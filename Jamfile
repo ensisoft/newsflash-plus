@@ -1,0 +1,60 @@
+#
+# README BEFORE YOU START SCREAMING AND BREAKING THINGS !!!
+#
+# MSVC: /Zc:whchar-t  option was set on in the boost-build\tools\msvc.jam file
+#       however this option was not on when I built Qt library. If /Zc:wchar-t is 
+#       on wchar_t is as a native type instead of a typedef for unsigned short and 
+#       linking against Qt fails (QString::fromStdWString(...), & QString::FromWCharArray
+#       
+#       Qt was built without debug libraries but when a debug version of this release
+#       is built boost.build expects debug versions of qtlibs (i.e. QtCored4.dll).
+#       -> copy+rename qt libs
+#
+#       
+# qt4.jam: qt4.jam file turns on QT_NO_DEBUG flag. I have commented this out in /usr/share/boost-build/qt4.jam
+#
+# 
+# Other notes: 
+# 
+# Moving Qt from it's installation folder will break the installation. Don't do that.
+#
+#
+import os ;
+import qt ;
+import path ;
+
+path-constant QT_PATH      : "../../qt-4.8.2" ;
+path-constant BOOST_PATH   : "../../boost_1_51_0" ;
+path-constant OPENSSL_PATH : "../../openssl_1_0_1" ;
+
+using qt : $(QT_PATH) ;
+
+use-project /boost/ : $(BOOST_PATH) ;
+
+if [ os.name ] = NT
+{
+   # define openssl libraries, they have different names on win32 vs. linux
+   lib openssl : : <name>ssleay32 <search>$(OPENSSL_PATH)/lib ;
+   lib crypto  : : <name>libeay32 <search>$(OPENSSL_PATH)/lib ;
+}
+
+if [ os.name ] = LINUX
+{
+   # on linux openssl is just *there* (only dev-package needs to be installed)
+   # so only got to name the libraries here
+   lib openssl : : <name>ssl ;
+   lib crypto  : : <name>crypto ;
+}
+
+# note that we don't set the C++11 flag here cause then it would cascade down to
+# python and zlib projects (which would just generate useless warnings)
+project newsflash 
+  : requirements
+    <include>../
+    <threading>multi
+   ;
+
+build-project zlib ;
+build-project engine ;
+#build-project gui ;
+

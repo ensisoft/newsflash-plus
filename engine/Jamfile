@@ -1,0 +1,23 @@
+
+# -rdynamic 
+
+project engine
+  : requirements
+  <library>/boost//filesystem/<link>static
+  <library>/boost//regex/<link>static
+  <library>/boost//system/<link>static
+  #<library>/newsflash//openssl/<link>shared
+  #<library>/newsflash//crypto/<link>shared
+
+  <toolset>gcc:<cflags>-std=c++11
+  <toolset>clang:<cflags>-std=c++11  
+  
+  # we need -rdynamic for backtrace and backtrace_symbols
+  # in order to dump a stacktrace from the assert
+  # todo: whats the flag for clang??
+  <toolset>gcc:<linkflags>-rdynamic
+  ;
+  
+lib engine : [ glob *.cpp ] : <link>static ;
+
+#build-project unit_test ;
