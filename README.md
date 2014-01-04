@@ -4,77 +4,76 @@ Newsflash Plus
 The world's best binary news reader!
 
 
-BUILD CONFIGURATION
+Build Configuration
+-------------------------
 
 Build configuration is defined as much as possible in the config file in this folder.
 It's assumed that either clang or gcc is used for a linux based build and msvc for windows.
 A C++11 compliant compiler is required. 
 
-BUILDING
-todo:
-- setup boost.build
-- build Qt
-- build 3rd party binaries
-- openssl
 
-RELEASING
+Building for Linux
+-------------------------
 
-For Windows
+Download and extract boost package boost_1_51_0, then build and install boost.build
 
-NullSoft Installer:
-I've made changes to the Base.nsh file. This script template now contains a script code
-to make a shortcut in the start menu. Updated Base.nsh should be copied into 
+        $ tar -zxvvf boost_1_51_0.tar.gz
+        $ cd boost_1_51_0/tools/build/v2/
+        $ ./bootstrap.sh
+        $ sudo ./b2 install
+        $ bjam --version
+        Boost.Build 2011.12-svn
 
-               "c:\program files\NSIS\contrib\zip2exe\base.nsh" 
+Install the required packages for building Qt
 
-before using the zip2exe tools.
+        libx11-dev
+        libext-dev
+        libfontconfig-dev
+        libxrender-dev
+        libpng12-dev
+        openssl-dev
+        libgtk2.0-dev
+        libgtk-3-dev
+        libicu-dev
+        autoconf
+        qt4-qmake
 
-1. Make a release build, make sure contents in dist/ are correct
-2. Compare dist and dist_final, update all changed files
-3. Make a .zip file by selecting the contents of dist_final and write .zip to releases/ e.g. newsflash_plus_3.1.0_rc1.zip
-4. Run NSIS Zip2Exe tool and create a self extracting .exe file
-5. Test the exe
+Download and extract Qt everywhere and build it. Note that you must have XRender and fontconfig
+for nice looking font rendering in Qt.
+
+        $ tar -zxvvf qt-everywhere-opensource-src-4.8.2.tar.gz
+        $ cd qt-everywhere-opensource-src-4.8.2
+        $ ./configure --prefix=../qt-4.8.2 --no-qt3support --no-webkit
+        $ make
+        $ make install
 
 
-For Linux
+Make a release package. 
 
-1. Make a release build
-2. Compare dist and dist_final, update files (binaries, help file, python, extensions and other .so files)
-    NOTE THAT MELD WILL NOT BY DEFAULT NOT COMPARE .so FILES!!
-3. $ tar -cvvf newsflash_plus_X.X.X.tar dist_final/
-4. gzip newsflash_plus_X.X.X.tar
-5. mv newsflash_plus_X.X.X.tar.gz releases/
-6. Extract and test
+        $ bjam release
+        $ ./python build_package.py x.y.z
 
 
+Building for Windows
+----------------------------
+todo: qt, boost, openssl
 
 
 Par2cmdline
 ========================
-Par2cmdline is a tool to repair and verify par2 files. 
-The current version is 0.4.
-
-You can download the source from:
+Par2cmdline is a tool to repair and verify par2 files. The current version is 0.4.
 http://sourceforge.net/projects/parchive/files/par2cmdline/
 
-To build:
-
-$ ./configure
-$ make
-
-
+        $ ./configure
+        $ make
 
 Unrar
 =========================
 Unrar is a tool to unrar .rar archives. 
-
-You can download it from:
 http://www.rarlab.com/rar_add.htm
 
-To build:
-
-$ make
-
+        $ make
+         
 
 Zlib
 ========================
@@ -87,3 +86,4 @@ two versions of zlib.so loaded in the same process with same symbol names.
 So if zlib is updated at one place it needs to be updated at the other place as well!!
 
 The current version is 1.2.5
+
