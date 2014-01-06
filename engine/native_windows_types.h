@@ -1,4 +1,4 @@
-// Copyright (c) 2013 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -22,43 +22,33 @@
 
 #pragma once
 
-#include <boost/noncopyable.hpp>
-#include <memory>
-#include "platform.h"
+#include <newsflash/config.h>
+
+#if !defined(WINDOWS_OS)
+#  error this file is only for windows
+#endif
+#include <windows.h>
+#include <winsock.h>
 
 namespace newsflash
 {
-    // event is a signaling object.
-    class event
-    {
-    public:
-        // construct a new event object. the event is initially
-        // not singnaled.
-        event();
+    typedef HANDLE  native_handle_t;
+    typedef SOCKET  native_socket_t;
+    typedef DWORD   native_errcode_t;    
+    typedef FD_SET  fd_set;
 
-       ~event();
+    // the constant's have a OS_ prefix because some stuff like SOCKET_ERROR
+    // is a macro *sigh* and wreaks havoc otherwise...
+    const HANDLE OS_INVALID_HANDLE        = NULL;    
+    const SOCKET OS_INVALID_SOCKET        = INVALID_SOCKET;
 
-        // get system specific handle for waiting functions
-        native_handle_t handle() const;
+    const int OS_SOCKET_ERROR_IN_PROGRESS = WSAEWOULDBLOCK;
+    const int OS_SOCKET_ERROR_RESET       = 0; // todo
+    const int OS_SOCKET_ERROR_TIMEOUT     = 0; // todo
+    const int OS_SOCKET_ERROR_REFUSED     = 0; // todo:
+    const int OS_ERROR_NO_ACCESS          = ERROR_ACCESS_DENIED;
+    const int OS_ERROR_FILE_NOT_FOUND     = ERROR_FILE_NOT_FOUND;
+    const int OS_BAD_HANDLE               = ERROR_INVALID_HANDLE;
 
-        // wait untill the event is signaled. if already signaled
-        // then this function returns immediately, otherwise waits 
-        // untill event is opened.
-        void wait();
 
-        // open the event
-        void set(); 
-
-        // reset to closed state
-        void reset();
-
-        // return if event is currently set
-        bool is_set() const;
-    private:
-        struct impl;
-
-        std::unique_ptr<impl> pimpl_;
-    }; 
-
-} // namespace
-
+} // newsflash

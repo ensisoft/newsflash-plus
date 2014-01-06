@@ -31,19 +31,20 @@ namespace newsflash
     // check if running in debugger
     bool has_debugger();
 
+    [[noreturn]]
+    void do_assert(const char* expression, const char* file, const char* func, int line);
+
 #if defined(__MSVC__)
     __forceinline void debug_break() 
       {
          DebugBreak();
       }
 
-    __declspec(noreturn) void do_assert(const char* expression, const char* file, const char* func, int line);
-
 #elif defined(__GNUG__)
     // not supported since we cannot detect the presence of a debugger reliably
     inline void debug_break() {}
 
-    void do_assert(const char* expression, const char* file, const char* func, int line) __attribute__((noreturn));
+    //void do_assert(const char* expression, const char* file, const char* func, int line) __attribute__((noreturn));
 #endif
 
 } // 

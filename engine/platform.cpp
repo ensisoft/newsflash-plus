@@ -39,14 +39,14 @@ namespace newsflash
 
 #if defined(WINDOWS_OS)
 
-void wait_single_object(handle_t handle)
+void wait_single_object(native_handle_t handle)
 {
     const DWORD ret = WaitForSingleObject(handle, INFINITE);
     if (ret != WAIT_OBJECT_0)
         throw std::runtime_error("wait failed (WaitForSingleObject");
 }
 
-bool wait_single_object(handle_t handle, std::chrono::milliseconds ms)
+bool wait_single_object(native_handle_t handle, std::chrono::milliseconds ms)
 {
     const DWORD ret = WaitForSingleObject(handle, ms.count());
     if (ret == WAIT_FAILED || ret == WAIT_ABANDONED)
@@ -55,7 +55,7 @@ bool wait_single_object(handle_t handle, std::chrono::milliseconds ms)
     return (ret == WAIT_TIMEOUT) ? false : true;
 }
 
-handle_t wait_multiple_objects(const std::vector<handle_t>& handles)
+native_handle_t wait_multiple_objects(const std::vector<native_handle_t>& handles)
 {
     const DWORD nCount = (DWORD)handles.size();
     assert(nCount);
@@ -67,7 +67,7 @@ handle_t wait_multiple_objects(const std::vector<handle_t>& handles)
     throw std::runtime_error("wait failed (WaitForMultipleObjectsEx)");
 }
 
-handle_t wait_multiple_objects(const std::vector<handle_t>& handles, std::chrono::milliseconds ms)
+native_handle_t wait_multiple_objects(const std::vector<native_handle_t>& handles, std::chrono::milliseconds ms)
 {
     const DWORD dwMillis = ms.count();
     const DWORD nCount = (DWORD)handles.size();
@@ -112,7 +112,7 @@ errcode_t get_last_error()
 
 #elif defined(LINUX_OS)
 
-void wait_single_object(handle_t handle)
+void wait_single_object(native_handle_t handle)
 {
     fd_set read;
     fd_set write;
@@ -126,7 +126,7 @@ void wait_single_object(handle_t handle)
         throw std::runtime_error("wait failed (select)");
 }
 
-bool wait_single_object(handle_t handle, std::chrono::milliseconds ms)
+bool wait_single_object(native_handle_t handle, std::chrono::milliseconds ms)
 {
     fd_set read;
     fd_set write;
@@ -148,7 +148,7 @@ bool wait_single_object(handle_t handle, std::chrono::milliseconds ms)
     return false;
 }
 
-handle_t wait_multiple_objects(const std::vector<handle_t>& handles)
+native_handle_t wait_multiple_objects(const std::vector<native_handle_t>& handles)
 {
     fd_set read;
     fd_set write;
@@ -175,7 +175,7 @@ handle_t wait_multiple_objects(const std::vector<handle_t>& handles)
     assert(0);
 }
 
-handle_t wait_multiple_objects(const std::vector<handle_t>& handles, std::chrono::milliseconds ms)
+native_handle_t wait_multiple_objects(const std::vector<native_handle_t>& handles, std::chrono::milliseconds ms)
 {
     fd_set read;
     //fd_set write;
@@ -211,7 +211,7 @@ std::string get_error_string(int code)
     return std::string(strerror_r(code, buff, sizeof(buff)));
 }
 
-errcode_t get_last_error() 
+native_errcode_t get_last_error() 
 {
     return errno;
 }
