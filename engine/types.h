@@ -1,4 +1,4 @@
-// Copyright (c) 2010-2013 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -21,6 +21,14 @@
 //  THE SOFTWARE.
 
 #pragma once
+
+#include <cstdint>
+
+namespace newsflash 
+{
+    typedef uint32_t ipv4_addr_t;
+
+} // newsflash
 
 #include <newsflash/config.h>
 #if defined(WINDOWS_OS)

@@ -37,18 +37,7 @@ namespace newsflash
     typedef DWORD   native_errcode_t;    
     typedef FD_SET  fd_set;
 
-    // the constant's have a OS_ prefix because some stuff like SOCKET_ERROR
-    // is a macro *sigh* and wreaks havoc otherwise...
-    const HANDLE OS_INVALID_HANDLE        = NULL;    
-    const SOCKET OS_INVALID_SOCKET        = INVALID_SOCKET;
-
-    const int OS_SOCKET_ERROR_IN_PROGRESS = WSAEWOULDBLOCK;
-    const int OS_SOCKET_ERROR_RESET       = 0; // todo
-    const int OS_SOCKET_ERROR_TIMEOUT     = 0; // todo
-    const int OS_SOCKET_ERROR_REFUSED     = 0; // todo:
-    const int OS_ERROR_NO_ACCESS          = ERROR_ACCESS_DENIED;
-    const int OS_ERROR_FILE_NOT_FOUND     = ERROR_FILE_NOT_FOUND;
-    const int OS_BAD_HANDLE               = ERROR_INVALID_HANDLE;
-
+    const int OS_SOCKET_ERROR = SOCKET_ERROR;
+    const int OS_INVALID_HANDLE = INVALID_HANDLE;
 
 } // newsflash

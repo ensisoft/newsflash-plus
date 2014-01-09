@@ -35,17 +35,12 @@ namespace newsflash
     typedef int    native_handle_t;
     typedef int    native_socket_t;
     typedef int    native_errcode_t;
-    typedef fd_set fd_set;    
 
-    const int OS_INVALID_HANDLE           = -1;
-    const int OS_INVALID_SOCKET           = -1;
 
-    const int OS_SOCKET_ERROR_IN_PROGRESS = EINPROGRESS;
-    const int OS_SOCKET_ERROR_RESET       = ECONNRESET;
-    const int OS_SOCKET_ERROR_TIMEOUT     = ETIMEDOUT;
-    const int OS_SOCKET_ERROR_REFUSED     = ECONNREFUSED;
-    const int OS_ERROR_NO_ACCESS          = EACCES;
-    const int OS_ERROR_FILE_NOT_FOUND     = ENOENT;
-    const int OS_BAD_HANDLE               = EBADF;
+    const int OS_SOCKET_ERROR = -1;
+    const int OS_INVALID_HANDLE = -1;
+    const int OS_INVALID_SOCKET = -1;
 
+    const int OS_ERR_WOULD_BLOCK = EWOULDBLOCK;
+    const int OS_ERR_AGAIN       = EAGAIN;
 } // newsflash
