@@ -27,6 +27,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <ctime>
 #include "../yenc.h"
 
 // test parsing headers, parts and end lines
