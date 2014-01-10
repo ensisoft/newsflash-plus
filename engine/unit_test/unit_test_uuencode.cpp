@@ -96,8 +96,8 @@ void test_decode()
     BOOST_REQUIRE(uue::decode(beg, end, std::back_inserter(buff)));
     BOOST_REQUIRE(*beg == '`'); // points to the end
 
-    uue::parse_end(beg, end);
-    BOOST_REQUIRE(beg == end);
+    BOOST_REQUIRE(uue::parse_end(beg, end));
+    // BOOST_REQUIRE(beg == end);
     
     std::vector<char> orig;
     std::copy(std::istreambuf_iterator<char>(ref), std::istreambuf_iterator<char>(), 

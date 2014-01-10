@@ -22,6 +22,13 @@
 
 // $Id: uuencode.h,v 1.11 2007/12/04 23:54:45 enska Exp $
 
+#if defined(_MSC_VER)
+#  undef MIN
+#  undef MAX
+#  undef min
+#  undef max
+#endif
+
 #include <cstdint>
 #include <cassert>
 #include <string>
@@ -235,25 +242,26 @@ namespace uuencode
 
     // parse and consume the UU trailer from the input stream
     template<typename InputIter>
-    void parse_end(InputIter& beg, InputIter end)
+    bool parse_end(InputIter& beg, InputIter end)
     {
-        // line terminators removed 
-        const std::string end_marker = "`end";
-        std::string str;
+#define UUENCODE_PARSE_END(x) \
+        if (beg == end || *beg++ != x) \
+            return false;
 
-        while (beg != end && str.size() != end_marker.size())
-        {
-            char c = *beg++;
-            if (c != '\n' && c != '\r')
-            {
-                str.push_back(c);
-                if (str == end_marker)
-                {
-                    ++beg;
-                    return;
-                }
-            }
-        }
+#define UUENCODE_PARSE_END_OPT(x) \
+        if (*beg == x) \
+            ++beg;
+
+        UUENCODE_PARSE_END('`');
+        UUENCODE_PARSE_END_OPT('\r');
+        UUENCODE_PARSE_END('\n');
+        UUENCODE_PARSE_END('e');
+        UUENCODE_PARSE_END('n');
+        UUENCODE_PARSE_END('d');
+
+#undef UUENCODE_PARSE_END
+
+        return true;
     }
 
     // decode input from the input iterator. returns true
@@ -290,6 +298,7 @@ namespace uuencode
             for (int triplet=0; triplet<triplets; ++triplet)
             {
                 uint32_t value = 0;
+
 #define UUENCODE_DECODE_CONCATENATE(shift) \
                 if (beg == end) \
                     return false; \
