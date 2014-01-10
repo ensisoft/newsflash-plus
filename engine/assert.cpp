@@ -54,6 +54,16 @@ std::atomic_flag mutex;
 namespace newsflash
 {
 
+void do_break()
+{
+#if defined(WINDOWS_OS)
+    DebugBreak();
+#else
+    // not implemented since we cannot detect 
+    // the presence of a debugger reliably.
+#endif
+}
+
 void do_assert(const char* expression, const char* file, const char* func, int line)
 {
     // if one thread is already asserting then spin lock other threads here.

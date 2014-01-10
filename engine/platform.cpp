@@ -106,7 +106,7 @@ std::string get_error_string(int code)
     return str;    
 }
 
-errcode_t get_last_error()
+native_errcode_t get_last_error()
 {
     return GetLastError();
 }

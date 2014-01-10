@@ -116,7 +116,9 @@ int tcpsocket::sendsome(const void* buff, int len)
     flags = MSG_NOSIGNAL;
 #endif
     
-    const int sent = ::send(socket_, buff, len, flags);
+    const char* ptr = static_cast<const char*>(buff);
+
+    const int sent = ::send(socket_, ptr, len, flags);
     if (sent == OS_SOCKET_ERROR)
         throw socket_io_exception("socket send", get_last_socket_error());
 
@@ -129,7 +131,9 @@ int tcpsocket::recvsome(void* buff, int capacity)
     assert(state_ == state::ready && "Socket is not connected");
     assert(socket_ && handle_);
 
-    const int ret = ::recv(socket_, buff, capacity, 0);
+    char* ptr = static_cast<char*>(buff);
+
+    const int ret = ::recv(socket_, ptr, capacity, 0);
     if (ret == OS_SOCKET_ERROR)
     {
         const native_errcode_t err = get_last_socket_error();
@@ -146,7 +150,7 @@ void tcpsocket::close()
     if (!socket_)
         return;
 
-    closesocket(socket_, handle_);
+    closesocket(handle_, socket_);
     socket_ = 0;
     handle_ = 0;
     state_  = state::nothing;

@@ -92,6 +92,12 @@ bigfile::bigfile() : pimpl_(new impl)
     pimpl_->append = false;
 }
 
+bigfile::~bigfile()
+{
+    close();
+}
+
+
 native_errcode_t bigfile::open(const std::string& file)
 {
     return pimpl_->open_file(file, OPEN_EXISTING);
@@ -166,7 +172,7 @@ void bigfile::write(const void* data, size_t bytes)
 
     if (pimpl_->append)
     {
-        if (!SetFilePointer(pimpl_->file, 0, NULL, FILE_END))
+        if (SetFilePointer(pimpl_->file, 0, NULL, FILE_END) == INVALID_SET_FILE_POINTER)
             throw std::runtime_error("file write failed (seek to the end)");
     }
     DWORD dw = 0;
@@ -207,7 +213,7 @@ bigfile::big_t bigfile::size(const std::string& file)
 
 void bigfile::resize(const std::string& file, big_t size)
 {
-    assert(size > 0);
+    assert(size >= 0);
 
     const std::wstring& wstr = utf8::decode(file);
 
@@ -225,7 +231,7 @@ void bigfile::resize(const std::string& file, big_t size)
     LARGE_INTEGER li;
     li.QuadPart = size;
  
-    if (SetFilePointerEx(handle, li, NULL, FILE_BEGIN) == FALSE ||
+    if (SetFilePointerEx(handle, li, NULL, FILE_BEGIN) == INVALID_SET_FILE_POINTER ||
         SetEndOfFile(handle) == FALSE)
     {
         CloseHandle(handle);

@@ -24,6 +24,8 @@
 
 #pragma once
 
+#include <newsflash/config.h>
+
 #include <exception>
 #include <chrono>
 #include <string>
@@ -78,19 +80,19 @@ namespace newsflash
     class socket_io_exception : public std::exception
     {
     public:
-        socket_io_exception(std::string what, native_errcode_t code) noexcept
+        socket_io_exception(std::string what, native_errcode_t code) NOTHROW // noexcept
             : what_(std::move(what)), code_(code)
         {}
 
-       ~socket_io_exception() noexcept
+       ~socket_io_exception() NOTHROW // noexcept
         {}
 
-        const char* what() const noexcept
+        const char* what() const NOTHROW // noexcept
         {
             return what_.c_str();
         }
 
-        native_errcode_t code() const noexcept
+        native_errcode_t code() const NOTHROW // noexcept 
         {
             return code_;
         }

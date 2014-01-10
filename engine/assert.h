@@ -31,23 +31,19 @@ namespace newsflash
     // check if running in debugger
     bool has_debugger();
 
+#if defined(__MSVC__)
+      __declspec(noreturn) void do_break();
+
+      __declspec(noreturn) void do_assert(const char* expression, const char* file, const char* func, int line);
+#else
     [[noreturn]]
     void do_assert(const char* expression, const char* file, const char* func, int line);
 
-#if defined(__MSVC__)
-    __forceinline void debug_break() 
-      {
-         DebugBreak();
-      }
-
-#elif defined(__GNUG__)
-    // not supported since we cannot detect the presence of a debugger reliably
-    inline void debug_break() {}
-
-    //void do_assert(const char* expression, const char* file, const char* func, int line) __attribute__((noreturn));
+    [[noreturn]]
+    void do_break();
 #endif
 
-} // 
+} //  newsflash
 
 // What is an assert and what is an ASSERT?
 // assert is the standard C utility which by default
@@ -72,7 +68,7 @@ namespace newsflash
     (expr) \
     ? ((void)0) \
     : (newsflash::has_debugger() ? \
-        newsflash::debug_break() : \
+        newsflash::do_break() : \
         newsflash::do_assert(#expr, __FILE__, __PRETTY_FUNCTION__, __LINE__))
 
 #ifdef _NDEBUG

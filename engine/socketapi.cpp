@@ -70,16 +70,16 @@ std::pair<native_socket_t, native_handle_t> begin_socket_connect(ipv4_addr_t hos
     };
     const static winsock startup; // thread safe per C++11 rules
 
-    auto sock = make_unique_handle(::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP, ::closesocket);
-    if (fd == INVALID_SOCKET)
+    auto sock = make_unique_handle(::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP), ::closesocket);
+    if (sock.get() == INVALID_SOCKET)
         throw std::runtime_error("create socket failed");
 
     auto event = make_unique_handle(CreateEvent(NULL, FALSE, FALSE, NULL), CloseHandle);
-    if (event == NULL)
+    if (event.get() == NULL)
         throw std::runtime_error("create socket event failed");
 
     // NOTE: this makes the socket non-blocking
-    if (WSAEventSelect(sock.get(), event, FD_READ | FD_WRITE) == SOCKET_ERROR)
+    if (WSAEventSelect(sock.get(), event.get(), FD_READ | FD_WRITE) == SOCKET_ERROR)
         throw std::runtime_error("socket event select failed");
 
     struct sockaddr_in addr {0};
@@ -117,10 +117,10 @@ native_errcode_t complete_socket_connect(native_handle_t handle, native_socket_t
 native_handle_t get_wait_handle(native_socket_t sock)
 {
     auto event = make_unique_handle(CreateEvent(NULL, FALSE, FALSE, NULL), CloseHandle);
-    if (event == NULL)
+    if (event.get() == NULL)
         throw std::runtime_error("create socket event failed");
 
-    if (WSAEventSelect(sock, event, FD_READ | FD_WRITE) == SOCKET_ERROR)
+    if (WSAEventSelect(sock, event.get(), FD_READ | FD_WRITE) == SOCKET_ERROR)
         throw std::runtime_error("socket event select failed");
 
     return event.release();

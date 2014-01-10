@@ -37,7 +37,9 @@ namespace newsflash
     typedef DWORD   native_errcode_t;    
     typedef FD_SET  fd_set;
 
-    const int OS_SOCKET_ERROR = SOCKET_ERROR;
-    const int OS_INVALID_HANDLE = INVALID_HANDLE;
+    const int OS_SOCKET_ERROR    = SOCKET_ERROR;
+    const int OS_INVALID_HANDLE  = NULL;
+    const int OS_ERR_WOULD_BLOCK = WSAEWOULDBLOCK; //EWOULDBLOC£K;
+    const int OS_ERR_AGAIN       = 0; //EAGAIN;    // not used on win.
 
 } // newsflash

@@ -81,11 +81,14 @@ void test_basic_file_ops()
         BOOST_REQUIRE(file.open("/dev/mem")); // no permission 
 //        REQUIRE_EXCEPTION(newsflash::bigfile::size("/dev/mem"));
 //        REQUIRE_EXCEPTION(newsflash::bigfile::resize("/dev/mem", 100));
+#elif defined(WINDOWS_OS)
+        BOOST_REQUIRE(file.open("\\\foobar\file"));
 #endif
     }
 
     // try open the file for appending, file doesn't exist it's created
     {
+
         delete_file("test0.file");
 
         newsflash::bigfile file;
@@ -197,22 +200,24 @@ void test_large_file()
     newsflash::bigfile file;
     file.create("test2.file");
 
-    newsflash::bigfile::resize("test2.file", 0xffffffffL + 1);
-    BOOST_REQUIRE(newsflash::bigfile::size("test2.file") == 0xffffffffL + 1);
+    using big_t = newsflash::bigfile::big_t;
+
+    newsflash::bigfile::resize("test2.file", big_t(0xffffffffL) + 1);
+    BOOST_REQUIRE(newsflash::bigfile::size("test2.file") == big_t(0xffffffffL) + 1);
 
     const char buff[] = "foobar";
 
     file.seek(0);
     file.write(buff, sizeof(buff));
 
-    file.seek(0xFFFFFFFFL);
+    file.seek(big_t(0xFFFFFFFFL));
     file.write(buff, 1);
     file.close();
 
     file.append("test2.file");
     file.write(buff, sizeof(buff));
 
-    BOOST_REQUIRE(newsflash::bigfile::size("test2.file") == 0xffffffffL + sizeof(buff));
+    BOOST_REQUIRE(newsflash::bigfile::size("test2.file") == big_t(0xffffffffL) + sizeof(buff));
 
     delete_file("test2.file");    
 }

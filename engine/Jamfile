@@ -1,11 +1,14 @@
 
-# -rdynamic 
-
 project engine
   : requirements
+
+  # if this is not defined linking problems ensue on msvc
+  <define>BOOST_ALL_NO_LIB
+
   <library>/boost//filesystem/<link>static
   <library>/boost//regex/<link>static
   <library>/boost//system/<link>static
+  
   #<library>/newsflash//openssl/<link>shared
   #<library>/newsflash//crypto/<link>shared
 
