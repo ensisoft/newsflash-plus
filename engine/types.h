@@ -1,4 +1,4 @@
-// Copyright (c) 2013 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -22,43 +22,19 @@
 
 #pragma once
 
-#include <boost/noncopyable.hpp>
-#include <memory>
-#include "platform.h"
+#include <cstdint>
 
-namespace newsflash
+namespace newsflash 
 {
-    // event is a signaling object.
-    class event
-    {
-    public:
-        // construct a new event object. the event is initially
-        // not singnaled.
-        event();
+    typedef uint32_t ipv4_addr_t;
 
-       ~event();
+} // newsflash
 
-        // get system specific handle for waiting functions
-        native_handle_t handle() const;
+#include <newsflash/config.h>
+#if defined(WINDOWS_OS)
+#  include "native_windows_types.h"
+#elif defined(LINUX_OS)
+#  include "native_linux_types.h"
+#endif
 
-        // wait untill the event is signaled. if already signaled
-        // then this function returns immediately, otherwise waits 
-        // untill event is opened.
-        void wait();
-
-        // open the event
-        void set(); 
-
-        // reset to closed state
-        void reset();
-
-        // return if event is currently set
-        bool is_set() const;
-    private:
-        struct impl;
-
-        std::unique_ptr<impl> pimpl_;
-    }; 
-
-} // namespace
 

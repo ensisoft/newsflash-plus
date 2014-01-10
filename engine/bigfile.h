@@ -24,12 +24,10 @@
 
 #pragma once
 
-#include <newsflash/config.h>
-
 #include <cstdint>
 #include <string>
 #include <memory>
-#include "platform.h"
+#include "types.h"
 
 namespace newsflash
 {
@@ -47,19 +45,19 @@ namespace newsflash
 
         // Try to open an existing file. Returns 0 on success
         // or a platform error code on error.
-        errcode_t open(const std::string& file);
+        native_errcode_t open(const std::string& file);
 
         // Open a file for appending. If file doesn't exist
         // it's created, otherwise it's opened for appending.
         // A file opened for appending will *always* append
         // regardless of current seek position.
         // returns 0 on success or a platform error code on error.
-        errcode_t append(const std::string& file);
+        native_errcode_t append(const std::string& file);
 
         // Create a new file. If the file already exists the contents
         // are truncated to 0. 
         // Returns 0 on success or a platform error code on error.
-        errcode_t create(const std::string& file);
+        native_errcode_t create(const std::string& file);
 
         // check if already open, returns true if open otherwise false.
         bool is_open() const;

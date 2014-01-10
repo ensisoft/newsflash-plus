@@ -1,4 +1,4 @@
-// Copyright (c) 2013 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -22,43 +22,25 @@
 
 #pragma once
 
-#include <boost/noncopyable.hpp>
-#include <memory>
-#include "platform.h"
+#include <newsflash/config.h>
+
+#if !defined(LINUX_OS)
+#  error this file is only for Linux
+#endif
+#include <sys/types.h>
+#include <cerrno>
 
 namespace newsflash
 {
-    // event is a signaling object.
-    class event
-    {
-    public:
-        // construct a new event object. the event is initially
-        // not singnaled.
-        event();
+    typedef int    native_handle_t;
+    typedef int    native_socket_t;
+    typedef int    native_errcode_t;
 
-       ~event();
 
-        // get system specific handle for waiting functions
-        native_handle_t handle() const;
+    const int OS_SOCKET_ERROR = -1;
+    const int OS_INVALID_HANDLE = -1;
+    const int OS_INVALID_SOCKET = -1;
 
-        // wait untill the event is signaled. if already signaled
-        // then this function returns immediately, otherwise waits 
-        // untill event is opened.
-        void wait();
-
-        // open the event
-        void set(); 
-
-        // reset to closed state
-        void reset();
-
-        // return if event is currently set
-        bool is_set() const;
-    private:
-        struct impl;
-
-        std::unique_ptr<impl> pimpl_;
-    }; 
-
-} // namespace
-
+    const int OS_ERR_WOULD_BLOCK = EWOULDBLOCK;
+    const int OS_ERR_AGAIN       = EAGAIN;
+} // newsflash

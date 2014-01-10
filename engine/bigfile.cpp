@@ -51,7 +51,7 @@ struct bigfile::impl {
     HANDLE file;
     bool append;
 
-    errcode_t open_file(const std::string& filename, unsigned flags)
+    native_errcode_t open_file(const std::string& filename, unsigned flags)
     {
         assert(!filename.empty());
 
@@ -92,21 +92,21 @@ bigfile::bigfile() : pimpl_(new impl)
     pimpl_->append = false;
 }
 
-errcode_t bigfile::open(const std::string& file)
+native_errcode_t bigfile::open(const std::string& file)
 {
     return pimpl_->open_file(file, OPEN_EXISTING);
 }
 
-errcode_t bigfile::append(const std::string& file)
+native_errcode_t bigfile::append(const std::string& file)
 {
-    const errcode_t ret = pimpl_->open_file(file, OPEN_ALWAYS);
+    const native_errcode_t ret = pimpl_->open_file(file, OPEN_ALWAYS);
     if (ret == 0)
         pimpl_->append = true;
 
     return ret;
 }
 
-errcode_t bigfile::create(const std::string& file)
+native_errcode_t bigfile::create(const std::string& file)
 {
     return pimpl_->open_file(file, CREATE_ALWAYS);
 }
@@ -239,7 +239,7 @@ void bigfile::resize(const std::string& file, big_t size)
 struct bigfile::impl {
     int fd;
 
-    errcode_t open_file(const std::string& filename, unsigned flags, unsigned mode)
+    native_errcode_t open_file(const std::string& filename, unsigned flags, unsigned mode)
     {
         assert(!filename.empty());
 
@@ -265,18 +265,18 @@ bigfile::~bigfile()
     close();
 }
 
-errcode_t bigfile::open(const std::string& file)
+native_errcode_t bigfile::open(const std::string& file)
 {
     return pimpl_->open_file(file, O_RDWR | O_LARGEFILE, 0);
 }
 
-errcode_t bigfile::append(const std::string& file)
+native_errcode_t bigfile::append(const std::string& file)
 {
     return pimpl_->open_file(file, O_RDWR | O_LARGEFILE | O_CREAT | O_APPEND, 
         S_IRWXU | S_IRGRP | S_IROTH);
 }
 
-errcode_t bigfile::create(const std::string& file)
+native_errcode_t bigfile::create(const std::string& file)
 {
     return pimpl_->open_file(file, O_RDWR | O_LARGEFILE | O_CREAT | O_TRUNC,
         S_IRWXU | S_IRGRP | S_IROTH);

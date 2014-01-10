@@ -1,4 +1,4 @@
-// Copyright (c) 2013 Sami Väisänen, Ensisoft 
+// Copyright (c) 2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -23,42 +23,52 @@
 #pragma once
 
 #include <boost/noncopyable.hpp>
-#include <memory>
-#include "platform.h"
+#include "socket.h"
 
 namespace newsflash
 {
-    // event is a signaling object.
-    class event
+    // straight TCP implementation of socket
+    class tcpsocket : public socket, boost::noncopyable
     {
     public:
-        // construct a new event object. the event is initially
-        // not singnaled.
-        event();
+        tcpsocket();
 
-       ~event();
+        // take ownership of the given socket and handle.
+        // the socket is expected to be already connected.
+        tcpsocket(native_socket_t sock, native_handle_t handle);
 
-        // get system specific handle for waiting functions
-        native_handle_t handle() const;
+        tcpsocket(tcpsocket&& other);
 
-        // wait untill the event is signaled. if already signaled
-        // then this function returns immediately, otherwise waits 
-        // untill event is opened.
-        void wait();
+       ~tcpsocket();
 
-        // open the event
-        void set(); 
+        virtual native_handle_t connect(ipv4_addr_t host, uint16_t port) override;
 
-        // reset to closed state
-        void reset();
+        virtual native_errcode_t complete_connect() override;
 
-        // return if event is currently set
-        bool is_set() const;
+        virtual void sendall(const void* buff, int len) override;
+
+        virtual int sendsome(const void* buff, int len) override;
+
+        virtual int recvsome(void* buff, int capacity) override;
+
+        virtual bool wait(int ms) override;
+
+        virtual void close() override;
+
+        tcpsocket& operator=(tcpsocket&& other);
     private:
-        struct impl;
+        enum class state {
+            nothing, connecting, ready
+        };
 
-        std::unique_ptr<impl> pimpl_;
-    }; 
+        // the actual socket
+        native_socket_t socket_;
 
-} // namespace
+        // event handle associated with the socket
+        native_handle_t handle_;
 
+        // current socket state.
+        state state_;
+    };
+
+} // newsflash

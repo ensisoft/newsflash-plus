@@ -208,7 +208,7 @@ namespace newsflash
             return size_;
         }
 
-        handle_t handle() const  NOTHROW
+        native_handle_t handle() const  NOTHROW
         {
             return event_.handle();
         }

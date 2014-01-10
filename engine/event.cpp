@@ -58,7 +58,7 @@ event::~event()
     ASSERT(CloseHandle(pimpl_->handle) == TRUE);
 }
 
-handle_t event::handle() const
+native_handle_t event::handle() const
 {
     return pimpl_->handle;
 }
@@ -116,7 +116,7 @@ event::~event()
     close(pimpl_->fds[1]);
 }
 
-handle_t event::handle() const
+native_handle_t event::handle() const
 {
     return pimpl_->fds[0]; // return read end
 }

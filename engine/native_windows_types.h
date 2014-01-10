@@ -1,4 +1,4 @@
-// Copyright (c) 2013 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -22,43 +22,22 @@
 
 #pragma once
 
-#include <boost/noncopyable.hpp>
-#include <memory>
-#include "platform.h"
+#include <newsflash/config.h>
+
+#if !defined(WINDOWS_OS)
+#  error this file is only for windows
+#endif
+#include <windows.h>
+#include <winsock.h>
 
 namespace newsflash
 {
-    // event is a signaling object.
-    class event
-    {
-    public:
-        // construct a new event object. the event is initially
-        // not singnaled.
-        event();
+    typedef HANDLE  native_handle_t;
+    typedef SOCKET  native_socket_t;
+    typedef DWORD   native_errcode_t;    
+    typedef FD_SET  fd_set;
 
-       ~event();
+    const int OS_SOCKET_ERROR = SOCKET_ERROR;
+    const int OS_INVALID_HANDLE = INVALID_HANDLE;
 
-        // get system specific handle for waiting functions
-        native_handle_t handle() const;
-
-        // wait untill the event is signaled. if already signaled
-        // then this function returns immediately, otherwise waits 
-        // untill event is opened.
-        void wait();
-
-        // open the event
-        void set(); 
-
-        // reset to closed state
-        void reset();
-
-        // return if event is currently set
-        bool is_set() const;
-    private:
-        struct impl;
-
-        std::unique_ptr<impl> pimpl_;
-    }; 
-
-} // namespace
-
+} // newsflash

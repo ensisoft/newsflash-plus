@@ -15,7 +15,7 @@ unit-test unit_test_yenc     : unit_test_yenc.cpp ;
 unit-test unit_test_nntp     : unit_test_nntp.cpp ;
 
 unit-test unit_test_threading : unit_test_threading.cpp ;
-unit-test unit_test_bigfile   : unit_test_bigfile.cpp ../bigfile.cpp ;
+unit-test unit_test_bigfile   : unit_test_bigfile.cpp ;
 
 
-
+unit-test unit_test_tcpsocket : unit_test_tcpsocket.cpp ;
