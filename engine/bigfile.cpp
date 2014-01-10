@@ -55,7 +55,7 @@ struct bigfile::impl {
     {
         assert(!filename.empty());
 
-        const std::wstring& wide = utf8_decode(filename);
+        const std::wstring& wide = utf8::decode(filename);
 
         const HANDLE file = CreateFile(
             wide.c_str(),
@@ -197,7 +197,7 @@ void bigfile::flush()
 
 bigfile::big_t bigfile::size(const std::string& file)
 {
-    const std::wstring& wstr = utf8_decode(file);
+    const std::wstring& wstr = utf8::decode(file);
     __stat64 st;
     if (_wstat64(wstr.c_str(), &st))
         throw std::runtime_error("get file size failed");
@@ -209,7 +209,7 @@ void bigfile::resize(const std::string& file, big_t size)
 {
     assert(size > 0);
 
-    const std::wstring& wstr = utf8_decode(file);
+    const std::wstring& wstr = utf8::decode(file);
 
     const HANDLE handle = CreateFile(
         wstr.c_str(),

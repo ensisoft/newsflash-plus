@@ -56,7 +56,22 @@ Make a release package.
 
 Building for Windows
 ----------------------------
-todo: qt, boost, openssl
+Download and extract boost package boost_1_51_0, then build and install boost.build
+
+        $ cd boost_1_51_0/tools/build/v2/
+        $ bootstrap.bat
+        $ b2
+        $ set BOOST_BUILD_PATH=c:\boost-build\share\boost-build
+        $ set PATH=%PATH%;c:\boost-build-engine\bin
+        $ bjam --version
+        Boost.Build 2011.12-svn
+
+Build openssl. Install NASM and ActivePerl. 
+
+        http://sourceforge.net/projects/nasm/        
+        http://www.activestate.com/activeperl
+
+
 
 
 Par2cmdline
