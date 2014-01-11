@@ -222,10 +222,33 @@ void test_large_file()
     delete_file("test2.file");    
 }
 
+void test_unicode_filename()
+{
+#if defined(WINDOWS_OS)
+    // わたしわさみ    
+    //const char* utf8 = u8"\u308f\u305f\u3057\u308f\u3055\u307f";
+    const char utf8[] = {0xe3, 0x82, 0x8f, 0xe3, 0x81, 0x9f, 0xe3, 0x81, 0x97, 0xe3, 0x82, 0x8f, 0xe3, 0x81, 0x95, 0xe3, 0x81, 0xbf, 0};
+
+    newsflash::bigfile file;
+
+    BOOST_REQUIRE(file.create(utf8) == 0);
+    BOOST_REQUIRE(file.is_open());
+    file.close();
+    BOOST_REQUIRE(!newsflash::bigfile::erase(utf8));
+
+    BOOST_REQUIRE(file.append(utf8) == 0);
+    BOOST_REQUIRE(file.is_open());
+    file.close();
+    BOOST_REQUIRE(!newsflash::bigfile::erase(utf8));
+
+#endif
+}
+
 int test_main(int, char* [])
 {
     test_basic_file_ops();
     test_file_write_read();
+    test_unicode_filename();
 
     return 0;
 }

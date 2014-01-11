@@ -211,6 +211,17 @@ bigfile::big_t bigfile::size(const std::string& file)
     return st.st_size;
 }
 
+native_errcode_t bigfile::erase(const std::string& file)
+{
+    // todo: if the file is read-only, first remove the read-only attribute
+
+    const std::wstring& wstr = utf8::decode(file);
+    if (DeleteFileW(wstr.c_str()) == FALSE)
+        return GetLastError();
+
+    return 0;
+}
+
 void bigfile::resize(const std::string& file, big_t size)
 {
     assert(size >= 0);
@@ -368,6 +379,13 @@ bigfile::big_t bigfile::size(const std::string& file)
         throw std::runtime_error("get file size failed (fstat64)");
 
     return big_t(st.st_size);
+}
+
+native_errcode_t bigfile::erase(const std::string& file)
+{
+    if (unlink(file.c_str()) == -1)
+        return errno;
+    return 0;
 }
 
 void bigfile::resize(const std::string& file, big_t size)

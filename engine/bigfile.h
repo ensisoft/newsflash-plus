@@ -1,4 +1,3 @@
-// Copyright (c) 2010-2013 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -84,6 +83,10 @@ namespace newsflash
 
         // get file size. 
         static big_t size(const std::string& file);
+
+        // erase the file. returns 0 on success or 
+        // platform specific native error code on error.
+        static native_errcode_t erase(const std::string& file);
 
         // Resize the file (either truncate or expand) to the given size. 
         static void resize(const std::string& file, big_t size);
