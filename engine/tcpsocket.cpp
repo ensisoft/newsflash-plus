@@ -156,15 +156,6 @@ void tcpsocket::close()
     state_  = state::nothing;
 }
 
-bool tcpsocket::wait(int ms)
-{
-    assert(socket_);
-    assert(handle_);
-    assert(state_ == state::ready || state_ == state::connecting);
-
-    return wait_single_object(handle_, std::chrono::milliseconds(ms));
-}
-
 tcpsocket& tcpsocket::operator=(tcpsocket&& other)
 {
     if (&other == this)

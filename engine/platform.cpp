@@ -128,10 +128,10 @@ bool is_socket(native_handle_t handle)
 void wait_single_object(native_handle_t handle)
 {
     fd_set read;
-    fd_set write;
+    //fd_set write;
 
     FD_ZERO(&read);
-    FD_ZERO(&write);
+    //FD_ZERO(&write);
     FD_SET(handle, &read);
     //FD_SET(handle, &write);
 
@@ -142,17 +142,17 @@ void wait_single_object(native_handle_t handle)
 bool wait_single_object(native_handle_t handle, const std::chrono::milliseconds& ms)
 {
     fd_set read;
-    fd_set write;
+    //fd_set write;
 
     FD_ZERO(&read);
-    FD_ZERO(&write);
+    //FD_ZERO(&write);
     FD_SET(handle, &read);
     //FD_SET(handle, &write);
 
     struct timeval tv {0};
     tv.tv_usec = ms.count() * 1000;
 
-    if (::select(handle + 1, &read, &write, nullptr, &tv) == -1)
+    if (::select(handle + 1, &read, nullptr, nullptr, &tv) == -1)
         throw std::runtime_error("wait failed (select)");
 
     if (FD_ISSET(handle, &read) || FD_ISSET(handle, &write))
@@ -164,12 +164,12 @@ bool wait_single_object(native_handle_t handle, const std::chrono::milliseconds&
 native_handle_t wait_multiple_objects(const std::vector<native_handle_t>& handles)
 {
     fd_set read;
-    fd_set write;
+    //fd_set write;
 
     int max_fd = 0;
 
     FD_ZERO(&read);
-    FD_ZERO(&write);
+    //FD_ZERO(&write);
     for (const auto handle : handles)
     {
         FD_SET(handle, &read);
@@ -177,7 +177,7 @@ native_handle_t wait_multiple_objects(const std::vector<native_handle_t>& handle
         max_fd = std::max(max_fd, handle);
     }
 
-    if (::select(max_fd + 1, &read, &write, nullptr, nullptr) == -1)
+    if (::select(max_fd + 1, &read, nullptr, nullptr, nullptr) == -1)
         throw std::runtime_error("wait failed (select)");
 
     for (const auto handle : handles)
@@ -191,12 +191,12 @@ native_handle_t wait_multiple_objects(const std::vector<native_handle_t>& handle
 native_handle_t wait_multiple_objects(const std::vector<native_handle_t>& handles, const std::chrono::milliseconds& ms)
 {
     fd_set read;
-    fd_set write;
+    //fd_set write;
 
     int max_fd = 0;
 
     FD_ZERO(&read);
-    FD_ZERO(&write);
+    //FD_ZERO(&write);
     for (const auto handle : handles)
     {
         FD_SET(handle, &read);
@@ -207,7 +207,7 @@ native_handle_t wait_multiple_objects(const std::vector<native_handle_t>& handle
     struct timeval tv {0};
     tv.tv_usec = ms.count() * 1000;
 
-    if (::select(max_fd + 1, &read, &write, nullptr, &tv) == -1)
+    if (::select(max_fd + 1, &read, nullptr, nullptr, &tv) == -1)
         throw std::runtime_error("wait failed (select)");
 
     for (const auto handle : handles)

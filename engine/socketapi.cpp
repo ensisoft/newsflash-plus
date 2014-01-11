@@ -23,6 +23,7 @@
 #include <newsflash/config.h>
 #if defined(WINDOWS_OS)
 #  include <winsock2.h> // for WSAEventSelect
+#  pragma comment(lib, "ws2_32.lib")
 #elif defined(LINUX_OS)
 #  include <sys/types.h>
 #  include <sys/socket.h>
@@ -38,6 +39,25 @@
 #include "platform.h"
 #include "utility.h"
 #include "assert.h"
+
+namespace {
+
+#if defined(WINDOWS_OS)
+    struct winsock {
+        winsock()
+        {
+            WSADATA data;
+            if (WSAStartup(MAKEWORD(1, 1), &data))
+                throw std::runtime_error("winsock startup failed");
+        }
+       ~winsock()
+        {
+            WSACleanup();
+        }
+    } winsock_starter;
+#endif
+
+} // namespace
 
 namespace newsflash
 {
@@ -56,20 +76,6 @@ ipv4_addr_t resolve_host_ipv4(const std::string& hostname)
 
 std::pair<native_socket_t, native_handle_t> begin_socket_connect(ipv4_addr_t host, uint16_t port)
 {
-    struct winsock {
-        winsock()
-        {
-            WSADATA data;
-            if (WSAStartup(MAKEWORD(1, 1), &data))
-                throw std::runtime_error("winsock startup failed");
-        }
-       ~winsock()
-        {
-            WSACleanup();
-        }
-    };
-    const static winsock startup; // thread safe per C++11 rules
-
     auto sock = make_unique_handle(::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP), ::closesocket);
     if (sock.get() == INVALID_SOCKET)
         throw std::runtime_error("create socket failed");
@@ -79,7 +85,7 @@ std::pair<native_socket_t, native_handle_t> begin_socket_connect(ipv4_addr_t hos
         throw std::runtime_error("create socket event failed");
 
     // NOTE: this makes the socket non-blocking
-    if (WSAEventSelect(sock.get(), event.get(), FD_READ | FD_WRITE) == SOCKET_ERROR)
+    if (WSAEventSelect(sock.get(), event.get(), FD_READ | FD_CONNECT) == SOCKET_ERROR)
         throw std::runtime_error("socket event select failed");
 
     struct sockaddr_in addr {0};
@@ -89,7 +95,7 @@ std::pair<native_socket_t, native_handle_t> begin_socket_connect(ipv4_addr_t hos
     if (connect(sock.get(), static_cast<sockaddr*>((void*)&addr), sizeof(sockaddr_in)))
     {
         const int err = WSAGetLastError();
-        if (err != WSAEALREADY)
+        if (err != WSAEALREADY && err != WSAEWOULDBLOCK)
             throw std::runtime_error("connect failed");
     }
 

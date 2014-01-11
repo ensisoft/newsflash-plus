@@ -67,10 +67,6 @@ namespace newsflash
         // On error a socket_io_error is thrown.
         virtual int recvsome(void* buff, int capacity) = 0;
 
-        // Wait for data to be ready on the socket within ms milliseconds.
-        // returns true if data is available otherwise false.
-        virtual bool wait(int ms) = 0;
-
         // Close the socket.
         virtual void close() = 0;
     protected:

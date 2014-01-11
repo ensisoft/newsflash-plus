@@ -51,8 +51,6 @@ namespace newsflash
 
         virtual int recvsome(void* buff, int capacity) override;
 
-        virtual bool wait(int ms) override;
-
         virtual void close() override;
 
         tcpsocket& operator=(tcpsocket&& other);
