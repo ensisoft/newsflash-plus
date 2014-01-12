@@ -43,7 +43,14 @@ namespace newsflash
         waithandle(native_handle_t handle, type t, bool r, bool w)
             : handle_(handle), type_(t), read_(r), write_(w)
         {
-            assert(read_ || write_);
+            assert(r || w); 
+            extra.socket_ = 0;
+        }
+        waithandle(native_handle_t handle, native_socket_t sock, bool r, bool w)
+            : handle_(handle), type_(type::socket), read_(r), write_(w)
+        {
+            assert(r || w);
+            extra.socket_ = sock;
         }
 
         // check for readability
@@ -60,21 +67,28 @@ namespace newsflash
             return write_;
         }
 
-        static void wait(const list& handles)
+        static 
+        void wait(const list& handles)
         {
             wait_handles(handles, nullptr);
         }
-        static bool wait(const list& handles, const std::chrono::milliseconds& ms)
+
+        static 
+        bool wait(const list& handles, const std::chrono::milliseconds& ms)
         {
             return wait_handles(handles, &ms);
         }
     private:
-        static bool wait_handles(const list& handles, const std::chrono::milliseconds* ms);
+        static 
+        bool wait_handles(const list& handles, const std::chrono::milliseconds* ms);
 
         native_handle_t handle_;
         type type_;
         bool read_;
         bool write_;
+        union {
+            native_socket_t socket_;
+        } extra ;
     };
 
     template<typename T>

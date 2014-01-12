@@ -22,6 +22,7 @@
 
 #include <newsflash/config.h>
 #if defined(WINDOWS_OS)
+#  include <windows.h>
 #  include <winsock2.h> // for WSAEventSelect
 #  pragma comment(lib, "ws2_32.lib")
 #elif defined(LINUX_OS)

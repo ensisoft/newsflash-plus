@@ -27,10 +27,11 @@
 
 namespace newsflash
 {
-    // straight TCP implementation of socket
+    // TCP implementation of socket
     class tcpsocket : public socket, boost::noncopyable
     {
     public:
+        // construct a non-connected socket.
         tcpsocket();
 
         // take ownership of the given socket and handle.

@@ -27,6 +27,7 @@
 #if defined(WINDOWS_OS)
 #  include <windows.h>
 #  include <winsock2.h>
+#  pragma comment(lib, "ws2_32.lib")
 #elif defined(LINUX_OS)
 #  include <sys/types.h>
 #  include <sys/select.h>
@@ -43,17 +44,21 @@ std::pair<bool, bool> check_read_write(newsflash::native_socket_t sock)
     fd_set read;
     fd_set write;
 
+    FD_ZERO(&read);
+    FD_ZERO(&write);
+
     FD_SET(sock, &read);
     FD_SET(sock, &write);
 
-    if (select(0, &read, &write, nullptr, nullptr) == newsflash::OS_SOCKET_ERROR)
+    struct timeval tv {};
+
+    if (select(0, &read, &write, nullptr, &tv) == newsflash::OS_SOCKET_ERROR)
         throw std::runtime_error("select");
 
     bool can_read  = FD_ISSET(sock, &read);
     bool can_write = FD_ISSET(sock, &write);
 
     return { can_read, can_write };
-
 }
 
 }  // namespace
@@ -78,12 +83,12 @@ bool waithandle::wait_handles(const list& handles, const std::chrono::millisecon
     const DWORD nCount = static_cast<DWORD>(vec.size());
     
     DWORD now = start;
-    DWORD signaled = 0;
+    DWORD signaled = -1;
     
     while (true)
     {      
         if ((now - start) > span)
-            return false;
+            break;
             
         const DWORD timeout = ms ? (span - (now - start)) : INFINITE;
       
@@ -91,18 +96,33 @@ bool waithandle::wait_handles(const list& handles, const std::chrono::millisecon
         if (ret == WAIT_FAILED)
             throw std::runtime_error("wait failed");
         else if (ret == WAIT_TIMEOUT)
-             return false;
+            break;
 
         signaled = ret - WAIT_OBJECT_0;
 
         auto handle = handles[ret - WAIT_OBJECT_0];
-        if (handle->type_ == handle::type::socket)
+        if (handle->type_ == waithandle::type::socket)
         {
-            const auto& state = check_read_write(handle->handle);
+            // unfortunately WaitForMultipleObjects doesn't tell us what
+            // is available when the wait handle is associated with a socket.
+            // thus we have to make another call to check if the handle is signaled
+            // for writeability or readability.
+            // also if neither is set then we assume that the socket is in connecting state
+            // and the result is now available  (FD_CONNECT in WSAEventSelect).
+            // We translate this to "readability" to follow linux semantics.
+            const std::pair<bool, bool>& state = check_read_write(handle->extra.socket_);
+
             if ((state.first && handle->read_) || (state.second && handle->write_))
             {
                 handle->read_  = state.first;
                 handle->write_ = state.second;
+                break;
+            }
+            else if (!state.first && !state.second)
+            {
+                // assume connect() completed.
+                handle->read_  = true;
+                handle->write_ = false;
                 break;
             }
         }
@@ -120,9 +140,12 @@ bool waithandle::wait_handles(const list& handles, const std::chrono::millisecon
     {
         if (i == signaled)
             continue;
-        vec[i]->read_  = false;
-        ved[i]->write_ = false;
+        handles[i]->read_  = false;
+        handles[i]->write_ = false;
     }
+    if (signaled == -1)
+        return false;
+
     return true;
 
 }

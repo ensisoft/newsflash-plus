@@ -24,6 +24,7 @@
 #include "tcpsocket.h"
 #include "socketapi.h"
 #include "platform.h"
+#include "assert.h"
 
 namespace newsflash
 {
@@ -94,12 +95,18 @@ void tcpsocket::sendall(const void* buff, int len)
     int sent = 0;
     do 
     {
-        const int ret = ::send(socket_, ptr + sent, len - sent, flags);
+        int ret = ::send(socket_, ptr + sent, len - sent, flags);
         if (ret == OS_SOCKET_ERROR)
         { 
             const auto err = get_last_socket_error();
             if (err != OS_ERR_WOULD_BLOCK && err != OS_ERR_AGAIN)
                 throw socket_io_exception("socket send", get_last_socket_error());
+
+            auto handle = wait(false, true);
+            newsflash::wait(handle);
+            assert(handle.write());
+
+            ret = 0;
         }
         sent += ret;
     }
@@ -125,7 +132,19 @@ int tcpsocket::sendsome(const void* buff, int len)
         const auto err = get_last_socket_error();
         if (err == OS_ERR_WOULD_BLOCK && err != OS_ERR_AGAIN)
             throw socket_io_exception("socket send", get_last_socket_error());
+
+        // on windows writeability is edge triggered, 
+        // i.e. the event is signaled once when the socket is writeable and a call
+        // to send clears the signal. the signal remains cleared
+        // untill send fails with WSAEWOULDBLOCK which will schedule
+        // the event for signaling once the socket can write more.        
+        return 0;
     }
+#if defined(WINDOWS_OS)
+    // set the signal manually since the socket can write more,
+    // so that we have the same semantics with linux.
+    CHECK(SetEvent(handle_), TRUE);
+#endif
 
     return sent;
 }
@@ -164,7 +183,7 @@ void tcpsocket::close()
 waithandle tcpsocket::wait() const
 {
     return waithandle {
-        handle_, waithandle::type::socket, true, true
+        handle_, socket_, true, true
     };
 }
 
@@ -173,7 +192,7 @@ waithandle tcpsocket::wait(bool waitread, bool waitwrite) const
     assert(waitread || waitwrite);
     
     return waithandle {
-        handle_, waithandle::type::socket, waitread, waitwrite
+        handle_, socket_, waitread, waitwrite
     };
 }
 
