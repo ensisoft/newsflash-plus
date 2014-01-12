@@ -31,6 +31,7 @@
 #include <string>
 #include <cstdint>
 #include "types.h"
+#include "waithandle.h"
 
 namespace newsflash
 {
@@ -40,12 +41,11 @@ namespace newsflash
     {
     public:
         virtual ~socket() = default;
-
         // Connect this socket to the specified host on the specified port.
         // This function is non-blocking and returns immediately.
         // To complete the connection attempt call complete connect
-        // after the returned handle becomes signaled.
-        virtual native_handle_t connect(ipv4_addr_t host, uint16_t port) = 0;
+        // after the waithandle becomes signaled.
+        virtual void connect(ipv4_addr_t host, uint16_t port) = 0;
 
         // Complete the connection attempt. On succesful return
         // the connection is ready to be used for sending and receiving data.
@@ -69,6 +69,12 @@ namespace newsflash
 
         // Close the socket.
         virtual void close() = 0;
+
+        // Get handle for waiting on the socket for writability/readability.
+        virtual waithandle wait() const = 0;
+
+        // Get handle for waiting either writability or readability or both.
+        virtual waithandle wait(bool waitread, bool waitwrite) const = 0;
     protected:
     private:
     };

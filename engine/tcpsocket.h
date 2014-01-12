@@ -41,7 +41,7 @@ namespace newsflash
 
        ~tcpsocket();
 
-        virtual native_handle_t connect(ipv4_addr_t host, uint16_t port) override;
+        virtual void connect(ipv4_addr_t host, uint16_t port) override;
 
         virtual native_errcode_t complete_connect() override;
 
@@ -52,6 +52,10 @@ namespace newsflash
         virtual int recvsome(void* buff, int capacity) override;
 
         virtual void close() override;
+
+        virtual waithandle wait() const override;
+
+        virtual waithandle wait(bool waitread, bool waitwrite) const override;
 
         tcpsocket& operator=(tcpsocket&& other);
     private:

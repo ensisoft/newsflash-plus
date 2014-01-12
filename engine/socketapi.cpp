@@ -85,7 +85,7 @@ std::pair<native_socket_t, native_handle_t> begin_socket_connect(ipv4_addr_t hos
         throw std::runtime_error("create socket event failed");
 
     // NOTE: this makes the socket non-blocking
-    if (WSAEventSelect(sock.get(), event.get(), FD_READ | FD_CONNECT) == SOCKET_ERROR)
+    if (WSAEventSelect(sock.get(), event.get(), FD_READ | FD_WRITE | FD_CONNECT) == SOCKET_ERROR)
         throw std::runtime_error("socket event select failed");
 
     struct sockaddr_in addr {0};

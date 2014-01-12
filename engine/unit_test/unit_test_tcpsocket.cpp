@@ -73,24 +73,30 @@ void test_connection_refused()
     {
         tcpsocket tcp;
         tcp.connect(resolve_host_ipv4("127.0.0.1"), 8000);
-        // BOOST_REQUIRE(tcp.wait(5000));
-        //tcp.wait();
+
+        auto handle = tcp.wait();
+        wait(handle);
+        BOOST_REQUIRE(handle.read());
         BOOST_REQUIRE(tcp.complete_connect() != 0);
     }
 
     {
         tcpsocket tcp;
-        tcp.connect(resolve_host_ipv4("192.168.0.240"), 99999);
-        // BOOST_REQUIRE(tcp.wait(5000));
-        //tcp.wait();
+        tcp.connect(resolve_host_ipv4("192.168.0.240"), 9999);
+
+        auto handle = tcp.wait();
+        wait(handle);
+        BOOST_REQUIRE(handle.read());
         BOOST_REQUIRE(tcp.complete_connect() != 0);
     }
 
     {
         tcpsocket tcp;
-        tcp.connect(resolve_host_ipv4("192.168.0.1"), 99999);
-        // BOOST_REQUIRE(tcp.wait(5000));
-        //tcp.wait();
+        tcp.connect(resolve_host_ipv4("192.168.0.1"), 9999);
+
+        auto handle = tcp.wait();
+        wait(handle);
+        BOOST_REQUIRE(handle.read());
         BOOST_REQUIRE(tcp.complete_connect() != 0);
     }
 }
@@ -137,12 +143,19 @@ void test_connection_success()
         {
             if (sent != buff.len)
             {
+                auto handle = client.wait(false, true);
+                wait(handle);
+                BOOST_REQUIRE(handle.write());                
+            
                 int ret = client.sendsome(buff.data + sent, buff.len - sent);
                 sent += ret;
             }
             if (recv != buff.len)
             {
-                //BOOST_REQUIRE(tcp.wait(1000));
+                auto handle = tcp.wait(true, false);
+                wait(handle);
+                BOOST_REQUIRE(handle.read());
+
                 int ret = tcp.recvsome(buff.buff + recv, buff.len - recv);
                 recv += ret;
             }
@@ -163,7 +176,7 @@ void test_connection_success()
 
 int test_main(int, char*[])
 {
-    //test_connection_refused();
+    test_connection_refused();
     test_connection_success();
 
     return 0;

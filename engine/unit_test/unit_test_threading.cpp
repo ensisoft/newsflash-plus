@@ -21,28 +21,15 @@
 //  THE SOFTWARE.
 
 #include <boost/test/minimal.hpp>
-#include <newsflash/engine/msgqueue.h>
-#include <newsflash/engine/event.h>
-#include <newsflash/engine/platform.h>
-#include <newsflash/engine/assert.h>
 #include <atomic>
 #include <thread>
 #include <vector>
 #include <string>
 #include <iostream>
 #include <chrono>
-
-
-struct foo {
-    int i;
-    std::string s;
-};
-
-struct bar {
-    std::vector<int> v;
-};
-
-namespace nt = newsflash;
+#include "../waithandle.h"
+#include "../event.h"
+#include "../msgqueue.h"
 
 class barrier 
 {
@@ -67,47 +54,84 @@ private:
     size_t count_;    
 };
 
-
-
-void thread_func_test_event(nt::event* e, barrier* b, std::atomic_flag* flag)
-{
-    // rendezvous
-    b->wait();
-
-    // wait on the event
-    e->wait();
-
-    // expected to be true after the wait completes
-    BOOST_REQUIRE(flag->test_and_set());
-}
-
 void unit_test_event()
 {
     {
-        nt::event ev;
+        newsflash::event event;
 
-        BOOST_REQUIRE(!ev.is_set());
-        BOOST_REQUIRE(!nt::is_signaled(ev.handle()));
-        ev.set();
-        BOOST_REQUIRE(ev.is_set());
-        BOOST_REQUIRE(nt::is_signaled(ev.handle()));
-        ev.wait();
-        ev.reset();
-        BOOST_REQUIRE(!ev.is_set());
-        BOOST_REQUIRE(!nt::is_signaled(ev.handle()));
+        auto handle = event.wait();
+        BOOST_REQUIRE(!wait(handle, std::chrono::milliseconds(0)));
+        BOOST_REQUIRE(!handle.read());
+
+        event.set();
+        handle = event.wait();
+        BOOST_REQUIRE(wait(handle, std::chrono::milliseconds(0)));
+        BOOST_REQUIRE(handle.read());
+
+        event.reset();
+        handle = event.wait();
+        BOOST_REQUIRE(!wait(handle, std::chrono::milliseconds(0)));
+        BOOST_REQUIRE(!handle.read());
+
     }    
+
+    {
+        newsflash::event event1, event2;
+
+        auto handle1 = event1.wait();
+        auto handle2 = event2.wait();
+
+        BOOST_REQUIRE(!wait(handle1, handle2, std::chrono::milliseconds(0)));
+        BOOST_REQUIRE(!handle1.read());
+        BOOST_REQUIRE(!handle2.read());
+
+        event2.set();
+
+        handle1 = event1.wait();
+        handle2 = event2.wait();
+        BOOST_REQUIRE(wait(handle1, handle2, std::chrono::milliseconds(0)));
+        BOOST_REQUIRE(!handle1.read());
+        BOOST_REQUIRE(handle2.read());
+
+        event2.reset();
+        event1.set();
+
+        handle1 = event1.wait();
+        handle2 = event2.wait();
+        BOOST_REQUIRE(wait(handle1, handle2, std::chrono::milliseconds(0)));
+        BOOST_REQUIRE(handle1.read());
+        BOOST_REQUIRE(!handle2.read());
+
+
+    }
+
+    const auto& waiter = [](newsflash::event& event, barrier& bar, std::atomic_flag& flag)
+    {
+        // rendezvous
+        bar.wait();
+        
+        // begin wait forever
+        auto handle = event.wait();
+        wait(handle);
+        
+        BOOST_REQUIRE(handle.read());
+        
+        // expected to be true after wait completes
+        BOOST_REQUIRE(flag.test_and_set());        
+        
+    };
     
     // single thread waiter
     {
         for (int i=0; i<1000; ++i)
         {
-            nt::event ev;
+            newsflash::event event;
 
             barrier bar(2);
 
             std::atomic_flag flag;
 
-            std::thread th(std::bind(thread_func_test_event, &ev, &bar, &flag));
+            std::thread th(std::bind(waiter, std::ref(event), std::ref(bar), std::ref(flag)));
 
             // rendezvous with the other thread
             bar.wait();
@@ -118,7 +142,7 @@ void unit_test_event()
             flag.test_and_set();
 
             // release the waiters
-            ev.set();
+            event.set();
 
             th.join();
         }
@@ -128,15 +152,15 @@ void unit_test_event()
     {
         for (int i=0; i<1000; ++i)
         {
-            nt::event ev;
+            newsflash::event event;
 
             barrier bar(4);
 
             std::atomic_flag flag;
 
-            std::thread th1(std::bind(thread_func_test_event, &ev, &bar, &flag));
-            std::thread th2(std::bind(thread_func_test_event, &ev, &bar, &flag));
-            std::thread th3(std::bind(thread_func_test_event, &ev, &bar, &flag));
+            std::thread th1(std::bind(waiter, std::ref(event), std::ref(bar), std::ref(flag)));
+            std::thread th2(std::bind(waiter, std::ref(event), std::ref(bar), std::ref(flag)));
+            std::thread th3(std::bind(waiter, std::ref(event), std::ref(bar), std::ref(flag)));
 
             // rendezvous with all the threads
             bar.wait();
@@ -145,7 +169,7 @@ void unit_test_event()
 
             flag.test_and_set();
 
-            ev.set();
+            event.set();
 
             th1.join();
             th2.join();
@@ -155,311 +179,222 @@ void unit_test_event()
 
 }
 
-void thread_func_test_queue(nt::msgqueue* q, int msg_count)
-{
-    for (int i=0; i<msg_count; ++i)
-    {
-        const auto msg = q->get();
-        BOOST_REQUIRE(msg->as<int>() == 123);
-        BOOST_REQUIRE(msg->id() == 666);
-    }
-}
+struct foo {
+    int i;
+    std::string s;
+};
 
-void thread_func_test_queue2(nt::msgqueue* q, int msg_count)
-{
-    for (int i=0; i<msg_count; ++i)
-    {
-        const auto msg = q->get();
-        std::string* str = msg->as<std::string*>();
-        *str = "jallukola";
-    }
-}
-
-void unit_test_queue()
+// test posting messages to the queue.
+// posting is an async operation and returns immediately.
+void unit_test_queue_post()
 {
     {
-        nt::msgqueue q;
+        std::unique_ptr<newsflash::msgqueue::message> msg;
 
-        BOOST_REQUIRE(q.size() == 0);
-        BOOST_REQUIRE(q.handle());
-        BOOST_REQUIRE(!nt::is_signaled(q.handle()));
+        newsflash::msgqueue queue;
+        BOOST_REQUIRE(queue.size() == 0);
+        BOOST_REQUIRE(!queue.try_get(msg));
 
-        q.post(123, foo{444, "jallukola"});
+     
+        queue.post(123, foo{444, "jallukola"});
+        BOOST_REQUIRE(queue.size() == 1);
 
-        BOOST_REQUIRE(q.size() == 1);
-        BOOST_REQUIRE(nt::is_signaled(q.handle()));
-
-        auto m = q.get();
+        auto m = queue.get();
         BOOST_REQUIRE(m->id() == 123);
         BOOST_REQUIRE(m->type_test<foo>());
         BOOST_REQUIRE(m->as<foo>().i == 444);
         BOOST_REQUIRE(m->as<foo>().s == "jallukola");
-
-        BOOST_REQUIRE(q.size() == 0);
-        BOOST_REQUIRE(!nt::is_signaled(q.handle()));
+        BOOST_REQUIRE(queue.size() == 0);
 
         // lvalue
-        foo f {1234, "jallukola"};
-
-        q.post(1, f);
+        foo lvalue {1234, "jallukola"};
+        queue.post(1, lvalue);
 
         // call to q.post should not modify f
-        BOOST_REQUIRE(f.i == 1234);
-        BOOST_REQUIRE(f.s == "jallukola");
+        BOOST_REQUIRE(lvalue.i == 1234);
+        BOOST_REQUIRE(lvalue.s == "jallukola");
+        BOOST_REQUIRE(queue.size() == 1);
 
-        BOOST_REQUIRE(q.size() == 1);
-        m = q.get();
+        m = queue.get();
         BOOST_REQUIRE(m->type_test<foo>());
         BOOST_REQUIRE(m->as<foo>().i == 1234);
         BOOST_REQUIRE(m->as<foo>().s == "jallukola");
+        BOOST_REQUIRE(queue.size() == 0);
+
+
 
     }
 
+    // try posting primitve type message
     {
-        nt::msgqueue q;
+        newsflash::msgqueue queue;
 
         for (size_t i=0; i<10000; ++i)
         {
-            q.post(i + 1, i + 2);
+            const size_t id = i + 1;
+            const size_t data = i + 2;
+            queue.post(id, data);
         }
-
-        BOOST_REQUIRE(q.size() == 10000);
+        BOOST_REQUIRE(queue.size() == 10000);
 
         for (size_t i=0; i<10000; ++i)
         {
-            auto m = q.get();
-            BOOST_REQUIRE(m->id() == i + 1);
-            BOOST_REQUIRE(m->as<size_t>() == i + 2);
+            const size_t id = i + 1;
+            const size_t data = i + 2;
+
+            auto msg = queue.get();
+            BOOST_REQUIRE(msg->id() == id);
+            BOOST_REQUIRE(msg->as<size_t>() == data);
         }
+
     }
 
+    // try posting messages of user defined type
     {
-        nt::msgqueue q;
+        newsflash::msgqueue queue;
 
-        foo f {123, "foobar"};
-        q.post(321, f);
+        const foo msg {1234, "foobar"};
 
-        BOOST_REQUIRE(f.s == "foobar");
-        BOOST_REQUIRE(f.i == 123);
-        BOOST_REQUIRE(q.size() == 1);
-
-        auto msg = q.get();
-        BOOST_REQUIRE(msg->id() == 321);
-        BOOST_REQUIRE(msg->as<foo>().s == "foobar");
-        BOOST_REQUIRE(msg->as<foo>().i == 123);
-    }
-
-    // single consumer and producer
-    {
-        nt::msgqueue q;
-
-        std::thread th(std::bind(thread_func_test_queue, &q, 1000));
-
-        for (int i=0; i<1000; ++i)
-            q.post(666, 123);
-
-        th.join();
-    }
-
-    // multiple threads
-    {
-        nt::msgqueue q;
-
-        std::thread th1(std::bind(thread_func_test_queue, &q, 5000));
-        std::thread th2(std::bind(thread_func_test_queue, &q, 5000));
-
-        for (int i=0; i<10000; ++i)
-            q.post(666, 123);
-
-        th1.join();
-        th2.join();
-    }
-
-    // test waiting on a message, single consumer
-    {
-        nt::msgqueue q;
-
-        std::thread th1(std::bind(thread_func_test_queue2, &q, 50000));
-
-        for (int i=0; i<50000; ++i)
+        for (size_t i=0; i<10000; ++i)
         {
-            std::string str;
-            // this should block untill the message has been processed 
-            // and disposed of by the consumer.
-            q.send(123, &str);
-
-            BOOST_REQUIRE(str == "jallukola");
+            queue.post(1, msg);
         }
 
-        th1.join();
+        BOOST_REQUIRE(queue.size() == 10000);
+
+        for (size_t i=0; i<10000; ++i)
+        {
+            auto m = queue.get();
+            BOOST_REQUIRE(m->id() == 1);
+            BOOST_REQUIRE(m->as<foo>().s == "foobar");
+            BOOST_REQUIRE(m->as<foo>().i == 1234);
+        }
+
     }
 
-    // test witing on a message, multiple consumers
+    // routine to consume messages out of the queue.
+    const auto& consumer = [](newsflash::msgqueue& queue, int count) 
     {
-        nt::msgqueue q;
-
-        std::thread th1(std::bind(thread_func_test_queue2, &q, 10000));
-        std::thread th2(std::bind(thread_func_test_queue2, &q, 10000));
-        std::thread th3(std::bind(thread_func_test_queue2, &q, 10000));
-
-        for (int i=0; i<3 * 10000; ++i)
+        for (int i=0; i<count; ++i)
         {
-            std::string str;
-            q.send(123, &str);
-
-            BOOST_REQUIRE(str == "jallukola");
+            const auto msg = queue.get();
+            BOOST_REQUIRE(msg->id() == 1234);
+            BOOST_REQUIRE(msg->as<foo>().s == "foobar");
+            BOOST_REQUIRE(msg->as<foo>().i == 1234567);
         }
+    };
 
-        th1.join();
-        th2.join();
-        th3.join();
+    // routine to produce messages into the queue
+    const auto& producer = [](newsflash::msgqueue& queue, int count)
+    {
+        for (int i=0; i<count; ++i)
+        {
+            queue.post(1234, foo { 1234567, "foobar"});
+        }
+    };
+
+    // single producer and consumer
+    {
+        newsflash::msgqueue queue;
+
+        std::thread consumer1(std::bind(consumer, std::ref(queue), 10000));
+        std::thread producer1(std::bind(producer, std::ref(queue), 10000));
+
+        consumer1.join();
+        producer1.join();
+    }
+
+    // single producer and multiple consumers
+    {
+        newsflash::msgqueue queue;
+
+        std::thread consumer1(std::bind(consumer, std::ref(queue), 5000));
+        std::thread consumer2(std::bind(consumer, std::ref(queue), 5000));
+        std::thread producer1(std::bind(producer, std::ref(queue), 10000));
+
+        producer1.join();
+        consumer1.join();
+        consumer2.join();
+    }
+
+    // multiple producers and multiple consumers
+    {
+        newsflash::msgqueue queue;
+
+        std::thread consumer1(std::bind(consumer, std::ref(queue), 5000));
+        std::thread consumer2(std::bind(consumer, std::ref(queue), 5000));
+        std::thread producer1(std::bind(producer, std::ref(queue), 5000));
+        std::thread producer2(std::bind(producer, std::ref(queue), 5000));
+
+        producer1.join();
+        producer2.join();
+        consumer1.join();
+        consumer2.join();
     }
 }
 
-void unit_test_waiting()
+// try sending messages the queue.
+// sending is a synchronous operation and will block
+// untill the message has been read and discarded by a receiving thread.
+// this can be used to request data to be returned back in the message
+void unit_test_queue_send()
 {
-    // test single object expect without blocking
+    typedef std::string message;
+
+    const auto& receiver = [](newsflash::msgqueue& queue, int count)
     {
-        nt::event ev;
-
-        BOOST_REQUIRE(!nt::is_signaled(ev.handle()));
-        BOOST_REQUIRE(!nt::wait_single_object(ev.handle(), std::chrono::milliseconds(0)));
-
-        ev.set();
-        BOOST_REQUIRE(nt::is_signaled(ev.handle()));
-        BOOST_REQUIRE(nt::wait_single_object(ev.handle(), std::chrono::milliseconds(0)));
-
-        ev.reset();
-        BOOST_REQUIRE(!nt::is_signaled(ev.handle()));
-        BOOST_REQUIRE(!nt::wait_single_object(ev.handle(), std::chrono::milliseconds(0)));
-    }
-
-    // test single object with blocking
-    {
-        nt::event ev;
-        std::atomic_flag f;
-        barrier bar(2);
-
-        std::thread th([&]()
+        for (int i=0; i<count; ++i)
         {
-            bar.wait();
+            auto msg = queue.get();
+            BOOST_REQUIRE(msg->id() == 1);
+            msg->as<message>() = "foobar";
+        }
+    };
 
-            nt::wait_single_object(ev.handle());
-
-            BOOST_REQUIRE(f.test_and_set());
-        });
-
-        bar.wait();
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-
-        f.test_and_set();
-
-        ev.set();
-
-        th.join();
-    }
-
-    // test single object with blocking
+    const auto& sender = [](newsflash::msgqueue& queue, int count)
     {
-        nt::event ev;
-        std::atomic_flag f;
-        barrier bar(2);
-
-        std::thread th([&]()
+        for (int i=0; i<count; ++i)
         {
-            bar.wait();
+            message m;
+            queue.send(1, m);
+            BOOST_REQUIRE(m == "foobar");
+        }
+    };
 
-            BOOST_REQUIRE(nt::wait_single_object(ev.handle(), std::chrono::milliseconds(1000)));
-            BOOST_REQUIRE(f.test_and_set());
-        });
-
-        bar.wait();
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-
-        f.test_and_set();
-
-        ev.set();
-
-        th.join();
-    }
-
-    // test single object with blocking and timeout
+    // single sender and receiver
     {
-        nt::event ev;
-        barrier bar(2);
+        newsflash::msgqueue queue;
 
-        std::thread th([&]()
-        {
-            bar.wait();
+        std::thread receiver1(std::bind(receiver, std::ref(queue), 10000));
+        std::thread sender1(std::bind(sender, std::ref(queue), 10000));
 
-            BOOST_REQUIRE(!nt::wait_single_object(ev.handle(), std::chrono::milliseconds(100)));
-        });
-
-        bar.wait();
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-
-        th.join();
+        receiver1.join();
+        sender1.join();
     }
 
-    // test multiple objects without blocking
+    // multiple senders and receivers
     {
-        nt::event e1, e2;
+        newsflash::msgqueue queue;
 
-        BOOST_REQUIRE(nt::wait_multiple_objects({e1.handle(), e2.handle()}, std::chrono::milliseconds(0)) == nt::OS_INVALID_HANDLE);
+        std::thread receiver1(std::bind(receiver, std::ref(queue), 5000));
+        std::thread receiver2(std::bind(receiver, std::ref(queue), 5000));        
+        std::thread sender1(std::bind(sender, std::ref(queue), 5000));
+        std::thread sender2(std::bind(sender, std::ref(queue), 5000));        
 
-        e1.set();
-
-        BOOST_REQUIRE(nt::wait_multiple_objects({e1.handle(), e2.handle()}, std::chrono::milliseconds(0)) == e1.handle());
-        BOOST_REQUIRE(nt::wait_multiple_objects({e1.handle(), e2.handle()}) == e1.handle());
-
+        receiver1.join();
+        receiver2.join();
+        sender1.join();
+        sender2.join();
     }
 
-    // test multiple objects with blocking
-    {
-        nt::event e1, e2;
-        std::atomic_flag f;
-        barrier bar(2);
-
-        std::thread th([&]()
-        {
-            bar.wait();
-
-            BOOST_REQUIRE(nt::wait_multiple_objects({e1.handle(), e2.handle()}) == e1.handle());
-            BOOST_REQUIRE(f.test_and_set());
-        });
-
-        bar.wait();
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-
-        f.test_and_set();
-
-        e1.set();
-
-        th.join();
-    }
-
-    // test multiple objects with timeout
-    {
-        nt::event e1, e2;
-        barrier bar(2);
-
-        std::thread th([&]()
-        {
-            bar.wait();
-            BOOST_REQUIRE(nt::wait_multiple_objects({e1.handle(), e2.handle()}, std::chrono::milliseconds(100)) == nt::OS_INVALID_HANDLE);
-        });
-        bar.wait();
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-
-        th.join();
-    }
 }
 
 
 int test_main(int, char*[])
 {
     unit_test_event();
-    unit_test_queue();
-    unit_test_waiting();
+    unit_test_queue_post();
+    unit_test_queue_send();
     return 0;
 }
+

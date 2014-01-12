@@ -22,10 +22,6 @@
 
 #pragma once
 
-#include <newsflash/config.h>
-
-#include <chrono>
-#include <vector>
 #include <string>
 #include "types.h"
 
@@ -34,45 +30,6 @@
 
 namespace newsflash
 {
-    // convenience wrapper to specify different time intervals.
-    template<typename Rep, typename Period>
-    bool wait_single_object(native_handle_t handle, const std::chrono::duration<Rep, Period>& wait_duration)
-    {
-        std::chrono::milliseconds ms {0};
-        ms += wait_duration;
-        return wait_single_object(handle, ms);
-    }
-
-    template<typename Rep, typename Period>
-    native_handle_t wait_multiple_objects(const std::vector<native_handle_t>& handles, 
-                                          const std::chrono::duration<Rep, Period>& wait_duration)
-    {
-        std::chrono::milliseconds ms {0};
-        ms += wait_duration;
-        return wait_multiple_objects(handles, ms);
-    }
-    // wait on a single handle indefinitely untill the handle is signaled.
-    void wait_single_object(native_handle_t handle);
-
-    // wait on a single handle untill the given ms elapses or the handle is signaled.
-    // returns true if object was signaled, otherwise returns false.
-    bool wait_single_object(native_handle_t handle, const std::chrono::milliseconds& ms);
-
-    // convenience function to check if the handle is signaled
-    inline bool is_signaled(native_handle_t handle)
-    {
-        return wait_single_object(handle, std::chrono::milliseconds(0)); 
-    }
-
-    // wait on a number of handles untill one of them is signaled.
-    // returns the handle that was signaled.
-    native_handle_t wait_multiple_objects(const std::vector<native_handle_t>& handles);
-
-    // wait on a number of handles untill one of them is signaled or untill
-    // the given timespan elapses. 
-    // returns the handle that was signaled or invalid handle on timeout
-    native_handle_t wait_multiple_objects(const std::vector<native_handle_t>& handles, const std::chrono::milliseconds& ms);
-
     // get a platform provided human readable error string.
     std::string get_error_string(int code);
 

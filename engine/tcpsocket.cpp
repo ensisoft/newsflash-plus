@@ -48,7 +48,7 @@ tcpsocket::~tcpsocket()
     close();
 }
 
-native_handle_t tcpsocket::connect(ipv4_addr_t host, uint16_t port) 
+void tcpsocket::connect(ipv4_addr_t host, uint16_t port) 
 {
     assert(state_ == state::nothing && "Socket is already connected");
     assert(!socket_ && !handle_);
@@ -61,8 +61,6 @@ native_handle_t tcpsocket::connect(ipv4_addr_t host, uint16_t port)
     socket_ = ret.first;
     handle_ = ret.second;    
     state_  = state::connecting;
-
-    return handle_;
 }
 
 native_errcode_t tcpsocket::complete_connect()
@@ -98,8 +96,11 @@ void tcpsocket::sendall(const void* buff, int len)
     {
         const int ret = ::send(socket_, ptr + sent, len - sent, flags);
         if (ret == OS_SOCKET_ERROR)
-            throw socket_io_exception("socket send", get_last_socket_error());
-
+        { 
+            const auto err = get_last_socket_error();
+            if (err != OS_ERR_WOULD_BLOCK && err != OS_ERR_AGAIN)
+                throw socket_io_exception("socket send", get_last_socket_error());
+        }
         sent += ret;
     }
     while (sent < len);
@@ -120,7 +121,11 @@ int tcpsocket::sendsome(const void* buff, int len)
 
     const int sent = ::send(socket_, ptr, len, flags);
     if (sent == OS_SOCKET_ERROR)
-        throw socket_io_exception("socket send", get_last_socket_error());
+    {
+        const auto err = get_last_socket_error();
+        if (err == OS_ERR_WOULD_BLOCK && err != OS_ERR_AGAIN)
+            throw socket_io_exception("socket send", get_last_socket_error());
+    }
 
     return sent;
 }
@@ -136,7 +141,7 @@ int tcpsocket::recvsome(void* buff, int capacity)
     const int ret = ::recv(socket_, ptr, capacity, 0);
     if (ret == OS_SOCKET_ERROR)
     {
-        const native_errcode_t err = get_last_socket_error();
+        const auto err = get_last_socket_error();
         if (err != OS_ERR_WOULD_BLOCK && err != OS_ERR_AGAIN)
             throw socket_io_exception("socket recv", err);
 
@@ -154,6 +159,22 @@ void tcpsocket::close()
     socket_ = 0;
     handle_ = 0;
     state_  = state::nothing;
+}
+
+waithandle tcpsocket::wait() const
+{
+    return waithandle {
+        handle_, waithandle::type::socket, true, true
+    };
+}
+
+waithandle tcpsocket::wait(bool waitread, bool waitwrite) const
+{
+    assert(waitread || waitwrite);
+    
+    return waithandle {
+        handle_, waithandle::type::socket, waitread, waitwrite
+    };
 }
 
 tcpsocket& tcpsocket::operator=(tcpsocket&& other)

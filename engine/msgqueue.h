@@ -106,8 +106,10 @@ namespace newsflash
             }
         }
 
+        // send a message to the queue and block untill
+        // the message has been processed by another thread.
         template<typename T>
-        void send(size_t id, const T& msg)
+        void send(size_t id, T& msg)
         {
             // synchronization primitives
             std::mutex m;
@@ -121,35 +123,7 @@ namespace newsflash
 
             push_back(next);
 
-            // block the sender untill the message has been processed.
-            while (!done)
-                c.wait(lock);
-        }
-
-        // send a new message to the queue and block untill
-        // the message has been processed by the receiving thread.
-        template<typename T>
-        void send(size_t id, T&& msg)
-        {
-            typedef typename std::remove_reference<T>::type non_ref_type;
-
-            // synchronization primitives
-            std::mutex m;
-            std::condition_variable c;
-            std::unique_lock<std::mutex> lock(m);
-            
-            // spurious wakeup condition flag
-            bool done = false;
-            
-            message* next = new send_message<non_ref_type>(id, m, c, done, std::forward<T>(msg));
-
-            // push the message to the queue
-            push_back(next);
-
-            // block the sending thread here untill the
-            // message has been processed by the receiving thread
-            while (!done)
-                c.wait(lock);
+            c.wait(lock, [&]{ return done; });
         }
 
         // post a new message to the queue and return.
@@ -208,23 +182,18 @@ namespace newsflash
             return size_;
         }
 
-        native_handle_t handle() const  NOTHROW
+        waithandle wait() const
         {
-            return event_.handle();
+            return event_.wait();
         }
     private:
         template<typename T>
         class send_message : public message
         {
         public:
-            send_message(size_t id, std::mutex& m, std::condition_variable& c, bool& done, const T& data) : 
+            send_message(size_t id, std::mutex& m, std::condition_variable& c, bool& done, T& data) : 
                 message(id), mutex_(m), cond_(c), done_(done), 
                 data_(data)
-            {}
-
-            send_message(size_t id, std::mutex& m, std::condition_variable& c, bool& done, T&& ref) :
-                message(id), mutex_(m), cond_(c), done_(done), 
-                data_(std::move(ref))
             {}
 
            ~send_message()
@@ -241,7 +210,7 @@ namespace newsflash
                 cond_.notify_one();
             }
         protected:
-            void* get_if(const std::type_info& check) const
+            void* get_if(const std::type_info& check) const override
             {
                 if (typeid(T) != check)
                     return nullptr;
@@ -251,7 +220,7 @@ namespace newsflash
             std::mutex& mutex_;
             std::condition_variable& cond_;
             bool& done_;
-            T data_;            
+            T& data_;            
         };
 
         template<typename T>
@@ -263,7 +232,7 @@ namespace newsflash
             post_message(size_t id, T&& ref) : message(id), data_(std::move(ref))
             {}
         protected:
-            void* get_if(const std::type_info& check) const
+            void* get_if(const std::type_info& check) const override
             {
                 if (typeid(T) != check)
                     return nullptr;

@@ -24,7 +24,7 @@
 
 #include <boost/noncopyable.hpp>
 #include <memory>
-#include "platform.h"
+#include "waithandle.h"
 
 namespace newsflash
 {
@@ -38,27 +38,19 @@ namespace newsflash
 
        ~event();
 
-        // get system specific handle for waiting functions
-        native_handle_t handle() const;
-
-        // wait untill the event is signaled. if already signaled
-        // then this function returns immediately, otherwise waits 
-        // untill event is opened.
-        void wait();
+        // get wait handle
+        waithandle wait() const;
 
         // open the event
         void set(); 
 
         // reset to closed state
         void reset();
-
-        // return if event is currently set
-        bool is_set() const;
     private:
         struct impl;
 
         std::unique_ptr<impl> pimpl_;
     }; 
 
-} // namespace
+} // newsflash
 

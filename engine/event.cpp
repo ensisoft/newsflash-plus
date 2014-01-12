@@ -22,14 +22,15 @@
 
 #include <newsflash/config.h>
 
-#if defined(LINUX_OS)
+#if defined(WINDOWS_OS)
+#  include <windows.h>
+#elif defined(LINUX_OS)
 #  include <unistd.h>
 #  include <sys/eventfd.h>
 #endif
 #include <stdexcept>
 #include <cassert>
 #include "event.h"
-#include "assert.h"
 
 namespace newsflash
 {
@@ -50,40 +51,36 @@ event::event() : pimpl_(new impl)
         NULL);
     if (pimpl_->handle == NULL)
         throw std::runtime_error("CreateEvent failed");
+
     pimpl_->signaled = false;
 }
 
 event::~event()
 {
-    ASSERT(CloseHandle(pimpl_->handle) == TRUE);
+    CloseHandle(pimpl_->handle);
 }
 
-native_handle_t event::handle() const
+waithandle event::wait() const
 {
-    return pimpl_->handle;
-}
-
-void event::wait()
-{
-    const DWORD ret = WaitForSingleObject(pimpl_->handle, INFINITE);
-    if (ret == WAIT_FAILED || ret == WAIT_ABANDONED)
-        throw std::runtime_error("WaitForSingleObject failed");
+    return waithandle {pimpl_->handle, waithandle::type::event, true, false};
 }
 
 void event::set()
 {
-    if (pimpl_->signaled) return;
+    if (pimpl_->signaled) 
+        return;
 
-    ASSERT(SetEvent(pimpl_->handle));
+    SetEvent(pimpl_->handle);
 
     pimpl_->signaled = true;    
 }
 
 void event::reset()
 {
-    if (!pimpl_->signaled) return;
+    if (!pimpl_->signaled) 
+        return;
 
-    ASSERT(ResetEvent(pimpl_->handle));
+    ResetEvent(pimpl_->handle);
 
     pimpl_->signaled = false;
 }
@@ -92,82 +89,53 @@ void event::reset()
 #elif defined(LINUX_OS)
 
 struct event::impl {
-    int fds[2];
-    //int fd;
+    int fd;
     bool signaled;
 };
 
 event::event() : pimpl_(new impl)
 {
-    if (pipe(pimpl_->fds) == -1)
-         throw std::runtime_error("create pipe failed");
-    //pimpl_->fd = eventfd(0, 0);
-    //if (pimpl_->fd == -1)
-    //    throw std::runtime_error("create event object failed");
-    pimpl_->signaled = false;
+    pimpl_->fd = eventfd(0, 0);
+    if (pimpl_->fd == -1)
+        throw std::runtime_error("create eventfd failed");
 
+    pimpl_->signaled = false;
 }
 
 event::~event()
 {
-    //close(pimpl_->fd);
-    //CHECK(close(pimpl_->fd), 0);
-    close(pimpl_->fds[0]);
-    close(pimpl_->fds[1]);
+    close(pimpl_->fd);
 }
 
-native_handle_t event::handle() const
+waithandle event::wait() const
 {
-    return pimpl_->fds[0]; // return read end
-}
-
-void event::wait()
-{
-    // this function executes typically in another thread 
-    // with respect to the set/reset functions. 
-    // so if you want to use signaled_ flag here to avoid
-    // a call to select think twice about memory consistency. (and race)
-
-    fd_set read;
-
-    FD_ZERO(&read);
-    FD_SET(pimpl_->fds[0], &read);
-
-    if (::select(pimpl_->fds[0] + 1, &read, nullptr, nullptr, nullptr) == -1)
-        throw std::runtime_error("select failed");
+    return waithandle {pimpl_->fd, waithandle::type::event, true, false};
 }
 
 void event::set()
 {
-    if (pimpl_->signaled) return;
+    if (pimpl_->signaled) 
+        return;
 
-    //uint64_t c = 1;
-    char c = 1;
-    const int ret = ::write(pimpl_->fds[1], &c, sizeof(c));
-    if (ret == -1)
-        throw std::runtime_error("failed to set event (pipe write)");
+    uint64_t c = 1;
+    if (::write(pimpl_->fd, &c, sizeof(c)) == -1)
+        throw std::runtime_error("event set failed");
 
     pimpl_->signaled = true;
 }
 
 void event::reset()
 {
-    if (!pimpl_->signaled) return;
+    if (!pimpl_->signaled) 
+        return;
 
-    //uint64_t c = 0;
-    char c = 1;
-    const int ret = ::read(pimpl_->fds[0], &c, sizeof(c));
-    if (ret == -1)
-        throw std::runtime_error("failed to reset event (pipe read)");
+    uint64_t c = 0;
+    if (::read(pimpl_->fd, &c, sizeof(c)) == -1)
+        throw std::runtime_error("event reset failed");
 
     pimpl_->signaled = false;
 }
 
 #endif
-
-bool event::is_set() const
-{
-    return pimpl_->signaled;
-}
 
 } // newsflash

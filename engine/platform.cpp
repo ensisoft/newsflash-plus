@@ -22,66 +22,19 @@
 
 #include <newsflash/config.h>
 
-#include <atomic>
-#include <stdexcept>
-#include <algorithm>
-#include <cassert>
-#include <cerrno>
-#if defined(LINUX_OS)
-#  include <sys/types.h>
-#  include <sys/select.h>
-#  include <sys/socket.h>
-#  include <cstring>
+#if defined(WINDOWS_OS)
+#  include <windows.h>
 #endif
+#include <stdexcept>
+#include <cstring>
+#include <cerrno>
+
 #include "platform.h"
 
 namespace newsflash
 {
 
 #if defined(WINDOWS_OS)
-
-void wait_single_object(native_handle_t handle)
-{
-    const DWORD ret = WaitForSingleObject(handle, INFINITE);
-    if (ret != WAIT_OBJECT_0)
-        throw std::runtime_error("wait failed (WaitForSingleObject");
-}
-
-bool wait_single_object(native_handle_t handle, const std::chrono::milliseconds& ms)
-{
-    const DWORD ret = WaitForSingleObject(handle, ms.count());
-    if (ret == WAIT_FAILED || ret == WAIT_ABANDONED)
-        throw std::runtime_error("wait failed (WaitForSingleObject");
-
-    return (ret == WAIT_TIMEOUT) ? false : true;
-}
-
-native_handle_t wait_multiple_objects(const std::vector<native_handle_t>& handles)
-{
-    const DWORD nCount = (DWORD)handles.size();
-    assert(nCount);
-
-    const DWORD ret = WaitForMultipleObjectsEx(nCount, &handles[0], FALSE, INFINITE, FALSE);
-    if (ret >= WAIT_OBJECT_0 && ret <= (nCount - 1))
-        return handles.at(ret - WAIT_OBJECT_0);
-
-    throw std::runtime_error("wait failed (WaitForMultipleObjectsEx)");
-}
-
-native_handle_t wait_multiple_objects(const std::vector<native_handle_t>& handles, const std::chrono::milliseconds& ms)
-{
-    const DWORD dwMillis = ms.count();
-    const DWORD nCount = (DWORD)handles.size();
-    assert(nCount);
-
-    const DWORD ret = WaitForMultipleObjectsEx(nCount, &handles[0], FALSE, dwMillis, FALSE);
-    if (ret == WAIT_TIMEOUT)
-        return OS_INVALID_HANDLE;
-    else if (ret >= WAIT_OBJECT_0 && ret <= (nCount -1))
-        return handles.at(ret - WAIT_OBJECT_0);
-
-    throw std::runtime_error("wait failed (WaitForMultipleObjectsEx)");
-}
 
 std::string get_error_string(int code)
 {
@@ -112,111 +65,6 @@ native_errcode_t get_last_error()
 }
 
 #elif defined(LINUX_OS)
-
-bool is_socket(native_handle_t handle)
-{
-    int type = 0;
-    socklen_t len = sizeof(type);
-    if (!getsockopt(handle, SOL_SOCKET, SO_TYPE, &type, &len))
-        return true;
-
-    assert(errno == ENOTSOCK);
-    return false;
-}
-
-
-void wait_single_object(native_handle_t handle)
-{
-    fd_set read;
-    //fd_set write;
-
-    FD_ZERO(&read);
-    //FD_ZERO(&write);
-    FD_SET(handle, &read);
-    //FD_SET(handle, &write);
-
-    if (::select(handle + 1, &read, &write, nullptr, nullptr) == -1)
-        throw std::runtime_error("wait failed (select)");
-}
-
-bool wait_single_object(native_handle_t handle, const std::chrono::milliseconds& ms)
-{
-    fd_set read;
-    //fd_set write;
-
-    FD_ZERO(&read);
-    //FD_ZERO(&write);
-    FD_SET(handle, &read);
-    //FD_SET(handle, &write);
-
-    struct timeval tv {0};
-    tv.tv_usec = ms.count() * 1000;
-
-    if (::select(handle + 1, &read, nullptr, nullptr, &tv) == -1)
-        throw std::runtime_error("wait failed (select)");
-
-    if (FD_ISSET(handle, &read) || FD_ISSET(handle, &write))
-        return true;
-
-    return false;
-}
-
-native_handle_t wait_multiple_objects(const std::vector<native_handle_t>& handles)
-{
-    fd_set read;
-    //fd_set write;
-
-    int max_fd = 0;
-
-    FD_ZERO(&read);
-    //FD_ZERO(&write);
-    for (const auto handle : handles)
-    {
-        FD_SET(handle, &read);
-        //FD_SET(handle, &write);
-        max_fd = std::max(max_fd, handle);
-    }
-
-    if (::select(max_fd + 1, &read, nullptr, nullptr, nullptr) == -1)
-        throw std::runtime_error("wait failed (select)");
-
-    for (const auto handle : handles)
-    {
-        if (FD_ISSET(handle, &read) || FD_ISSET(handle, &write))
-            return handle;
-    }
-    assert(0);
-}
-
-native_handle_t wait_multiple_objects(const std::vector<native_handle_t>& handles, const std::chrono::milliseconds& ms)
-{
-    fd_set read;
-    //fd_set write;
-
-    int max_fd = 0;
-
-    FD_ZERO(&read);
-    //FD_ZERO(&write);
-    for (const auto handle : handles)
-    {
-        FD_SET(handle, &read);
-        //FD_SET(handle, &write);
-        max_fd = std::max(max_fd, handle);
-    }    
-
-    struct timeval tv {0};
-    tv.tv_usec = ms.count() * 1000;
-
-    if (::select(max_fd + 1, &read, nullptr, nullptr, &tv) == -1)
-        throw std::runtime_error("wait failed (select)");
-
-    for (const auto handle : handles)
-    {
-        if (FD_ISSET(handle, &read) || FD_ISSET(handle, &write))
-            return handle;
-    }
-    return OS_INVALID_HANDLE;
-}
 
 std::string get_error_string(int code)
 {
