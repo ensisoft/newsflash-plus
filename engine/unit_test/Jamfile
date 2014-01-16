@@ -12,7 +12,10 @@ project
 unit-test unit_test_utf8     : unit_test_utf8.cpp ;
 unit-test unit_test_uuencode : unit_test_uuencode.cpp ;
 unit-test unit_test_yenc     : unit_test_yenc.cpp ;
-unit-test unit_test_nntp     : unit_test_nntp.cpp ;
+#unit-test unit_test_nntp     : unit_test_nntp.cpp ;
+
+unit-test unit_test_protocol : unit_test_protocol.cpp ;
+
 
 unit-test unit_test_threading : unit_test_threading.cpp ;
 unit-test unit_test_bigfile   : unit_test_bigfile.cpp ;

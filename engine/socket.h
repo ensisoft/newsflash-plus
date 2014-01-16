@@ -40,6 +40,37 @@ namespace newsflash
     class socket 
     {
     public:
+        // thrown if things go wrong on socket I/O
+        class io_exception : public std::exception
+        {
+        public:
+            io_exception(std::string what, native_errcode_t code) NOTHROW // noexcept
+               : what_(std::move(what)), code_(code)
+            {}
+            const char* what() const NOTHROW // noexcept
+            {
+                return what_.c_str();
+            }
+            native_errcode_t code() const NOTHROW // noexcept 
+            {
+                return code_;
+            }
+        private:
+            const std::string what_;
+            const native_errcode_t code_;
+        };
+
+        class ssl_exception : public std::exception
+        {
+        public:
+            ssl_exception(std::string what) : what_(std::move(what))
+            {}
+
+        private:
+            const std::string what_;
+        };
+
+
         virtual ~socket() = default;
         // Connect this socket to the specified host on the specified port.
         // This function is non-blocking and returns immediately.
@@ -77,30 +108,6 @@ namespace newsflash
         virtual waithandle wait(bool waitread, bool waitwrite) const = 0;
     protected:
     private:
-    };
-
-    class socket_io_exception : public std::exception
-    {
-    public:
-        socket_io_exception(std::string what, native_errcode_t code) NOTHROW // noexcept
-            : what_(std::move(what)), code_(code)
-        {}
-
-       ~socket_io_exception() NOTHROW // noexcept
-        {}
-
-        const char* what() const NOTHROW // noexcept
-        {
-            return what_.c_str();
-        }
-
-        native_errcode_t code() const NOTHROW // noexcept 
-        {
-            return code_;
-        }
-    private:
-        const std::string what_;
-        const native_errcode_t code_;
     };
 
 } // newsflash

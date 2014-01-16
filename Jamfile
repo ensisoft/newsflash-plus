@@ -51,6 +51,7 @@ if [ os.name ] = LINUX
 project newsflash 
   : requirements
     <include>../
+    <include>.
     <threading>multi
    ;
 
