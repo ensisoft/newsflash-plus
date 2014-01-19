@@ -1,4 +1,4 @@
-// Copyright (c) 2013 Sami Väisänen, Ensisoft 
+// Copyright (c) 2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -22,28 +22,31 @@
 
 #pragma once
 
-#include <string>
-#include "types.h"
-
-// this file contains an assortment of platform specific global functions
-// and associated types.
+#include <boost/noncopyable.hpp>
+#include <mutex>
+#include <map>
 
 namespace newsflash
 {
-    // get a platform provided human readable error string.
-    std::string get_error_string(int code);
+    class allocator : boost::noncopyable
+    {
+    public:
+        allocator();
+       ~allocator();
 
-    // get last platform error code
-    native_errcode_t get_last_error();
+        char* allocate(size_t size);
 
-    struct localtime {
-        size_t millis;
-        size_t seconds;        
-        size_t minutes;
-        size_t hours;
+        void free(char* ptr, size_t size);
+
+        static
+        allocator& get();
+    private:
+        std::mutex mutex_;
+        std::multimap<size_t, char*> slabs_;
+
+        size_t volume_;
+        size_t count_;
+        size_t allocated_;
     };
 
-    localtime get_localtime();
-
 } // newsflash
-

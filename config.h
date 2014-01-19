@@ -74,5 +74,5 @@
   #define NEWSFLASH_SCOPE_LOGGING
 #endif
 
-
+#define NEWSFLASH_ENABLE_LOG
 

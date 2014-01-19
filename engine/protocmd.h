@@ -232,13 +232,33 @@ namespace nntp
         }
     };
 
+    struct cmd_quit : cmd {
+        int transact()
+        {
+            send("QUIT");
+
+            const auto& response = recv(detail::find_response);
+
+            int code = 0;
+            if (!detail::scan_response(response, code) ||
+                !detail::check_code(code, {205}))
+                throw exception("incorrect QUIT response");
+
+            return code;
+        }
+    };
+
     struct cmd_capabilities : cmd
     {
         static const int SUCCESS = 101;
 
-        cmd_capabilities() : 
-            has_compress_gzip(false), has_xzver(false), has_mode_reader(false)
-        {}
+        bool has_compress_gzip;
+        bool has_xzver;
+        bool has_mode_reader;
+
+        cmd_capabilities() 
+           : has_compress_gzip(false), has_xzver(false), has_mode_reader(false)
+           {}
 
         int transact()
         {
@@ -278,9 +298,7 @@ namespace nntp
             return code;
         }
 
-        bool has_compress_gzip;
-        bool has_xzver;
-        bool has_mode_reader;
+
     };
 
     struct cmd_mode_reader : cmd
@@ -374,6 +392,10 @@ namespace nntp
 
         const std::string group;
 
+        uint64_t article_count;
+        uint64_t high_water_mark;
+        uint64_t low_water_mark;        
+
         cmd_group(std::string groupname) : group(std::move(groupname)),
             article_count(0), high_water_mark(0), low_water_mark(0)
         {}
@@ -394,10 +416,6 @@ namespace nntp
 
             return code;
         }
-
-        uint64_t article_count;
-        uint64_t high_water_mark;
-        uint64_t low_water_mark;
     };
 
 

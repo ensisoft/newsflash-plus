@@ -25,6 +25,7 @@
 #include <string>
 #include "protocmd.h"
 #include "protocol.h"
+#include "buffer.h"
 
 namespace newsflash
 {
@@ -56,6 +57,11 @@ void protocol::ping()
     transact(nntp::cmd_group {"send.ping.to.keep.connection.alive"});
 }
 
+void protocol::quit()
+{
+    transact(nntp::cmd_quit{});
+}
+
 bool protocol::change_group(const std::string& groupname)
 {
     if (group_ == groupname)
@@ -85,14 +91,14 @@ std::pair<bool, protocol::groupinfo> protocol::query_group(const std::string& gr
 
 bool protocol::download_article(const std::string& article, buffer& buff)
 {
-    nntp::cmd_body cmd {article, buff.capacity, buff.ptr};
+    // nntp::cmd_body cmd {article, buff.capacity, buff.ptr};
 
-    const auto code = transact(&cmd);
-    if (code != cmd.SUCCESS)
-        return false;
+    // const auto code = transact(&cmd);
+    // if (code != cmd.SUCCESS)
+    //     return false;
 
-    buff.offset = cmd.offset;
-    buff.size   = cmd.size;
+    // buff.offset = cmd.offset;
+    // buff.size   = cmd.size;
     return true;
 }
 
@@ -109,19 +115,19 @@ void protocol::download_overview(const std::string& first, const std::string& la
 
     if (is_compressed_)
     {
-        nntp::cmd_xzver cmd {first, last, buff.capacity, buff.ptr};
-        transact(&cmd);
+        // nntp::cmd_xzver cmd {first, last, buff.capacity, buff.ptr};
+        // transact(&cmd);
 
-        buff.offset = cmd.offset;
-        buff.size   = cmd.size;
+        // buff.offset = cmd.offset;
+        // buff.size   = cmd.size;
     }
     else
     {
-        nntp::cmd_xover cmd {first, last, buff.capacity, buff.ptr};
-        transact(&cmd);
+        // nntp::cmd_xover cmd {first, last, buff.capacity, buff.ptr};
+        // transact(&cmd);
 
-        buff.offset = cmd.offset;
-        buff.size   = cmd.size;
+        // buff.offset = cmd.offset;
+        // buff.size   = cmd.size;
     }
 }
 

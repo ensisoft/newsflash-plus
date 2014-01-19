@@ -1,4 +1,4 @@
-// Copyright (c) 2013 Sami Väisänen, Ensisoft 
+// Copyright (c) 2013,2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -23,27 +23,23 @@
 #pragma once
 
 #include <string>
-#include "types.h"
-
-// this file contains an assortment of platform specific global functions
-// and associated types.
+#include "queue.h"
 
 namespace newsflash
 {
-    // get a platform provided human readable error string.
-    std::string get_error_string(int code);
-
-    // get last platform error code
-    native_errcode_t get_last_error();
-
-    struct localtime {
-        size_t millis;
-        size_t seconds;        
-        size_t minutes;
-        size_t hours;
+    struct command {
+        enum class type {
+            body, xover, list
+        };
+        type kind;
+        std::string group;
+        std::string arg1;
+        std::string arg2;
+        size_t cmdid;
+        size_t taskid;
+        size_t size; // expected buffer size
     };
 
-    localtime get_localtime();
+    typedef queue<command> cmdqueue;
 
 } // newsflash
-

@@ -31,6 +31,8 @@
 
 namespace newsflash
 {
+    class buffer;
+
     // implements NNTP protocol state
     class protocol
     {
@@ -57,7 +59,7 @@ namespace newsflash
             {
                 return what_.c_str();
             }
-            code value() const NOTHROW
+            code error() const NOTHROW
             {
                 return code_;
             }
@@ -88,6 +90,7 @@ namespace newsflash
         // send ping to keep protocol state alive
         void ping(); 
 
+        void quit();
 
         void list(const std::string& groupname);
 
@@ -102,14 +105,6 @@ namespace newsflash
         };
 
         std::pair<bool, groupinfo> query_group(const std::string& groupname);
-
-        // buffer descriptor for using a preallocated buffer.
-        struct buffer {
-            char* ptr; // pointer to data
-            size_t capacity; // maximum capacity
-            size_t size; // size of data
-            size_t offset; // offset to the start of data within the buffer
-        };
 
         // download the contents of the article identified by article number or id.
         // returns true if article was downloaded succesfully, false if 

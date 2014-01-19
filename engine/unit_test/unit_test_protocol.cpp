@@ -198,6 +198,10 @@ void unit_test_cmd_mode_reader()
     test_failure(nntp::cmd_mode_reader{}, "MODE READER", "200 blalala");
 }
 
+void unit_test_cmd_body()
+{
+    
+}
 
 
 int test_main(int, char* [])

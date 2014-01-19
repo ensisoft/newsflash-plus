@@ -1,4 +1,4 @@
-// Copyright (c) 2013 Sami Väisänen, Ensisoft 
+// Copyright (c) 2013,2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -20,30 +20,26 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
+
 #pragma once
 
 #include <string>
-#include "types.h"
-
-// this file contains an assortment of platform specific global functions
-// and associated types.
+#include "queue.h"
 
 namespace newsflash
 {
-    // get a platform provided human readable error string.
-    std::string get_error_string(int code);
+    class buffer;
 
-    // get last platform error code
-    native_errcode_t get_last_error();
-
-    struct localtime {
-        size_t millis;
-        size_t seconds;        
-        size_t minutes;
-        size_t hours;
+    struct response {
+        enum class status {
+            success, unavailable
+        };
+        status stat;
+        size_t cmdid;
+        size_t taskid;
+        buffer* buff;
     };
 
-    localtime get_localtime();
+    typedef queue<response> resqueue;
 
 } // newsflash
-

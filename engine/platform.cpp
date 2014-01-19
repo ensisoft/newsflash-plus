@@ -24,6 +24,9 @@
 
 #if defined(WINDOWS_OS)
 #  include <windows.h>
+#elif defined(LINUX_OS)
+#  include <sys/time.h>
+#  include <time.h>
 #endif
 #include <stdexcept>
 #include <cstring>
@@ -64,6 +67,20 @@ native_errcode_t get_last_error()
     return GetLastError();
 }
 
+localtime get_localtime()
+{
+    localtime ret {0};
+
+    SYSTEMTIME sys;
+    GetLocalTime(&sys);
+    ret.hours   = sys.wHour;
+    ret.minutes = sys.wMinute;
+    ret.seconds = sys.wSecond;
+    ret.millis  = sys.wMilliseconds;    
+
+    return ret;
+}
+
 #elif defined(LINUX_OS)
 
 std::string get_error_string(int code)
@@ -75,6 +92,23 @@ std::string get_error_string(int code)
 native_errcode_t get_last_error() 
 {
     return errno;
+}
+
+localtime get_localtime()
+{
+    struct timeval tv;
+    gettimeofday(&tv, nullptr);
+    
+    struct tm time;
+    localtime_r(&tv.tv_sec, &time);
+    
+    localtime ret {0};
+
+    ret.hours   = time.tm_hour;
+    ret.minutes = time.tm_min;
+    ret.seconds = time.tm_sec;
+    ret.millis  = tv.tv_usec / 1000;    
+    return ret;
 }
 
 #endif

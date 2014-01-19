@@ -100,7 +100,7 @@ void tcpsocket::sendall(const void* buff, int len)
         { 
             const auto err = get_last_socket_error();
             if (err != OS_ERR_WOULD_BLOCK && err != OS_ERR_AGAIN)
-                throw socket_io_exception("socket send", get_last_socket_error());
+                throw socket::io_exception("socket send", get_last_socket_error());
 
             auto handle = wait(false, true);
             newsflash::wait(handle);
@@ -131,7 +131,7 @@ int tcpsocket::sendsome(const void* buff, int len)
     {
         const auto err = get_last_socket_error();
         if (err == OS_ERR_WOULD_BLOCK && err != OS_ERR_AGAIN)
-            throw socket_io_exception("socket send", get_last_socket_error());
+            throw socket::io_exception("socket send", get_last_socket_error());
 
         // on windows writeability is edge triggered, 
         // i.e. the event is signaled once when the socket is writeable and a call
@@ -162,7 +162,7 @@ int tcpsocket::recvsome(void* buff, int capacity)
     {
         const auto err = get_last_socket_error();
         if (err != OS_ERR_WOULD_BLOCK && err != OS_ERR_AGAIN)
-            throw socket_io_exception("socket recv", err);
+            throw socket::io_exception("socket recv", err);
 
         return 0;
     }
