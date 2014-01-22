@@ -29,55 +29,96 @@
 #include <exception>
 #include <vector>
 #include <deque>
+#include <tuple>
 #include <sstream>
 #include <cstdint>
+#include <cassert>
 
 namespace nntp
 {
-    const int AUTHENTICATION_REQUIRED = 480;
-    const int AUTHENTICATION_ACCEPTED = 281;
-    const int PASSWORD_REQUIRED       = 381;
-    const int SERVICE_UNAVAILABLE     = 502;
+    typedef unsigned int code_t;
+    typedef std::initializer_list<code_t> code_list_t;
+
+    const code_t AUTHENTICATION_REQUIRED = 480;
+    const code_t AUTHENTICATION_ACCEPTED = 281;
+    const code_t PASSWORD_REQUIRED       = 381;
+    const code_t SERVICE_UNAVAILABLE     = 502;
+
+    // adapters for contiguous std types that can be used as a buffer.
+    inline 
+    size_t buffer_capacity(const std::string& str) 
+    { 
+        return str.size(); 
+    }
+    inline 
+    void* buffer_data(std::string& str) 
+    { 
+        return &str[0]; 
+    }
+    inline 
+    void  grow_buffer(std::string& str, size_t capacity) 
+    { 
+        str.resize(capacity); 
+    }
+
+    template<typename T> inline
+    size_t buffer_capacity(const std::vector<T>& vec) 
+    { 
+        return vec.size() * sizeof(T); 
+    }
+
+    template<typename T> inline
+    void* buffer_data(std::vector<T>& vec) 
+    { 
+        return &vec[0]; 
+    }
+
+    template<typename T> inline
+    void grow_buffer(std::vector<T>& vec, size_t capacity) 
+    { 
+        const size_t items = (capacity + sizeof(T) - 1) / sizeof(T);
+        vec.resize(items);
+    }
 
     namespace detail {
+
+        // scan the input buffer for the a complete response.
+        // returns the length of the response if found, otherwise 0.
         inline 
-        bool find_response(const std::string& str)
+        size_t find_response(const void* buff, size_t size)
         {
             // end of response is indicated by \r\n
-            const auto end = str.size();
-            if (end < 2)
-                return false;
-            bool found_end = (str[end-1] == '\n' && str[end-2] == '\r');
+            if (size < 2)
+                return 0;
 
-            return found_end;
+            const char* str = static_cast<const char*>(buff);            
+
+            for (size_t len=1; len<size; ++len)
+            {
+                if (str[len] == '\n' && str[len-1] == '\r')
+                    return len+1;
+            }
+            return 0;
         }
 
+        // scan the input buffer for a complete message body.
+        // returns the length of the body if found, otherwise 0.
         inline
-        bool find_body(const std::string& str)
+        size_t find_body(const void* buff, size_t size)
         {
             // end of body data is indicated by .\r\n
-            const auto end = str.size();
-            if (end < 3)
-                return false;
+            if (size < 3)
+                return 0;
 
-            bool found_end = (str[end-1] == '\n' &&
-                    str[end-2] == '\r' &&
-                    str[end-3] == '.');
-           
-            return found_end;
-        }
-        inline
-        bool find_body_buff(const char* buff, size_t len)
-        {
-            if (len < 3)
-                return false;
-                
-            bool found_end = (buff[len-3] == '\n' &&
-                              buff[len-2] == '\r' &&
-                              buff[len-1] == '.');
-            return found_end;
-        }
+            const char* str = static_cast<const char*>(buff);
 
+            for (size_t len=2; len<size; ++len)
+            {
+                if (str[len] == '\n' && str[len-1] == '\r' && str[len-2] == '.')
+                    return len+1;
+            }
+            return 0;
+        }
 
         template<typename T>
         void extract_value(std::stringstream& ss, T& value)
@@ -107,7 +148,7 @@ namespace nntp
         }
 
         inline
-        bool check_code(int code, std::initializer_list<int> allowed_codes)
+        bool check_code(code_t code, const code_list_t& allowed_codes)
         {
             const auto it = std::find(allowed_codes.begin(), 
                 allowed_codes.end(), code);
@@ -144,20 +185,11 @@ namespace nntp
         const std::string what_;
     };
 
-    struct cmd 
-    {
+    struct cmd {
         std::function<size_t (void*, size_t)>     cmd_recv;
         std::function<void (const void*, size_t)> cmd_send;
         std::function<void (const std::string&)>  cmd_log;
 
-        void send(const char* cmd)
-        {
-            std::string str(cmd);
-            cmd_log(str);
-
-            str.append("\r\n");
-            cmd_send(str.c_str(), str.size());
-        }
         void send(const std::string& cmd)
         {
             std::string str(cmd);
@@ -168,126 +200,276 @@ namespace nntp
         }
 
         template<typename Pred>
-        std::string recv(Pred test)
+        std::pair<size_t, size_t> recv(Pred test, void* buff, size_t buffsize)
         {
-            std::string buff(512, 0);
-            std::string ret;
+            size_t total_bytes_received  = 0;
+            size_t message_length = 0;
             do 
             {
-                if (ret.size() >= 1024)
-                    throw nntp::exception("message is too large");
-                const auto bytes = cmd_recv(&buff[0], buff.size());
+                const size_t capacity = buffsize - total_bytes_received;
+
+                const auto bytes = cmd_recv(((char*)buff) + total_bytes_received, capacity);
                 if (bytes == 0)
                     throw nntp::exception("no input");
 
-                buff.resize(bytes);
-                if (ret.empty())
-                    std::swap(buff, ret);
-                else ret.append(buff);
+                total_bytes_received += bytes;
+                message_length = test(buff, total_bytes_received);
 
-            } while (!test(ret));
+            } 
+            while (!message_length && (total_bytes_received < buffsize));
 
-            return ret;
+            return { message_length, total_bytes_received };
+        }
+
+        template<typename Pred>
+        std::pair<size_t, size_t> recv(Pred test, std::string& buff)
+        {
+            return recv(test, &buff[0], buff.size());
         }
         
-        template<typename Pred>
-        size_t recv(Pred test, char* buff, size_t capacity)
+        // perform a send/recv transaction. no body is returned.
+        code_t transact(const std::string& cmd, const code_list_t& allowed_codes)
         {
-            size_t bytes = 0;
-            do
+            if (!cmd.empty())
+                send(cmd);
+
+            std::string response(512, 0);
+            if (!recv(detail::find_response, response).first)
+                throw nntp::exception("no message was found within the buffer");
+
+            code_t status = 0;
+            if (!detail::scan_response(response, status) || 
+                !detail::check_code(status, allowed_codes))
+                throw nntp::exception("incorrect " + cmd + " response");
+
+            return status;
+        }        
+
+        // perform send/recv transaction. read the response body into the body Buffer
+        template<typename Buffer>
+        std::tuple<code_t, size_t, size_t> transact(
+            const std::string& cmd, const code_list_t& allowed_codes, Buffer& body)
+        {
+            send(cmd);
+
+            assert(buffer_capacity(body));
+
+            const auto& ret = recv(detail::find_response, buffer_data(body), buffer_capacity(body));
+            if (!ret.first)
+                throw nntp::exception("no message was found within the buffer");
+
+            const std::string response((char*)buffer_data(body), ret.first);
+
+            code_t status = 0;
+            if (!detail::scan_response(response, status) ||
+                !detail::check_code(status, allowed_codes))
+                throw nntp::exception("incorrect " + cmd + " response");
+
+            if (status / 100 != 2)
+                return std::make_tuple(status, 0, 0);
+
+            assert(ret.first <= ret.second);
+
+            size_t data_total  = ret.second;
+            size_t body_offset = ret.first;
+            size_t bodylen     = detail::find_body(((char*)buffer_data(body)) + body_offset,
+                data_total - body_offset);
+
+            while (!bodylen)
             {
-                if (bytes == capacity)
-                    throw nntp::exception("message is too large");
-                const auto ret = cmd_recv(buff + bytes, capacity - bytes);
-                if (ret == 0)
-                    throw nntp::exception("no input");
-                bytes += ret;
+                const size_t capacity = buffer_capacity(body);
+                size_t available = capacity - data_total;
+                if (!available)
+                {
+                    available = capacity;
+                    grow_buffer(body, capacity * 2);
+                }
+                const auto& ret = recv(detail::find_body, 
+                    ((char*)buffer_data(body)) + data_total, available);
+
+                data_total += ret.first;
+                bodylen     = ret.second;
             }
-            while (!test(buff, bytes));
-            
-            return bytes;
+
+            return std::make_tuple(status, body_offset, bodylen-3);
         }
+
     };
 
-    // receive initial 200 Welcome from the server
-    struct cmd_welcome : cmd 
-    {
-        int transact() 
+
+    // receive initial greeting from the server.
+    // 200 Service available, posting allowed
+    // 201 Service available, posting prohibited
+    // 400 Service temporarily unavailable
+    // 502 Service permanently unavailable
+    struct cmd_welcome : cmd {
+        code_t transact() 
         {
-            // we don't send anything but only expect to receive the greeting.
-            
-            // valid responses:
-            // 200 Service available, posting allowed
-            // 201 Service available, posting prohibited
-            // 400 Service temporarily unavailable
-            // 502 Service permanently unavailable
-            const auto& response = recv(detail::find_response);
-
-            int code = 0;
-            if (!detail::scan_response(response, code) ||
-                !detail::check_code(code, {200, 201, 400, 502}))
-                throw exception("incorrect greeting received from the server");
-
-            return code;
+            // we don't send anything here. just receive response.
+            return cmd::transact("", {200, 201, 400, 502});
         }
     };
 
+    // send session terminating QUIT command. 
+    // the server will respond with 205 and then close
+    // the connection.
+    // 205 goodbye
     struct cmd_quit : cmd {
-        int transact()
+        code_t transact()
         {
-            send("QUIT");
+            return cmd::transact("QUIT", {205});
+        }
+    };
 
-            const auto& response = recv(detail::find_response);
+    // once this is enabled it will stay on
+    // untill connection is disconnected and restarted.
+    // 222 ok
+    struct cmd_enable_compress_gzip : cmd {
+        code_t transact()
+        {
+            return cmd::transact("XFEATURE COMPRESS GZIP", {222});
+        }
+        enum : code_t { SUCCESS = 222 };
+    };
 
-            int code = 0;
-            if (!detail::scan_response(response, code) ||
-                !detail::check_code(code, {205}))
-                throw exception("incorrect QUIT response");
+    // if the server is mode switching request it to switch
+    // from transit mode to it's reader mode. 
+    // this command must not be pipelined.
+    // 200 posting allowed
+    // 201 posting prohibited
+    // 502 reading service permanently unavailable
+    struct cmd_mode_reader : cmd {
+        code_t transact() 
+        {
+            return cmd::transact("MODE READER", {200, 201, 502});
+        }
+    };
+
+    // send AUTHINFO USER to authenticate the current session.
+    // this should only be sent when 480 response requesting
+    // authentication is received.
+    // 218 authentication accepted
+    // 381 password required
+    // 481 authentication failed/rejected
+    // 482 authentication command issued out of sequence
+    // 502 command unavailable.
+    struct cmd_auth_user : cmd {
+        const std::string user;
+
+        cmd_auth_user(std::string username) : user(std::move(username))
+        {}
+
+        code_t transact() 
+        {
+            return cmd::transact("AUTHINFO USER " + user, {281, 381, 481, 482, 502});
+        }
+    };
+
+    // send AUTHINFO PASS to authenticate the current session.
+    // should only be sent when 318 password required is received.
+    // 281 authentication accepted
+    // 381 password required
+    // 481 authentication failed/rejected
+    // 482 authentication command issued out of sequence
+    // 502 command unavailable 
+    struct cmd_auth_pass : cmd {
+        const std::string pass;
+
+        cmd_auth_pass(std::string password) : pass(std::move(password))
+        {}
+
+        code_t transact()
+        {
+            const std::string& str {"AUTHINFO PASS " + pass + "\r\n" };
+
+            cmd_log("AUTHINFO PASS *******");
+            cmd_send(str.c_str(), str.size());
+
+            std::string response(512, 0);
+            if (!recv(detail::find_response, response).first)
+                throw nntp::exception("no response found");
+
+            code_t code = 0;
+            if (!detail::scan_response(response, code) || 
+                !detail::check_code(code, {281, 381, 481, 482, 502}))
+                throw exception("incorrect AUTHINFO PASS  response");
 
             return code;
         }
     };
 
-    struct cmd_capabilities : cmd
-    {
-        static const int SUCCESS = 101;
+    // request the server to select the current newsgroup to the 
+    // given group. succesful selection will return the first and
+    // last article numbers in the group and an estimate of total
+    // articles in the group.
+    // 211 number low high groupname Group succesfully selected
+    // 411 no such newsgroup
+    struct cmd_group : cmd {
+        const std::string group;
 
+        uint64_t count;
+        uint64_t low;
+        uint64_t high;
+
+        cmd_group(std::string groupname) : 
+            group(std::move(groupname)), count(0), low(0), high(0)
+        {}
+
+        code_t transact()
+        {
+            send("GROUP " + group);
+
+            std::string response(512, 0);
+            if (!recv(detail::find_response, response).first)
+                throw nntp::exception("no response found");
+
+            code_t code = 0;
+            const bool success = detail::scan_response(response, code, count, low, high);
+            if (((code != 211) && (code != 411)) || (code == 211 && !success))
+                throw exception("incorrect GROUP response");
+
+            return code;
+        }
+        enum : code_t { SUCCESS = 211 };      
+    };
+
+
+    // request the server for the current list of capabilities. 
+    // this mechanism includes some standard capabilities as well as server
+    // specific extensions. upon receiving a response we scan
+    // the list of returned capabilities and set the appropriate boolean flags
+    // to indicate the existence of said capability.
+    // 101 capability list follows.
+    struct cmd_capabilities : cmd {
+
+        enum : code_t { SUCCESS = 101 };
+
+        bool has_mode_reader;
         bool has_compress_gzip;
         bool has_xzver;
-        bool has_mode_reader;
 
-        cmd_capabilities() 
-           : has_compress_gzip(false), has_xzver(false), has_mode_reader(false)
-           {}
+        cmd_capabilities() : has_mode_reader(false), has_compress_gzip(false), has_xzver(false)
+        {}
 
-        int transact()
+        code_t transact()
         {
             send("CAPABILITIES");
 
-            // the capabilities is sent as a list one caps per line
-            // terminated by an empty line, i.e. .\r\n
-            // read input data untill empty line is received
-            // valid responses:
-            // 101 capability list follows (multi-line)\r\n
-            // IHAVE\r\n
-            // MODE-READER\r\n
-            // ...
-            // .\r\n
-            const auto& response = recv(detail::find_body);
+            std::string response(1024, 0);
+            if (!recv(detail::find_body, response).first)
+                throw nntp::exception("no response found");
 
-            auto lines = detail::split_lines(response);
+            const auto& lines  = detail::split_lines(response);
+            const auto& status = lines.at(0);
 
-            int code = 0;
-            if (!detail::scan_response(lines.at(0), code) ||
+            code_t code = 0;
+            if (!detail::scan_response(status, code) ||
                 !detail::check_code(code, {101}))
                 throw nntp::exception("incorrect CAPABILITIES response");
 
-            // remove the initial-response-line
-            // then the rest of the lines contain capabilities
-            lines.pop_front();
-
-            for  (const auto& cap : lines)
+            for (size_t i=1; i<lines.size(); ++i)
             {
+                const auto& cap = lines[i];
                 if (cap.find("MODE-READER") != std::string::npos)
                     has_mode_reader = true;
                 else if (cap.find("XZVER") != std::string::npos)
@@ -297,319 +479,155 @@ namespace nntp
             }
             return code;
         }
-
-
+        
     };
 
-    struct cmd_mode_reader : cmd
-    {
-        int transact() 
-        {
-            send("MODE READER");
+    // request a list of valid newsgroups and associated information.
+    // 215 list of newsgroups follows.
+    template<typename Buffer>
+    struct cmd_list : cmd {
 
-            // valid responses.
-            // 200 posting allowed
-            // 201 posting prohibited
-            // 502 reading service permanently unavailable
-            const auto& response = recv(detail::find_response);
+        Buffer& buffer;
 
-            int code = 0;
-            if (!detail::scan_response(response, code) ||
-                !detail::check_code(code, {200, 201, 502}))
-                throw nntp::exception("incorrect MODE READER response");
-
-            return code;
-        }
-    };
-
-    // send AUTHINFO USER
-    struct cmd_auth_user : cmd 
-    {
-        const std::string user;
-
-        cmd_auth_user(std::string username) : user(std::move(username))
+        cmd_list(Buffer& buff) : buffer(buff)
         {}
 
-        int transact() 
-        {
-            send("AUTHINFO USER " + user);
-
-            // valid responses.
-            // 281 Authentication accepted
-            // 381 Password Required
-            // 481 Authentication failed/rejected
-            // 482 Authentication command issued out of sequence
-            // 502 Command unavailable
-            const auto& response = recv(detail::find_response);
-
-            int code = 0;
-            if (!detail::scan_response(response, code) ||
-                !detail::check_code(code, {281, 381, 481, 482, 502}))
-                throw nntp::exception("incorrect AUTHINFO USER response");
-
-            return code;
-        }
-    };
-
-    // send AUTHINFO PASS
-    struct cmd_auth_pass : cmd 
-    {
-        const std::string pass;
-
-        cmd_auth_pass(std::string password) : pass(std::move(password))
-        {}
-
-        int transact()
-        {
-            cmd_log("AUTHINFO PASS ********");
-
-            std::string str("AUTHINFO PASS ");
-            str.append(pass);
-
-            str.append("\r\n");
-            cmd_send(str.c_str(), str.size());
-
-            // valid responses:
-            // 281 Authentication accepted
-            // 381 Password Required
-            // 481 Authentication failed/rejected
-            // 482 Authentication command issued out of sequence
-            // 502 Command unavailable
-            const auto& response = recv(detail::find_response);            
-            
-            int code = 0;
-            if (!detail::scan_response(response, code) ||
-                !detail::check_code(code, {281, 381, 481, 482, 502}))
-                throw nntp::exception("incorrect AUTHINFO PASS response");
-
-            return code;
-        }
-    };
-
-    struct cmd_group : cmd 
-    {
-        const static int SUCCESS = 211;
-
-        const std::string group;
-
-        uint64_t article_count;
-        uint64_t high_water_mark;
-        uint64_t low_water_mark;        
-
-        cmd_group(std::string groupname) : group(std::move(groupname)),
-            article_count(0), high_water_mark(0), low_water_mark(0)
-        {}
-
-        int transact()
-        {
-            send("GROUP " + group);
-
-            // valid responses:
-            // 211 number low high group  Group succesfully selected
-            // 411 No such newsgroup
-            const auto& response = recv(detail::find_response);
-
-            int code = 0;
-            bool scan = detail::scan_response(response, code, article_count, low_water_mark, high_water_mark);         
-            if (((code != 211) && (code != 411)) || (code == 211 && !scan))
-                throw nntp::exception("incorrect GROUP response");
-
-            return code;
-        }
-    };
-
-
-    struct cmd_list : cmd
-    {
-        int transact()
+        code_t transact()
         {
             send("LIST");
-
+            // todo:
             return 0;
         }
     };
 
-    struct cmd_body : cmd
-    {
-        const static int SUCCESS = 222;
+    // request to receive the body of the article identified
+    // by article. note that this can either be the message number
+    // or the message-id in angle brackets ("<" and ">")
+    // 222 body follows
+    // 420 no article with that message-id
+    // 423 no article with that number
+    // 412 no newsgroup selected
+    template<typename Buffer>
+    struct cmd_body : cmd {
 
-        const std::string article;
-        const size_t capacity;
-        char* buff;
+        enum : code_t { SUCCESS = 222 };        
+
+        Buffer& buffer;
+        const std::string article;        
         size_t offset;
-        size_t size;        
+        size_t size;
 
-        cmd_body(std::string articleid, size_t buffcapa, char* ptr) 
-            : article(std::move(articleid)), capacity(buffcapa), buff(ptr),
-              offset(0), size(0)
+        cmd_body(Buffer& buff, std::string id) : buffer(buff), article(std::move(id)),
+            offset(0), size(0)
         {}
 
-        int transact()
+        code_t transact()
         {
-            send("BODY " + article);
+            code_t status = 0;
+            std::tie(status, offset, size) = cmd::transact("BODY " + article, {222, 420, 423, 412}, buffer);
 
-            // valid responses:
-            // 222 0|n messageid Body follows
-            // 222 n messageid body follows
-            // 430 no article with that message-id
-            // 423 no article with that number
-            // 412 no newsgroup selected.
-            const size_t len = recv(detail::find_body_buff, buff, capacity);
-            
-            std::string response;
-            // extract the response line
-            for (size_t i=0; i<len; ++i)
-            {
-                response.push_back(buff[i]);
-                if (i > 2)
-                {
-                    if (response[i] == '\n' && response[i-1] == '\r')
-                       break;
-                }                
-            }
-            
-            int code = 0;
-            if (!detail::scan_response(response, code) ||
-                !detail::check_code(code, {222, 430, 423, 412}))
-                throw nntp::exception("incorrect BODY response");
-            
-            if (code == 222)
-            {
-                offset = response.size();
-                size   = len - 3 - response.size();
-            }
-
-            return code;
+            return status;
         }
-
     };
 
     // like XOVER except that compressed.
+    template<typename Buffer>
     struct cmd_xzver : cmd
     {
+        enum : code_t { SUCCESS = 224 };
+
+        Buffer& buffer;
         const std::string first;
         const std::string last;
-        const size_t capacity;
-        char* buff;
         size_t offset;
         size_t size;        
 
-        cmd_xzver(std::string f, std::string l, size_t buffcapa, char* ptr)
-            : first(std::move(f)), last(std::move(l)), capacity(buffcapa), buff(ptr)
+        cmd_xzver(Buffer& buff, std::string start, std::string end) : buffer(buff),
+           first(std::move(start)), last(std::move(end)),
+           offset(0), size(0)
         {}
 
-        int transact()
+        code_t transact()
         {
-            std::stringstream ss;
-            ss << "XZVER " << first << "-" << last;
-            send(ss.str());
+            std::vector<char> body(1024 * 1024);
 
-            // 224 overview information follows
-            // 412 no news group selected
-            // 420 no articles(s) selected
-            // 502 no permission
-            // const size_t len = recv(detail::find_body_buff, buff, capacity);
+            const auto& ret = recv(detail::find_response, buffer_data(body));
+            if (!ret.second)
+                throw nntp::exception("no message was found within the buffer");
 
-            // // extract response line
-            // std::string response;
-            // for (size_t i=0; i<len; ++i)
-            // {
-            //     response.push_back(buff[i]);
-            //     if (i > 2)
-            //     {
-            //         if (response[i] == '\n' && response[i-1] == '\r')
-            //             break;
-            //     }
-            // }
-            // int code = 0;
-            // if (!detail::scan_response(response, code) ||
-            //     !detail::check_code(code, {224, 412, 420, 502}))
-            //     throw nntp::exception("incorrect XOVER response");
+            const std::string response(buffer_data(body), ret.first);
+            code_t status = 0;
+            if (!detail::scan_response(response, status) ||
+                !detail::check_code(status, {224, 412, 420, 502}))
+                throw nntp::exception("incorrect XZVER response");
 
-            // if (code == 224)
-            // {
-            //     offset = response.size();
-            //     size   = len - 3 - response.size(); 
-            // }
-            // return code;
-            return 0;
+            const size_t body_offset = ret.first;
+            const size_t data_total  = ret.second;
+
+            struct Z {
+                z_stream z;
+                Z() {
+                    z = z_stream {0};
+                }
+
+               ~Z() {
+                    inflateEnd(&z);
+                }
+            } zstream;
+
+
+            // begin body decompression, read data utill z inflate is happy.
+            zstream.z.avail_in = data_total - body_offset;
+            zstream.z.next_in  = (Bytef*)buffer_data(body);
+            inflateInit(&zstream.z);
+
+            uLong out = 0;
+            uLong in  = 0;
+
+            int err = Z_OK;
+            do
+            {
+                zstream.z.next_out = (Bytef*)buffer_data(buffer) + size;
+                zstream.z.avail_out = buffer_capacity(buffer) - size;
+                zstream.z.next_in = (Bytef*)buffer_data(body);
+                zstream.z.avail_in  = 0;
+            }
+            while (err != Z_STREAM_END);
+
+            return status;
         }
     };
 
     // XOVER is part of common nntp extensions
     // https://www.ietf.org/rfc/rfc2980.txt 
     // and is superceded by RFC 3977 and OVER
+    // 224 overview information follows
+    // 412 no news group selected
+    // 420 no articles(s) selected
+    // 502 no permission    
+    template<typename Buffer>
     struct cmd_xover : cmd
     {
+        enum : code_t { SUCCESS = 224 };            
+    
+        Buffer& buffer;
         const std::string first;
         const std::string last;
-        const size_t capacity;
-        char* buff;
         size_t offset;
         size_t size;
 
-        cmd_xover(std::string f, std::string l, size_t buffcapa, char* ptr)
-            : first(std::move(f)), last(std::move(l)), capacity(buffcapa), buff(ptr)
+        cmd_xover(Buffer& buff, std::string start, std::string end) : buffer(buff),
+             first(std::move(start)), last(std::move(end)),
+             offset(0), size(0)
         {}
 
-        int transact()
+        code_t transact()
         {
-            std::stringstream ss;
-            ss << "XOVER " << first << "-" << last;
-            send(ss.str());
+            code_t status = 0;
+            std::tie(status, offset, size) = cmd::transact("XOVER " + first + "-" + last, {224, 412, 420, 502}, buffer);                
 
-            // 224 overview information follows
-            // 412 no news group selected
-            // 420 no articles(s) selected
-            // 502 no permission
-            const size_t len = recv(detail::find_body_buff, buff, capacity);
-
-            // extract response line
-            std::string response;
-            for (size_t i=0; i<len; ++i)
-            {
-                response.push_back(buff[i]);
-                if (i > 2)
-                {
-                    if (response[i] == '\n' && response[i-1] == '\r')
-                        break;
-                }
-            }
-            int code = 0;
-            if (!detail::scan_response(response, code) ||
-                !detail::check_code(code, {224, 412, 420, 502}))
-                throw nntp::exception("incorrect XOVER response");
-
-            if (code == 224)
-            {
-                offset = response.size();
-                size   = len - 3 - response.size(); 
-            }
-            return code;
+            return status;
         }
-    };
-
-
-    // once this is enabled it will stay on
-    // untill connection is disconnected and restarted.
-    struct cmd_enable_compress_gzip : cmd
-    {
-        const static int SUCCESS =  222;
-
-        int transact()
-        {
-            send("XFEATURE COMPRESS GZIP");
-
-            const auto& response = recv(detail::find_response);
-
-            int code = 0;
-            if (!detail::scan_response(response, code) ||
-                !detail::check_code(code, {222}))
-                throw nntp::exception("incorrect XFEATURE COMPRESS GZIP response");
-
-            return code;
-        }
-
     };
 
 } // nntp

@@ -93,6 +93,55 @@ void test_failure(Cmd cmd, const char* request, const char* response)
 
 }
 
+void unit_test_find_response()
+{
+    {
+        BOOST_REQUIRE(nntp::detail::find_response("", 0) == 0);
+        BOOST_REQUIRE(nntp::detail::find_response("adsgas", 6) == 0);
+        BOOST_REQUIRE(nntp::detail::find_response("\r\n", 2) == 2);
+        BOOST_REQUIRE(nntp::detail::find_response("foo\r\n", 5) == 5);
+        BOOST_REQUIRE(nntp::detail::find_response("foo\r\nfoo", 5) == 5);
+    }
+
+    {
+        BOOST_REQUIRE(nntp::detail::find_body("", 0) == 0);
+        BOOST_REQUIRE(nntp::detail::find_body("asgas", 5) == 0);
+        BOOST_REQUIRE(nntp::detail::find_body(".\r\n", 3) == 3);
+        BOOST_REQUIRE(nntp::detail::find_body("foobar.\r\n", 9) == 9);
+        BOOST_REQUIRE(nntp::detail::find_body("foobar.\r\nkeke", 13) == 9);
+        BOOST_REQUIRE(nntp::detail::find_body("foo\r\nbar.\r\n", 11) == 11);
+    }
+}
+
+void unit_test_scan_response()
+{
+    {
+        int a, b, c;
+        BOOST_REQUIRE(nntp::detail::scan_response("123 234254 444", a, b, c));
+        BOOST_REQUIRE(a == 123);
+        BOOST_REQUIRE(b == 234254);
+        BOOST_REQUIRE(c == 444);
+    }
+
+    {
+        int a; 
+        double d;
+        BOOST_REQUIRE(nntp::detail::scan_response("200 40.50", a, d));
+        BOOST_REQUIRE(a == 200);
+        //BOOST_REQUIRE(d == 40.50); // fix
+    }
+
+    {
+        int a;
+        BOOST_REQUIRE(!nntp::detail::scan_response("asdga", a));
+    }
+
+    {
+        // int a;
+        // BOOST_REQUIRE(!nntp::detail::scan_response("233s 23", a));
+    }
+}
+
 void unit_test_cmd_welcome()
 {
    test_success(nntp::cmd_welcome{}, "", "200 Welcome posting allowed\r\n", 200);
@@ -154,40 +203,13 @@ void unit_test_cmd_group()
     {
         nntp::cmd_group cmd {"alt.binaries.bar"};
         test_success(&cmd, "GROUP alt.binaries.bar", "211 3 100 102 alt.binaries.bar Group selected\r\n", 211);
-        BOOST_REQUIRE(cmd.article_count == 3);
-        BOOST_REQUIRE(cmd.low_water_mark == 100);
-        BOOST_REQUIRE(cmd.high_water_mark == 102);
+        BOOST_REQUIRE(cmd.count == 3);
+        BOOST_REQUIRE(cmd.low == 100);
+        BOOST_REQUIRE(cmd.high == 102);
     }
 }
 
-void unit_test_scan_response()
-{
-    {
-        int a, b, c;
-        BOOST_REQUIRE(nntp::detail::scan_response("123 234254 444", a, b, c));
-        BOOST_REQUIRE(a == 123);
-        BOOST_REQUIRE(b == 234254);
-        BOOST_REQUIRE(c == 444);
-    }
 
-    {
-        int a; 
-        double d;
-        BOOST_REQUIRE(nntp::detail::scan_response("200 40.50", a, d));
-        BOOST_REQUIRE(a == 200);
-        //BOOST_REQUIRE(d == 40.50); // fix
-    }
-
-    {
-        int a;
-        BOOST_REQUIRE(!nntp::detail::scan_response("asdga", a));
-    }
-
-    {
-        // int a;
-        // BOOST_REQUIRE(!nntp::detail::scan_response("233s 23", a));
-    }
-}
 
 void unit_test_cmd_mode_reader()
 {
@@ -200,19 +222,57 @@ void unit_test_cmd_mode_reader()
 
 void unit_test_cmd_body()
 {
-    
+    using buffer_t = std::vector<char>;
+
+    {
+        buffer_t buff(1024);
+
+        nntp::cmd_body<buffer_t> cmd {buff, "1234"};
+
+        test_failure(cmd, "BODY 1234", "333 foobar\r\n");
+        test_failure(cmd, "BODY 1234", "223 FOOBAR\r\n");
+        test_failure(cmd, "BODY 1234", "asgasgas\r\n");
+    }
+
+    {
+        buffer_t buff(1024);
+
+        nntp::cmd_body<buffer_t> cmd {buff, "1234"};
+
+        test_success(&cmd, "BODY 1234", "420 no article with that message id\r\n", 420);
+        test_success(&cmd, "BODY 1234", "222 body follows\r\n.\r\n", 222);
+        BOOST_REQUIRE(cmd.size == 0);
+
+        test_success(&cmd, "BODY 1234", "222 body follows\r\nfoobar.\r\n", 222);
+        BOOST_REQUIRE(cmd.size == 6);
+        BOOST_REQUIRE(cmd.offset == 18);
+        BOOST_REQUIRE(!std::strncmp(&buff[cmd.offset], "foobar", cmd.size));
+    }
 }
 
+void unit_test_cmd_xover()
+{
+
+}
+
+void unit_test_cmd_xzver()
+{
+
+}
 
 int test_main(int, char* [])
 {
     unit_test_scan_response();
+    unit_test_find_response();
 
     unit_test_cmd_welcome();
     unit_test_cmd_auth();
     unit_test_cmd_capabilities();
     unit_test_cmd_mode_reader();
     unit_test_cmd_group();
+    unit_test_cmd_body();
+    unit_test_cmd_xover();
+    unit_test_cmd_xzver();
 
     return 0;
 }

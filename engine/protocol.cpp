@@ -84,13 +84,12 @@ std::pair<bool, protocol::groupinfo> protocol::query_group(const std::string& gr
         return {false, groupinfo{0}};
 
     group_ = groupname;
-    return { true, 
-        groupinfo {cmd.high_water_mark, cmd.low_water_mark, cmd.article_count}
-    };
+    
+    return { true, groupinfo {cmd.high, cmd.low, cmd.count}};
 }
 
 bool protocol::download_article(const std::string& article, buffer& buff)
-{
+{ 
     // nntp::cmd_body cmd {article, buff.capacity, buff.ptr};
 
     // const auto code = transact(&cmd);
