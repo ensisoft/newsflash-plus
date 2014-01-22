@@ -30,7 +30,7 @@
 #include <chrono>
 #include <string>
 #include <cstdint>
-#include "types.h"
+#include "socketapi.h"
 #include "waithandle.h"
 
 namespace newsflash
@@ -76,7 +76,7 @@ namespace newsflash
         // This function is non-blocking and returns immediately.
         // To complete the connection attempt call complete connect
         // after the waithandle becomes signaled.
-        virtual void connect(ipv4_addr_t host, uint16_t port) = 0;
+        virtual void connect(ipv4addr_t host, uint16_t port) = 0;
 
         // Complete the connection attempt. On succesful return
         // the connection is ready to be used for sending and receiving data.

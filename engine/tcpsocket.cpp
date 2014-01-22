@@ -49,7 +49,7 @@ tcpsocket::~tcpsocket()
     close();
 }
 
-void tcpsocket::connect(ipv4_addr_t host, uint16_t port) 
+void tcpsocket::connect(ipv4addr_t host, uint16_t port) 
 {
     assert(state_ == state::nothing && "Socket is already connected");
     assert(!socket_ && !handle_);

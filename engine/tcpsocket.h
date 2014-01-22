@@ -42,7 +42,7 @@ namespace newsflash
 
        ~tcpsocket();
 
-        virtual void connect(ipv4_addr_t host, uint16_t port) override;
+        virtual void connect(ipv4addr_t host, uint16_t port) override;
 
         virtual native_errcode_t complete_connect() override;
 

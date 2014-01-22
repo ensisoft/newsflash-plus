@@ -26,6 +26,7 @@
 #  include <winsock2.h> // for WSAEventSelect
 #  pragma comment(lib, "ws2_32.lib")
 #elif defined(LINUX_OS)
+#  define _POSIX_C_SOURCE 1
 #  include <sys/types.h>
 #  include <sys/socket.h>
 #  include <arpa/inet.h>
@@ -37,6 +38,7 @@
 #include <cassert>
 #include <memory>
 #include <stdexcept>
+#include "socketapi.h"
 #include "platform.h"
 #include "utility.h"
 #include "assert.h"
@@ -64,7 +66,7 @@ namespace newsflash
 {
 #if defined(WINDOWS_OS)
 
-ipv4_addr_t resolve_host_ipv4(const std::string& hostname)
+ipv4addr_t resolve_host_ipv4(const std::string& hostname)
 {
     // gethostbyname allocates data from TLS so it's thread safe
     const HOSTENT* hp = gethostbyname(hostname.c_str());
@@ -72,10 +74,10 @@ ipv4_addr_t resolve_host_ipv4(const std::string& hostname)
         return 0;
 
     const in_addr* addr = static_cast<const in_addr*>((void*)hp->h_addr);
-    return addr->s_addr;
+    return ntohl(addr->s_addr);
 }
 
-std::pair<native_socket_t, native_handle_t> begin_socket_connect(ipv4_addr_t host, uint16_t port)
+std::pair<native_socket_t, native_handle_t> begin_socket_connect(ipv4addr_t host, port_t port)
 {
     auto sock = make_unique_handle(::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP), ::closesocket);
     if (sock.get() == INVALID_SOCKET)
@@ -92,7 +94,7 @@ std::pair<native_socket_t, native_handle_t> begin_socket_connect(ipv4_addr_t hos
     struct sockaddr_in addr {0};
     addr.sin_family      = AF_INET;
     addr.sin_port        = htons(port);
-    addr.sin_addr.s_addr = host;
+    addr.sin_addr.s_addr = htonl(host);
     if (connect(sock.get(), static_cast<sockaddr*>((void*)&addr), sizeof(sockaddr_in)))
     {
         const int err = WSAGetLastError();
@@ -153,14 +155,14 @@ native_errcode_t get_last_socket_error()
 
 #elif defined(LINUX_OS)
 
-ipv4_addr_t resolve_host_ipv4(const std::string& hostname)
+ipv4addr_t resolve_host_ipv4(const std::string& hostname)
 {
     struct addrinfo* addrs = nullptr;
     const int ret = getaddrinfo(hostname.c_str(), nullptr, nullptr, &addrs);
     if (ret)
         return 0;
 
-    ipv4_addr_t host = 0;
+    ipv4addr_t host = 0;
     // take the first IPv4 address
     const struct addrinfo* iter = addrs;
     while (iter)
@@ -174,10 +176,10 @@ ipv4_addr_t resolve_host_ipv4(const std::string& hostname)
         iter = iter->ai_next;
     }
     freeaddrinfo(addrs);
-    return host;
+    return ntohl(host);
 }
 
-std::pair<native_socket_t, native_handle_t> begin_socket_connect(ipv4_addr_t host, uint16_t port)
+std::pair<native_socket_t, native_handle_t> begin_socket_connect(ipv4addr_t host, port_t port)
 {
     auto sock = make_unique_handle(::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP), close);
     if (sock == -1)
@@ -191,7 +193,7 @@ std::pair<native_socket_t, native_handle_t> begin_socket_connect(ipv4_addr_t hos
     struct sockaddr_in addr {0};
     addr.sin_family      = AF_INET;
     addr.sin_port        = htons(port);
-    addr.sin_addr.s_addr = host;
+    addr.sin_addr.s_addr = htonl(host);
     if (connect(fd, static_cast<sockaddr*>((void*)&addr), sizeof(sockaddr_in)))
     {
         const int err = errno;
