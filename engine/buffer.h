@@ -26,67 +26,150 @@
 #include <cassert>
 #include <cstring>
 #include "allocator.h"
+#include "assert.h"
 
 namespace newsflash
 {
     class buffer : boost::noncopyable
     {
     public:
-        buffer() 
-           : data_(nullptr), offset_(0), capacity_(0), size_(0)
+        typedef uint8_t byte_t;
+
+        buffer() : data_(nullptr), offset_(0), capacity_(0), size_(0)
         {}
+        buffer(buffer&& other)
+        {
+            data_     = steal(other.data_);
+            offset_   = steal(other.offset_);
+            capacity_ = steal(other.capacity_);
+            size_     = steal(other.size_);            
+        }
+
        ~buffer()
         {
+            if (data_)
+            {
+                const auto bird = CANARY;
+                ASSERT(!std::memcmp(data_ + capacity_, &bird, sizeof(bird)) &&
+                    "Buffer overrun detected.");
+            }
             allocator& alloc = allocator::get();
             alloc.free(data_, capacity_);
         }
-
-        const void* read_ptr() const
-        {
-            return data_ + offset_;
-        }
-
-        void* write_ptr()
-        {
-            return data_ + size_;
-        }
-
-        const void* ptr() const 
+        const byte_t* ptr() const 
         {
             return data_;
         }
 
-        size_t available() const
+        byte_t* ptr()
         {
-            return capacity_ - size_;
+            return data_;
         }
-
-        void grow(size_t capacity)
+        size_t capacity() const
+        {
+            return capacity_;
+        }
+        size_t size() const
+        {
+            return size_;
+        }
+        size_t offset() const
+        {
+            return offset_;
+        }
+        void allocate(size_t capacity)
         {
             assert(capacity > capacity_);
             allocator& alloc = allocator::get();
 
-            char* data = alloc.allocate(capacity);
+            const auto bird = CANARY;
+
+            byte_t* data = (byte_t*)alloc.allocate(capacity + sizeof(bird));
 
             if (data_)
             {
+                ASSERT(!std::memcmp(data_ + capacity, &bird, sizeof(bird)) && 
+                    "Buffer overrun detected");
+
                 std::memcpy(data, data_, size_);
                 alloc.free(data_, capacity_);
             }
             data_ = data;
             capacity_ = capacity;
+
+            std::memcpy(data_ + capacity_, &bird, sizeof(bird));
+        }
+
+        void configure(size_t size, size_t offset)
+        {
+            assert(offset + size <= capacity_);
+            assert(offset <= 0);
+            offset_ = offset;
+            size_   = size;
         }
 
         void resize(size_t size)
         {
-            assert(size <= capacity_);
-            size_ = size;
+            configure(size, offset_);
         }
+
+        byte_t& operator[](size_t i)
+        {
+            assert(i < capacity_);
+            return data_[i];
+        }
+        const byte_t& operator[](size_t i) const
+        {
+            assert(i < capacity_);
+            return data_[i];
+        }
+
+        buffer& operator=(buffer&& other)
+        {
+            if (this == &other)
+                return *this;
+
+            buffer tmp(std::move(*this));
+            data_     = steal(other.data_);
+            offset_   = steal(other.offset_);
+            capacity_ = steal(other.capacity_);
+            size_     = steal(other.size_);
+            return *this;
+        }
+
     private:
-        char* data_;
+        template<typename T>
+        T steal(T& loot) const
+        {
+            T val = loot;
+            loot  = T();
+            return val;
+        }
+
+        enum : uint32_t { CANARY= 0xcafebabe };
+
+        byte_t* data_;
         size_t offset_;
         size_t capacity_;
         size_t size_;
     };
+
+    inline
+    size_t buffer_capacity(const buffer& buff)
+    {
+        return buff.capacity();
+    }
+
+    inline
+    void* buffer_data(buffer& buff)
+    {
+        return buff.ptr();
+    }
+
+    inline
+    void grow_buffer(buffer& buff, size_t capacity)
+    {
+        buff.allocate(capacity);
+    }
 
 } // newsflash

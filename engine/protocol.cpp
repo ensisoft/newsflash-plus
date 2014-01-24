@@ -90,18 +90,19 @@ std::pair<bool, protocol::groupinfo> protocol::query_group(const std::string& gr
 
 bool protocol::download_article(const std::string& article, buffer& buff)
 { 
-    // nntp::cmd_body cmd {article, buff.capacity, buff.ptr};
+    typedef nntp::cmd_body<buffer> command_t;
 
-    // const auto code = transact(&cmd);
-    // if (code != cmd.SUCCESS)
-    //     return false;
+    command_t cmd {buff, article};
 
-    // buff.offset = cmd.offset;
-    // buff.size   = cmd.size;
+    const auto code = transact(&cmd);
+    if (code != command_t::SUCCESS)
+        return false;
+
+    buff.configure(cmd.size, cmd.offset);
     return true;
 }
 
-void protocol::download_overview(const std::string& first, const std::string& last, buffer& buff)
+bool protocol::download_overview(const std::string& first, const std::string& last, buffer& buff)
 {
     if (has_xzver_ && !is_compressed_)
     {
@@ -112,22 +113,44 @@ void protocol::download_overview(const std::string& first, const std::string& la
 
     }
 
+    typedef nntp::cmd_xzver<buffer> xzver_t;        
+    typedef nntp::cmd_xover<buffer> xover_t;
+
     if (is_compressed_)
     {
-        // nntp::cmd_xzver cmd {first, last, buff.capacity, buff.ptr};
-        // transact(&cmd);
+        xzver_t cmd {buff, first, last };
 
-        // buff.offset = cmd.offset;
-        // buff.size   = cmd.size;
+        if (transact(&cmd) == xzver_t::SUCCESS)
+        {
+            buff.configure(cmd.size, cmd.offset);
+            return true;
+        }
     }
     else
     {
-        // nntp::cmd_xover cmd {first, last, buff.capacity, buff.ptr};
-        // transact(&cmd);
+        xover_t cmd {buff, first, last};
 
-        // buff.offset = cmd.offset;
-        // buff.size   = cmd.size;
+        if (transact(&cmd) == xover_t::SUCCESS)
+        {
+            buff.configure(cmd.size, cmd.offset);
+            return true;
+        }
     }
+    return false;
+}
+
+bool protocol::download_list(buffer& buff)
+{
+    typedef nntp::cmd_list<buffer> command_t;
+
+    command_t cmd {buff};
+
+    if (transact(&cmd) == command_t::SUCCESS)
+    {
+        buff.configure(cmd.size, cmd.offset);
+        return true;
+    }
+    return false;
 }
 
 int protocol::authenticate()

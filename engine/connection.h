@@ -22,6 +22,9 @@
 
 #pragma once
 
+#include <boost/noncopyable.hpp>
+#include <mutex>
+#include <thread>
 #include <cstdint>
 #include "command.h"
 #include "response.h"
@@ -35,7 +38,7 @@ namespace newsflash
 
     // connection represents a high level connection to some
     // newsserver host. 
-    class connection
+    class connection : boost::noncopyable
     {
     public:
         enum class state {
