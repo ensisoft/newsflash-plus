@@ -41,11 +41,11 @@ allocator::~allocator()
     }
 }
 
-char* allocator::allocate(size_t size)
+void* allocator::allocate(size_t size)
 {
     std::lock_guard<std::mutex> lock(mutex_);
 
-    char* ret;
+    void* ret;
 
     // see if already have a slab that satisfies
     // the size requirement. if we have, grab it and
@@ -57,7 +57,7 @@ char* allocator::allocate(size_t size)
     const auto& it = slabs_.lower_bound(size);
     if (it == slabs_.end())
     {
-        ret = (char*)std::malloc(size);
+        ret = std::malloc(size);
         count_++;
         volume_ += size;
     }
@@ -70,8 +70,13 @@ char* allocator::allocate(size_t size)
     return ret;
 }
 
-void allocator::free(char* ptr, size_t size)
+void allocator::free(void* ptr, size_t size)
 {
+    if (!ptr)
+        return;
+
+    assert(size);
+
     std::lock_guard<std::mutex> lock(mutex_);
 
     slabs_.insert(std::make_pair(size, ptr));

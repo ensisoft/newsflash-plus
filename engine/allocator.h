@@ -28,21 +28,22 @@
 
 namespace newsflash
 {
+    // simple buffer caching allocator
     class allocator : boost::noncopyable
     {
     public:
         allocator();
        ~allocator();
 
-        char* allocate(size_t size);
+        void* allocate(size_t size);
 
-        void free(char* ptr, size_t size);
+        void free(void* ptr, size_t size);
 
         static
         allocator& get();
     private:
         std::mutex mutex_;
-        std::multimap<size_t, char*> slabs_;
+        std::multimap<size_t, void*> slabs_;
 
         size_t volume_;
         size_t count_;

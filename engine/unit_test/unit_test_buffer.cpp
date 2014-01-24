@@ -1,4 +1,4 @@
-// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -20,13 +20,46 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-#pragma once
+#include <boost/test/minimal.hpp>
+#include "../buffer.h"
 
-#include <newsflash/config.h>
-#if defined(WINDOWS_OS)
-#  include "native_windows_types.h"
-#elif defined(LINUX_OS)
-#  include "native_linux_types.h"
-#endif
+int test_main(int, char*[])
+{
+    newsflash::buffer buff;
+
+    BOOST_REQUIRE(buff.capacity() == 0);
+    BOOST_REQUIRE(buff.size() == 0);
+    BOOST_REQUIRE(buff.ptr() == nullptr);
+
+    buff.allocate(100);
+    BOOST_REQUIRE(buff.size() == 0);
+    BOOST_REQUIRE(buff.capacity() == 100);
+    BOOST_REQUIRE(buff.ptr());
+    buff.resize(1);
+    BOOST_REQUIRE(buff.size() == 1);
+    buff.resize(2);
+    BOOST_REQUIRE(buff.size() == 2);
+    buff.resize(100);
+    buff.resize(0);
+
+    for (int i=0; i<100; ++i)
+    {
+        auto* ptr = buff.ptr();
+        ptr[i] = 0xff;
+        BOOST_REQUIRE(buff[i] == 0xff);
+    }
 
 
+    buff = std::move(buff);
+    BOOST_REQUIRE(buff.ptr());
+    BOOST_REQUIRE(buff.capacity() == 100);
+
+    auto other = std::move(buff);
+
+    BOOST_REQUIRE(other.ptr());
+    BOOST_REQUIRE(other.capacity() == 100);
+    BOOST_REQUIRE(buff.ptr() == nullptr);
+    BOOST_REQUIRE(buff.capacity() == 0);
+
+    return 0;
+}

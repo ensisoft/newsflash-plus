@@ -90,9 +90,8 @@ namespace newsflash
         // send ping to keep protocol state alive
         void ping(); 
 
+        // send quit
         void quit();
-
-        void list(const std::string& groupname);
 
         // change the currently active group to the newgroup.
         // returns true if change was succesful, otherwise false.
@@ -113,7 +112,10 @@ namespace newsflash
 
         // download overview overview data in the first last range (inclusive)        
         // first and last are article numbers
-        void download_overview(const std::string& first, const std::string& last, buffer& buff);
+        bool download_overview(const std::string& first, const std::string& last, buffer& buff);
+
+        // download list of available newsgroups
+        bool download_list(buffer& buff);
 
     private:
         template<typename Cmd>

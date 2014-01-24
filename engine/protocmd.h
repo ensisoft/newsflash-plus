@@ -487,16 +487,21 @@ namespace nntp
     template<typename Buffer>
     struct cmd_list : cmd {
 
+        enum : code_t { SUCCESS = 215 };
+
         Buffer& buffer;
+        size_t offset;
+        size_t size;
 
         cmd_list(Buffer& buff) : buffer(buff)
         {}
 
         code_t transact()
         {
-            send("LIST");
-            // todo:
-            return 0;
+            code_t status = 0;
+            std::tie(status, offset, size) = cmd::transact("LIST", {215}, buffer);
+
+            return status;
         }
     };
 
@@ -551,11 +556,11 @@ namespace nntp
         {
             std::vector<char> body(1024 * 1024);
 
-            const auto& ret = recv(detail::find_response, buffer_data(body));
+            const auto& ret = cmd::recv(detail::find_response, buffer_data(body), buffer_capacity(body));
             if (!ret.second)
                 throw nntp::exception("no message was found within the buffer");
 
-            const std::string response(buffer_data(body), ret.first);
+            const std::string response((char*)buffer_data(body), ret.first);
             code_t status = 0;
             if (!detail::scan_response(response, status) ||
                 !detail::check_code(status, {224, 412, 420, 502}))
@@ -581,8 +586,8 @@ namespace nntp
             zstream.z.next_in  = (Bytef*)buffer_data(body);
             inflateInit(&zstream.z);
 
-            uLong out = 0;
-            uLong in  = 0;
+            // uLong out = 0;
+            // uLong in  = 0;
 
             int err = Z_OK;
             do
