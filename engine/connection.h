@@ -71,7 +71,7 @@ namespace newsflash
 
        ~connection();
     private:
-        void run(const server& host, const std::string& logfile);
+        void main(const server& host, const std::string& logfile);
         bool connect(const server& host);
         void execute();
 

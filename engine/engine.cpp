@@ -20,8 +20,11 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
+#include <algorithm>
+#include <functional>
 #include <thread>
 #include <vector>
+#include <deque>
 
 #include "engine.h"
 #include "listener.h"
@@ -29,6 +32,14 @@
 #include "command.h"
 #include "response.h"
 #include "logging.h"
+#include "task.h"
+#include "event.h"
+#include "msgqueue.h"
+#include "assert.h"
+
+namespace {
+
+} // namespace
 
 namespace newsflash
 {
@@ -36,26 +47,181 @@ namespace newsflash
 class engine::impl
 {
 public:
-    impl(listener& list, const std::string& logs) : logfolder_(logs), listener_(list)
+    impl(const std::string& logs, const engine::configuration& config, newsflash::listener* listener) 
+        : logfolder_(logs)
+        , config_(config)
+        , listener_(listener)
+        , thread_(std::bind(&engine::impl::main, this))
+    {}
+
+   ~impl()
+    {}
+
+    void join()
+    {
+        thread_.join();
+    }
+
+    void shutdown()
     {
 
     }
 
 
+    void add_account(const engine::account& acc)
+    {
+
+    }
+
+private:
+    void handle_messages()
+    {
+        std::unique_ptr<msgqueue::message> msg;
+
+        while (messages_.try_get(msg))
+        {
+
+        }
+    }
+
+    void dispatch_responses()
+    {
+        response resp;
+        while (responses_.get_one(resp))
+        {
+            const auto it = std::find_if(tasks_.begin(), tasks_.end(),
+                [&](const task& t)
+                {
+                    return t.id() == resp.taskid;
+                });
+
+            ASSERT(it != tasks_.end());
+            //const auto id = it
+        }
+    }
+
+    void remove_tasks()
+    {
+        if (tasks_.empty())
+            return;
+
+        std::remove_if(tasks_.begin(), tasks_.end(),
+            [&](const task& t)
+            {
+                const task::state state = t.get_state();
+                return state == task::state::done ||
+                       state == task::state::killed;
+            });
+
+    }
+
+    void remove_connections()
+    {
+        if (conns_.empty())
+            return;
+
+
+    }
+
+    void schedule_tasks()
+    {}
+
+    void schedule_connections()
+    {
+
+    }
+
+    void loop()
+    {
+        const std::chrono::milliseconds scheduling_interval(100);
+
+        while (true)
+        {
+            auto msg_handle = messages_.wait();
+            auto res_handle = responses_.wait();
+
+            if (!wait(msg_handle, res_handle, scheduling_interval))
+            {
+                remove_tasks();
+                remove_connections();
+                schedule_tasks();
+                schedule_connections();
+            }
+            else if (msg_handle.read())
+            {
+                handle_messages();
+            }
+            else if (res_handle.read())
+            {
+                dispatch_responses();
+            }
+        }
+    }
+
+    void main()
+    {
+        LOG_OPEN(logfolder_ + "/engine.log");
+
+        LOG_D("Engine thread: ", std::this_thread::get_id());
+        try
+        {
+            loop();
+        }
+        catch (const std::exception& e)
+        {
+            LOG_E(e.what());
+        }
+        LOG_D("Engine thread has exited.");
+    }
+
+private:
+    typedef std::deque<task> tasklist;
+    typedef std::deque<connection*> connlist;    
+    typedef std::vector<engine::account> acclist;
+
 private:
     const std::string& logfolder_;
-    std::thread thread_;
-    listener& listener_;    
+    engine::configuration config_;
+
+    listener* listener_;    
+    msgqueue messages_;
     cmdqueue commands_;
     resqueue responses_;
+    tasklist tasks_;
+    connlist conns_;
+    acclist  accounts_;
+
+    std::mutex mutex_;    
+    std::thread thread_;    
 };
 
 
-engine::engine(listener& list, const std::string& logfolder)
+engine::engine(listener* list, const configuration& config, 
+    const std::string& logfolder)
 {
-    pimpl_.reset(new engine::impl(list, logfolder));
+    pimpl_.reset(new engine::impl(logfolder, config, list));
 }
 
+engine::engine(listener* list, const configuration& config)
+{
+    pimpl_.reset(new engine::impl("", config, list));
+}
+
+
+engine::~engine()
+{
+    pimpl_->join();
+}
+
+void engine::shutdown()
+{
+    pimpl_->shutdown();
+}
+
+void engine::add_account(const account& acc)
+{
+    pimpl_->add_account(acc);
+}
 
 } // newsflash
 

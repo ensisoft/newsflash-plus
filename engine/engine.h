@@ -42,7 +42,7 @@ namespace newsflash
 
         // newsservice account information
         struct account {
-            size_t id;
+            std::size_t id;
             std::string username;
             std::string password;
             server secure;
@@ -66,18 +66,24 @@ namespace newsflash
         };
 
         struct stats {
-            uint64_t bytes_downloaded;
-            uint64_t bytes_written;
-            uint64_t bytes_queued;
+            std::uint64_t bytes_downloaded;
+            std::uint64_t bytes_written;
+            std::uint64_t bytes_queued;
         };
 
         // create a new engine instance. listener is the
         // listener implementation for the engine callbacks.
         // logfolder specifies a location in the filesystem
         // where to store the log files.
-        engine(listener& list, const std::string& logfolder);
+        engine(listener* list, const configuration& config,
+            const std::string& logfolder);
+
+        // like above but uses current working folder for log folder
+        engine(listener* list, const configuration& config);
 
        ~engine();
+
+        void add_account(const account& acc);
 
         void shutdown();
 

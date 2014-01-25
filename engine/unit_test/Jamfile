@@ -23,4 +23,4 @@ unit-test unit_test_bigfile   : unit_test_bigfile.cpp ;
 
 
 unit-test unit_test_tcpsocket : unit_test_tcpsocket.cpp ;
-
+unit-test unit_test_sslsocket : unit_test_sslsocket.cpp ;

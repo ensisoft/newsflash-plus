@@ -41,7 +41,7 @@ namespace newsflash
         queue()
         {}
 
-        bool get(T& data)
+        bool get_one(T& data)
         {
             std::lock_guard<std::mutex> lock(mutex_);
             if (buff_.empty())
@@ -52,6 +52,12 @@ namespace newsflash
             if (buff_.empty())
                 event_.reset();
             return true;
+        }
+
+        void try_again_later(const T& data) NOTHROW
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            buff_.push_front(data);
         }
 
         void push(const T& data)
@@ -66,6 +72,20 @@ namespace newsflash
                 event_.set();
         }
 
+        void push(const std::vector<T>& data)
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            size_t size = buff_.size();            
+            try
+            {
+                buff_.insert(buff_.end(), data.begin(), data.end());
+            }
+            catch (const std::exception&)
+            {
+                buff_.resize(size);
+                throw;
+            }
+        }
 
         void push(T&& data)
         {

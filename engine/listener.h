@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include <vector>
 #include <string>
 #include <cstdint>
 
@@ -52,6 +53,7 @@ namespace newsflash
         // be created or opened etc.
         virtual void on_error(const error& e) = 0;
 
+        // engine has finished performing an orderly shutdown.
         virtual void on_shutdown() = 0;
 
         //virtual void on_listing_complete()
@@ -61,23 +63,25 @@ namespace newsflash
             };
             status stat;
             std::string name;
-            std::string location;
             std::size_t account;
             std::uint64_t size;
         };
 
         struct filegroup {
             std::size_t account;
-            std::size_t id;            
+            std::size_t id;         
+            std::string location;               
             std::vector<file> files;
-
         };
 
-        virtual void on_file_complete(const file& f, ) = 0;
+        // an independent file outside any filegroup was completed.
+        virtual void on_complete(const file& f) = 0;
 
-        virtual void on_file_complete(const file& file, const filegroup& files) = 0;
+        // a file within a group was completed.
+        //virtual void on_file_complete(const file& f, const filegroup& files) = 0;
 
-        virtual void on_filegroup_complete(const filegroup& files) = 0;
+        // a group of files was completed.
+        virtual void on_complete(const filegroup& files) = 0;
     protected:
     private:
     };

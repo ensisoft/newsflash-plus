@@ -60,7 +60,7 @@ connection::connection(const std::string& logfile, const server& host, cmdqueue&
       bytes_(0),
       speed_(0),
       commands_(in), responses_(out),
-      thread_(std::bind(&connection::run, this, host, logfile))
+      thread_(std::bind(&connection::main, this, host, logfile))
 {}
 
 connection::~connection()
@@ -69,7 +69,7 @@ connection::~connection()
     thread_.join();
 }
 
-void connection::run(const server& host, const std::string& logfile)
+void connection::main(const server& host, const std::string& logfile)
 {
     LOG_OPEN(logfile);
     LOG_D("Connection thread: ", std::this_thread::get_id());
@@ -88,6 +88,7 @@ void connection::run(const server& host, const std::string& logfile)
             // wait for commands or shutdown signal
             auto command_handle  = commands_.wait();
             auto shutdown_handle = shutdown_.wait();
+
             if (!wait(command_handle, shutdown_handle, ping_interval))
             {
                 proto_.ping();
@@ -190,35 +191,42 @@ bool connection::connect(const server& host)
 void connection::execute()
 {
     command cmd;
-    if (!commands_.get(cmd))
+    if (!commands_.get_one(cmd))
         return;
 
     goto_state(state::active, error::none);
 
-    // allocate buffer.
-    //auto buff = allocate_buffer(cmd.size);
-
-    switch (cmd.kind)
+    try
     {
-        case command::type::body:
+        switch (cmd.kind)
         {
-            proto_.change_group(cmd.group);
-            //proto_.download_article(cmd.)
-        }
-        break;
-        
-        case command::type::xover:
-        {
-            proto_.change_group(cmd.group);
+            case command::type::body:
+            {
+                //proto_.change_group(cmd.group);
+               //proto_.download_article(cmd.)
+            }
+            break;
 
-        }
-        break;
+            case command::type::xover:
+            {
+                proto_.change_group(cmd.group);
 
-        case command::type::list:
-        {
+            }
+            break;
 
+            case command::type::list:
+            {
+
+            }
+            break;
         }
-        break;
+    }
+    catch (const std::exception& e)
+    {
+        // presumably we have a problem with socket IO or SSL
+        // but we must make sure not to loose the command data...
+        commands_.try_again_later(cmd);
+        throw;
     }
 }
 
@@ -240,6 +248,7 @@ size_t connection::read(void* buff, size_t len)
     // error we must throw.
     auto socket_handle   = socket_->wait(true, false);
     auto shutdown_handle = shutdown_.wait();
+
     if (!wait(socket_handle, shutdown_handle, timeout))
         throw conn_exception("socket timeout", error::timeout);
 

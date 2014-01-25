@@ -254,7 +254,9 @@ namespace newsflash
             if (head_ == nullptr)
                 tail_ = nullptr;
 
-            if (--size_ == 0)
+            --size_;
+
+            if (size_ == 0)
                 event_.reset();
 
             return head;
@@ -274,7 +276,9 @@ namespace newsflash
             }
             cond_.notify_one();
 
-            if (++size_ == 1)
+            ++size_;
+
+            if (size_ == 1)
                 event_.set();
         }
 
