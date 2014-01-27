@@ -8,6 +8,7 @@ project engine
   <library>/boost//filesystem/<link>static
   <library>/boost//regex/<link>static
   <library>/boost//system/<link>static
+  <library>/zlib//zlib/<link>shared
   
   #<library>/newsflash//openssl/<link>shared
   #<library>/newsflash//crypto/<link>shared

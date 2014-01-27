@@ -44,8 +44,14 @@ void protocol::connect()
     is_compressed_     = false;
     group_.clear();
 
-    transact(nntp::cmd_welcome{});
+    auto code = transact(nntp::cmd_welcome{});
+    if (code == nntp::cmd_welcome::SERVICE_TEMPORARILY_UNAVAILABLE)
+        throw exception("service temporarily unavailable", exception::code::service_temporarily_unavailable);
+    else if (code == nntp::cmd_welcome::SERVICE_PERMANENTLY_UNAVAILABLE)
+        throw exception("service permanently unavailable", exception::code::service_permanently_unavailable);
+    
     querycaps();
+    
     transact(nntp::cmd_mode_reader{});
 }
 
@@ -75,17 +81,20 @@ bool protocol::change_group(const std::string& groupname)
     return true;
 }
 
-std::pair<bool, protocol::groupinfo> protocol::query_group(const std::string& groupname)
+bool protocol::query_group(const std::string& groupname, groupinfo& info)
 {
-    nntp::cmd_group cmd {groupname};
+    nntp::cmd_group cmd { groupname };
 
     const auto code = transact(&cmd);
     if (code != nntp::cmd_group::SUCCESS)
-        return {false, groupinfo{0}};
+        return false;
 
     group_ = groupname;
     
-    return { true, groupinfo {cmd.high, cmd.low, cmd.count}};
+    info.high_water_mark = cmd.high;
+    info.low_water_mark = cmd.low;
+    info.article_count = cmd.count;
+    return true;
 }
 
 bool protocol::download_article(const std::string& article, buffer& buff)

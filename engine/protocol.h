@@ -103,7 +103,7 @@ namespace newsflash
             uint64_t article_count;
         };
 
-        std::pair<bool, groupinfo> query_group(const std::string& groupname);
+        bool query_group(const std::string& groupname, groupinfo& info);
 
         // download the contents of the article identified by article number or id.
         // returns true if article was downloaded succesfully, false if 
@@ -138,9 +138,6 @@ namespace newsflash
 
                 ret = cmd->transact();
             }
-            if (ret == nntp::SERVICE_UNAVAILABLE)
-                throw exception("service unavailable", exception::code::service_temporarily_unavailable);
-
             return ret;
         }
 

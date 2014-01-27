@@ -23,13 +23,14 @@ import os ;
 import qt ;
 import path ;
 
-path-constant QT_PATH      : "../../qt-4.8.2" ;
-path-constant BOOST_PATH   : "../../boost_1_51_0" ;
-path-constant OPENSSL_PATH : "../../openssl_1_0_1" ;
+path-constant QT_PATH      : "../qt-4.8.2" ;
+path-constant BOOST_PATH   : "../boost_1_51_0" ;
+path-constant OPENSSL_PATH : "../openssl_1_0_1" ;
 
 using qt : $(QT_PATH) ;
 
 use-project /boost/ : $(BOOST_PATH) ;
+use-project zlib : ./zlib ;
 
 if [ os.name ] = NT
 {
@@ -55,7 +56,7 @@ project newsflash
     <threading>multi
    ;
 
-build-project zlib ;
+
 build-project engine ;
 #build-project gui ;
 

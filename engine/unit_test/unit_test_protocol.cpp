@@ -21,7 +21,9 @@
 //  THE SOFTWARE.
 
 #include <boost/test/minimal.hpp>
+#include "unit_test_common.h"
 #include "../protocmd.h"
+#include "../protocol.h"
 
 struct string_input {
     const std::string out;
@@ -222,12 +224,13 @@ void unit_test_cmd_mode_reader()
 
 void unit_test_cmd_body()
 {
-    using buffer_t = std::vector<char>;
+    typedef std::vector<char> buffer_t;
+    typedef nntp::cmd_body<buffer_t> command_t;
 
     {
         buffer_t buff(1024);
 
-        nntp::cmd_body<buffer_t> cmd {buff, "1234"};
+        command_t cmd {buff, "1234"};
 
         test_failure(cmd, "BODY 1234", "333 foobar\r\n");
         test_failure(cmd, "BODY 1234", "223 FOOBAR\r\n");
@@ -237,7 +240,7 @@ void unit_test_cmd_body()
     {
         buffer_t buff(1024);
 
-        nntp::cmd_body<buffer_t> cmd {buff, "1234"};
+        command_t cmd {buff, "1234"};
 
         test_success(&cmd, "BODY 1234", "420 no article with that message id\r\n", 420);
         test_success(&cmd, "BODY 1234", "222 body follows\r\n.\r\n", 222);
@@ -247,6 +250,25 @@ void unit_test_cmd_body()
         BOOST_REQUIRE(cmd.size == 6);
         BOOST_REQUIRE(cmd.offset == 18);
         BOOST_REQUIRE(!std::strncmp(&buff[cmd.offset], "foobar", cmd.size));
+    }
+
+    {
+        buffer_t buff(20);
+
+        command_t cmd {buff, "1234"};
+
+        const char* body = 
+           "assa sassa mandelmassa\r\n"
+           "second line of data\r\n"
+           "foobar\r\n"
+           ".\r\n";
+
+        std::string str("222 body follows\r\n");
+        str.append(body);
+        test_success(&cmd, "BODY 1234", str.c_str(), 222);
+
+        BOOST_REQUIRE(cmd.offset == std::strlen("222 body follows\r\n"));
+        BOOST_REQUIRE(cmd.size   == std::strlen(body));
     }
 }
 
@@ -260,6 +282,97 @@ void unit_test_cmd_xzver()
 
 }
 
+void unit_test_cmd_list()
+{
+    typedef std::vector<char> buffer_t;
+    typedef nntp::cmd_list<buffer_t> command_t;
+
+    // test success
+    {
+        buffer_t buff(1024);
+        command_t cmd {buff};
+
+        test_success(&cmd, "LIST", "215 list of newsgroups follows\r\n.\r\n", 215);
+        BOOST_REQUIRE(cmd.size == 0);
+
+        test_success(&cmd, "LIST", 
+            "215 list of newsgroups follows\r\n"
+            "misc.test 3002322 3000234 y\r\n"            
+            "comp.risks 442001 441099 m\r\n"
+            ".\r\n", 
+            215);
+
+        BOOST_REQUIRE(cmd.size == 
+            std::strlen("misc.test 3002322 3000234 y\r\n"
+                        "comp.risks 442001 441099 m\r\n"));
+    }    
+}
+
+struct test_sequence {
+    std::deque<std::string> commands;
+    std::deque<std::string> responses;
+
+    size_t recv(void* buff, size_t capacity)
+    {
+        BOOST_REQUIRE(!responses.empty());
+        auto next = responses[0];
+        next.append("\r\n");
+        BOOST_REQUIRE(capacity <= next.size());
+        std::memcmp(buff, &next[0], next.size());
+        responses.pop_front();
+
+        return next.size();
+    }
+
+    void send(const void* data, size_t len)
+    {
+        BOOST_REQUIRE(!commands.empty());
+        auto next = commands[0];
+        next.append("\r\n");
+        BOOST_REQUIRE(next.size() == len);
+        BOOST_REQUIRE(!std::memcmp(&next[0], data, len));
+    }
+
+};
+
+void unit_test_protocol()
+{
+    {
+        test_sequence test;
+        test.responses = 
+            {
+                "400 service temporarily unavailable",
+                "502 service permanently unavailable",
+                "5555 foobar"
+            };
+
+        newsflash::protocol proto;
+        REQUIRE_EXCEPTION(proto.connect());
+        REQUIRE_EXCEPTION(proto.connect());
+        REQUIRE_EXCEPTION(proto.connect());
+    }
+
+    {
+        test_sequence test;
+        test.responses = 
+            {
+                "200 welcome posting allowed",
+                "101 capabilities list follows",
+                   "MODE-READER",
+                   "XZVER",
+                   "IHAVE",
+                   "."
+            };
+        test.commands = 
+            {
+                "CAPABILITIES"
+            };
+
+        newsflash::protocol proto;
+        proto.connect();
+    }
+}
+
 int test_main(int, char* [])
 {
     unit_test_scan_response();
@@ -270,9 +383,12 @@ int test_main(int, char* [])
     unit_test_cmd_capabilities();
     unit_test_cmd_mode_reader();
     unit_test_cmd_group();
-    unit_test_cmd_body();
+//    unit_test_cmd_body();
     unit_test_cmd_xover();
     unit_test_cmd_xzver();
+  //  unit_test_cmd_list();
+
+    unit_test_protocol();
 
     return 0;
 }
