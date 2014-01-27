@@ -42,7 +42,6 @@ namespace nntp
     const code_t AUTHENTICATION_REQUIRED = 480;
     const code_t AUTHENTICATION_ACCEPTED = 281;
     const code_t PASSWORD_REQUIRED       = 381;
-    const code_t SERVICE_UNAVAILABLE     = 502;
 
     // adapters for contiguous std types that can be used as a buffer.
     inline 
@@ -271,7 +270,7 @@ namespace nntp
             assert(ret.first <= ret.second);
 
             size_t data_total  = ret.second;
-            size_t body_offset = ret.first;
+            size_t body_offset = ret.first + 2;
             size_t bodylen     = detail::find_body(((char*)buffer_data(body)) + body_offset,
                 data_total - body_offset);
 
@@ -308,6 +307,10 @@ namespace nntp
             // we don't send anything here. just receive response.
             return cmd::transact("", {200, 201, 400, 502});
         }
+        enum : code_t { 
+            SERVICE_TEMPORARILY_UNAVAILABLE = 400,
+            SERVICE_PERMANENTLY_UNAVAILABLE = 502
+        };
     };
 
     // send session terminating QUIT command. 
