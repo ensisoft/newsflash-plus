@@ -1,0 +1,28 @@
+{
+	"folders":
+	[
+		{
+			"path": "engine"
+		},
+        {
+            "path": "engine/unit_test"
+        }
+	],
+    "build_systems":
+    [
+       {
+          "name": "bjam",
+          "cmd": ["bjam"]
+       }
+    ],
+    "settings":
+    {
+        "sublimeclang_options":
+        [
+            "-std=c++11",
+            "-I./",
+            "-I../",
+            "-I../boost_1_51_0"
+        ]
+    }
+}
