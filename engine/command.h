@@ -32,10 +32,10 @@ namespace newsflash
             body, xover, list
         };
         type kind;
-        std::string group;
+        std::string groups[3];
         std::string arg1;
         std::string arg2;
-        size_t cmdid;
+        size_t id;
         size_t taskid;
         size_t size; // expected buffer size
     };

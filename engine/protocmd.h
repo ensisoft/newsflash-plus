@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include <boost/algorithm/string/trim.hpp>
 #include <zlib/zlib.h>
 #include <algorithm>
 #include <functional>
@@ -119,10 +120,27 @@ namespace nntp
             return 0;
         }
 
+        struct trailing_comment {
+            std::string str;
+        };
+
         template<typename T>
         void extract_value(std::stringstream& ss, T& value)
         {
             ss >> std::skipws >> value;
+        }
+
+        inline
+        void extract_value(std::stringstream& ss, std::string& str)
+        {
+            ss >> std::skipws >> str;
+        }
+
+        inline
+        void extract_value(std::stringstream& ss, trailing_comment& comment)
+        {
+            std::getline(ss, comment.str);
+            boost::algorithm::trim(comment.str);
         }
 
         template<typename Value>
@@ -192,7 +210,14 @@ namespace nntp
         void send(const std::string& cmd)
         {
             std::string str(cmd);
-            cmd_log(str);
+            if (cmd_log)
+            {
+                if (cmd.find("AUTHINFO PASS") != std::string::npos)
+                     cmd_log("AUTHINFO PASS *********");
+                else if (cmd.find("AUTHINFO USER") != std::string::npos)
+                     cmd_log("AUTHINFO USER xxxxxxxxx");
+                else cmd_log(str);
+            }
 
             str.append("\r\n");
             cmd_send(str.c_str(), str.size());
@@ -233,21 +258,27 @@ namespace nntp
                 send(cmd);
 
             std::string response(512, 0);
-            if (!recv(detail::find_response, response).first)
-                throw nntp::exception("no message was found within the buffer");
+
+            const auto& ret = recv(detail::find_response, response);
+            if (!ret.first)
+                throw nntp::exception("no response was found within the response buffer");
+
+            response.resize(ret.first-2);
+            if (cmd_log)
+                cmd_log(response);
 
             code_t status = 0;
             if (!detail::scan_response(response, status) || 
                 !detail::check_code(status, allowed_codes))
-                throw nntp::exception("incorrect " + cmd + " response");
+                throw nntp::exception("incorrect command response");
 
             return status;
         }        
 
         // perform send/recv transaction. read the response body into the body Buffer
         template<typename Buffer>
-        std::tuple<code_t, size_t, size_t> transact(
-            const std::string& cmd, const code_list_t& allowed_codes, Buffer& body)
+        std::tuple<code_t, size_t, size_t> transact(const std::string& cmd, 
+            const code_list_t& allowed_codes, const code_list_t& success_codes, Buffer& body)
         {
             send(cmd);
 
@@ -255,26 +286,34 @@ namespace nntp
 
             const auto& ret = recv(detail::find_response, buffer_data(body), buffer_capacity(body));
             if (!ret.first)
-                throw nntp::exception("no message was found within the buffer");
+                throw nntp::exception("no response was found within the response buffer");
 
-            const std::string response((char*)buffer_data(body), ret.first);
+            const std::string response((char*)buffer_data(body), ret.first-2);
+
+            if (cmd_log)
+                cmd_log(response);
 
             code_t status = 0;
             if (!detail::scan_response(response, status) ||
                 !detail::check_code(status, allowed_codes))
-                throw nntp::exception("incorrect " + cmd + " response");
+                throw nntp::exception("incorrect command response");
 
-            if (status / 100 != 2)
+            if (!detail::check_code(status, success_codes))
                 return std::make_tuple(status, 0, 0);
 
             assert(ret.first <= ret.second);
 
             size_t data_total  = ret.second;
-            size_t body_offset = ret.first + 2;
-            size_t bodylen     = detail::find_body(((char*)buffer_data(body)) + body_offset,
-                data_total - body_offset);
+            size_t body_offset = ret.first; 
 
-            while (!bodylen)
+            // get a pointer to the start of the buffer
+            // and skip the response header. 
+            char* body_ptr = static_cast<char*>(buffer_data(body));
+
+            // check if we've already have the full body in the buffer
+            size_t body_len = detail::find_body(body_ptr + body_offset, data_total - body_offset);
+
+            while (!body_len)
             {
                 const size_t capacity = buffer_capacity(body);
                 size_t available = capacity - data_total;
@@ -282,15 +321,15 @@ namespace nntp
                 {
                     available = capacity;
                     grow_buffer(body, capacity * 2);
+                    body_ptr = static_cast<char*>(buffer_data(body));
                 }
-                const auto& ret = recv(detail::find_body, 
-                    ((char*)buffer_data(body)) + data_total, available);
+                const auto& ret = recv(detail::find_body, body_ptr + data_total, available);
 
-                data_total += ret.first;
-                bodylen     = ret.second;
+                data_total += ret.second;
+                body_len    = ret.first;
             }
 
-            return std::make_tuple(status, body_offset, bodylen-3);
+            return std::make_tuple(status, body_offset, data_total - body_offset - 3);  // omit .\r\n from the body length
         }
 
     };
@@ -351,7 +390,7 @@ namespace nntp
     // send AUTHINFO USER to authenticate the current session.
     // this should only be sent when 480 response requesting
     // authentication is received.
-    // 218 authentication accepted
+    // 281 authentication accepted
     // 381 password required
     // 481 authentication failed/rejected
     // 482 authentication command issued out of sequence
@@ -383,21 +422,7 @@ namespace nntp
 
         code_t transact()
         {
-            const std::string& str {"AUTHINFO PASS " + pass + "\r\n" };
-
-            cmd_log("AUTHINFO PASS *******");
-            cmd_send(str.c_str(), str.size());
-
-            std::string response(512, 0);
-            if (!recv(detail::find_response, response).first)
-                throw nntp::exception("no response found");
-
-            code_t code = 0;
-            if (!detail::scan_response(response, code) || 
-                !detail::check_code(code, {281, 381, 481, 482, 502}))
-                throw exception("incorrect AUTHINFO PASS  response");
-
-            return code;
+            return cmd::transact("AUTHINFO PASS " + pass, {281, 381, 481, 482, 502});
         }
     };
 
@@ -423,13 +448,20 @@ namespace nntp
             send("GROUP " + group);
 
             std::string response(512, 0);
-            if (!recv(detail::find_response, response).first)
+
+            const auto& ret = recv(detail::find_response, response);
+            if (!ret.first)
                 throw nntp::exception("no response found");
+
+            response.resize(ret.first-2);
+
+            if (cmd_log)
+                cmd_log(response);
 
             code_t code = 0;
             const bool success = detail::scan_response(response, code, count, low, high);
             if (((code != 211) && (code != 411)) || (code == 211 && !success))
-                throw exception("incorrect GROUP response");
+                throw exception("incorrect command response");
 
             return code;
         }
@@ -443,6 +475,8 @@ namespace nntp
     // the list of returned capabilities and set the appropriate boolean flags
     // to indicate the existence of said capability.
     // 101 capability list follows.
+    // 480 authentication required
+    // 
     struct cmd_capabilities : cmd {
 
         enum : code_t { SUCCESS = 101 };
@@ -456,33 +490,30 @@ namespace nntp
 
         code_t transact()
         {
-            send("CAPABILITIES");
-
             std::string response(1024, 0);
-            if (!recv(detail::find_body, response).first)
-                throw nntp::exception("no response found");
 
-            const auto& lines  = detail::split_lines(response);
-            const auto& status = lines.at(0);
+            size_t offset = 0;
+            size_t size   = 0;
+            code_t code   = 0;
 
-            code_t code = 0;
-            if (!detail::scan_response(status, code) ||
-                !detail::check_code(code, {101}))
-                throw nntp::exception("incorrect CAPABILITIES response");
-
-            for (size_t i=1; i<lines.size(); ++i)
+            std::tie(code, offset, size) = cmd::transact("CAPABILITIES", {101, 480}, {101}, response);
+            if (code == SUCCESS)
             {
-                const auto& cap = lines[i];
-                if (cap.find("MODE-READER") != std::string::npos)
-                    has_mode_reader = true;
-                else if (cap.find("XZVER") != std::string::npos)
-                    has_xzver = true;
-                else if (cap.find("COMPRESS") != std::string::npos && cap.find("GZIP") != std::string::npos)
-                    has_compress_gzip = true;
+                const auto& lines = detail::split_lines(response);
+
+                for (size_t i=1; i<lines.size(); ++i)
+                {
+                    const auto& cap = lines[i];
+                    if (cap.find("MODE-READER") != std::string::npos)
+                        has_mode_reader = true;
+                    else if (cap.find("XZVER") != std::string::npos)
+                        has_xzver = true;
+                    else if (cap.find("COMPRESS") != std::string::npos && cap.find("GZIP") != std::string::npos)
+                        has_compress_gzip = true;
+                }
             }
             return code;
         }
-        
     };
 
     // request a list of valid newsgroups and associated information.
@@ -502,7 +533,7 @@ namespace nntp
         code_t transact()
         {
             code_t status = 0;
-            std::tie(status, offset, size) = cmd::transact("LIST", {215}, buffer);
+            std::tie(status, offset, size) = cmd::transact("LIST", {215}, {215}, buffer);
 
             return status;
         }
@@ -524,6 +555,7 @@ namespace nntp
         const std::string article;        
         size_t offset;
         size_t size;
+        std::string reason;
 
         cmd_body(Buffer& buff, std::string id) : buffer(buff), article(std::move(id)),
             offset(0), size(0)
@@ -532,8 +564,20 @@ namespace nntp
         code_t transact()
         {
             code_t status = 0;
-            std::tie(status, offset, size) = cmd::transact("BODY " + article, {222, 420, 423, 412}, buffer);
+            std::tie(status, offset, size) = cmd::transact("BODY " + article, {222, 420, 423, 412}, {222}, buffer);
+            if (status != SUCCESS)
+            {
+                const char* data = static_cast<const char*>(buffer_data(buffer));
+                const auto size  = buffer_capacity(buffer);
 
+                const auto len = detail::find_response(data, size);
+                assert(len);
+
+                const std::string response(data, len);
+                detail::trailing_comment comment;
+                detail::scan_response(response, status, comment);
+                reason = comment.str;
+            }
             return status;
         }
     };
@@ -561,13 +605,13 @@ namespace nntp
 
             const auto& ret = cmd::recv(detail::find_response, buffer_data(body), buffer_capacity(body));
             if (!ret.second)
-                throw nntp::exception("no message was found within the buffer");
+                throw nntp::exception("no response was found within the buffer");
 
             const std::string response((char*)buffer_data(body), ret.first);
             code_t status = 0;
             if (!detail::scan_response(response, status) ||
                 !detail::check_code(status, {224, 412, 420, 502}))
-                throw nntp::exception("incorrect XZVER response");
+                throw nntp::exception("incorrect command response");
 
             const size_t body_offset = ret.first;
             const size_t data_total  = ret.second;
@@ -632,7 +676,7 @@ namespace nntp
         code_t transact()
         {
             code_t status = 0;
-            std::tie(status, offset, size) = cmd::transact("XOVER " + first + "-" + last, {224, 412, 420, 502}, buffer);                
+            std::tie(status, offset, size) = cmd::transact("XOVER " + first + "-" + last, {224, 412, 420, 502}, {224}, buffer);                
 
             return status;
         }

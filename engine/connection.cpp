@@ -27,6 +27,7 @@
 #include "sslsocket.h"
 #include "socketapi.h"
 #include "logging.h"
+#include "buffer.h"
 
 namespace {
     class conn_exception : public std::exception 
@@ -198,28 +199,58 @@ void connection::execute()
 
     try
     {
-        switch (cmd.kind)
+        response resp;
+        resp.stat   = response::status::unavailable;
+        resp.cmdid  = cmd.id;
+        resp.taskid = cmd.taskid;
+
+        bool group_available = true;
+
+        for (const auto& group : cmd.groups)
         {
-            case command::type::body:
-            {
-                //proto_.change_group(cmd.group);
-               //proto_.download_article(cmd.)
-            }
-            break;
-
-            case command::type::xover:
-            {
-                proto_.change_group(cmd.group);
-
-            }
-            break;
-
-            case command::type::list:
-            {
-
-            }
-            break;
+            group_available = proto_.change_group(group);
+            if (group_available)
+                break;
         }
+        if (!group_available)
+        {
+            LOG_W("Command uses newsgroups that are not available on this server.");
+        }
+        else
+        {
+            resp.buff = std::make_shared<buffer>();
+            resp.buff->allocate(cmd.size);
+            buffer* ptr = resp.buff.get();
+
+            switch (cmd.kind)
+            {
+                case command::type::body:
+                {
+                    const auto ret = proto_.download_article(cmd.arg1, *ptr);
+                    if (ret == protocol::status::success)
+                        resp.stat = response::status::success;
+                    else if (ret == protocol::status::unavailable)
+                        resp.stat = response::status::unavailable;
+                    else if (ret == protocol::status::dmca)
+                        resp.stat = response::status::dmca;
+                    else
+                        assert(!"weird command status");
+                }
+                break;
+
+                case command::type::xover:
+                {
+                }
+                break;
+
+                case command::type::list:
+                {
+                }
+            }
+        }
+        LOG_D("Command done succesfully!");
+
+        responses_.push(resp);
     }
     catch (const std::exception& e)
     {

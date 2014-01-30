@@ -22,6 +22,7 @@
 
 //#include <newsflash/config.h>
 
+#include <boost/algorithm/string/case_conv.hpp>
 #include <string>
 #include "protocmd.h"
 #include "protocol.h"
@@ -31,7 +32,7 @@ namespace newsflash
 {
 
 protocol::protocol() 
-    : has_compress_gzip_(false), has_xzver_(false), is_compressed_(false)
+    : has_compress_gzip_(false), has_xzver_(false), has_mode_reader_(false), is_compressed_(false)
 {}
 
 protocol::~protocol()
@@ -41,18 +42,33 @@ void protocol::connect()
 {
     has_compress_gzip_ = false;
     has_xzver_         = false;
+    has_mode_reader_   = false;    
     is_compressed_     = false;
-    group_.clear();
+    group_             = "";
 
-    auto code = transact(nntp::cmd_welcome{});
-    if (code == nntp::cmd_welcome::SERVICE_TEMPORARILY_UNAVAILABLE)
+    auto ret = transact(nntp::cmd_welcome{});
+
+    if (ret == nntp::cmd_welcome::SERVICE_TEMPORARILY_UNAVAILABLE)
         throw exception("service temporarily unavailable", exception::code::service_temporarily_unavailable);
-    else if (code == nntp::cmd_welcome::SERVICE_PERMANENTLY_UNAVAILABLE)
+    else if (ret == nntp::cmd_welcome::SERVICE_PERMANENTLY_UNAVAILABLE)
         throw exception("service permanently unavailable", exception::code::service_permanently_unavailable);
     
-    querycaps();
-    
-    transact(nntp::cmd_mode_reader{});
+    // common nntp extensions (rfc980) doesn't actually seem to specify
+    // when the request to authenticate can happen. Presumably it could happen
+    // at any command, but in practice it seems that the session is requested 
+    // to be authenticated only at the start.
+
+    nntp::cmd_capabilities cmd;
+    transact(&cmd);
+
+    has_compress_gzip_ = cmd.has_compress_gzip;
+    has_xzver_         = cmd.has_xzver;
+    has_mode_reader_   = cmd.has_mode_reader;
+
+    if (has_mode_reader_)
+    {
+        transact(nntp::cmd_mode_reader{});
+    }
 }
 
 
@@ -97,18 +113,24 @@ bool protocol::query_group(const std::string& groupname, groupinfo& info)
     return true;
 }
 
-bool protocol::download_article(const std::string& article, buffer& buff)
+protocol::status protocol::download_article(const std::string& article, buffer& buff)
 { 
     typedef nntp::cmd_body<buffer> command_t;
 
     command_t cmd {buff, article};
 
     const auto code = transact(&cmd);
-    if (code != command_t::SUCCESS)
-        return false;
+    if (code == command_t::SUCCESS)
+    {
+        buff.configure(cmd.size, cmd.offset);
+        return status::success;
+    }
 
-    buff.configure(cmd.size, cmd.offset);
-    return true;
+    const std::string& reason = boost::algorithm::to_lower_copy(cmd.reason);
+    if (reason.find("dmca") != std::string::npos)
+        return status::dmca;
+
+    return status::unavailable;
 }
 
 bool protocol::download_overview(const std::string& first, const std::string& last, buffer& buff)
@@ -124,6 +146,7 @@ bool protocol::download_overview(const std::string& first, const std::string& la
 
     typedef nntp::cmd_xzver<buffer> xzver_t;        
     typedef nntp::cmd_xover<buffer> xover_t;
+
 
     if (is_compressed_)
     {
@@ -162,7 +185,7 @@ bool protocol::download_list(buffer& buff)
     return false;
 }
 
-int protocol::authenticate()
+void protocol::authenticate()
 {
     std::string username;
     std::string password;
@@ -183,25 +206,8 @@ int protocol::authenticate()
 
         ret = pass.transact();
     }
-    return ret;
+    if (ret != nntp::AUTHENTICATION_ACCEPTED)
+        throw exception("authentication failed", exception::code::authentication_failed);    
 }
-
-int protocol::querycaps()
-{
-    nntp::cmd_capabilities cmd;
-
-    cmd.cmd_recv = on_recv;
-    cmd.cmd_send = on_send;
-    cmd.cmd_log  = on_log;
-
-    const auto ret = cmd.transact();
-    if (ret == nntp::cmd_capabilities::SUCCESS)
-    {
-        has_compress_gzip_ = cmd.has_compress_gzip;
-        has_xzver_ = cmd.has_xzver;
-    }
-    return ret;
-}
-
 
 } // newsflash

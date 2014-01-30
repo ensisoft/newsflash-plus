@@ -28,6 +28,7 @@
 #include <functional>
 #include <string>
 #include "protocmd.h"
+#include "nntp.h"
 
 namespace newsflash
 {
@@ -105,10 +106,14 @@ namespace newsflash
 
         bool query_group(const std::string& groupname, groupinfo& info);
 
+        enum class status {
+            success, unavailable, dmca
+        };
+
         // download the contents of the article identified by article number or id.
         // returns true if article was downloaded succesfully, false if 
         // it was no longer available.
-        bool download_article(const std::string& article, buffer& buff);
+        status download_article(const std::string& article, buffer& buff);
 
         // download overview overview data in the first last range (inclusive)        
         // first and last are article numbers
@@ -128,14 +133,7 @@ namespace newsflash
             auto ret = cmd->transact();
             if (ret == nntp::AUTHENTICATION_REQUIRED)
             {
-                ret = authenticate();
-                if (ret != nntp::AUTHENTICATION_ACCEPTED)
-                    throw exception("authentication failed", exception::code::authentication_failed);
-
-                // ask for caps again cause they might be reported
-                // differently now that we're authenticated.
-                querycaps();
-
+                authenticate();
                 ret = cmd->transact();
             }
             return ret;
@@ -147,12 +145,12 @@ namespace newsflash
             return transact(&cmd);
         }    
 
-        int authenticate();
-        int querycaps();
+        void authenticate();
 
 
         bool has_compress_gzip_;
         bool has_xzver_;
+        bool has_mode_reader_;
         bool is_compressed_;
         std::string group_; // selected group
 

@@ -19,8 +19,10 @@ unit-test unit_test_protocol : unit_test_protocol.cpp ;
 unit-test unit_test_buffer : unit_test_buffer.cpp ;
 
 unit-test unit_test_threading : unit_test_threading.cpp ;
+
 unit-test unit_test_bigfile   : unit_test_bigfile.cpp ;
 
+unit-test unit_test_connection : unit_test_connection.cpp ;
 
 unit-test unit_test_tcpsocket : unit_test_tcpsocket.cpp ;
 unit-test unit_test_sslsocket : unit_test_sslsocket.cpp ;

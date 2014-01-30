@@ -24,6 +24,7 @@
 #include "unit_test_common.h"
 #include "../protocmd.h"
 #include "../protocol.h"
+#include "../buffer.h"
 
 struct string_input {
     const std::string out;
@@ -135,13 +136,26 @@ void unit_test_scan_response()
 
     {
         int a;
-        BOOST_REQUIRE(!nntp::detail::scan_response("asdga", a));
+        std::string s;
+        BOOST_REQUIRE(nntp::detail::scan_response("233 welcome posting allowed", a, s));
+        BOOST_REQUIRE(a == 233);
+        BOOST_REQUIRE(s == "welcome");
     }
 
     {
-        // int a;
-        // BOOST_REQUIRE(!nntp::detail::scan_response("233s 23", a));
+        int a;
+        nntp::detail::trailing_comment c;
+        BOOST_REQUIRE(nntp::detail::scan_response("233 welcome posting allowed", a, c));
+        BOOST_REQUIRE(a == 233);
+        BOOST_REQUIRE(c.str == "welcome posting allowed");
     }
+
+    {
+        int a;
+        BOOST_REQUIRE(!nntp::detail::scan_response("asdga", a));
+    }
+
+
 }
 
 void unit_test_cmd_welcome()
@@ -268,7 +282,8 @@ void unit_test_cmd_body()
         test_success(&cmd, "BODY 1234", str.c_str(), 222);
 
         BOOST_REQUIRE(cmd.offset == std::strlen("222 body follows\r\n"));
-        BOOST_REQUIRE(cmd.size   == std::strlen(body));
+        BOOST_REQUIRE(cmd.size   == std::strlen(body) - 3);
+        BOOST_REQUIRE(buff.size() >= cmd.size);
     }
 }
 
@@ -311,14 +326,16 @@ void unit_test_cmd_list()
 struct test_sequence {
     std::deque<std::string> commands;
     std::deque<std::string> responses;
+    std::string username;
+    std::string password;
 
     size_t recv(void* buff, size_t capacity)
     {
         BOOST_REQUIRE(!responses.empty());
         auto next = responses[0];
         next.append("\r\n");
-        BOOST_REQUIRE(capacity <= next.size());
-        std::memcmp(buff, &next[0], next.size());
+        BOOST_REQUIRE(capacity >= next.size());
+        std::memcpy(buff, &next[0], next.size());
         responses.pop_front();
 
         return next.size();
@@ -331,63 +348,258 @@ struct test_sequence {
         next.append("\r\n");
         BOOST_REQUIRE(next.size() == len);
         BOOST_REQUIRE(!std::memcmp(&next[0], data, len));
+        commands.pop_front();
+    }
+
+    void authenticate(std::string& user, std::string& pass)
+    {
+        user = username;
+        pass = password;
     }
 
 };
 
 void unit_test_protocol()
 {
+    // test failing handshakes
     {
         test_sequence test;
         test.responses = 
-            {
-                "400 service temporarily unavailable",
-                "502 service permanently unavailable",
-                "5555 foobar"
-            };
+        {
+            "400 service temporarily unavailable",
+            "502 service permanently unavailable",
+            "5555 foobar"
+        };
 
         newsflash::protocol proto;
+        proto.on_recv = std::bind(&test_sequence::recv, &test, std::placeholders::_1, std::placeholders::_2);
+        proto.on_send = std::bind(&test_sequence::send, &test,std::placeholders::_1, std::placeholders::_2);
+        proto.on_log  = cmd_log;
+
+
         REQUIRE_EXCEPTION(proto.connect());
         REQUIRE_EXCEPTION(proto.connect());
         REQUIRE_EXCEPTION(proto.connect());
     }
 
+    // test authencation
     {
         test_sequence test;
-        test.responses = 
+        test.password = "pass123";
+        test.username = "user123";
+
+        newsflash::protocol proto;
+        proto.on_recv = std::bind(&test_sequence::recv, &test, std::placeholders::_1, std::placeholders::_2);
+        proto.on_send = std::bind(&test_sequence::send, &test, std::placeholders::_1, std::placeholders::_2);
+        proto.on_authenticate = std::bind(&test_sequence::authenticate, &test, std::placeholders::_1, std::placeholders::_2);
+        proto.on_log = cmd_log;
+
+        // rejected authentication
+        {
+            test.responses = 
+            {
+                "200 welcome posting allowed",
+                "480 authentication required",
+                "481 authentication rejected"
+            };
+
+            test.commands = 
+            {
+                "CAPABILITIES",
+                "AUTHINFO USER user123"
+            };
+            REQUIRE_EXCEPTION(proto.connect());
+        }
+
+        // rejected authentication
+        {
+
+            test.responses = 
+            {
+                "200 welcome posting allowed",
+                "480 authenticdation required",
+                "381 password required",
+                "481 authentication rejected"
+            };
+            test.commands =
+            {
+                "CAPABILITIES",
+                "AUTHINFO USER user123",
+                "AUTHINFO PASS pass123",
+            };
+            REQUIRE_EXCEPTION(proto.connect());
+        }
+        
+        // rejected authentication
+        {
+            test.responses = 
             {
                 "200 welcome posting allowed",
                 "101 capabilities list follows",
-                   "MODE-READER",
-                   "XZVER",
-                   "IHAVE",
-                   "."
+                    "MODE-READER",
+                    ".",
+                "200 posting allowed",
+                "480 authentication required",
+                "481 authentication rejected"
             };
-        test.commands = 
+            test.commands = 
             {
-                "CAPABILITIES"
+                "CAPABILITIES",
+                "MODE READER",
+                "BODY <1>",
+                "AUTHINFO USER user123"
             };
+            newsflash::buffer buff;
+            buff.allocate(1024);
+
+            proto.connect();
+            REQUIRE_EXCEPTION(proto.download_article("<1>", buff));
+        }
+
+        // accepted authentication
+        {
+            test.responses =
+            {
+                "200 welcome posting allowed",
+                "480 authentication required",
+                "281 authentication accepted",                
+                "101 capabilities list follows",
+                    ".",
+                "411 no such newsgroup",
+                "205 goodbye"
+            };
+            test.commands =
+            {
+                "CAPABILITIES",
+                "AUTHINFO USER user123",                
+                "CAPABILITIES",
+                "GROUP alt.foo.bar",
+                "QUIT"
+            };
+            newsflash::buffer buff;
+            buff.allocate(100);
+
+            proto.connect();
+            BOOST_REQUIRE(!proto.change_group("alt.foo.bar"));
+            proto.quit();
+        }
+
+        {
+            test.responses = 
+            {
+                "200 welcome posting allowed",
+                "480 authentication required",
+                "381 password required",
+                "281 authentication accepted",
+                "101 capabilities list follows",
+                    ".",
+                "411 no such newsgroup",
+                "205 goodbye"
+            };
+            test.commands = 
+            {
+                "CAPABILITIES",
+                "AUTHINFO USER user123",
+                "AUTHINFO PASS pass123",
+                "CAPABILITIES",
+                "GROUP alt.foo.bar",
+                "QUIT"
+            };
+            newsflash::buffer buff;
+            buff.allocate(100);
+
+            proto.connect();
+            BOOST_REQUIRE(!proto.change_group("alt.foo.bar"));
+            proto.quit();
+        }
+
+    }
+
+
+    // test api functions to request data from the server
+    {
+        test_sequence test;
+        test.responses = 
+        {
+            "200 welcome posting allowed",
+            "101 capabilities list follows",
+                "MODE-READER",
+                "XZVER",
+                "IHAVE",
+                ".",
+            "200 posting allowed",
+            "411 no such newsgroup",
+            "211 3 1 4 blah.bluh",
+            "211 3 1 4 test.test",
+            "420 dmca takedown",
+            "420 no such article",
+            "222 body follows",
+               "foobarlasg",
+               "kekekeke",
+               ".",
+            "215 list of newsgroups follows",
+               "misc.test 3 4 y",
+               "comp.risks 4 5 m",
+               ".",
+           "205 goodbye"
+        };
+        test.commands = 
+        {
+            "CAPABILITIES",
+            "MODE READER",
+            "GROUP foo.bar.baz",
+            "GROUP blah.bluh",
+            "GROUP test.test",
+            "BODY <1>",
+            "BODY <2>",
+            "BODY <3>",
+            "LIST",
+            "QUIT"
+        };
 
         newsflash::protocol proto;
+        proto.on_recv = std::bind(&test_sequence::recv, &test, std::placeholders::_1, std::placeholders::_2);
+        proto.on_send = std::bind(&test_sequence::send, &test, std::placeholders::_1, std::placeholders::_2);
+        proto.on_log  = cmd_log;
+
         proto.connect();
+        BOOST_REQUIRE(!proto.change_group("foo.bar.baz"));
+        BOOST_REQUIRE(proto.change_group("blah.bluh"));
+
+        newsflash::protocol::groupinfo info {0};
+        BOOST_REQUIRE(proto.query_group("test.test", info));
+        BOOST_REQUIRE(info.high_water_mark == 4);
+        BOOST_REQUIRE(info.low_water_mark == 1);
+        BOOST_REQUIRE(info.article_count == 3);
+
+        newsflash::buffer buff;
+        buff.allocate(100);
+
+        BOOST_REQUIRE(proto.download_article("<1>", buff) == newsflash::protocol::status::dmca);
+        BOOST_REQUIRE(proto.download_article("<2>", buff) == newsflash::protocol::status::unavailable);
+        BOOST_REQUIRE(proto.download_article("<3>", buff) == newsflash::protocol::status::success);
+
+        BOOST_REQUIRE(proto.download_list(buff));
+
+        proto.quit();
     }
+
+
 }
 
 int test_main(int, char* [])
 {
     unit_test_scan_response();
     unit_test_find_response();
-
     unit_test_cmd_welcome();
     unit_test_cmd_auth();
     unit_test_cmd_capabilities();
     unit_test_cmd_mode_reader();
     unit_test_cmd_group();
-//    unit_test_cmd_body();
+    unit_test_cmd_body();
     unit_test_cmd_xover();
     unit_test_cmd_xzver();
-  //  unit_test_cmd_list();
-
+    unit_test_cmd_list();
     unit_test_protocol();
 
     return 0;

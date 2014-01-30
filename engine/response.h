@@ -23,6 +23,7 @@
 
 #pragma once
 
+#include <memory>
 #include <string>
 #include "queue.h"
 
@@ -32,12 +33,12 @@ namespace newsflash
 
     struct response {
         enum class status {
-            success, unavailable
+            success, unavailable, dmca
         };
         status stat;
         size_t cmdid;
         size_t taskid;
-        buffer* buff;
+        std::shared_ptr<buffer> buff;
     };
 
     typedef queue<response> resqueue;

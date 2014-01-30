@@ -103,7 +103,7 @@ namespace newsflash
         void configure(size_t size, size_t offset)
         {
             assert(offset + size <= capacity_);
-            assert(offset <= 0);
+            assert(offset <= size);
             offset_ = offset;
             size_   = size;
         }
