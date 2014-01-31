@@ -24,9 +24,9 @@
 
 #include <newsflash/config.h>
 #if defined(WINDOWS_OS)
-#  include "native_windows_types.h"
+#  include "windows.h"
 #elif defined(LINUX_OS)
-#  include "native_linux_types.h"
+#  include "linux.h"
 #endif
 
 
