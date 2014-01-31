@@ -38,11 +38,6 @@ namespace newsflash
 
 std::ostream& get_log()
 {
-    if (!gLog.get())
-    {
-        gLog.reset(new std::ofstream);
-    }
-
     return *gLog.get();
 }
 
@@ -54,8 +49,8 @@ void begin_log_event(std::ostream& stream, logevent type, const char* file, int 
 
     stream << setw(2) << setfill('0') << timeval.hours << ":"
            << setw(2) << setfill('0') << timeval.minutes << ":"
-           << setw(2) << setfill('0') << timeval.millis;
-    stream << (char)type << ":";
+           << setw(3) << setfill('0') << timeval.millis << " ";
+    stream << (char)type << " ";
 }
 
 void end_log_event(std::ostream& stream)
@@ -70,12 +65,32 @@ void open_log(const std::string& filename)
         gLog.reset(new std::ofstream);
     }
 
+    if (filename == "clog")
+    {
+        std::ios& base = *gLog.get();
+        base.rdbuf(std::clog.rdbuf());
+    }
+    else
+    {
 #if defined(WINDOWS_OS)
-    const std::wstring& wide = utf8::decode(filename);
-    gLog->open(wide.c_str());
+        const std::wstring& wide = utf8::decode(filename);
+        gLog->open(wide.c_str());
 #else
-    gLog->open(filename.c_str());
+        gLog->open(filename.c_str());
 #endif
+    }
+}
+
+void flush_log()
+{
+    gLog->flush();
+}
+
+void close_log()
+{
+    gLog->flush();
+    gLog->close();
+    gLog.release();
 }
 
 } // newsflash

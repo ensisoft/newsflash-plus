@@ -1,4 +1,4 @@
-// Copyright (c) 2013,2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -20,27 +20,35 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
+#include <newsflash/config.h>
+
+#include <exception>
+#include <string>
 
 #pragma once
 
-#include <memory>
-#include <string>
-#include "queue.h"
-
 namespace newsflash
 {
-    class buffer;
+    class taskimpl
+    {
+    public:
+        class exception : public std::exception
+        {
+        public:
+            exception(std::string what) NOTHROW 
+                : what_(std::move(what))
+            {}                
+            const char* what() const NOTHROW // noexcept
+            {
+                return what_.c_str();
+            }
+        private:
+            const std::string what_;
 
-    struct response {
-        enum class status {
-            success, unavailable, dmca
         };
-        status stat;
-        size_t cmdid;
-        size_t taskid;
-        std::shared_ptr<buffer> buff;
+
+        virtual ~taskimpl() = default;
+
+        
     };
-
-    typedef queue<response> resqueue;
-
-} // newsflash
+}

@@ -47,14 +47,14 @@ namespace newsflash
             virtual ~message() {}
 
             // get message type/id
-            size_t id() const NOTHROW
+            size_t id() const 
             {
                 return id_;
             }
 
             // cast to the payload type
             template<typename T>
-            const T& as() const NOTHROW
+            const T& as() const
             {
                 const void* ptr = get_if(typeid(T));
 
@@ -65,7 +65,7 @@ namespace newsflash
 
             // cast to the const payload type
             template<typename T>
-            T& as() NOTHROW
+            T& as()
             {
                 void* ptr = get_if(typeid(T));
 
@@ -76,7 +76,7 @@ namespace newsflash
 
             // test against the given type
             template<typename T>
-            bool type_test() const NOTHROW
+            bool type_test() const 
             {
                 void* ptr = get_if(typeid(T));
                 return ptr ? true : false;
@@ -94,7 +94,7 @@ namespace newsflash
 
         };
 
-        msgqueue() : head_(nullptr), tail_(nullptr), size_(0)
+        msgqueue() : size_(0), head_(nullptr), tail_(nullptr)
         {}
 
        ~msgqueue()
@@ -109,35 +109,46 @@ namespace newsflash
         // send a message to the queue and block untill
         // the message has been processed by another thread.
         template<typename T>
-        void send(size_t id, T& msg)
+        void send_back(size_t id, T& msg)
         {
             // synchronization primitives
             std::mutex m;
             std::condition_variable c;
             std::unique_lock<std::mutex> lock(m);
-
-            // spurious wakeup condition flag
             bool done = false;
 
             message* next = new send_message<T>(id, m, c, done, msg);
-
             push_back(next);
 
             c.wait(lock, [&]{ return done; });
         }
 
-        // post a new message to the queue and return.
         template<typename T>
-        void post(size_t id, const T& msg)
+        void post_front(size_t id, const T& msg)
         {
             message* next = new post_message<T>(id, msg);
+            push_front(next);
+        }
 
+        void post_front(std::unique_ptr<message>& msg)
+        {
+            message* next = msg.release();
+            push_front(next);
+        }
+
+        // post a new message to the end of the queue
+        // and return immediately.
+        template<typename T>
+        void post_back(size_t id, const T& msg)
+        {
+            message* next = new post_message<T>(id, msg);
             push_back(next);
         }
 
-        // post a new message to the queue and return.
+        // post a new message to the end of the queue
+        // and return immediately.
         template<typename T>
-        void post(size_t id, T&& msg)
+        void post_back(size_t id, T&& msg)
         {
             typedef typename std::remove_reference<T>::type non_ref_type;
 
@@ -145,13 +156,18 @@ namespace newsflash
             // an rvalue ref. if it's an lvalue we don't want to 
             // move anything out of it.
             message* next = new post_message<non_ref_type>(id, std::forward<T>(msg));
+            push_back(next);
+        }
 
+        void post_back(std::unique_ptr<message>& msg)
+        {
+            message* next = msg.release();
             push_back(next);
         }
 
         // try to get a message from the queue returning immediately.
         // returns true if message was available or otherwise false.
-        bool try_get(std::unique_ptr<message>& msg) NOTHROW
+        bool try_get_front(std::unique_ptr<message>& msg)
         {
             std::unique_lock<std::mutex> lock(mutex_);
 
@@ -164,7 +180,7 @@ namespace newsflash
         }
 
         // get a message. blocks untill a message is available.
-        std::unique_ptr<message> get() NOTHROW
+        std::unique_ptr<message> get_front()
         {
             std::unique_lock<std::mutex> lock(mutex_);
 
@@ -175,7 +191,7 @@ namespace newsflash
             return std::unique_ptr<message>(pop_head());
         }
 
-        size_t size() const NOTHROW
+        size_t size() const
         {
             std::lock_guard<std::mutex> lock(mutex_);
 
@@ -254,15 +270,12 @@ namespace newsflash
             if (head_ == nullptr)
                 tail_ = nullptr;
 
-            --size_;
-
-            if (size_ == 0)
-                event_.reset();
+            dec_size();
 
             return head;
         }
 
-        void push_back(message* m) NOTHROW
+        void push_back(message* m)
         {
             std::lock_guard<std::mutex> lock(mutex_);
             if (tail_)
@@ -274,19 +287,46 @@ namespace newsflash
             {
                 tail_ = head_ = m;
             }
-            cond_.notify_one();
-
-            ++size_;
-
-            if (size_ == 1)
-                event_.set();
+            inc_size();
         }
 
-        mutable std::mutex mutex_;
+        void push_front(message* m)
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            if (head_)
+            {
+                m->next_ = head_;
+                head_ = m;
+            }
+            else
+            {
+                tail_ = head_ = m;
+            }
+            inc_size();
+        }
+
+        void inc_size()
+        {
+            ++size_;
+            if (size_ == 1)
+                event_.set();
+
+            cond_.notify_one();
+        }
+
+        void dec_size()
+        {
+            --size_;
+            if (size_ == 0)
+                event_.reset();
+        }
+
+        mutable 
+        std::mutex mutex_;
         std::condition_variable cond_;
+        std::size_t size_;
         message* head_;
         message* tail_;
-        size_t size_;
         event event_;
     };
 

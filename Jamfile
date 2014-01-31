@@ -32,6 +32,16 @@ using qt : $(QT_PATH) ;
 use-project /boost/ : $(BOOST_PATH) ;
 use-project zlib : ./zlib ;
 
+
+# note that we don't set the C++11 flag here cause then it would cascade down to
+# python and zlib projects (which would just generate useless warnings)
+project newsflash 
+  : requirements
+    <include>../
+    <include>.
+    <threading>multi
+   ;
+
 if [ os.name ] = NT
 {
    # define openssl libraries, they have different names on win32 vs. linux
@@ -47,14 +57,6 @@ if [ os.name ] = LINUX
    lib crypto  : : <name>crypto ;
 }
 
-# note that we don't set the C++11 flag here cause then it would cascade down to
-# python and zlib projects (which would just generate useless warnings)
-project newsflash 
-  : requirements
-    <include>../
-    <include>.
-    <threading>multi
-   ;
 
 
 build-project engine ;

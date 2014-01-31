@@ -79,8 +79,17 @@ namespace newsflash
         std::function<void (const std::string&)> on_log;
 
         // authentication requested.
-        std::function<void (std::string& user, 
-                            std::string& pass)> on_authenticate;
+        std::function<void (std::string& user, std::string& pass)> on_auth;
+
+        enum class status {
+            success, unavailable, dmca
+        };
+
+        struct groupinfo {
+            uint64_t high_water_mark;
+            uint64_t low_water_mark;
+            uint64_t article_count;
+        };
 
         protocol();
        ~protocol();
@@ -98,18 +107,10 @@ namespace newsflash
         // returns true if change was succesful, otherwise false.
         bool change_group(const std::string& groupname);
 
-        struct groupinfo {
-            uint64_t high_water_mark;
-            uint64_t low_water_mark;
-            uint64_t article_count;
-        };
-
+        // query group information. returns true if such group exists
+        // and information could be retrieved. otherwise false.
         bool query_group(const std::string& groupname, groupinfo& info);
-
-        enum class status {
-            success, unavailable, dmca
-        };
-
+        
         // download the contents of the article identified by article number or id.
         // returns true if article was downloaded succesfully, false if 
         // it was no longer available.
@@ -119,7 +120,7 @@ namespace newsflash
         // first and last are article numbers
         bool download_overview(const std::string& first, const std::string& last, buffer& buff);
 
-        // download list of available newsgroups
+        // download list of available newsgroups.
         bool download_list(buffer& buff);
 
     private:

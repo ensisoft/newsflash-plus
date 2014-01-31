@@ -32,12 +32,16 @@
 #  define LOG_I(...) newsflash::write_log(newsflash::logevent::info,  __FILE__, __LINE__, ## __VA_ARGS__)
 #  define LOG_D(...) newsflash::write_log(newsflash::logevent::debug, __FILE__, __LINE__, ## __VA_ARGS__)
 #  define LOG_OPEN(file) newsflash::open_log(file)
+#  define LOG_FLUSH() newsflash::flush_log()
+#  define LOG_CLOSE() newsflash::close_log()
 #else
 #  define LOG_E(...)
 #  define LOG_W(...)
 #  define LOG_I(...)
 #  define LOG_D(...)
 #  define LOG_OPEN(file)
+#  define LOG_FLUSH()
+#  define LOG_CLOSE();
 #endif
 
 namespace newsflash
@@ -78,5 +82,7 @@ namespace newsflash
     }
 
     void open_log(const std::string& filename);
+    void flush_log();
+    void close_log();
 
 } // newsflash

@@ -31,6 +31,7 @@
 #  include <sys/socket.h>
 #endif
 
+#include <string>
 #include <cstdint>
 #include <utility> // for pair
 #include "types.h"
@@ -60,5 +61,8 @@ namespace newsflash
     void closesocket(native_socket_t sock);
     
     native_errcode_t get_last_socket_error();
+
+
+    std::string format_ipv4(ipv4addr_t addr);
 
 } // newsflash

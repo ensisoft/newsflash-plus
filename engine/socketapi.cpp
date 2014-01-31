@@ -35,6 +35,7 @@
 #  include <netdb.h>
 #  include <unistd.h>
 #endif
+#include <sstream>
 #include <cassert>
 #include <memory>
 #include <stdexcept>
@@ -239,5 +240,18 @@ native_errcode_t get_last_socket_error()
 }
 
 #endif
+
+std::string format_ipv4(ipv4addr_t addr)
+{
+    std::stringstream ss;
+    ss << ((addr >> 24) & 0xff) << "."
+       << ((addr >> 16) & 0xff) << "."
+       << ((addr >> 8) & 0xff) << "."
+       << (addr & 0xff);
+
+    std::string s;
+    ss >> s;
+    return s;
+}
 
 } // newsflash

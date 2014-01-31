@@ -22,24 +22,67 @@
 
 #pragma once
 
+#include <memory>
 #include <string>
-#include "queue.h"
+#include "msgqueue.h"
 
 namespace newsflash
 {
     struct command {
-        enum class type {
-            body, xover, list
-        };
-        type kind;
-        std::string groups[3];
-        std::string arg1;
-        std::string arg2;
         size_t id;
         size_t taskid;
-        size_t size; // expected buffer size
+        size_t size; // expected buffer size        
     };
 
-    typedef queue<command> cmdqueue;
+    class buffer;
+
+    struct cmd_body : public command {
+        enum class cmdstatus {
+            success, unavailable, dmca
+        };
+        cmdstatus status;
+        std::string groups[3];
+        std::string article;
+        std::shared_ptr<buffer> data;
+
+        enum : size_t {
+            ID = 1
+        };
+    };
+
+    struct cmd_group : public command {
+        std::string name;
+        std::size_t high_water_mark;
+        std::size_t low_water_mark;
+        std::size_t article_count;
+        bool success;
+
+        enum : size_t {
+            ID = 2
+        };
+    };
+
+    struct cmd_xover : public command {
+        std::string group;
+        std::size_t start;
+        std::size_t end;
+        std::shared_ptr<buffer> data;
+        bool success;
+
+        enum : size_t {
+            ID = 3
+        };
+    };
+
+    struct cmd_list : public command {
+        std::shared_ptr<buffer> data;
+
+        enum : size_t {
+            ID = 4
+        };
+    };
+
+    typedef msgqueue cmdqueue;
+    typedef msgqueue resqueue;
 
 } // newsflash

@@ -30,7 +30,6 @@
 #include "listener.h"
 #include "connection.h"
 #include "command.h"
-#include "response.h"
 #include "logging.h"
 #include "task.h"
 #include "event.h"
@@ -78,7 +77,7 @@ private:
     {
         std::unique_ptr<msgqueue::message> msg;
 
-        while (messages_.try_get(msg))
+        while (messages_.try_get_front(msg))
         {
 
         }
@@ -86,18 +85,18 @@ private:
 
     void dispatch_responses()
     {
-        response resp;
-        while (responses_.get_one(resp))
-        {
-            const auto it = std::find_if(tasks_.begin(), tasks_.end(),
-                [&](const task& t)
-                {
-                    return t.id() == resp.taskid;
-                });
+        // response resp;
+        // while (responses_.try_get_one(resp))
+        // {
+        //     const auto it = std::find_if(tasks_.begin(), tasks_.end(),
+        //         [&](const task& t)
+        //         {
+        //             return t.id() == resp.taskid;
+        //         });
 
-            ASSERT(it != tasks_.end());
-            //const auto id = it
-        }
+        //     ASSERT(it != tasks_.end());
+        //     //const auto id = it
+        // }
     }
 
     void remove_tasks()
@@ -105,13 +104,13 @@ private:
         if (tasks_.empty())
             return;
 
-        std::remove_if(tasks_.begin(), tasks_.end(),
-            [&](const task& t)
-            {
-                const task::state state = t.get_state();
-                return state == task::state::done ||
-                       state == task::state::killed;
-            });
+        // std::remove_if(tasks_.begin(), tasks_.end(),
+        //     [&](const task& t)
+        //     {
+        //         const task::state state = t.get_state();
+        //         return state == task::state::done ||
+        //                state == task::state::killed;
+        //     });
 
     }
 
@@ -175,7 +174,7 @@ private:
     }
 
 private:
-    typedef std::deque<task> tasklist;
+    typedef std::deque<task*> tasklist;
     typedef std::deque<connection*> connlist;    
     typedef std::vector<engine::account> acclist;
 

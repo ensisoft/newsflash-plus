@@ -43,5 +43,6 @@ namespace newsflash
     const int OS_INVALID_SOCKET  = INVALID_SOCKET;
     const int OS_ERR_WOULD_BLOCK = WSAEWOULDBLOCK; //EWOULDBLOC£K;
     const int OS_ERR_AGAIN       = 0; //EAGAIN;    // not used on win.
+    const int OS_ERR_CONN_REFUSED = WSAECONNREFUSED;
 
 } // newsflash

@@ -27,7 +27,6 @@
 #include <thread>
 #include <cstdint>
 #include "command.h"
-#include "response.h"
 #include "msgqueue.h"
 #include "protocol.h"
 #include "event.h"
@@ -45,20 +44,23 @@ namespace newsflash
             connecting, idle, active, error
         };
         enum class error {
-            none, resolve, forbidden, protocol, socket, ssl, timeout, interrupted
-        };
-
-        // current execution status pack
-        struct status {
-            state st;       
-            error err;      
-            uint64_t bytes; 
-            size_t bps;     
+            none,        // no error 
+            resolve,     // failed to resolve host address
+            refused,     // host refused the connection attempt
+            forbidden,   // connection was made but user credentials were refused
+            protocol,    // nntp protocol level error occurred
+            socket,      // tcp socket error occurred
+            ssl,         // ssl error occurred
+            timeout,     // no data was received from host within timeout
+            interrupted, // pending operation was interrupted 
+            unknown      // something else.
         };
 
         // server argument to connect to
         struct server {
             std::string addr;
+            std::string user;
+            std::string pass;
             int port;
             bool ssl;
         };
@@ -70,11 +72,30 @@ namespace newsflash
         connection(const std::string& logfile, const server& host, cmdqueue& in, resqueue& out);
 
        ~connection();
+
+        // current execution status pack
+        struct status {
+            connection::state state;       
+            connection::error error;      
+            uint64_t bytes; 
+            uint64_t speed;
+        };
+
+        // get the current status of the connection.
+        status get_status();
+
+        // get a level triggered waithandle for waiting on state
+        // changes in the connection. the signal is set when a new
+        // state is reached and remains signaled untill get_status()
+        // is called to implicitly reset the signal
+        waithandle wait() const;
+
     private:
         void main(const server& host, const std::string& logfile);
         bool connect(const server& host);
         void execute();
 
+        void auth(std::string& user, std::string& pass);
         void send(const void* data, size_t len);
         size_t read(void* buff, size_t len);
 
@@ -91,10 +112,13 @@ namespace newsflash
         cmdqueue& commands_;
         resqueue& responses_;
 
+        std::string username_;
+        std::string password_;
         std::thread thread_;        
         std::unique_ptr<socket> socket_;
         protocol proto_;
         event shutdown_;
+        event status_;
     };
 
 } // newsflash

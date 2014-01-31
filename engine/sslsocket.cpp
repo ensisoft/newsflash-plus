@@ -47,7 +47,7 @@
 //
 // It's also possible that with blocking sockets the code will block indefinitely in SSL_read.
 // If we use select to check if the socket is readable it doesnt mean that SSL_read will return
-// because the socket could be singnalled readable but there's no application data arriving
+// because the socket could be signalled readable but there's no application data arriving
 // only SSL data. Thus SSL_read will block. 
 //
 // references:
@@ -157,6 +157,9 @@ private:
     std::mutex* locks_;
     int refcount_;
 };
+
+    std::mutex sslcontext::mutex_;
+    sslcontext* sslcontext::instance_;
 
 } // namespace
 

@@ -65,10 +65,7 @@ void protocol::connect()
     has_xzver_         = cmd.has_xzver;
     has_mode_reader_   = cmd.has_mode_reader;
 
-    if (has_mode_reader_)
-    {
-        transact(nntp::cmd_mode_reader{});
-    }
+    transact(nntp::cmd_mode_reader{});
 }
 
 
@@ -189,7 +186,8 @@ void protocol::authenticate()
 {
     std::string username;
     std::string password;
-    on_authenticate(username, password);
+    if (on_auth)
+        on_auth(username, password);
 
     nntp::cmd_auth_user user {username};
     user.cmd_recv = on_recv;

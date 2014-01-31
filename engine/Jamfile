@@ -8,12 +8,16 @@ project engine
   <library>/boost//filesystem/<link>static
   <library>/boost//regex/<link>static
   <library>/boost//system/<link>static
+  <library>/boost//thread/<link>static
   <library>/zlib//zlib/<link>shared
   
-  #<library>/newsflash//openssl/<link>shared
-  #<library>/newsflash//crypto/<link>shared
+  <library>/newsflash//openssl/<link>shared
+  <library>/newsflash//crypto/<link>shared
 
   <toolset>gcc:<cflags>-std=c++11
+  # supress noise from boost headers
+  <toolset>gcc:<cflags>-Wno-unused-local-typedefs
+
   <toolset>clang:<cflags>-std=c++11  
   
   # we need -rdynamic for backtrace and backtrace_symbols

@@ -215,7 +215,7 @@ namespace nntp
                 if (cmd.find("AUTHINFO PASS") != std::string::npos)
                      cmd_log("AUTHINFO PASS *********");
                 else if (cmd.find("AUTHINFO USER") != std::string::npos)
-                     cmd_log("AUTHINFO USER xxxxxxxxx");
+                     cmd_log("AUTHINFO USER *********");
                 else cmd_log(str);
             }
 
@@ -383,7 +383,7 @@ namespace nntp
     struct cmd_mode_reader : cmd {
         code_t transact() 
         {
-            return cmd::transact("MODE READER", {200, 201, 502});
+            return cmd::transact("MODE READER", {200, 201, 502, 480});
         }
     };
 
@@ -474,9 +474,10 @@ namespace nntp
     // specific extensions. upon receiving a response we scan
     // the list of returned capabilities and set the appropriate boolean flags
     // to indicate the existence of said capability.
+    // it seems that some servers such as astraweb respond to this with 500
     // 101 capability list follows.
     // 480 authentication required
-    // 
+    // 500 what? 
     struct cmd_capabilities : cmd {
 
         enum : code_t { SUCCESS = 101 };
@@ -496,7 +497,7 @@ namespace nntp
             size_t size   = 0;
             code_t code   = 0;
 
-            std::tie(code, offset, size) = cmd::transact("CAPABILITIES", {101, 480}, {101}, response);
+            std::tie(code, offset, size) = cmd::transact("CAPABILITIES", {101, 480, 500}, {101}, response);
             if (code == SUCCESS)
             {
                 const auto& lines = detail::split_lines(response);

@@ -88,7 +88,7 @@ namespace newsflash
 
             if (data_)
             {
-                ASSERT(!std::memcmp(data_ + capacity, &bird, sizeof(bird)) && 
+                ASSERT(!std::memcmp(data_ + capacity_, &bird, sizeof(bird)) && 
                     "Buffer overrun detected");
 
                 std::memcpy(data, data_, size_);

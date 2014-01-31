@@ -193,13 +193,13 @@ void unit_test_queue_post()
 
         newsflash::msgqueue queue;
         BOOST_REQUIRE(queue.size() == 0);
-        BOOST_REQUIRE(!queue.try_get(msg));
+        BOOST_REQUIRE(!queue.try_get_front(msg));
 
      
-        queue.post(123, foo{444, "jallukola"});
+        queue.post_back(123, foo{444, "jallukola"});
         BOOST_REQUIRE(queue.size() == 1);
 
-        auto m = queue.get();
+        auto m = queue.get_front();
         BOOST_REQUIRE(m->id() == 123);
         BOOST_REQUIRE(m->type_test<foo>());
         BOOST_REQUIRE(m->as<foo>().i == 444);
@@ -208,20 +208,41 @@ void unit_test_queue_post()
 
         // lvalue
         foo lvalue {1234, "jallukola"};
-        queue.post(1, lvalue);
+        queue.post_back(1, lvalue);
 
         // call to q.post should not modify f
         BOOST_REQUIRE(lvalue.i == 1234);
         BOOST_REQUIRE(lvalue.s == "jallukola");
         BOOST_REQUIRE(queue.size() == 1);
 
-        m = queue.get();
+        m = queue.get_front();
         BOOST_REQUIRE(m->type_test<foo>());
         BOOST_REQUIRE(m->as<foo>().i == 1234);
         BOOST_REQUIRE(m->as<foo>().s == "jallukola");
         BOOST_REQUIRE(queue.size() == 0);
 
+    }
 
+    {
+        newsflash::msgqueue queue;
+        queue.post_back(1, std::string{"foo"});
+        queue.post_back(2, std::string{"bar"});
+        queue.post_front(3, std::string{"baz"});
+
+        BOOST_REQUIRE(queue.size() == 3);
+        auto m = queue.get_front();
+        BOOST_REQUIRE(m->id() == 3);
+        BOOST_REQUIRE(m->as<std::string>() == "baz");
+        BOOST_REQUIRE(queue.size() == 2);
+        queue.post_front(m);
+        BOOST_REQUIRE(queue.size() == 3);
+        m = queue.get_front();
+        BOOST_REQUIRE(m->id() == 3);
+        m = queue.get_front();
+        BOOST_REQUIRE(m->id() == 1);
+        m = queue.get_front();
+        BOOST_REQUIRE(m->id() == 2);
+        BOOST_REQUIRE(queue.size() == 0);
 
     }
 
@@ -233,7 +254,7 @@ void unit_test_queue_post()
         {
             const size_t id = i + 1;
             const size_t data = i + 2;
-            queue.post(id, data);
+            queue.post_back(id, data);
         }
         BOOST_REQUIRE(queue.size() == 10000);
 
@@ -242,7 +263,7 @@ void unit_test_queue_post()
             const size_t id = i + 1;
             const size_t data = i + 2;
 
-            auto msg = queue.get();
+            auto msg = queue.get_front();
             BOOST_REQUIRE(msg->id() == id);
             BOOST_REQUIRE(msg->as<size_t>() == data);
         }
@@ -257,14 +278,14 @@ void unit_test_queue_post()
 
         for (size_t i=0; i<10000; ++i)
         {
-            queue.post(1, msg);
+            queue.post_back(1, msg);
         }
 
         BOOST_REQUIRE(queue.size() == 10000);
 
         for (size_t i=0; i<10000; ++i)
         {
-            auto m = queue.get();
+            auto m = queue.get_front();
             BOOST_REQUIRE(m->id() == 1);
             BOOST_REQUIRE(m->as<foo>().s == "foobar");
             BOOST_REQUIRE(m->as<foo>().i == 1234);
@@ -277,7 +298,7 @@ void unit_test_queue_post()
     {
         for (int i=0; i<count; ++i)
         {
-            const auto msg = queue.get();
+            const auto msg = queue.get_front();
             BOOST_REQUIRE(msg->id() == 1234);
             BOOST_REQUIRE(msg->as<foo>().s == "foobar");
             BOOST_REQUIRE(msg->as<foo>().i == 1234567);
@@ -289,7 +310,7 @@ void unit_test_queue_post()
     {
         for (int i=0; i<count; ++i)
         {
-            queue.post(1234, foo { 1234567, "foobar"});
+            queue.post_back(1234, foo { 1234567, "foobar"});
         }
     };
 
@@ -345,7 +366,7 @@ void unit_test_queue_send()
     {
         for (int i=0; i<count; ++i)
         {
-            auto msg = queue.get();
+            auto msg = queue.get_front();
             BOOST_REQUIRE(msg->id() == 1);
             msg->as<message>() = "foobar";
         }
@@ -356,7 +377,7 @@ void unit_test_queue_send()
         for (int i=0; i<count; ++i)
         {
             message m;
-            queue.send(1, m);
+            queue.send_back(1, m);
             BOOST_REQUIRE(m == "foobar");
         }
     };

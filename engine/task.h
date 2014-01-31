@@ -23,9 +23,14 @@
 #pragma once
 
 #include <boost/noncopyable.hpp>
+#include <memory>
+#include <cstddef>
 
 namespace newsflash
 {
+    class taskimpl;
+    class taskstate;
+
     class task 
     {
     public:
@@ -48,7 +53,8 @@ namespace newsflash
         
     private:
         std::size_t id_;
-
+        std::unique_ptr<taskimpl>  impl_;
+        std::unique_ptr<taskstate> state_;
     };
 
 } // newsflash

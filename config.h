@@ -56,6 +56,7 @@
   #define  NOTHROW throw() 
 #elif defined(__GNUG__)
   #define LINUX_OS
+//  #pragma GCC diagnostic warning ignored "-Wunused-local-typedefs"
   #ifdef __LP64__
     #define X86_64
   #endif

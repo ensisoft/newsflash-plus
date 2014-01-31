@@ -391,7 +391,7 @@ void unit_test_protocol()
         newsflash::protocol proto;
         proto.on_recv = std::bind(&test_sequence::recv, &test, std::placeholders::_1, std::placeholders::_2);
         proto.on_send = std::bind(&test_sequence::send, &test, std::placeholders::_1, std::placeholders::_2);
-        proto.on_authenticate = std::bind(&test_sequence::authenticate, &test, std::placeholders::_1, std::placeholders::_2);
+        proto.on_auth = std::bind(&test_sequence::authenticate, &test, std::placeholders::_1, std::placeholders::_2);
         proto.on_log = cmd_log;
 
         // rejected authentication
@@ -465,6 +465,7 @@ void unit_test_protocol()
                 "281 authentication accepted",                
                 "101 capabilities list follows",
                     ".",
+                "201 posting prohibited",
                 "411 no such newsgroup",
                 "205 goodbye"
             };
@@ -473,6 +474,7 @@ void unit_test_protocol()
                 "CAPABILITIES",
                 "AUTHINFO USER user123",                
                 "CAPABILITIES",
+                "MODE READER",
                 "GROUP alt.foo.bar",
                 "QUIT"
             };
@@ -493,6 +495,7 @@ void unit_test_protocol()
                 "281 authentication accepted",
                 "101 capabilities list follows",
                     ".",
+                "200 ok posting allowed",
                 "411 no such newsgroup",
                 "205 goodbye"
             };
@@ -502,6 +505,7 @@ void unit_test_protocol()
                 "AUTHINFO USER user123",
                 "AUTHINFO PASS pass123",
                 "CAPABILITIES",
+                "MODE READER",
                 "GROUP alt.foo.bar",
                 "QUIT"
             };

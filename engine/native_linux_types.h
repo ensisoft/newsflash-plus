@@ -41,6 +41,7 @@ namespace newsflash
     const int OS_INVALID_HANDLE = -1;
     const int OS_INVALID_SOCKET = -1;
 
-    const int OS_ERR_WOULD_BLOCK = EWOULDBLOCK;
-    const int OS_ERR_AGAIN       = EAGAIN;
+    const int OS_ERR_WOULD_BLOCK  = EWOULDBLOCK;
+    const int OS_ERR_AGAIN        = EAGAIN;
+    const int OS_ERR_CONN_REFUSED = ECONNREFUSED;
 } // newsflash

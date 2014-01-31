@@ -20,6 +20,7 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
+#include <boost/lexical_cast.hpp>
 #include <thread>
 #include <functional>
 #include "connection.h"
@@ -28,6 +29,7 @@
 #include "socketapi.h"
 #include "logging.h"
 #include "buffer.h"
+#include "platform.h"
 
 namespace {
     class conn_exception : public std::exception 
@@ -70,43 +72,63 @@ connection::~connection()
     thread_.join();
 }
 
+connection::status connection::get_status()
+{
+    connection::status ret;
+
+    std::lock_guard<std::mutex> lock(mutex_);
+
+    ret.state = state_;
+    ret.error = error_;
+    ret.bytes = bytes_;
+    ret.speed = speed_;
+
+    status_.reset();
+    return ret;
+}
+
+waithandle connection::wait() const 
+{
+    return status_.wait();
+}
+
 void connection::main(const server& host, const std::string& logfile)
 {
     LOG_OPEN(logfile);
-    LOG_D("Connection thread: ", std::this_thread::get_id());
-
-    const std::chrono::seconds ping_interval(10);
+    LOG_D("Connection thread, ", std::this_thread::get_id());
 
     try
     {
-        if (!connect(host))
-            return;
-
-        while (true)
+        if (connect(host))
         {
-            goto_state(state::idle, error::none);
+            while (true)
+            {
+                goto_state(state::idle, error::none);
 
-            // wait for commands or shutdown signal
-            auto command_handle  = commands_.wait();
-            auto shutdown_handle = shutdown_.wait();
+                // wait for commands or shutdown signal
+                auto command_handle  = commands_.wait();
+                auto shutdown_handle = shutdown_.wait();
 
-            if (!wait(command_handle, shutdown_handle, ping_interval))
-            {
-                proto_.ping();
+                const std::chrono::seconds ping_interval(10);            
+
+                if (!newsflash::wait(command_handle, shutdown_handle, ping_interval))
+                {
+                    proto_.ping();
+                }
+                else if (shutdown_handle.read())
+                {
+                    //LOG_D("Shutdown handle signaled");
+                    break;            
+                }
+                else if (command_handle.read())
+                {
+                    //LOG_D("Command handle signaled");
+                    execute();
+                }
             }
-            else if (shutdown_handle.read())
-            {
-                LOG_D("Shutdown handle signaled");
-                break;            
-            }
-            else if (command_handle.read())
-            {
-                LOG_D("Command handle signaled");
-                execute();
-            }
+            LOG_FLUSH();
+            proto_.quit();
         }
-
-        proto_.quit();
     }
     catch (const conn_exception& e)
     {
@@ -135,130 +157,178 @@ void connection::main(const server& host, const std::string& logfile)
 
         LOG_E(e.what());
     }
-    LOG_D("Thread exiting...");
+    LOG_D("Thread exiting.");
+    LOG_FLUSH();
+    LOG_CLOSE();
 }
 
 bool connection::connect(const server& host)
 {
-    LOG_I("Connecting to: ", host.addr, ":", host.port);
+    LOG_I("Connecting to, ", host.addr, ":", host.port);
 
-    auto addr = resolve_host_ipv4(host.addr);
+    const auto addr = resolve_host_ipv4(host.addr);
     if (addr == 0)
     {
         LOG_E("Failed to resolve host");
+
         goto_state(state::error, error::resolve);
         return false;
     }
+
+    LOG_I("Resolved to, ", format_ipv4(addr));
+
     if (host.ssl) 
-         socket_.reset(new sslsocket());
-    else socket_.reset(new tcpsocket());
+    {
+        LOG_D("Using TCP/SSL socket");
+        socket_.reset(new sslsocket());
+    }
+    else 
+    {
+        LOG_D("Using TCP socket");
+        socket_.reset(new tcpsocket());
+    }
 
     LOG_D("Begin connect...");
+
     socket_->connect(addr, host.port);
 
     auto socket_handle   = socket_->wait();
     auto shutdown_handle = shutdown_.wait();
-    wait(socket_handle, shutdown_handle);
+    newsflash::wait(socket_handle, shutdown_handle);
 
+    // if shutdown is signaled we're being shutdown while we're connecting.
+    // in that case, throw away the socket and return false.
     if (shutdown_handle.read())
     {
-        // if shutdown is signaled we're being shutdown while we're connecting.
-        // in that case, throw away the socket and return false.
         LOG_D("Connect was interrupted.");
+
+        goto_state(state::error, error::interrupted);
         return false;
     }
-    else if (socket_handle.read())
-    {
-        struct log_helper {
-            static void stub(const std::string& str)
-            {
-                LOG_I(str);
-            }
-        };
 
-        LOG_D("Socket connection established.");
-        // if socket is ready to read we're connected
-        // initialize protocol stack
-        proto_.on_recv = std::bind(&connection::read, this, std::placeholders::_1, std::placeholders::_2);
-        proto_.on_send = std::bind(&connection::send, this, std::placeholders::_1, std::placeholders::_2);
-        proto_.on_log  = log_helper::stub;
-        proto_.connect();
+    const auto err = socket_->complete_connect();
+    if (err)
+    {
+        LOG_E("Connection failed, ", err, ", ", get_error_string(err));
+
+        if (err == OS_ERR_CONN_REFUSED)
+             goto_state(state::error, error::refused);
+        else goto_state(state::error, error::unknown);
+        return false;
     }
 
+    username_ = host.user;
+    password_ = host.pass;
+
+    LOG_D("Socket connection established.");
+
+    // socket is connected state, next initialize the protocol stack.
+    proto_.on_recv = std::bind(&connection::read, this, std::placeholders::_1, std::placeholders::_2);
+    proto_.on_send = std::bind(&connection::send, this, std::placeholders::_1, std::placeholders::_2);
+    proto_.on_auth = std::bind(&connection::auth, this, std::placeholders::_1, std::placeholders::_2);
+    proto_.on_log  = [](const std::string& str) { LOG_I(str); };
+
+    LOG_D("Connect protocol");
+
+    proto_.connect();
+
     LOG_I("Connection ready!");
+    LOG_FLUSH();
     return true;
 }
 
 void connection::execute()
 {
-    command cmd;
-    if (!commands_.get_one(cmd))
+    std::unique_ptr<msgqueue::message> cmd;
+    if (!commands_.try_get_front(cmd))
         return;
 
     goto_state(state::active, error::none);
-
     try
     {
-        response resp;
-        resp.stat   = response::status::unavailable;
-        resp.cmdid  = cmd.id;
-        resp.taskid = cmd.taskid;
-
-        bool group_available = true;
-
-        for (const auto& group : cmd.groups)
+        switch (cmd->id())
         {
-            group_available = proto_.change_group(group);
-            if (group_available)
-                break;
-        }
-        if (!group_available)
-        {
-            LOG_W("Command uses newsgroups that are not available on this server.");
-        }
-        else
-        {
-            resp.buff = std::make_shared<buffer>();
-            resp.buff->allocate(cmd.size);
-            buffer* ptr = resp.buff.get();
-
-            switch (cmd.kind)
+            case cmd_body::ID:
             {
-                case command::type::body:
+                cmd_body& body = cmd->as<cmd_body>();
+
+                body.status = cmd_body::cmdstatus::unavailable;
+
+                bool group_available = true;
+                for (const auto& group : body.groups)
                 {
-                    const auto ret = proto_.download_article(cmd.arg1, *ptr);
+                    group_available = proto_.change_group(group);
+                    if (group_available)
+                        break;
+                }
+                if (group_available)
+                {
+                    body.data = std::make_shared<buffer>();
+                    body.data->allocate(body.size);
+                    const auto ret = proto_.download_article(body.article, *body.data);
                     if (ret == protocol::status::success)
-                        resp.stat = response::status::success;
-                    else if (ret == protocol::status::unavailable)
-                        resp.stat = response::status::unavailable;
+                        body.status = cmd_body::cmdstatus::success;
                     else if (ret == protocol::status::dmca)
-                        resp.stat = response::status::dmca;
-                    else
-                        assert(!"weird command status");
-                }
-                break;
-
-                case command::type::xover:
-                {
-                }
-                break;
-
-                case command::type::list:
-                {
+                        body.status = cmd_body::cmdstatus::dmca;
                 }
             }
-        }
-        LOG_D("Command done succesfully!");
+            break;
 
-        responses_.push(resp);
+            case cmd_group::ID:
+            {
+                cmd_group& group = cmd->as<cmd_group>();
+
+                newsflash::protocol::groupinfo info {0};
+                group.success = proto_.query_group(group.name, info);
+                group.article_count   = info.article_count;
+                group.high_water_mark = info.high_water_mark;
+                group.low_water_mark  = info.low_water_mark;
+            }
+            break;
+
+
+            case cmd_xover::ID:
+            {
+                cmd_xover& xover = cmd->as<cmd_xover>();
+                xover.success = proto_.change_group(xover.group);
+                if (xover.success)
+                {
+                    const std::string start = boost::lexical_cast<std::string>(xover.start);
+                    const std::string end   = boost::lexical_cast<std::string>(xover.end);
+
+                    xover.data = std::make_shared<buffer>();
+                    xover.data->allocate(xover.size);
+
+                    proto_.download_overview(start, end, *xover.data);
+                }
+            }
+            break;
+
+            case cmd_list::ID:
+            {
+                cmd_list& list = cmd->as<cmd_list>();
+                list.data = std::make_shared<buffer>();
+                list.data->allocate(list.size);
+                proto_.download_list(*list.data);
+            }
+            break;
+        }
+        responses_.post_back(cmd);
     }
     catch (const std::exception& e)
     {
         // presumably we have a problem with socket IO or SSL
-        // but we must make sure not to loose the command data...
-        commands_.try_again_later(cmd);
+        // so store the command back in the command queue so it
+        // won't get lost.
+        commands_.post_front(cmd);
         throw;
     }
+}
+void connection::auth(std::string& user, std::string& pass)
+{
+    LOG_I("Authenticating...");
+    user = username_;
+    pass = password_;
 }
 
 void connection::send(const void* data, size_t len)
@@ -280,7 +350,7 @@ size_t connection::read(void* buff, size_t len)
     auto socket_handle   = socket_->wait(true, false);
     auto shutdown_handle = shutdown_.wait();
 
-    if (!wait(socket_handle, shutdown_handle, timeout))
+    if (!newsflash::wait(socket_handle, shutdown_handle, timeout))
         throw conn_exception("socket timeout", error::timeout);
 
     if (shutdown_handle.read())
@@ -301,6 +371,9 @@ void connection::goto_state(state s, error e)
     std::lock_guard<std::mutex> lock(mutex_);
     state_ = s;
     error_ = e;
+
+    // set a signal indicating that the status has changed
+    status_.set();
 }
 
 } // newsflash
