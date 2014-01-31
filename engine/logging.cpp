@@ -28,7 +28,16 @@
 #include "utf8.h"
 
 namespace {
+
 //     thread_local std::ofstream gLog; msvc doesn't have thread_local
+
+    // http://www.boost.org/doc/libs/1_51_0/doc/html/thread/thread_local_storage.html#thread.thread_local_storage.thread_specific_ptr
+    // Note: on some platforms, cleanup of thread-specific data is not performed 
+    // for threads created with the platform's native API. 
+    // On those platforms such cleanup is only done for threads that 
+    // are started with boost::thread unless boost::on_thread_exit() 
+    // is called manually from that thread. 
+
     boost::thread_specific_ptr<std::ofstream> gLog;
 
 } // namespace
@@ -90,7 +99,7 @@ void close_log()
 {
     gLog->flush();
     gLog->close();
-    gLog.release();
+    delete gLog.release();
 }
 
 } // newsflash

@@ -25,7 +25,6 @@
 #include "../tcpsocket.h"
 #include "../sslsocket.h"
 #include "../command.h"
-#include "../response.h"
 #include "../waithandle.h"
 #include "../buffer.h"
 
@@ -240,6 +239,9 @@ void unit_test_connection_success(bool ssl)
     }
 
     // todo: body
+    {
+        
+    }
 }
 
 int test_main(int argc, char* argv[])
