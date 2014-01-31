@@ -2,10 +2,17 @@
 	"folders":
 	[
 		{
-			"path": "engine"
+			"path": "engine",
+            "folder_exclude_patterns": [
+                "bin"
+            ]
 		},
+
         {
-            "path": "engine/unit_test"
+            "path": "engine/unit_test",
+            "folder_exclude_patterns" : [
+                "bin"
+            ]
         }
 	],
     "build_systems":
@@ -20,9 +27,9 @@
         "sublimeclang_options":
         [
             "-std=c++11",
-            "-I./",
-            "-I../",
-            "-I../boost_1_51_0"
+            "-I/home/enska/coding/",
+            "-I/home/enska/coding/newsflash",
+            "-I/home/enska/coding/boost_1_51_0"
         ]
     }
 }
