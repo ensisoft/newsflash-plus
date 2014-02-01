@@ -25,7 +25,6 @@
 #include "../tcpsocket.h"
 #include "../sslsocket.h"
 #include "../command.h"
-#include "../response.h"
 #include "../waithandle.h"
 #include "../buffer.h"
 

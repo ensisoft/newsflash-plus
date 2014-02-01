@@ -315,7 +315,7 @@ void connection::execute()
         }
         responses_.post_back(cmd);
     }
-    catch (const std::exception& e)
+    catch (const std::exception&)
     {
         // presumably we have a problem with socket IO or SSL
         // so store the command back in the command queue so it

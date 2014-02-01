@@ -67,8 +67,8 @@ namespace nntp
 
     struct part {
         // (01/34)
-        size_t part;  // 1        
-        size_t total; // 34
+        size_t numerator;  // 1        
+        size_t denominator; // 34
     };
 
     // inspect the subject line and try to figure out whether

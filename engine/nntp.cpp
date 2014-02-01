@@ -396,8 +396,8 @@ std::pair<bool, part> parse_part(const char* str, size_t len)
 
     const auto& ret = parse(str, str+len,
         (                                   
-         ch_p('(') >> uint_p[assign(part.part)] >> 
-         ch_p('/') >> uint_p[assign(part.total)] >>
+         ch_p('(') >> uint_p[assign(part.numerator)] >> 
+         ch_p('/') >> uint_p[assign(part.denominator)] >>
          ch_p(')')
         ));
     return {ret.full, part};

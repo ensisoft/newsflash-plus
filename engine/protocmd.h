@@ -22,6 +22,8 @@
 
 #pragma once
 
+#include <newsflash/config.h>
+
 #include <boost/algorithm/string/trim.hpp>
 #include <zlib/zlib.h>
 #include <algorithm>
@@ -191,10 +193,10 @@ namespace nntp
     class exception : public std::exception
     {
     public:
-        exception(std::string what) noexcept 
+        exception(std::string what) NOTHROW 
            : what_(std::move(what))
         {}
-        const char* what() const noexcept
+        const char* what() const NOTHROW
         {
             return what_.c_str();
         }

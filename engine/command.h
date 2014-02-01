@@ -24,6 +24,7 @@
 
 #include <memory>
 #include <string>
+#include <cstdint>
 #include "msgqueue.h"
 
 namespace newsflash
@@ -52,9 +53,9 @@ namespace newsflash
 
     struct cmd_group : public command {
         std::string name;
-        std::size_t high_water_mark;
-        std::size_t low_water_mark;
-        std::size_t article_count;
+        std::uint64_t high_water_mark;
+        std::uint64_t low_water_mark;
+        std::uint64_t article_count;
         bool success;
 
         enum : size_t {

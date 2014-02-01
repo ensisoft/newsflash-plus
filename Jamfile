@@ -23,9 +23,10 @@ import os ;
 import qt ;
 import path ;
 
+# set these paths to to point to the relevant SDK locations.
 path-constant QT_PATH      : "../qt-4.8.2" ;
 path-constant BOOST_PATH   : "../boost_1_51_0" ;
-path-constant OPENSSL_PATH : "../openssl_1_0_1" ;
+path-constant OPENSSL_PATH : "../openssl_1_0_1f" ;
 
 using qt : $(QT_PATH) ;
 
@@ -39,6 +40,7 @@ project newsflash
   : requirements
     <include>../
     <include>.
+    <include>$(OPENSSL_PATH)/include    
     <threading>multi
    ;
 
