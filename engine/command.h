@@ -26,7 +26,7 @@
 
 #include <memory>
 #include <string>
-//#include "msgqueue.h"
+#include <cstdint>
 
 namespace newsflash
 {
@@ -79,9 +79,9 @@ namespace newsflash
     // an estimate of available articles. 
     struct cmd_group : public command {
         std::string name;
-        std::size_t high_water_mark;
-        std::size_t low_water_mark;
-        std::size_t article_count;
+        std::uint64_t high_water_mark;
+        std::uint64_t low_water_mark;
+        std::uint64_t article_count;
         bool success;
 
         cmd_group(std::string groupname) 
@@ -157,15 +157,5 @@ namespace newsflash
         return *static_cast<T*>(cmd.get());
 #endif
     }
-
-//     template<typename T>
-//     std::unique_ptr<T> command_cast(std::unique_ptr<command> cmd) NOTHROW
-//     {
-// #ifndef _NDEBUG
-//         return std::unique_ptr<T>(dynamic_cast<T*>(cmd.release()));
-// #else
-//         return std::unique_ptr<T>(static_cast<T*>(cmd.release()));
-// #endif
-//     }
 
 } // newsflash

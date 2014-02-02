@@ -71,8 +71,14 @@ Build openssl. Install NASM and ActivePerl.
         http://sourceforge.net/projects/nasm/        
         http://www.activestate.com/activeperl
 
-
-
+        $ set PATH=%PATH%;"c:\Program Files (x86)\NASM\"
+        $ cd openssl-1.0.1f
+        $ perl configure VC-WIN32 --prefix=c:\coding\openssl_1_0_1f
+        $ ms\do_nasm
+        $ notepad ms\ntdll.mak
+           * replace LFLAGS /debug with /release
+        $ nmake -f ms\ntdll.mak
+        $ nmake -f ms\ntdll.mak install
 
 Par2cmdline
 ========================

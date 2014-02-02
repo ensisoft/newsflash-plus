@@ -301,7 +301,7 @@ void sslsocket::close()
     }
     if (socket_)
     {
-        closesocket(socket_, handle_);
+        closesocket(handle_, socket_);
         socket_ = 0;
         handle_ = 0;
     }

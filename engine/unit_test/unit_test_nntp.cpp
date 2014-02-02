@@ -673,7 +673,7 @@ void test_is_binary()
 void test_find_filename()
 {
     struct test {
-        const char* test;
+        const char* str;
         const char* expected;
     } tests[] = {
         {"fooobar music.mp3 foobar", "music.mp3"},
@@ -717,7 +717,7 @@ void test_find_filename()
 
     for (const auto& it : tests)
     {
-        const auto& ret = nntp::find_filename(it.test, std::strlen(it.test));
+        const auto& ret = nntp::find_filename(it.str, std::strlen(it.str));
 
         //std::cout << it.test << std::endl;
 

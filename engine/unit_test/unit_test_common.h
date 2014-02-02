@@ -194,7 +194,7 @@ void create_dir(const char* name)
         try { \
             expr; \
             BOOST_REQUIRE(!"exception was expected!"); \
-        } catch (const std::exception& e) {} \
+        } catch (const std::exception&) {} \
     } while (0)
 
 
