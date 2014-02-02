@@ -109,10 +109,67 @@ void unit_test_find_response()
     {
         BOOST_REQUIRE(nntp::detail::find_body("", 0) == 0);
         BOOST_REQUIRE(nntp::detail::find_body("asgas", 5) == 0);
-        BOOST_REQUIRE(nntp::detail::find_body(".\r\n", 3) == 3);
-        BOOST_REQUIRE(nntp::detail::find_body("foobar.\r\n", 9) == 9);
-        BOOST_REQUIRE(nntp::detail::find_body("foobar.\r\nkeke", 13) == 9);
-        BOOST_REQUIRE(nntp::detail::find_body("foo\r\nbar.\r\n", 11) == 11);
+        BOOST_REQUIRE(nntp::detail::find_body(".\r\n", 3) == 0);
+        BOOST_REQUIRE(nntp::detail::find_body("foobar.\r\n", 9) == 0);
+        BOOST_REQUIRE(nntp::detail::find_body("foobar.\r\nkeke", 13) == 0);
+        BOOST_REQUIRE(nntp::detail::find_body("foo\r\nbar.\r\n", 11) == 0);
+
+        BOOST_REQUIRE(nntp::detail::find_body("foobar\r\n.\r\n", 11) == 11);
+        BOOST_REQUIRE(nntp::detail::find_body("\r\n.\r\n", 5) == 5);
+        BOOST_REQUIRE(nntp::detail::find_body(".\r\nderp\r\n.\r\n", 12) == 12);
+    }
+
+    {
+        const char* str = 
+         "On 2/23/2013 10:55 AM, James Silverton wrote:\r\n"
+         "> On 2/23/2013 10:08 AM, RussCA wrote:\r\n"
+         ">> On 2/23/2013 9:01 AM, John wrote:\r\n"
+         ">>> On 2/22/2013 8:58 PM, RussCA wrote:\r\n"
+         ">>>> I just printed a message from this newsgroup.\r\n"
+         ">>>>\r\n"
+         ">>>> I am using the addon \"TT DeepDark 4.1\", so that my text is white and\r\n"
+         ">>>> background is black(ish).\r\n"
+         ">>>>\r\n"
+         ">>>> The printed output is white text on a black background.  Quite a waste\r\n"
+         ">>>> of black ink.  Wouldn't it be better if the printing process knew\r\n"
+         ">>>> something about printing what the message colors are, rather than what\r\n"
+         ">>>> the displayed message looks like?\r\n"
+         ">>>\r\n"
+         ">>>\r\n"
+         ">>> When I want to print text only I transfer the text to a text (only)\r\n"
+         ">>> editor. Hi-light the text, Ctrl<C>, and Ctrl<V> into the editor and\r\n"
+         ">>> print from the editor --- sure saves on ink ;)\r\n"
+         ">>>\r\n"
+         ">>> John\r\n"
+         ">> John,\r\n"
+         ">> I know.  That's what I usually do when there is something specific I\r\n"
+         ">> want to save from the message.  If I'm in a hurry, though, it's often\r\n"
+         ">> easier to simply print.  I guess I'll have to simply abandon printing\r\n"
+         ">> from TB and possible FF as well.  Unfortunately, some web pages don't\r\n"
+         ">> let you select and copy.\r\n"
+         ">>\r\n"
+         ">>\r\n"
+         "> I think it is easier to copy text only with programs like PureText\r\n"
+         "> rather than carefully high lighting. I have defined a key to strip\r\n"
+         "> formatting and copy. That is an available option and I have chosen\r\n"
+         "> CTRL-0. The method can be used with both full text editors like Word and\r\n"
+         "> text only editors.\r\n"
+         "\r\n"
+         "\r\n"
+         "\r\n"
+         "That looks interesting. Does it address \"some web pages don't let you\r\n"
+         "select and copy\" problem RussCA has experienced? The PureText web page\r\n"
+         "doesn't seem to address that issue.\r\n"
+         "\r\n"
+         "Just curious,\r\n"
+         "John\r\n"
+         "\r\n"
+         "\r\n"
+         ".\r\n";
+
+         size_t len = nntp::detail::find_body(str, std::strlen(str));
+
+         BOOST_REQUIRE(len == std::strlen(str));
     }
 }
 
@@ -185,13 +242,13 @@ void unit_test_cmd_auth()
 void unit_test_cmd_capabilities()
 {
     test_success(nntp::cmd_capabilities{}, "CAPABILITIES", "101 Capability list follows\r\nFOO\r\nBAR\r\n.\r\n", 101);
-    test_success(nntp::cmd_capabilities{}, "CAPABILITIES", "101 Capability list follows\r\n.\r\n", 101);
-    test_success(nntp::cmd_capabilities{}, "CAPABILITIES", "101 foboaaslas asdglajsd\r\nACTIVE.TIMES.\r\n", 101);
+    test_success(nntp::cmd_capabilities{}, "CAPABILITIES", "101 Capability list follows\r\n\r\n.\r\n", 101);
+    test_success(nntp::cmd_capabilities{}, "CAPABILITIES", "101 foboaaslas asdglajsd\r\nACTIVE.TIMES\r\n.\r\n", 101);
     test_failure(nntp::cmd_capabilities{}, "CAPABILITIES", "200 unxpected response\r\n");
     test_failure(nntp::cmd_capabilities{}, "CAPABILITIES", "101 missing body terminator\r\n");
 
     nntp::cmd_capabilities cmd;
-    test_success(&cmd, "CAPABILITIES", "101 capability list follows\r\nMODE-READER.\r\n", 101);
+    test_success(&cmd, "CAPABILITIES", "101 capability list follows\r\nMODE-READER\r\n.\r\n", 101);
     BOOST_REQUIRE(cmd.has_mode_reader == true);
     BOOST_REQUIRE(cmd.has_xzver == false);
 
@@ -257,11 +314,11 @@ void unit_test_cmd_body()
         command_t cmd {buff, "1234"};
 
         test_success(&cmd, "BODY 1234", "420 no article with that message id\r\n", 420);
-        test_success(&cmd, "BODY 1234", "222 body follows\r\n.\r\n", 222);
+        test_success(&cmd, "BODY 1234", "222 body follows\r\n\r\n.\r\n", 222);
         BOOST_REQUIRE(cmd.size == 0);
 
-        test_success(&cmd, "BODY 1234", "222 body follows\r\nfoobar.\r\n", 222);
-        BOOST_REQUIRE(cmd.size == 6);
+        test_success(&cmd, "BODY 1234", "222 body follows\r\nfoobar\r\n.\r\n", 222);
+        BOOST_REQUIRE(cmd.size == strlen("foobar"));
         BOOST_REQUIRE(cmd.offset == 18);
         BOOST_REQUIRE(!std::strncmp(&buff[cmd.offset], "foobar", cmd.size));
     }
@@ -274,15 +331,17 @@ void unit_test_cmd_body()
         const char* body = 
            "assa sassa mandelmassa\r\n"
            "second line of data\r\n"
-           "foobar\r\n"
-           ".\r\n";
+           "foobar"
+           "\r\n"
+           "."
+           "\r\n";
 
         std::string str("222 body follows\r\n");
         str.append(body);
         test_success(&cmd, "BODY 1234", str.c_str(), 222);
 
         BOOST_REQUIRE(cmd.offset == std::strlen("222 body follows\r\n"));
-        BOOST_REQUIRE(cmd.size   == std::strlen(body) - 3);
+        BOOST_REQUIRE(cmd.size   == std::strlen(body) - 5);
         BOOST_REQUIRE(buff.size() >= cmd.size);
     }
 }
@@ -307,14 +366,16 @@ void unit_test_cmd_list()
         buffer_t buff(1024);
         command_t cmd {buff};
 
-        test_success(&cmd, "LIST", "215 list of newsgroups follows\r\n.\r\n", 215);
+        test_success(&cmd, "LIST", "215 list of newsgroups follows\r\n\r\n.\r\n", 215);
         BOOST_REQUIRE(cmd.size == 0);
 
         test_success(&cmd, "LIST", 
             "215 list of newsgroups follows\r\n"
             "misc.test 3002322 3000234 y\r\n"            
             "comp.risks 442001 441099 m\r\n"
-            ".\r\n", 
+            "\r\n"
+            "."
+            "\r\n", 
             215);
 
         BOOST_REQUIRE(cmd.size == 
@@ -437,6 +498,7 @@ void unit_test_protocol()
                 "200 welcome posting allowed",
                 "101 capabilities list follows",
                     "MODE-READER",
+                    "",
                     ".",
                 "200 posting allowed",
                 "480 authentication required",
@@ -464,6 +526,7 @@ void unit_test_protocol()
                 "480 authentication required",
                 "281 authentication accepted",                
                 "101 capabilities list follows",
+                    "",
                     ".",
                 "201 posting prohibited",
                 "411 no such newsgroup",
@@ -494,6 +557,7 @@ void unit_test_protocol()
                 "381 password required",
                 "281 authentication accepted",
                 "101 capabilities list follows",
+                    "",
                     ".",
                 "200 ok posting allowed",
                 "411 no such newsgroup",
@@ -530,6 +594,7 @@ void unit_test_protocol()
                 "MODE-READER",
                 "XZVER",
                 "IHAVE",
+                "",
                 ".",
             "200 posting allowed",
             "411 no such newsgroup",
@@ -540,10 +605,12 @@ void unit_test_protocol()
             "222 body follows",
                "foobarlasg",
                "kekekeke",
+               "",
                ".",
             "215 list of newsgroups follows",
                "misc.test 3 4 y",
                "comp.risks 4 5 m",
+               "",
                ".",
            "205 goodbye"
         };

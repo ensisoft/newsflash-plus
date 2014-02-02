@@ -106,15 +106,17 @@ namespace nntp
         inline
         size_t find_body(const void* buff, size_t size)
         {
-            // end of body data is indicated by .\r\n
-            if (size < 3)
+            // this is referred to as "multi-line data block" in rfc3977
+            // end of body data is indicated by \r\n.\r\n
+            if (size < 5)
                 return 0;
 
             const char* str = static_cast<const char*>(buff);
 
-            for (size_t len=2; len<size; ++len)
+            for (size_t len=4; len<size; ++len)
             {
-                if (str[len] == '\n' && str[len-1] == '\r' && str[len-2] == '.')
+                if (str[len] == '\n' && str[len-1] == '\r' && str[len-2] == '.'
+                    && str[len-3] == '\n' && str[len-4] == '\r')
                     return len+1;
             }
             return 0;
@@ -329,7 +331,10 @@ namespace nntp
                 body_len    = ret.first;
             }
 
-            return std::make_tuple(status, body_offset, data_total - body_offset - 3);  // omit .\r\n from the body length
+            assert(body_len >= 5);
+            assert(data_total >= body_len);
+            
+            return std::make_tuple(status, body_offset, data_total - body_offset - 5);  // omit \r\n.\r\n from the body length
         }
 
     };

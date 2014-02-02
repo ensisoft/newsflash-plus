@@ -137,6 +137,11 @@ namespace newsflash
             return *this;
         }
 
+        bool empty() const
+        {
+            return (size_ - offset_ ==  0);
+        }
+
     private:
         template<typename T>
         T steal(T& loot) const

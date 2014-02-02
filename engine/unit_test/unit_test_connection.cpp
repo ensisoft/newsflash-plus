@@ -21,6 +21,7 @@
 //  THE SOFTWARE.
 
 #include <boost/test/minimal.hpp>
+#include <boost/lexical_cast.hpp>
 #include "../connection.h"
 #include "../tcpsocket.h"
 #include "../sslsocket.h"
@@ -32,15 +33,14 @@ using namespace newsflash;
 
 void unit_test_connection_resolve_error(bool ssl)
 {
-    cmdqueue cmds;
-    resqueue resp;
+    cmdqueue in, out;
 
     connection::server host;
     host.addr = "asdgljasljgas";
     host.port = 8888;
     host.ssl  = ssl;
 
-    connection conn("clog", host, cmds, resp);
+    connection conn("clog", host, in, out);
     wait(conn);
 
     auto status = conn.get_status();
@@ -50,15 +50,14 @@ void unit_test_connection_resolve_error(bool ssl)
 
 void unit_test_connection_refused(bool ssl)
 {
-    cmdqueue cmds;
-    resqueue resp;
+    cmdqueue in, out;
 
     connection::server host;
     host.addr = "localhost";
     host.port = 2119;
     host.ssl  = ssl;
 
-    connection conn("clog", host, cmds, resp);
+    connection conn("clog", host, in, out);
     wait(conn);
 
     auto status = conn.get_status();
@@ -68,15 +67,14 @@ void unit_test_connection_refused(bool ssl)
 
 void unit_test_connection_interrupted(bool ssl)
 {
-    cmdqueue cmds;
-    resqueue resp;
+    cmdqueue in, out;
 
     connection::server host;
     host.addr = "news.budgetnews.net";
     host.port = 199;
     host.ssl  = false;
 
-    connection* conn = new connection("clog", host, cmds, resp);
+    connection* conn = new connection("clog", host, in, out);
 
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
@@ -85,8 +83,7 @@ void unit_test_connection_interrupted(bool ssl)
 
 void unit_test_connection_forbidden(bool ssl)
 {
-    cmdqueue cmds;
-    resqueue resp;
+    cmdqueue in, out;
 
     connection::server host;
     host.addr = "news.budgetnews.net";
@@ -95,7 +92,7 @@ void unit_test_connection_forbidden(bool ssl)
     host.pass = "foobar";
     host.user = "foobar";
 
-    connection conn("clog", host, cmds, resp);
+    connection conn("clog", host, in, out);
     wait(conn);
 
     auto status = conn.get_status();
@@ -105,15 +102,14 @@ void unit_test_connection_forbidden(bool ssl)
 
 void unit_test_connection_timeout_error(bool ssl)
 {
-    cmdqueue cmds;
-    resqueue resp;
+    cmdqueue in, out;
 
     connection::server host;
     host.addr = "www.google.com";
     host.port = 80;
     host.ssl  = false;
 
-    connection conn("clog", host, cmds, resp);
+    connection conn("clog", host, in, out);
     wait(conn);
 
     auto status = conn.get_status();
@@ -123,17 +119,12 @@ void unit_test_connection_timeout_error(bool ssl)
 
 void unit_test_connection_protocol_error(bool ssl)
 {
-    cmdqueue cmds;
-    resqueue resp;
-
-    connection::server host;
     // todo:
 }
 
 void unit_test_connection_success(bool ssl)
 {
-    cmdqueue commands;
-    resqueue responses;
+    cmdqueue commands, responses;
 
     connection::server host;
     host.addr = "freenews.netfront.net";
@@ -147,101 +138,208 @@ void unit_test_connection_success(bool ssl)
     BOOST_REQUIRE(status.state == connection::state::idle);
     BOOST_REQUIRE(status.error == connection::error::none);
 
+    // {
+    //     cmd_list cmd;
+    //     cmd.id     = 123;
+    //     cmd.taskid = 444;
+    //     cmd.size   = 1024 * 5;
+    //     in.push_back(cmd);
+
+    //     wait(out);
+    //     auto ret = out.try_get_front();
+
+    //     auto& list = command_cast<cmd_list>(ret);
+
+    //     BOOST_REQUIRE(list.id == cmd.id);
+    //     BOOST_REQUIRE(list.taskid == cmd.taskid);
+    // }
+
+    // // no such group
+    // {
+    //     cmd_group cmd;
+    //     cmd.type   = command::cmdtype::group;
+    //     cmd.name   = "mozilla.support.thunderbird-blalala";
+    //     cmd.id     = 1;
+    //     cmd.taskid = 2;
+    //     cmd.success = true;
+    //     cmd.article_count = cmd.high_water_mark = cmd.low_water_mark = 0;
+    //     in.push_back(cmd);        
+
+    //     wait(out);
+    //     auto ret = out.try_get_front();
+
+    //     auto& group = command_cast<cmd_group>(ret);
+
+    //     BOOST_REQUIRE(group.id == cmd.id);
+    //     BOOST_REQUIRE(group.taskid == cmd.taskid);
+    //     BOOST_REQUIRE(group.success == false);
+    //     BOOST_REQUIRE(group.article_count == 0);
+    //     BOOST_REQUIRE(group.low_water_mark == 0);
+    //     BOOST_REQUIRE(group.high_water_mark == 0);
+    // }
+
+    // // a valid group
+    // {
+    //     cmd_group cmd;
+    //     cmd.type   = command::cmdtype::group;
+    //     cmd.name   = "mozilla.support.thunderbird";
+    //     cmd.id     = 1;
+    //     cmd.taskid = 2;
+    //     in.push_back(cmd);
+
+    //     wait(out);
+    //     auto ret = out.try_get_front();
+
+    //     auto& group = command_cast<cmd_group>(ret);
+
+    //     BOOST_REQUIRE(group.success);
+    //     BOOST_REQUIRE(group.article_count);
+    //     BOOST_REQUIRE(group.high_water_mark);
+    //     BOOST_REQUIRE(group.low_water_mark);
+    // }
+
+    // // no such group for xover
+    // {
+    //     cmd_xover cmd;
+    //     cmd.type = command::cmdtype::xover;
+    //     cmd.size = 1024;
+    //     cmd.success = true;
+    //     cmd.group = "mozilla.support.thunderbird.blala";
+    //     in.push_back(cmd);
+
+    //     wait(out);
+    //     auto ret = out.try_get_front();
+
+    //     auto& xover = command_cast<cmd_xover>(ret);
+    //     BOOST_REQUIRE(xover.success == false);
+    // }
+
+    // // succesful xover
+    // {
+    //     cmd_xover cmd;
+    //     cmd.type = command::cmdtype::xover;
+    //     cmd.size = 1024;
+    //     cmd.success = false;
+    //     cmd.group = "mozilla.support.thunderbird";
+    //     cmd.start = 1;
+    //     cmd.end   = 100000;
+    //     in.push_back(cmd);
+
+    //     wait(out);
+    //     auto ret = out.try_get_front();
+
+    //     auto& xover = command_cast<cmd_xover>(ret);
+
+    //     BOOST_REQUIRE(xover.success);
+    //     BOOST_REQUIRE(!xover.data->empty());
+    // }
+
+
+    // test body.
     {
-        cmd_list cmd;
-        cmd.id     = 123;
-        cmd.taskid = 444;
-        cmd.size   = 1024 * 5;
-        commands.post_back(cmd_list::ID, cmd);
 
-        wait(responses);
-        auto resp = responses.get_front();
+        std::string available;
+        std::string unavailable;
 
-        cmd_list& ret = resp->as<cmd_list>();
-        BOOST_REQUIRE(ret.id == cmd.id);
-        BOOST_REQUIRE(ret.taskid == cmd.taskid);
+        // request some group information and try to find
+        // article ids for available and unavailable messages.
+        {
+
+            commands.push_back(new cmd_group{"mozilla.support.thunderbird"});
+            auto response = responses.get_front();
+            auto group = command_cast<cmd_group>(response);
+
+            available   = boost::lexical_cast<std::string>(group.high_water_mark);
+            unavailable = boost::lexical_cast<std::string>(group.high_water_mark + 1000);
+        }
+
+        // unavailable
+        {
+            commands.push_back(new cmd_body{unavailable, "mozilla.support.thunderbird"});
+
+            auto response = responses.get_front();
+            auto body = command_cast<cmd_body>(response);
+            BOOST_REQUIRE(body.status == cmd_body::cmdstatus::unavailable);
+            BOOST_REQUIRE(body.data->empty());
+        }
+
+        // available
+        {
+            commands.push_back(new cmd_body{available, "mozilla.support.thunderbird"});
+
+            auto response = responses.get_front();
+            auto body = command_cast<cmd_body>(response);
+
+            BOOST_REQUIRE(body.status == cmd_body::cmdstatus::success);
+            BOOST_REQUIRE(!body.data->empty());
+            
+        }
     }
 
-    // no such group
+}
+
+void unit_test_multiple_connections(bool ssl)
+{
+    cmdqueue commands, responses;
+
+    connection::server host;
+    host.addr = "freenews.netfront.net";
+    host.port = 119;
+    host.ssl  = ssl;    
+
+    std::unique_ptr<connection> conn1(new connection("connection1.log", host, commands, responses));
+    std::unique_ptr<connection> conn2(new connection("connection2.log", host, commands, responses));
+    std::unique_ptr<connection> conn3(new connection("connection3.log", host, commands, responses));
+
+    for (size_t i=0; i<1000; ++i)
     {
-        cmd_group cmd;
-        cmd.name   = "mozilla.support.thunderbird-blalala";
-        cmd.id     = 1;
-        cmd.taskid = 2;
-        cmd.success = true;
-        cmd.article_count = cmd.high_water_mark = cmd.low_water_mark = 0;
-        commands.post_back(cmd_group::ID, cmd);        
-
-        wait(responses);
-        auto resp = responses.get_front();
-
-        cmd_group& ret = resp->as<cmd_group>();
-
-        BOOST_REQUIRE(ret.id == cmd.id);
-        BOOST_REQUIRE(ret.taskid == cmd.taskid);
-        BOOST_REQUIRE(ret.success == false);
-        BOOST_REQUIRE(ret.article_count == 0);
-        BOOST_REQUIRE(ret.low_water_mark == 0);
-        BOOST_REQUIRE(ret.high_water_mark == 0);
+        const std::string id = boost::lexical_cast<std::string>(i);
+        commands.push_back(new cmd_body{id, "mozilla.support.thunderbird"});
     }
 
-    // a valid group
+    size_t resp_count = 0;
+    while (resp_count < 999)
     {
-        cmd_group cmd;
-        cmd.name   = "mozilla.support.thunderbird";
-        cmd.id     = 1;
-        cmd.taskid = 2;
-        commands.post_back(cmd_group::ID, cmd);
+        auto conn1_status = conn1->wait();
+        auto conn2_status = conn2->wait();
+        auto conn3_status = conn3->wait();
+        auto has_response = responses.wait();
 
-        wait(responses);
-        auto resp = responses.get_front();
-
-        cmd_group& ret = resp->as<cmd_group>();
-
-        BOOST_REQUIRE(ret.success);
-        BOOST_REQUIRE(ret.article_count);
-        BOOST_REQUIRE(ret.high_water_mark);
-        BOOST_REQUIRE(ret.low_water_mark);
-    }
-
-    // no such group for xover
-    {
-        cmd_xover cmd;
-        cmd.size = 1024;
-        cmd.success = true;
-        cmd.group = "mozilla.support.thunderbird.blala";
-        commands.post_back(cmd_xover::ID, cmd);
-
-        wait(responses);
-        auto resp = responses.get_front();
-
-        cmd_xover& ret = resp->as<cmd_xover>();
-        BOOST_REQUIRE(ret.success == false);
-    }
-
-    // succesful xover
-    {
-        cmd_xover cmd;
-        cmd.size = 1024;
-        cmd.success = false;
-        cmd.group = "mozilla.support.thunderbird";
-        cmd.start = 1;
-        cmd.end   = 100000;
-        commands.post_back(cmd_xover::ID, cmd);
-
-        wait(responses);
-        auto resp = responses.get_front();
-
-        cmd_xover& ret = resp->as<cmd_xover>();
-
-        BOOST_REQUIRE(ret.success);
-        BOOST_REQUIRE(ret.data->size());
-    }
-
-    // todo: body
-    {
-        
-    }
+        newsflash::wait_for(conn1_status, conn2_status, conn3_status, has_response);
+        if (has_response)
+        {
+            auto response = responses.get_front();
+            auto body = command_cast<cmd_body>(response);
+            std::cout << "\nBODY " << body.article << "\n";
+            if (body.status == cmd_body::cmdstatus::unavailable)
+                std::cout << "unavailable\n";
+            else if (body.status == cmd_body::cmdstatus::success)
+            {
+                const char* data = (const char*)buffer_data(*body.data);
+                std::cout << "success\n";
+                std::cout.write(data + body.data->offset(), body.data->size());
+            }
+            ++resp_count;
+        }
+        else if (conn1_status)
+        {
+            auto status = conn1->get_status();
+            if (status.state == connection::state::error)
+                conn1.reset(new connection("connection1.log", host, commands, responses));
+        }
+        else if (conn2_status)
+        {
+            auto status = conn2->get_status();
+            if (status.state == connection::state::error)
+                conn2.reset(new connection("connection2.log", host, commands, responses));
+        }
+        else if (conn3_status)
+        {
+            auto status = conn3->get_status();
+            if (status.state == connection::state::error)
+                conn3.reset(new connection("connection3.log", host, commands, responses));
+        }
+    }   
 }
 
 int test_main(int argc, char* argv[])
@@ -251,8 +349,7 @@ int test_main(int argc, char* argv[])
     unit_test_connection_interrupted(false);
     unit_test_connection_forbidden(false);
     unit_test_connection_timeout_error(false);
-
     unit_test_connection_success(false);
-
+    unit_test_multiple_connections(false);
     return 0;
 }

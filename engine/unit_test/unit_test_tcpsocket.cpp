@@ -75,7 +75,7 @@ void test_connection_refused()
         tcp.connect(resolve_host_ipv4("127.0.0.1"), 8000);
 
         auto handle = tcp.wait();
-        wait(handle);
+        wait_for(handle);
         BOOST_REQUIRE(handle.read());
         BOOST_REQUIRE(tcp.complete_connect() != 0);
     }
@@ -85,7 +85,7 @@ void test_connection_refused()
         tcp.connect(resolve_host_ipv4("192.168.0.240"), 9999);
 
         auto handle = tcp.wait();
-        wait(handle);
+        wait_for(handle);
         BOOST_REQUIRE(handle.read());
         BOOST_REQUIRE(tcp.complete_connect() != 0);
     }
@@ -95,7 +95,7 @@ void test_connection_refused()
         tcp.connect(resolve_host_ipv4("192.168.0.1"), 9999);
 
         auto handle = tcp.wait();
-        wait(handle);
+        wait_for(handle);
         BOOST_REQUIRE(handle.read());
         BOOST_REQUIRE(tcp.complete_connect() != 0);
     }
@@ -144,7 +144,7 @@ void test_connection_success()
             if (sent != buff.len)
             {
                 auto handle = client.wait(false, true);
-                wait(handle);
+                wait_for(handle);
                 BOOST_REQUIRE(handle.write());                
             
                 int ret = client.sendsome(buff.data + sent, buff.len - sent);
@@ -153,7 +153,7 @@ void test_connection_success()
             if (recv != buff.len)
             {
                 auto handle = tcp.wait(true, false);
-                wait(handle);
+                wait_for(handle);
                 BOOST_REQUIRE(handle.read());
 
                 int ret = tcp.recvsome(buff.buff + recv, buff.len - recv);

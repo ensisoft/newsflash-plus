@@ -167,16 +167,14 @@ namespace newsflash
 
         // try to get a message from the queue returning immediately.
         // returns true if message was available or otherwise false.
-        bool try_get_front(std::unique_ptr<message>& msg)
+        std::unique_ptr<message> try_get_front()
         {
             std::unique_lock<std::mutex> lock(mutex_);
 
             if (head_ == nullptr)
-                return false;
+                return std::unique_ptr<message>();
 
-            msg = std::unique_ptr<message>(pop_head());
-
-            return true;
+            return std::unique_ptr<message>(pop_head());
         }
 
         // get a message. blocks untill a message is available.

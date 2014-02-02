@@ -60,17 +60,17 @@ void unit_test_event()
         newsflash::event event;
 
         auto handle = event.wait();
-        BOOST_REQUIRE(!wait(handle, std::chrono::milliseconds(0)));
+        BOOST_REQUIRE(!wait_for(handle, std::chrono::milliseconds(0)));
         BOOST_REQUIRE(!handle.read());
 
         event.set();
         handle = event.wait();
-        BOOST_REQUIRE(wait(handle, std::chrono::milliseconds(0)));
+        BOOST_REQUIRE(wait_for(handle, std::chrono::milliseconds(0)));
         BOOST_REQUIRE(handle.read());
 
         event.reset();
         handle = event.wait();
-        BOOST_REQUIRE(!wait(handle, std::chrono::milliseconds(0)));
+        BOOST_REQUIRE(!wait_for(handle, std::chrono::milliseconds(0)));
         BOOST_REQUIRE(!handle.read());
 
     }    
@@ -81,7 +81,7 @@ void unit_test_event()
         auto handle1 = event1.wait();
         auto handle2 = event2.wait();
 
-        BOOST_REQUIRE(!wait(handle1, handle2, std::chrono::milliseconds(0)));
+        BOOST_REQUIRE(!wait_for(handle1, handle2, std::chrono::milliseconds(0)));
         BOOST_REQUIRE(!handle1.read());
         BOOST_REQUIRE(!handle2.read());
 
@@ -89,7 +89,7 @@ void unit_test_event()
 
         handle1 = event1.wait();
         handle2 = event2.wait();
-        BOOST_REQUIRE(wait(handle1, handle2, std::chrono::milliseconds(0)));
+        BOOST_REQUIRE(wait_for(handle1, handle2, std::chrono::milliseconds(0)));
         BOOST_REQUIRE(!handle1.read());
         BOOST_REQUIRE(handle2.read());
 
@@ -98,7 +98,7 @@ void unit_test_event()
 
         handle1 = event1.wait();
         handle2 = event2.wait();
-        BOOST_REQUIRE(wait(handle1, handle2, std::chrono::milliseconds(0)));
+        BOOST_REQUIRE(wait_for(handle1, handle2, std::chrono::milliseconds(0)));
         BOOST_REQUIRE(handle1.read());
         BOOST_REQUIRE(!handle2.read());
 
@@ -112,7 +112,7 @@ void unit_test_event()
         
         // begin wait forever
         auto handle = event.wait();
-        wait(handle);
+        wait_for(handle);
         
         BOOST_REQUIRE(handle.read());
         
@@ -193,7 +193,8 @@ void unit_test_queue_post()
 
         newsflash::msgqueue queue;
         BOOST_REQUIRE(queue.size() == 0);
-        BOOST_REQUIRE(!queue.try_get_front(msg));
+        auto front = queue.try_get_front();
+        BOOST_REQUIRE(!front);
 
      
         queue.post_back(123, foo{444, "jallukola"});

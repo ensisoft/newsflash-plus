@@ -21,7 +21,7 @@
 //  THE SOFTWARE.
 
 #include <boost/thread/tss.hpp>
-
+#include <iostream>
 #include <iomanip>
 #include "platform.h"
 #include "logging.h"

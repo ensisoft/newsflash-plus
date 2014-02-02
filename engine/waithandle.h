@@ -32,7 +32,9 @@
 
 namespace newsflash
 {
-    // waitable handle object
+    // waitable handle object. the handles are not resuable and should
+    // only be used in a single call to wait(...). after that a new
+    // waitable handle needs to be queried from the object.
     class waithandle
     {
     public:
@@ -53,7 +55,7 @@ namespace newsflash
             extra.socket_ = sock;
         }
 
-        // check for readability
+        // check for readability. this is always available.
         bool read() const
         {
             return read_;
@@ -67,12 +69,25 @@ namespace newsflash
             return write_;
         }
 
+        operator bool() const
+        {
+            return read();
+        }
+
+
+        // wait indefinitely for the listed handles.
+        // returns when any handle becomes signaled. 
         static 
         void wait(const list& handles)
         {
             wait_handles(handles, nullptr);
         }
 
+        // wait untill the specified milliseconds elapses
+        // or any of the listed handles becomes signaled.
+        // if timeout occurs returns false, otherwise true
+        // and the handles need to be checked which one is
+        // in signaled state.
         static 
         bool wait(const list& handles, const std::chrono::milliseconds& ms)
         {
@@ -104,57 +119,62 @@ namespace newsflash
 
 
     inline
-    void wait(waithandle& h1)
+    void wait_for(waithandle& h1)
     {
-        const waithandle::list handles {
-            &h1
-        };
+        const waithandle::list handles { &h1 };
         
         waithandle::wait(handles);
     }
     inline
-    void wait(waithandle& h1, waithandle& h2)
+    void wait_for(waithandle& h1, waithandle& h2)
     {
-        const waithandle::list handles {
-            &h1, &h2
-        };
+        const waithandle::list handles { &h1, &h2 };
         
         waithandle::wait(handles);
     }
     inline
-    void wait(waithandle& h1, waithandle& h2, waithandle& h3)
+    void wait_for(waithandle& h1, waithandle& h2, waithandle& h3)
     {
-        const waithandle::list handles {
-            &h1, &h2, &h3
-        };
+        const waithandle::list handles { &h1, &h2, &h3 };
         
         waithandle::wait(handles);
     }    
 
-    inline 
-    bool wait(waithandle& h1, const std::chrono::milliseconds& ms)
+    inline
+    void wait_for(waithandle& h1, waithandle& h2, waithandle& h3, waithandle& h4)
     {
-        const waithandle::list handles {
-            &h1
-        };
+        const waithandle::list handles { &h1, &h2, &h3, &h4 };
+
+        waithandle::wait(handles);
+    }
+
+    inline 
+    bool wait_for(waithandle& h1, const std::chrono::milliseconds& ms)
+    {
+        const waithandle::list handles { &h1 };
         
         return waithandle::wait(handles, ms);
     }
     inline 
-    bool wait(waithandle& h1, waithandle& h2, const std::chrono::milliseconds& ms)
+    bool wait_for(waithandle& h1, waithandle& h2, const std::chrono::milliseconds& ms)
     {
-        const waithandle::list handles {
-            &h1, &h2
-        };
+        const waithandle::list handles { &h1, &h2 };
 
         return waithandle::wait(handles, ms);
     }
     inline 
-    bool wait(waithandle& h1, waithandle& h2, waithandle& h3, const std::chrono::milliseconds& ms)
+    bool wait_for(waithandle& h1, waithandle& h2, waithandle& h3, const std::chrono::milliseconds& ms)
     {
-        const waithandle::list handles {
-            &h1, &h2, &h3
-        }; 
+        const waithandle::list handles { &h1, &h2, &h3 }; 
+
+        return waithandle::wait(handles, ms);
+    }
+
+    inline
+    bool wait_for(waithandle& h1, waithandle&h2, waithandle& h3, waithandle& h4,
+        const std::chrono::milliseconds& ms)
+    {
+        const waithandle::list handles { &h1, &h2, &h3, &h4 };
 
         return waithandle::wait(handles, ms);
     }

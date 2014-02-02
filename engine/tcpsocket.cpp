@@ -103,9 +103,7 @@ void tcpsocket::sendall(const void* buff, int len)
                 throw socket::io_exception("socket send", get_last_socket_error());
 
             auto handle = wait(false, true);
-            newsflash::wait(handle);
-            assert(handle.write());
-
+            newsflash::wait_for(handle);
             ret = 0;
         }
         sent += ret;

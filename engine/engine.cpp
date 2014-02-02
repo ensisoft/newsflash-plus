@@ -75,12 +75,12 @@ public:
 private:
     void handle_messages()
     {
-        std::unique_ptr<msgqueue::message> msg;
+        // std::unique_ptr<msgqueue::message> msg;
 
-        while (messages_.try_get_front(msg))
-        {
+        // while (messages_.try_get_front(msg))
+        // {
 
-        }
+        // }
     }
 
     void dispatch_responses()
@@ -137,23 +137,23 @@ private:
         while (true)
         {
             auto msg_handle = messages_.wait();
-            auto res_handle = responses_.wait();
+            // auto res_handle = responses_.wait();
 
-            if (!wait(msg_handle, res_handle, scheduling_interval))
-            {
-                remove_tasks();
-                remove_connections();
-                schedule_tasks();
-                schedule_connections();
-            }
-            else if (msg_handle.read())
-            {
-                handle_messages();
-            }
-            else if (res_handle.read())
-            {
-                dispatch_responses();
-            }
+            // if (!wait(msg_handle, res_handle, scheduling_interval))
+            // {
+            //     remove_tasks();
+            //     remove_connections();
+            //     schedule_tasks();
+            //     schedule_connections();
+            // }
+            // else if (msg_handle.read())
+            // {
+            //     handle_messages();
+            // }
+            // else if (res_handle.read())
+            // {
+            //     dispatch_responses();
+            // }
         }
     }
 
@@ -184,8 +184,8 @@ private:
 
     listener* listener_;    
     msgqueue messages_;
-    cmdqueue commands_;
-    resqueue responses_;
+    //cmdqueue commands_;
+    //resqueue responses_;
     tasklist tasks_;
     connlist conns_;
     acclist  accounts_;
