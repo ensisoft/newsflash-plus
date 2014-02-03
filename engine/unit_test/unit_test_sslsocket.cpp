@@ -21,10 +21,14 @@
 //  THE SOFTWARE.
 
 #include <boost/test/minimal.hpp>
+#include <condition_variable>
+#include <openssl/err.h>
+#include <functional>
 #include <thread>
 #include <chrono>
 #include "../socketapi.h"
 #include "../sslsocket.h"
+#include "../sslcontext.h"
 #include "../platform.h"
 #include "../types.h"
 #include "unit_test_common.h"
@@ -38,39 +42,208 @@
 
 using namespace newsflash;
 
-native_socket_t openhost(int port)
+
+void test_connection_failure()
 {
-    auto sock = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    // refused
+    {
+        sslsocket sock;
+        sock.begin_connect(resolve_host_ipv4("127.0.0.1"), 8000);
+
+        wait(sock);
+        REQUIRE_EXCEPTION(sock.complete_connect());
+    }
+
+    // resolve error
+    {
+        sslsocket sock;
+        sock.begin_connect(resolve_host_ipv4("blablahaa"), 9999);
+
+        wait(sock);
+        REQUIRE_EXCEPTION(sock.complete_connect());
+    }
+}
+
+struct checkpoint {
+    std::mutex m;
+    std::condition_variable c;
+    bool hit;
+
+    checkpoint() : hit(false)
+    {}
+
+    void check() 
+    {
+        std::unique_lock<std::mutex> lock(m);
+        while (!hit)
+            c.wait(lock);
+    }
+
+    void mark()
+    {
+        std::lock_guard<std::mutex> lock(m);
+        hit = true;
+        c.notify_one();
+    }
+
+    void clear()
+    {
+        std::lock_guard<std::mutex> lock(m);
+        hit = false;        
+    }
+};
+
+struct buffer {
+    int   len;
+    char* data;
+    char* buff;
+} buffers[] = {
+    {10},
+    {1024},
+    {1024 * 1024},
+    {1024 * 1024 * 5},
+    {555}
+};
+
+checkpoint open_socket;
+checkpoint send_buffer;
+
+// DH ciphers are the only ciphers that do not require a certificate.
+// for DH ciphers the DH key parameters must be set.
+
+void ssl_server_main(int port)
+{
+    auto listener = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
     struct sockaddr_in addr {0};
     addr.sin_family      = AF_INET;
     addr.sin_port        = htons(port);
     addr.sin_addr.s_addr = INADDR_ANY;
 
-    while (::bind(sock, static_cast<sockaddr*>((void*)&addr), sizeof(addr)) == OS_SOCKET_ERROR)
+    while (::bind(listener, static_cast<sockaddr*>((void*)&addr), sizeof(addr)) == OS_SOCKET_ERROR)
         std::this_thread::sleep_for(std::chrono::seconds(1));
 
-    BOOST_REQUIRE(listen(sock, 1) != OS_SOCKET_ERROR);
+    BOOST_REQUIRE(listen(listener, 1) != OS_SOCKET_ERROR);
 
-    return sock;
-}
+    open_socket.mark();
 
-sslsocket accept(native_socket_t fd)
-{
-    
-}
+    // get a client connection
+    memset(&addr, 0, sizeof(addr));
+    socklen_t len = sizeof(addr);
+    auto fd = ::accept(listener, static_cast<sockaddr*>((void*)&addr), &len);
+    BOOST_REQUIRE(fd != OS_INVALID_SOCKET);
 
-void test_connection_refused()
-{
 
+    // create new SSL server context.
+    SSL_CTX* ctx = SSL_CTX_new(SSLv23_server_method());
+    BOOST_REQUIRE(ctx);
+
+    // create file bio...
+    BIO* pem = BIO_new_file("test_data/dh1024.pem", "r");
+    BOOST_REQUIRE(pem);
+
+    // and read the DH key parameters from the file bio
+    DH* dh = PEM_read_bio_DHparams(pem, NULL, NULL, NULL);
+    BOOST_REQUIRE(dh);
+
+
+    // set the DH key parameters for the session key generation.
+    // the actual key is generated on the fly and the parameters
+    // coming from the dh file can be reused. 
+    BOOST_REQUIRE(SSL_CTX_set_tmp_dh(ctx, dh) == 1);
+    //BOOST_REQUIRE(SSL_CTX_set_tmp_rsa(ctx, rsa) == 1);
+    BOOST_REQUIRE(SSL_CTX_set_cipher_list(ctx, "ALL") == 1);
+
+    SSL* ssl = SSL_new(ctx);
+    BIO* bio = BIO_new_socket(fd, BIO_NOCLOSE);
+    SSL_set_bio(ssl, bio, bio);
+
+    BOOST_REQUIRE(SSL_accept(ssl) == 1);
+
+    sslsocket sock(fd, get_wait_handle(fd), ssl, bio);
+
+
+    // receive data
+    for (auto& buff : buffers)
+    {
+        std::memset(buff.buff, 0, buff.len);
+        int recv = 0;
+        do
+        {
+            auto can_read = sock.wait(true, false);
+            wait_for(can_read);
+            int ret = sock.recvsome(buff.buff + recv, buff.len - recv);
+            recv += ret;
+        }
+        while (recv != buff.len);
+
+        BOOST_REQUIRE(!std::memcmp(buff.data, buff.buff, buff.len));
+
+        send_buffer.mark();
+    }
+
+    sock.close();
+
+    BIO_free(pem);
+    SSL_CTX_free(ctx);
+
+    newsflash::closesocket(listener);
 }
 
 void test_connection_success()
-{}
+{
+    for (auto& buff : buffers)
+    {
+        buff.data = new char[buff.len];
+        buff.buff = new char[buff.len];
+        fill_random(buff.data, buff.len);
+    }
+
+    // open ssl server
+    std::thread server(std::bind(ssl_server_main, 8001));
+
+    open_socket.check();
+
+    // connect the client socket
+    sslsocket sock;
+    sock.begin_connect(0x7F000001, 8001);
+    wait(sock);
+    sock.complete_connect();
+
+    // transfer data
+    for (auto& buff : buffers)
+    {
+        send_buffer.clear();
+
+        int sent = 0;
+        do
+        {
+            auto can_write = sock.wait(false, true);
+            wait_for(can_write);
+            int ret = sock.sendsome(buff.data + sent, buff.len - sent);
+            sent += ret;
+        }
+        while (sent != buff.len);
+
+        send_buffer.check();
+    }
+
+    server.join();
+
+    // cleanup
+    for (auto& buff : buffers)
+    {
+        delete [] buff.data;
+        delete [] buff.buff;
+    }
+ 
+}
 
 int test_main(int argc, char* argv[])
 {
-    test_connection_refused();
+    newsflash::openssl_init();
+
+    test_connection_failure();
     test_connection_success();
 
     return 0;

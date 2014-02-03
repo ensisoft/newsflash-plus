@@ -38,6 +38,7 @@
 
 namespace newsflash
 {
+    typedef uint32_t sockerr_t;
     typedef uint32_t ipv4addr_t;
     typedef uint16_t port_t;
     // resolve the host name and return the first address in network byte order
@@ -54,13 +55,13 @@ namespace newsflash
     // complete the previously started connection attempt. 
     // makes the socket blocking again and returns a platform specific
     // error code indicating the status of the connection attempt.
-    native_errcode_t complete_socket_connect(native_handle_t handle, native_socket_t sock);
+    sockerr_t complete_socket_connect(native_handle_t handle, native_socket_t sock);
 
     void closesocket(native_handle_t handle, native_socket_t sock);
 
     void closesocket(native_socket_t sock);
     
-    native_errcode_t get_last_socket_error();
+    sockerr_t get_last_socket_error();
 
 
     std::string format_ipv4(ipv4addr_t addr);

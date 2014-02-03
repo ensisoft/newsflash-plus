@@ -45,5 +45,7 @@ namespace newsflash
 
     localtime get_localtime();
 
+    unsigned long get_thread_identity();
+
 } // newsflash
 

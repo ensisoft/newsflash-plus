@@ -21,8 +21,7 @@
 //  THE SOFTWARE.
 
 #include <newsflash/config.h>
-#include <boost/thread/tss.hpp>
-#include <fstream>
+#include <ostream>
 
 #pragma once
 

@@ -27,6 +27,7 @@
 #elif defined(LINUX_OS)
 #  include <sys/time.h>
 #  include <time.h>
+#  include <pthread.h>
 #endif
 #include <stdexcept>
 #include <cstring>
@@ -81,6 +82,11 @@ localtime get_localtime()
     return ret;
 }
 
+unsigned long get_thread_identity()
+{
+    return (unsigned long)GetCurrentThreadId();
+}
+
 #elif defined(LINUX_OS)
 
 std::string get_error_string(int code)
@@ -109,6 +115,11 @@ localtime get_localtime()
     ret.seconds = time.tm_sec;
     ret.millis  = tv.tv_usec / 1000;    
     return ret;
+}
+
+unsigned long get_thread_identity()
+{
+    return (unsigned long)pthread_self();
 }
 
 #endif

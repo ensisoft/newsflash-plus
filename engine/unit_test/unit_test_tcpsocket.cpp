@@ -68,36 +68,24 @@ tcpsocket accept(native_socket_t fd)
     return {sock, handle};
 }
 
-void test_connection_refused()
+void test_connection_failure()
 {
+    // refused
     {
-        tcpsocket tcp;
-        tcp.connect(resolve_host_ipv4("127.0.0.1"), 8000);
+        tcpsocket sock;
+        sock.begin_connect(resolve_host_ipv4("127.0.0.1"), 8000);
 
-        auto handle = tcp.wait();
-        wait_for(handle);
-        BOOST_REQUIRE(handle.read());
-        BOOST_REQUIRE(tcp.complete_connect() != 0);
+        wait(sock);
+        REQUIRE_EXCEPTION(sock.complete_connect());
     }
 
+    // resolve error
     {
-        tcpsocket tcp;
-        tcp.connect(resolve_host_ipv4("192.168.0.240"), 9999);
+        tcpsocket sock;
+        sock.begin_connect(resolve_host_ipv4("blahbalaha"), 9999);
 
-        auto handle = tcp.wait();
-        wait_for(handle);
-        BOOST_REQUIRE(handle.read());
-        BOOST_REQUIRE(tcp.complete_connect() != 0);
-    }
-
-    {
-        tcpsocket tcp;
-        tcp.connect(resolve_host_ipv4("192.168.0.1"), 9999);
-
-        auto handle = tcp.wait();
-        wait_for(handle);
-        BOOST_REQUIRE(handle.read());
-        BOOST_REQUIRE(tcp.complete_connect() != 0);
+        wait(sock);
+        REQUIRE_EXCEPTION(sock.complete_connect());
     }
 }
 
@@ -106,10 +94,10 @@ void test_connection_success()
     auto sock = openhost(8001);
 
     tcpsocket tcp;
-    tcp.connect(resolve_host_ipv4("127.0.0.1"), 8001);
+    tcp.begin_connect(resolve_host_ipv4("127.0.0.1"), 8001);
 
     tcpsocket client = ::accept(sock);
-    BOOST_REQUIRE(tcp.complete_connect() == 0);
+    tcp.complete_connect();
 
     newsflash::closesocket(sock);
 
@@ -176,7 +164,7 @@ void test_connection_success()
 
 int test_main(int, char*[])
 {
-    test_connection_refused();
+    test_connection_failure();
     test_connection_success();
 
     return 0;

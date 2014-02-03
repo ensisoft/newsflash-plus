@@ -109,7 +109,7 @@ std::pair<native_socket_t, native_handle_t> begin_socket_connect(ipv4addr_t host
     return {s, h};
 }
 
-native_errcode_t complete_socket_connect(native_handle_t handle, native_socket_t sock)
+sockerr_t complete_socket_connect(native_handle_t handle, native_socket_t sock)
 {
     int len = sizeof(len);
     int err = 0;
@@ -149,7 +149,7 @@ void closesocket(native_socket_t sock)
     CHECK(::closesocket(sock), 0);
 }
 
-native_errcode_t get_last_socket_error()
+sockerr_t get_last_socket_error()
 {
     return WSAGetLastError();
 }
@@ -207,7 +207,7 @@ std::pair<native_socket_t, native_handle_t> begin_socket_connect(ipv4addr_t host
     return {fd, fd};
 }
 
-native_errcode_t complete_socket_connect(native_handle_t handle, native_socket_t sock)
+sockerr_t complete_socket_connect(native_handle_t handle, native_socket_t sock)
 {
     assert(handle == sock);
 
@@ -234,7 +234,7 @@ native_handle_t get_wait_handle(native_socket_t sock)
     return sock;
 }
 
-native_errcode_t get_last_socket_error()
+sockerr_t get_last_socket_error()
 {
     return errno;
 }

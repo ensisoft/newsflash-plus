@@ -92,7 +92,7 @@ namespace newsflash
 
     private:
         void main(const server& host, const std::string& logfile);
-        bool connect(const server& host);
+        void connect(const server& host);
         void execute();
         void ping();
         void quit();
@@ -116,7 +116,7 @@ namespace newsflash
 
         std::string username_;
         std::string password_;
-        std::thread thread_;        
+        std::unique_ptr<std::thread> thread_;        
         std::unique_ptr<socket> socket_;
         protocol proto_;
         event shutdown_;

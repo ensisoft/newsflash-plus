@@ -116,10 +116,11 @@ namespace newsflash
         std::shared_ptr<buffer> data;
         bool success;
 
-        cmd_xover(std::string groupname) 
-            : group(std::move(groupname)), start(0), end(0), success(false)
+        cmd_xover(std::string groupname, std::size_t startrange, std::size_t endrange)
+            : group(std::move(groupname)), start(startrange), end(endrange), success(false)
         {
             type = cmdtype::xover;
+            size = 1024 * 512;
         }
     };
 
@@ -145,6 +146,7 @@ namespace newsflash
         cmd_list()
         {
             type = cmdtype::list;
+            size = 1024 * 5;
         }
     };
 

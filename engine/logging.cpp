@@ -22,6 +22,7 @@
 
 #include <boost/thread/tss.hpp>
 #include <iostream>
+#include <fstream>
 #include <iomanip>
 #include "platform.h"
 #include "logging.h"

@@ -55,8 +55,8 @@ if [ os.name ] = LINUX
 {
    # on linux openssl is just *there* (only dev-package needs to be installed)
    # so only got to name the libraries here
-   lib openssl : : <name>ssl ;
-   lib crypto  : : <name>crypto ;
+   lib openssl : : <name>ssl    <search>$(/usr/lib) ;
+   lib crypto  : : <name>crypto <search>$(/usr/lib) ; 
 }
 
 

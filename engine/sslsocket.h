@@ -24,19 +24,36 @@
 
 #include <boost/noncopyable.hpp>
 #include <openssl/ssl.h>
+#include "sslcontext.h"
 #include "socket.h"
 
 namespace newsflash
 {
+    // transfer data over SSL over TCP socket. 
     class sslsocket : public socket, boost::noncopyable
     {
     public:
         sslsocket();
+
+        // take ownership of the existing socket and handle
+        // objects and try to initialize SSL in client mode. 
+        // the socket is assumed to be already connected.
+        sslsocket(native_socket_t sock, native_handle_t handle);
+
+        // take ownership of the existing socket, handle 
+        // and SSL objects. The socket is assume to be already
+        // connected and associated with the given SSL objects. 
+        // Also the SSL operation mode is presumed to be already set 
+        // (SSL_accept vs. SSL_connect).
+        sslsocket(native_socket_t sock, native_handle_t handle, SSL* ssl, BIO* bio);
+
+        sslsocket(sslsocket&& other);
+
        ~sslsocket();
 
-       virtual void connect(ipv4addr_t host, port_t port) override;
+       virtual void begin_connect(ipv4addr_t host, port_t port) override;
 
-       virtual native_errcode_t complete_connect() override;
+       virtual void complete_connect() override;
 
        virtual void sendall(const void* buff, int len) override;
 
@@ -49,25 +66,27 @@ namespace newsflash
        virtual waithandle wait() const override;
 
        virtual waithandle wait(bool waitread, bool waitwrite) const override;
-    private:
-        enum class state {
-            nothing, connecting, ready
-        };
 
+       sslsocket& operator=(sslsocket&& other);
+    private:
+        void ssl_wait_write();
+        void ssl_wait_read();
+        void ssl_connect();
+
+    private:
         // actual socket handle
         native_socket_t socket_;
 
         // wait handle for the socket
         native_handle_t handle_;
 
-        // socket state
-        state state_;
-
         // SSL state
         SSL* ssl_;
 
         // SSL IO object
         BIO* bio_;
+
+        sslcontext context_;
     }; 
 } // newsflash
 

@@ -62,14 +62,16 @@ connection::connection(const std::string& logfile, const server& host, cmdqueue&
       error_(error::none),
       bytes_(0),
       speed_(0),
-      commands_(cmd), responses_(res),
-      thread_(std::bind(&connection::main, this, host, logfile))
-{}
+      commands_(cmd), responses_(res)
+{
+    thread_.reset(new std::thread(std::bind(&connection::main, this, host, logfile)));
+}
+
 
 connection::~connection()
 {
     shutdown_.set();
-    thread_.join();
+    thread_->join();
 }
 
 connection::status connection::get_status()
@@ -100,33 +102,33 @@ void connection::main(const server& host, const std::string& logfile)
 
     try
     {
-        if (connect(host))
+        connect(host);
+
+        LOG_FLUSH();
+
+        const std::chrono::seconds ping_interval(10);            
+        while (true)
         {
-            const std::chrono::seconds ping_interval(10);            
-            while (true)
-            {
-                goto_state(state::idle, error::none);
+            goto_state(state::idle, error::none);
              
-                auto execcmd  = commands_.wait();
-                auto shutdown = shutdown_.wait();
-                if (!newsflash::wait_for(execcmd, shutdown, ping_interval))
-                {
-                    ping();
-                }
-                else if (execcmd)
-                {
-                    execute();
-                }
-                else if (shutdown)
-                {
-                    break;
-                }
+            auto execcmd  = commands_.wait();
+            auto shutdown = shutdown_.wait();
+            if (!newsflash::wait_for(execcmd, shutdown, ping_interval))
+            {
+                ping();
+            }
+            else if (execcmd)
+            {
+                execute();
+            }
+            else if (shutdown)
+            {
+                break;
+            }
 
-                LOG_FLUSH();
-            } 
-
-            quit();
-        }
+            LOG_FLUSH();
+        } 
+        quit();
     }
     catch (const conn_exception& e)
     {
@@ -136,16 +138,19 @@ void connection::main(const server& host, const std::string& logfile)
     }
     catch (const protocol::exception& e)
     {
-        const auto info = e.error();
-        if (info == protocol::exception::code::authentication_failed)
+        const auto err = e.code();
+        if (err == protocol::error::authentication_failed)
              goto_state(state::error, error::forbidden);
         else goto_state(state::error, error::protocol);
 
         LOG_E(e.what());
     }
-    catch (const socket::io_exception& e)
+    catch (const socket::tcp_exception& e)
     {
-        goto_state(state::error, error::socket);
+        const auto err = e.code();
+        if (err == OS_ERR_CONN_REFUSED)
+            goto_state(state::error, error::refused);
+        else goto_state(state::error, error::socket);
 
         LOG_E(e.what());
     }
@@ -155,71 +160,51 @@ void connection::main(const server& host, const std::string& logfile)
 
         LOG_E(e.what());
     }
+    catch (const std::exception& e)
+    {
+        goto_state(state::error, error::unknown);
+
+        LOG_E(e.what());
+    }
+
 
     LOG_D("Thread exiting.");
+
     LOG_CLOSE();
 }
 
-bool connection::connect(const server& host)
+void connection::connect(const server& host)
 {
     LOG_I("Connecting to ", host.addr, ":", host.port);
 
     const auto addr = resolve_host_ipv4(host.addr);
     if (addr == 0)
-    {
-        LOG_E("Failed to resolve host");
-
-        goto_state(state::error, error::resolve);
-        return false;
-    }
+        throw conn_exception("failed to resolve host", error::resolve);
 
     LOG_I("Resolved to ", format_ipv4(addr));
+    LOG_I("Using SSL ", host.ssl);
 
     if (host.ssl) 
-    {
-        LOG_D("Using TCP/SSL socket");
         socket_.reset(new sslsocket());
-    }
-    else 
-    {
-        LOG_D("Using TCP socket");
-        socket_.reset(new tcpsocket());
-    }
+    else socket_.reset(new tcpsocket());
 
     LOG_D("Begin connect...");
-
-    socket_->connect(addr, host.port);
+    socket_->begin_connect(addr, host.port);
 
     auto connect  = socket_->wait();
     auto shutdown = shutdown_.wait();
-    
     newsflash::wait_for(connect, shutdown);
 
-    // if shutdown is signaled we're being shutdown while we're connecting.
-    // in that case, throw away the socket and return false.
     if (shutdown)
-    {
-        LOG_D("Connect was interrupted.");
+        throw conn_exception("connect was interrupted", error::interrupted);
 
-        goto_state(state::error, error::interrupted);
-        return false;
-    }
+    socket_->complete_connect();
 
-    const auto err = socket_->complete_connect();
-    if (err)
-    {
-        LOG_E("Connection failed, ", err, ", ", get_error_string(err));
-
-        if (err == OS_ERR_CONN_REFUSED)
-             goto_state(state::error, error::refused);
-        else goto_state(state::error, error::unknown);
-        return false;
-    }
-
-    username_ = host.user;
-    password_ = host.pass;
 
     LOG_D("Socket connection established.");
+    
+    username_ = host.user;
+    password_ = host.pass;
 
     // socket is connected state, next initialize the protocol stack.
     proto_.on_recv = std::bind(&connection::read, this, std::placeholders::_1, std::placeholders::_2);
@@ -228,12 +213,9 @@ bool connection::connect(const server& host)
     proto_.on_log  = [](const std::string& str) { LOG_I(str); };
 
     LOG_D("Connect protocol");
-
     proto_.connect();
 
     LOG_I("Connection ready!");
-    LOG_FLUSH();
-    return true;
 }
 
 void connection::execute()
@@ -361,11 +343,10 @@ size_t connection::read(void* buff, size_t len)
 {
     const std::chrono::seconds timeout(15);
 
-    // if we don't receive data in 15 seconds, we can consider
+    // if we don't receive data in "timeout" seconds, we can consider
     // that the connection has timed out and become stale.
     // note that the protocol stack expects this function
-    // to return the number of bytes > 0. so in case of
-    // error we must throw.
+    // to return the number of bytes > 0. so in case of error we must throw.
     auto sockread = socket_->wait(true, false);
     auto shutdown = shutdown_.wait();
 
@@ -378,8 +359,9 @@ size_t connection::read(void* buff, size_t len)
 
     // todo: throttle
     // todo: speedometer
+    // todo: handle 0 recv when shutting down connection (socket closed)
 
-    const size_t ret = socket_->recvsome(buff, len);
+    const size_t ret = socket_->recvsome(buff, (int)len);
 
     return ret;
 }

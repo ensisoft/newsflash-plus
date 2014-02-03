@@ -49,9 +49,9 @@ void protocol::connect()
     auto ret = transact(nntp::cmd_welcome{});
 
     if (ret == nntp::cmd_welcome::SERVICE_TEMPORARILY_UNAVAILABLE)
-        throw exception("service temporarily unavailable", exception::code::service_temporarily_unavailable);
+        throw exception("service temporarily unavailable", error::service_temporarily_unavailable);
     else if (ret == nntp::cmd_welcome::SERVICE_PERMANENTLY_UNAVAILABLE)
-        throw exception("service permanently unavailable", exception::code::service_permanently_unavailable);
+        throw exception("service permanently unavailable", error::service_permanently_unavailable);
     
     // common nntp extensions (rfc980) doesn't actually seem to specify
     // when the request to authenticate can happen. Presumably it could happen
@@ -205,7 +205,7 @@ void protocol::authenticate()
         ret = pass.transact();
     }
     if (ret != nntp::AUTHENTICATION_ACCEPTED)
-        throw exception("authentication failed", exception::code::authentication_failed);    
+        throw exception("authentication failed", error::authentication_failed);    
 }
 
 } // newsflash

@@ -23,48 +23,26 @@
 #pragma once
 
 #include <boost/noncopyable.hpp>
-#include "socket.h"
+#include <openssl/ssl.h>
+#include <mutex>
 
 namespace newsflash
 {
-    // transfer data over raw TCP socket. 
-    class tcpsocket : public socket, boost::noncopyable
+    // OpenSSL client context handle.
+    class sslcontext
     {
     public:
-        // construct a non-connected socket.
-        tcpsocket();
+        sslcontext();
+       ~sslcontext();
 
-        // take ownership of the given socket and handle.
-        // the socket is expected to be already connected.
-        tcpsocket(native_socket_t sock, native_handle_t handle);
+        sslcontext(const sslcontext& other);
+        sslcontext(sslcontext&& other) = default;
 
-        tcpsocket(tcpsocket&& other);
-
-       ~tcpsocket();
-
-        virtual void begin_connect(ipv4addr_t host, uint16_t port) override;
-
-        virtual void complete_connect() override;
-
-        virtual void sendall(const void* buff, int len) override;
-
-        virtual int sendsome(const void* buff, int len) override;
-
-        virtual int recvsome(void* buff, int capacity) override;
-
-        virtual void close() override;
-
-        virtual waithandle wait() const override;
-
-        virtual waithandle wait(bool waitread, bool waitwrite) const override;
-
-        tcpsocket& operator=(tcpsocket&& other);
+        SSL_CTX* ssl();        
+    protected:
     private:
-        // the actual socket
-        native_socket_t socket_;
-
-        // event handle associated with the socket
-        native_handle_t handle_;
     };
-
+    
+    void openssl_init();
+    
 } // newsflash

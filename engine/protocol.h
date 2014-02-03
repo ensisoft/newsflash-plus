@@ -38,6 +38,12 @@ namespace newsflash
     class protocol
     {
     public:
+        enum class error {
+            authentication_failed,
+            service_temporarily_unavailable,
+            service_permanently_unavailable
+        };
+
         // this gets thrown when things go wrong.
         // you might wonder why exceptions for conditions that
         // are not really "errors"? but this makes it easy to
@@ -48,25 +54,20 @@ namespace newsflash
         class exception : public std::exception
         {
         public:
-            enum class code {
-                authentication_failed,
-                service_temporarily_unavailable,
-                service_permanently_unavailable
-            };
-            exception(std::string what, exception::code code) NOTHROW
-                : what_(std::move(what)), code_(code)
+            exception(std::string what, error err) NOTHROW
+                : what_(std::move(what)), err_(err)
             {}
             const char* what() const NOTHROW
             {
                 return what_.c_str();
             }
-            code error() const NOTHROW
+            error code() const NOTHROW
             {
-                return code_;
+                return err_;
             }
         private:
             const std::string what_;
-            const exception::code code_;
+            const error err_;
         };
 
         // read protocol data in callback.

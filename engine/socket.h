@@ -40,26 +40,27 @@ namespace newsflash
     class socket 
     {
     public:
-        // thrown if things go wrong on socket I/O
-        class io_exception : public std::exception
+        // error in TCP protocol level.
+        class tcp_exception : public std::exception
         {
         public:
-            io_exception(std::string what, native_errcode_t code) NOTHROW // noexcept
-               : what_(std::move(what)), code_(code)
+            tcp_exception(std::string what, sockerr_t err) NOTHROW // noexcept
+               : what_(std::move(what)), err_(err)
             {}
             const char* what() const NOTHROW // noexcept
             {
                 return what_.c_str();
             }
-            native_errcode_t code() const NOTHROW // noexcept 
+            sockerr_t code() const NOTHROW // noexcept 
             {
-                return code_;
+                return err_;
             }
         private:
             const std::string what_;
-            const native_errcode_t code_;
+            const sockerr_t err_;
         };
 
+        // error in SSL protocol level.
         class ssl_exception : public std::exception
         {
         public:
@@ -76,26 +77,25 @@ namespace newsflash
         // This function is non-blocking and returns immediately.
         // To complete the connection attempt call complete connect
         // after the waithandle becomes signaled.
-        virtual void connect(ipv4addr_t host, uint16_t port) = 0;
+        virtual void begin_connect(ipv4addr_t host, uint16_t port) = 0;
 
         // Complete the connection attempt. On succesful return
         // the connection is ready to be used for sending and receiving data.
-        // on error a native platform specific error code is returned.
-        virtual native_errcode_t complete_connect() = 0;
+        // On error an exception is thrown.
+        virtual void complete_connect() = 0;
         
         // Write all of the input data to the socket.
-        // On error a socket_io_error is thrown.
+        // On error an exception is thrown.
         virtual void sendall(const void* buff, int len) = 0;
 
         // Write some input data to the socket.
-        // returns numbers of bytes written.
-        // on error a socket_io_error is thrown.
+        // Returns numbers of bytes written.
+        // On error an exception is thrown.
         virtual int sendsome(const void* buff, int len) = 0;
 
-        // Receive some data into the buffer or timeout.
-        // if there is no data available within "timeout" milliseconds timeout_occurred
-        // is set to true and function returns 0. Otherwise the number of bytes received is returned.
-        // On error a socket_io_error is thrown.
+        // Receive some data into the buffer.
+        // Returns the number of bytes received (which can be 0).
+        // On error an exception is thrown.
         virtual int recvsome(void* buff, int capacity) = 0;
 
         // Close the socket.

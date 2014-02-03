@@ -24,9 +24,9 @@ lib engine :  [ glob *.cpp ]
    /boost//regex/
    /boost//system/
    /boost//thread/
-   /zlib//zlib
-   /newsflash//openssl/
-   /newsflash//crypto/
+   /zlib//zlib/
+   /newsflash//openssl/<link>shared
+   /newsflash//crypto/<link>shared
 
    : <link>static ;
 

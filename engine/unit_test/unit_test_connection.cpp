@@ -138,101 +138,70 @@ void unit_test_connection_success(bool ssl)
     BOOST_REQUIRE(status.state == connection::state::idle);
     BOOST_REQUIRE(status.error == connection::error::none);
 
-    // {
-    //     cmd_list cmd;
-    //     cmd.id     = 123;
-    //     cmd.taskid = 444;
-    //     cmd.size   = 1024 * 5;
-    //     in.push_back(cmd);
+    {
+        commands.push_back(new cmd_list);
 
-    //     wait(out);
-    //     auto ret = out.try_get_front();
+        wait(responses);
+        auto ret = responses.try_get_front();
 
-    //     auto& list = command_cast<cmd_list>(ret);
-
-    //     BOOST_REQUIRE(list.id == cmd.id);
-    //     BOOST_REQUIRE(list.taskid == cmd.taskid);
-    // }
+        auto& list = command_cast<cmd_list>(ret);
+        BOOST_REQUIRE(!list.data->empty());
+    }
 
     // // no such group
-    // {
-    //     cmd_group cmd;
-    //     cmd.type   = command::cmdtype::group;
-    //     cmd.name   = "mozilla.support.thunderbird-blalala";
-    //     cmd.id     = 1;
-    //     cmd.taskid = 2;
-    //     cmd.success = true;
-    //     cmd.article_count = cmd.high_water_mark = cmd.low_water_mark = 0;
-    //     in.push_back(cmd);        
+    {
+        commands.push_back(new cmd_group("mozilla.support.thunderbird.blala"));
 
-    //     wait(out);
-    //     auto ret = out.try_get_front();
+        wait(responses);
+        auto ret = responses.get_front();
 
-    //     auto& group = command_cast<cmd_group>(ret);
+        auto& group = command_cast<cmd_group>(ret);
 
-    //     BOOST_REQUIRE(group.id == cmd.id);
-    //     BOOST_REQUIRE(group.taskid == cmd.taskid);
-    //     BOOST_REQUIRE(group.success == false);
-    //     BOOST_REQUIRE(group.article_count == 0);
-    //     BOOST_REQUIRE(group.low_water_mark == 0);
-    //     BOOST_REQUIRE(group.high_water_mark == 0);
-    // }
+        // BOOST_REQUIRE(group.id == cmd.id);
+        // BOOST_REQUIRE(group.taskid == cmd.taskid);
+        BOOST_REQUIRE(group.success == false);
+        BOOST_REQUIRE(group.article_count == 0);
+        BOOST_REQUIRE(group.low_water_mark == 0);
+        BOOST_REQUIRE(group.high_water_mark == 0);
+    }
 
-    // // a valid group
-    // {
-    //     cmd_group cmd;
-    //     cmd.type   = command::cmdtype::group;
-    //     cmd.name   = "mozilla.support.thunderbird";
-    //     cmd.id     = 1;
-    //     cmd.taskid = 2;
-    //     in.push_back(cmd);
+    // a valid group
+    {
+        commands.push_back(new cmd_group("mozilla.support.thunderbird"));
 
-    //     wait(out);
-    //     auto ret = out.try_get_front();
+        wait(responses);
+        auto ret = responses.get_front();
 
-    //     auto& group = command_cast<cmd_group>(ret);
+        auto& group = command_cast<cmd_group>(ret);
 
-    //     BOOST_REQUIRE(group.success);
-    //     BOOST_REQUIRE(group.article_count);
-    //     BOOST_REQUIRE(group.high_water_mark);
-    //     BOOST_REQUIRE(group.low_water_mark);
-    // }
+        BOOST_REQUIRE(group.success);
+        BOOST_REQUIRE(group.article_count);
+        BOOST_REQUIRE(group.high_water_mark);
+        BOOST_REQUIRE(group.low_water_mark);
+    }
 
-    // // no such group for xover
-    // {
-    //     cmd_xover cmd;
-    //     cmd.type = command::cmdtype::xover;
-    //     cmd.size = 1024;
-    //     cmd.success = true;
-    //     cmd.group = "mozilla.support.thunderbird.blala";
-    //     in.push_back(cmd);
+    // no such group for xover
+    {
+        commands.push_back(new cmd_xover("mozilla.support.thunderbird.blala", 0, 1));
 
-    //     wait(out);
-    //     auto ret = out.try_get_front();
+        wait(responses);
+        auto ret = responses.get_front();
 
-    //     auto& xover = command_cast<cmd_xover>(ret);
-    //     BOOST_REQUIRE(xover.success == false);
-    // }
+        auto& xover = command_cast<cmd_xover>(ret);
+        BOOST_REQUIRE(xover.success == false);
+    }
 
-    // // succesful xover
-    // {
-    //     cmd_xover cmd;
-    //     cmd.type = command::cmdtype::xover;
-    //     cmd.size = 1024;
-    //     cmd.success = false;
-    //     cmd.group = "mozilla.support.thunderbird";
-    //     cmd.start = 1;
-    //     cmd.end   = 100000;
-    //     in.push_back(cmd);
+    // succesful xover
+    {
+        commands.push_back(new cmd_xover("mozilla.support.thunderbird", 0, 1000));
 
-    //     wait(out);
-    //     auto ret = out.try_get_front();
+        wait(responses);
+        auto ret = responses.get_front();
 
-    //     auto& xover = command_cast<cmd_xover>(ret);
-
-    //     BOOST_REQUIRE(xover.success);
-    //     BOOST_REQUIRE(!xover.data->empty());
-    // }
+        auto& xover = command_cast<cmd_xover>(ret);
+        BOOST_REQUIRE(xover.success == true);
+        BOOST_REQUIRE(xover.data->empty() == false);
+    }
 
 
     // test body.

@@ -35,6 +35,7 @@
 #include <atomic>
 #include <cassert>
 #include "sslsocket.h"
+#include "sslcontext.h"
 #include "socketapi.h"
 
 // openssl has cryptic meanings for the special error codes SSL_ERROR_WANT_READ and
@@ -56,132 +57,38 @@
 // http://www.serverframework.com/asynchronousevents/2010/10/using-openssl-with-asynchronous-sockets.html
 // http://www.mail-archive.com/openssl-users@openssl.org/msg34340.html
 
-namespace {
-
-class sslcontext 
-{
-public:
-    static sslcontext& get()
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        
-        if (!instance_)
-            instance_ = new sslcontext();
-
-        return *instance_;
-    }
-    void addref()
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-
-        ++refcount_;
-    }
-    void decref()
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        if (--refcount_ == 0)
-        {
-            delete instance_;
-            instance_ = nullptr;
-        }
-    }
-
-    SSL_CTX* ssl()
-    {
-        return ssl_ctx_;
-    }
-private:
-    sslcontext() : ssl_method_(nullptr), ssl_ctx_(nullptr), locks_(nullptr), refcount_(0)
-    {
-        const int locks = CRYPTO_num_locks();
-        locks_ = new std::mutex[locks];
-
-        SSL_library_init();
-        SSL_load_error_strings();
-        OpenSSL_add_ssl_algorithms();
-
-        ssl_method_ = const_cast<SSL_METHOD*>(SSLv23_method());
-        if (!ssl_method_)
-            throw std::runtime_error("SSLv23_method");
-        ssl_ctx_ = SSL_CTX_new(ssl_method_);
-        if (!ssl_ctx_)
-            throw std::runtime_error("SSL_CTX_new");
-
-
-        // todo: should load the trusted Certifying Authorities list/file
-
-        // these callback functions need to be set last because
-        // the setup functions above call these (especially the locking function)
-        // which calls back to us and whole thing goes astray. 
-        // Calling the functions above without locking should be safe
-        // considering that this constructor code is already protected from MT access
-        // If there are random crashes, maybe this assumption is wrong
-        // and locking needs to be taken care of already.
-        CRYPTO_set_id_callback(thread_id_callback);
-        CRYPTO_set_locking_callback(locking_callback);
-    }
-
-   ~sslcontext()
-    {
-        SSL_CTX_free(ssl_ctx_);
-
-        delete [] locks_;
-    }
-
-    static unsigned long thread_id_callback()
-    {
-    // std::thread_id: has no conversion to unsigned long
-    // so must fallback on native funcs
-    #if defined(WINDOWS_OS)
-        return GetCurrentThreadId();
-    #elif defined(LINUX_OS)
-        return pthread_self();
-    #endif
-    }
-
-    static void locking_callback(int mode, int index, const char*, int)
-    {
-        sslcontext& ctx = sslcontext::get();
-
-        if (mode & CRYPTO_LOCK)
-            ctx.locks_[index].lock();
-        else
-            ctx.locks_[index].unlock();
-    }
-
-    static std::mutex mutex_;
-    static sslcontext* instance_;
-
-    SSL_METHOD* ssl_method_;
-    SSL_CTX*    ssl_ctx_;
-    std::mutex* locks_;
-    int refcount_;
-};
-
-    std::mutex sslcontext::mutex_;
-    sslcontext* sslcontext::instance_;
-
-} // namespace
-
 namespace newsflash
 {
 
-sslsocket::sslsocket() : socket_(0), handle_(0), state_(state::nothing), 
-    ssl_(nullptr), bio_(nullptr)
+sslsocket::sslsocket() : socket_(0), handle_(0), ssl_(nullptr), bio_(nullptr)
+{}
+
+
+sslsocket::sslsocket(native_socket_t sock, native_handle_t handle) : 
+    socket_(sock), handle_(handle), ssl_(nullptr), bio_(nullptr)
 {
-    sslcontext& ctx = sslcontext::get();
-    ctx.addref();
+    ssl_connect();
+}
+
+sslsocket::sslsocket(native_socket_t sock, native_handle_t handle, SSL* ssl, BIO* bio) : 
+    socket_(sock), handle_(handle), ssl_(ssl), bio_(bio)
+{}
+
+sslsocket::sslsocket(sslsocket&& other) : 
+    socket_(other.socket_), handle_(other.handle_), ssl_(other.ssl_), bio_(other.bio_)
+{
+    other.socket_ = 0;
+    other.handle_ = 0;
+    other.ssl_    = nullptr;
+    other.bio_    = nullptr;
 }
 
 sslsocket::~sslsocket()
 {
-    sslcontext& ctx = sslcontext::get();
-    ctx.decref();
-
     close();
 }
 
-void sslsocket::connect(ipv4addr_t host, port_t port)
+void sslsocket::begin_connect(ipv4addr_t host, port_t port)
 {
     assert(!socket_);
     assert(!handle_);
@@ -192,101 +99,125 @@ void sslsocket::connect(ipv4addr_t host, port_t port)
 
     socket_ = ret.first;
     handle_ = ret.second;
-    state_  = state::connecting;
 }
 
-native_errcode_t sslsocket::complete_connect()
+void sslsocket::complete_connect()
 {
-    assert(state_ == state::connecting && "Socket is not in connecting state");
     assert(socket_);
-    assert(handle_);
 
     const native_errcode_t err = complete_socket_connect(handle_, socket_);
     if (err)
-    {
-        close();
-        return err;
-    }
-    // setup SSL session now that we have TCP connection.
-    sslcontext& ctx = sslcontext::get();
+        throw tcp_exception("connect failed", err);
 
-    ssl_ = SSL_new(ctx.ssl());
-    if (!ssl_)
-        throw std::runtime_error("SSL_new failed");
-
-    // create new IO object
-    bio_ = BIO_new_socket(socket_, BIO_NOCLOSE);
-    if (!bio_)
-        throw std::runtime_error("BIO_new_socket");
-
-    SSL_set_bio(ssl_, bio_, bio_);
-
-    int error = SSL_connect(ssl_);
-    switch (SSL_get_error(ssl_,error)) 
-    {
-        case SSL_ERROR_NONE:
-            break;
-        // SSL_ERROR_SYSCALL
-        // SSL_ERROR_SSL
-        default:
-            throw std::runtime_error("SSL_connect");
-    }
-    return 0;
+    ssl_connect();
 }
 
 void sslsocket::sendall(const void* buff, int len) 
 {
+    const char* ptr = static_cast<const char*>(buff);      
+
     int sent = 0;
     do 
     {
-        // the SSL_write operation may fail because of SSL handshake
-        // is being done transparently. In this case SSL_ERROR_WANT_WRITE
-        // is reported and we must try sending data again        
-        const int ret = SSL_write(ssl_, buff, len);
-        if (ret <= 0)
-        {
-            switch (SSL_get_error(ssl_, ret))
-            {
-                case SSL_ERROR_SYSCALL:
-                    throw std::runtime_error("socket send");
-
-            }
-        }
-        sent += ret;
+        sent += sendsome(ptr + sent, len - sent);
     }
-    while (sent < len);
+    while (sent != len);
 }
 
 int sslsocket::sendsome(const void* buff, int len)
 {
-    return 0;
+    // the SSL_read operation may fail because SSL handshake
+    // is being done transparently and that requires IO on the socket
+    // which cannot be completed at the time. This is indicated by 
+    // SSL_ERROR_WANT_READ, SSL_ERROR_WANT_WRITE. When this happens
+    // we need to wait utill the condition can be satisfied on the
+    // underlying socket object (can read/write) and then restart
+    // the SSL operation with the *same* parameters.        
+    int sent = 0;
+    do
+    {
+        const int ret = SSL_write(ssl_, buff, len);
+        switch (SSL_get_error(ssl_, ret))
+        {
+            case SSL_ERROR_NONE:
+                sent += ret;
+                break;
+
+            case SSL_ERROR_WANT_READ:
+                ssl_wait_read();
+                break;
+
+            case SSL_ERROR_WANT_WRITE:
+                ssl_wait_write();
+                break;
+
+            case SSL_ERROR_SYSCALL:
+                {
+                    const auto err = get_last_socket_error();
+                    if (err != OS_ERR_WOULD_BLOCK && err != OS_ERR_AGAIN)
+                        throw socket::tcp_exception("socket send", err);
+
+                    return 0;
+                }
+                break;
+            default:
+               throw ssl_exception("SSL_write");
+        }
+    }
+    while (!sent);
+
+    return sent;
 }
 
 int sslsocket::recvsome(void* buff, int capacity)
 {
     // the SSL_read operation may fail because SSL handshake
-    // is being done transparently and we have to restart the
-    // same IO operation. This is indicated by SSL_ERROR_WANT_READ
-    int ret = 0;
+    // is being done transparently and that requires IO on the socket
+    // which cannot be completed at the time. This is indicated by 
+    // SSL_ERROR_WANT_READ, SSL_ERROR_WANT_WRITE. When this happens
+    // we need to wait utill the condition can be satisfied on the
+    // underlying socket object (can read/write) and then restart
+    // the SSL operation with the *same* parameters.        
 
-    while (true)
+    int recv = 0;
+    do 
     {
-        ret = SSL_read(ssl_, buff, capacity);
-        if (ret > 0)
-            break;
+        const int ret = SSL_read(ssl_, buff, capacity);
         switch (SSL_get_error(ssl_, ret))
         {
-            case SSL_ERROR_SYSCALL:
-                if (ret == 0)
-                    return 0;
+            case SSL_ERROR_NONE:
+                recv += ret;
                 break;
+
             case SSL_ERROR_WANT_WRITE:
+                ssl_wait_write();
+                break;
+
             case SSL_ERROR_WANT_READ:
+                ssl_wait_read();
+                break;
+
+            case SSL_ERROR_SYSCALL:
+               {
+                    const auto err = get_last_socket_error();
+                    if (err != OS_ERR_WOULD_BLOCK && err != OS_ERR_AGAIN)
+                        throw socket::tcp_exception("socket send", err);
+
+                    return 0;
+                }
+                break;
+
+            // socket was closed.
+            case SSL_ERROR_ZERO_RETURN:
+                return 0;                
+
             default:
-                throw std::runtime_error("SSL_read");
+                throw socket::ssl_exception("SSL_read");
         }
     }
-    return ret;
+    while (!recv);
+
+    return recv;
 }
 
 
@@ -294,18 +225,21 @@ void sslsocket::close()
 {
     if (ssl_)
     {
-        SSL_shutdown(ssl_);
+        // SSL_free() also calls the free()ing procedures for indirectly 
+        // affected items, if applicable: the buffering BIO, the read and
+        // write BIOs, cipher lists specially created for this ssl, the
+        // SSL_SESSION.
+         
         SSL_free(ssl_);
         ssl_ = nullptr;
-        bio_ = nullptr;
     }
+
     if (socket_)
     {
         closesocket(handle_, socket_);
         socket_ = 0;
         handle_ = 0;
     }
-    state_ = state::nothing;
 }
 
 waithandle sslsocket::wait() const
@@ -322,6 +256,75 @@ waithandle sslsocket::wait(bool waitread, bool waitwrite) const
     return waithandle {
         handle_, waithandle::type::socket, waitread, waitwrite
     };
+}
+
+sslsocket& sslsocket::operator=(sslsocket&& other)
+{
+    if (&other == this)
+        return *this;
+
+    sslsocket tmp(std::move(*this));
+
+    std::swap(socket_, other.socket_);
+    std::swap(handle_, other.handle_);
+    std::swap(ssl_, other.ssl_);
+    std::swap(bio_, other.bio_);
+    return *this;
+}
+
+void sslsocket::ssl_wait_write()
+{
+    auto can_write = wait(false, true);
+    newsflash::wait_for(can_write);
+}
+
+void sslsocket::ssl_wait_read()
+{
+    auto can_read = wait(true, false);
+    newsflash::wait_for(can_read);
+}
+
+void sslsocket::ssl_connect()
+{
+    // create SSL and BIO objects and then initialize ssl client mode.
+    // setup SSL session now that we have TCP connection.
+    SSL_CTX* ctx = context_.ssl();
+
+    ssl_ = SSL_new(ctx);
+    if (!ssl_)
+        throw socket::ssl_exception("SSL_new failed");
+
+    // create new IO object
+    bio_ = BIO_new_socket(socket_, BIO_NOCLOSE);
+    if (!bio_)
+        throw socket::ssl_exception("BIO_new_socket");
+
+    // connect the IO object with SSL, this takes the ownership
+    // of the BIO object.
+    SSL_set_bio(ssl_, bio_, bio_);
+
+    // go into client mode.
+    while (true)
+    {
+        const int ret = SSL_connect(ssl_);
+        if (ret == 1)
+            break;
+
+        const int err = SSL_get_error(ssl_, ret);
+        switch (err)
+        {
+            case SSL_ERROR_WANT_READ:
+                ssl_wait_read();
+                break;
+
+            case SSL_ERROR_WANT_WRITE:
+                ssl_wait_write();
+                break;
+
+            default:
+                throw socket::ssl_exception("SSL_connect");
+        }
+    }
 }
 
 
