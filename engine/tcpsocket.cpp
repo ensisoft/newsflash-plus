@@ -29,19 +29,19 @@
 namespace newsflash
 {
 
-tcpsocket::tcpsocket() : socket_(0), handle_(0), state_(state::nothing)
-{}
+tcpsocket::tcpsocket() : socket_(0), handle_(0)
+{
+    
+}
 
 tcpsocket::tcpsocket(native_socket_t sock, native_handle_t handle) : 
-    socket_(sock), handle_(handle), state_(state::ready)
+    socket_(sock), handle_(handle)
 {}
 
-tcpsocket::tcpsocket(tcpsocket&& other) : 
-    socket_(other.socket_), handle_(other.handle_), state_(other.state_)
+tcpsocket::tcpsocket(tcpsocket&& other) : socket_(other.socket_), handle_(other.handle_)
 {
     other.socket_ = 0;
     other.handle_ = 0;
-    other.state_  = state::nothing;
 }
 
 tcpsocket::~tcpsocket()
@@ -49,11 +49,8 @@ tcpsocket::~tcpsocket()
     close();
 }
 
-void tcpsocket::connect(ipv4addr_t host, uint16_t port) 
+void tcpsocket::begin_connect(ipv4addr_t host, uint16_t port) 
 {
-    assert(state_ == state::nothing && "Socket is already connected");
-    assert(!socket_ && !handle_);
-
     const auto& ret = begin_socket_connect(host, port);
 
     if (socket_)
@@ -61,26 +58,17 @@ void tcpsocket::connect(ipv4addr_t host, uint16_t port)
 
     socket_ = ret.first;
     handle_ = ret.second;    
-    state_  = state::connecting;
 }
 
-native_errcode_t tcpsocket::complete_connect()
+void tcpsocket::complete_connect()
 {
-    assert(state_ == state::connecting && "Socket is not in connecting state");
-    assert(socket_ && handle_);
-
-    state_ = state::ready;
-
     const native_errcode_t err = complete_socket_connect(handle_, socket_);
     if (err)
-        close();
-    
-    return err;
+        throw socket::tcp_exception("connect failed", err);
 }
 
 void tcpsocket::sendall(const void* buff, int len)
 {
-    assert(state_ == state::ready && "Socket is not connected");
     assert(socket_);
 
     int flags = 0;
@@ -100,7 +88,7 @@ void tcpsocket::sendall(const void* buff, int len)
         { 
             const auto err = get_last_socket_error();
             if (err != OS_ERR_WOULD_BLOCK && err != OS_ERR_AGAIN)
-                throw socket::io_exception("socket send", get_last_socket_error());
+                throw socket::tcp_exception("socket send", err);
 
             auto handle = wait(false, true);
             newsflash::wait_for(handle);
@@ -113,7 +101,6 @@ void tcpsocket::sendall(const void* buff, int len)
 
 int tcpsocket::sendsome(const void* buff, int len)
 {
-    assert(state_ == state::ready && "socket is not connected");
     assert(socket_);
 
     int flags = 0;
@@ -129,7 +116,7 @@ int tcpsocket::sendsome(const void* buff, int len)
     {
         const auto err = get_last_socket_error();
         if (err == OS_ERR_WOULD_BLOCK && err != OS_ERR_AGAIN)
-            throw socket::io_exception("socket send", get_last_socket_error());
+            throw socket::tcp_exception("socket send", err);
 
         // on windows writeability is edge triggered, 
         // i.e. the event is signaled once when the socket is writeable and a call
@@ -150,8 +137,7 @@ int tcpsocket::sendsome(const void* buff, int len)
 
 int tcpsocket::recvsome(void* buff, int capacity)
 {
-    assert(state_ == state::ready && "Socket is not connected");
-    assert(socket_ && handle_);
+    assert(socket_);
 
     char* ptr = static_cast<char*>(buff);
 
@@ -160,7 +146,7 @@ int tcpsocket::recvsome(void* buff, int capacity)
     {
         const auto err = get_last_socket_error();
         if (err != OS_ERR_WOULD_BLOCK && err != OS_ERR_AGAIN)
-            throw socket::io_exception("socket recv", err);
+            throw socket::tcp_exception("socket recv", err);
 
         return 0;
     }
@@ -175,7 +161,6 @@ void tcpsocket::close()
     closesocket(handle_, socket_);
     socket_ = 0;
     handle_ = 0;
-    state_  = state::nothing;
 }
 
 waithandle tcpsocket::wait() const
@@ -203,7 +188,6 @@ tcpsocket& tcpsocket::operator=(tcpsocket&& other)
 
     std::swap(socket_, other.socket_);
     std::swap(handle_, other.handle_);
-    std::swap(state_, other.state_);
     return *this;
 }
 
