@@ -35,8 +35,7 @@ namespace newsflash
         sslcontext();
        ~sslcontext();
 
-        sslcontext(const sslcontext& other);
-        sslcontext(sslcontext&& other) = default;
+        sslcontext(const sslcontext& other);        
 
         SSL_CTX* ssl();        
     protected:

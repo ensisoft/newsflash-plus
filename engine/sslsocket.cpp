@@ -157,6 +157,11 @@ int sslsocket::sendsome(const void* buff, int len)
                     if (err != OS_ERR_WOULD_BLOCK && err != OS_ERR_AGAIN)
                         throw socket::tcp_exception("socket send", err);
 
+                    // on windows writeability is edge triggered, 
+                    // i.e. the event is signaled once when the socket is writeable and a call
+                    // to send clears the signal. the signal remains cleared
+                    // untill send fails with WSAEWOULDBLOCK which will schedule
+                    // the event for signaling once the socket can write more.        
                     return 0;
                 }
                 break;
@@ -165,6 +170,13 @@ int sslsocket::sendsome(const void* buff, int len)
         }
     }
     while (!sent);
+
+#if defined(WINDOWS_OS)
+    // set the signal manually since the socket can write more,
+    // so that we have the same semantics with linux.
+    SetEvent(handle_);
+#endif
+
 
     return sent;
 }
@@ -245,7 +257,7 @@ void sslsocket::close()
 waithandle sslsocket::wait() const
 {
     return waithandle {
-        handle_, waithandle::type::socket, true, true
+        handle_, socket_, true, true
     };
 }
 
@@ -254,7 +266,7 @@ waithandle sslsocket::wait(bool waitread, bool waitwrite) const
     assert(waitread || waitwrite);
     
     return waithandle {
-        handle_, waithandle::type::socket, waitread, waitwrite
+        handle_, socket_, waitread, waitwrite
     };
 }
 
