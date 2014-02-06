@@ -227,82 +227,8 @@ void connection::execute()
     goto_state(state::active, error::none);
     try
     {
-        switch (cmd->type)
-        {
-            case command::cmdtype::body:
-            {
-                auto& body = command_cast<cmd_body>(cmd);
-                body.data  = std::make_shared<buffer>();
-                body.data->allocate(body.size);
+        cmd->perform(proto_);
 
-                for (const auto& group : body.groups)
-                {
-                    if (group.empty())
-                        continue;
-                    if (!proto_.change_group(group))
-                        continue;
-
-                    const auto ret = proto_.download_article(body.article, *body.data);
-                    if (ret == protocol::status::success)
-                        body.status = cmd_body::cmdstatus::success;
-                    else if (ret == protocol::status::dmca)
-                        body.status = cmd_body::cmdstatus::dmca;
-                    else if (ret == protocol::status::unavailable)
-                        body.status = cmd_body::cmdstatus::unavailable;
-
-                    if (ret != protocol::status::unavailable)
-                        break;
-                }
-            }
-            break;
-
-            case command::cmdtype::group:
-            {
-                auto& group = command_cast<cmd_group>(cmd);
-
-                newsflash::protocol::groupinfo info {0};
-                group.success = proto_.query_group(group.name, info);
-                if (group.success)
-                {
-                    group.article_count   = info.article_count;
-                    group.high_water_mark = info.high_water_mark;
-                    group.low_water_mark  = info.low_water_mark;
-                }
-            }
-            break;
-
-
-            case command::cmdtype::xover:
-            {
-                auto& xover = command_cast<cmd_xover>(cmd);
-
-                xover.success = proto_.change_group(xover.group);
-                if (xover.success)
-                {
-                    const std::string start = boost::lexical_cast<std::string>(xover.start);
-                    const std::string end   = boost::lexical_cast<std::string>(xover.end);
-
-                    xover.data = std::make_shared<buffer>();
-                    xover.data->allocate(xover.size);
-                    proto_.download_overview(start, end, *xover.data);
-                }
-            }
-            break;
-
-            case command::cmdtype::list:
-            {
-                auto& list = command_cast<cmd_list>(cmd);
-
-                list.data = std::make_shared<buffer>();
-                list.data->allocate(list.size);
-                proto_.download_list(*list.data);
-            }
-            break;
-
-            default:
-                assert(!"dont know how to handle command");
-                break;
-        }
         responses_.push_back(std::move(cmd));
     }
     catch (const std::exception&)

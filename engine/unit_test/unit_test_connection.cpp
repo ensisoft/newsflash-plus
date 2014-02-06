@@ -139,18 +139,18 @@ void unit_test_connection_success(bool ssl)
     BOOST_REQUIRE(status.error == connection::error::none);
 
     {
-        commands.push_back(new cmd_list);
+        commands.push_back(new cmd_list(0, 0));
 
         wait(responses);
         auto ret = responses.try_get_front();
 
         auto& list = command_cast<cmd_list>(ret);
-        BOOST_REQUIRE(!list.data->empty());
+        BOOST_REQUIRE(!list.empty());
     }
 
     // // no such group
     {
-        commands.push_back(new cmd_group("mozilla.support.thunderbird.blala"));
+        commands.push_back(new cmd_group(0, 0, "mozilla.support.thunderbird.blala"));
 
         wait(responses);
         auto ret = responses.get_front();
@@ -159,48 +159,48 @@ void unit_test_connection_success(bool ssl)
 
         // BOOST_REQUIRE(group.id == cmd.id);
         // BOOST_REQUIRE(group.taskid == cmd.taskid);
-        BOOST_REQUIRE(group.success == false);
-        BOOST_REQUIRE(group.article_count == 0);
-        BOOST_REQUIRE(group.low_water_mark == 0);
-        BOOST_REQUIRE(group.high_water_mark == 0);
+        BOOST_REQUIRE(group.success() == false);
+        BOOST_REQUIRE(group.count() == 0);
+        BOOST_REQUIRE(group.low() == 0);
+        BOOST_REQUIRE(group.high() == 0);
     }
 
     // a valid group
     {
-        commands.push_back(new cmd_group("mozilla.support.thunderbird"));
+        commands.push_back(new cmd_group(0, 0, "mozilla.support.thunderbird"));
 
         wait(responses);
         auto ret = responses.get_front();
 
         auto& group = command_cast<cmd_group>(ret);
 
-        BOOST_REQUIRE(group.success);
-        BOOST_REQUIRE(group.article_count);
-        BOOST_REQUIRE(group.high_water_mark);
-        BOOST_REQUIRE(group.low_water_mark);
+        BOOST_REQUIRE(group.success());
+        BOOST_REQUIRE(group.count());
+        BOOST_REQUIRE(group.high());
+        BOOST_REQUIRE(group.low());
     }
 
     // no such group for xover
     {
-        commands.push_back(new cmd_xover("mozilla.support.thunderbird.blala", 0, 1));
+        commands.push_back(new cmd_xover(0, 0, "mozilla.support.thunderbird.blala", 0, 1));
 
         wait(responses);
         auto ret = responses.get_front();
 
         auto& xover = command_cast<cmd_xover>(ret);
-        BOOST_REQUIRE(xover.success == false);
+        BOOST_REQUIRE(xover.success() == false);
     }
 
     // succesful xover
     {
-        commands.push_back(new cmd_xover("mozilla.support.thunderbird", 0, 1000));
+        commands.push_back(new cmd_xover(1, 1, "mozilla.support.thunderbird", 0, 1000));
 
         wait(responses);
         auto ret = responses.get_front();
 
         auto& xover = command_cast<cmd_xover>(ret);
-        BOOST_REQUIRE(xover.success == true);
-        BOOST_REQUIRE(xover.data->empty() == false);
+        BOOST_REQUIRE(xover.success() == true);
+        BOOST_REQUIRE(xover.empty() == false);
     }
 
 
@@ -214,33 +214,33 @@ void unit_test_connection_success(bool ssl)
         // article ids for available and unavailable messages.
         {
 
-            commands.push_back(new cmd_group{"mozilla.support.thunderbird"});
+            commands.push_back(new cmd_group(1, 1, "mozilla.support.thunderbird"));
             auto response = responses.get_front();
             auto group = command_cast<cmd_group>(response);
 
-            available   = boost::lexical_cast<std::string>(group.high_water_mark);
-            unavailable = boost::lexical_cast<std::string>(group.high_water_mark + 1000);
+            available   = boost::lexical_cast<std::string>(group.high());
+            unavailable = boost::lexical_cast<std::string>(group.high() + 1000);
         }
 
         // unavailable
         {
-            commands.push_back(new cmd_body{unavailable, "mozilla.support.thunderbird"});
+            commands.push_back(new cmd_body(1, 1, unavailable, {"mozilla.support.thunderbird"}));
 
             auto response = responses.get_front();
             auto body = command_cast<cmd_body>(response);
-            BOOST_REQUIRE(body.status == cmd_body::cmdstatus::unavailable);
-            BOOST_REQUIRE(body.data->empty());
+            BOOST_REQUIRE(body.status() == cmd_body::cmdstatus::unavailable);
+            BOOST_REQUIRE(body.empty());
         }
 
         // available
         {
-            commands.push_back(new cmd_body{available, "mozilla.support.thunderbird"});
+            commands.push_back(new cmd_body(1, 1, available, {"mozilla.support.thunderbird"}));
 
             auto response = responses.get_front();
             auto body = command_cast<cmd_body>(response);
 
-            BOOST_REQUIRE(body.status == cmd_body::cmdstatus::success);
-            BOOST_REQUIRE(!body.data->empty());
+            BOOST_REQUIRE(body.status() == cmd_body::cmdstatus::success);
+            BOOST_REQUIRE(body.empty() == false);
             
         }
     }
@@ -263,7 +263,7 @@ void unit_test_multiple_connections(bool ssl)
     for (size_t i=0; i<1000; ++i)
     {
         const std::string id = boost::lexical_cast<std::string>(i);
-        commands.push_back(new cmd_body{id, "mozilla.support.thunderbird"});
+        commands.push_back(new cmd_body(i, i, id, {"mozilla.support.thunderbird"}));
     }
 
     size_t resp_count = 0;
@@ -279,14 +279,14 @@ void unit_test_multiple_connections(bool ssl)
         {
             auto response = responses.get_front();
             auto body = command_cast<cmd_body>(response);
-            std::cout << "\nBODY " << body.article << "\n";
-            if (body.status == cmd_body::cmdstatus::unavailable)
+            std::cout << "\nBODY " << body.article() << "\n";
+            if (body.status() == cmd_body::cmdstatus::unavailable)
                 std::cout << "unavailable\n";
-            else if (body.status == cmd_body::cmdstatus::success)
+            else if (body.status() == cmd_body::cmdstatus::success)
             {
-                const char* data = (const char*)buffer_data(*body.data);
+                //const char* data = (const char*)buffer_data(*body.data);
                 std::cout << "success\n";
-                std::cout.write(data + body.data->offset(), body.data->size());
+                //std::cout.write(data + body.data->offset(), body.data->size());
             }
             ++resp_count;
         }
