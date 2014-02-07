@@ -22,39 +22,107 @@
 
 #pragma once
 
-#include <boost/noncopyable.hpp>
 #include <memory>
+#include <queue>
 #include <cstddef>
+#include "cmdqueue.h"
+#include "ioqueue.h"
+#include "stopwatch.h"
 
 namespace newsflash
 {
-    class taskimpl;
-    class taskstate;
+    class taskcmd;
+    class taskio;
+    class command;    
+    class ioaction;
 
+    // implements the state machinery required to execute tasks
+    // send nntp commands and perform IO activity on received data.
     class task 
     {
     public:
         enum class state {
-            preparing, queued, waiting, running,
-            paused, flushing, debuffering, finalizing, done, killed
+            queued, // currently queued.
+            active, // performing IO activity, see iostate
+            paused, // paused, waiting for resume
+            complete // done.
+
         };
         enum class error {
             none, damaged, unavailable, error, dmca
         };
 
-        task(std::size_t id);
+        enum class iostate {
+            none, preparing, active, waiting, flushing, canceling, finalizing
+        };
 
+        enum class warning {
+            none, damaged
+        };
+
+        struct status {
+            task::state state;
+            task::error error;
+            task::iostate iostate;
+            task::warning warning;
+
+        };
+
+        task(std::size_t id, std::size_t account, std::string description,
+            std::unique_ptr<taskcmd> cmd, std::unique_ptr<taskio> io);
        ~task();
 
-        state get_state() const;
-        error get_error() const;
+        // being executing the task. 
+        // precondition:  task is in queued state. 
+        // postcondition: task is in active state.
+        void start(cmdqueue* commands, ioqueue* ioactions);
 
-        std::size_t id() const;
-        
+        // pause the currently executing task. already downloaded
+        // commands/buffers are still allowed to perform IO activity
+        // but no new commands are generated.
+        // precondition: task is in active state. 
+        // postcondition: task is in paused state. 
+        void pause();
+
+        // resume the currently paused task. 
+        // precondition: task is paused
+        // postcondition: task is active.
+        void resume();
+
+        // flush the task's IO state to the disk.
+        // precondition: task is active.
+        void flush();
+
+        // update task state with a command response
+        void update(std::unique_ptr<command> cmd);
+
+        // update task state with an ioaction response.
+        void update(std::unique_ptr<ioaction> io);
+
+        // std::size_t id() const;
+        // std::size_t account() const;
+
     private:
-        std::size_t id_;
-        std::unique_ptr<taskimpl>  impl_;
-        std::unique_ptr<taskstate> state_;
+        void schedule();
+
+    private:
+        const std::size_t id_;
+        const std::string description_;
+
+    private:
+        task::state state_;
+        task::error error_;
+
+        std::size_t account_;
+ //       std::size_t cmd
+        std::queue<iostate> iostate_;
+        std::unique_ptr<taskcmd> cmds_;
+        std::shared_ptr<taskio> io_;
+
+        cmdqueue* cmdqueue_;
+        ioqueue* ioqueue_;
+
+        stopwatch clock_;
     };
 
 } // newsflash
