@@ -51,7 +51,7 @@ struct bigfile::impl {
     HANDLE file;
     bool append;
 
-    native_errcode_t open_file(const std::string& filename, unsigned flags)
+    std::error_code open_file(const std::string& filename, unsigned flags)
     {
         assert(!filename.empty());
 
@@ -66,7 +66,7 @@ struct bigfile::impl {
             FILE_ATTRIBUTE_NORMAL,
             NULL);
         if (file == INVALID_HANDLE_VALUE)
-            return GetLastError();
+            return std::error_code(GetLastError(), std::system_category());
 
         // make the handle non-inheritable so that any child processes 
         // that get started by this process do not have these files open
@@ -76,13 +76,13 @@ struct bigfile::impl {
         {
             const int err = GetLastError();
             CloseHandle(file);
-            return err;
+            return std::error_code(err, std::system_category());
         }
         if (this->file)
             CHECK(CloseHandle(this->file), TRUE);
 
         this->file = file;
-        return 0;
+        return std::error_code();
     }
 };
 
@@ -98,21 +98,21 @@ bigfile::~bigfile()
 }
 
 
-native_errcode_t bigfile::open(const std::string& file)
+std::error_code bigfile::open(const std::string& file)
 {
     return pimpl_->open_file(file, OPEN_EXISTING);
 }
 
-native_errcode_t bigfile::append(const std::string& file)
+std::error_code bigfile::append(const std::string& file)
 {
-    const native_errcode_t ret = pimpl_->open_file(file, OPEN_ALWAYS);
+    const std::error_code ret = pimpl_->open_file(file, OPEN_ALWAYS);
     if (ret == 0)
         pimpl_->append = true;
 
     return ret;
 }
 
-native_errcode_t bigfile::create(const std::string& file)
+std::error_code bigfile::create(const std::string& file)
 {
     return pimpl_->open_file(file, CREATE_ALWAYS);
 }
@@ -211,7 +211,7 @@ bigfile::big_t bigfile::size(const std::string& file)
     return st.st_size;
 }
 
-native_errcode_t bigfile::erase(const std::string& file)
+std::error_code bigfile::erase(const std::string& file)
 {
     // todo: if the file is read-only, first remove the read-only attribute
 
@@ -256,19 +256,19 @@ void bigfile::resize(const std::string& file, big_t size)
 struct bigfile::impl {
     int fd;
 
-    native_errcode_t open_file(const std::string& filename, unsigned flags, unsigned mode)
+    std::error_code open_file(const std::string& filename, unsigned flags, unsigned mode)
     {
         assert(!filename.empty());
 
         const int fd = ::open(filename.c_str(), flags, mode);
         if (fd == -1)
-            return errno;
+            return std::error_code(errno, std::generic_category());
 
         if (this->fd)
              CHECK(::close(this->fd), 0);
 
         this->fd = fd;
-        return 0;
+        return std::error_code();
     }
 };
 
@@ -282,18 +282,18 @@ bigfile::~bigfile()
     close();
 }
 
-native_errcode_t bigfile::open(const std::string& file)
+std::error_code bigfile::open(const std::string& file)
 {
     return pimpl_->open_file(file, O_RDWR | O_LARGEFILE, 0);
 }
 
-native_errcode_t bigfile::append(const std::string& file)
+std::error_code bigfile::append(const std::string& file)
 {
     return pimpl_->open_file(file, O_RDWR | O_LARGEFILE | O_CREAT | O_APPEND, 
         S_IRWXU | S_IRGRP | S_IROTH);
 }
 
-native_errcode_t bigfile::create(const std::string& file)
+std::error_code bigfile::create(const std::string& file)
 {
     return pimpl_->open_file(file, O_RDWR | O_LARGEFILE | O_CREAT | O_TRUNC,
         S_IRWXU | S_IRGRP | S_IROTH);
@@ -371,29 +371,31 @@ void bigfile::flush()
         throw std::runtime_error("flush failed");
 }
 
-bigfile::big_t bigfile::size(const std::string& file)
+std::pair<std::error_code, bigfile::big_t> bigfile::size(const std::string& file)
 {
     struct stat64 st {0};
 
     if (stat64(file.c_str(), &st))
-        throw std::runtime_error("get file size failed (fstat64)");
+        return { std::error_code(errno, std::generic_category()), 0};
 
-    return big_t(st.st_size);
+    return { std::error_code(), big_t(st.st_size) };
 }
 
-native_errcode_t bigfile::erase(const std::string& file)
+std::error_code bigfile::erase(const std::string& file)
 {
     if (unlink(file.c_str()) == -1)
-        return errno;
-    return 0;
+        return std::error_code(errno, std::generic_category());
+    return std::error_code();
 }
 
-void bigfile::resize(const std::string& file, big_t size)
+std::error_code bigfile::resize(const std::string& file, big_t size)
 {
     assert(size >= 0);
 
     if (truncate64(file.c_str(), size))
-        throw std::runtime_error("file truncate failed");
+        return std::error_code(errno, std::generic_category());
+
+    return std::error_code();
 }
 
 #endif

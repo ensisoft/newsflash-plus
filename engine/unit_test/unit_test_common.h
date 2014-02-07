@@ -26,6 +26,7 @@
 
 #include <newsflash/config.h>
 
+#include <boost/test/minimal.hpp>
 #include <boost/filesystem/path.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/convenience.hpp>
@@ -196,5 +197,6 @@ void create_dir(const char* name)
             BOOST_REQUIRE(!"exception was expected!"); \
         } catch (const std::exception&) {} \
     } while (0)
+
 
 

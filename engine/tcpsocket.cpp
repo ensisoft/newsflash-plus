@@ -20,6 +20,15 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
+#include <newsflash/config.h>
+
+#if defined(WINDOWS_OS)
+#  include <windows.h>
+#  include <winsock2.h>
+#elif defined(LINUX_OS)
+#  include <sys/socket.h>
+#endif
+
 #include <cassert>
 #include "tcpsocket.h"
 #include "socketapi.h"
@@ -62,7 +71,7 @@ void tcpsocket::begin_connect(ipv4addr_t host, uint16_t port)
 
 void tcpsocket::complete_connect()
 {
-    const native_errcode_t err = complete_socket_connect(handle_, socket_);
+    const auto err = complete_socket_connect(handle_, socket_);
     if (err)
         throw socket::tcp_exception("connect failed", err);
 }
@@ -87,7 +96,7 @@ void tcpsocket::sendall(const void* buff, int len)
         if (ret == OS_SOCKET_ERROR)
         { 
             const auto err = get_last_socket_error();
-            if (err != OS_ERR_WOULD_BLOCK && err != OS_ERR_AGAIN)
+            if (err != std::errc::operation_would_block)
                 throw socket::tcp_exception("socket send", err);
 
             auto handle = wait(false, true);
@@ -115,7 +124,7 @@ int tcpsocket::sendsome(const void* buff, int len)
     if (sent == OS_SOCKET_ERROR)
     {
         const auto err = get_last_socket_error();
-        if (err == OS_ERR_WOULD_BLOCK && err != OS_ERR_AGAIN)
+        if (err != std::errc::operation_would_block)
             throw socket::tcp_exception("socket send", err);
 
         // on windows writeability is edge triggered, 
@@ -145,7 +154,7 @@ int tcpsocket::recvsome(void* buff, int capacity)
     if (ret == OS_SOCKET_ERROR)
     {
         const auto err = get_last_socket_error();
-        if (err != OS_ERR_WOULD_BLOCK && err != OS_ERR_AGAIN)
+        if (err != std::errc::operation_would_block)
             throw socket::tcp_exception("socket recv", err);
 
         return 0;

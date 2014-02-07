@@ -26,6 +26,7 @@
 
 #include <newsflash/config.h>
 
+#include <system_error>
 #include <exception>
 #include <chrono>
 #include <string>
@@ -44,20 +45,21 @@ namespace newsflash
         class tcp_exception : public std::exception
         {
         public:
-            tcp_exception(std::string what, sockerr_t err) NOTHROW // noexcept
-               : what_(std::move(what)), err_(err)
+            tcp_exception(std::string what, std::error_code code) NOTHROW // noexcept
+               : what_(std::move(what)), 
+                 code_(std::move(code))
             {}
             const char* what() const NOTHROW // noexcept
             {
                 return what_.c_str();
             }
-            sockerr_t code() const NOTHROW // noexcept 
+            const std::error_code& code() const NOTHROW // noexcept 
             {
-                return err_;
+                return code_;
             }
         private:
             const std::string what_;
-            const sockerr_t err_;
+            const std::error_code code_;
         };
 
         // error in SSL protocol level.

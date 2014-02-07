@@ -21,6 +21,7 @@
 //  THE SOFTWARE.
 
 #include <newsflash/config.h>
+
 #if defined(WINDOWS_OS)
 #  include <windows.h>
 #  include <winsock2.h> // for WSAEventSelect
@@ -109,7 +110,7 @@ std::pair<native_socket_t, native_handle_t> begin_socket_connect(ipv4addr_t host
     return {s, h};
 }
 
-sockerr_t complete_socket_connect(native_handle_t handle, native_socket_t sock)
+std::error_code complete_socket_connect(native_handle_t handle, native_socket_t sock)
 {
     int len = sizeof(len);
     int err = 0;
@@ -121,7 +122,13 @@ sockerr_t complete_socket_connect(native_handle_t handle, native_socket_t sock)
     if (ret == SOCKET_ERROR)
         throw std::runtime_error("getsockopt");
 
-    return err;
+    return std::error_code(err, std::generic_category());
+}
+
+std::error_code get_last_socket_error()
+{
+    return std::error_code(WSAGetLastError(), 
+        std::system_category());
 }
 
 native_handle_t get_wait_handle(native_socket_t sock)
@@ -149,10 +156,7 @@ void closesocket(native_socket_t sock)
     CHECK(::closesocket(sock), 0);
 }
 
-sockerr_t get_last_socket_error()
-{
-    return WSAGetLastError();
-}
+
 
 #elif defined(LINUX_OS)
 
@@ -207,7 +211,7 @@ std::pair<native_socket_t, native_handle_t> begin_socket_connect(ipv4addr_t host
     return {fd, fd};
 }
 
-sockerr_t complete_socket_connect(native_handle_t handle, native_socket_t sock)
+std::error_code complete_socket_connect(native_handle_t handle, native_socket_t sock)
 {
     assert(handle == sock);
 
@@ -216,7 +220,12 @@ sockerr_t complete_socket_connect(native_handle_t handle, native_socket_t sock)
     if (getsockopt(sock, SOL_SOCKET, SO_ERROR, &err, &len))
         throw std::runtime_error("getsockopt failed");
 
-    return err;
+    return std::error_code(err, std::generic_category());
+}
+
+std::error_code get_last_socket_error()
+{
+    return std::error_code(errno, std::generic_category());
 }
 
 void closesocket(native_handle_t handle, native_socket_t sock)
@@ -234,10 +243,6 @@ native_handle_t get_wait_handle(native_socket_t sock)
     return sock;
 }
 
-sockerr_t get_last_socket_error()
-{
-    return errno;
-}
 
 #endif
 

@@ -148,7 +148,7 @@ void connection::main(const server& host, const std::string& logfile)
     catch (const socket::tcp_exception& e)
     {
         const auto err = e.code();
-        if (err == OS_ERR_CONN_REFUSED)
+        if (err == std::errc::connection_refused)
             goto_state(state::error, error::refused);
         else goto_state(state::error, error::socket);
 

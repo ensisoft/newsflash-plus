@@ -39,8 +39,8 @@ void test_basic_file_ops()
 {
     delete_file("test0.file");
 
-    REQUIRE_EXCEPTION(newsflash::bigfile::size("test0.file"));
-    REQUIRE_EXCEPTION(newsflash::bigfile::resize("test0.file", 100));
+    BOOST_REQUIRE(newsflash::bigfile::size("test0.file").first);
+    BOOST_REQUIRE(newsflash::bigfile::resize("test0.file", 100));
 
     // try opening non-existing file
     {
@@ -53,13 +53,13 @@ void test_basic_file_ops()
     {
         generate_file("test0.file", 1024);
 
-        BOOST_REQUIRE(newsflash::bigfile::size("test0.file") == 1024);
+        BOOST_REQUIRE(newsflash::bigfile::size("test0.file").second == 1024);
         newsflash::bigfile::resize("test0.file", 512);
-        BOOST_REQUIRE(newsflash::bigfile::size("test0.file") == 512);
+        BOOST_REQUIRE(newsflash::bigfile::size("test0.file").second == 512);
         newsflash::bigfile::resize("test0.file", 0);
-        BOOST_REQUIRE(newsflash::bigfile::size("test0.file") == 0);        
+        BOOST_REQUIRE(newsflash::bigfile::size("test0.file").second == 0);        
         newsflash::bigfile::resize("test0.file", 1234);
-        BOOST_REQUIRE(newsflash::bigfile::size("test0.file") == 1234);                
+        BOOST_REQUIRE(newsflash::bigfile::size("test0.file").second == 1234);                
 
         newsflash::bigfile file;
 
@@ -123,14 +123,14 @@ void test_basic_file_ops()
 
         BOOST_REQUIRE(!file.create("test0.file"));
         BOOST_REQUIRE(file.is_open());
-        BOOST_REQUIRE(newsflash::bigfile::size("test0.file") == 0);        
+        BOOST_REQUIRE(newsflash::bigfile::size("test0.file").second == 0);        
         file.close();
 
         generate_file("test0.file", 1024);
 
         // open existing file and truncate it's contents
         BOOST_REQUIRE(!file.create("test0.file"));
-        BOOST_REQUIRE(newsflash::bigfile::size("test0.file") == 0);
+        BOOST_REQUIRE(newsflash::bigfile::size("test0.file").second == 0);
 
         delete_file("test0.file");                
     }
@@ -203,7 +203,7 @@ void test_large_file()
     using big_t = newsflash::bigfile::big_t;
 
     newsflash::bigfile::resize("test2.file", big_t(0xffffffffL) + 1);
-    BOOST_REQUIRE(newsflash::bigfile::size("test2.file") == big_t(0xffffffffL) + 1);
+    BOOST_REQUIRE(newsflash::bigfile::size("test2.file").second == big_t(0xffffffffL) + 1);
 
     const char buff[] = "foobar";
 
@@ -217,7 +217,7 @@ void test_large_file()
     file.append("test2.file");
     file.write(buff, sizeof(buff));
 
-    BOOST_REQUIRE(newsflash::bigfile::size("test2.file") == big_t(0xffffffffL) + sizeof(buff));
+    BOOST_REQUIRE(newsflash::bigfile::size("test2.file").second == big_t(0xffffffffL) + sizeof(buff));
 
     delete_file("test2.file");    
 }
@@ -244,11 +244,40 @@ void test_unicode_filename()
 #endif
 }
 
+void print_err(const std::error_code& err)
+{
+    std::cout << "\nValue: " << err.value() << std::endl
+              << "Message: " << err.message() << std::endl
+              << "Category: " << err.category().name() << std::endl;
+}
+
+void test_error_codes()
+{
+    newsflash::bigfile file;
+
+    // no such file
+    print_err(file.open("nosuchfile"));
+
+#if defined(LINUX_OS)
+
+    print_err(file.open("/dev/mem")); // no permission 
+
+#elif defined(WINDOWS_OS)
+
+    print_err(file.open("\\\foobar\\file"));
+    
+#endif
+
+    
+}
+
 int test_main(int, char* [])
 {
     test_basic_file_ops();
     test_file_write_read();
     test_unicode_filename();
+
+    test_error_codes();
 
     return 0;
 }

@@ -23,16 +23,15 @@
 
 #pragma once
 
+#include <system_error>
 #include <cstdint>
 #include <string>
 #include <memory>
-#include "types.h"
+#include <utility>
 
 namespace newsflash
 {
     // bigfile handles big files up to 2^63-1 bytes in size
-    // if NEWSFLASH_UTF8 is defined the strings are expected
-    // to be in UTF-8 format.
     class bigfile
     {
     public:
@@ -41,22 +40,21 @@ namespace newsflash
         bigfile();
        ~bigfile();
 
-
         // Try to open an existing file. Returns 0 on success
         // or a platform error code on error.
-        native_errcode_t open(const std::string& file);
+        std::error_code open(const std::string& file);
 
         // Open a file for appending. If file doesn't exist
         // it's created, otherwise it's opened for appending.
         // A file opened for appending will *always* append
         // regardless of current seek position.
         // returns 0 on success or a platform error code on error.
-        native_errcode_t append(const std::string& file);
+        std::error_code append(const std::string& file);
 
         // Create a new file. If the file already exists the contents
         // are truncated to 0. 
         // Returns 0 on success or a platform error code on error.
-        native_errcode_t create(const std::string& file);
+        std::error_code create(const std::string& file);
 
         // check if already open, returns true if open otherwise false.
         bool is_open() const;
@@ -82,14 +80,14 @@ namespace newsflash
         void flush();
 
         // get file size. 
-        static big_t size(const std::string& file);
+        static std::pair<std::error_code, big_t> size(const std::string& file);
 
         // erase the file. returns 0 on success or 
         // platform specific native error code on error.
-        static native_errcode_t erase(const std::string& file);
+        static std::error_code erase(const std::string& file);
 
         // Resize the file (either truncate or expand) to the given size. 
-        static void resize(const std::string& file, big_t size);
+        static std::error_code resize(const std::string& file, big_t size);
     private:
         struct impl;
 

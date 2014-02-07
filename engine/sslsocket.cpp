@@ -24,6 +24,13 @@
 
 #include <newsflash/config.h>
 
+#if defined(WINDOWS_OS)
+#  include <windows.h>
+#  include <winsock2.h>
+#elif defined(LINUX_OS)
+#  include <sys/socket.h>
+#endif
+
 #include <openssl/err.h>
 #include <openssl/crypto.h>
 #include <openssl/opensslconf.h>
@@ -105,7 +112,7 @@ void sslsocket::complete_connect()
 {
     assert(socket_);
 
-    const native_errcode_t err = complete_socket_connect(handle_, socket_);
+    const auto err = complete_socket_connect(handle_, socket_);
     if (err)
         throw tcp_exception("connect failed", err);
 
@@ -154,7 +161,7 @@ int sslsocket::sendsome(const void* buff, int len)
             case SSL_ERROR_SYSCALL:
                 {
                     const auto err = get_last_socket_error();
-                    if (err != OS_ERR_WOULD_BLOCK && err != OS_ERR_AGAIN)
+                    if (err != std::errc::operation_would_block)
                         throw socket::tcp_exception("socket send", err);
 
                     // on windows writeability is edge triggered, 
@@ -212,7 +219,7 @@ int sslsocket::recvsome(void* buff, int capacity)
             case SSL_ERROR_SYSCALL:
                {
                     const auto err = get_last_socket_error();
-                    if (err != OS_ERR_WOULD_BLOCK && err != OS_ERR_AGAIN)
+                    if (err != std::errc::operation_would_block)
                         throw socket::tcp_exception("socket send", err);
 
                     return 0;
