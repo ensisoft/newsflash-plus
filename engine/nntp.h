@@ -18,7 +18,7 @@
 //  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 //  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-//  THE SOFTWARE.
+//  THE SOFTWARE
 
 // $Id: nntp.h,v 1.53 2010/07/04 18:33:53 svaisane Exp $
 
@@ -65,6 +65,13 @@ namespace nntp
         std::string tz;
     };
 
+    struct group {
+        std::string name;
+        std::string first;
+        std::string last;
+        char   posting;
+    };
+
     struct part {
         // (01/34)
         size_t numerator;  // 1        
@@ -84,6 +91,8 @@ namespace nntp
     // parse overview, returns (true, overview) if successful,
     // otherwise (false, overview) and the contents of response are undefined.
     std::pair<bool, overview> parse_overview(const char* str, size_t len);
+
+    std::pair<bool, group> parse_group(const char* str, size_t len);
 
     // parse nntp date. returns (true, date) if succesful,
     // otherwise (false, date) and the contents of date are undefined

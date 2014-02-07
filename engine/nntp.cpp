@@ -333,6 +333,23 @@ std::pair<bool, overview> parse_overview(const char* str, size_t len)
     return {ret, ov};
 }
 
+std::pair<bool, group> parse_group(const char* str, size_t len)
+{
+    strip_leading_space(str, len);
+
+    std::stringstream ss(std::string(str, len));
+
+    group grp;
+    ss >> std::skipws >> grp.name;
+    ss >> std::skipws >> grp.last;
+    ss >> std::skipws >> grp.first;
+    ss >> std::skipws >> grp.posting;
+
+    bool success = !ss.fail();
+
+    return { success, grp};
+}
+
 std::pair<bool, date> parse_date(const char* str, size_t len)
 {
     nntp::date date {0};

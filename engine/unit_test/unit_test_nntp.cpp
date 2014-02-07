@@ -29,6 +29,7 @@
 #include <cstdlib>
 #include <ctime>
 #include "../nntp.h"
+#include "../linebuffer.h"
 
 
 void test_parse_overview()
@@ -238,6 +239,36 @@ void test_parse_date()
     }
 }
 
+void test_parse_group()
+{
+    {
+        const char* str = "asgljasgöjsös";
+
+        BOOST_REQUIRE(nntp::parse_group(str, std::strlen(str)).first == false);
+    }
+
+    {
+        const char* str = "alt.binaries.foo.bar 4244 13222 y";
+
+        const auto ret = nntp::parse_group(str, std::strlen(str));
+        BOOST_REQUIRE(ret.first);
+        BOOST_REQUIRE(ret.second.name == "alt.binaries.foo.bar");
+        BOOST_REQUIRE(ret.second.last == "4244");
+        BOOST_REQUIRE(ret.second.first == "13222");
+        BOOST_REQUIRE(ret.second.posting == 'y');
+    }
+
+    {
+        const char* str = "    asdgasgas.foobar      1222 111 y";
+        const auto ret = nntp::parse_group(str, std::strlen(str));
+        BOOST_REQUIRE(ret.first);
+        BOOST_REQUIRE(ret.second.name == "asdgasgas.foobar");
+        BOOST_REQUIRE(ret.second.last == "1222");
+        BOOST_REQUIRE(ret.second.first == "111");
+        BOOST_REQUIRE(ret.second.posting == 'y');
+    }
+}
+
 void test_date()
 {
     {
@@ -357,319 +388,6 @@ void test_is_binary()
     }
 }
 
-
-
-
-
-// void test12()
-// {
-//     const char* str1 = "a subject line";
-//     const char* str2 = "a subJECT line";
-//     const char* str3 = "foobar keke gu";
-//     const char* str4 = "Metallica - 02 - Enter sandman (1/15).mp3";
-//     const char* str5 = "Metallica - 02 - Enter sandman (2/15).mp3";
-//     const char* str6 = "[foobar]";
-//     const char* str7 = "[doodar]";
-//     const char* str8 = "some weird letters öööäää,,,<|^^ÅÅ";
-//     const char* str9 = "foobar keke (01/50)";
-//     const char* strA = "foobar keke (01/xy)";
-
-
-//     BOOST_REQUIRE(test::strcmp(str1, str2) ==  0); // IGNORE CASE
-//     BOOST_REQUIRE(test::strcmp(str1, str3) == -1);
-//     BOOST_REQUIRE(test::strcmp(str4, str5) ==  0);
-//     BOOST_REQUIRE(test::strcmp(str6, str7) ==  1);
-//     BOOST_REQUIRE(test::strcmp(str8, str8) ==  0);
-//     BOOST_REQUIRE(test::strcmp(str9, strA) !=  0); 
-
-
-//     BOOST_REQUIRE(test::strcmp("abba", "aBBA") == 0);
-//     BOOST_REQUIRE(test::strcmp("Abba", "abba") == 0);
-//     BOOST_REQUIRE(test::strcmp("abba", "ABBA") == 0);
-
-//     BOOST_REQUIRE(test::strcmp("Abba", "Babba") == -1);
-//     BOOST_REQUIRE(test::strcmp("abel", "Babel") == -1);
-//     BOOST_REQUIRE(test::strcmp("Babel", "abel") == 1);
-
-//     BOOST_REQUIRE(test::strcmp("aaa", "aaaaa") == -1);
-//     BOOST_REQUIRE(test::strcmp("aaaaa", "aaa") == 1);
-    
-//     BOOST_REQUIRE(test::strcmp("ää", "öö") == -1);
-//     BOOST_REQUIRE(test::strcmp("ÖÖ", "öö") == 0);
-
-//     {
-//         const char* str1 = "\"01 - Kreator - Extreme Aggressions.mp3\" (3/20) yEnc";
-//         const char* str2 = "\"01 - Kreator - Extreme Aggressions.mp3\" (10/20) yEnc";
-
-//         const char* str3 = "foobar (2/145).mp3";
-//         const char* str4 = "foobar (100/145).mp3";
-
-//         BOOST_REQUIRE(test::strcmp(str1, str2) == 0);
-//         BOOST_REQUIRE(test::strcmp(str3, str4) == 0);
-
-//     }
-//     {
-//         const char* str1 = "foobar (34/45)";
-//         const char* str2 = "foobar (34/70)"; // different parts! 
-        
-//         BOOST_REQUIRE(test::strcmp(str1, str2) == -1);
-        
-//     }
-
-//     { 
-//         const char* str1 = "foobar (1234)";
-//         const char* str2 = "foobar (4321)";
-        
-//         BOOST_REQUIRE(test::strcmp(str1, str2) == -1);
-//         BOOST_REQUIRE(test::strcmp(str2, str1) == 1);
-
-//     }
-    
-//     //BOOST_REQUIRE(test::strcmp("0001234assa", "abcdef") == ignore_case_strcmp("0001234assa", "abcdef"));
-//     //BOOST_REQUIRE(test::strcmp("z1z2abc3", "[[101abcd") == ignore_case_strcmp("z1z2abc3", "[[101abcd"));
-// }
-
-// void test13()
-// {
-//     const char* str1 = "foobar there's no part count here";
-//     const char* str2 = "a part count yEnc (1/50)";
-//     const char* str3 = "another part count yEnc (0001/0048)";
-//     const char* str4 = "looks like a part count yEnc  (14) but isnt";
-//     const char* str5 = "foobar yEnc   (1/9)";
-//     const char* str6 = " foo (1/10) keke";
-//     const char* str7 = "lets post some pictures (2) foobar.jpg(1/1) ";
-//     const char* str8 = "(45/46) foobar";
-//     const char* str9 = "Killrape - Corrosive Birth (2010)(5/7) - \"Killrape - Corrosive Birth (2010).part3.rar\" - 71,70 MB yEnc (4/24)";
-
-//     int i;
-//     const char* str;
-//     nntp_part p;
-
-//     str = nntp_find_part_count(str1, strlen(str1), i);
-//     BOOST_REQUIRE(str == NULL);
-    
-//     str = nntp_find_part_count(str2, strlen(str2), i);
-//     BOOST_REQUIRE(str != NULL);
-//     BOOST_REQUIRE(strncmp(str, "(1/50)", 6) == 0);
-//     BOOST_REQUIRE(nntp_parse_part_count(str, i, p));
-//     BOOST_REQUIRE(p.count = 1 && p.max == 50);
-
-
-//     str = nntp_find_part_count(str3, strlen(str3), i);
-//     BOOST_REQUIRE(str != NULL);
-//     BOOST_REQUIRE(strncmp(str, "(0001/0048)", 11) == 0);
-//     BOOST_REQUIRE(nntp_parse_part_count(str, i, p));
-//     BOOST_REQUIRE(p.count == 1 && p.max == 48);
-
-
-//     str = nntp_find_part_count(str4, strlen(str4), i);
-//     BOOST_REQUIRE(str == NULL);
-
-
-//     str = nntp_find_part_count(str5, strlen(str5), i);
-//     BOOST_REQUIRE(str != NULL);
-//     BOOST_REQUIRE(strncmp(str, "(1/9)", 5) == 0);
-//     BOOST_REQUIRE(nntp_parse_part_count(str, i, p));
-//     BOOST_REQUIRE(p.count == 1 && p.max == 9);
-    
-
-//     str = nntp_find_part_count(str6, strlen(str6), i);
-//     BOOST_REQUIRE(str != NULL);
-//     BOOST_REQUIRE(strncmp(str, "(1/10)", 6) == 0);
-//     BOOST_REQUIRE(nntp_parse_part_count(str, i, p));
-//     BOOST_REQUIRE(p.count == 1 && p.max == 10);
-    
-//     str = nntp_find_part_count(str7, strlen(str7), i);
-//     BOOST_REQUIRE(str != NULL);
-//     BOOST_REQUIRE(strncmp(str, "(1/1)", 5) == 0);
-
-//     str = nntp_find_part_count(str8, strlen(str8), i);
-//     BOOST_REQUIRE(str == NULL);
-    
-//     str = nntp_find_part_count(str9, strlen(str9), i);
-//     BOOST_REQUIRE(str != NULL);
-//     BOOST_REQUIRE(strncmp(str, "(4/24)", 6) == 0);
-// }
-
-// #include <boost/lexical_cast.hpp>
-// #include <cstdlib>
-
-// void test14_0()
-// {
-//     BOOST_REQUIRE(nntp_to_int<int>("1234",  4) == 1234);
-//     BOOST_REQUIRE(nntp_to_int<int>("50000", 5) == 50000);
-//     BOOST_REQUIRE(nntp_to_int<int>("0", 1)     == 0);
-//     BOOST_REQUIRE(nntp_to_int<int>("1", 1)     == 1);
-//     BOOST_REQUIRE(nntp_to_int<int>("0003", 4)  == 3);
-
-
-
-//     bool overflow = false;
-//     BOOST_REQUIRE(nntp_to_int<int>("0", 1, overflow) == 0);    
-//     BOOST_REQUIRE(overflow == false);
-//     BOOST_REQUIRE(nntp_to_int<int>("1234", 4, overflow) == 1234);
-//     BOOST_REQUIRE(overflow == false);
-//     BOOST_REQUIRE(nntp_to_int<int>("50000", 5, overflow) == 50000);
-//     BOOST_REQUIRE(overflow == false);
-//     BOOST_REQUIRE(nntp_to_int<int>("637131", 6, overflow) == 637131);
-//     BOOST_REQUIRE(overflow == false);
-//     BOOST_REQUIRE(nntp_to_int<int>("7342352", 7, overflow) == 7342352);
-//     BOOST_REQUIRE(overflow == false);
-//     BOOST_REQUIRE(nntp_to_int<int>("87811234", 8, overflow) == 87811234);
-//     BOOST_REQUIRE(overflow == false);
-//     BOOST_REQUIRE(nntp_to_int<int>("534235256", 9, overflow) == 534235256);
-//     BOOST_REQUIRE(overflow == false);
-//     BOOST_REQUIRE(nntp_to_int<int>("2875543543", 10, overflow) == 0);
-//     BOOST_REQUIRE(overflow == true);
-
-//     BOOST_REQUIRE(nntp_to_int<short>("81023", 5, overflow) == 0);
-//     BOOST_REQUIRE(overflow == true);
-
-//     BOOST_REQUIRE(nntp_to_int<int>("9147483648", 10, overflow) == 0);
-//     BOOST_REQUIRE(overflow == true);
-
-//     BOOST_REQUIRE(nntp_to_int<int>("000123", 6, overflow) == 123);
-//     BOOST_REQUIRE(overflow == false);
-
-//     BOOST_REQUIRE(nntp_to_int<boost::uint32_t>("116812835", 9, overflow) == 116812835);
-//     BOOST_REQUIRE(overflow == false);
-
-//     {
-//         BOOST_REQUIRE(nntp_to_int<unsigned char>("254", 3, overflow) == 254);
-//         BOOST_REQUIRE(overflow == false);
-    
-//         BOOST_REQUIRE(nntp_to_int<unsigned char>("255", 3, overflow) == 255);
-//         BOOST_REQUIRE(overflow == false);
-
-//         BOOST_REQUIRE(nntp_to_int<unsigned char>("256", 3, overflow) == 0);
-//         BOOST_REQUIRE(overflow == true);
-
-//     }
-    
-//     {
-//         bool overflow;
-//         string tmp;
-//         unsigned int max = std::numeric_limits<int>::max();
-        
-//         max -= 1;
-//         tmp  = lexical_cast<string>(max);
-//         BOOST_REQUIRE(nntp_to_int<int>(tmp.c_str(), tmp.size(), overflow) == (int)max);
-//         BOOST_REQUIRE(overflow == false);
-        
-//         max += 1;
-//         tmp  = lexical_cast<string>(max);
-//         BOOST_REQUIRE(nntp_to_int<int>(tmp.c_str(), tmp.size(), overflow) == (int)max);
-//         BOOST_REQUIRE(overflow == false);
-        
-//         max += 1;
-//         tmp  = lexical_cast<string>(max);
-//         BOOST_REQUIRE(nntp_to_int<int>(tmp.c_str(), tmp.size(), overflow) == 0);
-//         BOOST_REQUIRE(overflow == true);
-//     }
-    
-// }
-
-// /*
-//  * Synopsis: measure the performance of string to int conversions
-//  *
-//  */
-// void test14()
-// {
-
-//     cout << "\"atoi\" times:\n";
-
-//     {
-//         ms_t now = sys_ms();
-        
-//         for (int i=0; i<2000000; ++i)
-//             nntp_to_int<int>("123456", 6);
-
-//         ms_t end  = sys_ms();
-//         ms_t time = end - now;
-        
-//         cout << "time1: " << time << "ms\tnntp_to_int()\n";
-//     }
-
-//     {
-//         ms_t now = sys_ms();
-        
-//         bool overflow;
-//         for (int i=0; i<2000000; ++i)
-//             nntp_to_int<int>("123456", 6, overflow);
-
-//         ms_t end  = sys_ms();
-//         ms_t time = end - now;
-        
-//         cout << "time2: " << time << "ms\tnntp_to_int(overflow)\n";
-//     }
-
-
-//     {
-//         ms_t now = sys_ms();
-        
-//         for (int i=0; i<2000000; ++i)
-//         {
-//             int ret = atoi("123456");
-//             ret = 123;
-//         }
-        
-//         ms_t end  = sys_ms();
-//         ms_t time = end - now;
-        
-//         cout << "time3: " << time << "ms\tatoi()\n";
-//     }
-
-//     {
-//         ms_t now = sys_ms();
-        
-//         for (int i=0; i<2000000; ++i)
-//             boost::lexical_cast<int>("123456");
-
-//         ms_t end  = sys_ms();
-//         ms_t time = end - now;
-        
-//         cout << "time4: " << time << "ms\tlexical_cast<>\n";
-
-//     }
-
-// }
-
-// void test15()
-// {
-//     cout << "strcmp times:\n";
-
-//     const char* str = "Man is distinguished, not only by his reason, but by this singular passion from other animals, which is a lust of the mind... ";
-//     {
-//         ms_t now = sys_ms();
-        
-//         for (int i=0; i<2000000; ++i)
-//         {
-//             ignore_case_strcmp(str, str);
-//         }
-        
-//         ms_t end  = sys_ms();
-//         ms_t time = end - now;
-//         cout << "time1: " << time << "ms\n";
-//     }
-//     {
-//         ms_t now = sys_ms();
-        
-//         // stricmp can loop untill 0, so it doesnt need to 
-//         // precalcute the lenght of the string all the time
-//         int len = strlen(str);
-
-//         for (int i=0; i<2000000; ++i)
-//         {
-//             nntp_strcmp(str, len, str, len);
-//         }
-        
-//         ms_t end  = sys_ms();
-//         ms_t time = end - now;
-//         cout << "time2: " << time << "ms\n";
-//     }
-// }
-
-
 void test_find_filename()
 {
     struct test {
@@ -734,13 +452,84 @@ void test_find_filename()
     }
 }
 
+void test_linebuffer()
+{
+    // no lines
+    {
+        const char* str = 
+           "fooobooar";
+
+        nntp::linebuffer buffer(str, std::strlen(str));
+        auto beg = buffer.begin();
+        auto end = buffer.end();
+        BOOST_REQUIRE(beg == end);
+    }
+
+    // some lines
+    {
+        const char* str = 
+           "assa\r\n"
+           "sassa\r\n"
+           "mandelmassa\r\n"
+           "foo\r\n";
+
+        nntp::linebuffer buffer(str, std::strlen(str));
+
+        auto beg = buffer.begin();
+        auto end = buffer.end();
+        BOOST_REQUIRE(beg.to_str() == "assa\r\n");
+        ++beg;
+        BOOST_REQUIRE(beg.to_str() == "sassa\r\n");
+        beg++;
+        BOOST_REQUIRE(beg.to_str() == "mandelmassa\r\n");
+        ++beg;
+        BOOST_REQUIRE(beg.to_str() == "foo\r\n");
+        beg++;
+        BOOST_REQUIRE(beg == end);
+    }
+
+    // last line is not full
+    {
+        const char* str = 
+           "jeesus\r\n"
+           "ajaa\r\n"
+           "mopolla";
+
+        nntp::linebuffer buffer(str, std::strlen(str));
+
+        auto beg = buffer.begin();
+        auto end = buffer.end();
+        BOOST_REQUIRE(beg.to_str() == "jeesus\r\n");
+        ++beg;
+        BOOST_REQUIRE(beg.to_str() == "ajaa\r\n");
+        ++beg;
+        BOOST_REQUIRE(beg == end);
+    }
+
+    // only a single "empty" line
+    {
+        const char* str = "\r\n";
+
+        nntp::linebuffer buffer(str, std::strlen(str));
+
+        auto beg = buffer.begin();
+        auto end = buffer.end();
+        BOOST_REQUIRE(beg.to_str() == "\r\n");
+        ++beg;
+        BOOST_REQUIRE(beg == end);
+    }
+}
+
 int test_main(int, char* [])
 {
     test_parse_overview();
     test_parse_date();
+    test_parse_group();
     test_date();
     test_is_binary();
     test_find_filename();
+
+    test_linebuffer();
 
     return 0;
    
