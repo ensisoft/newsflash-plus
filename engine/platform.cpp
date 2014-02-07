@@ -63,10 +63,6 @@ std::string get_error_string(int code)
     return str;    
 }
 
-native_errcode_t get_last_error()
-{
-    return GetLastError();
-}
 
 localtime get_localtime()
 {
@@ -95,10 +91,6 @@ std::string get_error_string(int code)
     return std::string(strerror_r(code, buff, sizeof(buff)));
 }
 
-native_errcode_t get_last_error() 
-{
-    return errno;
-}
 
 localtime get_localtime()
 {

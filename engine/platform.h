@@ -23,7 +23,6 @@
 #pragma once
 
 #include <string>
-#include "types.h"
 
 // this file contains an assortment of platform specific global functions
 // and associated types.
@@ -32,9 +31,6 @@ namespace newsflash
 {
     // get a platform provided human readable error string.
     std::string get_error_string(int code);
-
-    // get last platform error code
-    native_errcode_t get_last_error();
 
     struct localtime {
         size_t millis;

@@ -34,7 +34,6 @@ namespace newsflash
 {
     typedef HANDLE  native_handle_t;
     typedef SOCKET  native_socket_t;
-    typedef DWORD   native_errcode_t;    
     typedef FD_SET  fd_set;
     typedef int     socklen_t;
 
