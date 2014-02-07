@@ -23,22 +23,22 @@
 #pragma once
 
 #include <chrono>
-#include <cstdint>
 
 namespace newsflash
 {
     // measure total time for a specific task
     class stopwatch
     {
-    public:
+    private:
         typedef std::chrono::steady_clock clock_t;
         typedef clock_t::period period_t;
         typedef clock_t::time_point point_t;
         typedef clock_t::duration duration_t;
 
-        typedef std::uint32_t ms_t;
-        typedef std::uint32_t s_t;
-        typedef std::uint64_t us_t;
+    public:
+
+        typedef std::chrono::seconds::rep s_t;
+        typedef std::chrono::milliseconds::rep ms_t;
 
         stopwatch() : total_(0), paused_(true)
         {}
@@ -56,38 +56,36 @@ namespace newsflash
             paused_ = false;
         }
 
+        inline
         ms_t ms() const
         {
-            std::chrono::milliseconds ms;
-            if (paused_)
-            {
-                ms = std::chrono::duration_cast<std::chrono::milliseconds>(total_);
-            }
-            else
-            {
-                const auto& now  = clock_t::now();
-                const auto& gone = (now - start_);
-                ms = std::chrono::duration_cast<std::chrono::milliseconds>(total_ + gone);                
-            }
-
-            return ms.count();
+            return get_time<std::chrono::milliseconds>();
         }
 
+        inline
         s_t s() const 
         {
-            std::chrono::seconds s;
+            return get_time<std::chrono::seconds>();
+        }
+
+    private:
+        template<typename TimeUnit>
+        typename TimeUnit::rep get_time() const
+        {
+            TimeUnit ret;
             if (paused_)
             {
-                s = std::chrono::duration_cast<std::chrono::seconds>(total_);
+                ret = std::chrono::duration_cast<TimeUnit>(total_);
             }
             else
             {
                 const auto& now  = clock_t::now();
                 const auto& gone = (now - start_);
-                s = std::chrono::duration_cast<std::chrono::seconds>(total_ + gone);
+                ret = std::chrono::duration_cast<TimeUnit>(total_ + gone);
             }
-            return s.count();
-        }
+            return ret.count();
+        }        
+
     private:
         duration_t total_;
         point_t start_;
