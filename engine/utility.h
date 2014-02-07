@@ -23,6 +23,7 @@
 #pragma once
 
 #include <newsflash/config.h>
+#include <memory>
 
 // collection of generic usable utility functions
 

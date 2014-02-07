@@ -177,4 +177,16 @@ namespace newsflash
         buff.allocate(capacity);
     }
 
+    inline
+    auto buffer_begin(const buffer& buff) -> decltype(buff.ptr())
+    {
+        return buff.ptr() + buff.offset();
+    }
+
+    inline
+    auto buffer_size(const buffer& buff) ->decltype(buff.size())
+    {
+        return buff.size();
+    }
+
 } // newsflash

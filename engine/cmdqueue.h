@@ -28,6 +28,7 @@
 namespace newsflash
 {
     typedef queue<command> cmdqueue;
+    
 } // newsflash
 
 
