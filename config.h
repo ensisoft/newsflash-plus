@@ -77,3 +77,20 @@
 
 #define NEWSFLASH_ENABLE_LOG
 
+// these are macros so that they can be embedded inside string literals
+// all the strings are in UTF-8
+#define NEWSFLASH_VERSION      "3.5.0b0"
+#define NEWSFLASH_TITLE        "Newsflash Plus"
+#define NEWSFLASH_COPYRIGHT    "Copyright (c) Sami V\303\244is\303\244nen 2009-2014"
+#define NEWSFLASH_WEBSITE      "http://www.ensisoft.com"
+#define NEWSFLASH_CORE_FILE    "newsflash-core"
+
+namespace newsflash {
+
+  // const char* CATALOG_SUFFIX = ".cat";
+  // const char* INDEX_SUFFIC   = ".idx";
+  //const char* CONFIG_DIR     = ".newsflash";
+
+
+
+} // newsflash

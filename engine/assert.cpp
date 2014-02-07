@@ -57,7 +57,7 @@ namespace newsflash
 void do_break()
 {
 #if defined(WINDOWS_OS)
-    DebugBreak();
+""    DebugBreak();
 #else
     // not implemented since we cannot detect 
     // the presence of a debugger reliably.
@@ -83,7 +83,7 @@ void do_assert(const char* expression, const char* file, const char* func, int l
     const HANDLE process = GetCurrentProcess();
 
     char filename[100] = {0};
-    sprintf(filename, "newsflash-core.%d", process);
+    sprintf(filename, NEWSFLASH_CORE_FILE".%d", process);
     
     // write minidump
     HANDLE handle = CreateFileA(filename,
