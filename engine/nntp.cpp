@@ -23,6 +23,7 @@
 #include <boost/spirit/include/classic.hpp>
 #include <boost/functional/hash.hpp>
 #include <boost/regex.hpp>
+#include <sstream>
 #include <cctype>
 #if defined(LINUX_OS)
 #  include <strings.h> // for strcasecmp

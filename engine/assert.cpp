@@ -57,7 +57,7 @@ namespace newsflash
 void do_break()
 {
 #if defined(WINDOWS_OS)
-""    DebugBreak();
+    DebugBreak();
 #else
     // not implemented since we cannot detect 
     // the presence of a debugger reliably.

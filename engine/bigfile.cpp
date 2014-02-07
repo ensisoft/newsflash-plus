@@ -106,7 +106,7 @@ std::error_code bigfile::open(const std::string& file)
 std::error_code bigfile::append(const std::string& file)
 {
     const std::error_code ret = pimpl_->open_file(file, OPEN_ALWAYS);
-    if (ret == 0)
+    if (!ret)
         pimpl_->append = true;
 
     return ret;
@@ -201,14 +201,14 @@ void bigfile::flush()
         throw std::runtime_error("file flush failed");
 }
 
-bigfile::big_t bigfile::size(const std::string& file)
+std::pair<std::error_code, bigfile::big_t> bigfile::size(const std::string& file)
 {
     const std::wstring& wstr = utf8::decode(file);
     __stat64 st;
     if (_wstat64(wstr.c_str(), &st))
-        throw std::runtime_error("get file size failed");
+        return { std::error_code(GetLastError(), std::system_category()), 0 };        
 
-    return st.st_size;
+    return{ std::error_code(), st.st_size };
 }
 
 std::error_code bigfile::erase(const std::string& file)
@@ -217,12 +217,12 @@ std::error_code bigfile::erase(const std::string& file)
 
     const std::wstring& wstr = utf8::decode(file);
     if (DeleteFileW(wstr.c_str()) == FALSE)
-        return GetLastError();
+        return std::error_code(GetLastError(), std::system_category());
 
-    return 0;
+    return std::error_code();
 }
 
-void bigfile::resize(const std::string& file, big_t size)
+std::error_code bigfile::resize(const std::string& file, big_t size)
 {
     assert(size >= 0);
 
@@ -237,18 +237,21 @@ void bigfile::resize(const std::string& file, big_t size)
         FILE_ATTRIBUTE_NORMAL,
         NULL);
     if (handle == INVALID_HANDLE_VALUE)
-        throw std::runtime_error("file open error");
-
+        return std::error_code(GetLastError(), std::system_category());
+        
     LARGE_INTEGER li;
     li.QuadPart = size;
  
     if (SetFilePointerEx(handle, li, NULL, FILE_BEGIN) == INVALID_SET_FILE_POINTER ||
         SetEndOfFile(handle) == FALSE)
     {
+        const int err = GetLastError();
         CloseHandle(handle);
-        throw std::runtime_error("file truncate failed");        
+        return std::error_code(err, std::system_category());        
     }
     CloseHandle(handle);
+
+    return std::error_code();
 }
 
 #elif defined(LINUX_OS)

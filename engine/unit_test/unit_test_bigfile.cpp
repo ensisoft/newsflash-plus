@@ -231,12 +231,12 @@ void test_unicode_filename()
 
     newsflash::bigfile file;
 
-    BOOST_REQUIRE(file.create(utf8) == 0);
+    BOOST_REQUIRE(file.create(utf8) == std::error_code());
     BOOST_REQUIRE(file.is_open());
     file.close();
     BOOST_REQUIRE(!newsflash::bigfile::erase(utf8));
 
-    BOOST_REQUIRE(file.append(utf8) == 0);
+    BOOST_REQUIRE(file.append(utf8) == std::error_code());
     BOOST_REQUIRE(file.is_open());
     file.close();
     BOOST_REQUIRE(!newsflash::bigfile::erase(utf8));
@@ -256,7 +256,9 @@ void test_error_codes()
     newsflash::bigfile file;
 
     // no such file
-    print_err(file.open("nosuchfile"));
+    auto err = file.open("nosuchfile");
+    print_err(err);
+    BOOST_REQUIRE(err == std::errc::no_such_file_or_directory);
 
 #if defined(LINUX_OS)
 
