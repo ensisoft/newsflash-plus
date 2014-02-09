@@ -26,3 +26,5 @@ unit-test unit_test_connection : unit_test_connection.cpp ;
 
 unit-test unit_test_tcpsocket : unit_test_tcpsocket.cpp ;
 unit-test unit_test_sslsocket : unit_test_sslsocket.cpp ;
+
+unit-test unit_test_listing :  unit_test_listing.cpp ;

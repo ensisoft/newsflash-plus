@@ -1,4 +1,4 @@
-// Copyright (c) 2013 Sami Väisänen, Ensisoft 
+// Copyright (c) 2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -20,37 +20,43 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-#pragma once
-
-#include <string>
-#include <iosfwd>
-#include "types.h"
-
-// this file contains an assortment of platform specific global functions
-// and associated types.
+#include <functional>
+#include <cassert>
+#include "iothread.h"
+#include "ioaction.h"
+#include "taskio.h"
 
 namespace newsflash
 {
-    // get a platform provided human readable error string.
-    std::string get_error_string(int code);
 
-    struct localtime {
-        size_t millis;
-        size_t seconds;        
-        size_t minutes;
-        size_t hours;
-    };
+iothread::iothread(ioqueue& in, ioqueue& out) 
+    : ioin_(in), ioout_(out), 
+      thread_(std::bind(&iothread::main, this))
+{}
 
-    localtime get_localtime();
+iothread::~iothread()
+{
+    shutdown_.set();
+    thread_.join();
+}
 
-    unsigned long get_thread_identity();
+void iothread::main()
+{
+    while (true)
+    {
+        auto io = ioin_.wait();
+        auto shutdown  = shutdown_.wait();
+        newsflash::wait_for(io, shutdown);
 
-    // doesn't work with libstd++
-    //std::ofstream open_fstream(const std::string& filename);
+        if (shutdown)
+            break;
 
-    std::ofstream& open_fstream(const std::string& filename, std::ofstream& stream);
+        auto action = ioin_.get_front();
 
-    void throw_system_error(int code, std::string what);
+        action->perform();
+
+        ioout_.push_back(std::move(action));
+    }
+}
 
 } // newsflash
-

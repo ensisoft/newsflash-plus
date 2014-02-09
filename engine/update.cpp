@@ -1,4 +1,4 @@
-// Copyright (c) 2013 Sami Väisänen, Ensisoft 
+// Copyright (c) 2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -20,37 +20,37 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-#pragma once
-
-#include <string>
-#include <iosfwd>
-#include "types.h"
-
-// this file contains an assortment of platform specific global functions
-// and associated types.
+#include "update.h"
+#include "buffer.h"
+#include "nntp.h"
 
 namespace newsflash
 {
-    // get a platform provided human readable error string.
-    std::string get_error_string(int code);
 
-    struct localtime {
-        size_t millis;
-        size_t seconds;        
-        size_t minutes;
-        size_t hours;
-    };
+update::io::io(std::string key) : key_(std::move(key))
+{}
 
-    localtime get_localtime();
+void update::io::prepare()
+{
+    update::erase_key(key_);
+}
 
-    unsigned long get_thread_identity();
+void update::io::receive(const buffer& buff)
+{
 
-    // doesn't work with libstd++
-    //std::ofstream open_fstream(const std::string& filename);
+}
 
-    std::ofstream& open_fstream(const std::string& filename, std::ofstream& stream);
+void update::io::cancel()
+{
 
-    void throw_system_error(int code, std::string what);
+}
+
+void update::io::flush()
+{
+
+}
+
+void update::io::finalize()
+{}
 
 } // newsflash
-

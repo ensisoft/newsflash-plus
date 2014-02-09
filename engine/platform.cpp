@@ -22,8 +22,11 @@
 
 #include <newsflash/config.h>
 
+#include <system_error>
+
 #if defined(WINDOWS_OS)
 #  include <windows.h>
+#  include "utf8.h"
 #elif defined(LINUX_OS)
 #  include <sys/time.h>
 #  include <time.h>
@@ -32,8 +35,10 @@
 #include <stdexcept>
 #include <cstring>
 #include <cerrno>
+#include <fstream>
 
 #include "platform.h"
+
 
 namespace newsflash
 {
@@ -83,6 +88,14 @@ unsigned long get_thread_identity()
     return (unsigned long)GetCurrentThreadId();
 }
 
+std::ofstream& open_fstream(const std::string &filename, std::ofstream &stream)
+{
+    const std::wstring& wide = utf8::decode(filename);
+
+    stream.open(wide);
+    return stream;
+}
+
 #elif defined(LINUX_OS)
 
 std::string get_error_string(int code)
@@ -114,7 +127,14 @@ unsigned long get_thread_identity()
     return (unsigned long)pthread_self();
 }
 
+std::ofstream& open_fstream(const std::string& filename, std::ofstream& stream)
+{
+    stream.open(filename);
+    return stream;
+}
+
 #endif
+
 
 } // newsflash
 

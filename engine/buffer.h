@@ -37,6 +37,23 @@ namespace newsflash
 
         buffer() : data_(nullptr), offset_(0), capacity_(0), size_(0)
         {}
+
+        explicit
+        buffer(std::size_t size) : buffer()
+        {
+            allocate(size);
+        }
+
+        explicit 
+        buffer(const char* str) : buffer()
+        {
+            const std::size_t s = std::strlen(str);
+
+            allocate(s);
+            std::memcpy(data_, str, s);
+            size_ = s;
+        }
+
         buffer(buffer&& other)
         {
             data_     = steal(other.data_);

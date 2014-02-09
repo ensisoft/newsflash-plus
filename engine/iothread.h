@@ -1,4 +1,4 @@
-// Copyright (c) 2013 Sami Väisänen, Ensisoft 
+// Copyright (c) 2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -22,35 +22,28 @@
 
 #pragma once
 
-#include <string>
-#include <iosfwd>
-#include "types.h"
-
-// this file contains an assortment of platform specific global functions
-// and associated types.
+#include <thread>
+#include "event.h"
+#include "ioqueue.h"
 
 namespace newsflash
 {
-    // get a platform provided human readable error string.
-    std::string get_error_string(int code);
+    // perform IO actions in a separate thread.
+    class iothread : boost::noncopyable
+    {
+    public:
+        iothread(ioqueue& in, ioqueue& out);
 
-    struct localtime {
-        size_t millis;
-        size_t seconds;        
-        size_t minutes;
-        size_t hours;
+       ~iothread();
+
+    private:
+        void main();
+
+    private:
+        ioqueue& ioin_;
+        ioqueue& ioout_;
+
+        event shutdown_;
+        std::thread thread_;
     };
-
-    localtime get_localtime();
-
-    unsigned long get_thread_identity();
-
-    // doesn't work with libstd++
-    //std::ofstream open_fstream(const std::string& filename);
-
-    std::ofstream& open_fstream(const std::string& filename, std::ofstream& stream);
-
-    void throw_system_error(int code, std::string what);
-
 } // newsflash
-
