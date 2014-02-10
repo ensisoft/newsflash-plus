@@ -199,6 +199,11 @@ namespace newsflash
     {
         return buff.ptr() + buff.offset();
     }
+    inline
+    auto buffer_end(const buffer& buff) -> decltype(buff.ptr())
+    {
+        return buff.ptr() + buff.offset() + buff.size();
+    }
 
     inline
     auto buffer_size(const buffer& buff) ->decltype(buff.size())

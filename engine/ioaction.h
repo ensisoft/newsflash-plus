@@ -24,6 +24,7 @@
 
 #include <newsflash/config.h>
 
+#include <exception>
 #include <memory>
 #include <string>
 #include "buffer.h"
@@ -40,18 +41,10 @@ namespace newsflash
             prepare, receive, cancel, flush, finalize
         };
 
-        enum class iostatus {
-            none, success, error
-        };
-
-        enum class ioerror {
-
-        };
-
         ioaction(std::size_t id, 
                  std::size_t task, 
                  std::shared_ptr<taskio> io) 
-        : id_(id), taskid_(task), status_(iostatus::none), io_(io)
+        : id_(id), taskid_(task), io_(io)
         {}
 
         virtual ~ioaction() = default;
@@ -62,19 +55,21 @@ namespace newsflash
             try
             {
                 perform_action();
-                status_ = iostatus::success;
             }
             catch (const std::exception& e)
             {
-                status_ = iostatus::error;
+                exception_ = std::current_exception();
             }
         }
 
-        // get the IO action status after it has been performed.
-        iostatus status() const
+        void verify()
         {
-            return status_;
+            if (exception_ == std::exception_ptr())
+                return;
+
+            std::rethrow_exception(exception_);
         }
+
 
         std::size_t id() const
         {
@@ -92,9 +87,7 @@ namespace newsflash
     private:
         const std::size_t id_;
         const std::size_t taskid_;
-
-        iostatus status_;
-        ioerror  error_;
+        std::exception_ptr exception_;
 
     protected:
         virtual void perform_action() = 0;
