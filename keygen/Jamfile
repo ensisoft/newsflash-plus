@@ -1,0 +1,9 @@
+ 
+
+project keygen :
+        requirements
+        <library>/qt//QtCore 
+        <library>/qt//QtNetwork
+        ;
+
+exe keygen : main.cpp keygen.cpp ;
