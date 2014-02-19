@@ -70,6 +70,12 @@
   #define NOTHROW noexcept
 #endif
 
+#if defined(LINUX_OS)
+#  ifndef _LARGEFILE64_SOURCE
+#    define _LARGEFILE64_SOURCE
+#  endif
+#endif
+
 #ifndef _NDEBUG
   // if we're in debug build enable more copius logging information
   #define NEWSFLASH_SCOPE_LOGGING

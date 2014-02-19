@@ -22,8 +22,9 @@
 
 #pragma once
 
-#include <memory>
 #include <system_error>
+#include <memory>
+#include <vector>
 
 namespace newsflash
 {
@@ -46,12 +47,30 @@ namespace newsflash
         // retrive pointer to the data at the specified offset.
         // call to this function may invalidate any previously
         // retrieved data pointer if a transparent unmap is done.
-        void* data(std::size_t offset);
+        void* data(std::size_t offset, std::size_t size);
+
+        // get file size
+        std::size_t file_size() const;
+
+        // get current map count
+        std::size_t map_count() const;
 
     private:
+        struct chunk {
+            char* data;
+            std::size_t offset;
+            std::size_t size;
+            std::size_t ref;
+        };
+
         struct impl;
 
         std::unique_ptr<impl> pimpl_;
+
+        std::vector<chunk> chunks_;
+        std::size_t map_max_count_;
+        std::size_t map_size_;
+        std::size_t file_size_;
     };
 
 } // newsflash
