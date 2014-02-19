@@ -30,6 +30,7 @@
 #include <ctime>
 #include "../nntp.h"
 #include "../linebuffer.h"
+#include "../bodyiter.h"
 
 
 void test_parse_overview()
@@ -242,7 +243,7 @@ void test_parse_date()
 void test_parse_group()
 {
     {
-        const char* str = "asgljasgöjsös";
+        const char* str = "asgljasgajsas";
 
         BOOST_REQUIRE(nntp::parse_group(str, std::strlen(str)).first == false);
     }
@@ -520,6 +521,37 @@ void test_linebuffer()
     }
 }
 
+void test_bodyiter()
+{
+    // if a textual body response constains a double as the first character on a 
+    // new line the dot is doubled. (".\r\n" indicates the end of transmission)
+    {
+        const char* text = 
+        "..here is some text\r\n"
+        "more data follows.\r\n"
+        "two dots in the middle .. of text\r\n"
+        "and no dots\r\n"
+        "..\r\n"
+        "...\r\n"
+        "....\r\n";
+
+        nntp::bodyiter beg(text);
+        nntp::bodyiter end(text + std::strlen(text));
+
+        std::string str(beg, end);
+        BOOST_REQUIRE( str == 
+            ".here is some text\r\n"
+            "more data follows.\r\n"
+            "two dots in the middle .. of text\r\n"
+            "and no dots\r\n"
+            ".\r\n"
+            "..\r\n"
+            "...\r\n"
+            );
+
+    }
+}
+
 int test_main(int, char* [])
 {
     test_parse_overview();
@@ -530,6 +562,7 @@ int test_main(int, char* [])
     test_find_filename();
 
     test_linebuffer();
+    test_bodyiter();
 
     return 0;
    

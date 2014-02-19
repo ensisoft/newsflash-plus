@@ -22,8 +22,78 @@
 
 #pragma once
 
+#include <iterator>
+#include <cstddef>
+
 namespace nntp
 {
+    // iterate over NNTP body and collapse leading double dots
+    // to single dots. 
+    class bodyiter : public
+        std::iterator<std::forward_iterator_tag, char>
+    {
+    public:
+        bodyiter(const char* ptr) : ptr_(ptr), pos_(0)
+        {}
 
+
+        char operator * () const
+        {
+            return ptr_[pos_];
+        }
+
+        const char* operator -> () const
+        {
+            return &ptr_[pos_];
+        }
+
+        // postfix
+        bodyiter operator++(int)
+        {
+            bodyiter tmp(*this);
+            forward();
+            return *this;
+        }
+        bodyiter& operator++()
+        {
+            forward();
+            return *this;
+        }
+        bool operator==(const bodyiter& other) const
+        {
+            return ptr_ + pos_ == other.ptr_ + other.pos_;
+        }
+        bool operator!=(const bodyiter& other) const
+        {
+            return !(other == *this);
+        }
+    private:
+        bool double_dot() const
+        {
+            if (pos_ > 3)
+            {
+                if (ptr_[pos_] == '.' && ptr_[pos_-1] == '.' && ptr_[pos_-2] == '\n' && ptr_[pos_-3] == '\r')
+                    return true;
+            }
+            else if (pos_ == 1)
+            {
+                if (ptr_[pos_] == '.' && ptr_[pos_-1] == '.')
+                    return true;
+            }
+
+            return false;
+        }
+
+        void forward()
+        {
+            pos_++;
+            if (double_dot())
+                pos_++;
+        }
+
+    private:
+        const char* ptr_;
+        std::size_t pos_;
+    };
 
 } // nntp

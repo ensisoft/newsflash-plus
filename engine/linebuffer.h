@@ -37,7 +37,7 @@ namespace nntp
         };
 
         class iterator : public
-           std::iterator<std::forward_iterator_tag, const char>
+           std::iterator<std::forward_iterator_tag, line>
         {
         public:
             iterator(const linebuffer& buff, line current) : buffer_(&buff), current_(std::move(current))
