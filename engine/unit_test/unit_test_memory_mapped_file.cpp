@@ -32,6 +32,16 @@ std::size_t MB(int m)
     return m * 1024 * 1024;
 }
 
+std::size_t MB(double m)
+{
+    return m * 1024 * 1024;
+}
+
+std::size_t KB(int k)
+{
+    return k * 1024;
+}
+
 void test_map_whole_file()
 {
     delete_file("file");
@@ -82,22 +92,81 @@ void test_map_chunk_file()
     delete_file("file");
 
     // create test file with 3 disparate blocks of data
-    std::vector<char> block;
-    std::generate_n(std::back_inserter(block), MB(1), []() { return 0xaa; });
-    std::generate_n(std::back_inserter(block), MB(2), []() { return 0xbb; });
-    std::generate_n(std::back_inserter(block), MB(3), []() { return 0xcc; });
+    std::vector<char> data;
+    std::generate_n(std::back_inserter(data), MB(1), []() { return 0xaa; });
+    std::generate_n(std::back_inserter(data), MB(2), []() { return 0xbb; });
+    std::generate_n(std::back_inserter(data), MB(3), []() { return 0xcc; });
 
-    block[0] = 0xda;
-    block[block.size()-1] = 0xda;
+    data[0] = 0xda;
+    data[data.size()-1] = 0xda;
 
     newsflash::bigfile file;
     file.create("file");
-    file.write(&block[0], block.size());
+    file.write(&data[0], data.size());
     file.flush();
     file.close();
 
+    // try various block sizes with a single map (map_count == 1)
     {
-        
+        struct block {
+            std::size_t map_size;            
+            std::size_t offset;
+            std::size_t size;
+
+        } blocks[] = {
+            { KB(1), 0,     1 },
+            { KB(1), 1,     1 },
+            { KB(1), 0,     KB(1) },
+            { KB(1), 512,   512 },
+            { KB(1), KB(1), 1 },
+            { KB(1), 768,   512 },
+            { KB(1), 666,   30 },
+
+            { KB(4), 0,     1 },
+            { KB(4), 1,     1 },
+            { KB(4), 0,     KB(4) },
+            { KB(4), KB(2), KB(2) },
+            { KB(4), KB(4), 1 },
+            { KB(4), 3072,  KB(2) },
+            { KB(4), 1234,  4000 },
+
+            { MB(1), 0,       1 },
+            { MB(1), 1,       1,},
+            { MB(1), 0,       MB(1) },
+            { MB(1), MB(0.5), MB(0.5) },
+            { MB(1), MB(1),   1 },
+            { MB(1), MB(0.5), MB(0.7)}
+
+        };
+
+        for (const block& block : blocks)
+        {
+            newsflash::memory_mapped_file map;
+            BOOST_REQUIRE(!map.map("file", block.map_size, 1));
+
+            void* ptr = map.data(block.offset, block.size);
+            BOOST_REQUIRE(!std::memcmp(ptr, &data[block.offset], block.size));
+        }
+    }
+
+    // check multiple blocks
+    {
+        newsflash::memory_mapped_file map;
+        BOOST_REQUIRE(!map.map("file", KB(4), 2));
+
+        map.data(0, 1);
+        BOOST_REQUIRE(map.map_count() == 1);
+        map.data(1, 1);
+        BOOST_REQUIRE(map.map_count() == 1);
+
+        map.data(KB(4) + 1, 1);
+        BOOST_REQUIRE(map.map_count() == 2);
+
+        map.data(KB(8) + 1, 1);
+        BOOST_REQUIRE(map.map_count() == 2);
+
+        map.data(0, 1);
+        BOOST_REQUIRE(map.map_count() == 2);
     }
 
     delete_file("file");    

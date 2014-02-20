@@ -181,7 +181,11 @@ struct memory_mapped_file::impl
             file,
             offset);
         if (ptr == MAP_FAILED)
+        {
+            printf("errno: %d", errno);
             throw std::runtime_error("map failed");
+        }
+
 
         return chunk {(char*)ptr, offset, size, 0};
     }
@@ -189,7 +193,12 @@ struct memory_mapped_file::impl
 
 #endif
 
-memory_mapped_file::memory_mapped_file() : map_max_count_(0), map_size_(0), file_size_(0)
+std::size_t align(std::size_t s, std::size_t boundary)
+{
+    return (s + boundary - 1) & ~(boundary - 1);
+}
+
+memory_mapped_file::memory_mapped_file() : map_max_count_(0), map_size_(0), map_file_size_(0)
 {}
 
 memory_mapped_file::~memory_mapped_file()
@@ -206,20 +215,16 @@ memory_mapped_file::~memory_mapped_file()
 
 std::error_code memory_mapped_file::map(const std::string& file)
 {
+    // todo: think about a mapping strategy for large files.
+
     // we create a single chunk mapping that has a chunksize covering
     // the whole file contents
-    std::unique_ptr<impl> map(new impl);
 
-    const auto ret = map->map_file(file);
-    if (ret != std::error_code())
-        return ret;
+    const auto info = bigfile::size(file);
+    if (info.first)
+        return info.first;
 
-    pimpl_         = std::move(map);
-    file_size_     = bigfile::size(file).second;    
-    map_max_count_ = 1;
-    map_size_      = file_size_;
-
-    return ret;
+    return map(file, info.second, 1);
 }
 
 std::error_code memory_mapped_file::map(const std::string& file, std::size_t map_size, std::size_t map_max_count)
@@ -231,12 +236,10 @@ std::error_code memory_mapped_file::map(const std::string& file, std::size_t map
     if (ret != std::error_code())
         return ret;
 
-    const auto pagesize = get_page_size();
-
     pimpl_         = std::move(map);
-    file_size_     = bigfile::size(file).second;    
+    map_file_size_ = bigfile::size(file).second;    
     map_max_count_ = map_max_count;
-    map_size_      = (map_size + pagesize - 1) & ~(pagesize - 1);
+    map_size_      = align(map_size, get_page_size());
 
     return ret;
 }
@@ -245,56 +248,16 @@ void* memory_mapped_file::data(std::size_t offset, std::size_t size)
 {
     assert(size <= map_size_);
 
-    const auto chunk_offset = offset % map_size_;
-
-    // see if we can find a block that can accomodate the 
-    // requested offset and size
-    const auto it = std::find_if(chunks_.begin(), chunks_.end(),
-        [=](const chunk& c)
-        {
-            if (c.offset <= offset)
-            {
-                if (c.size - chunk_offset >= size)
-                    return true;
-            }
-
-            return false;
-        });
-
-    chunk* ret = nullptr;
-
-    if (it != chunks_.end())
+    chunk* ret = find_chunk(offset, size);
+    if (ret == nullptr)
     {
-        ret = &*it;
-    }
-    else
-    {
-        // no chunk was found. map a new chunk, but before that
-        // check if need to evict some chunk. if so, evict the 
-        // chunk with smallest ref count.
         if (chunks_.size() == map_max_count_)
-        {
-            auto it = std::min_element(chunks_.begin(), chunks_.end(), 
-                [](const chunk& lhs, const chunk& rhs)
-                {
-                    return lhs.ref < rhs.ref;
-                });
+            evict();
 
-            auto& chunk = *it;
-            pimpl_->unmap(chunk);
-
-            *it = chunks_.back();
-            chunks_.pop_back();
-        }
-        chunks_.reserve(chunks_.size() + 1);
-
-        const auto chunk_index  = offset / map_size_;
-        const auto chunk_offset = chunk_index * map_size_;
-
-        chunk c = pimpl_->map(chunk_offset, map_size_);
-        chunks_.push_back(c);
-        ret = &chunks_.back();
+        ret = map_chunk(offset, size);
     }
+
+    const auto chunk_offset = offset - ret->offset;
 
     ret->ref++;
     return ret->data + chunk_offset;
@@ -302,7 +265,7 @@ void* memory_mapped_file::data(std::size_t offset, std::size_t size)
 
 std::size_t memory_mapped_file::file_size() const
 {
-    return file_size_;
+    return map_file_size_;
 }
 
 std::size_t memory_mapped_file::map_count() const
@@ -310,5 +273,60 @@ std::size_t memory_mapped_file::map_count() const
     return chunks_.size();
 }
 
+memory_mapped_file::chunk* memory_mapped_file::find_chunk(std::size_t offset, std::size_t size)
+{
+    // find a mapped chunk that covers the region specified by
+    // offset and size
+    const auto it = std::find_if(chunks_.begin(), chunks_.end(), 
+        [=](const chunk& c)
+        {
+            const auto beg = c.offset;
+            const auto end = c.offset + c.size;
+            if (offset >= beg && offset + size <= end)
+                return true;
+
+            return false;
+        });
+    if (it == chunks_.end())
+        return nullptr;
+
+    return &*it;
+}
+
+
+memory_mapped_file::chunk* memory_mapped_file::map_chunk(std::size_t offset, std::size_t size)
+{
+    assert(offset + size <= map_file_size_);
+
+    const auto chunk_index = offset / map_size_;
+    const auto chunk_file_offset = chunk_index * map_size_;
+    auto map_size = map_size_;
+    if (offset - chunk_file_offset + size > map_size_)
+        map_size *= 2;
+
+    chunk c = pimpl_->map(chunk_file_offset, map_size);
+    chunks_.push_back(c);
+    return &chunks_.back();
+}
+
+void memory_mapped_file::evict()
+{
+    // evict a chunk that has the smallest refcount
+    auto it = std::min_element(chunks_.begin(), chunks_.end(),
+        [](const chunk& lhs, const chunk& rhs)
+        {
+            return lhs.ref < rhs.ref;
+        });
+        
+    if (it == chunks_.end())
+        return;
+
+    pimpl_->unmap(*it);
+
+    *it = chunks_.back();
+
+    chunks_.pop_back();
+}
 
 } // newsflash
+
