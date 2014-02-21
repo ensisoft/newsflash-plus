@@ -1,4 +1,4 @@
-// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -22,17 +22,14 @@
 
 #pragma once
 
-#include <newsflash/config.h>
-#if defined(WINDOWS_OS)
-#  include "windows.h"
-#elif defined(LINUX_OS)
-#  include "linux.h"
-#endif
-
-#include <cstdint>
-
 namespace newsflash
 {
-    typedef std::uint32_t bitflag_t;
-    
+    // track data transfer speeds.
+    class speedometer 
+    {
+    public:
+
+    private:
+    };
+
 } // newsflash

@@ -77,8 +77,7 @@
 #endif
 
 #ifndef _NDEBUG
-  // if we're in debug build enable more copius logging information
-  #define NEWSFLASH_SCOPE_LOGGING
+#  define NEWSFLASH_DEBUG
 #endif
 
 #define NEWSFLASH_ENABLE_LOG

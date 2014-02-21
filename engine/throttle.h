@@ -1,4 +1,4 @@
-// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -22,17 +22,29 @@
 
 #pragma once
 
-#include <newsflash/config.h>
-#if defined(WINDOWS_OS)
-#  include "windows.h"
-#elif defined(LINUX_OS)
-#  include "linux.h"
-#endif
-
-#include <cstdint>
+#include <chrono>
+#include <cstddef>
+#include "stopwatch.h"
 
 namespace newsflash
-{
-    typedef std::uint32_t bitflag_t;
-    
+{ 
+    // implement throttling to conserve/limit bandwidth usage
+    class throttle
+    {
+    public:
+        throttle() : bytes_per_second_(0)
+        {}
+
+        // enable throttling. 
+        // set the speed limit to the given bytes_per_second.
+        void enable(std::size_t bytes_per_second)
+        {
+
+        }
+
+    private:
+        std::size_t bytes_per_second_;
+        stopwatch stopwatch_;
+    };
+
 } // newsflash
