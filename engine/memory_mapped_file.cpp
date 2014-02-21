@@ -181,11 +181,7 @@ struct memory_mapped_file::impl
             file,
             offset);
         if (ptr == MAP_FAILED)
-        {
-            printf("errno: %d", errno);
             throw std::runtime_error("map failed");
-        }
-
 
         return chunk {(char*)ptr, offset, size, 0};
     }
