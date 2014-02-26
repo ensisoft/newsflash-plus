@@ -22,33 +22,30 @@
 
 #pragma once
 
-#include <mutex>
-#include <chrono>
 #include <cstddef>
 #include "stopwatch.h"
 
 namespace newsflash
-{ 
-    // implement throttling to conserve/limit bandwidth usage
-    class throttle
+{
+
+    // ETA calculator
+    class etacalc
     {
     public:
-        throttle() : bytes_per_second_(0), accum_(0)
+        etacalc(std::size_t total) : total_(total), recved_(0)
         {}
 
-        // enable throttling. 
-        // set the speed limit to the given bytes_per_second.
-        void enable(std::size_t bytes_per_second)
-        {
-            std::lock_guard<std::mutex> lock(mutex_);
-            bytes_per_second_ = bytes_per_second;
-        }
+        void pause()
+        {}
+
+        void resume()
+        {}
+
+
 
     private:
-        std::mutex mutex_;        
-        std::size_t bytes_per_second_;
-        std::size_t accum_;
-        stopwatch stopwatch_;
+        std::size_t total_;
+        std::size_t recved_;
     };
 
 } // newsflash

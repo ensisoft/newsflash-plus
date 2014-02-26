@@ -41,17 +41,6 @@
 #include "memory_mapped_file.h"
 #include "utf8.h"
 
-namespace {
-
-struct chunk {
-    char* data;
-    std::size_t offset;
-    std::size_t size;
-    std::size_t ref;
-};
-
-} // namespace
-
 namespace newsflash
 {
 

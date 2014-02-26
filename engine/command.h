@@ -88,15 +88,15 @@ namespace newsflash
                  std::string article,
                  std::vector<std::string> groups,
                  std::size_t size = 1024 * 1024) : command(id, task),
-          article_(std::move(article)),
-          groups_(std::move(groups)),
-          size_(size),
-          status_(cmdstatus::unavailable)
+            article_(std::move(article)),
+            groups_(std::move(groups)),
+            size_(size),
+            status_(cmdstatus::unavailable)
         {}
 
         virtual void perform(protocol& proto) override
         {
-            buff_ = std::make_shared<buffer>();
+            buff_ = std::make_shared<buffer>(id());
             buff_->allocate(size_);
             for (const auto& group : groups_)
             {
@@ -239,7 +239,7 @@ namespace newsflash
             success_ = proto.change_group(group_);
             if (success_)
             {
-                buff_ = std::make_shared<buffer>();
+                buff_ = std::make_shared<buffer>(id());
                 buff_->allocate(1024 * 5);
 
                 const std::string& start = boost::lexical_cast<std::string>(start_);
@@ -295,7 +295,7 @@ namespace newsflash
 
         virtual void perform(protocol& proto) override
         {
-            buff_ = std::make_shared<buffer>();
+            buff_ = std::make_shared<buffer>(id());
             buff_->allocate(1024 * 1024);
             proto.download_list(*buff_);
         }

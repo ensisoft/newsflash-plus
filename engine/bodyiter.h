@@ -27,19 +27,21 @@
 
 namespace nntp
 {
-    // iterate over NNTP body and collapse leading double dots
-    // to single dots. 
-    class bodyiter : public
-        std::iterator<std::forward_iterator_tag, char>
+    // bodyiter iterates over NNTP body and collapse leading 
+    // double dots into single dots.
+    class bodyiter : 
+        public std::iterator<std::forward_iterator_tag, char>
     {
     public:
         bodyiter(const char* ptr) : ptr_(ptr), pos_(0)
         {}
 
-
-        char operator * () const
+        // this should be const char& operator * () const and value_type should be "const char"
+        // but for some reason boost.spirit(?) has a problem with these types
+        // and optional.hpp errors.
+        char& operator * () const
         {
-            return ptr_[pos_];
+            return (char&)ptr_[pos_];
         }
 
         const char* operator -> () const
@@ -52,7 +54,7 @@ namespace nntp
         {
             bodyiter tmp(*this);
             forward();
-            return *this;
+            return tmp;
         }
         bodyiter& operator++()
         {

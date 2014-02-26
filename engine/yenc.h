@@ -27,8 +27,6 @@
 #include <boost/spirit/include/classic.hpp>
 #include <string>
 #include <iterator>
-#include <vector>
-#include <cassert>
 
 // yEnc decoder/encoder implementation.
 // http://www.yenc.org/
@@ -169,52 +167,6 @@ namespace yenc
         }
         return {true, end};
     }
-
-    template<typename InputIterator>
-    std::pair<bool, InputIterator> decode(InputIterator beg, InputIterator end, std::vector<char>& dest)
-    {
-        // yEnc enlarges the data when its encoded, so the output should always 
-        // be less than the yEnc input
-        if (dest.empty())
-            dest.resize(end - beg);
-
-        size_t bytes = 0;
-
-        while (beg != end)
-        {
-            unsigned char c = *beg;
-            if (c == '\r' || c == '\n')
-            {
-                ++beg;
-                continue;
-            }
-            else if (c == '=')
-            {
-                if (++beg == end)
-                {
-                    dest[bytes++] = c - 42;
-                    assert(bytes < dest.size());
-                    dest.resize(bytes);
-                    return { true, end };
-                }
-                if (*beg == 'y')
-                {
-                    assert(bytes < dest.size());
-                    dest.resize(bytes);
-                    return --beg;
-                }
-                c  = *beg;
-                c -= 64;
-            }
-            dest[bytes++] = c - 42;
-            ++beg;
-        }
-        assert(bytes < dest.size());
-        dest.resize(bytes);
-
-        return { true, end };
-    }
-
 
     // Encode data into yEnc. Line should be the preferred
     // line length after wich a new line (\r\n) is written into the output stream.

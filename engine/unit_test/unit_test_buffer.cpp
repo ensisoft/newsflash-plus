@@ -25,11 +25,12 @@
 
 int test_main(int, char*[])
 {
-    newsflash::buffer buff;
+    newsflash::buffer buff(1);
 
     BOOST_REQUIRE(buff.capacity() == 0);
     BOOST_REQUIRE(buff.size() == 0);
     BOOST_REQUIRE(buff.ptr() == nullptr);
+    BOOST_REQUIRE(buff.id() == 1);
 
     buff.allocate(100);
     BOOST_REQUIRE(buff.size() == 0);

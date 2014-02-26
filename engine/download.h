@@ -30,6 +30,8 @@
 
 namespace newsflash
 {
+    class content;
+
     class download
     {
     private:
@@ -55,10 +57,8 @@ namespace newsflash
             const std::string folder_;
             const std::string name_;
         private:
-            struct file;
 
         private:
-            std::vector<file*> files_;
 
         };
 

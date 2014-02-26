@@ -404,5 +404,14 @@ std::error_code bigfile::resize(const std::string& file, big_t size)
 #endif
 
 
+bool bigfile::exists(const std::string& file)
+{
+    const auto ret = bigfile::size(file);
+    if (ret.first == std::error_code())
+        return true;
+
+    return false;
+}
+
 } // newsflash
 

@@ -39,6 +39,7 @@ namespace newsflash
 
         typedef std::chrono::seconds::rep s_t;
         typedef std::chrono::milliseconds::rep ms_t;
+        typedef std::chrono::microseconds::rep us_t;
 
         stopwatch() : total_(0), paused_(true)
         {}
@@ -68,6 +69,12 @@ namespace newsflash
             return get_time<std::chrono::seconds>();
         }
 
+        inline
+        us_t us() const
+        {
+            return get_time<std::chrono::microseconds>();
+        }
+
     private:
         template<typename TimeUnit>
         typename TimeUnit::rep get_time() const
@@ -90,6 +97,19 @@ namespace newsflash
         duration_t total_;
         point_t start_;
         bool paused_;
+    };
+
+
+    // automatically start and stop the stopwatch to time
+    struct stopwatch_timer {
+        stopwatch& watch;
+
+        stopwatch_timer(stopwatch& w) : watch(w) {
+            watch.start();
+        }
+        ~stopwatch_timer() {
+            watch.pause();
+        }
     };
 
 } // newsflash

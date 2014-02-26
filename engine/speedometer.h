@@ -46,7 +46,7 @@ namespace newsflash
 
         // submit a sample. samples should be submitted
         // between calls to start() and end().
-        void submit(const std::size_t bytes)
+        double submit(const std::size_t bytes)
         {
             assert(stamp_ != point_t());
 
@@ -64,6 +64,7 @@ namespace newsflash
             const double SMOOTHING_FACTOR = 0.05;
             speed_ = SMOOTHING_FACTOR * bps + (1 - SMOOTHING_FACTOR) * speed_;
             stamp_ = now;
+            return speed_;
         }
 
         void end()
@@ -84,3 +85,4 @@ namespace newsflash
     };
 
 } // newsflash
+

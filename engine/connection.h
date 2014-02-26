@@ -30,6 +30,7 @@
 #include "cmdqueue.h"
 #include "protocol.h"
 #include "event.h"
+#include "speedometer.h"
 
 namespace newsflash
 {
@@ -78,7 +79,7 @@ namespace newsflash
             connection::state state;       
             connection::error error;      
             uint64_t bytes; 
-            uint64_t speed;
+            double   bps; // bytes per second
         };
 
         // get the current status of the connection.
@@ -96,21 +97,19 @@ namespace newsflash
         void execute();
         void ping();
         void quit();
-
+        void goto_state(state s, error e);
         void auth(std::string& user, std::string& pass);
         void send(const void* data, size_t len);
         size_t read(void* buff, size_t len);
 
-        void goto_state(state s, error e);
-
+    private:
         mutable std::mutex mutex_;
-        // state that is procted by the mutex
         state    state_;
         error    error_;
         uint64_t bytes_;
-        uint64_t speed_;
-        // end state
+        double   speed_;
 
+    private:
         cmdqueue& commands_;
         cmdqueue& responses_;
 
@@ -121,6 +120,7 @@ namespace newsflash
         protocol proto_;
         event shutdown_;
         event status_;
+        speedometer meter_;
     };
 
 } // newsflash

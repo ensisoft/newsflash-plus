@@ -83,7 +83,7 @@ connection::status connection::get_status()
     ret.state = state_;
     ret.error = error_;
     ret.bytes = bytes_;
-    ret.speed = speed_;
+    ret.bps   = speed_;
 
     status_.reset();
     return ret;
@@ -282,13 +282,12 @@ size_t connection::read(void* buff, size_t len)
     if (shutdown)
         throw conn_exception("read interrupted", error::interrupted);
 
-
     // todo: throttle
-    // todo: speedometer
     // todo: handle 0 recv when shutting down connection (socket closed)
 
     const size_t ret = socket_->recvsome(buff, (int)len);
 
+    speed_ = meter_.submit(ret);
     return ret;
 }
 
@@ -299,6 +298,20 @@ void connection::goto_state(state s, error e)
         return;
     state_ = s;
     error_ = e;
+
+    switch (state_)
+    {
+        case state::active:
+            meter_.start();
+            break;
+
+        case state::idle:
+            meter_.end();
+            break;
+
+        default:  
+            break;
+    }
 
     // set a signal indicating that the status has changed
     status_.set();

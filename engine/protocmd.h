@@ -442,9 +442,9 @@ namespace nntp
     struct cmd_group : cmd {
         const std::string group;
 
-        uint64_t count;
-        uint64_t low;
-        uint64_t high;
+        std::uint64_t count;
+        std::uint64_t low;
+        std::uint64_t high;
 
         cmd_group(std::string groupname) : 
             group(std::move(groupname)), count(0), low(0), high(0)
@@ -500,8 +500,8 @@ namespace nntp
         {
             std::string response(1024, 0);
 
-            size_t offset = 0;
-            size_t size   = 0;
+            std::size_t offset = 0;
+            std::size_t size   = 0;
             code_t code   = 0;
 
             std::tie(code, offset, size) = cmd::transact("CAPABILITIES", {101, 480, 500}, {101}, response);
@@ -532,8 +532,8 @@ namespace nntp
         enum : code_t { SUCCESS = 215 };
 
         Buffer& buffer;
-        size_t offset;
-        size_t size;
+        std::size_t offset;
+        std::size_t size;
 
         cmd_list(Buffer& buff) : buffer(buff)
         {}
@@ -561,8 +561,8 @@ namespace nntp
 
         Buffer& buffer;
         const std::string article;        
-        size_t offset;
-        size_t size;
+        std::size_t offset;
+        std::size_t size;
         std::string reason;
 
         cmd_body(Buffer& buff, std::string id) : buffer(buff), article(std::move(id)),
@@ -584,7 +584,7 @@ namespace nntp
                 const std::string response(data, len);
                 detail::trailing_comment comment;
                 detail::scan_response(response, status, comment);
-                reason = comment.str;
+                reason = std::move(comment.str);
             }
             return status;
         }

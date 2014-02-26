@@ -50,7 +50,7 @@ namespace newsflash
         // retrive pointer to the data at the specified offset.
         // call to this function may invalidate any previously
         // retrieved data pointer if a transparent unmap is done.
-        // size should be less than equal to the map_size
+        // size should be less than or equal to map_size
         void* data(std::size_t offset, std::size_t size);
 
         // get file size

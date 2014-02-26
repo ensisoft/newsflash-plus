@@ -24,12 +24,9 @@
 #include <boost/crc.hpp>
 #include "download.h"
 #include "linebuffer.h"
-#include "bodyiter.h"
+#include "content.h"
 #include "buffer.h"
-#include "bigfile.h"
-#include "uuencode.h"
-#include "yenc.h"
-#include "utf8.h"
+
 
 namespace {
     enum class encoding {
@@ -95,18 +92,6 @@ std::size_t download::cmd::complete(std::unique_ptr<command> cmd)
     return 0;
 }
 
-struct download::io::file {
-    std::string   filename;
-    std::string   filepath;
-    std::uint64_t size;
-    std::uint32_t crc32;    
-    encoding      format;
-    bigfile       file;    
-    boost::crc_32_type crc;
-
-
-
-};
 
 download::io::io(std::string folder, std::string name) : folder_(std::move(folder)), name_(std::move(name))
 {}
@@ -124,25 +109,24 @@ void download::io::receive(const buffer& buff)
 
     while (beg != end)
     {
+        const auto& line = *beg;
+        const auto enc = identify_encoding(line.start, line.length);
+        if (enc != encoding::yenc_multi)
+        {
 
+        }
     }
 }
 
 void download::io::cancel()
-{
-    for (const auto& file : files_)
-    {
-
-    }
-}
+{}
 
 void download::io::flush()
 {}
 
 void download::io::finalize()
-{
+{}
 
-}
 
 
 } // newsflash

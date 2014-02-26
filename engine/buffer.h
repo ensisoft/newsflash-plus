@@ -30,22 +30,26 @@
 
 namespace newsflash
 {
+    // id tagged data buffer
     class buffer : boost::noncopyable
     {
     public:
         typedef uint8_t byte_t;
 
-        buffer() : data_(nullptr), offset_(0), capacity_(0), size_(0)
+        // construct an empty buffer without any data capacity
+        buffer(std::size_t id) : data_(nullptr), offset_(0), capacity_(0), size_(0), id_(id)
         {}
 
+        // construct an empty buffer with some initial data capacity 
         explicit
-        buffer(std::size_t size) : buffer()
+        buffer(std::size_t id, std::size_t capacity) : buffer(id)
         {
-            allocate(size);
+            allocate(capacity);
         }
 
+        // construct a buffer from the contents of the NUL terminated string.
         explicit 
-        buffer(const char* str) : buffer()
+        buffer(std::size_t id, const char* str) : buffer(id)
         {
             const std::size_t s = std::strlen(str);
 
@@ -60,6 +64,7 @@ namespace newsflash
             offset_   = steal(other.offset_);
             capacity_ = steal(other.capacity_);
             size_     = steal(other.size_);            
+            id_       = steal(other.id_);
         }
 
        ~buffer()
@@ -82,18 +87,23 @@ namespace newsflash
         {
             return data_;
         }
-        size_t capacity() const
+        std::size_t capacity() const
         {
             return capacity_;
         }
-        size_t size() const
+        std::size_t size() const
         {
             return size_;
         }
-        size_t offset() const
+        std::size_t offset() const
         {
             return offset_;
         }
+        std::size_t id() const
+        {
+            return id_;
+        }
+
         void allocate(size_t capacity)
         {
             assert(capacity > capacity_);
@@ -117,7 +127,7 @@ namespace newsflash
             std::memcpy(data_ + capacity_, &bird, sizeof(bird));
         }
 
-        void configure(size_t size, size_t offset)
+        void configure(std::size_t size, std::size_t offset)
         {
             assert(offset + size <= capacity_);
             assert(offset <= size);
@@ -125,10 +135,11 @@ namespace newsflash
             size_   = size;
         }
 
-        void resize(size_t size)
+        void resize(std::size_t size)
         {
             configure(size, offset_);
         }
+
 
         byte_t& operator[](size_t i)
         {
@@ -171,13 +182,14 @@ namespace newsflash
         enum : uint32_t { CANARY= 0xcafebabe };
 
         byte_t* data_;
-        size_t offset_;
-        size_t capacity_;
-        size_t size_;
+        std::size_t offset_;
+        std::size_t capacity_;
+        std::size_t size_;
+        std::size_t id_;
     };
 
     inline
-    size_t buffer_capacity(const buffer& buff)
+    std::size_t buffer_capacity(const buffer& buff)
     {
         return buff.capacity();
     }
@@ -209,6 +221,14 @@ namespace newsflash
     auto buffer_size(const buffer& buff) ->decltype(buff.size())
     {
         return buff.size();
+    }
+
+    inline
+    bool operator==(const buffer& lhs, const buffer& rhs)
+    {
+        if (lhs.size() != rhs.size())
+            return false;
+        return !std::memcmp(lhs.ptr(), rhs.ptr(), lhs.size());
     }
 
 } // newsflash

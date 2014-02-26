@@ -48,6 +48,19 @@
 #  include <unistd.h>
 #endif
 
+int random_int()
+{
+    struct randomizer {
+        randomizer() {
+            std::srand(std::time(nullptr));
+        }
+    };
+    static randomizer r;
+
+    return rand();
+}
+
+
 inline
 std::vector<char> read_file_contents(const char* file)
 {
@@ -69,9 +82,8 @@ std::vector<char> read_file_contents(const char* file)
 inline
 void fill_random(char* buff, size_t bytes)
 {
-    srand(time(NULL));
     for (size_t i=0; i<bytes; ++i)
-        buff[i] = ((bytes * i ) ^ rand());
+        buff[i] = ((bytes * i ) ^ random_int());
 }
 
 inline

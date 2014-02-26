@@ -20,35 +20,42 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-#pragma once
-
-#include <mutex>
-#include <chrono>
-#include <cstddef>
-#include "stopwatch.h"
+#include "yenc_multi_decoder.h"
+#include "yenc.h"
+#include "buffer.h"
+#include "bodyiter.h"
 
 namespace newsflash
-{ 
-    // implement throttling to conserve/limit bandwidth usage
-    class throttle
-    {
-    public:
-        throttle() : bytes_per_second_(0), accum_(0)
-        {}
+{
+yenc_multi_decoder::yenc_multi_decoder()
+{}
 
-        // enable throttling. 
-        // set the speed limit to the given bytes_per_second.
-        void enable(std::size_t bytes_per_second)
-        {
-            std::lock_guard<std::mutex> lock(mutex_);
-            bytes_per_second_ = bytes_per_second;
-        }
+yenc_multi_decoder::~yenc_multi_decoder()
+{}
 
-    private:
-        std::mutex mutex_;        
-        std::size_t bytes_per_second_;
-        std::size_t accum_;
-        stopwatch stopwatch_;
-    };
+void yenc_multi_decoder::decode(const char* data, std::size_t len)
+{
+    nntp::bodyiter beg(data);
+    nntp::bodyiter end(data + len);
+
+    const auto header = yenc::parse_header(beg, end);
+    if (!header.first)
+        throw decoder::exception("yenc: broken or missing header");
+
+    const auto part = yenc::parse_part(beg, end);
+    if (!part.first)
+        throw decoder::exception("yenc: broken or missing part header");
+
+    std::vector<char> buff;
+
+}
+
+void yenc_multi_decoder::finish()
+{
+
+}
+
+void yenc_multi_decoder::cancel()
+{}
 
 } // newsflash

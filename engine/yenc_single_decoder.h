@@ -22,33 +22,27 @@
 
 #pragma once
 
-#include <mutex>
-#include <chrono>
-#include <cstddef>
-#include "stopwatch.h"
+#include <string>
+#include "decoder.h"
 
 namespace newsflash
-{ 
-    // implement throttling to conserve/limit bandwidth usage
-    class throttle
+{
+    // decoder for a single part yenc encoded content
+    class yenc_single_decoder : public decoder
     {
     public:
-        throttle() : bytes_per_second_(0), accum_(0)
-        {}
+        yenc_single_decoder();
 
-        // enable throttling. 
-        // set the speed limit to the given bytes_per_second.
-        void enable(std::size_t bytes_per_second)
-        {
-            std::lock_guard<std::mutex> lock(mutex_);
-            bytes_per_second_ = bytes_per_second;
-        }
+       ~yenc_single_decoder();
 
+        // expect to receive all the media in a single
+        // yenc encoded buffer.
+        virtual void decode(const char* data, std::size_t len) override;
+
+        virtual void finish() override;
+
+        virtual void cancel() override;
     private:
-        std::mutex mutex_;        
-        std::size_t bytes_per_second_;
-        std::size_t accum_;
-        stopwatch stopwatch_;
     };
 
 } // newsflash

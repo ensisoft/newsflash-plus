@@ -22,33 +22,19 @@
 
 #pragma once
 
-#include <mutex>
-#include <chrono>
-#include <cstddef>
-#include "stopwatch.h"
+#include <string>
 
-namespace newsflash
-{ 
-    // implement throttling to conserve/limit bandwidth usage
-    class throttle
-    {
-    public:
-        throttle() : bytes_per_second_(0), accum_(0)
-        {}
+// file system functions
 
-        // enable throttling. 
-        // set the speed limit to the given bytes_per_second.
-        void enable(std::size_t bytes_per_second)
-        {
-            std::lock_guard<std::mutex> lock(mutex_);
-            bytes_per_second_ = bytes_per_second;
-        }
+namespace fs
+{
 
-    private:
-        std::mutex mutex_;        
-        std::size_t bytes_per_second_;
-        std::size_t accum_;
-        stopwatch stopwatch_;
-    };
+std::string remove_illegal_filename_chars(std::string name);
 
-} // newsflash
+std::string remove_illegal_filepath_chars(std::string path);
+
+std::string join_path(const std::string& a, const std::string& b);
+
+std::string name_file(int attempt, const std::string& name);
+
+} // fs

@@ -88,6 +88,9 @@ namespace newsflash
 
         // Resize the file (either truncate or expand) to the given size. 
         static std::error_code resize(const std::string& file, big_t size);
+
+        // check if file exists or not.
+        static bool exists(const std::string& file);
     private:
         struct impl;
 
