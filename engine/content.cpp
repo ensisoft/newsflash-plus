@@ -65,13 +65,14 @@ void content::decode(std::shared_ptr<const buffer> buff)
     // buffers or not.
     if (id != next_buffer_id_)
     {
-        const auto ret = buffers_.insert(std::make_pair(buff, id));
+        const auto ret = stash_.insert(std::make_pair(id, buff));
         if (!ret.second)
             throw std::runtime_error("duplicate content sequence");
+
+        return;
     }
 
-    decoder_->decode((const char*)buff->ptr() + buff->offset(),
-        buff->size() - buff->offset());
+    decoder_->decode(buffer_payload(*buff), buffer_payload_size(*buff));
 
     next_buffer_id_ = id + 1;
 }
@@ -92,10 +93,10 @@ void content::cancel()
 
 void content::finish()
 {
-    for (auto& pair : buffers_)
+    for (auto& pair : stash_)
     {
-        const auto& buff = pair.first;
-        decoder_->decode((const char*)buff->ptr(), buff->size());
+        const auto& buff = pair.second;
+        decoder_->decode(buffer_payload(*buff), buffer_payload_size(*buff));
     }
 
     decoder_->finish();
@@ -125,33 +126,51 @@ void content::on_info(const decoder::info& info)
     const auto clean = fs::remove_illegal_filename_chars(info.name);
     if (!clean.empty())
         name_ = clean;
+
+    if (info.size)
+        open(info.size);
 }
 
 void content::on_write(const void* data, std::size_t len, std::size_t offset)
 {
-    if (!file_.is_open())
-    {
-        for (int i=0; i<11; ++i)
-        {
-            const std::string name = fs::name_file(i, name_);
-            const std::string file = fs::join_path(path_, name_);
-
-            if (!overwrite_ && bigfile::exists(file))
-                continue;
-
-            const std::error_code err = file_.create(file);
-            if (err != std::error_code())
-                throw std::system_error(err, "error opening file: " + file);
-
-            name_ = name;
-            break;
-        }
-    }
+    open(0);
 
     stopwatch_timer io(watch_);
 
     file_.seek(offset);
     file_.write(data, len);
+}
+
+void content::open(std::size_t initial_size)
+{
+    if (file_.is_open())
+        return;
+
+    for (int i=0; i<11; ++i)
+    {
+        const std::string name = fs::name_file(i, name_);
+        const std::string file = fs::join_path(path_, name);
+
+        if (!overwrite_ && bigfile::exists(file))
+            continue;
+
+        const auto err = file_.create(file);
+        if (err)
+            throw std::system_error(err, "error opening file: " + file);
+
+        if (initial_size)
+        {
+            const auto err = bigfile::resize(file, initial_size);
+            if (err)
+                throw std::system_error(err, "error resizing file: " + file);
+        }    
+
+        name_ = name;
+        break;
+    }
+    if (!file_.is_open())
+        throw std::runtime_error("unable to create file");    
+
 }
 
 } // newsflash

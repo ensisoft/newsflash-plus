@@ -33,10 +33,10 @@ yenc_multi_decoder::yenc_multi_decoder()
 yenc_multi_decoder::~yenc_multi_decoder()
 {}
 
-void yenc_multi_decoder::decode(const char* data, std::size_t len)
+void yenc_multi_decoder::decode(const void* data, std::size_t len)
 {
-    nntp::bodyiter beg(data);
-    nntp::bodyiter end(data + len);
+    nntp::bodyiter beg((const char*)data);
+    nntp::bodyiter end((const char*)data + len);
 
     const auto header = yenc::parse_header(beg, end);
     if (!header.first)

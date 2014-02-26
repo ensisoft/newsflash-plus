@@ -18,33 +18,45 @@
 //  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 //  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-//  THE SOFTWARE.
+//  THE SOFTWARE.            
+#include <boost/test/minimal.hpp>
+#include "../yenc_single_decoder.h"
+#include "../yenc_multi_decoder.h"
 
-#pragma once
+void decoder_write(const void* data, std::size_t size, std::size_t offset)
+{}
 
-#include <boost/crc.hpp>
-#include <string>
-#include "decoder.h"
+void decoder_info(const newsflash::decoder::info& info)
+{}
 
-namespace newsflash
+void decoder_error(const std::string& err)
+{}
+
+
+void test_single_success()
 {
-    // decoder for multi part yenc encoded content
-    class yenc_multi_decoder : public decoder
-    {
-    public:
-        yenc_multi_decoder();
+    newsflash::yenc_single_decoder yenc;
+    yenc.on_write = decoder_write;
+    yenc.on_info  = decoder_info;
 
-       ~yenc_multi_decoder();
+    //yenc.decode()
+}
 
-        // receive a part of the media in an yenc encoded buffer.
-        virtual void decode(const void* data, std::size_t len) override;
+void test_single_broken()
+{
 
-        // 
-        virtual void finish() override;
+}
 
-        virtual void cancel() override;
-    private:
-        boost::crc_32_type crc_;
-    };
+void test_single_error()
+{
 
-} // newsflash
+}
+
+int test_main(int, char*[])
+{
+    test_single_success();
+    test_single_broken();
+    test_single_error();
+
+    return 0;
+}

@@ -33,7 +33,7 @@ public:
     test_decoder() : offset_(0)
     {}
 
-    virtual void decode(const char* data, std::size_t len) override
+    virtual void decode(const void* data, std::size_t len) override
     {
         on_write(data, len, offset_);
         offset_ += len;
@@ -64,7 +64,7 @@ std::shared_ptr<newsflash::buffer> read_buffer_from_file(const char* file, std::
     std::FILE* fp = fopen(file, "rb");
     BOOST_REQUIRE(fp);
 
-    fseek(fp, SEEK_SET, offset);
+    fseek(fp, offset, SEEK_SET);
 
     auto buff = std::make_shared<newsflash::buffer>(0, len);
 
@@ -102,7 +102,7 @@ void test_success()
         const auto part1 = generate_buffer(0, 512);
         const auto part2 = generate_buffer(1, 100);
 
-        newsflash::content test(".", "test.png", std::unique_ptr<test_decoder>(new test_decoder));
+        newsflash::content test("", "test.png", std::unique_ptr<test_decoder>(new test_decoder));
         test.decode(part1);
         test.decode(part2);
         test.finish();
@@ -116,22 +116,87 @@ void test_success()
         delete_file("test.png");
     }
 
+    // test out of order buffers
+    {
+        delete_file("test.png");
+
+        const auto part1 = generate_buffer(0, 512);
+        const auto part2 = generate_buffer(1, 512);
+        const auto part3 = generate_buffer(2, 200);
+
+        newsflash::content test("", "test.png", std::unique_ptr<test_decoder>(new test_decoder));
+        test.decode(part2);
+        test.decode(part1);
+        test.decode(part3);
+        test.finish();
+        BOOST_REQUIRE(test.good());
+
+        const auto file1 = read_buffer_from_file("test.png", 0, 512);
+        const auto file2 = read_buffer_from_file("test.png", 512, 512);
+        const auto file3 = read_buffer_from_file("test.png", 1024, 200);
+        BOOST_REQUIRE(*part1 == *file1);
+        BOOST_REQUIRE(*part2 == *file2);
+        BOOST_REQUIRE(*part3 == *file3);
+
+        delete_file("test.png");
+    }
+
+    // test overwriting
+    {
+        generate_file("test.png", 512);
+
+        const auto buff = generate_buffer(0, 1024);
+
+        newsflash::content test("", "test.png", std::unique_ptr<test_decoder>(new test_decoder));
+        test.decode(buff);
+        test.finish();
+
+        const auto file = read_buffer_from_file("test.png", 0, 1024);
+        BOOST_REQUIRE(*file == *buff);
+
+        delete_file("test.png");
+    }
+
+    // test not-overwriting
+    {
+        generate_file("test.png", 512);
+        delete_file("(1) test.png");
+
+        const auto buff = generate_buffer(0, 1024);
+
+        newsflash::content test("", "test.png", std::unique_ptr<test_decoder>(new test_decoder()), false);
+        test.decode(buff);
+        test.finish();
+
+        const auto file = read_buffer_from_file("(1) test.png", 0, 1024);
+        BOOST_REQUIRE(*file == *buff);
+
+        delete_file("test.png");
+        delete_file("(1) test.png");
+    }
+
+    // test with decoding info
+    {
+        // todo:
+    }
 }
 
 
 void test_decode_error()
 {
-
+    // todo:
 }
 
 void test_filesystem_error()
 {
-
+    // todo:
 }
 
 int test_main(int, char* [])
 {
     test_success();
+    test_decode_error();
+    test_filesystem_error();
 
     return 0;
 }

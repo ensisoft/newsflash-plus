@@ -65,7 +65,10 @@ namespace newsflash
         void on_write(const void* data, std::size_t size, std::size_t offset);
 
     private:
-        typedef std::map<std::shared_ptr<const buffer>, std::size_t> buffmap;
+        void open(std::size_t initial_size);
+
+    private:
+        typedef std::map<std::size_t, std::shared_ptr<const buffer>> buffmap;
 
     private:
         std::size_t next_buffer_id_;
@@ -74,7 +77,7 @@ namespace newsflash
         std::unique_ptr<decoder> decoder_;    
         std::vector<std::string> errors_;
         bigfile file_;
-        buffmap buffers_;
+        buffmap stash_;
         stopwatch watch_;        
 
         bool overwrite_;

@@ -207,15 +207,17 @@ namespace newsflash
     }
 
     inline
-    auto buffer_begin(const buffer& buff) -> decltype(buff.ptr())
+    const buffer::byte_t* buffer_payload(const buffer& buff)
     {
         return buff.ptr() + buff.offset();
     }
+
     inline
-    auto buffer_end(const buffer& buff) -> decltype(buff.ptr())
+    std::size_t buffer_payload_size(const buffer& buff)
     {
-        return buff.ptr() + buff.offset() + buff.size();
+        return buff.size() - buff.offset();
     }
+
 
     inline
     auto buffer_size(const buffer& buff) ->decltype(buff.size())

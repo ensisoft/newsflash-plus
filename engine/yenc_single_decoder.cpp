@@ -34,19 +34,22 @@ yenc_single_decoder::yenc_single_decoder()
 yenc_single_decoder::~yenc_single_decoder()
 {}
 
-void yenc_single_decoder::decode(const char* data, std::size_t len)
+void yenc_single_decoder::decode(const void* data, std::size_t len)
 {
-    nntp::bodyiter beg(data);
-    nntp::bodyiter end(data + len);
+    nntp::bodyiter beg((const char*)data);
+    nntp::bodyiter end((const char*)data + len);
 
     const auto header = yenc::parse_header(beg, end);
     if (!header.first)
         throw decoder::exception("yenc: broken or missing header");
 
-    decoder::info info;
-    info.name = header.second.name;
-    info.size = header.second.size;
-    on_info(info);
+    if (on_info)
+    {
+        decoder::info info;
+        info.name = header.second.name;
+        info.size = header.second.size;
+        on_info(info);
+    }
 
     std::vector<char> buff;
     buff.reserve(header.second.size);
@@ -64,13 +67,22 @@ void yenc_single_decoder::decode(const char* data, std::size_t len)
         boost::crc_32_type crc;
         crc.process_bytes(&buff[0], buff.size());
         if (footer.second.crc32 != crc.checksum())
-            on_error("yenc: crc32 mismatch");
+        {
+            if (on_error)
+                on_error("yenc: crc32 mismatch");
+        }
     }
     if (footer.second.size != header.second.size)
-        on_error("yenc: size mismatch between binary size in footer and header");
+    {
+        if (on_error)
+            on_error("yenc: size mismatch between binary size in footer and header");
+    }
 
     if (footer.second.size != buff.size())
-        on_error("yenc: size mismatch between footer and actual binary size");
+    {
+        if (on_error)
+            on_error("yenc: size mismatch between footer and actual binary size");
+    }
 }
 
 void yenc_single_decoder::finish()

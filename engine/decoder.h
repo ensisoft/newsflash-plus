@@ -69,7 +69,7 @@ namespace newsflash
         virtual ~decoder() = default;
 
         // decode the data buffer. 
-        virtual void decode(const char* data, std::size_t len) = 0;
+        virtual void decode(const void* data, std::size_t len) = 0;
 
         // succesfully finish the decoding session. no more buffers coming.
         virtual void finish() = 0;

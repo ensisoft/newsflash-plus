@@ -28,5 +28,6 @@ unit-test unit_test_sslsocket  : unit_test_sslsocket.cpp ;
 
 unit-test unit_test_listing :  unit_test_listing.cpp ;
 unit-test unit_test_content : unit_test_content.cpp ;
+unit-test unit_test_yenc_decoder : unit_test_yenc_decoder.cpp ;
 
 unit-test unit_test_speedometer : unit_test_speedometer.cpp ;

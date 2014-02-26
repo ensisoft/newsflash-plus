@@ -37,7 +37,7 @@ namespace newsflash
 
         // expect to receive all the media in a single
         // yenc encoded buffer.
-        virtual void decode(const char* data, std::size_t len) override;
+        virtual void decode(const void* data, std::size_t len) override;
 
         virtual void finish() override;
 
