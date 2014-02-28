@@ -37,10 +37,15 @@ namespace newsflash
     public:
         typedef std::size_t key_t;
 
-        static const std::size_t MAX_STRING_LEN = 256;
+        enum { MAX_STRING_LEN = 256 };
 
         stringtable();
 
+        // convenience function
+        key_t add(const std::string& str)
+        {
+            return add(str.c_str(), str.size());
+        }
 
         // add a string to the table.
         // the string should not exceed MAX_STRING_LENGTH. 
@@ -52,6 +57,14 @@ namespace newsflash
         // to add function. 
         std::string get(key_t key) const;
 
+#ifdef NEWSFLASH_DEBUG
+        // get pair rawsize, tablesize 
+        // rawsize indicates the space required by all the strings combined.
+        // tablesize indicates the space required by all the strings 
+        // when stored in the table.
+        std::pair<std::size_t, std::size_t> size_info() const;
+#endif
+
     private:
         #pragma pack(push)
         #pragma pack(1)
@@ -59,7 +72,6 @@ namespace newsflash
             std::uint8_t pos;
             std::uint8_t val;
         };
-
         // difference string w/r to the basestring
         struct diffstring {
             std::uint32_t offset;
@@ -67,17 +79,15 @@ namespace newsflash
             std::uint8_t  count;
             delta deltas[MAX_STRING_LEN];
         };
-
-        static_assert(sizeof(diffstring) == 6 + sizeof(delta) * MAX_STRING_LEN
-            , "string was expected to be packed");
-
         // basestring
         struct basestring {
             std::uint8_t  len; // length of the data to follow
             char data[MAX_STRING_LEN]; 
         };
-
         #pragma pack(pop)
+
+        static_assert(sizeof(diffstring) == 6 + sizeof(delta) * MAX_STRING_LEN, 
+            "string structures are expected to be packed");        
 
         std::pair<basestring*, std::size_t> find_base_string(std::size_t bucket) const;
         std::pair<basestring*, std::size_t> insert_base_string(std::size_t bucket, const char* str, std::size_t len);
@@ -86,10 +96,13 @@ namespace newsflash
         const basestring* load_base_string(std::size_t offset) const;
 
     private:
-
         std::vector<char> basedata_;
         std::vector<char> diffdata_;
         std::map<std::size_t, std::size_t> offsets_;
+
+#ifdef NEWSFLASH_DEBUG
+    private:
         std::size_t rawbytes_;
+#endif
     };
 } // newsflash

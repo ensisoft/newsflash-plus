@@ -28,8 +28,13 @@
 namespace newsflash
 {
 
-stringtable::stringtable() : rawbytes_(0)
-{}
+stringtable::stringtable()
+{
+#ifdef NEWSFLASH_DEBUG
+    rawbytes_ = 0;
+#endif
+}
+
 
 // add a new string to the stringtable. the algorithm is as follows.
 // create a hash value for each string and see which bucket it belongs to.
@@ -42,7 +47,7 @@ stringtable::key_t stringtable::add(const char* str, std::size_t len)
     assert(str);
     assert(len);
 
-    len = std::min(len, MAX_STRING_LEN);
+    len = std::min(len, std::size_t(MAX_STRING_LEN));
 
     newsflash::hash<char> hash;
 
@@ -65,12 +70,10 @@ stringtable::key_t stringtable::add(const char* str, std::size_t len)
     // find where base string is stored for the bucket if any
     auto ret = find_base_string(bucket);
     if (!ret.first)
-        ret = insert_base_string(bucket, str, len+1);
+        ret = insert_base_string(bucket, str, len);
 
     const basestring* base   = ret.first;
     const std::size_t offset = ret.second;
-
-
 
     // 0 is not valid string len so we can -1 for a maximum total of 256 length
     diffstring s;
@@ -81,7 +84,7 @@ stringtable::key_t stringtable::add(const char* str, std::size_t len)
     // calculate delta to the base
     for (std::size_t i=0; i<len; ++i)
     {
-        if (i >= base->len || base->data[i] != str[i])
+        if (i > base->len+1 || base->data[i] != str[i])
         {
             delta d;
             d.pos = i;
@@ -94,8 +97,12 @@ stringtable::key_t stringtable::add(const char* str, std::size_t len)
 
     // serialize into buffer
     const char* beg = static_cast<const char*>((const void*)&s);
-    const char* end = beg + 6 + s.count;
+    const char* end = beg + 6 + sizeof(delta) * s.count;
     std::copy(beg, end, std::back_inserter(diffdata_));
+
+#ifdef NEWSFLASH_DEBUG
+    rawbytes_ += len;
+#endif
 
     return key;
 }
@@ -105,8 +112,8 @@ std::string stringtable::get(key_t key) const
     const diffstring* s = load_diff_string(key);
     const basestring* b = load_base_string(s->offset);
 
-    std::string ret(b->data, b->len);
-    ret.resize(s->length);
+    std::string ret(b->data, b->len+1);
+    ret.resize(s->length+1);
 
     for (size_t i=0; i<s->count; ++i)
     {
@@ -115,6 +122,17 @@ std::string stringtable::get(key_t key) const
     }
     return ret;
 }
+
+#ifdef NEWSFLASH_DEBUG
+    std::pair<std::size_t, std::size_t> stringtable::size_info() const
+    {
+        const auto tablesize = basedata_.size() + 
+            diffdata_.size() + 
+            offsets_.size() * sizeof(std::size_t) * 2;
+
+        return { rawbytes_, tablesize };
+    }
+#endif
 
 std::pair<stringtable::basestring*, std::size_t> stringtable::find_base_string(std::size_t bucket) const
 {
@@ -135,7 +153,7 @@ std::pair<stringtable::basestring*, std::size_t> stringtable::insert_base_string
 {
     const auto offset = basedata_.size();
 
-    basedata_.push_back(len);
+    basedata_.push_back(len-1);
     std::copy(str, str+len, std::back_inserter(basedata_));
 
     auto ret = offsets_.insert(std::make_pair(bucket, offset));
