@@ -31,3 +31,5 @@ unit-test unit_test_content : unit_test_content.cpp ;
 unit-test unit_test_yenc_decoder : unit_test_yenc_decoder.cpp ;
 
 unit-test unit_test_speedometer : unit_test_speedometer.cpp ;
+
+unit-test unit_test_stringtable : unit_test_stringtable.cpp ;
