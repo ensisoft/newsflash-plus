@@ -51,6 +51,14 @@ namespace newsflash
             const std::string what_;
         };
 
+        struct problem {
+            enum class type {
+                crc, size
+            };
+            type kind;
+            std::string str;
+        };
+
         struct info {
             std::string name; // decoded binary name
             std::size_t size; // expected decoded binary size
@@ -64,7 +72,7 @@ namespace newsflash
 
         // a decoding problem was encountered (for example incorrect CRC32)
         // the binary may be broken.
-        std::function<void (const std::string& error)> on_error;
+        std::function<void (const problem& prob)> on_problem;
 
         virtual ~decoder() = default;
 

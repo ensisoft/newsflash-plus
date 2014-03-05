@@ -38,9 +38,9 @@ content::content(std::string folder, std::string initial_file_name, std::unique_
       decoder_(std::move(dec)),
       overwrite_(overwrite)
 {
-    decoder_->on_error = std::bind(&content::on_error, this, std::placeholders::_1);    
-    decoder_->on_info  = std::bind(&content::on_info, this, std::placeholders::_1);
-    decoder_->on_write = std::bind(&content::on_write, this, 
+    decoder_->on_problem = std::bind(&content::on_problem, this, std::placeholders::_1);    
+    decoder_->on_info    = std::bind(&content::on_info, this, std::placeholders::_1);
+    decoder_->on_write   = std::bind(&content::on_write, this, 
         std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
 
 #ifdef NEWSFLASH_DEBUG
@@ -113,12 +113,12 @@ void content::finish()
 
 bool content::good() const
 {
-    return errors_.empty();
+    return problems_.empty();
 }
 
-void content::on_error(const std::string& err)
+void content::on_problem(const decoder::problem& problem)
 {
-    errors_.push_back(err);
+    problems_.push_back(problem.str);
 }
 
 void content::on_info(const decoder::info& info)

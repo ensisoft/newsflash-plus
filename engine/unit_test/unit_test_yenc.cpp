@@ -76,7 +76,7 @@ void test_parsing()
     {
         const char* str = "=yend size=16154 crc32=4a68571d";
         
-        const auto& ret = yenc::parse_end(str, str+strlen(str));
+        const auto& ret = yenc::parse_footer(str, str+strlen(str));
 
         BOOST_REQUIRE(ret.first == true);
         BOOST_REQUIRE(ret.second.size == 16154);
@@ -90,7 +90,7 @@ void test_parsing()
         // single part yend
         const char* str = "=yend size=16154";
         
-        const auto& ret = yenc::parse_end(str, str+strlen(str));
+        const auto& ret = yenc::parse_footer(str, str+strlen(str));
 
         BOOST_REQUIRE(ret.first == true);
         BOOST_REQUIRE(ret.second.size == 16154);
@@ -104,7 +104,7 @@ void test_parsing()
         // multipart end
         const char* str = "=yend size=16154 pcrc32=4a68571d";
 
-        const auto& ret = yenc::parse_end(str, str+strlen(str));
+        const auto& ret = yenc::parse_footer(str, str+strlen(str));
 
         BOOST_REQUIRE(ret.first == true);
         BOOST_REQUIRE(ret.second.size == 16154);
@@ -208,7 +208,7 @@ void test_parsing()
     {
         const char* str = "=yend size=sss123sss\r\n";
 
-        const auto& end = yenc::parse_end(str, str+strlen(str));
+        const auto& end = yenc::parse_footer(str, str+strlen(str));
         BOOST_REQUIRE(end.first == false);
     }
 }
@@ -249,10 +249,9 @@ void test_decoding()
     BOOST_REQUIRE(orig.size() == data.size());
     BOOST_REQUIRE(std::memcmp(&orig[0], &data[0], orig.size()) == 0);
 
-    // vector<char> data2;
-    // yenc_decode_data(beg, temp.end(), data2);
-    // BOOST_REQUIRE(data.size() == data2.size());
-    // BOOST_REQUIRE(data == data2);
+    const auto& footer = yenc::parse_footer(it, temp.end());
+    BOOST_REQUIRE(footer.first);
+    BOOST_REQUIRE(footer.second.size == header.second.size);
         
 }
 
@@ -290,6 +289,8 @@ void test_encoding()
     BOOST_REQUIRE(std::memcmp(&yenc[0], &data[0], yenc.size()) == 0);
 }
 
+
+
 /*
  * Synopsis: Verify that encoded data decodes back into origial data.
  *
@@ -311,11 +312,31 @@ void test_decode_encode()
     yenc::encode(junk, junk+sizeof(junk), std::back_inserter(yenc));
     
     // and decode back into binary
-    yenc::decode(yenc.begin(), yenc.end(), std::back_inserter(data));
+    auto it = yenc.begin();
+    yenc::decode(it, yenc.end(), std::back_inserter(data));
     
     BOOST_REQUIRE(data.size() == sizeof(junk));
     BOOST_REQUIRE(std::memcmp(&data[0], junk, sizeof(junk)) == 0);
     
+}
+
+void test_encode_special()
+{
+    // verify leading dot expansion
+    {
+        const char data[] = {
+            '.' - 42, 
+            'a' - 42,
+            'b' - 42,
+            'b' - 42,
+            'a' - 42,
+            '.' - 42
+        };
+
+        std::string yenc;
+        yenc::encode(std::begin(data), std::end(data), std::back_inserter(yenc), 128, true);
+        BOOST_REQUIRE(yenc == "..abba.");
+    }
 }
 
 int test_main(int, char* [])
@@ -324,5 +345,6 @@ int test_main(int, char* [])
     test_decoding();
     test_encoding();
     test_decode_encode();
+    test_encode_special();
     return 0;
 }

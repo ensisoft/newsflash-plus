@@ -55,7 +55,7 @@ namespace yenc
     // yEnd end line follows the yEnc encoded data.
     // In case of a multipart data the part field will
     // be present and have a non-zero value after succesful parsing. 
-    struct end {
+    struct footer {
         size_t size;
         size_t part; 
         size_t crc32;
@@ -113,31 +113,30 @@ namespace yenc
 
 
     template<typename InputIterator>
-    std::pair<bool, yenc::end> parse_end(InputIterator& beg, InputIterator end)
+    std::pair<bool, yenc::footer> parse_footer(InputIterator& beg, InputIterator end)
     {
         using namespace boost::spirit::classic;
         
-        yenc::end yend {0, 0, 0, 0};
+        yenc::footer footer {0, 0, 0, 0};
 
         const auto ret = parse(beg, end, 
           (                                                
            str_p("=yend") >>
-           (str_p("size=") >> uint_p[assign(yend.size)]) >>
-           !(str_p("part=") >> uint_p[assign(yend.part)]) >>
-           !(str_p("pcrc32=") >> hex_p[assign(yend.pcrc32)]) >>
-           !(str_p("crc32=") >> hex_p[assign(yend.crc32)]) >> 
+           (str_p("size=") >> uint_p[assign(footer.size)]) >>
+           !(str_p("part=") >> uint_p[assign(footer.part)]) >>
+           !(str_p("pcrc32=") >> hex_p[assign(footer.pcrc32)]) >>
+           !(str_p("crc32=") >> hex_p[assign(footer.crc32)]) >> 
            !eol_p
           ), space_p);
 
         beg = ret.stop;
 
-        return {ret.hit, yend};
+        return {ret.hit, footer};
     }
 
     // Decode yEnc encoded data back into its original binary representation.
-    // This function always returns end.
     template<typename InputIterator, typename OutputIterator>
-    std::pair<bool, InputIterator> decode(InputIterator beg, InputIterator end, OutputIterator dest)
+    bool decode(InputIterator& beg, InputIterator end, OutputIterator dest)
     {
         // todo: some error checking perhaps?
         while (beg != end)
@@ -150,28 +149,31 @@ namespace yenc
             }
             else if (c == '=')
             {
+                // todo: this might not actually work for an InputIterator
                 InputIterator tmp(beg);
                 if (++beg == end)
                 {
                     *dest++ = c-42;
-                    return { true, end };
+                    return true;
                 }
                 else if (*beg == 'y')
-                    return { true, tmp};
-
+                {
+                    beg = tmp;
+                    return true;
+                }
                 c  = *beg;
                 c -= 64;
             }
             *dest++ = c - 42;
             ++beg;
         }
-        return {true, end};
+        return true;
     }
 
     // Encode data into yEnc. Line should be the preferred
     // line length after wich a new line (\r\n) is written into the output stream.
     template<typename InputIterator, typename OutputIterator>
-    void encode(InputIterator beg, InputIterator end, OutputIterator dest, const int line = 128)
+    void encode(InputIterator beg, InputIterator end, OutputIterator dest, const int line = 128, bool double_dots = false)
     {
         int output = 0;
         while (beg != end)
@@ -181,13 +183,18 @@ namespace yenc
             // yEnc encoded content without being "escaped".
             if (val == 0x00 || val == 0x0A || val == 0x0D || val == 0x3D || val == 0x09)
             {
-                ++output;
+                output++;
                 *dest++ = '=';
                 val = (val + 64) % 256;
             }
             *dest++ = static_cast<char>(val);
-            ++output;
-            if (output >= line)
+            output++;
+            if (double_dots && output == 1)
+            {
+                if (static_cast<char>(val) == '.')
+                    *dest++ = '.';
+            } 
+            else if (output >= line)
             {
                 *dest++ = '\r';
                 *dest++ = '\n';

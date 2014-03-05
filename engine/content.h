@@ -60,7 +60,7 @@ namespace newsflash
         bool good() const;
 
     private:
-        void on_error(const std::string& err);                
+        void on_problem(const decoder::problem& problem);
         void on_info(const decoder::info& info);
         void on_write(const void* data, std::size_t size, std::size_t offset);
 
@@ -75,7 +75,7 @@ namespace newsflash
         std::string path_;
         std::string name_;        
         std::unique_ptr<decoder> decoder_;    
-        std::vector<std::string> errors_;
+        std::vector<std::string> problems_;
         bigfile file_;
         buffmap stash_;
         stopwatch watch_;        
