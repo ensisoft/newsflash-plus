@@ -41,7 +41,15 @@ void yenc_single_decoder::decode(const void* data, std::size_t len)
 
     const auto header = yenc::parse_header(beg, end);
     if (!header.first)
-        throw decoder::exception("yenc: broken or missing header");
+        throw decoder::exception("broken or missing header");
+
+    std::vector<char> buff;
+    buff.reserve(header.second.size);
+    yenc::decode(beg, end, std::back_inserter(buff));
+    
+    const auto footer = yenc::parse_footer(beg, end);
+    if (!footer.first)
+        throw decoder::exception("broken or missing footer");
 
     if (on_info)
     {
@@ -51,37 +59,23 @@ void yenc_single_decoder::decode(const void* data, std::size_t len)
         on_info(info);
     }
 
-    std::vector<char> buff;
-    buff.reserve(header.second.size);
-    yenc::decode(beg, end, std::back_inserter(buff));
-    
-    const auto footer = yenc::parse_footer(beg, end);
-    if (!footer.first)
-        throw decoder::exception("yenc: broken or missing footer");
-
-    on_write(&buff[0], buff.size(), 0);
-
-    if (footer.second.crc32)
+    if (on_problem)
     {
-        boost::crc_32_type crc;
-        crc.process_bytes(&buff[0], buff.size());
-        if (footer.second.crc32 != crc.checksum())
+        if (footer.second.crc32)
         {
-            if (on_problem)
-                on_problem(problem {problem::type::crc, "yenc: crc32 mismatch"});
+            boost::crc_32_type crc;
+            crc.process_bytes(&buff[0], buff.size());
+            if (footer.second.crc32 != crc.checksum())
+                on_problem(problem {problem::type::crc, "checksum mismatch"});
         }
-    }
-    if (footer.second.size != header.second.size)
-    {
-        if (on_problem)
-            on_problem(problem { problem::type::size, "yenc: size mismatch between binary size in footer and header"});
+
+        if (footer.second.size != header.second.size)
+            on_problem(problem { problem::type::size, "size mismatch between binary size in footer and header"});
+        if (footer.second.size != buff.size())
+            on_problem(problem { problem::type::size, "size mismatch between binary size and encoded size"});
     }
 
-    if (footer.second.size != buff.size())
-    {
-        if (on_problem)
-            on_problem(problem { problem::type::size, "yenc: size mismatch between footer and actual binary size"});
-    }
+    on_write(&buff[0], buff.size(), 0, false);    
 }
 
 void yenc_single_decoder::finish()

@@ -37,18 +37,27 @@ struct tester
     tester(newsflash::decoder& dec)
     {
         dec.on_write = std::bind(&tester::decoder_write, this, 
-            std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+            std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
         dec.on_info = std::bind(&tester::decoder_info, this,
             std::placeholders::_1);
         dec.on_problem = std::bind(&tester::decoder_problem, this,
             std::placeholders::_1);
     }
 
-    void decoder_write(const void* data, std::size_t size, std::size_t offset)
+    void decoder_write(const void* data, std::size_t size, std::size_t offset, bool has_offset)
     {
-        if (binary.size() < size + offset)
-            binary.resize(size + offset);
-        std::memcpy(&binary[offset], data, size);
+        if (has_offset)
+        {
+            if (binary.size() < size + offset)
+                binary.resize(size + offset);            
+            std::memcpy(&binary[offset], data, size);
+        }
+        else
+        {
+            const auto start = binary.size();
+            binary.resize(binary.size() + size);
+            std::memcpy(&binary[start], data, size);
+        }
     }
 
     void decoder_info(const newsflash::decoder::info& info)
@@ -69,11 +78,12 @@ void append(Container& c, const Values& v)
 
 std::vector<char> encode(std::vector<char> & data, std::size_t size)
 {
-    data.resize(size);
-    fill_random(&data[0], size);
+    const auto cur_size = data.size();
+    data.resize(cur_size + size);
+    fill_random(&data[cur_size], size);
 
     std::vector<char> yenc;
-    yenc::encode(data.begin(), data.end(), std::back_inserter(yenc), 128, true);
+    yenc::encode(data.begin() + cur_size, data.end(), std::back_inserter(yenc), 128, true);
     return yenc;
 }
 
@@ -93,7 +103,7 @@ void test_single_success()
 
     newsflash::yenc_single_decoder yenc;
     tester test(yenc);
-    yenc.decode(&part[0], part.size());
+    yenc.decode(part);
 
     BOOST_REQUIRE(test.info.name == "test-data.png");
     BOOST_REQUIRE(test.info.size == 1024);
@@ -118,7 +128,7 @@ void test_single_broken()
 
         newsflash::yenc_single_decoder yenc;
         tester test(yenc);
-        yenc.decode(&part[0], part.size());
+        yenc.decode(part);
 
         BOOST_REQUIRE(test.info.name == "foo.keke");
         BOOST_REQUIRE(test.info.size == 5666);
@@ -143,7 +153,7 @@ void test_single_broken()
 
         newsflash::yenc_single_decoder yenc;
         tester test(yenc);
-        yenc.decode(&part[0], part.size());
+        yenc.decode(part);
 
         BOOST_REQUIRE(test.info.name == "testtest");
         BOOST_REQUIRE(test.binary == data);
@@ -170,7 +180,7 @@ void test_single_error()
 
         newsflash::yenc_single_decoder yenc;
 
-        REQUIRE_EXCEPTION(yenc.decode(&part[0], part.size()));
+        REQUIRE_EXCEPTION(yenc.decode(part));
     }
 
     // missing footer
@@ -184,12 +194,56 @@ void test_single_error()
         append(part, encode(data, 4000));
 
         newsflash::yenc_single_decoder yenc;
-        REQUIRE_EXCEPTION(yenc.decode(&part[0], part.size()));
+        REQUIRE_EXCEPTION(yenc.decode(part));
     }
 }
 
 void test_multi_success()
-{}
+{
+    std::vector<char> data1;
+    std::vector<char> data2;
+
+    newsflash::yenc_multi_decoder yenc;
+    tester test(yenc);
+
+    std::vector<char> data;
+
+    // first part
+    { 
+        const std::string header("=ybegin part=1 total=2 line=128 size=2048 name=test\r\n");
+        const std::string part("=ypart begin=1 end=1024\r\n");
+        const std::string footer("=yend size=1024 part=1\r\n");
+
+        std::vector<char> yenc_data;
+        append(yenc_data, header);
+        append(yenc_data, part);
+        append(yenc_data, encode(data, 1024));
+        append(yenc_data, footer);
+        yenc.decode(yenc_data);
+
+    }
+
+    // second part
+    {
+        const std::string header("=ybegin part=2 total=2 line=128 size=2048 name=test\r\n");
+        const std::string part("=ypart begin=1025 end=2048\r\n");    
+        const std::string footer("=yend size=1024 part=2\r\n");   
+
+        std::vector<char> yenc_data;
+        append(yenc_data, header);
+        append(yenc_data, part);
+        append(yenc_data, encode(data, 1024));
+        append(yenc_data, footer);
+        yenc.decode(yenc_data);
+    }
+
+    yenc.finish();
+
+    BOOST_REQUIRE(test.info.name == "test");
+    BOOST_REQUIRE(test.info.size == 2048);
+    BOOST_REQUIRE(test.binary == data);
+
+}
 
 
 void test_multi_broken()
@@ -203,6 +257,10 @@ int test_main(int, char*[])
     test_single_success();
     test_single_broken();
     test_single_error();
+
+    test_multi_success();
+    test_multi_broken();
+    test_multi_error();
 
     return 0;
 }

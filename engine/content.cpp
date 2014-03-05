@@ -41,7 +41,7 @@ content::content(std::string folder, std::string initial_file_name, std::unique_
     decoder_->on_problem = std::bind(&content::on_problem, this, std::placeholders::_1);    
     decoder_->on_info    = std::bind(&content::on_info, this, std::placeholders::_1);
     decoder_->on_write   = std::bind(&content::on_write, this, 
-        std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+        std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
 
 #ifdef NEWSFLASH_DEBUG
     completed_ = false;
@@ -96,7 +96,7 @@ void content::finish()
     for (auto& pair : stash_)
     {
         const auto& buff = pair.second;
-        decoder_->decode(buffer_payload(*buff), buffer_payload_size(*buff));
+        decoder_->decode(buff);
     }
 
     decoder_->finish();
@@ -131,13 +131,15 @@ void content::on_info(const decoder::info& info)
         open(info.size);
 }
 
-void content::on_write(const void* data, std::size_t len, std::size_t offset)
+void content::on_write(const void* data, std::size_t len, std::size_t offset, bool has_offset)
 {
     open(0);
 
     stopwatch_timer io(watch_);
 
-    file_.seek(offset);
+    if (has_offset)
+        file_.seek(offset);
+
     file_.write(data, len);
 }
 

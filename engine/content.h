@@ -62,7 +62,7 @@ namespace newsflash
     private:
         void on_problem(const decoder::problem& problem);
         void on_info(const decoder::info& info);
-        void on_write(const void* data, std::size_t size, std::size_t offset);
+        void on_write(const void* data, std::size_t size, std::size_t offset, bool has_offset);
 
     private:
         void open(std::size_t initial_size);

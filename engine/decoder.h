@@ -27,6 +27,9 @@
 #include <exception>
 #include <string>
 #include <functional>
+#include <vector>
+#include <memory>
+#include "buffer.h"
 
 namespace newsflash
 {
@@ -53,7 +56,7 @@ namespace newsflash
 
         struct problem {
             enum class type {
-                crc, size
+                crc, size, partial
             };
             type kind;
             std::string str;
@@ -64,17 +67,31 @@ namespace newsflash
             std::size_t size; // expected decoded binary size
         };
 
+
+
         // info callback when meta information is available.
         std::function<void (const decoder::info& info)> on_info;
 
         // write a chunk of decoded data
-        std::function<void (const void* data, std::size_t size, std::size_t offset) > on_write;
+        std::function<void (const void* data, std::size_t size, std::size_t offset, bool has_offset) > on_write;
 
         // a decoding problem was encountered (for example incorrect CRC32)
         // the binary may be broken.
         std::function<void (const problem& prob)> on_problem;
 
         virtual ~decoder() = default;
+
+        // convenience function
+        void decode(const std::vector<char>& buff)
+        {
+            decode(&buff[0], buff.size());
+        }
+
+        // convenience function
+        void decode(const std::shared_ptr<const buffer>& buff)
+        {
+            decode(buffer_payload(*buff), buffer_payload_size(*buff));
+        }
 
         // decode the data buffer. 
         virtual void decode(const void* data, std::size_t len) = 0;

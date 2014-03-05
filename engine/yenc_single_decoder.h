@@ -31,6 +31,8 @@ namespace newsflash
     class yenc_single_decoder : public decoder
     {
     public:
+        using decoder::decode;
+
         yenc_single_decoder();
 
        ~yenc_single_decoder();
