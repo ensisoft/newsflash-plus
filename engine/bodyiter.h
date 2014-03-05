@@ -24,16 +24,23 @@
 
 #include <iterator>
 #include <cstddef>
+#include <cassert>
 
 namespace nntp
 {
     // bodyiter iterates over NNTP body and collapse leading 
     // double dots into single dots.
     class bodyiter : 
-        public std::iterator<std::forward_iterator_tag, char>
+        public std::iterator<std::bidirectional_iterator_tag, char>
     {
     public:
+        // construct an iterator that points to the start of the string
         bodyiter(const char* ptr) : ptr_(ptr), pos_(0)
+        {}
+
+        // construct an iterator that points to the specific position
+        // in the string.
+        bodyiter(const char* ptr, std::size_t pos) : ptr_(ptr), pos_(pos)
         {}
 
         // this should be const char& operator * () const and value_type should be "const char"
@@ -61,6 +68,19 @@ namespace nntp
             forward();
             return *this;
         }
+
+        bodyiter operator--(int)
+        {
+            bodyiter tmp(*this);
+            backward();
+            return tmp;
+        }
+        bodyiter& operator--()
+        {
+            backward();
+            return *this;
+        }
+
         bool operator==(const bodyiter& other) const
         {
             return ptr_ + pos_ == other.ptr_ + other.pos_;
@@ -88,9 +108,16 @@ namespace nntp
 
         void forward()
         {
-            pos_++;
+            ++pos_;
             if (double_dot())
-                pos_++;
+                ++pos_;
+        }
+
+        void backward()
+        {
+            --pos_;
+            if (double_dot())
+                --pos_;
         }
 
     private:

@@ -525,6 +525,8 @@ void test_bodyiter()
 {
     // if a textual body response constains a double as the first character on a 
     // new line the dot is doubled. (".\r\n" indicates the end of transmission)
+
+    // test forward
     {
         const char* text = 
         "..here is some text\r\n"
@@ -550,6 +552,68 @@ void test_bodyiter()
             );
 
     }
+
+    // test backwards
+    {
+        const char* text = 
+        "..here is some text\r\n"
+        "more data follows.\r\n"
+        "two dots in the middle .. of text\r\n"
+        "and no dots\r\n"
+        "..\r\n"
+        "...\r\n"
+        "....\r\n";
+
+        nntp::bodyiter beg(text - 1);
+        nntp::bodyiter end(text, std::strlen(text)-1);
+
+        std::string str;
+        for (; end != beg; --end)
+        {
+            str.insert(str.begin(), *end);
+        }
+
+        BOOST_REQUIRE( str == 
+            ".here is some text\r\n"
+            "more data follows.\r\n"
+            "two dots in the middle .. of text\r\n"
+            "and no dots\r\n"
+            ".\r\n"
+            "..\r\n"
+            "...\r\n"
+            );
+    }
+
+    // test forward and backwards
+    {
+        const char* text =
+        "..here is some text\r\n"
+        "..\r\n"
+        "...\r\n";
+
+        nntp::bodyiter beg(text);
+
+        std::string str;
+        str.push_back(*beg++);
+        str.push_back(*beg++);
+        str.push_back(*--beg);
+        str.push_back(*--beg);
+        BOOST_REQUIRE(str == ".hh.");
+
+        str.clear();
+
+        std::advance(beg, std::strlen(".here is some text\r\n"));
+        str.push_back(*beg++);
+        str.push_back(*beg++);
+        str.push_back(*beg++);
+        BOOST_REQUIRE(str == ".\r\n");
+
+        str.clear();
+        str.push_back(*--beg);
+        str.push_back(*--beg);
+        str.push_back(*--beg);
+        BOOST_REQUIRE(str == "\n\r.");
+    }    
 }
 
 int test_main(int, char* [])
