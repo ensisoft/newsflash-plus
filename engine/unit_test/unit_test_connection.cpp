@@ -31,90 +31,137 @@
 
 using namespace newsflash;
 
+struct tester {
+    std::mutex mutex;
+    std::condition_variable errcond;
+    std::condition_variable readycond;
+    std::string user;
+    std::string pass;
+
+    tester() : error(connection::error::none)
+    {}
+
+    tester(newsflash::connection& conn) : error(connection::error::none)
+    {
+        conn.on_error = std::bind(&tester::on_error, this,
+            std::placeholders::_1);
+        conn.on_auth = std::bind(&tester::on_auth, this,
+            std::placeholders::_1, std::placeholders::_2);
+    }
+
+    void on_auth(std::string& username, std::string& password)
+    {
+        username = user;
+        password = pass;
+    }
+
+    void on_error(connection::error e)
+    {
+        std::lock_guard<std::mutex> lock(mutex);
+        error = e;
+        errcond.notify_one();
+    }
+
+    void on_ready()
+    {
+        std::lock_guard<std::mutex> lock(mutex);
+        ready = true;
+        readycond.notify_one();
+    }
+
+    void wait_error()
+    {
+        std::unique_lock<std::mutex> lock(mutex);
+        bool ret = errcond.wait_for(lock, std::chrono::seconds(500000),
+            [&]() { return error != connection::error::none; });
+
+        if (!ret)
+            throw std::runtime_error("WAIT FAILED");
+    }
+
+    void wait_ready()
+    {
+        std::unique_lock<std::mutex> lock(mutex);
+        bool ret = readycond.wait_for(lock, std::chrono::seconds(500000),
+            [&]() { return ready; });
+
+        if (!ret)
+            throw std::runtime_error("WAIT FAILED");
+
+        ready = false;
+    }
+
+    connection::error error;
+    bool ready;
+};
+
+
 void unit_test_connection_resolve_error(bool ssl)
 {
-    cmdqueue in, out;
+    tester test;
 
-    connection::server host;
-    host.addr = "asdgljasljgas";
-    host.port = 8888;
-    host.ssl  = ssl;
+    newsflash::connection conn("clog");
+    conn.on_error = std::bind(&tester::on_error, &test, 
+        std::placeholders::_1);    
+    conn.connect("asgasgasg", 8888, ssl);
 
-    connection conn("clog", host, in, out);
-    wait(conn);
-
-    auto status = conn.get_status();
-    BOOST_REQUIRE(status.state == connection::state::error);
-    BOOST_REQUIRE(status.error == connection::error::resolve);
+    test.wait_error();
+    BOOST_REQUIRE(test.error == connection::error::resolve);
 }
 
 void unit_test_connection_refused(bool ssl)
 {
-    cmdqueue in, out;
+    tester test;
 
-    connection::server host;
-    host.addr = "localhost";
-    host.port = 2119;
-    host.ssl  = ssl;
+    newsflash::connection conn("clog");
+    conn.on_error = std::bind(&tester::on_error, &test, 
+        std::placeholders::_1);    
+    conn.connect("localhost", 2119, ssl);
 
-    connection conn("clog", host, in, out);
-    wait(conn);
-
-    auto status = conn.get_status();
-    BOOST_REQUIRE(status.state == connection::state::error);
-    BOOST_REQUIRE(status.error == connection::error::refused);
+    test.wait_error();
+    BOOST_REQUIRE(test.error == connection::error::refused);
 }
 
 void unit_test_connection_interrupted(bool ssl)
 {
-    cmdqueue in, out;
+    tester test;
 
-    connection::server host;
-    host.addr = "news.budgetnews.net";
-    host.port = 199;
-    host.ssl  = false;
-
-    connection* conn = new connection("clog", host, in, out);
+    newsflash::connection conn("clog");
+    conn.on_error = std::bind(&tester::on_error, &test, 
+        std::placeholders::_1);
+    conn.connect("news.budgetnews.net", 119, false);
 
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
-
-    delete conn;
 }
 
 void unit_test_connection_forbidden(bool ssl)
 {
-    cmdqueue in, out;
+    tester test;
+    test.user = "foobar";
+    test.pass = "foobar";
 
-    connection::server host;
-    host.addr = "news.budgetnews.net";
-    host.port = 119;
-    host.ssl  = false;
-    host.pass = "foobar";
-    host.user = "foobar";
+    newsflash::connection conn("clog");
+    conn.on_error = std::bind(&tester::on_error, &test,
+        std::placeholders::_1);
+    conn.on_auth = std::bind(&tester::on_auth, &test,
+        std::placeholders::_1, std::placeholders::_2);
+    conn.connect("news.astraweb.com", 1818, false);
 
-    connection conn("clog", host, in, out);
-    wait(conn);
-
-    auto status = conn.get_status();
-    BOOST_REQUIRE(status.state == connection::state::error);
-    BOOST_REQUIRE(status.error == connection::error::forbidden);
+    test.wait_error();
+    BOOST_REQUIRE(test.error == connection::error::forbidden);
 }
 
 void unit_test_connection_timeout_error(bool ssl)
 {
-    cmdqueue in, out;
+    tester test;
 
-    connection::server host;
-    host.addr = "www.google.com";
-    host.port = 80;
-    host.ssl  = false;
+    newsflash::connection conn("clog");
+    conn.on_error = std::bind(&tester::on_error, &test,
+        std::placeholders::_1);        
+    conn.connect("www.google.com", 80, false);
 
-    connection conn("clog", host, in, out);
-    wait(conn);
-
-    auto status = conn.get_status();
-    BOOST_REQUIRE(status.state == connection::state::error);
-    BOOST_REQUIRE(status.error == connection::error::timeout);
+    test.wait_error();
+    BOOST_REQUIRE(test.error == connection::error::timeout);
 }
 
 void unit_test_connection_protocol_error(bool ssl)
@@ -124,201 +171,32 @@ void unit_test_connection_protocol_error(bool ssl)
 
 void unit_test_connection_success(bool ssl)
 {
-    cmdqueue commands, responses;
+    tester test;
 
-    connection::server host;
-    host.addr = "freenews.netfront.net";
-    host.port = 119;
-    host.ssl  = ssl;
+    newsflash::connection conn("clog");
+    conn.on_error = std::bind(&tester::on_error, &test, 
+        std::placeholders::_1);
+    conn.on_ready = std::bind(&tester::on_ready, &test);
+    conn.connect("freenews.netfront.net", 119, false);
 
-    connection conn("clog", host, commands, responses);
-    wait(conn);
-
-    auto status = conn.get_status();
-    BOOST_REQUIRE(status.state == connection::state::idle);
-    BOOST_REQUIRE(status.error == connection::error::none);
-
-    {
-        commands.push_back(new cmd_list(0, 0));
-
-        wait(responses);
-        auto ret = responses.try_get_front();
-
-        auto& list = command_cast<cmd_list>(ret);
-        BOOST_REQUIRE(!list.empty());
-    }
-
-    // // no such group
-    {
-        commands.push_back(new cmd_group(0, 0, "mozilla.support.thunderbird.blala"));
-
-        wait(responses);
-        auto ret = responses.get_front();
-
-        auto& group = command_cast<cmd_group>(ret);
-
-        // BOOST_REQUIRE(group.id == cmd.id);
-        // BOOST_REQUIRE(group.taskid == cmd.taskid);
-        BOOST_REQUIRE(group.success() == false);
-        BOOST_REQUIRE(group.count() == 0);
-        BOOST_REQUIRE(group.low() == 0);
-        BOOST_REQUIRE(group.high() == 0);
-    }
-
-    // a valid group
-    {
-        commands.push_back(new cmd_group(0, 0, "mozilla.support.thunderbird"));
-
-        wait(responses);
-        auto ret = responses.get_front();
-
-        auto& group = command_cast<cmd_group>(ret);
-
-        BOOST_REQUIRE(group.success());
-        BOOST_REQUIRE(group.count());
-        BOOST_REQUIRE(group.high());
-        BOOST_REQUIRE(group.low());
-    }
-
-    // no such group for xover
-    {
-        commands.push_back(new cmd_xover(0, 0, "mozilla.support.thunderbird.blala", 0, 1));
-
-        wait(responses);
-        auto ret = responses.get_front();
-
-        auto& xover = command_cast<cmd_xover>(ret);
-        BOOST_REQUIRE(xover.success() == false);
-    }
-
-    // succesful xover
-    {
-        commands.push_back(new cmd_xover(1, 1, "mozilla.support.thunderbird", 0, 1000));
-
-        wait(responses);
-        auto ret = responses.get_front();
-
-        auto& xover = command_cast<cmd_xover>(ret);
-        BOOST_REQUIRE(xover.success() == true);
-        BOOST_REQUIRE(xover.empty() == false);
-    }
-
-
-    // test body.
-    {
-
-        std::string available;
-        std::string unavailable;
-
-        // request some group information and try to find
-        // article ids for available and unavailable messages.
-        {
-
-            commands.push_back(new cmd_group(1, 1, "mozilla.support.thunderbird"));
-            auto response = responses.get_front();
-            auto group = command_cast<cmd_group>(response);
-
-            available   = boost::lexical_cast<std::string>(group.high());
-            unavailable = boost::lexical_cast<std::string>(group.high() + 1000);
-        }
-
-        // unavailable
-        {
-            commands.push_back(new cmd_body(1, 1, unavailable, {"mozilla.support.thunderbird"}));
-
-            auto response = responses.get_front();
-            auto body = command_cast<cmd_body>(response);
-            BOOST_REQUIRE(body.status() == cmd_body::cmdstatus::unavailable);
-            BOOST_REQUIRE(body.empty());
-        }
-
-        // available
-        {
-            commands.push_back(new cmd_body(1, 1, available, {"mozilla.support.thunderbird"}));
-
-            auto response = responses.get_front();
-            auto body = command_cast<cmd_body>(response);
-
-            BOOST_REQUIRE(body.status() == cmd_body::cmdstatus::success);
-            BOOST_REQUIRE(body.empty() == false);
-            
-        }
-    }
-
+    test.wait_ready();
+    BOOST_REQUIRE(test.error == connection::error::none);
 }
 
-void unit_test_multiple_connections(bool ssl)
+void unit_test_cmdlist()
 {
-    cmdqueue commands, responses;
-
-    connection::server host;
-    host.addr = "freenews.netfront.net";
-    host.port = 119;
-    host.ssl  = ssl;    
-
-    std::unique_ptr<connection> conn1(new connection("connection1.log", host, commands, responses));
-    std::unique_ptr<connection> conn2(new connection("connection2.log", host, commands, responses));
-    std::unique_ptr<connection> conn3(new connection("connection3.log", host, commands, responses));
-
-    for (size_t i=0; i<1000; ++i)
-    {
-        const std::string id = boost::lexical_cast<std::string>(i);
-        commands.push_back(new cmd_body(i, i, id, {"mozilla.support.thunderbird"}));
-    }
-
-    size_t resp_count = 0;
-    while (resp_count < 999)
-    {
-        auto conn1_status = conn1->wait();
-        auto conn2_status = conn2->wait();
-        auto conn3_status = conn3->wait();
-        auto has_response = responses.wait();
-
-        newsflash::wait_for(conn1_status, conn2_status, conn3_status, has_response);
-        if (has_response)
-        {
-            auto response = responses.get_front();
-            auto body = command_cast<cmd_body>(response);
-            std::cout << "\nBODY " << body.article() << "\n";
-            if (body.status() == cmd_body::cmdstatus::unavailable)
-                std::cout << "unavailable\n";
-            else if (body.status() == cmd_body::cmdstatus::success)
-            {
-                //const char* data = (const char*)buffer_data(*body.data);
-                std::cout << "success\n";
-                //std::cout.write(data + body.data->offset(), body.data->size());
-            }
-            ++resp_count;
-        }
-        else if (conn1_status)
-        {
-            auto status = conn1->get_status();
-            if (status.state == connection::state::error)
-                conn1.reset(new connection("connection1.log", host, commands, responses));
-        }
-        else if (conn2_status)
-        {
-            auto status = conn2->get_status();
-            if (status.state == connection::state::error)
-                conn2.reset(new connection("connection2.log", host, commands, responses));
-        }
-        else if (conn3_status)
-        {
-            auto status = conn3->get_status();
-            if (status.state == connection::state::error)
-                conn3.reset(new connection("connection3.log", host, commands, responses));
-        }
-    }   
+    // todo:
 }
+
 
 int test_main(int argc, char* argv[])
 {
-    unit_test_connection_resolve_error(false);
-    unit_test_connection_refused(false);
-    unit_test_connection_interrupted(false);
+    // unit_test_connection_resolve_error(false);
+    // unit_test_connection_refused(false);
+    // unit_test_connection_interrupted(false);
     unit_test_connection_forbidden(false);
-    unit_test_connection_timeout_error(false);
-    unit_test_connection_success(false);
-    unit_test_multiple_connections(false);
+    // unit_test_connection_timeout_error(false);
+    //unit_test_connection_success(false);
+    unit_test_cmdlist();
     return 0;
 }

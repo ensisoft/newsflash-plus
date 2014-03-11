@@ -27,30 +27,23 @@
 namespace newsflash
 {
 
-update::io::io(std::string key) : key_(std::move(key))
-{}
 
-void update::io::prepare()
-{
-    update::erase_key(key_);
-}
-
-void update::io::receive(const buffer& buff)
+void update::receive(const buffer& buff)
 {
 
 }
 
-void update::io::cancel()
+void update::cancel()
 {
 
 }
 
-void update::io::flush()
+void update::flush()
 {
 
 }
 
-void update::io::finalize()
+void update::finalize()
 {}
 
 } // newsflash

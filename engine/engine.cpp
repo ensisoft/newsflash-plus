@@ -136,7 +136,7 @@ private:
 
         while (true)
         {
-            auto msg_handle = messages_.wait();
+            //auto msg_handle = messages_.wait();
             // auto res_handle = responses_.wait();
 
             // if (!wait(msg_handle, res_handle, scheduling_interval))

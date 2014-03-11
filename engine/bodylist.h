@@ -22,36 +22,52 @@
 
 #pragma once
 
+#include <functional>
+#include <deque>
+#include <string>
+#include <memory>
+#include <mutex>
+#include "cmdlist.h"
+
 namespace newsflash
 {
-    class buffer;
-
-    // IO interface for consuming task IO specific buffers.
-    class taskio
+    // list of article numbers (or message-ids) to download.
+    class bodylist : public cmdlist
     {
     public:
-        virtual ~taskio() = default;
+        // article status
+        enum class status {
+            unavailable, dmca, success
+        };
 
-        // prepare the IO object to receive buffers
-        virtual void prepare() = 0;
+        // article body response
+        struct body {
+            std::string article;
+            std::shared_ptr<buffer> buff;
+            std::size_t id;
+            bodylist::status status;
+        };
 
-        // receive a buffer full of NNTP data.
-        virtual void receive(const buffer& buff) = 0;
+        // callback to be invoked on each body in the list.
+        std::function<void (const bodylist::body& body)> on_body;
 
-        // cancel the task, roll back uncommited changes
-        // and release held resources. no more buffers follow.
-        virtual void cancel() = 0;
+        bodylist(std::deque<std::string> groups,
+                 std::deque<std::string> articles);
 
-        // flush a temporary snapshot to the disk
-        // and commit changes so far.
-        virtual void flush() = 0;
+       ~bodylist();
 
-        // finalize the task, commit final status of the task
-        // to the disk and release held resources.
-        // no more buffers follow.
-        virtual void finalize() = 0;
-    protected:
+        virtual bool run(protocol& proto) override;
+
     private:
+        bool dequeue(std::string& article, std::size_t& id);
+
+    private:
+        const std::deque<std::string> groups_;
+
+    private:
+        std::mutex mutex_;
+        std::deque<std::string> articles_;
+        std::size_t id_;
     };
 
 } // newsflash

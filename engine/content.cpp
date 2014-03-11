@@ -38,10 +38,11 @@ content::content(std::string folder, std::string initial_file_name, std::unique_
       decoder_(std::move(dec)),
       overwrite_(overwrite)
 {
-    decoder_->on_problem = std::bind(&content::on_problem, this, std::placeholders::_1);    
     decoder_->on_info    = std::bind(&content::on_info, this, std::placeholders::_1);
     decoder_->on_write   = std::bind(&content::on_write, this, 
         std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
+    decoder_->on_error = std::bind(&content::on_error, this, std::placeholders::_1, 
+        std::placeholders::_2);
 
 #ifdef NEWSFLASH_DEBUG
     completed_ = false;
@@ -57,7 +58,8 @@ content::~content()
 
 void content::decode(std::shared_ptr<const buffer> buff)
 {
-    const auto id = buff->id();
+    //const auto id = buff->id();
+    std::size_t id = 0;
 
     // if a buffer is out of sequence we'll need to copy it
     // and then deal with it later. this is because
@@ -113,12 +115,12 @@ void content::finish()
 
 bool content::good() const
 {
-    return problems_.empty();
+    return errors_.empty();
 }
 
-void content::on_problem(const decoder::problem& problem)
+void content::on_error(decoder::error error, const std::string& str)
 {
-    problems_.push_back(problem.str);
+    errors_.push_back(str);
 }
 
 void content::on_info(const decoder::info& info)

@@ -23,69 +23,35 @@
 
 #pragma once
 
-#include <memory>
-#include <vector>
+#include <string>
 #include <cstdint>
-#include "taskcmd.h"
-#include "taskio.h"
+#include <vector>
+#include "task.h"
 
 namespace newsflash
 {
-    class listing
+    // produce a listing of available newsgroups
+    class listing : public task
     {
-    private:
-        class cmd : public taskcmd
-        {
-        public:
-            virtual std::size_t enqueue(cmdqueue& cmds, std::size_t task, std::size_t limit) override
-            {
-                // request for the newsgroup listing.
-                cmds.push_back(new cmd_list(0, task));
-                return 1;
-            }
-            virtual std::size_t complete(std::unique_ptr<command> cmd) override
-            {
-                // the command is not supposed to fail so we're done
-                // for the commands here.
-                return 0;
-            }
-        private:
-        };
-
-        class io : public taskio
-        {
-        public:
-            io(std::string filename);
-
-            virtual void prepare() override;
-            virtual void receive(const buffer& buff) override;
-            virtual void cancel() override;
-            virtual void flush() override;
-            virtual void finalize() override;
-        private:
-            const std::string filename_;
-
-        private:
-            struct group_info {
-                std::string name; // group name
-                std::uint64_t size;
-            };
-
-            std::vector<group_info> groups_;
-        };
-
     public:
-        static
-        std::unique_ptr<taskio> create_io(std::string filename)
-        {
-            return std::unique_ptr<taskio> { new io{filename }};
-        }
+        listing(std::string filename);
 
-        static 
-        std::unique_ptr<taskcmd> create_cmd()
-        {
-            return std::unique_ptr<taskcmd> { new cmd };
-        }
+        virtual void prepare() override;
+        virtual void receive(const buffer& buff) override;
+        virtual void cancel() override;
+        virtual void flush() override;
+        virtual void finalize() override;
+
     private:
+        const std::string filename_;
+
+    private:
+        struct group_info {
+            std::string name; // group name
+            std::uint64_t size;
+        };
+
+        std::vector<group_info> groups_;
     };
+
 } // newsflash

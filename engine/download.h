@@ -25,54 +25,29 @@
 #include <memory>
 #include <vector>
 #include <string>
-#include "taskcmd.h"
-#include "taskio.h"
+#include "task.h"
 
 namespace newsflash
 {
     class content;
 
-    class download
+    // extract encoded binaries from the buffers
+    class download : public task
     {
-    private:
-        class cmd : public taskcmd
-        {
-        public:
-            virtual std::size_t enqueue(cmdqueue& cmds, std::size_t task, std::size_t limit) override;
-            virtual std::size_t complete(std::unique_ptr<command> cmd) override;
-        private:
-        };
-
-        class io : public taskio
-        {
-        public:
-            io(std::string folder, std::string name);
-
-            virtual void prepare() override;
-            virtual void receive(const buffer& buff) override;
-            virtual void cancel() override;
-            virtual void flush() override;
-            virtual void finalize() override;
-        private:
-            const std::string folder_;
-            const std::string name_;
-        private:
-
-        private:
-
-        };
-
     public:
-        static
-        std::unique_ptr<taskio> create_io(std::string folder, std::string name)
-        {
-            return std::unique_ptr<taskio> { new io{folder, name} };
-        }
-        static
-        std::unique_ptr<taskcmd> create_cmd()
-        {
-            return std::unique_ptr<taskcmd> { new cmd };
-        }
+        download(std::string folder, std::string name);
+
+        virtual void prepare() override;
+        virtual void receive(const buffer& buff) override;
+        virtual void cancel() override;
+        virtual void flush() override;
+        virtual void finalize() override;
+
+    private:
+        const std::string folder_;
+        const std::string name_;
+
+    private:
 
     };
 

@@ -20,43 +20,24 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-#include <functional>
-#include <cassert>
-#include "iothread.h"
-#include "ioaction.h"
-#include "taskio.h"
+#pragma once
 
 namespace newsflash
 {
+    class buffer;
+    class protocol;
 
-iothread::iothread(ioqueue& in, ioqueue& out) 
-    : ioin_(in), ioout_(out), 
-      thread_(std::bind(&iothread::main, this))
-{}
-
-iothread::~iothread()
-{
-    shutdown_.set();
-    thread_.join();
-}
-
-void iothread::main()
-{
-    while (true)
+    // list of commands to execute
+    class cmdlist
     {
-        auto io = ioin_.wait();
-        auto shutdown  = shutdown_.wait();
-        newsflash::wait_for(io, shutdown);
+    public:
+        virtual ~cmdlist() = default;
 
-        if (shutdown)
-            break;
-
-        auto action = ioin_.get_front();
-
-        action->perform();
-
-        ioout_.push_back(std::move(action));
-    }
-}
+        // run the cmdlist once. returns true if next run is expected
+        // otherwise false.
+        virtual bool run(protocol& proto) = 0;
+    protected:
+    private:
+    };
 
 } // newsflash

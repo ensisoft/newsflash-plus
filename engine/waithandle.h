@@ -117,6 +117,15 @@ namespace newsflash
         waithandle::wait(handles);
     }
 
+    template<typename T>
+    bool is_set(const T& obj)
+    {
+        auto handle = obj.wait();
+
+        const waithandle::list handles { &handle };
+
+        return waithandle::wait(handles, std::chrono::milliseconds(0));
+    }
 
     inline
     void wait_for(waithandle& h1)

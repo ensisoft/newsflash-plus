@@ -56,12 +56,12 @@ void unit_test_success()
            "alt.binaries.movies.divx 321 123 y\r\n"                      
            "alt.binaries.sounds.mp3    85 80 n\r\n";                      
 
-        const newsflash::buffer buff(body);
+        const newsflash::buffer buff(0, body);
 
-        const auto io = newsflash::listing::create_io("listing.txt");
+        auto listing = newsflash::listing("listing.txt");
 
-        io->receive(buff);
-        io->finalize();
+        listing.receive(buff);
+        listing.finalize();
 
         const auto& lines = read_file("listing.txt");
         BOOST_REQUIRE(lines.size() == 4);

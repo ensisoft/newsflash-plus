@@ -37,19 +37,19 @@ namespace newsflash
         typedef uint8_t byte_t;
 
         // construct an empty buffer without any data capacity
-        buffer(std::size_t id) : data_(nullptr), offset_(0), capacity_(0), size_(0), id_(id)
+        buffer() : data_(nullptr), offset_(0), capacity_(0), size_(0)
         {}
 
         // construct an empty buffer with some initial data capacity 
         explicit
-        buffer(std::size_t id, std::size_t capacity) : buffer(id)
+        buffer(std::size_t capacity) : buffer()
         {
             allocate(capacity);
         }
 
         // construct a buffer from the contents of the NUL terminated string.
         explicit 
-        buffer(std::size_t id, const char* str) : buffer(id)
+        buffer(const char* str) : buffer()
         {
             const std::size_t s = std::strlen(str);
 
@@ -64,7 +64,6 @@ namespace newsflash
             offset_   = steal(other.offset_);
             capacity_ = steal(other.capacity_);
             size_     = steal(other.size_);            
-            id_       = steal(other.id_);
         }
 
        ~buffer()
@@ -98,10 +97,6 @@ namespace newsflash
         std::size_t offset() const
         {
             return offset_;
-        }
-        std::size_t id() const
-        {
-            return id_;
         }
 
         void allocate(size_t capacity)
@@ -185,7 +180,6 @@ namespace newsflash
         std::size_t offset_;
         std::size_t capacity_;
         std::size_t size_;
-        std::size_t id_;
     };
 
     inline

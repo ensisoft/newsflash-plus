@@ -28,14 +28,18 @@
 #include "sslsocket.h"
 #include "socketapi.h"
 #include "logging.h"
-#include "buffer.h"
 #include "platform.h"
+#include "protocol.h"
+#include "cmdlist.h"
+#include "event.h"
 
 namespace {
+    using namespace newsflash;
+
     class conn_exception : public std::exception 
     {
     public:
-        conn_exception(std::string what, newsflash::connection::error e) 
+        conn_exception(std::string what, connection::error e) 
            : what_(std::move(what)), 
              error_(e)
         {}
@@ -43,278 +47,242 @@ namespace {
         {
             return what_.c_str();
         }
-        newsflash::connection::error err() const NOTHROW
+        connection::error err() const NOTHROW
         {
             return error_;
         }
     private:
         const std::string what_;
-        const newsflash::connection::error error_;
+        const connection::error error_;
     };
+
+    connection::error exception_to_errorcode()
+    {
+        auto err = connection::error::unknown;
+        try
+        {
+            throw;
+        }
+        catch (const conn_exception& e)
+        {
+            err = e.err();
+        }
+        catch (const protocol::exception& e)
+        {
+            const auto code = e.code();
+            if (code == protocol::error::authentication_failed)
+                err = connection::error::forbidden;
+            else err = connection::error::protocol;
+        }
+        catch (const socket::tcp_exception& e)
+        {
+            const auto code = e.code();
+            if (code == std::errc::connection_refused)
+                err = connection::error::refused;
+            else err = connection::error::socket;
+        }
+        catch (const socket::ssl_exception& e)
+        {
+            err = connection::error::ssl;
+        }
+        catch (const std::exception& e)
+        {
+            err = connection::error::unknown;
+        }
+        return err;
+    }
+
+    const char* errcode_to_string(connection::error error)
+    {
+    #define CASE(x) case x: return #x;
+
+        switch (error)
+        {
+            CASE(connection::error::none);
+            CASE(connection::error::resolve);
+            CASE(connection::error::refused);
+            CASE(connection::error::forbidden);
+            CASE(connection::error::protocol);
+            CASE(connection::error::socket);
+            CASE(connection::error::ssl);
+            CASE(connection::error::timeout);
+            CASE(connection::error::interrupted);
+            CASE(connection::error::unknown);
+        }
+    #undef CASE
+
+        assert(!"missing error case");
+        return "???";
+    }
 
 } // namespace
 
 namespace newsflash
 {
 
-connection::connection(const std::string& logfile, const server& host, cmdqueue& cmd, cmdqueue& res) 
-    : state_(state::connecting), 
-      error_(error::none),
-      bytes_(0),
-      speed_(0),
-      commands_(cmd), responses_(res)
-{
-    thread_.reset(new std::thread(std::bind(&connection::main, this, host, logfile)));
-}
+struct connection::thread_data {
+    std::unique_ptr<socket> sock;
+    std::string   logfile;
+    std::string   host;
+    std::uint16_t port;
+    bool          ssl;
+};
 
+connection::connection(std::string logfile) : logfile_(std::move(logfile))
+{}
 
 connection::~connection()
 {
     shutdown_.set();
+    cancel_.set();
     thread_->join();
 }
 
-connection::status connection::get_status()
+void connection::connect(const std::string& host, std::uint16_t port, bool ssl)
 {
-    connection::status ret;
+    assert(!thread_);
 
+    std::unique_ptr<connection::thread_data> data(new connection::thread_data);
+    data->host = host;
+    data->port = port;
+    data->ssl  = ssl;
+
+    thread_.reset(new std::thread(std::bind(&connection::main, this, data.get())));
+    data.release();
+}
+
+void connection::execute(std::shared_ptr<cmdlist> cmds)
+{
     std::lock_guard<std::mutex> lock(mutex_);
-
-    ret.state = state_;
-    ret.error = error_;
-    ret.bytes = bytes_;
-    ret.bps   = speed_;
-
-    status_.reset();
-    return ret;
+    cmds_ = cmds;
+    execute_.set();
 }
 
-waithandle connection::wait() const 
+void connection::main(thread_data* data)
 {
-    return status_.wait();
-}
+    std::unique_ptr<thread_data> unique(data);
 
-void connection::main(const server& host, const std::string& logfile)
-{
-    LOG_OPEN(logfile);
-
+    LOG_OPEN(logfile_);
     LOG_D("Connection thread ", std::this_thread::get_id());
 
     try
     {
-        connect(host);
+        LOG_I("Connecting to '", data->host, ":", data->port, "'");
 
-        LOG_FLUSH();
+        connect(data);
 
-        const std::chrono::seconds ping_interval(10);            
-        while (true)
+        LOG_I("Connection ready");
+
+        // init protocol stack
+        protocol proto;
+        proto.on_log  = [](const std::string& str) { LOG_I(str); };
+        proto.on_auth = on_auth;
+        proto.on_send = std::bind(&connection::send, this, data,
+            std::placeholders::_1, std::placeholders::_2);
+        proto.on_recv = std::bind(&connection::recv, this, data,
+            std::placeholders::_1, std::placeholders::_2);    
+
+        // perfrorm handshake
+        proto.connect();
+
+        const std::chrono::seconds PING_INTERVAL(10);
+
+        for (;;)
         {
-            goto_state(state::idle, error::none);
-             
-            auto execcmd  = commands_.wait();
+            on_ready();
+
+            auto execute  = execute_.wait();
             auto shutdown = shutdown_.wait();
-            if (!newsflash::wait_for(execcmd, shutdown, ping_interval))
+            if (!newsflash::wait_for(execute, shutdown, PING_INTERVAL))
+                proto.ping();
+            else if (execute)
             {
-                ping();
-            }
-            else if (execcmd)
-            {
-                execute();
+                std::unique_lock<std::mutex> lock(mutex_);
+                std::shared_ptr<cmdlist> cmds = cmds_;
+                cmds_.reset();
+                lock.unlock();
+
+                while (cmds_->run(proto))
+                {
+                    if (is_set(cancel_))
+                        break;
+                }
             }
             else if (shutdown)
-            {
                 break;
-            }
-
-            LOG_FLUSH();
-        } 
-        quit();
-    }
-    catch (const conn_exception& e)
-    {
-        goto_state(state::error, e.err());
-
-        LOG_E(e.what());
-    }
-    catch (const protocol::exception& e)
-    {
-        const auto err = e.code();
-        if (err == protocol::error::authentication_failed)
-             goto_state(state::error, error::forbidden);
-        else goto_state(state::error, error::protocol);
-
-        LOG_E(e.what());
-    }
-    catch (const socket::tcp_exception& e)
-    {
-        const auto err = e.code();
-        if (err == std::errc::connection_refused)
-            goto_state(state::error, error::refused);
-        else goto_state(state::error, error::socket);
-
-        LOG_E(e.what());
-    }
-    catch (const socket::ssl_exception& e)
-    {
-        goto_state(state::error, error::ssl);
-
-        LOG_E(e.what());
+        }
     }
     catch (const std::exception& e)
     {
-        goto_state(state::error, error::unknown);
-
-        LOG_E(e.what());
+        const auto code = exception_to_errorcode();
+        const auto estr = errcode_to_string(code);        
+        on_error(code);
+        LOG_E("Connection error '", estr, "' ", e.what());
     }
 
-
-    LOG_D("Thread exiting.");
-
+    LOG_D("Thread exiting");
     LOG_CLOSE();
 }
 
-void connection::connect(const server& host)
+void connection::connect(thread_data* data)
 {
-    LOG_I("Connecting to ", host.addr, ":", host.port);
-
-    const auto addr = resolve_host_ipv4(host.addr);
-    if (addr == 0)
+    const auto addr = resolve_host_ipv4(data->host);
+    if (!addr)
         throw conn_exception("failed to resolve host", error::resolve);
 
-    LOG_I("Resolved to ", format_ipv4(addr));
-    LOG_I("Using SSL ", host.ssl);
+    LOG_I("Resolved to '", format_ipv4(addr), "'");
 
-    if (host.ssl) 
-        socket_.reset(new sslsocket());
-    else socket_.reset(new tcpsocket());
+    if (data->ssl)
+        data->sock.reset(new newsflash::sslsocket());
+    else data->sock.reset(new newsflash::tcpsocket());
 
-    LOG_D("Begin connect...");
-    socket_->begin_connect(addr, host.port);
+    data->sock->begin_connect(addr, data->port);
 
-    auto connect  = socket_->wait();
+    auto connect  = data->sock->wait(true, false);
     auto shutdown = shutdown_.wait();
     newsflash::wait_for(connect, shutdown);
 
     if (shutdown)
-        throw conn_exception("connect was interrupted", error::interrupted);
+        throw conn_exception("connection was interrupted", error::interrupted);
 
-    socket_->complete_connect();
-
-
-    LOG_D("Socket connection established.");
-    
-    username_ = host.user;
-    password_ = host.pass;
-
-    // socket is connected state, next initialize the protocol stack.
-    proto_.on_recv = std::bind(&connection::read, this, std::placeholders::_1, std::placeholders::_2);
-    proto_.on_send = std::bind(&connection::send, this, std::placeholders::_1, std::placeholders::_2);
-    proto_.on_auth = std::bind(&connection::auth, this, std::placeholders::_1, std::placeholders::_2);
-    proto_.on_log  = [](const std::string& str) { LOG_I(str); };
-
-    LOG_D("Connect protocol");
-    proto_.connect();
-
-    LOG_I("Connection ready!");
+    data->sock->complete_connect();
 }
 
-void connection::execute()
+void connection::send(thread_data* data, const void* buff, std::size_t len)
 {
-    auto cmd = commands_.try_get_front();
-    if (!cmd)
-        return;
+    // the commands that we're sending are very small
+    // so presumably there's no problem here.
+    data->sock->sendall(data, (int)len);
 
-    goto_state(state::active, error::none);
-    try
-    {
-        cmd->perform(proto_);
-
-        responses_.push_back(std::move(cmd));
-    }
-    catch (const std::exception&)
-    {
-        // presumably we have a problem with socket IO or SSL
-        // so store the command back in the command queue so it
-        // won't get lost.
-        commands_.push_front(std::move(cmd));
-        throw;
-    }
 }
 
-void connection::ping()
+size_t connection::recv(thread_data* data, void* buff, std::size_t len)
 {
-    proto_.ping();
-}
+    // if there's no data in timeout seconds we consider
+    // the connection stale and timeout.
+    // also note that the protocol stack excepts this 
+    // function to always return the data (or throw) so 
+    // we must then throw on timeout.
 
-void connection::quit()
-{
-    proto_.quit();
-}
+    const std::chrono::seconds TIMEOUT(15);    
 
-void connection::auth(std::string& user, std::string& pass)
-{
-    LOG_I("Authenticating...");
-    user = username_;
-    pass = password_;
-}
-
-void connection::send(const void* data, size_t len)
-{
-    // the commands that we send are miniscule so just do it the simple way.
-    // this shouldn't be a problem, but is interruption a problem?
-    socket_->sendall(data, (int)len);
-}
-
-size_t connection::read(void* buff, size_t len)
-{
-    const std::chrono::seconds timeout(15);
-
-    // if we don't receive data in "timeout" seconds, we can consider
-    // that the connection has timed out and become stale.
-    // note that the protocol stack expects this function
-    // to return the number of bytes > 0. so in case of error we must throw.
-    auto sockread = socket_->wait(true, false);
+    auto canread  = data->sock->wait(true, false);
     auto shutdown = shutdown_.wait();
 
-    if (!newsflash::wait_for(sockread, shutdown, timeout))
+    if (!newsflash::wait_for(canread, shutdown, TIMEOUT))
         throw conn_exception("socket timeout", error::timeout);
-
-    if (shutdown)
+    else if (shutdown)
         throw conn_exception("read interrupted", error::interrupted);
 
     // todo: throttle
-    // todo: handle 0 recv when shutting down connection (socket closed)
+    // todo: handle 0 recv when shutting down.
+    const size_t ret = data->sock->recvsome(buff, (int)len);
 
-    const size_t ret = socket_->recvsome(buff, (int)len);
+    if (on_read)
+        on_read(ret);
 
-    speed_ = meter_.submit(ret);
     return ret;
 }
 
-void connection::goto_state(state s, error e)
-{
-    std::lock_guard<std::mutex> lock(mutex_);
-    if (s == state_)
-        return;
-    state_ = s;
-    error_ = e;
-
-    switch (state_)
-    {
-        case state::active:
-            meter_.start();
-            break;
-
-        case state::idle:
-            meter_.end();
-            break;
-
-        default:  
-            break;
-    }
-
-    // set a signal indicating that the status has changed
-    status_.set();
-}
 
 } // newsflash

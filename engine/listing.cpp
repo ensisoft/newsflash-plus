@@ -32,13 +32,13 @@
 namespace newsflash
 {
 
-listing::io::io(std::string filename) : filename_(std::move(filename))
+listing::listing(std::string filename) : filename_(std::move(filename))
 {}
 
-void listing::io::prepare()
+void listing::prepare()
 {}
 
-void listing::io::receive(const buffer& buff)
+void listing::receive(const buffer& buff)
 {
     const nntp::linebuffer lines((const char*)buffer_payload(buff), 
         buffer_payload_size(buff));
@@ -71,13 +71,13 @@ void listing::io::receive(const buffer& buff)
     }
 }
 
-void listing::io::cancel()
+void listing::cancel()
 {}
 
-void listing::io::flush()
+void listing::flush()
 {}
 
-void listing::io::finalize()
+void listing::finalize()
 {
     std::sort(groups_.begin(), groups_.end(), 
         [](const group_info& lhs, const group_info& rhs)

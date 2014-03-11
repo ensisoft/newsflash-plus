@@ -59,20 +59,20 @@ void yenc_single_decoder::decode(const void* data, std::size_t len)
         on_info(info);
     }
 
-    if (on_problem)
+    if (on_error)
     {
         if (footer.second.crc32)
         {
             boost::crc_32_type crc;
             crc.process_bytes(&buff[0], buff.size());
             if (footer.second.crc32 != crc.checksum())
-                on_problem(problem {problem::type::crc, "checksum mismatch"});
+                on_error(error::crc, "checksum mismatch");
         }
 
         if (footer.second.size != header.second.size)
-            on_problem(problem { problem::type::size, "size mismatch between binary size in footer and header"});
+            on_error(error::size, "size mismatch between binary size in footer and header");
         if (footer.second.size != buff.size())
-            on_problem(problem { problem::type::size, "size mismatch between binary size and encoded size"});
+            on_error(error::size, "size mismatch between binary size and encoded size");
     }
 
     on_write(&buff[0], buff.size(), 0, false);    

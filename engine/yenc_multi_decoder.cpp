@@ -74,7 +74,7 @@ void yenc_multi_decoder::decode(const void* data, std::size_t len)
         }
     }
 
-    if (on_problem)
+    if (on_error)
     {
         if (crc_value_)
             crc_.process_bytes(&buff[0], buff.size());
@@ -84,11 +84,11 @@ void yenc_multi_decoder::decode(const void* data, std::size_t len)
             boost::crc_32_type crc;
             crc.process_bytes(&buff[0], buff.size());
             if (footer.second.pcrc32 != crc.checksum())
-                on_problem(problem {problem::type::crc, "part checksum mismatch"});
+                on_error(error::crc, "part checksum mismatch");
         }
 
         if (part_size != buff.size())
-            on_problem(problem {problem::type::size, "size mismatch between buffer size and size in part header"});
+            on_error(error::size, "size mismatch between buffer size and size in part header");
     }
 
     has_header_ = true;
@@ -100,20 +100,20 @@ void yenc_multi_decoder::decode(const void* data, std::size_t len)
 
 void yenc_multi_decoder::finish()
 {
-    if (!on_problem)
+    if (!on_error)
         return;
 
     if (crc_value_)
     {
         if (crc_.checksum() != crc_value_)
-            on_problem(problem {problem::type::crc, "final checksum mismatch"});
+            on_error(error::crc, "final checksum mismatch");
     }
 
     if (part_ != part_count_)
-        on_problem(problem {problem::type::partial, "missing parts"});
+        on_error(error::partial_content, "missing parts");
 
     if (size_ != binary_size_)
-        on_problem(problem {problem::type::size, "size mismatch between binary size and encoded size"});
+        on_error(error::size, "size mismatch between binary size and encoded size");
 
 }
 

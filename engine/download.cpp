@@ -80,26 +80,13 @@ namespace newsflash
 {
 
 
-
-std::size_t download::cmd::enqueue(cmdqueue& cmds, std::size_t task, std::size_t limit)
-{
-
-    return 0;
-}
-
-std::size_t download::cmd::complete(std::unique_ptr<command> cmd)
-{
-    return 0;
-}
-
-
-download::io::io(std::string folder, std::string name) : folder_(std::move(folder)), name_(std::move(name))
+download::download(std::string folder, std::string name) : folder_(std::move(folder)), name_(std::move(name))
 {}
 
-void download::io::prepare()
+void download::prepare()
 {}
 
-void download::io::receive(const buffer& buff)
+void download::receive(const buffer& buff)
 {
     const nntp::linebuffer lines((const char*)buffer_payload(buff), 
         buffer_payload_size(buff));
@@ -118,13 +105,13 @@ void download::io::receive(const buffer& buff)
     }
 }
 
-void download::io::cancel()
+void download::cancel()
 {}
 
-void download::io::flush()
+void download::flush()
 {}
 
-void download::io::finalize()
+void download::finalize()
 {}
 
 
