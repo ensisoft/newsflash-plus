@@ -27,6 +27,7 @@
 #elif defined(LINUX_OS)
 #  include <unistd.h>
 #  include <sys/eventfd.h>
+#  include <mutex>
 #endif
 #include <stdexcept>
 #include <cassert>
@@ -91,6 +92,7 @@ void event::reset()
 struct event::impl {
     int fd;
     bool signaled;
+    std::mutex mutex;
 };
 
 event::event() : pimpl_(new impl)
@@ -114,6 +116,8 @@ waithandle event::wait() const
 
 void event::set()
 {
+    std::lock_guard<std::mutex> lock(pimpl_->mutex);
+
     if (pimpl_->signaled) 
         return;
 
@@ -126,6 +130,8 @@ void event::set()
 
 void event::reset()
 {
+    std::lock_guard<std::mutex> lock(pimpl_->mutex);
+
     if (!pimpl_->signaled) 
         return;
 
