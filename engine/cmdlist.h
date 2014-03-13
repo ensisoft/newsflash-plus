@@ -33,8 +33,7 @@ namespace newsflash
     public:
         virtual ~cmdlist() = default;
 
-        // run the cmdlist once. returns true if next run is expected
-        // otherwise false.
+        // run the cmdlist once. returns true if next run is expected otherwise false.
         virtual bool run(protocol& proto) = 0;
     protected:
     private:

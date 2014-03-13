@@ -71,13 +71,13 @@ namespace newsflash
         };
 
         // read protocol data in callback.
-        std::function<size_t (void*, size_t)>    on_recv;
+        std::function<size_t (void* buff, std::size_t len)> on_recv;
 
         // outgoing protocol data callback
-        std::function<void (const void*, size_t)> on_send;
+        std::function<void (const void* buff, std::size_t len)> on_send;
 
         // write something in the log
-        std::function<void (const std::string&)> on_log;
+        std::function<void (const std::string& str)> on_log;
 
         // authentication requested.
         std::function<void (std::string& user, std::string& pass)> on_auth;

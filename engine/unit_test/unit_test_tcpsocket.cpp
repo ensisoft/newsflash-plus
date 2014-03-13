@@ -100,17 +100,6 @@ void test_connection_failure()
         TEST_EXCEPTION(sock.complete_connect());
     }
 
-    class rgb {
-    public:
-        enum color {
-            white, green
-        };
-    };
-
-    static const rgb::color colors[] = {
-        rgb::white
-    };
-      
 }
 
 void test_connection_success()

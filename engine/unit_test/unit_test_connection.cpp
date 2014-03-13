@@ -115,7 +115,7 @@ public:
         {
             struct sockaddr_in addr {0};
             addr.sin_family      = AF_INET;
-            addr.sin_port        = htons(port++);
+            addr.sin_port        = htons(port);
             addr.sin_addr.s_addr = INADDR_ANY;
 
             const int ret = bind(sock, static_cast<sockaddr*>((void*)&addr), sizeof(addr));
@@ -124,6 +124,7 @@ public:
 
             std::cout << "bind failed: " << port;
             //std::this_thread::sleep_for(std::chrono::seconds(1));
+            ++port;
         }
 
         BOOST_REQUIRE(listen(sock, 10) != OS_SOCKET_ERROR);
@@ -145,7 +146,18 @@ public:
         nntp.append("\r\n");
 
         const int ret = ::send(socket_, &nntp[0], nntp.size(), 0);
-        BOOST_REQUIRE(ret == (int)str.size());
+        BOOST_REQUIRE(ret == (int)nntp.size());
+    }
+
+    void recv(const std::string& str)
+    {
+        std::string s;
+        s.resize(100);
+        const int ret = ::recv(socket_, &s[0], s.size(), 0);
+        BOOST_REQUIRE(ret > 2);
+        s.resize(ret-2); // omit \r\n
+        //std::cout << s;
+        BOOST_REQUIRE(s == str);
     }
 
     void recv(std::string& str)
@@ -263,6 +275,10 @@ void unit_test_cmdlist()
 
     serv.accept();
     serv.send("200 Welcome posting allowed");
+    serv.recv("CAPABILITIES");
+    serv.send("500 what?");
+    serv.recv("MODE READER");
+    serv.send("200 posting allowed");
 
     test.wait_ready();
 
@@ -284,7 +300,7 @@ void unit_test_cmdlist()
 
                 ++counter_;
 
-                return bool(counter_ == 10);
+                return bool(counter_ != 10);
             }
         private:
             int counter_;
@@ -298,19 +314,40 @@ void unit_test_cmdlist()
         {
             std::string str;
             std::stringstream ss;
-            ss << "BODY " << i << "\r\n";
-            serv.recv(str);
-            BOOST_REQUIRE(str == ss.str());
+            ss << "BODY " << i;
+            serv.recv(ss.str());
             serv.send("420 no article with that message id");
         }
 
         test.wait_ready();
     }
 
-
     // test cancellation
     {
+        class testlist : public newsflash::cmdlist
+        {
+        public:
+            testlist()
+            {}
 
+            bool run(protocol& proto) override
+            {
+                newsflash::buffer buff;
+                buff.allocate(1024);
+
+                proto.download_article("1234", buff);
+                return true;
+            }
+        };
+
+        auto list = std::make_shared<testlist>();
+
+        conn.execute(list);
+        conn.cancel();
+        serv.recv("BODY 1234");
+        serv.send("420 no article with that message id");
+
+        test.wait_ready();
     }
 }
 

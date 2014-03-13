@@ -247,10 +247,21 @@ void test_multi_success()
 
 
 void test_multi_broken()
-{}
+{
+    // crc error
+    {
+        // todo:
+    }
+
+}
 
 void test_multi_error()
-{}
+{
+    // broken header
+    {
+        // todo:
+    }
+}
 
 int test_main(int, char*[])
 {

@@ -35,7 +35,7 @@ public:
 
     virtual void decode(const void* data, std::size_t len) override
     {
-        on_write(data, len, offset_);
+        on_write(data, len, offset_, true);
         offset_ += len;
     }
 

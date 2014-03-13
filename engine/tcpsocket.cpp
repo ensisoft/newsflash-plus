@@ -129,9 +129,6 @@ int tcpsocket::sendsome(const void* buff, int len)
         if (err != std::errc::operation_would_block)
             throw socket::tcp_exception("socket send", err);
 
-        printf("pissapaska\n");
-        fflush(stdout);
-
         // on windows writeability is edge triggered, 
         // i.e. the event is signaled once when the socket is writeable and a call
         // to send clears the signal. the signal remains cleared

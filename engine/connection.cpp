@@ -1,4 +1,4 @@
-    // Copyright (c) 2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -158,6 +158,11 @@ void connection::execute(std::shared_ptr<cmdlist> cmds)
     execute_.set();
 }
 
+void connection::cancel()
+{
+    cancel_.set();
+}
+
 void connection::main(thread_data* data)
 {
     std::unique_ptr<thread_data> unique(data);
@@ -200,12 +205,16 @@ void connection::main(thread_data* data)
                 std::unique_lock<std::mutex> lock(mutex_);
                 std::shared_ptr<cmdlist> cmds = cmds_;
                 cmds_.reset();
+                execute_.reset();
                 lock.unlock();
 
-                while (cmds_->run(proto))
+                while (cmds->run(proto))
                 {
                     if (is_set(cancel_))
+                    {
+                        cancel_.reset();
                         break;
+                    }
                 }
             }
             else if (shutdown)
@@ -252,7 +261,7 @@ void connection::send(thread_data* data, const void* buff, std::size_t len)
 {
     // the commands that we're sending are very small
     // so presumably there's no problem here.
-    data->sock->sendall(data, (int)len);
+    data->sock->sendall(buff, (int)len);
 
 }
 
