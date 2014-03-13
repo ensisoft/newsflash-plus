@@ -29,7 +29,6 @@
 #include "engine.h"
 #include "listener.h"
 #include "connection.h"
-#include "command.h"
 #include "logging.h"
 #include "task.h"
 #include "event.h"

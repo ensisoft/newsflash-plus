@@ -22,24 +22,11 @@
 
 #include <newsflash/config.h>
 
-#if defined(WINDOWS_OS)
-#  include <windows.h>
-#  include <winsock2.h> // for WSAEventSelect
-#  pragma comment(lib, "ws2_32.lib")
-#elif defined(LINUX_OS)
-#  define _POSIX_C_SOURCE 1
-#  include <sys/types.h>
-#  include <sys/socket.h>
-#  include <arpa/inet.h>
-#  include <netinet/in.h>
-#  include <fcntl.h>
-#  include <netdb.h>
-#  include <unistd.h>
-#endif
 #include <sstream>
 #include <cassert>
 #include <memory>
 #include <stdexcept>
+#include "sockets.h"
 #include "socketapi.h"
 #include "platform.h"
 #include "utility.h"

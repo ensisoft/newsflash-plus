@@ -22,12 +22,15 @@
 
 #include <boost/test/minimal.hpp>
 #include <boost/lexical_cast.hpp>
+
+#include "../sockets.h"
 #include "../connection.h"
 #include "../tcpsocket.h"
 #include "../sslsocket.h"
-#include "../command.h"
 #include "../waithandle.h"
 #include "../buffer.h"
+#include "../cmdlist.h"
+#include "../protocol.h"
 
 using namespace newsflash;
 
@@ -95,6 +98,68 @@ struct tester {
     bool ready;
 };
 
+class server
+{
+public:    
+   ~server()
+    {
+        closesocket(listener_);
+        closesocket(socket_);
+    }
+
+    std::uint16_t open(std::uint16_t port)
+    {
+        auto sock = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+
+        for (;;)
+        {
+            struct sockaddr_in addr {0};
+            addr.sin_family      = AF_INET;
+            addr.sin_port        = htons(port++);
+            addr.sin_addr.s_addr = INADDR_ANY;
+
+            const int ret = bind(sock, static_cast<sockaddr*>((void*)&addr), sizeof(addr));
+            if (ret != OS_SOCKET_ERROR)
+                break;
+
+            std::cout << "bind failed: " << port;
+            //std::this_thread::sleep_for(std::chrono::seconds(1));
+        }
+
+        BOOST_REQUIRE(listen(sock, 10) != OS_SOCKET_ERROR);
+        listener_ = sock;        
+        return port;
+    }
+
+    void accept()
+    {
+        struct sockaddr_in addr {0};
+        socklen_t len = sizeof(addr);
+        socket_ = ::accept(listener_, static_cast<sockaddr*>((void*)&addr), &len);
+        BOOST_REQUIRE(socket_ != OS_INVALID_SOCKET);
+    }
+
+    void send(const std::string& str)
+    {
+        std::string nntp(str);
+        nntp.append("\r\n");
+
+        const int ret = ::send(socket_, &nntp[0], nntp.size(), 0);
+        BOOST_REQUIRE(ret == (int)str.size());
+    }
+
+    void recv(std::string& str)
+    {
+        str.resize(100);
+        const int ret = ::recv(socket_, &str[0], str.size(), 0);
+        BOOST_REQUIRE(ret != -1);
+        str.resize(ret);
+    }
+
+private:
+    native_socket_t listener_;
+    native_socket_t socket_;
+};
 
 void unit_test_connection_resolve_error(bool ssl)
 {
@@ -185,7 +250,68 @@ void unit_test_connection_success(bool ssl)
 
 void unit_test_cmdlist()
 {
-    // todo:
+    tester test;
+    server serv;
+
+    auto port = serv.open(8181);
+
+    newsflash::connection conn("clog");
+    conn.on_error = std::bind(&tester::on_error, &test,
+        std::placeholders::_1);
+    conn.on_ready = std::bind(&tester::on_ready, &test);
+    conn.connect("localhost", port, false);
+
+    serv.accept();
+    serv.send("200 Welcome posting allowed");
+
+    test.wait_ready();
+
+    // run to completion    
+    {
+        class testlist : public newsflash::cmdlist
+        {
+        public:
+            testlist() : counter_(0)
+            {}
+
+            bool run(protocol& proto) override
+            {
+                const auto& article = boost::lexical_cast<std::string>(counter_);
+                newsflash::buffer buff;
+                buff.allocate(100);
+
+                proto.download_article(article, buff);
+
+                ++counter_;
+
+                return bool(counter_ == 10);
+            }
+        private:
+            int counter_;
+        };
+
+        auto list = std::make_shared<testlist>();
+
+        conn.execute(list);
+
+        for (int i=0; i<10; ++i)
+        {
+            std::string str;
+            std::stringstream ss;
+            ss << "BODY " << i << "\r\n";
+            serv.recv(str);
+            BOOST_REQUIRE(str == ss.str());
+            serv.send("420 no article with that message id");
+        }
+
+        test.wait_ready();
+    }
+
+
+    // test cancellation
+    {
+
+    }
 }
 
 
@@ -194,7 +320,7 @@ int test_main(int argc, char* argv[])
     // unit_test_connection_resolve_error(false);
     // unit_test_connection_refused(false);
     // unit_test_connection_interrupted(false);
-    unit_test_connection_forbidden(false);
+    //unit_test_connection_forbidden(false);
     // unit_test_connection_timeout_error(false);
     //unit_test_connection_success(false);
     unit_test_cmdlist();

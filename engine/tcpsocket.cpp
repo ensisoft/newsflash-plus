@@ -22,14 +22,8 @@
 
 #include <newsflash/config.h>
 
-#if defined(WINDOWS_OS)
-#  include <windows.h>
-#  include <winsock2.h>
-#elif defined(LINUX_OS)
-#  include <sys/socket.h>
-#endif
-
 #include <cassert>
+#include "sockets.h"
 #include "tcpsocket.h"
 #include "socketapi.h"
 #include "platform.h"
@@ -39,9 +33,7 @@ namespace newsflash
 {
 
 tcpsocket::tcpsocket() : socket_(0), handle_(0)
-{
-    
-}
+{}
 
 tcpsocket::tcpsocket(native_socket_t sock, native_handle_t handle) : 
     socket_(sock), handle_(handle)
@@ -118,6 +110,16 @@ int tcpsocket::sendsome(const void* buff, int len)
     flags = MSG_NOSIGNAL;
 #endif
     
+    // on linux the the packet is silently dropped if the device queue overflows (ENOBUFS)
+    // so we check for the how much currently space is available 
+    // in the sendbuf and then crop the len if needed.
+
+    int sendbuf = 1024;
+    socklen_t optlen = sizeof(sendbuf);
+    getsockopt(socket_, SOL_SOCKET, SO_SNDBUF, &sendbuf, &optlen);
+
+    len = std::min(sendbuf, len);
+
     const char* ptr = static_cast<const char*>(buff);
 
     const int sent = ::send(socket_, ptr, len, flags);
@@ -126,6 +128,9 @@ int tcpsocket::sendsome(const void* buff, int len)
         const auto err = get_last_socket_error();
         if (err != std::errc::operation_would_block)
             throw socket::tcp_exception("socket send", err);
+
+        printf("pissapaska\n");
+        fflush(stdout);
 
         // on windows writeability is edge triggered, 
         // i.e. the event is signaled once when the socket is writeable and a call

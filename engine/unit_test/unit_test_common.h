@@ -26,7 +26,11 @@
 
 #include <newsflash/config.h>
 
-#include <boost/test/minimal.hpp>
+#ifdef TEST_CUSTOM
+#  define BOOST_REQUIRE TEST_REQUIRE
+#endif
+
+//#include <boost/test/minimal.hpp>
 #include <boost/filesystem/path.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/convenience.hpp>

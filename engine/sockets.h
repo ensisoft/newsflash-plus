@@ -1,4 +1,4 @@
-// Copyright (c) 2013,2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -22,13 +22,19 @@
 
 #pragma once
 
-#include "queue.h"
-#include "command.h"
+#include <newsflash/config.h>
 
-namespace newsflash
-{
-    typedef queue<command> cmdqueue;
-    
-} // newsflash
-
-
+#if defined(WINDOWS_OS)
+#  include <windows.h>
+#  include <winsock2.h>
+#  pragme comment(lib, "ws2_32.lib")
+#elif defined(LINUX_OS)
+#  include <sys/types.h>
+#  include <sys/socket.h>
+#  include <sys/select.h>
+#  include <arpa/inet.h>
+#  include <netinet/in.h>
+#  include <fcntl.h>
+#  include <netdb.h>
+#  include <unistd.h>
+#endif

@@ -20,7 +20,10 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-#include <boost/test/minimal.hpp>
+//#include <boost/test/minimal.hpp>
+
+#include "test_minimal.h"
+
 #include <thread>
 #include <chrono>
 #include "../socketapi.h"
@@ -39,20 +42,27 @@
 
 using namespace newsflash;
 
-native_socket_t openhost(int port)
+native_socket_t openhost(int& port)
 {
     auto sock = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
-    struct sockaddr_in addr {0};
-    addr.sin_family      = AF_INET;
-    addr.sin_port        = htons(port);
-    addr.sin_addr.s_addr = INADDR_ANY;
+    for (;;)
+    {
+        struct sockaddr_in addr {0};
+        addr.sin_family      = AF_INET;
+        addr.sin_port        = htons(port);
+        addr.sin_addr.s_addr = INADDR_ANY;
 
-    while (::bind(sock, static_cast<sockaddr*>((void*)&addr), sizeof(addr)) == OS_SOCKET_ERROR)
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        const int ret = bind(sock, static_cast<sockaddr*>((void*)&addr), sizeof(addr));
+        if (ret != OS_SOCKET_ERROR)
+            break;
 
-    //BOOST_REQUIRE(::bind(sock, static_cast<sockaddr*>((void*)&addr), sizeof(addr)) != OS_SOCKET_ERROR);
-    BOOST_REQUIRE(::listen(sock, 1) != OS_SOCKET_ERROR);
+        TEST_MESSAGE("bind failed on port %d\n", port);        
+
+        ++port;
+    }
+
+    TEST_REQUIRE(::listen(sock, 1) != OS_SOCKET_ERROR);
 
     return sock;
 }
@@ -62,7 +72,7 @@ tcpsocket accept(native_socket_t fd)
     struct sockaddr_in addr {0};
     socklen_t len = sizeof(addr);
     auto sock = ::accept(fd, static_cast<sockaddr*>((void*)&addr), &len);
-    BOOST_REQUIRE(sock != OS_INVALID_SOCKET);
+    TEST_REQUIRE(sock != OS_INVALID_SOCKET);
 
     auto handle = get_wait_handle(sock);
     return {sock, handle};
@@ -70,13 +80,15 @@ tcpsocket accept(native_socket_t fd)
 
 void test_connection_failure()
 {
+    TEST_BARK();
+
     // refused
     {
         tcpsocket sock;
         sock.begin_connect(resolve_host_ipv4("127.0.0.1"), 8000);
 
-        wait(sock);
-        REQUIRE_EXCEPTION(sock.complete_connect());
+        newsflash::wait(sock);
+        TEST_EXCEPTION(sock.complete_connect());
     }
 
     // resolve error
@@ -84,17 +96,33 @@ void test_connection_failure()
         tcpsocket sock;
         sock.begin_connect(resolve_host_ipv4("blahbalaha"), 9999);
 
-        wait(sock);
-        REQUIRE_EXCEPTION(sock.complete_connect());
+        newsflash::wait(sock);
+        TEST_EXCEPTION(sock.complete_connect());
     }
+
+    class rgb {
+    public:
+        enum color {
+            white, green
+        };
+    };
+
+    static const rgb::color colors[] = {
+        rgb::white
+    };
+      
 }
 
 void test_connection_success()
 {
-    auto sock = openhost(8001);
+    TEST_BARK();
+
+    int port = 8001;
+
+    auto sock = openhost(port);
 
     tcpsocket tcp;
-    tcp.begin_connect(resolve_host_ipv4("127.0.0.1"), 8001);
+    tcp.begin_connect(resolve_host_ipv4("127.0.0.1"), port);
 
     tcpsocket client = ::accept(sock);
     tcp.complete_connect();
@@ -122,6 +150,8 @@ void test_connection_success()
 
     for (auto& buff : buffers)
     {
+        TEST_MESSAGE("Testing %d bytes", buff.len);
+
         std::memset(buff.buff, 0, buff.len);
 
         // send from host to client
@@ -133,24 +163,30 @@ void test_connection_success()
             {
                 auto handle = client.wait(false, true);
                 wait_for(handle);
-                BOOST_REQUIRE(handle.write());                
+                TEST_REQUIRE(handle.write());                
             
                 int ret = client.sendsome(buff.data + sent, buff.len - sent);
                 sent += ret;
+
+                TEST_MESSAGE("sent %d bytes", sent);
             }
             if (recv != buff.len)
             {
                 auto handle = tcp.wait(true, false);
                 wait_for(handle);
-                BOOST_REQUIRE(handle.read());
+                TEST_REQUIRE(handle.read());
 
                 int ret = tcp.recvsome(buff.buff + recv, buff.len - recv);
                 recv += ret;
+
+                TEST_MESSAGE("recv %d bytes", recv);
             }
         } 
         while ((sent != buff.len) || (recv != buff.len));
 
-        BOOST_REQUIRE(!std::memcmp(buff.data, buff.buff, buff.len));
+        TEST_REQUIRE(!std::memcmp(buff.data, buff.buff, buff.len));
+
+        TEST_MESSAGE("Passed %d byte buffer", buff.len);
     }
 
     for (auto& buff : buffers)

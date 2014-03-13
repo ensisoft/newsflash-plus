@@ -24,17 +24,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cerrno>
-#if defined(WINDOWS_OS)
-#  include <windows.h>
-#  include <winsock2.h>
-#  pragma comment(lib, "ws2_32.lib")
-#elif defined(LINUX_OS)
-#  include <sys/types.h>
-#  include <sys/select.h>
-#  include <sys/socket.h>
-#  include <cstring>
-#endif
-#include "socketapi.h"
+#include "sockets.h"
 #include "waithandle.h"
 
 namespace {
