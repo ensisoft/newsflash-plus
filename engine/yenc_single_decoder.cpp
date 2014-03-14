@@ -21,9 +21,9 @@
 //  THE SOFTWARE.
 
 #include <boost/crc.hpp>
+#include "nntp/bodyiter.h"
 #include "yenc_single_decoder.h"
 #include "yenc.h"
-#include "bodyiter.h"
 
 namespace newsflash
 {

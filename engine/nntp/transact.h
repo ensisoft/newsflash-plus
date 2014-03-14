@@ -64,20 +64,19 @@ namespace nntp
 
         assert(ret.first <= ret.second);
 
-        std::size_t data_total  = ret.second;
-        std::size_t body_offset = ret.first; 
+        auto data_total  = ret.second;
+        auto body_offset = ret.first; 
 
         // get a pointer to the start of the buffer
         // and skip the response header. 
-        char* body_ptr = static_cast<char*>(buffer_data(body));
-
+        auto body_ptr = static_cast<char*>(buffer_data(body));
         // check if we've already have the full body in the buffer
-        std::size_t body_len = find_body(body_ptr + body_offset, data_total - body_offset);
+        auto body_len = find_body(body_ptr + body_offset, data_total - body_offset);
 
         while (!body_len)
         {
-            const std::size_t capacity = buffer_capacity(body);
-            std::size_t available = capacity - data_total;
+            auto capacity  = buffer_capacity(body);
+            auto available = capacity - data_total;
             if (!available)
             {
                 available = capacity;
