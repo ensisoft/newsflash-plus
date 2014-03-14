@@ -1,8 +1,0 @@
-
-project 
-  : requirements
-  <library>/engine//engine/
-  ;
-
-
-exe test : main.cpp ;
