@@ -145,16 +145,15 @@ namespace newsflash
         {
             return transact(&cmd);
         }    
-
+    private:
         void authenticate();
 
-
+    private:
         bool has_compress_gzip_;
         bool has_xzver_;
         bool has_mode_reader_;
         bool is_compressed_;
-        std::string group_; // selected group
-
+        std::string group_; // currently selected group
     };
 
 } // newsflash

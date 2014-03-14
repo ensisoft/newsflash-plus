@@ -176,7 +176,7 @@ bool protocol::download_list(buffer& buff)
     nntp::cmd_list<buffer> cmd {buff};
     if (transact(&cmd) == cmd.SUCCESS)
     {
-        buff.configure(cmd.size,cmd.offset);
+        buff.configure(cmd.size + cmd.offset, cmd.offset);
         return true;
     }
     return false;

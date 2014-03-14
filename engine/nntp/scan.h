@@ -24,6 +24,7 @@
 
 #include <boost/algorithm/string/trim.hpp>
 #include <sstream>
+#include <string>
 #include <iomanip>
 
 namespace nntp

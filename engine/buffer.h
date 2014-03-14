@@ -124,8 +124,9 @@ namespace newsflash
 
         void configure(std::size_t size, std::size_t offset)
         {
-            assert(offset + size <= capacity_);
-            assert(offset <= size);
+            assert(offset <= size);            
+            assert(size <= capacity_);
+
             offset_ = offset;
             size_   = size;
         }

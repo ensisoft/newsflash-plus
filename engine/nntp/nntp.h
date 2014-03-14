@@ -81,10 +81,10 @@ namespace nntp
         char   posting;
     };
 
+    // (01/34)
     struct part {
-        // (01/34)
-        size_t numerator;  // 1        
-        size_t denominator; // 34
+        std::size_t numerator;  // 1        
+        std::size_t denominator; // 34
     };
 
 
@@ -99,12 +99,14 @@ namespace nntp
     // the returned values are all universally comparable since they're all
     // converted to GMT times. They are also usable with C time functions
     // as long as one keeps in mind that that they time they represent is in GMT
-    std::time_t timevalue(const date& d);
+    std::time_t timevalue(const nntp::date& date);
 
     // parse overview, returns (true, overview) if successful,
     // otherwise (false, overview) and the contents of response are undefined.
     std::pair<bool, overview> parse_overview(const char* str, size_t len);
 
+    // parse group information. returns (true, group) if succesful,
+    // otherwise (false, overview) and the contents of group are undefined.
     std::pair<bool, group> parse_group(const char* str, size_t len);
 
     // parse nntp date. returns (true, date) if succesful,

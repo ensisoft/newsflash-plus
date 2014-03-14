@@ -263,6 +263,44 @@ void test_authentication()
     }
 }
 
+void test_listing()
+{
+    // LIST command has not been specified to fail
+
+    // empty list
+    {
+        test_sequence test;
+        test.responses = 
+        {
+            "215 list of newsgroups follows",
+                "alt.binaries.foo 1 2 y",
+                "alt.binaries.bar 3 4 y",
+                "."
+        };
+        test.commands = 
+        {
+            "LIST"
+        };
+
+        newsflash::protocol proto;
+        proto.on_recv = std::bind(&test_sequence::recv, &test, std::placeholders::_1, std::placeholders::_2);
+        proto.on_send = std::bind(&test_sequence::send, &test, std::placeholders::_1, std::placeholders::_2);
+        
+        newsflash::buffer buff;
+        buff.allocate(100);
+
+        BOOST_REQUIRE(proto.download_list(buff));
+
+        const char* body = 
+            "alt.binaries.foo 1 2 y\r\n"
+            "alt.binaries.bar 3 4 y\r\n";
+
+        BOOST_REQUIRE(buffer_payload_size(buff) == std::strlen(body));
+        BOOST_REQUIRE(!std::strcmp((const char*)buffer_payload(buff), body));
+
+    }
+}
+
 void test_api()
 {
     // test api functions to request data from the server
@@ -341,6 +379,7 @@ int test_main(int, char* [])
 {
     test_handshake();
     test_authentication();
+    test_listing();
     test_api();
 
     return 0;
