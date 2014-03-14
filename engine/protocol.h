@@ -27,8 +27,7 @@
 #include <exception>
 #include <functional>
 #include <string>
-#include "protocmd.h"
-#include "nntp.h"
+#include "nntp/nntp.h"
 
 namespace newsflash
 {
@@ -128,9 +127,9 @@ namespace newsflash
         template<typename Cmd>
         auto transact(Cmd* cmd) -> decltype(cmd->transact())
         {
-            cmd->cmd_recv = on_recv;
-            cmd->cmd_send = on_send;
-            cmd->cmd_log  = on_log;
+            cmd->recv = on_recv;
+            cmd->send = on_send;
+            cmd->log  = on_log;
 
             auto ret = cmd->transact();
             if (ret == nntp::AUTHENTICATION_REQUIRED)

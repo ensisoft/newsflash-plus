@@ -22,34 +22,47 @@
 
 #pragma once
 
-#include <cstddef>
+#include <vector>
+#include <string>
 
-namespace newsflash
+namespace std
 {
-    class buffer;
+    // adapters functions for contiguous std types that can be used as a buffer.
+    
+    inline 
+    size_t buffer_capacity(const std::string& str) 
+    { 
+        return str.size(); 
+    }
+    inline 
+    void* buffer_data(std::string& str) 
+    { 
+        return &str[0]; 
+    }
+    inline 
+    void  grow_buffer(std::string& str, size_t capacity) 
+    { 
+        str.resize(capacity); 
+    }
 
-    // task interface for performing activities on the data.
-    class task
-    {
-    public:
-        virtual ~task() = default;
+    template<typename T> inline
+    size_t buffer_capacity(const std::vector<T>& vec) 
+    { 
+        return vec.size() * sizeof(T); 
+    }
 
-        // prepare the task to receive data soon.
-        virtual void prepare() = 0;
+    template<typename T> inline
+    void* buffer_data(std::vector<T>& vec) 
+    { 
+        return &vec[0]; 
+    }
 
-        // receive and process a buffer of NNTP data.
-        virtual void receive(const buffer& buff, std::size_t id) = 0;
+    template<typename T> inline
+    void grow_buffer(std::vector<T>& vec, size_t capacity) 
+    { 
+        const size_t items = (capacity + sizeof(T) - 1) / sizeof(T);
+        vec.resize(items);
+    }
 
-        // cancel the task, rolllback any changes.
-        virtual void cancel() = 0;
 
-        // flush a temporary snapshot to the disk
-        // and commit changes so far.
-        virtual void flush() = 0;
-
-        // finalize (commit) the task. makes changes permanent.
-        virtual void finalize() = 0;
-    protected:
-    private:
-    };
-} // newsflash
+} // std

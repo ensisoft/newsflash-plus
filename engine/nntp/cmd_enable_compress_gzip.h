@@ -22,34 +22,20 @@
 
 #pragma once
 
-#include <cstddef>
+#include "cmd.h"
+#include "transact.h"
 
-namespace newsflash
+namespace nntp
 {
-    class buffer;
-
-    // task interface for performing activities on the data.
-    class task
-    {
-    public:
-        virtual ~task() = default;
-
-        // prepare the task to receive data soon.
-        virtual void prepare() = 0;
-
-        // receive and process a buffer of NNTP data.
-        virtual void receive(const buffer& buff, std::size_t id) = 0;
-
-        // cancel the task, rolllback any changes.
-        virtual void cancel() = 0;
-
-        // flush a temporary snapshot to the disk
-        // and commit changes so far.
-        virtual void flush() = 0;
-
-        // finalize (commit) the task. makes changes permanent.
-        virtual void finalize() = 0;
-    protected:
-    private:
+    // once this is enabled it will stay on
+    // untill connection is disconnected and restarted.
+    // 222 ok
+    struct cmd_enable_compress_gzip : cmd {
+        code_t transact()
+        {
+            return nntp::transact(*this, "XFEATURE COMPRESS GZIP", {222});
+        }
+        enum : code_t { SUCCESS = 222 };
     };
-} // newsflash
+    
+} // nntp

@@ -29,9 +29,6 @@
 #include <cstdlib>
 #include <ctime>
 #include "../nntp.h"
-#include "../linebuffer.h"
-#include "../bodyiter.h"
-
 
 void test_parse_overview()
 {
@@ -453,166 +450,83 @@ void test_find_filename()
     }
 }
 
-void test_linebuffer()
+void test_find_response()
 {
-    // no lines
     {
-        const char* str = 
-           "fooobooar";
-
-        nntp::linebuffer buffer(str, std::strlen(str));
-        auto beg = buffer.begin();
-        auto end = buffer.end();
-        BOOST_REQUIRE(beg == end);
+        BOOST_REQUIRE(nntp::find_response("", 0) == 0);
+        BOOST_REQUIRE(nntp::find_response("adsgas", 6) == 0);
+        BOOST_REQUIRE(nntp::find_response("\r\n", 2) == 2);
+        BOOST_REQUIRE(nntp::find_response("foo\r\n", 5) == 5);
+        BOOST_REQUIRE(nntp::find_response("foo\r\nfoo", 5) == 5);
     }
 
-    // some lines
     {
-        const char* str = 
-           "assa\r\n"
-           "sassa\r\n"
-           "mandelmassa\r\n"
-           "foo\r\n";
-
-        nntp::linebuffer buffer(str, std::strlen(str));
-
-        auto beg = buffer.begin();
-        auto end = buffer.end();
-        BOOST_REQUIRE(beg.to_str() == "assa\r\n");
-        ++beg;
-        BOOST_REQUIRE(beg.to_str() == "sassa\r\n");
-        beg++;
-        BOOST_REQUIRE(beg.to_str() == "mandelmassa\r\n");
-        ++beg;
-        BOOST_REQUIRE(beg.to_str() == "foo\r\n");
-        beg++;
-        BOOST_REQUIRE(beg == end);
-    }
-
-    // last line is not full
-    {
-        const char* str = 
-           "jeesus\r\n"
-           "ajaa\r\n"
-           "mopolla";
-
-        nntp::linebuffer buffer(str, std::strlen(str));
-
-        auto beg = buffer.begin();
-        auto end = buffer.end();
-        BOOST_REQUIRE(beg.to_str() == "jeesus\r\n");
-        ++beg;
-        BOOST_REQUIRE(beg.to_str() == "ajaa\r\n");
-        ++beg;
-        BOOST_REQUIRE(beg == end);
-    }
-
-    // only a single "empty" line
-    {
-        const char* str = "\r\n";
-
-        nntp::linebuffer buffer(str, std::strlen(str));
-
-        auto beg = buffer.begin();
-        auto end = buffer.end();
-        BOOST_REQUIRE(beg.to_str() == "\r\n");
-        ++beg;
-        BOOST_REQUIRE(beg == end);
-    }
+        BOOST_REQUIRE(nntp::find_body("", 0) == 0);
+        BOOST_REQUIRE(nntp::find_body("asgas", 5) == 0);
+        BOOST_REQUIRE(nntp::find_body(".\r\n", 3) == 0);
+        BOOST_REQUIRE(nntp::find_body("foobar.\r\n", 9) == 0);
+        BOOST_REQUIRE(nntp::find_body("foobar.\r\nkeke", 13) == 0);
+        BOOST_REQUIRE(nntp::find_body("foo\r\nbar.\r\n", 11) == 0);
+    }    
 }
 
-void test_bodyiter()
+void test_find_body()
 {
-    // if a textual body response constains a double as the first character on a 
-    // new line the dot is doubled. (".\r\n" indicates the end of transmission)
+    BOOST_REQUIRE(nntp::find_body("foobar\r\n.\r\n", 11) == 11);
+    BOOST_REQUIRE(nntp::find_body("\r\n.\r\n", 5) == 5);
+    BOOST_REQUIRE(nntp::find_body(".\r\nderp\r\n.\r\n", 12) == 12);
 
-    // test forward
     {
-        const char* text = 
-        "..here is some text\r\n"
-        "more data follows.\r\n"
-        "two dots in the middle .. of text\r\n"
-        "and no dots\r\n"
-        "..\r\n"
-        "...\r\n"
-        "....\r\n";
+        const char* str = 
+         "On 2/23/2013 10:55 AM, James Silverton wrote:\r\n"
+         "> On 2/23/2013 10:08 AM, RussCA wrote:\r\n"
+         ">> On 2/23/2013 9:01 AM, John wrote:\r\n"
+         ">>> On 2/22/2013 8:58 PM, RussCA wrote:\r\n"
+         ">>>> I just printed a message from this newsgroup.\r\n"
+         ">>>>\r\n"
+         ">>>> I am using the addon \"TT DeepDark 4.1\", so that my text is white and\r\n"
+         ">>>> background is black(ish).\r\n"
+         ">>>>\r\n"
+         ">>>> The printed output is white text on a black background.  Quite a waste\r\n"
+         ">>>> of black ink.  Wouldn't it be better if the printing process knew\r\n"
+         ">>>> something about printing what the message colors are, rather than what\r\n"
+         ">>>> the displayed message looks like?\r\n"
+         ">>>\r\n"
+         ">>>\r\n"
+         ">>> When I want to print text only I transfer the text to a text (only)\r\n"
+         ">>> editor. Hi-light the text, Ctrl<C>, and Ctrl<V> into the editor and\r\n"
+         ">>> print from the editor --- sure saves on ink ;)\r\n"
+         ">>>\r\n"
+         ">>> John\r\n"
+         ">> John,\r\n"
+         ">> I know.  That's what I usually do when there is something specific I\r\n"
+         ">> want to save from the message.  If I'm in a hurry, though, it's often\r\n"
+         ">> easier to simply print.  I guess I'll have to simply abandon printing\r\n"
+         ">> from TB and possible FF as well.  Unfortunately, some web pages don't\r\n"
+         ">> let you select and copy.\r\n"
+         ">>\r\n"
+         ">>\r\n"
+         "> I think it is easier to copy text only with programs like PureText\r\n"
+         "> rather than carefully high lighting. I have defined a key to strip\r\n"
+         "> formatting and copy. That is an available option and I have chosen\r\n"
+         "> CTRL-0. The method can be used with both full text editors like Word and\r\n"
+         "> text only editors.\r\n"
+         "\r\n"
+         "\r\n"
+         "\r\n"
+         "That looks interesting. Does it address \"some web pages don't let you\r\n"
+         "select and copy\" problem RussCA has experienced? The PureText web page\r\n"
+         "doesn't seem to address that issue.\r\n"
+         "\r\n"
+         "Just curious,\r\n"
+         "John\r\n"
+         "\r\n"
+         "\r\n"
+         ".\r\n";
 
-        nntp::bodyiter beg(text);
-        nntp::bodyiter end(text + std::strlen(text));
+        const std::size_t len = nntp::find_body(str, std::strlen(str));
 
-        std::string str(beg, end);
-        BOOST_REQUIRE( str == 
-            ".here is some text\r\n"
-            "more data follows.\r\n"
-            "two dots in the middle .. of text\r\n"
-            "and no dots\r\n"
-            ".\r\n"
-            "..\r\n"
-            "...\r\n"
-            );
-
-    }
-
-    // test backwards
-    {
-        const char* text = 
-        "..here is some text\r\n"
-        "more data follows.\r\n"
-        "two dots in the middle .. of text\r\n"
-        "and no dots\r\n"
-        "..\r\n"
-        "...\r\n"
-        "....\r\n";
-
-        nntp::bodyiter beg(text - 1);
-        nntp::bodyiter end(text, std::strlen(text)-1);
-
-        std::string str;
-        for (; end != beg; --end)
-        {
-            str.insert(str.begin(), *end);
-        }
-
-        BOOST_REQUIRE( str == 
-            ".here is some text\r\n"
-            "more data follows.\r\n"
-            "two dots in the middle .. of text\r\n"
-            "and no dots\r\n"
-            ".\r\n"
-            "..\r\n"
-            "...\r\n"
-            );
-    }
-
-    // test forward and backwards
-    {
-        const char* text =
-        "..here is some text\r\n"
-        "..\r\n"
-        "...\r\n";
-
-        nntp::bodyiter beg(text);
-
-        std::string str;
-        str.push_back(*beg++);
-        str.push_back(*beg++);
-        str.push_back(*--beg);
-        str.push_back(*--beg);
-        BOOST_REQUIRE(str == ".hh.");
-
-        str.clear();
-
-        std::advance(beg, std::strlen(".here is some text\r\n"));
-        str.push_back(*beg++);
-        str.push_back(*beg++);
-        str.push_back(*beg++);
-        BOOST_REQUIRE(str == ".\r\n");
-
-        str.clear();
-        str.push_back(*--beg);
-        str.push_back(*--beg);
-        str.push_back(*--beg);
-        BOOST_REQUIRE(str == "\n\r.");
+        BOOST_REQUIRE(len == std::strlen(str));
     }    
 }
 
@@ -624,12 +538,10 @@ int test_main(int, char* [])
     test_date();
     test_is_binary();
     test_find_filename();
-
-    test_linebuffer();
-    test_bodyiter();
+    test_find_response();
+    test_find_body();
 
     return 0;
-   
 }
 
 

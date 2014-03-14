@@ -136,12 +136,12 @@ namespace newsflash
         }
 
 
-        byte_t& operator[](size_t i)
+        byte_t& operator[](std::size_t i)
         {
             assert(i < capacity_);
             return data_[i];
         }
-        const byte_t& operator[](size_t i) const
+        const byte_t& operator[](std::size_t i) const
         {
             assert(i < capacity_);
             return data_[i];
@@ -177,9 +177,9 @@ namespace newsflash
         enum : uint32_t { CANARY= 0xcafebabe };
 
         byte_t* data_;
-        std::size_t offset_;
-        std::size_t capacity_;
-        std::size_t size_;
+        std::size_t offset_; // offset into the buffer where "real" data begins
+        std::size_t capacity_; // current buffer capacity, i.e. amount of bytes pointed by data_
+        std::size_t size_; // current total data size
     };
 
     inline
@@ -214,7 +214,7 @@ namespace newsflash
 
 
     inline
-    auto buffer_size(const buffer& buff) ->decltype(buff.size())
+    std::size_t buffer_size(const buffer& buff)
     {
         return buff.size();
     }

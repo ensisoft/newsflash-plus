@@ -22,8 +22,8 @@
 
 #include <boost/regex.hpp>
 #include <boost/crc.hpp>
+#include "nntp/linebuffer.h"
 #include "download.h"
-#include "linebuffer.h"
 #include "content.h"
 #include "buffer.h"
 
@@ -86,7 +86,7 @@ download::download(std::string folder, std::string name) : folder_(std::move(fol
 void download::prepare()
 {}
 
-void download::receive(const buffer& buff)
+void download::receive(const buffer& buff, std::size_t id)
 {
     const nntp::linebuffer lines((const char*)buffer_payload(buff), 
         buffer_payload_size(buff));

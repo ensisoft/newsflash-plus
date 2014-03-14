@@ -22,34 +22,31 @@
 
 #pragma once
 
-#include <cstddef>
+#include "cmd.h"
+#include "nntp.h"
 
-namespace newsflash
+namespace nntp
 {
-    class buffer;
+    // request the server for the current list of capabilities. 
+    // this mechanism includes some standard capabilities as well as server
+    // specific extensions. upon receiving a response we scan
+    // the list of returned capabilities and set the appropriate boolean flags
+    // to indicate the existence of said capability.
+    // it seems that some servers such as astraweb respond to this with 500
+    // 101 capability list follows.
+    // 480 authentication required
+    // 500 what? 
+    struct cmd_capabilities : cmd {
 
-    // task interface for performing activities on the data.
-    class task
-    {
-    public:
-        virtual ~task() = default;
+        enum : code_t { SUCCESS = 101 };
 
-        // prepare the task to receive data soon.
-        virtual void prepare() = 0;
+        bool has_mode_reader;
+        bool has_compress_gzip;
+        bool has_xzver;
 
-        // receive and process a buffer of NNTP data.
-        virtual void receive(const buffer& buff, std::size_t id) = 0;
+        cmd_capabilities();
 
-        // cancel the task, rolllback any changes.
-        virtual void cancel() = 0;
-
-        // flush a temporary snapshot to the disk
-        // and commit changes so far.
-        virtual void flush() = 0;
-
-        // finalize (commit) the task. makes changes permanent.
-        virtual void finalize() = 0;
-    protected:
-    private:
+        code_t transact();
     };
-} // newsflash
+
+} // nntp

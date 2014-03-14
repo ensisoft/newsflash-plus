@@ -20,36 +20,40 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-#pragma once
+#include "cmd_capabilities.h"
+#include "transact.h"
+#include "nntp.h"
+#include "buffer.h"
 
-#include <cstddef>
-
-namespace newsflash
+namespace nntp
 {
-    class buffer;
 
-    // task interface for performing activities on the data.
-    class task
+cmd_capabilities::cmd_capabilities() : has_mode_reader(false), has_compress_gzip(false), has_xzver(false)
+{}
+
+code_t cmd_capabilities::transact()
+{
+    std::string response(1024, 0);
+    std::size_t offset = 0;
+    std::size_t size   = 0;
+    code_t code = 0;
+
+    std::tie(code, offset, size) = nntp::transact(*this, "CAPABILITIES", {101, 480, 500}, {101}, response);
+    if (code == SUCCESS)
     {
-    public:
-        virtual ~task() = default;
+        const auto& lines = split_lines(response);
+        for (size_t i=1; i<lines.size(); ++i)
+        {
+            const auto& cap = lines[i];
+            if (cap.find("MODE-READER") != std::string::npos)
+                has_mode_reader = true;
+            else if (cap.find("XZVER") != std::string::npos)
+                has_xzver = true;
+            else if (cap.find("COMPRESS") != std::string::npos && cap.find("GZIP") != std::string::npos)
+                has_compress_gzip = true;
+        }
+    }
+    return code;
+}
 
-        // prepare the task to receive data soon.
-        virtual void prepare() = 0;
-
-        // receive and process a buffer of NNTP data.
-        virtual void receive(const buffer& buff, std::size_t id) = 0;
-
-        // cancel the task, rolllback any changes.
-        virtual void cancel() = 0;
-
-        // flush a temporary snapshot to the disk
-        // and commit changes so far.
-        virtual void flush() = 0;
-
-        // finalize (commit) the task. makes changes permanent.
-        virtual void finalize() = 0;
-    protected:
-    private:
-    };
-} // newsflash
+} // nntp

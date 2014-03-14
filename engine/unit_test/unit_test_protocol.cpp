@@ -24,367 +24,8 @@
 
 #include <boost/test/minimal.hpp>
 #include "unit_test_common.h"
-#include "../protocmd.h"
 #include "../protocol.h"
 #include "../buffer.h"
-
-struct string_input {
-    const std::string out;
-    const std::string in;
-    size_t pos;
-
-    string_input(const std::string& output, const std::string& input) 
-        : out(output), in(input), pos(0)
-    {}
-
-    size_t recv(void* buff, size_t buffsize)
-    {
-        const auto m = std::min(buffsize, in.size() - pos);
-        std::memcpy(buff, &in[pos], m);
-        pos += m;
-        return m;
-    }
-    void send(const void* cmd, size_t cmdsize) 
-    {
-        std::string str((char*)cmd, cmdsize);
-        BOOST_REQUIRE(str == out + "\r\n");
-    }
-};
-
-void cmd_log(const std::string& str)
-{
-    std::cout << str << std::endl;
-}
-
-template<typename Cmd>
-void test_success(Cmd* cmd, const char* request, const char* response, int code)
-{
-    string_input in {request, response};
-
-    cmd->cmd_log = cmd_log;
-    cmd->cmd_recv = std::bind(&string_input::recv, in, std::placeholders::_1, 
-        std::placeholders::_2);
-    cmd->cmd_send = std::bind(&string_input::send, in, std::placeholders::_1,
-        std::placeholders::_2);
-
-    int ret = cmd->transact();
-    BOOST_REQUIRE(ret == code);
-}
-
-template<typename Cmd>
-void test_success(Cmd cmd, const char* request, const char* response, int code)
-{
-    test_success(&cmd, request, response, code);
-}
-
-template<typename Cmd>
-void test_failure(Cmd cmd, const char* request, const char* response)
-{
-    string_input in {request, response};
-
-    cmd.cmd_log  = cmd_log;
-    cmd.cmd_recv = std::bind(&string_input::recv, in, std::placeholders::_1,
-        std::placeholders::_2);
-    cmd.cmd_send = std::bind(&string_input::send, in, std::placeholders::_1,
-        std::placeholders::_2);
-
-    try
-    {
-        cmd.transact();
-        BOOST_REQUIRE(!"exception was expected!");
-    }
-    catch (const std::exception& e)
-    {}
-
-}
-
-void unit_test_find_response()
-{
-    {
-        BOOST_REQUIRE(nntp::detail::find_response("", 0) == 0);
-        BOOST_REQUIRE(nntp::detail::find_response("adsgas", 6) == 0);
-        BOOST_REQUIRE(nntp::detail::find_response("\r\n", 2) == 2);
-        BOOST_REQUIRE(nntp::detail::find_response("foo\r\n", 5) == 5);
-        BOOST_REQUIRE(nntp::detail::find_response("foo\r\nfoo", 5) == 5);
-    }
-
-    {
-        BOOST_REQUIRE(nntp::detail::find_body("", 0) == 0);
-        BOOST_REQUIRE(nntp::detail::find_body("asgas", 5) == 0);
-        BOOST_REQUIRE(nntp::detail::find_body(".\r\n", 3) == 0);
-        BOOST_REQUIRE(nntp::detail::find_body("foobar.\r\n", 9) == 0);
-        BOOST_REQUIRE(nntp::detail::find_body("foobar.\r\nkeke", 13) == 0);
-        BOOST_REQUIRE(nntp::detail::find_body("foo\r\nbar.\r\n", 11) == 0);
-
-        BOOST_REQUIRE(nntp::detail::find_body("foobar\r\n.\r\n", 11) == 11);
-        BOOST_REQUIRE(nntp::detail::find_body("\r\n.\r\n", 5) == 5);
-        BOOST_REQUIRE(nntp::detail::find_body(".\r\nderp\r\n.\r\n", 12) == 12);
-    }
-
-    {
-        const char* str = 
-         "On 2/23/2013 10:55 AM, James Silverton wrote:\r\n"
-         "> On 2/23/2013 10:08 AM, RussCA wrote:\r\n"
-         ">> On 2/23/2013 9:01 AM, John wrote:\r\n"
-         ">>> On 2/22/2013 8:58 PM, RussCA wrote:\r\n"
-         ">>>> I just printed a message from this newsgroup.\r\n"
-         ">>>>\r\n"
-         ">>>> I am using the addon \"TT DeepDark 4.1\", so that my text is white and\r\n"
-         ">>>> background is black(ish).\r\n"
-         ">>>>\r\n"
-         ">>>> The printed output is white text on a black background.  Quite a waste\r\n"
-         ">>>> of black ink.  Wouldn't it be better if the printing process knew\r\n"
-         ">>>> something about printing what the message colors are, rather than what\r\n"
-         ">>>> the displayed message looks like?\r\n"
-         ">>>\r\n"
-         ">>>\r\n"
-         ">>> When I want to print text only I transfer the text to a text (only)\r\n"
-         ">>> editor. Hi-light the text, Ctrl<C>, and Ctrl<V> into the editor and\r\n"
-         ">>> print from the editor --- sure saves on ink ;)\r\n"
-         ">>>\r\n"
-         ">>> John\r\n"
-         ">> John,\r\n"
-         ">> I know.  That's what I usually do when there is something specific I\r\n"
-         ">> want to save from the message.  If I'm in a hurry, though, it's often\r\n"
-         ">> easier to simply print.  I guess I'll have to simply abandon printing\r\n"
-         ">> from TB and possible FF as well.  Unfortunately, some web pages don't\r\n"
-         ">> let you select and copy.\r\n"
-         ">>\r\n"
-         ">>\r\n"
-         "> I think it is easier to copy text only with programs like PureText\r\n"
-         "> rather than carefully high lighting. I have defined a key to strip\r\n"
-         "> formatting and copy. That is an available option and I have chosen\r\n"
-         "> CTRL-0. The method can be used with both full text editors like Word and\r\n"
-         "> text only editors.\r\n"
-         "\r\n"
-         "\r\n"
-         "\r\n"
-         "That looks interesting. Does it address \"some web pages don't let you\r\n"
-         "select and copy\" problem RussCA has experienced? The PureText web page\r\n"
-         "doesn't seem to address that issue.\r\n"
-         "\r\n"
-         "Just curious,\r\n"
-         "John\r\n"
-         "\r\n"
-         "\r\n"
-         ".\r\n";
-
-         size_t len = nntp::detail::find_body(str, std::strlen(str));
-
-         BOOST_REQUIRE(len == std::strlen(str));
-    }
-}
-
-void unit_test_scan_response()
-{
-    {
-        int a, b, c;
-        BOOST_REQUIRE(nntp::detail::scan_response("123 234254 444", a, b, c));
-        BOOST_REQUIRE(a == 123);
-        BOOST_REQUIRE(b == 234254);
-        BOOST_REQUIRE(c == 444);
-    }
-
-    {
-        int a; 
-        double d;
-        BOOST_REQUIRE(nntp::detail::scan_response("200 40.50", a, d));
-        BOOST_REQUIRE(a == 200);
-        //BOOST_REQUIRE(d == 40.50); // fix
-    }
-
-    {
-        int a;
-        std::string s;
-        BOOST_REQUIRE(nntp::detail::scan_response("233 welcome posting allowed", a, s));
-        BOOST_REQUIRE(a == 233);
-        BOOST_REQUIRE(s == "welcome");
-    }
-
-    {
-        int a;
-        nntp::detail::trailing_comment c;
-        BOOST_REQUIRE(nntp::detail::scan_response("233 welcome posting allowed", a, c));
-        BOOST_REQUIRE(a == 233);
-        BOOST_REQUIRE(c.str == "welcome posting allowed");
-    }
-
-    {
-        int a;
-        BOOST_REQUIRE(!nntp::detail::scan_response("asdga", a));
-    }
-
-
-}
-
-void unit_test_cmd_welcome()
-{
-   test_success(nntp::cmd_welcome{}, "", "200 Welcome posting allowed\r\n", 200);
-   test_success(nntp::cmd_welcome{}, "", "201 Welcome - posting prohibited\r\n", 201);
-   test_success(nntp::cmd_welcome{}, "", "201 Welcome to Astraweb v. 1.0\r\n", 201);
-   test_success(nntp::cmd_welcome{}, "", "200 ok\r\n", 200);
-
-   test_failure(nntp::cmd_welcome{}, "", "440 fooobar\r\n");
-   test_failure(nntp::cmd_welcome{}, "", "200 welcome");
-}
-
-void unit_test_cmd_auth()
-{
-   test_success(nntp::cmd_auth_user{"foobar"}, "AUTHINFO USER foobar", "281 authentication accepted\r\n", 281);
-   test_success(nntp::cmd_auth_user{"foobar"}, "AUTHINFO USER foobar", "482 authentication accepted\r\n", 482);
-   test_failure(nntp::cmd_auth_user{"foobar"}, "AUTHINFO USER foobar", "555, fooobar alalal\r\n");
-   test_failure(nntp::cmd_auth_user{"foobar"}, "AUTHINFO USER foobar", "281 authentication accepted");
-
-   test_success(nntp::cmd_auth_pass{"pass"}, "AUTHINFO PASS pass", "281 authentication accepted\r\n", 281);
-   test_success(nntp::cmd_auth_pass{"pass"}, "AUTHINFO PASS pass", "481 authentication rejected\r\n", 481);
-
-
-}
-
-void unit_test_cmd_capabilities()
-{
-    test_success(nntp::cmd_capabilities{}, "CAPABILITIES", "101 Capability list follows\r\nFOO\r\nBAR\r\n.\r\n", 101);
-    test_success(nntp::cmd_capabilities{}, "CAPABILITIES", "101 Capability list follows\r\n\r\n.\r\n", 101);
-    test_success(nntp::cmd_capabilities{}, "CAPABILITIES", "101 foboaaslas asdglajsd\r\nACTIVE.TIMES\r\n.\r\n", 101);
-    test_failure(nntp::cmd_capabilities{}, "CAPABILITIES", "200 unxpected response\r\n");
-    test_failure(nntp::cmd_capabilities{}, "CAPABILITIES", "101 missing body terminator\r\n");
-
-    nntp::cmd_capabilities cmd;
-    test_success(&cmd, "CAPABILITIES", "101 capability list follows\r\nMODE-READER\r\n.\r\n", 101);
-    BOOST_REQUIRE(cmd.has_mode_reader == true);
-    BOOST_REQUIRE(cmd.has_xzver == false);
-
-    cmd.has_mode_reader = false;
-    cmd.has_xzver = false;
-    test_success(&cmd, "CAPABILITIES", "101 capability list follows\r\nXZVER\r\nMODE-READER\r\n.\r\n", 101);
-    BOOST_REQUIRE(cmd.has_mode_reader == true);
-    BOOST_REQUIRE(cmd.has_xzver == true);
-
-}
-
-void unit_test_cmd_group()
-{
-    {
-        test_success(nntp::cmd_group{"alt.binaries.foo"}, "GROUP alt.binaries.foo", "411 no such group\r\n", 411);
-
-        test_failure(nntp::cmd_group{"alt.binaries.foo"}, "GROUP alt.binaries.foo", "444 foobar\r\n");
-        test_failure(nntp::cmd_group{"alt.binaries.foo"}, "GROUP alt.binaries.foo", "alsjglas");
-        test_failure(nntp::cmd_group{"alt.binaries.foo"}, "GROUP alt.binaries.foo", "1234");
-        test_failure(nntp::cmd_group{"alt.binaries.foo"}, "GROUP alt.binaries.foo", "211 323542\r\n");
-        test_failure(nntp::cmd_group{"alt.binaries.foo"}, "GROUP alt.binaries.foo", "211 0 1 ssagas\r\n");
-
-    }
-
-    {
-        nntp::cmd_group cmd {"alt.binaries.bar"};
-        test_success(&cmd, "GROUP alt.binaries.bar", "211 3 100 102 alt.binaries.bar Group selected\r\n", 211);
-        BOOST_REQUIRE(cmd.count == 3);
-        BOOST_REQUIRE(cmd.low == 100);
-        BOOST_REQUIRE(cmd.high == 102);
-    }
-}
-
-
-
-void unit_test_cmd_mode_reader()
-{
-    test_success(nntp::cmd_mode_reader{}, "MODE READER", "200 posting allowed\r\n", 200);
-    test_success(nntp::cmd_mode_reader{}, "MODE READER", "502 BLALBALBH\r\n", 502);
-    test_failure(nntp::cmd_mode_reader{}, "MODE READER", "333 foobar\r\n");
-    test_failure(nntp::cmd_mode_reader{}, "MODE READER", "asdglsjgs\r\n");
-    test_failure(nntp::cmd_mode_reader{}, "MODE READER", "200 blalala");
-}
-
-void unit_test_cmd_body()
-{
-    typedef std::vector<char> buffer_t;
-    typedef nntp::cmd_body<buffer_t> command_t;
-
-    {
-        buffer_t buff(1024);
-
-        command_t cmd {buff, "1234"};
-
-        test_failure(cmd, "BODY 1234", "333 foobar\r\n");
-        test_failure(cmd, "BODY 1234", "223 FOOBAR\r\n");
-        test_failure(cmd, "BODY 1234", "asgasgas\r\n");
-    }
-
-    {
-        buffer_t buff(1024);
-
-        command_t cmd {buff, "1234"};
-
-        test_success(&cmd, "BODY 1234", "420 no article with that message id\r\n", 420);
-        test_success(&cmd, "BODY 1234", "222 body follows\r\n\r\n.\r\n", 222);
-        BOOST_REQUIRE(cmd.size == 0);
-
-        test_success(&cmd, "BODY 1234", "222 body follows\r\nfoobar\r\n.\r\n", 222);
-        BOOST_REQUIRE(cmd.size == strlen("foobar"));
-        BOOST_REQUIRE(cmd.offset == 18);
-        BOOST_REQUIRE(!std::strncmp(&buff[cmd.offset], "foobar", cmd.size));
-    }
-
-    {
-        buffer_t buff(20);
-
-        command_t cmd {buff, "1234"};
-
-        const char* body = 
-           "assa sassa mandelmassa\r\n"
-           "second line of data\r\n"
-           "foobar"
-           "\r\n"
-           "."
-           "\r\n";
-
-        std::string str("222 body follows\r\n");
-        str.append(body);
-        test_success(&cmd, "BODY 1234", str.c_str(), 222);
-
-        BOOST_REQUIRE(cmd.offset == std::strlen("222 body follows\r\n"));
-        BOOST_REQUIRE(cmd.size   == std::strlen(body) - 5);
-        BOOST_REQUIRE(buff.size() >= cmd.size);
-    }
-}
-
-void unit_test_cmd_xover()
-{
-
-}
-
-void unit_test_cmd_xzver()
-{
-
-}
-
-void unit_test_cmd_list()
-{
-    typedef std::vector<char> buffer_t;
-    typedef nntp::cmd_list<buffer_t> command_t;
-
-    // test success
-    {
-        buffer_t buff(1024);
-        command_t cmd {buff};
-
-        test_success(&cmd, "LIST", "215 list of newsgroups follows\r\n\r\n.\r\n", 215);
-        BOOST_REQUIRE(cmd.size == 0);
-
-        test_success(&cmd, "LIST", 
-            "215 list of newsgroups follows\r\n"
-            "misc.test 3002322 3000234 y\r\n"            
-            "comp.risks 442001 441099 m\r\n"
-            "\r\n"
-            "."
-            "\r\n", 
-            215);
-
-        BOOST_REQUIRE(cmd.size == 
-            std::strlen("misc.test 3002322 3000234 y\r\n"
-                        "comp.risks 442001 441099 m\r\n"));
-    }    
-}
 
 struct test_sequence {
     std::deque<std::string> commands;
@@ -419,11 +60,47 @@ struct test_sequence {
         user = username;
         pass = password;
     }
-
 };
 
-void unit_test_protocol()
+void cmd_log(const std::string& str)
 {
+    std::cout << str << std::endl;
+}
+
+void test_handshake()
+{
+    // test succesful handshakes
+    {
+        test_sequence test;
+        test.responses = 
+        {
+            "200 service available, posting allowed",
+            "500 what?", 
+            "200 OK",
+
+            "201 service available posting prohibited",
+            "500 WHAT?",
+            "200 OK"
+        };
+
+        test.commands = 
+        {
+            "CAPABILITIES",
+            "MODE READER",
+
+            "CAPABILITIES",
+            "MODE READER"
+        };
+
+        newsflash::protocol proto;
+        proto.on_recv = std::bind(&test_sequence::recv, &test, std::placeholders::_1, std::placeholders::_2);
+        proto.on_send = std::bind(&test_sequence::send, &test,std::placeholders::_1, std::placeholders::_2);
+        proto.on_log  = cmd_log;
+
+        proto.connect();
+        proto.connect();
+    }
+
     // test failing handshakes
     {
         test_sequence test;
@@ -444,148 +121,150 @@ void unit_test_protocol()
         REQUIRE_EXCEPTION(proto.connect());
         REQUIRE_EXCEPTION(proto.connect());
     }
+}
 
-    // test authencation
+void test_authentication()
+{
+    test_sequence test;
+    test.password = "pass123";
+    test.username = "user123";
+
+    newsflash::protocol proto;
+    proto.on_recv = std::bind(&test_sequence::recv, &test, std::placeholders::_1, std::placeholders::_2);
+    proto.on_send = std::bind(&test_sequence::send, &test, std::placeholders::_1, std::placeholders::_2);
+    proto.on_auth = std::bind(&test_sequence::authenticate, &test, std::placeholders::_1, std::placeholders::_2);
+    proto.on_log = cmd_log;
+
+    // rejected authentication
     {
-        test_sequence test;
-        test.password = "pass123";
-        test.username = "user123";
-
-        newsflash::protocol proto;
-        proto.on_recv = std::bind(&test_sequence::recv, &test, std::placeholders::_1, std::placeholders::_2);
-        proto.on_send = std::bind(&test_sequence::send, &test, std::placeholders::_1, std::placeholders::_2);
-        proto.on_auth = std::bind(&test_sequence::authenticate, &test, std::placeholders::_1, std::placeholders::_2);
-        proto.on_log = cmd_log;
-
-        // rejected authentication
+        test.responses = 
         {
-            test.responses = 
-            {
-                "200 welcome posting allowed",
-                "480 authentication required",
-                "481 authentication rejected"
-            };
+            "200 welcome posting allowed",
+            "480 authentication required",
+            "481 authentication rejected"
+        };
 
-            test.commands = 
-            {
-                "CAPABILITIES",
-                "AUTHINFO USER user123"
-            };
-            REQUIRE_EXCEPTION(proto.connect());
-        }
-
-        // rejected authentication
+        test.commands = 
         {
-
-            test.responses = 
-            {
-                "200 welcome posting allowed",
-                "480 authenticdation required",
-                "381 password required",
-                "481 authentication rejected"
-            };
-            test.commands =
-            {
-                "CAPABILITIES",
-                "AUTHINFO USER user123",
-                "AUTHINFO PASS pass123",
-            };
-            REQUIRE_EXCEPTION(proto.connect());
-        }
-        
-        // rejected authentication
-        {
-            test.responses = 
-            {
-                "200 welcome posting allowed",
-                "101 capabilities list follows",
-                    "MODE-READER",
-                    "",
-                    ".",
-                "200 posting allowed",
-                "480 authentication required",
-                "481 authentication rejected"
-            };
-            test.commands = 
-            {
-                "CAPABILITIES",
-                "MODE READER",
-                "BODY <1>",
-                "AUTHINFO USER user123"
-            };
-            newsflash::buffer buff;
-            buff.allocate(1024);
-
-            proto.connect();
-            REQUIRE_EXCEPTION(proto.download_article("<1>", buff));
-        }
-
-        // accepted authentication
-        {
-            test.responses =
-            {
-                "200 welcome posting allowed",
-                "480 authentication required",
-                "281 authentication accepted",                
-                "101 capabilities list follows",
-                    "",
-                    ".",
-                "201 posting prohibited",
-                "411 no such newsgroup",
-                "205 goodbye"
-            };
-            test.commands =
-            {
-                "CAPABILITIES",
-                "AUTHINFO USER user123",                
-                "CAPABILITIES",
-                "MODE READER",
-                "GROUP alt.foo.bar",
-                "QUIT"
-            };
-            newsflash::buffer buff;
-            buff.allocate(100);
-
-            proto.connect();
-            BOOST_REQUIRE(!proto.change_group("alt.foo.bar"));
-            proto.quit();
-        }
-
-        {
-            test.responses = 
-            {
-                "200 welcome posting allowed",
-                "480 authentication required",
-                "381 password required",
-                "281 authentication accepted",
-                "101 capabilities list follows",
-                    "",
-                    ".",
-                "200 ok posting allowed",
-                "411 no such newsgroup",
-                "205 goodbye"
-            };
-            test.commands = 
-            {
-                "CAPABILITIES",
-                "AUTHINFO USER user123",
-                "AUTHINFO PASS pass123",
-                "CAPABILITIES",
-                "MODE READER",
-                "GROUP alt.foo.bar",
-                "QUIT"
-            };
-            newsflash::buffer buff;
-            buff.allocate(100);
-
-            proto.connect();
-            BOOST_REQUIRE(!proto.change_group("alt.foo.bar"));
-            proto.quit();
-        }
-
+            "CAPABILITIES",
+            "AUTHINFO USER user123"
+        };
+        REQUIRE_EXCEPTION(proto.connect());
     }
 
+    // rejected authentication
+    {
 
+        test.responses = 
+        {
+            "200 welcome posting allowed",
+            "480 authenticdation required",
+            "381 password required",
+            "481 authentication rejected"
+        };
+        test.commands =
+        {
+            "CAPABILITIES",
+            "AUTHINFO USER user123",
+            "AUTHINFO PASS pass123",
+        };
+        REQUIRE_EXCEPTION(proto.connect());
+    }
+        
+    // rejected authentication
+    {
+        test.responses = 
+        {
+            "200 welcome posting allowed",
+            "101 capabilities list follows",
+            "MODE-READER",
+                "",
+                ".",
+            "200 posting allowed",
+            "480 authentication required",
+            "481 authentication rejected"
+        };
+        test.commands = 
+        {
+            "CAPABILITIES",
+            "MODE READER",
+            "BODY <1>",
+            "AUTHINFO USER user123"
+        };
+        newsflash::buffer buff;
+        buff.allocate(1024);
+
+        proto.connect();
+        REQUIRE_EXCEPTION(proto.download_article("<1>", buff));
+    }
+
+    // accepted authentication
+    {
+        test.responses =
+        {
+            "200 welcome posting allowed",
+            "480 authentication required",
+            "281 authentication accepted",                
+            "101 capabilities list follows",
+                "",
+                ".",
+            "201 posting prohibited",
+            "411 no such newsgroup",
+            "205 goodbye"
+        };
+        test.commands =
+        {
+            "CAPABILITIES",
+            "AUTHINFO USER user123",                
+            "CAPABILITIES",
+            "MODE READER",
+            "GROUP alt.foo.bar",
+            "QUIT"
+        };
+        newsflash::buffer buff;
+        buff.allocate(100);
+
+        proto.connect();
+        BOOST_REQUIRE(!proto.change_group("alt.foo.bar"));
+        proto.quit();
+    }
+
+    // accepted authentication
+    {
+        test.responses = 
+        {
+            "200 welcome posting allowed",
+            "480 authentication required",
+            "381 password required",
+            "281 authentication accepted",
+            "101 capabilities list follows",
+                "",
+                ".",
+            "200 ok posting allowed",
+            "411 no such newsgroup",
+            "205 goodbye"
+        };
+        test.commands = 
+        {
+            "CAPABILITIES",
+            "AUTHINFO USER user123",
+            "AUTHINFO PASS pass123",
+            "CAPABILITIES",
+            "MODE READER",
+            "GROUP alt.foo.bar",
+            "QUIT"
+        };
+        newsflash::buffer buff;
+        buff.allocate(100);
+
+        proto.connect();
+        BOOST_REQUIRE(!proto.change_group("alt.foo.bar"));
+        proto.quit();
+    }
+}
+
+void test_api()
+{
     // test api functions to request data from the server
     {
         test_sequence test;
@@ -656,24 +335,13 @@ void unit_test_protocol()
 
         proto.quit();
     }
-
-
 }
 
 int test_main(int, char* [])
 {
-    unit_test_scan_response();
-    unit_test_find_response();
-    unit_test_cmd_welcome();
-    unit_test_cmd_auth();
-    unit_test_cmd_capabilities();
-    unit_test_cmd_mode_reader();
-    unit_test_cmd_group();
-    unit_test_cmd_body();
-    unit_test_cmd_xover();
-    unit_test_cmd_xzver();
-    unit_test_cmd_list();
-    unit_test_protocol();
+    test_handshake();
+    test_authentication();
+    test_api();
 
     return 0;
 }

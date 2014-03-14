@@ -20,36 +20,40 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-#pragma once
+#include "cmd_group.h"
+#include "send.h"
+#include "recv.h"
+#include "nntp.h"
+#include "scan.h"
 
-#include <cstddef>
-
-namespace newsflash
+namespace nntp
 {
-    class buffer;
 
-    // task interface for performing activities on the data.
-    class task
-    {
-    public:
-        virtual ~task() = default;
+cmd_group::cmd_group(std::string groupname) : 
+    group(std::move(groupname)), count(0), low(0), high(0)
+{}
 
-        // prepare the task to receive data soon.
-        virtual void prepare() = 0;
+code_t cmd_group::transact()
+{
+    nntp::send(*this, "GROUP " + group);
 
-        // receive and process a buffer of NNTP data.
-        virtual void receive(const buffer& buff, std::size_t id) = 0;
+    std::string response(512, 0);
 
-        // cancel the task, rolllback any changes.
-        virtual void cancel() = 0;
+    const auto& ret = nntp::recv(*this, find_response, response);
+    if (!ret.first)
+        throw nntp::exception("no response found");
 
-        // flush a temporary snapshot to the disk
-        // and commit changes so far.
-        virtual void flush() = 0;
+    response.resize(ret.first-2);
 
-        // finalize (commit) the task. makes changes permanent.
-        virtual void finalize() = 0;
-    protected:
-    private:
-    };
-} // newsflash
+    if (log)
+        log(response);
+
+    code_t code = 0;
+    const bool success = scan_response(response, code, count, low, high);
+    if (((code != 211) && (code != 411)) || (code == 211 && !success))
+        throw exception("incorrect command response");
+
+    return code;
+}
+
+} // nntp

@@ -22,34 +22,30 @@
 
 #pragma once
 
-#include <cstddef>
+#include "cmd.h"
+#include "transact.h"
 
-namespace newsflash
+namespace nntp
 {
-    class buffer;
+    // send AUTHINFO USER to authenticate the current session.
+    // this should only be sent when 480 response requesting
+    // authentication is received.
+    // 281 authentication accepted
+    // 381 password required
+    // 481 authentication failed/rejected
+    // 482 authentication command issued out of sequence
+    // 502 command unavailable.
+    struct cmd_auth_user : cmd {
 
-    // task interface for performing activities on the data.
-    class task
-    {
-    public:
-        virtual ~task() = default;
+        const std::string user;
 
-        // prepare the task to receive data soon.
-        virtual void prepare() = 0;
+        cmd_auth_user(std::string username) : user(std::move(username))
+        {}
 
-        // receive and process a buffer of NNTP data.
-        virtual void receive(const buffer& buff, std::size_t id) = 0;
+        code_t transact() 
+        {
+            return nntp::transact(*this, "AUTHINFO USER " + user, {281, 381, 481, 482, 502});
+        }
+    };    
 
-        // cancel the task, rolllback any changes.
-        virtual void cancel() = 0;
-
-        // flush a temporary snapshot to the disk
-        // and commit changes so far.
-        virtual void flush() = 0;
-
-        // finalize (commit) the task. makes changes permanent.
-        virtual void finalize() = 0;
-    protected:
-    private:
-    };
-} // newsflash
+} // nntp

@@ -26,7 +26,9 @@
 
 #include <newsflash/config.h>
 
+#include <initializer_list>
 #include <vector>
+#include <deque>
 #include <string>
 #include <cassert>
 #include <iterator>
@@ -37,6 +39,13 @@
 
 namespace nntp
 {
+    typedef unsigned int code_t;
+    typedef std::initializer_list<code_t> code_list_t;
+
+    const code_t AUTHENTICATION_REQUIRED = 480;
+    const code_t AUTHENTICATION_ACCEPTED = 281;
+    const code_t PASSWORD_REQUIRED       = 381;
+
     // broken down Usenet article overview fields.
     struct overview {
         struct field {
@@ -78,6 +87,10 @@ namespace nntp
         size_t denominator; // 34
     };
 
+
+    // check the list of allowed codes for the given code.
+    bool check_code(code_t code, const code_list_t& allowed_codes);
+
     // inspect the subject line and try to figure out whether
     // it indicates that post contains binary data.
     bool is_binary_post(const char* str, size_t len);
@@ -110,5 +123,16 @@ namespace nntp
     // and the length of the name. 
     // example: "South.park "Southpark.S1E3.par2" yEnc" returns ("southpark.S1E3.par2", 19)
     std::pair<const char*, size_t> find_filename(const char* str, size_t len);
+
+    // scan the given buffer for a complete nntp response.
+    // returns the length of the response if found, otherwise 0;
+    std::size_t find_response(const void* buff, std::size_t size);
+
+    // scan the given buffer for a complete message body.
+    // returns the length of the body if found, otherwise 0.
+    std::size_t find_body(const void* buff, std::size_t size);
+
+    // split input string into a collection of lines
+    std::deque<std::string> split_lines(const std::string& input);
 
 } // nntp

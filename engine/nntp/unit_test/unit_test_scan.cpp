@@ -20,36 +20,52 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-#pragma once
+#include <boost/test/minimal.hpp>
+#include "../scan.h"
 
-#include <cstddef>
-
-namespace newsflash
+void test_scan_response()
 {
-    class buffer;
-
-    // task interface for performing activities on the data.
-    class task
     {
-    public:
-        virtual ~task() = default;
+        int a, b, c;
+        BOOST_REQUIRE(nntp::scan_response("123 234254 444", a, b, c));
+        BOOST_REQUIRE(a == 123);
+        BOOST_REQUIRE(b == 234254);
+        BOOST_REQUIRE(c == 444);
+    }
 
-        // prepare the task to receive data soon.
-        virtual void prepare() = 0;
+    {
+        int a; 
+        double d;
+        BOOST_REQUIRE(nntp::scan_response("200 40.50", a, d));
+        BOOST_REQUIRE(a == 200);
+        //BOOST_REQUIRE(d == 40.50); // fix
+    }
 
-        // receive and process a buffer of NNTP data.
-        virtual void receive(const buffer& buff, std::size_t id) = 0;
+    {
+        int a;
+        std::string s;
+        BOOST_REQUIRE(nntp::scan_response("233 welcome posting allowed", a, s));
+        BOOST_REQUIRE(a == 233);
+        BOOST_REQUIRE(s == "welcome");
+    }
 
-        // cancel the task, rolllback any changes.
-        virtual void cancel() = 0;
+    {
+        int a;
+        nntp::trailing_comment c;
+        BOOST_REQUIRE(nntp::scan_response("233 welcome posting allowed", a, c));
+        BOOST_REQUIRE(a == 233);
+        BOOST_REQUIRE(c.str == "welcome posting allowed");
+    }
 
-        // flush a temporary snapshot to the disk
-        // and commit changes so far.
-        virtual void flush() = 0;
+    {
+        int a;
+        BOOST_REQUIRE(!nntp::scan_response("asdga", a));
+    }
+}
 
-        // finalize (commit) the task. makes changes permanent.
-        virtual void finalize() = 0;
-    protected:
-    private:
-    };
-} // newsflash
+
+int test_main(int, char*[])
+{
+    test_scan_response();
+    return 0;
+}

@@ -16,9 +16,11 @@ project engine
   <toolset>gcc:<linkflags>-rdynamic
 
   <toolset>clang:<cflags>-std=c++11  
+
+#  <include>.
   ;
   
-lib engine :  [ glob *.cpp ] 
+lib engine :  [ glob *.cpp ] [ glob nntp/*.cpp ]
 
    /boost//filesystem/
    /boost//regex/

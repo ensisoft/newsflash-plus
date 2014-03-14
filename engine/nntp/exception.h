@@ -22,34 +22,25 @@
 
 #pragma once
 
-#include <cstddef>
+#include <newsflash/config.h>
+#include <exception>
+#include <string>
 
-namespace newsflash
+namespace nntp
 {
-    class buffer;
-
-    // task interface for performing activities on the data.
-    class task
+    // gets thrown when things go wrong.
+    class exception : public std::exception
     {
     public:
-        virtual ~task() = default;
-
-        // prepare the task to receive data soon.
-        virtual void prepare() = 0;
-
-        // receive and process a buffer of NNTP data.
-        virtual void receive(const buffer& buff, std::size_t id) = 0;
-
-        // cancel the task, rolllback any changes.
-        virtual void cancel() = 0;
-
-        // flush a temporary snapshot to the disk
-        // and commit changes so far.
-        virtual void flush() = 0;
-
-        // finalize (commit) the task. makes changes permanent.
-        virtual void finalize() = 0;
-    protected:
+        exception(std::string what) NOTHROW 
+           : what_(std::move(what))
+        {}
+        const char* what() const NOTHROW
+        {
+            return what_.c_str();
+        }
     private:
+        const std::string what_;
     };
-} // newsflash
+
+} // nntp

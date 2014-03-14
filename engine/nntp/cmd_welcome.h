@@ -22,34 +22,26 @@
 
 #pragma once
 
-#include <cstddef>
+#include "cmd.h"
+#include "transact.h"
 
-namespace newsflash
+namespace nntp
 {
-    class buffer;
-
-    // task interface for performing activities on the data.
-    class task
-    {
-    public:
-        virtual ~task() = default;
-
-        // prepare the task to receive data soon.
-        virtual void prepare() = 0;
-
-        // receive and process a buffer of NNTP data.
-        virtual void receive(const buffer& buff, std::size_t id) = 0;
-
-        // cancel the task, rolllback any changes.
-        virtual void cancel() = 0;
-
-        // flush a temporary snapshot to the disk
-        // and commit changes so far.
-        virtual void flush() = 0;
-
-        // finalize (commit) the task. makes changes permanent.
-        virtual void finalize() = 0;
-    protected:
-    private:
+    // receive initial greeting from the server.
+    // 200 Service available, posting allowed
+    // 201 Service available, posting prohibited
+    // 400 Service temporarily unavailable
+    // 502 Service permanently unavailable
+    struct cmd_welcome : cmd {
+        code_t transact() 
+        {
+            // we don't send anything here. just receive response.
+            return nntp::transact(*this, "", {200, 201, 400, 502});
+        }
+        enum : code_t { 
+            SERVICE_TEMPORARILY_UNAVAILABLE = 400,
+            SERVICE_PERMANENTLY_UNAVAILABLE = 502
+        };
     };
-} // newsflash
+
+} // nntp

@@ -31,7 +31,7 @@
 struct tester 
 {
     std::vector<char> binary;
-    std::vector<newsflash::decoder::problem> problems;
+    std::vector<newsflash::decoder::error> errors;
     newsflash::decoder::info info;
 
     tester(newsflash::decoder& dec)
@@ -40,8 +40,8 @@ struct tester
             std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
         dec.on_info = std::bind(&tester::decoder_info, this,
             std::placeholders::_1);
-        dec.on_problem = std::bind(&tester::decoder_problem, this,
-            std::placeholders::_1);
+        dec.on_error = std::bind(&tester::decoder_error, this,
+            std::placeholders::_1, std::placeholders::_2);
     }
 
     void decoder_write(const void* data, std::size_t size, std::size_t offset, bool has_offset)
@@ -64,9 +64,9 @@ struct tester
     {
         this->info = info;
     }
-    void decoder_problem(const newsflash::decoder::problem& problem)
+    void decoder_error(const newsflash::decoder::error error, const std::string& str)
     {
-        problems.push_back(problem);
+        errors.push_back(error);
     }
 };
 
@@ -134,8 +134,8 @@ void test_single_broken()
         BOOST_REQUIRE(test.info.size == 5666);
         BOOST_REQUIRE(test.binary == data);
 
-        BOOST_REQUIRE(test.problems.size() == 1);
-        BOOST_REQUIRE(test.problems[0].kind == newsflash::decoder::problem::type::crc);
+        BOOST_REQUIRE(test.errors.size() == 1);
+        BOOST_REQUIRE(test.errors[0] == newsflash::decoder::error::crc);
     }
 
     // problems with yenc sizes
@@ -157,9 +157,9 @@ void test_single_broken()
 
         BOOST_REQUIRE(test.info.name == "testtest");
         BOOST_REQUIRE(test.binary == data);
-        BOOST_REQUIRE(test.problems.size() == 2);
-        BOOST_REQUIRE(test.problems[0].kind == newsflash::decoder::problem::type::size);
-        BOOST_REQUIRE(test.problems[1].kind == newsflash::decoder::problem::type::size);
+        BOOST_REQUIRE(test.errors.size() == 2);
+        BOOST_REQUIRE(test.errors[0] == newsflash::decoder::error::size);
+        BOOST_REQUIRE(test.errors[1] == newsflash::decoder::error::size);
     }
 }
 

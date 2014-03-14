@@ -279,14 +279,15 @@ namespace nntp
             return status;
         }        
 
+        typedef std::tuple<code_t, std::size_t, std::size_t> tuple_t;
+
         // perform send/recv transaction. read the response body into the body Buffer
         template<typename Buffer>
-        std::tuple<code_t, size_t, size_t> transact(const std::string& cmd, 
-            const code_list_t& allowed_codes, const code_list_t& success_codes, Buffer& body)
+        tuple_t transact(const std::string& cmd, const code_list_t& allowed_codes, const code_list_t& success_codes, Buffer& body)
         {
-            send(cmd);
+//            assert(buffer_capacity(body));
 
-            assert(buffer_capacity(body));
+            send(cmd);
 
             const auto& ret = recv(detail::find_response, buffer_data(body), buffer_capacity(body));
             if (!ret.first)
@@ -305,7 +306,7 @@ namespace nntp
             if (!detail::check_code(status, success_codes))
                 return std::make_tuple(status, 0, 0);
 
-            assert(ret.first <= ret.second);
+//            assert(ret.first <= ret.second);
 
             size_t data_total  = ret.second;
             size_t body_offset = ret.first; 
@@ -333,8 +334,8 @@ namespace nntp
                 body_len    = ret.first;
             }
 
-            assert(body_len >= 5);
-            assert(data_total >= body_len);
+//            assert(body_len >= 5);
+//            assert(data_total >= body_len);
             
             return std::make_tuple(status, body_offset, data_total - body_offset - 5);  // omit \r\n.\r\n from the body length
         }

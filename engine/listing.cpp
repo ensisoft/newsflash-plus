@@ -22,11 +22,11 @@
 
 #include <boost/lexical_cast.hpp>
 #include <algorithm>
+#include "nntp/nntp.h"
+#include "nntp/linebuffer.h"
 #include <fstream>
 #include "listing.h"
 #include "buffer.h"
-#include "nntp.h"
-#include "linebuffer.h"
 #include "platform.h"
 
 namespace newsflash
@@ -38,7 +38,7 @@ listing::listing(std::string filename) : filename_(std::move(filename))
 void listing::prepare()
 {}
 
-void listing::receive(const buffer& buff)
+void listing::receive(const buffer& buff, std::size_t id)
 {
     const nntp::linebuffer lines((const char*)buffer_payload(buff), 
         buffer_payload_size(buff));

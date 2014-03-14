@@ -22,13 +22,12 @@
 
 #include "update.h"
 #include "buffer.h"
-#include "nntp.h"
 
 namespace newsflash
 {
 
 
-void update::receive(const buffer& buff)
+void update::receive(const buffer& buff, std::size_t id)
 {
 
 }

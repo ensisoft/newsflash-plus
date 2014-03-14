@@ -20,36 +20,31 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-#pragma once
+#include "transact.h"
 
-#include <cstddef>
-
-namespace newsflash
+namespace nntp
 {
-    class buffer;
 
-    // task interface for performing activities on the data.
-    class task
-    {
-    public:
-        virtual ~task() = default;
+code_t transact(const cmd& cmd, const std::string& str, const code_list_t& allowed_codes)
+{
+    if (!str.empty())
+        send(cmd, str);
 
-        // prepare the task to receive data soon.
-        virtual void prepare() = 0;
+    std::string response(512, 0);
 
-        // receive and process a buffer of NNTP data.
-        virtual void receive(const buffer& buff, std::size_t id) = 0;
+    const auto& ret = recv(cmd, find_response, response);
+    if (!ret.first)
+        throw nntp::exception("no response was found within the response buffer");
 
-        // cancel the task, rolllback any changes.
-        virtual void cancel() = 0;
+    response.resize(ret.first-2);
+    if (cmd.log)
+        cmd.log(response);
 
-        // flush a temporary snapshot to the disk
-        // and commit changes so far.
-        virtual void flush() = 0;
+    code_t status = 0;
+    if (!scan_response(response, status) || !check_code(status, allowed_codes))
+        throw nntp::exception("incorrect command response");
 
-        // finalize (commit) the task. makes changes permanent.
-        virtual void finalize() = 0;
-    protected:
-    private:
-    };
-} // newsflash
+    return status;
+}        
+
+} // nntp

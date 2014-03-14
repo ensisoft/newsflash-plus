@@ -22,34 +22,29 @@
 
 #pragma once
 
-#include <cstddef>
+#include "cmd.h"
+#include "transact.h"
 
-namespace newsflash
+namespace nntp
 {
-    class buffer;
+    // send AUTHINFO PASS to authenticate the current session.
+    // should only be sent when 318 password required is received.
+    // 281 authentication accepted
+    // 381 password required
+    // 481 authentication failed/rejected
+    // 482 authentication command issued out of sequence
+    // 502 command unavailable 
+    struct cmd_auth_pass : cmd {
 
-    // task interface for performing activities on the data.
-    class task
-    {
-    public:
-        virtual ~task() = default;
+        const std::string pass;
 
-        // prepare the task to receive data soon.
-        virtual void prepare() = 0;
+        cmd_auth_pass(std::string password) : pass(std::move(password))
+        {}
 
-        // receive and process a buffer of NNTP data.
-        virtual void receive(const buffer& buff, std::size_t id) = 0;
-
-        // cancel the task, rolllback any changes.
-        virtual void cancel() = 0;
-
-        // flush a temporary snapshot to the disk
-        // and commit changes so far.
-        virtual void flush() = 0;
-
-        // finalize (commit) the task. makes changes permanent.
-        virtual void finalize() = 0;
-    protected:
-    private:
+        code_t transact()
+        {
+            return nntp::transact(*this, "AUTHINFO PASS " + pass, {281, 381, 481, 482, 502});
+        }
     };
-} // newsflash
+
+} // nntp

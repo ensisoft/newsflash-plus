@@ -22,34 +22,40 @@
 
 #pragma once
 
-#include <cstddef>
+#include "cmd.h"
+#include "transact.h"
 
-namespace newsflash
+namespace nntp
 {
-    class buffer;
-
-    // task interface for performing activities on the data.
-    class task
+    // XOVER is part of common nntp extensions
+    // https://www.ietf.org/rfc/rfc2980.txt 
+    // and is superceded by RFC 3977 and OVER
+    // 224 overview information follows
+    // 412 no news group selected
+    // 420 no articles(s) selected
+    // 502 no permission    
+    template<typename Buffer>
+    struct cmd_xover : cmd
     {
-    public:
-        virtual ~task() = default;
+        enum : code_t { SUCCESS = 224 };            
+    
+        Buffer& buffer;
+        std::string first;
+        std::string last;
+        std::size_t offset;
+        std::size_t size;
 
-        // prepare the task to receive data soon.
-        virtual void prepare() = 0;
+        cmd_xover(Buffer& buff, std::string start, std::string end) : buffer(buff),
+             first(std::move(start)), last(std::move(end)),
+             offset(0), size(0)
+        {}
 
-        // receive and process a buffer of NNTP data.
-        virtual void receive(const buffer& buff, std::size_t id) = 0;
-
-        // cancel the task, rolllback any changes.
-        virtual void cancel() = 0;
-
-        // flush a temporary snapshot to the disk
-        // and commit changes so far.
-        virtual void flush() = 0;
-
-        // finalize (commit) the task. makes changes permanent.
-        virtual void finalize() = 0;
-    protected:
-    private:
+        code_t transact()
+        {
+            code_t status = 0;
+            std::tie(status, offset, size) = nntp::transact(*this, "XOVER " + first + "-" + last, {224, 412, 420, 502}, {224}, buffer);                
+            return status;
+        }
     };
-} // newsflash
+ 
+} // nntp

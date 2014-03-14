@@ -41,6 +41,7 @@ project newsflash
     <include>../
     <include>.
     <include>$(OPENSSL_PATH)/include    
+    <include>$(BOOST_PATH)
     <threading>multi
    ;
 

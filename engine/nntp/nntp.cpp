@@ -24,6 +24,7 @@
 #include <boost/functional/hash.hpp>
 #include <boost/regex.hpp>
 #include <sstream>
+#include <algorithm>
 #include <cctype>
 #if defined(LINUX_OS)
 #  include <strings.h> // for strcasecmp
@@ -166,7 +167,12 @@ namespace nntp
 {
 
 
-
+bool check_code(code_t code, const code_list_t& allowed_codes)
+{
+    const auto it = std::find(allowed_codes.begin(), 
+        allowed_codes.end(), code);
+    return it != allowed_codes.end();
+}
 
 bool is_binary_post(const char* str, size_t len)
 {
@@ -523,5 +529,52 @@ std::pair<const char*, size_t> find_filename(const char* str, size_t len)
 
     return {start, end-start};
 }
+
+std::size_t find_response(const void* buff, std::size_t size)
+{
+    // end of response is indicated by \r\n
+    if (size < 2)
+        return 0;
+
+    const char* str = static_cast<const char*>(buff);            
+
+    for (std::size_t len=1; len<size; ++len)
+    {
+        if (str[len] == '\n' && str[len-1] == '\r')
+            return len+1;
+    }
+    return 0;
+}
+
+std::size_t find_body(const void* buff, std::size_t size)
+{
+    // this is referred to as "multi-line data block" in rfc3977
+    // end of body data is indicated by \r\n.\r\n
+    if (size < 5)
+        return 0;
+
+    const char* str = static_cast<const char*>(buff);
+
+    for (std::size_t len=4; len<size; ++len)
+    {
+        if (str[len] == '\n' && str[len-1] == '\r' && str[len-2] == '.'
+            && str[len-3] == '\n' && str[len-4] == '\r')
+            return len+1;
+    }
+    return 0;
+}
+
+std::deque<std::string> split_lines(const std::string& input)
+{
+    std::deque<std::string> ret;
+    std::stringstream ss(input);
+    std::string line;
+    while (!ss.eof())
+    {
+        std::getline(ss, line);
+        ret.push_back(line);
+    }
+    return ret;
+} 
 
 } // nntp

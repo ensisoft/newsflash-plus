@@ -24,7 +24,19 @@
 
 #include <boost/algorithm/string/case_conv.hpp>
 #include <string>
-#include "protocmd.h"
+#include "nntp/cmd_enable_compress_gzip.h"
+#include "nntp/cmd_auth_user.h"
+#include "nntp/cmd_auth_pass.h"
+#include "nntp/cmd_capabilities.h"
+#include "nntp/cmd_welcome.h"
+#include "nntp/cmd_mode_reader.h"
+#include "nntp/cmd_group.h"
+#include "nntp/cmd_quit.h"
+#include "nntp/cmd_body.h"
+#include "nntp/cmd_xzver.h"
+#include "nntp/cmd_xover.h"
+#include "nntp/cmd_list.h"
+#include "nntp/nntp.h"
 #include "protocol.h"
 #include "buffer.h"
 
@@ -105,25 +117,23 @@ bool protocol::query_group(const std::string& groupname, groupinfo& info)
     group_ = groupname;
     
     info.high_water_mark = cmd.high;
-    info.low_water_mark = cmd.low;
-    info.article_count = cmd.count;
+    info.low_water_mark  = cmd.low;
+    info.article_count   = cmd.count;
     return true;
 }
 
 protocol::status protocol::download_article(const std::string& article, buffer& buff)
 { 
-    typedef nntp::cmd_body<buffer> command_t;
-
-    command_t cmd {buff, article};
+    nntp::cmd_body<buffer> cmd {buff, article};
 
     const auto code = transact(&cmd);
-    if (code == command_t::SUCCESS)
+    if (code == cmd.SUCCESS)
     {
         buff.configure(cmd.size, cmd.offset);
         return status::success;
     }
 
-    const std::string& reason = boost::algorithm::to_lower_copy(cmd.reason);
+    const auto reason = boost::algorithm::to_lower_copy(cmd.reason);
     if (reason.find("dmca") != std::string::npos)
         return status::dmca;
 
@@ -138,18 +148,12 @@ bool protocol::download_overview(const std::string& first, const std::string& la
         const auto code = transact(nntp::cmd_enable_compress_gzip{});
         if (code == nntp::cmd_enable_compress_gzip::SUCCESS)
             is_compressed_ = true;
-
     }
-
-    typedef nntp::cmd_xzver<buffer> xzver_t;        
-    typedef nntp::cmd_xover<buffer> xover_t;
-
 
     if (is_compressed_)
     {
-        xzver_t cmd {buff, first, last };
-
-        if (transact(&cmd) == xzver_t::SUCCESS)
+        nntp::cmd_xzver<buffer> cmd {buff, first, last};
+        if (transact(&cmd) == cmd.SUCCESS)
         {
             buff.configure(cmd.size, cmd.offset);
             return true;
@@ -157,9 +161,8 @@ bool protocol::download_overview(const std::string& first, const std::string& la
     }
     else
     {
-        xover_t cmd {buff, first, last};
-
-        if (transact(&cmd) == xover_t::SUCCESS)
+        nntp::cmd_xover<buffer> cmd {buff, first, last};
+        if (transact(&cmd) == cmd.SUCCESS)
         {
             buff.configure(cmd.size, cmd.offset);
             return true;
@@ -170,13 +173,10 @@ bool protocol::download_overview(const std::string& first, const std::string& la
 
 bool protocol::download_list(buffer& buff)
 {
-    typedef nntp::cmd_list<buffer> command_t;
-
-    command_t cmd {buff};
-
-    if (transact(&cmd) == command_t::SUCCESS)
+    nntp::cmd_list<buffer> cmd {buff};
+    if (transact(&cmd) == cmd.SUCCESS)
     {
-        buff.configure(cmd.size, cmd.offset);
+        buff.configure(cmd.size,cmd.offset);
         return true;
     }
     return false;
@@ -190,18 +190,17 @@ void protocol::authenticate()
         on_auth(username, password);
 
     nntp::cmd_auth_user user {username};
-    user.cmd_recv = on_recv;
-    user.cmd_send = on_send;
-    user.cmd_log  = on_log;
+    user.recv = on_recv;
+    user.send = on_send;
+    user.log  = on_log;
 
     auto ret = user.transact();
     if (ret == nntp::PASSWORD_REQUIRED)
     {
         nntp::cmd_auth_pass pass {password};
-        pass.cmd_recv = on_recv;
-        pass.cmd_send = on_send;
-        pass.cmd_log  = on_log;
-
+        pass.recv = on_recv;
+        pass.send = on_send;
+        pass.log  = on_log;
         ret = pass.transact();
     }
     if (ret != nntp::AUTHENTICATION_ACCEPTED)

@@ -20,36 +20,25 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-#pragma once
+#include "cmd.h"
 
-#include <cstddef>
-
-namespace newsflash
+namespace nntp
 {
-    class buffer;
 
-    // task interface for performing activities on the data.
-    class task
+void send(const cmd& cmd, const std::string& str)
+{
+    std::string s(str);
+    if (cmd.log)
     {
-    public:
-        virtual ~task() = default;
+        if (s.find("AUTHINFO PASS") != std::string::npos)
+            cmd.log("AUTHINFO PASS *********");
+        else if (s.find("AUTHINFO USER") != std::string::npos)
+            cmd.log("AUTHINFO USER *********");
+        else cmd.log(str);
+    }
 
-        // prepare the task to receive data soon.
-        virtual void prepare() = 0;
+    s.append("\r\n");
+    cmd.send(s.c_str(), s.size());
+}
 
-        // receive and process a buffer of NNTP data.
-        virtual void receive(const buffer& buff, std::size_t id) = 0;
-
-        // cancel the task, rolllback any changes.
-        virtual void cancel() = 0;
-
-        // flush a temporary snapshot to the disk
-        // and commit changes so far.
-        virtual void flush() = 0;
-
-        // finalize (commit) the task. makes changes permanent.
-        virtual void finalize() = 0;
-    protected:
-    private:
-    };
-} // newsflash
+} // nntp

@@ -22,34 +22,29 @@
 
 #pragma once
 
-#include <cstddef>
+#include "cmd.h"
+#include "nntp.h"
 
-namespace newsflash
+namespace nntp
 {
-    class buffer;
+    // request the server to change the current newsgroup to the 
+    // given group. succesful selection will return the first and
+    // last article numbers in the group and an estimate of total
+    // articles in the group.
+    // 211 number low high groupname Group succesfully selected
+    // 411 no such newsgroup
+    struct cmd_group : cmd {
 
-    // task interface for performing activities on the data.
-    class task
-    {
-    public:
-        virtual ~task() = default;
+        enum : code_t { SUCCESS = 211 };      
 
-        // prepare the task to receive data soon.
-        virtual void prepare() = 0;
+        std::string group;
+        std::uint64_t count;
+        std::uint64_t low;
+        std::uint64_t high;
 
-        // receive and process a buffer of NNTP data.
-        virtual void receive(const buffer& buff, std::size_t id) = 0;
+        cmd_group(std::string groupname);
 
-        // cancel the task, rolllback any changes.
-        virtual void cancel() = 0;
-
-        // flush a temporary snapshot to the disk
-        // and commit changes so far.
-        virtual void flush() = 0;
-
-        // finalize (commit) the task. makes changes permanent.
-        virtual void finalize() = 0;
-    protected:
-    private:
+        code_t transact();
     };
-} // newsflash
+
+} // nntp

@@ -50,7 +50,7 @@ private:
 
 std::shared_ptr<newsflash::buffer> generate_buffer(std::size_t id, std::size_t bytes)
 {
-    auto buff = std::make_shared<newsflash::buffer>(id, bytes);
+    auto buff = std::make_shared<newsflash::buffer>(bytes);
 
     for (size_t i=0; i<bytes; ++i)
         (*buff)[i] = 0xff & (random_int() >> 7);
@@ -66,7 +66,7 @@ std::shared_ptr<newsflash::buffer> read_buffer_from_file(const char* file, std::
 
     fseek(fp, offset, SEEK_SET);
 
-    auto buff = std::make_shared<newsflash::buffer>(0, len);
+    auto buff = std::make_shared<newsflash::buffer>(len);
 
     fread(&(*buff)[0], 1, len, fp);
     fclose(fp);
