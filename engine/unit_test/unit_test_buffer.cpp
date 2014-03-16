@@ -34,32 +34,41 @@ int test_main(int, char*[])
     buff.allocate(100);
     BOOST_REQUIRE(buff.size() == 0);
     BOOST_REQUIRE(buff.capacity() == 100);
-    BOOST_REQUIRE(buff.ptr());
+
     buff.resize(1);
     BOOST_REQUIRE(buff.size() == 1);
-    buff.resize(2);
-    BOOST_REQUIRE(buff.size() == 2);
-    buff.resize(100);
-    buff.resize(0);
-
-    for (int i=0; i<100; ++i)
-    {
-        auto* ptr = buff.ptr();
-        ptr[i] = 0xff;
-        BOOST_REQUIRE(buff[i] == 0xff);
-    }
-
-
-    buff = std::move(buff);
-    BOOST_REQUIRE(buff.ptr());
     BOOST_REQUIRE(buff.capacity() == 100);
 
-    auto other = std::move(buff);
+    buff.resize(50);
+    BOOST_REQUIRE(buff.size() == 50);
+    BOOST_REQUIRE(buff.capacity() == 100);
 
-    BOOST_REQUIRE(other.ptr());
-    BOOST_REQUIRE(other.capacity() == 100);
-    BOOST_REQUIRE(buff.ptr() == nullptr);
-    BOOST_REQUIRE(buff.capacity() == 0);
+    buff.crop(1);
+    BOOST_REQUIRE(buff.size() == 49);
+    BOOST_REQUIRE(buff.capacity() == 99);
+
+    buff.crop(2);
+    BOOST_REQUIRE(buff.size() == 47);
+    BOOST_REQUIRE(buff.capacity() == 97);
+
+    // for (int i=0; i<100; ++i)
+    // {
+    //     auto* ptr = buff.ptr();
+    //     ptr[i] = 0xff;
+    //     BOOST_REQUIRE(buff[i] == 0xff);
+    // }
+
+
+    // buff = std::move(buff);
+    // BOOST_REQUIRE(buff.ptr());
+    // BOOST_REQUIRE(buff.capacity() == 100);
+
+    // auto other = std::move(buff);
+
+    // BOOST_REQUIRE(other.ptr());
+    // BOOST_REQUIRE(other.capacity() == 100);
+    // BOOST_REQUIRE(buff.ptr() == nullptr);
+    // BOOST_REQUIRE(buff.capacity() == 0);
 
     return 0;
 }

@@ -40,35 +40,35 @@ void listing::prepare()
 
 void listing::receive(const buffer& buff, std::size_t id)
 {
-    const nntp::linebuffer lines((const char*)buffer_payload(buff), 
-        buffer_payload_size(buff));
+    // const nntp::linebuffer lines((const char*)buffer_payload(buff), 
+    //     buffer_payload_size(buff));
 
-    auto beg = lines.begin();
-    auto end = lines.end();
+    // auto beg = lines.begin();
+    // auto end = lines.end();
 
-    while (beg != end)
-    {
-        const auto& line = *beg;
-        const auto& ret  = nntp::parse_group(line.start, line.length);
-        if (ret.first)
-        {
-            const auto& data = ret.second;
+    // while (beg != end)
+    // {
+    //     const auto& line = *beg;
+    //     const auto& ret  = nntp::parse_group(line.start, line.length);
+    //     if (ret.first)
+    //     {
+    //         const auto& data = ret.second;
 
-            group_info group;
-            group.size = 0;
-            group.name = data.name;
-            const std::uint64_t first = boost::lexical_cast<std::uint64_t>(data.first);
-            const std::uint64_t last  = boost::lexical_cast<std::uint64_t>(data.last);
+    //         group_info group;
+    //         group.size = 0;
+    //         group.name = data.name;
+    //         const std::uint64_t first = boost::lexical_cast<std::uint64_t>(data.first);
+    //         const std::uint64_t last  = boost::lexical_cast<std::uint64_t>(data.last);
 
-            // if the last field is less than the first field then
-            // there are no articles in the group.
-            if (last > first)
-                group.size = last - first + 1; // inclusive
+    //         // if the last field is less than the first field then
+    //         // there are no articles in the group.
+    //         if (last > first)
+    //             group.size = last - first + 1; // inclusive
 
-            groups_.push_back(std::move(group));
-        }
-        ++beg;
-    }
+    //         groups_.push_back(std::move(group));
+    //     }
+    //     ++beg;
+    // }
 }
 
 void listing::cancel()

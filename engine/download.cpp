@@ -88,21 +88,21 @@ void download::prepare()
 
 void download::receive(const buffer& buff, std::size_t id)
 {
-    const nntp::linebuffer lines((const char*)buffer_payload(buff), 
-        buffer_payload_size(buff));
+    // const nntp::linebuffer lines((const char*)buffer_payload(buff), 
+    //     buffer_payload_size(buff));
 
-    auto beg = lines.begin();
-    auto end = lines.end();
+    // auto beg = lines.begin();
+    // auto end = lines.end();
 
-    while (beg != end)
-    {
-        const auto& line = *beg;
-        const auto enc = identify_encoding(line.start, line.length);
-        if (enc != encoding::yenc_multi)
-        {
+    // while (beg != end)
+    // {
+    //     const auto& line = *beg;
+    //     const auto enc = identify_encoding(line.start, line.length);
+    //     if (enc != encoding::yenc_multi)
+    //     {
 
-        }
-    }
+    //     }
+    // }
 }
 
 void download::cancel()

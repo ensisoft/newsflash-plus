@@ -88,10 +88,10 @@ namespace nntp
             body_len    = ret.first;
         }
 
-        assert(body_len >= 5);
+        assert(body_len >= 3);
         assert(data_total >= body_len);
             
-        return std::make_tuple(status, body_offset, data_total - body_offset - 5);  // omit \r\n.\r\n from the body length
+        return std::make_tuple(status, body_offset, data_total - body_offset - 3);  // omit \r\n.\r\n from the body length
     }
 
 } // nntp

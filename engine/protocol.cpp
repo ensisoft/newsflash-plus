@@ -129,7 +129,8 @@ protocol::status protocol::download_article(const std::string& article, buffer& 
     const auto code = transact(&cmd);
     if (code == cmd.SUCCESS)
     {
-        buff.configure(cmd.size, cmd.offset);
+        buff.crop(cmd.offset);
+        buff.resize(cmd.size);
         return status::success;
     }
 
@@ -155,7 +156,8 @@ bool protocol::download_overview(const std::string& first, const std::string& la
         nntp::cmd_xzver<buffer> cmd {buff, first, last};
         if (transact(&cmd) == cmd.SUCCESS)
         {
-            buff.configure(cmd.size, cmd.offset);
+            buff.crop(cmd.offset);
+            buff.resize(cmd.size);
             return true;
         }
     }
@@ -164,7 +166,8 @@ bool protocol::download_overview(const std::string& first, const std::string& la
         nntp::cmd_xover<buffer> cmd {buff, first, last};
         if (transact(&cmd) == cmd.SUCCESS)
         {
-            buff.configure(cmd.size, cmd.offset);
+            buff.crop(cmd.offset);
+            buff.resize(cmd.size);
             return true;
         }
     }
@@ -176,7 +179,8 @@ bool protocol::download_list(buffer& buff)
     nntp::cmd_list<buffer> cmd {buff};
     if (transact(&cmd) == cmd.SUCCESS)
     {
-        buff.configure(cmd.size + cmd.offset, cmd.offset);
+        buff.crop(cmd.offset);
+        buff.resize(cmd.size);
         return true;
     }
     return false;

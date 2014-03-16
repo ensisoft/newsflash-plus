@@ -212,12 +212,12 @@ void test_cmd_body()
 
         test_success(&cmd, "BODY 1234", "420 no article with that message id\r\n", 420);
         test_success(&cmd, "BODY 1234", "222 body follows\r\n\r\n.\r\n", 222);
-        BOOST_REQUIRE(cmd.size == 0);
+        BOOST_REQUIRE(cmd.size == 2);
 
         test_success(&cmd, "BODY 1234", "222 body follows\r\nfoobar\r\n.\r\n", 222);
-        BOOST_REQUIRE(cmd.size == strlen("foobar"));
+        BOOST_REQUIRE(cmd.size == strlen("foobar\r\n"));
         BOOST_REQUIRE(cmd.offset == 18);
-        BOOST_REQUIRE(!std::strncmp(&buff[cmd.offset], "foobar", cmd.size));
+        BOOST_REQUIRE(!std::strncmp(&buff[cmd.offset], "foobar\r\n", cmd.size));
     }
 
     {
@@ -238,7 +238,7 @@ void test_cmd_body()
         test_success(&cmd, "BODY 1234", str.c_str(), 222);
 
         BOOST_REQUIRE(cmd.offset == std::strlen("222 body follows\r\n"));
-        BOOST_REQUIRE(cmd.size   == std::strlen(body) - 5);
+        BOOST_REQUIRE(cmd.size   == std::strlen(body) - std::strlen(".\r\n"));
         BOOST_REQUIRE(buff.size() >= cmd.size);
     }    
 }
@@ -254,7 +254,7 @@ void test_cmd_list()
         command_t cmd {buff};
 
         test_success(&cmd, "LIST", "215 list of newsgroups follows\r\n\r\n.\r\n", 215);
-        BOOST_REQUIRE(cmd.size == 0);
+        BOOST_REQUIRE(cmd.size == 2);
 
         test_success(&cmd, "LIST", 
             "215 list of newsgroups follows\r\n"
@@ -265,9 +265,10 @@ void test_cmd_list()
             "\r\n", 
             215);
 
-        BOOST_REQUIRE(cmd.size == 
-            std::strlen("misc.test 3002322 3000234 y\r\n"
-                        "comp.risks 442001 441099 m\r\n"));
+        BOOST_REQUIRE(cmd.size == std::strlen("misc.test 3002322 3000234 y\r\n"
+                                              "comp.risks 442001 441099 m\r\n"
+                                              "\r\n"));
+
     }    
     
 }

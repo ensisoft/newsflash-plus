@@ -84,7 +84,7 @@ namespace newsflash
         // convenience function
         void decode(const std::shared_ptr<const buffer>& buff)
         {
-            decode(buffer_payload(*buff), buffer_payload_size(*buff));
+            //decode(buffer_payload(*buff), buffer_payload_size(*buff));
         }
 
         // decode the data buffer. 

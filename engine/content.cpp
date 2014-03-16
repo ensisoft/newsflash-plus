@@ -74,7 +74,7 @@ void content::decode(std::shared_ptr<const buffer> buff)
         return;
     }
 
-    decoder_->decode(buffer_payload(*buff), buffer_payload_size(*buff));
+    //decoder_->decode(buffer_payload(*buff), buffer_payload_size(*buff));
 
     next_buffer_id_ = id + 1;
 }

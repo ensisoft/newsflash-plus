@@ -34,8 +34,6 @@ namespace newsflash
     class buffer : boost::noncopyable
     {
     public:
-        typedef uint8_t byte_t;
-
         // construct an empty buffer without any data capacity
         buffer() : data_(nullptr), offset_(0), capacity_(0), size_(0)
         {}
@@ -77,26 +75,22 @@ namespace newsflash
             allocator& alloc = allocator::get();
             alloc.free(data_, capacity_);
         }
-        const byte_t* ptr() const 
+        const void* ptr() const 
         {
-            return data_;
+            return &data_[offset_];
         }
 
-        byte_t* ptr()
+        void* ptr()
         {
-            return data_;
+            return &data_[offset_];
         }
         std::size_t capacity() const
         {
-            return capacity_;
+            return capacity_ - offset_;
         }
         std::size_t size() const
         {
-            return size_;
-        }
-        std::size_t offset() const
-        {
-            return offset_;
+            return size_ - offset_;
         }
 
         void allocate(size_t capacity)
@@ -106,7 +100,7 @@ namespace newsflash
 
             const auto bird = CANARY;
 
-            byte_t* data = (byte_t*)alloc.allocate(capacity + sizeof(bird));
+            auto data = (char*)alloc.allocate(capacity + sizeof(bird));
 
             if (data_)
             {
@@ -122,30 +116,27 @@ namespace newsflash
             std::memcpy(data_ + capacity_, &bird, sizeof(bird));
         }
 
-        void configure(std::size_t size, std::size_t offset)
+        // crop the first x number of bytes from the start of the buffer
+        void crop(std::size_t bytes)
         {
-            assert(offset <= size);            
-            assert(size <= capacity_);
-
-            offset_ = offset;
-            size_   = size;
+            assert(offset_ + bytes <= size_);
+            offset_ += bytes;
         }
 
         void resize(std::size_t size)
         {
-            configure(size, offset_);
+            size_ = size;
         }
 
-
-        byte_t& operator[](std::size_t i)
+        char& operator[](std::size_t i)
         {
-            assert(i < capacity_);
-            return data_[i];
+            assert(offset_ + i < capacity_);
+            return data_[offset_ + i];
         }
-        const byte_t& operator[](std::size_t i) const
+        const char& operator[](std::size_t i) const
         {
-            assert(i < capacity_);
-            return data_[i];
+            assert(offset_ + i < capacity_);
+            return data_[offset_ + i];
         }
 
         buffer& operator=(buffer&& other)
@@ -163,7 +154,7 @@ namespace newsflash
 
         bool empty() const
         {
-            return (size_ - offset_ ==  0);
+            return size() == 0;
         }
 
     private:
@@ -177,7 +168,7 @@ namespace newsflash
 
         enum : uint32_t { CANARY= 0xcafebabe };
 
-        byte_t* data_;
+        char* data_;
         std::size_t offset_; // offset into the buffer where "real" data begins
         std::size_t capacity_; // current buffer capacity, i.e. amount of bytes pointed by data_
         std::size_t size_; // current total data size
@@ -201,17 +192,17 @@ namespace newsflash
         buff.allocate(capacity);
     }
 
-    inline
-    const buffer::byte_t* buffer_payload(const buffer& buff)
-    {
-        return buff.ptr() + buff.offset();
-    }
+    // inline
+    // const void* buffer_payload(const buffer& buff)
+    // {
+    //     //return (char*)buff.ptr() + buff.offset();
+    // }
 
-    inline
-    std::size_t buffer_payload_size(const buffer& buff)
-    {
-        return buff.size() - buff.offset();
-    }
+    // inline
+    // std::size_t buffer_payload_size(const buffer& buff)
+    // {
+    //     //return buff.size() - buff.offset();
+    // }
 
 
     inline
