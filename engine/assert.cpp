@@ -48,7 +48,7 @@
 // store the core files in the journal. these can be retrieved
 // with systemd-coredumpctl
 
-std::atomic_flag mutex;
+std::atomic_flag mutex = ATOMIC_FLAG_INIT;
 
 
 namespace newsflash
