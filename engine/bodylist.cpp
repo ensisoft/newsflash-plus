@@ -27,11 +27,13 @@
 namespace newsflash
 {
 bodylist::bodylist(std::deque<std::string> groups,
-                  std::deque<std::string> articles)
-    : groups_(std::move(groups)),
-      articles_(std::move(articles)),
-      id_(0)
-{}
+                  const std::deque<std::string>& articles)
+    : groups_(std::move(groups))
+
+{
+    for (std::size_t i=0; i<articles.size(); ++i)
+        articles_.push_back(article { articles[i], i} );
+}
 
 
 bodylist::~bodylist()
@@ -39,14 +41,13 @@ bodylist::~bodylist()
 
 bool bodylist::run(protocol& proto)
 {
-    std::string article;
-    std::size_t id;
-    if (!dequeue(article, id))
+    article next;
+    if (!dequeue(next))
         return false;
 
     bodylist::body body;
-    body.id      = id;
-    body.article = article;
+    body.id      = next.id;
+    body.article = next.messageid;
     body.buff    = std::make_shared<buffer>(1024 * 1024);
     body.status  = bodylist::status::unavailable;
 
@@ -58,7 +59,7 @@ bool bodylist::run(protocol& proto)
         if (!proto.group(group))
             continue;
 
-        const auto ret = proto.body(article, *body.buff);
+        const auto ret = proto.body(next.messageid, *body.buff);
         if (ret == protocol::status::success)
             body.status = status::success;
         else if (ret == protocol::status::dmca)
@@ -75,15 +76,14 @@ bool bodylist::run(protocol& proto)
     return true;
 }
 
-bool bodylist::dequeue(std::string& article, std::size_t& id)
+bool bodylist::dequeue(article& next)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     if (articles_.empty())
         return false;
 
-    article = articles_.front();
+    next = articles_.front();
     articles_.pop_front();
-    id = id_++;
     return true;
 }
 

@@ -54,22 +54,25 @@ namespace newsflash
         std::function<void (const bodylist::body& body)> on_body;
 
         bodylist(std::deque<std::string> groups,
-                 std::deque<std::string> articles);
+                 const std::deque<std::string>& articles);
 
        ~bodylist();
 
         virtual bool run(protocol& proto) override;
 
     private:
-        bool dequeue(std::string& article, std::size_t& id);
+        struct article {
+            std::string messageid;
+            std::size_t id;
+        };
+
+    private:
+        bool dequeue(article& next);
 
     private:
         const std::deque<std::string> groups_;
-
-    private:
         std::mutex mutex_;
-        std::deque<std::string> articles_;
-        std::size_t id_;
+        std::deque<article> articles_;
     };
 
 } // newsflash
