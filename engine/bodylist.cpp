@@ -46,29 +46,39 @@ bool bodylist::run(protocol& proto)
         return false;
 
     bodylist::body body;
-    body.id      = next.id;
-    body.article = next.messageid;
-    body.buff    = std::make_shared<buffer>(1024 * 1024);
-    body.status  = bodylist::status::unavailable;
 
-    for (const auto& group : groups_)
+    try
     {
-        if (group.empty())
-            continue;
+        body.id      = next.id;
+        body.article = next.messageid;
+        body.buff    = std::make_shared<buffer>(1024 * 1024);
+        body.status  = bodylist::status::unavailable;
 
-        if (!proto.group(group))
-            continue;
+        for (const auto& group : groups_)
+        {
+            if (group.empty())
+                continue;
 
-        const auto ret = proto.body(next.messageid, *body.buff);
-        if (ret == protocol::status::success)
-            body.status = status::success;
-        else if (ret == protocol::status::dmca)
-            body.status = status::dmca;
-        else if (ret == protocol::status::unavailable)
-            body.status = status::unavailable;
+            if (!proto.group(group))
+                continue;
 
-        if (body.status != status::unavailable)
-            break;
+            const auto ret = proto.body(next.messageid, *body.buff);
+            if (ret == protocol::status::success)
+                body.status = status::success;
+            else if (ret == protocol::status::dmca)
+                body.status = status::dmca;
+            else if (ret == protocol::status::unavailable)
+                body.status = status::unavailable;
+
+            if (body.status != status::unavailable)
+                break;
+        }
+    }
+    catch (const std::exception&)
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        articles_.push_front(next);
+        throw ;
     }
 
     on_body(body);
