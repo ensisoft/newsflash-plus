@@ -40,10 +40,18 @@ namespace std
         return &str[0]; 
     }
     inline 
-    void  grow_buffer(std::string& str, size_t capacity) 
+    void grow_buffer(std::string& str, size_t capacity) 
     { 
-        str.resize(capacity); 
+        if (capacity > str.size())
+            str.resize(capacity); 
     }
+    inline
+    void trim_buffer(std::string& str, size_t size)
+    {
+        str.resize(size);
+    }
+
+
 
     template<typename T> inline
     size_t buffer_capacity(const std::vector<T>& vec) 
@@ -61,6 +69,14 @@ namespace std
     void grow_buffer(std::vector<T>& vec, size_t capacity) 
     { 
         const size_t items = (capacity + sizeof(T) - 1) / sizeof(T);
+        if (items > vec.size())
+            vec.resize(items);
+    }
+
+    template<typename T> inline
+    void trim_buffer(std::vector<T>& vec, size_t size)
+    {
+        const size_t items = (size / sizeof(T));
         vec.resize(items);
     }
 

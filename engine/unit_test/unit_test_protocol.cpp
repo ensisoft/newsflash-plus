@@ -192,10 +192,10 @@ void test_authentication()
             "AUTHINFO USER user123"
         };
         newsflash::buffer buff;
-        buff.allocate(1024);
+        buff.reserve(1024);
 
         proto.connect();
-        REQUIRE_EXCEPTION(proto.download_article("<1>", buff));
+        REQUIRE_EXCEPTION(proto.body("<1>", buff));
     }
 
     // accepted authentication
@@ -222,10 +222,10 @@ void test_authentication()
             "QUIT"
         };
         newsflash::buffer buff;
-        buff.allocate(100);
+        buff.reserve(100);
 
         proto.connect();
-        BOOST_REQUIRE(!proto.change_group("alt.foo.bar"));
+        BOOST_REQUIRE(!proto.group("alt.foo.bar"));
         proto.quit();
     }
 
@@ -255,10 +255,10 @@ void test_authentication()
             "QUIT"
         };
         newsflash::buffer buff;
-        buff.allocate(100);
+        buff.reserve(100);
 
         proto.connect();
-        BOOST_REQUIRE(!proto.change_group("alt.foo.bar"));
+        BOOST_REQUIRE(!proto.group("alt.foo.bar"));
         proto.quit();
     }
 }
@@ -287,22 +287,77 @@ void test_listing()
         proto.on_send = std::bind(&test_sequence::send, &test, std::placeholders::_1, std::placeholders::_2);
         
         newsflash::buffer buff;
-        buff.allocate(100);
 
-        BOOST_REQUIRE(proto.download_list(buff));
+        BOOST_REQUIRE(proto.list(buff));
 
         const char* body = 
             "alt.binaries.foo 1 2 y\r\n"
             "alt.binaries.bar 3 4 y\r\n";
 
-        // BOOST_REQUIRE(buffer_payload_size(buff) == std::strlen(body));
-        // BOOST_REQUIRE(!std::strncmp((const char*)buffer_payload(buff), body,
-            std::strlen(body)));
-
+        BOOST_REQUIRE(buff.size() - buff.offset() == std::strlen(body));
+        BOOST_REQUIRE(!std::strncmp(&buff[buff.offset()], body, std::strlen(body)));
     }
 }
 
 void test_body()
+{
+    // unavailable
+    {
+        test_sequence test;
+        test.responses = 
+        {
+            "420 no article with that message-id"
+        };
+        test.commands =
+        {
+            "BODY 1234"
+        };
+
+
+        newsflash::protocol proto;
+        proto.on_recv = std::bind(&test_sequence::recv, &test, std::placeholders::_1, std::placeholders::_2);
+        proto.on_send = std::bind(&test_sequence::send, &test, std::placeholders::_1, std::placeholders::_2);        
+
+        newsflash::buffer buff;
+
+        BOOST_REQUIRE(proto.body("1234", buff) == newsflash::protocol::status::unavailable);
+    }
+
+    // available
+    {
+        test_sequence test;
+        test.responses = 
+        {
+            "222 body follows",
+                "foobar",
+                "assa sassa mandelmassa",
+                "."
+        };
+
+        test.commands = 
+        {
+            "BODY 1234"
+        };
+
+        newsflash::protocol proto;
+        proto.on_recv = std::bind(&test_sequence::recv, &test, std::placeholders::_1, std::placeholders::_2);
+        proto.on_send = std::bind(&test_sequence::send, &test, std::placeholders::_1, std::placeholders::_2);                
+
+        newsflash::buffer buff;
+        buff.reserve(1024);
+
+        const char* body = 
+            "foobar\r\n"
+            "assa sassa mandelmassa\r\n";
+
+        BOOST_REQUIRE(proto.body("1234", buff) == newsflash::protocol::status::success);
+        BOOST_REQUIRE(buff.size() - buff.offset() == std::strlen(body));
+        BOOST_REQUIRE(!std::strncmp(&buff[buff.offset()], body, std::strlen(body)));
+
+    }
+}
+
+void test_xover()
 {
 
 }
@@ -359,23 +414,23 @@ void test_api()
         proto.on_log  = cmd_log;
 
         proto.connect();
-        BOOST_REQUIRE(!proto.change_group("foo.bar.baz"));
-        BOOST_REQUIRE(proto.change_group("blah.bluh"));
+        BOOST_REQUIRE(!proto.group("foo.bar.baz"));
+        BOOST_REQUIRE(proto.group("blah.bluh"));
 
         newsflash::protocol::groupinfo info {0};
-        BOOST_REQUIRE(proto.query_group("test.test", info));
+        BOOST_REQUIRE(proto.group("test.test", info));
         BOOST_REQUIRE(info.high_water_mark == 4);
         BOOST_REQUIRE(info.low_water_mark == 1);
         BOOST_REQUIRE(info.article_count == 3);
 
         newsflash::buffer buff;
-        buff.allocate(100);
+        buff.reserve(100);
 
-        BOOST_REQUIRE(proto.download_article("<1>", buff) == newsflash::protocol::status::dmca);
-        BOOST_REQUIRE(proto.download_article("<2>", buff) == newsflash::protocol::status::unavailable);
-        BOOST_REQUIRE(proto.download_article("<3>", buff) == newsflash::protocol::status::success);
+        BOOST_REQUIRE(proto.body("<1>", buff) == newsflash::protocol::status::dmca);
+        BOOST_REQUIRE(proto.body("<2>", buff) == newsflash::protocol::status::unavailable);
+        BOOST_REQUIRE(proto.body("<3>", buff) == newsflash::protocol::status::success);
 
-        BOOST_REQUIRE(proto.download_list(buff));
+        BOOST_REQUIRE(proto.list(buff));
 
         proto.quit();
     }
@@ -387,6 +442,7 @@ int test_main(int, char* [])
     test_authentication();
     test_listing();
     test_body();
+    test_xover();
     test_api();
 
     return 0;

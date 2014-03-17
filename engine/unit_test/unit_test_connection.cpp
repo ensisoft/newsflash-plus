@@ -75,7 +75,7 @@ struct tester {
     void wait_error()
     {
         std::unique_lock<std::mutex> lock(mutex);
-        bool ret = errcond.wait_for(lock, std::chrono::seconds(500000),
+        bool ret = errcond.wait_for(lock, std::chrono::seconds(50),
             [&]() { return error != connection::error::none; });
 
         if (!ret)
@@ -85,7 +85,7 @@ struct tester {
     void wait_ready()
     {
         std::unique_lock<std::mutex> lock(mutex);
-        bool ret = readycond.wait_for(lock, std::chrono::seconds(500000),
+        bool ret = readycond.wait_for(lock, std::chrono::seconds(50),
             [&]() { return ready; });
 
         if (!ret)
@@ -294,7 +294,7 @@ void unit_test_cmdlist()
             {
                 const auto& article = boost::lexical_cast<std::string>(counter_);
                 newsflash::buffer buff;
-                buff.allocate(100);
+                buff.reserve(100);
 
                 proto.download_article(article, buff);
 
@@ -333,7 +333,7 @@ void unit_test_cmdlist()
             bool run(protocol& proto) override
             {
                 newsflash::buffer buff;
-                buff.allocate(1024);
+                buff.reserve(1024);
 
                 proto.download_article("1234", buff);
                 return true;
@@ -354,12 +354,12 @@ void unit_test_cmdlist()
 
 int test_main(int argc, char* argv[])
 {
-    // unit_test_connection_resolve_error(false);
-    // unit_test_connection_refused(false);
-    // unit_test_connection_interrupted(false);
-    //unit_test_connection_forbidden(false);
-    // unit_test_connection_timeout_error(false);
-    //unit_test_connection_success(false);
+    unit_test_connection_resolve_error(false);
+    unit_test_connection_refused(false);
+    unit_test_connection_interrupted(false);
+    unit_test_connection_forbidden(false);
+    unit_test_connection_timeout_error(false);
+    unit_test_connection_success(false);
     unit_test_cmdlist();
     return 0;
 }

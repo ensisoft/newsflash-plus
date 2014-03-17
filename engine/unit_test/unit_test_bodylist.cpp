@@ -21,9 +21,13 @@
 //  THE SOFTWARE.            
 
 #include <boost/test/minimal.hpp>
+#include <boost/lexical_cast.hpp>
 #include <string>
 #include <cstring> // for memcpy
 #include <vector>
+#include <deque>
+#include <thread>
+#include <mutex>
 #include <deque>
 #include "../protocol.h"
 #include "../bodylist.h"
@@ -50,68 +54,200 @@ struct tester {
 
     void body(const newsflash::bodylist::body& body)
     {
+        std::lock_guard<std::mutex> lock(mutex);
+
         bodies.push_back(body);
     }
 
     std::deque<std::string> responses;
+
+    std::mutex mutex;
     std::vector<newsflash::bodylist::body> bodies;
 };
 
 void unit_test_bodylist()
 {
-    tester test;
-    test.responses = {
-        "411 no such newsgroup",
-        "211 12 31 33 alt.binaries.bar",
-        "222 body follows",
-            "bla bla bla",
-            ".",
-        "420 no article with that id",
-        "420 dmca takedown"
+    // no such newsgroup
+    {
+        tester test;
+        test.responses = 
+        {
+            "411 no such newsgroup",
+            "411 no such newsgroup"
+        };
+
+        newsflash::protocol proto;
+        proto.on_recv = std::bind(&tester::recv, &test,
+            std::placeholders::_1, std::placeholders::_2);
+        proto.on_send = std::bind(&tester::send, &test,
+            std::placeholders::_1, std::placeholders::_2);        
+
+        newsflash::bodylist list = {
+            {"alt.binaries.foo", "alt.binaries.bar"},
+            {"1234"}
+        };
+
+        list.on_body = std::bind(&tester::body, &test,
+            std::placeholders::_1);
+
+        list.run(proto);
+        const auto& body = test.bodies.at(0);
+        BOOST_REQUIRE(body.article == "1234");
+        BOOST_REQUIRE(body.buff->empty());
+        BOOST_REQUIRE(body.id == 0);
+        BOOST_REQUIRE(body.status == newsflash::bodylist::status::unavailable);        
+
+    }
+
+    // no such article
+    {
+        tester test;
+        test.responses = 
+        {
+            "211 12 31 333 alt.binaries.bar",
+            "420 no article with that id"
+        };
+
+        newsflash::protocol proto;
+        proto.on_recv = std::bind(&tester::recv, &test,
+            std::placeholders::_1, std::placeholders::_2);
+        proto.on_send = std::bind(&tester::send, &test,
+            std::placeholders::_1, std::placeholders::_2);        
+
+        newsflash::bodylist list = {
+            {"alt.binaries.foo"},
+            {"5555"}
+        };
+
+        list.on_body = std::bind(&tester::body, &test,
+            std::placeholders::_1);        
+
+        list.run(proto);
+        const auto& body = test.bodies.at(0);
+        BOOST_REQUIRE(body.article == "5555");
+        BOOST_REQUIRE(body.buff->offset() == 0);
+        BOOST_REQUIRE(body.id == 0);
+        BOOST_REQUIRE(body.status == newsflash::bodylist::status::unavailable);                
+    }
+
+    // succesful article retrieval
+    {
+        tester test;
+        test.responses = 
+        {
+            "211 12 31 333 alt.binaries.bar",
+            "222 body follows",
+                "eka body",
+                ".",
+
+            // "211 32 44 333 alt.binaries.bar", // group cmd is not sent cause it doesn't change
+            "222 body follows",
+                "toka body",
+                "."
+        };
+
+        newsflash::protocol proto;
+        proto.on_recv = std::bind(&tester::recv, &test,
+            std::placeholders::_1, std::placeholders::_2);
+        proto.on_send = std::bind(&tester::send, &test,
+            std::placeholders::_1, std::placeholders::_2);        
+
+        newsflash::bodylist list = {
+            {"alt.binaries.foo"},
+            {"1234", "4321"}
+        };     
+
+        list.on_body = std::bind(&tester::body, &test,
+            std::placeholders::_1);        
+
+        list.run(proto);
+        list.run(proto);
+
+        auto body = test.bodies.at(0);
+        BOOST_REQUIRE(body.article == "1234");
+        BOOST_REQUIRE(body.id == 0);
+        BOOST_REQUIRE(body.buff->offset());
+        BOOST_REQUIRE(body.status == newsflash::bodylist::status::success);
+
+        body = test.bodies.at(1);
+        BOOST_REQUIRE(body.article == "4321");
+        BOOST_REQUIRE(body.id == 1);
+        BOOST_REQUIRE(body.buff->offset());
+        BOOST_REQUIRE(body.status == newsflash::bodylist::status::success);
+    }
+}
+
+void simulate_connection_thread(newsflash::bodylist& cmdlist)
+{
+    struct tester {
+        tester() : group_selected(false)
+        {}
+
+        size_t recv(void* buff, std::size_t len)
+        {
+            const char* ret = nullptr;
+
+            if (group_selected)
+                 ret = "222 body follows\r\njuuhuu\r\n.\r\n";
+            else ret = "211 1 2 3 alt.biaries.bar";
+
+            const auto retlen = std::strlen(ret);
+
+            BOOST_REQUIRE(len >= retlen);
+
+            std::memcpy(buff, ret, retlen);
+
+            group_selected = true;
+            return retlen;
+        }
+
+        void send(const void*, std::size_t)
+        {}
+        bool group_selected;
     };
 
-    newsflash::protocol proto;    
+    tester test;
+
+    newsflash::protocol proto;
     proto.on_recv = std::bind(&tester::recv, &test,
         std::placeholders::_1, std::placeholders::_2);
     proto.on_send = std::bind(&tester::send, &test,
         std::placeholders::_1, std::placeholders::_2);
 
+    while (cmdlist.run(proto))
+        ;
+}
+
+
+void unit_test_bodylist_multiple_threads()
+{
+    std::deque<std::string> articles;
+
+    for (int i=0; i<1000; ++i)
+        articles.push_back(boost::lexical_cast<std::string>(i));
+
     newsflash::bodylist list = {
-        {"alt.binaries.foo",
-         "alt.binaries.bar"},
-        {"1234", "4321", "4444"}
+        {"alt.binaries.foo"},
+        articles
     };
+    tester test;
 
-    list.on_body = std::bind(&tester::body, &test,
-        std::placeholders::_1);
+    list.on_body = std::bind(&tester::body, &test, std::placeholders::_1);
 
-    BOOST_REQUIRE(list.run(proto));
-    BOOST_REQUIRE(list.run(proto) == false);
+    std::thread t1(std::bind(simulate_connection_thread, std::ref(list)));
+    std::thread t2(std::bind(simulate_connection_thread, std::ref(list)));
 
-    BOOST_REQUIRE(test.bodies.size() == 3);
-    const auto& body1 = test.bodies[0];
-    BOOST_REQUIRE(body1.article == "1234");
-    BOOST_REQUIRE(body1.buff->empty());
-    BOOST_REQUIRE(body1.id == 0);
-    BOOST_REQUIRE(body1.status == newsflash::bodylist::status::unavailable);
+    t1.join();
+    t2.join();
 
-    const auto& body2 =  test.bodies[1];
-    BOOST_REQUIRE(body2.article == "4321");
-    BOOST_REQUIRE(body2.buff->empty() == false);    
-    BOOST_REQUIRE(body2.id == 1);
-    BOOST_REQUIRE(body2.status == newsflash::bodylist::status::success);
-
-    const auto& body3 = test.bodies[2];
-    BOOST_REQUIRE(body3.article == "4444");
-    BOOST_REQUIRE(body3.buff->empty());
-    BOOST_REQUIRE(body3.id == 2);
-    BOOST_REQUIRE(body3.status == newsflash::bodylist::status::dmca);
-
+    BOOST_REQUIRE(test.bodies.size() == 1000);
+    // todo: check the data contents
 }
 
 int test_main(int, char*[])
 {
     unit_test_bodylist();
+    unit_test_bodylist_multiple_threads();
 
     return 0;
 }

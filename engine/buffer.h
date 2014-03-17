@@ -25,24 +25,25 @@
 #include <boost/noncopyable.hpp>
 #include <cassert>
 #include <cstring>
+#include <cstdint>
 #include "allocator.h"
 #include "assert.h"
 
 namespace newsflash
 {
-    // id tagged data buffer
+    // byte buffer
     class buffer : boost::noncopyable
     {
     public:
         // construct an empty buffer without any data capacity
-        buffer() : data_(nullptr), offset_(0), capacity_(0), size_(0)
+        buffer() : data_(nullptr), capacity_(0), size_(0), offset_(0)
         {}
 
         // construct an empty buffer with some initial data capacity 
         explicit
         buffer(std::size_t capacity) : buffer()
         {
-            allocate(capacity);
+            reserve(capacity);
         }
 
         // construct a buffer from the contents of the NUL terminated string.
@@ -51,7 +52,7 @@ namespace newsflash
         {
             const std::size_t s = std::strlen(str);
 
-            allocate(s);
+            reserve(s);
             std::memcpy(data_, str, s);
             size_ = s;
         }
@@ -59,9 +60,9 @@ namespace newsflash
         buffer(buffer&& other)
         {
             data_     = steal(other.data_);
-            offset_   = steal(other.offset_);
             capacity_ = steal(other.capacity_);
             size_     = steal(other.size_);            
+            offset_   = steal(other.offset_);
         }
 
        ~buffer()
@@ -75,25 +76,21 @@ namespace newsflash
             allocator& alloc = allocator::get();
             alloc.free(data_, capacity_);
         }
-        const void* ptr() const 
-        {
-            return &data_[offset_];
-        }
 
-        void* ptr()
-        {
-            return &data_[offset_];
-        }
         std::size_t capacity() const
         {
-            return capacity_ - offset_;
+            return capacity_;
         }
         std::size_t size() const
         {
-            return size_ - offset_;
+            return size_;
+        }
+        std::size_t offset() const
+        {
+            return offset_;
         }
 
-        void allocate(size_t capacity)
+        void reserve(std::size_t capacity)
         {
             assert(capacity > capacity_);
             allocator& alloc = allocator::get();
@@ -116,27 +113,27 @@ namespace newsflash
             std::memcpy(data_ + capacity_, &bird, sizeof(bird));
         }
 
-        // crop the first x number of bytes from the start of the buffer
-        void crop(std::size_t bytes)
-        {
-            assert(offset_ + bytes <= size_);
-            offset_ += bytes;
-        }
-
         void resize(std::size_t size)
         {
+            if (size > capacity_)
+                reserve(size);
             size_ = size;
+        }
+
+        void offset(std::size_t off)
+        {
+            offset_ = off;
         }
 
         char& operator[](std::size_t i)
         {
-            assert(offset_ + i < capacity_);
-            return data_[offset_ + i];
+            assert(i < size_);
+            return data_[i];
         }
         const char& operator[](std::size_t i) const
         {
-            assert(offset_ + i < capacity_);
-            return data_[offset_ + i];
+            assert(i < size_);
+            return data_[i];
         }
 
         buffer& operator=(buffer&& other)
@@ -146,9 +143,9 @@ namespace newsflash
 
             buffer tmp(std::move(*this));
             data_     = steal(other.data_);
-            offset_   = steal(other.offset_);
             capacity_ = steal(other.capacity_);
             size_     = steal(other.size_);
+            offset_   = steal(other.offset_);
             return *this;
         }
 
@@ -166,49 +163,36 @@ namespace newsflash
             return val;
         }
 
-        enum : uint32_t { CANARY= 0xcafebabe };
+        enum : std::uint32_t { CANARY= 0xcafebabe };
 
         char* data_;
-        std::size_t offset_; // offset into the buffer where "real" data begins
         std::size_t capacity_; // current buffer capacity, i.e. amount of bytes pointed by data_
         std::size_t size_; // current total data size
+        std::size_t offset_;
     };
 
     inline
     std::size_t buffer_capacity(const buffer& buff)
     {
-        return buff.capacity();
+        return buff.size();
     }
 
     inline
     void* buffer_data(buffer& buff)
     {
-        return buff.ptr();
+        return &buff[0];
     }
 
     inline
     void grow_buffer(buffer& buff, size_t capacity)
     {
-        buff.allocate(capacity);
+        buff.resize(capacity);
     }
 
-    // inline
-    // const void* buffer_payload(const buffer& buff)
-    // {
-    //     //return (char*)buff.ptr() + buff.offset();
-    // }
-
-    // inline
-    // std::size_t buffer_payload_size(const buffer& buff)
-    // {
-    //     //return buff.size() - buff.offset();
-    // }
-
-
     inline
-    std::size_t buffer_size(const buffer& buff)
+    void trim_buffer(buffer& buff, size_t size)
     {
-        return buff.size();
+        buff.resize(size);
     }
 
     inline
@@ -216,7 +200,7 @@ namespace newsflash
     {
         if (lhs.size() != rhs.size())
             return false;
-        return !std::memcmp(lhs.ptr(), rhs.ptr(), lhs.size());
+        return !std::memcmp(&lhs[0], &rhs[0], lhs.size());
     }
 
 } // newsflash

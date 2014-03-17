@@ -42,6 +42,8 @@ namespace nntp
     template<typename Buffer>
     tuple_t transact(const cmd& cmd, const std::string& str, const code_list_t& allowed_codes, const code_list_t& success_codes, Buffer& body)
     {
+        grow_buffer(body, 100);
+
         send(cmd, str);
 
         const auto& ret = recv(cmd, find_response, buffer_data(body), buffer_capacity(body));
@@ -91,6 +93,8 @@ namespace nntp
         assert(body_len >= 3);
         assert(data_total >= body_len);
             
+        trim_buffer(body, data_total);
+
         return std::make_tuple(status, body_offset, data_total - body_offset - 3);  // omit \r\n.\r\n from the body length
     }
 

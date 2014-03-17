@@ -55,10 +55,10 @@ bool bodylist::run(protocol& proto)
         if (group.empty())
             continue;
 
-        if (!proto.change_group(group))
+        if (!proto.group(group))
             continue;
 
-        const auto ret = proto.download_article(article, *body.buff);
+        const auto ret = proto.body(article, *body.buff);
         if (ret == protocol::status::success)
             body.status = status::success;
         else if (ret == protocol::status::dmca)

@@ -93,7 +93,7 @@ void protocol::quit()
     transact(nntp::cmd_quit{});
 }
 
-bool protocol::change_group(const std::string& groupname)
+bool protocol::group(const std::string& groupname)
 {
     if (group_ == groupname)
         return true;
@@ -106,7 +106,7 @@ bool protocol::change_group(const std::string& groupname)
     return true;
 }
 
-bool protocol::query_group(const std::string& groupname, groupinfo& info)
+bool protocol::group(const std::string& groupname, groupinfo& info)
 {
     nntp::cmd_group cmd { groupname };
 
@@ -122,15 +122,15 @@ bool protocol::query_group(const std::string& groupname, groupinfo& info)
     return true;
 }
 
-protocol::status protocol::download_article(const std::string& article, buffer& buff)
+protocol::status protocol::body(const std::string& article, buffer& buff)
 { 
     nntp::cmd_body<buffer> cmd {buff, article};
 
     const auto code = transact(&cmd);
     if (code == cmd.SUCCESS)
     {
-        buff.crop(cmd.offset);
-        buff.resize(cmd.size);
+        buff.resize(cmd.offset + cmd.size);
+        buff.offset(cmd.offset);
         return status::success;
     }
 
@@ -141,7 +141,7 @@ protocol::status protocol::download_article(const std::string& article, buffer& 
     return status::unavailable;
 }
 
-bool protocol::download_overview(const std::string& first, const std::string& last, buffer& buff)
+bool protocol::xover(const std::string& first, const std::string& last, buffer& buff)
 {
     if (has_xzver_ && !is_compressed_)
     {
@@ -156,8 +156,8 @@ bool protocol::download_overview(const std::string& first, const std::string& la
         nntp::cmd_xzver<buffer> cmd {buff, first, last};
         if (transact(&cmd) == cmd.SUCCESS)
         {
-            buff.crop(cmd.offset);
-            buff.resize(cmd.size);
+            buff.resize(cmd.size + cmd.offset);            
+            buff.offset(cmd.offset);
             return true;
         }
     }
@@ -166,21 +166,21 @@ bool protocol::download_overview(const std::string& first, const std::string& la
         nntp::cmd_xover<buffer> cmd {buff, first, last};
         if (transact(&cmd) == cmd.SUCCESS)
         {
-            buff.crop(cmd.offset);
-            buff.resize(cmd.size);
+            buff.resize(cmd.size + cmd.offset);            
+            buff.offset(cmd.offset);
             return true;
         }
     }
     return false;
 }
 
-bool protocol::download_list(buffer& buff)
+bool protocol::list(buffer& buff)
 {
     nntp::cmd_list<buffer> cmd {buff};
     if (transact(&cmd) == cmd.SUCCESS)
     {
-        buff.crop(cmd.offset);
-        buff.resize(cmd.size);
+        buff.resize(cmd.size + cmd.offset);            
+        buff.offset(cmd.offset);        
         return true;
     }
     return false;

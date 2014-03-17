@@ -31,6 +31,8 @@
 
 namespace newsflash
 {
+    class buffer;
+
     // list of article numbers (or message-ids) to download.
     class bodylist : public cmdlist
     {

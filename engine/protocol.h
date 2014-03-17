@@ -103,25 +103,26 @@ namespace newsflash
         // send quit
         void quit();
 
-        // change the currently active group to the newgroup.
-        // returns true if change was succesful, otherwise false.
-        bool change_group(const std::string& groupname);
+        // change the currently active group to given group.
+        // returns true if change was succesful.
+        bool group(const std::string& groupname);
 
-        // query group information. returns true if such group exists
-        // and information could be retrieved. otherwise false.
-        bool query_group(const std::string& groupname, groupinfo& info);
+        // change the currently active group to given group
+        // and return information about the group. 
+        // returns true if change was succesful.
+        bool group(const std::string& groupname, groupinfo& info);
         
         // download the contents of the article identified by article number or id.
         // returns true if article was downloaded succesfully, false if 
         // it was no longer available.
-        status download_article(const std::string& article, buffer& buff);
+        status body(const std::string& article, buffer& buff);
 
         // download overview overview data in the first last range (inclusive)        
         // first and last are article numbers
-        bool download_overview(const std::string& first, const std::string& last, buffer& buff);
+        bool xover(const std::string& first, const std::string& last, buffer& buff);
 
-        // download list of available newsgroups.
-        bool download_list(buffer& buff);
+        // list available groups
+        bool list(buffer& buff);
 
     private:
         template<typename Cmd>
