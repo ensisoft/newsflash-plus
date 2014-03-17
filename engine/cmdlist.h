@@ -27,7 +27,9 @@ namespace newsflash
     class buffer;
     class protocol;
 
-    // list of commands to execute
+    // list of commands to execute.
+    // all the cmdlist implementations must provide commit/rollback exception safety
+    // and not loose any state so that operations can be restarted at later time.
     class cmdlist
     {
     public:
