@@ -32,7 +32,7 @@ bodylist::bodylist(std::deque<std::string> groups,
 
 {
     for (std::size_t i=0; i<articles.size(); ++i)
-        articles_.push_back(article { articles[i], i} );
+        articles_.push_back(article { articles[i], i});
 }
 
 

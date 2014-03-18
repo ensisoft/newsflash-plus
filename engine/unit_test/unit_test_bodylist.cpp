@@ -32,10 +32,18 @@
 #include "../protocol.h"
 #include "../bodylist.h"
 #include "../buffer.h"
+#include "unit_test_common.h"
 
 struct tester {
+
+    tester() : throw_exception(false)
+    {} 
+
     std::size_t recv(void* buff, std::size_t len)
     {
+        if (throw_exception)
+            throw std::runtime_error("foobar");
+
         auto response = responses[0];
         response.append("\r\n");
 
@@ -63,6 +71,7 @@ struct tester {
 
     std::mutex mutex;
     std::vector<newsflash::bodylist::body> bodies;
+    bool throw_exception;
 };
 
 void unit_test_bodylist()
@@ -175,6 +184,51 @@ void unit_test_bodylist()
         BOOST_REQUIRE(body.buff->offset());
         BOOST_REQUIRE(body.status == newsflash::bodylist::status::success);
     }
+
+    // exception during run(), rollback semantics
+    {
+        tester test;
+        test.responses = 
+        {
+            "211 1 2 3 alt.binaries.foo",
+            "222 body follows",
+                "foo",
+                ".",
+
+            "222 body follows",
+                "bar",
+                "."
+        };
+
+        newsflash::protocol proto;
+        proto.on_recv = std::bind(&tester::recv, &test,
+            std::placeholders::_1, std::placeholders::_2);
+        proto.on_send = std::bind(&tester::send, &test,
+            std::placeholders::_1, std::placeholders::_2);        
+
+        newsflash::bodylist list = {
+            {"alt.binaries.foo"},
+            {"1234", "4321"}
+        };
+
+        list.on_body = std::bind(&tester::body, &test,
+            std::placeholders::_1);
+
+        list.run(proto);
+
+        test.throw_exception = true;
+        REQUIRE_EXCEPTION(list.run(proto));
+        REQUIRE_EXCEPTION(list.run(proto));
+        test.throw_exception = false;
+
+        list.run(proto);
+
+        auto body = test.bodies.at(0);
+        BOOST_REQUIRE(body.article == "1234");
+
+        body = test.bodies.at(1);
+        BOOST_REQUIRE(body.article == "4321");
+    }
 }
 
 void simulate_connection_thread(newsflash::bodylist& cmdlist)
@@ -236,9 +290,11 @@ void unit_test_bodylist_multiple_threads()
 
     std::thread t1(std::bind(simulate_connection_thread, std::ref(list)));
     std::thread t2(std::bind(simulate_connection_thread, std::ref(list)));
+    std::thread t3(std::bind(simulate_connection_thread, std::ref(list)));
 
     t1.join();
     t2.join();
+    t3.join();
 
     BOOST_REQUIRE(test.bodies.size() == 1000);
     // todo: check the data contents
