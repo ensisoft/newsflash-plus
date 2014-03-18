@@ -27,6 +27,7 @@
 #include <mutex>
 #include <string>
 #include <memory>
+#include <deque>
 #include <cstdint>
 #include "cmdlist.h"
 
@@ -48,23 +49,31 @@ namespace newsflash
         // callback to be invoked on xover data
         std::function<void (const xoverlist::xover& xover)> on_xover;
 
-        //std::functio
+        // callback to be invoked when the number of xover ranges is known.
+        std::function<void (std::size_t range_count)> on_prepare_ranges;
+
+        // callback to be invoked when the group is not available.
+        std::function<void ()> on_unavailable;
 
         xoverlist(std::string group);
 
         virtual bool run(protocol& proto) override;
 
     private:
+        struct range {
+            std::uint64_t start;
+            std::uint64_t end;
+        };
+
+    private:
         bool first_thread();
+        bool dequeue(range& next);
 
     private:
         const std::string group_;
-
-    private:
         std::condition_variable cond_;
         std::mutex mutex_;
-        std::uint64_t start_;
-        std::uint64_t end_;
+        std::deque<range> ranges_;
         bool first_;
         bool error_;
         bool configured_;

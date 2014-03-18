@@ -27,6 +27,7 @@
 #include <exception>
 #include <functional>
 #include <string>
+#include <cstdint>
 #include "nntp/nntp.h"
 
 namespace newsflash
@@ -86,9 +87,9 @@ namespace newsflash
         };
 
         struct groupinfo {
-            uint64_t high_water_mark;
-            uint64_t low_water_mark;
-            uint64_t article_count;
+            std::uint64_t high_water_mark;
+            std::uint64_t low_water_mark;
+            std::uint64_t article_count;
         };
 
         protocol();

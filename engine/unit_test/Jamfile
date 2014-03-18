@@ -35,3 +35,4 @@ unit-test unit_test_speedometer : unit_test_speedometer.cpp ;
 unit-test unit_test_stringtable : unit_test_stringtable.cpp ;
 
 unit-test unit_test_bodylist : unit_test_bodylist.cpp ;
+unit-test unit_test_xoverlist : unit_test_xoverlist.cpp ;

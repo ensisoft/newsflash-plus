@@ -29,7 +29,7 @@
 namespace newsflash
 {
 
-xoverlist::xoverlist(std::string group) : group_(std::move(group)), start_(0), end_(0), first_(false), error_(false)
+xoverlist::xoverlist(std::string group) : group_(std::move(group)), first_(true), error_(false), configured_(false)
 {}
 
 bool xoverlist::run(protocol& proto)
@@ -49,39 +49,69 @@ bool xoverlist::run(protocol& proto)
         std::unique_lock<std::mutex> lock(mutex_);        
         protocol::groupinfo info {0};
         if (!proto.group(group_, info))
-            error_ = false;
+        {
+            error_ = true;
+            if (on_unavailable)
+                on_unavailable();
+        }
         else
         {
-            start_ = info.low_water_mark;
-            end_   = info.high_water_mark;
+            const std::uint64_t XOVER_BATCH_SIZE = 2000;
+
+            if (info.article_count && info.high_water_mark >= info.low_water_mark)
+            {
+                // generate the range objects
+                // the high and low water mark are inclusive article numbers.                
+                const auto lo = info.low_water_mark;
+                const auto hi = info.high_water_mark;
+                const auto total = hi - lo + 1;
+                const auto max   = (total + (XOVER_BATCH_SIZE - 1)) / XOVER_BATCH_SIZE;
+                for (size_t i=0; i<max; ++i)
+                {
+                    const auto beg = lo + i * XOVER_BATCH_SIZE;
+                    const auto rem = hi - beg;
+                    const auto end = beg + std::min(XOVER_BATCH_SIZE-1, rem);
+                    const auto next = range {beg, end};
+                    ranges_.push_back(next);
+                }
+            }
+
+            if (on_prepare_ranges)
+                on_prepare_ranges(ranges_.size());            
         }
         configured_ = true;
         cond_.notify_all();
     }
 
-    std::unique_lock<std::mutex> lock(mutex_);
-    if (error_)
+    range next;
+    if (!dequeue(next))
         return false;
 
-    if (start_ == end_)
-        return false;
-
-    const std::uint64_t XOVER_BATCH_SIZE = 2000;
-
-    const auto start = start_;
-    const auto size  = std::min(end_ - start_, XOVER_BATCH_SIZE);
-    const auto end   = start + size;
-    start_ += size;
-
-    lock.unlock();
+    // if we're this far then it we've got the initial group information
+    // already from the server and the group should be availble.
+    // however because it's possible that the connection goes down
+    // and then cmdlist is restarted the group must be selected again.
+    // however this is not expected to fail now.
+    if (!proto.group(group_))
+        throw std::runtime_error("unexpected failure changing group");    
 
     xoverlist::xover xover;
-    xover.start = start;
-    xover.end   = end;
 
-    xover.buff = std::make_shared<buffer>(1024 * 1024);
-    proto.xover(boost::lexical_cast<std::string>(start),
-        boost::lexical_cast<std::string>(end), *xover.buff);
+    try
+    {
+        xover.start = next.start;
+        xover.end   = next.end;
+        xover.buff  = std::make_shared<buffer>(1024 * 1024);
+
+        proto.xover(boost::lexical_cast<std::string>(next.start),
+            boost::lexical_cast<std::string>(next.end), *xover.buff);
+    }
+    catch (const std::exception& e)
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        ranges_.push_front(next);
+        throw;
+    }
 
     on_xover(xover);
 
@@ -95,6 +125,20 @@ bool xoverlist::first_thread()
     bool ret = first_;
     first_ = false;
     return ret;
+}
+
+bool xoverlist::dequeue(range& next)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (error_)
+        return false;
+
+    if (ranges_.empty())
+        return false;
+
+    next = ranges_.front();
+    ranges_.pop_front();
+    return true;
 }
 
 } // newsflash
