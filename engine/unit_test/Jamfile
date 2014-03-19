@@ -27,8 +27,9 @@ unit-test unit_test_tcpsocket  : unit_test_tcpsocket.cpp ;
 unit-test unit_test_sslsocket  : unit_test_sslsocket.cpp ;
 
 unit-test unit_test_listing :  unit_test_listing.cpp ;
-unit-test unit_test_content : unit_test_content.cpp ;
+unit-test unit_test_download : unit_test_download.cpp ;
 unit-test unit_test_yenc_decoder : unit_test_yenc_decoder.cpp ;
+unit-test unit_test_uuencode_decoder : unit_test_uuencode_decoder.cpp ;
 
 unit-test unit_test_speedometer : unit_test_speedometer.cpp ;
 
@@ -36,3 +37,4 @@ unit-test unit_test_stringtable : unit_test_stringtable.cpp ;
 
 unit-test unit_test_bodylist : unit_test_bodylist.cpp ;
 unit-test unit_test_xoverlist : unit_test_xoverlist.cpp ;
+unit-test unit_test_grouplist : unit_test_grouplist.cpp ;

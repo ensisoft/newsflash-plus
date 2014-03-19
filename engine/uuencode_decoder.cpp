@@ -64,7 +64,7 @@ std::size_t uuencode_decoder::decode(const void* data, std::size_t len)
 
     on_write(buff.data(), buff.size(), 0, false);
 
-    return distance(beg, end);
+    return len - distance(beg, end);
 }
 
 void uuencode_decoder::finish()

@@ -77,7 +77,7 @@ std::size_t yenc_single_decoder::decode(const void* data, std::size_t len)
 
     on_write(buff.data(), buff.size(), 0, false);    
 
-    return distance(beg, end);
+    return len - distance(beg, end);
 }
 
 void yenc_single_decoder::finish()

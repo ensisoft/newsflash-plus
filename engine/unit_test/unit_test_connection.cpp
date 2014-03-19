@@ -296,7 +296,7 @@ void unit_test_cmdlist()
                 newsflash::buffer buff;
                 buff.reserve(100);
 
-                proto.download_article(article, buff);
+                proto.body(article, buff);
 
                 ++counter_;
 
@@ -335,7 +335,7 @@ void unit_test_cmdlist()
                 newsflash::buffer buff;
                 buff.reserve(1024);
 
-                proto.download_article("1234", buff);
+                proto.body("1234", buff);
                 return true;
             }
         };

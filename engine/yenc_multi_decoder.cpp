@@ -97,7 +97,7 @@ std::size_t yenc_multi_decoder::decode(const void* data, std::size_t len)
 
     on_write(buff.data(), buff.size(), part_offset, true);    
 
-    return distance(beg, end);
+    return len - distance(beg, end);
 }
 
 void yenc_multi_decoder::finish()

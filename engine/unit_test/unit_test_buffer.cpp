@@ -25,34 +25,58 @@
 
 int test_main(int, char*[])
 {
-    newsflash::buffer buff;
+    {
+        newsflash::buffer buff;
 
-    BOOST_REQUIRE(buff.capacity() == 0);
-    BOOST_REQUIRE(buff.size() == 0);
+        BOOST_REQUIRE(buff.capacity() == 0);
+        BOOST_REQUIRE(buff.size() == 0);
 
-    buff.reserve(100);
-    BOOST_REQUIRE(buff.size() == 0);
-    BOOST_REQUIRE(buff.capacity() >= 100);
+        buff.reserve(100);
+        BOOST_REQUIRE(buff.size() == 0);
+        BOOST_REQUIRE(buff.capacity() >= 100);
 
-    buff.resize(1);
-    BOOST_REQUIRE(buff.size() == 1);
-    BOOST_REQUIRE(buff.capacity() == 100);
-    buff[0] = 0x10;
+        buff.resize(1);
+        BOOST_REQUIRE(buff.size() == 1);
+        BOOST_REQUIRE(buff.capacity() == 100);
+        buff[0] = 0x10;
 
-    buff.resize(50);
-    BOOST_REQUIRE(buff.size() == 50);
-    BOOST_REQUIRE(buff.capacity() == 100);
-    buff[49] = 0x11;
+        buff.resize(50);
+        BOOST_REQUIRE(buff.size() == 50);
+        BOOST_REQUIRE(buff.capacity() == 100);
+        buff[49] = 0x11;
 
-    buff.resize(150);
-    BOOST_REQUIRE(buff.size() == 150);
-    BOOST_REQUIRE(buff.capacity() >= 150);
-    BOOST_REQUIRE(buff[0] == 0x10);
-    BOOST_REQUIRE(buff[49] == 0x11);
+        buff.resize(150);
+        BOOST_REQUIRE(buff.size() == 150);
+        BOOST_REQUIRE(buff.capacity() >= 150);
+        BOOST_REQUIRE(buff[0] == 0x10);
+        BOOST_REQUIRE(buff[49] == 0x11);
 
-    buff.resize(0);
-    BOOST_REQUIRE(buff.size() == 0);
-    BOOST_REQUIRE(buff.empty());
+        buff.resize(0);
+        BOOST_REQUIRE(buff.size() == 0);
+        BOOST_REQUIRE(buff.empty());
+    }
+
+
+    {
+        newsflash::buffer buff;
+        buff.resize(512);
+        buff.offset(100);
+
+        newsflash::buffer::header header(buff);
+        BOOST_REQUIRE(header.data() == buff.data());
+        BOOST_REQUIRE(header.size() == 100);
+
+        newsflash::buffer::payload body(buff);
+        BOOST_REQUIRE(body.data() == buff.data() + 100);
+        BOOST_REQUIRE(body.size() == 412);
+
+        body.crop(1);
+        BOOST_REQUIRE(body.size() == 411);
+        BOOST_REQUIRE(body.data() == buff.data() + 101);
+        body.crop(2);
+        BOOST_REQUIRE(body.size() == 409);
+        BOOST_REQUIRE(body.data() == buff.data() + 103);
+    }
 
 
     return 0;
