@@ -35,6 +35,7 @@
 #include <sstream>
 #include <algorithm>
 #include <vector>
+#include <iterator>
 
 // UUencoding. used mostly to encode images
 // http://en.wikipedia.org/wiki/Uuencoding

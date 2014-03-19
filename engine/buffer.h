@@ -31,10 +31,51 @@
 
 namespace newsflash
 {
-    // byte buffer
+    // nntp data buffer
     class buffer : boost::noncopyable
     {
     public:
+        class header
+        {
+        public:
+            header(const buffer& buff) : buffer_(buff)
+            {}
+            const char* data() const
+            {
+                return &buffer_[0];
+            }
+            std::size_t size() const
+            {
+                return buffer_.offset();
+            }
+        private:
+            const buffer& buffer_;
+        };
+
+        class payload
+        {
+        public:
+            payload(const buffer& buff) : buffer_(buff), crop_(0)
+            {}
+
+            const char* data() const
+            {
+                return &buffer_[buffer_.offset() + crop_];
+            }
+            std::size_t size() const
+            {
+                return buffer_.size() - (buffer_.offset() + crop_);
+            }
+            void crop(std::size_t bytes)
+            {
+                crop_ += bytes;
+            }
+        private:
+            const buffer& buffer_;
+            std::size_t crop_;
+
+        };
+
         // construct an empty buffer without any data capacity
         buffer() : data_(nullptr), capacity_(0), size_(0), offset_(0)
         {}
@@ -55,6 +96,13 @@ namespace newsflash
             reserve(s);
             std::memcpy(data_, str, s);
             size_ = s;
+        }
+
+        buffer(const void* data, std::size_t len) : buffer()
+        {
+            reserve(len);
+            std::memcpy(data_, data, len);
+            size_ = len;
         }
 
         buffer(buffer&& other)
@@ -88,6 +136,15 @@ namespace newsflash
         std::size_t offset() const
         {
             return offset_;
+        }
+
+        char* data()
+        {
+            return data_;
+        }
+        const char* data() const
+        {
+            return data_;
         }
 
         void reserve(std::size_t capacity)
@@ -154,6 +211,13 @@ namespace newsflash
             return size() == 0;
         }
 
+        buffer clone() const
+        {
+            buffer clone((const void*)data_, size_);
+            clone.offset_ = offset_;
+            return clone;
+        }
+
     private:
         template<typename T>
         T steal(T& loot) const
@@ -168,7 +232,7 @@ namespace newsflash
         char* data_;
         std::size_t capacity_; // current buffer capacity, i.e. amount of bytes pointed by data_
         std::size_t size_; // current total data size
-        std::size_t offset_;
+        std::size_t offset_; // offset where the payload data begins.
     };
 
     inline

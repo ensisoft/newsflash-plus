@@ -26,20 +26,17 @@
 
 namespace newsflash
 {
-    // decoder for a single part yenc encoded content
-    class yenc_single_decoder : public decoder
+    class uuencode_decoder : public decoder
     {
     public:
-        yenc_single_decoder();
+        uuencode_decoder();
 
-       ~yenc_single_decoder();
+       ~uuencode_decoder();
 
-        // expect to receive all the media in a single
-        // yenc encoded buffer.
         virtual std::size_t decode(const void* data, std::size_t len) override;
 
-        virtual void finish() override;
+        virtual void finish();
     private:
+        bool has_header_;
     };
-
 } // newsflash

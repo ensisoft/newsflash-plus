@@ -28,10 +28,10 @@
 #include "filesys.h"
 #include "yenc_single_decoder.h"
 #include "yenc_multi_decoder.h"
+#include "uuencode_decoder.h"
 
 namespace newsflash
 {
-
 
 download::download(std::string path, std::string name) : path_(std::move(path)), name_(std::move(name))
 {}
@@ -41,35 +41,67 @@ void download::prepare()
 
 void download::receive(buffer buff, std::size_t id)
 {
-    const buffer::payload body(buff);
+    buffer::payload body(buff);
 
-    const nntp::linebuffer lines(body.data(), body.size());
-
-    auto beg = lines.begin();
-    auto end = lines.end();
-    while (beg != end)
+    while (body.size())
     {
-        const auto& line = *beg;
+        const nntp::linebuffer lines(body.data(), body.size());
+        const auto& iter = lines.begin();
+        const auto& line = *iter;
+
         const auto enc = identify_encoding(line.start, line.length);
+        if (enc == encoding::unknown)
+        {
+            body.crop(line.length);
+            continue;
+        }
 
-
+        download::content* content = nullptr;
         switch (enc)
         {
             case encoding::yenc_single:
-            break;
+                {
+                    download::content yenc;
+                    yenc.size  = 0;
+                    yenc.enc   = encoding::yenc_single;
+                    yenc.codec.reset(new yenc_single_decoder);
+                    bind(yenc);
+                    contents_.push_back(std::move(yenc));
+                    content = &contents_.back();
+                }
+                break;
 
             case encoding::yenc_multi:
-            break;
+                content = find_by(encoding::yenc_multi);
+                break;
 
             case encoding::uuencode_single:
-            break;
+                {
+                    download::content uuenc;
+                    uuenc.size = 0;
+                    uuenc.enc  = encoding::uuencode_single;
+                    uuenc.codec.reset(new uuencode_decoder);
+                    bind(uuenc);
+                    contents_.push_back(std::move(uuenc));
+                    content = &contents_.back();
+                }
+                break;
 
             case encoding::uuencode_multi:
-            break;
+                content = find_by(encoding::uuencode_single);
+                break;
 
             default:
-            break;
+                assert(0); 
+                break;
         }
+        if (!content)
+            throw std::runtime_error("no such content found!");
+
+        const auto ret = content->codec->decode(body.data(), body.size());
+        assert(ret);
+
+        body.crop(ret);
     }
 }
 
@@ -93,7 +125,8 @@ void download::finalize()
 {
     for (auto& content : contents_)
     {
-
+        decoder& dec = *content.codec;
+        dec.finish();
     }
 }
 
@@ -108,6 +141,19 @@ download::content* download::find_by(encoding enc)
         return nullptr;
 
     return &(*it);
+}
+
+void download::bind(download::content& content)
+{
+    decoder& dec = *content.codec;
+
+    dec.on_info = std::bind(&download::on_info, this, 
+        std::placeholders::_1, std::ref(content));
+    dec.on_write = std::bind(&download::on_write, this, 
+        std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4,
+        std::ref(content));
+    dec.on_error = std::bind(&download::on_error, this,
+        std::placeholders::_1, std::placeholders::_2, std::ref(content));
 }
 
 void download::on_info(const decoder::info& info, download::content& content)

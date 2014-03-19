@@ -56,8 +56,11 @@ namespace newsflash
         };
 
         content* find_by(encoding enc);
+        void bind(content& cont);
 
     private:
+        void bind(decoder& dec);
+
         void on_info(const decoder::info& info, content& cont);
         void on_write(const void* data, std::size_t size, std::size_t offset, bool has_offset, content& cont);
         void on_error(decoder::error error, const std::string& what, content& cont);
@@ -67,6 +70,7 @@ namespace newsflash
         std::string path_;
         std::string name_;
         bool overwrite_;
+        bool keeptext_;
     };
 
 } //  newsflash

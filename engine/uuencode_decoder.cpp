@@ -20,26 +20,54 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-#pragma once
-
-#include "decoder.h"
+#include <vector>
+#include "nntp/bodyiter.h"
+#include "uuencode_decoder.h"
+#include "uuencode.h"
 
 namespace newsflash
 {
-    // decoder for a single part yenc encoded content
-    class yenc_single_decoder : public decoder
+
+uuencode_decoder::uuencode_decoder() : has_header_(false)
+{}
+
+uuencode_decoder::~uuencode_decoder()
+{}
+
+std::size_t uuencode_decoder::decode(const void* data, std::size_t len)
+{
+    nntp::bodyiter beg((const char*)data);
+    nntp::bodyiter end((const char*)data, len);
+
+    if (!has_header_)
     {
-    public:
-        yenc_single_decoder();
+        const auto& ret = uuencode::parse_begin(beg, end);
+        if (!ret.first)
+            throw decoder::exception("broken or missing header");
 
-       ~yenc_single_decoder();
+        if (on_info)
+        {
+            decoder::info info;
+            info.size = 0;
+            info.name = ret.second.file;
+            on_info(info);
+        }
+        
+        has_header_ = true;
+    }
 
-        // expect to receive all the media in a single
-        // yenc encoded buffer.
-        virtual std::size_t decode(const void* data, std::size_t len) override;
+    std::vector<char> buff;
+    uuencode::decode(beg, end, std::back_inserter(buff));
+    
+    if (!uuencode::parse_end(beg, end))
+        throw decoder::exception("broken or missing end");
 
-        virtual void finish() override;
-    private:
-    };
+    on_write(buff.data(), buff.size(), 0, false);
+
+    return distance(beg, end);
+}
+
+void uuencode_decoder::finish()
+{}
 
 } // newsflash
