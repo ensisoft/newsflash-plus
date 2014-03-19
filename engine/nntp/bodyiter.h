@@ -119,10 +119,21 @@ namespace nntp
             if (double_dot())
                 --pos_;
         }
+    private:
+        friend std::size_t distance(const bodyiter&, const bodyiter&);
 
     private:
         const char* ptr_;
         std::size_t pos_;
     };
+
+    // return absolute distance (in bytes, inclusive of double dots) between
+    // two body iterators.
+    inline
+    std::size_t distance(const bodyiter& beg, const bodyiter& end)
+    {
+        assert(end.pos_ >= beg.pos_);
+        return end.pos_ - beg.pos_;
+    }
 
 } // nntp

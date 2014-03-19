@@ -33,8 +33,8 @@ std::string remove_illegal_filename_chars(std::string name);
 
 std::string remove_illegal_filepath_chars(std::string path);
 
-std::string join_path(const std::string& a, const std::string& b);
+std::string joinpath(const std::string& a, const std::string& b);
 
-std::string name_file(int attempt, const std::string& name);
+std::string filename(int attempt, const std::string& name);
 
 } // fs

@@ -27,9 +27,6 @@
 #include <exception>
 #include <string>
 #include <functional>
-#include <vector>
-#include <memory>
-#include "buffer.h"
 
 namespace newsflash
 {
@@ -75,26 +72,12 @@ namespace newsflash
 
         virtual ~decoder() = default;
 
-        // convenience function
-        void decode(const std::vector<char>& buff)
-        {
-            decode(&buff[0], buff.size());
-        }
-
-        // convenience function
-        void decode(const std::shared_ptr<const buffer>& buff)
-        {
-            //decode(buffer_payload(*buff), buffer_payload_size(*buff));
-        }
-
         // decode the data buffer. 
-        virtual void decode(const void* data, std::size_t len) = 0;
+        // returns the number of bytes consumed.
+        virtual std::size_t decode(const void* data, std::size_t len) = 0;
 
-        // succesfully finish the decoding session. no more buffers coming.
+        // finish the decoding session. no more buffers coming. 
         virtual void finish() = 0;
-
-        // cancel the decoding session. discard and cleanup any data needed.
-        virtual void cancel() = 0;
     protected:
     private:
     };

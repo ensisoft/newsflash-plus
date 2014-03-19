@@ -38,6 +38,11 @@ bool xoverlist::run(protocol& proto)
     // need to request information about the group.
     // this information is then used to generate
     // the actual xover requests
+
+    // todo: there's a potential issue here that if an exception
+    // occurs during the first call to the protocol::group then 
+    // the condition will never get signaled and all the threads 
+    // will get blocked there eventually. fix this!
     if (!first_thread())
     {
         std::unique_lock<std::mutex> lock(mutex_);
@@ -101,10 +106,10 @@ bool xoverlist::run(protocol& proto)
     {
         xover.start = next.start;
         xover.end   = next.end;
-        xover.buff  = std::make_shared<buffer>(1024 * 1024);
+        xover.buff.reserve(1024 * 1024);
 
         proto.xover(boost::lexical_cast<std::string>(next.start),
-            boost::lexical_cast<std::string>(next.end), *xover.buff);
+            boost::lexical_cast<std::string>(next.end), xover.buff);
     }
     catch (const std::exception& e)
     {
@@ -113,7 +118,7 @@ bool xoverlist::run(protocol& proto)
         throw;
     }
 
-    on_xover(xover);
+    on_xover(std::move(xover));
 
     return true;
 }

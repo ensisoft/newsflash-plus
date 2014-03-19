@@ -34,10 +34,10 @@ yenc_single_decoder::yenc_single_decoder()
 yenc_single_decoder::~yenc_single_decoder()
 {}
 
-void yenc_single_decoder::decode(const void* data, std::size_t len)
+std::size_t yenc_single_decoder::decode(const void* data, std::size_t len)
 {
     nntp::bodyiter beg((const char*)data);
-    nntp::bodyiter end((const char*)data + len);
+    nntp::bodyiter end((const char*)data, len);
 
     const auto header = yenc::parse_header(beg, end);
     if (!header.first)
@@ -64,7 +64,7 @@ void yenc_single_decoder::decode(const void* data, std::size_t len)
         if (footer.second.crc32)
         {
             boost::crc_32_type crc;
-            crc.process_bytes(&buff[0], buff.size());
+            crc.process_bytes(buff.data(), buff.size());
             if (footer.second.crc32 != crc.checksum())
                 on_error(error::crc, "checksum mismatch");
         }
@@ -75,13 +75,13 @@ void yenc_single_decoder::decode(const void* data, std::size_t len)
             on_error(error::size, "size mismatch between binary size and encoded size");
     }
 
-    on_write(&buff[0], buff.size(), 0, false);    
+    on_write(buff.data(), buff.size(), 0, false);    
+
+    return distance(beg, end);
 }
 
 void yenc_single_decoder::finish()
 {}
 
-void yenc_single_decoder::cancel()
-{}
 
 } // newsflash

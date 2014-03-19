@@ -36,6 +36,17 @@ namespace newsflash
         typedef clock_t::duration duration_t;
 
     public:
+        // automatically start and stop the stopwatch to time something
+        struct timer {
+            stopwatch& watch;
+
+            timer(stopwatch& w) : watch(w) {
+                watch.start();
+            }
+           ~timer() {
+                watch.pause();
+            }
+        };
 
         typedef std::chrono::seconds::rep s_t;
         typedef std::chrono::milliseconds::rep ms_t;
@@ -97,19 +108,6 @@ namespace newsflash
         duration_t total_;
         point_t start_;
         bool paused_;
-    };
-
-
-    // automatically start and stop the stopwatch to time
-    struct stopwatch_timer {
-        stopwatch& watch;
-
-        stopwatch_timer(stopwatch& w) : watch(w) {
-            watch.start();
-        }
-        ~stopwatch_timer() {
-            watch.pause();
-        }
     };
 
 } // newsflash

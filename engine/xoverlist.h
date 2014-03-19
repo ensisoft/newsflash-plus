@@ -30,24 +30,23 @@
 #include <deque>
 #include <cstdint>
 #include "cmdlist.h"
+#include "buffer.h"
 
 namespace newsflash
 {
-    class buffer;
-
     // generate a list of xover commands to retrive
     // the headers of a group
     class xoverlist : public cmdlist
     {
     public:
         struct xover {
-            std::shared_ptr<buffer> buff;
             std::uint64_t start;
             std::uint64_t end;
+            buffer buff;
         };
 
         // callback to be invoked on xover data
-        std::function<void (const xoverlist::xover& xover)> on_xover;
+        std::function<void (xoverlist::xover xover)> on_xover;
 
         // callback to be invoked when the number of xover ranges is known.
         std::function<void (std::size_t range_count)> on_prepare_ranges;

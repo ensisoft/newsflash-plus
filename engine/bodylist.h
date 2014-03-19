@@ -28,11 +28,10 @@
 #include <memory>
 #include <mutex>
 #include "cmdlist.h"
+#include "buffer.h"
 
 namespace newsflash
 {
-    class buffer;
-
     // list of article numbers (or message-ids) to download.
     class bodylist : public cmdlist
     {
@@ -45,16 +44,16 @@ namespace newsflash
         // article body response
         struct body {
             std::string article;
-            std::shared_ptr<buffer> buff;
             std::size_t id;
             bodylist::status status;
+            buffer buff;
         };
 
         // callback to be invoked on each body in the list.
-        std::function<void (const bodylist::body& body)> on_body;
+        std::function<void (bodylist::body body)> on_body;
 
         bodylist(std::deque<std::string> groups,
-                 const std::deque<std::string>& articles);
+           const std::deque<std::string>& articles);
 
        ~bodylist();
 

@@ -39,12 +39,9 @@ namespace newsflash
        ~yenc_multi_decoder();
 
         // receive a part of the media in an yenc encoded buffer.
-        virtual void decode(const void* data, std::size_t len) override;
+        virtual std::size_t decode(const void* data, std::size_t len) override;
 
         virtual void finish() override;
-
-        virtual void cancel() override;
-
     private:
         boost::crc_32_type crc_;
         std::uint32_t crc_value_;

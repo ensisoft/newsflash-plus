@@ -49,11 +49,11 @@ struct tester {
     void send(const void* buff, std::size_t len)
     {}
 
-    void xover(const newsflash::xoverlist::xover& xover)
+    void xover(newsflash::xoverlist::xover xover)
     {
         std::lock_guard<std::mutex> lock(mutex);
 
-        xovers.push_back(xover);
+        xovers.push_back(std::move(xover));
     }
 
     void unavailable()
@@ -146,7 +146,7 @@ void test_xoverlist()
 
         BOOST_REQUIRE(test.xover_count == 1);
         BOOST_REQUIRE(test.xovers.size() == 1);
-        auto xover = test.xovers.at(0);
+        auto xover = std::move(test.xovers.at(0));
         BOOST_REQUIRE(xover.start == 2);
         BOOST_REQUIRE(xover.end == 2);        
     }
@@ -176,7 +176,7 @@ void test_xoverlist()
 
         BOOST_REQUIRE(test.xover_count == 1);
         BOOST_REQUIRE(test.xovers.size() == 1);
-        auto xover = test.xovers.at(0);
+        auto xover = std::move(test.xovers.at(0));
         BOOST_REQUIRE(xover.start == 100);
         BOOST_REQUIRE(xover.end == 504);          
     }
@@ -210,10 +210,10 @@ void test_xoverlist()
 
         BOOST_REQUIRE(test.xover_count == 2);
         BOOST_REQUIRE(test.xovers.size() == 2);
-        auto xover = test.xovers.at(0);
+        auto xover = std::move(test.xovers.at(0));
         BOOST_REQUIRE(xover.start == 100);
         BOOST_REQUIRE(xover.end == 2099);          
-        xover = test.xovers.at(1);
+        xover = std::move(test.xovers.at(1));
         BOOST_REQUIRE(xover.start == 2100);
         BOOST_REQUIRE(xover.end == 3115);
     }
@@ -251,10 +251,10 @@ void test_xoverlist()
 
         BOOST_REQUIRE(test.xover_count == 2);
         BOOST_REQUIRE(test.xovers.size() == 2);
-        auto xover = test.xovers.at(0);
+        auto xover = std::move(test.xovers.at(0));
         BOOST_REQUIRE(xover.start == 100);
         BOOST_REQUIRE(xover.end == 2099);          
-        xover = test.xovers.at(1);
+        xover = std::move(test.xovers.at(1));
         BOOST_REQUIRE(xover.start == 2100);
         BOOST_REQUIRE(xover.end == 3115);        
     }

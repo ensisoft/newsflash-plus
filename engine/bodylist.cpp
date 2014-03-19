@@ -51,8 +51,8 @@ bool bodylist::run(protocol& proto)
     {
         body.id      = next.id;
         body.article = next.messageid;
-        body.buff    = std::make_shared<buffer>(1024 * 1024);
         body.status  = bodylist::status::unavailable;
+        body.buff.reserve(1024 * 1024);
 
         for (const auto& group : groups_)
         {
@@ -62,7 +62,7 @@ bool bodylist::run(protocol& proto)
             if (!proto.group(group))
                 continue;
 
-            const auto ret = proto.body(next.messageid, *body.buff);
+            const auto ret = proto.body(next.messageid, body.buff);
             if (ret == protocol::status::success)
                 body.status = status::success;
             else if (ret == protocol::status::dmca)
@@ -81,7 +81,7 @@ bool bodylist::run(protocol& proto)
         throw ;
     }
 
-    on_body(body);
+    on_body(std::move(body));
 
     return true;
 }

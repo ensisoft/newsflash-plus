@@ -60,11 +60,11 @@ struct tester {
     void log(const std::string& str)
     {}
 
-    void body(const newsflash::bodylist::body& body)
+    void body(newsflash::bodylist::body body)
     {
         std::lock_guard<std::mutex> lock(mutex);
 
-        bodies.push_back(body);
+        bodies.push_back(std::move(body));
     }
 
     std::deque<std::string> responses;
@@ -102,7 +102,7 @@ void unit_test_bodylist()
         list.run(proto);
         const auto& body = test.bodies.at(0);
         BOOST_REQUIRE(body.article == "1234");
-        BOOST_REQUIRE(body.buff->empty());
+        BOOST_REQUIRE(body.buff.empty());
         BOOST_REQUIRE(body.id == 0);
         BOOST_REQUIRE(body.status == newsflash::bodylist::status::unavailable);        
 
@@ -134,7 +134,7 @@ void unit_test_bodylist()
         list.run(proto);
         const auto& body = test.bodies.at(0);
         BOOST_REQUIRE(body.article == "5555");
-        BOOST_REQUIRE(body.buff->offset() == 0);
+        BOOST_REQUIRE(body.buff.offset() == 0);
         BOOST_REQUIRE(body.id == 0);
         BOOST_REQUIRE(body.status == newsflash::bodylist::status::unavailable);                
     }
@@ -172,16 +172,16 @@ void unit_test_bodylist()
         list.run(proto);
         list.run(proto);
 
-        auto body = test.bodies.at(0);
+        auto body = std::move(test.bodies.at(0));
         BOOST_REQUIRE(body.article == "1234");
         BOOST_REQUIRE(body.id == 0);
-        BOOST_REQUIRE(body.buff->offset());
+        BOOST_REQUIRE(body.buff.offset());
         BOOST_REQUIRE(body.status == newsflash::bodylist::status::success);
 
-        body = test.bodies.at(1);
+        body = std::move(test.bodies.at(1));
         BOOST_REQUIRE(body.article == "4321");
         BOOST_REQUIRE(body.id == 1);
-        BOOST_REQUIRE(body.buff->offset());
+        BOOST_REQUIRE(body.buff.offset());
         BOOST_REQUIRE(body.status == newsflash::bodylist::status::success);
     }
 
@@ -223,10 +223,10 @@ void unit_test_bodylist()
 
         list.run(proto);
 
-        auto body = test.bodies.at(0);
+        auto body = std::move(test.bodies.at(0));
         BOOST_REQUIRE(body.article == "1234");
 
-        body = test.bodies.at(1);
+        body = std::move(test.bodies.at(1));
         BOOST_REQUIRE(body.article == "4321");
     }
 }

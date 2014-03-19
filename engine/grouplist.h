@@ -23,8 +23,6 @@
 #pragma once
 
 #include <functional>
-#include <memory>
-//#include <atomic>
 #include "buffer.h"
 #include "protocol.h"
 #include "cmdlist.h"
@@ -36,11 +34,11 @@ namespace newsflash
     {
     public:
         struct list {
-            std::shared_ptr<buffer> buff;
+            buffer buff;
         };
 
         // callback to invoke when the grouplist has been downloaded.
-        std::function<void (const grouplist::list& list)> on_list;
+        std::function<void (grouplist::list list)> on_list;
 
         virtual bool run(protocol& proto) override
         {
@@ -51,8 +49,9 @@ namespace newsflash
                 grouplist::list list;                
                 try
                 {
-                    list.buff = std::make_shared<buffer>(1024*1024);
-                    proto.list(*list.buff);
+                    list.buff.reserve(1024 * 1024);
+
+                    proto.list(list.buff);
                 }
                 catch (const std::exception&)
                 {
@@ -61,7 +60,7 @@ namespace newsflash
                     first_ = true;
                     throw;
                 }
-                on_list(list);                
+                on_list(std::move(list));
             }
             return false;
         }

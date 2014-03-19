@@ -103,7 +103,7 @@ void test_single_success()
 
     newsflash::yenc_single_decoder yenc;
     tester test(yenc);
-    yenc.decode(part);
+    yenc.decode(&part[0], part.size());
 
     BOOST_REQUIRE(test.info.name == "test-data.png");
     BOOST_REQUIRE(test.info.size == 1024);
@@ -128,7 +128,7 @@ void test_single_broken()
 
         newsflash::yenc_single_decoder yenc;
         tester test(yenc);
-        yenc.decode(part);
+        yenc.decode(part.data(), part.size());
 
         BOOST_REQUIRE(test.info.name == "foo.keke");
         BOOST_REQUIRE(test.info.size == 5666);
@@ -153,7 +153,7 @@ void test_single_broken()
 
         newsflash::yenc_single_decoder yenc;
         tester test(yenc);
-        yenc.decode(part);
+        yenc.decode(part.data(), part.size());
 
         BOOST_REQUIRE(test.info.name == "testtest");
         BOOST_REQUIRE(test.binary == data);
@@ -180,7 +180,7 @@ void test_single_error()
 
         newsflash::yenc_single_decoder yenc;
 
-        REQUIRE_EXCEPTION(yenc.decode(part));
+        REQUIRE_EXCEPTION(yenc.decode(part.data(), part.size()));
     }
 
     // missing footer
@@ -194,7 +194,7 @@ void test_single_error()
         append(part, encode(data, 4000));
 
         newsflash::yenc_single_decoder yenc;
-        REQUIRE_EXCEPTION(yenc.decode(part));
+        REQUIRE_EXCEPTION(yenc.decode(part.data(), part.size()));
     }
 }
 
@@ -219,7 +219,7 @@ void test_multi_success()
         append(yenc_data, part);
         append(yenc_data, encode(data, 1024));
         append(yenc_data, footer);
-        yenc.decode(yenc_data);
+        yenc.decode(yenc_data.data(), yenc_data.size());
 
     }
 
@@ -234,7 +234,7 @@ void test_multi_success()
         append(yenc_data, part);
         append(yenc_data, encode(data, 1024));
         append(yenc_data, footer);
-        yenc.decode(yenc_data);
+        yenc.decode(yenc_data.data(), yenc_data.size());
     }
 
     yenc.finish();

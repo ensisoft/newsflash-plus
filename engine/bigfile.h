@@ -40,6 +40,8 @@ namespace newsflash
         bigfile();
        ~bigfile();
 
+        bigfile(bigfile&& other);
+
         // Try to open an existing file. Returns 0 on success
         // or a platform error code on error.
         std::error_code open(const std::string& file);
@@ -78,6 +80,8 @@ namespace newsflash
 
         // flush buffered writes to the file on device.
         void flush();
+
+        bigfile& operator=(bigfile&& other);
 
         // get file size. 
         static std::pair<std::error_code, big_t> size(const std::string& file);

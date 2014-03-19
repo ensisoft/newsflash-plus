@@ -26,29 +26,47 @@
 #include <vector>
 #include <string>
 #include "task.h"
+#include "decoder.h"
+#include "bigfile.h"
+#include "stopwatch.h"
+#include "encoding.h"
 
 namespace newsflash
 {
-    class content;
-
-    // extract encoded binaries from the buffers
+    // extract encoded content from the buffers
     class download : public task
     {
     public:
-        download(std::string folder, std::string name);
+        download(std::string path, std::string name);
 
         virtual void prepare() override;
-        virtual void receive(const buffer& buff, std::size_t id) override;
+        virtual void receive(buffer buff, std::size_t id) override;
         virtual void cancel() override;
         virtual void flush() override;
         virtual void finalize() override;
 
     private:
-        const std::string folder_;
-        const std::string name_;
+        struct content {
+            std::size_t size;            
+            std::string name;
+            std::unique_ptr<decoder> codec;
+            std::vector<std::string> errors;
+            bigfile file;
+            encoding enc;
+        };
+
+        content* find_by(encoding enc);
 
     private:
+        void on_info(const decoder::info& info, content& cont);
+        void on_write(const void* data, std::size_t size, std::size_t offset, bool has_offset, content& cont);
+        void on_error(decoder::error error, const std::string& what, content& cont);
 
+    private:
+        std::vector<content> contents_;
+        std::string path_;
+        std::string name_;
+        bool overwrite_;
     };
 
 } //  newsflash

@@ -285,6 +285,9 @@ bigfile::~bigfile()
     close();
 }
 
+
+
+
 std::error_code bigfile::open(const std::string& file)
 {
     return pimpl_->open_file(file, O_RDWR | O_LARGEFILE, 0);
@@ -403,6 +406,17 @@ std::error_code bigfile::resize(const std::string& file, big_t size)
 
 #endif
 
+bigfile::bigfile(bigfile&& other) : pimpl_(std::move(other.pimpl_))
+{}
+
+bigfile& bigfile::operator=(bigfile&& other)
+{
+    if (&other == this)
+        return *this;
+
+    pimpl_ = std::move(other.pimpl_);
+    return *this;
+}
 
 bool bigfile::exists(const std::string& file)
 {

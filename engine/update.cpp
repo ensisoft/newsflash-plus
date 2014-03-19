@@ -27,22 +27,22 @@ namespace newsflash
 {
 
 
-void update::receive(const buffer& buff, std::size_t id)
-{
+// void update::receive(std::shared_ptr<const buffer> buff, std::size_t id)
+// {
 
-}
+// }
 
-void update::cancel()
-{
+// void update::cancel()
+// {
 
-}
+// }
 
-void update::flush()
-{
+// void update::flush()
+// {
 
-}
+// }
 
-void update::finalize()
-{}
+// void update::finalize()
+// {}
 
 } // newsflash

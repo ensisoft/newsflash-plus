@@ -23,10 +23,10 @@
 #include "nntp/bodyiter.h"
 #include "yenc_multi_decoder.h"
 #include "yenc.h"
-#include "buffer.h"
 
 namespace newsflash
 {
+
 yenc_multi_decoder::yenc_multi_decoder() 
     : crc_value_(0), part_count_(0), part_(0), binary_size_(0), size_(0), has_header_(false)
 {}
@@ -34,10 +34,10 @@ yenc_multi_decoder::yenc_multi_decoder()
 yenc_multi_decoder::~yenc_multi_decoder()
 {}
 
-void yenc_multi_decoder::decode(const void* data, std::size_t len)
+std::size_t yenc_multi_decoder::decode(const void* data, std::size_t len)
 {
     nntp::bodyiter beg((const char*)data);
-    nntp::bodyiter end((const char*)data + len);
+    nntp::bodyiter end((const char*)data, len);
 
     const auto header = yenc::parse_header(beg, end);
     if (!header.first)
@@ -77,12 +77,12 @@ void yenc_multi_decoder::decode(const void* data, std::size_t len)
     if (on_error)
     {
         if (crc_value_)
-            crc_.process_bytes(&buff[0], buff.size());
+            crc_.process_bytes(buff.data(), buff.size());
 
         if (footer.second.pcrc32)
         {
             boost::crc_32_type crc;
-            crc.process_bytes(&buff[0], buff.size());
+            crc.process_bytes(buff.data(), buff.size());
             if (footer.second.pcrc32 != crc.checksum())
                 on_error(error::crc, "part checksum mismatch");
         }
@@ -95,7 +95,9 @@ void yenc_multi_decoder::decode(const void* data, std::size_t len)
     part_ += 1;
     size_ += buff.size();
 
-    on_write(&buff[0], buff.size(), part_offset, true);    
+    on_write(buff.data(), buff.size(), part_offset, true);    
+
+    return distance(beg, end);
 }
 
 void yenc_multi_decoder::finish()
@@ -116,8 +118,5 @@ void yenc_multi_decoder::finish()
         on_error(error::size, "size mismatch between binary size and encoded size");
 
 }
-
-void yenc_multi_decoder::cancel()
-{}
 
 } // newsflash

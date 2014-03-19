@@ -96,7 +96,7 @@ std::string remove_illegal_filepath_chars(std::string name)
     return name;
 }
 
-std::string join_path(const std::string& a, const std::string& b)
+std::string joinpath(const std::string& a, const std::string& b)
 {
     if (a.empty())
         return b;
@@ -106,13 +106,13 @@ std::string join_path(const std::string& a, const std::string& b)
     return path.string();
 }
 
-std::string name_file(int attempt, const std::string& name)
+std::string filename(int attempt, const std::string& name)
 {
     if (attempt == 0)
         return name;
 
     std::stringstream ss;
-    ss << "(" << attempt << ") " << name;
+    ss << "(" << attempt+1 << ") " << name;
     return ss.str();
 }
 

@@ -56,11 +56,11 @@ void unit_test_success()
            "alt.binaries.movies.divx 321 123 y\r\n"                      
            "alt.binaries.sounds.mp3    85 80 n\r\n";                      
 
-        const newsflash::buffer buff(body);
+        newsflash::buffer buff(body);
 
         auto listing = newsflash::listing("listing.txt");
 
-        listing.receive(buff, 0);
+        listing.receive(std::move(buff), 0);
         listing.finalize();
 
         const auto& lines = read_file("listing.txt");

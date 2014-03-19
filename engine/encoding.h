@@ -22,37 +22,19 @@
 
 #pragma once
 
-#include <set>
-#include <memory>
-#include <cstdint>
-#include "task.h"
+#include <cstddef>
 
 namespace newsflash
 {
-    // class update : public task
-    // {
-    // public:
-    //     enum class flags {
-    //         merge_old       = 0x1,
-    //         mark_old_new    = 0x2,
-    //         index_by_author = 0x4,
-    //         index_by_date   = 0x8,
-    //         ids64           = 0x10,
-    //         crc16           = 0x20
-    //     };
+    enum class encoding {
+        yenc_single,
+        yenc_multi,
+        uuencode_single,
+        uuencode_multi,
+        unknown
+    };
 
-
-    //     virtual void prepare() override;
-    //     virtual void receive(std::shared_ptr<const buffer> buff, std::size_t id) override;
-    //     virtual void cancel() override;
-    //     virtual void flush() override;
-    //     virtual void finalize() override;
-
-    // private:
-
-
-    // private:
-
-    // };
+    // try to identify the used encoding (ascii-armoring) based on some input data.
+    encoding identify_encoding(const char* line, std::size_t len);
 
 } // newsflash

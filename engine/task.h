@@ -23,11 +23,11 @@
 #pragma once
 
 #include <cstddef>
+#include <memory>
+#include "buffer.h"
 
 namespace newsflash
 {
-    class buffer;
-
     // task interface for performing activities on the data.
     class task
     {
@@ -38,7 +38,7 @@ namespace newsflash
         virtual void prepare() = 0;
 
         // receive and process a buffer of NNTP data.
-        virtual void receive(const buffer& buff, std::size_t id) = 0;
+        virtual void receive(buffer buff, std::size_t id) = 0;
 
         // cancel the task, rolllback any changes.
         virtual void cancel() = 0;
@@ -52,4 +52,5 @@ namespace newsflash
     protected:
     private:
     };
+    
 } // newsflash
