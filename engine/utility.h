@@ -99,4 +99,11 @@ namespace newsflash
         return std::unique_ptr<T, Deleter>(ptr, del);
     }
 
+
+    inline
+    std::size_t MB(std::size_t megs)
+    {
+        return megs * 1024 * 1024;
+    }
+
 } // namespace
