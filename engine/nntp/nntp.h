@@ -127,11 +127,13 @@ namespace nntp
     std::pair<const char*, size_t> find_filename(const char* str, size_t len);
 
     // scan the given buffer for a complete nntp response.
-    // returns the length of the response if found, otherwise 0;
+    // returns the length of the response if found including the terminating sequence.
+    // if no response is found returns 0.
     std::size_t find_response(const void* buff, std::size_t size);
 
     // scan the given buffer for a complete message body.
-    // returns the length of the body if found, otherwise 0.
+    // returns the length of the body if found including the terminating sequence.
+    // if no body is found returns 0.
     std::size_t find_body(const void* buff, std::size_t size);
 
     // split input string into a collection of lines

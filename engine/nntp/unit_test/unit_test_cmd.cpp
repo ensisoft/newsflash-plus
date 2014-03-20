@@ -180,97 +180,139 @@ void test_cmd_mode_reader()
     test_failure(nntp::cmd_mode_reader{}, "MODE READER", "200 blalala");
 }
 
+
+
+template<typename Command, typename Buffer>
+std::string to_string(const Command& cmd, const Buffer& buff)
+{
+    return std::string(&buff[cmd.offset], cmd.size);
+}
+
 void test_cmd_xover()
 {
+    typedef std::vector<char> buffer;
+    typedef nntp::cmd_xover<buffer> command;
+    
     // todo:
+
+    
 }
 
 void test_cmd_xzver()
 {
+    typedef std::vector<char> buffer;
+    typedef nntp::cmd_xzver<buffer> command;
+    
     // todo:
 }
 
 void test_cmd_body()
 {
-    typedef std::vector<char> buffer_t;
-    typedef nntp::cmd_body<buffer_t> command_t;
+    typedef std::vector<char> buffer;    
+    typedef nntp::cmd_body<buffer> command;
 
+    // illegal input
     {
-        buffer_t buff(1024);
+        buffer buff(1024);
 
-        command_t cmd {buff, "1234"};
+        command cmd(buff, "1234");
 
         test_failure(cmd, "BODY 1234", "333 foobar\r\n");
         test_failure(cmd, "BODY 1234", "223 FOOBAR\r\n");
         test_failure(cmd, "BODY 1234", "asgasgas\r\n");
     }
 
+    // legal input, but no body available
     {
-        buffer_t buff(1024);
+        buffer buff(1024);
 
-        command_t cmd {buff, "1234"};
+        command cmd(buff, "1234");
 
         test_success(&cmd, "BODY 1234", "420 no article with that message id\r\n", 420);
-        test_success(&cmd, "BODY 1234", "222 body follows\r\n\r\n.\r\n", 222);
-        BOOST_REQUIRE(cmd.size == 2);
+        BOOST_REQUIRE(cmd.size == 0);
+        BOOST_REQUIRE(cmd.offset == 0);
 
-        test_success(&cmd, "BODY 1234", "222 body follows\r\nfoobar\r\n.\r\n", 222);
-        BOOST_REQUIRE(cmd.size == strlen("foobar\r\n"));
-        BOOST_REQUIRE(cmd.offset == 18);
-        BOOST_REQUIRE(!std::strncmp(&buff[cmd.offset], "foobar\r\n", cmd.size));
     }
 
+    // legal input, empty body
     {
-        buffer_t buff(20);
+        buffer buff(1024);
 
-        command_t cmd {buff, "1234"};
+        command cmd(buff, "1234");
+
+        test_success(&cmd, "BODY 1234", "222 body follows\r\n.\r\n", 222);
+        BOOST_REQUIRE(to_string(cmd, buff) == "");
+    }
+
+    // legal input, one liner body follows
+    {
+        buffer buff(1024);
+
+        command cmd(buff, "1234");
+
+        // empty line body
+        test_success(&cmd, "BODY 1234", "222 body follows\r\n\r\n.\r\n", 222);
+        BOOST_REQUIRE(to_string(cmd, buff) == "\r\n");
+
+        test_success(&cmd, "BODY 1234", "222 body follows\r\nfoobar\r\n.\r\n", 222);
+        BOOST_REQUIRE(to_string(cmd, buff) == "foobar\r\n");
+    }
+
+    // legal input, multi line body
+    {
+        buffer buff(20);
+
+        command cmd(buff, "1234");
 
         const char* body = 
            "assa sassa mandelmassa\r\n"
            "second line of data\r\n"
-           "foobar"
-           "\r\n"
-           "."
-           "\r\n";
+           "foobar\r\n";
 
-        std::string str("222 body follows\r\n");
+        std::string str;
+        str.append("222 body follows\r\n");
         str.append(body);
+        str.append(".\r\n");
+
         test_success(&cmd, "BODY 1234", str.c_str(), 222);
 
-        BOOST_REQUIRE(cmd.offset == std::strlen("222 body follows\r\n"));
-        BOOST_REQUIRE(cmd.size   == std::strlen(body) - std::strlen(".\r\n"));
-        BOOST_REQUIRE(buff.size() >= cmd.size);
+        BOOST_REQUIRE(to_string(cmd, buff) == body);
     }    
 }
 
 void test_cmd_list()
 {
-    typedef std::vector<char> buffer_t;
-    typedef nntp::cmd_list<buffer_t> command_t;
+    typedef std::vector<char> buffer;
+    typedef nntp::cmd_list<buffer> command;
 
-    // test success
+    // test success, non-empty list
     {
-        buffer_t buff(1024);
-        command_t cmd {buff};
+        buffer buff(1024);
 
-        test_success(&cmd, "LIST", "215 list of newsgroups follows\r\n\r\n.\r\n", 215);
-        BOOST_REQUIRE(cmd.size == 2);
+        command cmd(buff);
 
-        test_success(&cmd, "LIST", 
-            "215 list of newsgroups follows\r\n"
-            "misc.test 3002322 3000234 y\r\n"            
-            "comp.risks 442001 441099 m\r\n"
-            "\r\n"
-            "."
-            "\r\n", 
-            215);
+        const char* body =
+            "misc.test 3000242 323233 y\r\n"
+            "comp.risks 442001 441099 m\r\n";
 
-        BOOST_REQUIRE(cmd.size == std::strlen("misc.test 3002322 3000234 y\r\n"
-                                              "comp.risks 442001 441099 m\r\n"
-                                              "\r\n"));
+        std::string str;
+        str.append("215 list of newsgroups follows\r\n");
+        str.append(body);
+        str.append(".\r\n");
 
+        test_success(&cmd, "LIST", str.c_str(), 215);
+
+        BOOST_REQUIRE(to_string(cmd, buff) == body);
     }    
-    
+
+    // test success, empty list
+    {
+        buffer buff;
+        command cmd(buff);
+
+        test_success(&cmd, "LIST", "215 list of newsgroups follows\r\n.\r\n", 215);
+        BOOST_REQUIRE(cmd.size == 0);
+    }
 }
 
 int test_main(int, char*[])

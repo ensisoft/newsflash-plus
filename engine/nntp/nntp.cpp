@@ -549,16 +549,40 @@ std::size_t find_response(const void* buff, std::size_t size)
 std::size_t find_body(const void* buff, std::size_t size)
 {
     // this is referred to as "multi-line data block" in rfc3977
-    // end of body data is indicated by \r\n.\r\n
-    if (size < 5)
-        return 0;
+    // each block consists of a sequence of zero or more "lines",
+    // each being a stream of octets ending with CLRF pair.
+    // finally lines are followed by a terminating line consisting of
+    // a single "terminating octet" (.) followed by a CRLF.
+    //
+    // thus for non-empty cases one must look for CRLF . CRLF.
+    // note that you can't simply look for . CRLF cause for example
+    // human readable text body often ends with a . CRLF. so for the
+    // non-empty case we must look for CRLF . CRLF
+    //
+    //     response-line CRLF
+    //     line CRLF
+    //     line CRLF
+    //        ...
+    //     . CRLF
+    //
+    // and in case of empty body case we must look for . CRLF only.
+    //
+    //     response line CRLF 
+    //     . CRLF
 
-    const char* str = static_cast<const char*>(buff);
+    const char* str = static_cast<const char*>(buff);    
+    if (size == 3)
+    {
+        if (str[0] == '.' && str[1] == '\r' && str[2] == '\n')
+            return 3;
+    }
+    else if (size < 5)
+        return 0;
 
     for (std::size_t len=4; len<size; ++len)
     {
-        if (str[len] == '\n' && str[len-1] == '\r' && str[len-2] == '.'
-            && str[len-3] == '\n' && str[len-4] == '\r')
+        if ((str[len-0] == '\n' && str[len-1] == '\r' && str[len-2] == '.') && 
+            (str[len-3] == '\n' && str[len-4] == '\r'))
             return len+1;
     }
     return 0;
