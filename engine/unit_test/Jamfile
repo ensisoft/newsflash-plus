@@ -18,6 +18,7 @@ unit-test unit_test_protocol : unit_test_protocol.cpp ;
 unit-test unit_test_buffer : unit_test_buffer.cpp ;
 
 unit-test unit_test_threading : unit_test_threading.cpp ;
+unit-test unit_test_threadpool : unit_test_threadpool.cpp ;
 
 unit-test unit_test_bigfile            : unit_test_bigfile.cpp ;
 unit-test unit_test_memory_mapped_file : unit_test_memory_mapped_file.cpp ;

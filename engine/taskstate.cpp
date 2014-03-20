@@ -118,24 +118,24 @@ void taskstate::dequeue(std::size_t bytes, bool error)
 
 void taskstate::action_success(taskstate::action action)
 {
-    if (action == action::finalize_task)
-        emit(action::complete);
+    if (action == taskstate::action::finalize_task)
+        emit(taskstate::action::complete);
 }
 
 void taskstate::action_failure(taskstate::action action)
 {
     switch (action)
     {
-        case action::prepare_task:
+        case taskstate::action::prepare_task:
         break;
 
-        case action::flush_task:
+        case taskstate::action::flush_task:
         break;
 
-        case action::cancel_task:
+        case taskstate::action::cancel_task:
         break;
 
-        case action::finalize_task:
+        case taskstate::action::finalize_task:
         break;
 
         default:
@@ -144,7 +144,7 @@ void taskstate::action_failure(taskstate::action action)
     }
     state_ = state::complete;
     error_ = true;
-    emit(action::complete);
+    emit(taskstate::action::complete);
 }
 
 bool taskstate::kill()

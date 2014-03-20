@@ -108,10 +108,10 @@ namespace newsflash
         void emit(taskstate::action action);
 
     private:
+        state state_;        
         std::size_t qsize_;
         std::size_t curbuf_;
         std::size_t buffers_;
-        state state_;
         bool error_;
 
     };
