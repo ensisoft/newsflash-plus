@@ -39,11 +39,20 @@ namespace newsflash
     public:
         download(std::string path, std::string name);
 
-        virtual void prepare() override;
-        virtual void receive(buffer buff, std::size_t id) override;
-        virtual void cancel() override;
-        virtual void flush() override;
-        virtual void finalize() override;
+        // set overwrite flag to true/false.
+        // overwrite defaults to true.
+        void overwrite(bool val);
+
+        // set keeptext flag to true/false
+        // keeptext defaults to false.
+        void keeptext(bool val);
+
+        // task implementation
+        void prepare() override;
+        void receive(buffer&& buff, std::size_t id) override;
+        void cancel() override;
+        void flush() override;
+        void finalize() override;
 
     private:
         struct content {
@@ -55,12 +64,10 @@ namespace newsflash
             encoding enc;
         };
 
-        content* find_by(encoding enc);
-        void bind(content& cont);
+        content* find_content(encoding enc);
+        content* bind_content(content&& cont);
 
     private:
-        void bind(decoder& dec);
-
         void on_info(const decoder::info& info, content& cont);
         void on_write(const void* data, std::size_t size, std::size_t offset, bool has_offset, content& cont);
         void on_error(decoder::error error, const std::string& what, content& cont);

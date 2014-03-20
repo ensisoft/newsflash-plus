@@ -22,6 +22,8 @@
 
 #pragma once
 
+#include <newsflash/config.h>
+
 #include <boost/noncopyable.hpp>
 #include <cassert>
 #include <cstring>
@@ -69,6 +71,10 @@ namespace newsflash
             void crop(std::size_t bytes)
             {
                 crop_ += bytes;
+            }
+            bool empty() const
+            {
+                return size() == 0;
             }
         private:
             const buffer& buffer_;
@@ -155,6 +161,9 @@ namespace newsflash
             const auto bird = CANARY;
 
             auto data = (char*)alloc.allocate(capacity + sizeof(bird));
+#ifdef NEWSFLASH_DEBUG
+            memset(data, 0, capacity);
+#endif
 
             if (data_)
             {

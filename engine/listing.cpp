@@ -38,9 +38,11 @@ listing::listing(std::string filename) : filename_(std::move(filename))
 void listing::prepare()
 {}
 
-void listing::receive(buffer buff, std::size_t id)
+void listing::receive(buffer&& buff, std::size_t id)
 {
     const buffer::payload body(buff);
+    if (body.empty())
+        return;
     
     const nntp::linebuffer lines(body.data(), body.size());
 

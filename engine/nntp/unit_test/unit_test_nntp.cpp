@@ -452,29 +452,23 @@ void test_find_filename()
 
 void test_find_response()
 {
-    {
-        BOOST_REQUIRE(nntp::find_response("", 0) == 0);
-        BOOST_REQUIRE(nntp::find_response("adsgas", 6) == 0);
-        BOOST_REQUIRE(nntp::find_response("\r\n", 2) == 2);
-        BOOST_REQUIRE(nntp::find_response("foo\r\n", 5) == 5);
-        BOOST_REQUIRE(nntp::find_response("foo\r\nfoo", 5) == 5);
-    }
-
-    {
-        BOOST_REQUIRE(nntp::find_body("", 0) == 0);
-        BOOST_REQUIRE(nntp::find_body("asgas", 5) == 0);
-        BOOST_REQUIRE(nntp::find_body(".\r\n", 3) == 0);
-        BOOST_REQUIRE(nntp::find_body("foobar.\r\n", 9) == 0);
-        BOOST_REQUIRE(nntp::find_body("foobar.\r\nkeke", 13) == 0);
-        BOOST_REQUIRE(nntp::find_body("foo\r\nbar.\r\n", 11) == 0);
-    }    
+    BOOST_REQUIRE(nntp::find_response("", 0) == 0);
+    BOOST_REQUIRE(nntp::find_response("adsgas", 6) == 0);
+    BOOST_REQUIRE(nntp::find_response("\r\n", 2) == 2);
+    BOOST_REQUIRE(nntp::find_response("foo\r\n", 5) == 5);
+    BOOST_REQUIRE(nntp::find_response("foo\r\nfoo", 5) == 5);
 }
 
 void test_find_body()
 {
-    BOOST_REQUIRE(nntp::find_body("foobar\r\n.\r\n", 11) == 11);
-    BOOST_REQUIRE(nntp::find_body("\r\n.\r\n", 5) == 5);
-    BOOST_REQUIRE(nntp::find_body(".\r\nderp\r\n.\r\n", 12) == 12);
+
+    BOOST_REQUIRE(nntp::find_body("", 0) == 0);
+    BOOST_REQUIRE(nntp::find_body("asgas", 5) == 0);
+    BOOST_REQUIRE(nntp::find_body(".\r\n", 3) == 3);
+    BOOST_REQUIRE(nntp::find_body("foobar.\r\n", 9) == 0);
+    BOOST_REQUIRE(nntp::find_body("keke\r\n.\r\n", 9) == 9);
+    BOOST_REQUIRE(nntp::find_body("foo\r\nkeke\r\n.\r\n", strlen("foo\r\nkeke\r\n.\r\n")) == strlen("foo\r\nkeke\r\n.\r\n"));
+    BOOST_REQUIRE(nntp::find_body("foo.\r\nkeke\r\n.\r\n", strlen("foo.\r\nkeke\r\n.\r\n")) == strlen("foo.\r\nkeke\r\n.\r\n"));
 
     {
         const char* str = 
@@ -520,8 +514,6 @@ void test_find_body()
          "\r\n"
          "Just curious,\r\n"
          "John\r\n"
-         "\r\n"
-         "\r\n"
          ".\r\n";
 
         const std::size_t len = nntp::find_body(str, std::strlen(str));

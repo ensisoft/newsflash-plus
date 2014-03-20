@@ -37,7 +37,7 @@ namespace newsflash
         listing(std::string filename);
 
         virtual void prepare() override;
-        virtual void receive(buffer buff, std::size_t id) override;
+        virtual void receive(buffer&& buff, std::size_t id) override;
         virtual void cancel() override;
         virtual void flush() override;
         virtual void finalize() override;

@@ -261,6 +261,7 @@ namespace uuencode
         UUENCODE_PARSE_END('d');
 
 #undef UUENCODE_PARSE_END
+#undef UUENCODE_PARSE_END_OPT
 
         return true;
     }

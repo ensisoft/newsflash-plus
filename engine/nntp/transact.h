@@ -95,7 +95,7 @@ namespace nntp
             
         trim_buffer(body, data_total);
 
-        return std::make_tuple(status, body_offset, data_total - body_offset - 3);  // omit \r\n.\r\n from the body length
+        return std::make_tuple(status, body_offset, data_total - body_offset - 3);  // omit ".CRLF" from the body length
     }
 
 } // nntp

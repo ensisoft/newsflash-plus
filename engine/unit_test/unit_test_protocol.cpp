@@ -263,11 +263,45 @@ void test_authentication()
     }
 }
 
+template<typename T>
+std::string to_string(const T& t)
+{
+    return std::string(t.data(), t.size());
+}
+
 void test_listing()
 {
     // LIST command has not been specified to fail
 
     // empty list
+    {
+        test_sequence test;
+        test.responses = 
+        {
+            "215 list of newsgroups follows",
+                "."
+        };
+        test.commands = 
+        {
+            "LIST"
+        };
+
+        newsflash::protocol proto;
+        proto.on_recv = std::bind(&test_sequence::recv, &test, std::placeholders::_1, std::placeholders::_2);
+        proto.on_send = std::bind(&test_sequence::send, &test, std::placeholders::_1, std::placeholders::_2);
+
+        newsflash::buffer buff;
+
+        BOOST_REQUIRE(proto.list(buff));
+
+        const newsflash::buffer::header header(buff);
+        const newsflash::buffer::payload body(buff);
+
+        BOOST_REQUIRE(to_string(header) == "215 list of newsgroups follows\r\n");
+        BOOST_REQUIRE(body.empty());
+    }
+
+    // non-empty list
     {
         test_sequence test;
         test.responses = 
@@ -290,12 +324,12 @@ void test_listing()
 
         BOOST_REQUIRE(proto.list(buff));
 
-        const char* body = 
-            "alt.binaries.foo 1 2 y\r\n"
-            "alt.binaries.bar 3 4 y\r\n";
+        const newsflash::buffer::header header(buff);
+        const newsflash::buffer::payload body(buff);
 
-        BOOST_REQUIRE(buff.size() - buff.offset() == std::strlen(body));
-        BOOST_REQUIRE(!std::strncmp(&buff[buff.offset()], body, std::strlen(body)));
+        BOOST_REQUIRE(to_string(header) == "215 list of newsgroups follows\r\n");
+        BOOST_REQUIRE(to_string(body) == "alt.binaries.foo 1 2 y\r\n"
+                                         "alt.binaries.bar 3 4 y\r\n");
     }
 }
 
@@ -323,7 +357,7 @@ void test_body()
         BOOST_REQUIRE(proto.body("1234", buff) == newsflash::protocol::status::unavailable);
     }
 
-    // available
+    // available, non empty
     {
         test_sequence test;
         test.responses = 
@@ -344,96 +378,122 @@ void test_body()
         proto.on_send = std::bind(&test_sequence::send, &test, std::placeholders::_1, std::placeholders::_2);                
 
         newsflash::buffer buff;
-        buff.reserve(1024);
-
-        const char* body = 
-            "foobar\r\n"
-            "assa sassa mandelmassa\r\n";
-
         BOOST_REQUIRE(proto.body("1234", buff) == newsflash::protocol::status::success);
-        BOOST_REQUIRE(buff.size() - buff.offset() == std::strlen(body));
-        BOOST_REQUIRE(!std::strncmp(&buff[buff.offset()], body, std::strlen(body)));
 
+        const newsflash::buffer::header header(buff);
+        const newsflash::buffer::payload body(buff);
+
+        BOOST_REQUIRE(to_string(header) == "222 body follows\r\n");
+        BOOST_REQUIRE(to_string(body) == "foobar\r\nassa sassa mandelmassa\r\n");
     }
-}
 
-void test_xover()
-{
-
-}
-
-void test_api()
-{
-    // test api functions to request data from the server
+    // available, empty
     {
         test_sequence test;
         test.responses = 
         {
-            "200 welcome posting allowed",
-            "101 capabilities list follows",
-                "MODE-READER",
-                "XZVER",
-                "IHAVE",
-                "",
-                ".",
-            "200 posting allowed",
-            "411 no such newsgroup",
-            "211 3 1 4 blah.bluh",
-            "211 3 1 4 test.test",
-            "420 dmca takedown",
-            "420 no such article",
             "222 body follows",
-               "foobarlasg",
-               "kekekeke",
-               "",
-               ".",
-            "215 list of newsgroups follows",
-               "misc.test 3 4 y",
-               "comp.risks 4 5 m",
-               "",
-               ".",
-           "205 goodbye"
+               "."
         };
+
         test.commands = 
         {
-            "CAPABILITIES",
-            "MODE READER",
-            "GROUP foo.bar.baz",
-            "GROUP blah.bluh",
-            "GROUP test.test",
-            "BODY <1>",
-            "BODY <2>",
-            "BODY <3>",
-            "LIST",
-            "QUIT"
-        };
+            "BODY 1234"
+        };       
 
         newsflash::protocol proto;
         proto.on_recv = std::bind(&test_sequence::recv, &test, std::placeholders::_1, std::placeholders::_2);
-        proto.on_send = std::bind(&test_sequence::send, &test, std::placeholders::_1, std::placeholders::_2);
-        proto.on_log  = cmd_log;
-
-        proto.connect();
-        BOOST_REQUIRE(!proto.group("foo.bar.baz"));
-        BOOST_REQUIRE(proto.group("blah.bluh"));
-
-        newsflash::protocol::groupinfo info {0};
-        BOOST_REQUIRE(proto.group("test.test", info));
-        BOOST_REQUIRE(info.high_water_mark == 4);
-        BOOST_REQUIRE(info.low_water_mark == 1);
-        BOOST_REQUIRE(info.article_count == 3);
+        proto.on_send = std::bind(&test_sequence::send, &test, std::placeholders::_1, std::placeholders::_2);                
 
         newsflash::buffer buff;
-        buff.reserve(100);
+        BOOST_REQUIRE(proto.body("1234", buff) == newsflash::protocol::status::success);
 
-        BOOST_REQUIRE(proto.body("<1>", buff) == newsflash::protocol::status::dmca);
-        BOOST_REQUIRE(proto.body("<2>", buff) == newsflash::protocol::status::unavailable);
-        BOOST_REQUIRE(proto.body("<3>", buff) == newsflash::protocol::status::success);
+        const newsflash::buffer::header header(buff);
+        const newsflash::buffer::payload body(buff);
 
-        BOOST_REQUIRE(proto.list(buff));
-
-        proto.quit();
+        BOOST_REQUIRE(to_string(header) == "222 body follows\r\n");
+        BOOST_REQUIRE(body.empty());
     }
+
+}
+
+void test_xover()
+{
+    // todo
+}
+
+void test_api_sequence()
+{
+    // test api functions to request data from the server
+    // like in a real system run setting.
+
+    test_sequence test;
+    test.responses = 
+    {
+        "200 welcome posting allowed",
+        "101 capabilities list follows",
+        "MODE-READER",
+        "XZVER",
+        "IHAVE",
+        "",
+        ".",
+        "200 posting allowed",
+        "411 no such newsgroup",
+        "211 3 1 4 blah.bluh",
+        "211 3 1 4 test.test",
+        "420 dmca takedown",
+        "420 no such article",
+        "222 body follows",
+        "foobarlasg",
+        "kekekeke",
+        "",
+        ".",
+        "215 list of newsgroups follows",
+        "misc.test 3 4 y",
+        "comp.risks 4 5 m",
+        "",
+        ".",
+        "205 goodbye"
+    };
+    test.commands = 
+    {
+        "CAPABILITIES",
+        "MODE READER",
+        "GROUP foo.bar.baz",
+        "GROUP blah.bluh",
+        "GROUP test.test",
+        "BODY <1>",
+        "BODY <2>",
+        "BODY <3>",
+        "LIST",
+        "QUIT"
+    };
+
+    newsflash::protocol proto;
+    proto.on_recv = std::bind(&test_sequence::recv, &test, std::placeholders::_1, std::placeholders::_2);
+    proto.on_send = std::bind(&test_sequence::send, &test, std::placeholders::_1, std::placeholders::_2);
+    proto.on_log  = cmd_log;
+
+    proto.connect();
+    BOOST_REQUIRE(!proto.group("foo.bar.baz"));
+    BOOST_REQUIRE(proto.group("blah.bluh"));
+
+    newsflash::protocol::groupinfo info {0};
+    BOOST_REQUIRE(proto.group("test.test", info));
+    BOOST_REQUIRE(info.high_water_mark == 4);
+    BOOST_REQUIRE(info.low_water_mark == 1);
+    BOOST_REQUIRE(info.article_count == 3);
+
+    newsflash::buffer buff;
+    buff.reserve(100);
+
+    BOOST_REQUIRE(proto.body("<1>", buff) == newsflash::protocol::status::dmca);
+    BOOST_REQUIRE(proto.body("<2>", buff) == newsflash::protocol::status::unavailable);
+    BOOST_REQUIRE(proto.body("<3>", buff) == newsflash::protocol::status::success);
+
+    BOOST_REQUIRE(proto.list(buff));
+
+    proto.quit();
 }
 
 int test_main(int, char* [])
@@ -443,7 +503,7 @@ int test_main(int, char* [])
     test_listing();
     test_body();
     test_xover();
-    test_api();
+    test_api_sequence();
 
     return 0;
 }

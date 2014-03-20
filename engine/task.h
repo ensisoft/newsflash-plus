@@ -38,7 +38,7 @@ namespace newsflash
         virtual void prepare() = 0;
 
         // receive and process a buffer of NNTP data.
-        virtual void receive(buffer buff, std::size_t id) = 0;
+        virtual void receive(buffer&& buff, std::size_t id) = 0;
 
         // cancel the task, rolllback any changes.
         virtual void cancel() = 0;

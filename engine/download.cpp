@@ -30,33 +30,67 @@
 #include "yenc_multi_decoder.h"
 #include "uuencode_decoder.h"
 
+namespace {
+
+class text_decoder : public newsflash::decoder 
+{
+public:
+    virtual std::size_t decode(const void* data, std::size_t len) override
+    {
+        const nntp::linebuffer lines((const char*)data, len);
+        const auto& iter = lines.begin();
+        const auto& line = *iter;
+
+        on_write(line.start, line.length, 0, false);
+
+        return line.length;
+    }
+    virtual void finish() override
+    {}
+private:
+};
+
+} // 
+
 namespace newsflash
 {
 
-download::download(std::string path, std::string name) : path_(std::move(path)), name_(std::move(name))
+download::download(std::string path, std::string name) : path_(std::move(path)), name_(std::move(name)), overwrite_(true), keeptext_(false)
 {}
+
+void download::overwrite(bool val)
+{
+    overwrite_ = val;
+}
+
+void download::keeptext(bool val)
+{
+    keeptext_ = val;
+}
 
 void download::prepare()
 {}
 
-void download::receive(buffer buff, std::size_t id)
+void download::receive(buffer&& buff, std::size_t id)
 {
     buffer::payload body(buff);
 
-    while (body.size())
+    // iterate over the data line by line and inspect
+    // every line untill we can identify a binary content
+    // encoded with some encoding scheme. then if data remains
+    // in the buffer we continue processing it line by line
+    // repeating the same inspection
+    // todo: MIME and base64 based encoding.
+
+    while (!body.empty())
     {
         const nntp::linebuffer lines(body.data(), body.size());
         const auto& iter = lines.begin();
         const auto& line = *iter;
 
-        const auto enc = identify_encoding(line.start, line.length);
-        if (enc == encoding::unknown)
-        {
-            body.crop(line.length);
-            continue;
-        }
-
         download::content* content = nullptr;
+
+        const auto enc = identify_encoding(line.start, line.length);
         switch (enc)
         {
             case encoding::yenc_single:
@@ -65,43 +99,59 @@ void download::receive(buffer buff, std::size_t id)
                     yenc.size  = 0;
                     yenc.enc   = encoding::yenc_single;
                     yenc.codec.reset(new yenc_single_decoder);
-                    bind(yenc);
-                    contents_.push_back(std::move(yenc));
-                    content = &contents_.back();
+                    content = bind_content(std::move(yenc));
                 }
                 break;
 
             case encoding::yenc_multi:
-                content = find_by(encoding::yenc_multi);
+                content = find_content(encoding::yenc_multi);
                 break;
 
             case encoding::uuencode_single:
                 {
-                    download::content uuenc;
-                    uuenc.size = 0;
-                    uuenc.enc  = encoding::uuencode_single;
-                    uuenc.codec.reset(new uuencode_decoder);
-                    bind(uuenc);
-                    contents_.push_back(std::move(uuenc));
-                    content = &contents_.back();
+                    download::content uu;
+                    uu.size = 0;
+                    uu.enc  = encoding::uuencode_single;
+                    uu.codec.reset(new uuencode_decoder);
+                    content = bind_content(std::move(uu));
                 }
                 break;
 
+                // uuencoding scheme doesn't officially cater for messages split
+                // into several articles, however in practice it does happen, typically
+                // with large images (larger than maximum single nntp article size ~800kb).
+                // if we find a headerless uuencoded data we simply assume that it belongs
+                // to some previous uuencoded data blob.
             case encoding::uuencode_multi:
-                content = find_by(encoding::uuencode_single);
+                content = find_content(encoding::uuencode_single);
                 break;
 
-            default:
-                assert(0); 
+            case encoding::unknown:
+                {
+                    // if we're not keeping text then simply discard this line
+                    if (!keeptext_)
+                        break;
+
+                    content = find_content(encoding::unknown);
+                    if (!content)
+                    {
+                        download::content text;
+                        text.size = 0;
+                        text.enc  = encoding::unknown;
+                        text.codec.reset(new text_decoder);
+                        content = bind_content(std::move(text));
+                    }
+                }
                 break;
         }
         if (!content)
             throw std::runtime_error("no such content found!");
 
-        const auto ret = content->codec->decode(body.data(), body.size());
-        assert(ret);
+        decoder& dec = *content->codec;
 
-        body.crop(ret);
+        const auto consumed = dec.decode(body.data(), body.size());
+
+        body.crop(consumed);
     }
 }
 
@@ -130,7 +180,7 @@ void download::finalize()
     }
 }
 
-download::content* download::find_by(encoding enc)
+download::content* download::find_content(encoding enc)
 {
     const auto it = std::find_if(contents_.begin(), contents_.end(), 
         [&](const content& c)
@@ -143,7 +193,7 @@ download::content* download::find_by(encoding enc)
     return &(*it);
 }
 
-void download::bind(download::content& content)
+download::content* download::bind_content(download::content&& content)
 {
     decoder& dec = *content.codec;
 
@@ -154,6 +204,9 @@ void download::bind(download::content& content)
         std::ref(content));
     dec.on_error = std::bind(&download::on_error, this,
         std::placeholders::_1, std::placeholders::_2, std::ref(content));
+
+    contents_.push_back(std::move(content));
+    return &contents_.back();
 }
 
 void download::on_info(const decoder::info& info, download::content& content)

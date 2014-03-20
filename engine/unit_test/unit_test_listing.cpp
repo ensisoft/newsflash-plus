@@ -46,9 +46,25 @@ std::vector<std::string> read_file(const char* file)
 
 void unit_test_success()
 {
-
+    // empty list (empty body)
     {
+        delete_file("listing.txt");
 
+        newsflash::buffer buff;
+
+        auto listing = newsflash::listing("listing.txt");
+        listing.receive(std::move(buff), 0);
+        listing.finalize();
+
+        const auto& lines = read_file("listing.txt");
+        BOOST_REQUIRE(lines.size() == 1);
+        BOOST_REQUIRE(lines[0] == "0");
+
+        delete_file("listing.txt");
+    }
+
+    // non empty list
+    {
         delete_file("listing.txt");        
 
         const char* body = 
@@ -77,7 +93,10 @@ void unit_test_success()
 
 void unit_test_failure()
 {
-    
+    // filesystem failure
+    {
+
+    }
 }
 
 int test_main(int, char* [])
