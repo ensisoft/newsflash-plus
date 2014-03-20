@@ -35,25 +35,18 @@ taskstate::~taskstate()
 
 bool taskstate::start()
 {
-    if (state_ != state::queued && state_ != state::paused)
+    if (state_ != state::queued)
         return false;
 
-    if (state_ == state::queued)
-    {
-        emit(action::prepare_task);
-        emit(action::run_cmd_list);
-    }
-    else if (state_ == state::paused)
-    {
-        emit(action::run_cmd_list);
-    }
+    emit(action::prepare_task);
+    emit(action::run_cmd_list);
     state_ = state::waiting;
     return true;
 }
 
 bool taskstate::pause()
 {
-    if (state_ == state::paused || state_ == state::complete)
+    if (state_ != state::queued || state_ != state::active)
         return false;
 
     if (state_ == state::active)
@@ -63,108 +56,164 @@ bool taskstate::pause()
     return true;
 }
 
+bool taskstate::resume()
+{
+    if (state_ != state::paused)
+        return false;
+
+    if (buffers_)
+    {
+        emit(action::run_cmd_list);
+        state_ = state::waiting;
+    }
+    else
+    {
+        state_ = state::queued;
+    }
+    return true;
+}
+
 bool taskstate::flush()
 {
-    if (state_ != state::active)
+    if (!is_runnable())
         return false;
 
     emit(action::flush_task);
     return true;
 }
 
-bool taskstate::cancel()
+bool taskstate::kill()
 {
-    if (state_ != state::active)
+    if (state_ == state::kill)
         return false;
 
-    emit(action::cancel_task);
-    emit(action::stop_cmd_list);
+    switch (state_)
+    {
+        case state::queued:
+            break;
 
-    state_ = state::complete;    
+        case state::active:
+        case state::waiting:
+        case state::debuffering:
+            emit(action::stop_cmd_list);
+            emit(action::cancel_task);
+            break;
+
+        case state::paused:
+            emit(action::cancel_task);
+            break;
+
+        case state::complete:
+            break;
+
+        case state::kill:
+            assert(0);
+            break;
+
+    }
+    state_ = state::kill;
     return true;
 }
 
-void taskstate::enqueue(std::size_t bytes)
+bool taskstate::fault()
 {
-    qsize_ += bytes;
-    if (qsize_ >= MB(50))
-    {
-        emit(action::stop_cmd_list);
-        state_ = state::debuffering;
-    }
-
-    if (state_ == state::waiting)
-        state_ = state::active;
+    // todo:
+    return false;
 }
 
-void taskstate::dequeue(std::size_t bytes, bool error)
+bool taskstate::disrupt()
 {
+    // todo:
+    return false;
+}
+
+bool taskstate::enqueue(std::size_t bytes)
+{
+    if (!is_runnable())
+        return false;
+
+    qsize_ += bytes;
+
+    if (state_ == state::active)
+    {
+        if (qsize_ >= MB(50))
+        {
+            emit(action::stop_cmd_list);
+            state_ = state::debuffering;
+        }
+    }
+    else if (state_ == state::waiting)
+        state_ = state::active;
+
+    return true;
+}
+
+bool taskstate::dequeue(std::size_t bytes)
+{
+    if (!is_runnable())
+        return false;
+
     assert(qsize_);
     assert(qsize_ >= bytes);
     qsize_  -= bytes;
     curbuf_ += 1;
 
-    if (curbuf_ == buffers_)
+    if (state_ == state::debuffering)
+    {
+        if (qsize_ == 0)
+        {
+            emit(action::run_cmd_list);
+            state_ = state::waiting;
+        }
+    }
+    else if (curbuf_ == buffers_)
     {
         assert(qsize_ == 0);
         emit(action::finalize_task);
     }
-
-    if (qsize_ == 0 && state_ == state::debuffering)
-    {
-        emit(action::run_cmd_list);
-    }
+    return true;
 }
 
-void taskstate::action_success(taskstate::action action)
+bool taskstate::complete(taskstate::action action)
 {
-    if (action == taskstate::action::finalize_task)
-        emit(taskstate::action::complete);
+    // todo:
+    return true;
 }
 
-void taskstate::action_failure(taskstate::action action)
+bool taskstate::is_runnable() const
 {
-    switch (action)
+    switch (state_)
     {
-        case taskstate::action::prepare_task:
-        break;
-
-        case taskstate::action::flush_task:
-        break;
-
-        case taskstate::action::cancel_task:
-        break;
-
-        case taskstate::action::finalize_task:
-        break;
-
+        case state::active:
+        case state::waiting:
+        case state::debuffering:
+        case state::paused:
+            return true;
         default:
-            assert(0);        
             break;
     }
-    state_ = state::complete;
-    error_ = true;
-    emit(taskstate::action::complete);
+    return false;
 }
 
-bool taskstate::kill()
+bool taskstate::is_active() const
 {
-    if (state_ == state::queued || state_ == state::complete)
+    switch (state_)
     {
-        emit(action::kill);
-        return true;
+        case state::active:
+        case state::waiting:
+            return true;
+        default:
+            break;
     }
-
-    emit(action::stop_cmd_list);
-    emit(action::cancel_task);
-    emit(action::kill);
-    return true;
+    return false;
 }
 
 void taskstate::emit(taskstate::action action)
 {
     on_event(action);
 }
+
+
 
 
 } // newsflash
