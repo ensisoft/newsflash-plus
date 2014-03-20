@@ -49,7 +49,7 @@ struct tester {
     void send(const void* buff, std::size_t len)
     {}
 
-    void xover(newsflash::xoverlist::xover xover)
+    void xover(newsflash::xoverlist::xover&& xover)
     {
         std::lock_guard<std::mutex> lock(mutex);
 

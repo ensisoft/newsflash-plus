@@ -46,7 +46,7 @@ namespace newsflash
         };
 
         // callback to be invoked on xover data
-        std::function<void (xoverlist::xover xover)> on_xover;
+        std::function<void (xoverlist::xover&& xover)> on_xover;
 
         // callback to be invoked when the number of xover ranges is known.
         std::function<void (std::size_t range_count)> on_prepare_ranges;

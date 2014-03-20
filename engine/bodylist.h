@@ -50,7 +50,7 @@ namespace newsflash
         };
 
         // callback to be invoked on each body in the list.
-        std::function<void (bodylist::body body)> on_body;
+        std::function<void (bodylist::body&& body)> on_body;
 
         bodylist(std::deque<std::string> groups,
            const std::deque<std::string>& articles);

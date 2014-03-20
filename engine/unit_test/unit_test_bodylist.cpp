@@ -60,7 +60,7 @@ struct tester {
     void log(const std::string& str)
     {}
 
-    void body(newsflash::bodylist::body body)
+    void body(newsflash::bodylist::body&& body)
     {
         std::lock_guard<std::mutex> lock(mutex);
 
