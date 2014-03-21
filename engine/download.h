@@ -31,7 +31,7 @@
 #include "stopwatch.h"
 #include "encoding.h"
 
-namespace engine
+namespace corelib
 {
     // extract encoded content from the buffers
     class download : public task
@@ -80,5 +80,5 @@ namespace engine
         bool keeptext_;
     };
 
-} // engine
+} // corelib
 

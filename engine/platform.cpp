@@ -40,7 +40,7 @@
 #include "platform.h"
 
 
-namespace engine
+namespace corelib
 {
 
 #if defined(WINDOWS_OS)
@@ -136,5 +136,5 @@ std::ofstream& open_fstream(const std::string& filename, std::ofstream& stream)
 #endif
 
 
-} // engine
+} // corelib
 

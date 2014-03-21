@@ -28,7 +28,7 @@
 #include <ctime>
 #include "../speedometer.h"
 
-void produce_sample(int num_samples, int sample_bytes, engine::speedometer& meter)
+void produce_sample(int num_samples, int sample_bytes, corelib::speedometer& meter)
 {
     std::srand(std::time(NULL));
     meter.start();
@@ -49,7 +49,7 @@ void produce_sample(int num_samples, int sample_bytes, engine::speedometer& mete
 
 void test_multiple_thread()
 {
-    engine::speedometer meter;
+    corelib::speedometer meter;
 
     std::thread thread(std::bind(produce_sample, 100, 128, std::ref(meter)));
 

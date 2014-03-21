@@ -30,7 +30,7 @@
 #include "waithandle.h"
 #include "event.h"
 
-namespace engine
+namespace corelib
 {
     template<typename T>
     class queue : boost::noncopyable
@@ -129,4 +129,4 @@ namespace engine
         event event_;
     };
 
-} // engine
+} // corelib

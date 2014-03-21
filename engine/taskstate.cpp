@@ -24,7 +24,7 @@
 #include "taskstate.h"
 #include "utility.h"
 
-namespace engine
+namespace corelib
 {
 
 taskstate::taskstate()
@@ -280,4 +280,4 @@ void taskstate::emit(taskstate::action action)
     on_event(action);
 }
 
-} // engine
+} // corelib

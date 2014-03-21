@@ -29,7 +29,7 @@
 #include <memory>
 #include <utility>
 
-namespace engine
+namespace corelib
 {
     // bigfile handles big files up to 2^63-1 bytes in size
     class bigfile
@@ -101,7 +101,7 @@ namespace engine
         std::unique_ptr<impl> pimpl_;
     };
 
-} // engine
+} // corelib
 
 
 

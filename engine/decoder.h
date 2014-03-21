@@ -28,7 +28,7 @@
 #include <string>
 #include <functional>
 
-namespace engine
+namespace corelib
 {
     // NNTP data decoder. extracts/decodes ascii armoured binaries 
     // out of NNTP data buffers. 
@@ -82,4 +82,4 @@ namespace engine
     private:
     };
 
-} // engine
+} // corelib

@@ -40,7 +40,7 @@ namespace {
     public:
         context() : context_(nullptr)
         {
-            engine::openssl_init();
+            corelib::openssl_init();
         }
 
        ~context()
@@ -71,7 +71,7 @@ namespace {
 
 } // namespace
 
-namespace engine
+namespace corelib
 {
 
 sslcontext::sslcontext()
@@ -160,7 +160,7 @@ struct openssl {
     static 
     unsigned long identity_callback()
     {
-        return engine::get_thread_identity();
+        return corelib::get_thread_identity();
     }
 
     static 
@@ -182,4 +182,4 @@ void openssl_init()
     static openssl lib;
 }
 
-} // engine
+} // corelib

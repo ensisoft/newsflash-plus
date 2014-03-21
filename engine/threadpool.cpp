@@ -24,7 +24,7 @@
 #include <cassert>
 #include "threadpool.h"
 
-namespace engine
+namespace corelib
 {
 
 threadpool::threadpool(std::size_t num_threads) :qsize_(0), key_(0)
@@ -142,4 +142,4 @@ void threadpool::thread_main(threadpool::thread* self)
     }
 }
 
-} // engine
+} // corelib

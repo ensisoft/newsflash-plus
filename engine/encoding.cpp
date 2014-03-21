@@ -23,7 +23,7 @@
 #include <boost/regex.hpp>
 #include "encoding.h"
 
-namespace engine
+namespace corelib
 {
 
 encoding identify_encoding(const char* line, std::size_t len)
@@ -63,4 +63,4 @@ encoding identify_encoding(const char* line, std::size_t len)
     
 }
 
-} // engine
+} // corelib

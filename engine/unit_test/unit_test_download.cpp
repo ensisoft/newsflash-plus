@@ -24,9 +24,9 @@
 #include "../download.h"
 #include "unit_test_common.h"
 
-engine::buffer generate_buffer(std::size_t id, std::size_t bytes)
+corelib::buffer generate_buffer(std::size_t id, std::size_t bytes)
 {
-    engine::buffer buff;
+    corelib::buffer buff;
     buff.resize(bytes);
 
     for (size_t i=0; i<bytes; ++i)
@@ -35,14 +35,14 @@ engine::buffer generate_buffer(std::size_t id, std::size_t bytes)
     return buff;
 }
 
-engine::buffer read_file(const char* file, std::size_t offset, std::size_t len)
+corelib::buffer read_file(const char* file, std::size_t offset, std::size_t len)
 {
     std::FILE* fp = fopen(file, "rb");
     BOOST_REQUIRE(fp);
 
     fseek(fp, offset, SEEK_SET);
 
-    engine::buffer buff;
+    corelib::buffer buff;
     buff.resize(len);
 
     fread(&buff[0], 1, len, fp);

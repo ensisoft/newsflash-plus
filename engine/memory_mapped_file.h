@@ -26,7 +26,7 @@
 #include <memory>
 #include <vector>
 
-namespace engine
+namespace corelib
 {
     class memory_mapped_file
     {
@@ -88,4 +88,4 @@ namespace engine
         std::size_t map_file_size_;
     };
 
-} // engine
+} // corelib

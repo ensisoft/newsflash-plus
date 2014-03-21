@@ -40,7 +40,7 @@
 #include "protocol.h"
 #include "buffer.h"
 
-namespace engine
+namespace corelib
 {
 
 protocol::protocol() 
@@ -211,4 +211,4 @@ void protocol::authenticate()
         throw exception("authentication failed", error::authentication_failed);    
 }
 
-} // engine
+} // corelib

@@ -30,7 +30,7 @@
 #include <sys/types.h>
 #include <cerrno>
 
-namespace engine
+namespace corelib
 {
     typedef int    native_handle_t;
     typedef int    native_socket_t;
@@ -41,4 +41,4 @@ namespace engine
     const int OS_INVALID_HANDLE = -1;
     const int OS_INVALID_SOCKET = -1;
 
-} // engine
+} // corelib

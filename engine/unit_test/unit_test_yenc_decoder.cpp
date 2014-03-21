@@ -32,10 +32,10 @@
 struct tester 
 {
     std::vector<char> binary;
-    std::vector<engine::decoder::error> errors;
-    engine::decoder::info info;
+    std::vector<corelib::decoder::error> errors;
+    corelib::decoder::info info;
 
-    tester(engine::decoder& dec)
+    tester(corelib::decoder& dec)
     {
         dec.on_write = std::bind(&tester::decoder_write, this, 
             std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
@@ -61,11 +61,11 @@ struct tester
         }
     }
 
-    void decoder_info(const engine::decoder::info& info)
+    void decoder_info(const corelib::decoder::info& info)
     {
         this->info = info;
     }
-    void decoder_error(const engine::decoder::error error, const std::string& str)
+    void decoder_error(const corelib::decoder::error error, const std::string& str)
     {
         errors.push_back(error);
     }
@@ -102,7 +102,7 @@ void test_single_success()
     append(part, encode(data, 1024)); 
     append(part, footer);
 
-    engine::yenc_single_decoder yenc;
+    corelib::yenc_single_decoder yenc;
     tester test(yenc);
     yenc.decode(&part[0], part.size());
 
@@ -127,7 +127,7 @@ void test_single_broken()
         append(part, encode(data, 5666));
         append(part, footer);
 
-        engine::yenc_single_decoder yenc;
+        corelib::yenc_single_decoder yenc;
         tester test(yenc);
         yenc.decode(part.data(), part.size());
 
@@ -136,7 +136,7 @@ void test_single_broken()
         BOOST_REQUIRE(test.binary == data);
 
         BOOST_REQUIRE(test.errors.size() == 1);
-        BOOST_REQUIRE(test.errors[0] == engine::decoder::error::crc);
+        BOOST_REQUIRE(test.errors[0] == corelib::decoder::error::crc);
     }
 
     // problems with yenc sizes
@@ -152,15 +152,15 @@ void test_single_broken()
         append(part, encode(data, 4000));
         append(part, footer);
 
-        engine::yenc_single_decoder yenc;
+        corelib::yenc_single_decoder yenc;
         tester test(yenc);
         yenc.decode(part.data(), part.size());
 
         BOOST_REQUIRE(test.info.name == "testtest");
         BOOST_REQUIRE(test.binary == data);
         BOOST_REQUIRE(test.errors.size() == 2);
-        BOOST_REQUIRE(test.errors[0] == engine::decoder::error::size);
-        BOOST_REQUIRE(test.errors[1] == engine::decoder::error::size);
+        BOOST_REQUIRE(test.errors[0] == corelib::decoder::error::size);
+        BOOST_REQUIRE(test.errors[1] == corelib::decoder::error::size);
     }
 }
 
@@ -179,7 +179,7 @@ void test_single_error()
         append(part, encode(data, 4000));
         append(part, footer);
 
-        engine::yenc_single_decoder yenc;
+        corelib::yenc_single_decoder yenc;
 
         REQUIRE_EXCEPTION(yenc.decode(part.data(), part.size()));
     }
@@ -194,7 +194,7 @@ void test_single_error()
         append(part, header);
         append(part, encode(data, 4000));
 
-        engine::yenc_single_decoder yenc;
+        corelib::yenc_single_decoder yenc;
         REQUIRE_EXCEPTION(yenc.decode(part.data(), part.size()));
     }
 }
@@ -204,7 +204,7 @@ void test_multi_success()
     std::vector<char> data1;
     std::vector<char> data2;
 
-    engine::yenc_multi_decoder yenc;
+    corelib::yenc_multi_decoder yenc;
     tester test(yenc);
 
     std::vector<char> data;

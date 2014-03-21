@@ -55,14 +55,14 @@ void test_map_whole_file()
     block[0] = 0xda;
     block[block.size()-1] = 0xda;
 
-    engine::bigfile file;
+    corelib::bigfile file;
     file.create("file");
     file.write(&block[0], block.size());
     file.flush();
     file.close();
 
     {
-        engine::memory_mapped_file map;
+        corelib::memory_mapped_file map;
         BOOST_REQUIRE(map.map("file") == std::error_code());
         BOOST_REQUIRE(map.file_size() == block.size());
 
@@ -100,7 +100,7 @@ void test_map_chunk_file()
     data[0] = 0xda;
     data[data.size()-1] = 0xda;
 
-    engine::bigfile file;
+    corelib::bigfile file;
     file.create("file");
     file.write(&data[0], data.size());
     file.flush();
@@ -141,7 +141,7 @@ void test_map_chunk_file()
 
         for (const block& block : blocks)
         {
-            engine::memory_mapped_file map;
+            corelib::memory_mapped_file map;
             BOOST_REQUIRE(!map.map("file", block.map_size, 1));
 
             void* ptr = map.data(block.offset, block.size);
@@ -151,7 +151,7 @@ void test_map_chunk_file()
 
     // check multiple blocks
     {
-        engine::memory_mapped_file map;
+        corelib::memory_mapped_file map;
         BOOST_REQUIRE(!map.map("file", KB(4), 2));
 
         map.data(0, 1);

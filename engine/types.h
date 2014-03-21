@@ -31,8 +31,8 @@
 
 #include <cstdint>
 
-namespace engine
+namespace corelib
 {
     typedef std::uint32_t bitflag_t;
     
-} // engine
+} // corelib

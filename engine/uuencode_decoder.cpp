@@ -25,7 +25,7 @@
 #include "uuencode_decoder.h"
 #include "uuencode.h"
 
-namespace engine
+namespace corelib
 {
 
 uuencode_decoder::uuencode_decoder() : has_header_(false)
@@ -70,4 +70,4 @@ std::size_t uuencode_decoder::decode(const void* data, std::size_t len)
 void uuencode_decoder::finish()
 {}
 
-} // engine
+} // corelib

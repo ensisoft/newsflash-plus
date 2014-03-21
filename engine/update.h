@@ -27,7 +27,7 @@
 #include <cstdint>
 #include "task.h"
 
-namespace engine
+namespace corelib
 {
     // class update : public task
     // {
@@ -55,4 +55,4 @@ namespace engine
 
     // };
 
-} // engine
+} // corelib

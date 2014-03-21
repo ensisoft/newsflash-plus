@@ -27,7 +27,7 @@
 
 // collection of generic usable utility functions
 
-namespace engine
+namespace corelib
 {
 
     template<typename Handle, typename Deleter>

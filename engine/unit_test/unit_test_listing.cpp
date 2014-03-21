@@ -50,9 +50,9 @@ void unit_test_success()
     {
         delete_file("listing.txt");
 
-        engine::buffer buff;
+        corelib::buffer buff;
 
-        auto listing = engine::listing("listing.txt");
+        auto listing = corelib::listing("listing.txt");
         listing.receive(std::move(buff), 0);
         listing.finalize();
 
@@ -72,9 +72,9 @@ void unit_test_success()
            "alt.binaries.movies.divx 321 123 y\r\n"                      
            "alt.binaries.sounds.mp3    85 80 n\r\n";                      
 
-        engine::buffer buff(body);
+        corelib::buffer buff(body);
 
-        auto listing = engine::listing("listing.txt");
+        auto listing = corelib::listing("listing.txt");
 
         listing.receive(std::move(buff), 0);
         listing.finalize();

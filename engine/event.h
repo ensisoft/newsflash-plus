@@ -26,7 +26,7 @@
 #include <memory>
 #include "waithandle.h"
 
-namespace engine
+namespace corelib
 {
     // event is a signaling object.
     class event
@@ -52,5 +52,5 @@ namespace engine
         std::unique_ptr<impl> pimpl_;
     }; 
 
-} // engine
+} // corelib
 

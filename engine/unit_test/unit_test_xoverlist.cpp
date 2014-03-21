@@ -49,7 +49,7 @@ struct tester {
     void send(const void* buff, std::size_t len)
     {}
 
-    void xover(engine::xoverlist::xover&& xover)
+    void xover(corelib::xoverlist::xover&& xover)
     {
         std::lock_guard<std::mutex> lock(mutex);
 
@@ -71,7 +71,7 @@ struct tester {
     std::deque<std::string> responses;
 
     std::mutex mutex;
-    std::vector<engine::xoverlist::xover> xovers;
+    std::vector<corelib::xoverlist::xover> xovers;
     std::size_t xover_count;
     bool throw_exception;
     bool group_unavailable;
@@ -87,13 +87,13 @@ void test_xoverlist()
             "411 no such newsgroup"
         };
 
-        engine::protocol proto;
+        corelib::protocol proto;
         proto.on_recv = std::bind(&tester::recv, &test, 
             std::placeholders::_1, std::placeholders::_2);
         proto.on_send = std::bind(&tester::send, &test,
             std::placeholders::_1, std::placeholders::_2);
 
-        engine::xoverlist list = {"alt.binaries.foo"};
+        corelib::xoverlist list = {"alt.binaries.foo"};
         list.on_unavailable = std::bind(&tester::unavailable, &test);
 
         BOOST_REQUIRE(list.run(proto) == false);
@@ -108,13 +108,13 @@ void test_xoverlist()
             "211 0 0 0  alt.binaries.foo"
         };
 
-        engine::protocol proto;
+        corelib::protocol proto;
         proto.on_recv = std::bind(&tester::recv, &test, 
             std::placeholders::_1, std::placeholders::_2);
         proto.on_send = std::bind(&tester::send, &test,
             std::placeholders::_1, std::placeholders::_2);
 
-        engine::xoverlist list = {"alt.binaries.foo"};
+        corelib::xoverlist list = {"alt.binaries.foo"};
         list.on_prepare_ranges = std::bind(&tester::prepare, &test, std::placeholders::_1);
 
         BOOST_REQUIRE(list.run(proto) == false);
@@ -132,13 +132,13 @@ void test_xoverlist()
                  "."
         };
 
-        engine::protocol proto;
+        corelib::protocol proto;
         proto.on_recv = std::bind(&tester::recv, &test, 
             std::placeholders::_1, std::placeholders::_2);
         proto.on_send = std::bind(&tester::send, &test,
             std::placeholders::_1, std::placeholders::_2);
 
-        engine::xoverlist list = {"alt.binaries.foo"};
+        corelib::xoverlist list = {"alt.binaries.foo"};
         list.on_prepare_ranges = std::bind(&tester::prepare, &test, std::placeholders::_1);
         list.on_xover = std::bind(&tester::xover, &test, std::placeholders::_1);
 
@@ -162,13 +162,13 @@ void test_xoverlist()
                 "."
         };
 
-        engine::protocol proto;
+        corelib::protocol proto;
         proto.on_recv = std::bind(&tester::recv, &test, 
             std::placeholders::_1, std::placeholders::_2);
         proto.on_send = std::bind(&tester::send, &test,
             std::placeholders::_1, std::placeholders::_2);
 
-        engine::xoverlist list = {"alt.binaries.foo"};
+        corelib::xoverlist list = {"alt.binaries.foo"};
         list.on_prepare_ranges = std::bind(&tester::prepare, &test, std::placeholders::_1);
         list.on_xover = std::bind(&tester::xover, &test, std::placeholders::_1);
 
@@ -195,13 +195,13 @@ void test_xoverlist()
                 "."
         };
 
-        engine::protocol proto;
+        corelib::protocol proto;
         proto.on_recv = std::bind(&tester::recv, &test, 
             std::placeholders::_1, std::placeholders::_2);
         proto.on_send = std::bind(&tester::send, &test,
             std::placeholders::_1, std::placeholders::_2);
 
-        engine::xoverlist list = {"alt.binaries.foo"};
+        corelib::xoverlist list = {"alt.binaries.foo"};
         list.on_prepare_ranges = std::bind(&tester::prepare, &test, std::placeholders::_1);
         list.on_xover = std::bind(&tester::xover, &test, std::placeholders::_1);
 
@@ -232,13 +232,13 @@ void test_xoverlist()
                 "."
         };
 
-        engine::protocol proto;
+        corelib::protocol proto;
         proto.on_recv = std::bind(&tester::recv, &test, 
             std::placeholders::_1, std::placeholders::_2);
         proto.on_send = std::bind(&tester::send, &test,
             std::placeholders::_1, std::placeholders::_2);
 
-        engine::xoverlist list = {"alt.binaries.foo"};
+        corelib::xoverlist list = {"alt.binaries.foo"};
         list.on_prepare_ranges = std::bind(&tester::prepare, &test, std::placeholders::_1);
         list.on_xover = std::bind(&tester::xover, &test, std::placeholders::_1);
 
@@ -264,7 +264,7 @@ std::mutex mutex;
 std::condition_variable cond;
 bool done;
 
-void simulate_connection_thread(engine::xoverlist& xover)
+void simulate_connection_thread(corelib::xoverlist& xover)
 {
     struct tester {
         tester() : group_selected(false)
@@ -298,7 +298,7 @@ void simulate_connection_thread(engine::xoverlist& xover)
 
     tester test;
 
-    engine::protocol proto;
+    corelib::protocol proto;
     proto.on_recv = std::bind(&tester::recv, &test,
         std::placeholders::_1, std::placeholders::_2);
     proto.on_send = std::bind(&tester::send, &test,
@@ -312,7 +312,7 @@ void test_xoverlist_multiple_threads()
 {
     std::unique_lock<std::mutex> lock(mutex);
 
-    engine::xoverlist list = {"alt.binaries.foo"};
+    corelib::xoverlist list = {"alt.binaries.foo"};
 
     tester test;
 

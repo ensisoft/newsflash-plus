@@ -26,7 +26,7 @@
 int test_main(int, char*[])
 {
     {
-        engine::buffer buff;
+        corelib::buffer buff;
 
         BOOST_REQUIRE(buff.capacity() == 0);
         BOOST_REQUIRE(buff.size() == 0);
@@ -58,15 +58,15 @@ int test_main(int, char*[])
 
 
     {
-        engine::buffer buff;
+        corelib::buffer buff;
         buff.resize(512);
         buff.offset(100);
 
-        engine::buffer::header header(buff);
+        corelib::buffer::header header(buff);
         BOOST_REQUIRE(header.data() == buff.data());
         BOOST_REQUIRE(header.size() == 100);
 
-        engine::buffer::payload body(buff);
+        corelib::buffer::payload body(buff);
         BOOST_REQUIRE(body.data() == buff.data() + 100);
         BOOST_REQUIRE(body.size() == 412);
 

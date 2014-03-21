@@ -26,7 +26,7 @@
 #include <openssl/ssl.h>
 #include <mutex>
 
-namespace engine
+namespace corelib
 {
     // OpenSSL client context handle.
     class sslcontext
@@ -44,4 +44,4 @@ namespace engine
     
     void openssl_init();
     
-} // engine
+} // corelib

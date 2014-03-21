@@ -92,7 +92,7 @@ void test_handshake()
             "MODE READER"
         };
 
-        engine::protocol proto;
+        corelib::protocol proto;
         proto.on_recv = std::bind(&test_sequence::recv, &test, std::placeholders::_1, std::placeholders::_2);
         proto.on_send = std::bind(&test_sequence::send, &test,std::placeholders::_1, std::placeholders::_2);
         proto.on_log  = cmd_log;
@@ -111,7 +111,7 @@ void test_handshake()
             "5555 foobar"
         };
 
-        engine::protocol proto;
+        corelib::protocol proto;
         proto.on_recv = std::bind(&test_sequence::recv, &test, std::placeholders::_1, std::placeholders::_2);
         proto.on_send = std::bind(&test_sequence::send, &test,std::placeholders::_1, std::placeholders::_2);
         proto.on_log  = cmd_log;
@@ -129,7 +129,7 @@ void test_authentication()
     test.password = "pass123";
     test.username = "user123";
 
-    engine::protocol proto;
+    corelib::protocol proto;
     proto.on_recv = std::bind(&test_sequence::recv, &test, std::placeholders::_1, std::placeholders::_2);
     proto.on_send = std::bind(&test_sequence::send, &test, std::placeholders::_1, std::placeholders::_2);
     proto.on_auth = std::bind(&test_sequence::authenticate, &test, std::placeholders::_1, std::placeholders::_2);
@@ -191,7 +191,7 @@ void test_authentication()
             "BODY <1>",
             "AUTHINFO USER user123"
         };
-        engine::buffer buff;
+        corelib::buffer buff;
         buff.reserve(1024);
 
         proto.connect();
@@ -221,7 +221,7 @@ void test_authentication()
             "GROUP alt.foo.bar",
             "QUIT"
         };
-        engine::buffer buff;
+        corelib::buffer buff;
         buff.reserve(100);
 
         proto.connect();
@@ -254,7 +254,7 @@ void test_authentication()
             "GROUP alt.foo.bar",
             "QUIT"
         };
-        engine::buffer buff;
+        corelib::buffer buff;
         buff.reserve(100);
 
         proto.connect();
@@ -286,16 +286,16 @@ void test_listing()
             "LIST"
         };
 
-        engine::protocol proto;
+        corelib::protocol proto;
         proto.on_recv = std::bind(&test_sequence::recv, &test, std::placeholders::_1, std::placeholders::_2);
         proto.on_send = std::bind(&test_sequence::send, &test, std::placeholders::_1, std::placeholders::_2);
 
-        engine::buffer buff;
+        corelib::buffer buff;
 
         BOOST_REQUIRE(proto.list(buff));
 
-        const engine::buffer::header header(buff);
-        const engine::buffer::payload body(buff);
+        const corelib::buffer::header header(buff);
+        const corelib::buffer::payload body(buff);
 
         BOOST_REQUIRE(to_string(header) == "215 list of newsgroups follows\r\n");
         BOOST_REQUIRE(body.empty());
@@ -316,16 +316,16 @@ void test_listing()
             "LIST"
         };
 
-        engine::protocol proto;
+        corelib::protocol proto;
         proto.on_recv = std::bind(&test_sequence::recv, &test, std::placeholders::_1, std::placeholders::_2);
         proto.on_send = std::bind(&test_sequence::send, &test, std::placeholders::_1, std::placeholders::_2);
         
-        engine::buffer buff;
+        corelib::buffer buff;
 
         BOOST_REQUIRE(proto.list(buff));
 
-        const engine::buffer::header header(buff);
-        const engine::buffer::payload body(buff);
+        const corelib::buffer::header header(buff);
+        const corelib::buffer::payload body(buff);
 
         BOOST_REQUIRE(to_string(header) == "215 list of newsgroups follows\r\n");
         BOOST_REQUIRE(to_string(body) == "alt.binaries.foo 1 2 y\r\n"
@@ -348,13 +348,13 @@ void test_body()
         };
 
 
-        engine::protocol proto;
+        corelib::protocol proto;
         proto.on_recv = std::bind(&test_sequence::recv, &test, std::placeholders::_1, std::placeholders::_2);
         proto.on_send = std::bind(&test_sequence::send, &test, std::placeholders::_1, std::placeholders::_2);        
 
-        engine::buffer buff;
+        corelib::buffer buff;
 
-        BOOST_REQUIRE(proto.body("1234", buff) == engine::protocol::status::unavailable);
+        BOOST_REQUIRE(proto.body("1234", buff) == corelib::protocol::status::unavailable);
     }
 
     // available, non empty
@@ -373,15 +373,15 @@ void test_body()
             "BODY 1234"
         };
 
-        engine::protocol proto;
+        corelib::protocol proto;
         proto.on_recv = std::bind(&test_sequence::recv, &test, std::placeholders::_1, std::placeholders::_2);
         proto.on_send = std::bind(&test_sequence::send, &test, std::placeholders::_1, std::placeholders::_2);                
 
-        engine::buffer buff;
-        BOOST_REQUIRE(proto.body("1234", buff) == engine::protocol::status::success);
+        corelib::buffer buff;
+        BOOST_REQUIRE(proto.body("1234", buff) == corelib::protocol::status::success);
 
-        const engine::buffer::header header(buff);
-        const engine::buffer::payload body(buff);
+        const corelib::buffer::header header(buff);
+        const corelib::buffer::payload body(buff);
 
         BOOST_REQUIRE(to_string(header) == "222 body follows\r\n");
         BOOST_REQUIRE(to_string(body) == "foobar\r\nassa sassa mandelmassa\r\n");
@@ -401,15 +401,15 @@ void test_body()
             "BODY 1234"
         };       
 
-        engine::protocol proto;
+        corelib::protocol proto;
         proto.on_recv = std::bind(&test_sequence::recv, &test, std::placeholders::_1, std::placeholders::_2);
         proto.on_send = std::bind(&test_sequence::send, &test, std::placeholders::_1, std::placeholders::_2);                
 
-        engine::buffer buff;
-        BOOST_REQUIRE(proto.body("1234", buff) == engine::protocol::status::success);
+        corelib::buffer buff;
+        BOOST_REQUIRE(proto.body("1234", buff) == corelib::protocol::status::success);
 
-        const engine::buffer::header header(buff);
-        const engine::buffer::payload body(buff);
+        const corelib::buffer::header header(buff);
+        const corelib::buffer::payload body(buff);
 
         BOOST_REQUIRE(to_string(header) == "222 body follows\r\n");
         BOOST_REQUIRE(body.empty());
@@ -469,7 +469,7 @@ void test_api_sequence()
         "QUIT"
     };
 
-    engine::protocol proto;
+    corelib::protocol proto;
     proto.on_recv = std::bind(&test_sequence::recv, &test, std::placeholders::_1, std::placeholders::_2);
     proto.on_send = std::bind(&test_sequence::send, &test, std::placeholders::_1, std::placeholders::_2);
     proto.on_log  = cmd_log;
@@ -478,18 +478,18 @@ void test_api_sequence()
     BOOST_REQUIRE(!proto.group("foo.bar.baz"));
     BOOST_REQUIRE(proto.group("blah.bluh"));
 
-    engine::protocol::groupinfo info {0};
+    corelib::protocol::groupinfo info {0};
     BOOST_REQUIRE(proto.group("test.test", info));
     BOOST_REQUIRE(info.high_water_mark == 4);
     BOOST_REQUIRE(info.low_water_mark == 1);
     BOOST_REQUIRE(info.article_count == 3);
 
-    engine::buffer buff;
+    corelib::buffer buff;
     buff.reserve(100);
 
-    BOOST_REQUIRE(proto.body("<1>", buff) == engine::protocol::status::dmca);
-    BOOST_REQUIRE(proto.body("<2>", buff) == engine::protocol::status::unavailable);
-    BOOST_REQUIRE(proto.body("<3>", buff) == engine::protocol::status::success);
+    BOOST_REQUIRE(proto.body("<1>", buff) == corelib::protocol::status::dmca);
+    BOOST_REQUIRE(proto.body("<2>", buff) == corelib::protocol::status::unavailable);
+    BOOST_REQUIRE(proto.body("<3>", buff) == corelib::protocol::status::success);
 
     BOOST_REQUIRE(proto.list(buff));
 

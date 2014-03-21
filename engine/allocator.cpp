@@ -24,7 +24,7 @@
 #include <cassert>
 #include "allocator.h"
 
-namespace engine
+namespace corelib
 {
 
 allocator::allocator() : volume_(0), count_(0), allocated_(0)
@@ -90,4 +90,4 @@ allocator& allocator::get()
 }
 
 
-} // engine
+} // corelib

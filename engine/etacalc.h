@@ -25,7 +25,7 @@
 #include <cstddef>
 #include "stopwatch.h"
 
-namespace engine
+namespace corelib
 {
 
     // ETA calculator
@@ -48,4 +48,4 @@ namespace engine
         std::size_t recved_;
     };
 
-} // engine
+} // corelib

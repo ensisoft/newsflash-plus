@@ -24,7 +24,7 @@
 
 #include <cstddef>
 
-namespace engine
+namespace corelib
 {
     enum class encoding {
         yenc_single,
@@ -37,4 +37,4 @@ namespace engine
     // try to identify the used encoding (ascii-armoring) based on some input data.
     encoding identify_encoding(const char* line, std::size_t len);
 
-} // engine
+} // corelib

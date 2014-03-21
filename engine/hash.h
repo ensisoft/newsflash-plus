@@ -27,7 +27,7 @@
 #include <limits>
 #include <cstddef>
 
-namespace engine
+namespace corelib
 {
     // hashing code ripped off from boost TR1
     template<typename T>
@@ -63,4 +63,4 @@ namespace engine
         std::size_t seed_;
     };    
 
-} // engine
+} // corelib

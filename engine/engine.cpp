@@ -36,17 +36,17 @@
 #include "assert.h"
 
 
-// namespace engine
+// namespace corelib
 // {
 
-// class engine::impl
+// class corelib::impl
 // {
 // public:
-//     impl(const std::string& logs, const engine::configuration& config, engine::listener* listener) 
+//     impl(const std::string& logs, const corelib::configuration& config, corelib::listener* listener) 
 //         : logfolder_(logs)
 //         , config_(config)
 //         , listener_(listener)
-//         , thread_(std::bind(&engine::impl::main, this))
+//         , thread_(std::bind(&corelib::impl::main, this))
 //     {}
 
 //    ~impl()
@@ -63,7 +63,7 @@
 //     }
 
 
-//     void add_account(const engine::account& acc)
+//     void add_account(const corelib::account& acc)
 //     {
 
 //     }
@@ -172,11 +172,11 @@
 // private:
 //     typedef std::deque<task*> tasklist;
 //     typedef std::deque<connection*> connlist;    
-//     typedef std::vector<engine::account> acclist;
+//     typedef std::vector<corelib::account> acclist;
 
 // private:
 //     const std::string& logfolder_;
-//     engine::configuration config_;
+//     corelib::configuration config_;
 
 //     listener* listener_;    
 //     msgqueue messages_;
@@ -191,32 +191,32 @@
 // };
 
 
-// engine::engine(listener* list, const configuration& config, 
+// corelib::engine(listener* list, const configuration& config, 
 //     const std::string& logfolder)
 // {
-//     pimpl_.reset(new engine::impl(logfolder, config, list));
+//     pimpl_.reset(new corelib::impl(logfolder, config, list));
 // }
 
-// engine::engine(listener* list, const configuration& config)
+// corelib::engine(listener* list, const configuration& config)
 // {
-//     pimpl_.reset(new engine::impl("", config, list));
+//     pimpl_.reset(new corelib::impl("", config, list));
 // }
 
 
-// engine::~engine()
+// corelib::~engine()
 // {
 //     pimpl_->join();
 // }
 
-// void engine::shutdown()
+// void corelib::shutdown()
 // {
 //     pimpl_->shutdown();
 // }
 
-// void engine::add_account(const account& acc)
+// void corelib::add_account(const account& acc)
 // {
 //     pimpl_->add_account(acc);
 // }
 
-// } // engine
+// } // corelib
 

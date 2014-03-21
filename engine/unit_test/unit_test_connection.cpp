@@ -32,7 +32,7 @@
 #include "../cmdlist.h"
 #include "../protocol.h"
 
-using namespace engine;
+using namespace corelib;
 
 struct tester {
     std::mutex mutex;
@@ -44,7 +44,7 @@ struct tester {
     tester() : error(connection::error::none)
     {}
 
-    tester(engine::connection& conn) : error(connection::error::none)
+    tester(corelib::connection& conn) : error(connection::error::none)
     {
         conn.on_error = std::bind(&tester::on_error, this,
             std::placeholders::_1);
@@ -177,7 +177,7 @@ void unit_test_connection_resolve_error(bool ssl)
 {
     tester test;
 
-    engine::connection conn("clog");
+    corelib::connection conn("clog");
     conn.on_error = std::bind(&tester::on_error, &test, 
         std::placeholders::_1);    
     conn.connect("asgasgasg", 8888, ssl);
@@ -190,7 +190,7 @@ void unit_test_connection_refused(bool ssl)
 {
     tester test;
 
-    engine::connection conn("clog");
+    corelib::connection conn("clog");
     conn.on_error = std::bind(&tester::on_error, &test, 
         std::placeholders::_1);    
     conn.connect("localhost", 2119, ssl);
@@ -203,7 +203,7 @@ void unit_test_connection_interrupted(bool ssl)
 {
     tester test;
 
-    engine::connection conn("clog");
+    corelib::connection conn("clog");
     conn.on_error = std::bind(&tester::on_error, &test, 
         std::placeholders::_1);
     conn.connect("news.budgetnews.net", 119, false);
@@ -217,7 +217,7 @@ void unit_test_connection_forbidden(bool ssl)
     test.user = "foobar";
     test.pass = "foobar";
 
-    engine::connection conn("clog");
+    corelib::connection conn("clog");
     conn.on_error = std::bind(&tester::on_error, &test,
         std::placeholders::_1);
     conn.on_auth = std::bind(&tester::on_auth, &test,
@@ -232,7 +232,7 @@ void unit_test_connection_timeout_error(bool ssl)
 {
     tester test;
 
-    engine::connection conn("clog");
+    corelib::connection conn("clog");
     conn.on_error = std::bind(&tester::on_error, &test,
         std::placeholders::_1);        
     conn.connect("www.google.com", 80, false);
@@ -250,7 +250,7 @@ void unit_test_connection_success(bool ssl)
 {
     tester test;
 
-    engine::connection conn("clog");
+    corelib::connection conn("clog");
     conn.on_error = std::bind(&tester::on_error, &test, 
         std::placeholders::_1);
     conn.on_ready = std::bind(&tester::on_ready, &test);
@@ -267,7 +267,7 @@ void unit_test_cmdlist()
 
     auto port = serv.open(8181);
 
-    engine::connection conn("clog");
+    corelib::connection conn("clog");
     conn.on_error = std::bind(&tester::on_error, &test,
         std::placeholders::_1);
     conn.on_ready = std::bind(&tester::on_ready, &test);
@@ -284,7 +284,7 @@ void unit_test_cmdlist()
 
     // run to completion    
     {
-        class testlist : public engine::cmdlist
+        class testlist : public corelib::cmdlist
         {
         public:
             testlist() : counter_(0)
@@ -293,7 +293,7 @@ void unit_test_cmdlist()
             bool run(protocol& proto) override
             {
                 const auto& article = boost::lexical_cast<std::string>(counter_);
-                engine::buffer buff;
+                corelib::buffer buff;
                 buff.reserve(100);
 
                 proto.body(article, buff);
@@ -324,7 +324,7 @@ void unit_test_cmdlist()
 
     // test cancellation
     {
-        class testlist : public engine::cmdlist
+        class testlist : public corelib::cmdlist
         {
         public:
             testlist()
@@ -332,7 +332,7 @@ void unit_test_cmdlist()
 
             bool run(protocol& proto) override
             {
-                engine::buffer buff;
+                corelib::buffer buff;
                 buff.reserve(1024);
 
                 proto.body("1234", buff);

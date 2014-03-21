@@ -40,7 +40,7 @@
 #  include <netinet/in.h>
 #endif
 
-using namespace engine;
+using namespace corelib;
 
 
 void test_connection_failure()
@@ -187,7 +187,7 @@ void ssl_server_main(int port)
     BIO_free(pem);
     SSL_CTX_free(ctx);
 
-    engine::closesocket(listener);
+    corelib::closesocket(listener);
 }
 
 void test_connection_success()
@@ -241,7 +241,7 @@ void test_connection_success()
 
 int test_main(int argc, char* argv[])
 {
-    engine::openssl_init();
+    corelib::openssl_init();
 
     test_connection_failure();
     test_connection_success();

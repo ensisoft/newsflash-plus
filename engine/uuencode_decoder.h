@@ -24,7 +24,7 @@
 
 #include "decoder.h"
 
-namespace engine
+namespace corelib
 {
     class uuencode_decoder : public decoder
     {
@@ -39,4 +39,4 @@ namespace engine
     private:
         bool has_header_;
     };
-} // engine
+} // corelib

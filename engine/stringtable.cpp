@@ -25,7 +25,7 @@
 #include "stringtable.h"
 #include "hash.h"
 
-namespace engine
+namespace corelib
 {
 
 stringtable::stringtable()
@@ -49,7 +49,7 @@ stringtable::key_t stringtable::add(const char* str, std::size_t len)
 
     len = std::min(len, std::size_t(MAX_STRING_LEN));
 
-    engine::hash<char> hash;
+    corelib::hash<char> hash;
 
     // add the length of the string to the hash also.
     // this way stuff such as 
@@ -174,4 +174,4 @@ const stringtable::basestring* stringtable::load_base_string(std::size_t offset)
     return static_cast<const basestring*>((const void*)&basedata_[offset]);
 }
 
-} // engine
+} // corelib

@@ -29,7 +29,7 @@
 #include <map>
 #include <cstddef>
 
-namespace engine
+namespace corelib
 {
     // string lookup table
     class stringtable 
@@ -105,4 +105,4 @@ namespace engine
         std::size_t rawbytes_;
 #endif
     };
-} // engine
+} // corelib

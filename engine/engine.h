@@ -25,7 +25,7 @@
 #include <string>
 #include <cstdint>
 
-namespace engine
+namespace corelib
 {
     // class listener;
 
@@ -53,7 +53,7 @@ namespace engine
     //         bool fillserver;
     //     };
 
-    //     // engine configuration
+    //     // corelib configuration
     //     struct configuration {
     //         bool overwrite_existing_files; 
     //         bool discard_text_context; 
@@ -93,4 +93,4 @@ namespace engine
     //     std::unique_ptr<impl> pimpl_;
     // };
 
-} // engine
+} // corelib

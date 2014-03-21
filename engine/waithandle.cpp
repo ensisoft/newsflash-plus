@@ -29,7 +29,7 @@
 
 namespace {
 
-std::pair<bool, bool> check_read_write(engine::native_socket_t sock)
+std::pair<bool, bool> check_read_write(corelib::native_socket_t sock)
 {
     fd_set read;
     fd_set write;
@@ -42,7 +42,7 @@ std::pair<bool, bool> check_read_write(engine::native_socket_t sock)
 
     struct timeval tv {};
 
-    if (select(0, &read, &write, nullptr, &tv) == engine::OS_SOCKET_ERROR)
+    if (select(0, &read, &write, nullptr, &tv) == corelib::OS_SOCKET_ERROR)
         throw std::runtime_error("select");
 
     bool can_read  = FD_ISSET(sock, &read);
@@ -53,7 +53,7 @@ std::pair<bool, bool> check_read_write(engine::native_socket_t sock)
 
 }  // namespace
 
-namespace engine
+namespace corelib
 {
 
 #if defined(WINDOWS_OS)
@@ -204,7 +204,7 @@ bool waithandle::wait_handles(const list& handles, const std::chrono::millisecon
 
 #endif
 
-} // engine
+} // corelib
 
 
 

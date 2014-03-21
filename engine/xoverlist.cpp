@@ -26,7 +26,7 @@
 #include "protocol.h"
 #include "buffer.h"
 
-namespace engine
+namespace corelib
 {
 
 xoverlist::xoverlist(std::string group) : group_(std::move(group)), first_(true), error_(false), configured_(false)
@@ -146,4 +146,4 @@ bool xoverlist::dequeue(range& next)
     return true;
 }
 
-} // engine
+} // corelib

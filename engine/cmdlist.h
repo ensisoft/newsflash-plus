@@ -22,7 +22,7 @@
 
 #pragma once
 
-namespace engine
+namespace corelib
 {
     class buffer;
     class protocol;
@@ -41,4 +41,4 @@ namespace engine
     private:
     };
 
-} // engine
+} // corelib

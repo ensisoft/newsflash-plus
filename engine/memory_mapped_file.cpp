@@ -41,7 +41,7 @@
 #include "memory_mapped_file.h"
 #include "utf8.h"
 
-namespace engine
+namespace corelib
 {
 
 #if defined(WINDOWS_OS)
@@ -313,5 +313,5 @@ void memory_mapped_file::evict()
     chunks_.pop_back();
 }
 
-} // engine
+} // corelib
 

@@ -24,7 +24,7 @@
 
 #include <chrono>
 
-namespace engine
+namespace corelib
 {
     // measure total time for a specific task
     class stopwatch
@@ -110,4 +110,4 @@ namespace engine
         bool paused_;
     };
 
-} // engine
+} // corelib

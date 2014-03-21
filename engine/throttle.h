@@ -27,7 +27,7 @@
 #include <cstddef>
 #include "stopwatch.h"
 
-namespace engine
+namespace corelib
 { 
     // implement throttling to conserve/limit bandwidth usage
     class throttle
@@ -51,4 +51,4 @@ namespace engine
         stopwatch stopwatch_;
     };
 
-} // engine
+} // corelib

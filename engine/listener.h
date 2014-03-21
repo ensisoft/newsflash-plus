@@ -26,7 +26,7 @@
 #include <string>
 #include <cstdint>
 
-namespace engine
+namespace corelib
 {
     // interface for listening to engine events.
     // the callback functions should be nothrow exception safe. 
@@ -53,7 +53,7 @@ namespace engine
         // be created or opened etc.
         virtual void on_error(const error& e) = 0;
 
-        // engine has finished performing an orderly shutdown.
+        // corelib has finished performing an orderly shutdown.
         virtual void on_shutdown() = 0;
 
         //virtual void on_listing_complete()
@@ -86,5 +86,5 @@ namespace engine
     private:
     };
 
-} // engine
+} // corelib
 

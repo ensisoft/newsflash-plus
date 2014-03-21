@@ -26,7 +26,7 @@
 #include <string>
 #include "decoder.h"
 
-namespace engine
+namespace corelib
 {
     // decoder for multi part yenc encoded content
     class yenc_multi_decoder : public decoder
@@ -52,4 +52,4 @@ namespace engine
         bool has_header_;
     };
 
-} // engine
+} // corelib

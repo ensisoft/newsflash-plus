@@ -27,7 +27,7 @@
 #include "protocol.h"
 #include "cmdlist.h"
 
-namespace engine
+namespace corelib
 {
     // generate request to download group listing 
     class grouplist : public cmdlist
@@ -79,4 +79,4 @@ namespace engine
         bool first_;
     };
 
-} // engine
+} // corelib

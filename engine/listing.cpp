@@ -29,7 +29,7 @@
 #include "buffer.h"
 #include "platform.h"
 
-namespace engine
+namespace corelib
 {
 
 listing::listing(std::string filename) : filename_(std::move(filename))
@@ -107,4 +107,4 @@ void listing::finalize()
             "io failure on " + filename_);
 }
 
-} // engine
+} // corelib

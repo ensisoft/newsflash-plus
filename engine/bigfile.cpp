@@ -42,7 +42,7 @@
 #include "bigfile.h"
 #include "assert.h"
 
-namespace engine
+namespace corelib
 {
 
 #if defined(WINDOWS_OS)
@@ -427,5 +427,5 @@ bool bigfile::exists(const std::string& file)
     return false;
 }
 
-} // engine
+} // corelib
 

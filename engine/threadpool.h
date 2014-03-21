@@ -30,7 +30,7 @@
 #include <atomic>
 #include <cstddef>
 
-namespace engine
+namespace corelib
 {
     class threadpool
     {
@@ -100,4 +100,4 @@ namespace engine
         tid_t key_;
     };
 
-} // engine
+} // corelib

@@ -32,7 +32,7 @@
 #include "cmdlist.h"
 #include "buffer.h"
 
-namespace engine
+namespace corelib
 {
     // generate a list of xover commands to retrive
     // the headers of a group
@@ -78,4 +78,4 @@ namespace engine
         bool configured_;
     };
 
-} // engine
+} // corelib

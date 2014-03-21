@@ -26,7 +26,7 @@
 
 std::atomic_int counter;
 
-struct counter_increment : public engine::threadpool::work
+struct counter_increment : public corelib::threadpool::work
 {
     void execute()
     {
@@ -35,7 +35,7 @@ struct counter_increment : public engine::threadpool::work
 };
 
 
-struct affinity_tester : public engine::threadpool::work
+struct affinity_tester : public corelib::threadpool::work
 {
     affinity_tester(std::thread::id id) : tid(id)
     {}
@@ -47,7 +47,7 @@ struct affinity_tester : public engine::threadpool::work
     const std::thread::id tid;
 };
 
-struct affinity_grabber : public engine::threadpool::work
+struct affinity_grabber : public corelib::threadpool::work
 {
     affinity_grabber() : ready(false)
     {}
@@ -73,7 +73,7 @@ struct affinity_grabber : public engine::threadpool::work
 
 void test_work_queue()
 {
-    engine::threadpool pool(1);
+    corelib::threadpool pool(1);
 
     for (int i=0; i<5000; ++i)
     {
@@ -88,7 +88,7 @@ void test_work_queue()
 
 void test_affinity()
 {
-    engine::threadpool pool(5);
+    corelib::threadpool pool(5);
 
     affinity_grabber grabber;
 

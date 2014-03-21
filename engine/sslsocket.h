@@ -27,7 +27,7 @@
 #include "sslcontext.h"
 #include "socket.h"
 
-namespace engine
+namespace corelib
 {
     // transfer data over SSL over TCP socket. 
     class sslsocket : public socket, boost::noncopyable
@@ -88,5 +88,5 @@ namespace engine
 
         sslcontext context_;
     }; 
-} // engine
+} // corelib
 

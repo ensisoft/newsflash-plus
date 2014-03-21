@@ -74,11 +74,11 @@ QString generate_keycode(const QString& fingerprint)
 
 bool verify_code(const QString& keycode)
 {
-    QList<QNetworkInterface> nics = QNetworkInterface::allInterfaces();
+    const QList<QNetworkInterface>& nics = QNetworkInterface::allInterfaces();
     QList<QString> macs;
     for (int i=0; i<nics.size(); ++i)
     {
-        QNetworkInterface nic = nics[i];
+        const QNetworkInterface& nic = nics[i];
         if (!(nic.flags() & QNetworkInterface::IsLoopBack))
             macs.append(nic.hardwareAddress());
     }

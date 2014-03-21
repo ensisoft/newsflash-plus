@@ -34,7 +34,7 @@
 #include "socketapi.h"
 #include "waithandle.h"
 
-namespace engine
+namespace corelib
 {
     // socket represents a low level socket connection to the remote server
     // for sending and receiving data
@@ -112,5 +112,5 @@ namespace engine
     private:
     };
 
-} // engine
+} // corelib
 

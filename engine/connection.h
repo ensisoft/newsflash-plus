@@ -31,7 +31,7 @@
 #include <cstdint>
 #include "event.h"
 
-namespace engine
+namespace corelib
 {
     class cmdlist;
 
@@ -99,6 +99,6 @@ namespace engine
         event cancel_;
     };
 
-} // engine
+} // corelib
 
 

@@ -24,7 +24,7 @@
 
 #include "decoder.h"
 
-namespace engine
+namespace corelib
 {
     // decoder for a single part yenc encoded content
     class yenc_single_decoder : public decoder
@@ -42,4 +42,4 @@ namespace engine
     private:
     };
 
-} // engine
+} // corelib

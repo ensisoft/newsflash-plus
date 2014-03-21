@@ -26,7 +26,7 @@
 #include <mutex>
 #include <map>
 
-namespace engine
+namespace corelib
 {
     // simple buffer caching allocator
     class allocator : boost::noncopyable
@@ -50,4 +50,4 @@ namespace engine
         size_t allocated_;
     };
 
-} // engine
+} // corelib

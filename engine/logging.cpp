@@ -43,7 +43,7 @@ namespace {
 
 } // namespace
 
-namespace engine
+namespace corelib
 {
 
 std::ostream& get_log()
@@ -103,4 +103,4 @@ void close_log()
     delete gLog.release();
 }
 
-} // engine
+} // corelib

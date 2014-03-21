@@ -23,7 +23,7 @@
 #include "update.h"
 #include "buffer.h"
 
-namespace engine
+namespace corelib
 {
 
 
@@ -45,4 +45,4 @@ namespace engine
 // void update::finalize()
 // {}
 
-} // engine
+} // corelib

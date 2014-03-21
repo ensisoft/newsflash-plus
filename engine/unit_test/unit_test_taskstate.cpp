@@ -24,7 +24,7 @@
 #include <deque>
 #include "../taskstate.h"
 
-using namespace engine;
+using namespace corelib;
 
 #define pass(x, s) \
     BOOST_REQUIRE(x == true); \
@@ -164,7 +164,7 @@ void test_state_changes()
 
 void test_state_actions()
 {
-    std::deque<engine::taskstate::action> actions;
+    std::deque<corelib::taskstate::action> actions;
 
     // todo:
 }

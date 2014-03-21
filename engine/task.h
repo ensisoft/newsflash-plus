@@ -26,7 +26,7 @@
 #include <memory>
 #include "buffer.h"
 
-namespace engine
+namespace corelib
 {
     // task interface for performing activities on the data.
     class task
@@ -53,4 +53,4 @@ namespace engine
     private:
     };
     
-} // engine
+} // corelib

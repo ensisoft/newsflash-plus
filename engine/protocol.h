@@ -30,7 +30,7 @@
 #include <cstdint>
 #include "nntp/nntp.h"
 
-namespace engine
+namespace corelib
 {
     class buffer;
 
@@ -158,4 +158,4 @@ namespace engine
         std::string group_; // currently selected group
     };
 
-} // engine
+} // corelib

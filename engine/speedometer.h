@@ -27,7 +27,7 @@
 #include <cassert>
 #include "stopwatch.h"
 
-namespace engine
+namespace corelib
 {
     // track data transfer speeds.
     class speedometer 
@@ -84,5 +84,5 @@ namespace engine
         double speed_;
     };
 
-} // engine
+} // corelib
 

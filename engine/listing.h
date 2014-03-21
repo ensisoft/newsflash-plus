@@ -28,7 +28,7 @@
 #include <vector>
 #include "task.h"
 
-namespace engine
+namespace corelib
 {
     // produce a listing of available newsgroups
     class listing : public task
@@ -54,4 +54,4 @@ namespace engine
         std::vector<group_info> groups_;
     };
 
-} // engine
+} // corelib

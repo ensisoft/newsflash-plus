@@ -40,7 +40,7 @@
 #endif
 
 
-using namespace engine;
+using namespace corelib;
 
 native_socket_t openhost(int& port)
 {
@@ -87,7 +87,7 @@ void test_connection_failure()
         tcpsocket sock;
         sock.begin_connect(resolve_host_ipv4("127.0.0.1"), 8000);
 
-        engine::wait(sock);
+        corelib::wait(sock);
         TEST_EXCEPTION(sock.complete_connect());
     }
 
@@ -96,7 +96,7 @@ void test_connection_failure()
         tcpsocket sock;
         sock.begin_connect(resolve_host_ipv4("blahbalaha"), 9999);
 
-        engine::wait(sock);
+        corelib::wait(sock);
         TEST_EXCEPTION(sock.complete_connect());
     }
 
@@ -116,7 +116,7 @@ void test_connection_success()
     tcpsocket client = ::accept(sock);
     tcp.complete_connect();
 
-    engine::closesocket(sock);
+    corelib::closesocket(sock);
 
     // allocate buffers of various sizes and transfer them
     struct buffer {
@@ -184,7 +184,7 @@ void test_connection_success()
         delete [] buff.buff;
     }
 
-    engine::closesocket(sock);
+    corelib::closesocket(sock);
 }
 
 int test_main(int, char*[])
