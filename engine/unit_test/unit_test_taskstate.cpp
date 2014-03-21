@@ -24,7 +24,7 @@
 #include <deque>
 #include "../taskstate.h"
 
-using namespace newsflash;
+using namespace engine;
 
 #define pass(x, s) \
     BOOST_REQUIRE(x == true); \
@@ -164,7 +164,7 @@ void test_state_changes()
 
 void test_state_actions()
 {
-    std::deque<newsflash::taskstate::action> actions;
+    std::deque<engine::taskstate::action> actions;
 
     // todo:
 }

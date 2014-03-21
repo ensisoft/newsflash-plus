@@ -30,7 +30,7 @@
 #include <cassert>
 #include "types.h"
 
-namespace newsflash
+namespace engine
 {
     // waitable handle object. the handles are not resuable and should
     // only be used in a single call to wait(...). after that a new
@@ -188,4 +188,4 @@ namespace newsflash
         return waithandle::wait(handles, ms);
     }
 
-} // newsflash
+} // engine

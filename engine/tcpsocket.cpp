@@ -29,7 +29,7 @@
 #include "platform.h"
 #include "assert.h"
 
-namespace newsflash
+namespace engine
 {
 
 tcpsocket::tcpsocket() : socket_(0), handle_(0)
@@ -92,7 +92,7 @@ void tcpsocket::sendall(const void* buff, int len)
                 throw socket::tcp_exception("socket send", err);
 
             auto handle = wait(false, true);
-            newsflash::wait_for(handle);
+            engine::wait_for(handle);
             ret = 0;
         }
         sent += ret;
@@ -202,7 +202,7 @@ tcpsocket& tcpsocket::operator=(tcpsocket&& other)
     return *this;
 }
 
-} // newsflash
+} // engine
 
 
 

@@ -26,7 +26,7 @@
 #include <string>
 #include "decoder.h"
 
-namespace newsflash
+namespace engine
 {
     // decoder for multi part yenc encoded content
     class yenc_multi_decoder : public decoder
@@ -52,4 +52,4 @@ namespace newsflash
         bool has_header_;
     };
 
-} // newsflash
+} // engine

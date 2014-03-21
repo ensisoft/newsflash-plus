@@ -43,7 +43,7 @@ namespace {
 
 } // namespace
 
-namespace newsflash
+namespace engine
 {
 
 std::ostream& get_log()
@@ -103,4 +103,4 @@ void close_log()
     delete gLog.release();
 }
 
-} // newsflash
+} // engine

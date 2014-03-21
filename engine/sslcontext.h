@@ -26,7 +26,7 @@
 #include <openssl/ssl.h>
 #include <mutex>
 
-namespace newsflash
+namespace engine
 {
     // OpenSSL client context handle.
     class sslcontext
@@ -44,4 +44,4 @@ namespace newsflash
     
     void openssl_init();
     
-} // newsflash
+} // engine

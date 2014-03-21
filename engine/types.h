@@ -31,8 +31,8 @@
 
 #include <cstdint>
 
-namespace newsflash
+namespace engine
 {
     typedef std::uint32_t bitflag_t;
     
-} // newsflash
+} // engine

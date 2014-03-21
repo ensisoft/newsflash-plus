@@ -30,7 +30,7 @@
 #include <cassert>
 #include "event.h"
 
-namespace newsflash
+namespace engine
 {
     // FIFO message queue, each message has a particular
     // type that is identified by id.

@@ -31,7 +31,7 @@
 #include "stopwatch.h"
 #include "encoding.h"
 
-namespace newsflash
+namespace engine
 {
     // extract encoded content from the buffers
     class download : public task
@@ -80,4 +80,5 @@ namespace newsflash
         bool keeptext_;
     };
 
-} //  newsflash
+} // engine
+

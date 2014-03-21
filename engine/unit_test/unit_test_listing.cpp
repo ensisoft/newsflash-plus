@@ -50,9 +50,9 @@ void unit_test_success()
     {
         delete_file("listing.txt");
 
-        newsflash::buffer buff;
+        engine::buffer buff;
 
-        auto listing = newsflash::listing("listing.txt");
+        auto listing = engine::listing("listing.txt");
         listing.receive(std::move(buff), 0);
         listing.finalize();
 
@@ -72,9 +72,9 @@ void unit_test_success()
            "alt.binaries.movies.divx 321 123 y\r\n"                      
            "alt.binaries.sounds.mp3    85 80 n\r\n";                      
 
-        newsflash::buffer buff(body);
+        engine::buffer buff(body);
 
-        auto listing = newsflash::listing("listing.txt");
+        auto listing = engine::listing("listing.txt");
 
         listing.receive(std::move(buff), 0);
         listing.finalize();

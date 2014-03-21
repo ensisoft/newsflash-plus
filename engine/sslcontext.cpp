@@ -40,7 +40,7 @@ namespace {
     public:
         context() : context_(nullptr)
         {
-            newsflash::openssl_init();
+            engine::openssl_init();
         }
 
        ~context()
@@ -71,7 +71,7 @@ namespace {
 
 } // namespace
 
-namespace newsflash
+namespace engine
 {
 
 sslcontext::sslcontext()
@@ -160,7 +160,7 @@ struct openssl {
     static 
     unsigned long identity_callback()
     {
-        return newsflash::get_thread_identity();
+        return engine::get_thread_identity();
     }
 
     static 
@@ -182,4 +182,4 @@ void openssl_init()
     static openssl lib;
 }
 
-} // newsflash
+} // engine

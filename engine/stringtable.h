@@ -29,7 +29,7 @@
 #include <map>
 #include <cstddef>
 
-namespace newsflash
+namespace engine
 {
     // string lookup table
     class stringtable 
@@ -105,4 +105,4 @@ namespace newsflash
         std::size_t rawbytes_;
 #endif
     };
-} // newsflash
+} // engine

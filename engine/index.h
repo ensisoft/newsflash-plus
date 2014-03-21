@@ -25,7 +25,7 @@
 #include <cstdint>
 #include "types.h"
 
-namespace newsflash
+namespace engine
 {
     // index for the catalog file data access.
     class index
@@ -68,4 +68,4 @@ namespace newsflash
     private:
 
     };
-} // newsflash
+} // engine

@@ -26,13 +26,13 @@
 #pragma once
 
 #ifdef NEWSFLASH_ENABLE_LOG
-#  define LOG_E(...) newsflash::write_log(newsflash::logevent::error, __FILE__, __LINE__, ## __VA_ARGS__)
-#  define LOG_W(...) newsflash::write_log(newsflash::logevent::warning, __FILE__, __LINE__, ## __VA_ARGS__)
-#  define LOG_I(...) newsflash::write_log(newsflash::logevent::info,  __FILE__, __LINE__, ## __VA_ARGS__)
-#  define LOG_D(...) newsflash::write_log(newsflash::logevent::debug, __FILE__, __LINE__, ## __VA_ARGS__)
-#  define LOG_OPEN(file) newsflash::open_log(file)
-#  define LOG_FLUSH() newsflash::flush_log()
-#  define LOG_CLOSE() newsflash::close_log()
+#  define LOG_E(...) engine::write_log(engine::logevent::error, __FILE__, __LINE__, ## __VA_ARGS__)
+#  define LOG_W(...) engine::write_log(engine::logevent::warning, __FILE__, __LINE__, ## __VA_ARGS__)
+#  define LOG_I(...) engine::write_log(engine::logevent::info,  __FILE__, __LINE__, ## __VA_ARGS__)
+#  define LOG_D(...) engine::write_log(engine::logevent::debug, __FILE__, __LINE__, ## __VA_ARGS__)
+#  define LOG_OPEN(file) engine::open_log(file)
+#  define LOG_FLUSH() engine::flush_log()
+#  define LOG_CLOSE() engine::close_log()
 #else
 #  define LOG_E(...)
 #  define LOG_W(...)
@@ -43,7 +43,7 @@
 #  define LOG_CLOSE();
 #endif
 
-namespace newsflash
+namespace engine
 {
     enum class logevent {
         error   = 'E',
@@ -84,4 +84,4 @@ namespace newsflash
     void flush_log();
     void close_log();
 
-} // newsflash
+} // engine

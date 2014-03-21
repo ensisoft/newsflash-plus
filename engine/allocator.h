@@ -26,7 +26,7 @@
 #include <mutex>
 #include <map>
 
-namespace newsflash
+namespace engine
 {
     // simple buffer caching allocator
     class allocator : boost::noncopyable
@@ -50,4 +50,4 @@ namespace newsflash
         size_t allocated_;
     };
 
-} // newsflash
+} // engine

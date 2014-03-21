@@ -27,7 +27,7 @@
 #include <cstddef>
 #include "stopwatch.h"
 
-namespace newsflash
+namespace engine
 { 
     // implement throttling to conserve/limit bandwidth usage
     class throttle
@@ -51,4 +51,4 @@ namespace newsflash
         stopwatch stopwatch_;
     };
 
-} // newsflash
+} // engine

@@ -28,7 +28,7 @@
 #include <vector>
 #include "task.h"
 
-namespace newsflash
+namespace engine
 {
     // produce a listing of available newsgroups
     class listing : public task
@@ -54,4 +54,4 @@ namespace newsflash
         std::vector<group_info> groups_;
     };
 
-} // newsflash
+} // engine

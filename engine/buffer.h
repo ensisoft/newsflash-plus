@@ -31,7 +31,7 @@
 #include "allocator.h"
 #include "assert.h"
 
-namespace newsflash
+namespace engine
 {
     // nntp data buffer
     class buffer : boost::noncopyable
@@ -276,4 +276,4 @@ namespace newsflash
         return !std::memcmp(&lhs[0], &rhs[0], lhs.size());
     }
 
-} // newsflash
+} // engine

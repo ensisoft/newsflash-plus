@@ -30,7 +30,7 @@
 #include "waithandle.h"
 #include "event.h"
 
-namespace newsflash
+namespace engine
 {
     template<typename T>
     class queue : boost::noncopyable
@@ -129,4 +129,4 @@ namespace newsflash
         event event_;
     };
 
-} // newsflash
+} // engine

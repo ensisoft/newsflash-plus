@@ -26,7 +26,7 @@
 int test_main(int, char*[])
 {
     {
-        newsflash::buffer buff;
+        engine::buffer buff;
 
         BOOST_REQUIRE(buff.capacity() == 0);
         BOOST_REQUIRE(buff.size() == 0);
@@ -58,15 +58,15 @@ int test_main(int, char*[])
 
 
     {
-        newsflash::buffer buff;
+        engine::buffer buff;
         buff.resize(512);
         buff.offset(100);
 
-        newsflash::buffer::header header(buff);
+        engine::buffer::header header(buff);
         BOOST_REQUIRE(header.data() == buff.data());
         BOOST_REQUIRE(header.size() == 100);
 
-        newsflash::buffer::payload body(buff);
+        engine::buffer::payload body(buff);
         BOOST_REQUIRE(body.data() == buff.data() + 100);
         BOOST_REQUIRE(body.size() == 412);
 

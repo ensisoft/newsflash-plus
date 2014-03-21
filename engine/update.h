@@ -27,7 +27,7 @@
 #include <cstdint>
 #include "task.h"
 
-namespace newsflash
+namespace engine
 {
     // class update : public task
     // {
@@ -55,4 +55,4 @@ namespace newsflash
 
     // };
 
-} // newsflash
+} // engine

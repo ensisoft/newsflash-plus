@@ -31,7 +31,7 @@
 #include <cstdint>
 #include "event.h"
 
-namespace newsflash
+namespace engine
 {
     class cmdlist;
 
@@ -99,6 +99,6 @@ namespace newsflash
         event cancel_;
     };
 
-} // newsflash
+} // engine
 
 

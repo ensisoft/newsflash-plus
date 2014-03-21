@@ -34,7 +34,7 @@
 #include "event.h"
 
 namespace {
-    using namespace newsflash;
+    using namespace engine;
 
     class conn_exception : public std::exception 
     {
@@ -117,7 +117,7 @@ namespace {
 
 } // namespace
 
-namespace newsflash
+namespace engine
 {
 
 struct connection::thread_data {
@@ -198,7 +198,7 @@ void connection::main(thread_data* data)
 
             auto execute  = execute_.wait();
             auto shutdown = shutdown_.wait();
-            if (!newsflash::wait_for(execute, shutdown, PING_INTERVAL))
+            if (!engine::wait_for(execute, shutdown, PING_INTERVAL))
                 proto.ping();
             else if (execute)
             {
@@ -242,14 +242,14 @@ void connection::connect(thread_data* data)
     LOG_I("Resolved to '", format_ipv4(addr), "'");
 
     if (data->ssl)
-        data->sock.reset(new newsflash::sslsocket());
-    else data->sock.reset(new newsflash::tcpsocket());
+        data->sock.reset(new engine::sslsocket());
+    else data->sock.reset(new engine::tcpsocket());
 
     data->sock->begin_connect(addr, data->port);
 
     auto connect  = data->sock->wait(true, false);
     auto shutdown = shutdown_.wait();
-    newsflash::wait_for(connect, shutdown);
+    engine::wait_for(connect, shutdown);
 
     if (shutdown)
         throw conn_exception("connection was interrupted", error::interrupted);
@@ -278,7 +278,7 @@ size_t connection::recv(thread_data* data, void* buff, std::size_t len)
     auto canread  = data->sock->wait(true, false);
     auto shutdown = shutdown_.wait();
 
-    if (!newsflash::wait_for(canread, shutdown, TIMEOUT))
+    if (!engine::wait_for(canread, shutdown, TIMEOUT))
         throw conn_exception("socket timeout", error::timeout);
     else if (shutdown)
         throw conn_exception("read interrupted", error::interrupted);
@@ -294,4 +294,4 @@ size_t connection::recv(thread_data* data, void* buff, std::size_t len)
 }
 
 
-} // newsflash
+} // engine

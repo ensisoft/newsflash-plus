@@ -30,7 +30,7 @@
 #include "cmdlist.h"
 #include "buffer.h"
 
-namespace newsflash
+namespace engine
 {
     // list of article numbers (or message-ids) to download.
     class bodylist : public cmdlist
@@ -74,4 +74,4 @@ namespace newsflash
         std::deque<article> articles_;
     };
 
-} // newsflash
+} // engine

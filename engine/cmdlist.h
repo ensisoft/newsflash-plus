@@ -22,7 +22,7 @@
 
 #pragma once
 
-namespace newsflash
+namespace engine
 {
     class buffer;
     class protocol;
@@ -41,4 +41,4 @@ namespace newsflash
     private:
     };
 
-} // newsflash
+} // engine

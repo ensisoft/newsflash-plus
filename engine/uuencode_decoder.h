@@ -24,7 +24,7 @@
 
 #include "decoder.h"
 
-namespace newsflash
+namespace engine
 {
     class uuencode_decoder : public decoder
     {
@@ -39,4 +39,4 @@ namespace newsflash
     private:
         bool has_header_;
     };
-} // newsflash
+} // engine

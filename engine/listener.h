@@ -26,7 +26,7 @@
 #include <string>
 #include <cstdint>
 
-namespace newsflash
+namespace engine
 {
     // interface for listening to engine events.
     // the callback functions should be nothrow exception safe. 
@@ -86,5 +86,5 @@ namespace newsflash
     private:
     };
 
-} // newsflash
+} // engine
 

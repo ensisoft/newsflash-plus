@@ -54,7 +54,7 @@ std::atomic_flag mutex = ATOMIC_FLAG_INIT;
 
 } // namespace
 
-namespace newsflash
+namespace debug
 {
 
 void do_break()
@@ -199,4 +199,4 @@ bool has_debugger()
 #endif
 }
 
-} // newsflash
+} // debug

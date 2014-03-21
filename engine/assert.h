@@ -26,7 +26,7 @@
 #include <sstream>
 #include <string>
 
-namespace newsflash 
+namespace debug 
 {
     // check if running in debugger
     bool has_debugger();
@@ -43,7 +43,7 @@ namespace newsflash
     void do_break();
 #endif
 
-} //  newsflash
+} // debug
 
 // What is an assert and what is an ASSERT?
 // assert is the standard C utility which by default
@@ -67,9 +67,9 @@ namespace newsflash
 #define ASSERT(expr) \
     (expr) \
     ? ((void)0) \
-    : (newsflash::has_debugger() ? \
-        newsflash::do_break() : \
-        newsflash::do_assert(#expr, __FILE__, __PRETTY_FUNCTION__, __LINE__))
+    : (debug::has_debugger() ? \
+        debug::do_break() : \
+        debug::do_assert(#expr, __FILE__, __PRETTY_FUNCTION__, __LINE__))
 
 #ifdef _NDEBUG
 #  define CHECK(func, retval) \

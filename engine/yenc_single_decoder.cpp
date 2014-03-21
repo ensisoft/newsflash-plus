@@ -25,7 +25,7 @@
 #include "yenc_single_decoder.h"
 #include "yenc.h"
 
-namespace newsflash
+namespace engine
 {
 
 yenc_single_decoder::yenc_single_decoder()
@@ -84,4 +84,4 @@ void yenc_single_decoder::finish()
 {}
 
 
-} // newsflash
+} // engine

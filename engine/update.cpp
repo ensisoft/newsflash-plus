@@ -23,7 +23,7 @@
 #include "update.h"
 #include "buffer.h"
 
-namespace newsflash
+namespace engine
 {
 
 
@@ -45,4 +45,4 @@ namespace newsflash
 // void update::finalize()
 // {}
 
-} // newsflash
+} // engine

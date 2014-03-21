@@ -29,7 +29,7 @@
 #include <memory>
 #include <utility>
 
-namespace newsflash
+namespace engine
 {
     // bigfile handles big files up to 2^63-1 bytes in size
     class bigfile
@@ -101,7 +101,7 @@ namespace newsflash
         std::unique_ptr<impl> pimpl_;
     };
 
-} // newsflash
+} // engine
 
 
 

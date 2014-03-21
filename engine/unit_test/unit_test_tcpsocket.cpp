@@ -40,7 +40,7 @@
 #endif
 
 
-using namespace newsflash;
+using namespace engine;
 
 native_socket_t openhost(int& port)
 {
@@ -87,7 +87,7 @@ void test_connection_failure()
         tcpsocket sock;
         sock.begin_connect(resolve_host_ipv4("127.0.0.1"), 8000);
 
-        newsflash::wait(sock);
+        engine::wait(sock);
         TEST_EXCEPTION(sock.complete_connect());
     }
 
@@ -96,7 +96,7 @@ void test_connection_failure()
         tcpsocket sock;
         sock.begin_connect(resolve_host_ipv4("blahbalaha"), 9999);
 
-        newsflash::wait(sock);
+        engine::wait(sock);
         TEST_EXCEPTION(sock.complete_connect());
     }
 
@@ -116,7 +116,7 @@ void test_connection_success()
     tcpsocket client = ::accept(sock);
     tcp.complete_connect();
 
-    newsflash::closesocket(sock);
+    engine::closesocket(sock);
 
     // allocate buffers of various sizes and transfer them
     struct buffer {
@@ -184,7 +184,7 @@ void test_connection_success()
         delete [] buff.buff;
     }
 
-    newsflash::closesocket(sock);
+    engine::closesocket(sock);
 }
 
 int test_main(int, char*[])

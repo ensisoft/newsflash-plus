@@ -28,7 +28,7 @@
 #include <utility> // for pair
 #include "types.h"
 
-namespace newsflash
+namespace engine
 {
     typedef uint32_t sockerr_t;
     typedef uint32_t ipv4addr_t;
@@ -59,4 +59,4 @@ namespace newsflash
 
     void closesocket(native_socket_t sock);
 
-} // newsflash
+} // engine

@@ -27,7 +27,7 @@
 #include <limits>
 #include <cstddef>
 
-namespace newsflash
+namespace engine
 {
     // hashing code ripped off from boost TR1
     template<typename T>
@@ -63,4 +63,4 @@ namespace newsflash
         std::size_t seed_;
     };    
 
-} // newsflash
+} // engine

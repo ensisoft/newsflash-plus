@@ -28,7 +28,7 @@
 #include <ctime>
 #include "../speedometer.h"
 
-void produce_sample(int num_samples, int sample_bytes, newsflash::speedometer& meter)
+void produce_sample(int num_samples, int sample_bytes, engine::speedometer& meter)
 {
     std::srand(std::time(NULL));
     meter.start();
@@ -49,7 +49,7 @@ void produce_sample(int num_samples, int sample_bytes, newsflash::speedometer& m
 
 void test_multiple_thread()
 {
-    newsflash::speedometer meter;
+    engine::speedometer meter;
 
     std::thread thread(std::bind(produce_sample, 100, 128, std::ref(meter)));
 

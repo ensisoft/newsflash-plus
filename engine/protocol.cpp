@@ -40,7 +40,7 @@
 #include "protocol.h"
 #include "buffer.h"
 
-namespace newsflash
+namespace engine
 {
 
 protocol::protocol() 
@@ -211,4 +211,4 @@ void protocol::authenticate()
         throw exception("authentication failed", error::authentication_failed);    
 }
 
-} // newsflash
+} // engine

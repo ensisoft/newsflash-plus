@@ -29,7 +29,7 @@
 // this file contains an assortment of platform specific global functions
 // and associated types.
 
-namespace newsflash
+namespace engine
 {
     // get a platform provided human readable error string.
     std::string get_error_string(int code);
@@ -52,5 +52,5 @@ namespace newsflash
 
     void throw_system_error(int code, std::string what);
 
-} // newsflash
+} // engine
 

@@ -25,7 +25,7 @@
 #include <functional>
 #include <cstddef>
 
-namespace newsflash
+namespace engine
 {
     // task state machine. 
     // taskstate does not implement any actions related
@@ -162,4 +162,4 @@ namespace newsflash
 
     };
 
-} // newsflash
+} // engine

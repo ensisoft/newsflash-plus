@@ -28,7 +28,7 @@
 #include <string>
 #include <functional>
 
-namespace newsflash
+namespace engine
 {
     // NNTP data decoder. extracts/decodes ascii armoured binaries 
     // out of NNTP data buffers. 
@@ -82,4 +82,4 @@ namespace newsflash
     private:
     };
 
-} // newsflash
+} // engine

@@ -30,7 +30,7 @@
 #include <atomic>
 #include <cstddef>
 
-namespace newsflash
+namespace engine
 {
     class threadpool
     {
@@ -100,4 +100,4 @@ namespace newsflash
         tid_t key_;
     };
 
-} // newsflash
+} // engine

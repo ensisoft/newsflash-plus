@@ -23,7 +23,7 @@
 #include <boost/regex.hpp>
 #include "encoding.h"
 
-namespace newsflash
+namespace engine
 {
 
 encoding identify_encoding(const char* line, std::size_t len)
@@ -63,4 +63,4 @@ encoding identify_encoding(const char* line, std::size_t len)
     
 }
 
-} // newsflash
+} // engine

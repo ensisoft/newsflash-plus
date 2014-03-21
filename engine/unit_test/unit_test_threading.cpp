@@ -57,7 +57,7 @@ private:
 void unit_test_event()
 {
     {
-        newsflash::event event;
+        engine::event event;
 
         auto handle = event.wait();
         BOOST_REQUIRE(!wait_for(handle, std::chrono::milliseconds(0)));
@@ -76,7 +76,7 @@ void unit_test_event()
     }    
 
     {
-        newsflash::event event1, event2;
+        engine::event event1, event2;
 
         auto handle1 = event1.wait();
         auto handle2 = event2.wait();
@@ -105,7 +105,7 @@ void unit_test_event()
 
     }
 
-    const auto& waiter = [](newsflash::event& event, barrier& bar, std::atomic_flag& flag)
+    const auto& waiter = [](engine::event& event, barrier& bar, std::atomic_flag& flag)
     {
         // rendezvous
         bar.wait();
@@ -125,7 +125,7 @@ void unit_test_event()
     {
         for (int i=0; i<1000; ++i)
         {
-            newsflash::event event;
+            engine::event event;
 
             barrier bar(2);
 
@@ -152,7 +152,7 @@ void unit_test_event()
     {
         for (int i=0; i<1000; ++i)
         {
-            newsflash::event event;
+            engine::event event;
 
             barrier bar(4);
 
@@ -189,9 +189,9 @@ struct foo {
 void unit_test_queue_post()
 {
     {
-        std::unique_ptr<newsflash::msgqueue::message> msg;
+        std::unique_ptr<engine::msgqueue::message> msg;
 
-        newsflash::msgqueue queue;
+        engine::msgqueue queue;
         BOOST_REQUIRE(queue.size() == 0);
         auto front = queue.try_get_front();
         BOOST_REQUIRE(!front);
@@ -225,7 +225,7 @@ void unit_test_queue_post()
     }
 
     {
-        newsflash::msgqueue queue;
+        engine::msgqueue queue;
         queue.post_back(1, std::string{"foo"});
         queue.post_back(2, std::string{"bar"});
         queue.post_front(3, std::string{"baz"});
@@ -249,7 +249,7 @@ void unit_test_queue_post()
 
     // try posting primitve type message
     {
-        newsflash::msgqueue queue;
+        engine::msgqueue queue;
 
         for (size_t i=0; i<10000; ++i)
         {
@@ -273,7 +273,7 @@ void unit_test_queue_post()
 
     // try posting messages of user defined type
     {
-        newsflash::msgqueue queue;
+        engine::msgqueue queue;
 
         const foo msg {1234, "foobar"};
 
@@ -295,7 +295,7 @@ void unit_test_queue_post()
     }
 
     // routine to consume messages out of the queue.
-    const auto& consumer = [](newsflash::msgqueue& queue, int count) 
+    const auto& consumer = [](engine::msgqueue& queue, int count) 
     {
         for (int i=0; i<count; ++i)
         {
@@ -307,7 +307,7 @@ void unit_test_queue_post()
     };
 
     // routine to produce messages into the queue
-    const auto& producer = [](newsflash::msgqueue& queue, int count)
+    const auto& producer = [](engine::msgqueue& queue, int count)
     {
         for (int i=0; i<count; ++i)
         {
@@ -317,7 +317,7 @@ void unit_test_queue_post()
 
     // single producer and consumer
     {
-        newsflash::msgqueue queue;
+        engine::msgqueue queue;
 
         std::thread consumer1(std::bind(consumer, std::ref(queue), 10000));
         std::thread producer1(std::bind(producer, std::ref(queue), 10000));
@@ -328,7 +328,7 @@ void unit_test_queue_post()
 
     // single producer and multiple consumers
     {
-        newsflash::msgqueue queue;
+        engine::msgqueue queue;
 
         std::thread consumer1(std::bind(consumer, std::ref(queue), 5000));
         std::thread consumer2(std::bind(consumer, std::ref(queue), 5000));
@@ -341,7 +341,7 @@ void unit_test_queue_post()
 
     // multiple producers and multiple consumers
     {
-        newsflash::msgqueue queue;
+        engine::msgqueue queue;
 
         std::thread consumer1(std::bind(consumer, std::ref(queue), 5000));
         std::thread consumer2(std::bind(consumer, std::ref(queue), 5000));
@@ -363,7 +363,7 @@ void unit_test_queue_send()
 {
     typedef std::string message;
 
-    const auto& receiver = [](newsflash::msgqueue& queue, int count)
+    const auto& receiver = [](engine::msgqueue& queue, int count)
     {
         for (int i=0; i<count; ++i)
         {
@@ -373,7 +373,7 @@ void unit_test_queue_send()
         }
     };
 
-    const auto& sender = [](newsflash::msgqueue& queue, int count)
+    const auto& sender = [](engine::msgqueue& queue, int count)
     {
         for (int i=0; i<count; ++i)
         {
@@ -385,7 +385,7 @@ void unit_test_queue_send()
 
     // single sender and receiver
     {
-        newsflash::msgqueue queue;
+        engine::msgqueue queue;
 
         std::thread receiver1(std::bind(receiver, std::ref(queue), 10000));
         std::thread sender1(std::bind(sender, std::ref(queue), 10000));
@@ -396,7 +396,7 @@ void unit_test_queue_send()
 
     // multiple senders and receivers
     {
-        newsflash::msgqueue queue;
+        engine::msgqueue queue;
 
         std::thread receiver1(std::bind(receiver, std::ref(queue), 5000));
         std::thread receiver2(std::bind(receiver, std::ref(queue), 5000));        

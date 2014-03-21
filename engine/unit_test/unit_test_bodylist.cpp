@@ -60,7 +60,7 @@ struct tester {
     void log(const std::string& str)
     {}
 
-    void body(newsflash::bodylist::body&& body)
+    void body(engine::bodylist::body&& body)
     {
         std::lock_guard<std::mutex> lock(mutex);
 
@@ -70,7 +70,7 @@ struct tester {
     std::deque<std::string> responses;
 
     std::mutex mutex;
-    std::vector<newsflash::bodylist::body> bodies;
+    std::vector<engine::bodylist::body> bodies;
     bool throw_exception;
 };
 
@@ -85,13 +85,13 @@ void unit_test_bodylist()
             "411 no such newsgroup"
         };
 
-        newsflash::protocol proto;
+        engine::protocol proto;
         proto.on_recv = std::bind(&tester::recv, &test,
             std::placeholders::_1, std::placeholders::_2);
         proto.on_send = std::bind(&tester::send, &test,
             std::placeholders::_1, std::placeholders::_2);        
 
-        newsflash::bodylist list = {
+        engine::bodylist list = {
             {"alt.binaries.foo", "alt.binaries.bar"},
             {"1234"}
         };
@@ -104,7 +104,7 @@ void unit_test_bodylist()
         BOOST_REQUIRE(body.article == "1234");
         BOOST_REQUIRE(body.buff.empty());
         BOOST_REQUIRE(body.id == 0);
-        BOOST_REQUIRE(body.status == newsflash::bodylist::status::unavailable);        
+        BOOST_REQUIRE(body.status == engine::bodylist::status::unavailable);        
 
     }
 
@@ -117,13 +117,13 @@ void unit_test_bodylist()
             "420 no article with that id"
         };
 
-        newsflash::protocol proto;
+        engine::protocol proto;
         proto.on_recv = std::bind(&tester::recv, &test,
             std::placeholders::_1, std::placeholders::_2);
         proto.on_send = std::bind(&tester::send, &test,
             std::placeholders::_1, std::placeholders::_2);        
 
-        newsflash::bodylist list = {
+        engine::bodylist list = {
             {"alt.binaries.foo"},
             {"5555"}
         };
@@ -136,7 +136,7 @@ void unit_test_bodylist()
         BOOST_REQUIRE(body.article == "5555");
         BOOST_REQUIRE(body.buff.offset() == 0);
         BOOST_REQUIRE(body.id == 0);
-        BOOST_REQUIRE(body.status == newsflash::bodylist::status::unavailable);                
+        BOOST_REQUIRE(body.status == engine::bodylist::status::unavailable);                
     }
 
     // succesful article retrieval
@@ -155,13 +155,13 @@ void unit_test_bodylist()
                 "."
         };
 
-        newsflash::protocol proto;
+        engine::protocol proto;
         proto.on_recv = std::bind(&tester::recv, &test,
             std::placeholders::_1, std::placeholders::_2);
         proto.on_send = std::bind(&tester::send, &test,
             std::placeholders::_1, std::placeholders::_2);        
 
-        newsflash::bodylist list = {
+        engine::bodylist list = {
             {"alt.binaries.foo"},
             {"1234", "4321"}
         };     
@@ -176,13 +176,13 @@ void unit_test_bodylist()
         BOOST_REQUIRE(body.article == "1234");
         BOOST_REQUIRE(body.id == 0);
         BOOST_REQUIRE(body.buff.offset());
-        BOOST_REQUIRE(body.status == newsflash::bodylist::status::success);
+        BOOST_REQUIRE(body.status == engine::bodylist::status::success);
 
         body = std::move(test.bodies.at(1));
         BOOST_REQUIRE(body.article == "4321");
         BOOST_REQUIRE(body.id == 1);
         BOOST_REQUIRE(body.buff.offset());
-        BOOST_REQUIRE(body.status == newsflash::bodylist::status::success);
+        BOOST_REQUIRE(body.status == engine::bodylist::status::success);
     }
 
     // exception during run(), rollback semantics
@@ -200,13 +200,13 @@ void unit_test_bodylist()
                 "."
         };
 
-        newsflash::protocol proto;
+        engine::protocol proto;
         proto.on_recv = std::bind(&tester::recv, &test,
             std::placeholders::_1, std::placeholders::_2);
         proto.on_send = std::bind(&tester::send, &test,
             std::placeholders::_1, std::placeholders::_2);        
 
-        newsflash::bodylist list = {
+        engine::bodylist list = {
             {"alt.binaries.foo"},
             {"1234", "4321"}
         };
@@ -231,7 +231,7 @@ void unit_test_bodylist()
     }
 }
 
-void simulate_connection_thread(newsflash::bodylist& cmdlist)
+void simulate_connection_thread(engine::bodylist& cmdlist)
 {
     struct tester {
         tester() : group_selected(false)
@@ -262,7 +262,7 @@ void simulate_connection_thread(newsflash::bodylist& cmdlist)
 
     tester test;
 
-    newsflash::protocol proto;
+    engine::protocol proto;
     proto.on_recv = std::bind(&tester::recv, &test,
         std::placeholders::_1, std::placeholders::_2);
     proto.on_send = std::bind(&tester::send, &test,
@@ -280,7 +280,7 @@ void unit_test_bodylist_multiple_threads()
     for (int i=0; i<1000; ++i)
         articles.push_back(boost::lexical_cast<std::string>(i));
 
-    newsflash::bodylist list = {
+    engine::bodylist list = {
         {"alt.binaries.foo"},
         articles
     };

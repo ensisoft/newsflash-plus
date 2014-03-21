@@ -27,7 +27,7 @@
 #include <cassert>
 #include "stopwatch.h"
 
-namespace newsflash
+namespace engine
 {
     // track data transfer speeds.
     class speedometer 
@@ -84,5 +84,5 @@ namespace newsflash
         double speed_;
     };
 
-} // newsflash
+} // engine
 

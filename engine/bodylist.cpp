@@ -24,7 +24,7 @@
 #include "protocol.h"
 #include "buffer.h"
 
-namespace newsflash
+namespace engine
 {
 bodylist::bodylist(std::deque<std::string> groups,
                   const std::deque<std::string>& articles)
@@ -97,4 +97,4 @@ bool bodylist::dequeue(article& next)
     return true;
 }
 
-} // newsflash
+} // engine

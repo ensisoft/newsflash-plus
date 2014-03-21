@@ -27,7 +27,7 @@
 #include "sslcontext.h"
 #include "socket.h"
 
-namespace newsflash
+namespace engine
 {
     // transfer data over SSL over TCP socket. 
     class sslsocket : public socket, boost::noncopyable
@@ -88,5 +88,5 @@ namespace newsflash
 
         sslcontext context_;
     }; 
-} // newsflash
+} // engine
 

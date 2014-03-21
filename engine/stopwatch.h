@@ -24,7 +24,7 @@
 
 #include <chrono>
 
-namespace newsflash
+namespace engine
 {
     // measure total time for a specific task
     class stopwatch
@@ -110,4 +110,4 @@ namespace newsflash
         bool paused_;
     };
 
-} // newsflash
+} // engine

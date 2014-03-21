@@ -27,7 +27,7 @@
 
 // collection of generic usable utility functions
 
-namespace newsflash
+namespace engine
 {
 
     template<typename Handle, typename Deleter>

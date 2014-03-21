@@ -51,7 +51,7 @@ namespace {
 
 } // namespace
 
-namespace newsflash
+namespace engine
 {
 #if defined(WINDOWS_OS)
 
@@ -246,4 +246,4 @@ std::string format_ipv4(ipv4addr_t addr)
     return s;
 }
 
-} // newsflash
+} // engine

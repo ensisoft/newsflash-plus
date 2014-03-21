@@ -26,7 +26,7 @@
 #include <memory>
 #include <vector>
 
-namespace newsflash
+namespace engine
 {
     class memory_mapped_file
     {
@@ -88,4 +88,4 @@ namespace newsflash
         std::size_t map_file_size_;
     };
 
-} // newsflash
+} // engine

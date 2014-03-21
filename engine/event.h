@@ -26,7 +26,7 @@
 #include <memory>
 #include "waithandle.h"
 
-namespace newsflash
+namespace engine
 {
     // event is a signaling object.
     class event
@@ -52,5 +52,5 @@ namespace newsflash
         std::unique_ptr<impl> pimpl_;
     }; 
 
-} // newsflash
+} // engine
 

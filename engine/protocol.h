@@ -30,7 +30,7 @@
 #include <cstdint>
 #include "nntp/nntp.h"
 
-namespace newsflash
+namespace engine
 {
     class buffer;
 
@@ -158,4 +158,4 @@ namespace newsflash
         std::string group_; // currently selected group
     };
 
-} // newsflash
+} // engine

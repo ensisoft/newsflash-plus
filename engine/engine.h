@@ -25,72 +25,72 @@
 #include <string>
 #include <cstdint>
 
-namespace newsflash
+namespace engine
 {
-    class listener;
+    // class listener;
 
-    class engine : boost::noncopyable
-    {
-    public:
-        // remote newsserver configuration.
-        struct server {
-            std::string hostname;
-            int  port;
-            bool ipv6;
-            bool ssl;
-        };
+    // class engine : boost::noncopyable
+    // {
+    // public:
+    //     // remote newsserver configuration.
+    //     struct server {
+    //         std::string hostname;
+    //         int  port;
+    //         bool ipv6;
+    //         bool ssl;
+    //     };
 
-        // newsservice account information
-        struct account {
-            std::size_t id;
-            std::string username;
-            std::string password;
-            server secure;
-            server plain;
-            int maximum_connections;
-            bool try_compression;
-            bool try_pipelining;
-            bool fillserver;
-        };
+    //     // newsservice account information
+    //     struct account {
+    //         std::size_t id;
+    //         std::string username;
+    //         std::string password;
+    //         server secure;
+    //         server plain;
+    //         int maximum_connections;
+    //         bool try_compression;
+    //         bool try_pipelining;
+    //         bool fillserver;
+    //     };
 
-        // engine configuration
-        struct configuration {
-            bool overwrite_existing_files; 
-            bool discard_text_context; 
-            bool auto_connect;
-            bool auto_remove_complete_tasks;
-            bool prefer_ssl;
-            bool enable_throttle;
-            bool enable_fillserver;
-            int  throttle_bps; // bytes per second.
-        };
+    //     // engine configuration
+    //     struct configuration {
+    //         bool overwrite_existing_files; 
+    //         bool discard_text_context; 
+    //         bool auto_connect;
+    //         bool auto_remove_complete_tasks;
+    //         bool prefer_ssl;
+    //         bool enable_throttle;
+    //         bool enable_fillserver;
+    //         int  throttle_bps; // bytes per second.
+    //     };
 
-        struct stats {
-            std::uint64_t bytes_downloaded;
-            std::uint64_t bytes_written;
-            std::uint64_t bytes_queued;
-        };
+    //     struct stats {
+    //         std::uint64_t bytes_downloaded;
+    //         std::uint64_t bytes_written;
+    //         std::uint64_t bytes_queued;
+    //     };
 
-        // create a new engine instance. listener is the
-        // listener implementation for the engine callbacks.
-        // logfolder specifies a location in the filesystem
-        // where to store the log files.
-        engine(listener* list, const configuration& config,
-            const std::string& logfolder);
+    //     // create a new engine instance. listener is the
+    //     // listener implementation for the engine callbacks.
+    //     // logfolder specifies a location in the filesystem
+    //     // where to store the log files.
+    //     engine(listener* list, const configuration& config,
+    //         const std::string& logfolder);
 
-        // like above but uses current working folder for log folder
-        engine(listener* list, const configuration& config);
+    //     // like above but uses current working folder for log folder
+    //     engine(listener* list, const configuration& config);
 
-       ~engine();
+    //    ~engine();
 
-        void add_account(const account& acc);
+    //     void add_account(const account& acc);
 
-        void shutdown();
+    //     void shutdown();
 
-    private:
-        class impl;
+    // private:
+    //     class impl;
 
-        std::unique_ptr<impl> pimpl_;
-    };
+    //     std::unique_ptr<impl> pimpl_;
+    // };
 
-} // newsflash
+} // engine

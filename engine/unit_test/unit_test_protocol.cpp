@@ -92,7 +92,7 @@ void test_handshake()
             "MODE READER"
         };
 
-        newsflash::protocol proto;
+        engine::protocol proto;
         proto.on_recv = std::bind(&test_sequence::recv, &test, std::placeholders::_1, std::placeholders::_2);
         proto.on_send = std::bind(&test_sequence::send, &test,std::placeholders::_1, std::placeholders::_2);
         proto.on_log  = cmd_log;
@@ -111,7 +111,7 @@ void test_handshake()
             "5555 foobar"
         };
 
-        newsflash::protocol proto;
+        engine::protocol proto;
         proto.on_recv = std::bind(&test_sequence::recv, &test, std::placeholders::_1, std::placeholders::_2);
         proto.on_send = std::bind(&test_sequence::send, &test,std::placeholders::_1, std::placeholders::_2);
         proto.on_log  = cmd_log;
@@ -129,7 +129,7 @@ void test_authentication()
     test.password = "pass123";
     test.username = "user123";
 
-    newsflash::protocol proto;
+    engine::protocol proto;
     proto.on_recv = std::bind(&test_sequence::recv, &test, std::placeholders::_1, std::placeholders::_2);
     proto.on_send = std::bind(&test_sequence::send, &test, std::placeholders::_1, std::placeholders::_2);
     proto.on_auth = std::bind(&test_sequence::authenticate, &test, std::placeholders::_1, std::placeholders::_2);
@@ -191,7 +191,7 @@ void test_authentication()
             "BODY <1>",
             "AUTHINFO USER user123"
         };
-        newsflash::buffer buff;
+        engine::buffer buff;
         buff.reserve(1024);
 
         proto.connect();
@@ -221,7 +221,7 @@ void test_authentication()
             "GROUP alt.foo.bar",
             "QUIT"
         };
-        newsflash::buffer buff;
+        engine::buffer buff;
         buff.reserve(100);
 
         proto.connect();
@@ -254,7 +254,7 @@ void test_authentication()
             "GROUP alt.foo.bar",
             "QUIT"
         };
-        newsflash::buffer buff;
+        engine::buffer buff;
         buff.reserve(100);
 
         proto.connect();
@@ -286,16 +286,16 @@ void test_listing()
             "LIST"
         };
 
-        newsflash::protocol proto;
+        engine::protocol proto;
         proto.on_recv = std::bind(&test_sequence::recv, &test, std::placeholders::_1, std::placeholders::_2);
         proto.on_send = std::bind(&test_sequence::send, &test, std::placeholders::_1, std::placeholders::_2);
 
-        newsflash::buffer buff;
+        engine::buffer buff;
 
         BOOST_REQUIRE(proto.list(buff));
 
-        const newsflash::buffer::header header(buff);
-        const newsflash::buffer::payload body(buff);
+        const engine::buffer::header header(buff);
+        const engine::buffer::payload body(buff);
 
         BOOST_REQUIRE(to_string(header) == "215 list of newsgroups follows\r\n");
         BOOST_REQUIRE(body.empty());
@@ -316,16 +316,16 @@ void test_listing()
             "LIST"
         };
 
-        newsflash::protocol proto;
+        engine::protocol proto;
         proto.on_recv = std::bind(&test_sequence::recv, &test, std::placeholders::_1, std::placeholders::_2);
         proto.on_send = std::bind(&test_sequence::send, &test, std::placeholders::_1, std::placeholders::_2);
         
-        newsflash::buffer buff;
+        engine::buffer buff;
 
         BOOST_REQUIRE(proto.list(buff));
 
-        const newsflash::buffer::header header(buff);
-        const newsflash::buffer::payload body(buff);
+        const engine::buffer::header header(buff);
+        const engine::buffer::payload body(buff);
 
         BOOST_REQUIRE(to_string(header) == "215 list of newsgroups follows\r\n");
         BOOST_REQUIRE(to_string(body) == "alt.binaries.foo 1 2 y\r\n"
@@ -348,13 +348,13 @@ void test_body()
         };
 
 
-        newsflash::protocol proto;
+        engine::protocol proto;
         proto.on_recv = std::bind(&test_sequence::recv, &test, std::placeholders::_1, std::placeholders::_2);
         proto.on_send = std::bind(&test_sequence::send, &test, std::placeholders::_1, std::placeholders::_2);        
 
-        newsflash::buffer buff;
+        engine::buffer buff;
 
-        BOOST_REQUIRE(proto.body("1234", buff) == newsflash::protocol::status::unavailable);
+        BOOST_REQUIRE(proto.body("1234", buff) == engine::protocol::status::unavailable);
     }
 
     // available, non empty
@@ -373,15 +373,15 @@ void test_body()
             "BODY 1234"
         };
 
-        newsflash::protocol proto;
+        engine::protocol proto;
         proto.on_recv = std::bind(&test_sequence::recv, &test, std::placeholders::_1, std::placeholders::_2);
         proto.on_send = std::bind(&test_sequence::send, &test, std::placeholders::_1, std::placeholders::_2);                
 
-        newsflash::buffer buff;
-        BOOST_REQUIRE(proto.body("1234", buff) == newsflash::protocol::status::success);
+        engine::buffer buff;
+        BOOST_REQUIRE(proto.body("1234", buff) == engine::protocol::status::success);
 
-        const newsflash::buffer::header header(buff);
-        const newsflash::buffer::payload body(buff);
+        const engine::buffer::header header(buff);
+        const engine::buffer::payload body(buff);
 
         BOOST_REQUIRE(to_string(header) == "222 body follows\r\n");
         BOOST_REQUIRE(to_string(body) == "foobar\r\nassa sassa mandelmassa\r\n");
@@ -401,15 +401,15 @@ void test_body()
             "BODY 1234"
         };       
 
-        newsflash::protocol proto;
+        engine::protocol proto;
         proto.on_recv = std::bind(&test_sequence::recv, &test, std::placeholders::_1, std::placeholders::_2);
         proto.on_send = std::bind(&test_sequence::send, &test, std::placeholders::_1, std::placeholders::_2);                
 
-        newsflash::buffer buff;
-        BOOST_REQUIRE(proto.body("1234", buff) == newsflash::protocol::status::success);
+        engine::buffer buff;
+        BOOST_REQUIRE(proto.body("1234", buff) == engine::protocol::status::success);
 
-        const newsflash::buffer::header header(buff);
-        const newsflash::buffer::payload body(buff);
+        const engine::buffer::header header(buff);
+        const engine::buffer::payload body(buff);
 
         BOOST_REQUIRE(to_string(header) == "222 body follows\r\n");
         BOOST_REQUIRE(body.empty());
@@ -469,7 +469,7 @@ void test_api_sequence()
         "QUIT"
     };
 
-    newsflash::protocol proto;
+    engine::protocol proto;
     proto.on_recv = std::bind(&test_sequence::recv, &test, std::placeholders::_1, std::placeholders::_2);
     proto.on_send = std::bind(&test_sequence::send, &test, std::placeholders::_1, std::placeholders::_2);
     proto.on_log  = cmd_log;
@@ -478,18 +478,18 @@ void test_api_sequence()
     BOOST_REQUIRE(!proto.group("foo.bar.baz"));
     BOOST_REQUIRE(proto.group("blah.bluh"));
 
-    newsflash::protocol::groupinfo info {0};
+    engine::protocol::groupinfo info {0};
     BOOST_REQUIRE(proto.group("test.test", info));
     BOOST_REQUIRE(info.high_water_mark == 4);
     BOOST_REQUIRE(info.low_water_mark == 1);
     BOOST_REQUIRE(info.article_count == 3);
 
-    newsflash::buffer buff;
+    engine::buffer buff;
     buff.reserve(100);
 
-    BOOST_REQUIRE(proto.body("<1>", buff) == newsflash::protocol::status::dmca);
-    BOOST_REQUIRE(proto.body("<2>", buff) == newsflash::protocol::status::unavailable);
-    BOOST_REQUIRE(proto.body("<3>", buff) == newsflash::protocol::status::success);
+    BOOST_REQUIRE(proto.body("<1>", buff) == engine::protocol::status::dmca);
+    BOOST_REQUIRE(proto.body("<2>", buff) == engine::protocol::status::unavailable);
+    BOOST_REQUIRE(proto.body("<3>", buff) == engine::protocol::status::success);
 
     BOOST_REQUIRE(proto.list(buff));
 
