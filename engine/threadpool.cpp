@@ -29,6 +29,8 @@ namespace newsflash
 
 threadpool::threadpool(std::size_t num_threads) :qsize_(0), key_(0)
 {
+    assert(num_threads);
+
     for (std::size_t i=0; i<num_threads; ++i)
     {
         std::unique_ptr<threadpool::thread> thread(new threadpool::thread);
@@ -43,24 +45,25 @@ threadpool::~threadpool()
 {
     for (auto& thread : threads_)
     {
-        std::lock_guard<std::mutex> lock(thread->mutex);
-        thread->act = action::quit;
-        thread->cond.notify_one();
+        {
+            std::lock_guard<std::mutex> lock(thread->mutex);
+            thread->act = action::quit;
+            thread->cond.notify_one();
+        }
         thread->thread->join();
     }
 }
 
-threadpool::key_t threadpool::allocate()
+threadpool::tid_t threadpool::allocate()
 {
-    key_t ret = key_ % threads_.size();
+    auto ret = key_ % threads_.size();
     ++key_;
     return ret;
 }
 
-void threadpool::submit(std::unique_ptr<work> work, key_t key)
+void threadpool::submit(std::unique_ptr<work> work, tid_t key)
 {
-    assert(key < threads_.size());
-    auto& thread = threads_[key];
+    auto& thread = threads_.at(key);
 
     std::lock_guard<std::mutex> lock(thread->mutex);
 
@@ -72,6 +75,21 @@ void threadpool::submit(std::unique_ptr<work> work, key_t key)
         std::lock_guard<std::mutex> lock(mutex_);
         ++qsize_;
     }
+}
+
+void threadpool::submit(work* work, tid_t key)
+{
+    struct non_delete_wrapper : work {
+        work* the_real_thing;
+
+        void execute() {
+            the_real_thing->execute();
+        }
+    };
+
+    std::unique_ptr<non_delete_wrapper> wrapper(new non_delete_wrapper);
+    wrapper->the_real_thing = work;
+    submit(std::move(wrapper), key);
 }
 
 void threadpool::drain()
@@ -120,7 +138,7 @@ void threadpool::thread_main(threadpool::thread* self)
         // support drain signaling
         std::lock_guard<std::mutex> lock(mutex_);
         if (--qsize_ == 0)
-            cond_.notify_one();
+            cond_.notify_all();
     }
 }
 

@@ -46,21 +46,30 @@ namespace newsflash
         private:
         };
 
-        // affinity key
-        typedef std::size_t key_t;
+        // thread identifier type
+        typedef std::size_t tid_t;
 
+        // initialize the pool with num_threads.
+        // precondition: num_threads > 0
         threadpool(std::size_t num_threads);
        ~threadpool();
 
         // allocate a thread from the pool.
-        // the thread is subsequently identified by the keyvalue.
-        key_t allocate();
+        // the thread is subsequently identified by the returned tid.
+        tid_t allocate();
+
+        // submit work to the threadpool to be executed the thread
+        // specified by the tid.
+        // the ownership of the work object to be executed
+        // is transferred to the threadpool.
+        void submit(std::unique_ptr<work> work, tid_t key);
 
         // submit work to the threadpool with the given
         // thread affinity key.
-        // the ownership of the work object to be executed
-        // is transferred to the threadpool.
-        void submit(std::unique_ptr<work> work, key_t key);
+        // the ownership of the work object remains with the caller
+        // and the object needs to remain valid untill the work
+        // has been executed.
+        void submit(work* work, tid_t key);
 
         // block untill all the work queues are drained.
         void drain();
@@ -88,7 +97,7 @@ namespace newsflash
         std::mutex mutex_;
         std::size_t qsize_;
         container threads_;
-        key_t key_;
+        tid_t key_;
     };
 
 } // newsflash

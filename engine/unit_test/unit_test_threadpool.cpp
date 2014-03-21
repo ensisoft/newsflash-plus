@@ -34,14 +34,51 @@ struct counter_increment : public newsflash::threadpool::work
     }
 };
 
-void test()
+
+struct affinity_tester : public newsflash::threadpool::work
+{
+    affinity_tester(std::thread::id id) : tid(id)
+    {}
+
+    void execute()
+    {
+        BOOST_REQUIRE(tid == std::this_thread::get_id());
+    }
+    const std::thread::id tid;
+};
+
+struct affinity_grabber : public newsflash::threadpool::work
+{
+    affinity_grabber() : ready(false)
+    {}
+
+    void execute()
+    {
+        std::lock_guard<std::mutex> lock(mutex);
+        tid = std::this_thread::get_id();
+        ready = true;
+        cond.notify_one();
+    }
+    void wait()
+    {
+        std::unique_lock<std::mutex> lock(mutex);
+        cond.wait(lock, [&]() { return ready; });
+    }
+
+    std::thread::id tid;
+    std::mutex mutex;
+    std::condition_variable cond;
+    bool ready;
+};
+
+void test_work_queue()
 {
     newsflash::threadpool pool(1);
 
     for (int i=0; i<5000; ++i)
     {
-        auto key = pool.allocate();
-        pool.submit(std::unique_ptr<counter_increment>(new counter_increment), key);
+        auto tid = pool.allocate();
+        pool.submit(std::unique_ptr<counter_increment>(new counter_increment), tid);
     }
 
     pool.drain();
@@ -49,9 +86,29 @@ void test()
     BOOST_REQUIRE(counter == 5000);
 }
 
+void test_affinity()
+{
+    newsflash::threadpool pool(5);
+
+    affinity_grabber grabber;
+
+    const auto thread = pool.allocate();
+
+    pool.submit(&grabber, thread);
+    grabber.wait();
+
+    for (int i=0; i<5000; ++i)
+    {
+        std::unique_ptr<affinity_tester> work(new affinity_tester(grabber.tid));
+        pool.submit(std::move(work), thread);
+    }
+
+}
+
 int test_main(int, char*[])
 {
-    test();
+    test_work_queue();
+    test_affinity();
 
     return 0;
 }
