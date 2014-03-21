@@ -1,5 +1,5 @@
 
-project engine
+project corelib
   : requirements
 
   # if this is not defined linking problems ensue on msvc
@@ -20,7 +20,7 @@ project engine
 #  <include>.
   ;
   
-lib engine :  [ glob *.cpp ] [ glob nntp/*.cpp ]
+lib corelib :  [ glob *.cpp ] [ glob nntp/*.cpp ]
 
    /boost//filesystem/
    /boost//regex/

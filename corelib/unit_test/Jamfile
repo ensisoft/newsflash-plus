@@ -6,7 +6,7 @@ import testing ;
 
 project 
   : requirements
-  <library>/engine//engine/
+  <library>/corelib//corelib/
   ;
 
 unit-test unit_test_utf8     : unit_test_utf8.cpp ;
