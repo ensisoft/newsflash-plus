@@ -37,7 +37,12 @@ namespace newsflash
     {
     public:
         enum class state {
-            queued, active, waiting, debuffering, paused, complete, kill
+            queued, // initial state
+            waiting, // runnable, waiting for data
+            active, // expecting to process buffers
+            paused, // paused
+            complete, // completed possibly with fault
+            killed // terminal state
         };
 
         enum class action {
@@ -65,7 +70,7 @@ namespace newsflash
         bool start();
 
         // transition to paused state.
-        // precondition:  state is queued or active
+        // precondition:  state is queued, active or waiting
         // postcondition: paused
         bool pause();
 
@@ -85,7 +90,7 @@ namespace newsflash
         bool kill();
 
         // fail the task with an error.
-        // precondition: not (killed || complete)
+        // precondition: not (queued || killed || complete)
         // postcondition: complete with error
         bool fault();
 
@@ -93,6 +98,12 @@ namespace newsflash
         // precondition: active
         // postcondition: waiting
         bool disrupt();
+
+        // prepare to receive buffers. this should be called only once
+        // when the expected number of data buffers becomes known.
+        // precondition: waiting
+        // postcondition: 
+        bool prepare(std::size_t bufcount);
 
         // enqueue a buffer with the specified byte size.
         // this function should be called when a new buffer of data
@@ -126,15 +137,28 @@ namespace newsflash
         // i.e. active or waiting
         bool is_active() const;
 
+        // good flag is true if no fault() has occurred, otherwise false.
+        bool good() const;
+
+        // overflow flag is true if maximum number of enqueued
+        // buffers has been reached.
+        bool overflow() const;
+
+        state get_state() const;
+
+        void reset();
+
     private:
         void emit(taskstate::action action);
 
     private:
         state state_;        
         std::size_t qsize_;
-        std::size_t curbuf_;
+        std::size_t enqued_;
+        std::size_t dequed_;
         std::size_t buffers_;
         bool error_;
+        bool overflow_;
 
     };
 
