@@ -1,0 +1,14 @@
+
+
+project engine 
+    : requirements
+
+    <toolset>gcc:<cflags>-std=c++11
+
+    <toolset>gcc:<cflags>-Wno-unused-local-typedefs
+
+    <toolset>clang:<cflags>-std=c++11
+
+    ;
+
+lib engine : [ glob *.cpp ] ;

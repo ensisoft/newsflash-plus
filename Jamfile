@@ -62,6 +62,6 @@ if [ os.name ] = LINUX
 
 
 
+build-project corelib ;
 build-project engine ;
-#build-project gui ;
 

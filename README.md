@@ -11,6 +11,24 @@ Build configuration is defined as much as possible in the config file in this fo
 It's assumed that either clang or gcc is used for a linux based build and msvc for windows.
 A C++11 compliant compiler is required. 
 
+Description of Modules
+-------------------------
+
+gui
+    o application user interface. 
+    o uses the app module for doing work.
+
+app
+    o application specific downloader engine. 
+    o provides the core application functionality.
+
+engine
+    o generic usenet downloader engine. 
+    o manages lists of tasks and connections to servers.
+
+corelib
+    o a bunch foundation classes for the engine.
+
 
 Building for Linux
 -------------------------
