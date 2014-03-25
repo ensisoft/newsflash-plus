@@ -23,30 +23,37 @@
 #pragma once
 
 #include <string>
-#include <cstddef>
+#include <sstream>
+#include <stdexcept>
 
-namespace engine
+namespace corelib
 {
-    // newsserver configuration
-    struct server 
-    {
-        // hostname or IP4/6 address.
-        std::string host; 
+    namespace detail {
 
-        // the port number. typically Usenet servers
-        // run on port 119 for the general non-encrypted
-        // server and 443 or 563 for an encrypted server
-        // if that is supported.
-        std::uint16_t port; // port
+        template<typename T>
+        void format_next(std::stringstream& ss, const T& value)
+        {
+            value >> ss;
+        }
 
-        // true if ipv6 should be used.
-        bool ipv6;          
+        template<typename T, typename... Rest>
+        void format_next(std::stringstream& ss, const T& value, const Rest&... rest)
+        {
+            value >> ss;
+            format_next(rest...);
+        }
 
-    };
+    } // detail
 
-    bool is_valid(const server& server)
-    {
-        return !server.host.empty() && server.port;
-    }
+template<typename... Args>
+std::string format(const Args&... args)
+{
+    std::stringstream ss;
+    if (!ss.good())
+        throw std::runtime_error("string format error");
 
-} // engine
+    return ss.str();
+}
+
+
+} // corelib

@@ -22,31 +22,56 @@
 
 #pragma once
 
-#include <string>
 #include <cstddef>
+#include <string>
 
 namespace engine
 {
-    // newsserver configuration
-    struct server 
-    {
-        // hostname or IP4/6 address.
-        std::string host; 
+    enum class connection_error {
+        none,
 
-        // the port number. typically Usenet servers
-        // run on port 119 for the general non-encrypted
-        // server and 443 or 563 for an encrypted server
-        // if that is supported.
-        std::uint16_t port; // port
+        resolve,
 
-        // true if ipv6 should be used.
-        bool ipv6;          
+        refused,
 
+        forbidden,
+
+        protocol,
+
+        network,
+
+        timeout
     };
 
-    bool is_valid(const server& server)
+    enum class connection_state {
+        connecting,
+
+        active,
+
+        ready,
+
+        error
+    };
+
+    struct connection
     {
-        return !server.host.empty() && server.port;
-    }
+        connection_error error;
+
+        connection_state state;
+
+        std::size_t id;
+
+        std::size_t task;
+
+        std::size_t account;
+
+        std::uint64_t bytes;
+
+        std::string host;
+
+        bool secure;
+
+        int bps;
+    };
 
 } // engine

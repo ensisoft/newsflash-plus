@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include <vector>
 #include <memory>
 #include <string>
 #include <cstdint>
@@ -34,7 +35,7 @@ namespace engine
 
     // engine manages collections of connections
     // and download tasks/items. 
-    class engine
+    class bigmachine
     {
     public:
         struct stats {
@@ -43,22 +44,61 @@ namespace engine
             std::uint64_t bytes_queued;
         };
 
-        // create a new engine with the given listener object and logs folder.
-        engine(listener& callback, std::string logs);
-       ~engine();
+        // newsserver content comprising of a list of message(article) ids.
+        // and other parameters instructing the engine how to perform the download.
+        struct content {
+            // list of message id's or message numbers.
+            // note that message numbers are specific to a server
+            // while message-ids are portable across servers.
+            std::vector<std::string> ids;
 
-        // configure the engine.
+            // the list of groups into which look for the messge ids.
+            std::vector<std::string> groups;
+
+            // the local filesystem path where the content
+            // is to the be placed.
+            std::string path;
+
+            // the human readable description. 
+            // this will appear in task::description.
+            std::string description;
+
+            // the esimated size of the content to be downloaded in bytes. 
+            std::uint64_t size;
+
+            // the account to be used for downloading the content.
+            std::size_t account;
+        };
+
+        // create a new engine with the given listener object and logs folder.
+        bigmachine(listener& callback, std::string logs);
+       ~bigmachine();
+
+        // configure the engine. this is an asynchronous call
+        // and returns immediately.
         void configure(const configuration& conf);
 
-        // add a new account to the engine.
-        // if the account already exists then the 
-        // account is updated.
-        void add(const account& acc);
+        // configure an account in the engine.
+        // if the account already exists then the account is updated
+        // otherwise it's created.
+        // this is an async call and returns immediately.
+        void configure(const account& acc);
 
+        // request the engine to start shutdown. when the engine is ready is shutting
+        // down a callback is invoked. Then the engine can be deleted.
+        // This 2 phase stop allows the GUI to for example animate while 
+        // the engine performs an orderly shutdown
         void shutdown();
 
+        // download a single piece of content
+        void download(const content& cont);
+
+        // download multiple pieces of content and put them into
+        // one single "batch". 
+        void download(const std::vector<content>& contents);
+
     private:
-        struct impl;
+        class impl;
 
         std::unique_ptr<impl> pimpl_;
     };

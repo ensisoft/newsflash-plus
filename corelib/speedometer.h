@@ -79,6 +79,11 @@ namespace corelib
             return speed_;
         }
 
+        bool is_running() const
+        {
+            return stamp_ != point_t();
+        }
+
     private:
         point_t stamp_;
         double speed_;

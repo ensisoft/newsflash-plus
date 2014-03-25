@@ -37,4 +37,7 @@ std::string joinpath(const std::string& a, const std::string& b);
 
 std::string filename(int attempt, const std::string& name);
 
+// create the path recursively with all the directories in the path.
+void create_path(const std::string& path);
+
 } // fs

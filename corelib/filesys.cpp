@@ -23,9 +23,12 @@
 #include <newsflash/config.h>
 
 #include <boost/filesystem/path.hpp>
+#include <boost/filesystem/operations.hpp>
 #include <sstream>
 #include <algorithm>
 #include "filesys.h"
+
+namespace bfs = boost::filesystem;
 
 namespace {
 
@@ -100,7 +103,7 @@ std::string joinpath(const std::string& a, const std::string& b)
 {
     if (a.empty())
         return b;
-    boost::filesystem::path path(a);
+    bfs::path path(a);
     path /= b;
 
     return path.string();
@@ -114,6 +117,15 @@ std::string filename(int attempt, const std::string& name)
     std::stringstream ss;
     ss << "(" << attempt+1 << ") " << name;
     return ss.str();
+}
+
+void create_path(const std::string& path)
+{
+    if (path.empty())
+        return;
+
+    const bfs::path p(path);
+    bfs::create_directories(p);
 }
 
 } // fs
