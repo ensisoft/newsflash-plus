@@ -294,13 +294,13 @@ sslsocket& sslsocket::operator=(sslsocket&& other)
 void sslsocket::ssl_wait_write()
 {
     auto can_write = wait(false, true);
-    corelib::wait_for(can_write);
+    corelib::wait(can_write);
 }
 
 void sslsocket::ssl_wait_read()
 {
     auto can_read = wait(true, false);
-    corelib::wait_for(can_read);
+    corelib::wait(can_read);
 }
 
 void sslsocket::ssl_connect()

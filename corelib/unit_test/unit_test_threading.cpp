@@ -112,7 +112,7 @@ void unit_test_event()
         
         // begin wait forever
         auto handle = event.wait();
-        wait_for(handle);
+        wait(handle);
         
         BOOST_REQUIRE(handle.read());
         

@@ -128,21 +128,21 @@ namespace corelib
     }
 
     inline
-    void wait_for(waithandle& h1)
+    void wait(waithandle& h1)
     {
         const waithandle::list handles { &h1 };
         
         waithandle::wait(handles);
     }
     inline
-    void wait_for(waithandle& h1, waithandle& h2)
+    void wait(waithandle& h1, waithandle& h2)
     {
         const waithandle::list handles { &h1, &h2 };
         
         waithandle::wait(handles);
     }
     inline
-    void wait_for(waithandle& h1, waithandle& h2, waithandle& h3)
+    void wait(waithandle& h1, waithandle& h2, waithandle& h3)
     {
         const waithandle::list handles { &h1, &h2, &h3 };
         
@@ -150,7 +150,7 @@ namespace corelib
     }    
 
     inline
-    void wait_for(waithandle& h1, waithandle& h2, waithandle& h3, waithandle& h4)
+    void wait(waithandle& h1, waithandle& h2, waithandle& h3, waithandle& h4)
     {
         const waithandle::list handles { &h1, &h2, &h3, &h4 };
 

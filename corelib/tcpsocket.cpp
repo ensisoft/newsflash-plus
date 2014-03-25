@@ -92,7 +92,7 @@ void tcpsocket::sendall(const void* buff, int len)
                 throw socket::tcp_exception("socket send", err);
 
             auto handle = wait(false, true);
-            corelib::wait_for(handle);
+            corelib::wait(handle);
             ret = 0;
         }
         sent += ret;

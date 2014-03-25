@@ -249,7 +249,7 @@ void connection::connect(thread_data* data)
 
     auto connect  = data->sock->wait(true, false);
     auto shutdown = shutdown_.wait();
-    corelib::wait_for(connect, shutdown);
+    corelib::wait(connect, shutdown);
 
     if (shutdown)
         throw conn_exception("connection was interrupted", error::interrupted);
