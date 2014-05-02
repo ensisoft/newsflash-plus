@@ -22,27 +22,23 @@
 
 #pragma once
 
+#include <system_error>
+#include <string>
+
+
 namespace engine
 {
-    struct file;
-    struct task;
-    struct error;
-
-    // listener interface for listening to engine events.
-    // the callbacks on this interface may occur from several
-    // different threads. 
-    class listener
+    // a system error, for example when file cannot be created, network error etc.
+    struct error
     {
-    public:
-        virtual ~listener() = default;
+        // description of the error.
+        std::string what;
 
-        virtual void handle(const ::engine::error& error) = 0;
+        // the resource in question, i.e. filepath or hostname
+        std::string resource;
 
-        virtual void acknowledge(const ::engine::file& file) = 0;
-
-    protected:
-    private:
-
+        // system specific error code.
+        std::error_code code;
     };
 
 } // engine

@@ -128,7 +128,7 @@ struct connection::thread_data {
     bool          ssl;
 };
 
-connection::connection(std::string logfile) : logfile_(std::move(logfile))
+connection::connection(std::string logfile) : logfile_(std::move(logfile)), cmds_(nullptr)
 {}
 
 connection::~connection()
@@ -151,11 +151,12 @@ void connection::connect(const std::string& host, std::uint16_t port, bool ssl)
     data.release();
 }
 
-void connection::execute(std::shared_ptr<cmdlist> cmds)
+void connection::execute(cmdlist* cmds)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     cmds_ = cmds;
     execute_.set();
+    cancel_.reset();
 }
 
 void connection::cancel()
@@ -203,8 +204,8 @@ void connection::main(thread_data* data)
             else if (execute)
             {
                 std::unique_lock<std::mutex> lock(mutex_);
-                std::shared_ptr<cmdlist> cmds = cmds_;
-                cmds_.reset();
+                cmdlist* cmds = cmds_;
+                cmds_ = nullptr;
                 execute_.reset();
                 lock.unlock();
 

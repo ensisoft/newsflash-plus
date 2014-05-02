@@ -24,8 +24,8 @@
 
 namespace engine
 {
-    // engine configuration 
-    struct configuration 
+    // engine settings
+    struct settings
     {
         // if set to true engine will overwrite files
         // that already exist in the filesystem.
@@ -66,17 +66,6 @@ namespace engine
         // throttle speed to this limit. specified in bytes per second.
         int throttle;
 
-        configuration()
-        {
-            overwrite_existing_files = true;
-            discard_text_content     = true;
-            auto_connect             = true;
-            auto_remove_completed    = true;
-            prefer_secure            = true;
-            enable_throttle          = false;
-            enable_fillserver        = true;
-            throttle                 = 0;
-        }
     };
 
 } // engine

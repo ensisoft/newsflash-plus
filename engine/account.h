@@ -36,6 +36,9 @@ namespace engine
         // account in the engine api.
         std::size_t id;
 
+        // name for the account
+        std::string name;
+
         // username if user credentials are required.
         std::string username;
 

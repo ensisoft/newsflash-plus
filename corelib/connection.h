@@ -73,7 +73,7 @@ namespace corelib
         // execute the commands in the given cmdlist.
         // the cmdlist is run() repeatedly untill the cmdlist is
         // complete or the cmdlist is canceled via a call to cancel()
-        void execute(std::shared_ptr<cmdlist> cmds);
+        void execute(cmdlist* cmds);
 
         // cancel the current cmdlist.
         void cancel();
@@ -92,11 +92,11 @@ namespace corelib
 
     private:
         std::unique_ptr<std::thread> thread_;
-        std::shared_ptr<cmdlist> cmds_;
         std::mutex mutex_;
         event shutdown_;
         event execute_;
         event cancel_;
+        cmdlist* cmds_;
     };
 
 } // corelib

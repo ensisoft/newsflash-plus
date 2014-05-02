@@ -22,27 +22,42 @@
 
 #pragma once
 
+#include <vector>
+#include <string>
+#include <cstddef>
+
 namespace engine
 {
-    struct file;
-    struct task;
-    struct error;
-
-    // listener interface for listening to engine events.
-    // the callbacks on this interface may occur from several
-    // different threads. 
-    class listener
+    // a file available in usenet network. each file
+    // is identified by a list of message-ids or message numbers.
+    struct file
     {
-    public:
-        virtual ~listener() = default;
+        // list of message id's or message numbers.
+        // note that message numbers are specific to a server
+        // while message-ids are portable across servers.
+        std::vector<std::string> ids;
 
-        virtual void handle(const ::engine::error& error) = 0;
+        // the list of groups into which look for the messge ids.
+        std::vector<std::string> groups;
 
-        virtual void acknowledge(const ::engine::file& file) = 0;
+        // the local filesystem path where the content
+        // is to the be placed.
+        std::string path;
 
-    protected:
-    private:
+        std::string name;
 
+        // the human readable description. 
+        // this will appear in task::description.
+        std::string description;
+
+        // the esimated size of the content to be downloaded in bytes. 
+        std::uint64_t size;
+
+        // the account to be used for downloading the content.
+        std::size_t account;
+
+        // contents are suspected to be damaged
+        bool damaged;
     };
 
 } // engine

@@ -22,7 +22,10 @@
 
 #pragma once
 
+#include <newsflash/config.h>
+
 #include <condition_variable>
+#include <functional>
 #include <memory>
 #include <thread>
 #include <mutex>
@@ -40,8 +43,10 @@ namespace corelib
         public:
             virtual ~work() = default;
 
-            // execute this chunk of work
-            virtual void execute() = 0;
+            // execute this chunk of work.
+            // it is an error to allow an exception to propagate 
+            // out of the execute() function
+            virtual void execute() NOTHROW = 0;
         protected:
         private:
         };
@@ -70,6 +75,9 @@ namespace corelib
         // and the object needs to remain valid untill the work
         // has been executed.
         void submit(work* work, tid_t key);
+
+        // submit work to the threadpool with the given thread affinity key.
+        void submit(std::function<void (void)> work, tid_t key);
 
         // block untill all the work queues are drained.
         void drain();

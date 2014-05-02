@@ -79,16 +79,35 @@ void threadpool::submit(std::unique_ptr<work> work, tid_t key)
 
 void threadpool::submit(work* work, tid_t key)
 {
-    struct non_delete_wrapper : work {
+    struct non_delete_wrapper : public work {
         work* the_real_thing;
 
-        void execute() {
+        void execute() NOTHROW {
             the_real_thing->execute();
         }
     };
 
     std::unique_ptr<non_delete_wrapper> wrapper(new non_delete_wrapper);
     wrapper->the_real_thing = work;
+    submit(std::move(wrapper), key);
+}
+
+void threadpool::submit(std::function<void (void)> work, tid_t key)
+{
+    typedef std::function<void (void)> function_t;
+
+    struct callable_wrapper : public work {
+        function_t func;
+
+        callable_wrapper(function_t&& fun) : func(std::move(fun))
+        {}
+
+        void execute() NOTHROW {
+            func();
+        }
+    };
+
+    std::unique_ptr<callable_wrapper> wrapper(new callable_wrapper(std::move(work)));
     submit(std::move(wrapper), key);
 }
 

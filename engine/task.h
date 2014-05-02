@@ -37,7 +37,12 @@ namespace engine
         unavailable,
 
         // the requested data was taken down
-        dmca
+        dmca,
+
+        // local system error has occurred 
+        // for example a file cannot be created because of insufficient
+        // permissions or storage space is exhausted.
+        system,
     };
 
         // execution states
@@ -92,7 +97,6 @@ namespace engine
         // the current completion %  (range 0.0 - 100.0)
         double completion;
 
-        // some of the data was detected to be corrupt
         bool damaged;
 
     };

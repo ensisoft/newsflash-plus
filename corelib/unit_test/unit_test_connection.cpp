@@ -306,9 +306,10 @@ void unit_test_cmdlist()
             int counter_;
         };
 
-        auto list = std::make_shared<testlist>();
+        //auto list = std::make_shared<testlist>();
+        testlist list;
 
-        conn.execute(list);
+        conn.execute(&list);
 
         for (int i=0; i<10; ++i)
         {
@@ -340,9 +341,10 @@ void unit_test_cmdlist()
             }
         };
 
-        auto list = std::make_shared<testlist>();
+        //auto list = std::make_shared<testlist>();
+        testlist list;
 
-        conn.execute(list);
+        conn.execute(&list);
         conn.cancel();
         serv.recv("BODY 1234");
         serv.send("420 no article with that message id");

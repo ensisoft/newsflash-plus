@@ -46,10 +46,10 @@ namespace corelib
         };
 
         enum class action {
-            prepare_task,   
-            flush_task,
-            cancel_task,
-            finalize_task,
+            prepare,   
+            flush,
+            cancel,
+            finalize,
             run_cmd_list,
             stop_cmd_list
         };
@@ -130,12 +130,19 @@ namespace corelib
 
 
         // returns true if state is in runnable states
-        // i.e. active, waiting, paused or debuffering
+        // i.e. active, waiting, paused
         bool is_runnable() const;
 
         // returns true if task is in active states
         // i.e. active or waiting
         bool is_active() const;
+
+        // returns true if task is queued
+        bool is_queued() const;
+
+        bool is_complete() const;
+
+        bool is_killed() const;
 
         // good flag is true if no fault() has occurred, otherwise false.
         bool good() const;

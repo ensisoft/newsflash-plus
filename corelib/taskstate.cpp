@@ -40,7 +40,7 @@ bool taskstate::start()
     if (state_ != state::queued)
         return false;
 
-    emit(action::prepare_task);
+    emit(action::prepare);
     emit(action::run_cmd_list);
     state_ = state::waiting;
     return true;
@@ -80,7 +80,7 @@ bool taskstate::flush()
     if (!is_runnable())
         return false;
 
-    emit(action::flush_task);
+    emit(action::flush);
     return true;
 }
 
@@ -94,11 +94,11 @@ bool taskstate::kill()
         case state::active:
         case state::waiting:
             emit(action::stop_cmd_list);
-            emit(action::cancel_task);
+            emit(action::cancel);
             break;
 
         case state::paused:
-            emit(action::cancel_task);
+            emit(action::cancel);
             break;
 
         case state::complete:
@@ -124,11 +124,11 @@ bool taskstate::fault()
         case state::active:
         case state::waiting:
             emit(action::stop_cmd_list);
-            emit(action::cancel_task);
+            emit(action::cancel);
             break;
 
         case state::paused:
-            emit(action::cancel_task);
+            emit(action::cancel);
             break;
     }
     state_ = state::complete;
@@ -198,7 +198,7 @@ bool taskstate::dequeue(std::size_t bytes)
         if (dequed_ == buffers_)
         {
             assert(qsize_ == 0);
-            emit(action::finalize_task);
+            emit(action::finalize);
         }
         else if(overflow_)
         {
@@ -215,7 +215,7 @@ bool taskstate::dequeue(std::size_t bytes)
 
 bool taskstate::complete(taskstate::action action)
 {
-    if (action != taskstate::action::finalize_task)
+    if (action != taskstate::action::finalize)
         return false;
 
     state_ = state::complete;
@@ -247,6 +247,22 @@ bool taskstate::is_active() const
             break;
     }
     return false;
+}
+
+bool taskstate::is_queued() const
+{
+    return state_ == state::queued;
+}
+
+bool taskstate::is_complete() const
+{
+    return state_ == state::complete;
+}
+
+
+bool taskstate::is_killed() const
+{
+    return state_ == state::killed;
 }
 
 bool taskstate::good() const
