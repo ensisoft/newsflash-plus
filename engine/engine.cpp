@@ -33,6 +33,7 @@
 #include <corelib/format.h>
 #include <corelib/etacalc.h>
 #include <corelib/cmdlist.h>
+#include <corelib/stopwatch.h>
 #include <algorithm>
 #include <functional>
 #include <vector>
@@ -54,15 +55,56 @@ struct engine::task_t {
     ::engine::task state;
     corelib::taskstate stm;
     corelib::etacalc eta;
+    corelib::stopwatch timer;
     corelib::threadpool::tid_t tid;
     std::unique_ptr<corelib::task> task;
     std::unique_ptr<corelib::cmdlist> cmd;
+
+    task_t(std::size_t id, std::size_t account) : eta(0)
+    {
+        state.error = ::engine::task_error::none;
+        state.state = ::engine::task_state::queued;
+        state.id    = id;
+        state.account = account;
+        state.size    = 0;
+        state.runtime = 0;
+        state.eta     = -1;
+        state.completion = 0;
+        state.damaged = 0;
+
+        LOG_D("Task created '", state.description, "' (", state.id, ")");
+    }
+
+   ~task_t()
+    {
+        LOG_D("Task deleted ", state.id);
+    }
 };
 
 struct engine::conn_t {
     ::engine::connection state;
     corelib::connection conn;
     corelib::speedometer speed;
+
+    conn_t(const std::string& logfile) : conn(logfile)
+    {
+        state.error = ::engine::connection_error::none;
+        state.state = ::engine::connection_state::connecting;
+        state.id    = 0;
+        state.task  = 0;
+        state.account = 0;
+        state.bytes  = 0;
+        state.secure = false;
+        state.bps  = 0;
+
+        LOG_D("Connection created ", state.id);
+    }
+
+   ~conn_t()
+    {
+        LOG_D("Connection deleted ", state.id);
+    }
+
 };
 
 
@@ -94,6 +136,8 @@ engine::~engine()
 
 void engine::set(const ::engine::settings& settings)
 {
+    std::lock_guard<std::mutex> lock(mutex_);
+
     settings_ = settings;
 
     LOG_I("Current settings");
@@ -109,6 +153,8 @@ void engine::set(const ::engine::settings& settings)
 
 void engine::set(const ::engine::account& account)
 {
+    std::lock_guard<std::mutex> lock(mutex_);
+
     auto it = std::find_if(std::begin(accounts_), std::end(accounts_),
         [=](const ::engine::account& acc)
         {
@@ -167,6 +213,7 @@ void engine::download(const ::engine::file& file)
 
 }
 
+
 void engine::on_task_action(task_t* task, corelib::taskstate::action action)
 {
     LOG_D("Task action ", task->state.id);
@@ -217,10 +264,55 @@ void engine::on_task_action(task_t* task, corelib::taskstate::action action)
 
                     }
                     catch (const std::exception& e)
-                    { }
+                    {
+                    }
                 }, task->tid);
             break;
     }
+}
+
+void engine::on_conn_ready(conn_t* conn)
+{
+
+}
+
+void engine::on_conn_error(conn_t* conn, corelib::connection::error error)
+{
+
+}
+
+void engine::on_conn_read(conn_t* conn, std::size_t bytes)
+{
+
+}
+
+void engine::on_conn_auth(conn_t* conn, std::string& user, std::string& pass)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+
+    const auto it = std::find_if(std::begin(accounts_), std::end(accounts_),
+        [=](const account& acc)
+        {
+            return acc.id == conn->state.id;
+        });
+    ASSERT(it != std::end(accounts_));
+
+    const auto& account = *it;
+
+    user = account.username;
+    pass = account.password;
+}
+
+bool engine::on_conn_throttle(conn_t* conn, std::size_t& quota)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+
+    if (!settings_.enable_throttle)
+        return false;
+
+    //throttle_.enable(std::size_t bytes_per_second)
+
+    return true;
 }
 
 
@@ -265,9 +357,26 @@ void engine::schedule_tasklist()
 
 void engine::schedule_connlist()
 {
+    for (const auto& account : accounts_)
+    {
+        const int count = std::count_if(std::begin(conns_), std::end(conns_),
+            [=](const std::unique_ptr<conn_t>& conn)
+            {
+                return conn->state.account == account.id;
+            });
+        if (count == account.max_connections)
+            return;
 
+        for (int i=count; i<account.max_connections; ++i)
+        {
+            const auto cid = conns_.size() + 1;
+            const auto log = corelib::format("connection", cid, ".log");
+
+            //LOG_I("Starting a new connection to ", account.name);
+
+            //std::unique_ptr<conn_t> conn(new conn_t(log));
+        }
+    }
 }
-
-//void engine::download(const )
 
 } // engine

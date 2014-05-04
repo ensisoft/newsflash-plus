@@ -40,12 +40,10 @@ namespace corelib
         // set the speed limit to the given bytes_per_second.
         void enable(std::size_t bytes_per_second)
         {
-            std::lock_guard<std::mutex> lock(mutex_);
             bytes_per_second_ = bytes_per_second;
         }
 
     private:
-        std::mutex mutex_;        
         std::size_t bytes_per_second_;
         std::size_t accum_;
         stopwatch stopwatch_;

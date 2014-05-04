@@ -27,6 +27,7 @@
 #include <corelib/speedometer.h>
 #include <corelib/throttle.h>
 #include <memory>
+#include <mutex>
 #include <vector>
 #include <deque>
 #include <string>
@@ -125,6 +126,7 @@ namespace engine
         void on_conn_error(conn_t* conn, corelib::connection::error error);
         void on_conn_read(conn_t* conn, std::size_t bytes);
         void on_conn_auth(conn_t* conn, std::string& user, std::string& pass);
+        bool on_conn_throttle(conn_t* conn, std::size_t& quota);
 
     private:
         void schedule_tasklist();
@@ -132,9 +134,13 @@ namespace engine
 
     private:
         std::string logs_;
+        std::mutex mutex_;
         std::deque<std::unique_ptr<task_t>> tasks_;
         std::deque<std::unique_ptr<conn_t>> conns_;
         std::vector<account> accounts_;
+        std::uint64_t bytes_downloaded_;
+        std::uint64_t bytes_written_;
+        std::uint64_t bytes_queued_;
         corelib::throttle throttle_;
         corelib::speedometer meter_;
         settings settings_;
