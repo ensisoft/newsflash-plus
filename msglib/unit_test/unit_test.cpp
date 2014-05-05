@@ -46,7 +46,6 @@ void unit_test_message()
     BOOST_REQUIRE(msg.as<foo>().i == 1234);
 }
 
-
 void unit_test_queue()
 {
     typedef msglib::queue<foo> foo_queue;
@@ -93,6 +92,16 @@ void unit_test_queue()
         BOOST_REQUIRE(later.ready() == true);
     }
 
+    {
+        typedef msglib::queue<msglib::message> msg_queue;
+
+        msg_queue q;
+        msg_queue::message m;
+
+        q.emplace_post(123, foo {"ardvark", 5555});
+        q.get(m);
+        BOOST_REQUIRE(m.value.id() == 123);
+    }
 }
 
 void unit_test_queue_post()

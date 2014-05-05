@@ -29,17 +29,24 @@
 
 namespace msglib
 {
+    // message wraps safely arbitrary types and provides
+    // a safe "type casting" facility.
     class message
     {
     public:
-        template<typename T>
-        message(std::size_t id, T msg) : id_(id), msg_(new message::msg<T>(std::move(msg)))
+        // construct an empty message.
+        message() : id_(0)
         {}
 
+        // construct a message with msg payload and id
+        template<typename T>
+        message(int id, T msg) : id_(id), msg_(new message::msg<T>(std::move(msg)))
+        {}
 
         message(message&& other) : id_(other.id_), msg_(std::move(other.msg_))
         {}
 
+        // cast to type T object.
         template<typename T>
         T& as()
         {
@@ -47,6 +54,7 @@ namespace msglib
             return *static_cast<T*>(ptr);
         }
 
+        // cast to type const T object
         template<typename T>
         const T& as() const
         {
@@ -54,17 +62,10 @@ namespace msglib
             return *static_cast<const T*>(ptr);
         }
 
-        std::size_t id() const
+        // get message id.
+        int id() const
         {
             return id_;
-        }
-
-        message& operator==(message&& other)
-        {
-            if (&other == this)
-                return *this;
-            msg_ = std::move(other.msg_);
-            return *this;
         }
 
         template<typename T>
@@ -73,8 +74,17 @@ namespace msglib
             return msg_->get_if(typeid(T)) != nullptr;
         }
 
-    private:
-        const std::size_t id_;
+        bool empty() const
+        {
+            return !msg_;
+        }
+
+        message& operator=(message&& other)
+        {
+            id_  = other.id_;
+            msg_ = std::move(other.msg_);
+            return *this;
+        }
 
     private:
         struct any_message {
@@ -99,8 +109,8 @@ namespace msglib
         };
 
     private:
+        int id_;
         std::unique_ptr<any_message> msg_;
-
     };
 
 } // msglib

@@ -39,7 +39,6 @@ namespace msglib
         struct wait_state {
             std::condition_variable cond;
             std::mutex mutex;
-            std::size_t refc;
             bool done;
         };
 
@@ -73,11 +72,10 @@ namespace msglib
             message()
             {}
 
-            message(const message& other) : value(other.value), wait_(other.wait_)
-            {
-                if (wait_)
-                    wait_->refc++;
-            }
+            message(const message&) = delete;
+
+            message(message&& other) : value(std::move(other.value)), wait_(std::move(other.wait_))
+            {}
 
             message(const Message& m) : value(m)
             {}
@@ -87,8 +85,7 @@ namespace msglib
 
            ~message()
             {
-                if (wait_ && --wait_->refc == 0)
-                    dispose();
+                dispose();
             }
 
             void dispose()
@@ -101,15 +98,14 @@ namespace msglib
                 }
             }
 
-            message& operator=(const message& other)
+            message& operator=(message&& other)
             {
-                message tmp(other);
-
-                std::swap(tmp.wait_, wait_);
-                std::swap(tmp.value, value);
-
+                value = std::move(other.value);
+                wait_ = std::move(other.wait_);
                 return *this;
             }
+
+            message& operator=(const message&) = delete;
 
         private:
             friend class queue;
@@ -142,7 +138,6 @@ namespace msglib
         {
             auto wait = std::make_shared<wait_state>();
             wait->done = false;
-            wait->refc = 1;
 
             message m = { msg };
             m.wait_ = wait;
@@ -161,7 +156,6 @@ namespace msglib
         {
             auto wait = std::make_shared<wait_state>();
             wait->done = false;
-            wait->refc = 1;
 
             Message m = { std::forward<Args>(args)... };
             message mm = { std::move(m) };
@@ -172,6 +166,7 @@ namespace msglib
 
             std::lock_guard<std::mutex> lock(mutex_);
             messages_.push_back(std::move(mm));
+            return f;
         }
 
 
@@ -183,7 +178,7 @@ namespace msglib
             if (messages_.empty())
                 return false;
 
-            m = messages_.front();
+            m = std::move(messages_.front());
             messages_.pop_front();
             return true;
         }
