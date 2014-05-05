@@ -29,16 +29,21 @@ namespace engine
     struct error;
 
     // listener interface for listening to engine events.
-    // the callbacks on this interface may occur from several
-    // different threads. 
     class listener
     {
     public:
         virtual ~listener() = default;
 
-        virtual void handle(const ::engine::error& error) = 0;
+        // an error has occurred. 
+        virtual void on_error(const ::engine::error& error) = 0;
 
-        virtual void acknowledge(const ::engine::file& file) = 0;
+        // a file completed
+        virtual void on_file(const ::engine::file& file) = 0;
+
+        // notify the listener that there are pending events in the engine's
+        // event queue. the callback should organize for a call to engine::pump_events()
+        // to process the pending events.
+        virtual void on_events() = 0;
 
     protected:
     private:

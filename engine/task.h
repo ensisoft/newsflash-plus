@@ -52,6 +52,8 @@ namespace engine
         // and will be scheduled for execution at some point.
         queued,
 
+        preparing,
+
         // task was being run before, but now it's waiting
         // for input data. (for example connection went down,
         // or there are no free connections).
@@ -59,6 +61,12 @@ namespace engine
 
         // task was paused by the user.
         paused,
+
+        flushing,
+
+        finalized,
+
+        debuffering,
 
         // succesfully complete.
         // check the completion status for conditions.
@@ -82,6 +90,8 @@ namespace engine
         // the account to which the task is connected.
         std::size_t account;
 
+        std::size_t batch;
+
         // the human readable description of the task.
         std::string description;
 
@@ -98,7 +108,6 @@ namespace engine
         double completion;
 
         bool damaged;
-
     };
 
 } // engine

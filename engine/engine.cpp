@@ -44,10 +44,58 @@
 #include "account.h"
 #include "server.h"
 #include "task.h"
+#include "file.h"
 
 namespace {
     corelib::threadpool threads(5);
-} // 
+
+    const char* stringify(corelib::taskstate::action action)
+    {
+        using namespace corelib;
+
+        switch (action)
+        {
+            case taskstate::action::prepare:
+                return "PREPARE";
+            case taskstate::action::flush:
+                return "FLUSH";
+            case taskstate::action::cancel:
+                return "CANCEL";                
+            case taskstate::action::finalize:
+                return "FINALIZE";                                
+            case taskstate::action::run_cmd_list:
+                return "RUN";                                            
+            case taskstate::action::stop_cmd_list:
+                return "STOP";                                                            
+        }
+        assert(0);
+        return "???";
+    }
+
+    const char* stringify(corelib::taskstate::state state)
+    {
+        using namespace corelib;
+
+        switch (state)
+        {
+            case taskstate::state::queued:
+                return "QUEUED";
+            case taskstate::state::waiting:
+                return "WAITING";
+            case taskstate::state::active:
+                return "ACTIVE";
+            case taskstate::state::paused:
+                return "PAUSED";
+            case taskstate::state::complete:
+                return "COMPLETE";            
+            case taskstate::state::killed:
+                return "KILLED";                                                                        
+        }
+        assert(0);
+        return "???";
+    }
+
+} // namespace
 
 namespace engine
 {
@@ -60,24 +108,21 @@ struct engine::task_t {
     std::unique_ptr<corelib::task> task;
     std::unique_ptr<corelib::cmdlist> cmd;
 
-    task_t(std::size_t id, std::size_t account) : eta(0)
+    task_t(const ::engine::task& state) : state(state), eta(0)
     {
-        state.error = ::engine::task_error::none;
-        state.state = ::engine::task_state::queued;
-        state.id    = id;
-        state.account = account;
-        state.size    = 0;
-        state.runtime = 0;
-        state.eta     = -1;
-        state.completion = 0;
-        state.damaged = 0;
-
         LOG_D("Task created '", state.description, "' (", state.id, ")");
     }
 
    ~task_t()
     {
         LOG_D("Task deleted ", state.id);
+    }
+
+    static
+    std::size_t get_next_id()
+    {
+        static std::size_t id = 1;
+        return id++;
     }
 };
 
@@ -105,11 +150,56 @@ struct engine::conn_t {
         LOG_D("Connection deleted ", state.id);
     }
 
+    static
+    std::size_t get_next_id()
+    {
+        static std::size_t id = 1;
+        return id++;
+    }
+
 };
 
+struct engine::batch_t {
+    ::engine::task state;
+    
+    batch_t(const ::engine::task& state) : state(state)
+    {
+        LOG_D("Batch created '", state.description, "' (", state.id, ")");
+    }
 
+   ~batch_t()
+    {
+        LOG_D("Batch deleted ", state.id);        
+    }
 
-engine::engine(listener& callback, std::string logs)
+    static
+    std::size_t get_next_id()
+    {
+        static std::size_t id = 1;
+        return id++;
+    }
+};
+
+struct engine::msg_conn_ready {
+    conn_t* conn;
+};
+
+struct engine::msg_conn_error {
+    conn_t* conn; 
+};
+
+struct engine::msg_conn_read {
+    conn_t* conn;
+    std::size_t bytes;
+};
+
+struct engine::msg_conn_auth {
+    conn_t* conn;
+    std::string* user;
+    std::string* pass;
+};
+
+engine::engine(listener& callback, std::string logs) : logs_(logs), listener_(callback)
 {
     fs::create_path(logs);
 
@@ -203,20 +293,106 @@ void engine::set(const ::engine::account& account)
 
 
 
-void engine::pump()
+void engine::pump_events()
 {
 
 }
 
-void engine::download(const ::engine::file& file)
+void engine::download(const ::engine::account& account, const ::engine::file& file)
 {
+    set(account);
 
+    const auto batch_id = batch_t::get_next_id();
+    const auto task_id  = task_t::get_next_id();
+
+    ::engine::task state;
+    state.error       = ::engine::task_error::none;
+    state.state       = ::engine::task_state::queued;
+    state.id          = batch_id;
+    state.account     = account.id;
+    state.batch       = batch_id;
+    state.description = file.description;
+    state.size        = file.size;
+    state.runtime     = 0;
+    state.eta         = 0;
+    state.completion  = 0.0;
+    state.damaged     = false;
+
+    auto batch = std::unique_ptr<batch_t>(new batch_t(state));
+
+    state.batch = batch_id;
+    state.id    = task_id;
+    auto task = std::unique_ptr<task_t>(new task_t(state));
+
+    task->stm.on_action = std::bind(&engine::on_task_action, this,
+        task.get(), batch.get(), std::placeholders::_1);
+    task->stm.on_state_change = std::bind(&engine::on_task_state_change, this,
+        task.get(), batch.get(), std::placeholders::_1, std::placeholders::_2);
+
+    batches_.push_back(std::move(batch));
+    tasks_.push_back(std::move(task));
+
+    schedule_tasklist();
+    schedule_connlist();
+}
+
+void engine::download(const ::engine::account& account, const std::vector<::engine::file>& files)
+{
+    set(account);
+
+    ::engine::task batch_state;
+    batch_state.error       = ::engine::task_error::none;
+    batch_state.state       = ::engine::task_state::queued;
+    batch_state.id          = batch_t::get_next_id();
+    batch_state.account     = account.id;    
+    batch_state.batch       = batch_state.id;
+    batch_state.description = files[0].description;
+    batch_state.size        = std::accumulate(std::begin(files), std::end(files), std::uint64_t(0), 
+        [](std::uint64_t size, const ::engine::file& file) {
+            return size + file.size;
+        });
+    batch_state.runtime     = 0;
+    batch_state.eta         = 0;
+    batch_state.completion  = 0.0;
+    batch_state.damaged     = false;
+
+    auto batch = std::unique_ptr<batch_t>(new batch_t(batch_state));
+
+    for (auto& file : files)
+    {
+        ::engine::task state;
+        state.error       = ::engine::task_error::none;
+        state.state       = ::engine::task_state::queued;
+        state.id          = task_t::get_next_id();
+        state.account     = account.id;
+        state.batch       = batch_state.id;
+        state.description = file.description;
+        state.size        = file.size;
+        state.runtime     = 0;
+        state.eta         = 0;
+        state.completion  = 0.0;
+        state.damaged     = false;
+
+        auto task = std::unique_ptr<task_t>(new task_t(state));
+
+        task->stm.on_action = std::bind(&engine::on_task_action, this,
+            task.get(), batch.get(), std::placeholders::_1);
+        task->stm.on_state_change = std::bind(&engine::on_task_state_change, this,
+            task.get(), batch.get(), std::placeholders::_1, std::placeholders::_2);
+        tasks_.push_back(std::move(task));
+    }
+
+    batches_.push_back(std::move(batch));
+
+    schedule_tasklist();
+    schedule_connlist();
 }
 
 
-void engine::on_task_action(task_t* task, corelib::taskstate::action action)
+
+void engine::on_task_action(task_t* task, batch_t*, corelib::taskstate::action action)
 {
-    LOG_D("Task action ", task->state.id);
+    LOG_D("Task action (", task->state.id, ") ", stringify(action));
 
     // perform the action instructed by the state machine
     // we delegate the actual operation to a background
@@ -271,36 +447,42 @@ void engine::on_task_action(task_t* task, corelib::taskstate::action action)
     }
 }
 
+void engine::on_task_state_change(task_t* task, batch_t* batch, corelib::taskstate::state current,  corelib::taskstate::state next)
+{
+    LOG_D("Task state change (", task->state.id, ") ", stringify(current), " -> ", stringify(next));
+
+    // map the 
+}
+
 void engine::on_conn_ready(conn_t* conn)
 {
-
 }
 
 void engine::on_conn_error(conn_t* conn, corelib::connection::error error)
 {
-
 }
 
 void engine::on_conn_read(conn_t* conn, std::size_t bytes)
 {
-
 }
 
 void engine::on_conn_auth(conn_t* conn, std::string& user, std::string& pass)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
 
-    const auto it = std::find_if(std::begin(accounts_), std::end(accounts_),
-        [=](const account& acc)
-        {
-            return acc.id == conn->state.id;
-        });
-    ASSERT(it != std::end(accounts_));
+    //auto future = messages_.send(msglib::message(1, msg_conn_auth{conn, &user, &pass}));
 
-    const auto& account = *it;
+    //std::lock_guard<std::mutex> lock(mutex_);
+    // const auto it = std::find_if(std::begin(accounts_), std::end(accounts_),
+    //     [=](const account& acc)
+    //     {
+    //         return acc.id == conn->state.id;
+    //     });
+    // ASSERT(it != std::end(accounts_));
 
-    user = account.username;
-    pass = account.password;
+    // const auto& account = *it;
+
+    // user = account.username;
+    // pass = account.password;
 }
 
 bool engine::on_conn_throttle(conn_t* conn, std::size_t& quota)
@@ -310,7 +492,7 @@ bool engine::on_conn_throttle(conn_t* conn, std::size_t& quota)
     if (!settings_.enable_throttle)
         return false;
 
-    //throttle_.enable(std::size_t bytes_per_second)
+    // todo:
 
     return true;
 }
@@ -348,9 +530,6 @@ void engine::schedule_tasklist()
 
         auto& task = *currently_queued;
 
-        // kick it
-        task->stm.on_event = std::bind(&engine::on_task_action, this,
-            task.get(), std::placeholders::_1);
         task->stm.start();
     }
 }
@@ -377,6 +556,19 @@ void engine::schedule_connlist()
             //std::unique_ptr<conn_t> conn(new conn_t(log));
         }
     }
+}
+
+::engine::account* engine::find_account(std::size_t id)
+{
+    auto it = std::find_if(std::begin(accounts_), std::end(accounts_),
+        [=](const account& acc)
+        {
+            return acc.id == id;
+        });
+    if (it == std::end(accounts_))
+        return nullptr;
+
+    return &(*it);
 }
 
 } // engine

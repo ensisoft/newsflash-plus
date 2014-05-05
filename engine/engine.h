@@ -26,11 +26,14 @@
 #include <corelib/taskstate.h>
 #include <corelib/speedometer.h>
 #include <corelib/throttle.h>
+#include <msglib/queue.h>
+#include <msglib/message.h>
 #include <memory>
 #include <mutex>
 #include <vector>
 #include <deque>
 #include <string>
+#include <queue>
 #include <cstdint>
 #include "settings.h"
 
@@ -82,6 +85,7 @@ namespace engine
 
         typedef list<task_t, ::engine::task> tasklist;
         typedef list<conn_t, ::engine::connection> connlist;
+        typedef list<batch_t, ::engine::task> batchlist;
 
         struct stats {
             std::uint64_t bytes_downloaded;
@@ -112,15 +116,18 @@ namespace engine
         void shutdown();
 
         // download a single file
-        void download(const ::engine::file& file);
+        void download(const ::engine::account& account, const ::engine::file& file);
 
         // download a batch of files
-        void download(const std::vector<::engine::file>& files);
+        void download(const ::engine::account& account, const std::vector<::engine::file>& files);
 
-        void pump();
+        // process pending events coming from asynchronous worker threads.
+        // this function should be called as a response to listener::on_events()
+        void pump_events();
 
     private:
-        void on_task_action(task_t* task, corelib::taskstate::action action);
+        void on_task_action(task_t* task, batch_t* batch, corelib::taskstate::action action);
+        void on_task_state_change(task_t* task, batch_t* batch, corelib::taskstate::state current, corelib::taskstate::state next);
 
         void on_conn_ready(conn_t* conn);
         void on_conn_error(conn_t* conn, corelib::connection::error error);
@@ -133,17 +140,31 @@ namespace engine
         void schedule_connlist();
 
     private:
+        ::engine::account* find_account(std::size_t id);
+
+    private:
+        struct msg_conn_ready;
+        struct msg_conn_error;
+        struct msg_conn_read;
+        struct msg_conn_auth;
+
+
+    private:
         std::string logs_;
         std::mutex mutex_;
         std::deque<std::unique_ptr<task_t>> tasks_;
         std::deque<std::unique_ptr<conn_t>> conns_;
+        std::deque<std::unique_ptr<batch_t>> batches_;
         std::vector<account> accounts_;
         std::uint64_t bytes_downloaded_;
         std::uint64_t bytes_written_;
         std::uint64_t bytes_queued_;
+        std::size_t id_;
         corelib::throttle throttle_;
         corelib::speedometer meter_;
+        msglib::queue<msglib::message> messages_;
         settings settings_;
+        listener& listener_;
     };
 
 } // engine
