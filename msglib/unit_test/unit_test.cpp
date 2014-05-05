@@ -22,7 +22,9 @@
 
 #include <boost/test/minimal.hpp>
 #include <string>
+#include <thread>
 #include "../message.h"
+#include "../queue.h"
 
 struct foo {
     std::string str;
@@ -47,13 +49,87 @@ void unit_test_message()
 
 void unit_test_queue()
 {
-    
+    typedef msglib::queue<foo> foo_queue;
+
+    {
+        foo_queue f;
+        foo_queue::message m;
+        BOOST_REQUIRE(f.get(m) == false);
+    }
+
+    {
+        foo msg = {"keke", 1234};
+
+        foo_queue f;
+        foo_queue::message m;
+
+        f.post(msg);
+        BOOST_REQUIRE(f.get(m) == true);
+        BOOST_REQUIRE(m.value.i == 1234);
+        BOOST_REQUIRE(m.value.str == "keke");
+    }
+
+    {
+        foo_queue f;
+        foo_queue::message m;
+
+        f.emplace_post("jallukola", 1234);
+        BOOST_REQUIRE(f.get(m) == true);
+        BOOST_REQUIRE(m.value.i == 1234);
+        BOOST_REQUIRE(m.value.str == "jallukola");
+    }
+
+    {
+        foo msg = {"jeesus ajaa mopolla", 4444};
+
+        foo_queue f;
+        foo_queue::message m;
+
+        auto later = f.send(msg);
+        BOOST_REQUIRE(later.ready() == false);
+
+        f.get(m);
+        m.dispose();
+        BOOST_REQUIRE(later.ready() == true);
+    }
+
+}
+
+void unit_test_queue_post()
+{
+    typedef msglib::queue<foo> foo_queue;
+
+    foo_queue queue;
+
+    std::thread producer(
+        [&]() {
+            for (int i=0; i<10000; ++i)
+            {
+                queue.emplace_post("foo", i);
+            }
+        });
+
+    std::thread consumer(
+        [&]() {
+            for (int i=0; i<10000; ++i)
+            {
+                foo_queue::message m;
+                while (!queue.get(m));
+
+                BOOST_REQUIRE(m.value.i == i);
+                BOOST_REQUIRE(m.value.str == "foo");
+            }
+        });
+
+    producer.join();
+    consumer.join();
 }
 
 int test_main(int, char*[])
 {
     unit_test_message();
     unit_test_queue();
+    unit_test_queue_post();
 
     return 0;
 }

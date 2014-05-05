@@ -26,6 +26,7 @@
 #include <deque>
 #include <mutex>
 #include <memory>
+#include <utility> // for std::forward
 #include <cassert>
 
 namespace msglib
@@ -38,6 +39,7 @@ namespace msglib
         struct wait_state {
             std::condition_variable cond;
             std::mutex mutex;
+            std::size_t refc;
             bool done;
         };
 
@@ -52,6 +54,11 @@ namespace msglib
                     return;
                 wait_->cond.wait(lock);
             }
+            bool ready() const
+            {
+                std::unique_lock<std::mutex> lock(wait_->mutex);
+                return wait_->done;
+            }
         private:
             friend class queue;
 
@@ -61,59 +68,115 @@ namespace msglib
         class message 
         {
         public:
-            Message msg;
+            Message value;
+
+            message()
+            {}
+
+            message(const message& other) : value(other.value), wait_(other.wait_)
+            {
+                if (wait_)
+                    wait_->refc++;
+            }
+
+            message(const Message& m) : value(m)
+            {}
+
+            message(Message&& m) : value(std::move(m))
+            {}
 
            ~message()
             {
-                dispose();
+                if (wait_ && --wait_->refc == 0)
+                    dispose();
             }
 
             void dispose()
             {
-                if (!wait_)
-                    return;
-
-                std::lock_guard<std::mutex> lock(wait_->mutex);
-                wait_->done = true;
-                wait_->cond.notify_one();                
+                if (wait_)
+                {
+                    std::lock_guard<std::mutex> lock(wait_->mutex);
+                    wait_->done = true;
+                    wait_->cond.notify_one();                
+                }
             }
+
+            message& operator=(const message& other)
+            {
+                message tmp(other);
+
+                std::swap(tmp.wait_, wait_);
+                std::swap(tmp.value, value);
+
+                return *this;
+            }
+
         private:
             friend class queue;
 
             std::shared_ptr<wait_state> wait_;
         };
 
-
         // post a message to the back of the queue. 
-        void post(Message msg)
+        // returns immediately and caller cannot determine
+        // when the message will be processed by the receiver.
+        void post(const Message& msg)
         {
             std::lock_guard<std::mutex> lock(mutex_);
-            messages_.emplace_back(message { std::move(msg) });            
+            messages_.push_back(message { msg });
         }
+
+        template<typename... Args>
+        void emplace_post(Args&&... args)
+        {
+            Message m = { std::forward<Args>(args)... };
+            std::lock_guard<std::mutex> lock(mutex_);
+            messages_.push_back(message { std::move(m) });
+        }        
 
         // send a message to the back of the queue.
         // returns a future object which may be used to block
         // the caller untill the message has been processed by
         // the receiver.
-        future send(Message msg)
+        future send(const Message& msg)
         {
             auto wait = std::make_shared<wait_state>();
             wait->done = false;
+            wait->refc = 1;
 
-            message m = { std::move(msg) };
+            message m = { msg };
             m.wait_ = wait;
 
             future f;
             f.wait_ = wait;
 
             std::lock_guard<std::mutex> lock(mutex_);
-            messages_.emplace_back(std::move(m));
+            messages_.push_back(std::move(m));
 
             return f;
         }
 
+        template<typename... Args>
+        future emplace_send(Args&&... args)
+        {
+            auto wait = std::make_shared<wait_state>();
+            wait->done = false;
+            wait->refc = 1;
+
+            Message m = { std::forward<Args>(args)... };
+            message mm = { std::move(m) };
+            mm.wait_ = wait;
+
+            future f;
+            f.wait_ = wait;
+
+            std::lock_guard<std::mutex> lock(mutex_);
+            messages_.push_back(std::move(mm));
+        }
 
 
+        // get a message from the queue if any. 
+        // returns true if message was retrieved, otherwise false.
         bool get(message& m)
         {
             std::lock_guard<std::mutex> lock(mutex_);
