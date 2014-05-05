@@ -42,7 +42,8 @@ bool taskstate::start()
 
     emit(action::prepare);
     emit(action::run_cmd_list);
-    state_ = state::waiting;
+
+    goto_state(state::waiting);
     return true;
 }
 
@@ -54,7 +55,7 @@ bool taskstate::pause()
     if (state_ == state::active)
         emit(action::stop_cmd_list);
 
-    state_ = state::paused;
+    goto_state(state::paused);
     return true;
 }
 
@@ -66,11 +67,11 @@ bool taskstate::resume()
     if (buffers_)
     {
         emit(action::run_cmd_list);
-        state_ = state::waiting;
+        goto_state(state::waiting);
     }
     else
     {
-        state_ = state::queued;
+        goto_state(state::queued);
     }
     return true;
 }
@@ -108,7 +109,7 @@ bool taskstate::kill()
             return false;
 
     }
-    state_ = state::killed;
+    goto_state(state::killed);
     return true;
 }
 
@@ -131,8 +132,9 @@ bool taskstate::fault()
             emit(action::cancel);
             break;
     }
-    state_ = state::complete;
+
     error_ = true;
+    goto_state(state::complete);    
     return true;
 }
 
@@ -141,7 +143,7 @@ bool taskstate::disrupt()
     if (state_ != state::active)
         return false;
 
-    state_ = state::waiting;
+    goto_state(state::waiting);
     return true;
 }
 
@@ -171,14 +173,13 @@ bool taskstate::enqueue(std::size_t bytes)
         }
         else if (qsize_ >= MB(50))
         {
+            overflow_ = true;            
             emit(action::stop_cmd_list);
-            state_ = state::waiting;
-            overflow_ = true;
+            goto_state(state::waiting);
         }
-
     }
     else if (state_ == state::waiting)
-        state_ = state::active;
+        goto_state(state::active);
 
     return true;
 }
@@ -204,9 +205,9 @@ bool taskstate::dequeue(std::size_t bytes)
         {
             if (qsize_ == 0)
             {
+                overflow_ = false;                
                 emit(action::run_cmd_list);
-                state_ = state::waiting;
-                overflow_ = false;
+                goto_state(state::waiting);
             }
         }
     }
@@ -218,7 +219,7 @@ bool taskstate::complete(taskstate::action action)
     if (action != taskstate::action::finalize)
         return false;
 
-    state_ = state::complete;
+    goto_state(state::complete);
     return true;
 }
 
@@ -293,7 +294,18 @@ void taskstate::reset()
 
 void taskstate::emit(taskstate::action action)
 {
-    on_event(action);
+    if (on_action)
+        on_action(action);
+}
+
+void taskstate::goto_state(taskstate::state state)
+{
+    assert(state_ != state);
+
+    if (on_state_change)
+        on_state_change(state_, state);
+
+    state_ = state;
 }
 
 } // corelib

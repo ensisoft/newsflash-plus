@@ -54,8 +54,13 @@ namespace corelib
             stop_cmd_list
         };
 
-        // callback for performing state change related actions.
-        std::function<void (action a)> on_event;
+        // callback for performing state related actions.
+        std::function<void (taskstate::action action)> on_action;
+
+        // callback for state changes.
+        // the callback is invoked *before* the new state is set, so while in the callback
+        // functions reading current state will be based on  current state.
+        std::function<void (taskstate::state current, taskstate::state next)> on_state_change;
 
         taskstate();
        ~taskstate();
@@ -157,6 +162,9 @@ namespace corelib
 
     private:
         void emit(taskstate::action action);
+
+    private:
+        void goto_state(taskstate::state state);
 
     private:
         state state_;        

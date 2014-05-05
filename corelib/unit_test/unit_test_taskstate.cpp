@@ -66,7 +66,7 @@ void test_state_changes()
     // paused transitions
     {
         taskstate state;
-        state.on_event = [](taskstate::action) {};
+        state.on_action = [](taskstate::action) {};
 
         // queued -> paused -> queued
         pass(pause, paused);
@@ -90,7 +90,7 @@ void test_state_changes()
     // buffering transitions
     {
         taskstate state;
-        state.on_event = [](taskstate::action){};
+        state.on_action = [](taskstate::action){};
 
         pass(start, waiting);
         pass(prepare(2), waiting);
@@ -99,13 +99,13 @@ void test_state_changes()
         pass(enqueue, active);
         pass(dequeue, active);
         pass(dequeue, active);
-        pass(complete(taskstate::action::finalize_task), complete);
+        pass(complete(taskstate::action::finalize), complete);
     }
 
     // fault transitions
     {
         taskstate state;
-        state.on_event = [](taskstate::action){};
+        state.on_action = [](taskstate::action){};
 
         // queued -> fault
         //pass(fault, complete);
@@ -128,7 +128,7 @@ void test_state_changes()
     // kill transitions
     {
         taskstate state;
-        state.on_event = [](taskstate::action){};
+        state.on_action = [](taskstate::action){};
 
         // queued -> killed
         pass(kill, killed);
@@ -156,7 +156,7 @@ void test_state_changes()
         pass(prepare(1), waiting);
         pass(enqueue, active);
         pass(dequeue, active);
-        pass(complete(taskstate::action::finalize_task), complete);
+        pass(complete(taskstate::action::finalize), complete);
         pass(kill, killed);
     }
 
