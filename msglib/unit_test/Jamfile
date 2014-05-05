@@ -1,0 +1,9 @@
+
+import testing ;
+
+project 
+  : requirements
+    <toolset>gcc:<cflags>-std=c++11
+  ;
+
+unit-test unit_test : unit_test.cpp ;
