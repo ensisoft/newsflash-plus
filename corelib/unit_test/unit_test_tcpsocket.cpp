@@ -151,7 +151,7 @@ void test_connection_success()
             if (sent != buff.len)
             {
                 auto handle = client.wait(false, true);
-                wait_for(handle);
+                corelib::wait(handle);
                 TEST_REQUIRE(handle.write());                
             
                 int ret = client.sendsome(buff.data + sent, buff.len - sent);
@@ -162,7 +162,7 @@ void test_connection_success()
             if (recv != buff.len)
             {
                 auto handle = tcp.wait(true, false);
-                wait_for(handle);
+                corelib::wait(handle);
                 TEST_REQUIRE(handle.read());
 
                 int ret = tcp.recvsome(buff.buff + recv, buff.len - recv);

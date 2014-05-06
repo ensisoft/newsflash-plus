@@ -45,7 +45,7 @@ namespace corelib
         }
 
         // submit a sample. samples should be submitted
-        // between calls to start() and end().
+        // between calls to start() and stop().
         double submit(const std::size_t bytes)
         {
             assert(stamp_ != point_t());
@@ -67,7 +67,7 @@ namespace corelib
             return speed_;
         }
 
-        void end()
+        void stop()
         {
             speed_ = 0.0;
             stamp_ = point_t();

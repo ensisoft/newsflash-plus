@@ -150,8 +150,8 @@ bool taskstate::disrupt()
 bool taskstate::prepare(std::size_t bufcount)
 {
     assert(!buffers_);
-    if (state_ != state::waiting)
-        return false;
+    //if (state_ != state::waiting)
+    //    return false;
 
     buffers_ = bufcount;
     return true;

@@ -41,13 +41,13 @@ struct tester {
     std::string user;
     std::string pass;
 
-    tester() : error(connection::error::none)
+    tester() : error(false)
     {}
 
-    tester(corelib::connection& conn) : error(connection::error::none)
+    tester(corelib::connection& conn) : error(false)
     {
         conn.on_error = std::bind(&tester::on_error, this,
-            std::placeholders::_1);
+            std::placeholders::_1, std::placeholders::_2);
         conn.on_auth = std::bind(&tester::on_auth, this,
             std::placeholders::_1, std::placeholders::_2);
     }
@@ -58,10 +58,12 @@ struct tester {
         password = pass;
     }
 
-    void on_error(connection::error e)
+    void on_error(connection::error value, std::error_code code)
     {
         std::lock_guard<std::mutex> lock(mutex);
-        error = e;
+        error = true;
+        error_value = value;
+        error_code  = code;
         errcond.notify_one();
     }
 
@@ -75,11 +77,12 @@ struct tester {
     void wait_error()
     {
         std::unique_lock<std::mutex> lock(mutex);
-        bool ret = errcond.wait_for(lock, std::chrono::seconds(50),
-            [&]() { return error != connection::error::none; });
-
-        if (!ret)
-            throw std::runtime_error("WAIT FAILED");
+        while (!error)
+        {
+            errcond.wait_for(lock, std::chrono::seconds(50));
+            //if (!ret)
+            //    throw std::runtime_error("WAIT FAILED");
+        }
     }
 
     void wait_ready()
@@ -94,8 +97,10 @@ struct tester {
         ready = false;
     }
 
-    connection::error error;
+    connection::error error_value;
+    std::error_code error_code;
     bool ready;
+    bool error;
 };
 
 class server
@@ -177,36 +182,36 @@ void unit_test_connection_resolve_error(bool ssl)
 {
     tester test;
 
-    corelib::connection conn("clog");
+    corelib::connection conn;
     conn.on_error = std::bind(&tester::on_error, &test, 
-        std::placeholders::_1);    
-    conn.connect("asgasgasg", 8888, ssl);
+        std::placeholders::_1, std::placeholders::_2);    
+    conn.connect("clog", "asgasgasg", 8888, ssl);
 
     test.wait_error();
-    BOOST_REQUIRE(test.error == connection::error::resolve);
+    BOOST_REQUIRE(test.error_value == connection::error::resolve);
 }
 
 void unit_test_connection_refused(bool ssl)
 {
     tester test;
 
-    corelib::connection conn("clog");
+    corelib::connection conn;
     conn.on_error = std::bind(&tester::on_error, &test, 
-        std::placeholders::_1);    
-    conn.connect("localhost", 2119, ssl);
+        std::placeholders::_1, std::placeholders::_2);    
+    conn.connect("clog", "localhost", 2119, ssl);
 
     test.wait_error();
-    BOOST_REQUIRE(test.error == connection::error::refused);
+    BOOST_REQUIRE(test.error_value == connection::error::refused);
 }
 
 void unit_test_connection_interrupted(bool ssl)
 {
     tester test;
 
-    corelib::connection conn("clog");
+    corelib::connection conn;
     conn.on_error = std::bind(&tester::on_error, &test, 
-        std::placeholders::_1);
-    conn.connect("news.budgetnews.net", 119, false);
+        std::placeholders::_1, std::placeholders::_2);
+    conn.connect("clog", "news.budgetnews.net", 119, false);
 
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
 }
@@ -217,28 +222,28 @@ void unit_test_connection_forbidden(bool ssl)
     test.user = "foobar";
     test.pass = "foobar";
 
-    corelib::connection conn("clog");
+    corelib::connection conn;
     conn.on_error = std::bind(&tester::on_error, &test,
-        std::placeholders::_1);
+        std::placeholders::_1, std::placeholders::_2);
     conn.on_auth = std::bind(&tester::on_auth, &test,
         std::placeholders::_1, std::placeholders::_2);
-    conn.connect("news.astraweb.com", 1818, false);
+    conn.connect("clog", "news.astraweb.com", 1818, false);
 
     test.wait_error();
-    BOOST_REQUIRE(test.error == connection::error::forbidden);
+    BOOST_REQUIRE(test.error_value == connection::error::forbidden);
 }
 
 void unit_test_connection_timeout_error(bool ssl)
 {
     tester test;
 
-    corelib::connection conn("clog");
+    corelib::connection conn;
     conn.on_error = std::bind(&tester::on_error, &test,
-        std::placeholders::_1);        
-    conn.connect("www.google.com", 80, false);
+        std::placeholders::_1, std::placeholders::_2);        
+    conn.connect("clog", "www.google.com", 80, false);
 
     test.wait_error();
-    BOOST_REQUIRE(test.error == connection::error::timeout);
+    BOOST_REQUIRE(test.error_value == connection::error::timeout);
 }
 
 void unit_test_connection_protocol_error(bool ssl)
@@ -250,14 +255,14 @@ void unit_test_connection_success(bool ssl)
 {
     tester test;
 
-    corelib::connection conn("clog");
+    corelib::connection conn;
     conn.on_error = std::bind(&tester::on_error, &test, 
-        std::placeholders::_1);
+        std::placeholders::_1, std::placeholders::_2);
     conn.on_ready = std::bind(&tester::on_ready, &test);
-    conn.connect("freenews.netfront.net", 119, false);
+    conn.connect("clog", "freenews.netfront.net", 119, false);
 
     test.wait_ready();
-    BOOST_REQUIRE(test.error == connection::error::none);
+    BOOST_REQUIRE(test.error == false);
 }
 
 void unit_test_cmdlist()
@@ -267,11 +272,11 @@ void unit_test_cmdlist()
 
     auto port = serv.open(8181);
 
-    corelib::connection conn("clog");
+    corelib::connection conn;
     conn.on_error = std::bind(&tester::on_error, &test,
-        std::placeholders::_1);
+        std::placeholders::_1, std::placeholders::_2);
     conn.on_ready = std::bind(&tester::on_ready, &test);
-    conn.connect("localhost", port, false);
+    conn.connect("clog", "localhost", port, false);
 
     serv.accept();
     serv.send("200 Welcome posting allowed");

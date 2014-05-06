@@ -171,7 +171,7 @@ void ssl_server_main(int port)
         do
         {
             auto can_read = sock.wait(true, false);
-            wait_for(can_read);
+            corelib::wait(can_read);
             int ret = sock.recvsome(buff.buff + recv, buff.len - recv);
             recv += ret;
         }
@@ -219,7 +219,7 @@ void test_connection_success()
         do
         {
             auto can_write = sock.wait(false, true);
-            wait_for(can_write);
+            corelib::wait(can_write);
             int ret = sock.sendsome(buff.data + sent, buff.len - sent);
             sent += ret;
         }

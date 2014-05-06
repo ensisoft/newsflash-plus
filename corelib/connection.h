@@ -24,6 +24,7 @@
 
 #include <boost/noncopyable.hpp>
 #include <condition_variable>
+#include <system_error>
 #include <functional>
 #include <memory>
 #include <thread>
@@ -40,7 +41,6 @@ namespace corelib
     {
     public:
         enum class error {
-            none,        // no error 
             resolve,     // failed to resolve host address
             refused,     // host refused the connection attempt
             forbidden,   // connection was made but user credentials were refused
@@ -55,8 +55,11 @@ namespace corelib
         // invoked when connection is ready to execute a cmdlist
         std::function<void ()> on_ready;
 
-        // invoked when connection encounters an error
-        std::function<void (connection::error error)> on_error;
+        // invoked when connection encounters an error.
+        // provides a higher level connection error and a lower level
+        // system error code. system error code can be no-error when
+        // for example we have a protocol error.
+        std::function<void (connection::error error, const std::error_code& code)> on_error;
 
         // invoked when data is read
         std::function<void (std::size_t bytes)> on_read;
@@ -64,11 +67,11 @@ namespace corelib
         // invoked when authentication data is needed
         std::function<void (std::string& user, std::string& pass)> on_auth;
 
-        connection(std::string logfile);
+        connection();
        ~connection();
 
-        // create and start a new connection to the given host.
-        void connect(const std::string& host, std::uint16_t port, bool ssl);
+        // start the connection
+        void connect(const std::string& logfile, const std::string& host, std::uint16_t port, bool ssl);
 
         // execute the commands in the given cmdlist.
         // the cmdlist is run() repeatedly untill the cmdlist is
@@ -81,14 +84,10 @@ namespace corelib
     private:
         struct thread_data;
 
-    private:
-        void main(thread_data* data);
-        void connect(thread_data* data);
-        void send(thread_data* data, const void* buff, std::size_t len);
-        size_t recv(thread_data* data, void* buff, std::size_t len);        
-
-    private:
-        const std::string logfile_;
+        void thread_main(thread_data* data);
+        void thread_connect(thread_data* data);
+        void thread_send(thread_data* data, const void* buff, std::size_t len);
+        size_t thread_recv(thread_data* data, void* buff, std::size_t len);        
 
     private:
         std::unique_ptr<std::thread> thread_;

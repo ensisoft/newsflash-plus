@@ -56,49 +56,51 @@ namespace {
         const connection::error error_;
     };
 
-    connection::error exception_to_errorcode()
+    std::pair<connection::error, std::error_code> exception_to_errorcode()
     {
-        auto err = connection::error::unknown;
+        auto con_err = connection::error::unknown;
+        auto sys_err = std::error_code();
         try
         {
             throw;
         }
         catch (const conn_exception& e)
         {
-            err = e.err();
+            con_err = e.err();
         }
         catch (const protocol::exception& e)
         {
             const auto code = e.code();
             if (code == protocol::error::authentication_failed)
-                err = connection::error::forbidden;
-            else err = connection::error::protocol;
+                 con_err = connection::error::forbidden;
+            else con_err = connection::error::protocol;
         }
         catch (const socket::tcp_exception& e)
         {
             const auto code = e.code();
             if (code == std::errc::connection_refused)
-                err = connection::error::refused;
-            else err = connection::error::socket;
+                 con_err = connection::error::refused;
+            else con_err = connection::error::socket;
+
+            sys_err = code;
+
         }
         catch (const socket::ssl_exception& e)
         {
-            err = connection::error::ssl;
+            con_err = connection::error::ssl;
         }
         catch (const std::exception& e)
         {
-            err = connection::error::unknown;
+            con_err = connection::error::unknown;
         }
-        return err;
+        return { con_err, sys_err };
     }
 
-    const char* errcode_to_string(connection::error error)
+    const char* stringify(connection::error error)
     {
     #define CASE(x) case x: return #x;
-
         switch (error)
         {
-            CASE(connection::error::none);
             CASE(connection::error::resolve);
             CASE(connection::error::refused);
             CASE(connection::error::forbidden);
@@ -110,8 +112,7 @@ namespace {
             CASE(connection::error::unknown);
         }
     #undef CASE
-
-        assert(!"missing error case");
+        assert(0);
         return "???";
     }
 
@@ -128,26 +129,30 @@ struct connection::thread_data {
     bool          ssl;
 };
 
-connection::connection(std::string logfile) : logfile_(std::move(logfile)), cmds_(nullptr)
+connection::connection() : cmds_(nullptr)
 {}
 
 connection::~connection()
 {
-    shutdown_.set();
-    cancel_.set();
-    thread_->join();
+    if (thread_)
+    {
+        shutdown_.set();
+        cancel_.set();
+        thread_->join();
+    }
 }
 
-void connection::connect(const std::string& host, std::uint16_t port, bool ssl)
+void connection::connect(const std::string& logfile, const std::string& host, std::uint16_t port, bool ssl)
 {
     assert(!thread_);
 
     std::unique_ptr<connection::thread_data> data(new connection::thread_data);
-    data->host = host;
-    data->port = port;
-    data->ssl  = ssl;
+    data->host    = host;
+    data->port    = port;
+    data->ssl     = ssl;
+    data->logfile = logfile;
 
-    thread_.reset(new std::thread(std::bind(&connection::main, this, data.get())));
+    thread_.reset(new std::thread(std::bind(&connection::thread_main, this, data.get())));
     data.release();
 }
 
@@ -164,18 +169,18 @@ void connection::cancel()
     cancel_.set();
 }
 
-void connection::main(thread_data* data)
+void connection::thread_main(thread_data* data)
 {
     std::unique_ptr<thread_data> unique(data);
 
-    LOG_OPEN(logfile_);
+    LOG_OPEN(data->logfile);
     LOG_D("Connection thread ", std::this_thread::get_id());
 
     try
     {
         LOG_I("Connecting to '", data->host, ":", data->port, "'");
 
-        connect(data);
+        thread_connect(data);
 
         LOG_I("Connection ready");
 
@@ -183,9 +188,9 @@ void connection::main(thread_data* data)
         protocol proto;
         proto.on_log  = [](const std::string& str) { LOG_I(str); };
         proto.on_auth = on_auth;
-        proto.on_send = std::bind(&connection::send, this, data,
+        proto.on_send = std::bind(&connection::thread_send, this, data,
             std::placeholders::_1, std::placeholders::_2);
-        proto.on_recv = std::bind(&connection::recv, this, data,
+        proto.on_recv = std::bind(&connection::thread_recv, this, data,
             std::placeholders::_1, std::placeholders::_2);    
 
         // perfrorm handshake
@@ -199,8 +204,12 @@ void connection::main(thread_data* data)
 
             auto execute  = execute_.wait();
             auto shutdown = shutdown_.wait();
-            if (!corelib::wait_for(execute, shutdown, PING_INTERVAL))
+            bool timeout  = !corelib::wait_for(execute, shutdown, PING_INTERVAL);
+
+            if (timeout)
+            {
                 proto.ping();
+            }
             else if (execute)
             {
                 std::unique_lock<std::mutex> lock(mutex_);
@@ -224,17 +233,18 @@ void connection::main(thread_data* data)
     }
     catch (const std::exception& e)
     {
-        const auto code = exception_to_errorcode();
-        const auto estr = errcode_to_string(code);        
-        on_error(code);
-        LOG_E("Connection error '", estr, "' ", e.what());
+        const auto error_codes = exception_to_errorcode();
+
+        on_error(error_codes.first, error_codes.second);
+
+        LOG_E("Connection error '", stringify(error_codes.first), "' ", e.what());
     }
 
     LOG_D("Thread exiting");
     LOG_CLOSE();
 }
 
-void connection::connect(thread_data* data)
+void connection::thread_connect(thread_data* data)
 {
     const auto addr = resolve_host_ipv4(data->host);
     if (!addr)
@@ -243,7 +253,7 @@ void connection::connect(thread_data* data)
     LOG_I("Resolved to '", format_ipv4(addr), "'");
 
     if (data->ssl)
-        data->sock.reset(new corelib::sslsocket());
+         data->sock.reset(new corelib::sslsocket());
     else data->sock.reset(new corelib::tcpsocket());
 
     data->sock->begin_connect(addr, data->port);
@@ -258,7 +268,7 @@ void connection::connect(thread_data* data)
     data->sock->complete_connect();
 }
 
-void connection::send(thread_data* data, const void* buff, std::size_t len)
+void connection::thread_send(thread_data* data, const void* buff, std::size_t len)
 {
     // the commands that we're sending are very small
     // so presumably there's no problem here.
@@ -266,7 +276,7 @@ void connection::send(thread_data* data, const void* buff, std::size_t len)
 
 }
 
-size_t connection::recv(thread_data* data, void* buff, std::size_t len)
+size_t connection::thread_recv(thread_data* data, void* buff, std::size_t len)
 {
     // if there's no data in timeout seconds we consider
     // the connection stale and timeout.

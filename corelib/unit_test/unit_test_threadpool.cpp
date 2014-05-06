@@ -28,7 +28,7 @@ std::atomic_int counter;
 
 struct counter_increment : public corelib::threadpool::work
 {
-    void execute()
+    void execute() NOTHROW override
     {
         counter++;
     }
@@ -40,7 +40,7 @@ struct affinity_tester : public corelib::threadpool::work
     affinity_tester(std::thread::id id) : tid(id)
     {}
 
-    void execute()
+    virtual void execute() NOTHROW override
     {
         BOOST_REQUIRE(tid == std::this_thread::get_id());
     }
@@ -52,7 +52,7 @@ struct affinity_grabber : public corelib::threadpool::work
     affinity_grabber() : ready(false)
     {}
 
-    void execute()
+    virtual void execute() NOTHROW override
     {
         std::lock_guard<std::mutex> lock(mutex);
         tid = std::this_thread::get_id();
