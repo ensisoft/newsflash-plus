@@ -1,0 +1,4 @@
+
+import testing ;
+
+unit-test unit_test_taskstate : unit_test_taskstate.cpp ../taskstate.cpp ;
