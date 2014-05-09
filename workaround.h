@@ -1,4 +1,4 @@
-// Copyright (c) 2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2013 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -18,27 +18,22 @@
 //  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 //  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-//  THE SOFTWARE.            
+//  THE SOFTWARE.
 
 #pragma once
 
-#include <system_error>
-#include <string>
 
+// clang has a problem with gcc 4.9.0 stdlib and it complains
+// about max_align_t in cstddef (pulls it into std:: from global scope)
+// however the problem is only affecting sublimeclang in SublimeText
+// 
+// https://bugs.archlinux.org/task/40229
+// http://reviews.llvm.org/rL201729
+//
+// As a workaround we define some type with a matching typename
+// in the global namespace. 
+// the macro is enabled in 'newsflash.sublime-project'
 
-namespace newsflash
-{
-    // a system error, for example when file cannot be created, network error etc.
-    struct error
-    {
-        // description of the error.
-        std::string what;
-
-        // the resource in question, i.e. filepath or hostname
-        std::string resource;
-
-        // system specific error code.
-        std::error_code code;
-    };
-
-} // engine
+#if defined(SUBLIME_CLANG_WORKAROUND_max_align_t)
+  typedef int max_align_t;
+#endif

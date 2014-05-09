@@ -99,14 +99,14 @@ std::string remove_illegal_filepath_chars(std::string name)
     return name;
 }
 
-std::string joinpath(const std::string& a, const std::string& b)
+std::string joinpath(const std::string& path, const std::string& str)
 {
-    if (a.empty())
-        return b;
-    bfs::path path(a);
-    path /= b;
+    if (str.empty())
+        return path;
 
-    return path.string();
+    bfs::path p(path);
+    p /= str;
+    return p.string();
 }
 
 std::string filename(int attempt, const std::string& name)
@@ -119,13 +119,16 @@ std::string filename(int attempt, const std::string& name)
     return ss.str();
 }
 
-void create_path(const std::string& path)
+std::string createpath(const std::string& path)
 {
     if (path.empty())
-        return;
+        return path;
+    else if (path == "." || path == "./")
+        return path;
 
     const bfs::path p(path);
     bfs::create_directories(p);
+    return p.string();
 }
 
 } // fs

@@ -24,46 +24,34 @@
 
 #include <functional>
 #include <cstddef>
+#include "task.h"
 
-namespace corelib
+namespace newsflash
 {
-    // task state machine. 
-    // taskstate does not implement any actions related
+    // task state machine does not implement any actions related
     // to state changes but only the logic regarding
     // state changes themselves. the implementation of 
     // the actual actions depends upon the caller and the
     // callback handler.
-    class taskstate 
+    class task_state_machine
     {
     public:
-        enum class state {
-            queued, // initial state
-            waiting, // runnable, waiting for data
-            active, // expecting to process buffers
-            paused, // paused
-            complete, // completed possibly with fault
-            killed // terminal state
-        };
-
-        enum class action {
-            prepare,   
-            flush,
-            cancel,
-            finalize,
-            run_cmd_list,
-            stop_cmd_list
-        };
-
         // callback for performing state related actions.
-        std::function<void (taskstate::action action)> on_action;
+        std::function<void (task::action action)> on_action;
 
         // callback for state changes.
         // the callback is invoked *before* the new state is set, so while in the callback
         // functions reading current state will be based on  current state.
-        std::function<void (taskstate::state current, taskstate::state next)> on_state_change;
+        std::function<void (task::state current, task::state next)> on_state;
 
-        taskstate();
-       ~taskstate();
+        // callback perform activities on task start. 
+        std::function<void (void)> on_start;
+
+        // callback to perform activities on task stop.
+        std::function<void (void)> on_stop;
+
+        task_state_machine();
+       ~task_state_machine();
 
         // all the state transition functions return true 
         // if the transition is allowed in the current state
@@ -131,7 +119,7 @@ namespace corelib
 
         // call this function as a response to a performed action
         // when the action is succesful.
-        bool complete(taskstate::action action);
+        bool complete(task::action action);
 
 
         // returns true if state is in runnable states
@@ -152,29 +140,23 @@ namespace corelib
         // good flag is true if no fault() has occurred, otherwise false.
         bool good() const;
 
-        // overflow flag is true if maximum number of enqueued
-        // buffers has been reached.
-        bool overflow() const;
-
-        state get_state() const;
+        task::state get_state() const;
 
         void reset();
 
     private:
-        void emit(taskstate::action action);
+        void emit(task::action action);
 
     private:
-        void goto_state(taskstate::state state);
+        void goto_state(task::state state);
 
     private:
-        state state_;        
+        task::state state_;        
         std::size_t qsize_;
         std::size_t enqued_;
         std::size_t dequed_;
         std::size_t buffers_;
         bool error_;
-        bool overflow_;
-
     };
 
-} // corelib
+} // engine

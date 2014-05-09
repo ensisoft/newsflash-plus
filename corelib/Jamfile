@@ -1,35 +1,27 @@
 
 project corelib
   : requirements
-
-  # if this is not defined linking problems ensue on msvc
-  <define>BOOST_ALL_NO_LIB
-
-  <toolset>gcc:<cflags>-std=c++11
-
-  # supress noise from boost headers
-  <toolset>gcc:<cflags>-Wno-unused-local-typedefs
   
   # we need -rdynamic for backtrace and backtrace_symbols
   # in order to dump a stacktrace from the assert
   # todo: whats the flag for clang??
   <toolset>gcc:<linkflags>-rdynamic
-
-  <toolset>clang:<cflags>-std=c++11  
-
-#  <include>.
   ;
   
-lib corelib :  [ glob *.cpp ] [ glob nntp/*.cpp ]
+lib core-lib :  
+   [ glob *.cpp ] 
+   [ glob nntp/*.cpp ]
 
    /boost//filesystem/
    /boost//regex/
    /boost//system/
    /boost//thread/
+
    /zlib//zlib/
+
    /newsflash//openssl/<link>shared
    /newsflash//crypto/<link>shared
+ ;
 
-   : <link>static ;
 
 #build-project unit_test ;

@@ -31,7 +31,9 @@ path-constant OPENSSL_PATH : "../openssl_1_0_1f" ;
 using qt : $(QT_PATH) ;
 
 use-project /boost/ : $(BOOST_PATH) ;
-use-project zlib : ./zlib ;
+use-project zlib    : ./zlib ;
+use-project corelib : ./corelib ;
+use-project engine  : ./engine ;
 
 
 # note that we don't set the C++11 flag here cause then it would cascade down to
@@ -43,6 +45,13 @@ project newsflash
     <include>$(OPENSSL_PATH)/include    
     <include>$(BOOST_PATH)
     <threading>multi
+    <toolset>gcc:<cflags>-std=c++11
+    <toolset>gcc:<cflags>-Wno-unused-local-typedefs
+    
+    <toolset>clang:<cflags>-std=c++11
+    
+    # if this is not defined linking problems ensue on msvc
+    <define>BOOST_ALL_NO_LIB
    ;
 
 if [ os.name ] = NT
@@ -59,8 +68,6 @@ if [ os.name ] = LINUX
    lib openssl : : <name>ssl    <search>$(/usr/lib) ;
    lib crypto  : : <name>crypto <search>$(/usr/lib) ; 
 }
-
-
 
 build-project corelib ;
 build-project engine ;

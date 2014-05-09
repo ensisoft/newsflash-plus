@@ -108,7 +108,6 @@ namespace {
             CASE(connection::error::socket);
             CASE(connection::error::ssl);
             CASE(connection::error::timeout);
-            CASE(connection::error::interrupted);
             CASE(connection::error::unknown);
         }
     #undef CASE
@@ -127,6 +126,7 @@ struct connection::thread_data {
     std::string   host;
     std::uint16_t port;
     bool          ssl;
+    protocol*     proto;
 };
 
 connection::connection() : cmds_(nullptr)
@@ -151,6 +151,7 @@ void connection::connect(const std::string& logfile, const std::string& host, st
     data->port    = port;
     data->ssl     = ssl;
     data->logfile = logfile;
+    data->proto   = nullptr;
 
     thread_.reset(new std::thread(std::bind(&connection::thread_main, this, data.get())));
     data.release();
@@ -178,57 +179,42 @@ void connection::thread_main(thread_data* data)
 
     try
     {
-        LOG_I("Connecting to '", data->host, ":", data->port, "'");
-
-        thread_connect(data);
-
-        LOG_I("Connection ready");
-
-        // init protocol stack
-        protocol proto;
-        proto.on_log  = [](const std::string& str) { LOG_I(str); };
-        proto.on_auth = on_auth;
-        proto.on_send = std::bind(&connection::thread_send, this, data,
-            std::placeholders::_1, std::placeholders::_2);
-        proto.on_recv = std::bind(&connection::thread_recv, this, data,
-            std::placeholders::_1, std::placeholders::_2);    
-
-        // perfrorm handshake
-        proto.connect();
-
-        const std::chrono::seconds PING_INTERVAL(10);
-
-        for (;;)
+        if (thread_connect(data))
         {
-            on_ready();
+            // init protocol stack
+            protocol proto;
+            proto.on_log  = [](const std::string& str) { LOG_I(str); };
+            proto.on_auth = on_auth;
+            proto.on_send = std::bind(&connection::thread_send, this, data,
+                std::placeholders::_1, std::placeholders::_2);
+            proto.on_recv = std::bind(&connection::thread_recv, this, data,
+                std::placeholders::_1, std::placeholders::_2);    
 
-            auto execute  = execute_.wait();
-            auto shutdown = shutdown_.wait();
-            bool timeout  = !corelib::wait_for(execute, shutdown, PING_INTERVAL);
+            // perfrorm handshake
+            proto.connect();
 
-            if (timeout)
+            data->proto = &proto;
+
+            const std::chrono::seconds PING_INTERVAL(10);
+
+            for (;;)
             {
-                proto.ping();
-            }
-            else if (execute)
-            {
-                std::unique_lock<std::mutex> lock(mutex_);
-                cmdlist* cmds = cmds_;
-                cmds_ = nullptr;
-                execute_.reset();
-                lock.unlock();
+                on_ready();
 
-                while (cmds->run(proto))
+                auto execute  = execute_.wait();
+                auto shutdown = shutdown_.wait();
+                bool timeout  = !corelib::wait_for(execute, shutdown, PING_INTERVAL);
+
+                if (timeout)
+                    proto.ping();
+                else if (execute)
+                    thread_execute(data);
+                else if (shutdown)
                 {
-                    if (is_set(cancel_))
-                    {
-                        cancel_.reset();
-                        break;
-                    }
+                    LOG_D("Shutdown received");
+                    break;
                 }
             }
-            else if (shutdown)
-                break;
         }
     }
     catch (const std::exception& e)
@@ -244,8 +230,10 @@ void connection::thread_main(thread_data* data)
     LOG_CLOSE();
 }
 
-void connection::thread_connect(thread_data* data)
+bool connection::thread_connect(thread_data* data)
 {
+    LOG_I("Connecting to '", data->host, ":", data->port, "'");
+
     const auto addr = resolve_host_ipv4(data->host);
     if (!addr)
         throw conn_exception("failed to resolve host", error::resolve);
@@ -253,9 +241,17 @@ void connection::thread_connect(thread_data* data)
     LOG_I("Resolved to '", format_ipv4(addr), "'");
 
     if (data->ssl)
-         data->sock.reset(new corelib::sslsocket());
-    else data->sock.reset(new corelib::tcpsocket());
+    {
+        data->sock.reset(new corelib::sslsocket());
+        LOG_D("Using TCP/SSL");
+    }
+    else 
+    {
+        data->sock.reset(new corelib::tcpsocket());
+        LOG_D("Using TCP");
+    }
 
+    LOG_D("Beging connect...");
     data->sock->begin_connect(addr, data->port);
 
     auto connect  = data->sock->wait(true, false);
@@ -263,10 +259,43 @@ void connection::thread_connect(thread_data* data)
     corelib::wait(connect, shutdown);
 
     if (shutdown)
-        throw conn_exception("connection was interrupted", error::interrupted);
+    {
+        LOG_D("Connect was interrupted");
+        return false;
+    }
 
     data->sock->complete_connect();
+
+    LOG_I("Connection ready!");
+    return true;
 }
+
+void connection::thread_execute(thread_data* data)
+{
+    std::unique_lock<std::mutex> lock(mutex_);
+
+    cmdlist* cmds = cmds_;
+    cmds_ = nullptr;
+    execute_.reset();
+
+    lock.unlock();
+
+    LOG_D("Execute cmdlist");
+
+    while (cmds->run(*data->proto))
+    {
+        if (is_set(cancel_))
+        {
+
+            LOG_D("Cancel cmdlist");
+            cancel_.reset();
+            break;
+        }
+    }
+
+    LOG_D("Cmdlist ready");
+}
+
 
 void connection::thread_send(thread_data* data, const void* buff, std::size_t len)
 {
@@ -291,8 +320,6 @@ size_t connection::thread_recv(thread_data* data, void* buff, std::size_t len)
 
     if (!corelib::wait_for(canread, shutdown, TIMEOUT))
         throw conn_exception("socket timeout", error::timeout);
-    else if (shutdown)
-        throw conn_exception("read interrupted", error::interrupted);
 
     // todo: throttle
     // todo: handle 0 recv when shutting down.

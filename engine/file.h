@@ -22,11 +22,11 @@
 
 #pragma once
 
-#include <vector>
+#include <deque>
 #include <string>
 #include <cstddef>
 
-namespace engine
+namespace newsflash
 {
     // a file available in usenet network. each file
     // is identified by a list of message-ids or message numbers.
@@ -35,10 +35,10 @@ namespace engine
         // list of message id's or message numbers.
         // note that message numbers are specific to a server
         // while message-ids are portable across servers.
-        std::vector<std::string> ids;
+        std::deque<std::string> articles;
 
         // the list of groups into which look for the messge ids.
-        std::vector<std::string> groups;
+        std::deque<std::string> groups;
 
         // the local filesystem path where the content
         // is to the be placed.
@@ -48,7 +48,7 @@ namespace engine
 
         // the human readable description. 
         // this will appear in task::description.
-        std::string description;
+        std::string desc;
 
         // the esimated size of the content to be downloaded in bytes. 
         std::uint64_t size;

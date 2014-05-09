@@ -25,52 +25,84 @@
 #include <cstddef>
 #include <string>
 
-namespace engine
+namespace newsflash
 {
-    enum class connection_error {
-        none,
-
-        resolve,
-
-        refused,
-
-        forbidden,
-
-        protocol,
-
-        network,
-
-        timeout
-    };
-
-    enum class connection_state {
-        connecting,
-
-        active,
-
-        ready,
-
-        error
-    };
-
+    // a connection managed by the engine.
     struct connection
     {
-        connection_error error;
+        // possible connection errors.
+        enum class error {
+            // no error
+            none,
 
-        connection_state state;
+            // could not resolve host. this could because the theres a DNS problem
+            // in the network, or the network itself is down or the hostname 
+            // is not known by the DNS resolver.
+            resolve,
 
+            // connection was refused by the remote party.
+            refused,
+
+            // connection was made to the server but the server
+            // denied access based on incorrect authentication.
+            authentication_failed,
+
+            // a NNTP protocol fault has occurred. wth.
+            protocol,
+
+            // network problem, for example network is down.
+            network,
+
+            // active timeout, usully preceeds a network problem.
+            timeout
+        }; 
+
+        enum class state {
+
+            // connection is connecting to the remote host.
+            connecting,
+
+            // connection is authenticating.
+            authenticating,
+
+            // connection is transferring data.
+            active,
+
+            // connection is idle and ready.
+            ready,
+
+            // connection has suffered an error.
+            error
+        };
+
+        // current error if any.
+        error err;
+
+        // current state.
+        state st;
+
+        // unique connection id
         std::size_t id;
 
+        // the task id currently being processed.
         std::size_t task;
 
+        // the account to which this connection is connected to.
         std::size_t account;
 
-        std::uint64_t bytes;
+        // total bytes downloaded.
+        std::uint64_t down;
 
+        // current host
         std::string host;
 
+        // current description.
+        std::string desc;
+
+        // secure or not
         bool secure;
 
+        // current speed in bytes per second.
         int bps;
     };
 

@@ -20,6 +20,8 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
+#include <newsflash/config.h>
+
 #include <stdexcept>
 #include <algorithm>
 #include <cassert>
@@ -28,6 +30,8 @@
 #include "waithandle.h"
 
 namespace {
+
+#if defined(WINDOWS_OS)
 
 std::pair<bool, bool> check_read_write(corelib::native_socket_t sock)
 {
@@ -50,6 +54,8 @@ std::pair<bool, bool> check_read_write(corelib::native_socket_t sock)
 
     return { can_read, can_write };
 }
+
+#endif
 
 }  // namespace
 

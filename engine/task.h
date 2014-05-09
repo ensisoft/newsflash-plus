@@ -25,64 +25,87 @@
 #include <cstddef>
 #include <string>
 
-namespace engine
+namespace newsflash
 {
-    // completion statuses
-    enum class task_error {
-
-        // succesfully completed without any errors.
-        none,
-
-        // the requested data was not available
-        unavailable,
-
-        // the requested data was taken down
-        dmca,
-
-        // local system error has occurred 
-        // for example a file cannot be created because of insufficient
-        // permissions or storage space is exhausted.
-        system,
-    };
-
-        // execution states
-    enum class task_state {
-
-        // the task is currently queued in the engine
-        // and will be scheduled for execution at some point.
-        queued,
-
-        preparing,
-
-        // task was being run before, but now it's waiting
-        // for input data. (for example connection went down,
-        // or there are no free connections).
-        waiting,
-
-        // task was paused by the user.
-        paused,
-
-        flushing,
-
-        finalized,
-
-        debuffering,
-
-        // succesfully complete.
-        // check the completion status for conditions.
-        complete
-
-    };
-
     // a single task that the engine is performing, such as download
     // or header update.
     struct task
     {
+        enum class error {
+            // succesfully completed without any errors.
+            none,
+
+            // the requested data was not available
+            unavailable,
+
+            // the requested data was taken down
+            dmca,
+
+            // local system error has occurred 
+            // for example a file cannot be created because of insufficient
+            // permissions or storage space is exhausted.
+            system,
+        };
+
+        enum class state {
+            // the task is currently queued in the engine
+            // and will be scheduled for execution at some point.
+            queued,
+
+            // task was being run before, but now it's waiting
+            // for input data. (for example connection went down,
+            // or there are no free connections).
+            waiting,
+
+            // currently active and performing actions on data.
+            // see action for details.
+            active,
+
+            // a cap for limiting max buffered data was hit.
+            // drain the queue below the treshold to avoid
+            // consuming too much memory.
+            debuffering,
+
+            // paused by the user
+            paused,
+
+            // task is done. see damaged and error flags for details
+            complete,
+
+            // killed, will be removed.
+            killed
+        };
+
+        enum class action {
+            // no action
+            none,
+
+            // task is being prepared 
+            prepare,
+
+            // flushing buffered data to the disk
+            flush,
+
+            // processing data buffer(s)
+            process,
+
+            // finaling the task data
+            finalize,
+
+            // canceling pending data and changes so far.
+            cancel,
+
+            kill
+        };
+
         // error if any
-        task_error error;
+        error err;
 
         // current task execution state.
-        task_state state;
+        state st;
+
+        // current data action
+        action act;
 
         // unique task id.
         std::size_t id;
@@ -93,7 +116,7 @@ namespace engine
         std::size_t batch;
 
         // the human readable description of the task.
-        std::string description;
+        std::string desc;
 
         // download/transfer size in bytes (if known)
         std::uint64_t size;

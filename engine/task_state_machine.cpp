@@ -20,53 +20,56 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-#include <cassert>
-#include "taskstate.h"
-#include "utility.h"
+#include <newsflash/workaround.h>
 
-namespace corelib
+#include <cassert>
+#include "task_state_machine.h"
+
+using state  = newsflash::task::state;
+using action = newsflash::task::action;
+
+namespace newsflash
 {
 
-taskstate::taskstate()
+task_state_machine::task_state_machine()
 {
     reset();
 }
 
-taskstate::~taskstate()
+task_state_machine::~task_state_machine()
 {}
 
-bool taskstate::start()
+bool task_state_machine::start()
 {
-    if (state_ != state::queued)
+    if (state_ != task::state::queued)
         return false;
 
-    emit(action::prepare);
-    emit(action::run_cmd_list);
-
+    on_start();
+    on_action(action::prepare);
     goto_state(state::waiting);
     return true;
 }
 
-bool taskstate::pause()
+bool task_state_machine::pause()
 {
     if (state_ != state::queued && state_ != state::active && state_ != state::waiting)
         return false;
 
     if (state_ == state::active)
-        emit(action::stop_cmd_list);
+        on_stop();
 
     goto_state(state::paused);
     return true;
 }
 
-bool taskstate::resume()
+bool task_state_machine::resume()
 {
     if (state_ != state::paused)
         return false;
 
     if (buffers_)
     {
-        emit(action::run_cmd_list);
+        on_start();
         goto_state(state::waiting);
     }
     else
@@ -76,16 +79,16 @@ bool taskstate::resume()
     return true;
 }
 
-bool taskstate::flush()
+bool task_state_machine::flush()
 {
     if (!is_runnable())
         return false;
 
-    emit(action::flush);
+    on_action(action::flush);
     return true;
 }
 
-bool taskstate::kill()
+bool task_state_machine::kill()
 {
     switch (state_)
     {
@@ -94,10 +97,11 @@ bool taskstate::kill()
 
         case state::active:
         case state::waiting:
-            emit(action::stop_cmd_list);
+            on_stop();
             emit(action::cancel);
             break;
 
+        case state::debuffering:
         case state::paused:
             emit(action::cancel);
             break;
@@ -109,11 +113,12 @@ bool taskstate::kill()
             return false;
 
     }
+    emit(action::kill);
     goto_state(state::killed);
     return true;
 }
 
-bool taskstate::fault()
+bool task_state_machine::fault()
 {
     switch (state_)
     {
@@ -124,7 +129,11 @@ bool taskstate::fault()
 
         case state::active:
         case state::waiting:
-            emit(action::stop_cmd_list);
+            on_stop();
+            emit(action::cancel);
+            break;
+
+        case state::debuffering:
             emit(action::cancel);
             break;
 
@@ -138,7 +147,7 @@ bool taskstate::fault()
     return true;
 }
 
-bool taskstate::disrupt()
+bool task_state_machine::disrupt()
 {
     if (state_ != state::active)
         return false;
@@ -147,17 +156,17 @@ bool taskstate::disrupt()
     return true;
 }
 
-bool taskstate::prepare(std::size_t bufcount)
+bool task_state_machine::prepare(std::size_t bufcount)
 {
     assert(!buffers_);
-    //if (state_ != state::waiting)
-    //    return false;
 
     buffers_ = bufcount;
     return true;
 }
 
-bool taskstate::enqueue(std::size_t bytes)
+#define MB(x) x * 1024 * 1024
+
+bool task_state_machine::enqueue(std::size_t bytes)
 {
     if (!is_runnable())
         return false;
@@ -169,13 +178,12 @@ bool taskstate::enqueue(std::size_t bytes)
     {
         if (enqued_ == buffers_)
         {
-            emit(action::stop_cmd_list);
+            on_stop();
         }
         else if (qsize_ >= MB(50))
         {
-            overflow_ = true;            
-            emit(action::stop_cmd_list);
-            goto_state(state::waiting);
+            on_stop();
+            goto_state(state::debuffering);
         }
     }
     else if (state_ == state::waiting)
@@ -184,7 +192,7 @@ bool taskstate::enqueue(std::size_t bytes)
     return true;
 }
 
-bool taskstate::dequeue(std::size_t bytes)
+bool task_state_machine::dequeue(std::size_t bytes)
 {
     if (!is_runnable())
         return false;
@@ -201,35 +209,35 @@ bool taskstate::dequeue(std::size_t bytes)
             assert(qsize_ == 0);
             emit(action::finalize);
         }
-        else if(overflow_)
+    }
+    else if (state_ == state::debuffering)
+    {
+        if (qsize_ == 0)
         {
-            if (qsize_ == 0)
-            {
-                overflow_ = false;                
-                emit(action::run_cmd_list);
-                goto_state(state::waiting);
-            }
+            on_start();
+            goto_state(state::waiting);
         }
     }
     return true;
 }
 
-bool taskstate::complete(taskstate::action action)
+bool task_state_machine::complete(task::action action)
 {
-    if (action != taskstate::action::finalize)
+    if (action != task::action::finalize)
         return false;
 
     goto_state(state::complete);
     return true;
 }
 
-bool taskstate::is_runnable() const
+bool task_state_machine::is_runnable() const
 {
     switch (state_)
     {
         case state::active:
         case state::waiting:
         case state::paused:
+        case state::debuffering:
             return true;
         default:
             break;
@@ -237,7 +245,7 @@ bool taskstate::is_runnable() const
     return false;
 }
 
-bool taskstate::is_active() const
+bool task_state_machine::is_active() const
 {
     switch (state_)
     {
@@ -250,38 +258,33 @@ bool taskstate::is_active() const
     return false;
 }
 
-bool taskstate::is_queued() const
+bool task_state_machine::is_queued() const
 {
     return state_ == state::queued;
 }
 
-bool taskstate::is_complete() const
+bool task_state_machine::is_complete() const
 {
     return state_ == state::complete;
 }
 
 
-bool taskstate::is_killed() const
+bool task_state_machine::is_killed() const
 {
     return state_ == state::killed;
 }
 
-bool taskstate::good() const
+bool task_state_machine::good() const
 {
     return !error_;
 }
 
-bool taskstate::overflow() const
-{
-    return overflow_;
-}
-
-taskstate::state taskstate::get_state() const
+task::state task_state_machine::get_state() const
 {
     return state_;
 }
 
-void taskstate::reset()
+void task_state_machine::reset()
 {
     state_    = state::queued;
     qsize_    = 0;
@@ -289,23 +292,22 @@ void taskstate::reset()
     dequed_   = 0;
     buffers_  = 0;
     error_    = false;    
-    overflow_ = false;
 }
 
-void taskstate::emit(taskstate::action action)
+void task_state_machine::emit(task::action action)
 {
     if (on_action)
         on_action(action);
 }
 
-void taskstate::goto_state(taskstate::state state)
+void task_state_machine::goto_state(task::state state)
 {
     assert(state_ != state);
 
-    if (on_state_change)
-        on_state_change(state_, state);
+    if (on_state)
+        on_state(state_, state);
 
     state_ = state;
 }
 
-} // corelib
+} // engine

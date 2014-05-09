@@ -1,14 +1,6 @@
 
+# newsflash/engine/Jamfile
 
-project engine 
-    : requirements
+project engine ;
 
-    <toolset>gcc:<cflags>-std=c++11
-
-    <toolset>gcc:<cflags>-Wno-unused-local-typedefs
-
-    <toolset>clang:<cflags>-std=c++11
-
-    ;
-
-lib engine : [ glob *.cpp ] ;
+lib engine-lib : [ glob *.cpp ]  /corelib//core-lib ;

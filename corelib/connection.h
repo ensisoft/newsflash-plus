@@ -48,7 +48,6 @@ namespace corelib
             socket,      // tcp socket error occurred
             ssl,         // ssl error occurred
             timeout,     // no data was received from host within timeout
-            interrupted, // pending operation was interrupted 
             unknown      // something else.
         };
 
@@ -85,7 +84,8 @@ namespace corelib
         struct thread_data;
 
         void thread_main(thread_data* data);
-        void thread_connect(thread_data* data);
+        bool thread_connect(thread_data* data);
+        void thread_execute(thread_data* data);
         void thread_send(thread_data* data, const void* buff, std::size_t len);
         size_t thread_recv(thread_data* data, void* buff, std::size_t len);        
 

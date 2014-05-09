@@ -23,9 +23,10 @@
 #pragma once
 
 #include <corelib/connection.h>
-#include <corelib/taskstate.h>
 #include <corelib/speedometer.h>
 #include <corelib/throttle.h>
+#include <corelib/bodylist.h>
+#include <corelib/xoverlist.h>
 #include <msglib/queue.h>
 #include <msglib/message.h>
 #include <memory>
@@ -35,9 +36,10 @@
 #include <string>
 #include <queue>
 #include <cstdint>
+#include "task_state_machine.h"
 #include "settings.h"
 
-namespace engine
+namespace newsflash
 {
     struct file;    
     struct account;
@@ -83,9 +85,9 @@ namespace engine
             list_type* list_;
         };
 
-        typedef list<task_t, ::engine::task> tasklist;
-        typedef list<conn_t, ::engine::connection> connlist;
-        typedef list<batch_t, ::engine::task> batchlist;
+        typedef list<task_t, newsflash::task> tasklist;
+        typedef list<conn_t, newsflash::connection> connlist;
+        typedef list<batch_t, newsflash::task> batchlist;
 
         struct stats {
             std::uint64_t bytes_downloaded;
@@ -98,56 +100,68 @@ namespace engine
        ~engine();
 
         // set the engine settings.
-        void set(const ::engine::settings& settings);
+        void set(const newsflash::settings& settings);
 
         // set an account in the engine.
         // if the account already exists then the account is updated, otherwise add account.
-        void set(const ::engine::account& account);
+        void set(const newsflash::account& account);
 
 
         tasklist tasks() const;
 
         connlist conns() const;
 
-        // request the engine to start shutdown. when the engine is ready is shutting
+
+
+        // download a single file
+        void download(const newsflash::account& account, const newsflash::file& file);
+
+        // download a batch of files
+        void download(const newsflash::account& account, const std::vector<newsflash::file>& files);
+
+        // process pending messages coming from asynchronous worker threads.
+        // this function should be called as a response to listener::on_events()
+        void pump();
+
+        // master switch. when stopped all processing is halted
+        // and connections are killed.
+        void stop();
+
+        void start();
+
+
+        // request the engine to initiate permanent shutdown. when the engine is ready is shutting
         // down a callback is invoked. Then the engine can be deleted.
         // This 2 phase stop allows the GUI to for example animate while 
         // the engine performs an orderly shutdown
-        void shutdown();
-
-        // download a single file
-        void download(const ::engine::account& account, const ::engine::file& file);
-
-        // download a batch of files
-        void download(const ::engine::account& account, const std::vector<::engine::file>& files);
-
-        // process pending events coming from asynchronous worker threads.
-        // this function should be called as a response to listener::on_events()
-        void pump_events();
+        //void shutdown();        
 
     private:
-        void on_task_action(task_t* task, batch_t* batch, corelib::taskstate::action action);
-        void on_task_state_change(task_t* task, batch_t* batch, corelib::taskstate::state current, corelib::taskstate::state next);
+        void on_task_start(task_t* task, batch_t* batch);
+        void on_task_stop(task_t* task, batch_t* batch);
+        void on_task_action(task_t* task, batch_t* batch, task::action action);
+        void on_task_state(task_t* task, batch_t* batch, task::state current, task::state next);
+        void on_task_body(task_t* task, batch_t* batch, corelib::bodylist::body&& body);
+        void on_task_xover(task_t* task, batch_t* batch, corelib::xoverlist::xover&& xover);
+        void on_task_xover_prepare(task_t* task, batch_t* batch, std::size_t range_count);
 
         void on_conn_ready(conn_t* conn);
-        void on_conn_error(conn_t* conn, corelib::connection::error error);
+        void on_conn_error(conn_t* conn, corelib::connection::error error, const std::error_code& system_error);
         void on_conn_read(conn_t* conn, std::size_t bytes);
         void on_conn_auth(conn_t* conn, std::string& user, std::string& pass);
-        bool on_conn_throttle(conn_t* conn, std::size_t& quota);
 
     private:
-        void schedule_tasklist();
-        void schedule_connlist();
+        void start_next_task(std::size_t account);
+        void start_next_conn(std::size_t account);
 
     private:
-        ::engine::account* find_account(std::size_t id);
+        newsflash::account& find_account(std::size_t id);
 
     private:
-        struct msg_conn_ready;
-        struct msg_conn_error;
-        struct msg_conn_read;
-        struct msg_conn_auth;
+        typedef std::function<void (void) > message;
 
+    private:
+        struct process_buffer;
 
     private:
         std::string logs_;
@@ -159,12 +173,13 @@ namespace engine
         std::uint64_t bytes_downloaded_;
         std::uint64_t bytes_written_;
         std::uint64_t bytes_queued_;
-        std::size_t id_;
+        double bps_;
         corelib::throttle throttle_;
         corelib::speedometer meter_;
-        msglib::queue<msglib::message> messages_;
+        msglib::queue<message> messages_;
         settings settings_;
         listener& listener_;
+        bool stop_;
     };
 
 } // engine

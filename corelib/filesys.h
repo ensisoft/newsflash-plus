@@ -33,11 +33,13 @@ std::string remove_illegal_filename_chars(std::string name);
 
 std::string remove_illegal_filepath_chars(std::string path);
 
-std::string joinpath(const std::string& a, const std::string& b);
-
 std::string filename(int attempt, const std::string& name);
 
+// join i.e. concatenate b to to the end of path a
+// for example joinpath("/foo/bar", "keke.derp") -> "/foo/bar/keke.derp"
+std::string joinpath(const std::string& path, const std::string& str);
+
 // create the path recursively with all the directories in the path.
-void create_path(const std::string& path);
+std::string createpath(const std::string& path);
 
 } // fs

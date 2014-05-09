@@ -22,7 +22,7 @@
 
 #pragma once
 
-namespace engine
+namespace newsflash
 {
     // engine settings
     struct settings
@@ -38,10 +38,6 @@ namespace engine
         // some binary content.
         // set to false to have the text data stored to the disk.
         bool discard_text_content;
-
-        // set to true to have engine automatically create
-        // connections to the server as needed.
-        bool auto_connect;
 
         // set to true to automatically prune the task list
         // and kill completed items.

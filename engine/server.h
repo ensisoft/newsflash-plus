@@ -25,7 +25,7 @@
 #include <string>
 #include <cstddef>
 
-namespace engine
+namespace newsflash
 {
     // newsserver configuration
     struct server 

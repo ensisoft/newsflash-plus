@@ -58,6 +58,13 @@ namespace corelib
         stream << arg;
     }
 
+    inline
+    void write_log_args(std::ostream& stream, bool value)
+    {
+        stream << (value ? "True" : "False");
+    }
+
+
     template<typename Arg, typename... Rest>
     void write_log_args(std::ostream& stream, const Arg& arg, const Rest&... gang)
     {

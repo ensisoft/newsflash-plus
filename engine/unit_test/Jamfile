@@ -1,4 +1,12 @@
 
+# newsflash/engine/unit_test/Jamfile
+
 import testing ;
 
-unit-test unit_test_taskstate : unit_test_taskstate.cpp ../taskstate.cpp ;
+project engine-test
+  : requirements
+    <library>/engine//engine-lib/<link>static
+  ;
+
+unit-test unit_test_task_stm : unit_test_task_stm.cpp ;
+unit-test unit_test_engine   : unit_test_engine.cpp ;

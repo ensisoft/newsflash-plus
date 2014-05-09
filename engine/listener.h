@@ -22,7 +22,7 @@
 
 #pragma once
 
-namespace engine
+namespace newsflash
 {
     struct file;
     struct task;
@@ -35,15 +35,15 @@ namespace engine
         virtual ~listener() = default;
 
         // an error has occurred. 
-        virtual void on_error(const ::engine::error& error) = 0;
+        virtual void handle(const newsflash::error& error) = 0;
 
         // a file completed
-        virtual void on_file(const ::engine::file& file) = 0;
+        virtual void acknowledge(const newsflash::file& file) = 0;
 
-        // notify the listener that there are pending events in the engine's
-        // event queue. the callback should organize for a call to engine::pump_events()
-        // to process the pending events.
-        virtual void on_events() = 0;
+        // notify the listener that there are pending messages in the engine's
+        // message queue. the callback should organize for a call to engine::pump()
+        // to process the pending messages.
+        virtual void notify() = 0;
 
     protected:
     private:

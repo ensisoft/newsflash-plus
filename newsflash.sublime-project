@@ -27,9 +27,10 @@
         "sublimeclang_options":
         [
             "-std=c++11",
-            "-I/home/enska/coding/",
-            "-I/home/enska/coding/newsflash",
-            "-I/home/enska/coding/boost_1_51_0"
+            "-DSUBLIME_CLANG_WORKAROUND_max_align_t",
+            "-I/home/samiv/coding/",
+            "-I/home/samiv/coding/newsflash",
+            "-I/home/samiv/coding/boost_1_51_0"
         ]
     }
 }

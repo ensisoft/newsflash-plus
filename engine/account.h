@@ -27,13 +27,13 @@
 #include <cstdint>
 #include "server.h"
 
-namespace engine
+namespace newsflash
 {
     // newsserver account. 
     struct account 
     {
         // unique id for the account. used to refer to the
-        // account in the engine api.
+        // account in the newsflash api.
         std::size_t id;
 
         // name for the account
