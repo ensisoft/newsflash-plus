@@ -1,6 +1,10 @@
 
 # newsflash/engine/Jamfile
 
-project engine ;
+project engine 
+  : requirements
+    <toolset>clang:<cflags>-std=c++11
+    <toolset>gcc:<cflags>-std=c++11
+  ;
 
 lib engine-lib : [ glob *.cpp ]  /corelib//core-lib ;

@@ -1,0 +1,464 @@
+#
+# Python-2.5/Jamfile
+#
+
+import os ;
+import type ;
+
+lib pthread : : <name>pthread ;
+
+type.register PYLIB : : SHARED_LIB ;
+
+type.set-generated-target-prefix PYLIB : : "" ;
+
+lib util : : <name>util ;
+lib dl   : : <name>dl   ;
+
+local libs = gdi32 user32 shell32 ole32 advapi32 ;
+
+project python 
+  : requirements
+      <threading>multi
+      <include>Include/ 
+      <include>Modules/zlib
+      <include>Python/
+    
+      #<include>Modules/expat/expat-2.0.1/lib
+      # for these see the expat documentation
+      <include>Modules/expat
+      <define>XML_DTD
+      <define>XML_NS
+      #<define>WITH_THREAD                                 # see Include/ceval.h
+
+      #<os>NT:<define>Py_BUILD_CORE                       # define this only if building static
+      <os>NT:<include>PC/
+      <os>NT:<define>PY_WINDOWS
+      <os>NT:<define>WIN32
+      <toolset>msvc:<find-shared-library>$(libs)
+      #<toolset>msvc:<cflags>/Gy                          # function level linking
+
+      <os>LINUX:<include>linux/
+      <os>LINUX:<define>PY_LINUX 
+      <os>LINUX:<library>/python//pthread/<link>shared
+
+      # the python codebase produces a lot of warnings
+      # but since this code is not mine and i'm just going
+      # to assume that the code is correct im just going to
+      # suppress all that warning noise with -w flag
+      <toolset>gcc:<cflags>-w
+
+  : usage-requirements
+      <include>Include/ 
+    
+      <os>NT:<include>PC/
+      <toolset>msvc:<find-shared-library>$(libs)
+      #<toolset>msvc:<cflags>/Gy
+    
+      <os>LINUX:<include>linux/
+      <os>LINUX:<library>util/<link>shared
+      <os>LINUX:<library>dl/<link>shared
+      <os>LINUX:<linkflags>-Xlinker
+      <os>LINUX:<linkflags>-export-dynamic
+  ;
+
+
+local object_src = [ glob Objects/*.c ] ;
+
+# Common python parser source files
+local parser_src =  
+    Parser/acceler.c
+    Parser/grammar1.c
+    Parser/listnode.c
+    Parser/node.c
+    Parser/parser.c
+    Parser/parsetok.c
+    Parser/bitset.c
+    Parser/metagrammar.c
+    Parser/firstsets.c
+    Parser/grammar.c
+    Parser/myreadline.c
+    Parser/tokenizer.c 
+    ;
+
+# Common python source files
+local python_src =
+    Python/Python-ast.c
+    Python/asdl.c
+    Python/ast.c
+    Python/bltinmodule.c
+    Python/ceval.c
+    Python/compile.c
+    Python/codecs.c
+    Python/errors.c
+    Python/frozen.c
+    Python/future.c
+    Python/getargs.c
+    Python/getcompiler.c
+    Python/getcopyright.c
+    Python/getopt.c
+    Python/getmtime.c
+    Python/getplatform.c
+    Python/getversion.c
+    Python/graminit.c
+    Python/import.c
+    Python/importdl.c
+    Python/marshal.c
+    Python/modsupport.c
+    Python/mystrtoul.c
+    Python/mysnprintf.c
+    Python/pyarena.c
+    Python/pyfpe.c
+    Python/pystate.c
+    Python/pystrtod.c
+    Python/pythonrun.c
+    Python/structmember.c
+    Python/symtable.c
+    Python/sysmodule.c
+    Python/traceback.c
+    Python/thread.c
+    ;
+
+# Common modules to be built into the python lib
+local builtin_src =
+    Modules/getbuildinfo.c
+    Modules/_codecsmodule.c
+    Modules/_sre.c
+    Modules/_typesmodule.c
+    Modules/errnomodule.c
+    Modules/gcmodule.c
+    Modules/symtablemodule.c
+    Modules/main.c
+    Modules/posixmodule.c
+    Modules/threadmodule.c
+    Modules/signalmodule.c
+    Modules/zipimport.c
+    Modules/xxsubtype.c
+    ;
+
+if [ os.name ] = LINUX
+{
+    local builtin_lin = 
+        Modules/config.c
+        Modules/pwdmodule.c
+        Modules/timemodule.c
+    ;
+
+    lib python25 
+    : 
+        $(object_src) 
+        $(python_src)
+        $(parser_src) 
+        $(builtin_src)        
+        $(builtin_lin)
+        Parser/pgen.c 
+        Python/frozenmain.c
+        Python/dynload_shlib.c
+        getpath.c        
+    : 
+       <define>Py_BUILD_CORE 
+       #<link>static 
+       <include>linux 
+    ;
+
+    exe python : Modules/python.c util dl python25 : <linkflags>-Xlinker <linkflags>-export-dynamic ;
+    
+}
+
+if [ os.name ] = NT
+{
+    # this list is based on the vc7.1 project files provided by the
+    # Python-2.5.1 package
+    # modifying this list might require changes in PC/config.c 
+
+    local builtin_win =
+        Modules/_bisectmodule.c
+        Modules/cjkcodecs/_codecs_cn.c
+        Modules/cjkcodecs/_codecs_hk.c
+        Modules/cjkcodecs/_codecs_iso2022.c
+        Modules/cjkcodecs/_codecs_jp.c
+        Modules/cjkcodecs/_codecs_kr.c
+        Modules/cjkcodecs/_codecs_tw.c
+        #Modules/cjkcodecs/multibytecodec.c
+        Modules/_csv.c
+        Modules/_functoolsmodule.c
+        Modules/_heapqmodule.c
+        Modules/_hotshot.c
+        Modules/_localemodule.c
+        Modules/_lsprof.c
+        Modules/_randommodule.c
+        Modules/_struct.c
+        Modules/_weakref.c
+        Modules/arraymodule.c
+        Modules/audioop.c
+        Modules/binascii.c
+        Modules/cmathmodule.c
+        Modules/collectionsmodule.c
+        Modules/cPickle.c
+        Modules/cstringIO.c
+        Modules/datetimemodule.c
+        Modules/imageop.c
+        Modules/itertoolsmodule.c
+        Modules/mathmodule.c
+        Modules/mmapmodule.c
+        Modules/operator.c
+        Modules/parsermodule.c
+        Modules/rgbimgmodule.c
+        Modules/rotatingtree.c
+        Modules/sha256module.c
+        Modules/sha512module.c
+        Modules/shamodule.c
+        Modules/stropmodule.c
+        Modules/timemodule.c
+        #Modules/yuvconvert.c
+        PC/_subprocess.c
+        PC/_winreg.c
+        PC/config.c
+        PC/dl_nt.c
+        #PC/getpathp.c
+        PC/import_nt.c
+        PC/msvcrtmodule.c
+        getpath.c
+    ;
+
+    lib python25 
+    : 
+        $(object_src) 
+        $(parser_src) 
+        $(python_src) 
+        $(builtin_src) 
+        $(builtin_win)        
+        Python/dynload_win.c 
+    : 
+        <define>Py_BUILD_CORE                             # define this when building shared library
+        #<link>static
+        <include>win
+    ;
+    
+    exe python : Modules/python.c python25 ; 
+}
+
+
+local dll ;
+
+local rule pymod ( name : src * )
+{
+    local files ;
+    for local c in $(src)
+    {
+        files += Modules/$(c) ;
+    }
+
+    if [ os.name ] = NT
+    {
+        pylib $(name) : $(files) : <library>python25 <linkflags>/export:init$(name) ;
+    }
+    if [ os.name ] = LINUX
+    {
+        pylib $(name) : $(files) ;
+    }
+    dll += $(name) ;
+}
+
+
+local rule pymodl ( name : src * : lib )
+{
+    local files ;
+    for local c in $(src)
+    {
+        files += Modules/$(c) ;
+    }
+
+    if [ os.name ] = NT
+    {
+        pylib $(name) : $(files) : <library>python25 <library>$(lib) <linkflags>/export:init$(name) ;
+    }
+    if [ os.name ] = LINUX
+    {
+        pylib $(name) : $(files) : <linkflags>$(lib) ;
+    }
+    dll += $(name) ;
+}
+
+# zlib compression library
+pymod zlib 
+  : 
+    zlib/adler32.c 
+    zlib/compress.c 
+    zlib/crc32.c 
+    zlib/deflate.c 
+    zlib/gzclose.c  
+    zlib/gzlib.c 
+    zlib/gzread.c 
+    zlib/gzwrite.c 
+    zlib/infback.c
+    zlib/inffast.c 
+    zlib/inflate.c 
+    zlib/inftrees.c 
+    zlib/trees.c 
+    zlib/uncompr.c 
+    zlib/zutil.c 
+    zlibmodule.c 
+  ;
+
+# SQLite database library
+pymod _sqlite3 
+  : 
+    pysqlite/cache.c 
+    pysqlite/connection.c 
+    pysqlite/cursor.c 
+    pysqlite/microprotocols.c
+    pysqlite/module.c 
+    pysqlite/prepare_protocol.c 
+    pysqlite/row.c 
+    pysqlite/row.c 
+    pysqlite/statement.c
+    pysqlite/util.c 
+    pysqlite/sqlite3.c 
+  ;
+
+# expat XML parser
+pymod pyexpat : pyexpat.c expat/xmlparse.c expat/xmlrole.c expat/xmltok.c ; 
+
+# duplicate target on windows.
+#pymod _elementtree    : _elementtree.c expat/xmlparse.c expat/xmlrole.c expat/xmltok.c ;                               
+
+pymod _md5            : md5module.c md5.c ;                             #
+pymod _testcapi       : _testcapimodule.c ;                             # Python interpreter C API test
+pymod unicodedata     : unicodedata.c ;                                 # 
+pymod fpectl          : fpectlmodule.c ;                                # Floating point exception control
+pymod _multibytecodec : cjkcodecs/multibytecodec.c ;                    #
+
+# This is the IMDbPy C module.
+pymod cutils : cutils.c ;
+
+
+#
+# This is stuff that doesn't compile out of the box
+#
+
+# pymod _bsddb       : _bsddb.c ;                                       # some database stuff? 
+# pymod readline     : readline.c ;                                     #
+# pymod dbm          : dbmmodule.c ;                                    # database?
+# pymod gdbm         : gdbmmodule.c ;                                   # debug?
+# pymod yuvconvert   : yuvconvert.c ;                                   # no module main
+# pymod _tkinter     : _tkinter.c ;                                     # TKinter Needs Tc/Tkl dev package
+
+if [ os.name ] = LINUX 
+{
+    # these can be built as modules on linux
+    # and, who knows, maybe as modules on windows too with some hacking
+    pymod _csv          : _csv.c ;                                      # Comma separated values
+    pymod rgbimg        : rgbimgmodule.c ;                              # 
+    pymod imageop       : imageop.c ;                                   #
+    pymod audioop       : audioop.c ;                                   #
+    pymod mmap          : mmapmodule.c ;                                #
+    pymod _socket       : socketmodule.c ;                              # Sockets
+    pymod cStringIO     : cStringIO.c ;                                 #
+    pymod cPickle       : cPickle.c ;                                   #
+    pymod parser        : parsermodule.c ;                              #
+    pymod binascii      : binascii.c ;                                  #
+    pymod select        : selectmodule.c ;                              #
+    pymod _struct       : _struct.c ;                                   # Pack values into and out of strings   
+    pymod _locale       : _localemodule.c ;                             # 
+    pymod _lsprof       : _lsprof.c ;                                   #
+    pymod _hotshot      : _hotshot.c ;                                  # Python profiler
+    pymod _functools    : _functoolsmodule.c ;                          #
+    pymod _heapq        : _heapqmodule.c ;                              #
+    pymod _bisect       : _bisectmodule.c ;                             #
+    pymod collections   : collectionsmodule.c ;                         #
+    pymod itertools     : itertoolsmodule.c ;                           #
+    pymod _random       : _randommodule.c ;                             #
+    #pymod time          : timemodule.c ;                                #
+    pymod datetime      : datetimemodule.c ;                            #
+    pymod strop         : stropmodule.c ;                               #
+    pymod math          : mathmodule.c  ;                               #
+    pymod cmath         : cmathmodule.c ;                               #
+    pymod operator      : operator.c ;                                  # 
+    pymod _weakref      : _weakref.c ;
+    pymod array         : arraymodule.c ;
+    pymod _sha          : sha256module.c sha512module.c shamodule.c ;   #
+
+    # build linux specific modules
+    pymod spwd           : spwdmodule.c ;                               # Unix shadow password    
+    pymod grp            : grpmodule.c ;                                # Unix group file access module
+    pymod fcntl          : fcntlmodule.c ;                              # Manipulate file descriptor
+    pymod syslog         : syslogmodule.c ;                             # System log module
+    pymod termios        : termios.c ;                                  #
+    pymod resource       : resource.c ;                                 #
+    pymod timing         : timingmodule.c ;                             #
+    pymod linuxaudiodev  : linuxaudiodev.c ;                            # ALSA audio device access
+    pymod ossaudiodev    : ossaudiodev.c ;                              # OSS audio device access
+    pymodl crypt         : cryptmodule.c   : -lcrypt ;                  #
+    pymodl nis           : nismodule.c     : -lnsl ;                    #
+    pymodl _curses_panel : _curses_panel.c : -lncurses ;                #
+    pymodl _curses       : _cursesmodule.c : -lncurses ;                #
+    pymodl _ssl          : _ssl.c          : "-lcrypto -lssl" ;         #
+    pymodl _hashlib      : _hashopenssl.c  : "-lssl -lcrypto" ;         #
+
+    #pymod dl            : dlmodule.c ;                                 # boost.build error
+    #pymod bz2           : bz2module.c ;                                # needs bz2 dev kit
+}
+
+if [ os.name ] = NT 
+{
+    lib winsock2 : : <name>ws2_32 ;
+    lib winmm    : : <name>winmm  ;
+
+    # build windows specific modules
+    pymodl winsound      : winsound.c     : winmm    ;
+    pymodl _socket       : socketmodule.c : winsock2 ;
+    pymodl select        : selectmodule.c : winsock2 ;
+}
+
+constant PYTHON_RELEASE : $(NEWSFLASH_INSTALL_REL)"/Python-2.5.1" ;
+constant PYTHON_DEBUG   : $(NEWSFLASH_INSTALL_DBG)"/Python-2.5.1" ;
+
+local text_files ;
+text_files += LICENSE.txt ;
+text_files += NEWS.txt ;
+text_files += README.txt ;
+
+install dlls : $(dll) 
+:
+  <variant>release:<location>$(PYTHON_RELEASE)/DLLs 
+  <variant>debug:<location>$(PYTHON_DEBUG)/DLLs
+;
+
+install txts : $(text_files) 
+:
+  <variant>release:<location>$(PYTHON_RELEASE)
+  <variant>debug:<location>$(PYTHON_DEBUG)
+;
+
+local run-script ;
+
+if [ os.name ] = LINUX
+{
+   run-script = runpython.sh ;
+}
+if [ os.name ] = NT 
+{
+   run-script = runpython.bat ;
+}
+
+install lib : python25 $(run-script)
+:
+  <variant>release:<location>$(PYTHON_RELEASE)/..
+  <variant>debug:<location>$(PYTHON_DEBUG)/..
+;
+
+install bin : python
+:
+  <variant>release:<location>$(PYTHON_RELEASE)
+  <variant>debug:<location>$(PYTHON_DEBUG)
+;
+
+# we want to install the python scripts in Lib recursively while preserving the
+# paths in Lib. the easy way to do this is to use glob-tree, which unfortunately
+# does not accept a path but only works from the current directory.
+# hence installing the Lib is moved into a Jamfile inside Lib
+
+build-project Lib ;
+
+
+

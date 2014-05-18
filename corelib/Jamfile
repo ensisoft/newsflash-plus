@@ -1,6 +1,10 @@
 
 project corelib
   : requirements
+
+  <toolset>gcc:<cflags>-std=c++11
+  <toolset>clang:<cflags>-std=c++11
+
   
   # we need -rdynamic for backtrace and backtrace_symbols
   # in order to dump a stacktrace from the assert

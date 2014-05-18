@@ -1,0 +1,9 @@
+
+local python_files = [ glob-tree *.py ] ;
+
+install lib : $(python_files) : 
+  <variant>release:<location>$(PYTHON_RELEASE)/Lib 
+  <variant>debug:<location>$(PYTHON_DEBUG)/Lib 
+  : <install-source-root>Lib
+;
+

@@ -18,6 +18,8 @@
 # 
 # Moving Qt from it's installation folder will break the installation. Don't do that.
 #
+# Boost 1.51.0 generates a lof of mundane warnings about ununsed typedefs. the -Wno-unused-typedefs
+# doesn't cascade from here to the boost targets. This flag is added to boost_1_51_0/Jamroot
 #
 import os ;
 import qt ;
@@ -28,12 +30,18 @@ path-constant QT_PATH      : "../qt-4.8.2" ;
 path-constant BOOST_PATH   : "../boost_1_51_0" ;
 path-constant OPENSSL_PATH : "../openssl_1_0_1f" ;
 
+
+# debug and release binary paths
+path-constant NEWSFLASH_INSTALL_DBG : "debug" ;
+path-constant NEWSFLASH_INSTALL_REL : "release" ;
+
 using qt : $(QT_PATH) ;
 
 use-project /boost/ : $(BOOST_PATH) ;
 use-project zlib    : ./zlib ;
 use-project corelib : ./corelib ;
 use-project engine  : ./engine ;
+
 
 
 # note that we don't set the C++11 flag here cause then it would cascade down to
@@ -45,10 +53,6 @@ project newsflash
     <include>$(OPENSSL_PATH)/include    
     <include>$(BOOST_PATH)
     <threading>multi
-    <toolset>gcc:<cflags>-std=c++11
-    <toolset>gcc:<cflags>-Wno-unused-local-typedefs
-    
-    <toolset>clang:<cflags>-std=c++11
     
     # if this is not defined linking problems ensue on msvc
     <define>BOOST_ALL_NO_LIB

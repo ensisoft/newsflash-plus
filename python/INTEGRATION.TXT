@@ -1,0 +1,23 @@
+
+Python Integration
+
+I have made some changes in python in order to get it integrated "better". 
+
+Library loading
+  - python modules have standard .dll extension instead of .pyd extension
+  - Python/dynload_win.c
+
+  - some libraries are built as shared modules instead of built in modules on windows
+  - PC/config.c
+
+Path shit
+  - this affects where python looks for libs and dlls
+  - getpath.c (for both windows and Linux). this replaces Modules/getpath.c
+  
+
+cutils.h
+  - this comes form IMDbPy package and is built as a module in the Python source
+
+
+Lib 
+ - contains the Python based libraries for this python version.
