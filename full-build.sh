@@ -45,4 +45,11 @@ cp -v LICENSE_UNRAR.txt $NEWSFLASH_INSTALL_DBG/tools/
 cd ..
 
 echo "Building par2"
-cd 
+cd par2cmdline
+./configure 2>&1> /dev/null
+make 2>&1> /dev/null
+cp -v par2 $NEWSFLASH_INSTALL_DBG/tools/
+cp -v par2 $NEWSFLASH_INSTALL_REL/tools/
+cp -v LICENSE_PAR2.txt $NEWSFLASH_INSTALL_REL/tools/
+cp -v LICENSE_PAR2.txt $NEWSFLASH_INSTALL_DBG/tools/
+cd ..
