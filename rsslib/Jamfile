@@ -1,0 +1,16 @@
+import qt ;
+
+using qt : $(QT_PATH) ;
+
+project rss
+: 
+  requirements
+  <library>/qt//QtCore/<link>shared
+:
+  usage-requirements
+  <library>/qt//QtCore/<link>shared
+;
+
+lib rss : rss.cpp ;
+
+build-project "unit_test" ;
