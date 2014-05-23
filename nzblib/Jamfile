@@ -1,0 +1,19 @@
+
+import qt ;
+
+using qt : $(QT_PATH) ;
+
+project nzb
+: 
+  requirements
+  <library>/qt//QtCore/<link>shared
+  <library>/qt//QtXml/<link>shared
+:
+  usage-requirements
+  <library>/qt//QtCore/<link>shared
+  <library>/qt//QtCore/<link>shared
+;
+
+lib nzb : parser.h parser.cpp ;
+
+build-project "unit_test" ;

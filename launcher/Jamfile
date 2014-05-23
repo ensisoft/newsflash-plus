@@ -1,0 +1,12 @@
+
+
+exe launcher : launcher.cpp ;
+
+constant REL : $(NEWSFLASH_INSTALL_REL)"/tools" ;
+constant DBG : $(NEWSFLASH_INSTALL_DBG)"/tools" ;
+
+install bin : launcher
+:
+  <variant>release:<location>$(REL)
+  <variant>debug:<location>$(DBG)
+;

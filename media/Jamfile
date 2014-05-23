@@ -1,0 +1,14 @@
+
+local audio_files ;
+audio_files += download.wav ;
+audio_files += error.wav ;
+audio_files += update.wav ;
+
+constant REL : $(NEWSFLASH_INSTALL_REL)"/media" ;
+constant DBG : $(NEWSFLASH_INSTALL_DBG)"/media" ;
+
+install media : $(audio_files)
+: 
+   <variant>debug:<location>$(DBG)
+   <variant>release:<location>$(REL)
+;
