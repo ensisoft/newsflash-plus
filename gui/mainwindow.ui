@@ -1,0 +1,768 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>806</width>
+    <height>564</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Newsflash Plus</string>
+  </property>
+  <property name="windowIcon">
+   <iconset>
+    <normaloff>:/resource/flash.ico</normaloff>:/resource/flash.ico</iconset>
+  </property>
+  <property name="toolButtonStyle">
+   <enum>Qt::ToolButtonTextUnderIcon</enum>
+  </property>
+  <property name="unifiedTitleAndToolBarOnMac">
+   <bool>false</bool>
+  </property>
+  <widget class="QWidget" name="centralWidget">
+   <layout class="QGridLayout" name="gridLayout_5">
+    <item row="0" column="0">
+     <widget class="QTabWidget" name="mainTab">
+      <property name="enabled">
+       <bool>true</bool>
+      </property>
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+        <horstretch>10</horstretch>
+        <verstretch>10</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="tabShape">
+       <enum>QTabWidget::Rounded</enum>
+      </property>
+      <property name="currentIndex">
+       <number>0</number>
+      </property>
+      <property name="documentMode">
+       <bool>false</bool>
+      </property>
+      <property name="tabsClosable">
+       <bool>true</bool>
+      </property>
+      <property name="movable">
+       <bool>false</bool>
+      </property>
+      <widget class="QWidget" name="tab">
+       <attribute name="title">
+        <string>tab</string>
+       </attribute>
+       <layout class="QGridLayout" name="gridLayout_12">
+        <item row="0" column="0">
+         <widget class="QLabel" name="label">
+          <property name="text">
+           <string>This tab cannot be removed in the designer. It is removed at runtime</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+    </item>
+    <item row="1" column="0">
+     <widget class="QFrame" name="frmGraph">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>200</width>
+        <height>0</height>
+       </size>
+      </property>
+      <property name="frameShape">
+       <enum>QFrame::StyledPanel</enum>
+      </property>
+      <property name="frameShadow">
+       <enum>QFrame::Sunken</enum>
+      </property>
+      <layout class="QGridLayout" name="gridLayout_4">
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
+       <item row="0" column="0">
+        <widget class="gui::TinyGraph" name="netGraph" native="true">
+         <property name="toolTip">
+          <string>Network monitor</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item row="2" column="0">
+     <widget class="QFrame" name="frmFreeSpace">
+      <property name="frameShape">
+       <enum>QFrame::StyledPanel</enum>
+      </property>
+      <property name="frameShadow">
+       <enum>QFrame::Sunken</enum>
+      </property>
+      <layout class="QGridLayout" name="gridLayout_3">
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
+       <item row="0" column="0">
+        <layout class="QHBoxLayout" name="horizontalLayout_3">
+         <item>
+          <widget class="QLabel" name="lblDiskIco">
+           <property name="text">
+            <string/>
+           </property>
+           <property name="pixmap">
+            <pixmap>:/resource/16x16_ico_png/ico_disk.png</pixmap>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="lblDiskFree">
+           <property name="toolTip">
+            <string>Free space available at default download location</string>
+           </property>
+           <property name="text">
+            <string>/ 2.5 GB Free</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item row="3" column="0">
+     <widget class="QFrame" name="frmDiskWrite">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="frameShape">
+       <enum>QFrame::StyledPanel</enum>
+      </property>
+      <property name="frameShadow">
+       <enum>QFrame::Sunken</enum>
+      </property>
+      <layout class="QGridLayout" name="gridLayout">
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
+       <item row="0" column="0">
+        <layout class="QHBoxLayout" name="horizontalLayout">
+         <item>
+          <widget class="QLabel" name="lblDiskIOIco">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="frameShape">
+            <enum>QFrame::NoFrame</enum>
+           </property>
+           <property name="frameShadow">
+            <enum>QFrame::Sunken</enum>
+           </property>
+           <property name="text">
+            <string/>
+           </property>
+           <property name="pixmap">
+            <pixmap>:/resource/16x16_ico_png/ico_flush.png</pixmap>
+           </property>
+           <property name="scaledContents">
+            <bool>false</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="lblDiskIO">
+           <property name="toolTip">
+            <string>Amount of data written to disk</string>
+           </property>
+           <property name="frameShape">
+            <enum>QFrame::NoFrame</enum>
+           </property>
+           <property name="frameShadow">
+            <enum>QFrame::Raised</enum>
+           </property>
+           <property name="text">
+            <string>0MB</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item row="4" column="0">
+     <widget class="QFrame" name="frmKbs">
+      <property name="minimumSize">
+       <size>
+        <width>0</width>
+        <height>0</height>
+       </size>
+      </property>
+      <property name="frameShape">
+       <enum>QFrame::StyledPanel</enum>
+      </property>
+      <property name="frameShadow">
+       <enum>QFrame::Sunken</enum>
+      </property>
+      <layout class="QGridLayout" name="gridLayout_2">
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
+       <item row="0" column="0">
+        <layout class="QHBoxLayout" name="horizontalLayout_2">
+         <item>
+          <widget class="QLabel" name="lblNetIOIco">
+           <property name="text">
+            <string/>
+           </property>
+           <property name="pixmap">
+            <pixmap>:/resource/16x16_ico_png/ico_download.png</pixmap>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="lblNetIO">
+           <property name="minimumSize">
+            <size>
+             <width>130</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>16777215</height>
+            </size>
+           </property>
+           <property name="toolTip">
+            <string>Current download speed/amount of data downloaded</string>
+           </property>
+           <property name="frameShape">
+            <enum>QFrame::NoFrame</enum>
+           </property>
+           <property name="frameShadow">
+            <enum>QFrame::Sunken</enum>
+           </property>
+           <property name="lineWidth">
+            <number>1</number>
+           </property>
+           <property name="text">
+            <string>0 kB/s 0MB</string>
+           </property>
+           <property name="scaledContents">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item row="5" column="0">
+     <widget class="QFrame" name="frmProgress">
+      <property name="frameShape">
+       <enum>QFrame::StyledPanel</enum>
+      </property>
+      <property name="frameShadow">
+       <enum>QFrame::Sunken</enum>
+      </property>
+      <layout class="QHBoxLayout" name="horizontalLayout_4">
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_5">
+         <item>
+          <widget class="QLabel" name="label_2">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="text">
+            <string/>
+           </property>
+           <property name="pixmap">
+            <pixmap>:/resource/16x16_ico_png/ico_task_queued.png</pixmap>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="lblQueue">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="text">
+            <string>0 GB</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QProgressBar" name="progressBar">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>200</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>200</width>
+             <height>16</height>
+            </size>
+           </property>
+           <property name="styleSheet">
+            <string notr="true"> QProgressBar {  
+  background-color: qlineargradient(spread:pad, x1:0.489, y1:1, x2:0.499591, y2:0, stop:0 rgba(200, 200, 200, 255), stop:1 rgba(232, 232, 232, 255));
+   border: 1px solid grey;
+ }
+
+ QProgressBar::chunk {
+     background-color: rgb(47, 117, 29, 150);
+ }
+
+</string>
+           </property>
+           <property name="value">
+            <number>0</number>
+           </property>
+           <property name="textVisible">
+            <bool>false</bool>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menuBar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>806</width>
+     <height>26</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>&amp;File</string>
+    </property>
+    <addaction name="separator"/>
+   </widget>
+   <widget class="QMenu" name="menuEdit">
+    <property name="title">
+     <string>&amp;Edit</string>
+    </property>
+   </widget>
+   <widget class="QMenu" name="menuView">
+    <property name="title">
+     <string>&amp;View</string>
+    </property>
+    <addaction name="actionViewToolbar"/>
+    <addaction name="actionViewStatusbar"/>
+    <addaction name="separator"/>
+   </widget>
+   <widget class="QMenu" name="menuHelp">
+    <property name="tearOffEnabled">
+     <bool>false</bool>
+    </property>
+    <property name="title">
+     <string>&amp;Help</string>
+    </property>
+    <addaction name="actionContextHelp"/>
+    <addaction name="actionHelp"/>
+    <addaction name="separator"/>
+    <addaction name="actionViewForum"/>
+    <addaction name="separator"/>
+    <addaction name="separator"/>
+    <addaction name="actionBuyNow"/>
+    <addaction name="separator"/>
+    <addaction name="actionRegister"/>
+    <addaction name="separator"/>
+    <addaction name="actionAbout"/>
+   </widget>
+   <widget class="QMenu" name="menuTools">
+    <property name="title">
+     <string>&amp;Tools</string>
+    </property>
+    <addaction name="actionSettings"/>
+    <addaction name="separator"/>
+   </widget>
+   <widget class="QMenu" name="menuWindow">
+    <property name="title">
+     <string>&amp;Window</string>
+    </property>
+   </widget>
+   <widget class="QMenu" name="menuFeedback">
+    <property name="title">
+     <string>Feedback</string>
+    </property>
+    <addaction name="separator"/>
+    <addaction name="separator"/>
+    <addaction name="actionSendFeedback"/>
+    <addaction name="separator"/>
+    <addaction name="actionRequestFeature"/>
+    <addaction name="separator"/>
+    <addaction name="actionReportBug"/>
+    <addaction name="separator"/>
+    <addaction name="actionRequestCode"/>
+   </widget>
+   <addaction name="menuFile"/>
+   <addaction name="menuEdit"/>
+   <addaction name="menuView"/>
+   <addaction name="menuTools"/>
+   <addaction name="menuWindow"/>
+   <addaction name="menuFeedback"/>
+   <addaction name="menuHelp"/>
+  </widget>
+  <widget class="QToolBar" name="mainToolBar">
+   <property name="iconSize">
+    <size>
+     <width>16</width>
+     <height>16</height>
+    </size>
+   </property>
+   <property name="toolButtonStyle">
+    <enum>Qt::ToolButtonTextUnderIcon</enum>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+   <addaction name="separator"/>
+  </widget>
+  <widget class="QStatusBar" name="statusBar">
+   <property name="cursor">
+    <cursorShape>ArrowCursor</cursorShape>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::NoFocus</enum>
+   </property>
+   <property name="autoFillBackground">
+    <bool>false</bool>
+   </property>
+   <property name="sizeGripEnabled">
+    <bool>true</bool>
+   </property>
+  </widget>
+  <action name="actionExit">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/resource/16x16_ico_png/ico_exit.png</normaloff>:/resource/16x16_ico_png/ico_exit.png</iconset>
+   </property>
+   <property name="text">
+    <string>&amp;Exit</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Q</string>
+   </property>
+  </action>
+  <action name="actionSettings">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/resource/16x16_ico_png/ico_settings.png</normaloff>:/resource/16x16_ico_png/ico_settings.png</iconset>
+   </property>
+   <property name="text">
+    <string>Settings...</string>
+   </property>
+  </action>
+  <action name="actionAbout">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/resource/16x16_ico_png/ico_about.png</normaloff>:/resource/16x16_ico_png/ico_about.png</iconset>
+   </property>
+   <property name="text">
+    <string>About</string>
+   </property>
+   <property name="visible">
+    <bool>true</bool>
+   </property>
+  </action>
+  <action name="actionTools">
+   <property name="text">
+    <string>Tools...</string>
+   </property>
+  </action>
+  <action name="actionViewToolbar">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Toolbar</string>
+   </property>
+  </action>
+  <action name="actionViewStatusbar">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Statusbar</string>
+   </property>
+  </action>
+  <action name="actionHelp">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/resource/16x16_ico_png/ico_help.png</normaloff>:/resource/16x16_ico_png/ico_help.png</iconset>
+   </property>
+   <property name="text">
+    <string>More help</string>
+   </property>
+  </action>
+  <action name="actionTODO">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/resource/16x16_ico_png/ico_broken.png</normaloff>:/resource/16x16_ico_png/ico_broken.png</iconset>
+   </property>
+   <property name="text">
+    <string>TODO</string>
+   </property>
+  </action>
+  <action name="actionCloseWindow">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/resource/16x16_ico_png/ico_close.png</normaloff>:/resource/16x16_ico_png/ico_close.png</iconset>
+   </property>
+   <property name="text">
+    <string>Close window</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+W</string>
+   </property>
+  </action>
+  <action name="actionBuyNow">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/resource/16x16_ico_png/ico_euro.png</normaloff>:/resource/16x16_ico_png/ico_euro.png</iconset>
+   </property>
+   <property name="text">
+    <string>Donate</string>
+   </property>
+  </action>
+  <action name="actionRegister">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/resource/16x16_ico_png/ico_register.png</normaloff>:/resource/16x16_ico_png/ico_register.png</iconset>
+   </property>
+   <property name="text">
+    <string>Register</string>
+   </property>
+  </action>
+  <action name="actionNextWindow">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/resource/16x16_ico_png/ico_next_bookmark.png</normaloff>:/resource/16x16_ico_png/ico_next_bookmark.png</iconset>
+   </property>
+   <property name="text">
+    <string>Next window</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Tab</string>
+   </property>
+  </action>
+  <action name="actionPrevWindow">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/resource/16x16_ico_png/ico_previous_bookmark.png</normaloff>:/resource/16x16_ico_png/ico_previous_bookmark.png</iconset>
+   </property>
+   <property name="text">
+    <string>Previous window</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+Backtab</string>
+   </property>
+  </action>
+  <action name="actionReportBug">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/resource/16x16_ico_png/ico_bug.png</normaloff>:/resource/16x16_ico_png/ico_bug.png</iconset>
+   </property>
+   <property name="text">
+    <string>Report a bug</string>
+   </property>
+  </action>
+  <action name="actionSendFeedback">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/resource/16x16_ico_png/ico_user_feedback.png</normaloff>:/resource/16x16_ico_png/ico_user_feedback.png</iconset>
+   </property>
+   <property name="text">
+    <string>Send feedback</string>
+   </property>
+  </action>
+  <action name="actionRequestFeature">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/resource/16x16_ico_png/ico_idea.png</normaloff>:/resource/16x16_ico_png/ico_idea.png</iconset>
+   </property>
+   <property name="text">
+    <string>Request a feature</string>
+   </property>
+  </action>
+  <action name="actionContextHelp">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/resource/16x16_ico_png/ico_help.png</normaloff>:/resource/16x16_ico_png/ico_help.png</iconset>
+   </property>
+   <property name="text">
+    <string>Help</string>
+   </property>
+   <property name="shortcut">
+    <string>F1</string>
+   </property>
+  </action>
+  <action name="actionViewForum">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/resource/16x16_ico_png/ico_forum.png</normaloff>:/resource/16x16_ico_png/ico_forum.png</iconset>
+   </property>
+   <property name="text">
+    <string>Forum</string>
+   </property>
+   <property name="toolTip">
+    <string>Visit discussion forum</string>
+   </property>
+  </action>
+  <action name="actionRequestCode">
+   <property name="icon">
+    <iconset>
+     <normaloff>:/resource/16x16_ico_png/ico_register.png</normaloff>:/resource/16x16_ico_png/ico_register.png</iconset>
+   </property>
+   <property name="text">
+    <string>Request registration code</string>
+   </property>
+   <property name="toolTip">
+    <string>Request registration code</string>
+   </property>
+  </action>
+ </widget>
+ <layoutdefault spacing="6" margin="11"/>
+ <customwidgets>
+  <customwidget>
+   <class>gui::TinyGraph</class>
+   <extends>QWidget</extends>
+   <header>tinygraph.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
+ <resources>
+  <include location="resource.qrc"/>
+ </resources>
+ <connections>
+  <connection>
+   <sender>actionViewToolbar</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>mainToolBar</receiver>
+   <slot>setVisible(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>442</x>
+     <y>33</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>actionViewStatusbar</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>statusBar</receiver>
+   <slot>setVisible(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>442</x>
+     <y>681</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>
