@@ -1,0 +1,11 @@
+prefix=/usr/local
+exec_prefix=${prefix}
+libdir=/usr/local/lib
+includedir=/usr/local/include
+
+Name: QJson
+Description: QJson is a qt-based library that maps JSON data to QVariant objects
+Version: 0.8.1
+Requires: QtCore
+Libs: -L${libdir} -lqjson
+Cflags: -I${includedir}
