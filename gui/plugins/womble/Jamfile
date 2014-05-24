@@ -1,0 +1,19 @@
+
+project womble ;
+
+lib womble 
+: 
+  womble.h 
+  womble.cpp 
+  ../../../rsslib/rss.cpp
+:
+  <link>shared
+;
+
+install bin : womble
+: 
+  <variant>debug:<location>$(PLUGIN_DEBUG)
+  <variant>release:<location>$(PLUGIN_RELEASE)
+;
+
+   
