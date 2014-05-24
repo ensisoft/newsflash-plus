@@ -45,9 +45,9 @@ namespace gui
 
 int main(int argc, char* argv[])
 {
-    gui::set_cmd_line(argc, argv);
+    app::set_cmd_line(argc, argv);
 
-    const auto path = gui::get_installation_directory();
+    const auto path = app::get_installation_directory();
 
     QCoreApplication::setLibraryPaths(QStringList());
     QCoreApplication::addLibraryPath(path);
@@ -58,7 +58,7 @@ int main(int argc, char* argv[])
         QtSingleApplication newsflash(argc, argv);
         if (newsflash.isRunning())
         {
-            const QStringList& cmds = gui::get_cmd_line();
+            const QStringList& cmds = app::get_cmd_line();
             for (int i=1; i<cmds.size(); ++i)
                 newsflash.sendMessage(cmds[i]);
             return 0;            

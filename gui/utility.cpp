@@ -38,8 +38,9 @@ namespace {
     QStringList g_cmd_line;
 } // namespace
 
-namespace gui
+namespace app
 {
+
 QString widen(const char* str)
 {
 #if defined(WINDOWS_OS)
@@ -140,4 +141,4 @@ QStringList get_cmd_line()
 }
 
 
-} // gui
+} // app

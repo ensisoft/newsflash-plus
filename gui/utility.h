@@ -25,7 +25,7 @@
 #  include <QString>
 #include <newsflash/warnpop.h>
 
-namespace gui
+namespace app
 {
 
 // get a Qstring from a native system string.
@@ -43,4 +43,4 @@ void set_cmd_line(int argc, char* argv[]);
 QStringList get_cmd_line();
 
 
-} // gui
+} // app

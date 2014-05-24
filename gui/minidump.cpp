@@ -23,6 +23,9 @@
 #include "minidump.h"
 #include "config.h"
 
+namespace app
+{
+
 #if defined(WINDOWS_OS)
 
 DWORD write_mini_dump(EXCEPTION_POINTERS* eptr)
@@ -76,3 +79,6 @@ DWORD write_mini_dump(EXCEPTION_POINTERS* eptr)
 }
 
 #endif
+
+} // app
+
