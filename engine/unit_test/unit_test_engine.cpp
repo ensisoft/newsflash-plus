@@ -21,8 +21,10 @@
 //  THE SOFTWARE.
 
 #include <newsflash/workaround.h>
+#include <newsflash/corelib/nntp/nntp.h>
 
-#include <boost/test/minimal.hpp>
+//#include <boost/test/minimal.hpp>
+#include <testlib/test_minimal.h>
 
 #include <corelib/socketapi.h>
 #include <corelib/sockets.h>
@@ -35,8 +37,13 @@
 #include "../connection.h"
 #include "../task.h"
 #include "../listener.h"
+#include "../account.h"
+#include "../server.h"
+#include "../file.h"
 
 using namespace newsflash;
+
+namespace unit_test {
 
 class tester : public listener 
 {
@@ -83,17 +90,84 @@ private:
     std::size_t notify_count_;
 };
 
+class testcase 
+{
+public:
+    ~testcase() = default;
+
+
+};
+
+class connection
+{
+public:
+    connection(corelib::native_socket_t s) : socket_(s)
+    {}
+
+    connection(connection&& other) : socket_(other.socket_)
+    {
+        other.socket_ = 0;
+    }
+
+   ~connection()
+    {
+        if (socket_)
+            corelib::closesocket(socket_);        
+    }
+
+    connection& operator=(connection&& other)
+    {
+        connection tmp(std::move(*this));
+        socket_ = other.socket_;
+        other.socket_= 0;
+        return *this;
+    }
+
+    void greet()
+    {
+        send("200 Welcome\r\n");
+        recv("CAPABILITIES\r\n");
+        send("500 what?\r\n");
+        recv("MODE READER\r\n");
+        send("200 OK\r\n");
+    }
+private:
+    void send(const std::string& str)
+    {
+        const char* ptr = str.data();
+        std::size_t sent  = 0;
+        do 
+        {
+            const int ret = ::send(socket_, ptr + sent, str.size() - sent, 0);
+            TEST_REQUIRE(ret > 0);
+            sent += ret;
+        } 
+        while (sent != str.size());
+    }
+
+    void recv(const std::string& str)
+    {
+        std::string buff;
+        buff.resize(1024);
+        const int ret = ::recv(socket_, &buff[0],  1024, 0);
+        TEST_REQUIRE(ret > 0);
+        TEST_REQUIRE(nntp::find_response(&buff[0], ret));
+        TEST_REQUIRE(str == buff);
+    }
+
+private:
+    corelib::native_socket_t socket_;
+};
 
 class server
 {
 public:
-    server() : socket_(0), client_(0)
+    server() : socket_(0)
     {}
 
    ~server()
     {
         corelib::closesocket(socket_);
-        corelib::closesocket(client_);
     }
 
     std::uint16_t open(std::uint16_t port)
@@ -112,25 +186,69 @@ public:
 
             std::printf("bind failed %d\n", port);
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
-            ++port;
         }
-        BOOST_REQUIRE(::listen(sock, 10) != corelib::OS_SOCKET_ERROR);
-        BOOST_REQUIRE(socket_ == 0);
+        TEST_REQUIRE(::listen(sock, 10) != corelib::OS_SOCKET_ERROR);
+        TEST_REQUIRE(socket_ == 0);
         socket_ = sock;
         return port;
     }
 
+    connection accept()
+    {
+        struct sockaddr_in addr {0};
+        socklen_t len = sizeof(addr);
+        corelib::native_socket_t sock = ::accept(socket_, static_cast<sockaddr*>((void*)&addr), &len);
+
+        TEST_REQUIRE(sock != corelib::OS_INVALID_HANDLE);
+
+        std::printf("Got new connection sock, %d\n", sock);
+
+        return connection { sock };
+    }
+
 private:
     corelib::native_socket_t socket_;
-    corelib::native_socket_t client_;
+
 };
+
+} // unit_test
 
 void test_download()
 {
-    server serv;    
-    tester list;
-    engine eng(list, "logs_test_download");    
+    unit_test::server server;
+    server.open(4001);
 
+    unit_test::tester listener;
+    newsflash::engine engine(listener, "logs_test_download");    
+
+    newsflash::account account;
+    account.id                 = 123;
+    account.name               = "test";
+    account.username           = "foo";
+    account.password           = "bar";
+    account.secure             = newsflash::server { "localhost",  4001, false };
+    account.max_connections    = 1;
+    account.enable_compression = false;
+    account.enable_pipelining  = false;
+    account.fill               = false;
+
+    newsflash::file file;
+    file.articles = {"1", "2"};
+    file.groups   = {"alt.binaries.foo", "alt.binaries.foo"};
+    file.path     = "./files";
+    file.name     = "test.file";
+    file.desc     = "testing testing";
+    file.size     = 1024;
+    file.damaged  = false;
+    file.account  = account.id;
+
+    engine.download(account, file);
+    engine.start();
+
+    auto conn = server.accept();
+    
+    conn.greet();
+    //conn.send_body("1", "alt.binaries.foo", )
 
 }
 

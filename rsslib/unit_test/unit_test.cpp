@@ -44,13 +44,39 @@ void unit_test_parse()
 
     // correct
     {
+        auto dt = rss::parse_date("Fri, 26 Feb 2010 13:47:54 +0000");
+        BOOST_REQUIRE(dt.isValid());
 
+        auto date = dt.date();
+        BOOST_REQUIRE(date.day() == 26);
+        BOOST_REQUIRE(date.month() == 2);
+        BOOST_REQUIRE(date.year() == 2010);
+
+        auto time = dt.time();
+        BOOST_REQUIRE(time.hour() == 13);
+        BOOST_REQUIRE(time.minute() == 47);
+        BOOST_REQUIRE(time.second() == 54);
     }
+}
+
+void unit_test_timeframe()
+{
+    const auto& now = QDateTime::currentDateTime();
+
+    BOOST_REQUIRE(rss::calculate_timeframe(now, now) == rss::timeframe::today);
+    BOOST_REQUIRE(rss::calculate_timeframe(now, now.addDays(-1)) == rss::timeframe::yesterday);
+    BOOST_REQUIRE(rss::calculate_timeframe(now, now.addDays(-5)) == rss::timeframe::within_a_week);
+}
+
+void unit_test_timediff()
+{
+    
 }
 
 int test_main(int argc, char* argv[])
 {
     unit_test_parse();
+    unit_test_timeframe();
 
     return 0;
 }

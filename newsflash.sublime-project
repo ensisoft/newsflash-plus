@@ -27,10 +27,19 @@
         "sublimeclang_options":
         [
             "-std=c++11",
-            "-DSUBLIME_CLANG_WORKAROUND_max_align_t",
+            "-DSUBLIME_CLANG_WORKAROUNDS",
             "-I/home/samiv/coding/",
             "-I/home/samiv/coding/newsflash",
-            "-I/home/samiv/coding/boost_1_51_0"
+            "-I/home/samiv/coding/newsflash/app/",            
+            "-I/home/samiv/coding/newsflash/app/gui",                        
+            "-I/home/samiv/coding/newsflash/python/Include",
+            "-I/home/samiv/coding/newsflash/qjson/include",            
+            "-I/home/samiv/coding/boost_1_51_0",
+            "-I/home/samiv/coding/qt-4.8.2/include",
+            "-I/home/samiv/coding/qt-4.8.2/include/QtCore",
+
+            // for MOC
+            "-I/home/samiv/coding/newsflash/app/bin/gcc-4.9.0/debug/threading-multi/"
         ]
     }
 }

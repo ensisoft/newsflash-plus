@@ -20,10 +20,12 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.            
 
-#include <QtXml/QXmlSimpleReader>
-#include <QtXml/QXmlInputSource>
-#include <QtXml/QXmlDefaultHandler>
-#include <QStack>
+#include <newsflash/warnpush.h>
+#  include <QtXml/QXmlSimpleReader>
+#  include <QtXml/QXmlInputSource>
+#  include <QtXml/QXmlDefaultHandler>
+#  include <QStack>
+#include <newsflash/warnpop.h>
 #include "parser.h"
 
 namespace {

@@ -22,13 +22,15 @@
 
 #pragma once
 
-#include <QWaitCondition>
-#include <QMutex>
-#include <QThread>
-#include <QString>
-#include <QList>
-#include <QObject>
-#include <QtGlobal>
+#include <newsflash/warnpush.h>
+#  include <QWaitCondition>
+#  include <QMutex>
+#  include <QThread>
+#  include <QString>
+#  include <QList>
+#  include <QObject>
+#  include <QtGlobal>
+#include <newsflash/warnpop.h>
 
 class QIODevice;
 

@@ -11,7 +11,7 @@ project nzb
 :
   usage-requirements
   <library>/qt//QtCore/<link>shared
-  <library>/qt//QtCore/<link>shared
+  <library>/qt//QtXml/<link>shared
 ;
 
 lib nzb : parser.h parser.cpp ;
