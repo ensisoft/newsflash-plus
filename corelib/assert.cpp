@@ -86,7 +86,7 @@ void do_assert(const char* expression, const char* file, const char* func, int l
     const HANDLE process = GetCurrentProcess();
 
     char filename[100] = {0};
-    sprintf(filename, NEWSFLASH_CORE_FILE".%d", process);
+    sprintf(filename, "core.%d", process);
     
     // write minidump
     HANDLE handle = CreateFileA(filename,

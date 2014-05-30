@@ -33,14 +33,14 @@ namespace corelib
         template<typename T>
         void format_next(std::stringstream& ss, const T& value)
         {
-            value >> ss;
+            ss << value;
         }
 
         template<typename T, typename... Rest>
         void format_next(std::stringstream& ss, const T& value, const Rest&... rest)
         {
-            value >> ss;
-            format_next(rest...);
+            ss << value;
+            format_next(ss, rest...);
         }
 
     } // detail
@@ -51,6 +51,8 @@ std::string format(const Args&... args)
     std::stringstream ss;
     if (!ss.good())
         throw std::runtime_error("string format error");
+
+    detail::format_next(ss, args...);
 
     return ss.str();
 }

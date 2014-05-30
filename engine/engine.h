@@ -152,7 +152,7 @@ namespace newsflash
 
     private:
         void start_next_task(std::size_t account);
-        void start_next_conn(std::size_t account);
+        void start_connections(std::size_t account);
 
     private:
         newsflash::account& find_account(std::size_t id);

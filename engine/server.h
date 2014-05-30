@@ -44,6 +44,7 @@ namespace newsflash
 
     };
 
+    inline
     bool is_valid(const server& server)
     {
         return !server.host.empty() && server.port;

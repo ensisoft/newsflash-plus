@@ -149,12 +149,12 @@ struct engine::conn_t {
 
     conn_t(const connection& state) : state(state)
     {
-        LOG_D("Conn ", state.id, " created");
+        LOG_D("Connection ", state.id, " created");
     }
 
    ~conn_t()
     {
-        LOG_D("Conn ", state.id, " deleted");
+        LOG_D("Connection ", state.id, " deleted");
     }
 
     static
@@ -187,7 +187,7 @@ struct engine::batch_t {
     }
 };
 
-engine::engine(listener& callback, std::string logs) : logs_(logs), listener_(callback), stop_(false)
+engine::engine(listener& callback, std::string logs) : logs_(logs), listener_(callback), stop_(true)
 {
     bytes_downloaded_ = 0;
     bytes_written_    = 0;
@@ -225,7 +225,7 @@ void engine::set(const newsflash::settings& settings)
 
     settings_ = settings;
 
-    LOG_I("Current settings");
+    LOG_I("Engine settings");
     LOG_I("overwrite_existing_files: ", settings_.overwrite_existing_files);
     LOG_I("discard_text_content: ", settings_.overwrite_existing_files);
     LOG_I("auto_remove_completed: ", settings_.auto_remove_completed);
@@ -330,7 +330,7 @@ void engine::start()
     for (auto& account : accounts_)
     {
         start_next_task(account.id);
-        start_next_conn(account.id);
+        start_connections(account.id);
     }
 
     stop_ = false;
@@ -393,8 +393,6 @@ void engine::download(const newsflash::account& account, const newsflash::file& 
 
     batches_.push_back(std::move(batch));
     tasks_.push_back(std::move(task));
-
-    start_next_task(account.id);
 }
 
 void engine::download(const newsflash::account& account, const std::vector<newsflash::file>& files)
@@ -447,8 +445,6 @@ void engine::download(const newsflash::account& account, const std::vector<newsf
     }
 
     batches_.push_back(std::move(batch));
-
-    //start_next_task(account);
 }
 
 void engine::on_task_start(task_t* task, batch_t* batch)
@@ -601,11 +597,14 @@ void engine::on_task_action(task_t* task, batch_t*, task::action action)
 
 void engine::on_task_state(task_t* task, batch_t* batch, task::state current,  task::state next)
 {
-    LOG_D("Task state change ", task->state.id, " ", stringify(current), " => ", stringify(next));
+    LOG_D("Task ", task->state.id, " state change ", stringify(current), " => ", stringify(next));
+
 
     task->state.st = next;
 
     // todo: deal with batch shit
+
+    LOG_FLUSH();    
 }
 
 // c++11 lambdas do not support captures on movable types
@@ -899,6 +898,9 @@ void engine::on_conn_auth(conn_t* conn, std::string& user, std::string& pass)
 
 void engine::start_next_task(std::size_t account)
 {
+    if (stop_)
+        return;
+
     // starting at the top of the current task list look for the first
     // currently active task. if we have no active task, then it's time
     // to start the first queued task.
@@ -941,7 +943,7 @@ void engine::start_next_task(std::size_t account)
 
 }
 
-void engine::start_next_conn(std::size_t account)
+void engine::start_connections(std::size_t account)
 {
     const auto& acc = find_account(account);
 
@@ -996,7 +998,7 @@ void engine::start_next_conn(std::size_t account)
 
         foo->connect(logfile , host->host, host->port, ssl);
 
-        LOG_D("Connection ", id, " (", i, "/", acc.max_connections, ")");
+        LOG_D("Connection ", id, " (", i+1, "/", acc.max_connections, ")");
     }
 
 }

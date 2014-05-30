@@ -251,7 +251,7 @@ bool connection::thread_connect(thread_data* data)
         LOG_D("Using TCP");
     }
 
-    LOG_D("Beging connect...");
+    LOG_D("Begin connect...");
     data->sock->begin_connect(addr, data->port);
 
     auto connect  = data->sock->wait(true, false);
