@@ -1,9 +1,19 @@
 
+
 local python_files = [ glob-tree *.py ] ;
 
-install lib : $(python_files) : 
-  <variant>release:<location>$(PYTHON_RELEASE)/Lib 
-  <variant>debug:<location>$(PYTHON_DEBUG)/Lib 
-  : <install-source-root>Lib
+constant REL : $(NEWSFLASH_INSTALL_REL)"/Python-2.5.1/Lib" ;
+constant DBG : $(NEWSFLASH_INSTALL_DBG)"/Python-2.5.1/Lib" ;
+
+install lib : $(python_files) 
+: 
+  <variant>release:<location>$(REL)
+  <variant>debug:<location>$(DBG)
+: 
+  <install-source-root>.
 ;
 
+#for local f in $(python_files)
+#{
+#    echo $(f) ;
+#}

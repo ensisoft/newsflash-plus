@@ -458,7 +458,17 @@ install bin : python
 # does not accept a path but only works from the current directory.
 # hence installing the Lib is moved into a Jamfile inside Lib
 
-build-project Lib ;
+# Q"#¤%T"#"%&!"#¤& boost.build 
+# if bjam is invoked in *this* directory or in the Lib directory
+# installing the python modules in Lib (while preserving the hiearchy) with 
+# <install-source-root> rule works fine. 
+# HOWEVER, when build is done in the folder containining the toplevel Jamfile (newsflash/Jamfile)
+# it breaks! 
+#
+#.skipped <p/home/samiv/coding/newsflash/bin/debug/Python-2.5.1>python/Lib/plat-mac/lib-scriptpackages/CodeWarrior/Required.py for lack of /home/samiv/coding/newsflash/bin/debug/Python-2.5.1/python/Lib/plat-mac/lib-scriptpackages/CodeWarrior..."
+
+
+#build-project "./Lib" ;
 
 
 
