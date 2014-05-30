@@ -22,35 +22,40 @@
 
 #pragma once
 
-#include <newsflash/gui/sdk/plugin.h>
-#include <newsflash/warnpush.h>
-#  include <QString>
-#include <newsflash/warnpop.h>
+#include <newsflash/sdk/newsflash.h>
+#include <QObject>
 
-namespace womble
+namespace gui {
+    class MainWindow;
+}
+
+namespace app
 {
-    class plugin : public sdk::plugin
+    class settings;
+
+    // we need a class so that we can connect Qt signals
+    class mainapp : public QObject //, public sdk::newsflash
     {
+        Q_OBJECT
+
     public:
-        plugin(sdk::newsflash* host);
-       ~plugin();
-                
-        // generate request objects for womble RSS feeds
-        // in the given category
-        QList<sdk::request*> get_rss(sdk::mediatype media);
-        
-        // generate a request to download NZB from womble
-        sdk::request* get_nzb(const QString& id, const QString& url);
+        mainapp();
+       ~mainapp();
+       
+        int run(int argc, char* argv[]);
 
-        // get plugin name
-        QString name() const;
-        
-        QString host() const;
+        bool shutdown();
 
-        // get plugin features
-        sdk::bitflag_t features() const;
+    private slots:
+        void welcome_new_user();
+
     private:
-        sdk::newsflash* host_;
+        bool open(const QString& resouce);
+        bool open_help(const QString& page);
+
+    private:
+        app::settings* settings_;
+        gui::MainWindow* window_;
     };
 
-} // womble
+} // app

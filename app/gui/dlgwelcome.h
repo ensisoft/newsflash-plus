@@ -20,32 +20,56 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
+#pragma once
+
 #include <newsflash/config.h>
 
-#include <newsflash/keygen/keygen.h>
-#include <boost/version.hpp>
+#include <newsflash/app/config.h>
 
 #include <newsflash/warnpush.h>
-#  include <QLibrary>
-#  include <QEvent>
+#  include <QtGui/QDialog>
 #include <newsflash/warnpop.h>
-
-#include "sdk/extension.h"
-#include "sdk/plugin.h"
-#include "mainwindow.h"
-#include "ui_mainwindow.h"
+#include "ui_dlgwelcome.h"
 
 namespace gui
 {
-MainWindow::MainWindow(QWidget* parent) : 
-    QMainWindow(parent),
-    ui_(new Ui::MainWindow)
-{
-    ui_->setupUi(this);
-    
-}
+    class DlgWelcome : public QDialog
+    {
+        Q_OBJECT
 
-MainWindow::~MainWindow()
-{}
+    public:
+        DlgWelcome(QWidget* parent) : QDialog(parent)
+        {
+            ui_.setupUi(this);
+            auto txt = ui_.welcome->text();
+
+            txt.replace("#1", NEWSFLASH_TITLE);
+            txt.replace("#2", NEWSFLASH_VERSION);
+            ui_.welcome->setText(txt);
+        }
+       ~DlgWelcome()
+        {}
+
+        bool open_guide() const
+        {
+            return ui_.chkQuickStart->isChecked();
+        }
+
+    private slots:
+        void on_btnLater_clicked()
+        {
+            reject();
+        }
+        void on_btnYes_clicked()
+        {
+            accept();
+        }
+
+    private:
+        Ui::DlgWelcome ui_;
+
+    }; 
 
 } // gui
+
+

@@ -22,10 +22,10 @@
 
 #define PLUGIN_IMPL
 
-#include <newsflash/gui/sdk/newsflash.h>
-#include <newsflash/gui/sdk/rssrequest.h>
-#include <newsflash/gui/sdk/nzbrequest.h>
-#include <newsflash/gui/sdk/release.h>
+#include <newsflash/sdk/newsflash.h>
+#include <newsflash/sdk/rssrequest.h>
+#include <newsflash/sdk/nzbrequest.h>
+#include <newsflash/sdk/release.h>
 #include <rsslib/rss.h>
 #include <newsflash/warnpush.h>
 #  include <QtNetwork/QNetworkRequest>

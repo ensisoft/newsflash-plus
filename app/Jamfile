@@ -1,0 +1,46 @@
+
+project gui 
+: 
+  requirements
+
+  <library>/qt//QtCore
+  <library>/qt//QtGui
+  <library>/qt//QtXml
+  <library>/qt//QtNetwork  
+  <library>/newsflash//qjson
+  <library>/python//python25
+
+  # for promoted widgets since we're building using *this* jamfile
+  <include>gui/
+;
+
+exe newsflash 
+:
+  main.cpp
+  mainapp.h
+  mainapp.cpp
+  foobar.h
+  utility.cpp
+  settings.h
+  settings.cpp
+  eventlog.h
+  eventlog.cpp
+  qtsingleapplication/qtsingleapplication.h
+  qtsingleapplication/qtsingleapplication.cpp
+  qtsingleapplication/qtlocalpeer.h
+  qtsingleapplication/qtlocalpeer.cpp
+
+
+  gui/mainwindow.ui
+  gui/mainwindow.h
+  gui/mainwindow.cpp
+  gui/tinygraph.h
+  gui/tinygraph.cpp
+  gui/resource.qrc
+  gui/dlgwelcome.h
+  gui/dlgwelcome.ui
+;
+
+build-project "unit_test" ;
+
+build-project "plugins/womble" ;

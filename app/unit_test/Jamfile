@@ -1,0 +1,9 @@
+
+unit-test unit_test_settings 
+: 
+  unit_test.h    
+
+  unit_test_settings.cpp
+  ../settings.h
+  ../settings.cpp
+;

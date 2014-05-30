@@ -25,31 +25,39 @@
 #include <newsflash/warnpush.h>
 #  include <QtGui/QMainWindow>
 #include <newsflash/warnpop.h>
-
 #include <memory>
-
-#include "sdk/newsflash.h"
-
-namespace Ui
-{
-    class MainWindow;
-}
+#include "ui_mainwindow.h"
 
 class QIcon;
+class QCloseEvent;
+
+namespace app {
+    class settings;
+    class mainapp;
+}
 
 namespace gui
 {
     class MainWindow : public QMainWindow
-                       //public sdk::newsflash
     {
         Q_OBJECT
 
     public:
-        MainWindow(QWidget* parent = 0);
+        MainWindow(app::mainapp& app);
        ~MainWindow();
 
-    private:
-        std::unique_ptr<Ui::MainWindow> ui_;
+        void apply(const app::settings& settings);
+        void persist(app::settings& settings);
 
+    private:
+        void closeEvent(QCloseEvent* event);
+
+    private slots:
+        //void welcome_new_user();
+
+    private:
+        Ui::MainWindow ui_;
+        app::mainapp& app_;
     };
+
 } // gui
