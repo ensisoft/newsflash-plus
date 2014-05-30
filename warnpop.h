@@ -22,6 +22,8 @@
 
 #include "config.h"
 
-#ifdef __CLANG__
-  #pragma clang diagnostic pop
+#if defined(__CLANG__)
+#  pragma clang diagnostic pop
+#elif defined(__GCC__)
+#  pragma GCC diagnostic pop
 #endif

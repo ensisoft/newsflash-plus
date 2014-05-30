@@ -22,8 +22,13 @@
 
 #include "config.h"
 
-#ifdef __CLANG__
-  #pragma clang diagnostic push
-  #pragma clang diagnostic ignored "-Wdeprecated-register"
-  #pragma clang diagnostic ignored "-Wuninitialized"
+#if defined(__CLANG__)
+  // for Qt
+#  pragma clang diagnostic push
+#  pragma clang diagnostic ignored "-Wdeprecated-register"
+#  pragma clang diagnostic ignored "-Wuninitialized"
+#elif defined(__GCC__)
+  // for boost
+#  pragma GCC diagnostic push 
+#  pragma GCC diagnostic ignored "-Wunused-local-typedefs"
 #endif

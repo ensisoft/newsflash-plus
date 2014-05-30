@@ -14,21 +14,65 @@ A C++11 compliant compiler is required.
 Description of Modules
 -------------------------
 
-gui
-    o application user interface. 
-    o uses the app module for doing work.
+app/ 
+    - newsflash application
 
-app
-    o application specific downloader engine. 
-    o provides the core application functionality.
+app/lib
+    - somewhat generic application helper code for example 
+      logging, settings etc.
 
-engine
-    o generic usenet downloader engine. 
-    o manages lists of tasks and connections to servers.
+app/gui
+    - newsflash gui code
 
 corelib
-    o a bunch foundation classes for the engine.
+   - low level engine implementation classes for sockets, file systems, usenet data baseses etc.
 
+engine
+   - generic downloader engine. provides a high level api to download data from the usenet.
+
+keygen
+    - newsflash keygen code
+
+launcher 
+    - a tool to help launch external processes and marshall kill indication back to the initial caller
+
+media
+    - media files 
+
+msglib
+    - simple message and message queue library
+
+nzblib
+    - NZB file format library
+
+par2cmdline
+    - 3rd party par2 parity repair command line tool
+
+pylib
+    - Qt python interface to execute python scripts
+
+qjson
+    - 3rd party Qt json library
+
+rsslib
+    - simple RSS library
+
+
+sdk
+    - newsflash extension/plugin interfaces
+
+
+stringlib
+    - boyer-moore fast string search implementation
+
+testlib
+    - unit test utility
+
+unrar
+    - 3rd party .rar archive extractor application
+
+zlib
+    - zlib compression library
 
 Building for Linux
 -------------------------
@@ -113,6 +157,16 @@ http://www.rarlab.com/rar_add.htm
 
         $ make
          
+qjson
+=======================
+Qt JSON library 0.8.1
+http://qjson.sourceforge.net/
+https://github.com/flavio/qjson
+
+
+    $ cmake -G "Unix Makefiles"
+    $ make
+
 
 Zlib
 ========================
