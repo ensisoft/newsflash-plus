@@ -24,7 +24,11 @@
 
 #pragma once
 
-#include <boost/spirit/include/classic.hpp>
+#include <newsflash/config.h>
+
+#include <newsflash/warnpush.h>
+#  include <boost/spirit/include/classic.hpp>
+#include <newsflash/warnpop.h>
 #include <string>
 #include <iterator>
 

@@ -22,7 +22,11 @@
 
 #pragma once
 
-#include <boost/algorithm/string/trim.hpp>
+#include <newsflash/config.h>
+
+#include <newsflash/warnpush.h>
+#  include <boost/algorithm/string/trim.hpp>
+#include <newsflash/warnpop.h>
 #include <sstream>
 #include <string>
 #include <iomanip>

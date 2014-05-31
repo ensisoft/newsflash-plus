@@ -22,6 +22,9 @@
 
 #include "config.h"
 
+// note that GCC and clang don't give the same warnings, hence
+// the suppressions are different
+
 #if defined(__CLANG__)
   // for Qt
 #  pragma clang diagnostic push
@@ -31,4 +34,5 @@
   // for boost
 #  pragma GCC diagnostic push 
 #  pragma GCC diagnostic ignored "-Wunused-local-typedefs"
+#  pragma GCC diagnostic ignored "-Wlong-long"
 #endif

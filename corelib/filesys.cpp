@@ -22,8 +22,10 @@
 
 #include <newsflash/config.h>
 
-#include <boost/filesystem/path.hpp>
-#include <boost/filesystem/operations.hpp>
+#include <newsflash/warnpush.h>
+#  include <boost/filesystem/path.hpp>
+#  include <boost/filesystem/operations.hpp>
+#include <newsflash/warnpop.h>
 #include <sstream>
 #include <algorithm>
 #include "filesys.h"

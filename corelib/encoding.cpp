@@ -20,7 +20,10 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-#include <boost/regex.hpp>
+#include <newsflash/config.h>
+#include <newsflash/warnpush.h>
+#  include <boost/regex.hpp>
+#include <newsflash/warnpop.h>
 #include "encoding.h"
 
 namespace corelib

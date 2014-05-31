@@ -20,7 +20,7 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.            
 
-#include <newsflash/workaround.h>
+#include <newsflash/config.h>
 
 #include <corelib/connection.h>
 #include <corelib/threadpool.h>

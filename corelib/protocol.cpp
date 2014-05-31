@@ -20,23 +20,24 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-//#include <newsflash/config.h>
-
-#include <boost/algorithm/string/case_conv.hpp>
+#include <newsflash/config.h>
+#include <newsflash/warnpush.h>
+#  include <boost/algorithm/string/case_conv.hpp>
+#  include "nntp/cmd_enable_compress_gzip.h"
+#  include "nntp/cmd_auth_user.h"
+#  include "nntp/cmd_auth_pass.h"
+#  include "nntp/cmd_capabilities.h"
+#  include "nntp/cmd_welcome.h"
+#  include "nntp/cmd_mode_reader.h"
+#  include "nntp/cmd_group.h"
+#  include "nntp/cmd_quit.h"
+#  include "nntp/cmd_body.h"
+#  include "nntp/cmd_xzver.h"
+#  include "nntp/cmd_xover.h"
+#  include "nntp/cmd_list.h"
+#  include "nntp/nntp.h"
+#include <newsflash/warnpop.h>
 #include <string>
-#include "nntp/cmd_enable_compress_gzip.h"
-#include "nntp/cmd_auth_user.h"
-#include "nntp/cmd_auth_pass.h"
-#include "nntp/cmd_capabilities.h"
-#include "nntp/cmd_welcome.h"
-#include "nntp/cmd_mode_reader.h"
-#include "nntp/cmd_group.h"
-#include "nntp/cmd_quit.h"
-#include "nntp/cmd_body.h"
-#include "nntp/cmd_xzver.h"
-#include "nntp/cmd_xover.h"
-#include "nntp/cmd_list.h"
-#include "nntp/nntp.h"
 #include "protocol.h"
 #include "buffer.h"
 

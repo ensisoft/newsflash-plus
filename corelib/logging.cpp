@@ -20,7 +20,11 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-#include <boost/thread/tss.hpp>
+#include <newsflash/config.h>
+
+#include <newsflash/warnpush.h>
+#  include <boost/thread/tss.hpp>
+#include <newsflash/warnpop.h>
 #include <iostream>
 #include <fstream>
 #include <iomanip>

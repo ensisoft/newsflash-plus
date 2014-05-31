@@ -28,18 +28,18 @@
         [
             "-std=c++11",
             "-DSUBLIME_CLANG_WORKAROUNDS",
-            "-I/home/samiv/coding/",
-            "-I/home/samiv/coding/newsflash",
-            "-I/home/samiv/coding/newsflash/app/",            
-            "-I/home/samiv/coding/newsflash/app/gui",                        
-            "-I/home/samiv/coding/newsflash/python/Include",
-            "-I/home/samiv/coding/newsflash/qjson/include",            
-            "-I/home/samiv/coding/boost_1_51_0",
-            "-I/home/samiv/coding/qt-4.8.2/include",
-            "-I/home/samiv/coding/qt-4.8.2/include/QtCore",
+            "-I${home}/coding",
+            "-I${home}/coding/newsflash",
+            "-I${home}/coding/newsflash/app/",            
+            "-I${home}/coding/newsflash/app/gui",                        
+            "-I${home}/coding/newsflash/python/Include",
+            "-I${home}/coding/newsflash/qjson/include",            
+            "-I${home}/coding/boost_1_51_0",
+            "-I${home}/coding/qt-4.8.2/include",
+            "-I${home}/coding/qt-4.8.2/include/QtCore",
 
             // for MOC
-            "-I/home/samiv/coding/newsflash/app/bin/gcc-4.9.0/debug/threading-multi/"
+            "-I${home}/coding/newsflash/app/bin/gcc-4.9.0/debug/threading-multi/"
         ]
     }
 }

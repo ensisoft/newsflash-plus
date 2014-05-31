@@ -22,7 +22,10 @@
 
 #pragma once
 
-#include <boost/crc.hpp>
+#include <newsflash/config.h>
+#include <newsflash/warnpush.h>
+#  include <boost/crc.hpp>
+#include <newsflash/warnpop.h>
 #include <string>
 #include "decoder.h"
 
