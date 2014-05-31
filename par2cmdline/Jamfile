@@ -1,0 +1,6 @@
+
+install media : par2 LICENSE_PAR2.txt
+: 
+   <variant>debug:<location>$(NEWSFLASH_INSTALL_DBG)"/tools"
+   <variant>release:<location>$(NEWSFLASH_INSTALL_REL)"/tools"
+;
