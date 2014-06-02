@@ -695,6 +695,8 @@
    Include/unicodeobject.h). */
 /* #undef HAVE_USABLE_WCHAR_T */
 
+#define HAVE_USABLE_WCHAR_T
+
 /* Define to 1 if you have the `utimes' function. */
 #define HAVE_UTIMES 1
 
@@ -765,7 +767,7 @@
 /* #undef PY_FORMAT_SIZE_T */
 
 /* Define as the integral type used for Unicode representation. */
-#define PY_UNICODE_TYPE unsigned short
+#define PY_UNICODE_TYPE wchar_t 
 
 /* Define if you want to build an interpreter with many run-time checks. */
 /* #undef Py_DEBUG */
@@ -774,7 +776,7 @@
 /* #undef Py_ENABLE_SHARED */
 
 /* Define as the size of the unicode type. */
-#define Py_UNICODE_SIZE 2
+#define Py_UNICODE_SIZE 4
 
 /* Define if you want to have a Unicode type. */
 #define Py_USING_UNICODE 1

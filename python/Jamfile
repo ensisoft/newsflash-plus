@@ -40,6 +40,13 @@ project python
       <os>LINUX:<include>linux/
       <os>LINUX:<define>PY_LINUX 
       <os>LINUX:<library>/python//pthread/<link>shared
+	  <toolset>gcc:<cflags>-fno-strict-aliasing          # foobar
+
+# Py_DEBUG breaks shit, for example PyString_Check returns false
+# even though the type *is* a String. (wtf??) 
+# smells like bugs in shitty Python implementation
+#	  <variant>debug:<define>Py_DEBUG
+#	  <variant>debug:<define>Py_TRACE_REFS
 
       # the python codebase produces a lot of warnings
       # but since this code is not mine and i'm just going
@@ -156,7 +163,7 @@ if [ os.name ] = LINUX
         getpath.c        
     : 
        <define>Py_BUILD_CORE 
-       #<link>static 
+       <link>static 
        <include>linux 
     ;
 
@@ -235,6 +242,7 @@ if [ os.name ] = NT
     ;
     
     exe python : Modules/python.c python25 ; 
+
 }
 
 
@@ -322,11 +330,13 @@ pymod pyexpat : pyexpat.c expat/xmlparse.c expat/xmlrole.c expat/xmltok.c ;
 # duplicate target on windows.
 #pymod _elementtree    : _elementtree.c expat/xmlparse.c expat/xmlrole.c expat/xmltok.c ;                               
 
+
 pymod _md5            : md5module.c md5.c ;                             #
 pymod _testcapi       : _testcapimodule.c ;                             # Python interpreter C API test
 pymod unicodedata     : unicodedata.c ;                                 # 
 pymod fpectl          : fpectlmodule.c ;                                # Floating point exception control
 pymod _multibytecodec : cjkcodecs/multibytecodec.c ;                    #
+
 
 # This is the IMDbPy C module.
 pymod cutils : cutils.c ;
@@ -368,7 +378,7 @@ if [ os.name ] = LINUX
     pymod collections   : collectionsmodule.c ;                         #
     pymod itertools     : itertoolsmodule.c ;                           #
     pymod _random       : _randommodule.c ;                             #
-    #pymod time          : timemodule.c ;                                #
+    pymod time          : timemodule.c ;                                #
     pymod datetime      : datetimemodule.c ;                            #
     pymod strop         : stropmodule.c ;                               #
     pymod math          : mathmodule.c  ;                               #
