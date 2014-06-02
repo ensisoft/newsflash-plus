@@ -28,23 +28,22 @@
 namespace app
 {
 
-eventlog::eventlog() : events_(200), app_(nullptr)
+eventlog::eventlog() : events_(200)
 {}
 
 eventlog::~eventlog()
-{
-    if (app_)
-        app_->removeEventFilter(this);
-}
+{}
 
-void eventlog::make_global(QCoreApplication* app)
+void eventlog::hook(QCoreApplication& app)
 {
-    Q_ASSERT(!app_);
-
     // enable this eventlog as the "global" event log so that
     // it works with the logging macros
-    app->installEventFilter(this);
-    app_ = app;
+    app.installEventFilter(this);
+}
+
+void eventlog::unhook(QCoreApplication& app)
+{
+    app.removeEventFilter(this);
 }
 
 void eventlog::write(event_t type, const QString& msg, const QString& ctx)

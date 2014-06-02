@@ -192,7 +192,7 @@ int mainapp::run(int argc, char* argv[])
         return 0;            
     }
 
-    events.make_global(&qtinstance);
+    events.hook(qtinstance);
 
     const auto path = app::get_installation_directory();    
 
@@ -223,8 +223,10 @@ int mainapp::run(int argc, char* argv[])
     settings_ = &settings;
     window_   = &window;
 
-    return qtinstance.exec();
+    const int ret = qtinstance.exec();
 
+    events.unhook(qtinstance);
+    return ret;
 }
 
 bool mainapp::shutdown()

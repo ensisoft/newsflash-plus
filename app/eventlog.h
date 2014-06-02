@@ -54,7 +54,8 @@ namespace app
         eventlog();
        ~eventlog();
 
-        void make_global(QCoreApplication* app);
+        void hook(QCoreApplication& app);
+        void unhook(QCoreApplication& app);
 
         void write(event_t type, const QString& msg, const QString& ctx);
 
@@ -107,8 +108,6 @@ namespace app
 
     private:
         boost::circular_buffer<event> events_;
-
-        QCoreApplication* app_;
     };
 
 
