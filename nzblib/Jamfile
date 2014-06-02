@@ -1,17 +1,13 @@
 
-import qt ;
-
-using qt : $(QT_PATH) ;
-
 project nzb
 : 
   requirements
-  <library>/qt//QtCore/<link>shared
-  <library>/qt//QtXml/<link>shared
+  <library>/qt//QtCore
+  <library>/qt//QtXml
 :
   usage-requirements
-  <library>/qt//QtCore/<link>shared
-  <library>/qt//QtXml/<link>shared
+  <library>/qt//QtCore
+  <library>/qt//QtXml
 ;
 
 lib nzb : parser.h parser.cpp ;

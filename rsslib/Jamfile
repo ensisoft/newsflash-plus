@@ -1,14 +1,11 @@
-import qt ;
-
-using qt : $(QT_PATH) ;
 
 project rss
 : 
   requirements
-  <library>/qt//QtCore/<link>shared
+  <library>/qt//QtCore/
 :
   usage-requirements
-  <library>/qt//QtCore/<link>shared
+  <library>/qt//QtCore/
 ;
 
 lib rss : rss.cpp ;

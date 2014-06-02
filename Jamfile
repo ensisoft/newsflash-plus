@@ -39,14 +39,16 @@ path-constant PLUGIN_RELEASE : "bin/debug/plugins" ;
 
 using qt : $(QT_PATH) ;
 
+# bring stuff into scope so that it's usable in subprojects
+
 use-project /boost/ : $(BOOST_PATH) ;
 use-project zlib    : "zlib" ;
 use-project corelib : "corelib" ;
 use-project engine  : "engine" ;
 use-project python  : "python" ;
-
-#use-project rss     : ./rsslib ;
-#use-project nzb     : ./nzblib ;
+use-project rss     : "rsslib" ;
+use-project nzb     : "nzblib" ;
+use-project msglib  : "msglib" ;
 
 
 # note that we don't set the C++11 flag here cause then it would cascade down to
@@ -91,7 +93,7 @@ if [ os.name ] = LINUX
 lib qjson : : <name>qjson <search>"qjson/lib/" ;
 
 build-project "app" ;
-build-project "python" ;
+#build-project "python" ;
 build-project "media" ;
 build-project "unrar" ;
 build-project "par2cmdline" ;
