@@ -95,32 +95,6 @@ void settings::save(QIODevice& io, settings::format format) const
     }
 }
 
-QVariant settings::get(const char* context, const char* name) const
-{
-    const QVariantMap& map = values_[context].toMap();
-    if (map.isEmpty())
-        return QVariant();
-
-    const QVariant& value = map[name];
-    return value;
-}
-
-QVariant settings::get(const char* context, const char* name, const QVariant& defval) const
-{
-    auto value = get(context, name);
-    if (value.isNull())
-        return defval;
-
-    return value;
-}
-
-void settings::set(const char* context, const char* name, const QVariant& value)
-{
-    QVariantMap map = values_[context].toMap();
-    map[name] = value;
-    values_[context] = map;
-}
-
 void settings::clear()
 {
     values_.clear();
@@ -134,6 +108,26 @@ bool settings::contains(const char* context, const char* name) const
 
     return true;
 }
+
+QVariant settings::get(const QString& key, const QString& attr, const QVariant& defval) const
+{
+    const QVariantMap& map = values_[key].toMap();
+    if (map.isEmpty())
+        return defval;
+
+    const QVariant& value = map[attr];
+    return value;
+}
+
+void settings::set(const QString& key, const QString& attr, const QVariant& value)
+{
+    QVariantMap map = values_[key].toMap();
+    map[attr] = value;
+    values_[key] = map;
+}
+
+
+
 
 } // app
 

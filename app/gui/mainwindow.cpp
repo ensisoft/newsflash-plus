@@ -44,33 +44,29 @@ namespace gui
 
 MainWindow::MainWindow(app::mainapp& app) : QMainWindow(nullptr), app_(app)
 {
+    TinyGraph::colors greenish = {};
+    greenish.fill    = QColor(47, 117, 29, 150);
+    greenish.grad1   = QColor(232, 232, 232);
+    greenish.grad2   = QColor(200, 200, 200);
+    greenish.outline = QColor(97, 212, 55);
+
     ui_.setupUi(this);
+
+    // set the color scheme for the network monitor
+    ui_.netGraph->set_colors(greenish);
+
+    // the designer wont let remove the single tab    
+    ui_.mainTab->removeTab(0); 
+
+    // put the various little widgets in their correct places
+    ui_.statusBar->insertPermanentWidget(0, ui_.frmProgress);
+    ui_.statusBar->insertPermanentWidget(1, ui_.frmFreeSpace);
+    ui_.statusBar->insertPermanentWidget(2, ui_.frmDiskWrite);
+    ui_.statusBar->insertPermanentWidget(3, ui_.frmGraph);
+    ui_.statusBar->insertPermanentWidget(4, ui_.frmKbs);    
 
     setWindowTitle(NEWSFLASH_TITLE);
 
-    // const auto width  = app.setting("window_width", 1200);
-    // const auto height = app.setting("window_height", 800);
-    // DEBUG(str("Mainwindow dimensions _1 x _2", width, height));    
-
-    // resize(width, height);
-
-    // const auto xpos = app.setting("window_xpos", 0);
-    // const auto ypos = app.setting("window_ypos", 0);
-    // DEBUG(str("Mainwindow position _1, _2", xpos, ypos));    
-    // if (xpos && ypos)
-    //     move(xpos, ypos);
-
-    // const bool show_toolbar   = app.setting("window_show_toolbar", true);
-    // const auto show_statusbar = app.setting("window_show_statusbar", true);
-
-    // ui_.statusBar->setVisible(show_statusbar);
-    // ui_.mainToolBar->setVisible(show_toolbar);
-    // ui_.actionViewToolbar->setChecked(show_toolbar);
-    // ui_.actionViewStatusbar->setChecked(show_statusbar);
-    // ui_.mainTab->removeTab(0);
-
-    // if (app.is_first_launch())
-    //     QTimer::singleShot(500, this, SLOT(welcome_new_user()));
 }
 
 MainWindow::~MainWindow()

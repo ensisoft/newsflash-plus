@@ -36,6 +36,7 @@
 
 #include "qtsingleapplication/qtsingleapplication.h"
 #include "gui/mainwindow.h"
+#include "gui/accounts.h"
 #include "gui/dlgwelcome.h"
 #include "mainapp.h"
 #include "eventlog.h"
@@ -175,11 +176,10 @@ int mainapp::run(int argc, char* argv[])
         {
             QStyle* style = QApplication::setStyle(name);
             if (style)
-                QApplication::setPalette(
-                    style->standardPalette());
+                QApplication::setPalette(style->standardPalette());
+
             events.write(eventlog::event_t::debug,
-                str("Selected style '_1'", name),
-                "default");
+                str("Selected style '_1'", name), "default");
         }
     }
 
@@ -207,16 +207,13 @@ int mainapp::run(int argc, char* argv[])
     window.apply(settings);
     if (first_launch)
     {
-        QTimer::singleShot(500,
-            this, SLOT(welcome_new_user()));
+        QTimer::singleShot(500, this, SLOT(welcome_new_user()));
 
 #if defined(LINUX_OS)
         // todo: try to figure out what kind of distro is in question
         settings.set("settings", "open_cmd", "gnome-open");
         settings.set("settings", "shutdown_cmd", "gnome-session-quit --power-off --no-prompt");
 #endif
-
-
 
     }
 
@@ -292,7 +289,6 @@ bool mainapp::open_help(const QString& page)
     return open(QDir::toNativeSeparators(
         app::get_installation_directory() + "/help" + page));
 }
-
 
 
 } // app

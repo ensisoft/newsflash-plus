@@ -31,14 +31,11 @@ exe newsflash
   qtsingleapplication/qtlocalpeer.cpp
 
 
-  gui/mainwindow.ui
-  gui/mainwindow.h
-  gui/mainwindow.cpp
-  gui/tinygraph.h
-  gui/tinygraph.cpp
+  [ glob gui/*.ui  ]
+  [ glob gui/*.h   ]
+  [ glob gui/*.cpp ]
+
   gui/resource.qrc
-  gui/dlgwelcome.h
-  gui/dlgwelcome.ui
 ;
 
 build-project "unit_test" ;

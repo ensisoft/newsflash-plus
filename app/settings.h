@@ -53,37 +53,36 @@ namespace app
         // io must be already opened.
         void save(QIODevice& io, settings::format format = format::json) const;
 
-        // get a value identified by the context/name key pair.
-        // returns a null variant if no such value exists.
-        QVariant get(const char* context, const char* name) const;
-        QVariant get(const char* context, const char* name, const QVariant& defval) const;
-
-        void set(const char* context, const char* name, const QVariant& value);
-
+        // clear all values
         void clear();
-
-        // convenience accessor
-        template<typename T>
-        T get(const char* context, const char* name, const T& defval) const
-        {
-            auto var = get(context, name);
-            if (var.isValid())
-                return var.value<T>();
-            return defval;
-        }
-
-        QString get(const char* context, const char* name, const char* defval) const
-        {
-            auto var = get(context, name);
-            if (var.isValid())
-                return var.toString();
-            return QString(defval);
-        }
-
 
         // returns true if a value identifief by context/name key
         // exists in the settings. otherwise returns false.
         bool contains(const char* context, const char* name) const;
+
+        // set the value for the named attribute under the specified key
+        void set(const QString& key, const QString& attr, const QVariant& value);
+
+        // get the value under the named attribute in the specified key
+        QVariant get(const QString& key, const QString& attr, const QVariant& defval = QVariant()) const;
+
+        // convenience accessor
+        template<typename T>
+        T get(const QString& key, const QString& attr, const T& defval) const
+        {
+            const auto& var = get(key, attr);
+            if (var.isValid())
+                return qvariant_cast<T>(var);
+            return qvariant_cast<T>(defval);
+        }
+
+        QString get(const QString& key, const QString& attr, const char* str) const
+        {
+            const auto& var = get(key, attr);
+            if (var.isValid())
+                return qvariant_cast<QString>(var);
+            return QString(str);
+        }
 
     private:
         QVariantMap values_;
