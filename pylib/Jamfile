@@ -1,0 +1,19 @@
+
+
+project pylib 
+: 
+  requirements
+  <library>/python//python25 
+: 
+  usage-requirements
+  <library>/python//python25  
+;
+
+lib py 
+: 
+  [ glob *.cpp ]
+:
+  <link>static
+;
+
+build-project "unit_test" ;
