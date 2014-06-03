@@ -114,5 +114,13 @@ void Eventlog::on_listLog_customContextMenuRequested(QPoint pos)
     menu.exec(QCursor::pos());
 }
 
+sdk::uicomponent::info Eventlog::get_info() const 
+{
+    const static sdk::uicomponent::info info {
+        "eventlog.html", false
+    };
+    return info;
+}
+
 } // gui
 

@@ -57,7 +57,8 @@ namespace gui
 
         using QMainWindow::show;
 
-        void compose(sdk::uicomponent* ui);
+        void attach(sdk::uicomponent* ui);
+        void detach(sdk::uicomponent* ui);
         void show(sdk::uicomponent* ui);
         void hide(sdk::uicomponent* ui);        
         void focus(sdk::uicomponent* ui);
@@ -69,6 +70,10 @@ namespace gui
     private slots:
         void on_mainTab_currentChanged(int index);
         void on_mainTab_tabCloseRequested(int index);
+        void on_actionContextHelp_triggered();
+
+    private slots:
+        void show_tab();
 
     private:
         Ui::MainWindow ui_;

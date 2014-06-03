@@ -134,13 +134,15 @@ int mainapp::run(int argc, char* argv[])
         &gui_events,
     };
 
-    compose_views();
+    attach_views();
 
     gui_window.configure(valuestore);
     gui_window.show();
 
     // enter event lop
     qtinstance.exec();
+
+    detach_views();
 
     events.unhook(qtinstance);
     return 0;
@@ -263,6 +265,8 @@ bool mainapp::open(const QString& resource)
 
 bool mainapp::open_help(const QString& page)
 {
+    DEBUG(str("Opening help _1", page));
+
     return open(QDir::toNativeSeparators(
         app::get_installation_directory() + "/help" + page));
 }
@@ -358,11 +362,11 @@ bool mainapp::save_valuestore()
     return true;
 }
 
-void mainapp::compose_views()
+void mainapp::attach_views()
 {
     for (auto& ui : views_)
     {
-        gui_window_->compose(ui);
+        gui_window_->attach(ui);
         const auto& key  = ui->windowTitle();
         const auto& info = ui->get_info();
         const bool show  = valuestore_->get("visible_tabs", key, info.visible_by_default);
@@ -371,6 +375,14 @@ void mainapp::compose_views()
             gui_window_->show(ui);            
         }
         DEBUG(str("_1 is visible _2", key, show));
+    }
+}
+
+void mainapp::detach_views()
+{
+    for (auto& ui : views_)
+    {
+        gui_window_->detach(ui);
     }
 }
 

@@ -36,6 +36,11 @@ namespace gui
         Accounts(app::accounts& accounts);
        ~Accounts();
 
+        void add_actions(QMenu& menu);
+        void add_actions(QToolBar& bar);
+
+        sdk::uicomponent::info get_info() const;
+
     private:
         Ui::Accounts ui_;
 

@@ -66,16 +66,58 @@ Accounts::Accounts(app::accounts& accounts) : accounts_(accounts)
 Accounts::~Accounts()
 {}
 
-// void Accounts::add_actions(QMenu& menu)
-// {}
+void Accounts::add_actions(QMenu& menu)
+{
+    menu.addAction(ui_.actionServerAdd);
+    menu.addAction(ui_.actionServerDelete);
+    menu.addSeparator();
+    menu.addAction(ui_.actionServerSortGroups);
+    menu.addAction(ui_.actionServerDownloadList);
+    menu.addAction(ui_.actionGroupAdd);
+    menu.addAction(ui_.actionGroupAddByName);
+    menu.addSeparator();
+    menu.addAction(ui_.actionGroupUpdate);
+    menu.addAction(ui_.actionGroupUpdateWO);
+    menu.addSeparator();
+    menu.addAction(ui_.actionGroupOpen);
+    menu.addSeparator();
+    menu.addAction(ui_.actionGroupDelete);
+    menu.addSeparator();
+    menu.addAction(ui_.actionGroupEraseContent);
+    menu.addSeparator();
+    menu.addAction(ui_.actionGroupPurgeContent);
 
-// void Accounts::add_actions(QToolBar& bar)
-// {}
+}
+
+void Accounts::add_actions(QToolBar& bar)
+{
+    bar.addAction(ui_.actionServerAdd);
+    bar.addAction(ui_.actionServerDelete);
+    bar.addSeparator();
+    bar.addAction(ui_.actionServerSortGroups);
+    bar.addAction(ui_.actionGroupAdd);
+    bar.addSeparator();
+    bar.addAction(ui_.actionGroupUpdate);
+    bar.addAction(ui_.actionGroupOpen);
+    bar.addSeparator();
+    bar.addAction(ui_.actionGroupDelete);
+    bar.addAction(ui_.actionGroupEraseContent);
+    bar.addAction(ui_.actionGroupPurgeContent);
+}
+
 
 // void Accounts::activate(QWidget*)
 // {}
 
 // void Accounts::deactivate()
 // {}
+
+sdk::uicomponent::info Accounts::get_info() const
+{
+    const static sdk::uicomponent::info info {
+        "accounts.html", true
+    };
+    return info;
+}
 
 } // gui

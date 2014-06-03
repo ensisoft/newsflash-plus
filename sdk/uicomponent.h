@@ -62,7 +62,7 @@ namespace sdk
         virtual void deactivate() {}
 
         // Get static component configuration information.
-        virtual info get_info() const {}
+        virtual info get_info() const { return info {"", false}; }
     private:
     };
     

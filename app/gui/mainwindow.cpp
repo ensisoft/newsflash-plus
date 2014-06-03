@@ -44,7 +44,7 @@ using app::str;
 namespace gui
 {
 
-MainWindow::MainWindow(app::mainapp& app) : QMainWindow(nullptr), app_(app)
+MainWindow::MainWindow(app::mainapp& app) : QMainWindow(nullptr), app_(app), current_(nullptr)
 {
     TinyGraph::colors greenish = {};
     greenish.fill    = QColor(47, 117, 29, 150);
@@ -110,12 +110,42 @@ void MainWindow::persist(app::valuestore& values)
         ui_.statusBar->isVisible());
 }
 
-void MainWindow::compose(sdk::uicomponent* ui)
+void MainWindow::attach(sdk::uicomponent* ui)
 {
     Q_ASSERT(std::find(std::begin(tabs_),
         std::end(tabs_), ui) == std::end(tabs_));
 
+    const auto index = tabs_.size();
     tabs_.append(ui);
+
+    const auto& text = ui->windowTitle();
+    const auto& icon = ui->windowIcon();
+
+    QAction* action = ui_.menuView->addAction(text);
+    action->setCheckable(true);
+    //action->setIcon(icon);
+    action->setChecked(false);
+    action->setProperty("tab-index", index);
+    QObject::connect(action, SIGNAL(triggered()), 
+        this, SLOT(show_tab()));
+}
+
+void MainWindow::detach(sdk::uicomponent* ui)
+{
+    Q_ASSERT(std::find(std::begin(tabs_),
+        std::end(tabs_), ui) != std::end(tabs_));
+
+    if (current_ == ui)
+        current_ = nullptr;
+
+    int index = tabs_.indexOf(ui);
+    tabs_.removeAt(index);
+
+    index = ui_.mainTab->indexOf(ui);
+    if (index != -1)
+    {
+        ui_.mainTab->removeTab(index);
+    }
 }
 
 void MainWindow::show(sdk::uicomponent* ui)
@@ -179,11 +209,67 @@ void MainWindow::closeEvent(QCloseEvent* event)
 void MainWindow::on_mainTab_currentChanged(int index)
 {
     DEBUG(str("Current tab _1", index));
+
+    sdk::uicomponent* tab = nullptr;
+    if (index != -1)
+        tab = static_cast<sdk::uicomponent*>(ui_.mainTab->widget(index));
+
+    ui_.mainToolBar->clear();
+    ui_.menuEdit->clear();
+
+    if (current_)
+        current_->deactivate();
+
+    if (tab)
+    { 
+        tab->activate(ui_.mainTab);
+        tab->add_actions(*ui_.mainToolBar);
+        tab->add_actions(*ui_.menuEdit);
+
+        auto title = tab->windowTitle();
+        auto space = title.indexOf(" ");
+        if (space != -1)
+            title.resize(space);
+
+        ui_.menuEdit->setTitle(title);
+        current_ = tab;
+    }
+
+    // add the stuff that is always in the edit menu
+    ui_.mainToolBar->addSeparator();
+    ui_.mainToolBar->addAction(ui_.actionContextHelp);
 }
 
 void MainWindow::on_mainTab_tabCloseRequested(int index)
 {
     DEBUG(str("Close tab _1", index));
+}
+
+void MainWindow::on_actionContextHelp_triggered()
+{
+    if (!current_)
+        return;
+
+    const auto& info = current_->get_info();
+    app_.open_help(info.helpurl);
+}
+
+void MainWindow::show_tab()
+{
+    const auto* action = static_cast<QAction*>(sender());
+
+    const auto index = action->property("tab-index").toInt();
+
+    auto* tab = tabs_[index];
+    if (action->isChecked()) 
+    {
+        show(tab);
+        focus(tab);
+    }
+    else 
+    {
+        hide(tab);
+    }
 }
 
 } // gui

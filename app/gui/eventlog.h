@@ -43,6 +43,8 @@ namespace gui
         //void get_info(ext::uicomponent_info& info) const;
         //void write_log(logtype type, const QString& context, const QString& msg);
 
+        sdk::uicomponent::info get_info() const;
+
     private slots:
         void on_actionClearLog_triggered();
         void on_listLog_customContextMenuRequested(QPoint pos);

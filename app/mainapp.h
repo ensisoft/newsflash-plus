@@ -58,23 +58,35 @@ namespace app
 
         bool shutdown();
 
+        // open a generic resource using system's
+        // "open" command. typically such a command
+        // inspects whatever tool/file association
+        // is available in the system and then selects an
+        // appropriate application for opening the resource.
+        bool open(const QString& resouce);
+
+        // open a help page.
+        bool open_help(const QString& page);
+
         // listener api
         virtual void handle(const newsflash::error& error) override;
         virtual void acknowledge(const newsflash::file& file) override;
         virtual void notify() override;
+
+
 
     private slots:
         void welcome_new_user();
         void modify_account(std::size_t i);
 
     private:
-        bool open(const QString& resouce);
-        bool open_help(const QString& page);
+
 
         bool load_valuestore();
         bool save_valuestore();
 
-        void compose_views();
+        void attach_views();
+        void detach_views();
 
     private:
         app::valuestore* valuestore_;
