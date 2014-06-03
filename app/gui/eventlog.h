@@ -22,53 +22,37 @@
 
 #pragma once
 
-#include <newsflash/config.h>
-
-#include <newsflash/warnpush.h>
-#  include <QtGui/QDialog>
-#include <newsflash/warnpop.h>
-#include "ui_dlgwelcome.h"
-
-#include "../config.h"
+#include <newsflash/sdk/uicomponent.h>
+#include "ui_eventlog.h"
+#include "../eventlog.h"
 
 namespace gui
 {
-    class DlgWelcome : public QDialog
+    class Eventlog : public sdk::uicomponent
     {
         Q_OBJECT
 
     public:
-        DlgWelcome(QWidget* parent) : QDialog(parent)
-        {
-            ui_.setupUi(this);
-            auto txt = ui_.welcome->text();
+        Eventlog(app::eventlog& events);
+       ~Eventlog();
 
-            txt.replace("#1", NEWSFLASH_TITLE);
-            txt.replace("#2", NEWSFLASH_VERSION);
-            ui_.welcome->setText(txt);
-        }
-       ~DlgWelcome()
-        {}
-
-        bool open_guide() const
-        {
-            return ui_.chkQuickStart->isChecked();
-        }
+        void add_actions(QMenu& menu);
+        void add_actions(QToolBar& bar);
+//        void activate(QWidget*);
+        //void deactivate();
+        //void get_info(ext::uicomponent_info& info) const;
+        //void write_log(logtype type, const QString& context, const QString& msg);
 
     private slots:
-        void on_btnLater_clicked()
-        {
-            reject();
-        }
-        void on_btnYes_clicked()
-        {
-            accept();
-        }
+        void on_actionClearLog_triggered();
+        void on_listLog_customContextMenuRequested(QPoint pos);
 
     private:
-        Ui::DlgWelcome ui_;
+        Ui::Eventlog ui_;
 
-    }; 
+    private:
+        app::eventlog& events_;
+    };
 
 } // gui
 

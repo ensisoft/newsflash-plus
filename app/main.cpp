@@ -24,9 +24,14 @@
 #include <exception>
 #include "minidump.h"
 #include "mainapp.h"
+#include "debug.h"
+#include "config.h"
 
 int main(int argc, char* argv[])
 {
+    DEBUG("It's alive!");
+    DEBUG(NEWSFLASH_VERSION);
+
     try 
     {
         SEH_BLOCK(
@@ -39,4 +44,6 @@ int main(int argc, char* argv[])
         std::cerr << e.what();
         std::cerr << std::endl;
     }
+
+    DEBUG("Exiting...");
 }

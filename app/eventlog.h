@@ -41,7 +41,7 @@ namespace app
 
     public:
         enum class event_t {
-            debug, warning, info, error
+            warning, info, error
         };
 
         struct event {
@@ -64,7 +64,6 @@ namespace app
         const event& operator[](int i) const;
 
         std::size_t size() const;
-
 
         // post a log event
         static
@@ -109,10 +108,6 @@ namespace app
     private:
         boost::circular_buffer<event> events_;
     };
-
-
-#define DEBUG(m) \
-    app::eventlog::post(app::eventlog::event_t::debug, m, "default")
 
 #define WARN(m) \
     app::eventlog::post(app::eventlog::event_t::warning, m, "default")    

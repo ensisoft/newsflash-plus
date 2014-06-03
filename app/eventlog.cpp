@@ -21,7 +21,6 @@
 //  THE SOFTWARE.
 
 #include <QCoreApplication>
-#include <QDebug>
 #include "eventlog.h"
 #include "foobar.h"
 
@@ -49,12 +48,6 @@ void eventlog::unhook(QCoreApplication& app)
 void eventlog::write(event_t type, const QString& msg, const QString& ctx)
 {
     const auto time = QTime::currentTime();
-
-    if (type == event_t::debug)
-    {
-        qDebug() << time << ctx << msg;
-        return;
-    }
 
     bool was_full = events_.full();
     events_.push_front({ type, msg, ctx, time});
@@ -87,12 +80,6 @@ bool eventlog::eventFilter(QObject* object, QEvent* event)
         return false;
 
     const auto* data = static_cast<const logevent*>(event);
-
-    if (data->type_ == event_t::debug)
-    {
-        qDebug() << data->time_ << data->context_ << data->message_;
-        return true;
-    }
 
     bool was_full = events_.full();
     events_.push_front({ data->type_, data->message_, data->context_, data->time_ });

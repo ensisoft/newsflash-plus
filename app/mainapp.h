@@ -23,18 +23,30 @@
 #pragma once
 
 #include <newsflash/sdk/newsflash.h>
+#include <newsflash/engine/listener.h>
 #include <QObject>
+#include <vector>
 
 namespace gui {
     class MainWindow;
 }
 
+namespace newsflash {
+    class engine;
+}
+
+namespace sdk {
+    class uicomponent;
+}
+
 namespace app
 {
-    class settings;
+    class valuestore;
+    class accounts;
+    class eventlog;
 
     // we need a class so that we can connect Qt signals
-    class mainapp : public QObject //, public sdk::newsflash
+    class mainapp : public QObject, public newsflash::listener
     {
         Q_OBJECT
 
@@ -46,16 +58,33 @@ namespace app
 
         bool shutdown();
 
+        // listener api
+        virtual void handle(const newsflash::error& error) override;
+        virtual void acknowledge(const newsflash::file& file) override;
+        virtual void notify() override;
+
     private slots:
         void welcome_new_user();
+        void modify_account(std::size_t i);
 
     private:
         bool open(const QString& resouce);
         bool open_help(const QString& page);
 
+        bool load_valuestore();
+        bool save_valuestore();
+
+        void compose_views();
+
     private:
-        app::settings* settings_;
-        gui::MainWindow* window_;
+        app::valuestore* valuestore_;
+        app::eventlog* eventlog_;
+        app::accounts* accounts_;
+        gui::MainWindow* gui_window_;
+        newsflash::engine* engine_;
+        bool virgin_;
+
+        std::vector<sdk::uicomponent*> views_;
     };
 
 } // app

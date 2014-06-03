@@ -34,23 +34,60 @@
 
 #include <Python.h>
 
+#include <newsflash/engine/engine.h>
+#include <newsflash/engine/account.h>
+#include <newsflash/engine/listener.h>
+
+#include <vector>
+
 #include "qtsingleapplication/qtsingleapplication.h"
 #include "gui/mainwindow.h"
 #include "gui/accounts.h"
+#include "gui/eventlog.h"
 #include "gui/dlgwelcome.h"
+#include "gui/dlgaccount.h"
 #include "mainapp.h"
 #include "eventlog.h"
-#include "settings.h"
+#include "valuestore.h"
 #include "utility.h"
 #include "format.h"
 #include "config.h"
+#include "accounts.h"
+#include "debug.h"
 
-namespace {
-
-using app::str;
-
-void log_copyright_and_versions()
+namespace app
 {
+
+mainapp::mainapp() : valuestore_(nullptr), gui_window_(nullptr), virgin_(false)
+{}
+
+mainapp::~mainapp()
+{}
+
+int mainapp::run(int argc, char* argv[])
+{   
+    app::set_cmd_line(argc, argv);    
+
+    app::valuestore valuestore;    
+    app::eventlog events;
+    valuestore_ = &valuestore;
+    eventlog_   = &events;
+
+    // we must load valuestore and style information as the first thing
+    load_valuestore();
+
+    QtSingleApplication qtinstance(argc, argv);
+    if (qtinstance.isRunning())
+    {
+        const QStringList& cmds = app::get_cmd_line();
+        for (int i=1; i<cmds.size(); ++i)
+            qtinstance.sendMessage(cmds[i]);
+        return 0;            
+    }
+
+    // enable this eventlog as the global eventlog
+    events.hook(qtinstance);
+
     const auto boost_major    = BOOST_VERSION / 100000;
     const auto boost_minor    = BOOST_VERSION / 100 % 1000;
     const auto boost_revision = BOOST_VERSION % 100;
@@ -75,45 +112,217 @@ void log_copyright_and_versions()
     INFO("Zlib compression library 1.2.5");
     INFO("Copyright (c) 1995-2010 Jean-Loup Gailly & Mark Adler");
     INFO("http://zlib.net");        
+
+    const auto path = app::get_installation_directory();    
+    QCoreApplication::setLibraryPaths(QStringList());
+    QCoreApplication::addLibraryPath(path);
+    QCoreApplication::addLibraryPath(path + "/plugins-qt");
+
+    app::accounts accounts;
+    accounts_ = &accounts;
+    accounts.retrieve(valuestore);
+
+    // open the builtin views    
+    gui::MainWindow   gui_window   { *this };
+    gui::Accounts     gui_accounts { accounts };
+    gui::Eventlog     gui_events   { events };
+
+    gui_window_ = &gui_window;
+
+    views_ = {
+        &gui_accounts, 
+        &gui_events,
+    };
+
+    compose_views();
+
+    gui_window.configure(valuestore);
+    gui_window.show();
+
+    // enter event lop
+    qtinstance.exec();
+
+    events.unhook(qtinstance);
+    return 0;
 }
 
-bool load_settings(app::settings& settings, app::eventlog& log, bool& first_launch)
+bool mainapp::shutdown()
 {
-    const auto home = QDir::homePath();
-    const auto file = home + "/.newsflash/settings.json";
+    gui_window_->persist(*valuestore_);
+    accounts_->persist(*valuestore_);
 
-    QFile io(file);    
+    for (auto& ui : views_)
+    {
+        const auto show = ui->isVisible();
+        const auto key  = ui->windowTitle();
+        valuestore_->set("visible_tabs", key, show);
+    }
 
-    DEBUG(str("Settings _1", io));
-    try
-    {
-        if (!io.open(QIODevice::ReadOnly))
-        {
-            if (!QFile::exists(file))
-            {
-                first_launch = true;
-                //log.write(app::eventlog::event_t type, const QString &msg, const QString &ctx)
-                DEBUG("First launch");
-            }
-            else
-            {
-                ERROR(str("Failed to open settings _1", io));
-                ERROR(str("File error ", io.error()));
-            }
-            return false;
-        }
-        settings.load(io);
-    }
-    catch (const std::exception& e)
-    {
-        ERROR(str("Failed to load settings _1", io));
-        ERROR(e.what());
-    }
-    INFO("Settings loaded");
+    if (!save_valuestore())
+        return false;
+
+    // shutdown plugins
+    // shutdown extensions
+    // shutdown python
+    // shutdown engine
+
     return true;
 }
 
-bool save_settings(const app::settings& settings)
+void mainapp::handle(const newsflash::error& error)
+{
+    // todo:
+}
+
+void mainapp::acknowledge(const newsflash::file& file)
+{
+    // todo:
+}
+
+void mainapp::notify() 
+{
+    // todo:
+}
+
+void mainapp::welcome_new_user()
+{
+    gui::DlgWelcome dlg(gui_window_);
+    if (dlg.exec() == QDialog::Accepted)
+    {
+        auto acc = accounts_->create();
+        gui::DlgAccount dlg(gui_window_, acc, true);
+        if (dlg.exec() == QDialog::Accepted)
+            accounts_->set(acc);
+    }
+
+    if (dlg.open_guide())
+    {
+        open_help("quick.html");
+    }
+}
+
+void mainapp::modify_account(std::size_t i)
+{
+    const auto& account = accounts_->get(i);
+//    DEBUG(str("Account was edited '_1'", account.name));
+
+    // update engine configuration
+
+    newsflash::account na;
+    na.id                 = account.id;
+    na.enable_compression = account.enable_compression;
+    na.enable_pipelining  = account.enable_pipelining;
+    na.is_fill_account    = false; // todo:
+    na.max_connections    = account.maxconn;
+    na.name               = utf8(account.name);
+    na.username           = utf8(account.user);
+    na.password           = utf8(account.pass);
+    if (account.general.enabled)
+    {
+        na.general.host = utf8(account.general.host);
+        na.general.port = account.general.port;
+    }
+    if (account.secure.enabled)
+    {
+        na.secure.host = utf8(account.secure.host);
+        na.secure.port = account.secure.port;
+    }
+
+    // modify engine account now
+   // engine_->set(na);
+}
+
+bool mainapp::open(const QString& resource)
+{
+#if defined(WINDOWS_OS)
+    const auto ret = ShellExecute(
+        NULL,
+        L"open",
+        resource.utf16(),
+        NULL, // parameters dont care
+        NULL, // working directory
+        SW_SHOWNORMAL);
+    if ((int)ret <= 32)
+    {
+        ERROR(err(GetLastError()));
+        return false;
+    }
+    return true;
+
+#elif defined(LINUX_OS)
+    const auto& cmd = valuestore_->get("settings", "open_cmd").toString();
+    if (cmd.isEmpty())
+    {
+        WARN(str("Open command is not set. Unable to open _1", resource));
+        return false;
+    }
+
+    return true;
+#endif
+}
+
+bool mainapp::open_help(const QString& page)
+{
+    return open(QDir::toNativeSeparators(
+        app::get_installation_directory() + "/help" + page));
+}
+
+bool mainapp::load_valuestore()
+{
+// #define E(m) \
+//     eventlog_->write(eventlog::event_t::error, m, "default");
+// #define I(m) \
+//     eventlog_->write(eventlog::event_t::info, m, "default");    
+
+    const auto& home = QDir::homePath();
+    const auto& file = home + "/.newsflash/settings.json";
+    const auto& logs = home + "/Newsflash/Logs";
+    const auto& bins = home + "/Newsflash/Downloads";    
+
+    if (!QFile::exists(file))
+    {
+        DEBUG("First launch");
+        valuestore_->set("settings", "logs", logs);
+        valuestore_->set("settings", "downloads", bins);
+#if defined(LINUX_OS)
+        valuestore_->set("settings", "open_cmd", "gnome-open");
+        valuestore_->set("settings", "shutdown_cmd", "gnome-session-quit --power-off --no-prompt");
+#endif
+        QTimer::singleShot(500, this, SLOT(welcome_new_user()));
+        return false;
+    }
+
+    QFile io(file);
+    if (!io.open(QIODevice::ReadOnly))
+    {
+        //E(str("Failed to open valuestore _1", io));
+        //E(str("File error ", io.error()));
+        return false;
+    }
+    valuestore_->load(io);
+
+    // style must be applied as the first thing,
+    // before any Q application object is created
+    // in order to apply properly
+    const auto& name = valuestore_->get("settings", "style", "default");
+    if (name != "default")
+    {
+        QStyle* style = QApplication::setStyle(name);
+        if (style)
+        {
+            QApplication::setPalette(style->standardPalette());
+        }
+    }
+
+    return true;
+
+#undef D
+#undef E
+#undef I
+
+}
+
+bool mainapp::save_valuestore()
 {
     const auto home = QDir::homePath();
     const auto path = home + "/.newsflash";
@@ -137,7 +346,7 @@ bool save_settings(const app::settings& settings)
             ERROR(str("File error ", io.error()));
             return false;
         }
-        settings.save(io);
+        valuestore_->save(io);
     }
     catch (const std::exception& e)
     {
@@ -149,146 +358,20 @@ bool save_settings(const app::settings& settings)
     return true;
 }
 
-} // namespace
-
-namespace app
+void mainapp::compose_views()
 {
-
-mainapp::mainapp() : settings_(nullptr), window_(nullptr)
-{}
-
-mainapp::~mainapp()
-{}
-
-int mainapp::run(int argc, char* argv[])
-{   
-    app::set_cmd_line(argc, argv);    
-    app::settings settings;    
-    app::eventlog events;
-
-    // style must be applied before any application
-    // object is created in order to aply properly.
-    bool first_launch = false;
-    if (load_settings(settings, events, first_launch))
+    for (auto& ui : views_)
     {
-        const QString& name = settings.get("settings", "style", "default");
-        if (name.toLower() != "default")
+        gui_window_->compose(ui);
+        const auto& key  = ui->windowTitle();
+        const auto& info = ui->get_info();
+        const bool show  = valuestore_->get("visible_tabs", key, info.visible_by_default);
+        if (show)
         {
-            QStyle* style = QApplication::setStyle(name);
-            if (style)
-                QApplication::setPalette(style->standardPalette());
-
-            events.write(eventlog::event_t::debug,
-                str("Selected style '_1'", name), "default");
+            gui_window_->show(ui);            
         }
-    }
-
-    QtSingleApplication qtinstance(argc, argv);
-    if (qtinstance.isRunning())
-    {
-        const QStringList& cmds = app::get_cmd_line();
-        for (int i=1; i<cmds.size(); ++i)
-            qtinstance.sendMessage(cmds[i]);
-        return 0;            
-    }
-
-    events.hook(qtinstance);
-
-    const auto path = app::get_installation_directory();    
-
-    QCoreApplication::setLibraryPaths(QStringList());
-    QCoreApplication::addLibraryPath(path);
-    QCoreApplication::addLibraryPath(path + "/plugins-qt");
-
-    log_copyright_and_versions();
-
-    gui::MainWindow window(*this);
-    window.show();
-    window.apply(settings);
-    if (first_launch)
-    {
-        QTimer::singleShot(500, this, SLOT(welcome_new_user()));
-
-#if defined(LINUX_OS)
-        // todo: try to figure out what kind of distro is in question
-        settings.set("settings", "open_cmd", "gnome-open");
-        settings.set("settings", "shutdown_cmd", "gnome-session-quit --power-off --no-prompt");
-#endif
-
-    }
-
-    settings_ = &settings;
-    window_   = &window;
-
-    const int ret = qtinstance.exec();
-
-    events.unhook(qtinstance);
-    return ret;
-}
-
-bool mainapp::shutdown()
-{
-    window_->persist(*settings_);
-
-    if (!save_settings(*settings_))
-        return false;
-
-    // shutdown plugins
-    // shutdown extensions
-    // shutdown python
-    // shutdown engine
-
-    return true;
-}
-
-void mainapp::welcome_new_user()
-{
-    gui::DlgWelcome dlg(window_);
-    if (dlg.exec() == QDialog::Accepted)
-    {
-
-    }
-
-    if (dlg.open_guide())
-    {
-        open_help("quick.html");
+        DEBUG(str("_1 is visible _2", key, show));
     }
 }
-
-bool mainapp::open(const QString& resource)
-{
-#if defined(WINDOWS_OS)
-    const auto ret = ShellExecute(
-        NULL,
-        L"open",
-        resource.utf16(),
-        NULL, // parameters dont care
-        NULL, // working directory
-        SW_SHOWNORMAL);
-    if ((int)ret <= 32)
-    {
-        ERROR(err(GetLastError()));
-        return false;
-    }
-    return true;
-
-#elif defined(LINUX_OS)
-    const auto& cmd = settings_->get("settings", "open_cmd").toString();
-    if (cmd.isEmpty())
-    {
-        WARN(str("Open command is not set. Unable to open _1", resource));
-        return false;
-    }
-
-    return true;
-#endif
-}
-
-bool mainapp::open_help(const QString& page)
-{
-    return open(QDir::toNativeSeparators(
-        app::get_installation_directory() + "/help" + page));
-}
-
 
 } // app

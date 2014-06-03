@@ -145,7 +145,7 @@ namespace newsflash
         void reset();
 
     private:
-        void emit(task::action action);
+        void invoke(task::action action);
 
     private:
         void goto_state(task::state state);

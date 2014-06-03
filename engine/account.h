@@ -70,7 +70,7 @@ namespace newsflash
         // set to true to specify this account as a "fill"
         // (secondary) account. a fill account is consulted
         // when the primary server is missing some data.
-        bool fill;
+        bool is_fill_account;
     };
 
 }// engine

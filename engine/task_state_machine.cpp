@@ -98,12 +98,12 @@ bool task_state_machine::kill()
         case state::active:
         case state::waiting:
             on_stop();
-            emit(action::cancel);
+            invoke(action::cancel);
             break;
 
         case state::debuffering:
         case state::paused:
-            emit(action::cancel);
+            invoke(action::cancel);
             break;
 
         case state::complete:
@@ -113,7 +113,7 @@ bool task_state_machine::kill()
             return false;
 
     }
-    emit(action::kill);
+    invoke(action::kill);
     goto_state(state::killed);
     return true;
 }
@@ -130,15 +130,15 @@ bool task_state_machine::fault()
         case state::active:
         case state::waiting:
             on_stop();
-            emit(action::cancel);
+            invoke(action::cancel);
             break;
 
         case state::debuffering:
-            emit(action::cancel);
+            invoke(action::cancel);
             break;
 
         case state::paused:
-            emit(action::cancel);
+            invoke(action::cancel);
             break;
     }
 
@@ -207,7 +207,7 @@ bool task_state_machine::dequeue(std::size_t bytes)
         if (dequed_ == buffers_)
         {
             assert(qsize_ == 0);
-            emit(action::finalize);
+            invoke(action::finalize);
         }
     }
     else if (state_ == state::debuffering)
@@ -294,7 +294,7 @@ void task_state_machine::reset()
     error_    = false;    
 }
 
-void task_state_machine::emit(task::action action)
+void task_state_machine::invoke(task::action action)
 {
     if (on_action)
         on_action(action);

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>Log</class>
- <widget class="QWidget" name="Log">
+ <class>Eventlog</class>
+ <widget class="QWidget" name="Eventlog">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -21,7 +21,7 @@
    <item row="0" column="0">
     <widget class="QGroupBox" name="groupBox_6">
      <property name="title">
-      <string>Application log</string>
+      <string>Log</string>
      </property>
      <property name="flat">
       <bool>false</bool>

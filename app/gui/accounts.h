@@ -22,54 +22,25 @@
 
 #pragma once
 
-#include <newsflash/config.h>
+#include <newsflash/sdk/uicomponent.h>
+#include "ui_accounts.h"
 
-#include <newsflash/warnpush.h>
-#  include <QtGui/QDialog>
-#include <newsflash/warnpop.h>
-#include "ui_dlgwelcome.h"
-
-#include "../config.h"
+#include "../accounts.h"
 
 namespace gui
 {
-    class DlgWelcome : public QDialog
+    class Accounts : public sdk::uicomponent
     {
         Q_OBJECT
-
     public:
-        DlgWelcome(QWidget* parent) : QDialog(parent)
-        {
-            ui_.setupUi(this);
-            auto txt = ui_.welcome->text();
-
-            txt.replace("#1", NEWSFLASH_TITLE);
-            txt.replace("#2", NEWSFLASH_VERSION);
-            ui_.welcome->setText(txt);
-        }
-       ~DlgWelcome()
-        {}
-
-        bool open_guide() const
-        {
-            return ui_.chkQuickStart->isChecked();
-        }
-
-    private slots:
-        void on_btnLater_clicked()
-        {
-            reject();
-        }
-        void on_btnYes_clicked()
-        {
-            accept();
-        }
+        Accounts(app::accounts& accounts);
+       ~Accounts();
 
     private:
-        Ui::DlgWelcome ui_;
+        Ui::Accounts ui_;
 
-    }; 
+    private:
+        app::accounts& accounts_;
+    };
 
 } // gui
-
-

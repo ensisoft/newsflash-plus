@@ -34,23 +34,23 @@
 #include <stdexcept>
 #include <sstream>
 #include "format.h"
-#include "settings.h"
+#include "valuestore.h"
 
 namespace app
 {
 
-settings::settings()
+valuestore::valuestore()
 {}
 
-settings::~settings()
+valuestore::~valuestore()
 {}
 
 
-void settings::load(QIODevice& io, settings::format format)
+void valuestore::load(QIODevice& io, valuestore::format format)
 {
     Q_ASSERT(io.isOpen());
 
-    if (format == settings::format::json)
+    if (format == valuestore::format::json)
     {
         bool ok = false;
         QJson::Parser parser;
@@ -76,11 +76,11 @@ void settings::load(QIODevice& io, settings::format format)
     }
 }
 
-void settings::save(QIODevice& io, settings::format format) const
+void valuestore::save(QIODevice& io, valuestore::format format) const
 {
     Q_ASSERT(io.isOpen());
 
-    if (format == settings::format::json)
+    if (format == valuestore::format::json)
     {
         bool ok = false;
         QJson::Serializer serializer;
@@ -95,12 +95,12 @@ void settings::save(QIODevice& io, settings::format format) const
     }
 }
 
-void settings::clear()
+void valuestore::clear()
 {
     values_.clear();
 }
 
-bool settings::contains(const char* context, const char* name) const
+bool valuestore::contains(const char* context, const char* name) const
 {
     const auto& value = get(context, name);
     if (value.isNull())
@@ -109,7 +109,7 @@ bool settings::contains(const char* context, const char* name) const
     return true;
 }
 
-QVariant settings::get(const QString& key, const QString& attr, const QVariant& defval) const
+QVariant valuestore::get(const QString& key, const QString& attr, const QVariant& defval) const
 {
     const QVariantMap& map = values_[key].toMap();
     if (map.isEmpty())
@@ -119,7 +119,7 @@ QVariant settings::get(const QString& key, const QString& attr, const QVariant& 
     return value;
 }
 
-void settings::set(const QString& key, const QString& attr, const QVariant& value)
+void valuestore::set(const QString& key, const QString& attr, const QVariant& value)
 {
     QVariantMap map = values_[key].toMap();
     map[attr] = value;

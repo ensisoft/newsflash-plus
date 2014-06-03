@@ -22,7 +22,6 @@
 
 #include <newsflash/config.h>
 
-
 #include <newsflash/warnpush.h>
 #  include <QtGui/QCloseEvent>
 #  include <QtGui/QMessageBox>
@@ -30,12 +29,15 @@
 #  include <QTimer>
 #include <newsflash/warnpop.h>
 
+#include <algorithm>
+
 #include "mainwindow.h"
 #include "../eventlog.h"
 #include "../format.h"
 #include "../config.h"
-#include "../settings.h"
+#include "../valuestore.h"
 #include "../mainapp.h"
+#include "../debug.h"
 
 using app::str;
 
@@ -70,43 +72,90 @@ MainWindow::MainWindow(app::mainapp& app) : QMainWindow(nullptr), app_(app)
 }
 
 MainWindow::~MainWindow()
-{}
-
-void MainWindow::apply(const app::settings& settings)
 {
-    const auto width  = settings.get("window", "width", 1200);
-    const auto height = settings.get("window", "height", 800);
-    DEBUG(str("Mainwindow dimensions _1 x _2", 
-        width, height));
+    ui_.mainTab->clear();
+}
+
+void MainWindow::configure(const app::valuestore& values)
+{
+    const auto width  = values.get("window", "width", 1200);
+    const auto height = values.get("window", "height", 800);
+    DEBUG(str("Mainwindow dimensions _1 x _2", width, height));
 
     resize(width, height);
 
-    const auto x = settings.get("window", "x", 0);
-    const auto y = settings.get("window", "y", 0);
-    DEBUG(str("Mainwindow position _1, _2",
-        x, y));
-
+    const auto x = values.get("window", "x", 0);
+    const auto y = values.get("window", "y", 0);
+    DEBUG(str("Mainwindow position _1, _2", x, y));
+    
     move(x, y);
 
-    const auto show_statusbar = settings.get("window", "show_statusbar", true);
-    const auto show_toolbar = settings.get("window", "show_toolbar", true);
+    const auto show_statusbar = values.get("window", "show_statusbar", true);
+    const auto show_toolbar = values.get("window", "show_toolbar", true);
     ui_.mainToolBar->setVisible(show_toolbar);
     ui_.statusBar->setVisible(show_statusbar);
     ui_.actionViewToolbar->setChecked(show_toolbar);
     ui_.actionViewStatusbar->setChecked(show_statusbar);
 }
 
-void MainWindow::persist(app::settings& settings)
+void MainWindow::persist(app::valuestore& values)
 {
-    settings.set("window", "width", width());
-    settings.set("window", "height", height());
-    settings.set("window", "x", x());
-    settings.set("window", "y", y());
-    settings.set("window", "show_statusbar", 
+    values.set("window", "width", width());
+    values.set("window", "height", height());
+    values.set("window", "x", x());
+    values.set("window", "y", y());
+    values.set("window", "show_toolbar", 
         ui_.mainToolBar->isVisible());
-    settings.set("window", "show_statusbar",
+    values.set("window", "show_statusbar",
         ui_.statusBar->isVisible());
 }
+
+void MainWindow::compose(sdk::uicomponent* ui)
+{
+    Q_ASSERT(std::find(std::begin(tabs_),
+        std::end(tabs_), ui) == std::end(tabs_));
+
+    tabs_.append(ui);
+}
+
+void MainWindow::show(sdk::uicomponent* ui)
+{
+    Q_ASSERT(std::find(std::begin(tabs_),
+        std::end(tabs_), ui) != std::end(tabs_));
+
+    if (ui_.mainTab->indexOf(ui) == -1)
+    {
+        const int index = tabs_.indexOf(ui);
+        const auto& icon = ui->windowIcon();
+        const auto& text = ui->windowTitle();
+        ui_.mainTab->insertTab(index, ui, icon, text);
+    }
+}
+
+void MainWindow::hide(sdk::uicomponent* ui)
+{
+    Q_ASSERT(std::find(std::begin(tabs_),
+        std::end(tabs_), ui) != std::end(tabs_));
+
+    const auto index = ui_.mainTab->indexOf(ui);
+    if (index == -1)
+        return;
+
+    ui_.mainTab->removeTab(index);
+}
+
+void MainWindow::focus(sdk::uicomponent* ui)
+{
+    Q_ASSERT(std::find(std::begin(tabs_),
+        std::end(tabs_), ui) != std::end(tabs_));
+
+    const auto index = ui_.mainTab->indexOf(ui);
+    if (index == -1)
+        return;
+
+    ui_.mainTab->setCurrentIndex(index);
+}
+
 
 void MainWindow::closeEvent(QCloseEvent* event)
 {
@@ -125,6 +174,16 @@ void MainWindow::closeEvent(QCloseEvent* event)
         }
     }
     event->accept();
+}
+
+void MainWindow::on_mainTab_currentChanged(int index)
+{
+    DEBUG(str("Current tab _1", index));
+}
+
+void MainWindow::on_mainTab_tabCloseRequested(int index)
+{
+    DEBUG(str("Close tab _1", index));
 }
 
 } // gui

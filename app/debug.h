@@ -25,51 +25,26 @@
 #include <newsflash/config.h>
 
 #include <newsflash/warnpush.h>
-#  include <QtGui/QDialog>
+#  include <QtDebug>
+#  include <QTime>
+#  include <QString>
 #include <newsflash/warnpop.h>
-#include "ui_dlgwelcome.h"
 
-#include "../config.h"
-
-namespace gui
+namespace debug 
 {
-    class DlgWelcome : public QDialog
+    // we use qDebug() for output stream since it supports many
+    // of the Qt types and and is thus convenient.
+
+    inline
+    QString stamp(const char* file, int line) 
     {
-        Q_OBJECT
+        return QString("%1,%2").arg(file).arg(line);
+    }
+}
 
-    public:
-        DlgWelcome(QWidget* parent) : QDialog(parent)
-        {
-            ui_.setupUi(this);
-            auto txt = ui_.welcome->text();
-
-            txt.replace("#1", NEWSFLASH_TITLE);
-            txt.replace("#2", NEWSFLASH_VERSION);
-            ui_.welcome->setText(txt);
-        }
-       ~DlgWelcome()
-        {}
-
-        bool open_guide() const
-        {
-            return ui_.chkQuickStart->isChecked();
-        }
-
-    private slots:
-        void on_btnLater_clicked()
-        {
-            reject();
-        }
-        void on_btnYes_clicked()
-        {
-            accept();
-        }
-
-    private:
-        Ui::DlgWelcome ui_;
-
-    }; 
-
-} // gui
-
+#if defined(NEWSFLASH_DEBUG)
+#  define DEBUG(msg) qDebug() << QTime::currentTime() << debug::stamp(__FILE__, __LINE__) << msg
+#else
+#  define DEBUG(msg)
+#endif
 

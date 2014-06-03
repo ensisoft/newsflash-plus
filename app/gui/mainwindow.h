@@ -22,9 +22,15 @@
 
 #pragma once
 
+#include <newsflash/config.h>
+
 #include <newsflash/warnpush.h>
 #  include <QtGui/QMainWindow>
+#  include <QList>
 #include <newsflash/warnpop.h>
+
+#include <newsflash/sdk/uicomponent.h>
+
 #include <memory>
 #include "ui_mainwindow.h"
 
@@ -32,7 +38,7 @@ class QIcon;
 class QCloseEvent;
 
 namespace app {
-    class settings;
+    class valuestore;
     class mainapp;
 }
 
@@ -46,18 +52,29 @@ namespace gui
         MainWindow(app::mainapp& app);
        ~MainWindow();
 
-        void apply(const app::settings& settings);
-        void persist(app::settings& settings);
+        void configure(const app::valuestore& values);
+        void persist(app::valuestore& values);
+
+        using QMainWindow::show;
+
+        void compose(sdk::uicomponent* ui);
+        void show(sdk::uicomponent* ui);
+        void hide(sdk::uicomponent* ui);        
+        void focus(sdk::uicomponent* ui);
+        void refresh(sdk::uicomponent* ui);
 
     private:
         void closeEvent(QCloseEvent* event);
 
     private slots:
-        //void welcome_new_user();
+        void on_mainTab_currentChanged(int index);
+        void on_mainTab_tabCloseRequested(int index);
 
     private:
         Ui::MainWindow ui_;
         app::mainapp& app_;
+        sdk::uicomponent* current_;
+        QList<sdk::uicomponent*> tabs_;
     };
 
 } // gui

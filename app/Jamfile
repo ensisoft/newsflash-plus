@@ -16,20 +16,14 @@ project gui
 
 exe newsflash 
 :
-  main.cpp
-  mainapp.h
-  mainapp.cpp
-  foobar.h
-  utility.cpp
-  settings.h
-  settings.cpp
-  eventlog.h
-  eventlog.cpp
+  [ glob *.ui  ]
+  [ glob *.h   ]
+  [ glob *.cpp ]
+
   qtsingleapplication/qtsingleapplication.h
   qtsingleapplication/qtsingleapplication.cpp
   qtsingleapplication/qtlocalpeer.h
   qtsingleapplication/qtlocalpeer.cpp
-
 
   [ glob gui/*.ui  ]
   [ glob gui/*.h   ]
@@ -38,6 +32,6 @@ exe newsflash
   gui/resource.qrc
 ;
 
-build-project "unit_test" ;
+#build-project "unit_test" ;
 
 build-project "plugins/womble" ;

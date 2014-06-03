@@ -20,56 +20,18 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-#pragma once
+#include <boost/test/minimal.hpp>
 
-#include <newsflash/config.h>
+#include "../accounts.h"
+#include "../settings.h"
 
-#include <newsflash/warnpush.h>
-#  include <QtGui/QDialog>
-#include <newsflash/warnpop.h>
-#include "ui_dlgwelcome.h"
-
-#include "../config.h"
-
-namespace gui
+int test_main(int, char* argv[])
 {
-    class DlgWelcome : public QDialog
-    {
-        Q_OBJECT
+    app::settings store;
+    app::accounts accs;
 
-    public:
-        DlgWelcome(QWidget* parent) : QDialog(parent)
-        {
-            ui_.setupUi(this);
-            auto txt = ui_.welcome->text();
-
-            txt.replace("#1", NEWSFLASH_TITLE);
-            txt.replace("#2", NEWSFLASH_VERSION);
-            ui_.welcome->setText(txt);
-        }
-       ~DlgWelcome()
-        {}
-
-        bool open_guide() const
-        {
-            return ui_.chkQuickStart->isChecked();
-        }
-
-    private slots:
-        void on_btnLater_clicked()
-        {
-            reject();
-        }
-        void on_btnYes_clicked()
-        {
-            accept();
-        }
-
-    private:
-        Ui::DlgWelcome ui_;
-
-    }; 
-
-} // gui
+    
 
 
+    return 0;
+}        

@@ -23,53 +23,40 @@
 #pragma once
 
 #include <newsflash/config.h>
-
 #include <newsflash/warnpush.h>
 #  include <QtGui/QDialog>
 #include <newsflash/warnpop.h>
-#include "ui_dlgwelcome.h"
 
-#include "../config.h"
+#include "ui_dlgaccount.h"
+
+#include "../accounts.h"
 
 namespace gui
 {
-    class DlgWelcome : public QDialog
+    class DlgAccount : public QDialog 
     {
         Q_OBJECT
 
     public:
-        DlgWelcome(QWidget* parent) : QDialog(parent)
-        {
-            ui_.setupUi(this);
-            auto txt = ui_.welcome->text();
-
-            txt.replace("#1", NEWSFLASH_TITLE);
-            txt.replace("#2", NEWSFLASH_VERSION);
-            ui_.welcome->setText(txt);
-        }
-       ~DlgWelcome()
-        {}
-
-        bool open_guide() const
-        {
-            return ui_.chkQuickStart->isChecked();
-        }
-
-    private slots:
-        void on_btnLater_clicked()
-        {
-            reject();
-        }
-        void on_btnYes_clicked()
-        {
-            accept();
-        }
+        DlgAccount(QWidget *parent, app::accounts::account& account, bool create);
+       ~DlgAccount();
 
     private:
-        Ui::DlgWelcome ui_;
+        void changeEvent(QEvent *e);
 
-    }; 
+    private slots:
+        void on_btnOK_clicked();
+        void on_btnBrowseData_clicked();
+        void on_grpSecure_clicked(bool val);
+        void on_grpNonSecure_clicked(bool val);
+        void on_edtName_textEdited();
+
+    private:
+        Ui::DlgAccount ui_;
+
+    private:
+        app::accounts::account& account_;
+        bool create_;
+    };
 
 } // gui
-
-

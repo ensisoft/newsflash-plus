@@ -22,9 +22,15 @@
 
 #pragma once
 
-#include <QString>
-#include <QFile>
-#include <QDir>
+#include <newsflash/config.h>
+
+#include <newsflash/warnpush.h>
+#  include <QString>
+#  include <QFile>
+#  include <QDir>
+#include <newsflash/warnpop.h>
+
+#include <string>
 
 namespace app
 {
@@ -53,6 +59,13 @@ namespace app
             s = s.replace(
                 QString("_%1").arg(index),
                 QString("'%1'").arg(path));
+        }
+
+        inline
+        void format(QString& s, int index, bool val)
+        {
+            const auto& key = QString("_%1").arg(index);
+            s = s.replace(key, (val ? "True" : "False"));
         }
 
         template<typename T>
@@ -89,5 +102,12 @@ namespace app
     }
 
     QString err(int syserr);
+
+    inline
+    std::string utf8(const QString& str)
+    {
+        const auto& bytes = str.toUtf8();
+        return std::string(bytes.data(), bytes.size());
+    }
 
 } // 

@@ -26,37 +26,58 @@
 #include <newsflash/warnpush.h>
 #  include <QString>
 #  include <QList>
+#  include <QObject>
 #include <newsflash/warnpop.h>
 
 namespace app
 {
-    class settings;
+    class valuestore;
 
-    class accounts
+    class accounts : public QObject
     {
+        Q_OBJECT
+
     public:
         struct server {
             QString host;
             qint16  port;
+            bool    enabled;
         };
 
         struct account {
+            quint32 id;
             QString name;
             QString user;
             QString pass;
-            QString datapath;
+            QString path;
             server  general;
             server  secure;
 
             bool requires_login;
-            bool use_compressed_headers;
-            bool use_pipelining;
+            bool enable_compression;
+            bool enable_pipelining;
 
             int maxconn;
         };
 
-        void save(app::settings& settings);
-        void load(const app::settings& settings);
+        // persist accounts into valuestore
+        void persist(app::valuestore& valuestore) const;
+
+        // retrieve accounts from valuestore
+        void retrieve(const app::valuestore& valuestore);
+
+        // create a new account object
+        account create() const;
+
+        // insert or modify an existing account.
+        void set(const accounts::account& acc);
+
+        std::size_t count() const;
+
+        const account& get(std::size_t i) const;
+
+    signals:
+        void modify_account(std::size_t pos);
 
     private:
         QList<account> accounts_;

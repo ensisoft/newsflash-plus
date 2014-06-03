@@ -20,12 +20,45 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.            
 
+#include <newsflash/config.h>
+
+#include <newsflash/warnpush.h>
+#  include <QtGui/QToolBar>
+#  include <QtGui/QMenu>
+#  include <QAbstractListModel>
+#include <newsflash/warnpop.h>
+
 #include "accounts.h"
+
+namespace {
+
+    class model : public QAbstractListModel
+    {
+    public:
+        enum class type {
+            server, group
+        };
+        struct item {
+            model::type type;
+            QString text;
+            int parent;
+            int index;
+        };
+
+        model(QObject* parent) : QAbstractListModel(parent)
+        {}
+
+       ~model()
+        {}
+    private:
+    };
+
+} // namespace
 
 namespace gui
 {
 
-Accounts::Accounts(QObject* parent)
+Accounts::Accounts(app::accounts& accounts) : accounts_(accounts)
 {
     ui_.setupUi(this);
 }
@@ -33,16 +66,16 @@ Accounts::Accounts(QObject* parent)
 Accounts::~Accounts()
 {}
 
-void Accounts::add_actions(QMenu& menu)
-{}
+// void Accounts::add_actions(QMenu& menu)
+// {}
 
-void Accounts::add_actions(QToolBar& bar)
-{}
+// void Accounts::add_actions(QToolBar& bar)
+// {}
 
-void Accounts::activate(QWidget*)
-{}
+// void Accounts::activate(QWidget*)
+// {}
 
-void Accounts::deactivate()
-{}
+// void Accounts::deactivate()
+// {}
 
 } // gui
