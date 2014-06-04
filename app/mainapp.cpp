@@ -26,6 +26,7 @@
 
 #include <newsflash/warnpush.h>
 #  include <boost/version.hpp>
+#  include <QtGui/QMessageBox>
 #  include <QStringList>
 #  include <QFile>
 #  include <QDir>
@@ -82,6 +83,13 @@ int mainapp::run(int argc, char* argv[])
         const QStringList& cmds = app::get_cmd_line();
         for (int i=1; i<cmds.size(); ++i)
             qtinstance.sendMessage(cmds[i]);
+
+        QMessageBox msg;
+        msg.setStandardButtons(QMessageBox::Ok);
+        msg.setIcon(QMessageBox::Information);
+        msg.setText(tr("Another instance of " NEWSFLASH_TITLE " is already running.\r\n"
+                       "This instance will now exit."));
+        msg.exec();
         return 0;            
     }
 
@@ -126,6 +134,11 @@ int mainapp::run(int argc, char* argv[])
     gui::MainWindow   gui_window   { *this };
     gui::Accounts     gui_accounts { accounts };
     gui::Eventlog     gui_events   { events };
+
+    const auto& keycode = valuestore.get("settings", "keycode", "");
+    const bool  keyret  = keygen::verify_code(keycode);
+    gui_accounts.show_advertisment(!keyret);
+
 
     gui_window_ = &gui_window;
 
@@ -191,7 +204,9 @@ void mainapp::welcome_new_user()
     gui::DlgWelcome dlg(gui_window_);
     if (dlg.exec() == QDialog::Accepted)
     {
-        auto acc = accounts_->create();
+        accounts::account acc;
+        accounts_->suggest(acc);
+     
         gui::DlgAccount dlg(gui_window_, acc, true);
         if (dlg.exec() == QDialog::Accepted)
             accounts_->set(acc);

@@ -20,7 +20,13 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-#include <QCoreApplication>
+#include <newsflash/config.h>
+
+#include <newsflash/warnpush.h>
+#  include <QtGui/QIcon>
+#  include <QCoreApplication>
+#include <newsflash/warnpop.h>
+
 #include "eventlog.h"
 #include "foobar.h"
 
@@ -47,31 +53,49 @@ void eventlog::unhook(QCoreApplication& app)
 
 void eventlog::write(event_t type, const QString& msg, const QString& ctx)
 {
-    const auto time = QTime::currentTime();
-
-    bool was_full = events_.full();
-    events_.push_front({ type, msg, ctx, time});
-
-    if (was_full)
-         emit update_event(0);
-    else emit insert_event(0);
+    insert(type, msg, ctx, QTime::currentTime());
 }
 
 void eventlog::clear()
 {
+    beginRemoveRows(QModelIndex(), 0, events_.size());
     events_.clear();
-    emit clear_events();
+    endRemoveRows();
 }
 
-const eventlog::event& eventlog::operator[](int i) const
+
+int eventlog::rowCount(const QModelIndex&) const
 {
-    Q_ASSERT(i < events_.size());
-    return events_[i];
+    return static_cast<int>(events_.size());
 }
 
-std::size_t eventlog::size() const
+QVariant eventlog::data(const QModelIndex& index, int role) const
 {
-    return events_.size();
+    const auto& event = events_[index.row()];
+    switch (role)
+    {
+        case Qt::DecorationRole:
+        switch (event.type) {
+            case app::eventlog::event_t::warning:
+                return QIcon(":/resource/16x16_ico_png/ico_warning.png");
+            case app::eventlog::event_t::info:
+                return QIcon(":/resource/16x16_ico_png/ico_info.png");
+            case app::eventlog::event_t::error:
+                return QIcon(":/resource/16x16_ico_png/ico_error.png");
+            default:
+                Q_ASSERT("missing event type");
+                break;
+            }
+            break;
+
+            case Qt::DisplayRole:
+                return QString("[%1] [%2] %3")
+                    .arg(event.time.toString("hh:mm:ss:zzz"))
+                    .arg(event.context)
+                    .arg(event.message);                
+                    break;
+    }
+    return QVariant();    
 }
 
 bool eventlog::eventFilter(QObject* object, QEvent* event)
@@ -81,12 +105,27 @@ bool eventlog::eventFilter(QObject* object, QEvent* event)
 
     const auto* data = static_cast<const logevent*>(event);
 
-    bool was_full = events_.full();
-    events_.push_front({ data->type_, data->message_, data->context_, data->time_ });
-    if (was_full)
-         emit update_event(0);
-    else emit insert_event(0);
+    insert(data->type_, data->message_, data->context_, data->time_);
     return true;
+}
+
+void eventlog::insert(eventlog::event_t type, const QString& msg, const QString& ctx, const QTime& time)
+{
+    const event e {type, msg, ctx, time};
+
+    if (events_.full())
+    {
+        const auto first = index(0, 0);
+        const auto last  = index((int)events_.size(), 1);
+        events_.push_front(e);
+        emit dataChanged(first, last);
+    }
+    else
+    {
+        beginInsertRows(QModelIndex(), 0, 0);
+        events_.push_front(e);
+        endInsertRows();
+    }
 }
 
 void eventlog::post(event_t type, const QString& msg, const QString& ctx)

@@ -22,10 +22,17 @@
 
 #pragma once
 
-#include <newsflash/sdk/uicomponent.h>
-#include "ui_accounts.h"
+#include <newsflash/config.h>
 
+#include <newsflash/sdk/uicomponent.h>
+#include <newsflash/warnpush.h>
+#include <newsflash/warnpop.h>
+#include <memory>
+
+#include "ui_accounts.h"
 #include "../accounts.h"
+
+class QMovie;
 
 namespace gui
 {
@@ -41,8 +48,13 @@ namespace gui
 
         sdk::uicomponent::info get_info() const;
 
+        void show_advertisment(bool show);
+
     private:
         Ui::Accounts ui_;
+
+    private:
+        std::unique_ptr<QMovie> movie_;
 
     private:
         app::accounts& accounts_;

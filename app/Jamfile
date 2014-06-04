@@ -30,8 +30,15 @@ exe newsflash
   [ glob gui/*.cpp ]
 
   gui/resource.qrc
+
+  ../keygen/keygen.cpp 
 ;
 
 #build-project "unit_test" ;
 
 build-project "plugins/womble" ;
+
+install $(NEWSFLASH_INSTALL_DBG) : newsflash
+: 
+  <variant>release:<location>$(NEWSFLASH_INSTALL_REl)
+;

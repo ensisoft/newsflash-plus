@@ -24,6 +24,8 @@
 
 #include <newsflash/config.h>
 #include <newsflash/warnpush.h>
+#  include <QAbstractListModel>
+#  include <QDateTime>
 #  include <QString>
 #  include <QList>
 #  include <QObject>
@@ -33,15 +35,19 @@ namespace app
 {
     class valuestore;
 
-    class accounts : public QObject
+    class accounts : public QAbstractListModel
     {
-        Q_OBJECT
-
     public:
         struct server {
             QString host;
             qint16  port;
             bool    enabled;
+        };
+
+        struct group {
+            QString   name;
+            QDateTime update;
+            quint64   size;
         };
 
         struct account {
@@ -58,6 +64,8 @@ namespace app
             bool enable_pipelining;
 
             int maxconn;
+
+            QList<group> groups;
         };
 
         // persist accounts into valuestore
@@ -67,17 +75,22 @@ namespace app
         void retrieve(const app::valuestore& valuestore);
 
         // create a new account object
-        account create() const;
+        void suggest(account& ac) const;
 
         // insert or modify an existing account.
         void set(const accounts::account& acc);
 
-        std::size_t count() const;
+        const 
+        account& get(std::size_t i) const;
 
-        const account& get(std::size_t i) const;
+        account& get(std::size_t i);
 
-    signals:
-        void modify_account(std::size_t pos);
+        int rowCount(const QModelIndex&) const override;
+
+        QVariant data(const QModelIndex&, int role) const override;
+
+    // signals:
+    //     void modify_account(std::size_t pos);
 
     private:
         QList<account> accounts_;

@@ -14,7 +14,7 @@
    <string>Newsflash Plus</string>
   </property>
   <property name="windowIcon">
-   <iconset>
+   <iconset resource="resource.qrc">
     <normaloff>:/resource/flash.ico</normaloff>:/resource/flash.ico</iconset>
   </property>
   <property name="toolButtonStyle">
@@ -88,16 +88,7 @@
        <enum>QFrame::Sunken</enum>
       </property>
       <layout class="QGridLayout" name="gridLayout_4">
-       <property name="leftMargin">
-        <number>0</number>
-       </property>
-       <property name="topMargin">
-        <number>0</number>
-       </property>
-       <property name="rightMargin">
-        <number>0</number>
-       </property>
-       <property name="bottomMargin">
+       <property name="margin">
         <number>0</number>
        </property>
        <item row="0" column="0">
@@ -119,16 +110,7 @@
        <enum>QFrame::Sunken</enum>
       </property>
       <layout class="QGridLayout" name="gridLayout_3">
-       <property name="leftMargin">
-        <number>0</number>
-       </property>
-       <property name="topMargin">
-        <number>0</number>
-       </property>
-       <property name="rightMargin">
-        <number>0</number>
-       </property>
-       <property name="bottomMargin">
+       <property name="margin">
         <number>0</number>
        </property>
        <item row="0" column="0">
@@ -139,7 +121,7 @@
             <string/>
            </property>
            <property name="pixmap">
-            <pixmap>:/resource/16x16_ico_png/ico_disk.png</pixmap>
+            <pixmap resource="resource.qrc">:/resource/16x16_ico_png/ico_disk.png</pixmap>
            </property>
           </widget>
          </item>
@@ -173,16 +155,7 @@
        <enum>QFrame::Sunken</enum>
       </property>
       <layout class="QGridLayout" name="gridLayout">
-       <property name="leftMargin">
-        <number>0</number>
-       </property>
-       <property name="topMargin">
-        <number>0</number>
-       </property>
-       <property name="rightMargin">
-        <number>0</number>
-       </property>
-       <property name="bottomMargin">
+       <property name="margin">
         <number>0</number>
        </property>
        <item row="0" column="0">
@@ -205,7 +178,7 @@
             <string/>
            </property>
            <property name="pixmap">
-            <pixmap>:/resource/16x16_ico_png/ico_flush.png</pixmap>
+            <pixmap resource="resource.qrc">:/resource/16x16_ico_png/ico_flush.png</pixmap>
            </property>
            <property name="scaledContents">
             <bool>false</bool>
@@ -248,16 +221,7 @@
        <enum>QFrame::Sunken</enum>
       </property>
       <layout class="QGridLayout" name="gridLayout_2">
-       <property name="leftMargin">
-        <number>0</number>
-       </property>
-       <property name="topMargin">
-        <number>0</number>
-       </property>
-       <property name="rightMargin">
-        <number>0</number>
-       </property>
-       <property name="bottomMargin">
+       <property name="margin">
         <number>0</number>
        </property>
        <item row="0" column="0">
@@ -268,7 +232,7 @@
             <string/>
            </property>
            <property name="pixmap">
-            <pixmap>:/resource/16x16_ico_png/ico_download.png</pixmap>
+            <pixmap resource="resource.qrc">:/resource/16x16_ico_png/ico_download.png</pixmap>
            </property>
           </widget>
          </item>
@@ -320,16 +284,7 @@
        <enum>QFrame::Sunken</enum>
       </property>
       <layout class="QHBoxLayout" name="horizontalLayout_4">
-       <property name="leftMargin">
-        <number>0</number>
-       </property>
-       <property name="topMargin">
-        <number>0</number>
-       </property>
-       <property name="rightMargin">
-        <number>0</number>
-       </property>
-       <property name="bottomMargin">
+       <property name="margin">
         <number>0</number>
        </property>
        <item>
@@ -346,7 +301,7 @@
             <string/>
            </property>
            <property name="pixmap">
-            <pixmap>:/resource/16x16_ico_png/ico_task_queued.png</pixmap>
+            <pixmap resource="resource.qrc">:/resource/16x16_ico_png/ico_task_queued.png</pixmap>
            </property>
           </widget>
          </item>
@@ -416,7 +371,7 @@
      <x>0</x>
      <y>0</y>
      <width>806</width>
-     <height>26</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -525,7 +480,7 @@
   </widget>
   <action name="actionExit">
    <property name="icon">
-    <iconset>
+    <iconset resource="resource.qrc">
      <normaloff>:/resource/16x16_ico_png/ico_exit.png</normaloff>:/resource/16x16_ico_png/ico_exit.png</iconset>
    </property>
    <property name="text">
@@ -537,7 +492,7 @@
   </action>
   <action name="actionSettings">
    <property name="icon">
-    <iconset>
+    <iconset resource="resource.qrc">
      <normaloff>:/resource/16x16_ico_png/ico_settings.png</normaloff>:/resource/16x16_ico_png/ico_settings.png</iconset>
    </property>
    <property name="text">
@@ -546,7 +501,7 @@
   </action>
   <action name="actionAbout">
    <property name="icon">
-    <iconset>
+    <iconset resource="resource.qrc">
      <normaloff>:/resource/16x16_ico_png/ico_about.png</normaloff>:/resource/16x16_ico_png/ico_about.png</iconset>
    </property>
    <property name="text">
@@ -585,7 +540,7 @@
   </action>
   <action name="actionHelp">
    <property name="icon">
-    <iconset>
+    <iconset resource="resource.qrc">
      <normaloff>:/resource/16x16_ico_png/ico_help.png</normaloff>:/resource/16x16_ico_png/ico_help.png</iconset>
    </property>
    <property name="text">
@@ -594,20 +549,20 @@
   </action>
   <action name="actionTODO">
    <property name="icon">
-    <iconset>
+    <iconset resource="resource.qrc">
      <normaloff>:/resource/16x16_ico_png/ico_broken.png</normaloff>:/resource/16x16_ico_png/ico_broken.png</iconset>
    </property>
    <property name="text">
     <string>TODO</string>
    </property>
   </action>
-  <action name="actionCloseWindow">
+  <action name="actionWindowClose">
    <property name="icon">
-    <iconset>
+    <iconset resource="resource.qrc">
      <normaloff>:/resource/16x16_ico_png/ico_close.png</normaloff>:/resource/16x16_ico_png/ico_close.png</iconset>
    </property>
    <property name="text">
-    <string>Close window</string>
+    <string>Close</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+W</string>
@@ -615,7 +570,7 @@
   </action>
   <action name="actionBuyNow">
    <property name="icon">
-    <iconset>
+    <iconset resource="resource.qrc">
      <normaloff>:/resource/16x16_ico_png/ico_euro.png</normaloff>:/resource/16x16_ico_png/ico_euro.png</iconset>
    </property>
    <property name="text">
@@ -624,40 +579,16 @@
   </action>
   <action name="actionRegister">
    <property name="icon">
-    <iconset>
+    <iconset resource="resource.qrc">
      <normaloff>:/resource/16x16_ico_png/ico_register.png</normaloff>:/resource/16x16_ico_png/ico_register.png</iconset>
    </property>
    <property name="text">
     <string>Register</string>
    </property>
   </action>
-  <action name="actionNextWindow">
-   <property name="icon">
-    <iconset>
-     <normaloff>:/resource/16x16_ico_png/ico_next_bookmark.png</normaloff>:/resource/16x16_ico_png/ico_next_bookmark.png</iconset>
-   </property>
-   <property name="text">
-    <string>Next window</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+Tab</string>
-   </property>
-  </action>
-  <action name="actionPrevWindow">
-   <property name="icon">
-    <iconset>
-     <normaloff>:/resource/16x16_ico_png/ico_previous_bookmark.png</normaloff>:/resource/16x16_ico_png/ico_previous_bookmark.png</iconset>
-   </property>
-   <property name="text">
-    <string>Previous window</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+Shift+Backtab</string>
-   </property>
-  </action>
   <action name="actionReportBug">
    <property name="icon">
-    <iconset>
+    <iconset resource="resource.qrc">
      <normaloff>:/resource/16x16_ico_png/ico_bug.png</normaloff>:/resource/16x16_ico_png/ico_bug.png</iconset>
    </property>
    <property name="text">
@@ -666,7 +597,7 @@
   </action>
   <action name="actionSendFeedback">
    <property name="icon">
-    <iconset>
+    <iconset resource="resource.qrc">
      <normaloff>:/resource/16x16_ico_png/ico_user_feedback.png</normaloff>:/resource/16x16_ico_png/ico_user_feedback.png</iconset>
    </property>
    <property name="text">
@@ -675,7 +606,7 @@
   </action>
   <action name="actionRequestFeature">
    <property name="icon">
-    <iconset>
+    <iconset resource="resource.qrc">
      <normaloff>:/resource/16x16_ico_png/ico_idea.png</normaloff>:/resource/16x16_ico_png/ico_idea.png</iconset>
    </property>
    <property name="text">
@@ -684,7 +615,7 @@
   </action>
   <action name="actionContextHelp">
    <property name="icon">
-    <iconset>
+    <iconset resource="resource.qrc">
      <normaloff>:/resource/16x16_ico_png/ico_help.png</normaloff>:/resource/16x16_ico_png/ico_help.png</iconset>
    </property>
    <property name="text">
@@ -696,7 +627,7 @@
   </action>
   <action name="actionViewForum">
    <property name="icon">
-    <iconset>
+    <iconset resource="resource.qrc">
      <normaloff>:/resource/16x16_ico_png/ico_forum.png</normaloff>:/resource/16x16_ico_png/ico_forum.png</iconset>
    </property>
    <property name="text">
@@ -708,7 +639,7 @@
   </action>
   <action name="actionRequestCode">
    <property name="icon">
-    <iconset>
+    <iconset resource="resource.qrc">
      <normaloff>:/resource/16x16_ico_png/ico_register.png</normaloff>:/resource/16x16_ico_png/ico_register.png</iconset>
    </property>
    <property name="text">
@@ -716,6 +647,30 @@
    </property>
    <property name="toolTip">
     <string>Request registration code</string>
+   </property>
+  </action>
+  <action name="actionWindowNext">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_next_bookmark.png</normaloff>:/resource/16x16_ico_png/ico_next_bookmark.png</iconset>
+   </property>
+   <property name="text">
+    <string>Next</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Tab</string>
+   </property>
+  </action>
+  <action name="actionWindowPrev">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_previous_bookmark.png</normaloff>:/resource/16x16_ico_png/ico_previous_bookmark.png</iconset>
+   </property>
+   <property name="text">
+    <string>Prev</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+Backtab</string>
    </property>
   </action>
  </widget>

@@ -85,12 +85,11 @@ void accounts::retrieve(const app::valuestore& valuestore)
     }
 }
 
-accounts::account accounts::create() const
+void accounts::suggest(account& acc) const
 {
     const auto& home = QDir::homePath();
     const auto& data = home + "/Newsflash/Data";
 
-    account acc;
     acc.id                 = (quint32)std::time(nullptr);
     acc.path               = QDir::toNativeSeparators(data);
     acc.general.enabled    = false;
@@ -117,7 +116,6 @@ accounts::account accounts::create() const
         }
         ++index;
     }
-    return acc;
 }
 
 void accounts::set(const accounts::account& acc)
@@ -139,12 +137,7 @@ void accounts::set(const accounts::account& acc)
         index = std::distance(std::begin(accounts_), it);
         *it = acc;
     }
-    emit modify_account(index);
-}
-
-std::size_t accounts::count() const
-{
-    return accounts_.size();
+ //   emit modify_account(index);
 }
 
 const
@@ -152,6 +145,22 @@ accounts::account& accounts::get(std::size_t i) const
 {
     Q_ASSERT(i < accounts_.size());
     return accounts_[i];
+}
+
+accounts::account& accounts::get(std::size_t i)
+{
+    Q_ASSERT(i < accounts_.size());
+    return accounts_[i];
+}
+
+int accounts::rowCount(const QModelIndex&) const 
+{
+    return 0;
+}
+
+QVariant accounts::data(const QModelIndex&, int role) const
+{
+    return QVariant();
 }
 
 } // app

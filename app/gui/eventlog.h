@@ -36,14 +36,10 @@ namespace gui
         Eventlog(app::eventlog& events);
        ~Eventlog();
 
-        void add_actions(QMenu& menu);
-        void add_actions(QToolBar& bar);
-//        void activate(QWidget*);
-        //void deactivate();
-        //void get_info(ext::uicomponent_info& info) const;
-        //void write_log(logtype type, const QString& context, const QString& msg);
+        void add_actions(QMenu& menu) override;
+        void add_actions(QToolBar& bar) override;
 
-        sdk::uicomponent::info get_info() const;
+        sdk::uicomponent::info get_info() const override;
 
     private slots:
         void on_actionClearLog_triggered();

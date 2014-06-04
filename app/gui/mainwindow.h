@@ -73,13 +73,18 @@ namespace gui
         void on_actionContextHelp_triggered();
 
     private slots:
-        void show_tab();
+        void on_actionWindowClose_triggered();
+        void on_actionWindowNext_triggered();
+        void on_actionWindowPrev_triggered();
+        void actionWindowToggle_triggered();
+        void actionWindowFocus_triggered();
 
     private:
         Ui::MainWindow ui_;
         app::mainapp& app_;
         sdk::uicomponent* current_;
         QList<sdk::uicomponent*> tabs_;
+        QList<QAction*> tabs_actions_;
     };
 
 } // gui

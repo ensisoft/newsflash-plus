@@ -30,62 +30,13 @@
 
 #include "eventlog.h"
 
-namespace {
-    class model : public QAbstractListModel
-    {
-    public:
-        model(QObject* parent, const app::eventlog& events) : QAbstractListModel(parent), 
-            events_(events)
-        {}
-
-       ~model()
-        {}
-
-        int rowCount(const QModelIndex&) const
-        {
-            return static_cast<int>(events_.size());
-        }
-        QVariant data(const QModelIndex& index, int role) const
-        {
-            const auto& event = events_[index.row()];
-            switch (role)
-            {
-                case Qt::DecorationRole:
-                switch (event.type) {
-                    case app::eventlog::event_t::warning:
-                        return QIcon(":/resource/16x16_ico_png/ico_warning.png");
-                    case app::eventlog::event_t::info:
-                       return QIcon(":/resource/16x16_ico_png/ico_info.png");
-                    case app::eventlog::event_t::error:
-                       return QIcon(":/resource/16x16_ico_png/ico_error.png");
-                    default:
-                       Q_ASSERT("missing event type");
-                       break;
-                }
-                break;
-
-                case Qt::DisplayRole:
-                    return QString("[%1] [%2] %3")
-                      .arg(event.time.toString("hh:mm:ss:zzz"))
-                      .arg(event.context)
-                      .arg(event.message);                
-                    break;
-            }
-            return QVariant();
-        }
-
-    private:
-        const app::eventlog& events_;
-    };
-} // namespace
-
 namespace gui
 {
 
 Eventlog::Eventlog(app::eventlog& events) : events_(events)
 {
     ui_.setupUi(this);
-    ui_.listLog->setModel(new model(this, events));
+    ui_.listLog->setModel(&events);
     ui_.actionClearLog->setEnabled(false);
 }
 

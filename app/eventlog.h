@@ -26,54 +26,47 @@
 
 #include <newsflash/warnpush.h>
 #  include <boost/circular_buffer.hpp>
-#  include <QObject>
+#  include <QAbstractListModel>
 #  include <QEvent>
 #  include <QTime>
+#  include <QString>
 #include <newsflash/warnpop.h>
 
 class QCoreApplication;
 
 namespace app
 {
-    class eventlog : public QObject
+    class eventlog : public QAbstractListModel
     {
-        Q_OBJECT
-
     public:
         enum class event_t {
             warning, info, error
         };
 
-        struct event {
-            event_t type;
-            QString message;
-            QString context;
-            QTime   time;
-        };
-
         eventlog();
        ~eventlog();
 
+        // install this eventlog as the global application log
         void hook(QCoreApplication& app);
+
+        // uninstall this eventlog as the global application log
         void unhook(QCoreApplication& app);
 
+        // record a new event in the log
         void write(event_t type, const QString& msg, const QString& ctx);
 
+        // clear the event log
         void clear();
 
-        const event& operator[](int i) const;
+        // abstraclistmodel data accessor
+        int rowCount(const QModelIndex&) const override;
 
-        std::size_t size() const;
+        // abstractlistmodel data accessor
+        QVariant data(const QModelIndex& index, int role) const override;
 
         // post a log event
         static
         void post(event_t type, const QString& msg, const QString& ctx);
-
-    signals:
-        void insert_event(std::size_t pos);
-        void update_event(std::size_t pos);
-        void clear_events();
-
     private:
         class logevent : public QEvent
         {
@@ -104,8 +97,18 @@ namespace app
 
     private:
         bool eventFilter(QObject* object, QEvent* event);
+        
+    private:
+        void insert(event_t type, const QString& msg, const QString& ctx, const QTime& time);
 
     private:
+        struct event {
+            event_t type;
+            QString message;
+            QString context;
+            QTime   time;
+        };
+
         boost::circular_buffer<event> events_;
     };
 

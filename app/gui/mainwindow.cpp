@@ -112,66 +112,67 @@ void MainWindow::persist(app::valuestore& values)
 
 void MainWindow::attach(sdk::uicomponent* ui)
 {
-    Q_ASSERT(std::find(std::begin(tabs_),
-        std::end(tabs_), ui) == std::end(tabs_));
+    Q_ASSERT(tabs_.indexOf(ui) == -1);
 
     const auto index = tabs_.size();
-    tabs_.append(ui);
-
     const auto& text = ui->windowTitle();
     const auto& icon = ui->windowIcon();
 
     QAction* action = ui_.menuView->addAction(text);
     action->setCheckable(true);
-    //action->setIcon(icon);
     action->setChecked(false);
-    action->setProperty("tab-index", index);
-    QObject::connect(action, SIGNAL(triggered()), 
-        this, SLOT(show_tab()));
+    action->setProperty("index", index);
+    QObject::connect(action, SIGNAL(triggered()), this, SLOT(actionWindowToggle_triggered()));
+
+    tabs_.append(ui);    
+    tabs_actions_.append(action);
 }
 
 void MainWindow::detach(sdk::uicomponent* ui)
 {
-    Q_ASSERT(std::find(std::begin(tabs_),
-        std::end(tabs_), ui) != std::end(tabs_));
+    const auto index = tabs_.indexOf(ui);
+    Q_ASSERT(index != -1);
 
-    if (current_ == ui)
-        current_ = nullptr;
+    hide(ui);
 
-    int index = tabs_.indexOf(ui);
     tabs_.removeAt(index);
+    tabs_actions_.removeAt(index);
 
-    index = ui_.mainTab->indexOf(ui);
-    if (index != -1)
-    {
-        ui_.mainTab->removeTab(index);
-    }
+    auto actions = ui_.menuView->actions();
+    auto* action = actions[index];
+    ui_.menuView->removeAction(action);
 }
 
 void MainWindow::show(sdk::uicomponent* ui)
 {
-    Q_ASSERT(std::find(std::begin(tabs_),
-        std::end(tabs_), ui) != std::end(tabs_));
+    const int index = tabs_.indexOf(ui);
+    Q_ASSERT(index != -1);
 
-    if (ui_.mainTab->indexOf(ui) == -1)
-    {
-        const int index = tabs_.indexOf(ui);
-        const auto& icon = ui->windowIcon();
-        const auto& text = ui->windowTitle();
-        ui_.mainTab->insertTab(index, ui, icon, text);
-    }
+    if (ui_.mainTab->indexOf(ui) != -1)
+        return;
+
+    auto* action = tabs_actions_[index];
+    action->setChecked(true);
+
+    const auto& icon = ui->windowIcon();
+    const auto& text = ui->windowTitle();
+    ui_.mainTab->insertTab(index, ui, icon, text);    
+
 }
 
 void MainWindow::hide(sdk::uicomponent* ui)
 {
-    Q_ASSERT(std::find(std::begin(tabs_),
-        std::end(tabs_), ui) != std::end(tabs_));
+    const int index = tabs_.indexOf(ui);
+    Q_ASSERT(index != -1);
 
-    const auto index = ui_.mainTab->indexOf(ui);
-    if (index == -1)
+    const int tab_index = ui_.mainTab->indexOf(ui);
+    if (tab_index == -1)
         return;
 
-    ui_.mainTab->removeTab(index);
+    auto* action = tabs_actions_[index];
+    action->setChecked(false);
+
+    ui_.mainTab->removeTab(tab_index);
 }
 
 void MainWindow::focus(sdk::uicomponent* ui)
@@ -210,39 +211,64 @@ void MainWindow::on_mainTab_currentChanged(int index)
 {
     DEBUG(str("Current tab _1", index));
 
-    sdk::uicomponent* tab = nullptr;
-    if (index != -1)
-        tab = static_cast<sdk::uicomponent*>(ui_.mainTab->widget(index));
-
-    ui_.mainToolBar->clear();
-    ui_.menuEdit->clear();
-
     if (current_)
         current_->deactivate();
 
-    if (tab)
-    { 
-        tab->activate(ui_.mainTab);
-        tab->add_actions(*ui_.mainToolBar);
-        tab->add_actions(*ui_.menuEdit);
+    ui_.mainToolBar->clear();
+    ui_.menuEdit->clear();
+    ui_.menuWindow->clear();
 
-        auto title = tab->windowTitle();
+    if (index != -1)
+    {
+        const auto count = ui_.mainTab->count();
+        const auto curr  = index;
+        for (int i=0; i<count; ++i)
+        {
+            const auto& text = ui_.mainTab->tabText(i);
+            const auto& icon = ui_.mainTab->tabIcon(i);
+            QAction* action  = ui_.menuWindow->addAction(icon, text);
+            action->setCheckable(true);
+            action->setChecked(i == curr);
+            action->setProperty("tab-index", i);
+            if (i < 9)
+                action->setShortcut(QKeySequence(Qt::ALT | (Qt::Key_1 + i)));
+
+            QObject::connect(action, SIGNAL(triggered()),
+                this, SLOT(actionWindowFocus_triggered()));
+        }
+
+        auto* ui = static_cast<sdk::uicomponent*>(
+            ui_.mainTab->widget(index)); 
+
+        ui->activate(ui_.mainTab);
+        ui->add_actions(*ui_.mainToolBar);
+        ui->add_actions(*ui_.menuEdit);
+
+        auto title = ui->windowTitle();
         auto space = title.indexOf(" ");
         if (space != -1)
             title.resize(space);
 
         ui_.menuEdit->setTitle(title);
-        current_ = tab;
+        current_ = ui;
     }
 
     // add the stuff that is always in the edit menu
     ui_.mainToolBar->addSeparator();
     ui_.mainToolBar->addAction(ui_.actionContextHelp);
+
+    // and this is in the window menu
+    ui_.menuWindow->addSeparator();
+    ui_.menuWindow->addAction(ui_.actionWindowClose);
+    ui_.menuWindow->addAction(ui_.actionWindowNext);
+    ui_.menuWindow->addAction(ui_.actionWindowPrev);    
 }
 
-void MainWindow::on_mainTab_tabCloseRequested(int index)
+void MainWindow::on_mainTab_tabCloseRequested(int tab)
 {
-    DEBUG(str("Close tab _1", index));
+    auto* ui = static_cast<sdk::uicomponent*>(ui_.mainTab->widget(tab));
+
+    hide(ui);
 }
 
 void MainWindow::on_actionContextHelp_triggered()
@@ -254,14 +280,59 @@ void MainWindow::on_actionContextHelp_triggered()
     app_.open_help(info.helpurl);
 }
 
-void MainWindow::show_tab()
+void MainWindow::on_actionWindowClose_triggered()
+{
+    const auto tab = ui_.mainTab->currentIndex();
+    if (tab == -1)
+        return;
+
+    auto* ui = static_cast<sdk::uicomponent*>(
+        ui_.mainTab->widget(tab));
+
+    hide(ui);
+}
+
+void MainWindow::on_actionWindowNext_triggered()
+{
+    const auto tab = ui_.mainTab->currentIndex();
+    if (tab == -1)
+        return;
+
+    auto* ui = static_cast<sdk::uicomponent*>(
+        ui_.mainTab->widget(tab));
+
+    const auto size  = tabs_.size();
+    const auto index = tabs_.indexOf(ui);
+    auto* next = tabs_[(index + 1) % size];
+    focus(next);
+}
+
+void MainWindow::on_actionWindowPrev_triggered()
+{
+    const auto tab = ui_.mainTab->currentIndex();
+    if (tab == -1)
+        return;
+
+    auto* ui = static_cast<sdk::uicomponent*>(
+        ui_.mainTab->widget(tab));
+
+    const auto size  = tabs_.size();
+    const auto index = tabs_.indexOf(ui);
+    auto* prev = tabs_[((index  == 0) ? size - 1 : index - 1)];
+    focus(prev);
+}
+
+void MainWindow::actionWindowToggle_triggered()
 {
     const auto* action = static_cast<QAction*>(sender());
+    const auto index   = action->property("index").toInt();
+    const bool visible = action->isChecked();
 
-    const auto index = action->property("tab-index").toInt();
+    //DEBUG(str("Toggle tab _1", index));
 
     auto* tab = tabs_[index];
-    if (action->isChecked()) 
+
+    if (visible)
     {
         show(tab);
         focus(tab);
@@ -270,6 +341,19 @@ void MainWindow::show_tab()
     {
         hide(tab);
     }
+}
+
+void MainWindow::actionWindowFocus_triggered()
+{
+    auto* action = static_cast<QAction*>(sender());
+    const auto tab_index = action->property("tab-index").toInt();
+
+    auto* ui = static_cast<sdk::uicomponent*>(
+        ui_.mainTab->widget(tab_index));
+
+    action->setChecked(true);
+
+    focus(ui);
 }
 
 } // gui

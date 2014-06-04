@@ -10,9 +10,8 @@ lib womble
   <link>shared
 ;
 
-install bin : womble
+install $(PLUGIN_DEBUG) : womble
 : 
-  <variant>debug:<location>$(PLUGIN_DEBUG)
   <variant>release:<location>$(PLUGIN_RELEASE)
 ;
 

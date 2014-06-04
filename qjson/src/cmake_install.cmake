@@ -33,6 +33,18 @@ IF(NOT DEFINED CMAKE_INSTALL_SO_NO_EXE)
 ENDIF(NOT DEFINED CMAKE_INSTALL_SO_NO_EXE)
 
 IF(NOT CMAKE_INSTALL_COMPONENT OR "${CMAKE_INSTALL_COMPONENT}" STREQUAL "Unspecified")
+  FOREACH(file
+      "$ENV{DESTDIR}/usr/local/lib/libqjson.so.0.8.1"
+      "$ENV{DESTDIR}/usr/local/lib/libqjson.so.0"
+      "$ENV{DESTDIR}/usr/local/lib/libqjson.so"
+      )
+    IF(EXISTS "${file}" AND
+       NOT IS_SYMLINK "${file}")
+      FILE(RPATH_CHECK
+           FILE "${file}"
+           RPATH "")
+    ENDIF()
+  ENDFOREACH()
   list(APPEND CMAKE_ABSOLUTE_DESTINATION_FILES
    "/usr/local/lib/libqjson.so.0.8.1;/usr/local/lib/libqjson.so.0;/usr/local/lib/libqjson.so")
   IF (CMAKE_WARN_ON_ABSOLUTE_INSTALL_DESTINATION)
@@ -42,10 +54,24 @@ IF(NOT CMAKE_INSTALL_COMPONENT OR "${CMAKE_INSTALL_COMPONENT}" STREQUAL "Unspeci
     message(FATAL_ERROR "ABSOLUTE path INSTALL DESTINATION forbidden (by caller): ${CMAKE_ABSOLUTE_DESTINATION_FILES}")
   ENDIF (CMAKE_ERROR_ON_ABSOLUTE_INSTALL_DESTINATION)
 FILE(INSTALL DESTINATION "/usr/local/lib" TYPE SHARED_LIBRARY FILES
-    "/home/samiv/coding/newsflash/qjson/src/CMakeFiles/CMakeRelink.dir/libqjson.so.0.8.1"
-    "/home/samiv/coding/newsflash/qjson/src/CMakeFiles/CMakeRelink.dir/libqjson.so.0"
-    "/home/samiv/coding/newsflash/qjson/src/CMakeFiles/CMakeRelink.dir/libqjson.so"
+    "/home/samiv/coding/newsflash/qjson/lib/libqjson.so.0.8.1"
+    "/home/samiv/coding/newsflash/qjson/lib/libqjson.so.0"
+    "/home/samiv/coding/newsflash/qjson/lib/libqjson.so"
     )
+  FOREACH(file
+      "$ENV{DESTDIR}/usr/local/lib/libqjson.so.0.8.1"
+      "$ENV{DESTDIR}/usr/local/lib/libqjson.so.0"
+      "$ENV{DESTDIR}/usr/local/lib/libqjson.so"
+      )
+    IF(EXISTS "${file}" AND
+       NOT IS_SYMLINK "${file}")
+      FILE(RPATH_REMOVE
+           FILE "${file}")
+      IF(CMAKE_INSTALL_DO_STRIP)
+        EXECUTE_PROCESS(COMMAND "/usr/bin/strip" "${file}")
+      ENDIF(CMAKE_INSTALL_DO_STRIP)
+    ENDIF()
+  ENDFOREACH()
 ENDIF(NOT CMAKE_INSTALL_COMPONENT OR "${CMAKE_INSTALL_COMPONENT}" STREQUAL "Unspecified")
 
 IF(NOT CMAKE_INSTALL_COMPONENT OR "${CMAKE_INSTALL_COMPONENT}" STREQUAL "Unspecified")

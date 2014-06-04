@@ -30,7 +30,7 @@
 int main(int argc, char* argv[])
 {
     DEBUG("It's alive!");
-    DEBUG(NEWSFLASH_VERSION);
+    DEBUG(NEWSFLASH_TITLE << NEWSFLASH_VERSION);
 
     try 
     {

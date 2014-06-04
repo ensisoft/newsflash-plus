@@ -228,7 +228,7 @@
          <item>
           <layout class="QVBoxLayout" name="verticalLayout">
            <item>
-            <widget class="QLabel" name="lblBanner">
+            <widget class="QLabel" name="lblMovie">
              <property name="cursor">
               <cursorShape>PointingHandCursor</cursorShape>
              </property>
