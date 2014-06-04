@@ -100,7 +100,7 @@ build-project "par2cmdline" ;
 
 if [ os.name ] = LINUX
 {
-    build-project launcher ;
+    build-project "tools/launcher" ;
 }
 
 
