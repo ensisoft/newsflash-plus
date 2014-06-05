@@ -32,6 +32,7 @@
 #include <ctime>
 
 #include "accounts.h"
+#include "../accounts.h"
 #include "../debug.h"
 #include "../format.h"
 
@@ -50,41 +51,18 @@ Accounts::~Accounts()
 
 void Accounts::add_actions(QMenu& menu)
 {
-    menu.addAction(ui_.actionServerAdd);
-    menu.addAction(ui_.actionServerDelete);
+    menu.addAction(ui_.actionNew);
+    menu.addAction(ui_.actionRemove);
     menu.addSeparator();
-    menu.addAction(ui_.actionServerSortGroups);
-    menu.addAction(ui_.actionServerDownloadList);
-    menu.addAction(ui_.actionGroupAdd);
-    menu.addAction(ui_.actionGroupAddByName);
-    menu.addSeparator();
-    menu.addAction(ui_.actionGroupUpdate);
-    menu.addAction(ui_.actionGroupUpdateWO);
-    menu.addSeparator();
-    menu.addAction(ui_.actionGroupOpen);
-    menu.addSeparator();
-    menu.addAction(ui_.actionGroupDelete);
-    menu.addSeparator();
-    menu.addAction(ui_.actionGroupEraseContent);
-    menu.addSeparator();
-    menu.addAction(ui_.actionGroupPurgeContent);
-
+    menu.addAction(ui_.actionProperties);
 }
 
 void Accounts::add_actions(QToolBar& bar)
 {
-    bar.addAction(ui_.actionServerAdd);
-    bar.addAction(ui_.actionServerDelete);
+    bar.addAction(ui_.actionNew);
+    bar.addAction(ui_.actionRemove);
     bar.addSeparator();
-    bar.addAction(ui_.actionServerSortGroups);
-    bar.addAction(ui_.actionGroupAdd);
-    bar.addSeparator();
-    bar.addAction(ui_.actionGroupUpdate);
-    bar.addAction(ui_.actionGroupOpen);
-    bar.addSeparator();
-    bar.addAction(ui_.actionGroupDelete);
-    bar.addAction(ui_.actionGroupEraseContent);
-    bar.addAction(ui_.actionGroupPurgeContent);
+    bar.addAction(ui_.actionProperties);
 }
 
 void Accounts::show_advertisment(bool show)

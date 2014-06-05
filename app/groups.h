@@ -1,4 +1,4 @@
-// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -18,48 +18,54 @@
 //  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 //  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-//  THE SOFTWARE.
+//  THE SOFTWARE.            
 
 #pragma once
 
 #include <newsflash/config.h>
 
-#include <newsflash/sdk/uicomponent.h>
 #include <newsflash/warnpush.h>
+#  include <QAbstractTableModel>
+#  include <QDateTime>
+#  include <QString>
+#  include <QList>
 #include <newsflash/warnpop.h>
-#include <memory>
-#include "ui_accounts.h"
 
-class QMovie;
-
-namespace app {
-    class accounts;
-}
-
-namespace gui
+namespace app
 {
-    class Accounts : public sdk::uicomponent
+    class valuestore;
+
+    class groups : public QAbstractTableModel
     {
-        Q_OBJECT
+
     public:
-        Accounts(app::accounts& accounts);
-       ~Accounts();
+        groups();
+       ~groups();
 
-        void add_actions(QMenu& menu);
-        void add_actions(QToolBar& bar);
+        void persist(app::valuestore& values) const;
 
-        sdk::uicomponent::info get_info() const;
+        void retrieve(const app::valuestore& values);
 
-        void show_advertisment(bool show);
+        QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
+        QVariant data(const QModelIndex& index, int role) const override;
 
-    private:
-        Ui::Accounts ui_;
-
-    private:
-        std::unique_ptr<QMovie> movie_;
+        int rowCount(const QModelIndex&) const override;
+        int columnCount(const QModelIndex&) const override;
 
     private:
-        app::accounts& accounts_;
+        enum class column {
+            name, created, updated, articles, size, last
+        };
+
+        struct group {
+            QString   name;
+            QDateTime created;
+            QDateTime updated;
+            quint64   size;
+        };
+
+    private:
+        QList<group> groups_;
     };
 
-} // gui
+} // app

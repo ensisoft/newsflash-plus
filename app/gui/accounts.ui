@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>706</width>
-    <height>675</height>
+    <height>676</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -69,7 +69,7 @@
         </size>
        </property>
        <property name="title">
-        <string>No account selected</string>
+        <string>Downloads</string>
        </property>
        <property name="flat">
         <bool>false</bool>
@@ -116,76 +116,6 @@
          <widget class="QPushButton" name="btnResetAllTime">
           <property name="text">
            <string>Reset</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </widget>
-     </item>
-     <item>
-      <widget class="QGroupBox" name="grpGroup">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="minimumSize">
-        <size>
-         <width>328</width>
-         <height>0</height>
-        </size>
-       </property>
-       <property name="maximumSize">
-        <size>
-         <width>16777215</width>
-         <height>16777215</height>
-        </size>
-       </property>
-       <property name="title">
-        <string>No group selected</string>
-       </property>
-       <property name="flat">
-        <bool>false</bool>
-       </property>
-       <layout class="QFormLayout" name="formLayout_2">
-        <item row="0" column="0">
-         <widget class="QLabel" name="label_4">
-          <property name="text">
-           <string>Article count</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="1">
-         <widget class="QLineEdit" name="edtArticleCount">
-          <property name="enabled">
-           <bool>true</bool>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>16777215</width>
-            <height>16777215</height>
-           </size>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="0">
-         <widget class="QLabel" name="label_5">
-          <property name="text">
-           <string>Last update</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="1">
-         <widget class="QLineEdit" name="edtLastUpdate">
-          <property name="enabled">
-           <bool>true</bool>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>16777215</width>
-            <height>16777215</height>
-           </size>
           </property>
          </widget>
         </item>
@@ -302,34 +232,34 @@ p, li { white-space: pre-wrap; }
     </layout>
    </item>
   </layout>
-  <action name="actionServerAdd">
+  <action name="actionNew">
    <property name="icon">
     <iconset resource="resource.qrc">
      <normaloff>:/resource/16x16_ico_png/ico_add.png</normaloff>:/resource/16x16_ico_png/ico_add.png</iconset>
    </property>
    <property name="text">
-    <string>Add account...</string>
+    <string>New account ...</string>
    </property>
    <property name="toolTip">
-    <string>Add account</string>
+    <string>Create new account</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+N</string>
    </property>
   </action>
-  <action name="actionServerDelete">
+  <action name="actionRemove">
    <property name="icon">
     <iconset resource="resource.qrc">
      <normaloff>:/resource/16x16_ico_png/ico_delete.png</normaloff>:/resource/16x16_ico_png/ico_delete.png</iconset>
    </property>
    <property name="text">
-    <string>Remove account</string>
+    <string>Remove</string>
    </property>
    <property name="toolTip">
     <string>Remove account</string>
    </property>
   </action>
-  <action name="actionServerProperties">
+  <action name="actionProperties">
    <property name="icon">
     <iconset resource="resource.qrc">
      <normaloff>:/resource/16x16_ico_png/ico_properties.png</normaloff>:/resource/16x16_ico_png/ico_properties.png</iconset>
@@ -338,150 +268,7 @@ p, li { white-space: pre-wrap; }
     <string>Properties</string>
    </property>
    <property name="toolTip">
-    <string>Server properties</string>
-   </property>
-  </action>
-  <action name="actionServerDownloadList">
-   <property name="text">
-    <string>Update newsgroup list</string>
-   </property>
-   <property name="toolTip">
-    <string>Download list of available groups</string>
-   </property>
-  </action>
-  <action name="actionGroupAdd">
-   <property name="icon">
-    <iconset resource="resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_add.png</normaloff>:/resource/16x16_ico_png/ico_add.png</iconset>
-   </property>
-   <property name="text">
-    <string>Add  group...</string>
-   </property>
-   <property name="toolTip">
-    <string>Add a group from the list of available news groups</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+Shift+N</string>
-   </property>
-  </action>
-  <action name="actionGroupAddByName">
-   <property name="icon">
-    <iconset resource="resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_add.png</normaloff>:/resource/16x16_ico_png/ico_add.png</iconset>
-   </property>
-   <property name="text">
-    <string>Add group by name...</string>
-   </property>
-   <property name="toolTip">
-    <string>Add a group by its name</string>
-   </property>
-  </action>
-  <action name="actionGroupDelete">
-   <property name="icon">
-    <iconset resource="resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_delete.png</normaloff>:/resource/16x16_ico_png/ico_delete.png</iconset>
-   </property>
-   <property name="text">
-    <string>Remove group</string>
-   </property>
-   <property name="toolTip">
-    <string>Remove group from the list of groups</string>
-   </property>
-   <property name="shortcut">
-    <string>Del</string>
-   </property>
-  </action>
-  <action name="actionGroupProperties">
-   <property name="icon">
-    <iconset resource="resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_info.png</normaloff>:/resource/16x16_ico_png/ico_info.png</iconset>
-   </property>
-   <property name="text">
-    <string>Info</string>
-   </property>
-   <property name="toolTip">
-    <string>View group properties</string>
-   </property>
-  </action>
-  <action name="actionGroupUpdate">
-   <property name="icon">
-    <iconset resource="resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_update.png</normaloff>:/resource/16x16_ico_png/ico_update.png</iconset>
-   </property>
-   <property name="text">
-    <string>Update</string>
-   </property>
-   <property name="toolTip">
-    <string>Update group</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+U</string>
-   </property>
-  </action>
-  <action name="actionGroupUpdateWO">
-   <property name="icon">
-    <iconset resource="resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_update.png</normaloff>:/resource/16x16_ico_png/ico_update.png</iconset>
-   </property>
-   <property name="text">
-    <string>Update with options...</string>
-   </property>
-   <property name="toolTip">
-    <string>Update content with options</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+Shift+U</string>
-   </property>
-  </action>
-  <action name="actionGroupEraseContent">
-   <property name="icon">
-    <iconset resource="resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_erase_content.png</normaloff>:/resource/16x16_ico_png/ico_erase_content.png</iconset>
-   </property>
-   <property name="text">
-    <string>Delete data</string>
-   </property>
-   <property name="toolTip">
-    <string>Delete all group data permanently</string>
-   </property>
-  </action>
-  <action name="actionGroupPurgeContent">
-   <property name="icon">
-    <iconset resource="resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_purge.png</normaloff>:/resource/16x16_ico_png/ico_purge.png</iconset>
-   </property>
-   <property name="text">
-    <string>Expunge headers</string>
-   </property>
-   <property name="toolTip">
-    <string>Expunge current group headers</string>
-   </property>
-  </action>
-  <action name="actionServerSortGroups">
-   <property name="icon">
-    <iconset resource="resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_sorting.png</normaloff>:/resource/16x16_ico_png/ico_sorting.png</iconset>
-   </property>
-   <property name="text">
-    <string>Sort groups</string>
-   </property>
-   <property name="toolTip">
-    <string>Sort groups alphabetically</string>
-   </property>
-  </action>
-  <action name="actionGroupOpen">
-   <property name="icon">
-    <iconset resource="resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_open.png</normaloff>:/resource/16x16_ico_png/ico_open.png</iconset>
-   </property>
-   <property name="text">
-    <string>Open</string>
-   </property>
-   <property name="toolTip">
-    <string>Open and view group contents</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+O</string>
+    <string>Open account properties</string>
    </property>
   </action>
  </widget>
@@ -491,8 +278,6 @@ p, li { white-space: pre-wrap; }
   <tabstop>btnResetMonth</tabstop>
   <tabstop>edtAllTime</tabstop>
   <tabstop>btnResetAllTime</tabstop>
-  <tabstop>edtArticleCount</tabstop>
-  <tabstop>edtLastUpdate</tabstop>
  </tabstops>
  <resources>
   <include location="resource.qrc"/>

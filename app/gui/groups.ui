@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Groups</class>
+ <widget class="QWidget" name="Groups">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>616</width>
+    <height>582</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Groups</string>
+  </property>
+  <property name="windowIcon">
+   <iconset resource="../../../../svnroot/newsflash/gui/resource.qrc">
+    <normaloff>:/resource/16x16_ico_png/ico_catalog.png</normaloff>:/resource/16x16_ico_png/ico_catalog.png</iconset>
+  </property>
+  <layout class="QHBoxLayout" name="horizontalLayout">
+   <item>
+    <widget class="QGroupBox" name="groupBox">
+     <property name="title">
+      <string>Groups</string>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout">
+      <item>
+       <widget class="QTableView" name="tableGroups">
+        <property name="showGrid">
+         <bool>false</bool>
+        </property>
+        <property name="sortingEnabled">
+         <bool>true</bool>
+        </property>
+        <attribute name="horizontalHeaderMinimumSectionSize">
+         <number>0</number>
+        </attribute>
+        <attribute name="horizontalHeaderStretchLastSection">
+         <bool>true</bool>
+        </attribute>
+        <attribute name="verticalHeaderVisible">
+         <bool>false</bool>
+        </attribute>
+        <attribute name="verticalHeaderDefaultSectionSize">
+         <number>16</number>
+        </attribute>
+        <attribute name="verticalHeaderMinimumSectionSize">
+         <number>16</number>
+        </attribute>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+  </layout>
+  <action name="actionAdd">
+   <property name="icon">
+    <iconset resource="../../../../svnroot/newsflash/gui/resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_add.png</normaloff>:/resource/16x16_ico_png/ico_add.png</iconset>
+   </property>
+   <property name="text">
+    <string>Add group ...</string>
+   </property>
+   <property name="toolTip">
+    <string>Add new group</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+N</string>
+   </property>
+  </action>
+  <action name="actionGroupAddByName">
+   <property name="icon">
+    <iconset resource="../../../../svnroot/newsflash/gui/resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_add.png</normaloff>:/resource/16x16_ico_png/ico_add.png</iconset>
+   </property>
+   <property name="text">
+    <string>Add group by name...</string>
+   </property>
+   <property name="toolTip">
+    <string>Add a group by its name</string>
+   </property>
+  </action>
+  <action name="actionRemove">
+   <property name="icon">
+    <iconset resource="../../../../svnroot/newsflash/gui/resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_delete.png</normaloff>:/resource/16x16_ico_png/ico_delete.png</iconset>
+   </property>
+   <property name="text">
+    <string>Remove</string>
+   </property>
+   <property name="toolTip">
+    <string>Remove a newsgroup</string>
+   </property>
+   <property name="shortcut">
+    <string>Del</string>
+   </property>
+  </action>
+  <action name="actionInfo">
+   <property name="icon">
+    <iconset resource="../../../../svnroot/newsflash/gui/resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_info.png</normaloff>:/resource/16x16_ico_png/ico_info.png</iconset>
+   </property>
+   <property name="text">
+    <string>Info</string>
+   </property>
+   <property name="toolTip">
+    <string>View group information</string>
+   </property>
+  </action>
+  <action name="actionUpdate">
+   <property name="icon">
+    <iconset resource="../../../../svnroot/newsflash/gui/resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_update.png</normaloff>:/resource/16x16_ico_png/ico_update.png</iconset>
+   </property>
+   <property name="text">
+    <string>Update</string>
+   </property>
+   <property name="toolTip">
+    <string>Update group</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+U</string>
+   </property>
+  </action>
+  <action name="actionUpdateOptions">
+   <property name="icon">
+    <iconset resource="../../../../svnroot/newsflash/gui/resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_update.png</normaloff>:/resource/16x16_ico_png/ico_update.png</iconset>
+   </property>
+   <property name="text">
+    <string>Update with options...</string>
+   </property>
+   <property name="toolTip">
+    <string>Update group with options</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+U</string>
+   </property>
+  </action>
+  <action name="actionDelete">
+   <property name="icon">
+    <iconset resource="../../../../svnroot/newsflash/gui/resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_erase_content.png</normaloff>:/resource/16x16_ico_png/ico_erase_content.png</iconset>
+   </property>
+   <property name="text">
+    <string>Delete headers</string>
+   </property>
+   <property name="toolTip">
+    <string>Delete group data</string>
+   </property>
+  </action>
+  <action name="actionClean">
+   <property name="icon">
+    <iconset resource="../../../../svnroot/newsflash/gui/resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_purge.png</normaloff>:/resource/16x16_ico_png/ico_purge.png</iconset>
+   </property>
+   <property name="text">
+    <string>Clean headers</string>
+   </property>
+   <property name="toolTip">
+    <string>Clean old headers</string>
+   </property>
+  </action>
+  <action name="actionFetch">
+   <property name="icon">
+    <iconset resource="../../../../svnroot/newsflash/gui/resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_sorting.png</normaloff>:/resource/16x16_ico_png/ico_sorting.png</iconset>
+   </property>
+   <property name="text">
+    <string>Fetch list</string>
+   </property>
+   <property name="toolTip">
+    <string>Fetch lists of available newsgroups</string>
+   </property>
+  </action>
+  <action name="actionOpen">
+   <property name="icon">
+    <iconset resource="../../../../svnroot/newsflash/gui/resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_open.png</normaloff>:/resource/16x16_ico_png/ico_open.png</iconset>
+   </property>
+   <property name="text">
+    <string>Open ...</string>
+   </property>
+   <property name="toolTip">
+    <string>Open group</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+O</string>
+   </property>
+  </action>
+ </widget>
+ <resources>
+  <include location="../../../../svnroot/newsflash/gui/resource.qrc"/>
+  <include location="resource.qrc"/>
+ </resources>
+ <connections/>
+</ui>

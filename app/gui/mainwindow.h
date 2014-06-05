@@ -64,15 +64,17 @@ namespace gui
         void focus(sdk::uicomponent* ui);
         void refresh(sdk::uicomponent* ui);
 
+        bool is_shown(const sdk::uicomponent* ui) const;
     private:
         void closeEvent(QCloseEvent* event);
+
+    private:
+        void build_window_menu();
 
     private slots:
         void on_mainTab_currentChanged(int index);
         void on_mainTab_tabCloseRequested(int index);
         void on_actionContextHelp_triggered();
-
-    private slots:
         void on_actionWindowClose_triggered();
         void on_actionWindowNext_triggered();
         void on_actionWindowPrev_triggered();

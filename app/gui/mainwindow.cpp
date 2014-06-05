@@ -158,6 +158,7 @@ void MainWindow::show(sdk::uicomponent* ui)
     const auto& text = ui->windowTitle();
     ui_.mainTab->insertTab(index, ui, icon, text);    
 
+    build_window_menu();
 }
 
 void MainWindow::hide(sdk::uicomponent* ui)
@@ -173,6 +174,8 @@ void MainWindow::hide(sdk::uicomponent* ui)
     action->setChecked(false);
 
     ui_.mainTab->removeTab(tab_index);
+
+    build_window_menu();
 }
 
 void MainWindow::focus(sdk::uicomponent* ui)
@@ -185,6 +188,15 @@ void MainWindow::focus(sdk::uicomponent* ui)
         return;
 
     ui_.mainTab->setCurrentIndex(index);
+}
+
+bool MainWindow::is_shown(const sdk::uicomponent* ui) const
+{
+    const auto ret = ui_.mainTab->indexOf(const_cast<sdk::uicomponent*>(ui));
+    if (ret == -1)
+        return false;
+
+    return true;
 }
 
 
@@ -207,36 +219,45 @@ void MainWindow::closeEvent(QCloseEvent* event)
     event->accept();
 }
 
+void MainWindow::build_window_menu()
+{
+    ui_.menuWindow->clear();
+
+    const auto count = ui_.mainTab->count();
+    const auto curr  = ui_.mainTab->currentIndex();
+    for (int i=0; i<count; ++i)
+    {
+        const auto& text = ui_.mainTab->tabText(i);
+        const auto& icon = ui_.mainTab->tabIcon(i);
+        QAction* action  = ui_.menuWindow->addAction(icon, text);
+        action->setCheckable(true);
+        action->setChecked(i == curr);
+        action->setProperty("tab-index", i);
+        if (i < 9)
+            action->setShortcut(QKeySequence(Qt::ALT | (Qt::Key_1 + i)));
+
+        QObject::connect(action, SIGNAL(triggered()),
+            this, SLOT(actionWindowFocus_triggered()));
+    }
+    // and this is in the window menu
+    ui_.menuWindow->addSeparator();
+    ui_.menuWindow->addAction(ui_.actionWindowClose);
+    ui_.menuWindow->addAction(ui_.actionWindowNext);
+    ui_.menuWindow->addAction(ui_.actionWindowPrev);    
+}
+
 void MainWindow::on_mainTab_currentChanged(int index)
 {
-    DEBUG(str("Current tab _1", index));
+    //DEBUG(str("Current tab _1", index));
 
     if (current_)
         current_->deactivate();
 
     ui_.mainToolBar->clear();
     ui_.menuEdit->clear();
-    ui_.menuWindow->clear();
 
     if (index != -1)
     {
-        const auto count = ui_.mainTab->count();
-        const auto curr  = index;
-        for (int i=0; i<count; ++i)
-        {
-            const auto& text = ui_.mainTab->tabText(i);
-            const auto& icon = ui_.mainTab->tabIcon(i);
-            QAction* action  = ui_.menuWindow->addAction(icon, text);
-            action->setCheckable(true);
-            action->setChecked(i == curr);
-            action->setProperty("tab-index", i);
-            if (i < 9)
-                action->setShortcut(QKeySequence(Qt::ALT | (Qt::Key_1 + i)));
-
-            QObject::connect(action, SIGNAL(triggered()),
-                this, SLOT(actionWindowFocus_triggered()));
-        }
-
         auto* ui = static_cast<sdk::uicomponent*>(
             ui_.mainTab->widget(index)); 
 
@@ -257,11 +278,7 @@ void MainWindow::on_mainTab_currentChanged(int index)
     ui_.mainToolBar->addSeparator();
     ui_.mainToolBar->addAction(ui_.actionContextHelp);
 
-    // and this is in the window menu
-    ui_.menuWindow->addSeparator();
-    ui_.menuWindow->addAction(ui_.actionWindowClose);
-    ui_.menuWindow->addAction(ui_.actionWindowNext);
-    ui_.menuWindow->addAction(ui_.actionWindowPrev);    
+    build_window_menu();
 }
 
 void MainWindow::on_mainTab_tabCloseRequested(int tab)

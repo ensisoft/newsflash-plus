@@ -27,20 +27,27 @@ esac
 echo -e "Build variant: $VARIANT"
 echo -e "Build install: $INSTALL"
 
+REMOVE_BUILD=true
 while true; do
-    read -p "Going to remove old binaries. c)ontinue, q)uit: " yc
+    read -p "Going to remove old binaries. c)ontinue, q)uit s)kip: " yc
     case $yc in 
         [Cc]* ) break;;
         [Qq]* ) exit;;
+        [Ss]* ) REMOVE_BUILD=false break;;
         * ) echo "Please answer c)ontinue or q)uit." ;;
     esac
 done
 
 echo "Starting build..."
 
+if [ $REMOVE_BUILD ]; then
+    rm -rf $VERBOSE "$INSTALL"
+fi
 
-rm -rf $VERBOSE "$INSTALL"
-mkdir $VERBOSE "$INSTALL"
+if [ ! -e "$INSTALL" ]; then
+    mkdir $VERBOSE "$INSTALL"
+fi
+
 
 function makedir() {
     local dir=$1
@@ -149,12 +156,11 @@ copy "$QT/plugins/imageformats/libqgif.so" "plugins-qt/imageformats"
 copy "$QT/plugins/imageformats/libqjpeg.so" "plugins-qt/imageformats"
 
 copy "newsflash.sh" ""
-copy "NEWSFLASH_README.txt" ""
-copy "runpython.sh" ""
 copy "../boost_1_51_0/LICENSE_1_0.txt" "BOOST_LICENSE.txt"
 copy "media/download.wav" "media"
 copy "media/error.wav" "media"
 copy "media/update.wav" "media"
+copy "doc/README.txt" ""
 
 cd "$INSTALL"
 chmod u+x "runpython.sh"

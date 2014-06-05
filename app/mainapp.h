@@ -26,6 +26,8 @@
 #include <newsflash/engine/listener.h>
 #include <QObject>
 #include <vector>
+#include <memory>
+#include "action.h"
 
 namespace gui {
     class MainWindow;
@@ -44,6 +46,7 @@ namespace app
     class valuestore;
     class accounts;
     class eventlog;
+    class action;
 
     // we need a class so that we can connect Qt signals
     class mainapp : public QObject, public newsflash::listener
@@ -68,12 +71,12 @@ namespace app
         // open a help page.
         bool open_help(const QString& page);
 
+        uid_t submit(std::unique_ptr<action> action);
+
         // listener api
         virtual void handle(const newsflash::error& error) override;
         virtual void acknowledge(const newsflash::file& file) override;
         virtual void notify() override;
-
-
 
     private slots:
         void welcome_new_user();
@@ -89,14 +92,20 @@ namespace app
         void detach_views();
 
     private:
+        gui::MainWindow* gui_window_;        
+
+    private:
         app::valuestore* valuestore_;
         app::eventlog* eventlog_;
         app::accounts* accounts_;
-        gui::MainWindow* gui_window_;
-        newsflash::engine* engine_;
-        bool virgin_;
 
+    private:
         std::vector<sdk::uicomponent*> views_;
+        std::vector<std::unique_ptr<action> > pending_;
+
+    private:
+        newsflash::engine* engine_;
+        bool virgin_;        
     };
 
 } // app

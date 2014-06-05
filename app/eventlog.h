@@ -79,12 +79,15 @@ namespace app
                 time_ = QTime::currentTime();
             }
 
-            static QEvent::Type type()
+
+        private:
+            static 
+            QEvent::Type type()
             {
-                static QEvent::Type id = 
-                    static_cast<QEvent::Type>(QEvent::registerEventType());
-                return id;
-            }
+                static auto tid = QEvent::registerEventType();
+                return (QEvent::Type)tid;
+            }            
+
         private: 
             friend class eventlog;
 

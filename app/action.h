@@ -1,4 +1,4 @@
-// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -18,48 +18,43 @@
 //  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 //  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-//  THE SOFTWARE.
+//  THE SOFTWARE.            
 
 #pragma once
 
 #include <newsflash/config.h>
 
-#include <newsflash/sdk/uicomponent.h>
 #include <newsflash/warnpush.h>
+#  include <QObject>
+#  include <QString>
 #include <newsflash/warnpop.h>
+
 #include <memory>
-#include "ui_accounts.h"
 
-class QMovie;
-
-namespace app {
-    class accounts;
-}
-
-namespace gui
+namespace app
 {
-    class Accounts : public sdk::uicomponent
+    class action : public QObject
     {
         Q_OBJECT
+
     public:
-        Accounts(app::accounts& accounts);
-       ~Accounts();
+        enum class type_t {
+            open_generic,
+            open_help,
+            shutdown
+        };
 
-        void add_actions(QMenu& menu);
-        void add_actions(QToolBar& bar);
+        virtual ~action() = default;
 
-        sdk::uicomponent::info get_info() const;
+        virtual type_t type() const = 0;
 
-        void show_advertisment(bool show);
-
+    protected:
     private:
-        Ui::Accounts ui_;
-
-    private:
-        std::unique_ptr<QMovie> movie_;
-
-    private:
-        app::accounts& accounts_;
     };
 
-} // gui
+    typedef action* uid_t;
+
+    uid_t submit(std::unique_ptr<action> act);
+
+
+} // app

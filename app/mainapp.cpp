@@ -44,6 +44,7 @@
 #include "qtsingleapplication/qtsingleapplication.h"
 #include "gui/mainwindow.h"
 #include "gui/accounts.h"
+#include "gui/groups.h"
 #include "gui/eventlog.h"
 #include "gui/dlgwelcome.h"
 #include "gui/dlgaccount.h"
@@ -54,16 +55,39 @@
 #include "format.h"
 #include "config.h"
 #include "accounts.h"
+#include "groups.h"
 #include "debug.h"
+#include "action.h"
+#include "action_open_generic.h"
+#include "action_open_help.h"
+
+namespace {
+    app::mainapp* g_app;
+}
 
 namespace app
 {
 
-mainapp::mainapp() : valuestore_(nullptr), gui_window_(nullptr), virgin_(false)
-{}
+uid_t submit(std::unique_ptr<action> act)
+{
+    return g_app->submit(std::move(act));
+}
+
+
+mainapp::mainapp()
+{
+    gui_window_ = nullptr;
+    valuestore_ = nullptr;
+    eventlog_   = nullptr;
+    accounts_   = nullptr;
+    engine_     = nullptr;
+    g_app = this;
+}
 
 mainapp::~mainapp()
-{}
+{
+    g_app = nullptr;
+}
 
 int mainapp::run(int argc, char* argv[])
 {   
@@ -130,20 +154,24 @@ int mainapp::run(int argc, char* argv[])
     accounts_ = &accounts;
     accounts.retrieve(valuestore);
 
+    app::groups groups;
+    groups.retrieve(valuestore);
+
     // open the builtin views    
     gui::MainWindow   gui_window   { *this };
     gui::Accounts     gui_accounts { accounts };
+    gui::Groups       gui_groups   { groups };
     gui::Eventlog     gui_events   { events };
 
     const auto& keycode = valuestore.get("settings", "keycode", "");
     const bool  keyret  = keygen::verify_code(keycode);
     gui_accounts.show_advertisment(!keyret);
 
-
     gui_window_ = &gui_window;
 
     views_ = {
         &gui_accounts, 
+        &gui_groups,
         &gui_events,
     };
 
@@ -168,7 +196,7 @@ bool mainapp::shutdown()
 
     for (auto& ui : views_)
     {
-        const auto show = ui->isVisible();
+        const auto show = gui_window_->is_shown(ui);
         const auto key  = ui->windowTitle();
         valuestore_->set("visible_tabs", key, show);
     }
@@ -284,6 +312,32 @@ bool mainapp::open_help(const QString& page)
 
     return open(QDir::toNativeSeparators(
         app::get_installation_directory() + "/help" + page));
+}
+
+uid_t mainapp::submit(std::unique_ptr<action> act)
+{
+    auto* ptr = act.get();
+
+    switch (act->type())
+    {
+        case action::type_t::open_generic:
+            {
+                auto* open = static_cast<action_open_generic*>(ptr);
+                
+            }
+            break;
+
+        case action::type_t::open_help:
+            {
+                auto* open = static_cast<action_open_help*>(ptr);
+                DEBUG(str("Opening help _1", open->))
+            }
+            break;
+
+        case action::type_t::shutdown:
+            break;
+    }
+    return nullptr;
 }
 
 bool mainapp::load_valuestore()
