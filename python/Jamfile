@@ -5,68 +5,57 @@
 import os ;
 import type ;
 
-lib pthread : : <name>pthread ;
+
 
 type.register PYLIB : : SHARED_LIB ;
 
 type.set-generated-target-prefix PYLIB : : "" ;
 
-lib util : : <name>util ;
-lib dl   : : <name>dl   ;
+lib util    : : <name>util ;
+lib dl      : : <name>dl   ;
+lib pthread : : <name>pthread ;
 
 local libs = gdi32 user32 shell32 ole32 advapi32 ;
 
 project python 
-  : requirements
-      <threading>multi
-      <include>Include/ 
-      <include>Modules/zlib
-      <include>Python/
-    
-      #<include>Modules/expat/expat-2.0.1/lib
-      # for these see the expat documentation
-      <include>Modules/expat
-      <define>XML_DTD
-      <define>XML_NS
-      #<define>WITH_THREAD                                 # see Include/ceval.h
+: 
+  requirements
+    <threading>multi
+    <include>Include/ 
+    <include>Modules/zlib
+    <include>Modules/expat      
+    <include>Python/
 
-      #<os>NT:<define>Py_BUILD_CORE                       # define this only if building static
-      <os>NT:<include>PC/
-      <os>NT:<define>PY_WINDOWS
-      <os>NT:<define>WIN32
-      <toolset>msvc:<find-shared-library>$(libs)
-      #<toolset>msvc:<cflags>/Gy                          # function level linking
+    # define this only if building static
+    #<define>Py_BUILD_CORE     
 
-      <os>LINUX:<include>linux/
-      <os>LINUX:<define>PY_LINUX 
-      <os>LINUX:<library>/python//pthread/<link>shared
-	  <toolset>gcc:<cflags>-fno-strict-aliasing          # foobar
+    <define>XML_DTD
+    <define>XML_NS
 
-# Py_DEBUG breaks shit, for example PyString_Check returns false
-# even though the type *is* a String. (wtf??) 
-# smells like bugs in shitty Python implementation
-#	  <variant>debug:<define>Py_DEBUG
-#	  <variant>debug:<define>Py_TRACE_REFS
+    <os>NT:<include>PC/
+    <os>NT:<define>PY_WINDOWS
+    <os>NT:<define>WIN32
+    <toolset>msvc:<find-shared-library>$(libs)
 
-      # the python codebase produces a lot of warnings
-      # but since this code is not mine and i'm just going
-      # to assume that the code is correct im just going to
-      # suppress all that warning noise with -w flag
-      <toolset>gcc:<cflags>-w
+    <os>LINUX:<include>linux/
+    <os>LINUX:<define>PY_LINUX 
 
-  : usage-requirements
-      <include>Include/ 
-    
-      <os>NT:<include>PC/
-      <toolset>msvc:<find-shared-library>$(libs)
-      #<toolset>msvc:<cflags>/Gy
-    
-      <os>LINUX:<include>linux/
-      <os>LINUX:<library>util/<link>shared
-      <os>LINUX:<library>dl/<link>shared
-      <os>LINUX:<linkflags>-Xlinker
-      <os>LINUX:<linkflags>-export-dynamic
-  ;
+    # todo: what is this needed for?
+	<toolset>gcc:<cflags>-fno-strict-aliasing          
+
+    # the python codebase produces a lot of warnings
+    # but since this code is not mine and i'm just going
+    # to assume that the code is correct im just going to
+    # suppress all that warning noise with -w flag
+    <toolset>gcc:<cflags>-w
+
+
+    # Py_DEBUG breaks shit, for example PyString_Check returns false
+    # even though the type *is* a String. (wtf??) 
+    # smells like bugs in shitty Python implementation
+    #<variant>debug:<define>Py_DEBUG
+	#<variant>debug:<define>Py_TRACE_REFS
+;
 
 
 local object_src = [ glob Objects/*.c ] ;
@@ -161,13 +150,12 @@ if [ os.name ] = LINUX
         Python/frozenmain.c
         Python/dynload_shlib.c
         getpath.c        
-    : 
-       <define>Py_BUILD_CORE 
-       <link>static 
-       <include>linux 
+
+        util
+        dl
     ;
 
-    exe python : Modules/python.c util dl python25 : <linkflags>-Xlinker <linkflags>-export-dynamic ;
+    exe python : Modules/python.c python25 : <linkflags>-Xlinker <linkflags>-export-dynamic ;
     
 }
 
@@ -236,7 +224,7 @@ if [ os.name ] = NT
         $(builtin_win)        
         Python/dynload_win.c 
     : 
-        <define>Py_BUILD_CORE                             # define this when building shared library
+        #<define>Py_BUILD_CORE                             # define this when building shared library
         #<link>static
         <include>win
     ;
@@ -331,12 +319,19 @@ pymod pyexpat : pyexpat.c expat/xmlparse.c expat/xmlrole.c expat/xmltok.c ;
 #pymod _elementtree    : _elementtree.c expat/xmlparse.c expat/xmlrole.c expat/xmltok.c ;                               
 
 
-pymod _md5            : md5module.c md5.c ;                             #
-pymod _testcapi       : _testcapimodule.c ;                             # Python interpreter C API test
-pymod unicodedata     : unicodedata.c ;                                 # 
-pymod fpectl          : fpectlmodule.c ;                                # Floating point exception control
-pymod _multibytecodec : cjkcodecs/multibytecodec.c ;                    #
+pymod _md5            : md5module.c md5.c ;                             
 
+# Python interpreter C API test
+pymod _testcapi       : _testcapimodule.c ;                             
+
+# 
+pymod unicodedata     : unicodedata.c ;                                 
+
+# Floating point exception control
+pymod fpectl          : fpectlmodule.c ;                                
+
+#
+pymod _multibytecodec : cjkcodecs/multibytecodec.c ;                    
 
 # This is the IMDbPy C module.
 pymod cutils : cutils.c ;
@@ -345,7 +340,6 @@ pymod cutils : cutils.c ;
 #
 # This is stuff that doesn't compile out of the box
 #
-
 # pymod _bsddb       : _bsddb.c ;                                       # some database stuff? 
 # pymod readline     : readline.c ;                                     #
 # pymod dbm          : dbmmodule.c ;                                    # database?
@@ -420,65 +414,10 @@ if [ os.name ] = NT
     pymodl select        : selectmodule.c : winsock2 ;
 }
 
-constant PYTHON_RELEASE : $(NEWSFLASH_INSTALL_REL)"/Python-2.5.1" ;
-constant PYTHON_DEBUG   : $(NEWSFLASH_INSTALL_DBG)"/Python-2.5.1" ;
-
-local text_files ;
-text_files += LICENSE.txt ;
-text_files += NEWS.txt ;
-text_files += README.txt ;
-
-install dlls : $(dll) 
-:
-  <variant>release:<location>$(PYTHON_RELEASE)/DLLs 
-  <variant>debug:<location>$(PYTHON_DEBUG)/DLLs
+install debug : python python25 
+: 
+  <variant>release:<location>release
 ;
 
-install txts : $(text_files) 
-:
-  <variant>release:<location>$(PYTHON_RELEASE)
-  <variant>debug:<location>$(PYTHON_DEBUG)
-;
-
-local run-script ;
-
-if [ os.name ] = LINUX
-{
-   run-script = runpython.sh ;
-}
-if [ os.name ] = NT 
-{
-   run-script = runpython.bat ;
-}
-
-install lib : python25 $(run-script)
-:
-  <variant>release:<location>$(PYTHON_RELEASE)/..
-  <variant>debug:<location>$(PYTHON_DEBUG)/..
-;
-
-install bin : python
-:
-  <variant>release:<location>$(PYTHON_RELEASE)
-  <variant>debug:<location>$(PYTHON_DEBUG)
-;
-
-# we want to install the python scripts in Lib recursively while preserving the
-# paths in Lib. the easy way to do this is to use glob-tree, which unfortunately
-# does not accept a path but only works from the current directory.
-# hence installing the Lib is moved into a Jamfile inside Lib
-
-# Q"#¤%T"#"%&!"#¤& boost.build 
-# if bjam is invoked in *this* directory or in the Lib directory
-# installing the python modules in Lib (while preserving the hiearchy) with 
-# <install-source-root> rule works fine. 
-# HOWEVER, when build is done in the folder containining the toplevel Jamfile (newsflash/Jamfile)
-# it breaks! 
-#
-#.skipped <p/home/samiv/coding/newsflash/bin/debug/Python-2.5.1>python/Lib/plat-mac/lib-scriptpackages/CodeWarrior/Required.py for lack of /home/samiv/coding/newsflash/bin/debug/Python-2.5.1/python/Lib/plat-mac/lib-scriptpackages/CodeWarrior..."
-
-
-#build-project "./Lib" ;
-
-
+install DLLs : $(dll) ;
 

@@ -25,3 +25,5 @@ lib zlib :
 #    :
 #    <link>shared
 #;
+
+install lib : zlib ;

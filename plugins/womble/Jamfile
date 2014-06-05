@@ -1,0 +1,16 @@
+
+lib womble 
+: 
+  womble.h 
+  womble.cpp 
+  ../../rsslib/rss.cpp
+:
+  <link>shared
+;
+
+install ../../dist_d/plugins : womble
+: 
+  <variant>release:<location>../../dist/plugins
+;
+
+   

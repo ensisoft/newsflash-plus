@@ -5,5 +5,4 @@
 #
 
 export LD_LIBRARY_PATH=`pwd`
-cd Python-2.5.1
-./python
+exec Python-2.5.1/python

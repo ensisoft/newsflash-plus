@@ -30,36 +30,25 @@ path-constant QT_PATH      : "../qt-4.8.2" ;
 path-constant BOOST_PATH   : "../boost_1_51_0" ;
 path-constant OPENSSL_PATH : "../openssl_1_0_1f" ;
 
-# debug and release binary paths
-path-constant NEWSFLASH_INSTALL_DBG : "bin/debug" ;
-path-constant NEWSFLASH_INSTALL_REL : "bin/release" ;
-
-path-constant PLUGIN_DEBUG   : "bin/debug/plugins/" ;
-path-constant PLUGIN_RELEASE : "bin/debug/plugins" ;
-
 using qt : $(QT_PATH) ;
 
 # bring stuff into scope so that it's usable in subprojects
 
 use-project /boost/ : $(BOOST_PATH) ;
-use-project zlib    : "zlib" ;
 use-project corelib : "corelib" ;
 use-project engine  : "engine" ;
-use-project python  : "python" ;
 use-project rss     : "rsslib" ;
 use-project nzb     : "nzblib" ;
 use-project msglib  : "msglib" ;
+use-project pylib   : "pylib"  ;
 
-
-# note that we don't set the C++11 flag here cause then it would cascade down to
-# python and zlib projects (which would just generate useless warnings)
 project newsflash 
 : 
   requirements
+    <include>../
+    <include>.  
     <include>qjson/include/
     <include>python/Include/
-    <include>../
-    <include>.
     <include>$(OPENSSL_PATH)/include    
     <include>$(QT_PATH)/include/QtCore    
     <include>$(QT_PATH)/include    
@@ -88,28 +77,20 @@ if [ os.name ] = LINUX
    lib crypto  : : <name>crypto <search>$(/usr/lib) ; 
 }
 
+## prebuilt binaries
+
 # this library is LGPL license, so must use as a .so
 # instead of statically link it.
-lib qjson : : <name>qjson <search>"qjson/lib/" ;
+lib qjson  : : <name>qjson <search>"qjson/lib/" ;
 
-build-project "app" ;
-#build-project "python" ;
-build-project "media" ;
-build-project "unrar" ;
-build-project "par2cmdline" ;
+# compression library
+lib zlib   : : <name>zlib <search>"zlib/lib" ;
 
-if [ os.name ] = LINUX
-{
-    build-project "tools/launcher" ;
-}
+# python. we want to be able to debug into python also
+# hence the debug and release versions
+lib python : : <name>python25 <search>"python/debug" <variant>debug ;
+lib python : : <name>python25 <search>"python/release" <variant>release ;
 
-
-## these are Qt plugins that we need.
-lib qgif : : <name>qgif <search>$(QT_PATH)"/plugins/imageformats" ;
-
-#install bin : qgif
-#: 
-#  <variant>debug:<location>$(NEWSFLASH_INSTALL_DBG)"/qt-plugins/imageformats"
-#  <variant>release:<location>$(NEWSFLASH_INSTALL_REL)"/qt-plugins/imageformats"
-#;
-
+#system libs (python dependants)
+lib dl   : : <name>dl ;
+lib util : : <name>util ;

@@ -3,15 +3,18 @@
 project pylib 
 : 
   requirements
-  <library>/python//python25 
 : 
   usage-requirements
-  <library>/python//python25  
+
 ;
 
 lib py 
 : 
   [ glob *.cpp ]
+
+  /newsflash//python/<link>shared
+  /newsflash//dl/<link>shared
+  /newsflash//util/<link>shared
 :
   <link>static
 ;

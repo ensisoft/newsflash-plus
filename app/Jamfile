@@ -8,7 +8,9 @@ project gui
   <library>/qt//QtXml
   <library>/qt//QtNetwork  
   <library>/newsflash//qjson
-  <library>/python//python25
+  <library>/newsflash//python
+  <library>/newsflash//dl
+  <library>/newsflash//util
 
   # for promoted widgets since we're building using *this* jamfile
   <include>gui/
@@ -34,11 +36,11 @@ exe newsflash
   ../keygen/keygen.cpp 
 ;
 
+install ../dist_d : newsflash 
+:
+  <variant>release:<location>../dist
+;
+
 #build-project "unit_test" ;
 
-build-project "plugins/womble" ;
 
-install $(NEWSFLASH_INSTALL_DBG) : newsflash
-: 
-  <variant>release:<location>$(NEWSFLASH_INSTALL_REl)
-;
