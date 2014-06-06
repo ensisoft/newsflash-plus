@@ -32,7 +32,7 @@
 
 #include <string>
 
-namespace app
+namespace sdk
 {
     namespace detail {
 
@@ -101,8 +101,6 @@ namespace app
             bytes.data(), bytes.size());
     }
 
-    QString err(int syserr);
-
     inline
     std::string utf8(const QString& str)
     {
@@ -110,4 +108,12 @@ namespace app
         return std::string(bytes.data(), bytes.size());
     }
 
-} // 
+
+    // get a Qstring from a native system string.
+    // the string is expected to be in the systems 
+    // native narrow character encoding (whatever that is)
+    QString widen(const char* str);
+
+    QString widen(const wchar_t* str);
+
+} // sdk

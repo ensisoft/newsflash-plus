@@ -23,6 +23,7 @@
 #pragma once
 
 #include <newsflash/config.h>
+
 #include <newsflash/warnpush.h>
 #  include <QAbstractListModel>
 #  include <QDateTime>
@@ -44,12 +45,6 @@ namespace app
             bool    enabled;
         };
 
-        struct group {
-            QString   name;
-            QDateTime update;
-            quint64   size;
-        };
-
         struct account {
             quint32 id;
             QString name;
@@ -62,10 +57,7 @@ namespace app
             bool requires_login;
             bool enable_compression;
             bool enable_pipelining;
-
             int maxconn;
-
-            QList<group> groups;
         };
 
         // persist accounts into valuestore
@@ -88,9 +80,6 @@ namespace app
         int rowCount(const QModelIndex&) const override;
 
         QVariant data(const QModelIndex&, int role) const override;
-
-    // signals:
-    //     void modify_account(std::size_t pos);
 
     private:
         QList<account> accounts_;

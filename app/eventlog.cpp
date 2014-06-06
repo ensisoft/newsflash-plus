@@ -24,7 +24,6 @@
 
 #include <newsflash/warnpush.h>
 #  include <QtGui/QIcon>
-#  include <QCoreApplication>
 #include <newsflash/warnpop.h>
 
 #include "eventlog.h"
@@ -39,21 +38,24 @@ eventlog::eventlog() : events_(200)
 eventlog::~eventlog()
 {}
 
-void eventlog::hook(QCoreApplication& app)
-{
-    // enable this eventlog as the "global" event log so that
-    // it works with the logging macros
-    app.installEventFilter(this);
-}
-
-void eventlog::unhook(QCoreApplication& app)
-{
-    app.removeEventFilter(this);
-}
-
 void eventlog::write(event_t type, const QString& msg, const QString& ctx)
 {
-    insert(type, msg, ctx, QTime::currentTime());
+    const auto time = QTime::currentTime();
+    const event e {type, msg, ctx, time };
+
+    if (events_.full())
+    {
+        const auto first = index(0, 0);
+        const auto last  = index((int)events_.size(), 1);
+        events_.push_front(e);
+        emit dataChanged(first, last);
+    }
+    else
+    {
+        beginInsertRows(QModelIndex(), 0, 0);
+        events_.push_front(e);
+        endInsertRows();
+    }    
 }
 
 void eventlog::clear()
@@ -62,7 +64,6 @@ void eventlog::clear()
     events_.clear();
     endRemoveRows();
 }
-
 
 int eventlog::rowCount(const QModelIndex&) const
 {
@@ -98,41 +99,10 @@ QVariant eventlog::data(const QModelIndex& index, int role) const
     return QVariant();    
 }
 
-bool eventlog::eventFilter(QObject* object, QEvent* event)
+eventlog& eventlog::get()
 {
-    if (event->type() != logevent::type())
-        return false;
-
-    const auto* data = static_cast<const logevent*>(event);
-
-    insert(data->type_, data->message_, data->context_, data->time_);
-    return true;
-}
-
-void eventlog::insert(eventlog::event_t type, const QString& msg, const QString& ctx, const QTime& time)
-{
-    const event e {type, msg, ctx, time};
-
-    if (events_.full())
-    {
-        const auto first = index(0, 0);
-        const auto last  = index((int)events_.size(), 1);
-        events_.push_front(e);
-        emit dataChanged(first, last);
-    }
-    else
-    {
-        beginInsertRows(QModelIndex(), 0, 0);
-        events_.push_front(e);
-        endInsertRows();
-    }
-}
-
-void eventlog::post(event_t type, const QString& msg, const QString& ctx)
-{
-    static foobar foo;
-
-    QCoreApplication::postEvent(&foo, new logevent(type, msg, ctx));
+    static eventlog log;
+    return log;
 }
 
 } // app

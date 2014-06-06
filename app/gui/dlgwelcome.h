@@ -29,7 +29,7 @@
 #include <newsflash/warnpop.h>
 #include "ui_dlgwelcome.h"
 
-#include "../config.h"
+#include "config.h"
 
 namespace gui
 {

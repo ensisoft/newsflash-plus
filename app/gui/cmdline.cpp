@@ -22,53 +22,19 @@
 
 #include <newsflash/config.h>
 
-#include <string>
-#include <cstring>
-#include "utility.h"
+#include <newsflash/sdk/format.h>
 
-#if defined(WINDOWS_OS)
-#  include <windows.h>
-#elif defined(LINUX_OS)
-#  include <langinfo.h> // for nl_langinfo
-#endif
+#include <cstring>
+#include "cmdline.h"
 
 namespace {
-    QString g_executable_path;
-
+    QString     g_executable_path;
     QStringList g_cmd_line;
 } // namespace
 
-namespace app
+
+namespace gui
 {
-
-QString widen(const char* str)
-{
-#if defined(WINDOWS_OS)
-    return QString::fromLatin1(str);
-
-#elif defined(LINUX_OS)
-    const char* codeset = nl_langinfo(CODESET);
-    if (!std::strcmp(codeset, "UTF-8"))
-        return QString::fromUtf8(str);
-    return QString::fromLocal8Bit(str);
-#endif
-}
-
-QString widen(const wchar_t* str)
-{
-    // windows uses UTF-16 (UCS-2 with surrogate pairs for non BMP characters)    
-    // if this gives a compiler error it means that wchar_t is treated
-    // as a native type by msvc. In order to compile wchar_t needs to be
-    // unsigned short. Doing a cast will help but then a linker error will 
-    // follow since Qt build assumes that wchar_t = unsigned short
-#if defined(WINDOWS_OS)
-    return QString::fromUtf16(str);
-#elif defined(LINUX_OS)
-    static_assert(sizeof(wchar_t) == sizeof(uint), "");
-
-    return QString::fromUcs4((const uint*)str);
-#endif
-}
 
 QString get_installation_directory()
 {
@@ -124,15 +90,14 @@ void set_cmd_line(int argc, char* argv[])
             break;
         }
     }
-    g_executable_path = widen(tmp.c_str());
+    g_executable_path = sdk::widen(tmp.c_str());
 
     for (int i=0; i<argc; ++i)
     {
-        g_cmd_line.push_back(widen(argv[0]));
+        g_cmd_line.push_back(sdk::widen(argv[0]));
     }
 
 #endif
-
 }
 
 QStringList get_cmd_line()
@@ -140,5 +105,4 @@ QStringList get_cmd_line()
     return g_cmd_line;
 }
 
-
-} // app
+} // gui

@@ -32,8 +32,6 @@
 #  include <QString>
 #include <newsflash/warnpop.h>
 
-class QCoreApplication;
-
 namespace app
 {
     class eventlog : public QAbstractListModel
@@ -42,15 +40,6 @@ namespace app
         enum class event_t {
             warning, info, error
         };
-
-        eventlog();
-       ~eventlog();
-
-        // install this eventlog as the global application log
-        void hook(QCoreApplication& app);
-
-        // uninstall this eventlog as the global application log
-        void unhook(QCoreApplication& app);
 
         // record a new event in the log
         void write(event_t type, const QString& msg, const QString& ctx);
@@ -64,45 +53,15 @@ namespace app
         // abstractlistmodel data accessor
         QVariant data(const QModelIndex& index, int role) const override;
 
-        // post a log event
         static
-        void post(event_t type, const QString& msg, const QString& ctx);
+        eventlog& get();
+
+        // post a log event
+        // static
+        // void post(event_t type, const QString& msg, const QString& ctx);
     private:
-        class logevent : public QEvent
-        {
-        public:
-            logevent(eventlog::event_t e,
-                     const QString& wut, 
-                     const QString ctx) : QEvent(type()),
-            message_(wut), context_(ctx), type_(e)
-            {
-                time_ = QTime::currentTime();
-            }
-
-
-        private:
-            static 
-            QEvent::Type type()
-            {
-                static auto tid = QEvent::registerEventType();
-                return (QEvent::Type)tid;
-            }            
-
-        private: 
-            friend class eventlog;
-
-        private:
-            QString message_;
-            QString context_;
-            QTime   time_;
-            eventlog::event_t type_;
-        };
-
-    private:
-        bool eventFilter(QObject* object, QEvent* event);
-        
-    private:
-        void insert(event_t type, const QString& msg, const QString& ctx, const QTime& time);
+        eventlog();
+       ~eventlog();
 
     private:
         struct event {
@@ -116,13 +75,13 @@ namespace app
     };
 
 #define WARN(m) \
-    app::eventlog::post(app::eventlog::event_t::warning, m, "default")    
+    app::eventlog::get().write(app::eventlog::event_t::warning, m, "default")    
 
 #define ERROR(m) \
-    app::eventlog::post(app::eventlog::event_t::error, m, "default")    
+    app::eventlog::get().write(app::eventlog::event_t::error, m, "default")    
 
 #define INFO(m) \
-    app::eventlog::post(app::eventlog::event_t::info, m, "default")    
+    app::eventlog::get().write(app::eventlog::event_t::info, m, "default")    
 
 
 } // app

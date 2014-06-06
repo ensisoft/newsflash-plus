@@ -29,22 +29,19 @@
 #  include <QTimer>
 #include <newsflash/warnpop.h>
 
-#include <algorithm>
+#include <newsflash/sdk/format.h>
 
 #include "mainwindow.h"
-#include "../eventlog.h"
-#include "../format.h"
-#include "../config.h"
+#include "config.h"
 #include "../valuestore.h"
-#include "../mainapp.h"
 #include "../debug.h"
 
-using app::str;
+using sdk::str;
 
 namespace gui
 {
 
-MainWindow::MainWindow(app::mainapp& app) : QMainWindow(nullptr), app_(app), current_(nullptr)
+MainWindow::MainWindow() : QMainWindow(nullptr), current_(nullptr)
 {
     TinyGraph::colors greenish = {};
     greenish.fill    = QColor(47, 117, 29, 150);
@@ -69,11 +66,14 @@ MainWindow::MainWindow(app::mainapp& app) : QMainWindow(nullptr), app_(app), cur
 
     setWindowTitle(NEWSFLASH_TITLE);
 
+    DEBUG("MainWindow created");
 }
 
 MainWindow::~MainWindow()
 {
     ui_.mainTab->clear();
+
+    DEBUG("MainWindow deleted");
 }
 
 void MainWindow::configure(const app::valuestore& values)
@@ -104,10 +104,8 @@ void MainWindow::persist(app::valuestore& values)
     values.set("window", "height", height());
     values.set("window", "x", x());
     values.set("window", "y", y());
-    values.set("window", "show_toolbar", 
-        ui_.mainToolBar->isVisible());
-    values.set("window", "show_statusbar",
-        ui_.statusBar->isVisible());
+    values.set("window", "show_toolbar", ui_.mainToolBar->isVisible());
+    values.set("window", "show_statusbar",ui_.statusBar->isVisible());
 }
 
 void MainWindow::attach(sdk::uicomponent* ui)
@@ -202,21 +200,21 @@ bool MainWindow::is_shown(const sdk::uicomponent* ui) const
 
 void MainWindow::closeEvent(QCloseEvent* event)
 {
-    if (!app_.shutdown())
-    {
-        QMessageBox msg(this);
-        msg.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
-        msg.setIcon(QMessageBox::Critical);
-        msg.setText(tr("Failed to save application state.\r\n"
-           "No current session or settings will be saved.\r\n"
-           "Are you sure you want to quit?"));
-        if (msg.exec() == QMessageBox::No)
-        {
-            event->ignore();
-            return;
-        }
-    }
-    event->accept();
+    // if (!app_.shutdown())
+    // {
+    //     QMessageBox msg(this);
+    //     msg.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+    //     msg.setIcon(QMessageBox::Critical);
+    //     msg.setText(tr("Failed to save application state.\r\n"
+    //        "No current session or settings will be saved.\r\n"
+    //        "Are you sure you want to quit?"));
+    //     if (msg.exec() == QMessageBox::No)
+    //     {
+    //         event->ignore();
+    //         return;
+    //     }
+    // }
+    // event->accept();
 }
 
 void MainWindow::build_window_menu()
@@ -293,8 +291,8 @@ void MainWindow::on_actionContextHelp_triggered()
     if (!current_)
         return;
 
-    const auto& info = current_->get_info();
-    app_.open_help(info.helpurl);
+    //const auto& info = current_->get_info();
+    //app_.open_help(info.helpurl);
 }
 
 void MainWindow::on_actionWindowClose_triggered()

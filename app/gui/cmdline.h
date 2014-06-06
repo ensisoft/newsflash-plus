@@ -20,30 +20,19 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-#include <iostream>
-#include <exception>
-#include "minidump.h"
-#include "mainapp.h"
-#include "debug.h"
-#include "config.h"
+#pragma once
 
-int main(int argc, char* argv[])
+#include <newsflash/warnpush.h>
+#  include <QStringList>
+#  include <QString>
+#include <newsflash/warnpop.h>
+
+namespace gui
 {
-    DEBUG("It's alive!");
-    DEBUG(NEWSFLASH_TITLE << NEWSFLASH_VERSION);
+    // get the directory in which the current executable resides.
+    QString get_installation_directory();
 
-    try 
-    {
-        SEH_BLOCK(
-            app::mainapp app;
-            return app.run(argc, argv);
-            );
-    }
-    catch (const std::exception& e)
-    {
-        std::cerr << e.what();
-        std::cerr << std::endl;
-    }
+    void set_cmd_line(int argc, char* argv[]);
 
-    DEBUG("Exiting...");
-}
+    QStringList get_cmd_line();
+} // gui

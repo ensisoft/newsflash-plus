@@ -30,8 +30,6 @@
 #include <newsflash/warnpop.h>
 
 #include <newsflash/sdk/uicomponent.h>
-
-#include <memory>
 #include "ui_mainwindow.h"
 
 class QIcon;
@@ -39,7 +37,6 @@ class QCloseEvent;
 
 namespace app {
     class valuestore;
-    class mainapp;
 }
 
 namespace gui
@@ -49,7 +46,7 @@ namespace gui
         Q_OBJECT
 
     public:
-        MainWindow(app::mainapp& app);
+        MainWindow();
        ~MainWindow();
 
         void configure(const app::valuestore& values);
@@ -83,7 +80,9 @@ namespace gui
 
     private:
         Ui::MainWindow ui_;
-        app::mainapp& app_;
+    private:
+
+
         sdk::uicomponent* current_;
         QList<sdk::uicomponent*> tabs_;
         QList<QAction*> tabs_actions_;

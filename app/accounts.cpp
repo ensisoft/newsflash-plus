@@ -31,7 +31,7 @@
 #include "accounts.h"
 #include "valuestore.h"
 #include "eventlog.h"
-#include "format.h"
+//#include "format.h"
 
 namespace app
 {
@@ -41,7 +41,8 @@ void accounts::persist(app::valuestore& valuestore) const
     int count = 0;
     for (const auto& acc : accounts_)
     {
-        const auto& key  = str("account_1", count);
+  //      const auto& key  = str("account_1", count);
+        QString key;
         valuestore.set(key, "name", acc.name);
         valuestore.set(key, "id", acc.id);
         valuestore.set(key, "username", acc.user);
@@ -65,7 +66,8 @@ void accounts::retrieve(const app::valuestore& valuestore)
     const int count = valuestore.get("accounts", "count", 0);
     for (int i=0; i<count; ++i)
     {
-        const auto& key = str("account_1", count);
+//        const auto& key = str("account_1", count);
+        const QString key;
         account acc;
         acc.id                 = valuestore.get(key, "id").toLongLong();        
         acc.name               = valuestore.get(key, "name").toString();
@@ -104,7 +106,8 @@ void accounts::suggest(account& acc) const
     int index = 1;
     for (;;)
     {
-        auto suggestion = str("My Usenet _1", index);
+//        auto suggestion = str("My Usenet _1", index);
+        QString suggestion;
         auto it = std::find_if(std::begin(accounts_), std::end(accounts_),
             [&](const account& acc) {
                 return acc.name == suggestion;

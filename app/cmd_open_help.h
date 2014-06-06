@@ -20,25 +20,23 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.            
 
-#include "action.h"
+#pragma once
+
+#include "command.h"
 
 namespace app
 {
-    class action_open_generic : public action
+    class cmd_open_help : public command
     {
     public:
-        action_open_generic(QString resource) : resource_(std::move(resource))
+        cmd_open_help(QString page) : page_(page)
         {}
 
-       ~action_open_generic()
-        {}
-
-        action::type_t type() const override 
+        type_t type() const override
         {
-            return type_t::open_generic;
+            return type_t::open_help;
         }
-
     private:
-        QString resource_;
+        QString page_;
     };
 } // app

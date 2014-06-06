@@ -1,4 +1,4 @@
-// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -18,29 +18,24 @@
 //  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 //  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-//  THE SOFTWARE.
+//  THE SOFTWARE.            
 
-#include <newsflash/warnpush.h>
-#  include <QStringList>
-#  include <QString>
-#include <newsflash/warnpop.h>
+#include "command.h"
 
 namespace app
 {
+    class cmd_open_generic : public command
+    {
+    public:
+        cmd_open_generic(QString resource) : resource_(std::move(resource))
+        {}
 
-// get a Qstring from a native system string.
-// the string is expected to be in the systems 
-// native narrow character encoding (whatever that is)
-QString widen(const char* str);
+        type_t type() const override 
+        {
+            return type_t::open_generic;
+        }
 
-QString widen(const wchar_t* str);
-
-// get the directory in which the current executable resides.
-QString get_installation_directory();
-
-void set_cmd_line(int argc, char* argv[]);
-
-QStringList get_cmd_line();
-
-
+    private:
+        QString resource_;
+    };
 } // app

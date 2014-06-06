@@ -22,39 +22,30 @@
 
 #pragma once
 
-#include <newsflash/config.h>
-
-#include <newsflash/warnpush.h>
-#  include <QObject>
-#  include <QString>
-#include <newsflash/warnpop.h>
-
-#include <memory>
-
 namespace app
 {
-    class action : public QObject
+    // a command encapsulates and packages a single user action
+    // (see command design pattern)
+    class command 
     {
-        Q_OBJECT
-
     public:
-        enum class type_t {
-            open_generic,
-            open_help,
-            shutdown
+        enum class status_t {
+            none, accept, reject, cancel, error
         };
 
-        virtual ~action() = default;
+        enum class action_t {
+            add_account,
+            del_account
+        };
+        virtual ~command() = default;
 
-        virtual type_t type() const = 0;
+        virtual void cancel() = 0;
 
+        virtual void accept() = 0;
+
+        virtual void reject() = 0;
     protected:
     private:
     };
-
-    typedef action* uid_t;
-
-    uid_t submit(std::unique_ptr<action> act);
-
 
 } // app

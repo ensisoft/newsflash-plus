@@ -29,14 +29,15 @@
 #  include <QtGui/QMovie>
 #include <newsflash/warnpop.h>
 
+#include <newsflash/sdk/format.h>
+
 #include <ctime>
 
 #include "accounts.h"
 #include "../accounts.h"
 #include "../debug.h"
-#include "../format.h"
 
-using app::str;
+using sdk::str;
 
 namespace gui
 {

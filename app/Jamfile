@@ -1,46 +1,47 @@
 
-project gui 
-: 
-  requirements
 
-  <library>/qt//QtCore
-  <library>/qt//QtGui
-  <library>/qt//QtXml
-  <library>/qt//QtNetwork  
-  <library>/newsflash//qjson
-  <library>/newsflash//python
-  <library>/newsflash//dl
-  <library>/newsflash//util
-
-  # for promoted widgets since we're building using *this* jamfile
-  <include>gui/
+project gui
+:
+   requirements
+   <include>gui/
 ;
 
-exe newsflash 
+# build Qt Gui application
+
+exe newsflash
 :
-  [ glob *.ui  ]
   [ glob *.h   ]
   [ glob *.cpp ]
-
-  qtsingleapplication/qtsingleapplication.h
-  qtsingleapplication/qtsingleapplication.cpp
-  qtsingleapplication/qtlocalpeer.h
-  qtsingleapplication/qtlocalpeer.cpp
 
   [ glob gui/*.ui  ]
   [ glob gui/*.h   ]
   [ glob gui/*.cpp ]
 
   gui/resource.qrc
+  gui/qtsingleapplication/qtsingleapplication.h
+  gui/qtsingleapplication/qtsingleapplication.cpp
+  gui/qtsingleapplication/qtlocalpeer.h
+  gui/qtsingleapplication/qtlocalpeer.cpp
 
-  ../keygen/keygen.cpp 
+  /qt//QtCore
+  /qt//QtGui
+  /qt//QtNetwork
+  /newsflash//qjson
+  /newsflash//python
+  /newsflash//dl
+  /newsflash//util
+
+  /engine//engine-lib/<link>static
+
+  ../keygen/keygen.cpp
+  ../sdk/format.cpp
 ;
 
-install ../dist_d : newsflash 
-:
-  <variant>release:<location>../dist
-;
 
 #build-project "unit_test" ;
 
 
+install ../dist_d : newsflash
+: 
+  <variant>release:<location>../dist
+;

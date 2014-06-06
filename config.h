@@ -32,6 +32,9 @@
   #ifdef _M_AMD64
     #define X86_64
   #endif
+ 
+  #define COMPILER "msvc"
+  #define COMPILER_VERSION "todo"
 
   // minimum supported version, windows Server 2003 and Windows XP
   #define _WIN32_WINNT 0x0501 
@@ -82,6 +85,10 @@
     typedef int max_align_t;
   #endif
 
+  #define COMPILER_NAME "clang"
+  #define COMPILER_VERSION "todo"
+
+
 #elif defined(__GNUG__)
 
   #define __GCC__
@@ -92,11 +99,10 @@
     #define X86_64
   #endif
 
+  #define COMPILER_NAME "GCC"
+  #define COMPILER_VERSION __GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__
+
   #define NOTHROW noexcept
-
-  #define BEGIN_QT_INCLUDE
-  #define END_QT_INCLUDE    
-
 #endif
 
 #if defined(LINUX_OS)

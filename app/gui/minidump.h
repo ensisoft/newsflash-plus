@@ -31,11 +31,11 @@
 #  include <dbghelp.h> // for minidumps
 #  pragma comment(lib, "dbghelp.lib")
 
-namespace app
+namespace gui
 {
    DWORD write_mini_dump(EXCEPTION_POINTERS* eptr);
 
-} // app
+} // gui
 
 #define SEH_BLOCK(x) \
     __try { \

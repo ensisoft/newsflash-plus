@@ -22,32 +22,21 @@
 
 #pragma once
 
-#include <newsflash/sdk/newsflash.h>
+#include <newsflash/config.h>
+
+#include <newsflash/warnpush.h>
+#  include <QObject>
+#include <newsflash/warnpop.h>
+
 #include <newsflash/engine/listener.h>
-#include <QObject>
-#include <vector>
+#include <newsflash/engine/engine.h>
 #include <memory>
-#include "action.h"
 
-namespace gui {
-    class MainWindow;
-}
-
-namespace newsflash {
-    class engine;
-}
-
-namespace sdk {
-    class uicomponent;
-}
+#include "accounts.h"
+#include "groups.h"
 
 namespace app
 {
-    class valuestore;
-    class accounts;
-    class eventlog;
-    class action;
-
     // we need a class so that we can connect Qt signals
     class mainapp : public QObject, public newsflash::listener
     {
@@ -57,55 +46,14 @@ namespace app
         mainapp();
        ~mainapp();
        
-        int run(int argc, char* argv[]);
-
-        bool shutdown();
-
-        // open a generic resource using system's
-        // "open" command. typically such a command
-        // inspects whatever tool/file association
-        // is available in the system and then selects an
-        // appropriate application for opening the resource.
-        bool open(const QString& resouce);
-
-        // open a help page.
-        bool open_help(const QString& page);
-
-        uid_t submit(std::unique_ptr<action> action);
-
-        // listener api
         virtual void handle(const newsflash::error& error) override;
         virtual void acknowledge(const newsflash::file& file) override;
         virtual void notify() override;
 
-    private slots:
-        void welcome_new_user();
-        void modify_account(std::size_t i);
-
     private:
+        std::unique_ptr<newsflash::engine> engine_;
 
 
-        bool load_valuestore();
-        bool save_valuestore();
-
-        void attach_views();
-        void detach_views();
-
-    private:
-        gui::MainWindow* gui_window_;        
-
-    private:
-        app::valuestore* valuestore_;
-        app::eventlog* eventlog_;
-        app::accounts* accounts_;
-
-    private:
-        std::vector<sdk::uicomponent*> views_;
-        std::vector<std::unique_ptr<action> > pending_;
-
-    private:
-        newsflash::engine* engine_;
-        bool virgin_;        
     };
 
 } // app

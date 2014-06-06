@@ -23,7 +23,7 @@
 #include "minidump.h"
 #include "config.h"
 
-namespace app
+namespace gui
 {
 
 #if defined(WINDOWS_OS)
@@ -80,5 +80,5 @@ DWORD write_mini_dump(EXCEPTION_POINTERS* eptr)
 
 #endif
 
-} // app
+} // gui
 
