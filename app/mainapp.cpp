@@ -56,6 +56,22 @@ mainapp::~mainapp()
     DEBUG("Application deleted");
 }
 
+QAbstractItemModel* mainapp::get_accounts_data()
+{
+    return &accounts_;
+}
+
+QAbstractItemModel* mainapp::get_event_data()
+{
+    auto& log = eventlog::get();
+    return &log;
+}
+
+QAbstractItemModel* mainapp::get_groups_data()
+{
+    return &groups_;
+}
+
 void mainapp::handle(const newsflash::error& error)
 {}
 

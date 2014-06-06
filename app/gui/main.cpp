@@ -30,13 +30,18 @@
 #include <newsflash/warnpop.h>
 
 #include <newsflash/sdk/format.h>
+#include <newsflash/sdk/uicomponent.h>
 
 #include <iostream>
 #include <exception>
+#include <vector>
 
 #include "qtsingleapplication/qtsingleapplication.h"
 
 #include "mainwindow.h"
+#include "accounts.h"
+#include "eventlog.h"
+#include "groups.h"
 #include "minidump.h"
 #include "config.h"
 #include "cmdline.h"
@@ -89,16 +94,44 @@ int run(int argc, char* argv[])
         return 0;
     }
 
+
     app::mainapp app;
 
     // bring up the main window
     gui::MainWindow window;
 
+    gui::Accounts accounts(app.get_accounts_data());
+    gui::Eventlog eventlog(app.get_event_data());
+    gui::Groups   groups(app.get_groups_data());
+
+    // attach views to the mainwindow
+    // these are the builtins
+    std::vector<sdk::uicomponent*> views {
+        &accounts, &groups, &eventlog
+    };
+
+    for (auto* view : views)
+    {
+        window.attach(view);
+        const auto& key  = view->windowTitle();
+        const auto& info = view->get_info();
+        const bool show = values.get("visible_tabs", key, info.visible_by_default);
+        if (show)
+            window.show(view);
+    }
 
     window.configure(values);
     window.show();
 
     qtinstance.exec();
+
+    for (auto* view : views)
+    {
+        window.detach(view);
+        const auto& key = view->windowTitle();
+        const auto show = window.is_shown(view);
+        values.set("visible_tabs", key, show);
+    }
 
     return 0;
 }

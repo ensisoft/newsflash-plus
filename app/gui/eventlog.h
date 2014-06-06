@@ -24,7 +24,8 @@
 
 #include <newsflash/sdk/uicomponent.h>
 #include "ui_eventlog.h"
-#include "../eventlog.h"
+
+class QAbstractItemModel;
 
 namespace gui
 {
@@ -33,7 +34,7 @@ namespace gui
         Q_OBJECT
 
     public:
-        Eventlog(app::eventlog& events);
+        Eventlog(QAbstractItemModel* model);
        ~Eventlog();
 
         void add_actions(QMenu& menu) override;
@@ -47,9 +48,6 @@ namespace gui
 
     private:
         Ui::Eventlog ui_;
-
-    private:
-        app::eventlog& events_;
     };
 
 } // gui

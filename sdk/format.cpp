@@ -20,40 +20,47 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-#pragma once
-
 #include <newsflash/config.h>
 
-#include <newsflash/sdk/uicomponent.h>
-#include <newsflash/warnpush.h>
-#include <newsflash/warnpop.h>
-#include <memory>
-#include "ui_accounts.h"
+#if defined(WINDOWS_OS)
+#  include <windows.h>
+#elif defined(LINUX_OS)
+#  include <langinfo.h> // for nl_langinfo
+#endif
 
-class QMovie;
-class QAbstractItemModel;
+#include <cstring>
+#include "format.h"
 
-namespace gui
+namespace sdk
 {
-    class Accounts : public sdk::uicomponent
-    {
-        Q_OBJECT
-    public:
-        Accounts(QAbstractItemModel* model);
-       ~Accounts();
 
-        void add_actions(QMenu& menu);
-        void add_actions(QToolBar& bar);
+QString widen(const char* str)
+{
+#if defined(WINDOWS_OS)
+    return QString::fromLatin1(str);
 
-        sdk::uicomponent::info get_info() const;
+#elif defined(LINUX_OS)
+    const char* codeset = nl_langinfo(CODESET);
+    if (!std::strcmp(codeset, "UTF-8"))
+        return QString::fromUtf8(str);
+    return QString::fromLocal8Bit(str);
+#endif
+}
 
-        void show_advertisment(bool show);
+QString widen(const wchar_t* str)
+{
+    // windows uses UTF-16 (UCS-2 with surrogate pairs for non BMP characters)    
+    // if this gives a compiler error it means that wchar_t is treated
+    // as a native type by msvc. In order to compile wchar_t needs to be
+    // unsigned short. Doing a cast will help but then a linker error will 
+    // follow since Qt build assumes that wchar_t = unsigned short
+#if defined(WINDOWS_OS)
+    return QString::fromUtf16(str);
+#elif defined(LINUX_OS)
+    static_assert(sizeof(wchar_t) == sizeof(uint), "");
 
-    private:
-        Ui::Accounts ui_;
+    return QString::fromUcs4((const uint*)str);
+#endif
+}
 
-    private:
-        std::unique_ptr<QMovie> movie_;
-    };
-
-} // gui
+} // sdk

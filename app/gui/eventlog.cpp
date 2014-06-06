@@ -33,10 +33,10 @@
 namespace gui
 {
 
-Eventlog::Eventlog(app::eventlog& events) : events_(events)
+Eventlog::Eventlog(QAbstractItemModel* model)
 {
     ui_.setupUi(this);
-    ui_.listLog->setModel(&events);
+    ui_.listLog->setModel(model);
     ui_.actionClearLog->setEnabled(false);
 }
 
@@ -55,7 +55,8 @@ void Eventlog::add_actions(QToolBar& bar)
 
 void Eventlog::on_actionClearLog_triggered()
 {
-    events_.clear();
+    //events_.clear();
+    // todo:
 }
 
 void Eventlog::on_listLog_customContextMenuRequested(QPoint pos)

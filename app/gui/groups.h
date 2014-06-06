@@ -29,9 +29,7 @@
 #include <newsflash/warnpop.h>
 #include "ui_groups.h"
 
-namespace app {
-    class groups;
-}
+class QAbstractItemModel;
 
 namespace gui
 {
@@ -40,7 +38,7 @@ namespace gui
         Q_OBJECT
 
     public:
-        Groups(app::groups& groups);
+        Groups(QAbstractItemModel* model);
        ~Groups();
 
         void add_actions(QMenu& menu);
@@ -59,9 +57,6 @@ namespace gui
 
     private:
         Ui::Groups ui_;
-
-    private:
-        app::groups& groups_;
 
     };
 

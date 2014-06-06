@@ -34,7 +34,6 @@
 #include <ctime>
 
 #include "accounts.h"
-#include "../accounts.h"
 #include "../debug.h"
 
 using sdk::str;
@@ -42,9 +41,10 @@ using sdk::str;
 namespace gui
 {
 
-Accounts::Accounts(app::accounts& accounts) : accounts_(accounts)
+Accounts::Accounts(QAbstractItemModel* model)
 {
     ui_.setupUi(this);
+    ui_.listView->setModel(model);
 }
 
 Accounts::~Accounts()

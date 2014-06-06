@@ -30,15 +30,14 @@
 #include <newsflash/warnpop.h>
 
 #include "groups.h"
-#include "../groups.h"
 
 namespace gui
 {
 
-Groups::Groups(app::groups& groups) : groups_(groups)
+Groups::Groups(QAbstractItemModel* model)
 {
     ui_.setupUi(this);
-    ui_.tableGroups->setModel(&groups);
+    ui_.tableGroups->setModel(model);
 }
 
 Groups::~Groups()

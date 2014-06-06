@@ -35,6 +35,8 @@
 #include "accounts.h"
 #include "groups.h"
 
+class QAbstractItemModel;
+
 namespace app
 {
     // we need a class so that we can connect Qt signals
@@ -45,6 +47,10 @@ namespace app
     public:
         mainapp();
        ~mainapp();
+
+        QAbstractItemModel* get_accounts_data();
+        QAbstractItemModel* get_event_data();
+        QAbstractItemModel* get_groups_data();
        
         virtual void handle(const newsflash::error& error) override;
         virtual void acknowledge(const newsflash::file& file) override;
@@ -53,6 +59,9 @@ namespace app
     private:
         std::unique_ptr<newsflash::engine> engine_;
 
+    private:
+        accounts accounts_;
+        groups   groups_;
 
     };
 
