@@ -1,4 +1,4 @@
-// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -18,21 +18,58 @@
 //  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 //  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-//  THE SOFTWARE.
+//  THE SOFTWARE.            
 
 #pragma once
 
-#include <QObject>
+#include <cstddef>
+#include "message_register.h"
 
-namespace app 
+namespace sdk
 {
-    // a dummy Qt object when a QObject is needed
-    // for example with postEvent(QObject*, QEvent*)
-    class foobar : public QObject
+    // message posting protocol between components
+    class message
     {
-        Q_OBJECT
-
     public:
+        enum class status {
+            none, accept, reject, error
+        };
+        message(std::size_t id) : id_(id), status_(status::none)
+        {}
+
+        void accept()
+        {
+            status_ = status::accept;
+        }
+        void reject()
+        {
+            status_ = status::reject;
+        }
+        void fail()
+        {
+            status_ = status::error;
+        }
+        std::size_t identity() const
+        {
+            return id_;
+        }
+    private:
+        std::size_t id_;
+        status status_;
     };
 
-} // app
+    // a shim to automatically perform type registration
+    template<typename T>
+    class msgbase : public message
+    {
+    protected:
+        msgbase() : message(this_type.identity())
+        {}
+    private:
+        static message_register::registrant<T> this_type;
+    };
+
+    template<typename T>
+    message_register::registrant<T> msgbase<T>::this_type;
+
+} // sdk

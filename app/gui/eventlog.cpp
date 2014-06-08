@@ -1,4 +1,4 @@
-// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
+    // Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -29,15 +29,18 @@
 #include <newsflash/warnpop.h>
 
 #include "eventlog.h"
+#include "command.h"
 
 namespace gui
 {
 
-Eventlog::Eventlog(QAbstractItemModel* model)
+Eventlog::Eventlog(sdk::model& model) : model_(model)
 {
     ui_.setupUi(this);
-    ui_.listLog->setModel(model);
+    ui_.listLog->setModel(model.view());
     ui_.actionClearLog->setEnabled(false);
+
+
 }
 
 Eventlog::~Eventlog()
@@ -55,8 +58,9 @@ void Eventlog::add_actions(QToolBar& bar)
 
 void Eventlog::on_actionClearLog_triggered()
 {
-    //events_.clear();
-    // todo:
+    ui_.actionClearLog->setEnabled(false);
+    
+    model_.clear();
 }
 
 void Eventlog::on_listLog_customContextMenuRequested(QPoint pos)

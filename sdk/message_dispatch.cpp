@@ -20,22 +20,15 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.            
 
-#include "command.h"
+#include "message_dispatch.h"
 
-namespace app
+namespace sdk
 {
-    class cmd_open_generic : public command
-    {
-    public:
-        cmd_open_generic(QString resource) : resource_(std::move(resource))
-        {}
 
-        type_t type() const override 
-        {
-            return type_t::open_generic;
-        }
+message_dispatch& message_dispatch::get()
+{
+    static message_dispatch md;
+    return md;
+}
 
-    private:
-        QString resource_;
-    };
-} // app
+} // sdk

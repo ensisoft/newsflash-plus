@@ -1,0 +1,19 @@
+
+project sdk ;
+
+lib corekit
+:
+  [ glob *.cpp ]
+  [ glob *.h   ]
+
+  /qt//QtCore
+  
+:
+  <link>shared
+;
+
+install ../dist_d : corekit 
+:
+  <variant>release:<location>../dist
+;
+ 

@@ -31,26 +31,30 @@
 #  include <QDebug>
 #include <newsflash/warnpop.h>
 
+#include <newsflash/sdk/format.h>
+
 #include <stdexcept>
 #include <sstream>
-#include "format.h"
-#include "valuestore.h"
+#include "datastore.h"
+
+using sdk::str;
+using sdk::str_a;
 
 namespace app
 {
 
-valuestore::valuestore()
+datastore::datastore()
 {}
 
-valuestore::~valuestore()
+datastore::~datastore()
 {}
 
 
-void valuestore::load(QIODevice& io, valuestore::format format)
+void datastore::load(QIODevice& io, datastore::format format)
 {
     Q_ASSERT(io.isOpen());
 
-    if (format == valuestore::format::json)
+    if (format == datastore::format::json)
     {
         bool ok = false;
         QJson::Parser parser;
@@ -76,11 +80,11 @@ void valuestore::load(QIODevice& io, valuestore::format format)
     }
 }
 
-void valuestore::save(QIODevice& io, valuestore::format format) const
+void datastore::save(QIODevice& io, datastore::format format) const
 {
     Q_ASSERT(io.isOpen());
 
-    if (format == valuestore::format::json)
+    if (format == datastore::format::json)
     {
         bool ok = false;
         QJson::Serializer serializer;
@@ -95,12 +99,12 @@ void valuestore::save(QIODevice& io, valuestore::format format) const
     }
 }
 
-void valuestore::clear()
+void datastore::clear()
 {
     values_.clear();
 }
 
-bool valuestore::contains(const char* context, const char* name) const
+bool datastore::contains(const char* context, const char* name) const
 {
     const auto& value = get(context, name);
     if (value.isNull())
@@ -109,7 +113,7 @@ bool valuestore::contains(const char* context, const char* name) const
     return true;
 }
 
-QVariant valuestore::get(const QString& key, const QString& attr, const QVariant& defval) const
+QVariant datastore::get(const QString& key, const QString& attr, const QVariant& defval) const
 {
     const QVariantMap& map = values_[key].toMap();
     if (map.isEmpty())
@@ -119,7 +123,7 @@ QVariant valuestore::get(const QString& key, const QString& attr, const QVariant
     return value;
 }
 
-void valuestore::set(const QString& key, const QString& attr, const QVariant& value)
+void datastore::set(const QString& key, const QString& attr, const QVariant& value)
 {
     QVariantMap map = values_[key].toMap();
     map[attr] = value;

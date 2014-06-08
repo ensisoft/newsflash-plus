@@ -20,6 +20,8 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
+#define LOGTAG "gui"
+
 #include <newsflash/config.h>
 
 #include <newsflash/warnpush.h>
@@ -30,32 +32,76 @@
 #include <newsflash/warnpop.h>
 
 #include <newsflash/sdk/format.h>
+#include <newsflash/sdk/eventlog.h>
+#include <newsflash/sdk/debug.h>
+#include <newsflash/keygen/keygen.h>
+#include <Python.h>
 
 #include "mainwindow.h"
+#include "accounts.h"
+#include "eventlog.h"
+#include "groups.h"
+#include "dlgwelcome.h"
+#include "dlgaccount.h"
+#include "guiapi.h"
 #include "config.h"
-#include "../valuestore.h"
-#include "../debug.h"
+#include "datastore.h"
+#include "../mainapp.h"
 
 using sdk::str;
+
+namespace {
+
+void copyright()
+{
+    const auto boost_major    = BOOST_VERSION / 100000;
+    const auto boost_minor    = BOOST_VERSION / 100 % 1000;
+    const auto boost_revision = BOOST_VERSION % 100;
+
+    INFO(NEWSFLASH_TITLE " " NEWSFLASH_VERSION);
+    INFO(QString::fromUtf8(NEWSFLASH_COPYRIGHT));
+    INFO(NEWSFLASH_WEBSITE);
+    INFO("Compiled: " __DATE__ ", " __TIME__);    
+    INFO("Compiler: " COMPILER_NAME);
+    INFO(str("Boost software library _1._2._3", boost_major, boost_minor, boost_revision));
+    INFO("http://www.boost.org");
+    INFO("16x16 Free Application Icons");
+    INFO("Copyright (c) 2009 Aha-Soft");
+    INFO("http://www.small-icons.com/stock-icons/16x16-free-application-icons.htm");
+    INFO("http://www.aha-soft.com");
+    INFO("Silk Icon Set 1.3");
+    INFO("Copyright (c) Mark James");
+    INFO("http://www.famfamfam.com/lab/icons/silk/");
+    INFO(str("Qt cross-platform application and UI framework _1", QT_VERSION_STR));
+    INFO("http://qt.nokia.com");
+    INFO(str("Python _1", Py_GetVersion()));
+    INFO("http://www.python.org");
+    INFO("Zlib compression library 1.2.5");
+    INFO("Copyright (c) 1995-2010 Jean-Loup Gailly & Mark Adler");
+    INFO("http://zlib.net");        
+}
+
+} // namespace
 
 namespace gui
 {
 
-MainWindow::MainWindow() : QMainWindow(nullptr), current_(nullptr)
+MainWindow::MainWindow(app::mainapp& app) : QMainWindow(nullptr), app_(app), current_(nullptr)
 {
+    ui_.setupUi(this);
+
+    // the designer wont let remove the single tab.
+    // NOTE: this will call signal handlers for the tab, currentChanged etc.
+    // its best to do this first.
+    ui_.mainTab->removeTab(0); 
+
+    // set network monitor colors
     TinyGraph::colors greenish = {};
     greenish.fill    = QColor(47, 117, 29, 150);
     greenish.grad1   = QColor(232, 232, 232);
     greenish.grad2   = QColor(200, 200, 200);
     greenish.outline = QColor(97, 212, 55);
-
-    ui_.setupUi(this);
-
-    // set the color scheme for the network monitor
     ui_.netGraph->set_colors(greenish);
-
-    // the designer wont let remove the single tab    
-    ui_.mainTab->removeTab(0); 
 
     // put the various little widgets in their correct places
     ui_.statusBar->insertPermanentWidget(0, ui_.frmProgress);
@@ -63,6 +109,73 @@ MainWindow::MainWindow() : QMainWindow(nullptr), current_(nullptr)
     ui_.statusBar->insertPermanentWidget(2, ui_.frmDiskWrite);
     ui_.statusBar->insertPermanentWidget(3, ui_.frmGraph);
     ui_.statusBar->insertPermanentWidget(4, ui_.frmKbs);    
+
+
+    // load gui settings, we need this for the rest of the stuff
+    const auto& home = QDir::homePath();
+    const auto& file = home + "/.newsflash/gui.json";
+    if (QFile::exists(file))
+    {
+        QFile io(file);
+        if (!io.open(QIODevice::ReadWrite))
+        {
+            ERROR(str("Failed to open _1", io));
+        }
+        else
+        {
+            settings_.load(io);
+        }
+    }
+    else
+    {
+        // assuming first launch if settings file doesn't exist
+        QTimer::singleShot(500, this, SLOT(timerWelcome_timeout()));        
+    }
+
+    Accounts* acc = new Accounts(app.get_model("accounts"));
+
+    const auto& keycode = settings_.get("settings", "keycode", "");
+    acc->advertise(!keygen::verify_code(keycode));
+
+    // todo: load dynamic GUI modules
+    tabs_.append(acc);
+    tabs_.append(new Groups(app.get_model("groups")));
+    tabs_.append(new Eventlog(app.get_model("eventlog")));
+
+    for (int i=0; i<tabs_.size(); ++i)
+    {
+        const auto& text = tabs_[i]->windowTitle();
+        const auto& icon = tabs_[i]->windowIcon();
+        const auto& info = tabs_[i]->get_info();
+        const auto show  = settings_.get("visible_tabs", text, info.visible_by_default);
+
+        QAction* action = ui_.menuView->addAction(text);
+        action->setCheckable(true);
+        action->setChecked(show);
+        action->setProperty("index", i);
+        QObject::connect(action, SIGNAL(triggered()), this, SLOT(actionWindowToggle_triggered()));        
+
+        tabs_actions_.append(action);        
+        if (show)
+            ui_.mainTab->insertTab(i, tabs_[i], icon, text);
+    }
+
+    const auto width  = settings_.get("window", "width", 1200);
+    const auto height = settings_.get("window", "height", 800);
+    DEBUG(str("Mainwindow dimensions _1 x _2", width, height));
+    resize(width, height);
+
+    const auto x = settings_.get("window", "x", 0);
+    const auto y = settings_.get("window", "y", 0);
+    DEBUG(str("Mainwindow position _1, _2", x, y));
+    move(x, y);
+
+    const auto show_statusbar = settings_.get("window", "show_statusbar", true);
+    const auto show_toolbar = settings_.get("window", "show_toolbar", true);
+    ui_.mainToolBar->setVisible(show_toolbar);
+    ui_.statusBar->setVisible(show_statusbar);
+    ui_.actionViewToolbar->setChecked(show_toolbar);
+    ui_.actionViewStatusbar->setChecked(show_statusbar);
 
     setWindowTitle(NEWSFLASH_TITLE);
 
@@ -73,73 +186,15 @@ MainWindow::~MainWindow()
 {
     ui_.mainTab->clear();
 
+    // todo: use unique_ptr
+    for (auto* tab : tabs_)
+    {
+        delete tab;
+    }
+    
     DEBUG("MainWindow deleted");
 }
 
-void MainWindow::configure(const app::valuestore& values)
-{
-    const auto width  = values.get("window", "width", 1200);
-    const auto height = values.get("window", "height", 800);
-    DEBUG(str("Mainwindow dimensions _1 x _2", width, height));
-
-    resize(width, height);
-
-    const auto x = values.get("window", "x", 0);
-    const auto y = values.get("window", "y", 0);
-    DEBUG(str("Mainwindow position _1, _2", x, y));
-    
-    move(x, y);
-
-    const auto show_statusbar = values.get("window", "show_statusbar", true);
-    const auto show_toolbar = values.get("window", "show_toolbar", true);
-    ui_.mainToolBar->setVisible(show_toolbar);
-    ui_.statusBar->setVisible(show_statusbar);
-    ui_.actionViewToolbar->setChecked(show_toolbar);
-    ui_.actionViewStatusbar->setChecked(show_statusbar);
-}
-
-void MainWindow::persist(app::valuestore& values)
-{
-    values.set("window", "width", width());
-    values.set("window", "height", height());
-    values.set("window", "x", x());
-    values.set("window", "y", y());
-    values.set("window", "show_toolbar", ui_.mainToolBar->isVisible());
-    values.set("window", "show_statusbar",ui_.statusBar->isVisible());
-}
-
-void MainWindow::attach(sdk::uicomponent* ui)
-{
-    Q_ASSERT(tabs_.indexOf(ui) == -1);
-
-    const auto index = tabs_.size();
-    const auto& text = ui->windowTitle();
-    const auto& icon = ui->windowIcon();
-
-    QAction* action = ui_.menuView->addAction(text);
-    action->setCheckable(true);
-    action->setChecked(false);
-    action->setProperty("index", index);
-    QObject::connect(action, SIGNAL(triggered()), this, SLOT(actionWindowToggle_triggered()));
-
-    tabs_.append(ui);    
-    tabs_actions_.append(action);
-}
-
-void MainWindow::detach(sdk::uicomponent* ui)
-{
-    const auto index = tabs_.indexOf(ui);
-    Q_ASSERT(index != -1);
-
-    hide(ui);
-
-    tabs_.removeAt(index);
-    tabs_actions_.removeAt(index);
-
-    auto actions = ui_.menuView->actions();
-    auto* action = actions[index];
-    ui_.menuView->removeAction(action);
-}
 
 void MainWindow::show(sdk::uicomponent* ui)
 {
@@ -188,33 +243,61 @@ void MainWindow::focus(sdk::uicomponent* ui)
     ui_.mainTab->setCurrentIndex(index);
 }
 
-bool MainWindow::is_shown(const sdk::uicomponent* ui) const
-{
-    const auto ret = ui_.mainTab->indexOf(const_cast<sdk::uicomponent*>(ui));
-    if (ret == -1)
-        return false;
-
-    return true;
-}
-
-
 void MainWindow::closeEvent(QCloseEvent* event)
 {
-    // if (!app_.shutdown())
-    // {
-    //     QMessageBox msg(this);
-    //     msg.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
-    //     msg.setIcon(QMessageBox::Critical);
-    //     msg.setText(tr("Failed to save application state.\r\n"
-    //        "No current session or settings will be saved.\r\n"
-    //        "Are you sure you want to quit?"));
-    //     if (msg.exec() == QMessageBox::No)
-    //     {
-    //         event->ignore();
-    //         return;
-    //     }
-    // }
-    // event->accept();
+    settings_.set("window", "width", width());
+    settings_.set("window", "height", height());
+    settings_.set("window", "x", x());
+    settings_.set("window", "y", y());
+
+    const bool show_statusbar = ui_.statusBar->isVisible();
+    const bool show_toolbar   = ui_.mainToolBar->isVisible();
+    settings_.set("window", "show_toolbar", show_toolbar);
+    settings_.set("window", "show_statusbar",show_statusbar);
+
+    for (auto* tab : tabs_)
+    {
+        const auto& text = tab->windowTitle();
+//        const auto show  = tabs
+    }
+
+    const auto& home = QDir::homePath();
+    const auto& file = home + "/.newsflash/gui.json";
+
+    bool errors = false;
+
+    QFile io(file);
+    if (!io.open(QIODevice::WriteOnly))
+    {
+        ERROR(str("Failed to open settings _1", io));
+        errors = true;
+    }
+    else
+    {
+        settings_.save(io);
+    }
+
+    // todo: message
+
+
+    if (errors)
+    {
+        QMessageBox msg(this);
+        msg.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+        msg.setIcon(QMessageBox::Critical);
+        msg.setText(tr("Failed to save application state.\r\n"
+           "No current session or settings will be saved.\r\n"
+           "Are you sure you want to quit?"));
+        if (msg.exec() == QMessageBox::No)
+        {
+            event->ignore();
+            return;
+        }
+    }
+
+    event->accept();
+
+    ui_.mainTab->clear();
 }
 
 void MainWindow::build_window_menu()
@@ -286,15 +369,6 @@ void MainWindow::on_mainTab_tabCloseRequested(int tab)
     hide(ui);
 }
 
-void MainWindow::on_actionContextHelp_triggered()
-{
-    if (!current_)
-        return;
-
-    //const auto& info = current_->get_info();
-    //app_.open_help(info.helpurl);
-}
-
 void MainWindow::on_actionWindowClose_triggered()
 {
     const auto tab = ui_.mainTab->currentIndex();
@@ -337,6 +411,23 @@ void MainWindow::on_actionWindowPrev_triggered()
     focus(prev);
 }
 
+void MainWindow::on_actionHelp_triggered()
+{
+    openhelp("index.html");
+}
+
+void MainWindow::on_actionContextHelp_triggered()
+{
+    const auto* ui = static_cast<sdk::uicomponent*>(
+        ui_.mainTab->currentWidget());
+    if (ui == nullptr)
+        return;
+
+    const auto& info = ui->get_info();
+
+    openhelp(info.helpurl);
+}
+
 void MainWindow::actionWindowToggle_triggered()
 {
     const auto* action = static_cast<QAction*>(sender());
@@ -369,6 +460,20 @@ void MainWindow::actionWindowFocus_triggered()
     action->setChecked(true);
 
     focus(ui);
+}
+
+void MainWindow::timerWelcome_timeout()
+{
+    DlgWelcome dlg(this);
+    if (dlg.exec() == QDialog::Accepted) 
+    {
+        DlgAccount dlg(this);
+        dlg.exec();
+    }
+    if (dlg.open_guide())
+    {
+        openhelp("quick.html");
+    }
 }
 
 } // gui

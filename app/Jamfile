@@ -1,5 +1,4 @@
 
-
 project gui
 :
    requirements
@@ -32,9 +31,10 @@ exe newsflash
   /newsflash//util
 
   /engine//engine-lib/<link>static
+  
+  /sdk//corekit/<link>shared
 
   ../keygen/keygen.cpp
-  ../sdk/format.cpp
 ;
 
 

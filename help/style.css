@@ -1,0 +1,23 @@
+
+body
+{
+  font-family: tahoma, verdana;
+  font-size: 10pt;        
+}
+
+img.thumb
+{
+
+}
+
+div
+{
+  position: absolute;
+  width: 830px;
+  text-align: justify;
+}
+
+strong
+{
+  color: red;
+}

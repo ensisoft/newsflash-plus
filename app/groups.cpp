@@ -20,7 +20,7 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.            
 
-#include "valuestore.h"
+#include "datastore.h"
 #include "groups.h"
 
 namespace app
@@ -32,15 +32,20 @@ groups::groups()
 groups::~groups()
 {}
 
-void groups::persist(app::valuestore& values) const
+void groups::save(app::datastore& values) const
 {
 
 }
 
 
-void groups::retrieve(const valuestore& values) 
+void groups::load(const datastore& values) 
 {
 
+}
+
+QAbstractItemModel* groups::view() 
+{
+    return this;
 }
 
 QVariant groups::headerData(int section, Qt::Orientation orietantation, int role) const 
@@ -54,7 +59,7 @@ QVariant groups::headerData(int section, Qt::Orientation orietantation, int role
     switch ((groups::column)section)
     {
         case column::name:
-            return tr("Name"); 
+            return "Name";
         case column::created:
             return "Created";
         case column::updated:

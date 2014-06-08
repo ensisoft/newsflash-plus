@@ -336,6 +336,10 @@ void engine::start()
     stop_ = false;
 }
 
+bool engine::is_running() const
+{
+    return !stop_;
+}
 
 void engine::download(const newsflash::account& account, const newsflash::file& file)
 {
@@ -515,7 +519,7 @@ void engine::on_task_action(task_t* task, batch_t*, task::action action)
                         ASSERT(it != std::end(tasks_));
                         tasks_.erase(it);
                     });
-                listener_.notify();
+                listener_.async_notify();
                 return;
             }
 
@@ -569,7 +573,7 @@ void engine::on_task_action(task_t* task, batch_t*, task::action action)
                                 task->stm.kill();
                         }
                     });
-                listener_.notify();
+                listener_.async_notify();
             }
             catch (const std::exception& e)
             {
@@ -590,7 +594,7 @@ void engine::on_task_action(task_t* task, batch_t*, task::action action)
                                 task->stm.kill();
                         }
                     });
-                listener_.notify();
+                listener_.async_notify();
             }
         }, task->tid);
 }
@@ -627,7 +631,7 @@ struct engine::process_buffer : corelib::threadpool::work
         {
             task->state.act = task::action::process;
         });
-        listener.notify();
+        listener.async_notify();
 
         const auto bytes = buff.size();
 
@@ -660,7 +664,7 @@ struct engine::process_buffer : corelib::threadpool::work
                 }
             });
         }
-        listener.notify();
+        listener.async_notify();
     }
 };
 
@@ -775,7 +779,7 @@ void engine::on_conn_ready(conn_t* conn)
         if (!found_runnable_task)
             start_next_task(conn->state.account);
     });
-    listener_.notify();
+    listener_.async_notify();
 }
 
 void engine::on_conn_error(conn_t* conn, corelib::connection::error error, const std::error_code& system_error)
@@ -842,7 +846,7 @@ void engine::on_conn_error(conn_t* conn, corelib::connection::error error, const
 
         listener_.handle({what, resource, system_error });
     });
-    listener_.notify();
+    listener_.async_notify();
 }
 
 void engine::on_conn_read(conn_t* conn, std::size_t bytes)
@@ -864,7 +868,7 @@ void engine::on_conn_read(conn_t* conn, std::size_t bytes)
         conn->state.bps = conn->meter.bps();
         conn->state.st  = connection::state::active;
     });
-    listener_.notify();
+    listener_.async_notify();
 }
 
 void engine::on_conn_auth(conn_t* conn, std::string& user, std::string& pass)
@@ -886,7 +890,7 @@ void engine::on_conn_auth(conn_t* conn, std::string& user, std::string& pass)
         *pass_ptr = account.password;
         conn->state.st = connection::state::authenticating;
     });
-    listener_.notify();
+    listener_.async_notify();
 
     // block the calling connection thread untill the message has been
     // processed by the engine thread.
@@ -952,26 +956,30 @@ void engine::start_connections(std::size_t account)
             return conn->state.account == account;
         });
 
-    if (count == acc.max_connections)
+    if (count == acc.connections)
         return;
 
     LOG_I("Starting connections for '", acc.name, "'");
 
-    for (int i=count; i<acc.max_connections; ++i)
+    for (int i=count; i<acc.connections; ++i)
     {
         const auto id = conn_t::get_next_id();
         const auto logfile = fs::joinpath(logs_, corelib::format("connection", id, ".log"));
 
-        const server* host = &acc.general;
-        bool ssl = false;
-
-        if (settings_.prefer_secure)
+        std::string  host;
+        std::uint16_t port;
+        bool secure;
+        if (settings_.prefer_secure && acc.enable_secure_server)
         {
-            if (is_valid(acc.secure))
-            {
-                host = &acc.secure;
-                ssl  = true;
-            }
+            host = acc.secure_host;
+            port = acc.secure_port;
+            secure = true;
+        }
+        else
+        {
+            host = acc.general_host;
+            port = acc.general_port;
+            secure = false;
         }
 
         connection state;
@@ -981,8 +989,8 @@ void engine::start_connections(std::size_t account)
         state.task    = 0;
         state.account = account;
         state.down    = 0;
-        state.host    = host->host;
-        state.secure  = ssl;
+        state.host    = host;
+        state.secure  = secure;
         state.bps     = 0;
 
         std::unique_ptr<conn_t> conn(new conn_t(state));
@@ -996,9 +1004,9 @@ void engine::start_connections(std::size_t account)
         foo->on_auth = std::bind(&engine::on_conn_auth, this, conn.get(),
             std::placeholders::_1, std::placeholders::_2);
 
-        foo->connect(logfile , host->host, host->port, ssl);
+        foo->connect(logfile , host, port, secure);
 
-        LOG_D("Connection ", id, " (", i+1, "/", acc.max_connections, ")");
+        LOG_D("Connection ", id, " (", i+1, "/", acc.connections, ")");
     }
 
 }

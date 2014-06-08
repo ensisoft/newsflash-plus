@@ -1,0 +1,3 @@
+
+
+unit-test unit_test_message : unit_test_message.cpp ../message_dispatch.cpp ../message_register.cpp ;

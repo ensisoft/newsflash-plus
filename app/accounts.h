@@ -24,6 +24,8 @@
 
 #include <newsflash/config.h>
 
+#include <newsflash/sdk/model.h>
+
 #include <newsflash/warnpush.h>
 #  include <QAbstractListModel>
 #  include <QDateTime>
@@ -34,56 +36,73 @@
 
 namespace app
 {
-    class valuestore;
+    class datastore;
 
-    class accounts : public QAbstractListModel
+    class accounts : public sdk::model, public QAbstractListModel
     {
     public:
-        struct server {
-            QString host;
-            qint16  port;
-            bool    enabled;
+        enum class quota {
+            fixed, monthly
         };
 
         struct account {
             quint32 id;
             QString name;
-            QString user;
-            QString pass;
-            QString path;
-            server  general;
-            server  secure;
-
-            bool requires_login;
+            QString username;
+            QString password;
+            QString general_host;
+            quint16 general_port;        
+            QString secure_host;        
+            quint16 secure_port;
+            bool enable_general_server;
+            bool enable_secure_server;
+            bool enable_login;
             bool enable_compression;
             bool enable_pipelining;
-            int maxconn;
+            bool enable_quota;
+            int  connections;
+            quint64 quota_avail; // available quota bytes
+            quint64 quota_spent;  // how much is spent of the quota
+            quint64 downloads_this_month;
+            quint64 downloads_all_time;
+            quota quota_type;
         };
 
-        // persist accounts into valuestore
-        void persist(app::valuestore& valuestore) const;
+        // persist accounts into datastore
+        void save(app::datastore& datastore) const;
 
-        // retrieve accounts from valuestore
-        void retrieve(const app::valuestore& valuestore);
+        // retrieve accounts from datastore
+        void load(const app::datastore& datastore);
 
-        // create a new account object
-        void suggest(account& ac) const;
+        // suggest a new account object
+        account suggest() const;
 
-        // insert or modify an existing account.
+        // get account at index
+        const 
+        account& get(std::size_t index) const;
+
+        account& get(std::size_t index);
+        
+        // delete the account at index 
+        void del(std::size_t index);
+
+        // insert or modify an account.
+        // if account already exists it's modified otherwise it's inserted
         void set(const accounts::account& acc);
 
-        const 
-        account& get(std::size_t i) const;
+        // model impl
+        virtual QAbstractItemModel* view() override;
 
-        account& get(std::size_t i);
 
-        int rowCount(const QModelIndex&) const override;
 
-        QVariant data(const QModelIndex&, int role) const override;
+        // AbstractListModel impl
+        virtual int rowCount(const QModelIndex&) const override;
 
+        // AbstractListMode impl
+        virtual QVariant data(const QModelIndex&, int role) const override;
     private:
         QList<account> accounts_;
     };
 
 } // app
- 
+   

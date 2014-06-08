@@ -24,6 +24,8 @@
 
 #include <newsflash/config.h>
 
+#include <newsflash/sdk/model.h>
+
 #include <newsflash/warnpush.h>
 #  include <QAbstractTableModel>
 #  include <QDateTime>
@@ -33,25 +35,34 @@
 
 namespace app
 {
-    class valuestore;
+    class datastore;
 
-    class groups : public QAbstractTableModel
+    class groups : public sdk::model, public QAbstractTableModel
     {
 
     public:
         groups();
        ~groups();
 
-        void persist(app::valuestore& values) const;
+        void save(app::datastore& values) const;
 
-        void retrieve(const app::valuestore& values);
+        void load(const app::datastore& values);
 
+        // sdk::model
+        virtual QAbstractItemModel* view() override;
+
+
+        // QAbstractTableModel
         QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
+
+        // QAbstractTableMode
         QVariant data(const QModelIndex& index, int role) const override;
 
+        // QAbstractTableModel
         int rowCount(const QModelIndex&) const override;
-        int columnCount(const QModelIndex&) const override;
 
+        // QAbstractTableModel
+        int columnCount(const QModelIndex&) const override;
     private:
         enum class column {
             name, created, updated, articles, size, last

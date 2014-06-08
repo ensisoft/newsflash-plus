@@ -43,7 +43,7 @@ namespace newsflash
         // notify the listener that there are pending messages in the engine's
         // message queue. the callback should organize for a call to engine::pump()
         // to process the pending messages.
-        virtual void notify() = 0;
+        virtual void async_notify() = 0;
 
     protected:
     private:

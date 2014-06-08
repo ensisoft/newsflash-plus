@@ -1,8 +1,8 @@
-IF(NOT EXISTS "/home/samiv/coding/newsflash/qjson/install_manifest.txt")
-  MESSAGE(FATAL_ERROR "Cannot find install manifest: \"/home/samiv/coding/newsflash/qjson/install_manifest.txt\"")
-ENDIF(NOT EXISTS "/home/samiv/coding/newsflash/qjson/install_manifest.txt")
+IF(NOT EXISTS "/home/enska/coding/newsflash/qjson/install_manifest.txt")
+  MESSAGE(FATAL_ERROR "Cannot find install manifest: \"/home/enska/coding/newsflash/qjson/install_manifest.txt\"")
+ENDIF(NOT EXISTS "/home/enska/coding/newsflash/qjson/install_manifest.txt")
 
-FILE(READ "/home/samiv/coding/newsflash/qjson/install_manifest.txt" files)
+FILE(READ "/home/enska/coding/newsflash/qjson/install_manifest.txt" files)
 STRING(REGEX REPLACE "\n" ";" files "${files}")
 FOREACH(file ${files})
   MESSAGE(STATUS "Uninstalling \"$ENV{DESTDIR}${file}\"")

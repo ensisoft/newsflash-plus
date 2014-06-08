@@ -25,11 +25,10 @@
 #include <newsflash/config.h>
 
 #include <newsflash/sdk/uicomponent.h>
+#include <newsflash/sdk/model.h>
 #include <newsflash/warnpush.h>
 #include <newsflash/warnpop.h>
 #include "ui_groups.h"
-
-class QAbstractItemModel;
 
 namespace gui
 {
@@ -38,12 +37,13 @@ namespace gui
         Q_OBJECT
 
     public:
-        Groups(QAbstractItemModel* model);
+        Groups(sdk::model& model);
        ~Groups();
 
         void add_actions(QMenu& menu);
         void add_actions(QToolBar& bar);
 
+        sdk::uicomponent::info get_info() const;
 
     private slots:
         void on_actionAdd_triggered();
@@ -57,6 +57,9 @@ namespace gui
 
     private:
         Ui::Groups ui_;
+
+    private:
+        sdk::model& model_;
 
     };
 

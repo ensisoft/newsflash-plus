@@ -22,6 +22,8 @@
 
 #pragma once
 
+
+
 #include <newsflash/config.h>
 
 #include <newsflash/warnpush.h>
@@ -30,12 +32,23 @@
 
 #include <newsflash/engine/listener.h>
 #include <newsflash/engine/engine.h>
-#include <memory>
+#include <newsflash/sdk/model.h>
 
+#include <memory>
+#include <map>
 #include "accounts.h"
+#include "groups.h"
+#include "datastore.h"
+#include "eventlog.h"
 #include "groups.h"
 
 class QAbstractItemModel;
+class QCoreApplication;
+class QEvent;
+
+namespace sdk {
+    class model;
+}
 
 namespace app
 {
@@ -45,23 +58,65 @@ namespace app
         Q_OBJECT
 
     public:
-        mainapp();
+        mainapp(QCoreApplication& app);
        ~mainapp();
 
-        QAbstractItemModel* get_accounts_data();
-        QAbstractItemModel* get_event_data();
-        QAbstractItemModel* get_groups_data();
+        sdk::model& get_model(const QString& name);
        
+        // invoke a command in the application.
+        // typically commands are created by user interacting
+        // with the application through the user interface layer.
+        //void react(std::shared_ptr<sdk::command> cmd);
+
+
+        // todo: 
         virtual void handle(const newsflash::error& error) override;
+
+        // todo:
         virtual void acknowledge(const newsflash::file& file) override;
-        virtual void notify() override;
+
+        // this callback gets invoked by the engine when
+        // there are new events to be processed inside
+        // the engine. this is an async callback and
+        // can occur from different threads.
+        // async_notify implementation should arrange
+        // for the "main" thread that drives the engine
+        // to call engine::pump to process pending events.
+        virtual void async_notify() override;
+
+    private:
+        bool eventFilter(QObject* object, QEvent* event);
+
+    private:
+        // friend class sdk::command_dispatch<mainapp>;
+
+        // void on_command(std::shared_ptr<sdk::cmd_new_account>& cmd);
+        // void on_command(std::shared_ptr<sdk::cmd_del_account>& cmd);
+        // void on_command(std::shared_ptr<sdk::cmd_set_account>& cmd);
+        // void on_command(std::shared_ptr<sdk::cmd_get_account>& cmd);
+        // void on_command(std::shared_ptr<sdk::cmd_get_account_quota>& cmd);
+        // void on_command(std::shared_ptr<sdk::cmd_set_account_quota>& cmd);
+        // void on_command(std::shared_ptr<sdk::cmd_get_account_volume>& cmd);
+        // void on_command(std::shared_ptr<sdk::cmd_set_account_volume>& cmd);
+        // void on_command(std::shared_ptr<sdk::cmd_shutdown>& cmd);
 
     private:
         std::unique_ptr<newsflash::engine> engine_;
 
+
+    // private:
+    //     sdk::command_dispatch<mainapp> dispatch_;
+
     private:
-        accounts accounts_;
-        groups   groups_;
+        QCoreApplication& app_;    
+
+    private:
+        datastore  settings_;
+
+        // built-in models which are always available
+    private:
+        accounts   accounts_;
+        groups     groups_;
 
     };
 

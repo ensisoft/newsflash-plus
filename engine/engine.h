@@ -129,6 +129,8 @@ namespace newsflash
 
         void start();
 
+        bool is_running() const;
+
 
         // request the engine to initiate permanent shutdown. when the engine is ready is shutting
         // down a callback is invoked. Then the engine can be deleted.

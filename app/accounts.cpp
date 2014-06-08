@@ -21,94 +21,134 @@
 //  THE SOFTWARE.            
 
 #include <newsflash/config.h>
+
 #include <newsflash/warnpush.h>
+#  include <QtGui/QFont>
+#  include <QtGui/QIcon>
 #  include <QDir>
+#  include <QStringList>
 #include <newsflash/warnpop.h>
+
+#include <newsflash/sdk/format.h>
 
 #include <ctime>
 #include <algorithm>
 
 #include "accounts.h"
-#include "valuestore.h"
+#include "datastore.h"
 #include "eventlog.h"
-//#include "format.h"
+
+using sdk::str;
+using sdk::str_a;
 
 namespace app
 {
 
-void accounts::persist(app::valuestore& valuestore) const
+void accounts::save(app::datastore& datastore) const
 {
-    int count = 0;
+
+#define SAVE(x) \
+    datastore.set(key, #x, acc.x)
+
+    QStringList accounts;
     for (const auto& acc : accounts_)
     {
-  //      const auto& key  = str("account_1", count);
-        QString key;
-        valuestore.set(key, "name", acc.name);
-        valuestore.set(key, "id", acc.id);
-        valuestore.set(key, "username", acc.user);
-        valuestore.set(key, "password", acc.pass);
-        valuestore.set(key, "path", acc.path);
-        valuestore.set(key, "general_server_host", acc.general.host);
-        valuestore.set(key, "general_server_port", acc.general.port);        
-        valuestore.set(key, "general_server_enabled", acc.general.enabled);
-        valuestore.set(key, "secure_server_host", acc.secure.host);
-        valuestore.set(key, "secure_server_port", acc.secure.port);
-        valuestore.set(key, "secure_server_enabled", acc.secure.enabled);
-        valuestore.set(key, "requires_login", acc.requires_login);
-        valuestore.set(key, "enable_compression", acc.enable_compression);
-        valuestore.set(key, "enable_pipelining", acc.enable_pipelining);
+        const auto& key = acc.name;
+
+        SAVE(id);
+        SAVE(name);
+        SAVE(username);
+        SAVE(password);
+        SAVE(general_host);
+        SAVE(general_port);
+        SAVE(secure_host);
+        SAVE(secure_port);
+        SAVE(enable_general_server);
+        SAVE(enable_secure_server);
+        SAVE(enable_login);
+        SAVE(enable_compression);
+        SAVE(enable_pipelining);
+        SAVE(enable_quota);
+        SAVE(connections);
+        SAVE(quota_avail);
+        SAVE(quota_spent);
+        SAVE(downloads_this_month);
+        SAVE(downloads_all_time);
+
+        datastore.set(key, "quota_type", (int)acc.quota_type);
+        
+
+        accounts.append(key);
     }
-    valuestore.set("accounts", "count", count);
+    datastore.set("accounts", "list", accounts);
+
+#undef SAVE
 }
 
-void accounts::retrieve(const app::valuestore& valuestore)
+void accounts::load(const app::datastore& datastore)
 {
-    const int count = valuestore.get("accounts", "count", 0);
-    for (int i=0; i<count; ++i)
+    // we use the template version of the get method to resolve
+    // the type of the account member. however in order for 
+    // automatic type deduction to kick in we must provide
+    // a default value. for this we use the original value 
+    // which then gets overwritten.
+#define LOAD(x) \
+    acc.x = datastore.get(key, #x, acc.x)
+
+    const auto& accounts = datastore.get("accounts", "list").toStringList();
+    for (const auto& name : accounts)
     {
-//        const auto& key = str("account_1", count);
-        const QString key;
-        account acc;
-        acc.id                 = valuestore.get(key, "id").toLongLong();        
-        acc.name               = valuestore.get(key, "name").toString();
-        acc.user               = valuestore.get(key, "username").toString();
-        acc.pass               = valuestore.get(key, "password").toString();
-        acc.path               = valuestore.get(key, "path").toString();
-        acc.general.host       = valuestore.get(key, "general_server_host").toString();
-        acc.general.port       = valuestore.get(key, "general_server_port").toInt();
-        acc.general.enabled    = valuestore.get(key, "general_server_enabled").toBool();
-        acc.secure.host        = valuestore.get(key, "secure_server_host").toString();
-        acc.secure.port        = valuestore.get(key, "secure_server_port").toInt();
-        acc.secure.enabled     = valuestore.get(key, "secure_server_enabled").toBool();
-        acc.requires_login     = valuestore.get(key, "requires_login").toBool();
-        acc.enable_compression = valuestore.get(key, "enable_compression").toBool();
-        acc.enable_pipelining  = valuestore.get(key, "enable_pipelining").toBool();
+        const auto& key = name;
+        account acc = {};
+
+        LOAD(id);
+        LOAD(name);
+        LOAD(username);
+        LOAD(password);
+        LOAD(general_host);
+        LOAD(general_port);
+        LOAD(secure_host);
+        LOAD(secure_port);
+        LOAD(enable_general_server);
+        LOAD(enable_secure_server);
+        LOAD(enable_login);
+        LOAD(enable_compression);
+        LOAD(enable_pipelining);
+        LOAD(enable_quota);
+        LOAD(connections);
+        LOAD(quota_avail);
+        LOAD(quota_spent);
+        LOAD(downloads_this_month);
+        LOAD(downloads_all_time);
+
+        acc.quota_type = (accounts::quota)datastore.get(key, "quota_type").toInt();
+
         accounts_.append(acc);
     }
+    QAbstractItemModel::reset();
+    
+#undef LOAD
 }
 
-void accounts::suggest(account& acc) const
+accounts::account accounts::suggest() const
 {
-    const auto& home = QDir::homePath();
-    const auto& data = home + "/Newsflash/Data";
-
-    acc.id                 = (quint32)std::time(nullptr);
-    acc.path               = QDir::toNativeSeparators(data);
-    acc.general.enabled    = false;
-    acc.general.port       = 119;
-    acc.secure.port        = 563;
-    acc.secure.enabled     = false;
-    acc.requires_login     = false;
-    acc.enable_compression = false;
-    acc.enable_pipelining  = false;
-    acc.maxconn            = 5;
+    account acc = {};
+    acc.id                    = (quint32)std::time(nullptr);
+    acc.enable_general_server = false;
+    acc.enable_secure_server  = false;
+    acc.general_port          = 119;
+    acc.secure_port           = 563;
+    acc.enable_login          = false;
+    acc.enable_compression    = false;
+    acc.enable_pipelining     = false;
+    acc.connections           = 5;
 
     int index = 1;
     for (;;)
     {
-//        auto suggestion = str("My Usenet _1", index);
-        QString suggestion;
-        auto it = std::find_if(std::begin(accounts_), std::end(accounts_),
+        const auto& suggestion = str("My Usenet _1", index);
+
+        const auto& it = std::find_if(std::begin(accounts_), std::end(accounts_),
             [&](const account& acc) {
                 return acc.name == suggestion;
             });
@@ -119,6 +159,7 @@ void accounts::suggest(account& acc) const
         }
         ++index;
     }
+    return acc;
 }
 
 void accounts::set(const accounts::account& acc)
@@ -128,41 +169,74 @@ void accounts::set(const accounts::account& acc)
             return maybe.id == acc.id;
         });
 
-    std::size_t index = 0;
-
     if (it == std::end(accounts_))
     {
+        beginInsertRows(QModelIndex(), accounts_.size(), accounts_.size());
         accounts_.push_back(acc);
-        index = accounts_.size() -1;
+        endInsertRows();
     }
     else
     {
-        index = std::distance(std::begin(accounts_), it);
         *it = acc;
+        const auto pos = std::distance(std::begin(accounts_), it);
+        const auto first = index(pos, 0);
+        const auto last  = index(pos, 0);
+        emit dataChanged(first, last);
     }
- //   emit modify_account(index);
 }
 
-const
-accounts::account& accounts::get(std::size_t i) const
+QAbstractItemModel* accounts::view() 
 {
-    Q_ASSERT(i < accounts_.size());
-    return accounts_[i];
+    return this;
 }
 
-accounts::account& accounts::get(std::size_t i)
+const 
+accounts::account& accounts::get(std::size_t index) const
 {
-    Q_ASSERT(i < accounts_.size());
-    return accounts_[i];
+    Q_ASSERT(index < accounts_.size());
+
+    return accounts_[index];
+}
+
+accounts::account& accounts::get(std::size_t index)
+{
+    Q_ASSERT(index < accounts_.size());
+
+    return accounts_[index];
+}
+
+void accounts::del(std::size_t index)
+{
+    Q_ASSERT(index < accounts_.size());
+
+    beginRemoveRows(QModelIndex(), index, index);
+    accounts_.removeAt(index);
+    endRemoveRows();
 }
 
 int accounts::rowCount(const QModelIndex&) const 
 {
-    return 0;
+    return accounts_.size();
 }
 
-QVariant accounts::data(const QModelIndex&, int role) const
+QVariant accounts::data(const QModelIndex& index, int role) const
 {
+
+    if (role == Qt::DisplayRole)
+    {
+        const auto& acc = accounts_[index.row()];
+        return acc.name;
+    }
+    else if (role == Qt::FontRole)
+    {
+        QFont bold;
+        bold.setBold(true);
+        return bold;
+    }
+    else if (role == Qt::DecorationRole)
+    {
+        return QIcon(":/resource/16x16_ico_png/ico_account.png");
+    }
     return QVariant();
 }
 

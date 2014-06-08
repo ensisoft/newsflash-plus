@@ -1,4 +1,4 @@
-// Copyright (c) 2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -18,34 +18,42 @@
 //  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 //  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-//  THE SOFTWARE.            
+//  THE SOFTWARE.
 
 #pragma once
 
-namespace app
+#include <newsflash/config.h>
+
+#include <newsflash/warnpush.h>
+#  include <QtDebug>
+#  include <QTime>
+#  include <QString>
+#include <newsflash/warnpop.h>
+
+#include <mutex>
+
+namespace debug 
 {
-    // a command encapsulates and packages a single user action
-    // (see command design pattern)
-    class command 
+    // we use qDebug() for output stream since it supports many
+    // of the Qt types and and is thus convenient.
+
+    inline
+    QString stamp(const char* file, int line) 
     {
-    public:
-        enum class status_t {
-            none, accept, reject, cancel, error
-        };
+        return QString("%1,%2").arg(file).arg(line);
+    }
 
-        enum class action_t {
-            add_account,
-            del_account
-        };
-        virtual ~command() = default;
+    std::mutex& get_lock(); 
 
-        virtual void cancel() = 0;
+} // debug
 
-        virtual void accept() = 0;
+#if defined(NEWSFLASH_DEBUG)
+#  define DEBUG(msg) \
+     do { \
+        std::lock_guard<std::mutex> lock(debug::get_lock()); \
+        qDebug() << QTime::currentTime() << debug::stamp(__FILE__, __LINE__) << msg; \
+     } while (0)
+#else
+#  define DEBUG(msg)
+#endif
 
-        virtual void reject() = 0;
-    protected:
-    private:
-    };
-
-} // app

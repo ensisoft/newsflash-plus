@@ -22,6 +22,11 @@
 
 #include <newsflash/config.h>
 
+#include <newsflash/warnpush.h>
+#  include <QFile>
+#  include <QDir>
+#include <newsflash/warnpop.h>
+
 #if defined(WINDOWS_OS)
 #  include <windows.h>
 #elif defined(LINUX_OS)
@@ -31,8 +36,72 @@
 #include <cstring>
 #include "format.h"
 
+namespace {
+
+    // use floating points here so we get automatic
+    // promotion, and no need to cast in format funcs
+    const double GB = 1024 * 1024 * 1024;
+    const double MB = 1024 * 1024;
+    const double KB = 1024;
+
+} // namespace
+
 namespace sdk
 {
+
+
+namespace detail {
+    void format(QString& s, int index, const sdk::size& size)
+    {
+        QString str;
+        if (size.bytes >= GB)
+            str = QString("%1 Gb").arg(size.bytes / GB, 0, 'f', 1, ' ');
+        else if (size.bytes >= MB)
+            str = QString("%1 Mb").arg(size.bytes / MB, 0, 'f', 1, ' ');
+        else str = QString("%1 Kb").arg(size.bytes / KB, 0, 'f', 1, ' ');
+
+        s = s.replace(key(index), str);
+    }
+
+    void format(QString& s, int index, const sdk::speed& speed)
+    {
+        QString str;
+        if (speed.bps >= GB)
+            str = QString("%1 Gb/s").arg(speed.bps / GB, 0, 'f', 1);
+        else if (speed.bps >= MB)
+            str = QString("%1 Mb/s").arg(speed.bps / MB, 0, 'f', 1);
+        else str = QString("%1 Kb/s").arg(speed.bps / KB, 0, 'f', 1);
+
+        s = s.replace(key(index), str);
+    }
+
+    void format(QString& s, int index, const QFile& file)
+    {
+        s = s.replace(key(index), QString("'%1'").arg(file.fileName()));
+    }
+
+    void format(QString& s, int index, const QDir& dir)
+    {
+        const QString& path = QDir::toNativeSeparators(dir.absolutePath());
+        s = s.replace(key(index), QString("'%1'").arg(path));
+    }    
+}
+
+
+std::string narrow(const QString& str)
+{
+#if defined(WINDOWS_OS)
+    return utf8(str);
+#elif defined(LINUX_OS)
+    const char* codeset = nl_langinfo(CODESET);
+    if (!std::strcmp(codeset, "UTF-8"))
+        return utf8(str);
+
+    const auto& bytes = str.toLocal8Bit();
+    return std::string(bytes.data(),
+        bytes.size());
+#endif
+}
 
 QString widen(const char* str)
 {
@@ -61,6 +130,11 @@ QString widen(const wchar_t* str)
 
     return QString::fromUcs4((const uint*)str);
 #endif
+}
+
+double gigs(quint64 bytes)
+{
+    return bytes / GB;
 }
 
 } // sdk

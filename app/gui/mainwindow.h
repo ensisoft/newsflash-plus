@@ -31,13 +31,11 @@
 
 #include <newsflash/sdk/uicomponent.h>
 #include "ui_mainwindow.h"
+#include "datastore.h"
+#include "../mainapp.h"
 
 class QIcon;
 class QCloseEvent;
-
-namespace app {
-    class valuestore;
-}
 
 namespace gui
 {
@@ -46,22 +44,16 @@ namespace gui
         Q_OBJECT
 
     public:
-        MainWindow();
+        MainWindow(app::mainapp& app);
        ~MainWindow();
-
-        void configure(const app::valuestore& values);
-        void persist(app::valuestore& values);
-
+       
         using QMainWindow::show;
 
-        void attach(sdk::uicomponent* ui);
-        void detach(sdk::uicomponent* ui);
+   private:
         void show(sdk::uicomponent* ui);
         void hide(sdk::uicomponent* ui);        
-        void focus(sdk::uicomponent* ui);
-        void refresh(sdk::uicomponent* ui);
+        void focus(sdk::uicomponent* ui);    
 
-        bool is_shown(const sdk::uicomponent* ui) const;
     private:
         void closeEvent(QCloseEvent* event);
 
@@ -75,13 +67,18 @@ namespace gui
         void on_actionWindowClose_triggered();
         void on_actionWindowNext_triggered();
         void on_actionWindowPrev_triggered();
+        void on_actionHelp_triggered();
         void actionWindowToggle_triggered();
         void actionWindowFocus_triggered();
+        void timerWelcome_timeout();
 
     private:
         Ui::MainWindow ui_;
-    private:
 
+    private:
+        datastore settings_;
+
+        app::mainapp& app_;
 
         sdk::uicomponent* current_;
         QList<sdk::uicomponent*> tabs_;

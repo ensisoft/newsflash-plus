@@ -1,4 +1,4 @@
-// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -18,33 +18,25 @@
 //  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 //  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-//  THE SOFTWARE.
+//  THE SOFTWARE.            
 
-#pragma once
+#include "message_register.h"
 
-#include <newsflash/config.h>
-
-#include <newsflash/warnpush.h>
-#  include <QtDebug>
-#  include <QTime>
-#  include <QString>
-#include <newsflash/warnpop.h>
-
-namespace debug 
+namespace sdk
 {
-    // we use qDebug() for output stream since it supports many
-    // of the Qt types and and is thus convenient.
 
-    inline
-    QString stamp(const char* file, int line) 
-    {
-        return QString("%1,%2").arg(file).arg(line);
-    }
+std::size_t message_register::get_next_command_id()
+{
+    static std::size_t tid;
+    return ++tid;
 }
 
-#if defined(NEWSFLASH_DEBUG)
-#  define DEBUG(msg) qDebug() << QTime::currentTime() << debug::stamp(__FILE__, __LINE__) << msg
-#else
-#  define DEBUG(msg)
-#endif
+message_register::map_t& message_register::types()
+{
+    // must be in a translation unit, need to make sure that
+    // all modules can share the same registry.
+    static map_t m;
+    return m;
+}
 
+} // sdk

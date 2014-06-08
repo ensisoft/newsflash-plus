@@ -20,23 +20,15 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.            
 
-#pragma once
+#include "debug.h"
 
-#include "command.h"
-
-namespace app
+namespace debug
 {
-    class cmd_open_help : public command
-    {
-    public:
-        cmd_open_help(QString page) : page_(page)
-        {}
 
-        type_t type() const override
-        {
-            return type_t::open_help;
-        }
-    private:
-        QString page_;
-    };
-} // app
+std::mutex& get_lock()
+{
+    static std::mutex m;
+    return m;
+}
+
+} // debug

@@ -162,6 +162,8 @@ copy "media/error.wav" "media"
 copy "media/update.wav" "media"
 copy "doc/README.txt" ""
 
+copy "help/*" "help"
+
 cd "$INSTALL"
 chmod u+x "runpython.sh"
 cd "$CURRENT"

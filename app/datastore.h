@@ -35,29 +35,29 @@ namespace app
     // values are keyed by context-name pair so that for example
     // "some-context", "value" and "other-context", "value" point
     // to different actual value objects.
-    class valuestore
+    class datastore
     {
     public:
         enum class format {
             json
         };
 
-        valuestore();
-       ~valuestore();
+        datastore();
+       ~datastore();
 
         // load the store from the given stream.
         // io must be already opened.
-        void load(QIODevice& io, valuestore::format format = format::json);
+        void load(QIODevice& io, datastore::format format = format::json);
 
         // save the store to a stream.
         // io must be already opened.
-        void save(QIODevice& io, valuestore::format format = format::json) const;
+        void save(QIODevice& io, datastore::format format = format::json) const;
 
         // clear all values
         void clear();
 
         // returns true if a value identifief by context/name key
-        // exists in the valuestore. otherwise returns false.
+        // exists in the datastore. otherwise returns false.
         bool contains(const char* context, const char* name) const;
 
         // set the value for the named attribute under the specified key

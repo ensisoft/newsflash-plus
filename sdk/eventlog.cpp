@@ -26,10 +26,12 @@
 #  include <QtGui/QIcon>
 #include <newsflash/warnpop.h>
 
-#include "eventlog.h"
-#include "foobar.h"
+#define LOGTAG
 
-namespace app
+#include "eventlog.h"
+#include "debug.h"
+
+namespace sdk
 {
 
 eventlog::eventlog() : events_(200)
@@ -38,10 +40,10 @@ eventlog::eventlog() : events_(200)
 eventlog::~eventlog()
 {}
 
-void eventlog::write(event_t type, const QString& msg, const QString& ctx)
+void eventlog::write(event type, const QString& msg, const QString& tag)
 {
     const auto time = QTime::currentTime();
-    const event e {type, msg, ctx, time };
+    const event_t e {type, msg, tag, time };
 
     if (events_.full())
     {
@@ -65,6 +67,11 @@ void eventlog::clear()
     endRemoveRows();
 }
 
+QAbstractItemModel* eventlog::view()
+{
+    return this;
+}
+
 int eventlog::rowCount(const QModelIndex&) const
 {
     return static_cast<int>(events_.size());
@@ -72,16 +79,16 @@ int eventlog::rowCount(const QModelIndex&) const
 
 QVariant eventlog::data(const QModelIndex& index, int role) const
 {
-    const auto& event = events_[index.row()];
+    const auto& ev = events_[index.row()];
     switch (role)
     {
         case Qt::DecorationRole:
-        switch (event.type) {
-            case app::eventlog::event_t::warning:
+        switch (ev.type) {
+            case sdk::eventlog::event::warning:
                 return QIcon(":/resource/16x16_ico_png/ico_warning.png");
-            case app::eventlog::event_t::info:
+            case sdk::eventlog::event::info:
                 return QIcon(":/resource/16x16_ico_png/ico_info.png");
-            case app::eventlog::event_t::error:
+            case sdk::eventlog::event::error:
                 return QIcon(":/resource/16x16_ico_png/ico_error.png");
             default:
                 Q_ASSERT("missing event type");
@@ -91,9 +98,9 @@ QVariant eventlog::data(const QModelIndex& index, int role) const
 
             case Qt::DisplayRole:
                 return QString("[%1] [%2] %3")
-                    .arg(event.time.toString("hh:mm:ss:zzz"))
-                    .arg(event.context)
-                    .arg(event.message);                
+                    .arg(ev.time.toString("hh:mm:ss:zzz"))
+                    .arg(ev.logtag)
+                    .arg(ev.message);                
                     break;
     }
     return QVariant();    
@@ -105,4 +112,5 @@ eventlog& eventlog::get()
     return log;
 }
 
-} // app
+} // sdk
+    

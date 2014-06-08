@@ -20,47 +20,53 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-#include <newsflash/config.h>
-
-#include <newsflash/warnpush.h>
-#  include <QtGui/QFileDialog>
-#  include <QDir>
-#include <newsflash/warnpop.h>
-
 #include "dlgaccount.h"
+#include "command.h"
 
 namespace gui
 {
 
-DlgAccount::DlgAccount(QWidget* parent, app::accounts::account& account, bool create) : QDialog(parent), 
-    account_(account), create_(create)
+DlgAccount::DlgAccount(QWidget* parent, int fetch) : QDialog(parent)
 {
     ui_.setupUi(this);
 
-    ui_.edtName->setText(account.name);
-    ui_.edtHost->setText(account.general.host);
-    ui_.edtPort->setText(QString::number(account.general.port));
-    ui_.edtHostSecure->setText(account.secure.host);
-    ui_.edtPortSecure->setText(QString::number(account.secure.port));
-    ui_.edtUsername->setText(account.user);
-    ui_.edtPassword->setText(account.pass);
-    ui_.edtDataFiles->setCursorPosition(0);
-    ui_.chkCompressedHeaders->setChecked(account.enable_compression);
-    ui_.chkBatchMode->setChecked(account.enable_pipelining);
-    ui_.grpSecure->setChecked(account.secure.enabled);
-    ui_.grpNonSecure->setChecked(account.general.enabled);
-    ui_.grpLogin->setChecked(account.requires_login);
-    ui_.btnOK->setEnabled(account.general.enabled ||
-        account.secure.enabled);
-    ui_.maxConnections->setValue(account.maxconn);
+    // const auto cmd = gui::fetch<cmd_get_account>(fetch);
 
-    ui_.edtName->setFocus();
-    ui_.edtName->setSelection(0, account.name.size());
+    // acc_id_ = cmd->id;
 
-    if (create)
-        ui_.edtDataFiles->setText(
-            QDir::toNativeSeparators(account.path + "/" + account.name));
-    else ui_.edtDataFiles->setText(account.path);
+    // ui_.edtName->setText(cmd->name);
+    // ui_.edtHost->setText(cmd->general_host);
+    // ui_.edtPort->setText(QString::number(cmd->general_port));
+    // ui_.edtHostSecure->setText(cmd->secure_host);
+    // ui_.edtPortSecure->setText(QString::number(cmd->secure_port));
+    // ui_.edtUsername->setText(cmd->username);
+    // ui_.edtPassword->setText(cmd->password);
+    // ui_.chkCompression->setChecked(cmd->enable_compression);
+    // ui_.chkPipelining->setChecked(cmd->enable_pipelining);
+    // ui_.grpSecure->setChecked(cmd->enable_secure_server);
+    // ui_.grpGeneral->setChecked(cmd->enable_general_server);
+    // ui_.grpLogin->setChecked(cmd->enable_login);
+}
+
+DlgAccount::DlgAccount(QWidget* parent) : QDialog(parent)
+{
+    ui_.setupUi(this);
+
+    // const auto cmd = gui::fetch<cmd_new_account>();
+
+    // acc_id_ = cmd->id;
+
+    // ui_.edtName->setText(cmd->name);
+    // ui_.edtName->setFocus();
+    // ui_.edtName->setSelection(0, cmd->name.size());    
+    // ui_.edtPort->setText(QString::number(cmd->general_port));
+    // ui_.edtPortSecure->setText(QString::number(cmd->secure_port));
+    // ui_.chkCompression->setChecked(cmd->enable_compression);
+    // ui_.chkPipelining->setChecked(cmd->enable_pipelining);
+    // ui_.grpSecure->setChecked(false);
+    // ui_.grpGeneral->setChecked(false);
+    // ui_.grpLogin->setChecked(false);
+    // ui_.btnOK->setEnabled(false);
 }
 
 DlgAccount::~DlgAccount()
@@ -80,100 +86,73 @@ void DlgAccount::changeEvent(QEvent* e)
 
 void DlgAccount::on_btnOK_clicked()
 {
-    // validate and accept input if valid
-    account_.name               = ui_.edtName->text();
-    account_.general.enabled    = ui_.grpNonSecure->isChecked();
-    account_.secure.enabled     = ui_.grpSecure->isChecked();
-    account_.requires_login     = ui_.grpLogin->isCheckable();    
-    account_.general.port       = ui_.edtPort->text().toInt();
-    account_.general.host       = ui_.edtHost->text();            
-    account_.secure.port        = ui_.edtPortSecure->text().toInt();
-    account_.secure.host        = ui_.edtHostSecure->text();            
-    account_.user               = ui_.edtUsername->text();
-    account_.pass               = ui_.edtPassword->text();
-    account_.requires_login     = ui_.grpLogin->isChecked();
-    account_.path               = ui_.edtDataFiles->text();
-    account_.maxconn            = ui_.maxConnections->value();
-    account_.enable_compression = ui_.chkCompressedHeaders->isChecked();
-    account_.enable_pipelining  = ui_.chkBatchMode->isChecked();
+    // auto cmd = std::make_shared<cmd_set_account>();
+    // cmd->id                    = acc_id_;
+    // cmd->name                  = ui_.edtName->text();
+    // cmd->enable_general_server = ui_.grpGeneral->isChecked();
+    // cmd->enable_secure_server  = ui_.grpSecure->isChecked();
+    // cmd->enable_login          = ui_.grpLogin->isChecked();
+    // cmd->general_port          = ui_.edtPort->text().toInt();
+    // cmd->general_host          = ui_.edtHost->text();            
+    // cmd->secure_port           = ui_.edtPortSecure->text().toInt();
+    // cmd->secure_host           = ui_.edtHostSecure->text();            
+    // cmd->username              = ui_.edtUsername->text();
+    // cmd->password              = ui_.edtPassword->text();
+    // cmd->connections           = ui_.maxConnections->value();
+    // cmd->enable_compression    = ui_.chkCompression->isChecked();
+    // cmd->enable_pipelining     = ui_.chkPipelining->isChecked();
 
-    if (account_.name.isEmpty())
-    {
-        ui_.edtName->setFocus();
-        return;
-    }
-    if (account_.general.enabled)
-    {
-        if (account_.general.port <= 0)
-        {
-            ui_.edtPort->setFocus();
-            return;
-        }
-        if (account_.general.host.isEmpty())
-        {
-            ui_.edtHost->setFocus();
-            return;
-        }
-    }
-    if (account_.secure.enabled)
-    {
-        if (account_.secure.port <= 0)
-        {
-            ui_.edtPort->setFocus();
-            return;
-        }
-        if (account_.secure.host.isEmpty())
-        {
-            ui_.edtHost->setFocus();
-            return;
-        }
-    }
-    if (account_.requires_login)
-    {
-        if (account_.user.isEmpty())
-        {
-            ui_.edtUsername->setFocus();
-            return;
-        }
-        if (account_.pass.isEmpty())
-        {
-            ui_.edtPassword->setFocus();
-            return;
-        }
-    }
-    if (account_.path.isEmpty())
-    {
-        ui_.edtDataFiles->setFocus();
-        return;
-    }
-
-    if (account_.maxconn < 0)
-    {
-        ui_.maxConnections->setFocus();
-        return;
-    }
-
-    accept();
-}
-
-void DlgAccount::on_btnBrowseData_clicked()
-{
-    const auto& dir = QFileDialog::getExistingDirectory(
-        this, tr("Location for data files"));
-    if (dir.isEmpty())
-        return;
-
-    QString path;
-    if (create_)
-    {
-        const auto& name = ui_.edtName->text();
-        path = QDir::toNativeSeparators(dir + "/" + name);
-    }
-    else 
-    {
-        path = QDir::toNativeSeparators(dir);
-    }
-    ui_.edtDataFiles->setText(path);
+    // if (cmd->name.isEmpty())
+    // {
+    //     ui_.edtName->setFocus();
+    //     return;
+    // }
+    // if (cmd->enable_general_server)
+    // {
+    //     if (cmd->general_port <= 0)
+    //     {
+    //         ui_.edtPort->setFocus();
+    //         return;
+    //     }
+    //     if (cmd->general_host.isEmpty())
+    //     {
+    //         ui_.edtHost->setFocus();
+    //         return;
+    //     }
+    // }
+    // if (cmd->enable_secure_server)
+    // {
+    //     if (cmd->secure_port <= 0)
+    //     {
+    //         ui_.edtPort->setFocus();
+    //         return;
+    //     }
+    //     if (cmd->secure_host.isEmpty())
+    //     {
+    //         ui_.edtHost->setFocus();
+    //         return;
+    //     }
+    // }
+    // if (cmd->enable_login)
+    // {
+    //     if (cmd->username.isEmpty())
+    //     {
+    //         ui_.edtUsername->setFocus();
+    //         return;
+    //     }
+    //     if (cmd->password.isEmpty())
+    //     {
+    //         ui_.edtPassword->setFocus();
+    //         return;
+    //     }
+    // }
+    // if (cmd->connections < 0)
+    // {
+    //     ui_.maxConnections->setFocus();
+    //     return;
+    // }
+//    if (send(cmd) == command::status::accept)
+//        accept();
 }
 
 void DlgAccount::on_grpSecure_clicked(bool val)
@@ -181,26 +160,15 @@ void DlgAccount::on_grpSecure_clicked(bool val)
     // need to enable at least 1 server
     ui_.btnOK->setEnabled(
         ui_.grpSecure->isChecked() || 
-        ui_.grpNonSecure->isChecked());
+        ui_.grpGeneral->isChecked());
 }
 
-void DlgAccount::on_grpNonSecure_clicked(bool val)
+void DlgAccount::on_grpGeneral_clicked(bool val)
 {
     // need to enable at least 1 server
     ui_.btnOK->setEnabled(
         ui_.grpSecure->isChecked() || 
-        ui_.grpNonSecure->isChecked());    
-}
-
-void DlgAccount::on_edtName_textEdited()
-{
-    if (!create_)
-        return;
-
-    // modify the default data file path on the fly 
-    const auto& name = ui_.edtName->text();
-    const auto& path = QDir::toNativeSeparators(account_.path + "/" + name);
-    ui_.edtDataFiles->setText(path);
+        ui_.grpGeneral->isChecked());    
 }
 
 } // gui

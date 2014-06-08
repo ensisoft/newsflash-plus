@@ -34,10 +34,10 @@
 namespace gui
 {
 
-Groups::Groups(QAbstractItemModel* model)
+Groups::Groups(sdk::model& model) : model_(model)
 {
     ui_.setupUi(this);
-    ui_.tableGroups->setModel(model);
+    ui_.tableGroups->setModel(model.view());
 }
 
 Groups::~Groups()
@@ -62,6 +62,14 @@ void Groups::add_actions(QToolBar& bar)
     bar.addAction(ui_.actionClean);
     bar.addSeparator();
     bar.addAction(ui_.actionInfo);
+}
+
+sdk::uicomponent::info Groups::get_info() const
+{
+    const static sdk::uicomponent::info info {
+        "groups.html", true
+    };
+    return info;
 }
 
 void Groups::on_actionAdd_triggered()

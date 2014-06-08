@@ -25,48 +25,54 @@
 #include <newsflash/config.h>
 
 #include <newsflash/warnpush.h>
+#  include <QtGlobal>
 #  include <QString>
-#  include <QFile>
-#  include <QDir>
 #include <newsflash/warnpop.h>
-
 #include <string>
+
+
+class QFile;
+class QDir;
 
 namespace sdk
 {
+    struct size {
+        quint64 bytes;
+    };
+
+    struct speed {
+        quint32 bps;
+    };
+
     namespace detail {
+        inline
+        QString key(int index)
+        {
+            return QString("_%1").arg(index);
+        }
+
 
         template<typename T>
         void format(QString& s, int index, const T& t)
         {
-            s = s.replace(
-                QString("_%1").arg(index), 
-                QString("%1").arg(t));
-        }
-
-        inline
-        void format(QString& s, int index, const QFile& file)
-        {
-            s = s.replace(
-                QString("_%1").arg(index),
-                QString("'%1'").arg(file.fileName()));
-        }
-
-        inline
-        void format(QString& s, int index, const QDir& dir)
-        {
-            const QString& path = QDir::toNativeSeparators(dir.absolutePath());
-            s = s.replace(
-                QString("_%1").arg(index),
-                QString("'%1'").arg(path));
+            s = s.replace(key(index), QString("%1").arg(t));
         }
 
         inline
         void format(QString& s, int index, bool val)
         {
-            const auto& key = QString("_%1").arg(index);
-            s = s.replace(key, (val ? "True" : "False"));
+            s = s.replace(key(index), (val ? "True" : "False"));
         }
+        inline
+        void format(QString& s, int index, std::string str)
+        {
+            s = s.replace(key(index), str.c_str());
+        }
+
+        void format(QString& s, int index, const QFile& file);
+        void format(QString& s, int index, const QDir& dir);
+        void format(QString& s, int index, const sdk::size& size);
+        void format(QString& s, int index, const sdk::speed& speed);
 
         template<typename T>
         void format_next(QString& s, int index, const T& t)
@@ -75,6 +81,7 @@ namespace sdk
         }
 
         template<typename T, typename... Rest>
+
         void format_next(QString& s, int index, const T& t, const Rest&... rest)
         {
             format(s, index, t);
@@ -82,7 +89,10 @@ namespace sdk
         }
     }
 
+
+
     // a wrapper around QString::arg() with more convenient syntax
+
     // and also potentail for changing the output by overloading format_next
     template<typename... Args>
     QString str(const char* fmt, const Args&... args)
@@ -90,6 +100,12 @@ namespace sdk
         QString s(fmt);
         detail::format_next(s, 1, args...);
         return s;
+    }
+
+    template<typename T>
+    QString str(const T& arg)
+    {
+        return str("_1", arg);
     }
 
     template<typename... Args>
@@ -105,9 +121,20 @@ namespace sdk
     std::string utf8(const QString& str)
     {
         const auto& bytes = str.toUtf8();
-        return std::string(bytes.data(), bytes.size());
+        return std::string(bytes.data(), 
+            bytes.size());
     }
 
+    inline
+    std::string latin(const QString& str)
+    {
+        const auto& bytes = str.toLatin1();
+        return std::string(bytes.data(),
+            bytes.size());
+    }
+
+    // get a string in systems native narrow character encoding.
+    std::string narrow(const QString& str);
 
     // get a Qstring from a native system string.
     // the string is expected to be in the systems 
@@ -116,4 +143,7 @@ namespace sdk
 
     QString widen(const wchar_t* str);
 
+    double gigs(quint64 bytes);
+
 } // sdk
+

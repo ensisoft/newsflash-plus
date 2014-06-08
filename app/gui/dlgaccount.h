@@ -29,8 +29,6 @@
 
 #include "ui_dlgaccount.h"
 
-#include "../accounts.h"
-
 namespace gui
 {
     class DlgAccount : public QDialog 
@@ -38,25 +36,23 @@ namespace gui
         Q_OBJECT
 
     public:
-        DlgAccount(QWidget *parent, app::accounts::account& account, bool create);
+        DlgAccount(QWidget* parent, int fetch);
+        DlgAccount(QWidget *parent);
        ~DlgAccount();
 
+        
     private:
         void changeEvent(QEvent *e);
 
     private slots:
         void on_btnOK_clicked();
-        void on_btnBrowseData_clicked();
         void on_grpSecure_clicked(bool val);
-        void on_grpNonSecure_clicked(bool val);
-        void on_edtName_textEdited();
+        void on_grpGeneral_clicked(bool val);
 
     private:
         Ui::DlgAccount ui_;
 
-    private:
-        app::accounts::account& account_;
-        bool create_;
+        quint32 acc_id_;
     };
 
 } // gui

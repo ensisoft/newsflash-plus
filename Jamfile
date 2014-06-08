@@ -41,6 +41,7 @@ use-project rss     : "rsslib" ;
 use-project nzb     : "nzblib" ;
 use-project msglib  : "msglib" ;
 use-project pylib   : "pylib"  ;
+use-project sdk     : "sdk" ;
 
 project newsflash 
 : 

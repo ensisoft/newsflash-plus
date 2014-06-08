@@ -1,4 +1,4 @@
-// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -18,21 +18,42 @@
 //  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 //  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-//  THE SOFTWARE.
+//  THE SOFTWARE.            
 
 #pragma once
 
+#include <newsflash/config.h>
+
 #include <newsflash/warnpush.h>
-#  include <QStringList>
-#  include <QString>
+#  include <QAbstractItemModel>
+#  include <QObject>
+#  include <QVariant>
 #include <newsflash/warnpop.h>
 
-namespace gui
+namespace sdk
 {
-    // get the directory in which the current executable resides.
-    QString get_installation_directory();
+    class model : public QObject
+    {
+        Q_OBJECT
 
-    void set_cmd_line(int argc, char* argv[]);
+    public:
+        virtual ~model() = default;
 
-    QStringList get_cmd_line();
-} // gui
+        virtual void clear() {};
+
+        virtual bool empty() const { return true; }
+
+        virtual QAbstractItemModel* view() { return nullptr; }
+
+        //virtual std::size_t rows() const { return 0; }
+        //virtual std::size_t cols() const { return 0; }
+        //virtual QVariant data(std::size_t row, std::size_t col) const { return QVariant(); }
+
+    //public signal:        
+
+    protected:
+    private:
+
+    };
+
+} // sdk

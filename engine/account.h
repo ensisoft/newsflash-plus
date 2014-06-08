@@ -51,15 +51,21 @@ namespace newsflash
         // with 2 servers. one for the general unecrypted use
         // and the secure server that uses encryption.
 
-        // secure server
-        server secure;
+        std::string secure_host;
 
-        // general uncrypted server.
-        server general;
+        std::string general_host;
+
+        std::uint16_t secure_port;
+
+        std::uint16_t general_port;
 
         // maximum number of connections to be opened
         // to the servers under this account.
-        int max_connections;
+        int connections;
+
+        bool enable_secure_server;
+
+        bool enable_general_server;
 
         // todo:
         bool enable_compression;

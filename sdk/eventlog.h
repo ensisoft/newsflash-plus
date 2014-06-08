@@ -32,56 +32,65 @@
 #  include <QString>
 #include <newsflash/warnpop.h>
 
-namespace app
+#include "model.h"
+
+namespace sdk
 {
-    class eventlog : public QAbstractListModel
+    // eventlog is technically a backend module to the coreapp and could
+    // generally be a builtin. but since it's a universally handy module
+    // it lives here in the sdk library.
+    class eventlog : public sdk::model, public QAbstractListModel
     {
     public:
-        enum class event_t {
+        enum class event {
             warning, info, error
         };
 
         // record a new event in the log
-        void write(event_t type, const QString& msg, const QString& ctx);
+        void write(event type, const QString& msg, const QString& tag);
 
         // clear the event log
-        void clear();
+        virtual void clear() override;
+
+        virtual QAbstractItemModel* view() override;
 
         // abstraclistmodel data accessor
-        int rowCount(const QModelIndex&) const override;
+        virtual int rowCount(const QModelIndex&) const override;
 
         // abstractlistmodel data accessor
-        QVariant data(const QModelIndex& index, int role) const override;
+        virtual QVariant data(const QModelIndex& index, int role) const override;
 
         static
         eventlog& get();
 
-        // post a log event
-        // static
-        // void post(event_t type, const QString& msg, const QString& ctx);
     private:
         eventlog();
        ~eventlog();
 
     private:
-        struct event {
-            event_t type;
+        struct event_t {
+            event   type;
             QString message;
-            QString context;
+            QString logtag;
             QTime   time;
         };
 
-        boost::circular_buffer<event> events_;
+        boost::circular_buffer<event_t> events_;
     };
 
+#ifndef LOGTAG
+    // we want every log event to be tracable back to where it came from
+    // so thus every module should define it's own LOGTAG 
+//#  error every module importing eventlog needs to define LOGTAG
+#endif
+
 #define WARN(m) \
-    app::eventlog::get().write(app::eventlog::event_t::warning, m, "default")    
+    sdk::eventlog::get().write(sdk::eventlog::event::warning, m, LOGTAG)    
 
 #define ERROR(m) \
-    app::eventlog::get().write(app::eventlog::event_t::error, m, "default")    
+    sdk::eventlog::get().write(sdk::eventlog::event::error, m, LOGTAG)    
 
 #define INFO(m) \
-    app::eventlog::get().write(app::eventlog::event_t::info, m, "default")    
+    sdk::eventlog::get().write(sdk::eventlog::event::info, m, LOGTAG)    
 
-
-} // app
+} // sdk

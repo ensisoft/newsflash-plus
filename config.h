@@ -116,14 +116,14 @@
 #endif
 
 #define NEWSFLASH_ENABLE_LOG
-
 #define NEWSFLASH_ENABLE_PYTHON
 
-#ifndef QT_NO_DEBUG
-#  define QT_NO_DEBUG
+#ifndef NEWSFLASH_DEBUG
+//#  define QT_NO_DEBUG
 #endif
+
 #define QT_NO_CAST_TO_ASCII
-//#define QT_NO_CAST_FROM_ASCII
+
 
 
     
