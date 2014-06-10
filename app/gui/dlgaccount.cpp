@@ -21,52 +21,26 @@
 //  THE SOFTWARE.
 
 #include "dlgaccount.h"
-#include "command.h"
 
 namespace gui
 {
 
-DlgAccount::DlgAccount(QWidget* parent, int fetch) : QDialog(parent)
+DlgAccount::DlgAccount(QWidget* parent, app::accounts::account& acc) : QDialog(parent), acc_(acc)
 {
     ui_.setupUi(this);
 
-    // const auto cmd = gui::fetch<cmd_get_account>(fetch);
-
-    // acc_id_ = cmd->id;
-
-    // ui_.edtName->setText(cmd->name);
-    // ui_.edtHost->setText(cmd->general_host);
-    // ui_.edtPort->setText(QString::number(cmd->general_port));
-    // ui_.edtHostSecure->setText(cmd->secure_host);
-    // ui_.edtPortSecure->setText(QString::number(cmd->secure_port));
-    // ui_.edtUsername->setText(cmd->username);
-    // ui_.edtPassword->setText(cmd->password);
-    // ui_.chkCompression->setChecked(cmd->enable_compression);
-    // ui_.chkPipelining->setChecked(cmd->enable_pipelining);
-    // ui_.grpSecure->setChecked(cmd->enable_secure_server);
-    // ui_.grpGeneral->setChecked(cmd->enable_general_server);
-    // ui_.grpLogin->setChecked(cmd->enable_login);
-}
-
-DlgAccount::DlgAccount(QWidget* parent) : QDialog(parent)
-{
-    ui_.setupUi(this);
-
-    // const auto cmd = gui::fetch<cmd_new_account>();
-
-    // acc_id_ = cmd->id;
-
-    // ui_.edtName->setText(cmd->name);
-    // ui_.edtName->setFocus();
-    // ui_.edtName->setSelection(0, cmd->name.size());    
-    // ui_.edtPort->setText(QString::number(cmd->general_port));
-    // ui_.edtPortSecure->setText(QString::number(cmd->secure_port));
-    // ui_.chkCompression->setChecked(cmd->enable_compression);
-    // ui_.chkPipelining->setChecked(cmd->enable_pipelining);
-    // ui_.grpSecure->setChecked(false);
-    // ui_.grpGeneral->setChecked(false);
-    // ui_.grpLogin->setChecked(false);
-    // ui_.btnOK->setEnabled(false);
+    ui_.edtName->setText(acc_.name);
+    ui_.edtHost->setText(acc_.general_host);
+    ui_.edtPort->setText(QString::number(acc_.general_port));
+    ui_.edtHostSecure->setText(acc_.secure_host);
+    ui_.edtPortSecure->setText(QString::number(acc_.secure_port));
+    ui_.edtUsername->setText(acc_.username);
+    ui_.edtPassword->setText(acc_.password);
+    ui_.chkCompression->setChecked(acc_.enable_compression);
+    ui_.chkPipelining->setChecked(acc_.enable_pipelining);
+    ui_.grpSecure->setChecked(acc_.enable_secure_server);
+    ui_.grpGeneral->setChecked(acc_.enable_general_server);
+    ui_.grpLogin->setChecked(acc_.enable_login);
 }
 
 DlgAccount::~DlgAccount()
@@ -86,73 +60,71 @@ void DlgAccount::changeEvent(QEvent* e)
 
 void DlgAccount::on_btnOK_clicked()
 {
-    // auto cmd = std::make_shared<cmd_set_account>();
-    // cmd->id                    = acc_id_;
-    // cmd->name                  = ui_.edtName->text();
-    // cmd->enable_general_server = ui_.grpGeneral->isChecked();
-    // cmd->enable_secure_server  = ui_.grpSecure->isChecked();
-    // cmd->enable_login          = ui_.grpLogin->isChecked();
-    // cmd->general_port          = ui_.edtPort->text().toInt();
-    // cmd->general_host          = ui_.edtHost->text();            
-    // cmd->secure_port           = ui_.edtPortSecure->text().toInt();
-    // cmd->secure_host           = ui_.edtHostSecure->text();            
-    // cmd->username              = ui_.edtUsername->text();
-    // cmd->password              = ui_.edtPassword->text();
-    // cmd->connections           = ui_.maxConnections->value();
-    // cmd->enable_compression    = ui_.chkCompression->isChecked();
-    // cmd->enable_pipelining     = ui_.chkPipelining->isChecked();
+    acc_.name                  = ui_.edtName->text();
+    acc_.enable_general_server = ui_.grpGeneral->isChecked();
+    acc_.enable_secure_server  = ui_.grpSecure->isChecked();
+    acc_.enable_login          = ui_.grpLogin->isChecked();
+    acc_.general_port          = ui_.edtPort->text().toInt();
+    acc_.general_host          = ui_.edtHost->text();            
+    acc_.secure_port           = ui_.edtPortSecure->text().toInt();
+    acc_.secure_host           = ui_.edtHostSecure->text();            
+    acc_.username              = ui_.edtUsername->text();
+    acc_.password              = ui_.edtPassword->text();
+    acc_.connections           = ui_.maxConnections->value();
+    acc_.enable_compression    = ui_.chkCompression->isChecked();
+    acc_.enable_pipelining     = ui_.chkPipelining->isChecked();
 
-    // if (cmd->name.isEmpty())
-    // {
-    //     ui_.edtName->setFocus();
-    //     return;
-    // }
-    // if (cmd->enable_general_server)
-    // {
-    //     if (cmd->general_port <= 0)
-    //     {
-    //         ui_.edtPort->setFocus();
-    //         return;
-    //     }
-    //     if (cmd->general_host.isEmpty())
-    //     {
-    //         ui_.edtHost->setFocus();
-    //         return;
-    //     }
-    // }
-    // if (cmd->enable_secure_server)
-    // {
-    //     if (cmd->secure_port <= 0)
-    //     {
-    //         ui_.edtPort->setFocus();
-    //         return;
-    //     }
-    //     if (cmd->secure_host.isEmpty())
-    //     {
-    //         ui_.edtHost->setFocus();
-    //         return;
-    //     }
-    // }
-    // if (cmd->enable_login)
-    // {
-    //     if (cmd->username.isEmpty())
-    //     {
-    //         ui_.edtUsername->setFocus();
-    //         return;
-    //     }
-    //     if (cmd->password.isEmpty())
-    //     {
-    //         ui_.edtPassword->setFocus();
-    //         return;
-    //     }
-    // }
-    // if (cmd->connections < 0)
-    // {
-    //     ui_.maxConnections->setFocus();
-    //     return;
-    // }
-//    if (send(cmd) == command::status::accept)
-//        accept();
+    if (acc_.name.isEmpty())
+    {
+        ui_.edtName->setFocus();
+        return;
+    }
+    if (acc_.enable_general_server)
+    {
+        if (acc_.general_port <= 0)
+        {
+            ui_.edtPort->setFocus();
+            return;
+        }
+        if (acc_.general_host.isEmpty())
+        {
+            ui_.edtHost->setFocus();
+            return;
+        }
+    }
+    if (acc_.enable_secure_server)
+    {
+        if (acc_.secure_port <= 0)
+        {
+            ui_.edtPort->setFocus();
+            return;
+        }
+        if (acc_.secure_host.isEmpty())
+        {
+            ui_.edtHost->setFocus();
+            return;
+        }
+    }
+    if (acc_.enable_login)
+    {
+        if (acc_.username.isEmpty())
+        {
+            ui_.edtUsername->setFocus();
+            return;
+        }
+        if (acc_.password.isEmpty())
+        {
+            ui_.edtPassword->setFocus();
+            return;
+        }
+    }
+    if (acc_.connections < 0)
+    {
+        ui_.maxConnections->setFocus();
+        return;
+    }
+    
+    accept();
 }
 
 void DlgAccount::on_grpSecure_clicked(bool val)

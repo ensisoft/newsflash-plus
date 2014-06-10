@@ -29,13 +29,16 @@
 #  include <QList>
 #include <newsflash/warnpop.h>
 
-#include <newsflash/sdk/uicomponent.h>
+#include <newsflash/sdk/datastore.h>
 #include "ui_mainwindow.h"
-#include "datastore.h"
 #include "../mainapp.h"
 
 class QIcon;
 class QCloseEvent;
+
+namespace sdk {
+    class widget;
+} //
 
 namespace gui
 {
@@ -50,15 +53,19 @@ namespace gui
         using QMainWindow::show;
 
    private:
-        void show(sdk::uicomponent* ui);
-        void hide(sdk::uicomponent* ui);        
-        void focus(sdk::uicomponent* ui);    
+        void show(const QString& name);
+        void show(sdk::widget* widget);
+        void hide(sdk::widget* widget);        
+        void focus(sdk::widget* widget);    
 
     private:
         void closeEvent(QCloseEvent* event);
 
     private:
         void build_window_menu();
+        bool savestate();
+        void loadstate();
+        void loadwidgets();
 
     private slots:
         void on_mainTab_currentChanged(int index);
@@ -76,12 +83,12 @@ namespace gui
         Ui::MainWindow ui_;
 
     private:
-        datastore settings_;
+        sdk::datastore settings_;
 
         app::mainapp& app_;
 
-        sdk::uicomponent* current_;
-        QList<sdk::uicomponent*> tabs_;
+        sdk::widget* current_;
+        QList<sdk::widget*> tabs_;
         QList<QAction*> tabs_actions_;
     };
 

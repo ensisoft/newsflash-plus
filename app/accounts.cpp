@@ -30,12 +30,12 @@
 #include <newsflash/warnpop.h>
 
 #include <newsflash/sdk/format.h>
+#include <newsflash/sdk/datastore.h>
 
 #include <ctime>
 #include <algorithm>
 
 #include "accounts.h"
-#include "datastore.h"
 #include "eventlog.h"
 
 using sdk::str;
@@ -44,7 +44,7 @@ using sdk::str_a;
 namespace app
 {
 
-void accounts::save(app::datastore& datastore) const
+void accounts::save(sdk::datastore& datastore) const
 {
 
 #define SAVE(x) \
@@ -85,7 +85,7 @@ void accounts::save(app::datastore& datastore) const
 #undef SAVE
 }
 
-void accounts::load(const app::datastore& datastore)
+void accounts::load(const sdk::datastore& datastore)
 {
     // we use the template version of the get method to resolve
     // the type of the account member. however in order for 

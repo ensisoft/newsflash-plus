@@ -32,13 +32,14 @@
 
 #include <newsflash/engine/listener.h>
 #include <newsflash/engine/engine.h>
+#include <newsflash/sdk/datastore.h>
 #include <newsflash/sdk/model.h>
+
 
 #include <memory>
 #include <map>
 #include "accounts.h"
 #include "groups.h"
-#include "datastore.h"
 #include "eventlog.h"
 #include "groups.h"
 
@@ -48,6 +49,8 @@ class QEvent;
 
 namespace sdk {
     class model;
+    struct msg_shutdown;
+    struct msg_request_shutdown;
 }
 
 namespace app
@@ -62,12 +65,10 @@ namespace app
        ~mainapp();
 
         sdk::model& get_model(const QString& name);
-       
-        // invoke a command in the application.
-        // typically commands are created by user interacting
-        // with the application through the user interface layer.
-        //void react(std::shared_ptr<sdk::command> cmd);
 
+        bool savestate();
+
+        void shutdown();
 
         // todo: 
         virtual void handle(const newsflash::error& error) override;
@@ -88,30 +89,16 @@ namespace app
         bool eventFilter(QObject* object, QEvent* event);
 
     private:
-        // friend class sdk::command_dispatch<mainapp>;
 
-        // void on_command(std::shared_ptr<sdk::cmd_new_account>& cmd);
-        // void on_command(std::shared_ptr<sdk::cmd_del_account>& cmd);
-        // void on_command(std::shared_ptr<sdk::cmd_set_account>& cmd);
-        // void on_command(std::shared_ptr<sdk::cmd_get_account>& cmd);
-        // void on_command(std::shared_ptr<sdk::cmd_get_account_quota>& cmd);
-        // void on_command(std::shared_ptr<sdk::cmd_set_account_quota>& cmd);
-        // void on_command(std::shared_ptr<sdk::cmd_get_account_volume>& cmd);
-        // void on_command(std::shared_ptr<sdk::cmd_set_account_volume>& cmd);
-        // void on_command(std::shared_ptr<sdk::cmd_shutdown>& cmd);
 
     private:
         std::unique_ptr<newsflash::engine> engine_;
-
-
-    // private:
-    //     sdk::command_dispatch<mainapp> dispatch_;
 
     private:
         QCoreApplication& app_;    
 
     private:
-        datastore  settings_;
+        sdk::datastore settings_;
 
         // built-in models which are always available
     private:

@@ -30,18 +30,24 @@
 #  include <QtGui/QStandardItemModel>
 #include <newsflash/warnpop.h>
 
+#include <newsflash/keygen/keygen.h>
 #include <newsflash/sdk/format.h>
+#include <newsflash/sdk/debug.h>
+#include <newsflash/sdk/datastore.h>
 #include <ctime>
 
 #include "dlgaccount.h"
 #include "accounts.h"
-#include "guiapi.h"
-#include "debug.h"
+
+#include "../accounts.h"
+
 
 using sdk::str;
 
 namespace gui
 {
+
+void openurl(const QString&);
 
 Accounts::Accounts(sdk::model& model) : model_(model)
 {
@@ -49,7 +55,7 @@ Accounts::Accounts(sdk::model& model) : model_(model)
     ui_.listView->setModel(model.view());
     ui_.lblMovie->installEventFilter(this);
 
-    const bool empty = model.empty();
+    const bool empty = model.is_empty();
 
     ui_.actionDel->setEnabled(!empty);
     ui_.actionProperties->setEnabled(!empty);
@@ -62,6 +68,9 @@ Accounts::Accounts(sdk::model& model) : model_(model)
     pie->setHeaderData(0, Qt::Horizontal, tr("Available"));
     pie->setHeaderData(1, Qt::Horizontal, tr("Used"));
     ui_.pie->setModel(pie);
+
+    ui_.grpQuota->setChecked(false);
+    ui_.btnMonthlyQuota->setChecked(true);
 }
 
 Accounts::~Accounts()
@@ -85,12 +94,25 @@ void Accounts::add_actions(QToolBar& bar)
     bar.addAction(ui_.actionProperties);
 }
 
-sdk::uicomponent::info Accounts::get_info() const
+sdk::widget::info Accounts::information() const
 {
-    const static sdk::uicomponent::info info {
-        "accounts.html", true
-    };
-    return info;
+    return {"accounts.html", true};
+}
+
+void Accounts::load(const sdk::datastore& data)
+{
+    const auto license  = data.get("accounts", "license", "");
+    const bool validate = keygen::verify_code(license);
+    if (validate)
+        advertise(false);
+    else advertise(true);
+
+    license_ = license;
+}
+
+void Accounts::save(sdk::datastore& data)
+{
+    data.set("accounts", "license", license_);
 }
 
 void Accounts::advertise(bool show)
@@ -154,8 +176,8 @@ bool Accounts::eventFilter(QObject* object, QEvent* event)
 void Accounts::on_actionNew_triggered()
 {
     DEBUG("New account");
-    DlgAccount dlg(this);
-    dlg.exec();
+    //DlgAccount dlg(this);
+    //dlg.exec();
 
     auto* model = ui_.listView->model();
     if (model->rowCount())
@@ -187,8 +209,8 @@ void Accounts::on_actionProperties_triggered()
     if (row == -1)
         return;
 
-    DlgAccount dlg(this, row);
-    dlg.exec();
+    //DlgAccount dlg(this, row);
+    //dlg.exec();
 }
 
 void Accounts::currentRowChanged()
@@ -197,7 +219,7 @@ void Accounts::currentRowChanged()
     if (row == -1)
         return;
 
-    DEBUG(str("rowChanged _1", row));
+
 
     // auto quota  = fetch<cmd_get_account_quota>(row);
     // auto volume = fetch<cmd_get_account_volume>(row);

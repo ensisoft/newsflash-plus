@@ -22,6 +22,16 @@
 
 #pragma once
 
+#if defined(LINUX_OS)
+#  define WIDGET_API extern "C" 
+#elif defined(WINDOWS_OS)
+#  ifdef WIDGET_IMPL
+#    define WIDGET_API extern "C" __declspec(dllexport)
+#  else
+#    define WIDGET_API extern "C" __declspec(dllimport)
+#  endif
+#endif
+
 #include <newsflash/warnpush.h>
 #  include <QtGui/QWidget>
 #  include <QString>
@@ -32,8 +42,13 @@ class QToolBar;
 
 namespace sdk
 {
-    // ui component extends the visible user interface 
-    class uicomponent : public QWidget
+    class datastore;
+
+    // widget objects extend the use visible interface.
+    // a widget typically uses a model object and presents
+    // the data within the model to the user and responds
+    // to user interactions.
+    class widget : public QWidget
     {
     public:
         struct info {
@@ -46,7 +61,7 @@ namespace sdk
             bool visible_by_default;            
         };
 
-        virtual ~uicomponent() = default;
+        virtual ~widget() = default;
         
         // Add the component specific menu actions to a menu inside the host application
         virtual void add_actions(QMenu& menu) {}
@@ -61,8 +76,14 @@ namespace sdk
         // This function is invoked when this ui component is hidden in the host GUI.
         virtual void deactivate() {}
 
-        // Get static component configuration information.
-        virtual info get_info() const { return info {"", false}; }
+        // save widget state into datastore
+        virtual void save(datastore& store) {}
+
+        // load widget state from datastore.
+        virtual void load(const datastore& store) {}
+
+        // get information about the widget.
+        virtual info information() const { return {"", false}; }
     private:
     };
     

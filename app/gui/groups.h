@@ -24,7 +24,7 @@
 
 #include <newsflash/config.h>
 
-#include <newsflash/sdk/uicomponent.h>
+#include <newsflash/sdk/widget.h>
 #include <newsflash/sdk/model.h>
 #include <newsflash/warnpush.h>
 #include <newsflash/warnpop.h>
@@ -32,7 +32,7 @@
 
 namespace gui
 {
-    class Groups : public sdk::uicomponent
+    class Groups : public sdk::widget
     {
         Q_OBJECT
 
@@ -40,10 +40,9 @@ namespace gui
         Groups(sdk::model& model);
        ~Groups();
 
-        void add_actions(QMenu& menu);
-        void add_actions(QToolBar& bar);
-
-        sdk::uicomponent::info get_info() const;
+        virtual void add_actions(QMenu& menu) override;
+        virtual void add_actions(QToolBar& bar) override;
+        virtual info information() const override;
 
     private slots:
         void on_actionAdd_triggered();

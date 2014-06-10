@@ -64,12 +64,9 @@ void Groups::add_actions(QToolBar& bar)
     bar.addAction(ui_.actionInfo);
 }
 
-sdk::uicomponent::info Groups::get_info() const
+sdk::widget::info Groups::information() const
 {
-    const static sdk::uicomponent::info info {
-        "groups.html", true
-    };
-    return info;
+    return {"groups.html", true};
 }
 
 void Groups::on_actionAdd_triggered()

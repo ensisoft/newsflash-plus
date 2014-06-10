@@ -25,11 +25,12 @@
 #include <newsflash/warnpush.h>
 #  include <QVariant>
 #  include <QMap>
+#  include <QFile>
 #include <newsflash/warnpop.h>
 
 class QIODevice;
 
-namespace app
+namespace sdk
 {
     // store arbitrary values/objects with a context/name key.
     // values are keyed by context-name pair so that for example
@@ -52,6 +53,10 @@ namespace app
         // save the store to a stream.
         // io must be already opened.
         void save(QIODevice& io, datastore::format format = format::json) const;
+
+        QFile::FileError load(const QString& file, datastore::format format = format::json);
+
+        QFile::FileError save(const QString& file, datastore::format format = format::json);
 
         // clear all values
         void clear();
@@ -88,4 +93,4 @@ namespace app
         QVariantMap values_;
     };
 
-} // app
+} // sdk

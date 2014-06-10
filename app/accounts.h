@@ -36,8 +36,6 @@
 
 namespace app
 {
-    class datastore;
-
     class accounts : public sdk::model, public QAbstractListModel
     {
     public:
@@ -69,10 +67,10 @@ namespace app
         };
 
         // persist accounts into datastore
-        void save(app::datastore& datastore) const;
+        void save(sdk::datastore& datastore) const;
 
         // retrieve accounts from datastore
-        void load(const app::datastore& datastore);
+        void load(const sdk::datastore& datastore);
 
         // suggest a new account object
         account suggest() const;

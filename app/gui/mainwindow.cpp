@@ -25,17 +25,21 @@
 #include <newsflash/config.h>
 
 #include <newsflash/warnpush.h>
+#  include <boost/version.hpp>
 #  include <QtGui/QCloseEvent>
 #  include <QtGui/QMessageBox>
 #  include <QEvent>
 #  include <QTimer>
+#  include <QDir>
 #include <newsflash/warnpop.h>
 
+#include <newsflash/sdk/widget.h>
 #include <newsflash/sdk/format.h>
 #include <newsflash/sdk/eventlog.h>
 #include <newsflash/sdk/debug.h>
-#include <newsflash/keygen/keygen.h>
-#include <Python.h>
+#include <newsflash/sdk/home.h>
+#include <newsflash/sdk/message_dispatcher.h>
+#include <newsflash/sdk/msg_first_launch.h>
 
 #include "mainwindow.h"
 #include "accounts.h"
@@ -43,48 +47,17 @@
 #include "groups.h"
 #include "dlgwelcome.h"
 #include "dlgaccount.h"
-#include "guiapi.h"
 #include "config.h"
-#include "datastore.h"
 #include "../mainapp.h"
 
 using sdk::str;
 
-namespace {
-
-void copyright()
-{
-    const auto boost_major    = BOOST_VERSION / 100000;
-    const auto boost_minor    = BOOST_VERSION / 100 % 1000;
-    const auto boost_revision = BOOST_VERSION % 100;
-
-    INFO(NEWSFLASH_TITLE " " NEWSFLASH_VERSION);
-    INFO(QString::fromUtf8(NEWSFLASH_COPYRIGHT));
-    INFO(NEWSFLASH_WEBSITE);
-    INFO("Compiled: " __DATE__ ", " __TIME__);    
-    INFO("Compiler: " COMPILER_NAME);
-    INFO(str("Boost software library _1._2._3", boost_major, boost_minor, boost_revision));
-    INFO("http://www.boost.org");
-    INFO("16x16 Free Application Icons");
-    INFO("Copyright (c) 2009 Aha-Soft");
-    INFO("http://www.small-icons.com/stock-icons/16x16-free-application-icons.htm");
-    INFO("http://www.aha-soft.com");
-    INFO("Silk Icon Set 1.3");
-    INFO("Copyright (c) Mark James");
-    INFO("http://www.famfamfam.com/lab/icons/silk/");
-    INFO(str("Qt cross-platform application and UI framework _1", QT_VERSION_STR));
-    INFO("http://qt.nokia.com");
-    INFO(str("Python _1", Py_GetVersion()));
-    INFO("http://www.python.org");
-    INFO("Zlib compression library 1.2.5");
-    INFO("Copyright (c) 1995-2010 Jean-Loup Gailly & Mark Adler");
-    INFO("http://zlib.net");        
-}
-
-} // namespace
-
 namespace gui
 {
+
+void openurl(const QString& url);
+void openhelp(const QString& page);
+
 
 MainWindow::MainWindow(app::mainapp& app) : QMainWindow(nullptr), app_(app), current_(nullptr)
 {
@@ -110,74 +83,10 @@ MainWindow::MainWindow(app::mainapp& app) : QMainWindow(nullptr), app_(app), cur
     ui_.statusBar->insertPermanentWidget(3, ui_.frmGraph);
     ui_.statusBar->insertPermanentWidget(4, ui_.frmKbs);    
 
-
-    // load gui settings, we need this for the rest of the stuff
-    const auto& home = QDir::homePath();
-    const auto& file = home + "/.newsflash/gui.json";
-    if (QFile::exists(file))
-    {
-        QFile io(file);
-        if (!io.open(QIODevice::ReadWrite))
-        {
-            ERROR(str("Failed to open _1", io));
-        }
-        else
-        {
-            settings_.load(io);
-        }
-    }
-    else
-    {
-        // assuming first launch if settings file doesn't exist
-        QTimer::singleShot(500, this, SLOT(timerWelcome_timeout()));        
-    }
-
-    Accounts* acc = new Accounts(app.get_model("accounts"));
-
-    const auto& keycode = settings_.get("settings", "keycode", "");
-    acc->advertise(!keygen::verify_code(keycode));
-
-    // todo: load dynamic GUI modules
-    tabs_.append(acc);
-    tabs_.append(new Groups(app.get_model("groups")));
-    tabs_.append(new Eventlog(app.get_model("eventlog")));
-
-    for (int i=0; i<tabs_.size(); ++i)
-    {
-        const auto& text = tabs_[i]->windowTitle();
-        const auto& icon = tabs_[i]->windowIcon();
-        const auto& info = tabs_[i]->get_info();
-        const auto show  = settings_.get("visible_tabs", text, info.visible_by_default);
-
-        QAction* action = ui_.menuView->addAction(text);
-        action->setCheckable(true);
-        action->setChecked(show);
-        action->setProperty("index", i);
-        QObject::connect(action, SIGNAL(triggered()), this, SLOT(actionWindowToggle_triggered()));        
-
-        tabs_actions_.append(action);        
-        if (show)
-            ui_.mainTab->insertTab(i, tabs_[i], icon, text);
-    }
-
-    const auto width  = settings_.get("window", "width", 1200);
-    const auto height = settings_.get("window", "height", 800);
-    DEBUG(str("Mainwindow dimensions _1 x _2", width, height));
-    resize(width, height);
-
-    const auto x = settings_.get("window", "x", 0);
-    const auto y = settings_.get("window", "y", 0);
-    DEBUG(str("Mainwindow position _1, _2", x, y));
-    move(x, y);
-
-    const auto show_statusbar = settings_.get("window", "show_statusbar", true);
-    const auto show_toolbar = settings_.get("window", "show_toolbar", true);
-    ui_.mainToolBar->setVisible(show_toolbar);
-    ui_.statusBar->setVisible(show_statusbar);
-    ui_.actionViewToolbar->setChecked(show_toolbar);
-    ui_.actionViewStatusbar->setChecked(show_statusbar);
-
     setWindowTitle(NEWSFLASH_TITLE);
+
+    loadstate();
+    loadwidgets();
 
     DEBUG("MainWindow created");
 }
@@ -195,26 +104,37 @@ MainWindow::~MainWindow()
     DEBUG("MainWindow deleted");
 }
 
-
-void MainWindow::show(sdk::uicomponent* ui)
+void MainWindow::show(const QString& tabname)
 {
-    const int index = tabs_.indexOf(ui);
+    for (auto* tab : tabs_)
+    {
+        if (tab->windowTitle() == tabname)
+        {
+            show(tab);
+            break;
+        }
+    }
+}
+
+void MainWindow::show(sdk::widget* widget)
+{
+    const int index = tabs_.indexOf(widget);
     Q_ASSERT(index != -1);
 
-    if (ui_.mainTab->indexOf(ui) != -1)
+    if (ui_.mainTab->indexOf(widget) != -1)
         return;
 
     auto* action = tabs_actions_[index];
     action->setChecked(true);
 
-    const auto& icon = ui->windowIcon();
-    const auto& text = ui->windowTitle();
-    ui_.mainTab->insertTab(index, ui, icon, text);    
+    const auto& icon = widget->windowIcon();
+    const auto& text = widget->windowTitle();
+    ui_.mainTab->insertTab(index, widget, icon, text);    
 
     build_window_menu();
 }
 
-void MainWindow::hide(sdk::uicomponent* ui)
+void MainWindow::hide(sdk::widget* ui)
 {
     const int index = tabs_.indexOf(ui);
     Q_ASSERT(index != -1);
@@ -231,7 +151,7 @@ void MainWindow::hide(sdk::uicomponent* ui)
     build_window_menu();
 }
 
-void MainWindow::focus(sdk::uicomponent* ui)
+void MainWindow::focus(sdk::widget* ui)
 {
     Q_ASSERT(std::find(std::begin(tabs_),
         std::end(tabs_), ui) != std::end(tabs_));
@@ -245,42 +165,7 @@ void MainWindow::focus(sdk::uicomponent* ui)
 
 void MainWindow::closeEvent(QCloseEvent* event)
 {
-    settings_.set("window", "width", width());
-    settings_.set("window", "height", height());
-    settings_.set("window", "x", x());
-    settings_.set("window", "y", y());
-
-    const bool show_statusbar = ui_.statusBar->isVisible();
-    const bool show_toolbar   = ui_.mainToolBar->isVisible();
-    settings_.set("window", "show_toolbar", show_toolbar);
-    settings_.set("window", "show_statusbar",show_statusbar);
-
-    for (auto* tab : tabs_)
-    {
-        const auto& text = tab->windowTitle();
-//        const auto show  = tabs
-    }
-
-    const auto& home = QDir::homePath();
-    const auto& file = home + "/.newsflash/gui.json";
-
-    bool errors = false;
-
-    QFile io(file);
-    if (!io.open(QIODevice::WriteOnly))
-    {
-        ERROR(str("Failed to open settings _1", io));
-        errors = true;
-    }
-    else
-    {
-        settings_.save(io);
-    }
-
-    // todo: message
-
-
-    if (errors)
+    if (!app_.savestate() || !savestate())
     {
         QMessageBox msg(this);
         msg.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
@@ -290,6 +175,7 @@ void MainWindow::closeEvent(QCloseEvent* event)
            "Are you sure you want to quit?"));
         if (msg.exec() == QMessageBox::No)
         {
+            show("Logs");
             event->ignore();
             return;
         }
@@ -327,6 +213,99 @@ void MainWindow::build_window_menu()
     ui_.menuWindow->addAction(ui_.actionWindowPrev);    
 }
 
+bool MainWindow::savestate()
+{
+    settings_.set("window", "width", width());
+    settings_.set("window", "height", height());
+    settings_.set("window", "x", x());
+    settings_.set("window", "y", y());
+    settings_.set("window", "show_toolbar", ui_.mainToolBar->isVisible());
+    settings_.set("window", "show_statusbar", ui_.statusBar->isVisible()); 
+
+    for (std::size_t i=0; i<tabs_.size(); ++i)
+    {
+        const auto& text = tabs_[i]->windowTitle();
+        const auto show  = tabs_actions_[i]->isChecked();
+        settings_.set("visible_tabs", text, show);
+
+        tabs_[i]->save(settings_);
+    }
+
+    const auto file  = sdk::home::file("gui.json");
+    const auto error = settings_.save(file);
+    if (error != QFile::NoError)
+        ERROR(str("Failed to save settings _1, _2", error, file));
+
+    return error == QFile::NoError;
+}
+
+void MainWindow::loadstate()
+{
+    // load gui settings, we need this for the rest of the stuff
+    const auto file = sdk::home::file("gui.json");
+    if (!QFile::exists(file))
+    {
+        // assuming first launch if settings file doesn't exist
+        QTimer::singleShot(500, this, SLOT(timerWelcome_timeout()));        
+        return;
+    }
+
+    const auto error = settings_.load(file);
+    if (error != QFile::NoError)
+    {
+        ERROR(str("Failed to load settings _1, _2", error, file));
+        return;
+    }
+
+    const auto width  = settings_.get("window", "width", 1200);
+    const auto height = settings_.get("window", "height", 800);
+    DEBUG(str("Mainwindow dimensions _1 x _2", width, height));
+    resize(width, height);
+
+    const auto x = settings_.get("window", "x", 0);
+    const auto y = settings_.get("window", "y", 0);
+    DEBUG(str("Mainwindow position _1, _2", x, y));
+    move(x, y);
+
+    const auto show_statusbar = settings_.get("window", "show_statusbar", true);
+    const auto show_toolbar = settings_.get("window", "show_toolbar", true);
+    ui_.mainToolBar->setVisible(show_toolbar);
+    ui_.statusBar->setVisible(show_statusbar);
+    ui_.actionViewToolbar->setChecked(show_toolbar);
+    ui_.actionViewStatusbar->setChecked(show_statusbar);
+
+
+}
+
+void MainWindow::loadwidgets()
+{
+    // todo: load dynamic GUI modules
+    tabs_.append(new Accounts(app_.get_model("accounts")));
+    tabs_.append(new Groups(app_.get_model("groups")));
+    tabs_.append(new Eventlog(app_.get_model("eventlog")));
+
+    for (int i=0; i<tabs_.size(); ++i)
+    {
+        const auto& text = tabs_[i]->windowTitle();
+        const auto& icon = tabs_[i]->windowIcon();
+        const auto& info = tabs_[i]->information();
+        const auto show  = settings_.get("visible_tabs", text, info.visible_by_default);
+
+        QAction* action = ui_.menuView->addAction(text);
+        action->setCheckable(true);
+        action->setChecked(show);
+        action->setProperty("index", i);
+        QObject::connect(action, SIGNAL(triggered()), this, SLOT(actionWindowToggle_triggered()));        
+
+        tabs_actions_.append(action);        
+        if (show)
+            ui_.mainTab->insertTab(i, tabs_[i], icon, text);
+
+        tabs_[i]->load(settings_);
+    }    
+}
+
+
 void MainWindow::on_mainTab_currentChanged(int index)
 {
     //DEBUG(str("Current tab _1", index));
@@ -339,20 +318,20 @@ void MainWindow::on_mainTab_currentChanged(int index)
 
     if (index != -1)
     {
-        auto* ui = static_cast<sdk::uicomponent*>(
+        auto* widget = static_cast<sdk::widget*>(
             ui_.mainTab->widget(index)); 
 
-        ui->activate(ui_.mainTab);
-        ui->add_actions(*ui_.mainToolBar);
-        ui->add_actions(*ui_.menuEdit);
+        widget->activate(ui_.mainTab);
+        widget->add_actions(*ui_.mainToolBar);
+        widget->add_actions(*ui_.menuEdit);
 
-        auto title = ui->windowTitle();
+        auto title = widget->windowTitle();
         auto space = title.indexOf(" ");
         if (space != -1)
             title.resize(space);
 
         ui_.menuEdit->setTitle(title);
-        current_ = ui;
+        current_ = widget;
     }
 
     // add the stuff that is always in the edit menu
@@ -364,9 +343,9 @@ void MainWindow::on_mainTab_currentChanged(int index)
 
 void MainWindow::on_mainTab_tabCloseRequested(int tab)
 {
-    auto* ui = static_cast<sdk::uicomponent*>(ui_.mainTab->widget(tab));
+    auto* widget = static_cast<sdk::widget*>(ui_.mainTab->widget(tab));
 
-    hide(ui);
+    hide(widget);
 }
 
 void MainWindow::on_actionWindowClose_triggered()
@@ -375,10 +354,10 @@ void MainWindow::on_actionWindowClose_triggered()
     if (tab == -1)
         return;
 
-    auto* ui = static_cast<sdk::uicomponent*>(
+    auto* widget = static_cast<sdk::widget*>(
         ui_.mainTab->widget(tab));
 
-    hide(ui);
+    hide(widget);
 }
 
 void MainWindow::on_actionWindowNext_triggered()
@@ -387,11 +366,11 @@ void MainWindow::on_actionWindowNext_triggered()
     if (tab == -1)
         return;
 
-    auto* ui = static_cast<sdk::uicomponent*>(
+    auto* widget = static_cast<sdk::widget*>(
         ui_.mainTab->widget(tab));
 
     const auto size  = tabs_.size();
-    const auto index = tabs_.indexOf(ui);
+    const auto index = tabs_.indexOf(widget);
     auto* next = tabs_[(index + 1) % size];
     focus(next);
 }
@@ -402,11 +381,11 @@ void MainWindow::on_actionWindowPrev_triggered()
     if (tab == -1)
         return;
 
-    auto* ui = static_cast<sdk::uicomponent*>(
+    auto* widget = static_cast<sdk::widget*>(
         ui_.mainTab->widget(tab));
 
     const auto size  = tabs_.size();
-    const auto index = tabs_.indexOf(ui);
+    const auto index = tabs_.indexOf(widget);
     auto* prev = tabs_[((index  == 0) ? size - 1 : index - 1)];
     focus(prev);
 }
@@ -418,12 +397,12 @@ void MainWindow::on_actionHelp_triggered()
 
 void MainWindow::on_actionContextHelp_triggered()
 {
-    const auto* ui = static_cast<sdk::uicomponent*>(
+    const auto* widget = static_cast<sdk::widget*>(
         ui_.mainTab->currentWidget());
-    if (ui == nullptr)
+    if (widget == nullptr)
         return;
 
-    const auto& info = ui->get_info();
+    const auto& info = widget->information();
 
     openhelp(info.helpurl);
 }
@@ -454,26 +433,23 @@ void MainWindow::actionWindowFocus_triggered()
     auto* action = static_cast<QAction*>(sender());
     const auto tab_index = action->property("tab-index").toInt();
 
-    auto* ui = static_cast<sdk::uicomponent*>(
+    auto* widget = static_cast<sdk::widget*>(
         ui_.mainTab->widget(tab_index));
 
     action->setChecked(true);
 
-    focus(ui);
+    focus(widget);
 }
 
 void MainWindow::timerWelcome_timeout()
 {
     DlgWelcome dlg(this);
-    if (dlg.exec() == QDialog::Accepted) 
-    {
-        DlgAccount dlg(this);
-        dlg.exec();
-    }
+    dlg.exec();
     if (dlg.open_guide())
-    {
         openhelp("quick.html");
-    }
+
+    const auto add_account = dlg.add_account();
+    //sdk::send<sdk::msg_first_launch>(add_account);
 }
 
 } // gui

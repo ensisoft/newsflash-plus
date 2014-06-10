@@ -22,49 +22,27 @@
 
 #pragma once
 
+#include <newsflash/config.h>
+
 #include <cstddef>
 #include "message_register.h"
 
 namespace sdk
 {
     // message posting protocol between components
-    class message
+    struct message
     {
-    public:
-        enum class status {
-            none, accept, reject, error
-        };
-        message(std::size_t id) : id_(id), status_(status::none)
-        {}
-
-        void accept()
-        {
-            status_ = status::accept;
-        }
-        void reject()
-        {
-            status_ = status::reject;
-        }
-        void fail()
-        {
-            status_ = status::error;
-        }
-        std::size_t identity() const
-        {
-            return id_;
-        }
-    private:
-        std::size_t id_;
-        status status_;
+        std::size_t id;
     };
 
     // a shim to automatically perform type registration
     template<typename T>
-    class msgbase : public message
+    struct msgbase : public message
     {
-    protected:
-        msgbase() : message(this_type.identity())
-        {}
+        msgbase() 
+        {
+            id = this_type.identity();
+        }
     private:
         static message_register::registrant<T> this_type;
     };

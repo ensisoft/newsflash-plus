@@ -29,7 +29,6 @@
 #include <newsflash/warnpop.h>
 
 #include "eventlog.h"
-#include "command.h"
 
 namespace gui
 {
@@ -39,8 +38,6 @@ Eventlog::Eventlog(sdk::model& model) : model_(model)
     ui_.setupUi(this);
     ui_.listLog->setModel(model.view());
     ui_.actionClearLog->setEnabled(false);
-
-
 }
 
 Eventlog::~Eventlog()
@@ -70,12 +67,9 @@ void Eventlog::on_listLog_customContextMenuRequested(QPoint pos)
     menu.exec(QCursor::pos());
 }
 
-sdk::uicomponent::info Eventlog::get_info() const 
+sdk::widget::info Eventlog::information() const 
 {
-    const static sdk::uicomponent::info info {
-        "eventlog.html", false
-    };
-    return info;
+    return {"eventlog.html", false};
 }
 
 } // gui

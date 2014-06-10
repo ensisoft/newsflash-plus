@@ -24,32 +24,61 @@
 
 #include <newsflash/config.h>
 
+#if defined(LINUX_OS)
+#  define MODEL_API extern "C" 
+#elif defined(WINDOWS_OS)
+#  ifdef MODEL_IMPL
+#    define MODEL_API extern "C" __declspec(dllexport)
+#  else
+#    define MODEL_API extern "C" __declspec(dllimport)
+#  endif
+#endif
+
 #include <newsflash/warnpush.h>
 #  include <QAbstractItemModel>
 #  include <QObject>
 #  include <QVariant>
 #include <newsflash/warnpop.h>
 
+
 namespace sdk
 {
+    class datastore;
+    class newsflash;
+
+    // model implementations are application plugins 
+    // that represent application data and provide actions
+    // for the GUI to invoke upon that data.
+    // typically the GUI obtains a reference to the model
+    // and then calls model methods directly.
     class model : public QObject
     {
         Q_OBJECT
 
     public:
+        enum {
+            version = 1
+        };
+
         virtual ~model() = default;
 
+        // clear all the data in the model
         virtual void clear() {};
 
-        virtual bool empty() const { return true; }
+        // returns true if model has no data.
+        virtual bool is_empty() const { return true; }
 
+        // get a Qt view compatible model object
+        // for quickly showing the data in a Qt view widget
         virtual QAbstractItemModel* view() { return nullptr; }
 
-        //virtual std::size_t rows() const { return 0; }
-        //virtual std::size_t cols() const { return 0; }
-        //virtual QVariant data(std::size_t row, std::size_t col) const { return QVariant(); }
+        // load model state from the datastore.
+        virtual void save(datastore& store) {}
 
-    //public signal:        
+        // save model state to the datastore.
+        virtual void load(const datastore& store) {}
+
+        virtual bool shutdown() { return true; }
 
     protected:
     private:
@@ -57,3 +86,12 @@ namespace sdk
     };
 
 } // sdk
+
+  // factory function, create a plugin object
+  MODEL_API sdk::model* create_model(sdk::newsflash&);
+  
+  // get the api version implemented by the plugin objects
+  MODEL_API int model_api_version();
+  
+  // get the library version
+  MODEL_API void model_lib_version(int& major, int& minor);

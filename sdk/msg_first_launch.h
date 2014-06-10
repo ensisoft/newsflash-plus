@@ -20,37 +20,19 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-#pragma once
+#include "message.h"
 
-#include <newsflash/sdk/widget.h>
-#include <newsflash/sdk/model.h>
-#include "ui_eventlog.h"
-
-namespace gui
+namespace sdk
 {
-    class Eventlog : public sdk::widget
+    struct msg_first_launch : msgbase<msg_first_launch>
     {
-        Q_OBJECT
+        bool add_account;
 
-    public:
-        Eventlog(sdk::model& model);
-       ~Eventlog();
+        msg_first_launch() : add_account(false)
+        {}
 
-        virtual void add_actions(QMenu& menu) override;
-        virtual void add_actions(QToolBar& bar) override;
-        sdk::widget::info information() const override;
-
-    private slots:
-        void on_actionClearLog_triggered();
-        void on_listLog_customContextMenuRequested(QPoint pos);
-
-    private:
-        Ui::Eventlog ui_;
-
-    private:
-        sdk::model& model_;
+        msg_first_launch(bool add_account) : add_account(add_account)
+        {}
     };
 
-} // gui
-
-
+} // sdk

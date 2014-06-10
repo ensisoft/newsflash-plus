@@ -29,6 +29,8 @@
 
 #include "ui_dlgaccount.h"
 
+#include "../accounts.h"
+
 namespace gui
 {
     class DlgAccount : public QDialog 
@@ -36,8 +38,7 @@ namespace gui
         Q_OBJECT
 
     public:
-        DlgAccount(QWidget* parent, int fetch);
-        DlgAccount(QWidget *parent);
+        DlgAccount(QWidget* parent, app::accounts::account& acc);
        ~DlgAccount();
 
         
@@ -52,7 +53,8 @@ namespace gui
     private:
         Ui::DlgAccount ui_;
 
-        quint32 acc_id_;
+    private:
+        app::accounts::account& acc_;
     };
 
 } // gui

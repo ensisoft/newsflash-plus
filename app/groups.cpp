@@ -20,7 +20,7 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.            
 
-#include "datastore.h"
+#include <newsflash/sdk/datastore.h>
 #include "groups.h"
 
 namespace app
@@ -32,13 +32,13 @@ groups::groups()
 groups::~groups()
 {}
 
-void groups::save(app::datastore& values) const
+void groups::save(sdk::datastore& values) const
 {
 
 }
 
 
-void groups::load(const datastore& values) 
+void groups::load(const sdk::datastore& values) 
 {
 
 }

@@ -20,37 +20,41 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-#pragma once
+#include "home.h"
 
-#include <newsflash/sdk/widget.h>
-#include <newsflash/sdk/model.h>
-#include "ui_eventlog.h"
+#include <newsflash/warnpush.h>
+#  include <QDir>
+#include <newsflash/warnpop.h>
 
-namespace gui
+#include <stdexcept>
+#include "format.h"
+
+namespace sdk
 {
-    class Eventlog : public sdk::widget
-    {
-        Q_OBJECT
 
-    public:
-        Eventlog(sdk::model& model);
-       ~Eventlog();
+QString home::pathstr;
 
-        virtual void add_actions(QMenu& menu) override;
-        virtual void add_actions(QToolBar& bar) override;
-        sdk::widget::info information() const override;
+void home::init(const QString& folder)
+{
+    const auto& home = QDir::homePath();
+    const auto& mine = home + "/" + folder;
 
-    private slots:
-        void on_actionClearLog_triggered();
-        void on_listLog_customContextMenuRequested(QPoint pos);
+    QDir dir;
+    if (!dir.mkpath(home + "/" + folder))
+        throw std::runtime_error(str_a("failed to create _1", mine));
 
-    private:
-        Ui::Eventlog ui_;
+    pathstr = mine;
+}
 
-    private:
-        sdk::model& model_;
-    };
+QString home::path() 
+{
+    return pathstr;
+}
 
-} // gui
+QString home::file(const QString& name)
+{
+    return QDir::toNativeSeparators(QDir::cleanPath(pathstr + "/" + name));
+}
 
 
+} // sdk

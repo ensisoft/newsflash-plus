@@ -22,6 +22,8 @@
 
 #pragma once
 
+#include <newsflash/config.h>
+
 #include <vector>
 #include <cassert>
 #include <memory>
@@ -30,16 +32,20 @@
 
 namespace sdk
 {
-    class message_dispatch
+    class message;
+
+    class message_dispatcher
     {
     public:
-        bool post(std::shared_ptr<message> msg)
+        message_dispatcher()
+        {}
+
+        void send(sdk::message& msg)
         {
             for (auto& sink : sinks_)
             {
                 sink->dispatch(msg);
             }
-            return true;
         }
 
         template<typename Msg, typename Receiver>
@@ -50,39 +56,79 @@ namespace sdk
 
             using sink_type = any_sink<Receiver, Msg>;
 
-            auto sink  = std::make_shared<sink_type>();
+            auto sink  = std::unique_ptr<sink_type>(new sink_type);
             sink->recv = recv;
-            sinks_.push_back(sink);
+            sinks_.push_back(std::move(sink));
         }
 
         static 
-        message_dispatch& get();
-
-    private:
-        message_dispatch()
-        {}
+        message_dispatcher& get();
 
     private:
         struct sink {
             virtual ~sink() = default;
-            virtual void dispatch(std::shared_ptr<message>& msg) = 0;
+            virtual void dispatch(message& msg) = 0;
         };
 
         template<typename R, typename T>
         struct any_sink : public sink {
             R* recv;
 
-            virtual void dispatch(std::shared_ptr<message>& msg) override
+            virtual void dispatch(message& msg) override
             {
                 static auto id = message_register::find<T>();
-                if (msg->identity() != id)
+                if (msg.id != id)
                     return;
-                std::shared_ptr<T> down = std::static_pointer_cast<T>(msg);
+                T& down = static_cast<T&>(msg);
                 recv->on_message(down);
             }
         };
 
-        std::vector<std::shared_ptr<sink>> sinks_;
+        std::vector<std::unique_ptr<sink>> sinks_;
     };
+
+    inline
+    void send(sdk::message* pmsg)
+    {
+        auto& dispatcher = sdk::message_dispatcher::get();
+        dispatcher.send(*pmsg);
+    }
+
+    template<typename T> inline
+    void send(T msg)
+    {
+        auto& dispatcher = sdk::message_dispatcher::get();
+        dispatcher.send(msg);
+    }
+
+    template<typename T> inline
+    void send(T* pmsg)
+    {
+        auto& dispatcher = sdk::message_dispatcher::get();
+        dispatcher.send(*pmsg);
+    }
+
+    template<typename T, typename... Args>
+    void send(Args... args)
+    {
+        auto& dispatcher = sdk::message_dispatcher::get();
+        dispatcher.send( T { args... } );
+    }
+
+    inline
+    bool send(const char* recv, sdk::message& msg)
+    {
+        auto& dispatcher = sdk::message_dispatcher::get();
+        // todo.
+        return false;
+    }
+
+
+    template<typename Msg, typename Recv>
+    void listen(Recv* receiver)
+    {
+        auto& dispatcher = sdk::message_dispatcher::get();
+        dispatcher.listen<Msg>(receiver);
+    }
 
 } // sdk

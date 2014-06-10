@@ -20,37 +20,33 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-#pragma once
+#include <newsflash/warnpush.h>
+#  include <QCoreApplication>
+#  include <QDir>
+#include <newsflash/warnpop.h>
 
-#include <newsflash/sdk/widget.h>
-#include <newsflash/sdk/model.h>
-#include "ui_eventlog.h"
+#include <cstring>
+#include "dist.h"
+#include "format.h"
 
-namespace gui
+namespace sdk
 {
-    class Eventlog : public sdk::widget
-    {
-        Q_OBJECT
 
-    public:
-        Eventlog(sdk::model& model);
-       ~Eventlog();
+void dist::init()
+{
+    pathstr = QCoreApplication::applicationDirPath();
+}
 
-        virtual void add_actions(QMenu& menu) override;
-        virtual void add_actions(QToolBar& bar) override;
-        sdk::widget::info information() const override;
+QString dist::path()
+{
+    return pathstr;
+}
 
-    private slots:
-        void on_actionClearLog_triggered();
-        void on_listLog_customContextMenuRequested(QPoint pos);
+QString dist::path(const QString& path)
+{
+    return QDir::toNativeSeparators(pathstr + "/" + path);
+}
 
-    private:
-        Ui::Eventlog ui_;
+QString dist::pathstr;
 
-    private:
-        sdk::model& model_;
-    };
-
-} // gui
-
-
+} // sdk

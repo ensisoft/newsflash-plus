@@ -20,6 +20,8 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
+#define LOGTAG "gui"
+
 #include <newsflash/config.h>
 
 #include <newsflash/warnpush.h>
@@ -35,8 +37,12 @@
 #include <newsflash/sdk/format.h>
 #include <newsflash/sdk/eventlog.h>
 #include <newsflash/sdk/debug.h>
+#include <newsflash/sdk/home.h>
+#include <newsflash/sdk/dist.h>
 #include <iostream>
 #include <exception>
+
+#include <Python.h>
 
 #include "qtsingleapplication/qtsingleapplication.h"
 #include "mainwindow.h"
@@ -46,103 +52,26 @@
 
 using sdk::str;
 
-namespace {
-    QString     g_executable_path;
-    QStringList g_cmd_line;
-} // namespace
-
-
 namespace gui
 {
-
-QString get_installation_directory()
-{
-#if defined(WINDOWS_OS)
-    QString s;
-    // Using the first argument of the executable doesnt work with Unicode
-    // paths, but the system mangles the path
-    std::wstring buff;
-    buff.resize(1024);
-
-    DWORD ret = GetModuleFileName(NULL, &buff[0], buff.size());
-    if (ret == 0)
-        return "";
-    
-    s = widen(buff);
-    int i = s.lastIndexOf("\\");
-    if (i ==-1)
-        return "";
-    s = s.left(i+1);
-    return s;
-
-#elif defined(LINUX_OS)
-
-    return g_executable_path;
-
-#endif
-
-}
-
-void set_cmd_line(int argc, char* argv[])
-{
-#if defined(WINDOWS_OS)
-    int num_cmd_args = 0;
-    LPWSTR* cmds = CommandLineToArgW(GetCommandLineW(),
-        &num_cmd_args);
-
-    for (int i=0; i<num_cmd_args)
-    {
-        g_cmd_line.push_back(widen(cmds[i]));
-    }
-    LocalFree(cmds);
-
-#elif defined(LINUX_OS)
-    std::string tmp;
-    auto e = argv[0];
-    auto i = std::strlen(argv[0]);
-    for (i=i-1; i>0; --i)
-    {
-        if (e[i] == '/')
-        {
-            tmp.append(e, i+1);
-            break;
-        }
-    }
-    g_executable_path = sdk::widen(tmp.c_str());
-
-    for (int i=0; i<argc; ++i)
-    {
-        g_cmd_line.push_back(sdk::widen(argv[0]));
-    }
-
-#endif
-}
-
-QStringList get_cmd_line()
-{
-    return g_cmd_line;
-}
 
 void openurl(const QString& url)
 {
     QDesktopServices::openUrl(url);
 }
 
-void openhelp(const QString& help)
+void openhelp(const QString& page)
 {
-    const QString& home = get_installation_directory();
-    const QString& file = QString("file://%1help/%2").arg(home).arg(help);
+    const auto& help = sdk::dist::path("help");
+    const auto& file = QString("file://%1/%2").arg(help).arg(page);
     QDesktopServices::openUrl(file);
 }
-
-
 
 // note that any Qt style must be applied first
 // thing before any Qt application object is instance is created.
 void set_style()
 {
-    const auto& home = QDir::homePath();
-    const auto& file = home + "/.newsflash/style";
+    const auto& file = sdk::home::file("style");
     if (!QFile::exists(file))
         return;
 
@@ -163,21 +92,41 @@ void set_style()
 
 }
 
+void copyright()
+{
+    const auto boost_major    = BOOST_VERSION / 100000;
+    const auto boost_minor    = BOOST_VERSION / 100 % 1000;
+    const auto boost_revision = BOOST_VERSION % 100;
+
+    INFO(NEWSFLASH_TITLE " " NEWSFLASH_VERSION);
+    INFO(QString::fromUtf8(NEWSFLASH_COPYRIGHT));
+    INFO(NEWSFLASH_WEBSITE);
+    INFO("Compiled: " __DATE__ ", " __TIME__);    
+    INFO("Compiler: " COMPILER_NAME);
+    INFO(str("Boost software library _1._2._3", boost_major, boost_minor, boost_revision));
+    INFO("http://www.boost.org");
+    INFO("16x16 Free Application Icons");
+    INFO("Copyright (c) 2009 Aha-Soft");
+    INFO("http://www.small-icons.com/stock-icons/16x16-free-application-icons.htm");
+    INFO("http://www.aha-soft.com");
+    INFO("Silk Icon Set 1.3");
+    INFO("Copyright (c) Mark James");
+    INFO("http://www.famfamfam.com/lab/icons/silk/");
+    INFO(str("Qt cross-platform application and UI framework _1", QT_VERSION_STR));
+    INFO("http://qt.nokia.com");
+    INFO(str("Python _1", Py_GetVersion()));
+    INFO("http://www.python.org");
+    INFO("Zlib compression library 1.2.5");
+    INFO("Copyright (c) 1995-2010 Jean-Loup Gailly & Mark Adler");
+    INFO("http://zlib.net");        
+}
+
 int run(int argc, char* argv[])
 {
-    set_cmd_line(argc, argv);
-    set_style();
-
-    const auto& home = QDir::homePath();
-
-    QDir dir;
-    if (!dir.mkpath(home + "/.newsflash"))
-        throw std::runtime_error("Failed to create .newsflash in user home");
-
     QtSingleApplication qtinstance(argc, argv);
     if (qtinstance.isRunning())
     {
-        const QStringList& cmds = get_cmd_line();
+        const QStringList& cmds = QCoreApplication::arguments();
         for (int i=1; i<cmds.size(); ++i)
             qtinstance.sendMessage(cmds[i]);
 
@@ -190,11 +139,17 @@ int run(int argc, char* argv[])
         return 0;
     }
 
-    const auto& self = gui::get_installation_directory();
+
+    sdk::home::init(".newsflash");
+    sdk::dist::init();
+
+    set_style();
 
     QCoreApplication::setLibraryPaths(QStringList());
-    QCoreApplication::addLibraryPath(self);
-    QCoreApplication::addLibraryPath(self + "/plugins-qt");
+    QCoreApplication::addLibraryPath(sdk::dist::path());
+    QCoreApplication::addLibraryPath(sdk::dist::path("plugins-qt"));
+
+    copyright();
 
     // main application module
     app::mainapp app(qtinstance);

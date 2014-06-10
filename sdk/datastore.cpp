@@ -40,7 +40,7 @@
 using sdk::str;
 using sdk::str_a;
 
-namespace app
+namespace sdk
 {
 
 datastore::datastore()
@@ -97,6 +97,26 @@ void datastore::save(QIODevice& io, datastore::format format) const
                 str_a("json serialize failed '_1'", msg));
         }
     }
+}
+
+QFile::FileError datastore::load(const QString& file, datastore::format format)
+{
+    QFile io(file);
+    if (!io.open(QIODevice::ReadOnly))
+        return io.error();
+
+    load(io, format);
+    return QFile::NoError;
+}
+
+QFile::FileError datastore::save(const QString& file, datastore::format format)
+{
+    QFile io(file);
+    if (!io.open(QIODevice::WriteOnly))
+        return io.error();
+
+    save(io, format);
+    return QFile::NoError;
 }
 
 void datastore::clear()

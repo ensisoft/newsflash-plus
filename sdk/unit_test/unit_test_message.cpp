@@ -25,64 +25,62 @@
 #include <string>
 
 #include "../message.h"
-#include "../message_dispatch.h"
+#include "../message_dispatcher.h"
 #include "../message_register.h"
 
-struct test_message : sdk::msgbase<test_message>
+struct msg_respond : sdk::msgbase<msg_respond>
 {
     std::string str;
-    test_message()
-    {}
+    bool foo;
+    bool bar;    
 };
 
 class foo 
 {
 public:
-    foo() : test(false)
+    foo()
     {
-        sdk::message_dispatch::get().listen<test_message>(this);
+       sdk::listen<msg_respond>(this);
     }
-    void on_message(std::shared_ptr<test_message>& msg)
+    void on_message(msg_respond& msg)
     {
-        BOOST_REQUIRE(msg->str == "ardvark");
-        test = true;        
+        BOOST_REQUIRE(msg.str == "ardvark");
+        msg.foo = true;
     }
-    bool test;
 };
 
 class bar
 {
 public:
-    bar() : test(false)
+    bar()
     {
-        sdk::message_dispatch::get().listen<test_message>(this);
+        sdk::listen<msg_respond>(this);
     }
-    void on_message(std::shared_ptr<test_message>& msg)
+    void on_message(msg_respond& msg)
     {
-        BOOST_REQUIRE(msg->str == "ardvark");
-        test = true;
+        BOOST_REQUIRE(msg.str == "ardvark");
+        msg.bar = true;
     }
-    bool test;
 };
 
 int test_main(int, char*[])
 {
-    const auto id = sdk::message_register::find<test_message>();
+    const auto id = sdk::message_register::find<msg_respond>();
     BOOST_REQUIRE(id);
     const auto* type = sdk::message_register::find(id);
     BOOST_REQUIRE(type);
-    BOOST_REQUIRE(type->match<test_message>());
-
-    auto msg = std::make_shared<test_message>();
-    msg->str = "ardvark";
+    BOOST_REQUIRE(type->match<msg_respond>());
 
     foo f;
     bar b;
 
-    sdk::message_dispatch::get().post(msg);
+    msg_respond msg;
+    msg.str = "ardvark";
+    msg.foo = msg.bar = false;
+    sdk::send(&msg);
 
-    BOOST_REQUIRE(f.test == true);
-    BOOST_REQUIRE(b.test == true);
+    BOOST_REQUIRE(msg.foo == true);
+    BOOST_REQUIRE(msg.bar == true);
 
     return 0;
 }

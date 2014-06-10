@@ -22,35 +22,38 @@
 
 #pragma once
 
-#include <newsflash/sdk/widget.h>
-#include <newsflash/sdk/model.h>
-#include "ui_eventlog.h"
+#include <newsflash/config.h>
 
-namespace gui
+#include <newsflash/warnpush.h>
+#  include <QString>
+#include <newsflash/warnpop.h>
+
+namespace sdk
 {
-    class Eventlog : public sdk::widget
+    // applications home directory in user home
+    class home
     {
-        Q_OBJECT
-
     public:
-        Eventlog(sdk::model& model);
-       ~Eventlog();
+        // initialize once. 
+        // folder is name for our application specific folder
+        // in the user's real home. for example /home/roger/ on 
+        // a linux system and "c:\Documents and Settings\roger\"
+        // on a windows system, so we get 
+        // "home/roger/folder" and "c:\documents and settings\roger\folder".
+        static 
+        void init(const QString& folder);
 
-        virtual void add_actions(QMenu& menu) override;
-        virtual void add_actions(QToolBar& bar) override;
-        sdk::widget::info information() const override;
+        // get absolute path to the applications home directory
+        static 
+        QString path();
 
-    private slots:
-        void on_actionClearLog_triggered();
-        void on_listLog_customContextMenuRequested(QPoint pos);
+        // get the path to a file in the home directory 
+        // in system specific path notation.
+        static 
+        QString file(const QString& name);
 
     private:
-        Ui::Eventlog ui_;
-
-    private:
-        sdk::model& model_;
+        static QString pathstr;
     };
 
-} // gui
-
-
+} // sdk

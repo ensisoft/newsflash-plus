@@ -35,8 +35,6 @@
 
 namespace app
 {
-    class datastore;
-
     class groups : public sdk::model, public QAbstractTableModel
     {
 
@@ -44,9 +42,9 @@ namespace app
         groups();
        ~groups();
 
-        void save(app::datastore& values) const;
+        void save(sdk::datastore& values) const;
 
-        void load(const app::datastore& values);
+        void load(const sdk::datastore& values);
 
         // sdk::model
         virtual QAbstractItemModel* view() override;

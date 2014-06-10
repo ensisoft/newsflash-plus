@@ -24,7 +24,7 @@
 
 #include <newsflash/config.h>
 
-#include <newsflash/sdk/uicomponent.h>
+#include <newsflash/sdk/widget.h>
 #include <newsflash/sdk/model.h>
 #include <newsflash/warnpush.h>
 #include <newsflash/warnpop.h>
@@ -36,7 +36,7 @@ class QAbstractItemModel;
 
 namespace gui
 {
-    class Accounts : public sdk::uicomponent
+    class Accounts : public sdk::widget
     {
         Q_OBJECT
         
@@ -44,15 +44,17 @@ namespace gui
         Accounts(sdk::model& model);
        ~Accounts();
 
-        void add_actions(QMenu& menu);
-        void add_actions(QToolBar& bar);
-
-        sdk::uicomponent::info get_info() const;
-
-        void advertise(bool show);
+        virtual void add_actions(QMenu& menu) override;
+        virtual void add_actions(QToolBar& bar) override;
+        virtual info information() const override;
+        virtual void load(const sdk::datastore& data) override;
+        virtual void save(sdk::datastore& data) override;
 
     private:
         bool eventFilter(QObject* object, QEvent* event);
+
+    private:
+        void advertise(bool show);        
 
     private slots:
         void on_actionNew_triggered();
@@ -68,9 +70,8 @@ namespace gui
 
     private:
         sdk::model& model_;
-
-    private:
         std::unique_ptr<QMovie> movie_;
+        QString license_;
     };
 
 } // gui

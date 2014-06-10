@@ -1,4 +1,4 @@
-// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -18,39 +18,17 @@
 //  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 //  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-//  THE SOFTWARE.
+//  THE SOFTWARE.            
 
-#pragma once
+#include "message_dispatcher.h"
 
-#include <newsflash/sdk/widget.h>
-#include <newsflash/sdk/model.h>
-#include "ui_eventlog.h"
-
-namespace gui
+namespace sdk
 {
-    class Eventlog : public sdk::widget
-    {
-        Q_OBJECT
 
-    public:
-        Eventlog(sdk::model& model);
-       ~Eventlog();
+message_dispatcher& message_dispatcher::get()
+{
+    static message_dispatcher dispatch;
+    return dispatch;
+}
 
-        virtual void add_actions(QMenu& menu) override;
-        virtual void add_actions(QToolBar& bar) override;
-        sdk::widget::info information() const override;
-
-    private slots:
-        void on_actionClearLog_triggered();
-        void on_listLog_customContextMenuRequested(QPoint pos);
-
-    private:
-        Ui::Eventlog ui_;
-
-    private:
-        sdk::model& model_;
-    };
-
-} // gui
-
-
+} // sdk

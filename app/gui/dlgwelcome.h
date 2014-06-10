@@ -54,6 +54,10 @@ namespace gui
         {
             return ui_.chkQuickStart->isChecked();
         }
+        bool add_account() const 
+        {
+            return this->result() == QDialog::Accepted;
+        }
 
     private slots:
         void on_btnLater_clicked()

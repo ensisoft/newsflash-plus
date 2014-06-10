@@ -1,4 +1,4 @@
-// Copyright (c) 2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -18,17 +18,40 @@
 //  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 //  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-//  THE SOFTWARE.            
+//  THE SOFTWARE.
 
-#include "message_dispatch.h"
+#pragma once
+
+#include <newsflash/config.h>
+
+#include <newsflash/warnpush.h>
+#  include <QString>
+#include <newsflash/warnpop.h>
 
 namespace sdk
 {
+    // access to our installation environment, based 
+    // on the application installation location.
+    class dist 
+    {
+    public:
+        static
+        void init();
 
-message_dispatch& message_dispatch::get()
-{
-    static message_dispatch md;
-    return md;
-}
+        // get absolute path to the installation base folder
+        static
+        QString path();
+
+        // get absolute path to the path relative to the installation foldern
+        static
+        QString path(const QString& path);
+
+        static
+        QString help(const QString& page);
+
+    private:
+        static QString pathstr;
+    };
 
 } // sdk
+
