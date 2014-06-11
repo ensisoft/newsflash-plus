@@ -41,8 +41,6 @@
     public:  type name() const { return m_##name; } \
     public:  void name(const type& val) { m_##name = val; }
 
-//#define RO_PROPERTY()
-
 namespace app
 {
     class account 
@@ -84,7 +82,8 @@ namespace app
 
         account(QString name) : m_name(std::move(name))
         {
-            m_id = (quint32)std::time(nullptr);
+            m_id   = (quint32)std::time(nullptr);
+            m_date = QDate::currentDate();
         }
 
         account(const QString& key, const sdk::datastore& store)
@@ -110,7 +109,8 @@ namespace app
             LOAD(quota_spent);
             LOAD(downloads_this_month);
             LOAD(downloads_all_time);     
-            m_quota_type = (quota)store.get(m_name, "quota_type").toInt();
+            m_quota_type = (quota)store.get(key, "quota_type").toInt();
+            m_downloads_date = store.get(key, "downloads_date").toDate();
 #undef LOAD
 
         }
@@ -141,7 +141,8 @@ namespace app
             SAVE(quota_spent);
             SAVE(downloads_this_month);
             SAVE(downloads_all_time);     
-            store.set(m_name, "quota_type", (int)m_quota_type);
+            store.set(key, "quota_type", (int)m_quota_type);
+            store.set(key, "downloads_date", m_downloads_date);
 
 #undef SAVE
         }
@@ -168,6 +169,14 @@ namespace app
             if (msg.account != m_id)
                 return;
 
+            const auto& today = QDate::currentDate();
+            if (today.month() > m_downloads_date.month() ||
+                today.year() > m_downloads_date.year())
+            {
+                m_downloads_date = today;
+                m_downloads_this_month = 0;
+            }
+
             // respond to a file complete, update quotas and download counters
 
             bool enabled = m_quota_type != quota::none;
@@ -191,8 +200,8 @@ namespace app
                 m_downloads_all_time,
                 m_downloads_this_month}, "accounts");
         }
-
     private:
+        QDate m_downloads_date;
     };
 
 } // app

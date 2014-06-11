@@ -155,6 +155,12 @@ namespace sdk
         return str("_1", arg);
     }
 
+    inline
+    QString str(const char* str) 
+    {
+        return QString { str };
+    }
+
     template<typename... Args>
     std::string str_a(const char* fmt, const Args&... args)
     {

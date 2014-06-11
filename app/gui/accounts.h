@@ -69,6 +69,8 @@ namespace gui
         void on_actionProperties_triggered();
         void on_btnResetMonth_clicked();
         void on_btnResetAllTime_clicked();
+        void on_btnMonthlyQuota_toggled(bool checked);
+        void on_btnFixedQuota_toggled(bool checked);
         void on_spinTotal_valueChanged(double value);
         void on_spinSpent_valueChanged(double value);
         void on_listView_doubleClicked(const QModelIndex& index);
@@ -84,6 +86,7 @@ namespace gui
         sdk::model& model_;
         std::unique_ptr<QMovie> movie_;
         QString license_;
+        bool in_row_changed_;
     };
 
 } // gui

@@ -28,6 +28,7 @@
 #  include <boost/version.hpp>
 #  include <QtGui/QCloseEvent>
 #  include <QtGui/QMessageBox>
+#  include <QtGui/QSystemTrayIcon>
 #  include <QEvent>
 #  include <QTimer>
 #  include <QDir>
@@ -60,7 +61,8 @@ void openurl(const QString& url);
 void openhelp(const QString& page);
 
 
-MainWindow::MainWindow(app::mainapp& app) : QMainWindow(nullptr), app_(app), current_(nullptr)
+MainWindow::MainWindow(app::mainapp& app) : QMainWindow(nullptr), 
+    app_(app), current_(nullptr)
 {
     ui_.setupUi(this);
 
@@ -83,6 +85,25 @@ MainWindow::MainWindow(app::mainapp& app) : QMainWindow(nullptr), app_(app), cur
     ui_.statusBar->insertPermanentWidget(2, ui_.frmDiskWrite);
     ui_.statusBar->insertPermanentWidget(3, ui_.frmGraph);
     ui_.statusBar->insertPermanentWidget(4, ui_.frmKbs);    
+
+    if (!QSystemTrayIcon::isSystemTrayAvailable())
+    {
+        WARN("System tray is not available. Notifications disabled");
+    }
+    else
+    {
+        DEBUG("Setup system tray");
+
+        ui_.actionRestore->setEnabled(false);
+        ui_.actionMinimize->setEnabled(true);
+
+        tray_.setIcon(QIcon(":/resource/16x16_ico_png/ico_newsflash.png"));
+        tray_.setToolTip(NEWSFLASH_TITLE " " NEWSFLASH_VERSION);
+        tray_.setVisible(true);
+
+        QObject::connect(&tray_, SIGNAL(activated(QSystemTrayIcon::ActivationReason)),
+            this, SLOT(actionTray_activated(QSystemTrayIcon::ActivationReason)));
+    }
 
     setWindowTitle(NEWSFLASH_TITLE);
 
@@ -168,6 +189,11 @@ void MainWindow::closeEvent(QCloseEvent* event)
 {
     if (!app_.savestate() || !savestate())
     {
+        if (QMainWindow::isHidden())
+        {
+            on_actionRestore_triggered();
+        }
+
         QMessageBox msg(this);
         msg.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
         msg.setIcon(QMessageBox::Critical);
@@ -339,6 +365,14 @@ void MainWindow::on_mainTab_currentChanged(int index)
     ui_.mainToolBar->addSeparator();
     ui_.mainToolBar->addAction(ui_.actionContextHelp);
 
+    // build file menu
+    ui_.menuFile->clear();
+    if (QSystemTrayIcon::isSystemTrayAvailable())
+    {
+        ui_.menuFile->addAction(ui_.actionMinimize);
+    }
+    ui_.menuFile->addAction(ui_.actionExit);
+
     build_window_menu();
 }
 
@@ -396,6 +430,26 @@ void MainWindow::on_actionHelp_triggered()
     openhelp("index.html");
 }
 
+void MainWindow::on_actionMinimize_triggered()
+{
+    DEBUG("Minimize to tray!");
+
+    QMainWindow::hide();
+
+    ui_.actionRestore->setEnabled(true);
+    ui_.actionMinimize->setEnabled(false);
+}
+
+void MainWindow::on_actionRestore_triggered()
+{
+    DEBUG("Restore from tray");
+
+    QMainWindow::show();
+
+    ui_.actionRestore->setEnabled(false);
+    ui_.actionMinimize->setEnabled(true);
+}
+
 void MainWindow::on_actionContextHelp_triggered()
 {
     const auto* widget = static_cast<sdk::widget*>(
@@ -406,6 +460,13 @@ void MainWindow::on_actionContextHelp_triggered()
     const auto& info = widget->information();
 
     openhelp(info.helpurl);
+}
+
+void MainWindow::on_actionExit_triggered()
+{
+    // calling close will generate QCloseEvent which
+    // will invoke the normal shutdown sequence.
+    QMainWindow::close();
 }
 
 void MainWindow::actionWindowToggle_triggered()
@@ -440,6 +501,21 @@ void MainWindow::actionWindowFocus_triggered()
     action->setChecked(true);
 
     focus(widget);
+}
+
+
+
+
+void MainWindow::actionTray_activated(QSystemTrayIcon::ActivationReason reason)
+{
+    if (reason != QSystemTrayIcon::Context)
+        return;
+
+    QMenu menu;
+    menu.addAction(ui_.actionRestore);
+    menu.addSeparator();
+    menu.addAction(ui_.actionExit);
+    menu.exec(QCursor::pos());
 }
 
 void MainWindow::timerWelcome_timeout()

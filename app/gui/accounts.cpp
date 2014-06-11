@@ -270,6 +270,14 @@ void Accounts::on_actionProperties_triggered()
 
 void Accounts::currentRowChanged()
 {
+    QStandardItemModel* model = static_cast<QStandardItemModel*>(ui_.pie->model());
+    if (model->rowCount())
+    {
+        Q_ASSERT(model->rowCount() == 2);
+        model->removeRow(0);
+        model->removeRow(0);
+    }    
+
     const auto row = ui_.listView->currentIndex().row();
     if (row == -1)
     {
@@ -284,25 +292,28 @@ void Accounts::currentRowChanged()
         return;
     }
 
+    in_row_changed_ = true;
+
     ui_.grpServer->setEnabled(true);
     ui_.grpQuota->setEnabled(true);
     ui_.actionDel->setEnabled(true);
     ui_.actionProperties->setEnabled(true);
 
-    auto& accounts  = get_accounts_model(model_);
-    const auto& acc = accounts.get(row);
+    const auto& accounts = get_accounts_model(model_);
+    const auto& account  = accounts.get(row);
 
-    const auto quota_type   = acc.quota_type();            
-    const auto quota_total  = sdk::gigs(acc.quota_total());
-    const auto quota_spent  = sdk::gigs(acc.quota_spent());
-    const auto quota_avail  = sdk::gigs(acc.quota_avail());
-    const auto gigs_alltime = sdk::gigs(acc.downloads_all_time());
-    const auto gigs_month   = sdk::gigs(acc.downloads_this_month());
+    const auto quota_type   = account.quota_type();            
+    const auto quota_total  = sdk::gigs(account.quota_total());
+    const auto quota_spent  = sdk::gigs(account.quota_spent());
+    const auto quota_avail  = sdk::gigs(account.quota_avail());
+    const auto gigs_alltime = sdk::gigs(account.downloads_all_time());
+    const auto gigs_month   = sdk::gigs(account.downloads_this_month());
 
     ui_.edtMonth->setText(str(gigs_month));
     ui_.edtAllTime->setText(str(gigs_alltime));
     ui_.spinTotal->setValue(quota_total.as_float());
     ui_.spinSpent->setValue(quota_spent.as_float());
+    ui_.spinSpent->setMaximum(quota_total.as_float());
     
     if (quota_type == app::account::quota::none)
     {
@@ -321,17 +332,10 @@ void Accounts::currentRowChanged()
         ui_.grpQuota->setChecked(true);        
     }
 
-    QStandardItemModel* model = static_cast<QStandardItemModel*>(ui_.pie->model());
-
-    if (model->rowCount())
-    {
-        Q_ASSERT(model->rowCount() == 2);
-        model->removeRow(0);
-        model->removeRow(0);
-    }
-
     const auto slice_avail = 100 * (quota_avail.as_float() / quota_total.as_float());
     const auto slice_used  = 100 * (quota_spent.as_float() / quota_total.as_float());
+
+    DEBUG(str("quota avail _1, used _2", slice_avail, slice_used));
 
     model->insertRows(0, 1, QModelIndex());
     model->insertRows(1, 1, QModelIndex());
@@ -344,6 +348,8 @@ void Accounts::currentRowChanged()
     model->setData(model->index(1, 1), slice_used);    
     model->setData(model->index(1, 0),
         QColor(0x80, 0, 0), Qt::DecorationRole);
+
+    in_row_changed_ = false;
 }
 
 void Accounts::on_btnResetMonth_clicked()
@@ -378,8 +384,7 @@ void Accounts::on_btnResetAllTime_clicked()
     ui_.edtAllTime->setText(str(nada));
 }
 
-
-void Accounts::on_spinTotal_valueChanged(double value)
+void Accounts::on_btnMonthlyQuota_toggled(bool checked)
 {
     const auto row = ui_.listView->currentIndex().row();
     if (row == -1)
@@ -388,20 +393,65 @@ void Accounts::on_spinTotal_valueChanged(double value)
     auto& accounts = get_accounts_model(model_);
     auto& account  = accounts.get(row);
 
-    account.quota_total(value);
+    account.quota_type(app::account::quota::monthly);
 
+    ui_.btnFixedQuota->setChecked(false);
 }
 
-void Accounts::on_spinSpent_valueChanged(double value)
+void Accounts::on_btnFixedQuota_toggled(bool checked)
 {
     const auto row = ui_.listView->currentIndex().row();
     if (row == -1)
         return;
 
     auto& accounts = get_accounts_model(model_);
+    auto& account  = accounts.get(row);
+
+    account.quota_type(app::account::quota::fixed);
+
+    ui_.btnMonthlyQuota->setChecked(false);
+}
+
+void Accounts::on_spinTotal_valueChanged(double value)
+{
+    if (in_row_changed_)
+        return;
+
+    const auto row = ui_.listView->currentIndex().row();
+    if (row == -1)
+        return;
+
+    auto& accounts = get_accounts_model(model_);
+    auto& account  = accounts.get(row);
+
+    DEBUG(str("Quota total value _1", value));
+
+    const sdk::gigs gigs { value };
+
+    account.quota_total(gigs.as_bytes());
+
+    currentRowChanged();
+}
+
+void Accounts::on_spinSpent_valueChanged(double value)
+{
+    if (in_row_changed_)
+        return;
+
+    const auto row = ui_.listView->currentIndex().row();
+    if (row == -1)
+        return;
+
+    DEBUG(str("Quota spent value _1", value));
+
+    auto& accounts = get_accounts_model(model_);
     auto& account  = accounts.get(row);    
 
-    account.quota_spent(value);
+    const sdk::gigs gigs { value };
+
+    account.quota_spent(gigs.as_bytes());
+
+    currentRowChanged();
 }
 
 void Accounts::on_listView_doubleClicked(const QModelIndex& index)

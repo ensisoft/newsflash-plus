@@ -81,9 +81,15 @@ namespace app
 mainapp::mainapp(QCoreApplication& app) : app_(app)
 {
     const auto home = QDir::homePath();
-    settings_.data_path      = QDir::toNativeSeparators(home + "/Newsflash/Data");
-    settings_.logs_path      = QDir::toNativeSeparators(home + "/Newsflash/Logs");
-    settings_.downloads_path = QDir::toNativeSeparators(home + "/Newsflash/Downloads");
+    settings_.data_path            = QDir::toNativeSeparators(home + "/Newsflash/Data");
+    settings_.logs_path            = QDir::toNativeSeparators(home + "/Newsflash/Logs");
+    settings_.downloads_path       = QDir::toNativeSeparators(home + "/Newsflash/Downloads");
+    settings_.enable_throttle      = false;
+    settings_.discard_text_content = false;
+    settings_.overwrite_existing   = false;
+    settings_.remove_complete      = false;
+    settings_.prefer_secure        = true;
+    settings_.throttle             = 0;
 
     //models_.push_back(std::unique_ptr<sdk::model>(new accounts));
     //models_.push_back(std::unique_ptr<sdk::model>(new groups));
@@ -145,6 +151,8 @@ sdk::model& mainapp::get_model(const QString& name)
 
 bool mainapp::savestate()
 {
+    data_.clear();
+
     sdk::eventlog::get().save(data_);
 
     groups_.save(data_);
@@ -154,6 +162,8 @@ bool mainapp::savestate()
     {
         model->save(data_);
     }
+
+    save_settings();
 
     const auto file  = sdk::home::file("engine.json");
     const auto error = data_.save(file);

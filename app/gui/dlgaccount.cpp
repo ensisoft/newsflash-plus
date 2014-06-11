@@ -42,6 +42,7 @@ DlgAccount::DlgAccount(QWidget* parent, app::account& acc) : QDialog(parent), ac
     ui_.grpSecure->setChecked(acc_.enable_secure_server());
     ui_.grpGeneral->setChecked(acc_.enable_general_server());
     ui_.grpLogin->setChecked(acc_.enable_login());
+    ui_.maxConnections->setValue(acc_.connections());
 
     ui_.edtName->setFocus();    
 }
@@ -76,6 +77,7 @@ void DlgAccount::on_btnOK_clicked()
     acc_.connections(ui_.maxConnections->value());
     acc_.enable_compression(ui_.chkCompression->isChecked());
     acc_.enable_pipelining(ui_.chkPipelining->isChecked());
+    acc_.connections(ui_.maxConnections->value());
 
     if (acc_.name().isEmpty())
     {

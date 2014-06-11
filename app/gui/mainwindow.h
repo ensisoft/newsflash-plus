@@ -26,6 +26,8 @@
 
 #include <newsflash/warnpush.h>
 #  include <QtGui/QMainWindow>
+#  include <QtGui/QSystemTrayIcon>
+#  include <QtGui/QAction>
 #  include <QList>
 #include <newsflash/warnpop.h>
 
@@ -34,6 +36,7 @@
 #include "../mainapp.h"
 
 class QIcon;
+class QAction;
 class QCloseEvent;
 
 namespace sdk {
@@ -75,21 +78,26 @@ namespace gui
         void on_actionWindowNext_triggered();
         void on_actionWindowPrev_triggered();
         void on_actionHelp_triggered();
+        void on_actionMinimize_triggered();
+        void on_actionRestore_triggered();        
+        void on_actionExit_triggered();
         void actionWindowToggle_triggered();
         void actionWindowFocus_triggered();
+
+        void actionTray_activated(QSystemTrayIcon::ActivationReason);
         void timerWelcome_timeout();
 
     private:
         Ui::MainWindow ui_;
 
     private:
+        app::mainapp& app_;        
         sdk::datastore settings_;
+        sdk::widget* current_;        
 
-        app::mainapp& app_;
-
-        sdk::widget* current_;
         QList<sdk::widget*> tabs_;
         QList<QAction*> tabs_actions_;
+        QSystemTrayIcon tray_;
     };
 
 } // gui

@@ -1,6 +1,7 @@
 <!DOCTYPE RCC>
 <RCC version="1.0">
   <qresource>
+    <file>resource/16x16_ico_png/ico_newsflash.png</file>
     <file>resource/16x16_ico_png/ico_debug.png</file>
     <file>resource/16x16_ico_png/ico_forum.png</file>
     <file>resource/16x16_ico_png/ico_idea.png</file>
@@ -86,6 +87,8 @@
     <file>resource/16x16_ico_png/ico_throttle.png</file>
     <file>resource/16x16_ico_png/ico_not_active.png</file>
     <file>resource/16x16_ico_png/ico_skipped.png</file>
+    <file>resource/16x16_ico_png/ico_minimize.png</file>
+    <file>resource/16x16_ico_png/ico_restore.png</file>
 
     <file>resource/16x16_ico_png/ico_task_canceled.png</file>
     <file>resource/16x16_ico_png/ico_task_complete.png</file>

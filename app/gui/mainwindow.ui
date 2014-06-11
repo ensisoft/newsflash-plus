@@ -371,7 +371,7 @@
      <x>0</x>
      <y>0</y>
      <width>806</width>
-     <height>22</height>
+     <height>23</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -547,15 +547,6 @@
     <string>More help</string>
    </property>
   </action>
-  <action name="actionTODO">
-   <property name="icon">
-    <iconset resource="resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_broken.png</normaloff>:/resource/16x16_ico_png/ico_broken.png</iconset>
-   </property>
-   <property name="text">
-    <string>TODO</string>
-   </property>
-  </action>
   <action name="actionWindowClose">
    <property name="icon">
     <iconset resource="resource.qrc">
@@ -671,6 +662,30 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+Shift+Backtab</string>
+   </property>
+  </action>
+  <action name="actionMinimize">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_minimize.png</normaloff>:/resource/16x16_ico_png/ico_minimize.png</iconset>
+   </property>
+   <property name="text">
+    <string>Minimize</string>
+   </property>
+   <property name="toolTip">
+    <string>Minimize to tray</string>
+   </property>
+  </action>
+  <action name="actionRestore">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_restore.png</normaloff>:/resource/16x16_ico_png/ico_restore.png</iconset>
+   </property>
+   <property name="text">
+    <string>Restore</string>
+   </property>
+   <property name="toolTip">
+    <string>Restore application from system tray</string>
    </property>
   </action>
  </widget>

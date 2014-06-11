@@ -2,6 +2,8 @@
 
 #!/bin/bash
 
+clear
+
 # allow unlimited core files to be written
 ulimit -c unlimited
 
