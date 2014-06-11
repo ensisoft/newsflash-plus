@@ -1,4 +1,4 @@
-// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -18,21 +18,25 @@
 //  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 //  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-//  THE SOFTWARE.
+//  THE SOFTWARE.            
 
-#include "message.h"
+#include "typereg.h"
 
 namespace sdk
 {
-    struct msg_first_launch : msgbase<msg_first_launch>
-    {
-        bool add_account;
 
-        msg_first_launch() : add_account(false)
-        {}
+std::size_t typereg::next_type_identity()
+{
+    static std::size_t tid;
+    return ++tid;
+}
 
-        msg_first_launch(bool add_account) : add_account(add_account)
-        {}
-    };
+typereg::map_t& typereg::types()
+{
+    // must be in a translation unit, need to make sure that
+    // all modules can share the same registry.
+    static map_t m;
+    return m;
+}
 
 } // sdk

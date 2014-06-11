@@ -54,6 +54,8 @@ namespace sdk
 
         virtual QAbstractItemModel* view() override;
 
+        virtual QString name() const override;
+
         // abstraclistmodel data accessor
         virtual int rowCount(const QModelIndex&) const override;
 

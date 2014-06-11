@@ -1,4 +1,4 @@
-// Copyright (c) 2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -18,17 +18,50 @@
 //  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 //  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-//  THE SOFTWARE.            
+//  THE SOFTWARE.
 
-#include "message_dispatcher.h"
+#pragma once
+
+#include <newsflash/config.h>
+
+#include <newsflash/warnpush.h>
+#  include <QtGlobal>
+#  include <QString>
+#include <newsflash/warnpop.h>
 
 namespace sdk
 {
+    struct msg_set_account {
+        quint32 id;
+        QString name;
+    };
 
-message_dispatcher& message_dispatcher::get()
-{
-    static message_dispatcher dispatch;
-    return dispatch;
-}
+    struct msg_del_account {
+        quint32 id;
+    };
+
+    struct msg_get_account {
+        quint32 id;
+        bool success;
+        QString name;
+        QString username;
+        QString password;
+        // etc.
+    };
+
+    struct msg_account_quota_update {
+        quint32 id;
+        quint64 total;
+        quint64 avail;
+        quint64 used;
+        bool enabled;
+        bool montly;
+    };
+
+    struct msg_account_downloads_update {
+        quint32 id;
+        quint64 all_time;
+        quint64 this_month;
+    };
 
 } // sdk

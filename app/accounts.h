@@ -25,6 +25,8 @@
 #include <newsflash/config.h>
 
 #include <newsflash/sdk/model.h>
+#include <newsflash/sdk/message.h>
+#include <newsflash/sdk/message_account.h>
 
 #include <newsflash/warnpush.h>
 #  include <QAbstractListModel>
@@ -34,37 +36,18 @@
 #  include <QObject>
 #include <newsflash/warnpop.h>
 
+#include <memory>
+#include <vector>
+
+#include "account.h"
+
 namespace app
 {
     class accounts : public sdk::model, public QAbstractListModel
     {
     public:
-        enum class quota {
-            fixed, monthly
-        };
-
-        struct account {
-            quint32 id;
-            QString name;
-            QString username;
-            QString password;
-            QString general_host;
-            quint16 general_port;        
-            QString secure_host;        
-            quint16 secure_port;
-            bool enable_general_server;
-            bool enable_secure_server;
-            bool enable_login;
-            bool enable_compression;
-            bool enable_pipelining;
-            bool enable_quota;
-            int  connections;
-            quint64 quota_avail; // available quota bytes
-            quint64 quota_spent;  // how much is spent of the quota
-            quint64 downloads_this_month;
-            quint64 downloads_all_time;
-            quota quota_type;
-        };
+        accounts();
+       ~accounts();
 
         // persist accounts into datastore
         void save(sdk::datastore& datastore) const;
@@ -86,18 +69,28 @@ namespace app
 
         // insert or modify an account.
         // if account already exists it's modified otherwise it's inserted
-        void set(const accounts::account& acc);
+        void set(const account& acc);
+
+        //void reset_month_downloads(std::size_t index);
+        //void reset_all_time_downloads(std::size_t index);
+        //void set_spent_quota(std::size_t index, quint64 value);
+        //void set_avail_quota(std::size_t index, quint64 value);
+        //void set_quota_type(std::size_t index, accounts::quota type);
 
         // model impl
         virtual QAbstractItemModel* view() override;
 
-
+        virtual QString name() const override;
 
         // AbstractListModel impl
         virtual int rowCount(const QModelIndex&) const override;
 
         // AbstractListMode impl
         virtual QVariant data(const QModelIndex&, int role) const override;
+
+        void on_message(const char* sender, sdk::msg_get_account& msg);   
+        void on_message(const char* sender, sdk::msg_file_complete& msg);
+
     private:
         QList<account> accounts_;
     };

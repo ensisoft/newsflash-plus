@@ -38,6 +38,7 @@
 #  include <QAbstractItemModel>
 #  include <QObject>
 #  include <QVariant>
+#  include <QString>
 #include <newsflash/warnpop.h>
 
 
@@ -79,6 +80,8 @@ namespace sdk
         virtual void load(const datastore& store) {}
 
         virtual bool shutdown() { return true; }
+
+        virtual QString name() const = 0;
 
     protected:
     private:

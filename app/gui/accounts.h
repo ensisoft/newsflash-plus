@@ -26,9 +26,12 @@
 
 #include <newsflash/sdk/widget.h>
 #include <newsflash/sdk/model.h>
+#include <newsflash/sdk/message.h>
+#include <newsflash/sdk/message_account.h>
 #include <newsflash/warnpush.h>
 #include <newsflash/warnpop.h>
 #include <memory>
+#include "message.h"
 #include "ui_accounts.h"
 
 class QMovie;
@@ -50,11 +53,15 @@ namespace gui
         virtual void load(const sdk::datastore& data) override;
         virtual void save(sdk::datastore& data) override;
 
-    private:
-        bool eventFilter(QObject* object, QEvent* event);
+        void on_message(const char* sender, msg_first_launch& msg);
+        void on_message(const char* sender, sdk::msg_account_downloads_update& msg);
+        void on_message(const char* sender, sdk::msg_account_quota_update& msg);
 
     private:
         void advertise(bool show);        
+        
+    private:
+        bool eventFilter(QObject* object, QEvent* event);
 
     private slots:
         void on_actionNew_triggered();
@@ -62,6 +69,11 @@ namespace gui
         void on_actionProperties_triggered();
         void on_btnResetMonth_clicked();
         void on_btnResetAllTime_clicked();
+        void on_spinTotal_valueChanged(double value);
+        void on_spinSpent_valueChanged(double value);
+        void on_listView_doubleClicked(const QModelIndex& index);
+        void on_listView_customContextMenuRequested(QPoint pos);
+        void on_grpQuota_toggled(bool on);
 
         void currentRowChanged();
 

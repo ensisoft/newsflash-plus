@@ -29,14 +29,17 @@
 #  include <QStringList>
 #include <newsflash/warnpop.h>
 
+#include <newsflash/sdk/eventlog.h>
+#include <newsflash/sdk/debug.h>
 #include <newsflash/sdk/format.h>
 #include <newsflash/sdk/datastore.h>
-
+#include <newsflash/sdk/message.h>
+#include <newsflash/sdk/message_account.h>
 #include <ctime>
 #include <algorithm>
 
 #include "accounts.h"
-#include "eventlog.h"
+
 
 using sdk::str;
 using sdk::str_a;
@@ -44,105 +47,55 @@ using sdk::str_a;
 namespace app
 {
 
+accounts::accounts()
+{
+    sdk::listen<sdk::msg_get_account>(this, "accounts");
+    sdk::listen<sdk::msg_file_complete>(this, "accounts");
+
+    DEBUG("accounts created");
+}
+
+accounts::~accounts()
+{
+    sdk::remove_listener(this);
+
+    DEBUG("accounts deleted");
+}
+
 void accounts::save(sdk::datastore& datastore) const
 {
+    QStringList list;
 
-#define SAVE(x) \
-    datastore.set(key, #x, acc.x)
-
-    QStringList accounts;
     for (const auto& acc : accounts_)
     {
-        const auto& key = acc.name;
+        const auto& key = QString::number(acc.id());
 
-        SAVE(id);
-        SAVE(name);
-        SAVE(username);
-        SAVE(password);
-        SAVE(general_host);
-        SAVE(general_port);
-        SAVE(secure_host);
-        SAVE(secure_port);
-        SAVE(enable_general_server);
-        SAVE(enable_secure_server);
-        SAVE(enable_login);
-        SAVE(enable_compression);
-        SAVE(enable_pipelining);
-        SAVE(enable_quota);
-        SAVE(connections);
-        SAVE(quota_avail);
-        SAVE(quota_spent);
-        SAVE(downloads_this_month);
-        SAVE(downloads_all_time);
-
-        datastore.set(key, "quota_type", (int)acc.quota_type);
-        
-
-        accounts.append(key);
+        acc.save(key, datastore);
+        list.append(key);
     }
-    datastore.set("accounts", "list", accounts);
 
-#undef SAVE
+    datastore.set("accounts", "list", list);
 }
 
 void accounts::load(const sdk::datastore& datastore)
 {
-    // we use the template version of the get method to resolve
-    // the type of the account member. however in order for 
-    // automatic type deduction to kick in we must provide
-    // a default value. for this we use the original value 
-    // which then gets overwritten.
-#define LOAD(x) \
-    acc.x = datastore.get(key, #x, acc.x)
+    QStringList list =  datastore.get("accounts", "list").toStringList();
 
-    const auto& accounts = datastore.get("accounts", "list").toStringList();
-    for (const auto& name : accounts)
+    for (const auto& key : list)
     {
-        const auto& key = name;
-        account acc = {};
+        account acc(key, datastore);
 
-        LOAD(id);
-        LOAD(name);
-        LOAD(username);
-        LOAD(password);
-        LOAD(general_host);
-        LOAD(general_port);
-        LOAD(secure_host);
-        LOAD(secure_port);
-        LOAD(enable_general_server);
-        LOAD(enable_secure_server);
-        LOAD(enable_login);
-        LOAD(enable_compression);
-        LOAD(enable_pipelining);
-        LOAD(enable_quota);
-        LOAD(connections);
-        LOAD(quota_avail);
-        LOAD(quota_spent);
-        LOAD(downloads_this_month);
-        LOAD(downloads_all_time);
+        DEBUG(str("Account loaded _1, _2", acc.name(), acc.id()));
 
-        acc.quota_type = (accounts::quota)datastore.get(key, "quota_type").toInt();
+        accounts_.push_back(acc);
 
-        accounts_.append(acc);
+
     }
     QAbstractItemModel::reset();
-    
-#undef LOAD
 }
 
-accounts::account accounts::suggest() const
+account accounts::suggest() const
 {
-    account acc = {};
-    acc.id                    = (quint32)std::time(nullptr);
-    acc.enable_general_server = false;
-    acc.enable_secure_server  = false;
-    acc.general_port          = 119;
-    acc.secure_port           = 563;
-    acc.enable_login          = false;
-    acc.enable_compression    = false;
-    acc.enable_pipelining     = false;
-    acc.connections           = 5;
-
     int index = 1;
     for (;;)
     {
@@ -150,58 +103,24 @@ accounts::account accounts::suggest() const
 
         const auto& it = std::find_if(std::begin(accounts_), std::end(accounts_),
             [&](const account& acc) {
-                return acc.name == suggestion;
+                return acc.name() == suggestion;
             });
         if (it == std::end(accounts_))
         {
-            acc.name = suggestion;
-            break;
+            return account { suggestion };
         }
         ++index;
     }
-    return acc;
-}
-
-void accounts::set(const accounts::account& acc)
-{
-    auto it = std::find_if(std::begin(accounts_), std::end(accounts_),
-        [&](const account& maybe) {
-            return maybe.id == acc.id;
-        });
-
-    if (it == std::end(accounts_))
-    {
-        beginInsertRows(QModelIndex(), accounts_.size(), accounts_.size());
-        accounts_.push_back(acc);
-        endInsertRows();
-    }
-    else
-    {
-        *it = acc;
-        const auto pos = std::distance(std::begin(accounts_), it);
-        const auto first = index(pos, 0);
-        const auto last  = index(pos, 0);
-        emit dataChanged(first, last);
-    }
-}
-
-QAbstractItemModel* accounts::view() 
-{
-    return this;
 }
 
 const 
-accounts::account& accounts::get(std::size_t index) const
+account& accounts::get(std::size_t index) const
 {
-    Q_ASSERT(index < accounts_.size());
-
     return accounts_[index];
 }
 
-accounts::account& accounts::get(std::size_t index)
+account& accounts::get(std::size_t index) 
 {
-    Q_ASSERT(index < accounts_.size());
-
     return accounts_[index];
 }
 
@@ -209,9 +128,56 @@ void accounts::del(std::size_t index)
 {
     Q_ASSERT(index < accounts_.size());
 
+    const auto acc = get(index);
+    const auto aid = acc.id();
+
     beginRemoveRows(QModelIndex(), index, index);
     accounts_.removeAt(index);
     endRemoveRows();
+
+    sdk::send(sdk::msg_del_account{aid}, "accounts");
+}
+
+void accounts::set(const account& acc)
+{
+    auto it = std::find_if(std::begin(accounts_), std::end(accounts_),
+        [&](const account& maybe) {
+            return maybe.id() == acc.id();
+        });
+
+    if (it == std::end(accounts_))
+    {
+        DEBUG(str("Insert account _1", acc.id()));
+
+        beginInsertRows(QModelIndex(), accounts_.size(), accounts_.size());
+        accounts_.push_back(acc);
+        endInsertRows();
+    }
+    else
+    {
+        DEBUG(str("Set account _1", acc.id()));
+
+        *it = acc;
+        const auto pos = std::distance(std::begin(accounts_), it);
+        const auto first = index(pos, 0);
+        const auto last  = index(pos, 0);
+        emit dataChanged(first, last);
+    }
+
+    sdk::msg_set_account msg {};
+    msg.id   = acc.id();
+    msg.name = acc.name();
+    sdk::send(msg, "accounts");
+}
+
+QAbstractItemModel* accounts::view() 
+{
+    return this;
+}
+
+QString accounts::name() const 
+{
+    return "accounts";
 }
 
 int accounts::rowCount(const QModelIndex&) const 
@@ -225,7 +191,7 @@ QVariant accounts::data(const QModelIndex& index, int role) const
     if (role == Qt::DisplayRole)
     {
         const auto& acc = accounts_[index.row()];
-        return acc.name;
+        return acc.name();
     }
     else if (role == Qt::FontRole)
     {
@@ -238,6 +204,39 @@ QVariant accounts::data(const QModelIndex& index, int role) const
         return QIcon(":/resource/16x16_ico_png/ico_account.png");
     }
     return QVariant();
+}
+
+void accounts::on_message(const char* sender, sdk::msg_get_account& msg)
+{
+    msg.success = false;
+
+    auto it = std::find_if(std::begin(accounts_), std::end(accounts_),
+        [&](const account& acc) {
+            return acc.id() == msg.id;
+        });
+    if (it == std::end(accounts_))
+        return;
+
+    const auto& acc = *it;
+    msg.success  = true;
+    msg.name     = acc.name();
+    msg.password = acc.password();
+    msg.username = acc.username();
+        // etc.
+}
+
+void accounts::on_message(const char* sender, sdk::msg_file_complete& msg)
+{
+    auto it = std::find_if(std::begin(accounts_), std::end(accounts_),
+        [&](const account& acc) {
+            return acc.id() == msg.account;
+        });
+    if (it == std::end(accounts_))
+        return;
+
+    auto& acc = *it;
+
+    acc.on_message(sender, msg);
 }
 
 } // app

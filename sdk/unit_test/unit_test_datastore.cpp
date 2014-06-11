@@ -31,46 +31,44 @@
 #include <QBuffer>
 #include <cstdio>
 
-#include "../settings.h"
-#include "unit_test.h"
-
+#include "../datastore.h"
 
 int test_main(int argc, char* argv[])
 {
     QCoreApplication app(argc, argv);
 
-    app::settings settings;
-    BOOST_REQUIRE(!settings.contains("foo", "bar"));
-    settings.set("foo", "bar", QVariant(1234));
-    BOOST_REQUIRE(settings.contains("foo", "bar"));
-    BOOST_REQUIRE(settings.get("foo", "bar").toInt() == 1234);
+    sdk::datastore datastore;
+    BOOST_REQUIRE(!datastore.contains("foo", "bar"));
+    datastore.set("foo", "bar", QVariant(1234));
+    BOOST_REQUIRE(datastore.contains("foo", "bar"));
+    BOOST_REQUIRE(datastore.get("foo", "bar").toInt() == 1234);
 
-    settings.set("bar", "bar", QVariant("kekeke"));
-    BOOST_REQUIRE(settings.contains("foo", "bar"));
-    BOOST_REQUIRE(settings.contains("bar", "bar"));
-    BOOST_REQUIRE(settings.get("bar", "bar").toString() == "kekeke");
+    datastore.set("bar", "bar", QVariant("kekeke"));
+    BOOST_REQUIRE(datastore.contains("foo", "bar"));
+    BOOST_REQUIRE(datastore.contains("bar", "bar"));
+    BOOST_REQUIRE(datastore.get("bar", "bar").toString() == "kekeke");
 
-    BOOST_REQUIRE(settings.get("no", "value", 1234) == 1234);
+    BOOST_REQUIRE(datastore.get("no", "value", 1234) == 1234);
 
     QByteArray buffer;
     QBuffer io(&buffer);
     io.open(QIODevice::ReadWrite);
 
-    settings.clear();
-    settings.set("app", "setting-one", 1234);
-    settings.set("app", "setting-two", "kekeke");
-    settings.set("plugin", "something", 0.556);
-    settings.set("lib", "value", true);
-    settings.save(io);
+    datastore.clear();
+    datastore.set("app", "setting-one", 1234);
+    datastore.set("app", "setting-two", "kekeke");
+    datastore.set("plugin", "something", 0.556);
+    datastore.set("lib", "value", true);
+    datastore.save(io);
 
     // QTextStream out(stdout);
     // out << buffer;
 
     io.seek(0);
-    settings.clear();
-    settings.load(io);
-    BOOST_REQUIRE(settings.get("app", "setting-one").toInt() == 1234);
-    BOOST_REQUIRE(settings.get("app", "setting-two").toString() == "kekeke");
-    BOOST_REQUIRE(settings.get("lib", "value").toBool() == true);
+    datastore.clear();
+    datastore.load(io);
+    BOOST_REQUIRE(datastore.get("app", "setting-one").toInt() == 1234);
+    BOOST_REQUIRE(datastore.get("app", "setting-two").toString() == "kekeke");
+    BOOST_REQUIRE(datastore.get("lib", "value").toBool() == true);
     return 0;
 }

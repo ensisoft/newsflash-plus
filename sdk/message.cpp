@@ -1,4 +1,4 @@
-// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -18,43 +18,17 @@
 //  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 //  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-//  THE SOFTWARE.
+//  THE SOFTWARE.            
 
-#pragma once
+#include "message.h"
 
-#include <newsflash/config.h>
-#include <newsflash/warnpush.h>
-#  include <QtGui/QDialog>
-#include <newsflash/warnpop.h>
-
-#include "ui_dlgaccount.h"
-
-#include "../accounts.h"
-
-namespace gui
+namespace sdk
 {
-    class DlgAccount : public QDialog 
-    {
-        Q_OBJECT
 
-    public:
-        DlgAccount(QWidget* parent, app::account& acc);
-       ~DlgAccount();
+message_dispatcher& message_dispatcher::get()
+{
+    static message_dispatcher dispatch;
+    return dispatch;
+}
 
-        
-    private:
-        void changeEvent(QEvent *e);
-
-    private slots:
-        void on_btnOK_clicked();
-        void on_grpSecure_clicked(bool val);
-        void on_grpGeneral_clicked(bool val);
-
-    private:
-        Ui::DlgAccount ui_;
-
-    private:
-        app::account& acc_;
-    };
-
-} // gui
+} // sdk

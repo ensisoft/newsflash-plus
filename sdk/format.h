@@ -44,6 +44,51 @@ namespace sdk
         quint32 bps;
     };
 
+    struct gigs {
+        gigs() : bytes(0)
+        {}
+
+        gigs(quint64 bytes) : bytes(bytes)
+        {}
+
+        gigs(double gb) : bytes(gb * 1024 * 1024 * 1024)
+        {}
+
+        double as_float() const {
+            static auto d = 1024.0 * 1024.0 * 1024.0;
+            return bytes / d;
+        }
+
+        quint64 as_bytes() const {
+            return bytes;
+        }
+    private:
+        quint64 bytes;
+    };
+
+    struct megs {
+        megs() : bytes(0)
+        {}
+
+        megs(quint64 bytes) : bytes(bytes)
+        {}
+
+        megs(double mb) : bytes(mb * 1024 * 1024)
+        {}
+
+        double as_float() const {
+            static auto d = 1024.0 * 1024.0;
+            return bytes / d;
+        };
+        quint64 as_bytes() const {
+            return bytes;
+        }
+    private:
+        quint64 bytes;
+    };
+
+
+
     namespace detail {
         inline
         QString key(int index)
@@ -73,6 +118,8 @@ namespace sdk
         void format(QString& s, int index, const QDir& dir);
         void format(QString& s, int index, const sdk::size& size);
         void format(QString& s, int index, const sdk::speed& speed);
+        void format(QString& s, int index, const sdk::gigs& gigs);
+        void format(QString& s, int index, const sdk::megs& megs);
 
         template<typename T>
         void format_next(QString& s, int index, const T& t)
@@ -143,7 +190,6 @@ namespace sdk
 
     QString widen(const wchar_t* str);
 
-    double gigs(quint64 bytes);
 
 } // sdk
 

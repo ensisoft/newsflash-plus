@@ -68,6 +68,7 @@ namespace sdk
         
         // Add the component specific toolbar actions to a toolbar in the host application
         virtual void add_actions(QToolBar& bar) {}
+
         
         // This function is invoked when this ui component is getting activated (becomes visible)
         // in the host GUI.

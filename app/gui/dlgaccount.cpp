@@ -25,22 +25,25 @@
 namespace gui
 {
 
-DlgAccount::DlgAccount(QWidget* parent, app::accounts::account& acc) : QDialog(parent), acc_(acc)
+DlgAccount::DlgAccount(QWidget* parent, app::account& acc) : QDialog(parent), acc_(acc)
 {
     ui_.setupUi(this);
 
-    ui_.edtName->setText(acc_.name);
-    ui_.edtHost->setText(acc_.general_host);
-    ui_.edtPort->setText(QString::number(acc_.general_port));
-    ui_.edtHostSecure->setText(acc_.secure_host);
-    ui_.edtPortSecure->setText(QString::number(acc_.secure_port));
-    ui_.edtUsername->setText(acc_.username);
-    ui_.edtPassword->setText(acc_.password);
-    ui_.chkCompression->setChecked(acc_.enable_compression);
-    ui_.chkPipelining->setChecked(acc_.enable_pipelining);
-    ui_.grpSecure->setChecked(acc_.enable_secure_server);
-    ui_.grpGeneral->setChecked(acc_.enable_general_server);
-    ui_.grpLogin->setChecked(acc_.enable_login);
+    ui_.edtName->setText(acc_.name());
+    ui_.edtHost->setText(acc_.general_host());
+
+    ui_.edtPort->setText(QString::number(acc_.general_port()));
+    ui_.edtHostSecure->setText(acc_.secure_host());
+    ui_.edtPortSecure->setText(QString::number(acc_.secure_port()));
+    ui_.edtUsername->setText(acc_.username());
+    ui_.edtPassword->setText(acc_.password());
+    ui_.chkCompression->setChecked(acc_.enable_compression());
+    ui_.chkPipelining->setChecked(acc_.enable_pipelining());
+    ui_.grpSecure->setChecked(acc_.enable_secure_server());
+    ui_.grpGeneral->setChecked(acc_.enable_general_server());
+    ui_.grpLogin->setChecked(acc_.enable_login());
+
+    ui_.edtName->setFocus();    
 }
 
 DlgAccount::~DlgAccount()
@@ -60,65 +63,65 @@ void DlgAccount::changeEvent(QEvent* e)
 
 void DlgAccount::on_btnOK_clicked()
 {
-    acc_.name                  = ui_.edtName->text();
-    acc_.enable_general_server = ui_.grpGeneral->isChecked();
-    acc_.enable_secure_server  = ui_.grpSecure->isChecked();
-    acc_.enable_login          = ui_.grpLogin->isChecked();
-    acc_.general_port          = ui_.edtPort->text().toInt();
-    acc_.general_host          = ui_.edtHost->text();            
-    acc_.secure_port           = ui_.edtPortSecure->text().toInt();
-    acc_.secure_host           = ui_.edtHostSecure->text();            
-    acc_.username              = ui_.edtUsername->text();
-    acc_.password              = ui_.edtPassword->text();
-    acc_.connections           = ui_.maxConnections->value();
-    acc_.enable_compression    = ui_.chkCompression->isChecked();
-    acc_.enable_pipelining     = ui_.chkPipelining->isChecked();
+    acc_.name(ui_.edtName->text());
+    acc_.enable_general_server(ui_.grpGeneral->isChecked());
+    acc_.enable_secure_server(ui_.grpSecure->isChecked());
+    acc_.enable_login(ui_.grpLogin->isChecked());
+    acc_.general_port(ui_.edtPort->text().toInt());
+    acc_.general_host(ui_.edtHost->text());
+    acc_.secure_port(ui_.edtPortSecure->text().toInt());
+    acc_.secure_host(ui_.edtHostSecure->text());
+    acc_.username(ui_.edtUsername->text());
+    acc_.password(ui_.edtPassword->text());
+    acc_.connections(ui_.maxConnections->value());
+    acc_.enable_compression(ui_.chkCompression->isChecked());
+    acc_.enable_pipelining(ui_.chkPipelining->isChecked());
 
-    if (acc_.name.isEmpty())
+    if (acc_.name().isEmpty())
     {
         ui_.edtName->setFocus();
         return;
     }
-    if (acc_.enable_general_server)
+    if (acc_.enable_general_server())
     {
-        if (acc_.general_port <= 0)
+        if (acc_.general_port() <= 0)
         {
             ui_.edtPort->setFocus();
             return;
         }
-        if (acc_.general_host.isEmpty())
+        if (acc_.general_host().isEmpty())
         {
             ui_.edtHost->setFocus();
             return;
         }
     }
-    if (acc_.enable_secure_server)
+    if (acc_.enable_secure_server())
     {
-        if (acc_.secure_port <= 0)
+        if (acc_.secure_port() <= 0)
         {
             ui_.edtPort->setFocus();
             return;
         }
-        if (acc_.secure_host.isEmpty())
+        if (acc_.secure_host().isEmpty())
         {
             ui_.edtHost->setFocus();
             return;
         }
     }
-    if (acc_.enable_login)
+    if (acc_.enable_login())
     {
-        if (acc_.username.isEmpty())
+        if (acc_.username().isEmpty())
         {
             ui_.edtUsername->setFocus();
             return;
         }
-        if (acc_.password.isEmpty())
+        if (acc_.password().isEmpty())
         {
             ui_.edtPassword->setFocus();
             return;
         }
     }
-    if (acc_.connections < 0)
+    if (acc_.connections() < 0)
     {
         ui_.maxConnections->setFocus();
         return;

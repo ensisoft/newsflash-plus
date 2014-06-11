@@ -23,38 +23,43 @@
 #pragma once
 
 #include <newsflash/config.h>
+
 #include <newsflash/warnpush.h>
-#  include <QtGui/QDialog>
+#  include <QtGlobal>
+#  include <QString>
 #include <newsflash/warnpop.h>
 
-#include "ui_dlgaccount.h"
-
-#include "../accounts.h"
-
-namespace gui
+namespace sdk
 {
-    class DlgAccount : public QDialog 
-    {
-        Q_OBJECT
+    struct msg_file_complete {
+        // the account that was used to download this file from.
+        quint32 account;
 
-    public:
-        DlgAccount(QWidget* parent, app::account& acc);
-       ~DlgAccount();
+        // the path in the file system 
+        QString path;
 
-        
-    private:
-        void changeEvent(QEvent *e);
+        // the name of the file
+        QString name;
 
-    private slots:
-        void on_btnOK_clicked();
-        void on_grpSecure_clicked(bool val);
-        void on_grpGeneral_clicked(bool val);
+        // true if file is expected to be damaged someway
+        bool damaged;
 
-    private:
-        Ui::DlgAccount ui_;
+        // size on the disk 
+        quint64 local_size;
 
-    private:
-        app::account& acc_;
+        // size/amount of bytes transferred over the network
+        quint64 network_size;
+    };
+    
+    struct msg_file_unavailable {
+        // the account that was used to download this file from.
+        quint32 account;
+
+        // the original description of the file
+        QString description;
+
+        // true if dmca takedown was detected
+        bool dmca;
     };
 
-} // gui
+} // sdk

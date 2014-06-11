@@ -24,30 +24,128 @@
 
 #include <newsflash/config.h>
 
-#include <cstddef>
-#include "message_register.h"
+#include <vector>
+#include <string>
+#include <memory>
+#include "typereg.h"
+#include "debug.h"
+#include "format.h"
 
 namespace sdk
 {
-    // message posting protocol between components
-    struct message
+    class message_dispatcher
     {
-        std::size_t id;
-    };
+    public:
+        message_dispatcher()
+        {}
 
-    // a shim to automatically perform type registration
-    template<typename T>
-    struct msgbase : public message
-    {
-        msgbase() 
+        template<typename T>
+        void send(const char* receiver, const char* sender, T& msg)
         {
-            id = this_type.identity();
+            //DEBUG(str(""))
+
+            static auto id = typereg::insert<T>();
+
+            for (auto& sink : sinks_)
+            {
+                sink->dispatch(receiver, sender, &msg, id);
+            }
         }
+
+        template<typename T, typename Receiver>
+        void listen(Receiver* recv, std::string name) 
+        {
+            typereg::insert<T>();
+
+            using sink_type = any_sink<Receiver, T>;
+
+            auto sink  = std::unique_ptr<sink_type>(new sink_type);
+            sink->recv = recv;
+            sink->name = std::move(name);
+            sinks_.push_back(std::move(sink));
+        }
+
+        template<typename Receiver>
+        void remove(Receiver* recv)
+        {
+            sinks_.erase(std::remove_if(std::begin(sinks_), std::end(sinks_), 
+                [=](const std::unique_ptr<sink>& test) {
+                    return test->is_receiver_match(recv);
+                }),
+            sinks_.end());
+        }
+
+        static 
+        message_dispatcher& get();
+
     private:
-        static message_register::registrant<T> this_type;
+        struct sink {
+            virtual ~sink() = default;
+            virtual bool dispatch(const char* receiver, const char* sender, void* msg, std::size_t tid) = 0;
+            virtual bool is_receiver_match(void* recv) const = 0;
+        };
+
+        template<typename R, typename T>
+        struct any_sink : public sink {
+            R* recv;
+            std::string name;
+
+            virtual bool dispatch(const char* receiver, const char* sender, void* msg, std::size_t tid)
+            {
+                static auto id = typereg::find<T>();
+                if (tid != id)
+                    return false;
+                if (receiver && receiver != name)
+                    return false;
+
+                T* down = static_cast<T*>(msg);
+                recv->on_message(sender, *down);
+                return true;
+            }
+            virtual bool is_receiver_match(void* recv) const
+            {
+                return recv == this->recv;
+            }
+        };
+
+        std::vector<std::unique_ptr<sink>> sinks_;
     };
 
     template<typename T>
-    message_register::registrant<T> msgbase<T>::this_type;
+    void send(T msg, const char* sender, const char* receiver = nullptr)
+    {
+        auto& dispatcher = sdk::message_dispatcher::get();
+        dispatcher.send(receiver, sender, msg); 
+    }
+
+    template<typename T>
+    void send(T* msg, const char* sender, const char* receiver)
+    {
+        auto& dispatcher = sdk::message_dispatcher::get();
+        dispatcher.send(receiver, sender, *msg);
+
+    }
+
+
+    template<typename T, typename Recv>
+    void listen(Recv* receiver)
+    {
+        auto& dispatcher = sdk::message_dispatcher::get();
+        dispatcher.listen<T>(receiver, "");
+    }
+
+    template<typename T, typename Recv>
+    void listen(Recv* receiver, const char* name)
+    {
+        auto& dispatcher = sdk::message_dispatcher::get();
+        dispatcher.listen<T>(receiver, name);
+    }
+
+    template<typename Recv>
+    void remove_listener(Recv* receiver)
+    {
+        auto& dispatcher = sdk::message_dispatcher::get();
+        dispatcher.remove(receiver);
+    }
 
 } // sdk

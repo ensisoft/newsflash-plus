@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1142</width>
-    <height>861</height>
+    <width>997</width>
+    <height>558</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -185,7 +185,7 @@
           <item>
            <layout class="QGridLayout" name="gridLayout_2">
             <item row="0" column="1">
-             <widget class="QDoubleSpinBox" name="spinAvail">
+             <widget class="QDoubleSpinBox" name="spinTotal">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                 <horstretch>0</horstretch>
@@ -466,7 +466,7 @@ p, li { white-space: pre-wrap; }
   <tabstop>grpQuota</tabstop>
   <tabstop>btnMonthlyQuota</tabstop>
   <tabstop>btnFixedQuota</tabstop>
-  <tabstop>spinAvail</tabstop>
+  <tabstop>spinTotal</tabstop>
   <tabstop>spinSpent</tabstop>
  </tabstops>
  <resources>

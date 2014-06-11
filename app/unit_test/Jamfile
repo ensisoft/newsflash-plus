@@ -1,9 +1,11 @@
 
-unit-test unit_test_settings 
+project test 
 : 
-  unit_test.h    
-
-  unit_test_settings.cpp
-  ../settings.h
-  ../settings.cpp
+  requirements
+  <library>/qt//QtCore
+  <library>/qt//QtGui
+  <library>/sdk//corekit
+  <library>/newsflash//qjson
 ;
+
+unit-test unit_test_accounts : unit_test_accounts.cpp ../accounts.cpp ;

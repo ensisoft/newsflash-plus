@@ -1,4 +1,4 @@
-// Copyright (c) 2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -18,25 +18,14 @@
 //  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 //  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-//  THE SOFTWARE.            
+//  THE SOFTWARE.
 
-#include "message_register.h"
+#pragma once
 
-namespace sdk
+namespace gui
 {
+    struct msg_first_launch {
+        bool add_account;
+    };
 
-std::size_t message_register::get_next_command_id()
-{
-    static std::size_t tid;
-    return ++tid;
-}
-
-message_register::map_t& message_register::types()
-{
-    // must be in a translation unit, need to make sure that
-    // all modules can share the same registry.
-    static map_t m;
-    return m;
-}
-
-} // sdk
+} // gui

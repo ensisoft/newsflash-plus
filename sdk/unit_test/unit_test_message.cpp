@@ -20,19 +20,29 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.            
 
+#include <newsflash/config.h>
+
 #include <boost/test/minimal.hpp>
 
+#include <cstring>
 #include <string>
 
 #include "../message.h"
-#include "../message_dispatcher.h"
-#include "../message_register.h"
+#include "../typereg.h"
 
-struct msg_respond : sdk::msgbase<msg_respond>
+struct msg_baz 
 {
     std::string str;
-    bool foo;
-    bool bar;    
+};
+
+struct msg_bar 
+{
+    bool received;
+};
+
+struct msg_foo
+{
+    bool received;
 };
 
 class foo 
@@ -40,13 +50,24 @@ class foo
 public:
     foo()
     {
-       sdk::listen<msg_respond>(this);
+       sdk::listen<msg_baz>(this);
+       sdk::listen<msg_foo>(this, "foo");
+       recv_msg_baz = false;
     }
-    void on_message(msg_respond& msg)
+    void on_message(const char* sender, msg_baz& msg)
     {
-        BOOST_REQUIRE(msg.str == "ardvark");
-        msg.foo = true;
+        BOOST_REQUIRE(!std::strcmp(sender, "main"));
+        BOOST_REQUIRE(msg.str == "aardvark");
+        recv_msg_baz = true;
     }
+
+    void on_message(const char* sender, msg_foo& msg)
+    {
+        BOOST_REQUIRE(!std::strcmp(sender, "main"));
+        msg.received = true;
+    }
+
+    bool recv_msg_baz;
 };
 
 class bar
@@ -54,33 +75,61 @@ class bar
 public:
     bar()
     {
-        sdk::listen<msg_respond>(this);
+        sdk::listen<msg_baz>(this);
+        sdk::listen<msg_bar>(this, "bar");
+        recv_msg_baz = false;        
     }
-    void on_message(msg_respond& msg)
+    void on_message(const char* sender, msg_baz& msg)
     {
-        BOOST_REQUIRE(msg.str == "ardvark");
-        msg.bar = true;
+        BOOST_REQUIRE(!std::strcmp(sender, "main"));
+        BOOST_REQUIRE(msg.str == "aardvark");
+        recv_msg_baz = true;
     }
+
+    void on_message(const char* sender, msg_bar& msg)
+    {
+        BOOST_REQUIRE(!std::strcmp(sender, "main"));
+        msg.received = true;
+    }
+
+    bool recv_msg_baz;
 };
 
 int test_main(int, char*[])
 {
-    const auto id = sdk::message_register::find<msg_respond>();
+    using namespace sdk;
+
+    BOOST_REQUIRE(typereg::find(0) == nullptr);
+    BOOST_REQUIRE(typereg::find<msg_baz>() == 0);
+
+    const auto id = typereg::insert<msg_baz>();
     BOOST_REQUIRE(id);
-    const auto* type = sdk::message_register::find(id);
+    BOOST_REQUIRE(typereg::insert<msg_baz>() == id);
+
+    const auto* type = typereg::find(id);
     BOOST_REQUIRE(type);
-    BOOST_REQUIRE(type->match<msg_respond>());
+    BOOST_REQUIRE(type->match<msg_baz>() == true);
+    BOOST_REQUIRE(type->match<msg_bar>() == false);
 
     foo f;
     bar b;
 
-    msg_respond msg;
-    msg.str = "ardvark";
-    msg.foo = msg.bar = false;
-    sdk::send(&msg);
+    // send to everyone  
+    sdk::send(msg_baz{"aardvark"}, "main");
+    BOOST_REQUIRE(f.recv_msg_baz);
+    BOOST_REQUIRE(b.recv_msg_baz);
 
-    BOOST_REQUIRE(msg.foo == true);
-    BOOST_REQUIRE(msg.bar == true);
+
+    // send to foo
+    msg_foo to_foo {false};
+    sdk::send(&to_foo, "main", "foo");
+    BOOST_REQUIRE(to_foo.received = true);
+
+    // send to bar
+    msg_bar to_bar {false};
+    sdk::send(&to_bar, "main", "bar");
+    BOOST_REQUIRE(to_bar.received == true);
+
 
     return 0;
 }

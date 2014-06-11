@@ -75,6 +75,20 @@ namespace detail {
         s = s.replace(key(index), str);
     }
 
+    void format(QString& s, int index, const sdk::gigs& gigs)
+    {
+        QString str = QString("%1 Gb").arg(gigs.as_float(), 0, 'f', 1, ' ');
+
+        s = s.replace(key(index), str);
+    }
+
+    void format(QString& s, int index, const sdk::megs& megs)
+    {
+        QString str = QString("%1 Mb").arg(megs.as_float(), 0, 'f', 1, ' ');
+
+        s = s.replace(key(index), str);
+    }
+
     void format(QString& s, int index, const QFile& file)
     {
         s = s.replace(key(index), QString("'%1'").arg(file.fileName()));
@@ -130,11 +144,6 @@ QString widen(const wchar_t* str)
 
     return QString::fromUcs4((const uint*)str);
 #endif
-}
-
-double gigs(quint64 bytes)
-{
-    return bytes / GB;
 }
 
 } // sdk

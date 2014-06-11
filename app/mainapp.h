@@ -35,9 +35,8 @@
 #include <newsflash/sdk/datastore.h>
 #include <newsflash/sdk/model.h>
 
-
 #include <memory>
-#include <map>
+#include <vector>
 #include "accounts.h"
 #include "groups.h"
 #include "eventlog.h"
@@ -49,8 +48,6 @@ class QEvent;
 
 namespace sdk {
     class model;
-    struct msg_shutdown;
-    struct msg_request_shutdown;
 }
 
 namespace app
@@ -61,6 +58,18 @@ namespace app
         Q_OBJECT
 
     public:
+        struct settings {
+            QString logs_path;
+            QString data_path;
+            QString downloads_path;
+            bool enable_throttle;
+            bool discard_text_content;
+            bool overwrite_existing;
+            bool remove_complete;
+            bool prefer_secure;
+            int throttle;
+        };
+
         mainapp(QCoreApplication& app);
        ~mainapp();
 
@@ -89,22 +98,20 @@ namespace app
         bool eventFilter(QObject* object, QEvent* event);
 
     private:
-
-
-    private:
-        std::unique_ptr<newsflash::engine> engine_;
+        void save_settings();
+        void load_settings();
 
     private:
         QCoreApplication& app_;    
 
-    private:
-        sdk::datastore settings_;
+        settings settings_;
+        accounts accounts_;
+        groups   groups_;
 
-        // built-in models which are always available
     private:
-        accounts   accounts_;
-        groups     groups_;
-
+        sdk::datastore data_;
+        std::vector<std::unique_ptr<sdk::model>> models_;
+        std::unique_ptr<newsflash::engine> engine_;        
     };
 
 } // app

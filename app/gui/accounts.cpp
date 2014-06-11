@@ -34,15 +34,25 @@
 #include <newsflash/sdk/format.h>
 #include <newsflash/sdk/debug.h>
 #include <newsflash/sdk/datastore.h>
+#include <newsflash/sdk/message.h>
+#include <newsflash/sdk/message_account.h>
 #include <ctime>
 
 #include "dlgaccount.h"
 #include "accounts.h"
+#include "message.h"
 
 #include "../accounts.h"
 
 
 using sdk::str;
+
+namespace {
+    app::accounts& get_accounts_model(sdk::model& m)
+    {
+        return static_cast<app::accounts&>(m);
+    }
+}// 
 
 namespace gui
 {
@@ -60,6 +70,12 @@ Accounts::Accounts(sdk::model& model) : model_(model)
     ui_.actionDel->setEnabled(!empty);
     ui_.actionProperties->setEnabled(!empty);
 
+    ui_.grpServer->setEnabled(false);
+    ui_.grpQuota->setEnabled(false);
+    ui_.grpQuota->setChecked(false);    
+
+    ui_.btnMonthlyQuota->setChecked(true);
+
     auto* selection = ui_.listView->selectionModel();
     QObject::connect(selection, SIGNAL(currentRowChanged(const QModelIndex&, const QModelIndex&)),
         this, SLOT(currentRowChanged()));
@@ -69,8 +85,9 @@ Accounts::Accounts(sdk::model& model) : model_(model)
     pie->setHeaderData(1, Qt::Horizontal, tr("Used"));
     ui_.pie->setModel(pie);
 
-    ui_.grpQuota->setChecked(false);
-    ui_.btnMonthlyQuota->setChecked(true);
+    sdk::listen<msg_first_launch>(this);
+    sdk::listen<sdk::msg_account_downloads_update>(this);
+    sdk::listen<sdk::msg_account_quota_update>(this);
 }
 
 Accounts::~Accounts()
@@ -161,6 +178,50 @@ void Accounts::advertise(bool show)
     ui_.lblRegister->setVisible(true);
 }
 
+void Accounts::on_message(const char*, msg_first_launch& msg)
+{
+    if (!msg.add_account)
+        return;
+
+    auto& accounts = get_accounts_model(model_);
+    auto account   = accounts.suggest();
+
+    DlgAccount dlg(this, account);
+    if (dlg.exec() == QDialog::Accepted)
+        accounts.set(account);
+
+}
+
+void Accounts::on_message(const char*, sdk::msg_account_downloads_update& msg)
+{
+    const auto row = ui_.listView->currentIndex().row();
+    if (row == -1)
+        return;
+
+    const auto& accounts = get_accounts_model(model_);
+    const auto& account  = accounts.get(row);
+    if (account.id() != msg.id)
+        return;
+
+    // update gui 
+    currentRowChanged();
+}
+
+void Accounts::on_message(const char*, sdk::msg_account_quota_update& msg)
+{
+    const auto row = ui_.listView->currentIndex().row();
+    if (row == -1)
+        return;
+
+    const auto& accounts = get_accounts_model(model_);
+    const auto& account  = accounts.get(row);
+    if (account.id() != msg.id)
+        return;
+
+    // update gui
+    currentRowChanged();
+}
+
 bool Accounts::eventFilter(QObject* object, QEvent* event)
 {
     if (object == ui_.lblMovie &&
@@ -175,16 +236,12 @@ bool Accounts::eventFilter(QObject* object, QEvent* event)
 
 void Accounts::on_actionNew_triggered()
 {
-    DEBUG("New account");
-    //DlgAccount dlg(this);
-    //dlg.exec();
+    auto& accounts = get_accounts_model(model_);
+    auto account   = accounts.suggest();
 
-    auto* model = ui_.listView->model();
-    if (model->rowCount())
-    {
-        ui_.actionDel->setEnabled(true);
-        ui_.actionProperties->setEnabled(true);
-    }
+    DlgAccount dlg(this, account);
+    if (dlg.exec() == QDialog::Accepted)
+        accounts.set(account);
 }
 
 void Accounts::on_actionDel_triggered()
@@ -193,14 +250,8 @@ void Accounts::on_actionDel_triggered()
     if (row == -1)
         return;
 
-    //post<cmd_del_account>(row);
-
-    auto* model = ui_.listView->model();
-    if (model->rowCount() == 0)
-    {
-        ui_.actionDel->setEnabled(false);
-        ui_.actionProperties->setEnabled(false);
-    }
+    auto& accounts = get_accounts_model(model_);
+    accounts.del(row);
 }
 
 void Accounts::on_actionProperties_triggered()
@@ -209,62 +260,182 @@ void Accounts::on_actionProperties_triggered()
     if (row == -1)
         return;
 
-    //DlgAccount dlg(this, row);
-    //dlg.exec();
+    auto& accounts = get_accounts_model(model_);
+    auto account   = accounts.get(row);
+
+    DlgAccount dlg(this, account);
+    if (dlg.exec() == QDialog::Accepted)
+        accounts.set(account);
 }
 
 void Accounts::currentRowChanged()
 {
     const auto row = ui_.listView->currentIndex().row();
     if (row == -1)
+    {
+        ui_.edtMonth->clear();
+        ui_.edtAllTime->clear();
+        ui_.grpServer->setEnabled(false);
+        ui_.grpQuota->setEnabled(false);
+        ui_.spinTotal->setValue(0);
+        ui_.spinSpent->setValue(0);
+        ui_.actionDel->setEnabled(false);
+        ui_.actionProperties->setEnabled(false);
         return;
+    }
 
+    ui_.grpServer->setEnabled(true);
+    ui_.grpQuota->setEnabled(true);
+    ui_.actionDel->setEnabled(true);
+    ui_.actionProperties->setEnabled(true);
 
+    auto& accounts  = get_accounts_model(model_);
+    const auto& acc = accounts.get(row);
 
-    // auto quota  = fetch<cmd_get_account_quota>(row);
-    // auto volume = fetch<cmd_get_account_volume>(row);
+    const auto quota_type   = acc.quota_type();            
+    const auto quota_total  = sdk::gigs(acc.quota_total());
+    const auto quota_spent  = sdk::gigs(acc.quota_spent());
+    const auto quota_avail  = sdk::gigs(acc.quota_avail());
+    const auto gigs_alltime = sdk::gigs(acc.downloads_all_time());
+    const auto gigs_month   = sdk::gigs(acc.downloads_this_month());
 
-    // ui_.edtMonth->setText(str(sdk::size { volume->this_month }));
-    // ui_.edtAllTime->setText(str(sdk::size { volume->all_time }));
+    ui_.edtMonth->setText(str(gigs_month));
+    ui_.edtAllTime->setText(str(gigs_alltime));
+    ui_.spinTotal->setValue(quota_total.as_float());
+    ui_.spinSpent->setValue(quota_spent.as_float());
+    
+    if (quota_type == app::account::quota::none)
+    {
+        ui_.grpQuota->setChecked(false);
+    }
+    else if (quota_type == app::account::quota::monthly)
+    {
+        ui_.btnMonthlyQuota->setChecked(true);
+        ui_.btnFixedQuota->setChecked(false);
+        ui_.grpQuota->setChecked(true);
+    }
+    else
+    {
+        ui_.btnMonthlyQuota->setChecked(false);
+        ui_.btnFixedQuota->setChecked(true);
+        ui_.grpQuota->setChecked(true);        
+    }
 
-    // const double avail = sdk::gigs(quota->available);
-    // const double spent = sdk::gigs(quota->consumed);
-    // ui_.spinAvail->setValue(avail);
-    // ui_.spinSpent->setValue(spent);
+    QStandardItemModel* model = static_cast<QStandardItemModel*>(ui_.pie->model());
 
-    // ui_.grpQuota->setChecked(quota->enabled);
-    // ui_.btnMonthlyQuota->setChecked(quota->monthly);
+    if (model->rowCount())
+    {
+        Q_ASSERT(model->rowCount() == 2);
+        model->removeRow(0);
+        model->removeRow(0);
+    }
 
-    // QStandardItemModel* model = static_cast<QStandardItemModel*>(ui_.pie->model());
+    const auto slice_avail = 100 * (quota_avail.as_float() / quota_total.as_float());
+    const auto slice_used  = 100 * (quota_spent.as_float() / quota_total.as_float());
 
-    // if (model->rowCount())
-    // {
-    //     Q_ASSERT(model->rowCount() == 2);
-    //     model->removeRow(0);
-    //     model->removeRow(0);
-    // }
-    // model->insertRows(0, 1, QModelIndex());
-    // model->insertRows(1, 1, QModelIndex());
-    // model->setData(model->index(0, 0), "Available");
-    // model->setData(model->index(0, 1), 123);
-    // model->setData(model->index(0, 0), 
-    //     QColor(0, 0x80, 0), Qt::DecorationRole);
+    model->insertRows(0, 1, QModelIndex());
+    model->insertRows(1, 1, QModelIndex());
+    model->setData(model->index(0, 0), "Avail");
+    model->setData(model->index(0, 1), slice_avail);
+    model->setData(model->index(0, 0), 
+        QColor(0, 0x80, 0), Qt::DecorationRole);
 
-    // model->setData(model->index(1, 0), "Used");
-    // model->setData(model->index(1, 1), 555);    
-    // model->setData(model->index(1, 0),
-    //     QColor(0x80, 0, 0), Qt::DecorationRole);
+    model->setData(model->index(1, 0), "Used");
+    model->setData(model->index(1, 1), slice_used);    
+    model->setData(model->index(1, 0),
+        QColor(0x80, 0, 0), Qt::DecorationRole);
 }
 
 void Accounts::on_btnResetMonth_clicked()
 {
-    DEBUG("TODO");
+    const auto row = ui_.listView->currentIndex().row();
+    if (row == -1)
+        return;
+
+    auto& accounts = get_accounts_model(model_);
+    auto& account  = accounts.get(row);
+
+    account.reset_month();
+
+    const sdk::gigs nada;
+
+    ui_.edtMonth->setText(str(nada));
 }
 
 void Accounts::on_btnResetAllTime_clicked()
 {
-    DEBUG("todo");
+    const auto row = ui_.listView->currentIndex().row();
+    if (row == -1)
+        return;
+
+    auto& accounts = get_accounts_model(model_);
+    auto& account  = accounts.get(row);
+
+    account.reset_all_time();
+
+    const sdk::gigs nada;
+
+    ui_.edtAllTime->setText(str(nada));
 }
 
+
+void Accounts::on_spinTotal_valueChanged(double value)
+{
+    const auto row = ui_.listView->currentIndex().row();
+    if (row == -1)
+        return;
+
+    auto& accounts = get_accounts_model(model_);
+    auto& account  = accounts.get(row);
+
+    account.quota_total(value);
+
+}
+
+void Accounts::on_spinSpent_valueChanged(double value)
+{
+    const auto row = ui_.listView->currentIndex().row();
+    if (row == -1)
+        return;
+
+    auto& accounts = get_accounts_model(model_);
+    auto& account  = accounts.get(row);    
+
+    account.quota_spent(value);
+}
+
+void Accounts::on_listView_doubleClicked(const QModelIndex& index)
+{
+    // forward
+    on_actionProperties_triggered();
+}
+
+void Accounts::on_listView_customContextMenuRequested(QPoint pos)
+{
+    QMenu menu(this);
+    add_actions(menu);
+    menu.exec(QCursor::pos());
+}
+
+void Accounts::on_grpQuota_toggled(bool on)
+{
+    const auto row = ui_.listView->currentIndex().row();
+    if (row == -1)
+        return;
+
+    auto& accounts = get_accounts_model(model_);
+    auto& account  = accounts.get(row);
+
+    if (!on)
+    {
+        account.quota_type(app::account::quota::none);
+    }
+    else 
+    {
+        if (ui_.btnFixedQuota->isChecked())
+            account.quota_type(app::account::quota::fixed);
+        else account.quota_type(app::account::quota::monthly);
+    }
+}
 
 } // gui

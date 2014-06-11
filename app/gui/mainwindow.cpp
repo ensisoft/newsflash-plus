@@ -38,17 +38,18 @@
 #include <newsflash/sdk/eventlog.h>
 #include <newsflash/sdk/debug.h>
 #include <newsflash/sdk/home.h>
-#include <newsflash/sdk/message_dispatcher.h>
-#include <newsflash/sdk/msg_first_launch.h>
+#include <newsflash/sdk/message.h>
 
 #include "mainwindow.h"
 #include "accounts.h"
 #include "eventlog.h"
 #include "groups.h"
 #include "dlgwelcome.h"
-#include "dlgaccount.h"
 #include "config.h"
+#include "message.h"
 #include "../mainapp.h"
+
+
 
 using sdk::str;
 
@@ -449,7 +450,9 @@ void MainWindow::timerWelcome_timeout()
         openhelp("quick.html");
 
     const auto add_account = dlg.add_account();
-    //sdk::send<sdk::msg_first_launch>(add_account);
+
+    sdk::send(gui::msg_first_launch {add_account}, "gui");
+
 }
 
 } // gui

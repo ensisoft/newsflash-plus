@@ -23,6 +23,8 @@
 
 #pragma once
 
+#include <newsflash/config.h>
+
 #include <typeinfo>
 #include <cstddef>
 #include <memory>
@@ -30,7 +32,8 @@
 
 namespace sdk
 {
-    class message_register
+    // typeregistry. maps types to ids and ids back to types.
+    class typereg
     {
     public:
         class type 
@@ -68,8 +71,6 @@ namespace sdk
         template<typename T> static
         std::size_t find()
         {
-            T force_instanciation;
-
             const auto& map = types();
 
             // linear search..
@@ -80,6 +81,24 @@ namespace sdk
                     return it.first;
             }
             return 0;
+        }
+
+        // insert a new type into registry if it doesn't exist already
+        // returns the id for the type.
+        template<typename T> static
+        std::size_t insert()
+        {
+            using new_type = any_type<T>;
+
+            static auto id = 0; 
+
+            if (id == 0)
+            {
+                auto& map = types();
+                id = next_type_identity();
+                map.insert({id, std::make_shared<new_type>()});
+            }
+            return id;
         }
 
     private:
@@ -97,34 +116,15 @@ namespace sdk
                 return typeid(T) == other;
             }
         };
-
-        typedef 
-        std::map<std::size_t, std::shared_ptr<type>> map_t;
+    private:
+        using map_t = std::map<std::size_t, std::shared_ptr<type>>;
 
         static
         map_t& types();
 
         static
-        std::size_t get_next_command_id();
-
-    public:
-        template<typename T>
-        class registrant 
-        {
-            typedef any_type<T> my_type;
-        public:
-            registrant() : id_(get_next_command_id()) 
-            {
-                auto& map = types();
-                map.insert({id_, std::make_shared<my_type>()});
-            }
-            std::size_t identity() const 
-            {
-                return id_;
-            }
-        private:
-            const std::size_t id_;
-        };        
+        std::size_t next_type_identity();
+     
     };
 
 } // sdk

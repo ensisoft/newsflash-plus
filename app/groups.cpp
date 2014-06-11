@@ -34,18 +34,21 @@ groups::~groups()
 
 void groups::save(sdk::datastore& values) const
 {
-
 }
 
 
 void groups::load(const sdk::datastore& values) 
 {
-
 }
 
 QAbstractItemModel* groups::view() 
 {
     return this;
+}
+
+QString groups::name() const 
+{
+    return "groups";
 }
 
 QVariant groups::headerData(int section, Qt::Orientation orietantation, int role) const 

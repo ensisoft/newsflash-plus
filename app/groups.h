@@ -49,6 +49,7 @@ namespace app
         // sdk::model
         virtual QAbstractItemModel* view() override;
 
+        virtual QString name() const override;
 
         // QAbstractTableModel
         QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
