@@ -83,7 +83,7 @@ namespace app
         account(QString name) : m_name(std::move(name))
         {
             m_id   = (quint32)std::time(nullptr);
-            m_date = QDate::currentDate();
+            m_downloads_date = QDate::currentDate();
         }
 
         account(const QString& key, const sdk::datastore& store)

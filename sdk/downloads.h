@@ -28,26 +28,18 @@
 #  include <QString>
 #include <newsflash/warnpop.h>
 
-class QNetworkRequest;
-class QNetworkReply;
-
 namespace sdk
 {
-    // request represents a request to download
-    // or upload data to the internet.
-    class request 
+    // downloads directory access
+    class downloads
     {
     public:
-        virtual ~request() = default;
+        downloads(const QString& path);
+       ~downloads();
 
-        // prepare a QNetworkRequest for submission
-        virtual void prepare(QNetworkRequest& request) = 0;
-
-        // receive and process reply to the request
-        virtual bool receive(QNetworkReply& reply) = 0;
-
-    protected:
     private:
+        QString path_;
     };
 
 } // sdk
+

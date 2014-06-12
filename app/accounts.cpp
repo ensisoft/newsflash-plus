@@ -51,47 +51,13 @@ accounts::accounts()
 {
     sdk::listen<sdk::msg_get_account>(this, "accounts");
     sdk::listen<sdk::msg_file_complete>(this, "accounts");
-
     DEBUG("accounts created");
 }
 
 accounts::~accounts()
 {
     sdk::remove_listener(this);
-
     DEBUG("accounts deleted");
-}
-
-void accounts::save(sdk::datastore& datastore) const
-{
-    QStringList list;
-
-    for (const auto& acc : accounts_)
-    {
-        const auto& key = QString::number(acc.id());
-
-        acc.save(key, datastore);
-        list.append(key);
-    }
-
-    datastore.set("accounts", "list", list);
-}
-
-void accounts::load(const sdk::datastore& datastore)
-{
-    QStringList list =  datastore.get("accounts", "list").toStringList();
-
-    for (const auto& key : list)
-    {
-        account acc(key, datastore);
-
-        DEBUG(str("Account loaded _1, _2", acc.name(), acc.id()));
-
-        accounts_.push_back(acc);
-
-
-    }
-    QAbstractItemModel::reset();
 }
 
 account accounts::suggest() const
@@ -168,6 +134,38 @@ void accounts::set(const account& acc)
     msg.id   = acc.id();
     msg.name = acc.name();
     sdk::send(msg, "accounts");
+}
+
+void accounts::save(sdk::datastore& datastore) const
+{
+    QStringList list;
+
+    for (const auto& acc : accounts_)
+    {
+        const auto& key = QString::number(acc.id());
+
+        acc.save(key, datastore);
+        list.append(key);
+    }
+
+    datastore.set("accounts", "list", list);
+}
+
+void accounts::load(const sdk::datastore& datastore)
+{
+    QStringList list =  datastore.get("accounts", "list").toStringList();
+
+    for (const auto& key : list)
+    {
+        account acc(key, datastore);
+
+        DEBUG(str("Account loaded _1, _2", acc.name(), acc.id()));
+
+        accounts_.push_back(acc);
+
+
+    }
+    QAbstractItemModel::reset();
 }
 
 QAbstractItemModel* accounts::view() 

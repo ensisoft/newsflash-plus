@@ -19,35 +19,36 @@
 //  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
-
+  
 #pragma once
 
 #include <newsflash/config.h>
 
 #include <newsflash/warnpush.h>
-#  include <QString>
 #include <newsflash/warnpop.h>
-
-class QNetworkRequest;
-class QNetworkReply;
 
 namespace sdk
 {
-    // request represents a request to download
-    // or upload data to the internet.
-    class request 
+    class request;
+
+    // host application interface
+    class hostapp
     {
     public:
-        virtual ~request() = default;
-
-        // prepare a QNetworkRequest for submission
-        virtual void prepare(QNetworkRequest& request) = 0;
-
-        // receive and process reply to the request
-        virtual bool receive(QNetworkReply& reply) = 0;
+        // submit a new request for downloading / uploading
+        // data to the internet. the ownership of the request
+        // object remains with the caller and the lifetime
+        // of the object should extend to the completion of the
+        // request
+        virtual void submit(request* req) = 0;
 
     protected:
+        virtual ~hostapp() = default;
+
     private:
     };
 
 } // sdk
+
+
+

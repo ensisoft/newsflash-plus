@@ -53,6 +53,8 @@ QString home::path()
 
 QString home::file(const QString& name)
 {
+    // pathstr is an absolute path so then this is also
+    // an absolute path.
     return QDir::toNativeSeparators(QDir::cleanPath(pathstr + "/" + name));
 }
 

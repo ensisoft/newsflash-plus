@@ -22,59 +22,25 @@
 
 #pragma once
 
+#include <newsflash/config.h>
+
+#include <newsflash/warnpush.h>
+#  include <QString>
+#include <newsflash/warnpop.h>
+
 namespace sdk
 {
-    // media category/type. each item is traditionally
-    // tagged into a single category. 
-    // int = international
-    // sd  = standard definition
-    // hd  = high definition
-    enum class mediatype 
+    // data directory access
+    class data
     {
-        none,
+    public:
+        data(const QString& path);
+       ~data();
 
-        console,
-        console_nds,
-        console_wii,
-        console_xbox,
-        console_xbox360,
-        console_psp,
-        console_ps2,
-        console_ps3,
-        console_ps4,
+        QString file(const QString& name);
 
-        movies,
-        movies_int,
-        movies_sd,
-        movies_hd,
-
-        audio,
-        audio_mp3,
-        audio_video,
-        audio_audiobook,
-        audio_lossless,
-
-        apps,
-        apps_pc,
-        apps_iso,
-        apps_mac,
-        apps_android,
-        apps_ios,
-
-        tv,
-        tv_int,
-        tv_sd,
-        tv_hd,
-        tv_other,
-        tv_sport,
-
-        xxx,
-        xxx_dvd,
-        xxx_hd,
-        xxx_sd,
-
-        other,
-        other_ebook
+    private:
+        QString path_;
     };
 
 } // sdk

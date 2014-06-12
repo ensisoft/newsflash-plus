@@ -20,25 +20,93 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.            
 
+#define LOGTAG "app"
+
+#include <newsflash/warnpush.h>
+#  include <QtGui/QFont>
+#  include <QtGui/QIcon>
+#  include <QDir>
+#  include <QStringList>
+#  include <QFile>
+#include <newsflash/warnpop.h>
+
 #include <newsflash/sdk/datastore.h>
+#include <newsflash/sdk/home.h>
+#include <newsflash/sdk/debug.h>
+#include <newsflash/sdk/format.h>
+#include <newsflash/sdk/eventlog.h>
 #include "groups.h"
+
+using sdk::str;
 
 namespace app
 {
 
 groups::groups()
-{}
+{
+    DEBUG("groups created");
+}
 
 groups::~groups()
-{}
+{
+    DEBUG("groups deleted");
+}
 
 void groups::save(sdk::datastore& values) const
 {
+    QStringList list;
+    for (const auto& group : groups_)
+    {
+        const auto& key = group.name;
+        values.set(key, "name", group.name);
+        values.set(key, "updated", group.updated);
+        values.set(key, "articles", group.articles);
+        list.push_back(key);
+    }
+    values.set("groups", "list", list);    
 }
 
 
 void groups::load(const sdk::datastore& values) 
 {
+
+    const QStringList& list = values.get("groups", "list").toStringList();
+    for (const auto& key : list)
+    {
+        groups::group group {};
+        group.name     = values.get(key, "name").toString();
+        group.updated  = values.get(key, "updated").toDateTime();
+        group.headers  = 0;
+        group.articles = values.get(key, "articles").toULongLong();
+        group.size_on_disk = 0;
+
+    }
+}
+
+void groups::load_content()
+{
+    const auto listing = sdk::home::file("newsgroups.txt");
+    if (!QFile::exists(listing))
+    {
+
+    }
+
+    QFile io(listing);
+    if (!io.open(QIODevice::ReadOnly))
+    {
+        ERROR(str("Failed to open listing file _1, _2", io, io.error()));
+        return;
+    }
+
+    QTextStream stream(&io);
+    while (!stream.atEnd())
+    {
+        const auto& line = stream.readLine();
+        
+
+    }
+
+    io.close();
 }
 
 QAbstractItemModel* groups::view() 
@@ -63,14 +131,19 @@ QVariant groups::headerData(int section, Qt::Orientation orietantation, int role
     {
         case column::name:
             return "Name";
-        case column::created:
-            return "Created";
+
         case column::updated:
             return "Updated";
+
+        case column::headers:
+            return "Headers";
+
         case column::articles:
             return "Articles";
+
         case column::size:
             return "Size";
+
         default:
             Q_ASSERT(!"missing column case");
             break;
@@ -82,21 +155,24 @@ QVariant groups::data(const QModelIndex& index, int role) const
 {
     if (role == Qt::DisplayRole)
     {
-        const auto col   = index.column();
-        const auto row   = index.row();
-        const auto group = groups_[row];
+        const auto col    = index.column();
+        const auto row    = index.row();
+        const auto& group = groups_[row];
         switch ((groups::column)col)
         {
             case column::name:
                return group.name;
-            case column::created:
-               return "todo:";
+
             case column::updated:
-                return "todo";
-            case column::size:
-                return "todo";
+                return sdk::format(sdk::age{group.updated});
+
             case column::articles:
-                return group.size;
+                return group.articles;
+
+
+            case column::size:
+                return sdk::format(sdk::size{group.size_on_disk});
+
             default:
                 Q_ASSERT(!"missing column case");
                 break;

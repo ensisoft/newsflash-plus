@@ -26,11 +26,14 @@
 
 #include <newsflash/warnpush.h>
 #  include <boost/version.hpp>
+#  include <QtNetwork/QNetworkReply>
+#  include <QtNetwork/QNetworkRequest>
 #  include <QCoreApplication>
 #  include <QStringList>
 #  include <QFile>
 #  include <QDir>
 #  include <QEvent>
+#  include <QLibrary>
 #include <newsflash/warnpop.h>
 
 #include <newsflash/engine/engine.h>
@@ -40,6 +43,8 @@
 #include <newsflash/sdk/debug.h>
 #include <newsflash/sdk/eventlog.h>
 #include <newsflash/sdk/home.h>
+#include <newsflash/sdk/dist.h>
+#include <newsflash/sdk/request.h>
 #include <vector>
 #include "mainapp.h"
 #include "accounts.h"
@@ -91,8 +96,60 @@ mainapp::mainapp(QCoreApplication& app) : app_(app)
     settings_.prefer_secure        = true;
     settings_.throttle             = 0;
 
-    //models_.push_back(std::unique_ptr<sdk::model>(new accounts));
-    //models_.push_back(std::unique_ptr<sdk::model>(new groups));
+    const QDir dir(sdk::dist::path("plugins"));
+
+#define FAIL(x) \
+    if (1) { \
+        ERROR(str("Failed to load plugin library _1, _2", lib, x)); \
+        continue; \
+    }
+
+    for (const auto& name : dir.entryList())
+    {
+        const auto file = dir.absoluteFilePath(name);
+        if (!QLibrary::isLibrary(file))
+            continue;
+
+        QLibrary lib(file);
+
+        DEBUG(str("Loading plugin _1", lib));
+
+        if (!lib.load())
+        {
+            ERROR(lib.errorString());
+            continue;
+        }
+
+        auto get_api_version = (sdk::fp_model_api_version)(lib.resolve("model_api_version"));
+        if (get_api_version == nullptr)
+            FAIL("no api version found");
+
+        if (get_api_version() != sdk::model::version)
+            FAIL("incompatible version");
+
+        auto create = (sdk::fp_model_create)(lib.resolve("create_model"));
+        if (create == nullptr)
+            FAIL("no entry point found");
+
+        std::unique_ptr<sdk::model> model(create(this));
+        if (!model)
+            FAIL("plugin create failed");
+
+        models_.push_back(std::move(model));
+
+        int major = 0;
+        int minor = 0;
+
+        auto get_lib_version = (sdk::fp_model_lib_version)(lib.resolve("model_lib_version"));
+        if (get_lib_version)
+        {
+            get_lib_version(&major, &minor);
+        }        
+
+        INFO(str("Loaded _1", lib));
+    }
+
+#undef FAIL
 
     const auto file  = sdk::home::file("engine.json");
     if (QFile::exists(file))
@@ -119,6 +176,12 @@ mainapp::mainapp(QCoreApplication& app) : app_(app)
     app.installEventFilter(this);
 
     DEBUG("Application created");    
+
+    net_submit_timer_  = 0;
+    net_timeout_timer_ = 0;
+
+    QObject::connect(&net_, SIGNAL(finished(QNetworkReply*)),
+        this, SLOT(replyAvailable(QNetworkReply*)));
 }
 
 mainapp::~mainapp()
@@ -183,6 +246,21 @@ void mainapp::shutdown()
     engine_->stop();
 }
 
+void mainapp::submit(sdk::request* req)
+{
+    const auto submit_interval_millis = 1000;
+
+    submits_.push_back({0, req, nullptr});
+    if (submits_.size() == 1)
+    {
+        submit_first();
+    }   
+    else if (!net_submit_timer_)
+    {
+        startTimer(submit_interval_millis);
+    }
+}
+
 void mainapp::handle(const newsflash::error& error)
 {}
 
@@ -205,6 +283,70 @@ void mainapp::async_notify()
     QCoreApplication::postEvent(this, new async_notify_event());
 }
 
+void mainapp::replyAvailable(QNetworkReply* reply)
+{
+    QString err;
+
+#define CASE(x) case QNetworkReply::x##Error : err = #x"Error"; break;
+
+    switch (reply->error())
+    {
+        CASE(ConnectionRefused);
+        CASE(RemoteHostClosed);
+        CASE(HostNotFound);
+        CASE(Timeout);
+        CASE(OperationCanceled);
+        CASE(SslHandshakeFailed);
+        CASE(TemporaryNetworkFailure);
+        CASE(ProxyConnectionRefused);
+        CASE(ProxyConnectionClosed);
+        CASE(ProxyNotFound);
+        CASE(ProxyAuthenticationRequired)
+        CASE(ProxyTimeout);
+        CASE(ContentOperationNotPermitted);
+        CASE(ContentNotFound);
+        CASE(ContentReSend);
+        CASE(AuthenticationRequired);
+        CASE(ProtocolUnknown);
+        CASE(ProtocolInvalidOperation);
+        CASE(UnknownNetwork);
+        CASE(UnknownProxy);
+        CASE(UnknownContent);
+
+        case QNetworkReply::ContentAccessDenied:
+            err = "ContentAccessDenied";
+            break;
+        case QNetworkReply::ProtocolFailure: 
+            err = "ProtocolFailure"; 
+            break;
+        case QNetworkReply::NoError:
+            err = "Success";
+            break;
+    }
+
+    DEBUG(str("replyAvailable _1, _2", reply->url(), err));
+
+#undef CASE
+
+    if (reply->error() != QNetworkReply::NoError)
+    {
+        ERROR(str("Network request _1 failed, _2", reply->url(), err));
+    }
+    
+    auto it = std::find_if(std::begin(submits_), std::end(submits_),
+        [=](const submission& sub) {
+            return sub.reply == reply;
+        });
+    Q_ASSERT(it != std::end(submits_));
+
+    auto& submit = *it;
+
+    submit.handler->receive(*reply);
+    reply->deleteLater();
+
+    submits_.erase(it);
+}
+
 bool mainapp::eventFilter(QObject* object, QEvent* event)
 {
     if (object != this)
@@ -216,6 +358,60 @@ bool mainapp::eventFilter(QObject* object, QEvent* event)
     engine_->pump();
     return true;
 
+}
+
+void mainapp::timerEvent(QTimerEvent* event)
+{
+    if (event->timerId() == net_submit_timer_)
+    {
+        if (!submit_first())
+        {
+            killTimer(net_submit_timer_);
+            net_submit_timer_ = 0;
+        }
+    }
+    else if (event->timerId() == net_timeout_timer_)
+    {
+        const auto timeout_ticks = 30;
+
+        std::for_each(std::begin(submits_), std::end(submits_),
+            [](submission& m) {
+                if (m.reply)
+                    ++m.ticks;
+            });
+
+        std::list<submission> pending;
+        std::list<submission> timeouts;
+
+        // very carefully now, calling abort() on QNetworkReply
+        // will immediately invoke the finished() signal handler
+        // which under normal operation removes the submission
+        // from the queue. so must take care not to invalidate
+        // our iteration here at any point!
+
+        std::partition_copy(
+            std::begin(submits_), std::end(submits_),
+            std::back_inserter(timeouts), std::back_inserter(pending),
+            [](const submission& m) {
+                return m.ticks == timeout_ticks;
+            });
+
+        std::for_each(std::begin(timeouts), std::end(timeouts),
+            [](submission& m) {
+                m.reply->abort();
+            });
+        submits_ = std::move(pending);
+
+        if (submits_.empty())
+        {
+            killTimer(net_timeout_timer_);
+            net_timeout_timer_ = 0;
+        }
+    }
+    else
+    {
+        QObject::timerEvent(event);
+    }
 }
 
 void mainapp::save_settings()
@@ -254,6 +450,34 @@ void mainapp::load_settings()
 
 #undef LOAD
 
+}
+
+bool mainapp::submit_first()
+{
+    auto it = std::find_if(std::begin(submits_), std::end(submits_),
+        [](const submission& sub) {
+            return sub.reply == nullptr;
+        });
+    if (it == std::end(submits_))
+        return false;
+
+    auto& submit = *it;
+
+    QNetworkRequest request;
+    submit.handler->prepare(request);
+    submit.reply = net_.get(request);
+    if (submit.reply == nullptr)
+    {
+        ERROR(str("Network get failed!"));
+        //submit.handler->fa
+
+        submits_.erase(it);
+    }
+    if (!net_timeout_timer_)
+        net_timeout_timer_ = startTimer(1000);
+
+
+    return true;
 }
 
 

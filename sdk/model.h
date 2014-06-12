@@ -35,17 +35,17 @@
 #endif
 
 #include <newsflash/warnpush.h>
-#  include <QAbstractItemModel>
 #  include <QObject>
 #  include <QVariant>
 #  include <QString>
 #include <newsflash/warnpop.h>
 
+class QAbstractItemModel;
 
 namespace sdk
 {
     class datastore;
-    class newsflash;
+    class hostapp;
 
     // model implementations are application plugins 
     // that represent application data and provide actions
@@ -73,11 +73,16 @@ namespace sdk
         // for quickly showing the data in a Qt view widget
         virtual QAbstractItemModel* view() { return nullptr; }
 
-        // load model state from the datastore.
-        virtual void save(datastore& store) {}
-
         // save model state to the datastore.
+        virtual void save(datastore& store) const {}
+
+        // load model state from the datastore.
         virtual void load(const datastore& store) {}
+
+        // load the model content if applicable.
+        virtual void load_content() {}
+
+
 
         virtual bool shutdown() { return true; }
 
@@ -88,13 +93,18 @@ namespace sdk
 
     };
 
+    typedef void   (*fp_model_lib_version)(int*, int*);
+    typedef int    (*fp_model_api_version)();
+    typedef model* (*fp_model_create)(sdk::hostapp*);
+
 } // sdk
 
-  // factory function, create a plugin object
-  MODEL_API sdk::model* create_model(sdk::newsflash&);
+  // factory function, create a plugin object. 
+  // this function may not throw an exception but should return nullptr on error
+  MODEL_API sdk::model* create_model(sdk::hostapp*);
   
   // get the api version implemented by the plugin objects
   MODEL_API int model_api_version();
   
   // get the library version
-  MODEL_API void model_lib_version(int& major, int& minor);
+  MODEL_API void model_lib_version(int* major, int* minor);

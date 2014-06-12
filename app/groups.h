@@ -33,6 +33,8 @@
 #  include <QList>
 #include <newsflash/warnpop.h>
 
+#include <vector>
+
 namespace app
 {
     class groups : public sdk::model, public QAbstractTableModel
@@ -42,9 +44,11 @@ namespace app
         groups();
        ~groups();
 
-        void save(sdk::datastore& values) const;
+        virtual void save(sdk::datastore& values) const override;
 
-        void load(const sdk::datastore& values);
+        virtual void load(const sdk::datastore& values) override;
+
+        virtual void load_content() override;
 
         // sdk::model
         virtual QAbstractItemModel* view() override;
@@ -62,20 +66,22 @@ namespace app
 
         // QAbstractTableModel
         int columnCount(const QModelIndex&) const override;
+
     private:
         enum class column {
-            name, created, updated, articles, size, last
+            name, updated, headers, articles, size, last
         };
 
         struct group {
             QString   name;
-            QDateTime created;
             QDateTime updated;
-            quint64   size;
+            quint64   headers;            
+            quint64   articles;
+            quint64   size_on_disk;
         };
 
     private:
-        QList<group> groups_;
+        std::vector<group> groups_;
     };
 
 } // app

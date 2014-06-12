@@ -28,26 +28,37 @@
 #  include <QString>
 #include <newsflash/warnpop.h>
 
-class QNetworkRequest;
-class QNetworkReply;
+#include "media.h"
+#include "model.h"
 
 namespace sdk
 {
-    // request represents a request to download
-    // or upload data to the internet.
-    class request 
+    class search : public sdk::model
     {
     public:
-        virtual ~request() = default;
+        struct settings {
+            QString username;
+            QString password;
+            media streams;
+        };
 
-        // prepare a QNetworkRequest for submission
-        virtual void prepare(QNetworkRequest& request) = 0;
+        struct music {
+            QString artist;
+            QString album;
+            QString keyword;
+        };
 
-        // receive and process reply to the request
-        virtual bool receive(QNetworkReply& reply) = 0;
+        struct tv {
+            QString season;
+            QString episode;
+            QString keyword;
+        };
+
+        virtual void start(const QString keyword) = 0;
+
+        virtual void start(const music& m) = 0;
 
     protected:
     private:
     };
-
 } // sdk

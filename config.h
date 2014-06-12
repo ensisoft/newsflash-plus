@@ -124,6 +124,3 @@
 
 #define QT_NO_CAST_TO_ASCII
 
-
-
-    

@@ -27,15 +27,18 @@
 #include <newsflash/warnpush.h>
 #  include <QtGlobal>
 #  include <QString>
+#  include <QDateTime>
+#  include <QUrl>
 #include <newsflash/warnpop.h>
 #include <string>
 
-
+class QLibrary;
 class QFile;
 class QDir;
 
 namespace sdk
 {
+
     struct size {
         quint64 bytes;
     };
@@ -54,12 +57,14 @@ namespace sdk
         gigs(double gb) : bytes(gb * 1024 * 1024 * 1024)
         {}
 
-        double as_float() const {
+        double as_float() const 
+        {
             static auto d = 1024.0 * 1024.0 * 1024.0;
             return bytes / d;
         }
 
-        quint64 as_bytes() const {
+        quint64 as_bytes() const 
+        {
             return bytes;
         }
     private:
@@ -76,17 +81,101 @@ namespace sdk
         megs(double mb) : bytes(mb * 1024 * 1024)
         {}
 
-        double as_float() const {
+        double as_float() const 
+        {
             static auto d = 1024.0 * 1024.0;
             return bytes / d;
         };
-        quint64 as_bytes() const {
+        quint64 as_bytes() const 
+        {
             return bytes;
         }
     private:
         quint64 bytes;
     };
 
+    struct event {
+        event() : epoch_(QDateTime::currentDateTime()), event_(QDateTime::currentDateTime())
+        {}
+
+        event(QDateTime epoch, QDateTime event) : epoch_(std::move(epoch)), event_(std::move(event))
+        {
+            Q_ASSERT(epoch <= event);
+        }
+
+        enum class when {
+            today, yesterday, this_week, this_month, this_year, before
+        };
+
+        when as_when() const 
+        {
+            const auto& epoch = epoch_.date();
+            const auto& event = event_.date();
+            const auto& days  = epoch_.daysTo(event_);
+
+            if (days == 0)
+                return when::today;
+            else if (days == 1)
+                return when::yesterday;
+            else if (epoch.year() == event.year())
+            {
+                if (epoch.weekNumber() == event.weekNumber())
+                    return when::this_week;
+                if (epoch.month() == event.month())
+                    return when::this_month;
+                
+                return when::this_year;
+            }
+            return when::before;
+        }
+        const QDateTime& datetime() const {
+            return event_;
+        }
+    private:
+        QDateTime epoch_;
+        QDateTime event_;
+    };
+
+    struct age {
+        age() : birth_(QDateTime::currentDateTime())
+        {
+            now_ = QDateTime::currentDateTime();
+        }
+
+        age(QDateTime birthday) : birth_(std::move(birthday))
+        {
+            now_ = QDateTime::currentDateTime();
+        }
+
+        quint32 days() const 
+        {
+            return birth_.daysTo(now_);
+        }
+    private:
+        QDateTime birth_;
+        QDateTime now_;
+    };
+
+
+    // generic format method, supports whatever Qt QString::arg supports
+    template<typename T>
+    QString format(const T& t)
+    {
+        return QString("%1").arg(t);
+    }
+
+    QString format(bool val);
+    QString format(const QFile& file);
+    QString format(const QDir& dir);
+    QString format(const QLibrary& lib);
+    QString format(const QUrl& url);
+    QString format(const sdk::size& size);
+    QString format(const sdk::speed& speed);
+    QString format(const sdk::gigs& gigs);
+    QString format(const sdk::megs& megs);
+    QString format(const sdk::event& event);
+    QString format(const sdk::age& age);
+    QString format(const std::string& str);        
 
 
     namespace detail {
@@ -96,56 +185,29 @@ namespace sdk
             return QString("_%1").arg(index);
         }
 
-
         template<typename T>
-        void format(QString& s, int index, const T& t)
+        void format_arg(QString& s, int index, const T& t)
         {
-            s = s.replace(key(index), QString("%1").arg(t));
-        }
-
-        inline
-        void format(QString& s, int index, bool val)
-        {
-            s = s.replace(key(index), (val ? "True" : "False"));
-        }
-        inline
-        void format(QString& s, int index, std::string str)
-        {
-            s = s.replace(key(index), str.c_str());
-        }
-
-        void format(QString& s, int index, const QFile& file);
-        void format(QString& s, int index, const QDir& dir);
-        void format(QString& s, int index, const sdk::size& size);
-        void format(QString& s, int index, const sdk::speed& speed);
-        void format(QString& s, int index, const sdk::gigs& gigs);
-        void format(QString& s, int index, const sdk::megs& megs);
-
-        template<typename T>
-        void format_next(QString& s, int index, const T& t)
-        {
-            format(s, index, t);
+            const auto& str = sdk::format(t);
+            s = s.replace(key(index), str);
         }
 
         template<typename T, typename... Rest>
-
-        void format_next(QString& s, int index, const T& t, const Rest&... rest)
+        void format_arg(QString& s, int index, const T& t, const Rest&... rest)
         {
-            format(s, index, t);
-            format_next(s, index + 1, rest...);
+            const auto& str = sdk::format(t);
+            s = s.replace(key(index), str);
+            format_arg(s, index + 1, rest...);
         }
-    }
-
-
+    } // detail
 
     // a wrapper around QString::arg() with more convenient syntax
-
-    // and also potentail for changing the output by overloading format_next
+    // and overloads for supporting more types for formatting.
     template<typename... Args>
     QString str(const char* fmt, const Args&... args)
     {
         QString s(fmt);
-        detail::format_next(s, 1, args...);
+        detail::format_arg(s, 1, args...);
         return s;
     }
 

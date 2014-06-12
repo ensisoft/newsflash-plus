@@ -49,12 +49,6 @@ namespace app
         accounts();
        ~accounts();
 
-        // persist accounts into datastore
-        void save(sdk::datastore& datastore) const;
-
-        // retrieve accounts from datastore
-        void load(const sdk::datastore& datastore);
-
         // suggest a new account object
         account suggest() const;
 
@@ -71,11 +65,11 @@ namespace app
         // if account already exists it's modified otherwise it's inserted
         void set(const account& acc);
 
-        //void reset_month_downloads(std::size_t index);
-        //void reset_all_time_downloads(std::size_t index);
-        //void set_spent_quota(std::size_t index, quint64 value);
-        //void set_avail_quota(std::size_t index, quint64 value);
-        //void set_quota_type(std::size_t index, accounts::quota type);
+        // persist accounts into datastore
+        virtual void save(sdk::datastore& datastore) const override;
+
+        // retrieve accounts from datastore
+        virtual void load(const sdk::datastore& datastore) override;
 
         // model impl
         virtual QAbstractItemModel* view() override;

@@ -22,11 +22,10 @@
 
 #pragma once
 
-
-
 #include <newsflash/config.h>
 
 #include <newsflash/warnpush.h>
+#  include <QtNetwork/QNetworkAccessManager>
 #  include <QObject>
 #include <newsflash/warnpop.h>
 
@@ -34,9 +33,11 @@
 #include <newsflash/engine/engine.h>
 #include <newsflash/sdk/datastore.h>
 #include <newsflash/sdk/model.h>
+#include <newsflash/sdk/hostapp.h>
 
 #include <memory>
 #include <vector>
+#include <list>
 #include "accounts.h"
 #include "groups.h"
 #include "eventlog.h"
@@ -44,16 +45,23 @@
 
 class QAbstractItemModel;
 class QCoreApplication;
+class QTimerEvent;
 class QEvent;
+class QNetworkReply;
 
 namespace sdk {
     class model;
+    class request;
 }
 
 namespace app
 {
     // we need a class so that we can connect Qt signals
-    class mainapp : public QObject, public newsflash::listener
+    // mainapp manages the downloading engine, implements the
+    // engine callback interface, and manages the dynamic model plugins
+    // providing them with hostapp implementation.
+    class mainapp : public QObject, 
+        public newsflash::listener, public sdk::hostapp
     {
         Q_OBJECT
 
@@ -79,6 +87,9 @@ namespace app
 
         void shutdown();
 
+        virtual void submit(sdk::request* req) override;
+
+
         // todo: 
         virtual void handle(const newsflash::error& error) override;
 
@@ -94,23 +105,41 @@ namespace app
         // to call engine::pump to process pending events.
         virtual void async_notify() override;
 
+    private slots:
+        void replyAvailable(QNetworkReply* reply);
+
     private:
         bool eventFilter(QObject* object, QEvent* event);
+        void timerEvent(QTimerEvent* event);
 
     private:
         void save_settings();
         void load_settings();
+        bool submit_first();
 
     private:
         QCoreApplication& app_;    
+        QNetworkAccessManager net_;
+        int net_submit_timer_;
+        int net_timeout_timer_;
 
+    private:
         settings settings_;
         accounts accounts_;
         groups   groups_;
 
     private:
+        struct submission {
+            std::size_t ticks;
+            sdk::request* handler;
+            QNetworkReply* reply;
+        };
+
+
+    private:
         sdk::datastore data_;
         std::vector<std::unique_ptr<sdk::model>> models_;
+        std::list<submission> submits_;
         std::unique_ptr<newsflash::engine> engine_;        
     };
 

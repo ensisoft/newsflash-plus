@@ -22,35 +22,31 @@
 
 #pragma once
 
-#include <newsflash/sdk/plugin.h>
+#include <newsflash/config.h>
+
+#include <newsflash/sdk/rssmodel.h>
+#include <newsflash/sdk/hostapp.h>
+
 #include <newsflash/warnpush.h>
 #  include <QString>
 #include <newsflash/warnpop.h>
 
 namespace womble
 {
-    class plugin : public sdk::plugin
+    class plugin : public sdk::rssmodel
     {
     public:
-        plugin(sdk::newsflash* host);
+        plugin(sdk::hostapp& host);
        ~plugin();
                 
-        // generate request objects for womble RSS feeds
-        // in the given category
-        QList<sdk::request*> get_rss(sdk::mediatype media);
-        
-        // generate a request to download NZB from womble
-        sdk::request* get_nzb(const QString& id, const QString& url);
+        virtual void load_content() override;
 
-        // get plugin name
-        QString name() const;
-        
-        QString host() const;
+        virtual QAbstractItemModel* view() override;
 
-        // get plugin features
-        sdk::bitflag_t features() const;
+        virtual QString name() const override;
+
     private:
-        sdk::newsflash* host_;
+        sdk::hostapp& host_;
     };
 
 } // womble

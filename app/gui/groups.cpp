@@ -31,6 +31,16 @@
 
 #include "groups.h"
 
+#include "../groups.h"
+
+namespace {
+    app::groups& get_groups_model(sdk::model& model)
+    {
+        return static_cast<app::groups&>(model);
+    }
+
+} // namespace 
+
 namespace gui
 {
 
@@ -38,6 +48,8 @@ Groups::Groups(sdk::model& model) : model_(model)
 {
     ui_.setupUi(this);
     ui_.tableGroups->setModel(model.view());
+    ui_.tableGroups->setColumnWidth(0, 150);
+    ui_.progressBar->setVisible(false);
 }
 
 Groups::~Groups()
