@@ -44,6 +44,9 @@ namespace rss
 
 QDateTime parse_date(const QString& str)
 {
+    if (str.isEmpty())
+        return QDateTime();
+    
     // match a RFC 822 date for example: "Fri, 26 Feb 2010 13:47:54 +0000"
     const QRegExp regex(
         "((Mon|Tue|Wed|Thu|Fri|Sat|Sun),\\s)?(\\d{1,2}) "

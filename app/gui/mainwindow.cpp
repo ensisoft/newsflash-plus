@@ -32,6 +32,7 @@
 #  include <QEvent>
 #  include <QTimer>
 #  include <QDir>
+#  include <QLibrary>
 #include <newsflash/warnpop.h>
 
 #include <newsflash/sdk/widget.h>
@@ -39,6 +40,7 @@
 #include <newsflash/sdk/eventlog.h>
 #include <newsflash/sdk/debug.h>
 #include <newsflash/sdk/home.h>
+#include <newsflash/sdk/dist.h>
 #include <newsflash/sdk/message.h>
 
 #include "mainwindow.h"
@@ -124,6 +126,11 @@ MainWindow::~MainWindow()
     }
     
     DEBUG("MainWindow deleted");
+}
+
+sdk::model* MainWindow::create_model(const char* klazz)
+{
+    return app_.create_model(klazz);
 }
 
 void MainWindow::show(const QString& tabname)
@@ -306,10 +313,55 @@ void MainWindow::loadstate()
 
 void MainWindow::loadwidgets()
 {
-    // todo: load dynamic GUI modules
     tabs_.append(new Accounts(app_.get_model("accounts")));
     tabs_.append(new Groups(app_.get_model("groups")));
     tabs_.append(new Eventlog(app_.get_model("eventlog")));
+
+
+    const QDir dir(sdk::dist::path("plugins"));
+
+#define FAIL(x) \
+    if (1) { \
+        ERROR(str("Failed to load plugin library _1, _2", lib, x)); \
+        continue; \
+    }
+
+    for (const auto& name : dir.entryList())
+    {
+        const auto& file = dir.absoluteFilePath(name);
+        if (!QLibrary::isLibrary(file))
+            continue;
+
+        QLibrary lib(file);
+
+        DEBUG(str("Loading plugin _1", lib));
+
+        if (!lib.load())
+        {
+            ERROR(lib.errorString());
+            continue;
+        }
+        auto get_api_version = (sdk::fp_widget_api_version)(lib.resolve("widget_api_version"));
+        if (get_api_version == nullptr)
+            FAIL("no api version found");
+
+        if (get_api_version() != sdk::widget::version)
+            FAIL("incompatible version");
+
+        auto create = (sdk::fp_widget_create)(lib.resolve("create_widget"));
+        if (create == nullptr)
+            FAIL("no entry point found");
+
+        sdk::widget* widget = create(this);
+        if (widget == nullptr)
+            FAIL("widget create failed");
+
+        tabs_.append(widget);
+
+        //DEBUG(str("Created instance of _1"))
+    }
+
+#undef FAIL
 
     for (int i=0; i<tabs_.size(); ++i)
     {

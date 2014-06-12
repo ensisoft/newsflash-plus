@@ -28,67 +28,66 @@
 #include <newsflash/sdk/format.h>
 
 #include <newsflash/warnpush.h>
+#  include <QtNetwork/QNetworkRequest>
+#  include <QtNetwork/QNetworkReply>
 #  include <QtXml/QDomDocument>
 #  include <QIODevice>
 #  include <QDateTime>
 #  include <QUrl>
+#  include <QByteArray>
+#  include <QBuffer>
 #include <newsflash/warnpop.h>
+
+#include <newsflash/rsslib/rss.h>
 
 #include <cstring>
 #include "womble.h"
-//#include <rsslib/rss.h>
+
+
+using sdk::str;
 
 namespace womble
 {
 
-plugin::plugin(sdk::hostapp& host) : host_(host)
+void plugin::rss::prepare(QNetworkRequest& request)
 {
-    DEBUG("Womble created");
+    request.setUrl(url_);
 }
 
-plugin::~plugin()
+void plugin::rss::receive(QNetworkReply& reply)
 {
-    DEBUG("Womble created");
-}
+    if (reply.error() != QNetworkReply::NoError)
+        return;
 
-void plugin::load_content()
-{
-    
-}
+    QByteArray bytes = reply.readAll();
+    QBuffer io(&bytes);
 
-QAbstractItemModel* plugin::view() 
-{
-    return nullptr;
-}
+    QDomDocument dom;
+    QString error_string;
+    int     error_line;
+    int     error_column;
+    if (!dom.setContent(&io, false, &error_string, &error_line, &error_column))
+    {
+        ERROR(str("Error parsing RSS response '_1'", error_string));
+        return;
+    }
 
-QString plugin::name() const
-{
-    return "womble";
+    const auto& root  = dom.firstChildElement();
+    const auto& items = root.elementsByTagName("item");
+    for (int i=0; i<items.size(); ++i)
+    {
+        const auto& elem = items.at(i).toElement();
+
+        plugin::item item {};
+        item.title = elem.firstChildElement("title").text();
+        item.id    = elem.firstChildElement("link").text();
+        item.date  = ::rss::parse_date(elem.firstChildElement("pubDate").text());
+        items_.push_back(std::move(item));
+    }
+
+    DEBUG(str("Parse _1 items from RSS stream", items_.size()));
 }
 
 } // womble
 
 
-MODEL_API sdk::model* create_model(sdk::hostapp* host)
-{
-    try 
-    {
-        return new womble::plugin(*host);
-    }
-    catch (const std::exception& e)
-    {
-        ERROR(sdk::str("Womble exception _1", e.what()));
-    }
-    return nullptr;
-}
-
-MODEL_API int model_api_version()
-{
-    return sdk::model::version;
-}
-
-MODEL_API void model_lib_version(int* major, int* minor)
-{
-    *major = 1;
-    *minor = 0;
-}

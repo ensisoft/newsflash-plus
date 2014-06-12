@@ -83,11 +83,13 @@ namespace app
 
         sdk::model& get_model(const QString& name);
 
+        sdk::model* create_model(const char* klazz);
+
         bool savestate();
 
         void shutdown();
 
-        virtual void submit(sdk::request* req) override;
+        virtual void submit(sdk::model* model, sdk::request* req) override;
 
 
         // todo: 
@@ -132,6 +134,7 @@ namespace app
         struct submission {
             std::size_t ticks;
             sdk::request* handler;
+            sdk::model* model;
             QNetworkReply* reply;
         };
 

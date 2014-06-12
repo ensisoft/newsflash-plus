@@ -1,4 +1,4 @@
-// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -18,60 +18,75 @@
 //  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 //  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-//  THE SOFTWARE.
+//  THE SOFTWARE.            
 
-#pragma once
 
 #include <newsflash/config.h>
 
-#include <newsflash/sdk/request.h>
-#include <newsflash/sdk/rssfeed.h>
-
 #include <newsflash/warnpush.h>
-#  include <QDateTime>
-#  include <QString>
+#  include <QtGui/QPainter>
+#  include <QtGui/QColor>
 #include <newsflash/warnpop.h>
 
-#include <vector>
+#include "spinner.h"
 
-namespace womble
+namespace gui
 {
-    class plugin : public sdk::rssfeed
+
+spinner::spinner(QWidget* parent) : QWidget(parent), pos_(0)
+{
+    connect(&timer_, SIGNAL(timeout()), this, SLOT(update()));
+}
+spinner::~spinner()
+{
+}
+void spinner::start()
+{
+    timer_.start(50);
+}
+
+void spinner::stop()
+{
+    timer_.stop();
+}
+
+bool spinner::is_active() const
+{
+    return timer_.isActive();
+}
+
+void spinner::paintEvent(QPaintEvent*)
+{
+    QPainter p(this);
+
+    enum { TICKS = 27 };
+
+    unsigned pos = pos_++ % TICKS;
+
+    int width  = this->width();
+    int height = this->height();
+
+    p.setRenderHint(QPainter::Antialiasing);
+    
+    const QColor tick(QColor(0xff, 0x8c, 00));
+    
+    p.translate(width / 2, height / 2);
+    p.rotate((360/TICKS * pos) % 360);
+
+    int y = -height / 2;
+
+    for (int i=0; i<TICKS;++i)
     {
-    public:
-        plugin();
-       ~plugin();
+        QColor c(tick);
+        if (is_active())
+            c = c.lighter(100 + 2 * i);
 
-    private:
-        class rss : public sdk::request 
-        {
-        public:
-            rss(QString url) : url_(std::move(url))
-            {}
+        QPen pen(c);
+        pen.setWidth(1);
+        p.setPen(pen);
+        p.rotate(360/TICKS);
+        p.drawLine(0, y+1, 0, y + 8);
+    }    
+}
 
-           ~rss()
-            {}
-
-            virtual void prepare(QNetworkRequest& request) override;
-            virtual void receive(QNetworkReply& reply) override;
-        private:
-            friend class plugin;
-
-            QString url_;
-            std::vector<item> items_;
-        };
-
-        class nzb : public sdk::request
-        {
-        public:
-            virtual void prepare(QNetworkRequest& request) override;
-            virtual void receive(QNetworkReply& reply) override;            
-        private:
-            friend class plugin;
-        };
-
-    private:
-    };
-
-
-} // womble
+} // gui

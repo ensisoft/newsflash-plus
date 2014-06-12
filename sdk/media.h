@@ -87,4 +87,6 @@ namespace sdk
         return static_cast<media>(bitflag_t(lhs) & bitflag_t(rhs));
     }
 
+    const char* str(media m);
+
 } // sdk

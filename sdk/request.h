@@ -41,11 +41,10 @@ namespace sdk
         virtual ~request() = default;
 
         // prepare a QNetworkRequest for submission
-        virtual void prepare(QNetworkRequest& request) = 0;
+        virtual void prepare(QNetworkRequest& request) {}
 
         // receive and process reply to the request
-        virtual bool receive(QNetworkReply& reply) = 0;
-
+        virtual void receive(QNetworkReply& reply) {}
     protected:
     private:
     };

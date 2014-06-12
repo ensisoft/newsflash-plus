@@ -1,4 +1,4 @@
-// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -18,60 +18,66 @@
 //  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 //  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-//  THE SOFTWARE.
+//  THE SOFTWARE.            
 
 #pragma once
 
 #include <newsflash/config.h>
 
+#include <newsflash/sdk/rssmodel.h>
+#include <newsflash/sdk/hostapp.h>
 #include <newsflash/sdk/request.h>
 #include <newsflash/sdk/rssfeed.h>
 
 #include <newsflash/warnpush.h>
-#  include <QDateTime>
+#  include <QAbstractItemModel>
 #  include <QString>
 #include <newsflash/warnpop.h>
 
 #include <vector>
 
-namespace womble
+namespace rss 
 {
-    class plugin : public sdk::rssfeed
+    class model : public QAbstractTableModel, public sdk::rssmodel
     {
     public:
-        plugin();
-       ~plugin();
+        model(sdk::hostapp& host);
+       ~model();
+
+        virtual void load_content() override;
+
+        virtual void complete(sdk::request* request) override;
+
+        virtual QString name() const override;
+
+        // QAbstractItemModel
+        virtual QAbstractItemModel* view() override;
+
+        // AbstractItemModel
+        virtual QVariant data(const QModelIndex&, int role) const override;
+
+        virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
+
+        virtual int rowCount(const QModelIndex&) const override;
+
+        virtual int columnCount(const QModelIndex&) const override;
 
     private:
-        class rss : public sdk::request 
-        {
-        public:
-            rss(QString url) : url_(std::move(url))
-            {}
+        enum class columns {
+            date, category, title, sentinel
+        };        
 
-           ~rss()
-            {}
+        struct item {
+            sdk::media type;
+            QString    title;
+            QString    id;
+            QDateTime  date;
+            quint64    size;
 
-            virtual void prepare(QNetworkRequest& request) override;
-            virtual void receive(QNetworkReply& reply) override;
-        private:
-            friend class plugin;
-
-            QString url_;
-            std::vector<item> items_;
-        };
-
-        class nzb : public sdk::request
-        {
-        public:
-            virtual void prepare(QNetworkRequest& request) override;
-            virtual void receive(QNetworkReply& reply) override;            
-        private:
-            friend class plugin;
-        };
-
-    private:
+        };        
+        std::vector<item> items_;
+        sdk::hostapp& host_;
     };
 
 
-} // womble
+} // rss

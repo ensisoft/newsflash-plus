@@ -1,0 +1,15 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+     <qresource>
+       <file>ico/ico_open.png</file>
+       <file>ico/ico_reload.png</file>
+       <file>ico/ico_rss.png</file>
+       <file>ico/ico_rss_dim.png</file>
+       <file>ico/ico_download.png</file>
+       <file>ico/ico_save.png</file>
+       <file>ico/ico_folder.png</file>
+       <file>ico/ico_settings.png</file>
+       <file>ico/ico_stop.png</file>
+       <file>ico/ico_password.png</file>
+     </qresource>
+</RCC>

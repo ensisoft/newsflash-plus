@@ -1,4 +1,4 @@
-// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -18,60 +18,43 @@
 //  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 //  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-//  THE SOFTWARE.
+//  THE SOFTWARE.            
 
 #pragma once
 
 #include <newsflash/config.h>
 
-#include <newsflash/sdk/request.h>
-#include <newsflash/sdk/rssfeed.h>
-
 #include <newsflash/warnpush.h>
-#  include <QDateTime>
-#  include <QString>
+#  include <QtGui/QWidget>
+#  include <QTimer>
 #include <newsflash/warnpop.h>
 
-#include <vector>
-
-namespace womble
+namespace gui
 {
-    class plugin : public sdk::rssfeed
+    class spinner : public QWidget
     {
+        Q_OBJECT
     public:
-        plugin();
-       ~plugin();
+        spinner(QWidget* parent);
+       ~spinner();
+        
+        // start animating the widget
+        void start();
+        
+        // stop animation
+        void stop();
+        
+        // check if animation is currently running
+        bool is_active() const;
+    private:
+        void paintEvent(QPaintEvent* event);
 
     private:
-        class rss : public sdk::request 
-        {
-        public:
-            rss(QString url) : url_(std::move(url))
-            {}
-
-           ~rss()
-            {}
-
-            virtual void prepare(QNetworkRequest& request) override;
-            virtual void receive(QNetworkReply& reply) override;
-        private:
-            friend class plugin;
-
-            QString url_;
-            std::vector<item> items_;
-        };
-
-        class nzb : public sdk::request
-        {
-        public:
-            virtual void prepare(QNetworkRequest& request) override;
-            virtual void receive(QNetworkReply& reply) override;            
-        private:
-            friend class plugin;
-        };
-
-    private:
+        QTimer timer_;
+        unsigned pos_;
     };
 
+} // gui
 
-} // womble
+
+

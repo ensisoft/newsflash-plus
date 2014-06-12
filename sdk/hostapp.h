@@ -30,6 +30,7 @@
 namespace sdk
 {
     class request;
+    class model;
 
     // host application interface
     class hostapp
@@ -40,7 +41,7 @@ namespace sdk
         // object remains with the caller and the lifetime
         // of the object should extend to the completion of the
         // request
-        virtual void submit(request* req) = 0;
+        virtual void submit(model* model, request* req) = 0;
 
     protected:
         virtual ~hostapp() = default;

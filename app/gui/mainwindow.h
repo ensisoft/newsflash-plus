@@ -32,6 +32,8 @@
 #include <newsflash/warnpop.h>
 
 #include <newsflash/sdk/datastore.h>
+#include <newsflash/sdk/window.h>
+#include <newsflash/sdk/model.h>
 #include "ui_mainwindow.h"
 #include "../mainapp.h"
 
@@ -45,7 +47,7 @@ namespace sdk {
 
 namespace gui
 {
-    class MainWindow : public QMainWindow
+    class MainWindow : public QMainWindow, public sdk::window
     {
         Q_OBJECT
 
@@ -54,6 +56,8 @@ namespace gui
        ~MainWindow();
        
         using QMainWindow::show;
+
+        virtual sdk::model* create_model(const char* klazz) override;
 
    private:
         void show(const QString& name);

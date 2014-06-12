@@ -22,6 +22,8 @@
 
 #pragma once
 
+#include <newsflash/config.h>
+
 #if defined(LINUX_OS)
 #  define WIDGET_API extern "C" 
 #elif defined(WINDOWS_OS)
@@ -43,6 +45,7 @@ class QToolBar;
 namespace sdk
 {
     class datastore;
+    class window;
 
     // widget objects extend the use visible interface.
     // a widget typically uses a model object and presents
@@ -51,6 +54,10 @@ namespace sdk
     class widget : public QWidget
     {
     public:
+        enum { 
+            version = 1
+        };
+
         struct info {
             // this is the URL to the help (file). If it specifies a filename
             // it is considered to be a help file in the application's help installation
@@ -87,6 +94,20 @@ namespace sdk
         virtual info information() const { return {"", false}; }
     private:
     };
-    
+
+    typedef void    (*fp_widget_lib_version)(int*, int*);
+    typedef int     (*fp_widget_api_version)();
+    typedef widget* (*fp_widget_create)(sdk::window*);
+
 } // sdk
 
+    // factory function for creating a widget object.
+    // this function may not throw, instead it should return
+    // a null pointer on error.
+    WIDGET_API sdk::widget* create_widget(sdk::window*);
+
+    // get the api version implemented by the widget objects
+    WIDGET_API int widget_api_version();
+
+    // get the library version
+    WIDGET_API void widget_lib_version(int* major, int* minor);

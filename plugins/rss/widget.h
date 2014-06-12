@@ -1,4 +1,4 @@
-// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -18,60 +18,49 @@
 //  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 //  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-//  THE SOFTWARE.
+//  THE SOFTWARE.            
 
 #pragma once
 
 #include <newsflash/config.h>
 
-#include <newsflash/sdk/request.h>
-#include <newsflash/sdk/rssfeed.h>
+#include <newsflash/sdk/widget.h>
+#include <newsflash/sdk/rssmodel.h>
+#include <newsflash/sdk/window.h>
+#include <newsflash/sdk/datastore.h>
 
 #include <newsflash/warnpush.h>
-#  include <QDateTime>
-#  include <QString>
+
 #include <newsflash/warnpop.h>
+#include <memory>
+#include "ui_rss.h"
 
-#include <vector>
-
-namespace womble
+namespace rss
 {
-    class plugin : public sdk::rssfeed
+    class widget : public sdk::widget
     {
+        Q_OBJECT
+
     public:
-        plugin();
-       ~plugin();
+        widget(sdk::window& win);
+       ~widget();
+
+        virtual void add_actions(QMenu& menu) override;
+        virtual void add_actions(QToolBar& bar) override;
+
+        virtual void activate(QWidget*) override;
+
+        virtual void save(sdk::datastore& store) override;
+        virtual void load(const sdk::datastore& store) override;
+
+        virtual info information() const override;
 
     private:
-        class rss : public sdk::request 
-        {
-        public:
-            rss(QString url) : url_(std::move(url))
-            {}
-
-           ~rss()
-            {}
-
-            virtual void prepare(QNetworkRequest& request) override;
-            virtual void receive(QNetworkReply& reply) override;
-        private:
-            friend class plugin;
-
-            QString url_;
-            std::vector<item> items_;
-        };
-
-        class nzb : public sdk::request
-        {
-        public:
-            virtual void prepare(QNetworkRequest& request) override;
-            virtual void receive(QNetworkReply& reply) override;            
-        private:
-            friend class plugin;
-        };
+        Ui::RSS ui_;
 
     private:
+        sdk::window& win_;
+        sdk::rssmodel* rss_;
     };
 
-
-} // womble
+} // rss

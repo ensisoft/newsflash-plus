@@ -46,6 +46,7 @@ namespace sdk
 {
     class datastore;
     class hostapp;
+    class request;
 
     // model implementations are application plugins 
     // that represent application data and provide actions
@@ -83,6 +84,7 @@ namespace sdk
         virtual void load_content() {}
 
 
+        virtual void complete(request* request) {};
 
         virtual bool shutdown() { return true; }
 
@@ -95,13 +97,13 @@ namespace sdk
 
     typedef void   (*fp_model_lib_version)(int*, int*);
     typedef int    (*fp_model_api_version)();
-    typedef model* (*fp_model_create)(sdk::hostapp*);
+    typedef model* (*fp_model_create)(sdk::hostapp*, const char* klazz);
 
 } // sdk
 
   // factory function, create a plugin object. 
   // this function may not throw an exception but should return nullptr on error
-  MODEL_API sdk::model* create_model(sdk::hostapp*);
+  MODEL_API sdk::model* create_model(sdk::hostapp*, const char* klazz);
   
   // get the api version implemented by the plugin objects
   MODEL_API int model_api_version();

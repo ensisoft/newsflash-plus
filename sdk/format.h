@@ -107,6 +107,11 @@ namespace sdk
             today, yesterday, this_week, this_month, this_year, before
         };
 
+        bool valid() const
+        {
+            return epoch_.isValid() && event_.isValid();
+        }
+
         when as_when() const 
         {
             const auto& epoch = epoch_.date();

@@ -83,6 +83,8 @@ QString format(const sdk::megs& megs)
 
 QString format(const sdk::event& event)
 {
+    if (!event.valid())
+        return "???";
 
     // These expressions may be used for the date:
     // Expression          Output

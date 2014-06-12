@@ -96,61 +96,6 @@ mainapp::mainapp(QCoreApplication& app) : app_(app)
     settings_.prefer_secure        = true;
     settings_.throttle             = 0;
 
-    const QDir dir(sdk::dist::path("plugins"));
-
-#define FAIL(x) \
-    if (1) { \
-        ERROR(str("Failed to load plugin library _1, _2", lib, x)); \
-        continue; \
-    }
-
-    for (const auto& name : dir.entryList())
-    {
-        const auto file = dir.absoluteFilePath(name);
-        if (!QLibrary::isLibrary(file))
-            continue;
-
-        QLibrary lib(file);
-
-        DEBUG(str("Loading plugin _1", lib));
-
-        if (!lib.load())
-        {
-            ERROR(lib.errorString());
-            continue;
-        }
-
-        auto get_api_version = (sdk::fp_model_api_version)(lib.resolve("model_api_version"));
-        if (get_api_version == nullptr)
-            FAIL("no api version found");
-
-        if (get_api_version() != sdk::model::version)
-            FAIL("incompatible version");
-
-        auto create = (sdk::fp_model_create)(lib.resolve("create_model"));
-        if (create == nullptr)
-            FAIL("no entry point found");
-
-        std::unique_ptr<sdk::model> model(create(this));
-        if (!model)
-            FAIL("plugin create failed");
-
-        models_.push_back(std::move(model));
-
-        int major = 0;
-        int minor = 0;
-
-        auto get_lib_version = (sdk::fp_model_lib_version)(lib.resolve("model_lib_version"));
-        if (get_lib_version)
-        {
-            get_lib_version(&major, &minor);
-        }        
-
-        INFO(str("Loaded _1", lib));
-    }
-
-#undef FAIL
-
     const auto file  = sdk::home::file("engine.json");
     if (QFile::exists(file))
     {
@@ -212,6 +157,72 @@ sdk::model& mainapp::get_model(const QString& name)
     return *ptr.get();
 }
 
+sdk::model* mainapp::create_model(const char* klazz)
+{
+    DEBUG(str("Create instance of _1", klazz));
+
+#define FAIL(x) \
+    if (1) { \
+        ERROR(str("Failed to load plugin library _1, _2", lib, x)); \
+        continue; \
+    }
+
+    const QDir dir(sdk::dist::path("plugins"));
+
+    for (const auto& name : dir.entryList())
+    {
+        const auto file = dir.absoluteFilePath(name);
+        if (!QLibrary::isLibrary(file))
+            continue;
+
+        QLibrary lib(file);
+
+        DEBUG(str("Loading plugin _1", lib));
+
+        if (!lib.load())
+        {
+            ERROR(lib.errorString());
+            continue;
+        }
+
+        auto get_api_version = (sdk::fp_model_api_version)(lib.resolve("model_api_version"));
+        if (get_api_version == nullptr)
+            FAIL("no api version found");
+
+        if (get_api_version() != sdk::model::version)
+            FAIL("incompatible version");
+
+        auto create = (sdk::fp_model_create)(lib.resolve("create_model"));
+        if (create == nullptr)
+            FAIL("no entry point found");
+
+        std::unique_ptr<sdk::model> model(create(this, klazz));
+        if (!model)
+            continue;
+
+        models_.push_back(std::move(model));
+
+        int major = 0;
+        int minor = 0;
+
+        auto get_lib_version = (sdk::fp_model_lib_version)(lib.resolve("model_lib_version"));
+        if (get_lib_version)
+        {
+            get_lib_version(&major, &minor);
+        }        
+
+        INFO(str("Loaded _1", lib));
+
+        return models_.back().get();
+    }
+
+#undef FAIL
+
+    DEBUG(str("No such model _1", klazz));
+
+    return nullptr;
+}
+
 bool mainapp::savestate()
 {
     data_.clear();
@@ -246,11 +257,11 @@ void mainapp::shutdown()
     engine_->stop();
 }
 
-void mainapp::submit(sdk::request* req)
+void mainapp::submit(sdk::model* model, sdk::request* req)
 {
     const auto submit_interval_millis = 1000;
 
-    submits_.push_back({0, req, nullptr});
+    submits_.push_back({0, req, model, nullptr});
     if (submits_.size() == 1)
     {
         submit_first();
@@ -342,6 +353,8 @@ void mainapp::replyAvailable(QNetworkReply* reply)
     auto& submit = *it;
 
     submit.handler->receive(*reply);
+    submit.model->complete(submit.handler);
+
     reply->deleteLater();
 
     submits_.erase(it);
