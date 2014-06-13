@@ -24,21 +24,12 @@
 
 #include <newsflash/config.h>
 
-#if defined(LINUX_OS)
-#  define MODEL_API extern "C" 
-#elif defined(WINDOWS_OS)
-#  ifdef MODEL_IMPL
-#    define MODEL_API extern "C" __declspec(dllexport)
-#  else
-#    define MODEL_API extern "C" __declspec(dllimport)
-#  endif
-#endif
-
 #include <newsflash/warnpush.h>
-#  include <QObject>
 #  include <QVariant>
 #  include <QString>
 #include <newsflash/warnpop.h>
+
+#include "plugin.h"
 
 class QAbstractItemModel;
 
@@ -53,10 +44,8 @@ namespace sdk
     // for the GUI to invoke upon that data.
     // typically the GUI obtains a reference to the model
     // and then calls model methods directly.
-    class model : public QObject
+    class model
     {
-        Q_OBJECT
-
     public:
         enum {
             version = 1
@@ -95,18 +84,11 @@ namespace sdk
 
     };
 
-    typedef void   (*fp_model_lib_version)(int*, int*);
-    typedef int    (*fp_model_api_version)();
-    typedef model* (*fp_model_create)(sdk::hostapp*, const char* klazz);
+    typedef model* (*fp_model_create)(sdk::hostapp*, const char*, int);
 
 } // sdk
 
   // factory function, create a plugin object. 
   // this function may not throw an exception but should return nullptr on error
-  MODEL_API sdk::model* create_model(sdk::hostapp*, const char* klazz);
+  PLUGIN_API sdk::model* create_model(sdk::hostapp*, const char* klazz, int version);
   
-  // get the api version implemented by the plugin objects
-  MODEL_API int model_api_version();
-  
-  // get the library version
-  MODEL_API void model_lib_version(int* major, int* minor);

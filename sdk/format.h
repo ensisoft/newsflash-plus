@@ -169,6 +169,7 @@ namespace sdk
         return QString("%1").arg(t);
     }
 
+    QString format(const void* ptr);
     QString format(bool val);
     QString format(const QFile& file);
     QString format(const QDir& dir);

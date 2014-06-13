@@ -20,35 +20,19 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-#pragma once
-
 #include <newsflash/config.h>
 
-#include <newsflash/sdk/request.h>
-#include <newsflash/sdk/rssfeed.h>
+#include "dlgsettings.h"
 
-#include <newsflash/warnpush.h>
-#  include <QDateTime>
-#  include <QString>
-#include <newsflash/warnpop.h>
-
-#include <vector>
-
-namespace womble
+namespace gui
 {
-    class plugin : public sdk::rssfeed
-    {
-    public:
-        plugin();
-       ~plugin();
 
-        virtual bool parse(QIODevice& io, std::vector<item>& rss) const override;
+DlgSettings::DlgSettings(QWidget* parent) : QDialog(parent)
+{
+    ui_.setupUi(this);
+}
 
-        virtual void prepare(sdk::category cat, std::vector<QUrl>& urls) const override;
+DlgSettings::~DlgSettings()
+{}
 
-        virtual QString site() const override;        
-
-    private:
-    };
-
-} // womble
+} // gui

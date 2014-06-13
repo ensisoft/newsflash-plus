@@ -25,24 +25,36 @@
 #include <newsflash/warnpush.h>
 #  include <QString>
 #  include <QDateTime>
+#  include <QtGlobal>
+#  include <QUrl>
 #include <newsflash/warnpop.h>
 
-#include "media.h"
+#include <vector>
+#include "category.h"
+#include "plugin.h"
+
+class QIODevice;
 
 namespace sdk
 {
     class rssfeed 
     {
     public:
+        enum {
+            version = 1
+        };
+
+        // an rss feed item parsed from the rss stream
         struct item {
-            sdk::media tags;
+            category    cat;
             QString     title;
             QString     id;
             QString     nzb;
-            QDateTime   date;
+            QDateTime   pubdate;
+            quint64     size;
             bool password;
         };
-        
+
         struct settings {
             QString username;
             QString password;
@@ -50,14 +62,25 @@ namespace sdk
 
         virtual ~rssfeed() = default;
 
-        virtual void configure(const settings& settings) {};
+        virtual void configure(settings settings) {}
 
-        virtual void fetch(media m) = 0;
+        // parse the contents of the RSS data and insert the
+        // items into the vector.
+        // returns true if parsing was succesful, otherwise false.
+        virtual bool parse(QIODevice& io, std::vector<item>& rss) const = 0;
 
+        // prepare rss stream urls for matching media type.
+        virtual void prepare(category cat, std::vector<QUrl>& urls) const = 0;
 
+        // return the site url
+        virtual QString site() const = 0;
 
     protected:
     private:
     };
 
+    typedef rssfeed* (*fp_create_rssfeed)(int);
+
 } // sdk
+
+PLUGIN_API sdk::rssfeed* create_rssfeed(int version);

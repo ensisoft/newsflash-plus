@@ -20,6 +20,8 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.            
 
+#define PLUGIN_IMPL
+
 #define LOGTAG "rss"
 
 #include <newsflash/config.h>
@@ -58,10 +60,34 @@ widget::~widget()
 }
 
 void widget::add_actions(QMenu& menu)
-{}
+{
+    menu.addAction(ui_.actionRefresh);
+    menu.addSeparator();    
+    menu.addAction(ui_.actionDownload);
+    menu.addAction(ui_.actionDownloadTo);
+    menu.addSeparator();    
+    menu.addAction(ui_.actionRefresh);
+    menu.addSeparator();        
+    menu.addAction(ui_.actionSave);
+    menu.addSeparator();        
+    menu.addAction(ui_.actionSettings);
+    menu.addSeparator();        
+    menu.addAction(ui_.actionStop);
+
+}
 
 void widget::add_actions(QToolBar& bar)
-{}
+{
+    bar.addAction(ui_.actionRefresh);
+    bar.addSeparator();
+    bar.addAction(ui_.actionDownload);
+    bar.addSeparator();    
+    bar.addAction(ui_.actionSave);
+    bar.addSeparator();    
+    bar.addAction(ui_.actionSettings);
+    bar.addSeparator();    
+    bar.addAction(ui_.actionStop);    
+}
 
 void widget::activate(QWidget*)
 {
@@ -81,12 +107,37 @@ sdk::widget::info widget::information() const
     return {"rss.html", true};
 }
 
-} // gui
+void widget::on_actionRefresh_triggered()
+{
+    
+}
+
+void widget::on_actionDownload_triggered()
+{
+
+}
+
+void widget::on_actionSave_triggered()
+{
+
+}
+
+void widget::on_actionSettings_triggered()
+{}
+
+void widget::on_actionStop_triggered()
+{}
+
+
+} // rss
 
 int qInitResources_rss();
 
-WIDGET_API sdk::widget* create_widget(sdk::window* win)
+PLUGIN_API sdk::widget* create_widget(sdk::window* win, int version)
 {
+    if (version != sdk::widget::version)
+        return nullptr;
+
     qInitResources_rss();
     try
     {
@@ -99,15 +150,3 @@ WIDGET_API sdk::widget* create_widget(sdk::window* win)
     return nullptr;
 }
 
-
-WIDGET_API int widget_api_version()
-{
-    return sdk::widget::version;
-}
-
-    // get the library version
-WIDGET_API void widget_lib_version(int* major, int* minor)
-{
-    *major = 0;
-    *minor = 1;
-}

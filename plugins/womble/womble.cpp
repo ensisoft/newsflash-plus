@@ -20,7 +20,8 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-#define MODEL_IMPL
+#define PLUGIN_IMPL
+
 #define LOGTAG "womble"
 
 #include <newsflash/sdk/eventlog.h>
@@ -28,10 +29,7 @@
 #include <newsflash/sdk/format.h>
 
 #include <newsflash/warnpush.h>
-#  include <QtNetwork/QNetworkRequest>
-#  include <QtNetwork/QNetworkReply>
 #  include <QtXml/QDomDocument>
-#  include <QIODevice>
 #  include <QDateTime>
 #  include <QUrl>
 #  include <QByteArray>
@@ -49,45 +47,106 @@ using sdk::str;
 namespace womble
 {
 
-void plugin::rss::prepare(QNetworkRequest& request)
+plugin::plugin()
 {
-    request.setUrl(url_);
+    DEBUG(str("womble _1 created", (const void*)this));
 }
 
-void plugin::rss::receive(QNetworkReply& reply)
+plugin::~plugin()
 {
-    if (reply.error() != QNetworkReply::NoError)
-        return;
+    DEBUG(str("womble _1 destroyed", (const void*)this));
+}
 
-    QByteArray bytes = reply.readAll();
-    QBuffer io(&bytes);
-
+bool plugin::parse(QIODevice& io, std::vector<sdk::rssfeed::item>& rss) const
+{
     QDomDocument dom;
     QString error_string;
-    int     error_line;
-    int     error_column;
+    int error_line;
+    int error_column;
     if (!dom.setContent(&io, false, &error_string, &error_line, &error_column))
     {
         ERROR(str("Error parsing RSS response '_1'", error_string));
-        return;
+        return false;
     }
-
     const auto& root  = dom.firstChildElement();
     const auto& items = root.elementsByTagName("item");
     for (int i=0; i<items.size(); ++i)
     {
         const auto& elem = items.at(i).toElement();
 
-        plugin::item item {};
-        item.title = elem.firstChildElement("title").text();
-        item.id    = elem.firstChildElement("link").text();
-        item.date  = ::rss::parse_date(elem.firstChildElement("pubDate").text());
-        items_.push_back(std::move(item));
+        sdk::rssfeed::item item {};
+        item.title    = elem.firstChildElement("title").text();
+        item.id       = elem.firstChildElement("link").text();
+        item.pubdate  = rss::parse_date(elem.firstChildElement("pubDate").text());
+        item.password = false;
+        item.nzb      = item.id;
+        item.size     = 0; // not known
+        rss.push_back(item);
     }
+    return true;
+}
 
-    DEBUG(str("Parse _1 items from RSS stream", items_.size()));
+void plugin::prepare(sdk::category cat, std::vector<QUrl>& urls) const 
+{
+    struct feed {
+        sdk::category  tag;
+        const char* arg;
+    } feeds[] = {
+        {sdk::category::console_nds, "nds"},
+        {sdk::category::console_psp, "psp"},
+        {sdk::category::console_wii, "wii"},
+        {sdk::category::console_xbox, "xbox"},
+        {sdk::category::console_xbox360, "xbox360"},
+        {sdk::category::console_ps3, "ps3"},
+        {sdk::category::console_ps2, "ps2"},
+        {sdk::category::movies_sd, "divx"},
+        {sdk::category::movies_sd, "xvid"},
+        {sdk::category::movies_sd, "dvd-pal"},
+        {sdk::category::movies_hd, "bluray"}, // better than x264
+        {sdk::category::audio_mp3, "mp3"},
+        {sdk::category::audio_video, "mvids"}, // mvid and mv are same as mvids
+        {sdk::category::apps_pc, "0-day"},
+        {sdk::category::apps_pc, "0day"},
+        {sdk::category::apps_pc, "0day-"},
+        {sdk::category::apps_iso, "iso"},
+        {sdk::category::tv_sd, "tv-xvid"},
+        {sdk::category::tv_sd, "tv-dvdrip"},
+        {sdk::category::tv_hd, "tv-x264"},
+        {sdk::category::xxx_dvd, "xxx"},
+        {sdk::category::ebook, "ebook"}        
+    };
+
+    const QString site("http://newshost.co.za/rss/?sec=%1&fr=false");
+
+    for (const auto& feed : feeds)
+    {
+        if (feed.tag == cat)
+        {
+            QUrl url(site.arg(feed.arg));
+            urls.push_back(url);
+        }
+    }
+}
+
+QString plugin::site() const
+{
+    return "http://newshost.co.za";
 }
 
 } // womble
 
+PLUGIN_API sdk::rssfeed* create_rssfeed(int version)
+{
+    if (version != sdk::rssfeed::version)
+        return nullptr;
 
+    try
+    {
+        return new womble::plugin();
+    }
+    catch (const std::exception& e)
+    {
+
+    }
+    return nullptr;
+}

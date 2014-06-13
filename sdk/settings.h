@@ -1,4 +1,4 @@
-// Copyright (c) 2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -18,69 +18,41 @@
 //  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 //  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-//  THE SOFTWARE.            
+//  THE SOFTWARE.
 
 #pragma once
 
 #include <newsflash/config.h>
 
-#include <newsflash/sdk/widget.h>
-#include <newsflash/sdk/rssmodel.h>
-#include <newsflash/sdk/window.h>
-#include <newsflash/sdk/settings.h>
-#include <newsflash/sdk/datastore.h>
-
 #include <newsflash/warnpush.h>
-
+#  include <QtGui/QWidget>
+#  include <QString>
 #include <newsflash/warnpop.h>
-#include <memory>
-#include "ui_rss.h"
 
-namespace rss
+namespace sdk
 {
-    class dialog : public sdk::settings
+    // settings widget extends the visible settings interface
+    class settings : public QWidget
     {
-        Q_OBJECT
-
     public:
+        virtual ~settings() = default;
 
+        // check if the settings are valid. 
+        // if the settings are not valid the 
+        // dialog is not dismissed and user
+        // can continue editing settings.
+        virtual bool validate() { return true; };
+
+        // apply was clicked.
+        virtual void apply() {}
+
+        // cancel was clicked
+        virtual void cancel() {}
+
+        // ok was clicked
+        virtual void accept() {}
+    protected:
     private:
+
     };
-
-    class widget : public sdk::widget
-    {
-        Q_OBJECT
-
-    public:
-        widget(sdk::window& win);
-       ~widget();
-
-        virtual void add_actions(QMenu& menu) override;
-        virtual void add_actions(QToolBar& bar) override;
-
-        virtual void activate(QWidget*) override;
-
-        virtual void save(sdk::datastore& store) override;
-        virtual void load(const sdk::datastore& store) override;
-
-        virtual info information() const override;
-
-    private:
-        void on_actionRefresh_triggered();
-        void on_actionDownload_triggered();
-        void on_actionSave_triggered();
-        void on_actionSettings_triggered();
-        void on_actionStop_triggered();
-
-    private:
-
-
-    private:
-        Ui::RSS ui_;
-
-    private:
-        sdk::window& win_;
-        sdk::rssmodel* rss_;
-    };
-
-} // rss
+} // sdk

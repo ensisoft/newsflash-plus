@@ -31,7 +31,7 @@ namespace sdk
     // int = international
     // sd  = standard definition
     // hd  = high definition
-    enum class media {
+    enum class category {
         none            = 0,
         //console,
         console_nds     = (1 << 1),
@@ -78,15 +78,15 @@ namespace sdk
     };
 
     inline 
-    media operator | (media lhs, media rhs) {
-        return static_cast<media>(bitflag_t(lhs) | bitflag_t(rhs));
+    category operator | (category lhs, category rhs) {
+        return static_cast<category>(bitflag_t(lhs) | bitflag_t(rhs));
     }
 
     inline
-    media operator & (media lhs, media rhs) {
-        return static_cast<media>(bitflag_t(lhs) & bitflag_t(rhs));
+    category operator & (category lhs, category rhs) {
+        return static_cast<category>(bitflag_t(lhs) & bitflag_t(rhs));
     }
 
-    const char* str(media m);
+    const char* str(category m);
 
 } // sdk

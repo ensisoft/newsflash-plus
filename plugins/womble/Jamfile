@@ -8,9 +8,9 @@ lib womble
   <link>shared
 ;
 
-#install ../../dist_d/plugins : womble
-#: 
-#  <variant>release:<location>../../dist/plugins
-#;
+install ../../dist_d/plugins/rss : womble
+: 
+  <variant>release:<location>../../dist/plugins/rss
+;
 
    

@@ -35,6 +35,7 @@
 #  include <langinfo.h> // for nl_langinfo
 #endif
 
+#include <sstream>
 #include <cstring>
 #include "format.h"
 
@@ -153,6 +154,13 @@ QString format(const sdk::age& age)
 QString format(const std::string& str)
 {
     return QString(str.c_str());
+}
+
+QString format(const void* ptr)
+{
+    std::stringstream ss;
+    ss << ptr; 
+    return QString::fromStdString(ss.str());
 }
 
 QString format(bool val)

@@ -170,7 +170,11 @@ int main(int argc, char* argv[])
     DEBUG(NEWSFLASH_TITLE << NEWSFLASH_VERSION);
     try 
     {
-        return SEH_BLOCK(gui::run(argc, argv));
+        int ret = 0;
+        SEH_BLOCK(ret = gui::run(argc, argv));
+
+        DEBUG(str("Goodbye...(_1)", ret));
+        return ret;
     }
     catch (const std::exception& e)
     {

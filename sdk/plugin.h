@@ -24,31 +24,12 @@
 
 #include <newsflash/config.h>
 
-#include <newsflash/sdk/request.h>
-#include <newsflash/sdk/rssfeed.h>
-
-#include <newsflash/warnpush.h>
-#  include <QDateTime>
-#  include <QString>
-#include <newsflash/warnpop.h>
-
-#include <vector>
-
-namespace womble
-{
-    class plugin : public sdk::rssfeed
-    {
-    public:
-        plugin();
-       ~plugin();
-
-        virtual bool parse(QIODevice& io, std::vector<item>& rss) const override;
-
-        virtual void prepare(sdk::category cat, std::vector<QUrl>& urls) const override;
-
-        virtual QString site() const override;        
-
-    private:
-    };
-
-} // womble
+#if defined(LINUX_OS)
+#  define PLUGIN_API extern "C" 
+#elif defined(WINDOWS_OS)
+#  ifdef PLUGIN_IMPL
+#    define PLUGIN_API extern "C" __declspec(dllexport)
+#  else
+#    define PLUGIN_API extern "C" __declspec(dllimport)
+#  endif
+#endif

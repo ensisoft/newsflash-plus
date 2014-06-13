@@ -24,20 +24,12 @@
 
 #include <newsflash/config.h>
 
-#if defined(LINUX_OS)
-#  define WIDGET_API extern "C" 
-#elif defined(WINDOWS_OS)
-#  ifdef WIDGET_IMPL
-#    define WIDGET_API extern "C" __declspec(dllexport)
-#  else
-#    define WIDGET_API extern "C" __declspec(dllimport)
-#  endif
-#endif
-
 #include <newsflash/warnpush.h>
 #  include <QtGui/QWidget>
 #  include <QString>
 #include <newsflash/warnpop.h>
+
+#include "plugin.h"
 
 class QMenu;
 class QToolBar;
@@ -46,6 +38,7 @@ namespace sdk
 {
     class datastore;
     class window;
+    class settings;
 
     // widget objects extend the use visible interface.
     // a widget typically uses a model object and presents
@@ -75,7 +68,6 @@ namespace sdk
         
         // Add the component specific toolbar actions to a toolbar in the host application
         virtual void add_actions(QToolBar& bar) {}
-
         
         // This function is invoked when this ui component is getting activated (becomes visible)
         // in the host GUI.
@@ -92,22 +84,18 @@ namespace sdk
 
         // get information about the widget.
         virtual info information() const { return {"", false}; }
+
+        // get the settings widget if any.
+        // ownership is transferred to the caller
+        virtual sdk::settings* settings() { return nullptr; }
     private:
     };
 
-    typedef void    (*fp_widget_lib_version)(int*, int*);
-    typedef int     (*fp_widget_api_version)();
-    typedef widget* (*fp_widget_create)(sdk::window*);
+    typedef widget* (*fp_widget_create)(sdk::window*, int);
 
 } // sdk
 
     // factory function for creating a widget object.
     // this function may not throw, instead it should return
     // a null pointer on error.
-    WIDGET_API sdk::widget* create_widget(sdk::window*);
-
-    // get the api version implemented by the widget objects
-    WIDGET_API int widget_api_version();
-
-    // get the library version
-    WIDGET_API void widget_lib_version(int* major, int* minor);
+    PLUGIN_API sdk::widget* create_widget(sdk::window*, int version);

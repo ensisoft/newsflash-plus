@@ -34,6 +34,7 @@
 #  include <QString>
 #include <newsflash/warnpop.h>
 
+#include <memory>
 #include <vector>
 
 namespace rss 
@@ -44,7 +45,7 @@ namespace rss
         model(sdk::hostapp& host);
        ~model();
 
-        virtual void load_content() override;
+        virtual void refresh(sdk::category cat) override;
 
         virtual void complete(sdk::request* request) override;
 
@@ -56,25 +57,23 @@ namespace rss
         // AbstractItemModel
         virtual QVariant data(const QModelIndex&, int role) const override;
 
+        // AbstractItemModel
         virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
 
+        // AbstractItemModel
         virtual int rowCount(const QModelIndex&) const override;
 
+        // AbstractItemModel
         virtual int columnCount(const QModelIndex&) const override;
-
     private:
         enum class columns {
-            date, category, title, sentinel
+            date, category, size, title, sentinel
         };        
 
-        struct item {
-            sdk::media type;
-            QString    title;
-            QString    id;
-            QDateTime  date;
-            quint64    size;
+        using item = sdk::rssfeed::item;
 
-        };        
+        std::vector<std::unique_ptr<sdk::rssfeed>> feeds_;
+        //std::vector<std::unique_ptr<sdk::request>> grabs_;        
         std::vector<item> items_;
         sdk::hostapp& host_;
     };

@@ -185,31 +185,15 @@ sdk::model* mainapp::create_model(const char* klazz)
             continue;
         }
 
-        auto get_api_version = (sdk::fp_model_api_version)(lib.resolve("model_api_version"));
-        if (get_api_version == nullptr)
-            FAIL("no api version found");
-
-        if (get_api_version() != sdk::model::version)
-            FAIL("incompatible version");
-
         auto create = (sdk::fp_model_create)(lib.resolve("create_model"));
         if (create == nullptr)
             FAIL("no entry point found");
 
-        std::unique_ptr<sdk::model> model(create(this, klazz));
+        std::unique_ptr<sdk::model> model(create(this, klazz, sdk::model::version));
         if (!model)
             continue;
 
         models_.push_back(std::move(model));
-
-        int major = 0;
-        int minor = 0;
-
-        auto get_lib_version = (sdk::fp_model_lib_version)(lib.resolve("model_lib_version"));
-        if (get_lib_version)
-        {
-            get_lib_version(&major, &minor);
-        }        
 
         INFO(str("Loaded _1", lib));
 
@@ -477,6 +461,8 @@ bool mainapp::submit_first()
     auto& submit = *it;
 
     QNetworkRequest request;
+    request.setRawHeader("User-Agent", "NewsflashPlus");
+    
     submit.handler->prepare(request);
     submit.reply = net_.get(request);
     if (submit.reply == nullptr)

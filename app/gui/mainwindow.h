@@ -85,6 +85,7 @@ namespace gui
         void on_actionMinimize_triggered();
         void on_actionRestore_triggered();        
         void on_actionExit_triggered();
+        void on_actionSettings_triggered();
         void actionWindowToggle_triggered();
         void actionWindowFocus_triggered();
 

@@ -28,7 +28,7 @@
 #  include <QString>
 #include <newsflash/warnpop.h>
 
-#include "media.h"
+#include "category.h"
 #include "model.h"
 
 namespace sdk
@@ -38,15 +38,9 @@ namespace sdk
     class rssmodel : public sdk::model
     {
     public:
-        struct settings {
-            QString username;
-            QString password;
-            media   streams;
-        };
-
         virtual ~rssmodel() = default;
 
-        virtual void configure(const settings& settings) {}
+        virtual void refresh(category cat) = 0;
 
     protected:
     private:

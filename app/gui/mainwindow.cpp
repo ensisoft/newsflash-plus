@@ -48,6 +48,7 @@
 #include "eventlog.h"
 #include "groups.h"
 #include "dlgwelcome.h"
+#include "dlgsettings.h"
 #include "config.h"
 #include "message.h"
 #include "../mainapp.h"
@@ -341,24 +342,18 @@ void MainWindow::loadwidgets()
             ERROR(lib.errorString());
             continue;
         }
-        auto get_api_version = (sdk::fp_widget_api_version)(lib.resolve("widget_api_version"));
-        if (get_api_version == nullptr)
-            FAIL("no api version found");
-
-        if (get_api_version() != sdk::widget::version)
-            FAIL("incompatible version");
 
         auto create = (sdk::fp_widget_create)(lib.resolve("create_widget"));
         if (create == nullptr)
             FAIL("no entry point found");
 
-        sdk::widget* widget = create(this);
+        sdk::widget* widget = create(this, sdk::widget::version);
         if (widget == nullptr)
-            FAIL("widget create failed");
+            continue;
 
         tabs_.append(widget);
 
-        //DEBUG(str("Created instance of _1"))
+        INFO(str("Loaded _1", lib));
     }
 
 #undef FAIL
@@ -519,6 +514,12 @@ void MainWindow::on_actionExit_triggered()
     // calling close will generate QCloseEvent which
     // will invoke the normal shutdown sequence.
     QMainWindow::close();
+}
+
+void MainWindow::on_actionSettings_triggered()
+{
+    DlgSettings dlg(this);
+    dlg.exec();
 }
 
 void MainWindow::actionWindowToggle_triggered()
