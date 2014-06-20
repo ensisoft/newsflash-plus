@@ -64,8 +64,7 @@ namespace sdk
 
         virtual void configure(settings settings) {}
 
-        // parse the contents of the RSS data and insert the
-        // items into the vector.
+        // parse the contents of the RSS data and insert the items into the vector.
         // returns true if parsing was succesful, otherwise false.
         virtual bool parse(QIODevice& io, std::vector<item>& rss) const = 0;
 

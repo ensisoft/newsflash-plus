@@ -1,4 +1,4 @@
-// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -20,14 +20,42 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-#pragma once
+#include "engine_settings.h"
 
-#include <QtGlobal>
-
-namespace sdk
+namespace gui
 {
-    typedef quint32 bitflag_t;
-    
-} // sdk
 
-#define BITFLAG(x) static_cast<sdk::bitflag_t>(x)
+engine_settings::engine_settings(app::settings& settings) : settings_(settings)
+{
+    ui_.setupUi(this);
+
+    ui_.editDataFiles->setText(settings_.data_path);
+    ui_.editDownloads->setText(settings_.downloads_path);
+    ui_.grpThrottle->setChecked(settings_.enable_throttle);
+    //ui_.
+}
+
+engine_settings::~engine_settings()
+{}
+
+bool engine_settings::validate() const
+{
+    settings_.data_path = ui_.editDataFiles->text();
+    settings_.downloads_path = ui_.editDownloads->text();
+    settings_.enable_throttle = ui_.grpThrottle->isChecked();
+    settings_.discard_text_content = ui_.chkDiscardText->isChecked();
+    settings_.overwrite_existing = ui_.chkOverwriteExisting->isChecked();
+    //settings_.remove_complete = 
+    settings_.throttle = ui_.editThrottle->text().toInt();
+
+    //if (ui_.editDataFiles->)
+
+    return true;
+}
+
+void engine_settings::accept()
+{
+
+}
+
+} // gui

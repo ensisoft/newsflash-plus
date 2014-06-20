@@ -48,8 +48,6 @@ namespace app
 
         virtual void load(const sdk::datastore& values) override;
 
-        virtual void load_content() override;
-
         // sdk::model
         virtual QAbstractItemModel* view() override;
 

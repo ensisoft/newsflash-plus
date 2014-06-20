@@ -241,19 +241,35 @@ void mainapp::shutdown()
     engine_->stop();
 }
 
+void mainapp::get(app::settings& settings)
+{
+    settings = settings_;
+}
+
+void mainapp::set(const app::settings& settings)
+{
+    settings_ = settings;
+
+    // todo: configure engine
+}
+
 void mainapp::submit(sdk::model* model, sdk::request* req)
 {
     const auto submit_interval_millis = 1000;
 
     submits_.push_back({0, req, model, nullptr});
+
     if (submits_.size() == 1)
     {
         submit_first();
     }   
     else if (!net_submit_timer_)
     {
-        startTimer(submit_interval_millis);
+        net_submit_timer_ = startTimer(submit_interval_millis);
+        DEBUG(str("Starting submit timer..."));
     }
+
+    DEBUG(str("New submit, total _1", submits_.size()));
 }
 
 void mainapp::handle(const newsflash::error& error)
@@ -319,7 +335,7 @@ void mainapp::replyAvailable(QNetworkReply* reply)
             break;
     }
 
-    DEBUG(str("replyAvailable _1, _2", reply->url(), err));
+    DEBUG(str("Got network reply for _1, _2", reply->url(), err));
 
 #undef CASE
 
@@ -342,6 +358,8 @@ void mainapp::replyAvailable(QNetworkReply* reply)
     reply->deleteLater();
 
     submits_.erase(it);
+
+    DEBUG(str("Pending submits _1", submits_.size()));
 }
 
 bool mainapp::eventFilter(QObject* object, QEvent* event)
@@ -361,10 +379,13 @@ void mainapp::timerEvent(QTimerEvent* event)
 {
     if (event->timerId() == net_submit_timer_)
     {
+        DEBUG("Submit timer!");
+
         if (!submit_first())
         {
             killTimer(net_submit_timer_);
             net_submit_timer_ = 0;
+            DEBUG("Killed submit timer...");
         }
     }
     else if (event->timerId() == net_timeout_timer_)

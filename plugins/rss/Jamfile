@@ -14,9 +14,8 @@ lib rss
    widget.h   
    widget.cpp
    rss.ui
-   spinner.h
-   spinner.cpp
    rss.qrc
+   settings.ui
 :
   <link>shared
 ;

@@ -35,4 +35,55 @@ DlgSettings::DlgSettings(QWidget* parent) : QDialog(parent)
 DlgSettings::~DlgSettings()
 {}
 
+void DlgSettings::attach(sdk::settings* tab)
+{
+    ui_.tab->addTab(tab, tab->windowTitle());
+}
+
+void DlgSettings::show(const QString& title)
+{
+    const auto count = ui_.tab->count();
+    for (int i=0; i<count; ++i)
+    {
+        QWidget* tab = ui_.tab->widget(i);
+        if (tab->windowTitle() == title)
+        {
+            ui_.tab->setCurrentIndex(i);
+            return;
+        }
+    }
+}
+
+void DlgSettings::on_btnAccept_clicked()
+{
+    const auto count = ui_.tab->count();
+    for (int i=0; i<count; ++i)
+    {
+        auto* ptr = ui_.tab->widget(i);
+        auto* tab = static_cast<sdk::settings*>(ptr);
+        if (!tab->validate())
+            return;
+    }
+
+    for (int i=0; i<count; ++i)
+    {
+        auto* ptr = ui_.tab->widget(i);
+        auto* tab = static_cast<sdk::settings*>(ptr);
+        tab->accept();
+    }
+
+    accept();
+}
+
+void DlgSettings::on_btnCancel_clicked()
+{
+    const auto count = ui_.tab->count();
+    for (int i=0; i<count; ++i)
+    {
+        auto* ptr = ui_.tab->widget(i);
+        auto* tab = static_cast<sdk::settings*>(ptr);
+        tab->cancel();
+    }
+}
+
 } // gui

@@ -37,6 +37,9 @@
 #include "ui_mainwindow.h"
 #include "../mainapp.h"
 
+#include <vector>
+#include <memory>
+
 class QIcon;
 class QAction;
 class QCloseEvent;
@@ -59,10 +62,16 @@ namespace gui
 
         virtual sdk::model* create_model(const char* klazz) override;
 
+        virtual void show_widget(const QString& name) override;
+
+        virtual void show_setting(const QString& name) override;
+
    private:
         void show(const QString& name);
         void show(sdk::widget* widget);
+        void show(std::size_t index);
         void hide(sdk::widget* widget);        
+        void hide(std::size_t index);
         void focus(sdk::widget* widget);    
 
     private:
@@ -86,7 +95,7 @@ namespace gui
         void on_actionRestore_triggered();        
         void on_actionExit_triggered();
         void on_actionSettings_triggered();
-        void actionWindowToggle_triggered();
+        void actionWindowToggleView_triggered();
         void actionWindowFocus_triggered();
 
         void actionTray_activated(QSystemTrayIcon::ActivationReason);
@@ -99,9 +108,9 @@ namespace gui
         app::mainapp& app_;        
         sdk::datastore settings_;
         sdk::widget* current_;        
-
-        QList<sdk::widget*> tabs_;
-        QList<QAction*> tabs_actions_;
+        std::vector<std::unique_ptr<sdk::widget>> widgets_;
+        std::vector<QAction*> actions_;
+    private:
         QSystemTrayIcon tray_;
     };
 

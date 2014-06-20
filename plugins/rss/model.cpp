@@ -32,6 +32,7 @@
 #include <newsflash/warnpush.h>
 #  include <QtNetwork/QNetworkRequest>
 #  include <QtNetwork/QNetworkReply>
+#  include <QtGui/QIcon>
 #  include <QtXml/QDomDocument>
 #  include <QIODevice>
 #  include <QDateTime>
@@ -51,7 +52,7 @@ namespace {
 class get_rss : public sdk::request 
 {
 public:
-    get_rss(QUrl url) : url_(std::move(url))
+    get_rss(QUrl url, sdk::rssfeed& feed, sdk::category cat) : url_(std::move(url)), feed_(feed), cat_(cat)
     {}
     virtual void prepare(QNetworkRequest& request) override
     {
@@ -64,12 +65,17 @@ public:
 
         QByteArray bytes = reply.readAll();
         QBuffer io(&bytes);
-        feed_->parse(io, items_);
+        feed_.parse(io, items_);
+
+        for (auto& item : items_)
+        {
+            if (item.cat == sdk::category::none)
+                item.cat = cat_;
+        }
     }
     void append(std::vector<sdk::rssfeed::item>& vec) const
     {
-        std::copy(std::begin(items_), std::end(items_),
-            std::back_inserter(vec));
+        std::copy(std::begin(items_), std::end(items_), std::back_inserter(vec));
     }
     std::size_t size() const 
     {
@@ -78,7 +84,8 @@ public:
 private:
     QUrl url_;
 private:
-    sdk::rssfeed* feed_;
+    sdk::rssfeed& feed_;
+    sdk::category cat_;
 private:
     std::vector<sdk::rssfeed::item> items_;
 
@@ -113,7 +120,7 @@ private:
 namespace rss
 {
 
-model::model(sdk::hostapp& host) : host_(host)
+model::model(sdk::hostapp& host) : host_(host), pending_(0)
 {
     DEBUG(str("rss::model _1 created", (const void*)this));
 
@@ -157,27 +164,28 @@ model::~model()
     DEBUG(str("rss::model _1 deleted", (const void*)this));;
 }
 
-void model::refresh(sdk::category cat)
+bool model::refresh(sdk::category cat)
 {
-    items_.clear();
-
-    QAbstractTableModel::reset();
-
-    std::vector<QUrl> urls;
+    auto currently_pending = pending_;
 
     for (const auto& feed : feeds_)
     {
+        std::vector<QUrl> urls;        
         feed->prepare(cat, urls);
+
+        for (const auto& url : urls)
+        {
+            std::unique_ptr<get_rss> get(new get_rss(url, *feed.get(), cat));
+
+            host_.submit(this, get.get());
+
+            ++pending_;
+
+            get.release();
+        }
     }
 
-    for (const auto& url : urls)
-    {
-        std::unique_ptr<get_rss> get(new get_rss(url));
-
-        host_.submit(this, get.get());
-
-        //grabs_.push_back(std::move(get));
-    }
+    return (currently_pending != pending_);
 }
 
 QAbstractItemModel* model::view() 
@@ -206,17 +214,28 @@ void model::complete(sdk::request* request)
     {
 
     }
+
+    if (--pending_ == 0)
+        emit ready();
+}
+
+void model::clear()
+{
+    items_.clear();
+    QAbstractTableModel::reset();    
 }
 
 QVariant model::data(const QModelIndex& index, int role) const
 {
-    const auto& item = items_[index.row()];
+    const auto row = index.row();
+    const auto col = columns(index.column());        
+    const auto& item = items_[row];
 
     if (role == Qt::DisplayRole)
     {
         const auto& now = QDateTime::currentDateTime();
 
-        switch (columns(index.column()))
+        switch (col)
         {
             case columns::date:
                 return sdk::format(sdk::event{item.pubdate, now}); 
@@ -229,7 +248,7 @@ QVariant model::data(const QModelIndex& index, int role) const
 
             case columns::size:
                 if (item.size == 0)
-                    return "N/A";
+                    return "n/a";
                 return sdk::str(sdk::size { item.size });
 
             default:
@@ -239,6 +258,10 @@ QVariant model::data(const QModelIndex& index, int role) const
     }
     else if (role == Qt::DecorationRole)
     {
+        if (col  == columns::date)
+            return QIcon(":/ico/ico_rss.png");
+        else if (col == columns::title && item.password)
+            return QIcon(":/ico/ico_password.png");
 
     }
     return QVariant();

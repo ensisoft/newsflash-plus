@@ -45,9 +45,11 @@ namespace rss
         model(sdk::hostapp& host);
        ~model();
 
-        virtual void refresh(sdk::category cat) override;
+        virtual bool refresh(sdk::category cat) override;
 
         virtual void complete(sdk::request* request) override;
+
+        virtual void clear() override;
 
         virtual QString name() const override;
 
@@ -73,9 +75,10 @@ namespace rss
         using item = sdk::rssfeed::item;
 
         std::vector<std::unique_ptr<sdk::rssfeed>> feeds_;
-        //std::vector<std::unique_ptr<sdk::request>> grabs_;        
         std::vector<item> items_;
         sdk::hostapp& host_;
+        std::size_t pending_;                
+
     };
 
 

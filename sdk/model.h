@@ -69,10 +69,6 @@ namespace sdk
         // load model state from the datastore.
         virtual void load(const datastore& store) {}
 
-        // load the model content if applicable.
-        virtual void load_content() {}
-
-
         virtual void complete(request* request) {};
 
         virtual bool shutdown() { return true; }

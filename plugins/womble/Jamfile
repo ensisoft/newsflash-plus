@@ -4,6 +4,8 @@ lib womble
   womble.h 
   womble.cpp 
   ../../rsslib/rss.cpp
+
+  /qt//QtXml  
 :
   <link>shared
 ;

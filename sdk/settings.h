@@ -41,7 +41,7 @@ namespace sdk
         // if the settings are not valid the 
         // dialog is not dismissed and user
         // can continue editing settings.
-        virtual bool validate() { return true; };
+        virtual bool validate() const { return true; };
 
         // apply was clicked.
         virtual void apply() {}

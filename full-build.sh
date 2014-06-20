@@ -136,6 +136,8 @@ copy "bin/launcher" "tools/"
 cd ..
 cd ..
 
+bjam -j8 "sdk" $VARIANT
+bjam -j8 "plugins/rss" $VARIANT
 bjam -j8 "plugins/womble" $VARIANT
 bjam -j8 "app" $VARIANT
 
@@ -145,13 +147,20 @@ QT=`pwd`/../qt-4.8.2
 # install qt plugins and libs
 copy "$QT/lib/libQtCore.so" ""
 copy "$QT/lib/libQtCore.so.4" ""
+copy "$QT/lib/libQtCore.so.4.8" ""
 copy "$QT/lib/libQtCore.so.4.8.2" ""
 copy "$QT/lib/libQtNetwork.so" ""
 copy "$QT/lib/libQtNetwork.so.4" ""
+copy "$QT/lib/libQtNetwork.so.4.8" ""
 copy "$QT/lib/libQtNetwork.so.4.8.2" ""
 copy "$QT/lib/libQtGui.so" ""
 copy "$QT/lib/libQtGui.so.4" ""
+copy "$QT/lib/libQtGui.so.4.8" ""
 copy "$QT/lib/libQtGui.so.4.8.2" ""
+copy "$QT/lib/libQtXml.so" ""
+copy "$QT/lib/libQtXml.so.4" ""
+copy "$QT/lib/libQtXml.so.4.8" ""
+copy "$QT/lib/libQtXml.so.4.8.2" ""
 copy "$QT/plugins/imageformats/libqgif.so" "plugins-qt/imageformats"
 copy "$QT/plugins/imageformats/libqjpeg.so" "plugins-qt/imageformats"
 

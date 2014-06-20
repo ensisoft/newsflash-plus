@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Settings</class>
+ <widget class="QWidget" name="Settings">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>593</width>
+    <height>579</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>RSS</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout_2">
+   <item row="1" column="0">
+    <widget class="QGroupBox" name="groupBox">
+     <property name="title">
+      <string>Categories</string>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_8">
+      <item row="1" column="0">
+       <layout class="QGridLayout" name="gridLayout_7">
+        <item row="0" column="1">
+         <widget class="QGroupBox" name="groupBox_3">
+          <property name="title">
+           <string>Movies</string>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout_2">
+           <item>
+            <widget class="QCheckBox" name="chkMoviesForeign">
+             <property name="text">
+              <string>International</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="chkMoviesSD">
+             <property name="text">
+              <string>SD</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="chkMoviesHD">
+             <property name="text">
+              <string>HD</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item row="0" column="0">
+         <widget class="QGroupBox" name="groupBox_2">
+          <property name="title">
+           <string>TV</string>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout">
+           <item>
+            <widget class="QCheckBox" name="chkTVForeign">
+             <property name="text">
+              <string>International</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="chkTVSD">
+             <property name="text">
+              <string>SD</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="chkTVHD">
+             <property name="text">
+              <string>HD</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QGroupBox" name="groupBox_4">
+          <property name="title">
+           <string>Computer</string>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout_3">
+           <item>
+            <widget class="QCheckBox" name="chkComputerPC">
+             <property name="text">
+              <string>PC</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="chkComputerISO">
+             <property name="text">
+              <string>ISO</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="chkComputerMac">
+             <property name="text">
+              <string>Mac</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="chkComputerAndroid">
+             <property name="text">
+              <string>Android</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QGroupBox" name="groupBox_6">
+          <property name="title">
+           <string>Music</string>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout_5">
+           <item>
+            <widget class="QCheckBox" name="chkMusicMP3">
+             <property name="text">
+              <string>MP3</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="chkMusicLosless">
+             <property name="text">
+              <string>Losless</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="chkMusicVideo">
+             <property name="text">
+              <string>Video</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <widget class="QGroupBox" name="groupBox_7">
+          <property name="title">
+           <string>XXX</string>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout_6">
+           <item>
+            <widget class="QCheckBox" name="chkXXXDVD">
+             <property name="text">
+              <string>DVD</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="chkXXXSD">
+             <property name="text">
+              <string>SD</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="chkXXXHD">
+             <property name="text">
+              <string>HD</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QGroupBox" name="groupBox_5">
+          <property name="title">
+           <string>Console</string>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout_4">
+           <item>
+            <widget class="QCheckBox" name="chkConsoleNintendo">
+             <property name="text">
+              <string>Nintendo</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="chkConsolePlaystation">
+             <property name="text">
+              <string>Playstation</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="chkConsoleXbox">
+             <property name="text">
+              <string>XBox</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="0" column="0">
+    <widget class="QGroupBox" name="groupBox_8">
+     <property name="title">
+      <string>Providers</string>
+     </property>
+     <layout class="QHBoxLayout" name="horizontalLayout">
+      <item>
+       <widget class="QListWidget" name="listWidget"/>
+      </item>
+     </layout>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <tabstops>
+  <tabstop>chkTVForeign</tabstop>
+  <tabstop>chkTVSD</tabstop>
+  <tabstop>chkTVHD</tabstop>
+  <tabstop>chkMoviesForeign</tabstop>
+  <tabstop>chkMoviesSD</tabstop>
+  <tabstop>chkMoviesHD</tabstop>
+  <tabstop>chkComputerPC</tabstop>
+  <tabstop>chkComputerISO</tabstop>
+  <tabstop>chkComputerMac</tabstop>
+  <tabstop>chkComputerAndroid</tabstop>
+  <tabstop>chkConsoleNintendo</tabstop>
+  <tabstop>chkConsoleXbox</tabstop>
+  <tabstop>chkMusicMP3</tabstop>
+  <tabstop>chkMusicLosless</tabstop>
+  <tabstop>chkMusicVideo</tabstop>
+  <tabstop>chkXXXDVD</tabstop>
+  <tabstop>chkXXXSD</tabstop>
+  <tabstop>chkXXXHD</tabstop>
+ </tabstops>
+ <resources/>
+ <connections/>
+</ui>

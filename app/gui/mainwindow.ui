@@ -40,7 +40,7 @@
        <enum>QTabWidget::Rounded</enum>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>-1</number>
       </property>
       <property name="documentMode">
        <bool>false</bool>
@@ -51,20 +51,6 @@
       <property name="movable">
        <bool>false</bool>
       </property>
-      <widget class="QWidget" name="tab">
-       <attribute name="title">
-        <string>tab</string>
-       </attribute>
-       <layout class="QGridLayout" name="gridLayout_12">
-        <item row="0" column="0">
-         <widget class="QLabel" name="label">
-          <property name="text">
-           <string>This tab cannot be removed in the designer. It is removed at runtime</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </widget>
      </widget>
     </item>
     <item row="1" column="0">
@@ -371,7 +357,7 @@
      <x>0</x>
      <y>0</y>
      <width>806</width>
-     <height>23</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">

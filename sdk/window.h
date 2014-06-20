@@ -38,6 +38,9 @@ namespace sdk
     public:
         virtual sdk::model* create_model(const char* klazz) = 0;
 
+        virtual void show_widget(const QString& name) = 0;
+
+        virtual void show_setting(const QString& name) = 0;
     protected:
         ~window() = default;
     };

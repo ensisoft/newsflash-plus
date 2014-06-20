@@ -35,16 +35,23 @@
 #include <newsflash/warnpop.h>
 #include <memory>
 #include "ui_rss.h"
+#include "ui_settings.h"
 
 namespace rss
 {
-    class dialog : public sdk::settings
+    class settings : public sdk::settings
     {
         Q_OBJECT
 
     public:
+        settings(sdk::bitflag_t& feeds);
+       ~settings();
 
+        virtual void accept() override;
     private:
+        Ui::Settings ui_;
+    private:
+        sdk::bitflag_t& feeds_;
     };
 
     class widget : public sdk::widget
@@ -65,15 +72,21 @@ namespace rss
 
         virtual info information() const override;
 
-    private:
+        sdk::settings* settings() override;
+
+    private slots:
         void on_actionRefresh_triggered();
         void on_actionDownload_triggered();
         void on_actionSave_triggered();
         void on_actionSettings_triggered();
         void on_actionStop_triggered();
 
-    private:
 
+    private slots:
+        void ready();
+
+    private:
+        sdk::bitflag_t feeds_;
 
     private:
         Ui::RSS ui_;

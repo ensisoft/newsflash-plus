@@ -26,6 +26,7 @@
 
 #include <newsflash/warnpush.h>
 #  include <QString>
+#  include <QObject>
 #include <newsflash/warnpop.h>
 
 #include "category.h"
@@ -35,12 +36,23 @@ namespace sdk
 {
     // rss feed model for accessing some rss feed
     // and extracting nzb information
-    class rssmodel : public sdk::model
+    class rssmodel : public QObject, public sdk::model 
     {
+        Q_OBJECT
+
     public:
         virtual ~rssmodel() = default;
 
-        virtual void refresh(category cat) = 0;
+        // request the model to refresh the contents 
+        // with the specified feed. the feed is requested
+        // from all available rss feed providers.
+        // returns true if feeds are available for the category,
+        // otherwise false.
+        virtual bool refresh(category cat) = 0;
+
+    signals:
+        // emitted once refresh is ready
+        void ready();
 
     protected:
     private:

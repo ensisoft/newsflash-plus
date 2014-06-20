@@ -1,4 +1,4 @@
-// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -22,12 +22,24 @@
 
 #pragma once
 
-#include <QtGlobal>
+#include <newsflash/config.h>
 
-namespace sdk
+#include <newsflash/warnpush.h>
+#  include <QString>
+#include <newsflash/warnpop.h>
+
+namespace app
 {
-    typedef quint32 bitflag_t;
+    struct settings {
+        QString logs_path;
+        QString data_path;
+        QString downloads_path;
+        bool enable_throttle;
+        bool discard_text_content;
+        bool overwrite_existing;
+        bool remove_complete;
+        bool prefer_secure;
+        int throttle;
+    };
     
-} // sdk
-
-#define BITFLAG(x) static_cast<sdk::bitflag_t>(x)
+} // app

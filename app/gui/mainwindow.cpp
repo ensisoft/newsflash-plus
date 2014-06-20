@@ -51,8 +51,8 @@
 #include "dlgsettings.h"
 #include "config.h"
 #include "message.h"
+#include "engine_settings.h"
 #include "../mainapp.h"
-
 
 
 using sdk::str;
@@ -68,11 +68,6 @@ MainWindow::MainWindow(app::mainapp& app) : QMainWindow(nullptr),
     app_(app), current_(nullptr)
 {
     ui_.setupUi(this);
-
-    // the designer wont let remove the single tab.
-    // NOTE: this will call signal handlers for the tab, currentChanged etc.
-    // its best to do this first.
-    ui_.mainTab->removeTab(0); 
 
     // set network monitor colors
     TinyGraph::colors greenish = {};
@@ -119,12 +114,6 @@ MainWindow::MainWindow(app::mainapp& app) : QMainWindow(nullptr),
 MainWindow::~MainWindow()
 {
     ui_.mainTab->clear();
-
-    // todo: use unique_ptr
-    for (auto* tab : tabs_)
-    {
-        delete tab;
-    }
     
     DEBUG("MainWindow deleted");
 }
@@ -134,58 +123,116 @@ sdk::model* MainWindow::create_model(const char* klazz)
     return app_.create_model(klazz);
 }
 
-void MainWindow::show(const QString& tabname)
+void MainWindow::show_widget(const QString& name)
 {
-    for (auto* tab : tabs_)
+    show(name);
+}
+
+void MainWindow::show_setting(const QString& name)
+{
+    DlgSettings dlg(this);
+
+    std::vector<std::unique_ptr<sdk::settings>> pages;
+
+    app::settings settings;
+    app_.get(settings);
+
+    std::unique_ptr<sdk::settings> page(new engine_settings(settings));
+    dlg.attach(page.get());
+    pages.push_back(std::move(page));
+
+    for (auto& widget : widgets_)
     {
-        if (tab->windowTitle() == tabname)
-        {
-            show(tab);
-            break;
-        }
+        std::unique_ptr<sdk::settings> page(widget->settings());
+        if (page)
+            dlg.attach(page.get());
+        pages.push_back(std::move(page));
     }
+    if (!name.isEmpty())
+        dlg.show(name);
+
+    if (dlg.exec() == QDialog::Accepted)
+    {
+        app_.set(settings);
+    }    
+}
+
+void MainWindow::show(const QString& title)
+{
+    const auto it = std::find_if(std::begin(widgets_), std::end(widgets_),
+        [&](const std::unique_ptr<sdk::widget>& widget) {
+            return widget->windowTitle() == title;
+        });
+    if (it == std::end(widgets_))
+        return;
+
+    show(std::distance(std::begin(widgets_), it));
 }
 
 void MainWindow::show(sdk::widget* widget)
 {
-    const int index = tabs_.indexOf(widget);
-    Q_ASSERT(index != -1);
-
-    if (ui_.mainTab->indexOf(widget) != -1)
+    auto it = std::find_if(std::begin(widgets_), std::end(widgets_),
+        [&](const std::unique_ptr<sdk::widget>& maybe) {
+            return maybe.get()  == widget;
+        });
+    if (it == std::end(widgets_))
         return;
 
-    auto* action = tabs_actions_[index];
+    show(std::distance(std::begin(widgets_), it));
+}
+
+void MainWindow::show(std::size_t index)
+{
+    auto& widget = widgets_[index];
+    auto* action = actions_[index];
+
+    // if already show, then do nothing
+    auto pos = ui_.mainTab->indexOf(widget.get());
+    if (pos != -1)
+        return;
+
     action->setChecked(true);
 
     const auto& icon = widget->windowIcon();
     const auto& text = widget->windowTitle();
-    ui_.mainTab->insertTab(index, widget, icon, text);    
-
+    ui_.mainTab->insertTab(index, widget.get(), icon, text);
     build_window_menu();
+
 }
 
-void MainWindow::hide(sdk::widget* ui)
+void MainWindow::hide(sdk::widget* widget)
 {
-    const int index = tabs_.indexOf(ui);
-    Q_ASSERT(index != -1);
+    auto it = std::find_if(std::begin(widgets_), std::end(widgets_),
+        [&](const std::unique_ptr<sdk::widget>& maybe) {
+            return maybe.get() == widget;
+        });
+    Q_ASSERT(it != std::end(widgets_));
 
-    const int tab_index = ui_.mainTab->indexOf(ui);
-    if (tab_index == -1)
+    auto index = std::distance(std::begin(widgets_), it);
+
+    hide(index);
+
+}
+
+void MainWindow::hide(std::size_t index)
+{
+    auto& widget = widgets_[index];
+    auto* action = actions_[index];
+
+    // if already not shown then do nothing
+    auto pos = ui_.mainTab->indexOf(widget.get());
+    if (pos == -1)
         return;
 
-    auto* action = tabs_actions_[index];
     action->setChecked(false);
 
-    ui_.mainTab->removeTab(tab_index);
-
+    ui_.mainTab->removeTab(pos);
+ 
     build_window_menu();
 }
 
 void MainWindow::focus(sdk::widget* ui)
 {
-    Q_ASSERT(std::find(std::begin(tabs_),
-        std::end(tabs_), ui) != std::end(tabs_));
-
     const auto index = ui_.mainTab->indexOf(ui);
     if (index == -1)
         return;
@@ -257,13 +304,13 @@ bool MainWindow::savestate()
     settings_.set("window", "show_toolbar", ui_.mainToolBar->isVisible());
     settings_.set("window", "show_statusbar", ui_.statusBar->isVisible()); 
 
-    for (std::size_t i=0; i<tabs_.size(); ++i)
+    for (std::size_t i=0; i<widgets_.size(); ++i)
     {
-        const auto& text = tabs_[i]->windowTitle();
-        const auto show  = tabs_actions_[i]->isChecked();
+        const auto& text = widgets_[i]->windowTitle();
+        const auto show  = actions_[i]->isChecked();
         settings_.set("visible_tabs", text, show);
 
-        tabs_[i]->save(settings_);
+        widgets_[i]->save(settings_);
     }
 
     const auto file  = sdk::home::file("gui.json");
@@ -314,10 +361,9 @@ void MainWindow::loadstate()
 
 void MainWindow::loadwidgets()
 {
-    tabs_.append(new Accounts(app_.get_model("accounts")));
-    tabs_.append(new Groups(app_.get_model("groups")));
-    tabs_.append(new Eventlog(app_.get_model("eventlog")));
-
+    widgets_.emplace_back(new Accounts(app_.get_model("accounts")));
+    widgets_.emplace_back(new Groups(app_.get_model("groups")));
+    widgets_.emplace_back(new Eventlog(app_.get_model("eventlog")));
 
     const QDir dir(sdk::dist::path("plugins"));
 
@@ -347,35 +393,35 @@ void MainWindow::loadwidgets()
         if (create == nullptr)
             FAIL("no entry point found");
 
-        sdk::widget* widget = create(this, sdk::widget::version);
-        if (widget == nullptr)
+        std::unique_ptr<sdk::widget> widget(create(this, sdk::widget::version));
+        if (!widget)
             continue;
 
-        tabs_.append(widget);
+        widgets_.push_back(std::move(widget));
 
         INFO(str("Loaded _1", lib));
     }
 
 #undef FAIL
 
-    for (int i=0; i<tabs_.size(); ++i)
+    for (std::size_t i=0; i<widgets_.size(); ++i)
     {
-        const auto& text = tabs_[i]->windowTitle();
-        const auto& icon = tabs_[i]->windowIcon();
-        const auto& info = tabs_[i]->information();
+        const auto& text = widgets_[i]->windowTitle();
+        const auto& icon = widgets_[i]->windowIcon();
+        const auto& info = widgets_[i]->information();
         const auto show  = settings_.get("visible_tabs", text, info.visible_by_default);
 
         QAction* action = ui_.menuView->addAction(text);
         action->setCheckable(true);
         action->setChecked(show);
-        action->setProperty("index", i);
-        QObject::connect(action, SIGNAL(triggered()), this, SLOT(actionWindowToggle_triggered()));        
+        action->setProperty("index", (int)i);
+        QObject::connect(action, SIGNAL(triggered()), this, SLOT(actionWindowToggleView_triggered()));        
 
-        tabs_actions_.append(action);        
+        actions_.push_back(action);        
         if (show)
-            ui_.mainTab->insertTab(i, tabs_[i], icon, text);
+            ui_.mainTab->insertTab(i, widgets_[i].get(), icon, text);
 
-        tabs_[i]->load(settings_);
+        widgets_[i]->load(settings_);
     }    
 }
 
@@ -425,51 +471,58 @@ void MainWindow::on_mainTab_currentChanged(int index)
 
 void MainWindow::on_mainTab_tabCloseRequested(int tab)
 {
-    auto* widget = static_cast<sdk::widget*>(ui_.mainTab->widget(tab));
+    const auto* widget = static_cast<sdk::widget*>(ui_.mainTab->widget(tab));
 
-    hide(widget);
+    // find in the array
+    auto it = std::find_if(std::begin(widgets_), std::end(widgets_), 
+        [&](const std::unique_ptr<sdk::widget>& maybe) {
+            return maybe.get() == widget;
+        });
+    Q_ASSERT(it != std::end(widgets_));
+
+    auto index = std::distance(std::begin(widgets_), it);
+
+    auto* action = actions_[index];
+    action->setChecked(false);
+
+    ui_.mainTab->removeTab(tab);
+
+    build_window_menu();
 }
 
 void MainWindow::on_actionWindowClose_triggered()
 {
-    const auto tab = ui_.mainTab->currentIndex();
-    if (tab == -1)
+    const auto cur = ui_.mainTab->currentIndex();
+    if (cur == -1)
         return;
 
-    auto* widget = static_cast<sdk::widget*>(
-        ui_.mainTab->widget(tab));
-
-    hide(widget);
+    on_mainTab_tabCloseRequested(cur);
 }
 
 void MainWindow::on_actionWindowNext_triggered()
 {
-    const auto tab = ui_.mainTab->currentIndex();
-    if (tab == -1)
+    // cycle to next tab in the maintab
+
+    const auto cur = ui_.mainTab->currentIndex();
+    if (cur == -1)
         return;
 
-    auto* widget = static_cast<sdk::widget*>(
-        ui_.mainTab->widget(tab));
-
-    const auto size  = tabs_.size();
-    const auto index = tabs_.indexOf(widget);
-    auto* next = tabs_[(index + 1) % size];
-    focus(next);
+    const auto size = ui_.mainTab->count();
+    const auto next = (cur + 1) % size;
+    ui_.mainTab->setCurrentIndex(next);
 }
 
 void MainWindow::on_actionWindowPrev_triggered()
 {
-    const auto tab = ui_.mainTab->currentIndex();
-    if (tab == -1)
+    // cycle to previous tab in the maintab
+
+    const auto cur = ui_.mainTab->currentIndex();
+    if (cur == -1)
         return;
 
-    auto* widget = static_cast<sdk::widget*>(
-        ui_.mainTab->widget(tab));
-
-    const auto size  = tabs_.size();
-    const auto index = tabs_.indexOf(widget);
-    auto* prev = tabs_[((index  == 0) ? size - 1 : index - 1)];
-    focus(prev);
+    const auto size = ui_.mainTab->count();
+    const auto prev = (cur == 0) ? size - 1 : cur - 1;
+    ui_.mainTab->setCurrentIndex(prev);
 }
 
 void MainWindow::on_actionHelp_triggered()
@@ -499,8 +552,7 @@ void MainWindow::on_actionRestore_triggered()
 
 void MainWindow::on_actionContextHelp_triggered()
 {
-    const auto* widget = static_cast<sdk::widget*>(
-        ui_.mainTab->currentWidget());
+    const auto* widget = static_cast<sdk::widget*>(ui_.mainTab->currentWidget());
     if (widget == nullptr)
         return;
 
@@ -518,46 +570,47 @@ void MainWindow::on_actionExit_triggered()
 
 void MainWindow::on_actionSettings_triggered()
 {
-    DlgSettings dlg(this);
-    dlg.exec();
+    show_setting("");
+
+
 }
 
-void MainWindow::actionWindowToggle_triggered()
+void MainWindow::actionWindowToggleView_triggered()
 {
+    // the signal comes from the action object in
+    // the view menu. the index is the index to the widgets array
+
     const auto* action = static_cast<QAction*>(sender());
     const auto index   = action->property("index").toInt();
     const bool visible = action->isChecked();
 
-    //DEBUG(str("Toggle tab _1", index));
-
-    auto* tab = tabs_[index];
+    auto& widget = widgets_[index];
 
     if (visible)
     {
-        show(tab);
-        focus(tab);
+        show(index);
+//        focus(index);
     }
     else 
     {
-        hide(tab);
+        hide(index);
     }
 }
 
 void MainWindow::actionWindowFocus_triggered()
 {
+    // this signal comes from an action in the
+    // window menu. the index is the index of the widget
+    // in the main tab. the menu is rebuilt
+    // when the maintab configuration changes.
+
     auto* action = static_cast<QAction*>(sender());
     const auto tab_index = action->property("tab-index").toInt();
 
-    auto* widget = static_cast<sdk::widget*>(
-        ui_.mainTab->widget(tab_index));
-
     action->setChecked(true);
 
-    focus(widget);
+    ui_.mainTab->setCurrentIndex(tab_index);
 }
-
-
-
 
 void MainWindow::actionTray_activated(QSystemTrayIcon::ActivationReason reason)
 {

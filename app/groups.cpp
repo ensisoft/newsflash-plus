@@ -83,31 +83,30 @@ void groups::load(const sdk::datastore& values)
     }
 }
 
-void groups::load_content()
-{
-    const auto listing = sdk::home::file("newsgroups.txt");
-    if (!QFile::exists(listing))
-    {
+// void groups::load_content()
+// {
+//     const auto listing = sdk::home::file("newsgroups.txt");
+//     if (!QFile::exists(listing))
+//     {
 
-    }
+//     }
 
-    QFile io(listing);
-    if (!io.open(QIODevice::ReadOnly))
-    {
-        ERROR(str("Failed to open listing file _1, _2", io, io.error()));
-        return;
-    }
+//     QFile io(listing);
+//     if (!io.open(QIODevice::ReadOnly))
+//     {
+//         ERROR(str("Failed to open listing file _1, _2", io, io.error()));
+//         return;
+//     }
 
-    QTextStream stream(&io);
-    while (!stream.atEnd())
-    {
-        const auto& line = stream.readLine();
-        
+//     QTextStream stream(&io);
+//     while (!stream.atEnd())
+//     {
+//         const auto& line = stream.readLine();
+//     }
 
-    }
 
-    io.close();
-}
+//     io.close();
+// }
 
 QAbstractItemModel* groups::view() 
 {

@@ -31,6 +31,7 @@
 #include <newsflash/warnpop.h>
 #include "ui_dlgsettings.h"
 
+#include <newsflash/sdk/settings.h>
 
 class QTableWidgetItem;
 class QEvent;
@@ -45,9 +46,15 @@ namespace gui
         DlgSettings(QWidget* parent);
        ~DlgSettings();
 
+        void attach(sdk::settings* tab);
+        void show(const QString& title);
+
+    private slots:
+        void on_btnAccept_clicked();
+        void on_btnCancel_clicked();
+
     private:
         Ui::DlgSettings ui_;
-
     };
 
 } // gui

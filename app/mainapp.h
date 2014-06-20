@@ -38,6 +38,7 @@
 #include <memory>
 #include <vector>
 #include <list>
+#include "settings.h"
 #include "accounts.h"
 #include "groups.h"
 #include "eventlog.h"
@@ -66,18 +67,6 @@ namespace app
         Q_OBJECT
 
     public:
-        struct settings {
-            QString logs_path;
-            QString data_path;
-            QString downloads_path;
-            bool enable_throttle;
-            bool discard_text_content;
-            bool overwrite_existing;
-            bool remove_complete;
-            bool prefer_secure;
-            int throttle;
-        };
-
         mainapp(QCoreApplication& app);
        ~mainapp();
 
@@ -88,6 +77,9 @@ namespace app
         bool savestate();
 
         void shutdown();
+
+        void get(app::settings& settings);
+        void set(const app::settings& settings);
 
         virtual void submit(sdk::model* model, sdk::request* req) override;
 

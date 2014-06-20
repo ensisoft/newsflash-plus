@@ -1,4 +1,4 @@
-// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -22,12 +22,29 @@
 
 #pragma once
 
-#include <QtGlobal>
+#include <newsflash/sdk/settings.h>
 
-namespace sdk
+#include "ui_engine_settings.h"
+#include "../settings.h"
+
+namespace gui
 {
-    typedef quint32 bitflag_t;
-    
-} // sdk
+    // settings tab for the engine
+    class engine_settings : public sdk::settings
+    {
+        Q_OBJECT
 
-#define BITFLAG(x) static_cast<sdk::bitflag_t>(x)
+    public:
+        engine_settings(app::settings& settings);
+       ~engine_settings();
+
+        bool validate() const override;
+
+        void accept() override;
+
+    private:
+        Ui::EngineSettings ui_;
+    private:
+        app::settings& settings_;
+    };
+} // gui
