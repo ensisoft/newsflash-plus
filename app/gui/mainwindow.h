@@ -66,6 +66,10 @@ namespace gui
 
         virtual void show_setting(const QString& name) override;
 
+        virtual QString select_download_folder() override;
+
+        virtual void recents(QStringList& paths) const override;
+
    private:
         void show(const QString& name);
         void show(sdk::widget* widget);
@@ -112,6 +116,7 @@ namespace gui
         std::vector<QAction*> actions_;
     private:
         QSystemTrayIcon tray_;
+        QStringList recents_;
     };
 
 } // gui

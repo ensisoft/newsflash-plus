@@ -16,6 +16,8 @@ lib rss
    rss.ui
    rss.qrc
    settings.ui
+   nzbs.ui
+   
 :
   <link>shared
 ;

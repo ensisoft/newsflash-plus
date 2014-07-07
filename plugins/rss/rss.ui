@@ -184,7 +184,7 @@
     <string>Refresh RSS feed</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+R</string>
+    <string>F5</string>
    </property>
   </action>
   <action name="actionDownload">
@@ -251,6 +251,30 @@
    </property>
    <property name="text">
     <string>Stop</string>
+   </property>
+  </action>
+  <action name="actionBrowse">
+   <property name="icon">
+    <iconset resource="rss.qrc">
+     <normaloff>:/ico/ico_folder.png</normaloff>:/ico/ico_folder.png</iconset>
+   </property>
+   <property name="text">
+    <string>Browse ...</string>
+   </property>
+  </action>
+  <action name="actionOpen">
+   <property name="icon">
+    <iconset resource="rss.qrc">
+     <normaloff>:/ico/ico_open.png</normaloff>:/ico/ico_open.png</iconset>
+   </property>
+   <property name="text">
+    <string>Open NZB</string>
+   </property>
+   <property name="toolTip">
+    <string>Open NZB</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+O</string>
    </property>
   </action>
  </widget>

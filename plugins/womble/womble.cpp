@@ -133,6 +133,11 @@ QString plugin::site() const
     return "http://newshost.co.za";
 }
 
+QString plugin::name() const 
+{
+    return "womble";
+}
+
 } // womble
 
 PLUGIN_API sdk::rssfeed* create_rssfeed(int version)
@@ -146,7 +151,7 @@ PLUGIN_API sdk::rssfeed* create_rssfeed(int version)
     }
     catch (const std::exception& e)
     {
-
+	ERROR(str("Error creating womble plugin _1", e.what()));
     }
     return nullptr;
 }

@@ -29,6 +29,7 @@
 #  include <QtGui/QCloseEvent>
 #  include <QtGui/QMessageBox>
 #  include <QtGui/QSystemTrayIcon>
+#  include <QtGui/QFileDialog>
 #  include <QEvent>
 #  include <QTimer>
 #  include <QDir>
@@ -132,22 +133,21 @@ void MainWindow::show_setting(const QString& name)
 {
     DlgSettings dlg(this);
 
-    std::vector<std::unique_ptr<sdk::settings>> pages;
-
     app::settings settings;
     app_.get(settings);
 
-    std::unique_ptr<sdk::settings> page(new engine_settings(settings));
-    dlg.attach(page.get());
-    pages.push_back(std::move(page));
-
+    std::vector<std::unique_ptr<sdk::settings>> pages;
+    pages.emplace_back(new engine_settings(settings));
+    
     for (auto& widget : widgets_)
     {
-        std::unique_ptr<sdk::settings> page(widget->settings());
-        if (page)
-            dlg.attach(page.get());
-        pages.push_back(std::move(page));
+        widget->add_settings(pages);
     }
+    for (auto& page : pages)
+    {
+        dlg.attach(page.get());
+    }
+
     if (!name.isEmpty())
         dlg.show(name);
 
@@ -155,6 +155,43 @@ void MainWindow::show_setting(const QString& name)
     {
         app_.set(settings);
     }    
+}
+
+QString MainWindow::select_download_folder()
+{
+    QString latest;
+    if (!recents_.isEmpty())
+        latest = recents_.back();
+
+    QFileDialog dlg(this);
+    dlg.setFileMode(QFileDialog::Directory);
+    dlg.setWindowTitle(tr("Select download folder"));
+    dlg.setDirectory(latest);
+    if (dlg.exec() == QDialog::Rejected)
+        return QString();
+
+    auto dir = dlg.selectedFiles().first();
+
+    Q_ASSERT(dir.isEmpty());
+
+    if (!recents_.contains(dir))
+        recents_.push_back(dir);
+
+    if (recents_.size() > 10)
+        recents_.pop_front();
+
+    return QDir::toNativeSeparators(dir);
+}
+
+void MainWindow::recents(QStringList& paths) const 
+{
+    for (const auto& path : recents_)
+    {
+        QDir dir(path);
+        const auto& clean    = QDir::cleanPath(dir.absolutePath());
+        const auto& native   = QDir::toNativeSeparators(clean);
+        paths << native;
+    }
 }
 
 void MainWindow::show(const QString& title)
@@ -303,6 +340,7 @@ bool MainWindow::savestate()
     settings_.set("window", "y", y());
     settings_.set("window", "show_toolbar", ui_.mainToolBar->isVisible());
     settings_.set("window", "show_statusbar", ui_.statusBar->isVisible()); 
+    settings_.set("settings", "recent_paths", recents_);
 
     for (std::size_t i=0; i<widgets_.size(); ++i)
     {
@@ -356,6 +394,7 @@ void MainWindow::loadstate()
     ui_.actionViewToolbar->setChecked(show_toolbar);
     ui_.actionViewStatusbar->setChecked(show_statusbar);
 
+    recents_ = settings_.get("settings", "recent_paths").toStringList();
 
 }
 

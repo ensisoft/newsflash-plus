@@ -27,6 +27,7 @@
 #  include <QDateTime>
 #  include <QtGlobal>
 #  include <QUrl>
+#  include <QVariantMap>
 #include <newsflash/warnpop.h>
 
 #include <vector>
@@ -55,14 +56,11 @@ namespace sdk
             bool password;
         };
 
-        struct settings {
-            QString username;
-            QString password;
-        };
-
         virtual ~rssfeed() = default;
 
-        virtual void configure(settings settings) {}
+        virtual bool set_params(const QVariantMap& params) { return false;}
+
+        virtual bool get_params(QVariantMap& params) { return false; }
 
         // parse the contents of the RSS data and insert the items into the vector.
         // returns true if parsing was succesful, otherwise false.
@@ -73,6 +71,8 @@ namespace sdk
 
         // return the site url
         virtual QString site() const = 0;
+
+        virtual QString name() const = 0;
 
     protected:
     private:

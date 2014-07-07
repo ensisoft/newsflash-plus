@@ -14,10 +14,10 @@
    <string>RSS</string>
   </property>
   <layout class="QGridLayout" name="gridLayout_2">
-   <item row="1" column="0">
+   <item row="0" column="0">
     <widget class="QGroupBox" name="groupBox">
      <property name="title">
-      <string>Categories</string>
+      <string>RSS Feed Categories</string>
      </property>
      <layout class="QGridLayout" name="gridLayout_8">
       <item row="1" column="0">
@@ -210,18 +210,6 @@
          </widget>
         </item>
        </layout>
-      </item>
-     </layout>
-    </widget>
-   </item>
-   <item row="0" column="0">
-    <widget class="QGroupBox" name="groupBox_8">
-     <property name="title">
-      <string>Providers</string>
-     </property>
-     <layout class="QHBoxLayout" name="horizontalLayout">
-      <item>
-       <widget class="QListWidget" name="listWidget"/>
       </item>
      </layout>
     </widget>

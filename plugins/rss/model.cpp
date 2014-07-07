@@ -120,12 +120,9 @@ private:
 namespace rss
 {
 
-model::model(sdk::hostapp& host) : host_(host), pending_(0)
+model::model(sdk::hostapp& host) : host_(host), pending_(0), sortcol_(columns::date), sortorder_(Qt::DescendingOrder)
 {
-    DEBUG(str("rss::model _1 created", (const void*)this));
-
     INFO("RSS plugin 1.0 (c) 2014 Sami Vaisanen");
-
 
     const QDir dir(sdk::dist::path("plugins/rss"));
 
@@ -157,11 +154,35 @@ model::model(sdk::hostapp& host) : host_(host), pending_(0)
 
         feeds_.push_back(std::move(feed));
     }
+
+    DEBUG(str("rss::model _1 created", (const void*)this));    
 }
 
 model::~model()
 {
     DEBUG(str("rss::model _1 deleted", (const void*)this));;
+}
+
+void model::load(const sdk::datastore& store)
+{
+    // for (auto& site : sites_)
+    // {
+    //     const auto& key = site.name;
+    //     site.password = store.get(key, "password", "");
+    //     site.username = store.get(key, "username", "");
+    //     site.enabled  = store.get(key, "enabled", site.enabled);
+    // }
+}
+
+void model::save(sdk::datastore& store) const
+{
+    // for (const auto& site : sites_)
+    // {
+    //     const auto& key = site.name;
+    //     store.set(key, "password", site.password);
+    //     store.set(key, "username", site.username);
+    //     store.set(key, "enabled", site.enabled);
+    // }
 }
 
 bool model::refresh(sdk::category cat)
@@ -188,6 +209,45 @@ bool model::refresh(sdk::category cat)
     return (currently_pending != pending_);
 }
 
+QList<QString> model::sites() const 
+{
+    QList<QString> ret;
+    for (const auto& site : feeds_)
+    {
+        const auto name = site->name();
+        ret.push_back(name);
+    }
+    return ret;
+}
+
+bool model::params(const QString& site, QVariantMap& values) const
+{
+    auto it = std::find_if(std::begin(feeds_), std::end(feeds_),
+        [=](const std::unique_ptr<sdk::rssfeed>& feed) {
+            return feed->name() == site;
+        });
+    if (it == std::end(feeds_))
+        return false;
+
+    auto& ptr = *it;
+
+    return ptr->get_params(values);
+}
+
+bool model::params(const QString& site, const QVariantMap& values)
+{
+    auto it = std::find_if(std::begin(feeds_), std::end(feeds_),
+        [=](const std::unique_ptr<sdk::rssfeed>& feed) {
+            return feed->name() == site;
+        });
+    if (it == std::end(feeds_))
+        return false;
+
+    auto& ptr = *it;
+
+    return ptr->set_params(values);
+}
+
 QAbstractItemModel* model::view() 
 {
     return this;
@@ -209,6 +269,8 @@ void model::complete(sdk::request* request)
             items_.size(), items_.size() + count);
         rss->append(items_);
         endInsertRows();
+
+        sort((int)sortcol_, sortorder_);
     }
     else if (get_nzb* nzb = dynamic_cast<get_nzb*>(request))
     {
@@ -292,6 +354,47 @@ QVariant model::headerData(int section, Qt::Orientation orientation, int role) c
     }
 
     return QVariant();
+}
+
+void model::sort(int column, Qt::SortOrder order)
+{
+    emit layoutAboutToBeChanged();
+
+#define SORT(x) \
+    std::sort(std::begin(items_), std::end(items_), \
+        [&](const item& lhs, const item& rhs) { \
+            if (order == Qt::AscendingOrder) \
+                return lhs.x < rhs.x; \
+            return lhs.x > rhs.x; \
+        });
+
+    switch (columns(column))
+    {
+        case columns::date:
+            SORT(pubdate);
+            break;
+
+        case columns::category:
+            SORT(cat);
+            break;
+
+        case columns::size:
+            SORT(size);
+            break;
+
+        case columns::title:
+            SORT(title);
+            break;
+
+        default:
+            Q_ASSERT(!"unknown column");
+            break;
+    }
+
+    emit layoutChanged();
+
+    sortcol_   = columns(column);
+    sortorder_ = order;
 }
 
 int model::rowCount(const QModelIndex&) const

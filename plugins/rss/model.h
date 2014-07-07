@@ -28,6 +28,7 @@
 #include <newsflash/sdk/hostapp.h>
 #include <newsflash/sdk/request.h>
 #include <newsflash/sdk/rssfeed.h>
+#include <newsflash/sdk/datastore.h>
 
 #include <newsflash/warnpush.h>
 #  include <QAbstractItemModel>
@@ -44,14 +45,28 @@ namespace rss
     public:
         model(sdk::hostapp& host);
        ~model();
+        
+        virtual void load(const sdk::datastore& store) override;
 
-        virtual bool refresh(sdk::category cat) override;
+        virtual void save(sdk::datastore& store) const override;
 
+        // sdk::model
         virtual void complete(sdk::request* request) override;
 
+        // sdk::model
         virtual void clear() override;
 
+        // sdk::model
         virtual QString name() const override;
+
+        // sdk::rssmodel
+        virtual bool refresh(sdk::category cat) override;
+
+        virtual QList<QString> sites() const override;
+
+        virtual bool params(const QString& site, QVariantMap& values) const override;
+
+        virtual bool params(const QString& site, const QVariantMap& values) override;
 
         // QAbstractItemModel
         virtual QAbstractItemModel* view() override;
@@ -62,6 +77,7 @@ namespace rss
         // AbstractItemModel
         virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
 
+        virtual void sort(int column, Qt::SortOrder order) override;
         // AbstractItemModel
         virtual int rowCount(const QModelIndex&) const override;
 
@@ -78,8 +94,9 @@ namespace rss
         std::vector<item> items_;
         sdk::hostapp& host_;
         std::size_t pending_;                
+        columns sortcol_;
+        Qt::SortOrder sortorder_;
 
     };
-
 
 } // rss

@@ -27,7 +27,11 @@
 #include <newsflash/warnpush.h>
 #  include <QtGui/QWidget>
 #  include <QString>
+#  include <QList>
 #include <newsflash/warnpop.h>
+
+#include <vector>
+#include <memory>
 
 #include "plugin.h"
 
@@ -68,6 +72,9 @@ namespace sdk
         
         // Add the component specific toolbar actions to a toolbar in the host application
         virtual void add_actions(QToolBar& bar) {}
+
+        // Add the settings widgets if any.
+        virtual void add_settings(std::vector<std::unique_ptr<sdk::settings>>& pages) { }
         
         // This function is invoked when this ui component is getting activated (becomes visible)
         // in the host GUI.
@@ -85,9 +92,7 @@ namespace sdk
         // get information about the widget.
         virtual info information() const { return {"", false}; }
 
-        // get the settings widget if any.
-        // ownership is transferred to the caller
-        virtual sdk::settings* settings() { return nullptr; }
+
     private:
     };
 

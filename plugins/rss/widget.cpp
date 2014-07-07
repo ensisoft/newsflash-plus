@@ -41,7 +41,7 @@
 namespace rss
 {
 
-settings::settings(sdk::bitflag_t& feeds) : feeds_(feeds)
+feeds::feeds(sdk::bitflag_t& feeds) : feeds_(feeds)
 {
     ui_.setupUi(this);
 
@@ -68,10 +68,10 @@ settings::settings(sdk::bitflag_t& feeds) : feeds_(feeds)
     ui_.chkXXXSD->setChecked(feeds & category::xxx_sd);
 }
 
-settings::~settings()
+feeds::~feeds()
 {}
 
-void settings::accept() 
+void feeds::accept() 
 {
 #define b(x) bitflag_t(x)
 
@@ -118,26 +118,42 @@ void settings::accept()
         feeds_ |= b(category::xxx_sd);
 }
 
+nzbs::nzbs()
+{
+    ui_.setupUi(this);
+}
+
+nzbs::~nzbs()
+{}
+
+void nzbs::accept()
+{
+
+}
+
 widget::widget(sdk::window& win) : feeds_(0), win_(win)
 {
     ui_.setupUi(this);
 
     rss_ = dynamic_cast<sdk::rssmodel*>(win.create_model("rss"));
-
     if (rss_ == nullptr)
         throw std::runtime_error("no rss model available");
 
-    QObject::connect(rss_, SIGNAL(ready()), this, SLOT(ready()));
-
     ui_.tableView->setModel(rss_->view());
-
     ui_.actionDownload->setEnabled(false);
     ui_.actionDownloadTo->setEnabled(false);
     ui_.actionSave->setEnabled(false);
+    ui_.actionOpen->setEnabled(false);
     ui_.actionStop->setEnabled(false);
     ui_.progressBar->setVisible(false);
     ui_.progressBar->setValue(0);
     ui_.progressBar->setRange(0, 0);
+
+    auto* selection = ui_.tableView->selectionModel();
+    QObject::connect(selection, SIGNAL(selectionChanged(const QItemSelection&, const QItemSelection&)),
+        this, SLOT(rowChanged()));
+
+    QObject::connect(rss_, SIGNAL(ready()), this, SLOT(ready()));
 
     DEBUG("rss::widget created");
 }
@@ -152,12 +168,12 @@ void widget::add_actions(QMenu& menu)
     menu.addAction(ui_.actionRefresh);
     menu.addSeparator();    
     menu.addAction(ui_.actionDownload);
-    menu.addAction(ui_.actionDownloadTo);
-    menu.addSeparator();    
-    menu.addAction(ui_.actionRefresh);
-    menu.addSeparator();        
+    //menu.addAction(ui_.actionDownloadTo);
+    //menu.addSeparator();    
     menu.addAction(ui_.actionSave);
     menu.addSeparator();        
+    menu.addAction(ui_.actionOpen);
+    menu.addSeparator();
     menu.addAction(ui_.actionSettings);
     menu.addSeparator();        
     menu.addAction(ui_.actionStop);
@@ -171,10 +187,18 @@ void widget::add_actions(QToolBar& bar)
     bar.addAction(ui_.actionDownload);
     bar.addSeparator();    
     bar.addAction(ui_.actionSave);
-    bar.addSeparator();    
+    bar.addSeparator(); 
+    bar.addAction(ui_.actionOpen);
+    bar.addSeparator();   
     bar.addAction(ui_.actionSettings);
     bar.addSeparator();    
     bar.addAction(ui_.actionStop);    
+}
+
+void widget::add_settings(std::vector<std::unique_ptr<sdk::settings>>& pages)
+{
+    pages.emplace_back(new rss::feeds(feeds_));
+    pages.emplace_back(new rss::nzbs());
 }
 
 void widget::activate(QWidget*)
@@ -212,9 +236,15 @@ sdk::widget::info widget::information() const
     return {"rss.html", true};
 }
 
-sdk::settings* widget::settings()
+
+
+void widget::download_selected(const QString& folder)
 {
-    return new rss::settings(feeds_);
+    const auto& indices = ui_.tableView->selectionModel()->selectedRows();
+    if (indices.isEmpty())
+        return;
+
+
 }
 
 void widget::on_actionRefresh_triggered()
@@ -288,9 +318,23 @@ void widget::on_actionDownload_triggered()
     DEBUG("download");
 }
 
+void widget::on_actionDownloadTo_triggered()
+{
+    const auto& folder = win_.select_download_folder();
+    if (folder.isEmpty())
+        return;
+
+    download_selected(folder);
+}
+
 void widget::on_actionSave_triggered()
 {
     DEBUG("save");
+}
+
+void widget::on_actionOpen_triggered()
+{
+    DEBUG("open");
 }
 
 void widget::on_actionSettings_triggered()
@@ -303,12 +347,77 @@ void widget::on_actionStop_triggered()
     DEBUG("stop");
 }
 
+void widget::on_actionBrowse_triggered()
+{
+    const auto& folder = win_.select_download_folder();
+    if (folder.isEmpty())
+        return;
+
+    download_selected(folder);    
+}
+
+void widget::on_tableView_customContextMenuRequested(QPoint point)
+{
+    QMenu sub("Download to");
+    sub.setIcon(QIcon(":/ico/ico_download.png"));
+
+    QStringList paths;
+    win_.recents(paths);
+    for (const auto& path : paths)
+    {
+        QAction* action = sub.addAction(QIcon(":/ico/ico_folder.png"),            
+            path);
+        QObject::connect(action, SIGNAL(triggered(bool)),
+            this, SLOT(downloadToPrevious()));
+    }
+
+    sub.addSeparator();
+    sub.addAction(ui_.actionBrowse);
+    sub.setEnabled(ui_.actionDownload->isEnabled());
+
+    QMenu menu;
+    menu.addAction(ui_.actionRefresh);
+    menu.addSeparator();
+    menu.addAction(ui_.actionDownload);
+    menu.addMenu(&sub);
+    menu.addSeparator();
+    menu.addAction(ui_.actionSave);
+    menu.addSeparator();
+    menu.addAction(ui_.actionOpen);
+    menu.addSeparator();
+    menu.addAction(ui_.actionStop);
+    menu.addSeparator();
+    menu.addAction(ui_.actionSettings);
+    menu.exec(QCursor::pos());
+}
+ 
 void widget::ready()
 {
     ui_.progressBar->hide();
     ui_.actionStop->setEnabled(false);
 }
 
+
+void widget::rowChanged()
+{
+    const auto list = ui_.tableView->selectionModel()->selectedRows();
+    if (list.isEmpty())
+        return;
+
+    ui_.actionDownload->setEnabled(true);
+    ui_.actionSave->setEnabled(true);
+    ui_.actionOpen->setEnabled(true);
+}
+
+void widget::downloadToPrevious()
+{
+    const auto* action = qobject_cast<const QAction*>(sender());
+
+    // use the directory from the action title
+    const auto folder = action->text();
+
+    download_selected(folder);
+}
 
 } // rss
 

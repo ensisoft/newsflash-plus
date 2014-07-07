@@ -27,6 +27,8 @@
 #include <newsflash/warnpush.h>
 #  include <QString>
 #  include <QObject>
+#  include <QList>
+#  include <QVariantMap>
 #include <newsflash/warnpop.h>
 
 #include "category.h"
@@ -49,6 +51,13 @@ namespace sdk
         // returns true if feeds are available for the category,
         // otherwise false.
         virtual bool refresh(category cat) = 0;
+
+        // get a list of available website for RSS feeds.
+        virtual QList<QString> sites() const = 0;
+
+        virtual bool params(const QString& site, QVariantMap& values) const = 0;
+
+        virtual bool params(const QString& site, const QVariantMap& values) = 0;
 
     signals:
         // emitted once refresh is ready

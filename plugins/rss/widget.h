@@ -35,17 +35,30 @@
 #include <newsflash/warnpop.h>
 #include <memory>
 #include "ui_rss.h"
+#include "ui_nzbs.h"
 #include "ui_settings.h"
 
 namespace rss
 {
-    class settings : public sdk::settings
+    class nzbs : public sdk::settings
+    {
+        Q_OBJECT
+    public:
+        nzbs();
+       ~nzbs();
+
+        virtual void accept() override;
+    private:
+        Ui::NZBS ui_;
+    };
+
+    class feeds : public sdk::settings
     {
         Q_OBJECT
 
     public:
-        settings(sdk::bitflag_t& feeds);
-       ~settings();
+        feeds(sdk::bitflag_t& feeds);
+       ~feeds();
 
         virtual void accept() override;
     private:
@@ -64,6 +77,7 @@ namespace rss
 
         virtual void add_actions(QMenu& menu) override;
         virtual void add_actions(QToolBar& bar) override;
+        virtual void add_settings(std::vector<std::unique_ptr<sdk::settings>>& pages) override;        
 
         virtual void activate(QWidget*) override;
 
@@ -72,18 +86,28 @@ namespace rss
 
         virtual info information() const override;
 
-        sdk::settings* settings() override;
+
+
+    private:
+        void download_selected(const QString& path);
+        //void save_selected(const QString& path);
+        //void open_selected()
 
     private slots:
         void on_actionRefresh_triggered();
         void on_actionDownload_triggered();
+        void on_actionDownloadTo_triggered();
         void on_actionSave_triggered();
+        void on_actionOpen_triggered();
         void on_actionSettings_triggered();
         void on_actionStop_triggered();
-
+        void on_actionBrowse_triggered();
+        void on_tableView_customContextMenuRequested(QPoint point);
 
     private slots:
         void ready();
+        void rowChanged();
+        void downloadToPrevious();
 
     private:
         sdk::bitflag_t feeds_;

@@ -48,6 +48,8 @@ namespace womble
 
         virtual QString site() const override;        
 
+        virtual QString name() const override;
+
     private:
     };
 
