@@ -90,6 +90,43 @@
          </widget>
         </item>
         <item>
+         <widget class="QPushButton" name="btnWomble">
+          <property name="toolTip">
+           <string>http://newshost.co.za</string>
+          </property>
+          <property name="text">
+           <string>Womble</string>
+          </property>
+          <property name="icon">
+           <iconset resource="rss.qrc">
+            <normaloff>:/ico/ico_rss.png</normaloff>:/ico/ico_rss.png</iconset>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="flat">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btnNzbs">
+          <property name="toolTip">
+           <string>http://nzbs.org</string>
+          </property>
+          <property name="text">
+           <string>NZBS</string>
+          </property>
+          <property name="icon">
+           <iconset resource="rss.qrc">
+            <normaloff>:/ico/ico_rss.png</normaloff>:/ico/ico_rss.png</iconset>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
          <spacer name="horizontalSpacer">
           <property name="orientation">
            <enum>Qt::Horizontal</enum>

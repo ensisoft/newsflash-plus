@@ -83,7 +83,7 @@ QDateTime parse_date(const QString& str)
             Qt::UTC);
 
         if (!datetime.isValid())
-            return datetime;
+            return QDateTime();
 
         // offset by timezone seconds
         const auto off = -tmz * 3600;
@@ -91,49 +91,8 @@ QDateTime parse_date(const QString& str)
         return ret;
     }
 
-    // const QRegExp regex(
-    //     "(\\d{2})/(\\d{2})/(\\d{4})"
-    //     );
-
-
     return QDateTime();
 }
 
-rss::timeframe calculate_timeframe(const QDateTime& now, const QDateTime& event)
-{
-    Q_ASSERT(event < now);
-
-    const auto days = event.daysTo(now);
-    if (days == 0)
-        return timeframe::today;
-    else if (days == 1)
-        return timeframe::yesterday;
-    else if (days < 6)
-        return timeframe::within_a_week;
-
-    return timeframe::older_than_week;
-}
-
-rss::timediff calculate_timediff(const QDateTime& first, const QDateTime& second)
-{
-    auto seconds = std::abs(first.secsTo(second));
-
-    enum { SECONDS_TO_DAY  = 60 * 60 * 24,
-           SECONDS_TO_HOUR = 60 * 60,
-           SECONDS_TO_MIN  = 60
-    };
-
-    timediff diff = {};
-    
-    diff.days    = seconds / SECONDS_TO_DAY;
-    seconds   -= diff.days * SECONDS_TO_DAY;
-    diff.hours   = seconds / SECONDS_TO_HOUR;
-    seconds   -= diff.hours * SECONDS_TO_HOUR;
-    diff.minutes = seconds / SECONDS_TO_MIN;
-    seconds   -= diff.minutes * SECONDS_TO_MIN;
-    diff.seconds = seconds;    
-
-    return diff;
-}
 
 } // rss

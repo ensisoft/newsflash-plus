@@ -39,11 +39,12 @@
 #  include <QUrl>
 #  include <QByteArray>
 #  include <QBuffer>
-#  include <QLibrary>
-#  include <QDir>
 #include <newsflash/warnpop.h>
 
 #include "model.h"
+#include "womble.h"
+#include "nzbs.h"
+#include "rss.h"
 
 using sdk::str;
 
@@ -71,6 +72,8 @@ public:
         {
             if (item.cat == sdk::category::none)
                 item.cat = cat_;
+
+            item.pubdate = item.pubdate.toLocalTime();
         }
     }
     void append(std::vector<sdk::rssfeed::item>& vec) const
@@ -120,70 +123,31 @@ private:
 namespace rss
 {
 
-model::model(sdk::hostapp& host) : host_(host), pending_(0), sortcol_(columns::date), sortorder_(Qt::DescendingOrder)
+model::model(sdk::hostapp& host) : pending_(0), host_(host), sortcol_(columns::date), sortorder_(Qt::DescendingOrder)
 {
+    std::unique_ptr<sdk::rssfeed> womble(new rss::womble());
+    std::unique_ptr<sdk::rssfeed> nzbs(new rss::nzbs());
+
     INFO("RSS plugin 1.0 (c) 2014 Sami Vaisanen");
+    INFO(womble->site());
+    INFO(nzbs->site());
 
-    const QDir dir(sdk::dist::path("plugins/rss"));
+    feeds_.push_back(std::move(womble));
+    feeds_.push_back(std::move(nzbs));
 
-    for (const auto& name : dir.entryList())
-    {
-        const auto file = dir.absoluteFilePath(name);
-        if (!QLibrary::isLibrary(file))
-            continue;
-
-        QLibrary lib(file);
-
-        DEBUG(str("Loading library _1", lib));
-
-        if (!lib.load())
-        {
-            ERROR(lib.errorString());
-        }
-        auto create = (sdk::fp_create_rssfeed)(lib.resolve("create_rssfeed"));
-        if (create == nullptr)
-        {
-            ERROR(str("Failed to load _1, no entry point found", lib));
-            continue;
-        }
-        std::unique_ptr<sdk::rssfeed> feed(create(sdk::rssfeed::version));
-        if (!feed)
-            continue;
-
-        INFO(str("Available RSS provider _1", feed->site()));
-
-        feeds_.push_back(std::move(feed));
-    }
-
-    DEBUG(str("rss::model _1 created", (const void*)this));    
+    DEBUG("rss::model created");
 }
 
 model::~model()
 {
-    DEBUG(str("rss::model _1 deleted", (const void*)this));;
+    DEBUG("rss::model destroyed");
 }
 
 void model::load(const sdk::datastore& store)
-{
-    // for (auto& site : sites_)
-    // {
-    //     const auto& key = site.name;
-    //     site.password = store.get(key, "password", "");
-    //     site.username = store.get(key, "username", "");
-    //     site.enabled  = store.get(key, "enabled", site.enabled);
-    // }
-}
+{}
 
 void model::save(sdk::datastore& store) const
-{
-    // for (const auto& site : sites_)
-    // {
-    //     const auto& key = site.name;
-    //     store.set(key, "password", site.password);
-    //     store.set(key, "username", site.username);
-    //     store.set(key, "enabled", site.enabled);
-    // }
-}
+{}
 
 bool model::refresh(sdk::category cat)
 {
@@ -191,6 +155,10 @@ bool model::refresh(sdk::category cat)
 
     for (const auto& feed : feeds_)
     {
+        const auto& site = feed->name();
+        if (!enabled_[site])
+            continue;
+
         std::vector<QUrl> urls;        
         feed->prepare(cat, urls);
 
@@ -220,7 +188,7 @@ QList<QString> model::sites() const
     return ret;
 }
 
-bool model::params(const QString& site, QVariantMap& values) const
+bool model::get_params(const QString& site, QVariantMap& values) const
 {
     auto it = std::find_if(std::begin(feeds_), std::end(feeds_),
         [=](const std::unique_ptr<sdk::rssfeed>& feed) {
@@ -234,7 +202,7 @@ bool model::params(const QString& site, QVariantMap& values) const
     return ptr->get_params(values);
 }
 
-bool model::params(const QString& site, const QVariantMap& values)
+bool model::set_params(const QString& site, const QVariantMap& values)
 {
     auto it = std::find_if(std::begin(feeds_), std::end(feeds_),
         [=](const std::unique_ptr<sdk::rssfeed>& feed) {
@@ -246,6 +214,11 @@ bool model::params(const QString& site, const QVariantMap& values)
     auto& ptr = *it;
 
     return ptr->set_params(values);
+}
+
+void model::enable(const QString& site, bool val)
+{
+    enabled_[site] = val;
 }
 
 QAbstractItemModel* model::view() 

@@ -40,25 +40,36 @@
 
 namespace rss
 {
-    class nzbs : public sdk::settings
+    struct nzbs_settings {
+        QString userid;
+        QString apikey;
+        int feedsize;
+        bool enabled;
+    };
+
+    class nzbs_settings_page : public sdk::settings
     {
         Q_OBJECT
     public:
-        nzbs();
-       ~nzbs();
+        nzbs_settings_page(nzbs_settings& data);
+       ~nzbs_settings_page();
+
+        virtual bool validate() const override;
 
         virtual void accept() override;
     private:
         Ui::NZBS ui_;
+    private:
+        nzbs_settings& data_;
     };
 
-    class feeds : public sdk::settings
+    class feeds_settings_page : public sdk::settings
     {
         Q_OBJECT
 
     public:
-        feeds(sdk::bitflag_t& feeds);
-       ~feeds();
+        feeds_settings_page(sdk::bitflag_t& feeds);
+       ~feeds_settings_page();
 
         virtual void accept() override;
     private:
@@ -78,6 +89,7 @@ namespace rss
         virtual void add_actions(QMenu& menu) override;
         virtual void add_actions(QToolBar& bar) override;
         virtual void add_settings(std::vector<std::unique_ptr<sdk::settings>>& pages) override;        
+        virtual void apply_settings() override;
 
         virtual void activate(QWidget*) override;
 
@@ -118,6 +130,9 @@ namespace rss
     private:
         sdk::window& win_;
         sdk::rssmodel* rss_;
+
+    private:
+        nzbs_settings nzbs_;
     };
 
 } // rss

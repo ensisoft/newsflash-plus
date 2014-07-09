@@ -24,52 +24,36 @@
 
 #include <newsflash/config.h>
 
+#include <newsflash/sdk/request.h>
+#include <newsflash/sdk/rssfeed.h>
+
 #include <newsflash/warnpush.h>
+#  include <QDateTime>
 #  include <QString>
-#  include <QObject>
-#  include <QList>
-#  include <QVariantMap>
 #include <newsflash/warnpop.h>
 
-#include "category.h"
-#include "model.h"
+#include <vector>
 
-namespace sdk
+namespace rss
 {
-    // rss feed model for accessing some rss feed
-    // and extracting nzb information
-    class rssmodel : public QObject, public sdk::model 
+    class nzbs : public sdk::rssfeed
     {
-        Q_OBJECT
-
     public:
-        virtual ~rssmodel() = default;
+        nzbs();
+       ~nzbs();
 
-        // request the model to refresh the contents 
-        // with the specified feed. the feed is requested
-        // from all available rss feed providers.
-        // returns true if feeds are available for the category,
-        // otherwise false.
-        virtual bool refresh(category cat) = 0;
+        virtual bool parse(QIODevice& io, std::vector<item>& rss) const override;
 
-        // get a list of available website for RSS feeds.
-        virtual QList<QString> sites() const = 0;
+        virtual void prepare(sdk::category cat, std::vector<QUrl>& urls) const override;
 
-        virtual bool get_params(const QString& site, QVariantMap& values) const = 0;
+        virtual bool set_params(const QVariantMap& params);
 
-        virtual bool set_params(const QString& site, const QVariantMap& values) = 0;
-
-        virtual void enable(const QString& site, bool val) = 0;
-
-        //virtual void savenzb(int index) = 0;
-
-
-    signals:
-        // emitted once all pending actions are ready
-        void ready();
-
-    protected:
+        virtual QString site() const override;
+        virtual QString name() const override;
     private:
+        QString userid_;
+        QString apikey_;
+        int feedsize_;
     };
 
-} // sdk
+} // rss

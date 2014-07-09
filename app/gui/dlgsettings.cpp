@@ -62,7 +62,10 @@ void DlgSettings::on_btnAccept_clicked()
         auto* ptr = ui_.tab->widget(i);
         auto* tab = static_cast<sdk::settings*>(ptr);
         if (!tab->validate())
+        {
+            ui_.tab->setCurrentIndex(i);
             return;
+        }
     }
 
     for (int i=0; i<count; ++i)

@@ -20,45 +20,48 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-#pragma once
+#include <newsflash/config.h>
 
-#include <newsflash/warnpush.h>
-#  include <QString>
-#  include <QDateTime>
-#include <newsflash/warnpop.h>
+#include <boost/test/minimal.hpp>
 
-namespace rss
+#include "../rss.h"
+
+void unit_test_parse()
 {
-    enum class timeframe {
-        today,
-        yesterday,
-        within_a_week,
-        older_than_week
-    };
-
-    struct timediff {
-        int days;
-        int hours;
-        int minutes;
-        int seconds;
-    };
-
-    // Try to parse a date from a RSS feed into a valid date object.
     // The expected date format is "Fri, 26 Feb 2010 13:47:54 +0000",
-    // i.e. the date format specified in RFC 822/2822.
-    // The returned QDateTime is in UTC time zone.
-    // If string is not a valid date returns invalid QDateTime    
-    QDateTime parse_date(const QString& str);
 
-    // Calculate and simply the the difference between two events.
-    // returns a value that describes when the an event occurred with respect to
-    // current time (given in now). 
-    // for Example if now represents 25th of April 2014 13:00 and event is
-    // 24th April 2014 14:00 then timeframe == yesterday
-    // event is required to be less than now.
-    timeframe calculate_timeframe(const QDateTime& now, const QDateTime& event);
+    // incorrect
+    {
+        auto dt = rss::parse_date("fooboasgas");
+        BOOST_REQUIRE(!dt.isValid());
 
-    // Breakdown difference between two timestamps
-    timediff calculate_timediff(const QDateTime& first, const QDateTime& second);
+        dt = rss::parse_date("Fri, 34 Feb 2013 12:00:00 +0000");
+        BOOST_REQUIRE(!dt.isValid());
 
-} // rss
+        dt = rss::parse_date("Fri, 12 Feb 201345 12:00:00 +0000");
+        BOOST_REQUIRE(!dt.isValid());
+    }
+
+    // correct
+    {
+        auto dt = rss::parse_date("Fri, 26 Feb 2010 13:47:54 +0000");
+        BOOST_REQUIRE(dt.isValid());
+
+        auto date = dt.date();
+        BOOST_REQUIRE(date.day() == 26);
+        BOOST_REQUIRE(date.month() == 2);
+        BOOST_REQUIRE(date.year() == 2010);
+
+        auto time = dt.time();
+        BOOST_REQUIRE(time.hour() == 13);
+        BOOST_REQUIRE(time.minute() == 47);
+        BOOST_REQUIRE(time.second() == 54);
+    }
+}
+
+int test_main(int argc, char* argv[])
+{
+    unit_test_parse();
+
+    return 0;
+}

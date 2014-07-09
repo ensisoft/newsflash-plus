@@ -37,7 +37,6 @@ using qt : $(QT_PATH) ;
 use-project /boost/ : $(BOOST_PATH) ;
 use-project corelib : "corelib" ;
 use-project engine  : "engine" ;
-use-project rss     : "rsslib" ;
 use-project nzb     : "nzblib" ;
 use-project msglib  : "msglib" ;
 use-project pylib   : "pylib"  ;

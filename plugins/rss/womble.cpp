@@ -20,9 +20,9 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-#define PLUGIN_IMPL
-
-#define LOGTAG "womble"
+//#define PLUGIN_IMPL
+//#define LOGTAG "womble"
+#define LOGTAG "rss"
 
 #include <newsflash/sdk/eventlog.h>
 #include <newsflash/sdk/debug.h>
@@ -34,30 +34,50 @@
 #  include <QUrl>
 #  include <QByteArray>
 #  include <QBuffer>
+#  include <QRegExp>
 #include <newsflash/warnpop.h>
-
-#include <newsflash/rsslib/rss.h>
 
 #include <cstring>
 #include "womble.h"
-
+//#include "rss.h"
 
 using sdk::str;
 
-namespace womble
-{
+namespace {
 
-plugin::plugin()
+
+QDateTime parse_date(const QString& str)
 {
-    DEBUG(str("womble _1 created", (const void*)this));
+    // this appears to be womble's format.. is this according to some RFC?
+    // certainly not according to the format in RSS specification
+    // 7/8/2014 1:53:02 AM
+    auto ret = QDateTime::fromString(str, "M/d/yyyy h:m:s AP");
+
+    // womble is .za which is south-africa. UTC+2
+    // todo: daylight saving time??
+    const auto time = ret.time();
+    time.addSecs(- 60 * 60 * 2);
+    ret.setTime(time);
+
+    return ret;
 }
 
-plugin::~plugin()
+} // namespace
+
+namespace rss
 {
-    DEBUG(str("womble _1 destroyed", (const void*)this));
+
+womble::womble()
+{
+    DEBUG("womble created");
 }
 
-bool plugin::parse(QIODevice& io, std::vector<sdk::rssfeed::item>& rss) const
+womble::~womble()
+{
+    DEBUG("womble destroyed");
+}
+
+bool womble::parse(QIODevice& io, std::vector<sdk::rssfeed::item>& rss) const
 {
     QDomDocument dom;
     QString error_string;
@@ -77,16 +97,16 @@ bool plugin::parse(QIODevice& io, std::vector<sdk::rssfeed::item>& rss) const
         sdk::rssfeed::item item {};
         item.title    = elem.firstChildElement("title").text();
         item.id       = elem.firstChildElement("link").text();
-        item.pubdate  = rss::parse_date(elem.firstChildElement("pubDate").text());
+        item.pubdate  = parse_date(elem.firstChildElement("pubDate").text());
         item.password = false;
         item.nzb      = item.id;
         item.size     = 0; // not known
-        rss.push_back(item);
+        rss.push_back(std::move(item));
     }
     return true;
 }
 
-void plugin::prepare(sdk::category cat, std::vector<QUrl>& urls) const 
+void womble::prepare(sdk::category cat, std::vector<QUrl>& urls) const 
 {
     struct feed {
         sdk::category  tag;
@@ -128,30 +148,30 @@ void plugin::prepare(sdk::category cat, std::vector<QUrl>& urls) const
     }
 }
 
-QString plugin::site() const
+QString womble::site() const
 {
     return "http://newshost.co.za";
 }
 
-QString plugin::name() const 
+QString womble::name() const 
 {
     return "womble";
 }
 
-} // womble
+} // rss
 
-PLUGIN_API sdk::rssfeed* create_rssfeed(int version)
-{
-    if (version != sdk::rssfeed::version)
-        return nullptr;
+// PLUGIN_API sdk::rssfeed* create_rssfeed(int version)
+// {
+//     if (version != sdk::rssfeed::version)
+//         return nullptr;
 
-    try
-    {
-        return new womble::plugin();
-    }
-    catch (const std::exception& e)
-    {
-	ERROR(str("Error creating womble plugin _1", e.what()));
-    }
-    return nullptr;
-}
+//     try
+//     {
+//         return new womble::womble();
+//     }
+//     catch (const std::exception& e)
+//     {
+// 	ERROR(str("Error creating womble womble _1", e.what()));
+//     }
+//     return nullptr;
+// }

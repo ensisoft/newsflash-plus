@@ -68,6 +68,8 @@ namespace gui
 
         virtual QString select_download_folder() override;
 
+        virtual QString select_save_nzb_folder() override;
+
         virtual void recents(QStringList& paths) const override;
 
    private:
@@ -117,6 +119,8 @@ namespace gui
     private:
         QSystemTrayIcon tray_;
         QStringList recents_;
+        QString recent_save_nzb_path_;
+        QString recent_load_nzb_path_;
     };
 
 } // gui

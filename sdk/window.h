@@ -54,6 +54,10 @@ namespace sdk
         // if the selection is cancelled a empty() string is returned.
         virtual QString select_download_folder() = 0;
 
+        virtual QString select_save_nzb_folder() = 0;
+
+        
+
         // select a nzb file for opening.
         //virtual QString open_nzb_file() = 0;
 

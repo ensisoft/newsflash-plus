@@ -154,6 +154,11 @@ void MainWindow::show_setting(const QString& name)
     if (dlg.exec() == QDialog::Accepted)
     {
         app_.set(settings);
+
+        for (auto& widget : widgets_)
+        {
+            widget->apply_settings();
+        }
     }    
 }
 
@@ -179,6 +184,22 @@ QString MainWindow::select_download_folder()
 
     if (recents_.size() > 10)
         recents_.pop_front();
+
+    return QDir::toNativeSeparators(dir);
+}
+
+QString MainWindow::select_save_nzb_folder()
+{
+    QFileDialog dlg(this);
+    dlg.setFileMode(QFileDialog::Directory);
+    dlg.setWindowTitle(tr("Select save nzb folder"));
+    dlg.setDirectory(recent_save_nzb_path_);
+    if (dlg.exec() == QDialog::Rejected)
+        return QString();
+
+    auto dir = dlg.selectedFiles().first();
+
+    recent_save_nzb_path_ = dir;
 
     return QDir::toNativeSeparators(dir);
 }
@@ -340,7 +361,10 @@ bool MainWindow::savestate()
     settings_.set("window", "y", y());
     settings_.set("window", "show_toolbar", ui_.mainToolBar->isVisible());
     settings_.set("window", "show_statusbar", ui_.statusBar->isVisible()); 
-    settings_.set("settings", "recent_paths", recents_);
+    settings_.set("paths", "recents", recents_);
+    settings_.set("paths", "save_nzb", recent_save_nzb_path_);
+    settings_.set("paths", "load_nzb", recent_load_nzb_path_);
+
 
     for (std::size_t i=0; i<widgets_.size(); ++i)
     {
@@ -394,7 +418,9 @@ void MainWindow::loadstate()
     ui_.actionViewToolbar->setChecked(show_toolbar);
     ui_.actionViewStatusbar->setChecked(show_statusbar);
 
-    recents_ = settings_.get("settings", "recent_paths").toStringList();
+    recents_ = settings_.get("paths", "recents").toStringList();
+    recent_save_nzb_path_ = settings_.get("paths", "save_nzb").toString();
+    recent_load_nzb_path_ = settings_.get("paths", "load_nzb").toString();
 
 }
 

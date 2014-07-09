@@ -34,13 +34,14 @@
 
 #include <vector>
 
-namespace womble
+namespace rss
 {
-    class plugin : public sdk::rssfeed
+    // womble feed 
+    class womble : public sdk::rssfeed
     {
     public:
-        plugin();
-       ~plugin();
+        womble();
+       ~womble();
 
         virtual bool parse(QIODevice& io, std::vector<item>& rss) const override;
 
@@ -53,4 +54,4 @@ namespace womble
     private:
     };
 
-} // womble
+} // rss

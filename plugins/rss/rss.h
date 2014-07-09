@@ -22,54 +22,18 @@
 
 #pragma once
 
-#include <newsflash/config.h>
-
 #include <newsflash/warnpush.h>
 #  include <QString>
-#  include <QObject>
-#  include <QList>
-#  include <QVariantMap>
+#  include <QDateTime>
 #include <newsflash/warnpop.h>
 
-#include "category.h"
-#include "model.h"
-
-namespace sdk
+namespace rss
 {
-    // rss feed model for accessing some rss feed
-    // and extracting nzb information
-    class rssmodel : public QObject, public sdk::model 
-    {
-        Q_OBJECT
+    // Try to parse a date from a RSS feed into a valid date object.
+    // The expected date format is "Fri, 26 Feb 2010 13:47:54 +0000",
+    // i.e. the date format specified in RFC 822/2822.
+    // The returned QDateTime is in UTC time zone.
+    // If string is not a valid date returns invalid QDateTime    
+    QDateTime parse_date(const QString& str);
 
-    public:
-        virtual ~rssmodel() = default;
-
-        // request the model to refresh the contents 
-        // with the specified feed. the feed is requested
-        // from all available rss feed providers.
-        // returns true if feeds are available for the category,
-        // otherwise false.
-        virtual bool refresh(category cat) = 0;
-
-        // get a list of available website for RSS feeds.
-        virtual QList<QString> sites() const = 0;
-
-        virtual bool get_params(const QString& site, QVariantMap& values) const = 0;
-
-        virtual bool set_params(const QString& site, const QVariantMap& values) = 0;
-
-        virtual void enable(const QString& site, bool val) = 0;
-
-        //virtual void savenzb(int index) = 0;
-
-
-    signals:
-        // emitted once all pending actions are ready
-        void ready();
-
-    protected:
-    private:
-    };
-
-} // sdk
+} // rss

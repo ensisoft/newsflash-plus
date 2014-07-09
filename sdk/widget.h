@@ -76,6 +76,8 @@ namespace sdk
         // Add the settings widgets if any.
         virtual void add_settings(std::vector<std::unique_ptr<sdk::settings>>& pages) { }
         
+        virtual void apply_settings() {}
+
         // This function is invoked when this ui component is getting activated (becomes visible)
         // in the host GUI.
         virtual void activate(QWidget* parent) {}

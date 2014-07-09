@@ -5,6 +5,7 @@ project
   <include>.
   <library>/qt//QtCore
   <library>/qt//QtGui
+  <library>/qt//QtXml
 ;
 
 lib rss
@@ -13,11 +14,16 @@ lib rss
    model.cpp
    widget.h   
    widget.cpp
+   womble.h
+   womble.cpp
+   nzbs.h
+   nzbs.cpp
+   rss.cpp
    rss.ui
    rss.qrc
    settings.ui
    nzbs.ui
-   
+
 :
   <link>shared
 ;

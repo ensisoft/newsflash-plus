@@ -37,6 +37,7 @@
 
 #include <memory>
 #include <vector>
+#include <map>
 
 namespace rss 
 {
@@ -64,9 +65,11 @@ namespace rss
 
         virtual QList<QString> sites() const override;
 
-        virtual bool params(const QString& site, QVariantMap& values) const override;
+        virtual bool get_params(const QString& site, QVariantMap& values) const override;
 
-        virtual bool params(const QString& site, const QVariantMap& values) override;
+        virtual bool set_params(const QString& site, const QVariantMap& values) override;
+
+        virtual void enable(const QString& site, bool val) override;
 
         // QAbstractItemModel
         virtual QAbstractItemModel* view() override;
@@ -88,14 +91,18 @@ namespace rss
             date, category, size, title, sentinel
         };        
 
-        using item = sdk::rssfeed::item;
-
+    private:
         std::vector<std::unique_ptr<sdk::rssfeed>> feeds_;
+        using item = sdk::rssfeed::item;        
         std::vector<item> items_;
+        std::size_t pending_;                        
+        std::map<QString, bool> enabled_;
+    private:
         sdk::hostapp& host_;
-        std::size_t pending_;                
+    private:
         columns sortcol_;
         Qt::SortOrder sortorder_;
+
 
     };
 

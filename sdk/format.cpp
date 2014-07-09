@@ -115,6 +115,9 @@ QString format(const sdk::event& event)
 
     QString str;
 
+    // todo: fix this. dddd is *localized* but we have hardcoded english here 
+
+
     const auto date = event.datetime();
     const auto when = event.as_when();
     switch (when)
@@ -132,15 +135,15 @@ QString format(const sdk::event& event)
         break;
 
         case sdk::event::when::this_month:
-        str = date.toString("dddd dd");
+        str = date.toString("dddd, dd");
         break;
 
         case sdk::event::when::this_year:
-        str = date.toString("MMMM dd");
+        str = date.toString("MMMM, dd");
         break;
 
         case sdk::event::when::before:
-        str = date.toString("yyyy MMM dd");
+        str = date.toString("yyyy, MMM, dd");
         break;
     }
     return str;
