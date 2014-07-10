@@ -36,15 +36,8 @@
 #  include <QLibrary>
 #include <newsflash/warnpop.h>
 
-#include <newsflash/sdk/widget.h>
-#include <newsflash/sdk/format.h>
-#include <newsflash/sdk/eventlog.h>
-#include <newsflash/sdk/debug.h>
-#include <newsflash/sdk/home.h>
-#include <newsflash/sdk/dist.h>
-#include <newsflash/sdk/message.h>
-
 #include "mainwindow.h"
+#include "mainwidget.h"
 #include "accounts.h"
 #include "eventlog.h"
 #include "groups.h"
@@ -54,9 +47,13 @@
 #include "message.h"
 #include "engine_settings.h"
 #include "../mainapp.h"
+#include "../eventlog.h"
+#include "../debug.h"
+#include "../format.h"
+#include "../message.h"
+#include "../home.h"
 
-
-using sdk::str;
+using app::str;
 
 namespace gui
 {
@@ -65,8 +62,7 @@ void openurl(const QString& url);
 void openhelp(const QString& page);
 
 
-MainWindow::MainWindow(app::mainapp& app) : QMainWindow(nullptr), 
-    app_(app), current_(nullptr)
+MainWindow::MainWindow(app::mainapp& app) : QMainWindow(nullptr), app_(app), current_(nullptr)
 {
     ui_.setupUi(this);
 
@@ -106,8 +102,8 @@ MainWindow::MainWindow(app::mainapp& app) : QMainWindow(nullptr),
 
     setWindowTitle(NEWSFLASH_TITLE);
 
-    loadstate();
-    loadwidgets();
+    //loadstate();
+    //loadwidgets();
 
     DEBUG("MainWindow created");
 }
@@ -119,9 +115,70 @@ MainWindow::~MainWindow()
     DEBUG("MainWindow deleted");
 }
 
-sdk::model* MainWindow::create_model(const char* klazz)
+void MainWindow::attach(mainwidget* widget)
 {
-    return app_.create_model(klazz);
+    widgets_.push_back(widget);
+}
+
+void MainWindow::loadstate()
+{
+    // load gui settings, we need this for the rest of the stuff
+    const auto file = app::home::file("gui.json");
+    if (!QFile::exists(file))
+    {
+        // assuming first launch if settings file doesn't exist
+        QTimer::singleShot(500, this, SLOT(timerWelcome_timeout()));        
+        return;
+    }
+
+    const auto error = settings_.load(file);
+    if (error != QFile::NoError)
+    {
+        ERROR(str("Failed to load settings _1, _2", error, file));
+        return;
+    }
+
+    const auto width  = settings_.get("window", "width", 1200);
+    const auto height = settings_.get("window", "height", 800);
+    DEBUG(str("Mainwindow dimensions _1 x _2", width, height));
+    resize(width, height);
+
+    const auto x = settings_.get("window", "x", 0);
+    const auto y = settings_.get("window", "y", 0);
+    DEBUG(str("Mainwindow position _1, _2", x, y));
+    move(x, y);
+
+    const auto show_statusbar = settings_.get("window", "show_statusbar", true);
+    const auto show_toolbar = settings_.get("window", "show_toolbar", true);
+    ui_.mainToolBar->setVisible(show_toolbar);
+    ui_.statusBar->setVisible(show_statusbar);
+    ui_.actionViewToolbar->setChecked(show_toolbar);
+    ui_.actionViewStatusbar->setChecked(show_statusbar);
+
+    recents_ = settings_.get("paths", "recents").toStringList();
+    recent_save_nzb_path_ = settings_.get("paths", "save_nzb").toString();
+    recent_load_nzb_path_ = settings_.get("paths", "load_nzb").toString();
+
+    for (std::size_t i=0; i<widgets_.size(); ++i)
+    {
+        const auto& text = widgets_[i]->windowTitle();
+        const auto& icon = widgets_[i]->windowIcon();
+        const auto& info = widgets_[i]->information();
+        const auto show  = settings_.get("visible_tabs", text, info.visible_by_default);
+
+        QAction* action = ui_.menuView->addAction(text);
+        action->setCheckable(true);
+        action->setChecked(show);
+        action->setProperty("index", (int)i);
+        QObject::connect(action, SIGNAL(triggered()), this, SLOT(actionWindowToggleView_triggered()));        
+
+        actions_.push_back(action);        
+        if (show)
+            ui_.mainTab->insertTab(i, widgets_[i], icon, text);
+
+        widgets_[i]->load(settings_);
+    }        
+
 }
 
 void MainWindow::show_widget(const QString& name)
@@ -131,35 +188,35 @@ void MainWindow::show_widget(const QString& name)
 
 void MainWindow::show_setting(const QString& name)
 {
-    DlgSettings dlg(this);
+    // DlgSettings dlg(this);
 
-    app::settings settings;
-    app_.get(settings);
+    // app::settings settings;
+    // app_.get(settings);
 
-    std::vector<std::unique_ptr<sdk::settings>> pages;
-    pages.emplace_back(new engine_settings(settings));
+    // std::vector<std::unique_ptr<sdk::settings>> pages;
+    // pages.emplace_back(new engine_settings(settings));
     
-    for (auto& widget : widgets_)
-    {
-        widget->add_settings(pages);
-    }
-    for (auto& page : pages)
-    {
-        dlg.attach(page.get());
-    }
+    // for (auto& widget : widgets_)
+    // {
+    //     widget->add_settings(pages);
+    // }
+    // for (auto& page : pages)
+    // {
+    //     dlg.attach(page.get());
+    // }
 
-    if (!name.isEmpty())
-        dlg.show(name);
+    // if (!name.isEmpty())
+    //     dlg.show(name);
 
-    if (dlg.exec() == QDialog::Accepted)
-    {
-        app_.set(settings);
+    // if (dlg.exec() == QDialog::Accepted)
+    // {
+    //     app_.set(settings);
 
-        for (auto& widget : widgets_)
-        {
-            widget->apply_settings();
-        }
-    }    
+    //     for (auto& widget : widgets_)
+    //     {
+    //         widget->apply_settings();
+    //     }
+    // }    
 }
 
 QString MainWindow::select_download_folder()
@@ -218,7 +275,7 @@ void MainWindow::recents(QStringList& paths) const
 void MainWindow::show(const QString& title)
 {
     const auto it = std::find_if(std::begin(widgets_), std::end(widgets_),
-        [&](const std::unique_ptr<sdk::widget>& widget) {
+        [&](const mainwidget* widget) {
             return widget->windowTitle() == title;
         });
     if (it == std::end(widgets_))
@@ -227,12 +284,9 @@ void MainWindow::show(const QString& title)
     show(std::distance(std::begin(widgets_), it));
 }
 
-void MainWindow::show(sdk::widget* widget)
+void MainWindow::show(mainwidget* widget)
 {
-    auto it = std::find_if(std::begin(widgets_), std::end(widgets_),
-        [&](const std::unique_ptr<sdk::widget>& maybe) {
-            return maybe.get()  == widget;
-        });
+    auto it = std::find(std::begin(widgets_), std::end(widgets_), widget);
     if (it == std::end(widgets_))
         return;
 
@@ -241,11 +295,11 @@ void MainWindow::show(sdk::widget* widget)
 
 void MainWindow::show(std::size_t index)
 {
-    auto& widget = widgets_[index];
+    auto* widget = widgets_[index];
     auto* action = actions_[index];
 
     // if already show, then do nothing
-    auto pos = ui_.mainTab->indexOf(widget.get());
+    auto pos = ui_.mainTab->indexOf(widget);
     if (pos != -1)
         return;
 
@@ -253,17 +307,15 @@ void MainWindow::show(std::size_t index)
 
     const auto& icon = widget->windowIcon();
     const auto& text = widget->windowTitle();
-    ui_.mainTab->insertTab(index, widget.get(), icon, text);
+    ui_.mainTab->insertTab(index, widget, icon, text);
     build_window_menu();
 
 }
 
-void MainWindow::hide(sdk::widget* widget)
+void MainWindow::hide(mainwidget* widget)
 {
-    auto it = std::find_if(std::begin(widgets_), std::end(widgets_),
-        [&](const std::unique_ptr<sdk::widget>& maybe) {
-            return maybe.get() == widget;
-        });
+    auto it = std::find(std::begin(widgets_), std::end(widgets_), widget);
+
     Q_ASSERT(it != std::end(widgets_));
 
     auto index = std::distance(std::begin(widgets_), it);
@@ -274,11 +326,11 @@ void MainWindow::hide(sdk::widget* widget)
 
 void MainWindow::hide(std::size_t index)
 {
-    auto& widget = widgets_[index];
+    auto* widget = widgets_[index];
     auto* action = actions_[index];
 
     // if already not shown then do nothing
-    auto pos = ui_.mainTab->indexOf(widget.get());
+    auto pos = ui_.mainTab->indexOf(widget);
     if (pos == -1)
         return;
 
@@ -289,7 +341,7 @@ void MainWindow::hide(std::size_t index)
     build_window_menu();
 }
 
-void MainWindow::focus(sdk::widget* ui)
+void MainWindow::focus(mainwidget* ui)
 {
     const auto index = ui_.mainTab->indexOf(ui);
     if (index == -1)
@@ -375,121 +427,13 @@ bool MainWindow::savestate()
         widgets_[i]->save(settings_);
     }
 
-    const auto file  = sdk::home::file("gui.json");
+    const auto file  = app::home::file("gui.json");
     const auto error = settings_.save(file);
     if (error != QFile::NoError)
         ERROR(str("Failed to save settings _1, _2", error, file));
 
     return error == QFile::NoError;
 }
-
-void MainWindow::loadstate()
-{
-    // load gui settings, we need this for the rest of the stuff
-    const auto file = sdk::home::file("gui.json");
-    if (!QFile::exists(file))
-    {
-        // assuming first launch if settings file doesn't exist
-        QTimer::singleShot(500, this, SLOT(timerWelcome_timeout()));        
-        return;
-    }
-
-    const auto error = settings_.load(file);
-    if (error != QFile::NoError)
-    {
-        ERROR(str("Failed to load settings _1, _2", error, file));
-        return;
-    }
-
-    const auto width  = settings_.get("window", "width", 1200);
-    const auto height = settings_.get("window", "height", 800);
-    DEBUG(str("Mainwindow dimensions _1 x _2", width, height));
-    resize(width, height);
-
-    const auto x = settings_.get("window", "x", 0);
-    const auto y = settings_.get("window", "y", 0);
-    DEBUG(str("Mainwindow position _1, _2", x, y));
-    move(x, y);
-
-    const auto show_statusbar = settings_.get("window", "show_statusbar", true);
-    const auto show_toolbar = settings_.get("window", "show_toolbar", true);
-    ui_.mainToolBar->setVisible(show_toolbar);
-    ui_.statusBar->setVisible(show_statusbar);
-    ui_.actionViewToolbar->setChecked(show_toolbar);
-    ui_.actionViewStatusbar->setChecked(show_statusbar);
-
-    recents_ = settings_.get("paths", "recents").toStringList();
-    recent_save_nzb_path_ = settings_.get("paths", "save_nzb").toString();
-    recent_load_nzb_path_ = settings_.get("paths", "load_nzb").toString();
-
-}
-
-void MainWindow::loadwidgets()
-{
-    widgets_.emplace_back(new Accounts(app_.get_model("accounts")));
-    widgets_.emplace_back(new Groups(app_.get_model("groups")));
-    widgets_.emplace_back(new Eventlog(app_.get_model("eventlog")));
-
-    const QDir dir(sdk::dist::path("plugins"));
-
-#define FAIL(x) \
-    if (1) { \
-        ERROR(str("Failed to load plugin library _1, _2", lib, x)); \
-        continue; \
-    }
-
-    for (const auto& name : dir.entryList())
-    {
-        const auto& file = dir.absoluteFilePath(name);
-        if (!QLibrary::isLibrary(file))
-            continue;
-
-        QLibrary lib(file);
-
-        DEBUG(str("Loading plugin _1", lib));
-
-        if (!lib.load())
-        {
-            ERROR(lib.errorString());
-            continue;
-        }
-
-        auto create = (sdk::fp_widget_create)(lib.resolve("create_widget"));
-        if (create == nullptr)
-            FAIL("no entry point found");
-
-        std::unique_ptr<sdk::widget> widget(create(this, sdk::widget::version));
-        if (!widget)
-            continue;
-
-        widgets_.push_back(std::move(widget));
-
-        INFO(str("Loaded _1", lib));
-    }
-
-#undef FAIL
-
-    for (std::size_t i=0; i<widgets_.size(); ++i)
-    {
-        const auto& text = widgets_[i]->windowTitle();
-        const auto& icon = widgets_[i]->windowIcon();
-        const auto& info = widgets_[i]->information();
-        const auto show  = settings_.get("visible_tabs", text, info.visible_by_default);
-
-        QAction* action = ui_.menuView->addAction(text);
-        action->setCheckable(true);
-        action->setChecked(show);
-        action->setProperty("index", (int)i);
-        QObject::connect(action, SIGNAL(triggered()), this, SLOT(actionWindowToggleView_triggered()));        
-
-        actions_.push_back(action);        
-        if (show)
-            ui_.mainTab->insertTab(i, widgets_[i].get(), icon, text);
-
-        widgets_[i]->load(settings_);
-    }    
-}
-
 
 void MainWindow::on_mainTab_currentChanged(int index)
 {
@@ -503,7 +447,7 @@ void MainWindow::on_mainTab_currentChanged(int index)
 
     if (index != -1)
     {
-        auto* widget = static_cast<sdk::widget*>(
+        auto* widget = static_cast<mainwidget*>(
             ui_.mainTab->widget(index)); 
 
         widget->activate(ui_.mainTab);
@@ -536,13 +480,11 @@ void MainWindow::on_mainTab_currentChanged(int index)
 
 void MainWindow::on_mainTab_tabCloseRequested(int tab)
 {
-    const auto* widget = static_cast<sdk::widget*>(ui_.mainTab->widget(tab));
+    const auto* widget = static_cast<mainwidget*>(ui_.mainTab->widget(tab));
 
     // find in the array
-    auto it = std::find_if(std::begin(widgets_), std::end(widgets_), 
-        [&](const std::unique_ptr<sdk::widget>& maybe) {
-            return maybe.get() == widget;
-        });
+    auto it = std::find(std::begin(widgets_), std::end(widgets_), widget);
+
     Q_ASSERT(it != std::end(widgets_));
 
     auto index = std::distance(std::begin(widgets_), it);
@@ -617,7 +559,7 @@ void MainWindow::on_actionRestore_triggered()
 
 void MainWindow::on_actionContextHelp_triggered()
 {
-    const auto* widget = static_cast<sdk::widget*>(ui_.mainTab->currentWidget());
+    const auto* widget = static_cast<mainwidget*>(ui_.mainTab->currentWidget());
     if (widget == nullptr)
         return;
 
@@ -698,7 +640,7 @@ void MainWindow::timerWelcome_timeout()
 
     const auto add_account = dlg.add_account();
 
-    sdk::send(gui::msg_first_launch {add_account}, "gui");
+    app::send(gui::msg_first_launch {add_account}, "gui");
 
 }
 

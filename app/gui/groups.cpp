@@ -31,20 +31,10 @@
 
 #include "groups.h"
 
-#include "../groups.h"
-
-namespace {
-    app::groups& get_groups_model(sdk::model& model)
-    {
-        return static_cast<app::groups&>(model);
-    }
-
-} // namespace 
-
 namespace gui
 {
 
-Groups::Groups(sdk::model& model) : model_(model)
+groups::groups(app::groups& model) : model_(model)
 {
     ui_.setupUi(this);
     ui_.tableGroups->setModel(model.view());
@@ -52,15 +42,15 @@ Groups::Groups(sdk::model& model) : model_(model)
     ui_.progressBar->setVisible(false);
 }
 
-Groups::~Groups()
+groups::~groups()
 {}
 
-void Groups::add_actions(QMenu& menu)
+void groups::add_actions(QMenu& menu)
 {
     menu.addAction(ui_.actionAdd);
 }
 
-void Groups::add_actions(QToolBar& bar)
+void groups::add_actions(QToolBar& bar)
 {
     bar.addAction(ui_.actionAdd);
     bar.addAction(ui_.actionRemove);
@@ -76,37 +66,37 @@ void Groups::add_actions(QToolBar& bar)
     bar.addAction(ui_.actionInfo);
 }
 
-sdk::widget::info Groups::information() const
+mainwidget::info groups::information() const
 {
     return {"groups.html", true};
 }
 
-void Groups::on_actionAdd_triggered()
+void groups::on_actionAdd_triggered()
 {
 
 }
 
-void Groups::on_actionRemove_triggered()
+void groups::on_actionRemove_triggered()
 {}
 
-void Groups::on_actionOpen_triggered()
+void groups::on_actionOpen_triggered()
 {}
 
-void Groups::on_actionUpdate_triggered()
+void groups::on_actionUpdate_triggered()
 {}
 
-void Groups::on_actionUpdateOptions_triggered()
-{}
-
-
-void Groups::on_actionDelete_triggered()
-{}
-
-void Groups::on_actionClean_triggered()
+void groups::on_actionUpdateOptions_triggered()
 {}
 
 
-void Groups::on_actionInfo_triggered()
+void groups::on_actionDelete_triggered()
+{}
+
+void groups::on_actionClean_triggered()
+{}
+
+
+void groups::on_actionInfo_triggered()
 {}
 
 

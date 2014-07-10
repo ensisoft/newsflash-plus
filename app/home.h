@@ -25,43 +25,35 @@
 #include <newsflash/config.h>
 
 #include <newsflash/warnpush.h>
-#  include <QtGlobal>
 #  include <QString>
 #include <newsflash/warnpop.h>
 
-namespace sdk
+namespace app
 {
-    struct msg_set_account {
-        quint32 id;
-        QString name;
+    // applications home directory in user home
+    class home
+    {
+    public:
+        // initialize once. 
+        // folder is name for our application specific folder
+        // in the user's real home. for example /home/roger/ on 
+        // a linux system and "c:\Documents and Settings\roger\"
+        // on a windows system, so we get 
+        // "home/roger/folder" and "c:\documents and settings\roger\folder".
+        static 
+        void init(const QString& folder);
+
+        // get absolute path to the applications home directory
+        static 
+        QString path();
+
+        // get the path to a file in the home directory 
+        // in system specific path notation.
+        static 
+        QString file(const QString& name);
+
+    private:
+        static QString pathstr;
     };
 
-    struct msg_del_account {
-        quint32 id;
-    };
-
-    struct msg_get_account {
-        quint32 id;
-        bool success;
-        QString name;
-        QString username;
-        QString password;
-        // etc.
-    };
-
-    struct msg_account_quota_update {
-        quint32 id;
-        quint64 total;
-        quint64 avail;
-        quint64 used;
-        bool enabled;
-        bool montly;
-    };
-
-    struct msg_account_downloads_update {
-        quint32 id;
-        quint64 all_time;
-        quint64 this_month;
-    };
-
-} // sdk
+} // app

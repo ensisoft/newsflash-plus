@@ -32,7 +32,7 @@ exe newsflash
 
   /engine//engine-lib/<link>static
   
-  /sdk//corekit/<link>shared
+  #/sdk//corekit/<link>shared
 
   ../keygen/keygen.cpp
 ;

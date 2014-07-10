@@ -34,11 +34,6 @@
 #  include <QUrl>
 #include <newsflash/warnpop.h>
 
-#include <newsflash/sdk/format.h>
-#include <newsflash/sdk/eventlog.h>
-#include <newsflash/sdk/debug.h>
-#include <newsflash/sdk/home.h>
-#include <newsflash/sdk/dist.h>
 #include <iostream>
 #include <exception>
 
@@ -48,9 +43,20 @@
 #include "mainwindow.h"
 #include "minidump.h"
 #include "config.h"
+#include "accounts.h"
+#include "groups.h"
+#include "eventlog.h"
 #include "../mainapp.h"
+#include "../eventlog.h"
+#include "../debug.h"
+#include "../format.h"
+#include "../dist.h"
+#include "../home.h"
+#include "../datastore.h"
+#include "../accounts.h"
+#include "../groups.h"
 
-using sdk::str;
+using app::str;
 
 namespace gui
 {
@@ -62,16 +68,16 @@ void openurl(const QString& url)
 
 void openhelp(const QString& page)
 {
-    const auto& help = sdk::dist::path("help");
+    const auto& help = app::dist::path("help");
     const auto& file = QString("file://%1/%2").arg(help).arg(page);
     QDesktopServices::openUrl(file);
 }
 
 // note that any Qt style must be applied first
 // thing before any Qt application object is instance is created.
-void set_style()
+void setstyle()
 {
-    const auto& file = sdk::home::file("style");
+    const auto& file = app::home::file("style");
     if (!QFile::exists(file))
         return;
 
@@ -140,24 +146,44 @@ int run(int argc, char* argv[])
     }
 
 
-    sdk::home::init(".newsflash");
-    sdk::dist::init();
+    app::home::init(".newsflash");
+    app::dist::init();
 
-    set_style();
+    setstyle();
+    copyright();    
 
     QCoreApplication::setLibraryPaths(QStringList());
-    QCoreApplication::addLibraryPath(sdk::dist::path());
-    QCoreApplication::addLibraryPath(sdk::dist::path("plugins-qt"));
-
-    copyright();
+    QCoreApplication::addLibraryPath(app::dist::path());
+    QCoreApplication::addLibraryPath(app::dist::path("plugins-qt"));
 
     // main application module
     app::mainapp app(qtinstance);
 
-    // bring up the main window
-    gui::MainWindow window(app);
+    // main application window
+    gui::MainWindow win(app);
 
-    window.show();
+    // accounts module
+    app::accounts app_accounts;
+    gui::accounts gui_accounts(app_accounts);
+    app.attach(&app_accounts);
+    win.attach(&gui_accounts);
+
+    // groups module
+    app::groups app_groups;
+    gui::groups gui_groups(app_groups);
+    app.attach(&app_groups);
+    win.attach(&gui_groups);
+
+    // eventlog
+    app::eventlog& app_eventlog = app::eventlog::get();
+    gui::eventlog  gui_eventlog(app_eventlog);
+    app.attach(&app_eventlog);
+    win.attach(&gui_eventlog);
+
+    app.loadstate();
+    win.loadstate();
+
+    win.show();
 
     return qtinstance.exec();
 }
@@ -181,6 +207,7 @@ int main(int argc, char* argv[])
         std::cerr << e.what();
         std::cerr << std::endl;
 
+// Todo: this doesn't work fix it
         QMessageBox msg;
         msg.setStandardButtons(QMessageBox::Ok);
         msg.setIcon(QMessageBox::Critical);

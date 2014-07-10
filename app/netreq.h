@@ -20,43 +20,32 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-#include "home.h"
+#pragma once
+
+#include <newsflash/config.h>
 
 #include <newsflash/warnpush.h>
-#  include <QDir>
+#  include <QString>
 #include <newsflash/warnpop.h>
 
-#include <stdexcept>
-#include "format.h"
+class QNetworkRequest;
+class QNetworkReply;
 
-namespace sdk
+namespace app
 {
+    // network request
+    class netreq
+    {
+    public:
+        virtual ~netreq() = default;
 
-QString home::pathstr;
+        // prepare a QNetworkRequest for submission
+        virtual void prepare(QNetworkRequest& request) {}
 
-void home::init(const QString& folder)
-{
-    const auto& home = QDir::homePath();
-    const auto& mine = home + "/" + folder;
+        // receive and process reply to the request
+        virtual void receive(QNetworkReply& reply) {}
+    protected:
+    private:
+    };
 
-    QDir dir;
-    if (!dir.mkpath(home + "/" + folder))
-        throw std::runtime_error(str_a("failed to create _1", mine));
-
-    pathstr = mine;
-}
-
-QString home::path() 
-{
-    return pathstr;
-}
-
-QString home::file(const QString& name)
-{
-    // pathstr is an absolute path so then this is also
-    // an absolute path.
-    return QDir::toNativeSeparators(QDir::cleanPath(pathstr + "/" + name));
-}
-
-
-} // sdk
+} // app

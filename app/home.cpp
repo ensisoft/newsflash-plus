@@ -21,32 +21,40 @@
 //  THE SOFTWARE.
 
 #include <newsflash/warnpush.h>
-#  include <QCoreApplication>
 #  include <QDir>
 #include <newsflash/warnpop.h>
 
-#include <cstring>
-#include "dist.h"
+#include <stdexcept>
+#include "home.h"
 #include "format.h"
 
-namespace sdk
+namespace app
 {
 
-void dist::init()
+QString home::pathstr;
+
+void home::init(const QString& folder)
 {
-    pathstr = QCoreApplication::applicationDirPath();
+    const auto& home = QDir::homePath();
+    const auto& mine = home + "/" + folder;
+
+    QDir dir;
+    if (!dir.mkpath(home + "/" + folder))
+        throw std::runtime_error(str_a("failed to create _1", mine));
+
+    pathstr = mine;
 }
 
-QString dist::path()
+QString home::path() 
 {
     return pathstr;
 }
 
-QString dist::path(const QString& path)
+QString home::file(const QString& name)
 {
-    return QDir::toNativeSeparators(pathstr + "/" + path);
+    // pathstr is an absolute path so then this is also
+    // an absolute path.
+    return QDir::toNativeSeparators(QDir::cleanPath(pathstr + "/" + name));
 }
 
-QString dist::pathstr;
-
-} // sdk
+} // app

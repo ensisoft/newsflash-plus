@@ -1,4 +1,4 @@
-// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -18,42 +18,17 @@
 //  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 //  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-//  THE SOFTWARE.
+//  THE SOFTWARE.            
 
-#pragma once
+#include "message.h"
 
-#include <newsflash/config.h>
-
-#include <newsflash/warnpush.h>
-#  include <QString>
-#include <newsflash/warnpop.h>
-
-namespace sdk
+namespace app
 {
-    // applications home directory in user home
-    class home
-    {
-    public:
-        // initialize once. 
-        // folder is name for our application specific folder
-        // in the user's real home. for example /home/roger/ on 
-        // a linux system and "c:\Documents and Settings\roger\"
-        // on a windows system, so we get 
-        // "home/roger/folder" and "c:\documents and settings\roger\folder".
-        static 
-        void init(const QString& folder);
 
-        // get absolute path to the applications home directory
-        static 
-        QString path();
+message_dispatcher& message_dispatcher::get()
+{
+    static message_dispatcher dispatch;
+    return dispatch;
+}
 
-        // get the path to a file in the home directory 
-        // in system specific path notation.
-        static 
-        QString file(const QString& name);
-
-    private:
-        static QString pathstr;
-    };
-
-} // sdk
+} // app

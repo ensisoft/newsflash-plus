@@ -24,17 +24,19 @@
 
 #include <newsflash/config.h>
 
-#include <newsflash/sdk/message.h>
-#include <newsflash/sdk/message_account.h>
-#include <newsflash/sdk/message_file.h>
-#include <newsflash/sdk/datastore.h>
-
 #include <newsflash/warnpush.h>
 #  include <QDate>
 #  include <QtGlobal>
 #  include <QString>
 #  include <QList>
 #include <newsflash/warnpop.h>
+
+#include <ctime>
+
+#include "datastore.h"
+#include "message.h"
+#include "msg_account.h"
+#include "msg_file.h"
 
 #define RW_PROPERTY(type, name, value) \
     private: type m_##name { value }; \
@@ -86,7 +88,7 @@ namespace app
             m_downloads_date = QDate::currentDate();
         }
 
-        account(const QString& key, const sdk::datastore& store)
+        account(const QString& key, const datastore& store)
         {
 #define LOAD(x) \
     m_##x = store.get(key, #x, m_##x)
@@ -118,7 +120,7 @@ namespace app
        ~account()
         {}
 
-        void save(const QString& key, sdk::datastore& store) const
+        void save(const QString& key, datastore& store) const
         {
 #define SAVE(x) \
     store.set(key, #x, m_##x)
@@ -164,7 +166,7 @@ namespace app
         }
 
     public:
-        void on_message(const char* sender, sdk::msg_file_complete& msg)
+        void on_message(const char* sender, msg_file_complete& msg)
         {
             if (msg.account != m_id)
                 return;
@@ -184,7 +186,7 @@ namespace app
 
             m_quota_spent += msg.local_size;
 
-            sdk::send(sdk::msg_account_quota_update{
+            send(msg_account_quota_update{
                 m_id, 
                 m_quota_total,
                 m_quota_total - m_quota_spent,
@@ -195,7 +197,7 @@ namespace app
             m_downloads_all_time += msg.local_size;
             m_downloads_this_month += msg.local_size;
 
-            sdk::send(sdk::msg_account_downloads_update{
+            send(msg_account_downloads_update{
                 m_id,
                 m_downloads_all_time,
                 m_downloads_this_month}, "accounts");

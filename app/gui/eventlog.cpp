@@ -33,41 +33,41 @@
 namespace gui
 {
 
-Eventlog::Eventlog(sdk::model& model) : model_(model)
+eventlog::eventlog(app::eventlog& model) : model_(model)
 {
     ui_.setupUi(this);
     ui_.listLog->setModel(model.view());
     ui_.actionClearLog->setEnabled(false);
 }
 
-Eventlog::~Eventlog()
+eventlog::~eventlog()
 {}
 
-void Eventlog::add_actions(QMenu& menu)
+void eventlog::add_actions(QMenu& menu)
 {
     menu.addAction(ui_.actionClearLog);
 }
 
-void Eventlog::add_actions(QToolBar& bar)
+void eventlog::add_actions(QToolBar& bar)
 {
     bar.addAction(ui_.actionClearLog);
 }
 
-void Eventlog::on_actionClearLog_triggered()
+void eventlog::on_actionClearLog_triggered()
 {
     ui_.actionClearLog->setEnabled(false);
     
     model_.clear();
 }
 
-void Eventlog::on_listLog_customContextMenuRequested(QPoint pos)
+void eventlog::on_listLog_customContextMenuRequested(QPoint pos)
 {
     QMenu menu(this);
     menu.addAction(ui_.actionClearLog);
     menu.exec(QCursor::pos());
 }
 
-sdk::widget::info Eventlog::information() const 
+mainwidget::info eventlog::information() const 
 {
     return {"eventlog.html", false};
 }

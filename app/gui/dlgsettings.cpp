@@ -23,6 +23,7 @@
 #include <newsflash/config.h>
 
 #include "dlgsettings.h"
+#include "settings.h"
 
 namespace gui
 {
@@ -35,7 +36,7 @@ DlgSettings::DlgSettings(QWidget* parent) : QDialog(parent)
 DlgSettings::~DlgSettings()
 {}
 
-void DlgSettings::attach(sdk::settings* tab)
+void DlgSettings::attach(settings* tab)
 {
     ui_.tab->addTab(tab, tab->windowTitle());
 }
@@ -60,7 +61,7 @@ void DlgSettings::on_btnAccept_clicked()
     for (int i=0; i<count; ++i)
     {
         auto* ptr = ui_.tab->widget(i);
-        auto* tab = static_cast<sdk::settings*>(ptr);
+        auto* tab = static_cast<settings*>(ptr);
         if (!tab->validate())
         {
             ui_.tab->setCurrentIndex(i);
@@ -71,7 +72,7 @@ void DlgSettings::on_btnAccept_clicked()
     for (int i=0; i<count; ++i)
     {
         auto* ptr = ui_.tab->widget(i);
-        auto* tab = static_cast<sdk::settings*>(ptr);
+        auto* tab = static_cast<settings*>(ptr);
         tab->accept();
     }
 
@@ -84,7 +85,7 @@ void DlgSettings::on_btnCancel_clicked()
     for (int i=0; i<count; ++i)
     {
         auto* ptr = ui_.tab->widget(i);
-        auto* tab = static_cast<sdk::settings*>(ptr);
+        auto* tab = static_cast<settings*>(ptr);
         tab->cancel();
     }
 }

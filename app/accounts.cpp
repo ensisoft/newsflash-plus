@@ -29,34 +29,30 @@
 #  include <QStringList>
 #include <newsflash/warnpop.h>
 
-#include <newsflash/sdk/eventlog.h>
-#include <newsflash/sdk/debug.h>
-#include <newsflash/sdk/format.h>
-#include <newsflash/sdk/datastore.h>
-#include <newsflash/sdk/message.h>
-#include <newsflash/sdk/message_account.h>
 #include <ctime>
 #include <algorithm>
 
 #include "accounts.h"
-
-
-using sdk::str;
-using sdk::str_a;
+#include "format.h"
+#include "eventlog.h"
+#include "debug.h"
+#include "datastore.h"
+#include "message.h"
+#include "msg_account.h"
 
 namespace app
 {
 
 accounts::accounts()
 {
-    sdk::listen<sdk::msg_get_account>(this, "accounts");
-    sdk::listen<sdk::msg_file_complete>(this, "accounts");
+    listen<msg_get_account>(this, "accounts");
+    listen<msg_file_complete>(this, "accounts");
     DEBUG("accounts created");
 }
 
 accounts::~accounts()
 {
-    sdk::remove_listener(this);
+    remove_listener(this);
     DEBUG("accounts deleted");
 }
 
@@ -101,7 +97,7 @@ void accounts::del(std::size_t index)
     accounts_.removeAt(index);
     endRemoveRows();
 
-    sdk::send(sdk::msg_del_account{aid}, "accounts");
+    send(msg_del_account{aid}, "accounts");
 }
 
 void accounts::set(const account& acc)
@@ -130,13 +126,13 @@ void accounts::set(const account& acc)
         emit dataChanged(first, last);
     }
 
-    sdk::msg_set_account msg {};
+    msg_set_account msg {};
     msg.id   = acc.id();
     msg.name = acc.name();
-    sdk::send(msg, "accounts");
+    send(msg, "accounts");
 }
 
-void accounts::save(sdk::datastore& datastore) const
+void accounts::save(datastore& datastore) const
 {
     QStringList list;
 
@@ -151,7 +147,7 @@ void accounts::save(sdk::datastore& datastore) const
     datastore.set("accounts", "list", list);
 }
 
-void accounts::load(const sdk::datastore& datastore)
+void accounts::load(const datastore& datastore)
 {
     QStringList list =  datastore.get("accounts", "list").toStringList();
 
@@ -204,7 +200,7 @@ QVariant accounts::data(const QModelIndex& index, int role) const
     return QVariant();
 }
 
-void accounts::on_message(const char* sender, sdk::msg_get_account& msg)
+void accounts::on_message(const char* sender, msg_get_account& msg)
 {
     msg.success = false;
 
@@ -223,7 +219,7 @@ void accounts::on_message(const char* sender, sdk::msg_get_account& msg)
         // etc.
 }
 
-void accounts::on_message(const char* sender, sdk::msg_file_complete& msg)
+void accounts::on_message(const char* sender, msg_file_complete& msg)
 {
     auto it = std::find_if(std::begin(accounts_), std::end(accounts_),
         [&](const account& acc) {

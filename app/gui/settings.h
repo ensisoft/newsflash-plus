@@ -29,7 +29,7 @@
 #  include <QString>
 #include <newsflash/warnpop.h>
 
-namespace sdk
+namespace gui
 {
     // settings widget extends the visible settings interface
     class settings : public QWidget
@@ -55,4 +55,5 @@ namespace sdk
     private:
 
     };
-} // sdk
+
+} // gui

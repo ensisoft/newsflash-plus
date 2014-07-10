@@ -22,15 +22,14 @@
 
 #pragma once
 
-#include <newsflash/sdk/settings.h>
-
 #include "ui_engine_settings.h"
+#include "settings.h"
 #include "../settings.h"
 
 namespace gui
 {
     // settings tab for the engine
-    class engine_settings : public sdk::settings
+    class engine_settings : public settings
     {
         Q_OBJECT
 

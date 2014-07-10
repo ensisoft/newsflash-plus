@@ -39,23 +39,16 @@
 #include <newsflash/engine/engine.h>
 #include <newsflash/engine/account.h>
 #include <newsflash/engine/listener.h>
-#include <newsflash/sdk/format.h>
-#include <newsflash/sdk/debug.h>
-#include <newsflash/sdk/eventlog.h>
-#include <newsflash/sdk/home.h>
-#include <newsflash/sdk/dist.h>
-#include <newsflash/sdk/request.h>
 #include <vector>
 #include "mainapp.h"
+#include "mainmodel.h"
+#include "eventlog.h"
 #include "accounts.h"
 #include "groups.h"
-
-using sdk::str;
-using sdk::str_a;
-using sdk::utf8;
-using sdk::narrow;
-using sdk::utf8;
-using sdk::latin;
+#include "debug.h"
+#include "format.h"
+#include "netreq.h"
+#include "home.h"
 
 namespace {
     // we post this event object to the application's event queue
@@ -83,50 +76,14 @@ namespace {
 namespace app
 {
 
-mainapp::mainapp(QCoreApplication& app) : app_(app)
+mainapp::mainapp(QCoreApplication& app) : app_(app), net_submit_timer_(0), net_timeout_timer_(0)
 {
-    const auto home = QDir::homePath();
-    settings_.data_path            = QDir::toNativeSeparators(home + "/Newsflash/Data");
-    settings_.logs_path            = QDir::toNativeSeparators(home + "/Newsflash/Logs");
-    settings_.downloads_path       = QDir::toNativeSeparators(home + "/Newsflash/Downloads");
-    settings_.enable_throttle      = false;
-    settings_.discard_text_content = false;
-    settings_.overwrite_existing   = false;
-    settings_.remove_complete      = false;
-    settings_.prefer_secure        = true;
-    settings_.throttle             = 0;
-
-    const auto file  = sdk::home::file("engine.json");
-    if (QFile::exists(file))
-    {
-        const auto error = data_.load(file);
-        if (error != QFile::NoError)
-        {
-            ERROR(str("Failed to read settings _1, _2", error, file));
-        }
-
-        for (auto& model : models_)
-        {
-            model->load(data_);
-        }        
-        sdk::eventlog::get().load(data_);
-        groups_.load(data_);
-        accounts_.load(data_);
-
-        load_settings();
-    }
-
-    engine_.reset(new newsflash::engine(*this, utf8(settings_.logs_path)));
-
     app.installEventFilter(this);
-
-    DEBUG("Application created");    
-
-    net_submit_timer_  = 0;
-    net_timeout_timer_ = 0;
 
     QObject::connect(&net_, SIGNAL(finished(QNetworkReply*)),
         this, SLOT(replyAvailable(QNetworkReply*)));
+
+    DEBUG("Application created");        
 }
 
 mainapp::~mainapp()
@@ -136,101 +93,66 @@ mainapp::~mainapp()
     DEBUG("Application deleted");
 }
 
-sdk::model& mainapp::get_model(const QString& name)
+void mainapp::loadstate()
 {
-    if (name == sdk::eventlog::get().name())
-        return sdk::eventlog::get();
-    else if (name == accounts_.name())
-        return accounts_;
-    else if (name == groups_.name())
-        return groups_;
+    datastore data;
 
-    auto it = std::find_if(std::begin(models_), std::end(models_),
-        [&](const std::unique_ptr<sdk::model>& model) {
-            return model->name() == name;
-        });
-    if (it == std::end(models_))
-        throw std::runtime_error("no such model");
-
-    auto& ptr = *it;
-
-    return *ptr.get();
-}
-
-sdk::model* mainapp::create_model(const char* klazz)
-{
-    DEBUG(str("Create instance of _1", klazz));
-
-#define FAIL(x) \
-    if (1) { \
-        ERROR(str("Failed to load plugin library _1, _2", lib, x)); \
-        continue; \
-    }
-
-    const QDir dir(sdk::dist::path("plugins"));
-
-    for (const auto& name : dir.entryList())
+    const auto file = home::file("engine.json");
+    if (QFile::exists(file))
     {
-        const auto file = dir.absoluteFilePath(name);
-        if (!QLibrary::isLibrary(file))
-            continue;
-
-        QLibrary lib(file);
-
-        DEBUG(str("Loading plugin _1", lib));
-
-        if (!lib.load())
+        const auto error = data.load(file);
+        if (error != QFile::NoError)
         {
-            ERROR(lib.errorString());
-            continue;
+            ERROR(str("Failed to read settings _1, _2", file, error));
+            return;
         }
-
-        auto create = (sdk::fp_model_create)(lib.resolve("create_model"));
-        if (create == nullptr)
-            FAIL("no entry point found");
-
-        std::unique_ptr<sdk::model> model(create(this, klazz, sdk::model::version));
-        if (!model)
-            continue;
-
-        models_.push_back(std::move(model));
-
-        INFO(str("Loaded _1", lib));
-
-        return models_.back().get();
     }
 
-#undef FAIL
+    const auto home = QDir::homePath();
 
-    DEBUG(str("No such model _1", klazz));
+    settings_.logs_path = data.get("settings", "logs_path", home + "/Newsflash/Logs");
+    settings_.data_path = data.get("settings", "data_path", home + "/Newsflash/Data");
+    settings_.downloads_path = data.get("settings", "downloads_path", home + "Downloads");
+    settings_.enable_throttle = data.get("settings", "enable_throttle", false);
+    settings_.discard_text_content = data.get("settings", "discard_text_content", false);
+    settings_.overwrite_existing = data.get("settings", "overwrite_existing", false);
+    settings_.remove_complete = data.get("settings", "remove_complete", false);
+    settings_.prefer_secure = data.get("settings", "prefer_secure", true);
+    settings_.throttle = data.get("settings", "throttle", 0);
 
-    return nullptr;
+    for (auto* model : models_)
+    {
+        model->load(data);
+    }
 }
 
 bool mainapp::savestate()
 {
-    data_.clear();
+    datastore data;
 
-    sdk::eventlog::get().save(data_);
+    data.set("settings", "logs_path", settings_.logs_path);
+    data.set("settings", "data_path", settings_.data_path);
+    data.set("settings", "downloads_path", settings_.downloads_path);
+    data.set("settings", "enable_throttle", settings_.enable_throttle);
+    data.set("settings", "discard_text_content", settings_.discard_text_content);
+    data.set("settings", "overwrite_existing", settings_.overwrite_existing);
+    data.set("settings", "remove_complete", settings_.remove_complete);
+    data.set("settings", "prefer_secure", settings_.prefer_secure);
+    data.set("settings", "throttle", settings_.throttle);
 
-    groups_.save(data_);
-    accounts_.save(data_);
-
-    for (auto& model : models_)
+    for (auto* model : models_)
     {
-        model->save(data_);
+        model->save(data);
     }
 
-    save_settings();
-
-    const auto file  = sdk::home::file("engine.json");
-    const auto error = data_.save(file);
+    const auto file  = home::file("engine.json");
+    const auto error = data.save(file);
     if (error != QFile::NoError)
     {
-        ERROR(str("Error saving settings _1 _2", error, file));
+        ERROR(str("Error saving settings _1, _2", file, error));
         return false;
     }
-    
+
     // todo: save engine state
 
     return true;
@@ -253,7 +175,7 @@ void mainapp::set(const app::settings& settings)
     // todo: configure engine
 }
 
-void mainapp::submit(sdk::model* model, sdk::request* req)
+void mainapp::submit(mainmodel* model, netreq* req)
 {
     const auto submit_interval_millis = 1000;
 
@@ -270,6 +192,11 @@ void mainapp::submit(sdk::model* model, sdk::request* req)
     }
 
     DEBUG(str("New submit, total _1", submits_.size()));
+}
+
+void mainapp::attach(mainmodel* model)
+{
+    models_.push_back(model);
 }
 
 void mainapp::handle(const newsflash::error& error)
@@ -352,8 +279,8 @@ void mainapp::replyAvailable(QNetworkReply* reply)
 
     auto& submit = *it;
 
-    submit.handler->receive(*reply);
-    submit.model->complete(submit.handler);
+    submit.request->receive(*reply);
+    submit.model->complete(submit.request);
 
     reply->deleteLater();
 
@@ -432,44 +359,6 @@ void mainapp::timerEvent(QTimerEvent* event)
     }
 }
 
-void mainapp::save_settings()
-{
-#define SAVE(x) \
-    data_.set("settings", #x, settings_.x)
-
-    SAVE(logs_path);
-    SAVE(data_path);
-    SAVE(downloads_path);
-    SAVE(enable_throttle);
-    SAVE(discard_text_content);
-    SAVE(overwrite_existing);
-    SAVE(remove_complete);
-    SAVE(prefer_secure);
-    SAVE(throttle);
-
-#undef SAVE
-}
-
-void mainapp::load_settings()
-{
-
-#define LOAD(x) \
-    settings_.x = data_.get("settings", #x, settings_.x)
-
-    LOAD(logs_path);
-    LOAD(data_path);
-    LOAD(downloads_path);
-    LOAD(enable_throttle);
-    LOAD(discard_text_content);
-    LOAD(overwrite_existing);
-    LOAD(remove_complete);
-    LOAD(prefer_secure);
-    LOAD(throttle);
-
-#undef LOAD
-
-}
-
 bool mainapp::submit_first()
 {
     auto it = std::find_if(std::begin(submits_), std::end(submits_),
@@ -484,7 +373,7 @@ bool mainapp::submit_first()
     QNetworkRequest request;
     request.setRawHeader("User-Agent", "NewsflashPlus");
     
-    submit.handler->prepare(request);
+    submit.request->prepare(request);
     submit.reply = net_.get(request);
     if (submit.reply == nullptr)
     {

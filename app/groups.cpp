@@ -30,14 +30,12 @@
 #  include <QFile>
 #include <newsflash/warnpop.h>
 
-#include <newsflash/sdk/datastore.h>
-#include <newsflash/sdk/home.h>
-#include <newsflash/sdk/debug.h>
-#include <newsflash/sdk/format.h>
-#include <newsflash/sdk/eventlog.h>
+#include "datastore.h"
+#include "eventlog.h"
+#include "debug.h"
 #include "groups.h"
+#include "format.h"
 
-using sdk::str;
 
 namespace app
 {
@@ -52,7 +50,7 @@ groups::~groups()
     DEBUG("groups deleted");
 }
 
-void groups::save(sdk::datastore& values) const
+void groups::save(datastore& values) const
 {
     QStringList list;
     for (const auto& group : groups_)
@@ -67,7 +65,7 @@ void groups::save(sdk::datastore& values) const
 }
 
 
-void groups::load(const sdk::datastore& values) 
+void groups::load(const datastore& values) 
 {
 
     const QStringList& list = values.get("groups", "list").toStringList();
@@ -163,14 +161,14 @@ QVariant groups::data(const QModelIndex& index, int role) const
                return group.name;
 
             case column::updated:
-                return sdk::format(sdk::age{group.updated});
+                return format(age{group.updated});
 
             case column::articles:
                 return group.articles;
 
 
             case column::size:
-                return sdk::format(sdk::size{group.size_on_disk});
+                return format(size{group.size_on_disk});
 
             default:
                 Q_ASSERT(!"missing column case");

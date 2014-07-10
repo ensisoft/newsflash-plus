@@ -27,11 +27,10 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <algorithm>
 #include "typereg.h"
-#include "debug.h"
-#include "format.h"
 
-namespace sdk
+namespace app
 {
     class message_dispatcher
     {
@@ -114,14 +113,14 @@ namespace sdk
     template<typename T>
     void send(T msg, const char* sender, const char* receiver = nullptr)
     {
-        auto& dispatcher = sdk::message_dispatcher::get();
+        auto& dispatcher = app::message_dispatcher::get();
         dispatcher.send(receiver, sender, msg); 
     }
 
     template<typename T>
     void send(T* msg, const char* sender, const char* receiver)
     {
-        auto& dispatcher = sdk::message_dispatcher::get();
+        auto& dispatcher = app::message_dispatcher::get();
         dispatcher.send(receiver, sender, *msg);
 
     }
@@ -130,22 +129,22 @@ namespace sdk
     template<typename T, typename Recv>
     void listen(Recv* receiver)
     {
-        auto& dispatcher = sdk::message_dispatcher::get();
+        auto& dispatcher = app::message_dispatcher::get();
         dispatcher.listen<T>(receiver, "");
     }
 
     template<typename T, typename Recv>
     void listen(Recv* receiver, const char* name)
     {
-        auto& dispatcher = sdk::message_dispatcher::get();
+        auto& dispatcher = app::message_dispatcher::get();
         dispatcher.listen<T>(receiver, name);
     }
 
     template<typename Recv>
     void remove_listener(Recv* receiver)
     {
-        auto& dispatcher = sdk::message_dispatcher::get();
+        auto& dispatcher = app::message_dispatcher::get();
         dispatcher.remove(receiver);
     }
 
-} // sdk
+} // app

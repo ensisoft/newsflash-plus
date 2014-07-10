@@ -32,14 +32,11 @@
 #  include <QString>
 #include <newsflash/warnpop.h>
 
-#include "model.h"
+#include "mainmodel.h"
 
-namespace sdk
+namespace app
 {
-    // eventlog is technically a backend module to the coreapp and could
-    // generally be a builtin. but since it's a universally handy module
-    // it lives here in the sdk library.
-    class eventlog : public sdk::model, public QAbstractListModel
+    class eventlog : public mainmodel, public QAbstractListModel
     {
     public:
         enum class event {
@@ -87,12 +84,12 @@ namespace sdk
 #endif
 
 #define WARN(m) \
-    sdk::eventlog::get().write(sdk::eventlog::event::warning, m, LOGTAG)    
+    app::eventlog::get().write(app::eventlog::event::warning, m, LOGTAG)    
 
 #define ERROR(m) \
-    sdk::eventlog::get().write(sdk::eventlog::event::error, m, LOGTAG)    
+    app::eventlog::get().write(app::eventlog::event::error, m, LOGTAG)    
 
 #define INFO(m) \
-    sdk::eventlog::get().write(sdk::eventlog::event::info, m, LOGTAG)    
+    app::eventlog::get().write(app::eventlog::event::info, m, LOGTAG)    
 
-} // sdk
+} // app

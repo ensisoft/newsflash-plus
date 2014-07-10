@@ -31,13 +31,13 @@
 #include <newsflash/warnpop.h>
 #include "ui_dlgsettings.h"
 
-#include <newsflash/sdk/settings.h>
-
 class QTableWidgetItem;
 class QEvent;
 
 namespace gui
 {
+    class settings;
+
     class DlgSettings : public QDialog
     {
         Q_OBJECT
@@ -46,7 +46,7 @@ namespace gui
         DlgSettings(QWidget* parent);
        ~DlgSettings();
 
-        void attach(sdk::settings* tab);
+        void attach(settings* tab);
         void show(const QString& title);
 
     private slots:

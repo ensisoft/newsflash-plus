@@ -24,38 +24,39 @@
 
 #include <newsflash/config.h>
 
-#include <newsflash/sdk/widget.h>
-#include <newsflash/sdk/model.h>
-#include <newsflash/sdk/message.h>
-#include <newsflash/sdk/message_account.h>
 #include <newsflash/warnpush.h>
+
 #include <newsflash/warnpop.h>
+
 #include <memory>
 #include "message.h"
+#include "mainwidget.h"
 #include "ui_accounts.h"
+#include "../accounts.h"
+#include "../msg_account.h"
 
 class QMovie;
 class QAbstractItemModel;
 
 namespace gui
 {
-    class Accounts : public sdk::widget
+    class accounts : public mainwidget
     {
         Q_OBJECT
         
     public:
-        Accounts(sdk::model& model);
-       ~Accounts();
+        accounts(app::accounts& model);
+       ~accounts();
 
         virtual void add_actions(QMenu& menu) override;
         virtual void add_actions(QToolBar& bar) override;
         virtual info information() const override;
-        virtual void load(const sdk::datastore& data) override;
-        virtual void save(sdk::datastore& data) override;
+        virtual void load(const app::datastore& data) override;
+        virtual void save(app::datastore& data) override;
 
         void on_message(const char* sender, msg_first_launch& msg);
-        void on_message(const char* sender, sdk::msg_account_downloads_update& msg);
-        void on_message(const char* sender, sdk::msg_account_quota_update& msg);
+        void on_message(const char* sender, app::msg_account_downloads_update& msg);
+        void on_message(const char* sender, app::msg_account_quota_update& msg);
 
     private:
         void advertise(bool show);        
@@ -83,7 +84,7 @@ namespace gui
         Ui::Accounts ui_;
 
     private:
-        sdk::model& model_;
+        app::accounts& model_;
         std::unique_ptr<QMovie> movie_;
         QString license_;
         bool in_row_changed_;

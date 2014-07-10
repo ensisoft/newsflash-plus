@@ -20,46 +20,33 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-#pragma once
-
-#include <newsflash/config.h>
-
 #include <newsflash/warnpush.h>
-#  include <QtGlobal>
-#  include <QString>
+#  include <QCoreApplication>
+#  include <QDir>
 #include <newsflash/warnpop.h>
 
-namespace sdk
+#include <cstring>
+#include "dist.h"
+#include "format.h"
+
+namespace app
 {
-    struct msg_file_complete {
-        // the account that was used to download this file from.
-        quint32 account;
 
-        // the path in the file system 
-        QString path;
+void dist::init()
+{
+    pathstr = QCoreApplication::applicationDirPath();
+}
 
-        // the name of the file
-        QString name;
+QString dist::path()
+{
+    return pathstr;
+}
 
-        // true if file is expected to be damaged someway
-        bool damaged;
+QString dist::path(const QString& path)
+{
+    return QDir::toNativeSeparators(pathstr + "/" + path);
+}
 
-        // size on the disk 
-        quint64 local_size;
+QString dist::pathstr;
 
-        // size/amount of bytes transferred over the network
-        quint64 network_size;
-    };
-    
-    struct msg_file_unavailable {
-        // the account that was used to download this file from.
-        quint32 account;
-
-        // the original description of the file
-        QString description;
-
-        // true if dmca takedown was detected
-        bool dmca;
-    };
-
-} // sdk
+} // app

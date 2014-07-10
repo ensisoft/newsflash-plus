@@ -33,28 +33,21 @@
 #include <vector>
 #include <memory>
 
-#include "plugin.h"
-
 class QMenu;
 class QToolBar;
 
-namespace sdk
-{
+namespace app {
     class datastore;
-    class window;
+}
+
+namespace gui
+{
     class settings;
 
-    // widget objects extend the use visible interface.
-    // a widget typically uses a model object and presents
-    // the data within the model to the user and responds
-    // to user interactions.
-    class widget : public QWidget
+    // mainwidget objects sit in the mainwindow's main tab 
+    class mainwidget : public QWidget
     {
     public:
-        enum { 
-            version = 1
-        };
-
         struct info {
             // this is the URL to the help (file). If it specifies a filename
             // it is considered to be a help file in the application's help installation
@@ -65,7 +58,7 @@ namespace sdk
             bool visible_by_default;            
         };
 
-        virtual ~widget() = default;
+        virtual ~mainwidget() = default;
         
         // Add the component specific menu actions to a menu inside the host application
         virtual void add_actions(QMenu& menu) {}
@@ -74,7 +67,7 @@ namespace sdk
         virtual void add_actions(QToolBar& bar) {}
 
         // Add the settings widgets if any.
-        virtual void add_settings(std::vector<std::unique_ptr<sdk::settings>>& pages) { }
+        virtual void add_settings(std::vector<std::unique_ptr<settings>>& pages) { }
         
         virtual void apply_settings() {}
 
@@ -86,23 +79,15 @@ namespace sdk
         virtual void deactivate() {}
 
         // save widget state into datastore
-        virtual void save(datastore& store) {}
+        virtual void save(app::datastore& store) {}
 
         // load widget state from datastore.
-        virtual void load(const datastore& store) {}
+        virtual void load(const app::datastore& store) {}
 
         // get information about the widget.
         virtual info information() const { return {"", false}; }
 
-
     private:
     };
 
-    typedef widget* (*fp_widget_create)(sdk::window*, int);
-
-} // sdk
-
-    // factory function for creating a widget object.
-    // this function may not throw, instead it should return
-    // a null pointer on error.
-    PLUGIN_API sdk::widget* create_widget(sdk::window*, int version);
+} // gui

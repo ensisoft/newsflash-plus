@@ -49,10 +49,10 @@ namespace {
 
 } // namespace
 
-namespace sdk
+namespace app
 {
 
-QString format(const sdk::size& size)
+QString format(const app::size& size)
 {
     if (size.bytes >= GB)
         return QString("%1 Gb").arg(size.bytes / GB, 0, 'f', 1, ' ');
@@ -62,7 +62,7 @@ QString format(const sdk::size& size)
     return QString("%1 Kb").arg(size.bytes / KB, 0, 'f', 1, ' ');
 }
 
-QString format(const sdk::speed& speed)
+QString format(const app::speed& speed)
 {
     if (speed.bps >= GB)
         return QString("%1 Gb/s").arg(speed.bps / GB, 0, 'f', 1);
@@ -72,17 +72,17 @@ QString format(const sdk::speed& speed)
     return QString("%1 Kb/s").arg(speed.bps / KB, 0, 'f', 1);
 }
 
-QString format(const sdk::gigs& gigs)
+QString format(const app::gigs& gigs)
 {
     return QString("%1 Gb").arg(gigs.as_float(), 0, 'f', 1, ' ');
 }
 
-QString format(const sdk::megs& megs)
+QString format(const app::megs& megs)
 {
     return QString("%1 Mb").arg(megs.as_float(), 0, 'f', 1, ' ');
 }
 
-QString format(const sdk::event& event)
+QString format(const app::event& event)
 {
     if (!event.valid())
         return "???";
@@ -122,34 +122,34 @@ QString format(const sdk::event& event)
     const auto when = event.as_when();
     switch (when)
     {
-        case sdk::event::when::today:
+        case app::event::when::today:
         str = date.toString("'Today' hh:mm");
         break;
 
-        case sdk::event::when::yesterday:
+        case app::event::when::yesterday:
         str = date.toString("'Yesterday' hh:mm");
         break;
 
-        case sdk::event::when::this_week:
+        case app::event::when::this_week:
         str = date.toString("dddd hh:mm");
         break;
 
-        case sdk::event::when::this_month:
+        case app::event::when::this_month:
         str = date.toString("dddd, dd");
         break;
 
-        case sdk::event::when::this_year:
+        case app::event::when::this_year:
         str = date.toString("MMMM, dd");
         break;
 
-        case sdk::event::when::before:
+        case app::event::when::before:
         str = date.toString("yyyy, MMM, dd");
         break;
     }
     return str;
 }
 
-QString format(const sdk::age& age)
+QString format(const app::age& age)
 {
     return QString("%1 days").arg(age.days());
 }
@@ -236,4 +236,4 @@ QString widen(const wchar_t* str)
 #endif
 }
 
-} // sdk
+} // app

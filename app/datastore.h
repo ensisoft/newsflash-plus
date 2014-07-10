@@ -30,7 +30,7 @@
 
 class QIODevice;
 
-namespace sdk
+namespace app
 {
     // store arbitrary values/objects with a context/name key.
     // values are keyed by context-name pair so that for example
@@ -93,4 +93,4 @@ namespace sdk
         QVariantMap values_;
     };
 
-} // sdk
+} // app

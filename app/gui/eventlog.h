@@ -22,23 +22,23 @@
 
 #pragma once
 
-#include <newsflash/sdk/widget.h>
-#include <newsflash/sdk/model.h>
+#include "mainwidget.h"
 #include "ui_eventlog.h"
+#include "../eventlog.h"
 
 namespace gui
 {
-    class Eventlog : public sdk::widget
+    class eventlog : public mainwidget
     {
         Q_OBJECT
 
     public:
-        Eventlog(sdk::model& model);
-       ~Eventlog();
+        eventlog(app::eventlog& model);
+       ~eventlog();
 
         virtual void add_actions(QMenu& menu) override;
         virtual void add_actions(QToolBar& bar) override;
-        sdk::widget::info information() const override;
+        mainwidget::info information() const override;
 
     private slots:
         void on_actionClearLog_triggered();
@@ -48,7 +48,7 @@ namespace gui
         Ui::Eventlog ui_;
 
     private:
-        sdk::model& model_;
+        app::eventlog& model_;
     };
 
 } // gui

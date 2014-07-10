@@ -31,11 +31,10 @@
 #  include <QList>
 #include <newsflash/warnpop.h>
 
-#include <newsflash/sdk/datastore.h>
-#include <newsflash/sdk/window.h>
-#include <newsflash/sdk/model.h>
+//#include <newsflash/sdk/model.h>
 #include "ui_mainwindow.h"
 #include "../mainapp.h"
+#include "../datastore.h"
 
 #include <vector>
 #include <memory>
@@ -43,42 +42,46 @@
 class QIcon;
 class QAction;
 class QCloseEvent;
-
-namespace sdk {
-    class widget;
-} //
+class QCoreApplication;
 
 namespace gui
 {
-    class MainWindow : public QMainWindow, public sdk::window
+    class mainwidget;
+
+    class MainWindow : public QMainWindow
     {
         Q_OBJECT
 
     public:
+        using QMainWindow::show;
+
         MainWindow(app::mainapp& app);
        ~MainWindow();
        
-        using QMainWindow::show;
+        void attach(mainwidget* widget);
 
-        virtual sdk::model* create_model(const char* klazz) override;
+        void loadstate();
 
-        virtual void show_widget(const QString& name) override;
+        void load(const app::datastore& store);
+        void save(app::datastore& store);
 
-        virtual void show_setting(const QString& name) override;
+        void show_widget(const QString& name);
 
-        virtual QString select_download_folder() override;
+        void show_setting(const QString& name);
 
-        virtual QString select_save_nzb_folder() override;
+        QString select_download_folder();
 
-        virtual void recents(QStringList& paths) const override;
+        QString select_save_nzb_folder();
+        
+        void recents(QStringList& paths) const;
 
    private:
         void show(const QString& name);
-        void show(sdk::widget* widget);
+        void show(mainwidget* widget);
         void show(std::size_t index);
-        void hide(sdk::widget* widget);        
+        void hide(mainwidget* widget);        
         void hide(std::size_t index);
-        void focus(sdk::widget* widget);    
+        void focus(mainwidget* widget);    
 
     private:
         void closeEvent(QCloseEvent* event);
@@ -86,9 +89,7 @@ namespace gui
     private:
         void build_window_menu();
         bool savestate();
-        void loadstate();
-        void loadwidgets();
-
+        
     private slots:
         void on_mainTab_currentChanged(int index);
         void on_mainTab_tabCloseRequested(int index);
@@ -112,10 +113,10 @@ namespace gui
 
     private:
         app::mainapp& app_;        
-        sdk::datastore settings_;
-        sdk::widget* current_;        
-        std::vector<std::unique_ptr<sdk::widget>> widgets_;
+        app::datastore settings_;
+        std::vector<mainwidget*> widgets_;
         std::vector<QAction*> actions_;
+        mainwidget* current_;                
     private:
         QSystemTrayIcon tray_;
         QStringList recents_;

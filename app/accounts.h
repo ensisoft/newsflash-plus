@@ -24,10 +24,6 @@
 
 #include <newsflash/config.h>
 
-#include <newsflash/sdk/model.h>
-#include <newsflash/sdk/message.h>
-#include <newsflash/sdk/message_account.h>
-
 #include <newsflash/warnpush.h>
 #  include <QAbstractListModel>
 #  include <QDateTime>
@@ -39,11 +35,15 @@
 #include <memory>
 #include <vector>
 
+#include "mainmodel.h"
 #include "account.h"
+#include "message.h"
+#include "msg_account.h"
+#include "msg_file.h"
 
 namespace app
 {
-    class accounts : public sdk::model, public QAbstractListModel
+    class accounts : public mainmodel, public QAbstractListModel
     {
     public:
         accounts();
@@ -66,10 +66,10 @@ namespace app
         void set(const account& acc);
 
         // persist accounts into datastore
-        virtual void save(sdk::datastore& datastore) const override;
+        virtual void save(datastore& datastore) const override;
 
         // retrieve accounts from datastore
-        virtual void load(const sdk::datastore& datastore) override;
+        virtual void load(const datastore& datastore) override;
 
         // model impl
         virtual QAbstractItemModel* view() override;
@@ -82,8 +82,8 @@ namespace app
         // AbstractListMode impl
         virtual QVariant data(const QModelIndex&, int role) const override;
 
-        void on_message(const char* sender, sdk::msg_get_account& msg);   
-        void on_message(const char* sender, sdk::msg_file_complete& msg);
+        void on_message(const char* sender, msg_get_account& msg);   
+        void on_message(const char* sender, msg_file_complete& msg);
 
     private:
         QList<account> accounts_;

@@ -24,8 +24,6 @@
 
 #include <newsflash/config.h>
 
-#include <newsflash/sdk/model.h>
-
 #include <newsflash/warnpush.h>
 #  include <QAbstractTableModel>
 #  include <QDateTime>
@@ -34,19 +32,20 @@
 #include <newsflash/warnpop.h>
 
 #include <vector>
+#include "mainmodel.h"
 
 namespace app
 {
-    class groups : public sdk::model, public QAbstractTableModel
+    class groups : public mainmodel, public QAbstractTableModel
     {
 
     public:
         groups();
        ~groups();
 
-        virtual void save(sdk::datastore& values) const override;
+        virtual void save(datastore& values) const override;
 
-        virtual void load(const sdk::datastore& values) override;
+        virtual void load(const datastore& values) override;
 
         // sdk::model
         virtual QAbstractItemModel* view() override;

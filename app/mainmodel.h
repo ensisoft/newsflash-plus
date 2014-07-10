@@ -29,29 +29,18 @@
 #  include <QString>
 #include <newsflash/warnpop.h>
 
-#include "plugin.h"
-
 class QAbstractItemModel;
 
-namespace sdk
+namespace app
 {
     class datastore;
-    class hostapp;
-    class request;
+    class netreq;
 
-    // model implementations are application plugins 
-    // that represent application data and provide actions
-    // for the GUI to invoke upon that data.
-    // typically the GUI obtains a reference to the model
-    // and then calls model methods directly.
-    class model
+    // data model
+    class mainmodel
     {
     public:
-        enum {
-            version = 1
-        };
-
-        virtual ~model() = default;
+        virtual ~mainmodel() = default;
 
         // clear all the data in the model
         virtual void clear() {};
@@ -69,7 +58,7 @@ namespace sdk
         // load model state from the datastore.
         virtual void load(const datastore& store) {}
 
-        virtual void complete(request* request) {};
+        virtual void complete(netreq* request) {};
 
         virtual bool shutdown() { return true; }
 
@@ -80,11 +69,6 @@ namespace sdk
 
     };
 
-    typedef model* (*fp_model_create)(sdk::hostapp*, const char*, int);
+} // app
 
-} // sdk
 
-  // factory function, create a plugin object. 
-  // this function may not throw an exception but should return nullptr on error
-  PLUGIN_API sdk::model* create_model(sdk::hostapp*, const char* klazz, int version);
-  

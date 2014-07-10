@@ -25,33 +25,41 @@
 #include <newsflash/config.h>
 
 #include <newsflash/warnpush.h>
+#  include <QtGlobal>
 #  include <QString>
 #include <newsflash/warnpop.h>
 
-namespace sdk
+namespace app
 {
-    // access to our installation environment, based 
-    // on the application installation location.
-    class dist 
-    {
-    public:
-        static
-        void init();
+    struct msg_file_complete {
+        // the account that was used to download this file from.
+        quint32 account;
 
-        // get absolute path to the installation base folder
-        static
-        QString path();
+        // the path in the file system 
+        QString path;
 
-        // get absolute path to the path relative to the installation foldern
-        static
-        QString path(const QString& path);
+        // the name of the file
+        QString name;
 
-        static
-        QString help(const QString& page);
+        // true if file is expected to be damaged someway
+        bool damaged;
 
-    private:
-        static QString pathstr;
+        // size on the disk 
+        quint64 local_size;
+
+        // size/amount of bytes transferred over the network
+        quint64 network_size;
+    };
+    
+    struct msg_file_unavailable {
+        // the account that was used to download this file from.
+        quint32 account;
+
+        // the original description of the file
+        QString description;
+
+        // true if dmca takedown was detected
+        bool dmca;
     };
 
-} // sdk
-
+} // app

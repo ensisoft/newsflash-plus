@@ -31,16 +31,12 @@
 #  include <QDebug>
 #include <newsflash/warnpop.h>
 
-#include <newsflash/sdk/format.h>
-
 #include <stdexcept>
 #include <sstream>
 #include "datastore.h"
+#include "format.h"
 
-using sdk::str;
-using sdk::str_a;
-
-namespace sdk
+namespace app
 {
 
 datastore::datastore()
@@ -149,9 +145,6 @@ void datastore::set(const QString& key, const QString& attr, const QVariant& val
     map[attr] = value;
     values_[key] = map;
 }
-
-
-
 
 } // app
 

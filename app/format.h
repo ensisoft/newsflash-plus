@@ -36,9 +36,8 @@ class QLibrary;
 class QFile;
 class QDir;
 
-namespace sdk
+namespace app
 {
-
     struct size {
         quint64 bytes;
     };
@@ -175,12 +174,12 @@ namespace sdk
     QString format(const QDir& dir);
     QString format(const QLibrary& lib);
     QString format(const QUrl& url);
-    QString format(const sdk::size& size);
-    QString format(const sdk::speed& speed);
-    QString format(const sdk::gigs& gigs);
-    QString format(const sdk::megs& megs);
-    QString format(const sdk::event& event);
-    QString format(const sdk::age& age);
+    QString format(const app::size& size);
+    QString format(const app::speed& speed);
+    QString format(const app::gigs& gigs);
+    QString format(const app::megs& megs);
+    QString format(const app::event& event);
+    QString format(const app::age& age);
     QString format(const std::string& str);        
 
 
@@ -194,14 +193,14 @@ namespace sdk
         template<typename T>
         void format_arg(QString& s, int index, const T& t)
         {
-            const auto& str = sdk::format(t);
+            const auto& str = app::format(t);
             s = s.replace(key(index), str);
         }
 
         template<typename T, typename... Rest>
         void format_arg(QString& s, int index, const T& t, const Rest&... rest)
         {
-            const auto& str = sdk::format(t);
+            const auto& str = app::format(t);
             s = s.replace(key(index), str);
             format_arg(s, index + 1, rest...);
         }

@@ -31,11 +31,6 @@
 #include <newsflash/warnpop.h>
 
 #include <newsflash/keygen/keygen.h>
-#include <newsflash/sdk/format.h>
-#include <newsflash/sdk/debug.h>
-#include <newsflash/sdk/datastore.h>
-#include <newsflash/sdk/message.h>
-#include <newsflash/sdk/message_account.h>
 #include <ctime>
 
 #include "dlgaccount.h"
@@ -43,23 +38,19 @@
 #include "message.h"
 
 #include "../accounts.h"
+#include "../datastore.h"
+#include "../debug.h"
+#include "../format.h"
+#include "../message.h"
 
-
-using sdk::str;
-
-namespace {
-    app::accounts& get_accounts_model(sdk::model& m)
-    {
-        return static_cast<app::accounts&>(m);
-    }
-}// 
+using app::str;
 
 namespace gui
 {
 
 void openurl(const QString&);
 
-Accounts::Accounts(sdk::model& model) : model_(model)
+accounts::accounts(app::accounts& model) : model_(model)
 {
     ui_.setupUi(this);
     ui_.listView->setModel(model.view());
@@ -85,17 +76,17 @@ Accounts::Accounts(sdk::model& model) : model_(model)
     pie->setHeaderData(1, Qt::Horizontal, tr("Used"));
     ui_.pie->setModel(pie);
 
-    sdk::listen<msg_first_launch>(this);
-    sdk::listen<sdk::msg_account_downloads_update>(this);
-    sdk::listen<sdk::msg_account_quota_update>(this);
+    app::listen<msg_first_launch>(this);
+    app::listen<app::msg_account_downloads_update>(this);
+    app::listen<app::msg_account_quota_update>(this);
 }
 
-Accounts::~Accounts()
+accounts::~accounts()
 {
     ui_.lblMovie->removeEventFilter(this);
 }
 
-void Accounts::add_actions(QMenu& menu)
+void accounts::add_actions(QMenu& menu)
 {
     menu.addAction(ui_.actionNew);
     menu.addAction(ui_.actionDel);
@@ -103,7 +94,7 @@ void Accounts::add_actions(QMenu& menu)
     menu.addAction(ui_.actionProperties);
 }
 
-void Accounts::add_actions(QToolBar& bar)
+void accounts::add_actions(QToolBar& bar)
 {
     bar.addAction(ui_.actionNew);
     bar.addAction(ui_.actionDel);
@@ -111,12 +102,12 @@ void Accounts::add_actions(QToolBar& bar)
     bar.addAction(ui_.actionProperties);
 }
 
-sdk::widget::info Accounts::information() const
+mainwidget::info accounts::information() const
 {
     return {"accounts.html", true};
 }
 
-void Accounts::load(const sdk::datastore& data)
+void accounts::load(const app::datastore& data)
 {
     const auto license  = data.get("accounts", "license", "");
     const bool validate = keygen::verify_code(license);
@@ -127,12 +118,12 @@ void Accounts::load(const sdk::datastore& data)
     license_ = license;
 }
 
-void Accounts::save(sdk::datastore& data)
+void accounts::save(app::datastore& data)
 {
     data.set("accounts", "license", license_);
 }
 
-void Accounts::advertise(bool show)
+void accounts::advertise(bool show)
 {
     ui_.lblMovie->setMovie(nullptr);
     ui_.lblMovie->setVisible(false);
@@ -178,28 +169,26 @@ void Accounts::advertise(bool show)
     ui_.lblRegister->setVisible(true);
 }
 
-void Accounts::on_message(const char*, msg_first_launch& msg)
+void accounts::on_message(const char*, msg_first_launch& msg)
 {
     if (!msg.add_account)
         return;
 
-    auto& accounts = get_accounts_model(model_);
-    auto account   = accounts.suggest();
+    auto account = model_.suggest();
 
     DlgAccount dlg(this, account);
     if (dlg.exec() == QDialog::Accepted)
-        accounts.set(account);
+        model_.set(account);
 
 }
 
-void Accounts::on_message(const char*, sdk::msg_account_downloads_update& msg)
+void accounts::on_message(const char*, app::msg_account_downloads_update& msg)
 {
     const auto row = ui_.listView->currentIndex().row();
     if (row == -1)
         return;
 
-    const auto& accounts = get_accounts_model(model_);
-    const auto& account  = accounts.get(row);
+    const auto& account  = model_.get(row);
     if (account.id() != msg.id)
         return;
 
@@ -207,14 +196,13 @@ void Accounts::on_message(const char*, sdk::msg_account_downloads_update& msg)
     currentRowChanged();
 }
 
-void Accounts::on_message(const char*, sdk::msg_account_quota_update& msg)
+void accounts::on_message(const char*, app::msg_account_quota_update& msg)
 {
     const auto row = ui_.listView->currentIndex().row();
     if (row == -1)
         return;
 
-    const auto& accounts = get_accounts_model(model_);
-    const auto& account  = accounts.get(row);
+    const auto& account = model_.get(row);
     if (account.id() != msg.id)
         return;
 
@@ -222,7 +210,7 @@ void Accounts::on_message(const char*, sdk::msg_account_quota_update& msg)
     currentRowChanged();
 }
 
-bool Accounts::eventFilter(QObject* object, QEvent* event)
+bool accounts::eventFilter(QObject* object, QEvent* event)
 {
     if (object == ui_.lblMovie &&
         event->type() == QEvent::MouseButtonPress)
@@ -234,41 +222,38 @@ bool Accounts::eventFilter(QObject* object, QEvent* event)
     return QObject::eventFilter(object, event);
 }
 
-void Accounts::on_actionNew_triggered()
+void accounts::on_actionNew_triggered()
 {
-    auto& accounts = get_accounts_model(model_);
-    auto account   = accounts.suggest();
+    auto account  = model_.suggest();
 
     DlgAccount dlg(this, account);
     if (dlg.exec() == QDialog::Accepted)
-        accounts.set(account);
+        model_.set(account);
 }
 
-void Accounts::on_actionDel_triggered()
+void accounts::on_actionDel_triggered()
 {
     const auto row = ui_.listView->currentIndex().row();
     if (row == -1)
         return;
 
-    auto& accounts = get_accounts_model(model_);
-    accounts.del(row);
+    model_.del(row);
 }
 
-void Accounts::on_actionProperties_triggered()
+void accounts::on_actionProperties_triggered()
 {
     const auto row = ui_.listView->currentIndex().row();
     if (row == -1)
         return;
 
-    auto& accounts = get_accounts_model(model_);
-    auto account   = accounts.get(row);
+    auto account = model_.get(row);
 
     DlgAccount dlg(this, account);
     if (dlg.exec() == QDialog::Accepted)
-        accounts.set(account);
+        model_.set(account);
 }
 
-void Accounts::currentRowChanged()
+void accounts::currentRowChanged()
 {
     QStandardItemModel* model = static_cast<QStandardItemModel*>(ui_.pie->model());
     if (model->rowCount())
@@ -299,15 +284,14 @@ void Accounts::currentRowChanged()
     ui_.actionDel->setEnabled(true);
     ui_.actionProperties->setEnabled(true);
 
-    const auto& accounts = get_accounts_model(model_);
-    const auto& account  = accounts.get(row);
+    const auto& account = model_.get(row);
 
     const auto quota_type   = account.quota_type();            
-    const auto quota_total  = sdk::gigs(account.quota_total());
-    const auto quota_spent  = sdk::gigs(account.quota_spent());
-    const auto quota_avail  = sdk::gigs(account.quota_avail());
-    const auto gigs_alltime = sdk::gigs(account.downloads_all_time());
-    const auto gigs_month   = sdk::gigs(account.downloads_this_month());
+    const auto quota_total  = app::gigs(account.quota_total());
+    const auto quota_spent  = app::gigs(account.quota_spent());
+    const auto quota_avail  = app::gigs(account.quota_avail());
+    const auto gigs_alltime = app::gigs(account.downloads_all_time());
+    const auto gigs_month   = app::gigs(account.downloads_this_month());
 
     ui_.edtMonth->setText(str(gigs_month));
     ui_.edtAllTime->setText(str(gigs_alltime));
@@ -352,67 +336,63 @@ void Accounts::currentRowChanged()
     in_row_changed_ = false;
 }
 
-void Accounts::on_btnResetMonth_clicked()
+void accounts::on_btnResetMonth_clicked()
 {
     const auto row = ui_.listView->currentIndex().row();
     if (row == -1)
         return;
 
-    auto& accounts = get_accounts_model(model_);
-    auto& account  = accounts.get(row);
+    auto& account = model_.get(row);
 
     account.reset_month();
 
-    const sdk::gigs nada;
+    const app::gigs nada;
 
     ui_.edtMonth->setText(str(nada));
 }
 
-void Accounts::on_btnResetAllTime_clicked()
+void accounts::on_btnResetAllTime_clicked()
 {
     const auto row = ui_.listView->currentIndex().row();
     if (row == -1)
         return;
 
-    auto& accounts = get_accounts_model(model_);
-    auto& account  = accounts.get(row);
+    auto& account = model_.get(row);
 
     account.reset_all_time();
 
-    const sdk::gigs nada;
+    const app::gigs nada;
 
     ui_.edtAllTime->setText(str(nada));
 }
 
-void Accounts::on_btnMonthlyQuota_toggled(bool checked)
+void accounts::on_btnMonthlyQuota_toggled(bool checked)
 {
     const auto row = ui_.listView->currentIndex().row();
     if (row == -1)
         return;
 
-    auto& accounts = get_accounts_model(model_);
-    auto& account  = accounts.get(row);
+    auto& account = model_.get(row);
 
     account.quota_type(app::account::quota::monthly);
 
     ui_.btnFixedQuota->setChecked(false);
 }
 
-void Accounts::on_btnFixedQuota_toggled(bool checked)
+void accounts::on_btnFixedQuota_toggled(bool checked)
 {
     const auto row = ui_.listView->currentIndex().row();
     if (row == -1)
         return;
 
-    auto& accounts = get_accounts_model(model_);
-    auto& account  = accounts.get(row);
+    auto& account = model_.get(row);
 
     account.quota_type(app::account::quota::fixed);
 
     ui_.btnMonthlyQuota->setChecked(false);
 }
 
-void Accounts::on_spinTotal_valueChanged(double value)
+void accounts::on_spinTotal_valueChanged(double value)
 {
     if (in_row_changed_)
         return;
@@ -421,19 +401,18 @@ void Accounts::on_spinTotal_valueChanged(double value)
     if (row == -1)
         return;
 
-    auto& accounts = get_accounts_model(model_);
-    auto& account  = accounts.get(row);
+    auto& account = model_.get(row);
 
     DEBUG(str("Quota total value _1", value));
 
-    const sdk::gigs gigs { value };
+    const app::gigs gigs { value };
 
     account.quota_total(gigs.as_bytes());
 
     currentRowChanged();
 }
 
-void Accounts::on_spinSpent_valueChanged(double value)
+void accounts::on_spinSpent_valueChanged(double value)
 {
     if (in_row_changed_)
         return;
@@ -444,37 +423,35 @@ void Accounts::on_spinSpent_valueChanged(double value)
 
     DEBUG(str("Quota spent value _1", value));
 
-    auto& accounts = get_accounts_model(model_);
-    auto& account  = accounts.get(row);    
+    auto& account = model_.get(row);    
 
-    const sdk::gigs gigs { value };
+    const app::gigs gigs { value };
 
     account.quota_spent(gigs.as_bytes());
 
     currentRowChanged();
 }
 
-void Accounts::on_listView_doubleClicked(const QModelIndex& index)
+void accounts::on_listView_doubleClicked(const QModelIndex& index)
 {
     // forward
     on_actionProperties_triggered();
 }
 
-void Accounts::on_listView_customContextMenuRequested(QPoint pos)
+void accounts::on_listView_customContextMenuRequested(QPoint pos)
 {
     QMenu menu(this);
     add_actions(menu);
     menu.exec(QCursor::pos());
 }
 
-void Accounts::on_grpQuota_toggled(bool on)
+void accounts::on_grpQuota_toggled(bool on)
 {
     const auto row = ui_.listView->currentIndex().row();
     if (row == -1)
         return;
 
-    auto& accounts = get_accounts_model(model_);
-    auto& account  = accounts.get(row);
+    auto& account = model_.get(row);
 
     if (!on)
     {

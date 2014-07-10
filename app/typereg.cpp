@@ -22,7 +22,7 @@
 
 #include "typereg.h"
 
-namespace sdk
+namespace app
 {
 
 std::size_t typereg::next_type_identity()
@@ -39,4 +39,4 @@ typereg::map_t& typereg::types()
     return m;
 }
 
-} // sdk
+} // app

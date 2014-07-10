@@ -30,7 +30,7 @@
 #include <memory>
 #include <map>
 
-namespace sdk
+namespace app
 {
     // typeregistry. maps types to ids and ids back to types.
     class typereg
@@ -127,4 +127,4 @@ namespace sdk
      
     };
 
-} // sdk
+} // app

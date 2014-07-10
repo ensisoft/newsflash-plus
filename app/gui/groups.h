@@ -24,21 +24,22 @@
 
 #include <newsflash/config.h>
 
-#include <newsflash/sdk/widget.h>
-#include <newsflash/sdk/model.h>
 #include <newsflash/warnpush.h>
 #include <newsflash/warnpop.h>
+
 #include "ui_groups.h"
+#include "mainwidget.h"
+#include "../groups.h"
 
 namespace gui
 {
-    class Groups : public sdk::widget
+    class groups : public mainwidget
     {
         Q_OBJECT
 
     public:
-        Groups(sdk::model& model);
-       ~Groups();
+        groups(app::groups& model);
+       ~groups();
 
         virtual void add_actions(QMenu& menu) override;
         virtual void add_actions(QToolBar& bar) override;
@@ -58,8 +59,7 @@ namespace gui
         Ui::Groups ui_;
 
     private:
-        sdk::model& model_;
-
+        app::groups& model_;
     };
 
 } // gui

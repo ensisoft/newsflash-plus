@@ -31,7 +31,7 @@
 #include "eventlog.h"
 #include "debug.h"
 
-namespace sdk
+namespace app
 {
 
 eventlog::eventlog() : events_(200)
@@ -89,11 +89,11 @@ QVariant eventlog::data(const QModelIndex& index, int role) const
     {
         case Qt::DecorationRole:
         switch (ev.type) {
-            case sdk::eventlog::event::warning:
+            case eventlog::event::warning:
                 return QIcon(":/resource/16x16_ico_png/ico_warning.png");
-            case sdk::eventlog::event::info:
+            case eventlog::event::info:
                 return QIcon(":/resource/16x16_ico_png/ico_info.png");
-            case sdk::eventlog::event::error:
+            case eventlog::event::error:
                 return QIcon(":/resource/16x16_ico_png/ico_error.png");
             default:
                 Q_ASSERT("missing event type");
@@ -117,5 +117,5 @@ eventlog& eventlog::get()
     return log;
 }
 
-} // sdk
+} // app
     
