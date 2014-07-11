@@ -32,6 +32,8 @@
 #  include <QString>
 #include <newsflash/warnpop.h>
 
+#include <functional>
+
 #include "mainmodel.h"
 
 namespace app
@@ -43,6 +45,15 @@ namespace app
             warning, info, error
         };
 
+        struct event_t {
+            event   type;
+            QString message;
+            QString logtag;
+            QTime   time;
+        };
+
+        std::function<void (const event_t&)> on_event;
+
         // record a new event in the log
         void write(event type, const QString& msg, const QString& tag);
 
@@ -50,8 +61,6 @@ namespace app
         virtual void clear() override;
 
         virtual QAbstractItemModel* view() override;
-
-        virtual QString name() const override;
 
         // abstraclistmodel data accessor
         virtual int rowCount(const QModelIndex&) const override;
@@ -67,12 +76,6 @@ namespace app
        ~eventlog();
 
     private:
-        struct event_t {
-            event   type;
-            QString message;
-            QString logtag;
-            QTime   time;
-        };
 
         boost::circular_buffer<event_t> events_;
     };

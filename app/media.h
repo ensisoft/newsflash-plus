@@ -28,14 +28,13 @@
 
 #pragma once
 
-namespace sdk
+namespace app
 {
-    // media category/type. each item is traditionally
-    // tagged into a single category. 
+    // media type. each item is traditionally tagged into a single media. 
     // int = international
     // sd  = standard definition
     // hd  = high definition
-    enum class category {
+    enum class media {
         none            = 0,
         //console,
         console_nds     = (1 << 1),
@@ -98,100 +97,99 @@ namespace sdk
     };
 
     inline 
-    bitflag_t operator | (category lhs, category rhs) 
+    bitflag_t operator | (media lhs, media rhs) 
     {
         return bitflag_t(lhs) | bitflag_t(rhs);
     }
     inline
-    bitflag_t operator | (bitflag_t lhs, category rhs) 
+    bitflag_t operator | (bitflag_t lhs, media rhs) 
     {
         return lhs | bitflag_t(rhs);
     }
     inline
-    bitflag_t operator | (category lhs, bitflag_t rhs) 
+    bitflag_t operator | (media lhs, bitflag_t rhs) 
     {
         return bitflag_t(lhs) | rhs;
     }
 
     inline
-    bitflag_t operator & (category lhs, category rhs) 
+    bitflag_t operator & (media lhs, media rhs) 
     {
         return bitflag_t(lhs) & bitflag_t(rhs);
     }
     inline
-    bitflag_t operator & (bitflag_t lhs, category rhs) 
+    bitflag_t operator & (bitflag_t lhs, media rhs) 
     {
         return lhs & bitflag_t(rhs);
     }
     inline
-    bitflag_t operator & (category lhs, bitflag_t rhs) 
+    bitflag_t operator & (media lhs, bitflag_t rhs) 
     {
         return bitflag_t(lhs) & rhs;
     }
 
-    class category_iterator : public std::iterator<std::forward_iterator_tag, sdk::category>
+    class media_iterator : public std::iterator<std::forward_iterator_tag, media>
     {
     public:
-        category_iterator(category beg) : cur_(beg)
+        media_iterator(media beg) : cur_(beg)
         {}
-        category_iterator() : cur_(category::last)
+        media_iterator() : cur_(media::last)
         {}
 
         // postfix
-        category_iterator operator ++(int)
+        media_iterator operator ++(int)
         {
-            category_iterator tmp(cur_);
+            media_iterator tmp(cur_);
             auto value = BITFLAG(cur_);
             value <<= 1;
-            cur_ = static_cast<category>(value);
+            cur_ = static_cast<media>(value);
 
             return tmp;
         }
 
-        category_iterator& operator++()
+        media_iterator& operator++()
         {
             auto value = BITFLAG(cur_);
             value <<= 1;
-            cur_ = static_cast<category>(value);
+            cur_ = static_cast<media>(value);
             return *this;
         }
-        category operator*() const 
+        media operator*() const 
         {
             return cur_;
         }
-        category& operator*()
+        media& operator*()
         {
             return cur_;
         }
         static 
-        category_iterator begin() 
+        media_iterator begin() 
         {
-            return category_iterator(category::console_nds);
+            return media_iterator(media::console_nds);
         }
         static
-        category_iterator end() 
+        media_iterator end() 
         {
-            return category_iterator(category::last);
+            return media_iterator(media::last);
         }
 
     private:
-        friend bool operator==(const category_iterator&, const category_iterator&);
+        friend bool operator==(const media_iterator&, const media_iterator&);
     private:
-        category cur_;
+        media cur_;
     };
 
     inline
-    bool operator==(const category_iterator& lhs, const category_iterator& rhs)
+    bool operator==(const media_iterator& lhs, const media_iterator& rhs)
     {
         return lhs.cur_ == rhs.cur_;
     }
     inline 
-    bool operator!=(const category_iterator& lhs, const category_iterator& rhs)
+    bool operator!=(const media_iterator& lhs, const media_iterator& rhs)
     {
         return !(lhs == rhs);
     }
 
+    const char* str(media m);
 
-    const char* str(category m);
-
-} // sdk
+} // app

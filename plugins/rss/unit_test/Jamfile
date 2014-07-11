@@ -1,2 +1,0 @@
-
-unit-test unit_test : unit_test.cpp ../rss.cpp ;

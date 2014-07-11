@@ -24,86 +24,85 @@
 
 #include <newsflash/config.h>
 
-#include <newsflash/sdk/widget.h>
-#include <newsflash/sdk/rssmodel.h>
-#include <newsflash/sdk/window.h>
-#include <newsflash/sdk/settings.h>
-#include <newsflash/sdk/datastore.h>
-
 #include <newsflash/warnpush.h>
 
 #include <newsflash/warnpop.h>
 #include <memory>
 #include "ui_rss.h"
-#include "ui_nzbs.h"
-#include "ui_settings.h"
+#include "ui_rss_nzbs.h"
+#include "ui_rss_settings.h"
+#include "settings.h"
+#include "mainwidget.h"
+#include "../types.h"
+#include "../rss.h"
 
-namespace rss
+namespace gui
 {
-    struct nzbs_settings {
+    class mainwindow;
+
+    struct rss_nzbs_settings {
         QString userid;
         QString apikey;
         int feedsize;
         bool enabled;
     };
 
-    class nzbs_settings_page : public sdk::settings
+    class rss_nzbs_settings_page : public settings
     {
         Q_OBJECT
     public:
-        nzbs_settings_page(nzbs_settings& data);
-       ~nzbs_settings_page();
+        rss_nzbs_settings_page(rss_nzbs_settings& data);
+       ~rss_nzbs_settings_page();
 
         virtual bool validate() const override;
 
         virtual void accept() override;
     private:
-        Ui::NZBS ui_;
+        Ui::rss_nzbs ui_;
     private:
-        nzbs_settings& data_;
+        rss_nzbs_settings& data_;
     };
 
-    class feeds_settings_page : public sdk::settings
+    class rss_feeds_settings_page : public settings
     {
         Q_OBJECT
 
     public:
-        feeds_settings_page(sdk::bitflag_t& feeds);
-       ~feeds_settings_page();
+        rss_feeds_settings_page(app::bitflag_t& feeds);
+       ~rss_feeds_settings_page();
 
         virtual void accept() override;
     private:
-        Ui::Settings ui_;
+        Ui::rss_settings ui_;
     private:
-        sdk::bitflag_t& feeds_;
+        app::bitflag_t& feeds_;
     };
 
-    class widget : public sdk::widget
+    class rss : public mainwidget
     {
         Q_OBJECT
 
     public:
-        widget(sdk::window& win);
-       ~widget();
+        rss(mainwindow& win, app::rss& model);
+       ~rss();
 
         virtual void add_actions(QMenu& menu) override;
         virtual void add_actions(QToolBar& bar) override;
-        virtual void add_settings(std::vector<std::unique_ptr<sdk::settings>>& pages) override;        
+        virtual void add_settings(std::vector<std::unique_ptr<settings>>& pages) override;        
         virtual void apply_settings() override;
 
         virtual void activate(QWidget*) override;
 
-        virtual void save(sdk::datastore& store) override;
-        virtual void load(const sdk::datastore& store) override;
+        virtual void save(app::datastore& store) override;
+        virtual void load(const app::datastore& store) override;
 
         virtual info information() const override;
-
-
 
     private:
         void download_selected(const QString& path);
         //void save_selected(const QString& path);
         //void open_selected()
+        void ready();
 
     private slots:
         void on_actionRefresh_triggered();
@@ -117,22 +116,22 @@ namespace rss
         void on_tableView_customContextMenuRequested(QPoint point);
 
     private slots:
-        void ready();
+        //void ready();
         void rowChanged();
         void downloadToPrevious();
 
     private:
-        sdk::bitflag_t feeds_;
+        mainwindow& win_;
+
+    private:
+        app::rss& model_;        
+        app::bitflag_t feeds_;
 
     private:
         Ui::RSS ui_;
 
     private:
-        sdk::window& win_;
-        sdk::rssmodel* rss_;
-
-    private:
-        nzbs_settings nzbs_;
+        rss_nzbs_settings nzbs_;
     };
 
-} // rss
+} // gui

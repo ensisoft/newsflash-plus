@@ -58,6 +58,8 @@ void eventlog::write(event type, const QString& msg, const QString& tag)
         events_.push_front(e);
         endInsertRows();
     }    
+    if (on_event)
+        on_event(e);
 }
 
 void eventlog::clear()
@@ -70,11 +72,6 @@ void eventlog::clear()
 QAbstractItemModel* eventlog::view()
 {
     return this;
-}
-
-QString eventlog::name() const
-{
-    return "eventlog";
 }
 
 int eventlog::rowCount(const QModelIndex&) const
@@ -102,10 +99,13 @@ QVariant eventlog::data(const QModelIndex& index, int role) const
             break;
 
             case Qt::DisplayRole:
-                return QString("[%1] [%2] %3")
+                // return QString("[%1] [%2] %3")
+                //     .arg(ev.time.toString("hh:mm:ss:zzz"))
+                //     .arg(ev.logtag)
+                //     .arg(ev.message);                
+                return QString("[%1] %2")
                     .arg(ev.time.toString("hh:mm:ss:zzz"))
-                    .arg(ev.logtag)
-                    .arg(ev.message);                
+                    .arg(ev.message);                                    
                     break;
     }
     return QVariant();    

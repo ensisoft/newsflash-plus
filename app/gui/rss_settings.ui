@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>Settings</class>
- <widget class="QWidget" name="Settings">
+ <class>rss_settings</class>
+ <widget class="QWidget" name="rss_settings">
   <property name="geometry">
    <rect>
     <x>0</x>

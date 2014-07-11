@@ -20,15 +20,7 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.            
 
-#define PLUGIN_IMPL
-
-#define LOGTAG "rss"
-
 #include <newsflash/config.h>
-
-#include <newsflash/sdk/debug.h>
-#include <newsflash/sdk/format.h>
-#include <newsflash/sdk/eventlog.h>
 
 #include <newsflash/warnpush.h>
 #  include <QtGui/QMenu>
@@ -36,99 +28,105 @@
 #  include <QtGui/QMessageBox>
 #include <newsflash/warnpop.h>
 
-#include "widget.h"
+#include "rss.h"
+#include "mainwindow.h"
+#include "../debug.h"
+#include "../format.h"
+#include "../eventlog.h"
+#include "../datastore.h"
 
-namespace rss
+namespace gui
 {
-feeds_settings_page::feeds_settings_page(sdk::bitflag_t& feeds) : feeds_(feeds)
+
+rss_feeds_settings_page::rss_feeds_settings_page(app::bitflag_t& feeds) : feeds_(feeds)
 {
     ui_.setupUi(this);
 
-    using namespace sdk;
+    using namespace app;
 
-    ui_.chkTVForeign->setChecked(feeds & category::tv_int);
-    ui_.chkTVHD->setChecked(feeds & category::tv_hd);
-    ui_.chkTVSD->setChecked(feeds & category::tv_sd);
-    ui_.chkComputerPC->setChecked(feeds & category::apps_pc);
-    ui_.chkComputerISO->setChecked(feeds & category::apps_iso);
-    ui_.chkComputerMac->setChecked(feeds & category::apps_mac);
-    ui_.chkComputerAndroid->setChecked(feeds & category::apps_android);
-    ui_.chkMusicMP3->setChecked(feeds & category::audio_mp3);
-    ui_.chkMusicLosless->setChecked(feeds & category::audio_lossless);
-    ui_.chkMusicVideo->setChecked(feeds & category::audio_video);
-    ui_.chkMoviesForeign->setChecked(feeds & category::movies_int);
-    ui_.chkMoviesSD->setChecked(feeds & category::movies_sd);
-    ui_.chkMoviesHD->setChecked(feeds & category::movies_hd);
-    ui_.chkConsoleNintendo->setChecked(feeds & category::console_nintendo);
-    ui_.chkConsolePlaystation->setChecked(feeds & category::console_playstation);
-    ui_.chkConsoleXbox->setChecked(feeds & category::console_microsoft);
-    ui_.chkXXXDVD->setCheckable(feeds & category::xxx_dvd);
-    ui_.chkXXXHD->setChecked(feeds & category::xxx_hd);
-    ui_.chkXXXSD->setChecked(feeds & category::xxx_sd);
+    ui_.chkTVForeign->setChecked(feeds & media::tv_int);
+    ui_.chkTVHD->setChecked(feeds & media::tv_hd);
+    ui_.chkTVSD->setChecked(feeds & media::tv_sd);
+    ui_.chkComputerPC->setChecked(feeds & media::apps_pc);
+    ui_.chkComputerISO->setChecked(feeds & media::apps_iso);
+    ui_.chkComputerMac->setChecked(feeds & media::apps_mac);
+    ui_.chkComputerAndroid->setChecked(feeds & media::apps_android);
+    ui_.chkMusicMP3->setChecked(feeds & media::audio_mp3);
+    ui_.chkMusicLosless->setChecked(feeds & media::audio_lossless);
+    ui_.chkMusicVideo->setChecked(feeds & media::audio_video);
+    ui_.chkMoviesForeign->setChecked(feeds & media::movies_int);
+    ui_.chkMoviesSD->setChecked(feeds & media::movies_sd);
+    ui_.chkMoviesHD->setChecked(feeds & media::movies_hd);
+    ui_.chkConsoleNintendo->setChecked(feeds & media::console_nintendo);
+    ui_.chkConsolePlaystation->setChecked(feeds & media::console_playstation);
+    ui_.chkConsoleXbox->setChecked(feeds & media::console_microsoft);
+    ui_.chkXXXDVD->setCheckable(feeds & media::xxx_dvd);
+    ui_.chkXXXHD->setChecked(feeds & media::xxx_hd);
+    ui_.chkXXXSD->setChecked(feeds & media::xxx_sd);
 }
 
-feeds_settings_page::~feeds_settings_page()
+rss_feeds_settings_page::~rss_feeds_settings_page()
 {}
 
-void feeds_settings_page::accept() 
+void rss_feeds_settings_page::accept() 
 {
     feeds_ = 0;
 
-    using namespace sdk;
+    using namespace app;
     if (ui_.chkTVForeign->isChecked())
-        feeds_ |= BITFLAG(category::tv_int);
+        feeds_ |= BITFLAG(media::tv_int);
     if (ui_.chkTVHD->isChecked())
-        feeds_ |= BITFLAG(category::tv_hd);
+        feeds_ |= BITFLAG(media::tv_hd);
     if (ui_.chkTVSD->isChecked())
-        feeds_ |= BITFLAG(category::tv_sd);
+        feeds_ |= BITFLAG(media::tv_sd);
     if (ui_.chkComputerPC->isChecked())
-        feeds_ |= BITFLAG(category::apps_pc);
+        feeds_ |= BITFLAG(media::apps_pc);
     if (ui_.chkComputerISO->isChecked())
-        feeds_ |= BITFLAG(category::apps_iso);
+        feeds_ |= BITFLAG(media::apps_iso);
     if (ui_.chkComputerMac->isChecked())
-        feeds_ |= BITFLAG(category::apps_mac);
+        feeds_ |= BITFLAG(media::apps_mac);
     if (ui_.chkComputerAndroid->isChecked())
-        feeds_ |= BITFLAG(category::apps_android);
+        feeds_ |= BITFLAG(media::apps_android);
     if (ui_.chkMusicMP3->isChecked())
-        feeds_ |= BITFLAG(category::audio_mp3);
+        feeds_ |= BITFLAG(media::audio_mp3);
     if (ui_.chkMusicLosless->isChecked())
-        feeds_ |= BITFLAG(category::audio_lossless);
+        feeds_ |= BITFLAG(media::audio_lossless);
     if (ui_.chkMusicVideo->isChecked())
-        feeds_ |= BITFLAG(category::audio_video);
+        feeds_ |= BITFLAG(media::audio_video);
     if (ui_.chkMoviesForeign->isChecked())
-        feeds_ |= BITFLAG(category::movies_int);
+        feeds_ |= BITFLAG(media::movies_int);
     if (ui_.chkMoviesHD->isChecked())
-        feeds_ |= BITFLAG(category::movies_hd);
+        feeds_ |= BITFLAG(media::movies_hd);
     if (ui_.chkMoviesSD->isChecked())
-        feeds_ |= BITFLAG(category::movies_sd);
+        feeds_ |= BITFLAG(media::movies_sd);
     if (ui_.chkConsoleNintendo->isChecked())
-        feeds_ |= BITFLAG(category::console_nintendo);
+        feeds_ |= BITFLAG(media::console_nintendo);
     if (ui_.chkConsolePlaystation->isChecked())
-        feeds_ |= BITFLAG(category::console_playstation);
+        feeds_ |= BITFLAG(media::console_playstation);
     if (ui_.chkConsoleXbox->isChecked())
-        feeds_ |= BITFLAG(category::console_microsoft);
+        feeds_ |= BITFLAG(media::console_microsoft);
     if (ui_.chkXXXDVD->isChecked())
-        feeds_ |= BITFLAG(category::xxx_dvd);
+        feeds_ |= BITFLAG(media::xxx_dvd);
     if (ui_.chkXXXHD->isChecked())
-        feeds_ |= BITFLAG(category::xxx_hd);
+        feeds_ |= BITFLAG(media::xxx_hd);
     if (ui_.chkXXXSD->isChecked())
-        feeds_ |= BITFLAG(category::xxx_sd);
+        feeds_ |= BITFLAG(media::xxx_sd);
 }
 
-nzbs_settings_page::nzbs_settings_page(nzbs_settings& data) : data_(data)
+rss_nzbs_settings_page::rss_nzbs_settings_page(rss_nzbs_settings& data) : data_(data)
 {
     ui_.setupUi(this);
 
     ui_.editUserID->setText(data.userid);
     ui_.editAPIKey->setText(data.apikey);
-    ui_.feedSize->setValue(data.feedsize);
+    //ui_.feedSize->setValue(data.feedsize);
     ui_.grpEnable->setChecked(data.enabled);
 }
 
-nzbs_settings_page::~nzbs_settings_page()
+rss_nzbs_settings_page::~rss_nzbs_settings_page()
 {}
 
-bool nzbs_settings_page::validate() const
+bool rss_nzbs_settings_page::validate() const
 {
     if (!ui_.grpEnable->isChecked())
         return true;
@@ -150,23 +148,19 @@ bool nzbs_settings_page::validate() const
     return true;
 }
 
-void nzbs_settings_page::accept()
+void rss_nzbs_settings_page::accept()
 {
     data_.userid = ui_.editUserID->text();
     data_.apikey = ui_.editAPIKey->text();
-    data_.feedsize = ui_.feedSize->value();
+    //data_.feedsize = ui_.feedSize->value();
     data_.enabled = ui_.grpEnable->isChecked();
 }
 
-widget::widget(sdk::window& win) : feeds_(0), win_(win)
+rss::rss(mainwindow& win, app::rss& model) : win_(win), model_(model), feeds_(0)
 {
     ui_.setupUi(this);
 
-    rss_ = dynamic_cast<sdk::rssmodel*>(win.create_model("rss"));
-    if (rss_ == nullptr)
-        throw std::runtime_error("no rss model available");
-
-    ui_.tableView->setModel(rss_->view());
+    ui_.tableView->setModel(model_.view());
     ui_.actionDownload->setEnabled(false);
     ui_.actionDownloadTo->setEnabled(false);
     ui_.actionSave->setEnabled(false);
@@ -180,17 +174,18 @@ widget::widget(sdk::window& win) : feeds_(0), win_(win)
     QObject::connect(selection, SIGNAL(selectionChanged(const QItemSelection&, const QItemSelection&)),
         this, SLOT(rowChanged()));
 
-    QObject::connect(rss_, SIGNAL(ready()), this, SLOT(ready()));
+    //QObject::connect(&model_, SIGNAL(ready()), this, SLOT(ready()));
+    model.on_ready = std::bind(&rss::ready, this);
 
-    DEBUG("rss::widget created");
+    DEBUG("rss::rss created");
 }
 
-widget::~widget()
+rss::~rss()
 {
-    DEBUG("rss::widget destroyed");
+    DEBUG("rss::rss destroyed");
 }
 
-void widget::add_actions(QMenu& menu)
+void rss::add_actions(QMenu& menu)
 {
     menu.addAction(ui_.actionRefresh);
     menu.addSeparator();    
@@ -207,7 +202,7 @@ void widget::add_actions(QMenu& menu)
 
 }
 
-void widget::add_actions(QToolBar& bar)
+void rss::add_actions(QToolBar& bar)
 {
     bar.addAction(ui_.actionRefresh);
     bar.addSeparator();
@@ -222,13 +217,13 @@ void widget::add_actions(QToolBar& bar)
     bar.addAction(ui_.actionStop);    
 }
 
-void widget::add_settings(std::vector<std::unique_ptr<sdk::settings>>& pages)
+void rss::add_settings(std::vector<std::unique_ptr<settings>>& pages)
 {
-    pages.emplace_back(new rss::feeds_settings_page(feeds_));
-    pages.emplace_back(new rss::nzbs_settings_page(nzbs_));
+    pages.emplace_back(new rss_feeds_settings_page(feeds_));
+    pages.emplace_back(new rss_nzbs_settings_page(nzbs_));
 }
 
-void widget::apply_settings()
+void rss::apply_settings()
 {
     ui_.btnNzbs->setVisible(nzbs_.enabled);
 
@@ -237,15 +232,14 @@ void widget::apply_settings()
         QVariantMap params;
         params["userid"]   = nzbs_.userid;
         params["apikey"]   = nzbs_.apikey;
-        params["feedsize"] = nzbs_.feedsize;
-        rss_->set_params("nzbs", params);
+        model_.set_params("nzbs", params);
     }
 }
 
-void widget::activate(QWidget*)
+void rss::activate(QWidget*)
 {}
 
-void widget::save(sdk::datastore& store) 
+void rss::save(app::datastore& store) 
 {
     store.set("rss", "music", ui_.chkMusic->isChecked());
     store.set("rss", "movies", ui_.chkMovies->isChecked());
@@ -261,7 +255,7 @@ void widget::save(sdk::datastore& store)
     store.set("rss", "nzbs_apikey", nzbs_.apikey);
     store.set("rss", "nzbs_userid", nzbs_.userid);
     store.set("rss", "nzbs_enabled", nzbs_.enabled);
-    store.set("rss", "nzbs_feedsize", nzbs_.feedsize);
+    //store.set("rss", "nzbs_feedsize", nzbs_.feedsize);
 
     const auto* model = ui_.tableView->model();
     for (int i=0; i<model->columnCount(); ++i)
@@ -272,7 +266,7 @@ void widget::save(sdk::datastore& store)
     }
 }
 
-void widget::load(const sdk::datastore& store)
+void rss::load(const app::datastore& store)
 {
     ui_.chkMusic->setChecked(store.get("rss", "music", false));
     ui_.chkMovies->setChecked(store.get("rss", "movies", false));
@@ -281,18 +275,18 @@ void widget::load(const sdk::datastore& store)
     ui_.chkComputer->setChecked(store.get("rss", "computer", false));
     ui_.chkXXX->setChecked(store.get("rss", "xxx", false));
 
-    feeds_ = (sdk::bitflag_t)store.get("rss", "feeds", qlonglong(sdk::category::all));
+    feeds_ = BITFLAG(store.get("rss", "feeds", qlonglong(app::media::all)));
 
     nzbs_.apikey = store.get("rss", "nzbs_apikey", "");
     nzbs_.userid = store.get("rss", "nzbs_userid", "");
     nzbs_.enabled = store.get("rss", "nzbs_enabled", false);
-    nzbs_.feedsize = store.get("rss", "nzbs_feesize", 25);
+    //nzbs_.feedsize = store.get("rss", "nzbs_feesize", 25);
 
     QVariantMap params;
     params["userid"]   = nzbs_.userid;
     params["apikey"]   = nzbs_.apikey;
-    params["feedsize"] = nzbs_.feedsize;
-    rss_->set_params("nzbs", params);
+    //params["feedsize"] = nzbs_.feedsize;
+    model_.set_params("nzbs", params);
 
     ui_.btnNzbs->setVisible(nzbs_.enabled);
     ui_.btnNzbs->setChecked(store.get("rss", "nzbs_active", false));
@@ -307,14 +301,14 @@ void widget::load(const sdk::datastore& store)
     }
 }
 
-sdk::widget::info widget::information() const
+mainwidget::info rss::information() const
 {
     return {"rss.html", true};
 }
 
 
 
-void widget::download_selected(const QString& folder)
+void rss::download_selected(const QString& folder)
 {
     const auto& indices = ui_.tableView->selectionModel()->selectedRows();
     if (indices.isEmpty())
@@ -323,23 +317,23 @@ void widget::download_selected(const QString& folder)
 
 }
 
-void widget::on_actionRefresh_triggered()
+void rss::on_actionRefresh_triggered()
 {
     const bool enable_womble = ui_.btnWomble->isChecked();
     const bool enable_nzbs   = ui_.btnNzbs->isChecked() && nzbs_.enabled;
-    rss_->enable("womble", enable_womble);
-    rss_->enable("nzbs", enable_nzbs);
+    model_.enable("womble", enable_womble);
+    model_.enable("nzbs", enable_nzbs);
 
     struct feed {
         QCheckBox* chk;
-        sdk::bitflag_t mask;
+        app::bitflag_t mask;
     } selected_feeds[] = {
-        {ui_.chkMusic, BITFLAG(sdk::category::audio)},
-        {ui_.chkMovies, BITFLAG(sdk::category::movies)},
-        {ui_.chkTV, BITFLAG(sdk::category::tv)},
-        {ui_.chkConsole, BITFLAG(sdk::category::console)},
-        {ui_.chkComputer, BITFLAG(sdk::category::apps)},
-        {ui_.chkXXX, BITFLAG(sdk::category::xxx)}
+        {ui_.chkMusic, BITFLAG(app::media::audio)},
+        {ui_.chkMovies, BITFLAG(app::media::movies)},
+        {ui_.chkTV, BITFLAG(app::media::tv)},
+        {ui_.chkConsole, BITFLAG(app::media::console)},
+        {ui_.chkComputer, BITFLAG(app::media::apps)},
+        {ui_.chkXXX, BITFLAG(app::media::xxx)}
     };
 
     bool have_feeds = false;
@@ -350,16 +344,16 @@ void widget::on_actionRefresh_triggered()
         if (!feed.chk->isChecked())
             continue;
 
-        auto beg = sdk::category_iterator::begin();
-        auto end = sdk::category_iterator::end();
+        auto beg = app::media_iterator::begin();
+        auto end = app::media_iterator::end();
         for (; beg != end; ++beg)
         {
-            const auto cat = *beg;
-            if (!(cat & feed.mask))
+            const auto type = *beg;
+            if (!(type & feed.mask))
                 continue;
-            if (!(cat & feeds_))
+            if (!(type & feeds_))
                 continue;
-            if (rss_->refresh(cat))
+            if (model_.refresh(type))
                 have_feeds = true;
 
             have_selections = true;            
@@ -386,7 +380,7 @@ void widget::on_actionRefresh_triggered()
         return;
     }
 
-    rss_->clear();
+    model_.clear();
 
     ui_.progressBar->setVisible(true);
     ui_.actionDownload->setEnabled(false);
@@ -394,12 +388,12 @@ void widget::on_actionRefresh_triggered()
     ui_.actionStop->setEnabled(true);
 }
 
-void widget::on_actionDownload_triggered()
+void rss::on_actionDownload_triggered()
 {
     DEBUG("download");
 }
 
-void widget::on_actionDownloadTo_triggered()
+void rss::on_actionDownloadTo_triggered()
 {
     const auto& folder = win_.select_download_folder();
     if (folder.isEmpty())
@@ -408,7 +402,7 @@ void widget::on_actionDownloadTo_triggered()
     download_selected(folder);
 }
 
-void widget::on_actionSave_triggered()
+void rss::on_actionSave_triggered()
 {
     const auto& indices = ui_.tableView->selectionModel()->selectedRows();
     if (indices.isEmpty())
@@ -421,22 +415,22 @@ void widget::on_actionSave_triggered()
     
 }
 
-void widget::on_actionOpen_triggered()
+void rss::on_actionOpen_triggered()
 {
     DEBUG("open");
 }
 
-void widget::on_actionSettings_triggered()
+void rss::on_actionSettings_triggered()
 {
     win_.show_setting("RSS");
 }
 
-void widget::on_actionStop_triggered()
+void rss::on_actionStop_triggered()
 {
     DEBUG("stop");
 }
 
-void widget::on_actionBrowse_triggered()
+void rss::on_actionBrowse_triggered()
 {
     const auto& folder = win_.select_download_folder();
     if (folder.isEmpty())
@@ -445,7 +439,7 @@ void widget::on_actionBrowse_triggered()
     download_selected(folder);    
 }
 
-void widget::on_tableView_customContextMenuRequested(QPoint point)
+void rss::on_tableView_customContextMenuRequested(QPoint point)
 {
     QMenu sub("Download to");
     sub.setIcon(QIcon(":/ico/ico_download.png"));
@@ -480,14 +474,14 @@ void widget::on_tableView_customContextMenuRequested(QPoint point)
     menu.exec(QCursor::pos());
 }
  
-void widget::ready()
+void rss::ready()
 {
     ui_.progressBar->hide();
     ui_.actionStop->setEnabled(false);
 }
 
 
-void widget::rowChanged()
+void rss::rowChanged()
 {
     const auto list = ui_.tableView->selectionModel()->selectedRows();
     if (list.isEmpty())
@@ -498,7 +492,7 @@ void widget::rowChanged()
     ui_.actionOpen->setEnabled(true);
 }
 
-void widget::downloadToPrevious()
+void rss::downloadToPrevious()
 {
     const auto* action = qobject_cast<const QAction*>(sender());
 
@@ -508,24 +502,5 @@ void widget::downloadToPrevious()
     download_selected(folder);
 }
 
-} // rss
-
-int qInitResources_rss();
-
-PLUGIN_API sdk::widget* create_widget(sdk::window* win, int version)
-{
-    if (version != sdk::widget::version)
-        return nullptr;
-
-    qInitResources_rss();
-    try
-    {
-        return new rss::widget(*win);
-    }
-    catch (const std::exception& e)
-    {
-        ERROR(sdk::str("rss widget exception _1", e.what()));
-    }
-    return nullptr;
-}
+} // gui
 

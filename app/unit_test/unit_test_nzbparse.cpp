@@ -26,7 +26,7 @@
 #include <QCoreApplication>
 #include <QFile>
 #include <QEventLoop>
-#include "../parser.h"
+#include "../nzbparse.h"
 
 void test_sync()
 {
@@ -36,9 +36,9 @@ void test_sync()
         input.open(QIODevice::ReadOnly);
         BOOST_REQUIRE(input.isOpen());
 
-        QList<nzb::content> content;
-        const auto err = nzb::parse(input, content, nullptr);
-        BOOST_REQUIRE(err == nzb::error::none);
+        QList<app::nzbcontent> content;
+        const auto err = app::parse_nzb(input, content);
+        BOOST_REQUIRE(err == app::nzberror::none);
 
         // check content.
         BOOST_REQUIRE(content.size() == 2);
@@ -60,76 +60,42 @@ void test_sync()
     // Io error 
     {
         QFile input;
-        QList<nzb::content> content;
-        const auto err = nzb::parse(input, content, nullptr);
+        QList<app::nzbcontent> content;
+        const auto err = app::parse_nzb(input, content);
 
-        BOOST_REQUIRE(err == nzb::error::io);
+        BOOST_REQUIRE(err == app::nzberror::io);
     }
 
     // nzb content error
     {
         QFile input("ubuntu-12.04.4-server-amd64.iso-nzb-error.nzb");
-        QList<nzb::content> content;
+        QList<app::nzbcontent> content;
 
         input.open(QIODevice::ReadOnly);      
         BOOST_REQUIRE(input.isOpen());
-        const auto err = nzb::parse(input, content, nullptr);
+        const auto err = app::parse_nzb(input, content);
 
-        BOOST_REQUIRE(err == nzb::error::nzb);
+        BOOST_REQUIRE(err == app::nzberror::nzb);
     }
 
     // xml error
     {
         QFile input("ubuntu-12.04.4-server-amd64.iso-xml-error.nzb");
-        QList<nzb::content> content;
+        QList<app::nzbcontent> content;
 
         input.open(QIODevice::ReadOnly);      
         BOOST_REQUIRE(input.isOpen());
-        const auto err = nzb::parse(input, content, nullptr);
+        const auto err = app::parse_nzb(input, content);
 
-        BOOST_REQUIRE(err == nzb::error::xml);
+        BOOST_REQUIRE(err == app::nzberror::xml);
     }
 }
 
-void test_async()
-{
-    nzb::parser parser;
-
-    QEventLoop loop;
-    QObject::connect(&parser, SIGNAL(dataready()), &loop, SLOT(quit()));
-
-    // success
-    {
-        parser.parse("ubuntu-12.04.4-server-amd64.iso.nzb");
-        loop.exec();
-
-        nzb::parser::data data;
-        BOOST_REQUIRE(parser.get(data));
-        BOOST_REQUIRE(data.error == nzb::error::none);
-        BOOST_REQUIRE(data.file == "ubuntu-12.04.4-server-amd64.iso.nzb");
-
-    }
-
-    // xml error
-    {
-        parser.parse("ubuntu-12.04.4-server-amd64.iso-xml-error.nzb");
-        loop.exec();
-
-        nzb::parser::data data;
-        BOOST_REQUIRE(parser.get(data));
-        BOOST_REQUIRE(data.error == nzb::error::xml);
-        BOOST_REQUIRE(data.file == "ubuntu-12.04.4-server-amd64.iso-xml-error.nzb");
-    }
-
-    parser.shutdown();
-    //loop.
-}
 
 int test_main(int argc, char* argv[])
 {
     QCoreApplication app(argc, argv);
 
     test_sync();
-    test_async();
     return 0;
 }

@@ -62,8 +62,6 @@ namespace app
 
         virtual bool shutdown() { return true; }
 
-        virtual QString name() const = 0;
-
     protected:
     private:
 

@@ -65,22 +65,30 @@ namespace app
         mainapp(QCoreApplication& app);
        ~mainapp();
 
+        // load the previously (prio application run) persisted settings 
+        // and restore the application state.
         void loadstate();
 
+        // try to take a snapshot and persist the current application state
+        // so that the state can be recovered later on. 
+        // returns true if succesful, otherwise false.
         bool savestate();
 
+        // 
         void shutdown();
 
         void get(app::settings& settings);
         void set(const app::settings& settings);
 
+        // submit a new network request. ownership of the
+        // request remains with the model doing the submission.
+        // a completion callback will be invoked on the model
+        // object once the request has been completed.
         void submit(mainmodel* model, netreq* request);
 
+        // attach a new module to the application. ownership of the module
+        // remains with the caller.
         void attach(mainmodel* model);
-
-
-
-        //void save();
 
         // todo: 
         virtual void handle(const newsflash::error& error) override;
@@ -108,26 +116,21 @@ namespace app
         bool submit_first();
 
     private:
-        QCoreApplication& app_;    
-        QNetworkAccessManager net_;
-        int net_submit_timer_;
-        int net_timeout_timer_;
-
-    private:
-        settings settings_;
-
-    private:
         struct submission {
             std::size_t ticks;
             netreq* request;
             mainmodel* model;
             QNetworkReply* reply;
-        };
+        };        
 
-    private:
         std::vector<mainmodel*> models_;
         std::list<submission> submits_;
         std::unique_ptr<newsflash::engine> engine_;        
+        QCoreApplication& app_;    
+        QNetworkAccessManager net_;
+        int net_submit_timer_;
+        int net_timeout_timer_;
+        settings settings_;
     };
 
 } // app

@@ -36,6 +36,8 @@
 #  include <QLibrary>
 #include <newsflash/warnpop.h>
 
+#include <memory>
+
 #include "mainwindow.h"
 #include "mainwidget.h"
 #include "accounts.h"
@@ -46,6 +48,7 @@
 #include "config.h"
 #include "message.h"
 #include "engine_settings.h"
+#include "settings.h"
 #include "../mainapp.h"
 #include "../eventlog.h"
 #include "../debug.h"
@@ -62,7 +65,7 @@ void openurl(const QString& url);
 void openhelp(const QString& page);
 
 
-MainWindow::MainWindow(app::mainapp& app) : QMainWindow(nullptr), app_(app), current_(nullptr)
+mainwindow::mainwindow(app::mainapp& app) : QMainWindow(nullptr), app_(app), current_(nullptr)
 {
     ui_.setupUi(this);
 
@@ -102,25 +105,22 @@ MainWindow::MainWindow(app::mainapp& app) : QMainWindow(nullptr), app_(app), cur
 
     setWindowTitle(NEWSFLASH_TITLE);
 
-    //loadstate();
-    //loadwidgets();
-
-    DEBUG("MainWindow created");
+    DEBUG("mainwindow created");
 }
 
-MainWindow::~MainWindow()
+mainwindow::~mainwindow()
 {
     ui_.mainTab->clear();
     
-    DEBUG("MainWindow deleted");
+    DEBUG("mainwindow deleted");
 }
 
-void MainWindow::attach(mainwidget* widget)
+void mainwindow::attach(mainwidget* widget)
 {
     widgets_.push_back(widget);
 }
 
-void MainWindow::loadstate()
+void mainwindow::loadstate()
 {
     // load gui settings, we need this for the rest of the stuff
     const auto file = app::home::file("gui.json");
@@ -140,12 +140,12 @@ void MainWindow::loadstate()
 
     const auto width  = settings_.get("window", "width", 1200);
     const auto height = settings_.get("window", "height", 800);
-    DEBUG(str("Mainwindow dimensions _1 x _2", width, height));
+    DEBUG(str("mainwindow dimensions _1 x _2", width, height));
     resize(width, height);
 
     const auto x = settings_.get("window", "x", 0);
     const auto y = settings_.get("window", "y", 0);
-    DEBUG(str("Mainwindow position _1, _2", x, y));
+    DEBUG(str("mainwindow position _1, _2", x, y));
     move(x, y);
 
     const auto show_statusbar = settings_.get("window", "show_statusbar", true);
@@ -181,45 +181,46 @@ void MainWindow::loadstate()
 
 }
 
-void MainWindow::show_widget(const QString& name)
+void mainwindow::show_widget(const QString& name)
 {
     show(name);
 }
 
-void MainWindow::show_setting(const QString& name)
+void mainwindow::show_setting(const QString& name)
 {
-    // DlgSettings dlg(this);
+    DlgSettings dlg(this);
 
-    // app::settings settings;
-    // app_.get(settings);
+    //app::settings settings;
+    //app_.get(settings);
 
-    // std::vector<std::unique_ptr<sdk::settings>> pages;
-    // pages.emplace_back(new engine_settings(settings));
+    //std::unique_ptr<settings> cunt;
+    std::vector<std::unique_ptr<class settings>> pages;
+    //pages.emplace_back(new engine_settings(settings));
     
-    // for (auto& widget : widgets_)
-    // {
-    //     widget->add_settings(pages);
-    // }
-    // for (auto& page : pages)
-    // {
-    //     dlg.attach(page.get());
-    // }
+    for (auto& widget : widgets_)
+    {
+        widget->add_settings(pages);
+    }
+    for (auto& page : pages)
+    {
+        dlg.attach(page.get());
+    }
 
-    // if (!name.isEmpty())
-    //     dlg.show(name);
+    if (!name.isEmpty())
+        dlg.show(name);
 
-    // if (dlg.exec() == QDialog::Accepted)
-    // {
-    //     app_.set(settings);
+    if (dlg.exec() == QDialog::Accepted)
+    {
+        //app_.set(settings);
 
-    //     for (auto& widget : widgets_)
-    //     {
-    //         widget->apply_settings();
-    //     }
-    // }    
+        for (auto& widget : widgets_)
+        {
+            widget->apply_settings();
+        }
+    }    
 }
 
-QString MainWindow::select_download_folder()
+QString mainwindow::select_download_folder()
 {
     QString latest;
     if (!recents_.isEmpty())
@@ -245,7 +246,7 @@ QString MainWindow::select_download_folder()
     return QDir::toNativeSeparators(dir);
 }
 
-QString MainWindow::select_save_nzb_folder()
+QString mainwindow::select_save_nzb_folder()
 {
     QFileDialog dlg(this);
     dlg.setFileMode(QFileDialog::Directory);
@@ -261,7 +262,7 @@ QString MainWindow::select_save_nzb_folder()
     return QDir::toNativeSeparators(dir);
 }
 
-void MainWindow::recents(QStringList& paths) const 
+void mainwindow::recents(QStringList& paths) const 
 {
     for (const auto& path : recents_)
     {
@@ -272,7 +273,17 @@ void MainWindow::recents(QStringList& paths) const
     }
 }
 
-void MainWindow::show(const QString& title)
+void mainwindow::update(mainwidget* widget)
+{
+    const auto index = ui_.mainTab->indexOf(widget);
+    if (index == -1)
+        return;
+
+    ui_.mainTab->setTabText(index, widget->windowTitle());
+    ui_.mainTab->setTabIcon(index, widget->windowIcon());
+}
+
+void mainwindow::show(const QString& title)
 {
     const auto it = std::find_if(std::begin(widgets_), std::end(widgets_),
         [&](const mainwidget* widget) {
@@ -284,7 +295,7 @@ void MainWindow::show(const QString& title)
     show(std::distance(std::begin(widgets_), it));
 }
 
-void MainWindow::show(mainwidget* widget)
+void mainwindow::show(mainwidget* widget)
 {
     auto it = std::find(std::begin(widgets_), std::end(widgets_), widget);
     if (it == std::end(widgets_))
@@ -293,7 +304,7 @@ void MainWindow::show(mainwidget* widget)
     show(std::distance(std::begin(widgets_), it));
 }
 
-void MainWindow::show(std::size_t index)
+void mainwindow::show(std::size_t index)
 {
     auto* widget = widgets_[index];
     auto* action = actions_[index];
@@ -312,7 +323,7 @@ void MainWindow::show(std::size_t index)
 
 }
 
-void MainWindow::hide(mainwidget* widget)
+void mainwindow::hide(mainwidget* widget)
 {
     auto it = std::find(std::begin(widgets_), std::end(widgets_), widget);
 
@@ -324,7 +335,7 @@ void MainWindow::hide(mainwidget* widget)
 
 }
 
-void MainWindow::hide(std::size_t index)
+void mainwindow::hide(std::size_t index)
 {
     auto* widget = widgets_[index];
     auto* action = actions_[index];
@@ -341,7 +352,7 @@ void MainWindow::hide(std::size_t index)
     build_window_menu();
 }
 
-void MainWindow::focus(mainwidget* ui)
+void mainwindow::focus(mainwidget* ui)
 {
     const auto index = ui_.mainTab->indexOf(ui);
     if (index == -1)
@@ -350,7 +361,7 @@ void MainWindow::focus(mainwidget* ui)
     ui_.mainTab->setCurrentIndex(index);
 }
 
-void MainWindow::closeEvent(QCloseEvent* event)
+void mainwindow::closeEvent(QCloseEvent* event)
 {
     if (!app_.savestate() || !savestate())
     {
@@ -378,7 +389,7 @@ void MainWindow::closeEvent(QCloseEvent* event)
     ui_.mainTab->clear();
 }
 
-void MainWindow::build_window_menu()
+void mainwindow::build_window_menu()
 {
     ui_.menuWindow->clear();
 
@@ -405,7 +416,7 @@ void MainWindow::build_window_menu()
     ui_.menuWindow->addAction(ui_.actionWindowPrev);    
 }
 
-bool MainWindow::savestate()
+bool mainwindow::savestate()
 {
     settings_.set("window", "width", width());
     settings_.set("window", "height", height());
@@ -435,7 +446,7 @@ bool MainWindow::savestate()
     return error == QFile::NoError;
 }
 
-void MainWindow::on_mainTab_currentChanged(int index)
+void mainwindow::on_mainTab_currentChanged(int index)
 {
     //DEBUG(str("Current tab _1", index));
 
@@ -447,8 +458,7 @@ void MainWindow::on_mainTab_currentChanged(int index)
 
     if (index != -1)
     {
-        auto* widget = static_cast<mainwidget*>(
-            ui_.mainTab->widget(index)); 
+        auto* widget = static_cast<mainwidget*>(ui_.mainTab->widget(index)); 
 
         widget->activate(ui_.mainTab);
         widget->add_actions(*ui_.mainToolBar);
@@ -469,35 +479,48 @@ void MainWindow::on_mainTab_currentChanged(int index)
 
     // build file menu
     ui_.menuFile->clear();
+    ui_.menuFile->addAction(ui_.actionOpenNZB);
+    ui_.menuFile->addAction(ui_.actionLoadNZB);
+
     if (QSystemTrayIcon::isSystemTrayAvailable())
     {
+        ui_.menuFile->addSeparator();
         ui_.menuFile->addAction(ui_.actionMinimize);
     }
+    ui_.menuFile->addSeparator();
     ui_.menuFile->addAction(ui_.actionExit);
 
     build_window_menu();
 }
 
-void MainWindow::on_mainTab_tabCloseRequested(int tab)
+void mainwindow::on_mainTab_tabCloseRequested(int tab)
 {
     const auto* widget = static_cast<mainwidget*>(ui_.mainTab->widget(tab));
 
     // find in the array
     auto it = std::find(std::begin(widgets_), std::end(widgets_), widget);
-
-    Q_ASSERT(it != std::end(widgets_));
-
-    auto index = std::distance(std::begin(widgets_), it);
-
-    auto* action = actions_[index];
-    action->setChecked(false);
+    if (it == std::end(widgets_))
+    {
+        auto it = std::find_if(std::begin(extras_), std::end(extras_), 
+            [=](const std::unique_ptr<mainwidget>& w) {
+                return w.get() == widget;
+            });
+        Q_ASSERT(it != std::end(extras_));
+        extras_.erase(it);
+    }
+    else
+    {
+        const auto index = std::distance(std::begin(widgets_), it);
+        auto* action = actions_[index];
+        action->setChecked(false);
+    }
 
     ui_.mainTab->removeTab(tab);
 
     build_window_menu();
 }
 
-void MainWindow::on_actionWindowClose_triggered()
+void mainwindow::on_actionWindowClose_triggered()
 {
     const auto cur = ui_.mainTab->currentIndex();
     if (cur == -1)
@@ -506,7 +529,7 @@ void MainWindow::on_actionWindowClose_triggered()
     on_mainTab_tabCloseRequested(cur);
 }
 
-void MainWindow::on_actionWindowNext_triggered()
+void mainwindow::on_actionWindowNext_triggered()
 {
     // cycle to next tab in the maintab
 
@@ -519,7 +542,7 @@ void MainWindow::on_actionWindowNext_triggered()
     ui_.mainTab->setCurrentIndex(next);
 }
 
-void MainWindow::on_actionWindowPrev_triggered()
+void mainwindow::on_actionWindowPrev_triggered()
 {
     // cycle to previous tab in the maintab
 
@@ -532,12 +555,12 @@ void MainWindow::on_actionWindowPrev_triggered()
     ui_.mainTab->setCurrentIndex(prev);
 }
 
-void MainWindow::on_actionHelp_triggered()
+void mainwindow::on_actionHelp_triggered()
 {
     openhelp("index.html");
 }
 
-void MainWindow::on_actionMinimize_triggered()
+void mainwindow::on_actionMinimize_triggered()
 {
     DEBUG("Minimize to tray!");
 
@@ -547,7 +570,7 @@ void MainWindow::on_actionMinimize_triggered()
     ui_.actionMinimize->setEnabled(false);
 }
 
-void MainWindow::on_actionRestore_triggered()
+void mainwindow::on_actionRestore_triggered()
 {
     DEBUG("Restore from tray");
 
@@ -557,7 +580,7 @@ void MainWindow::on_actionRestore_triggered()
     ui_.actionMinimize->setEnabled(true);
 }
 
-void MainWindow::on_actionContextHelp_triggered()
+void mainwindow::on_actionContextHelp_triggered()
 {
     const auto* widget = static_cast<mainwidget*>(ui_.mainTab->currentWidget());
     if (widget == nullptr)
@@ -568,21 +591,24 @@ void MainWindow::on_actionContextHelp_triggered()
     openhelp(info.helpurl);
 }
 
-void MainWindow::on_actionExit_triggered()
+void mainwindow::on_actionExit_triggered()
 {
     // calling close will generate QCloseEvent which
     // will invoke the normal shutdown sequence.
     QMainWindow::close();
 }
 
-void MainWindow::on_actionSettings_triggered()
+void mainwindow::on_actionSettings_triggered()
 {
     show_setting("");
-
-
 }
 
-void MainWindow::actionWindowToggleView_triggered()
+void mainwindow::on_actionOpenNZB_triggered()
+{
+ 
+}
+
+void mainwindow::actionWindowToggleView_triggered()
 {
     // the signal comes from the action object in
     // the view menu. the index is the index to the widgets array
@@ -604,7 +630,7 @@ void MainWindow::actionWindowToggleView_triggered()
     }
 }
 
-void MainWindow::actionWindowFocus_triggered()
+void mainwindow::actionWindowFocus_triggered()
 {
     // this signal comes from an action in the
     // window menu. the index is the index of the widget
@@ -619,7 +645,7 @@ void MainWindow::actionWindowFocus_triggered()
     ui_.mainTab->setCurrentIndex(tab_index);
 }
 
-void MainWindow::actionTray_activated(QSystemTrayIcon::ActivationReason reason)
+void mainwindow::actionTray_activated(QSystemTrayIcon::ActivationReason reason)
 {
     if (reason != QSystemTrayIcon::Context)
         return;
@@ -631,7 +657,7 @@ void MainWindow::actionTray_activated(QSystemTrayIcon::ActivationReason reason)
     menu.exec(QCursor::pos());
 }
 
-void MainWindow::timerWelcome_timeout()
+void mainwindow::timerWelcome_timeout()
 {
     DlgWelcome dlg(this);
     dlg.exec();
@@ -643,5 +669,6 @@ void MainWindow::timerWelcome_timeout()
     app::send(gui::msg_first_launch {add_account}, "gui");
 
 }
+
 
 } // gui

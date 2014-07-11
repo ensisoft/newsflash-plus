@@ -14,8 +14,8 @@
    <string>RSS</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="rss.qrc">
-    <normaloff>:/ico/ico_rss.png</normaloff>:/ico/ico_rss.png</iconset>
+   <iconset resource="resource.qrc">
+    <normaloff>:/resource/16x16_ico_png/ico_rss.png</normaloff>:/resource/16x16_ico_png/ico_rss.png</iconset>
   </property>
   <layout class="QGridLayout" name="gridLayout_2">
    <item row="1" column="0">
@@ -98,8 +98,8 @@
            <string>Womble</string>
           </property>
           <property name="icon">
-           <iconset resource="rss.qrc">
-            <normaloff>:/ico/ico_rss.png</normaloff>:/ico/ico_rss.png</iconset>
+           <iconset resource="resource.qrc">
+            <normaloff>:/resource/16x16_ico_png/ico_rss.png</normaloff>:/resource/16x16_ico_png/ico_rss.png</iconset>
           </property>
           <property name="checkable">
            <bool>true</bool>
@@ -118,8 +118,8 @@
            <string>NZBS</string>
           </property>
           <property name="icon">
-           <iconset resource="rss.qrc">
-            <normaloff>:/ico/ico_rss.png</normaloff>:/ico/ico_rss.png</iconset>
+           <iconset resource="resource.qrc">
+            <normaloff>:/resource/16x16_ico_png/ico_rss.png</normaloff>:/resource/16x16_ico_png/ico_rss.png</iconset>
           </property>
           <property name="checkable">
            <bool>true</bool>
@@ -211,8 +211,8 @@
   </layout>
   <action name="actionRefresh">
    <property name="icon">
-    <iconset resource="rss.qrc">
-     <normaloff>:/ico/ico_reload.png</normaloff>:/ico/ico_reload.png</iconset>
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_reload.png</normaloff>:/resource/16x16_ico_png/ico_reload.png</iconset>
    </property>
    <property name="text">
     <string>Refresh</string>
@@ -226,8 +226,8 @@
   </action>
   <action name="actionDownload">
    <property name="icon">
-    <iconset resource="rss.qrc">
-     <normaloff>:/ico/ico_download.png</normaloff>:/ico/ico_download.png</iconset>
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_download.png</normaloff>:/resource/16x16_ico_png/ico_download.png</iconset>
    </property>
    <property name="text">
     <string>Download</string>
@@ -238,8 +238,8 @@
   </action>
   <action name="actionSelectDirectory">
    <property name="icon">
-    <iconset resource="rss.qrc">
-     <normaloff>:/ico/ico_open.png</normaloff>:/ico/ico_open.png</iconset>
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_folder.png</normaloff>:/resource/16x16_ico_png/ico_folder.png</iconset>
    </property>
    <property name="text">
     <string>Select download directory</string>
@@ -247,8 +247,8 @@
   </action>
   <action name="actionSave">
    <property name="icon">
-    <iconset resource="rss.qrc">
-     <normaloff>:/ico/ico_save.png</normaloff>:/ico/ico_save.png</iconset>
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_save.png</normaloff>:/resource/16x16_ico_png/ico_save.png</iconset>
    </property>
    <property name="text">
     <string>Save NZB...</string>
@@ -262,8 +262,8 @@
   </action>
   <action name="actionDownloadTo">
    <property name="icon">
-    <iconset resource="rss.qrc">
-     <normaloff>:/ico/ico_download.png</normaloff>:/ico/ico_download.png</iconset>
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_download.png</normaloff>:/resource/16x16_ico_png/ico_download.png</iconset>
    </property>
    <property name="text">
     <string>Download to...</string>
@@ -271,8 +271,8 @@
   </action>
   <action name="actionSettings">
    <property name="icon">
-    <iconset resource="rss.qrc">
-     <normaloff>:/ico/ico_settings.png</normaloff>:/ico/ico_settings.png</iconset>
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_settings.png</normaloff>:/resource/16x16_ico_png/ico_settings.png</iconset>
    </property>
    <property name="text">
     <string>Settings</string>
@@ -283,8 +283,8 @@
   </action>
   <action name="actionStop">
    <property name="icon">
-    <iconset resource="rss.qrc">
-     <normaloff>:/ico/ico_stop.png</normaloff>:/ico/ico_stop.png</iconset>
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_stop.png</normaloff>:/resource/16x16_ico_png/ico_stop.png</iconset>
    </property>
    <property name="text">
     <string>Stop</string>
@@ -292,8 +292,8 @@
   </action>
   <action name="actionBrowse">
    <property name="icon">
-    <iconset resource="rss.qrc">
-     <normaloff>:/ico/ico_folder.png</normaloff>:/ico/ico_folder.png</iconset>
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_folder.png</normaloff>:/resource/16x16_ico_png/ico_folder.png</iconset>
    </property>
    <property name="text">
     <string>Browse ...</string>
@@ -301,8 +301,8 @@
   </action>
   <action name="actionOpen">
    <property name="icon">
-    <iconset resource="rss.qrc">
-     <normaloff>:/ico/ico_open.png</normaloff>:/ico/ico_open.png</iconset>
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_open.png</normaloff>:/resource/16x16_ico_png/ico_open.png</iconset>
    </property>
    <property name="text">
     <string>Open NZB</string>
@@ -319,7 +319,7 @@
   <tabstop>tableView</tabstop>
  </tabstops>
  <resources>
-  <include location="rss.qrc"/>
+  <include location="resource.qrc"/>
  </resources>
  <connections/>
 </ui>

@@ -25,14 +25,13 @@ exe newsflash
   /qt//QtCore
   /qt//QtGui
   /qt//QtNetwork
+  /qt//QtXml
   /newsflash//qjson
   /newsflash//python
   /newsflash//dl
   /newsflash//util
 
   /engine//engine-lib/<link>static
-  
-  #/sdk//corekit/<link>shared
 
   ../keygen/keygen.cpp
 ;

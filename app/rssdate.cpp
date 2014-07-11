@@ -27,7 +27,7 @@
 #include <newsflash/warnpop.h>
 
 #include <algorithm>
-#include "rss.h"
+#include "rssdate.h"
 
 namespace {
     int four_digit_year(int year)
@@ -39,10 +39,10 @@ namespace {
 
 } // namespace
 
-namespace rss
+namespace app
 {
 
-QDateTime parse_date(const QString& str)
+QDateTime parse_rss_date(const QString& str)
 {
     // match a RFC 822 date for example: "Fri, 26 Feb 2010 13:47:54 +0000"
     const QRegExp rfc822(
@@ -94,5 +94,4 @@ QDateTime parse_date(const QString& str)
     return QDateTime();
 }
 
-
-} // rss
+} // app

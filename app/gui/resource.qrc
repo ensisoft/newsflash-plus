@@ -2,6 +2,9 @@
 <RCC version="1.0">
   <qresource>
     <file>resource/16x16_ico_png/ico_newsflash.png</file>
+    <file>resource/16x16_ico_png/ico_save.png</file>
+    <file>resource/16x16_ico_png/ico_rss.png</file>
+    <file>resource/16x16_ico_png/ico_password.png</file>
     <file>resource/16x16_ico_png/ico_debug.png</file>
     <file>resource/16x16_ico_png/ico_forum.png</file>
     <file>resource/16x16_ico_png/ico_idea.png</file>

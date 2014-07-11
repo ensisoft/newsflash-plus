@@ -1,4 +1,4 @@
-// Copyright (c) 2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -18,43 +18,37 @@
 //  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 //  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-//  THE SOFTWARE.            
+//  THE SOFTWARE.
 
 #pragma once
 
 #include <newsflash/config.h>
 
 #include <newsflash/warnpush.h>
-#  include <QtGui/QWidget>
-#  include <QTimer>
+#  include <QAbstractListModel>
 #include <newsflash/warnpop.h>
 
-namespace gui
+#include "mainmodel.h"
+#include "nzbparse.h"
+
+namespace app
 {
-    class spinner : public QWidget
+    class nzbfile : public mainmodel, public QAbstractListModel
     {
-        Q_OBJECT
     public:
-        spinner(QWidget* parent);
-       ~spinner();
-        
-        // start animating the widget
-        void start();
-        
-        // stop animation
-        void stop();
-        
-        // check if animation is currently running
-        bool is_active() const;
-    private:
-        void paintEvent(QPaintEvent* event);
+        nzbfile();
+       ~nzbfile();
+
+        virtual void clear() override;
+
+        virtual QAbstractItemModel* view() override;
+
+        virtual int rowCount(const QModelIndex&) const override;
+
+        virtual QVariant data(const QModelIndex& index, int role) const override;
 
     private:
-        QTimer timer_;
-        unsigned pos_;
+        QList<nzbcontent> content_;
     };
 
-} // gui
-
-
-
+} // app

@@ -22,36 +22,18 @@
 
 #pragma once
 
-#include <newsflash/config.h>
-
-#include <newsflash/sdk/request.h>
-#include <newsflash/sdk/rssfeed.h>
-
 #include <newsflash/warnpush.h>
-#  include <QDateTime>
 #  include <QString>
+#  include <QDateTime>
 #include <newsflash/warnpop.h>
 
-#include <vector>
-
-namespace rss
+namespace app
 {
-    // womble feed 
-    class womble : public sdk::rssfeed
-    {
-    public:
-        womble();
-       ~womble();
+    // Try to parse a date from a RSS feed into a valid date object.
+    // The expected date format is "Fri, 26 Feb 2010 13:47:54 +0000",
+    // i.e. the date format specified in RFC 822/2822.
+    // The returned QDateTime is in UTC time zone.
+    // If string is not a valid date returns invalid QDateTime    
+    QDateTime parse_rss_date(const QString& str);
 
-        virtual bool parse(QIODevice& io, std::vector<item>& rss) const override;
-
-        virtual void prepare(sdk::category cat, std::vector<QUrl>& urls) const override;
-
-        virtual QString site() const override;        
-
-        virtual QString name() const override;
-
-    private:
-    };
-
-} // rss
+} // app

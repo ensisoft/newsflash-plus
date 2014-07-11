@@ -29,6 +29,7 @@
 #include <newsflash/warnpop.h>
 
 #include "eventlog.h"
+#include "mainwindow.h"
 
 namespace gui
 {
@@ -38,6 +39,9 @@ eventlog::eventlog(app::eventlog& model) : model_(model)
     ui_.setupUi(this);
     ui_.listLog->setModel(model.view());
     ui_.actionClearLog->setEnabled(false);
+
+    model.on_event = std::bind(&eventlog::on_event, this,
+        std::placeholders::_1);
 }
 
 eventlog::~eventlog()
@@ -53,6 +57,27 @@ void eventlog::add_actions(QToolBar& bar)
     bar.addAction(ui_.actionClearLog);
 }
 
+void eventlog::activate(QWidget*)
+{
+    setWindowIcon(QIcon(":/resource/16x16_ico_png/ico_info.png"));
+    g_win->update(this);
+}
+
+mainwidget::info eventlog::information() const 
+{
+    return {"eventlog.html", false};
+}
+
+void eventlog::on_event(const app::eventlog::event_t& e)
+{
+    if (e.type == app::eventlog::event::error)
+    {
+        setWindowIcon(QIcon(":/resource/16x16_ico_png/ico_error.png"));
+        g_win->update(this);
+    }
+    ui_.actionClearLog->setEnabled(true);
+}
+
 void eventlog::on_actionClearLog_triggered()
 {
     ui_.actionClearLog->setEnabled(false);
@@ -65,11 +90,6 @@ void eventlog::on_listLog_customContextMenuRequested(QPoint pos)
     QMenu menu(this);
     menu.addAction(ui_.actionClearLog);
     menu.exec(QCursor::pos());
-}
-
-mainwidget::info eventlog::information() const 
-{
-    return {"eventlog.html", false};
 }
 
 } // gui

@@ -46,6 +46,7 @@
 #include "accounts.h"
 #include "groups.h"
 #include "eventlog.h"
+#include "rss.h"
 #include "../mainapp.h"
 #include "../eventlog.h"
 #include "../debug.h"
@@ -55,6 +56,7 @@
 #include "../datastore.h"
 #include "../accounts.h"
 #include "../groups.h"
+#include "../rss.h"
 
 using app::str;
 
@@ -120,12 +122,16 @@ void copyright()
     INFO("http://www.famfamfam.com/lab/icons/silk/");
     INFO(str("Qt cross-platform application and UI framework _1", QT_VERSION_STR));
     INFO("http://qt.nokia.com");
-    INFO(str("Python _1", Py_GetVersion()));
+    //INFO(str("Python _1", Py_GetVersion()));
+    INFO("Python 2.5.1");
     INFO("http://www.python.org");
     INFO("Zlib compression library 1.2.5");
     INFO("Copyright (c) 1995-2010 Jean-Loup Gailly & Mark Adler");
     INFO("http://zlib.net");        
 }
+
+gui::mainwindow* g_win;
+app::mainapp* g_app;
 
 int run(int argc, char* argv[])
 {
@@ -158,9 +164,11 @@ int run(int argc, char* argv[])
 
     // main application module
     app::mainapp app(qtinstance);
+    g_app = &app;
 
     // main application window
-    gui::MainWindow win(app);
+    gui::mainwindow win(app);
+    g_win = &win;
 
     // accounts module
     app::accounts app_accounts;
@@ -174,16 +182,24 @@ int run(int argc, char* argv[])
     app.attach(&app_groups);
     win.attach(&gui_groups);
 
-    // eventlog
+    // eventlog module
     app::eventlog& app_eventlog = app::eventlog::get();
     gui::eventlog  gui_eventlog(app_eventlog);
     app.attach(&app_eventlog);
     win.attach(&gui_eventlog);
 
+    // RSS module
+    app::rss app_rss(app);
+    gui::rss gui_rss(win, app_rss);
+    app.attach(&app_rss);
+    win.attach(&gui_rss);
+
     app.loadstate();
     win.loadstate();
 
     win.show();
+
+
 
     return qtinstance.exec();
 }

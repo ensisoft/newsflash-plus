@@ -24,36 +24,14 @@
 
 #include <newsflash/config.h>
 
-#include <newsflash/sdk/request.h>
-#include <newsflash/sdk/rssfeed.h>
-
 #include <newsflash/warnpush.h>
-#  include <QDateTime>
-#  include <QString>
 #include <newsflash/warnpop.h>
 
-#include <vector>
+#include <memory>
+#include "ui_nzbfile.h"
 
-namespace rss
+namespace gui
 {
-    class nzbs : public sdk::rssfeed
-    {
-    public:
-        nzbs();
-       ~nzbs();
 
-        virtual bool parse(QIODevice& io, std::vector<item>& rss) const override;
 
-        virtual void prepare(sdk::category cat, std::vector<QUrl>& urls) const override;
-
-        virtual bool set_params(const QVariantMap& params);
-
-        virtual QString site() const override;
-        virtual QString name() const override;
-    private:
-        QString userid_;
-        QString apikey_;
-        int feedsize_;
-    };
-
-} // rss
+} // gui

@@ -37,7 +37,7 @@ int test_main(int argc, char* argv[])
 {
     QCoreApplication app(argc, argv);
 
-    sdk::datastore datastore;
+    app::datastore datastore;
     BOOST_REQUIRE(!datastore.contains("foo", "bar"));
     datastore.set("foo", "bar", QVariant(1234));
     BOOST_REQUIRE(datastore.contains("foo", "bar"));

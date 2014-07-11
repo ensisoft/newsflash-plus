@@ -20,20 +20,38 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-#pragma once
+#include "nzbfile.h"
+#include "debug.h"
 
-#include <newsflash/warnpush.h>
-#  include <QString>
-#  include <QDateTime>
-#include <newsflash/warnpop.h>
-
-namespace rss
+namespace app
 {
-    // Try to parse a date from a RSS feed into a valid date object.
-    // The expected date format is "Fri, 26 Feb 2010 13:47:54 +0000",
-    // i.e. the date format specified in RFC 822/2822.
-    // The returned QDateTime is in UTC time zone.
-    // If string is not a valid date returns invalid QDateTime    
-    QDateTime parse_date(const QString& str);
 
-} // rss
+nzbfile::nzbfile()
+{
+    DEBUG("nzbfile created");
+}
+
+nzbfile::~nzbfile()
+{
+    DEBUG("nzbfile destroyed");
+}
+
+void nzbfile::clear()
+{}
+
+QAbstractItemModel* nzbfile::view() 
+{
+    return this;
+}
+
+int nzbfile::rowCount(const QModelIndex&) const
+{
+    return content_.size();
+}
+
+QVariant nzbfile::data(const QModelIndex& index, int role) const
+{
+    return QVariant();
+}
+
+} // app

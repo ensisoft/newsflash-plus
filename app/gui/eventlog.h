@@ -38,7 +38,11 @@ namespace gui
 
         virtual void add_actions(QMenu& menu) override;
         virtual void add_actions(QToolBar& bar) override;
+        virtual void activate(QWidget*);
         mainwidget::info information() const override;
+
+    private:
+        void on_event(const app::eventlog::event_t& e);
 
     private slots:
         void on_actionClearLog_triggered();

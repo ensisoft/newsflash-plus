@@ -48,15 +48,15 @@ namespace gui
 {
     class mainwidget;
 
-    class MainWindow : public QMainWindow
+    class mainwindow : public QMainWindow
     {
         Q_OBJECT
 
     public:
         using QMainWindow::show;
 
-        MainWindow(app::mainapp& app);
-       ~MainWindow();
+        mainwindow(app::mainapp& app);
+       ~mainwindow();
        
         void attach(mainwidget* widget);
 
@@ -74,6 +74,8 @@ namespace gui
         QString select_save_nzb_folder();
         
         void recents(QStringList& paths) const;
+
+        void update(mainwidget* widget);
 
    private:
         void show(const QString& name);
@@ -102,6 +104,7 @@ namespace gui
         void on_actionRestore_triggered();        
         void on_actionExit_triggered();
         void on_actionSettings_triggered();
+        void on_actionOpenNZB_triggered();
         void actionWindowToggleView_triggered();
         void actionWindowFocus_triggered();
 
@@ -116,6 +119,7 @@ namespace gui
         app::datastore settings_;
         std::vector<mainwidget*> widgets_;
         std::vector<QAction*> actions_;
+        std::vector<std::unique_ptr<mainwidget>> extras_;
         mainwidget* current_;                
     private:
         QSystemTrayIcon tray_;
@@ -123,5 +127,7 @@ namespace gui
         QString recent_save_nzb_path_;
         QString recent_load_nzb_path_;
     };
+
+    extern mainwindow* g_win;
 
 } // gui

@@ -24,10 +24,10 @@
 
 #include <QtGlobal>
 
-namespace sdk
+namespace app
 {
     typedef quint32 bitflag_t;
     
 } // sdk
 
-#define BITFLAG(x) static_cast<sdk::bitflag_t>(x)
+#define BITFLAG(x) static_cast<app::bitflag_t>(x)

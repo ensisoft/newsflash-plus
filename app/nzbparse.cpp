@@ -18,7 +18,9 @@
 //  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 //  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-//  THE SOFTWARE.            
+//  THE SOFTWARE.
+
+#include <newsflash/config.h>
 
 #include <newsflash/warnpush.h>
 #  include <QtXml/QXmlSimpleReader>
@@ -26,14 +28,14 @@
 #  include <QtXml/QXmlDefaultHandler>
 #  include <QStack>
 #include <newsflash/warnpop.h>
-#include "parser.h"
+
+#include "nzbparse.h"
 
 namespace {
-    
 class xmlhandler : public QXmlDefaultHandler
 {
 public:
-    xmlhandler(QList<nzb::content>& contents) : contents_(contents), nzb_error_(false), xml_error_(false)
+    xmlhandler(QList<app::nzbcontent>& contents) : contents_(contents), nzb_error_(false), xml_error_(false)
     {}
 
     virtual bool characters(const QString& ch) override
@@ -84,7 +86,7 @@ public:
             if (!curr_element_is("nzb"))
                 return false;
 
-            nzb::content content {};
+            app::nzbcontent content {};
             content.subject = attrs.value("subject");
             content.date    = attrs.value("date");
             content.poster  = attrs.value("poster");
@@ -171,7 +173,7 @@ private:
     }
 
 private:
-    QList<nzb::content>& contents_;
+    QList<app::nzbcontent>& contents_;
     QStack<QString> stack_;
     QString error_;    
     bool nzb_error_;
@@ -179,113 +181,33 @@ private:
     
 };
 
-} // namespace
+} // 
 
-namespace nzb
+namespace app
 {
 
-error parse(QIODevice& input, QList<content>& contents, QString* errstr)
+nzberror parse_nzb(QIODevice& io, QList<nzbcontent>& content)
 {
-    QList<content> data;
+    QList<nzbcontent> data;
 
     xmlhandler handler(data);
-    QXmlInputSource source(&input);
+    QXmlInputSource source(&io);
     QXmlSimpleReader reader;
     
     reader.setContentHandler(&handler);
     reader.setErrorHandler(&handler);
     if (!reader.parse(&source))
     {
-        if (!input.isOpen())
-            return error::io;
+        if (!io.isOpen())
+            return nzberror::io;
         else if (handler.nzb_error())
-            return error::nzb;
+            return nzberror::nzb;
 
-        if (errstr)
-            *errstr = handler.error();
-
-        return error::xml;
+        return nzberror::xml;
     }
-    contents.append(data);
+    content.append(data);
 
-    return error::none;
+    return nzberror::none;    
 }
 
-// remember that virtual functions are not virtual inside ctor and dtor!
-
-parser::parser() : shutdown_(false)
-{}
-
-parser::~parser()
-{
-    Q_ASSERT(shutdown_);
-}
-
-void parser::shutdown()
-{
-    if (isRunning())
-    {
-        QMutexLocker lock(&mutex_);        
-        shutdown_ = true;
-        cond_.wakeOne();
-    }
-    wait();    
-}
-
-void parser::parse(const QString& file)
-{
-    QMutexLocker lock(&mutex_);
-
-    files_.append(file);
-
-    if (!isRunning())
-        start();
-
-    cond_.wakeOne();
-}
-
-void parser::run()
-{
-    for (;;)
-    {
-        QString file;
-        QMutexLocker lock(&mutex_);
-        if (!shutdown_ && files_.isEmpty())
-        {
-            cond_.wait(&mutex_);
-            continue; // takes care of sporadic wakeup
-        }
-        else if (shutdown_)
-            break;
-
-        file = files_.first();
-        files_.pop_front();
-        lock.unlock();
-
-        parser::data data;
-        data.error = error::none;
-        data.file  = file;
-
-        QFile input(file);
-        if (!input.open(QIODevice::ReadOnly))
-             data.error = error::io;
-        else data.error = nzb::parse(input, data.contents);
-
-        lock.relock();
-        data_.push_back(data);
-        emit dataready();
-    }
-}
-
-bool parser::get(parser::data& data)
-{
-    QMutexLocker lock(&mutex_);
-    if (data_.isEmpty())
-        return false;
-
-    data = std::move(data_.first());
-    data_.pop_front();
-    return true;
-}
-
-} // nzb
+} // app

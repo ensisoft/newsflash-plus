@@ -74,8 +74,6 @@ namespace app
         // model impl
         virtual QAbstractItemModel* view() override;
 
-        virtual QString name() const override;
-
         // AbstractListModel impl
         virtual int rowCount(const QModelIndex&) const override;
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -18,75 +18,48 @@
 //  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 //  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-//  THE SOFTWARE.            
+//  THE SOFTWARE.
 
+#pragma once
 
 #include <newsflash/config.h>
 
 #include <newsflash/warnpush.h>
-#  include <QtGui/QPainter>
-#  include <QtGui/QColor>
+#  include <QList>
+#  include <QString>
 #include <newsflash/warnpop.h>
 
-#include "spinner.h"
+class QIODevice;
 
-namespace gui
+namespace app
 {
+    // content data parsed from a NZB file
+    struct nzbcontent {
+        //subject line
+        QString subject;
 
-spinner::spinner(QWidget* parent) : QWidget(parent), pos_(0)
-{
-    connect(&timer_, SIGNAL(timeout()), this, SLOT(update()));
-}
-spinner::~spinner()
-{
-}
-void spinner::start()
-{
-    timer_.start(50);
-}
+        // post date (unix time)
+        QString date; 
 
-void spinner::stop()
-{
-    timer_.stop();
-}
+        // Poster aka author
+        QString poster; 
 
-bool spinner::is_active() const
-{
-    return timer_.isActive();
-}
+        // the list of newsgroups where the file has been posted
+        QList<QString> groups;
 
-void spinner::paintEvent(QPaintEvent*)
-{
-    QPainter p(this);
+        // the list of message-ids that comprise this content
+        QList<QString> segments;
 
-    enum { TICKS = 27 };
+        // the presumed size of the content in bytes
+        quint64 bytes;
+    };
 
-    unsigned pos = pos_++ % TICKS;
+    enum class nzberror {
+        none, xml, nzb, io, other
+    };
 
-    int width  = this->width();
-    int height = this->height();
+    // parse nzb content from from input and store in the list of contents.
+    // returns nzberror code indicating the result of the parsing.
+    nzberror parse_nzb(QIODevice& io, QList<nzbcontent>& content);
 
-    p.setRenderHint(QPainter::Antialiasing);
-    
-    const QColor tick(QColor(0xff, 0x8c, 00));
-    
-    p.translate(width / 2, height / 2);
-    p.rotate((360/TICKS * pos) % 360);
-
-    int y = -height / 2;
-
-    for (int i=0; i<TICKS;++i)
-    {
-        QColor c(tick);
-        if (is_active())
-            c = c.lighter(100 + 2 * i);
-
-        QPen pen(c);
-        pen.setWidth(1);
-        p.setPen(pen);
-        p.rotate(360/TICKS);
-        p.drawLine(0, y+1, 0, y + 8);
-    }    
-}
-
-} // gui
+} // app

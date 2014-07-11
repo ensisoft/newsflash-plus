@@ -169,11 +169,6 @@ QAbstractItemModel* accounts::view()
     return this;
 }
 
-QString accounts::name() const 
-{
-    return "accounts";
-}
-
 int accounts::rowCount(const QModelIndex&) const 
 {
     return accounts_.size();
