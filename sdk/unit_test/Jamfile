@@ -1,5 +1,0 @@
-
-
-unit-test unit_test_message : unit_test_message.cpp ../message.cpp ../typereg.cpp ;
-
-unit-test unit_test_datastore : unit_test_datastore.cpp ../datastore.cpp /qt//QtCore /newsflash//qjson ;
