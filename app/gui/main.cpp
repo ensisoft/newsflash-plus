@@ -47,6 +47,7 @@
 #include "groups.h"
 #include "eventlog.h"
 #include "rss.h"
+#include "nzbfile.h"
 #include "../mainapp.h"
 #include "../eventlog.h"
 #include "../debug.h"
@@ -57,6 +58,7 @@
 #include "../accounts.h"
 #include "../groups.h"
 #include "../rss.h"
+#include "../nzbfile.h"
 
 using app::str;
 
@@ -193,6 +195,12 @@ int run(int argc, char* argv[])
     gui::rss gui_rss(win, app_rss);
     app.attach(&app_rss);
     win.attach(&gui_rss);
+
+    // NZB module
+    app::nzbfile app_nzb;
+    gui::nzbfile gui_nzb(app_nzb);
+    app.attach(&app_nzb);
+    win.attach(&gui_nzb);
 
     app.loadstate();
     win.loadstate();

@@ -31,7 +31,6 @@
 #  include <QList>
 #include <newsflash/warnpop.h>
 
-//#include <newsflash/sdk/model.h>
 #include "ui_mainwindow.h"
 #include "../mainapp.h"
 #include "../datastore.h"
@@ -72,6 +71,8 @@ namespace gui
         QString select_download_folder();
 
         QString select_save_nzb_folder();
+
+        QString select_nzb_file();
         
         void recents(QStringList& paths) const;
 

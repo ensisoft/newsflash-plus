@@ -29,20 +29,22 @@
 #  include <QStack>
 #include <newsflash/warnpop.h>
 
+#include <algorithm>
+
 #include "nzbparse.h"
 
 namespace {
 class xmlhandler : public QXmlDefaultHandler
 {
 public:
-    xmlhandler(QList<app::nzbcontent>& contents) : contents_(contents), nzb_error_(false), xml_error_(false)
+    xmlhandler(std::vector<app::nzbcontent>& contents) : contents_(contents), nzb_error_(false), xml_error_(false)
     {}
 
     virtual bool characters(const QString& ch) override
     {
         Q_ASSERT(has_content());
 
-        auto& content = contents_.last();
+        auto& content = contents_.back();
 
         // process the data of an xml element
         if (curr_element_is("group"))
@@ -52,7 +54,7 @@ public:
             if (group.isEmpty())
                 return true;
 
-            content.groups.append(group);
+            content.groups.push_back(group);
         }
         else if (curr_element_is("segment"))
         {
@@ -69,7 +71,7 @@ public:
             if (segment[segment.size()-1] != '>')
                 segment.append('>');
 
-            content.segments.append(segment);
+            content.segments.push_back(segment);
         }
         return true;
     }
@@ -88,12 +90,12 @@ public:
 
             app::nzbcontent content {};
             content.subject = attrs.value("subject");
+            if (content.subject.isEmpty())
+                return false;            
             content.date    = attrs.value("date");
             content.poster  = attrs.value("poster");
-            if (content.subject.isEmpty())
-                return false;
-            
-            contents_.append(content);
+            content.type    = app::find_filetype(content.subject);
+            contents_.push_back(content);
         }
         else if (element == "segment")
         {
@@ -103,7 +105,7 @@ public:
             if (!has_content())
                 return false;
 
-            auto& content = contents_.last();
+            auto& content = contents_.back();
             content.bytes += attrs.value("bytes").toInt();
         }
         else if (element == "group")
@@ -169,11 +171,11 @@ private:
     }
     bool has_content() const
     {
-        return !contents_.isEmpty();
+        return !contents_.empty();
     }
 
 private:
-    QList<app::nzbcontent>& contents_;
+    std::vector<app::nzbcontent>& contents_;
     QStack<QString> stack_;
     QString error_;    
     bool nzb_error_;
@@ -186,9 +188,9 @@ private:
 namespace app
 {
 
-nzberror parse_nzb(QIODevice& io, QList<nzbcontent>& content)
+nzberror parse_nzb(QIODevice& io, std::vector<nzbcontent>& content)
 {
-    QList<nzbcontent> data;
+    std::vector<nzbcontent> data;
 
     xmlhandler handler(data);
     QXmlInputSource source(&io);
@@ -205,7 +207,9 @@ nzberror parse_nzb(QIODevice& io, QList<nzbcontent>& content)
 
         return nzberror::xml;
     }
-    content.append(data);
+    //content.append(data);
+    std::copy(std::begin(data), std::end(data), 
+        std::back_inserter(content));
 
     return nzberror::none;    
 }

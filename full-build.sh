@@ -13,7 +13,7 @@ do
         "--debug" ) VARIANT="debug" ;;
         "--release" ) VARIANT="release" ;;
         "--verbose" ) VERBOSE="-v" ;;
-    * ) echo -e "'$arg' is not a valid build argument\n" 
+    * ) echo -e "'$arg' is not a valid build argument\nMaybe you mean --debug, --release, --verbose ?" 
     exit 1;;
     esac
 done

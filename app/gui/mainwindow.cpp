@@ -33,7 +33,7 @@
 #  include <QEvent>
 #  include <QTimer>
 #  include <QDir>
-#  include <QLibrary>
+#  include <QFileInfo>
 #include <newsflash/warnpop.h>
 
 #include <memory>
@@ -250,7 +250,7 @@ QString mainwindow::select_save_nzb_folder()
 {
     QFileDialog dlg(this);
     dlg.setFileMode(QFileDialog::Directory);
-    dlg.setWindowTitle(tr("Select save nzb folder"));
+    dlg.setWindowTitle(tr("Select save NZB folder"));
     dlg.setDirectory(recent_save_nzb_path_);
     if (dlg.exec() == QDialog::Rejected)
         return QString();
@@ -260,6 +260,17 @@ QString mainwindow::select_save_nzb_folder()
     recent_save_nzb_path_ = dir;
 
     return QDir::toNativeSeparators(dir);
+}
+
+QString mainwindow::select_nzb_file()
+{
+    const auto& file = QFileDialog::getOpenFileName(this,
+        tr("Select NZB file"), recent_load_nzb_path_, "*.nzb");
+    if (file.isEmpty())
+        return "";
+
+    recent_load_nzb_path_ = QFileInfo(file).absolutePath();
+    return QDir::toNativeSeparators(file);
 }
 
 void mainwindow::recents(QStringList& paths) const 
@@ -605,7 +616,7 @@ void mainwindow::on_actionSettings_triggered()
 
 void mainwindow::on_actionOpenNZB_triggered()
 {
- 
+
 }
 
 void mainwindow::actionWindowToggleView_triggered()

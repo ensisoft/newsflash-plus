@@ -25,16 +25,21 @@
 #include <newsflash/config.h>
 
 #include <newsflash/warnpush.h>
-#  include <QAbstractListModel>
 #include <newsflash/warnpop.h>
 
+#include <memory>
+
 #include "mainmodel.h"
-#include "nzbparse.h"
+#include "nzbthread.h"
+
+class QFile;
 
 namespace app
 {
-    class nzbfile : public mainmodel, public QAbstractListModel
+    class nzbfile : public QObject, public mainmodel
     {
+        Q_OBJECT
+
     public:
         nzbfile();
        ~nzbfile();
@@ -43,12 +48,25 @@ namespace app
 
         virtual QAbstractItemModel* view() override;
 
-        virtual int rowCount(const QModelIndex&) const override;
+        // begin loading the NZB contents from the given file
+        // returns true if file was succesfully opened and then subsequently
+        // emits ready() once the file has been parsed.
+        // otherwise returns false and no signal will arrive.
+        bool load(const QString& file);
 
-        virtual QVariant data(const QModelIndex& index, int role) const override;
+    signals:
+        void ready();
+
+    private slots:
+        void parse_complete();
 
     private:
-        QList<nzbcontent> content_;
+        struct item;
+        class model;
+
+    private:
+        std::unique_ptr<nzbthread> thread_;
+        std::unique_ptr<model> model_;
     };
 
 } // app

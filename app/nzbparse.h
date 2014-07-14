@@ -25,9 +25,11 @@
 #include <newsflash/config.h>
 
 #include <newsflash/warnpush.h>
-#  include <QList>
 #  include <QString>
 #include <newsflash/warnpop.h>
+
+#include <vector>
+#include "filetype.h"
 
 class QIODevice;
 
@@ -35,6 +37,8 @@ namespace app
 {
     // content data parsed from a NZB file
     struct nzbcontent {
+        filetype type;
+
         //subject line
         QString subject;
 
@@ -45,10 +49,10 @@ namespace app
         QString poster; 
 
         // the list of newsgroups where the file has been posted
-        QList<QString> groups;
+        std::vector<QString> groups;
 
         // the list of message-ids that comprise this content
-        QList<QString> segments;
+        std::vector<QString> segments;
 
         // the presumed size of the content in bytes
         quint64 bytes;
@@ -60,6 +64,6 @@ namespace app
 
     // parse nzb content from from input and store in the list of contents.
     // returns nzberror code indicating the result of the parsing.
-    nzberror parse_nzb(QIODevice& io, QList<nzbcontent>& content);
+    nzberror parse_nzb(QIODevice& io, std::vector<nzbcontent>& content);
 
 } // app

@@ -29,9 +29,36 @@
 
 #include <memory>
 #include "ui_nzbfile.h"
+#include "mainwidget.h"
+#include "../nzbfile.h"
 
 namespace gui
 {
+    class nzbfile : public mainwidget
+    {
+        Q_OBJECT
 
+    public:
+        nzbfile(app::nzbfile& model);
+       ~nzbfile();
+
+        virtual void add_actions(QMenu& menu) override;
+        virtual void add_actions(QToolBar& bar) override;
+
+    private slots:
+        void ready();
+
+    private slots:
+        void on_actionOpen_triggered();
+        void on_actionDownload_triggered();
+        void on_actionClear_triggered();
+        void on_listFiles_customContextMenuRequested(QPoint);
+
+    private:
+        Ui::NZB ui_;
+
+    private:
+        app::nzbfile& model_;
+    };
 
 } // gui

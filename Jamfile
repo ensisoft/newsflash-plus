@@ -39,7 +39,6 @@ use-project corelib : "corelib" ;
 use-project engine  : "engine" ;
 use-project msglib  : "msglib" ;
 use-project pylib   : "pylib"  ;
-use-project sdk     : "sdk" ;
 
 project newsflash 
 : 

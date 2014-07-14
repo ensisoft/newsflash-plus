@@ -327,8 +327,8 @@ private:
 
 rss::rss(mainapp& app) : pending_(0), app_(app)
 {
-    INFO("RSS (womble) http://newshost.co.za");
-    INFO("RSS (nzbs) http://nzbs.org");
+    INFO("RSS http://newshost.co.za");
+    INFO("RSS http://nzbs.org");
 
     feeds_.emplace_back(new womble);
     feeds_.emplace_back(new nzbs);
