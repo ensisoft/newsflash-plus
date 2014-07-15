@@ -20,54 +20,49 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-#pragma once
-
-#include <newsflash/config.h>
-
 #include <newsflash/warnpush.h>
-#  include <QObject>
+#  include <QIODevice>
 #include <newsflash/warnpop.h>
 
-#include <memory>
-
-#include "mainmodel.h"
 #include "nzbthread.h"
-
-class QFile;
+#include "debug.h"
+#include "format.h"
 
 namespace app
 {
-    class nzbfile : public QObject, public mainmodel
-    {
-        Q_OBJECT
 
-    public:
-        nzbfile();
-       ~nzbfile();
+nzbthread::nzbthread(std::unique_ptr<QIODevice> io) : io_(std::move(io)), error_(nzberror::none)
+{
+    DEBUG("Created nzbhread");
+}
 
-        virtual void clear() override;
+nzbthread::~nzbthread()
+{
+    DEBUG("Destroyed nzbhread");
+}
 
-        virtual QAbstractItemModel* view() override;
+void nzbthread::run() 
+{
+    DEBUG(str("nzbthread::run _1", QThread::currentThreadId()));
 
-        // begin loading the NZB contents from the given file
-        // returns true if file was succesfully opened and then subsequently
-        // emits ready() once the file has been parsed.
-        // otherwise returns false and no signal will arrive.
-        bool load(const QString& file);
+    std::vector<nzbcontent> data;
+    const auto result = parse_nzb(*io_.get(), data);
 
-    signals:
-        void ready();
+    std::lock_guard<std::mutex> lock(mutex_);
+    data_  = std::move(data);
+    error_ = result;
 
-    private slots:
-        void parse_complete();
+    emit complete();
 
-    private:
-        struct item;
-        class model;
+    DEBUG("nzbthread done...");
+}
 
-    private:
-        std::unique_ptr<nzbthread> thread_;
-        std::unique_ptr<model> model_;
-    };
+nzberror nzbthread::result(std::vector<nzbcontent>& data)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+
+    data = std::move(data_);
+    return error_;
+}    
 
 } // app

@@ -193,8 +193,8 @@ engine::engine(listener& callback, std::string logs) : logs_(logs), listener_(ca
     bytes_written_    = 0;
     bytes_queued_     = 0;
 
-    const auto path = fs::createpath(logs);
-    const auto file = fs::joinpath(path, "engine.log");
+    //const auto path = fs::createpath(logs);
+    const auto file = fs::joinpath(logs, "engine.log");
 
     LOG_OPEN(file);
     LOG_D("Engine created");

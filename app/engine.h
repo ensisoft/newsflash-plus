@@ -23,51 +23,57 @@
 #pragma once
 
 #include <newsflash/config.h>
-
 #include <newsflash/warnpush.h>
 #  include <QObject>
+#  include <QString>
 #include <newsflash/warnpop.h>
-
 #include <memory>
+#include <string>
+#include <deque>
 
-#include "mainmodel.h"
-#include "nzbthread.h"
+namespace newsflash {
+    class engine;
+    class settings;
+}
 
-class QFile;
+class QCoreApplication;
+class QEvent;
 
 namespace app
 {
-    class nzbfile : public QObject, public mainmodel
+    class account;
+
+    // manager class around newsflash engine + engine state
+    class engine : public QObject
     {
         Q_OBJECT
-
     public:
-        nzbfile();
-       ~nzbfile();
+        struct file {
+            QString description;
 
-        virtual void clear() override;
+        };
 
-        virtual QAbstractItemModel* view() override;
+        engine(QCoreApplication& application);
+       ~engine();
 
-        // begin loading the NZB contents from the given file
-        // returns true if file was succesfully opened and then subsequently
-        // emits ready() once the file has been parsed.
-        // otherwise returns false and no signal will arrive.
-        bool load(const QString& file);
+        void set(const account& acc);
 
-    signals:
-        void ready();
-
-    private slots:
-        void parse_complete();
+        //void download()
+    private:
+        virtual bool eventFilter(QObject* object, QEvent* event) override;
 
     private:
-        struct item;
-        class model;
-
+        class listener;
     private:
-        std::unique_ptr<nzbthread> thread_;
-        std::unique_ptr<model> model_;
+        QCoreApplication& app_;
+    private:
+        std::unique_ptr<newsflash::engine> engine_;
+        std::unique_ptr<newsflash::settings> settings_;
+        std::unique_ptr<listener> listener_;
+    private:
+
     };
+
+    extern engine* g_engine;
 
 } // app

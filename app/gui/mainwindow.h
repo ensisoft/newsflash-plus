@@ -128,7 +128,9 @@ namespace gui
         QString recent_save_nzb_path_;
         QString recent_load_nzb_path_;
     };
-
+    
     extern mainwindow* g_win;
 
 } // gui
+
+

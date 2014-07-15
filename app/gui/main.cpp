@@ -48,6 +48,7 @@
 #include "eventlog.h"
 #include "rss.h"
 #include "nzbfile.h"
+#include "downloads.h"
 #include "../mainapp.h"
 #include "../eventlog.h"
 #include "../debug.h"
@@ -59,6 +60,9 @@
 #include "../groups.h"
 #include "../rss.h"
 #include "../nzbfile.h"
+#include "../connlist.h"
+#include "../tasklist.h"
+#include "../engine.h"
 
 using app::str;
 
@@ -132,9 +136,6 @@ void copyright()
     INFO("http://zlib.net");        
 }
 
-gui::mainwindow* g_win;
-app::mainapp* g_app;
-
 int run(int argc, char* argv[])
 {
     QtSingleApplication qtinstance(argc, argv);
@@ -164,13 +165,16 @@ int run(int argc, char* argv[])
     QCoreApplication::addLibraryPath(app::dist::path());
     QCoreApplication::addLibraryPath(app::dist::path("plugins-qt"));
 
+    app::engine eng(qtinstance);
+    app::g_engine = &eng;
+
     // main application module
-    app::mainapp app(qtinstance);
-    g_app = &app;
+    app::mainapp app;
+    app::g_app = &app;
 
     // main application window
     gui::mainwindow win(app);
-    g_win = &win;
+    gui::g_win = &win;
 
     // accounts module
     app::accounts app_accounts;
@@ -183,6 +187,11 @@ int run(int argc, char* argv[])
     gui::groups gui_groups(app_groups);
     app.attach(&app_groups);
     win.attach(&gui_groups);
+
+    app::tasklist app_tasks;
+    app::connlist app_conns;
+    gui::downloads gui_downloads(app_tasks, app_conns);
+    win.attach(&gui_downloads);
 
     // eventlog module
     app::eventlog& app_eventlog = app::eventlog::get();

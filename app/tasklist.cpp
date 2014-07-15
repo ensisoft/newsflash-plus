@@ -20,54 +20,61 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-#pragma once
-
 #include <newsflash/config.h>
 
-#include <newsflash/warnpush.h>
-#  include <QObject>
-#include <newsflash/warnpop.h>
-
-#include <memory>
-
-#include "mainmodel.h"
-#include "nzbthread.h"
-
-class QFile;
+#include "tasklist.h"
+#include "mainapp.h"
 
 namespace app
 {
-    class nzbfile : public QObject, public mainmodel
+
+tasklist::tasklist()
+{}
+
+tasklist::~tasklist()
+{}
+
+QVariant tasklist::data(const QModelIndex& index, int role) const 
+{
+    return QVariant();
+}
+
+QVariant tasklist::headerData(int section, Qt::Orientation orientation, int role) const
+{
+    if (role != Qt::DisplayRole)
+        return QVariant();
+
+    switch (columns(section))
     {
-        Q_OBJECT
+        case columns::status:
+            return "Status";
+        case columns::priority:
+            return "Priority";
+        case columns::done:
+            return "Done";
+        case columns::time:
+            return "Time";
+        case columns::eta:
+            return "ETA";
+        case columns::size:
+            return "Size";
+        case columns::desc:
+            return "Description";
+        default:
+            Q_ASSERT(!"incorrect column");
+            break;
+    }    
+    return QVariant();
+}
 
-    public:
-        nzbfile();
-       ~nzbfile();
+int tasklist::rowCount(const QModelIndex&) const 
+{
+    return 0;
+}
 
-        virtual void clear() override;
-
-        virtual QAbstractItemModel* view() override;
-
-        // begin loading the NZB contents from the given file
-        // returns true if file was succesfully opened and then subsequently
-        // emits ready() once the file has been parsed.
-        // otherwise returns false and no signal will arrive.
-        bool load(const QString& file);
-
-    signals:
-        void ready();
-
-    private slots:
-        void parse_complete();
-
-    private:
-        struct item;
-        class model;
-
-    private:
-        std::unique_ptr<nzbthread> thread_;
-        std::unique_ptr<model> model_;
-    };
+int tasklist::columnCount(const QModelIndex&) const
+{
+    return (int)columns::sentinel;
+}
 
 } // app

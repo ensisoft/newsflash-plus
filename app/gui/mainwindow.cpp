@@ -61,6 +61,8 @@ using app::str;
 namespace gui
 {
 
+mainwindow* g_win;    
+
 void openurl(const QString& url);
 void openhelp(const QString& page);
 

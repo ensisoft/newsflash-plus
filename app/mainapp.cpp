@@ -50,36 +50,12 @@
 #include "netreq.h"
 #include "home.h"
 
-namespace {
-    // we post this event object to the application's event queue
-    // when a thread in the engine calls async_notify.
-    // mainapp then installs itself as a global event filter
-    // and uses the filter function to pick up the notification event
-    // to drive the engine's event pump
-    class async_notify_event : public QEvent 
-    {
-    public:
-        async_notify_event() : QEvent(identity())
-        {}
-
-        static 
-        QEvent::Type identity() 
-        {
-            static auto id = QEvent::registerEventType();
-            return (QEvent::Type)id;
-        }
-    private:
-    };
-
-} // namespace
-
 namespace app
 {
+mainapp* g_app;
 
-mainapp::mainapp(QCoreApplication& app) : app_(app), net_submit_timer_(0), net_timeout_timer_(0)
+mainapp::mainapp() : net_submit_timer_(0), net_timeout_timer_(0)
 {
-    app.installEventFilter(this);
-
     QObject::connect(&net_, SIGNAL(finished(QNetworkReply*)),
         this, SLOT(replyAvailable(QNetworkReply*)));
 
@@ -88,16 +64,13 @@ mainapp::mainapp(QCoreApplication& app) : app_(app), net_submit_timer_(0), net_t
 
 mainapp::~mainapp()
 {
-    app_.removeEventFilter(this);
-
     DEBUG("Application deleted");
 }
 
 void mainapp::loadstate()
 {
     datastore data;
-
-    const auto file = home::file("engine.json");
+    const auto file = home::file("app.json");
     if (QFile::exists(file))
     {
         const auto error = data.load(file);
@@ -107,19 +80,6 @@ void mainapp::loadstate()
             return;
         }
     }
-
-    const auto home = QDir::homePath();
-
-    settings_.logs_path = data.get("settings", "logs_path", home + "/Newsflash/Logs");
-    settings_.data_path = data.get("settings", "data_path", home + "/Newsflash/Data");
-    settings_.downloads_path = data.get("settings", "downloads_path", home + "Downloads");
-    settings_.enable_throttle = data.get("settings", "enable_throttle", false);
-    settings_.discard_text_content = data.get("settings", "discard_text_content", false);
-    settings_.overwrite_existing = data.get("settings", "overwrite_existing", false);
-    settings_.remove_complete = data.get("settings", "remove_complete", false);
-    settings_.prefer_secure = data.get("settings", "prefer_secure", true);
-    settings_.throttle = data.get("settings", "throttle", 0);
-
     for (auto* model : models_)
     {
         model->load(data);
@@ -129,51 +89,23 @@ void mainapp::loadstate()
 bool mainapp::savestate()
 {
     datastore data;
-
-    data.set("settings", "logs_path", settings_.logs_path);
-    data.set("settings", "data_path", settings_.data_path);
-    data.set("settings", "downloads_path", settings_.downloads_path);
-    data.set("settings", "enable_throttle", settings_.enable_throttle);
-    data.set("settings", "discard_text_content", settings_.discard_text_content);
-    data.set("settings", "overwrite_existing", settings_.overwrite_existing);
-    data.set("settings", "remove_complete", settings_.remove_complete);
-    data.set("settings", "prefer_secure", settings_.prefer_secure);
-    data.set("settings", "throttle", settings_.throttle);
-
     for (auto* model : models_)
     {
         model->save(data);
     }
 
-    const auto file  = home::file("engine.json");
+    const auto file  = home::file("app.json");
     const auto error = data.save(file);
     if (error != QFile::NoError)
     {
         ERROR(str("Error saving settings _1, _2", file, error));
         return false;
     }
-
-    // todo: save engine state
-
     return true;
 }
 
 void mainapp::shutdown()
-{
-    engine_->stop();
-}
-
-void mainapp::get(app::settings& settings)
-{
-    settings = settings_;
-}
-
-void mainapp::set(const app::settings& settings)
-{
-    settings_ = settings;
-
-    // todo: configure engine
-}
+{}
 
 void mainapp::submit(mainmodel* model, netreq* req)
 {
@@ -197,28 +129,6 @@ void mainapp::submit(mainmodel* model, netreq* req)
 void mainapp::attach(mainmodel* model)
 {
     models_.push_back(model);
-}
-
-void mainapp::handle(const newsflash::error& error)
-{}
-
-
-void mainapp::acknowledge(const newsflash::file& file)
-{}
-
-
-void mainapp::async_notify()
-{
-    const auto& tid = std::this_thread::get_id();
-    std::stringstream ss;
-    std::string s;
-    ss << tid;
-    ss >> s;
-
-    DEBUG(str("Async notify by thread: _1", s));
-
-    // postEvent is a thread safe function  so we're all se here.
-    QCoreApplication::postEvent(this, new async_notify_event());
 }
 
 void mainapp::replyAvailable(QNetworkReply* reply)
@@ -288,20 +198,6 @@ void mainapp::replyAvailable(QNetworkReply* reply)
 
     DEBUG(str("Pending submits _1", submits_.size()));
 }
-
-bool mainapp::eventFilter(QObject* object, QEvent* event)
-{
-    if (object != this)
-        return false;
-
-    if (event->type() != async_notify_event::identity())
-        return false;
-
-    engine_->pump();
-    return true;
-
-}
-
 void mainapp::timerEvent(QTimerEvent* event)
 {
     if (event->timerId() == net_submit_timer_)
@@ -388,6 +284,4 @@ bool mainapp::submit_first()
 
     return true;
 }
-
-
 } // app

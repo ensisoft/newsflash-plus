@@ -37,8 +37,10 @@
 #include "eventlog.h"
 #include "debug.h"
 #include "datastore.h"
+#include "engine.h"
 #include "message.h"
 #include "msg_account.h"
+
 
 namespace app
 {
@@ -126,10 +128,11 @@ void accounts::set(const account& acc)
         emit dataChanged(first, last);
     }
 
-    msg_set_account msg {};
-    msg.id   = acc.id();
-    msg.name = acc.name();
-    send(msg, "accounts");
+    g_engine->set(acc);
+    //msg_set_account msg {};
+    //msg.id   = acc.id();
+    //msg.name = acc.name();
+    //send(msg, "accounts");
 }
 
 void accounts::save(datastore& datastore) const
@@ -159,7 +162,7 @@ void accounts::load(const datastore& datastore)
 
         accounts_.push_back(acc);
 
-
+        g_engine->set(acc);
     }
     QAbstractItemModel::reset();
 }

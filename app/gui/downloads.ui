@@ -1,0 +1,448 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Downloads</class>
+ <widget class="QWidget" name="Downloads">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>743</width>
+    <height>633</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Downloads</string>
+  </property>
+  <property name="windowIcon">
+   <iconset resource="resource.qrc">
+    <normaloff>:/resource/16x16_ico_png/ico_download.png</normaloff>:/resource/16x16_ico_png/ico_download.png</iconset>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="1" column="0">
+    <layout class="QVBoxLayout" name="verticalLayout">
+     <property name="spacing">
+      <number>0</number>
+     </property>
+     <item>
+      <widget class="QGroupBox" name="grpTasks">
+       <property name="title">
+        <string>Downloads</string>
+       </property>
+       <property name="flat">
+        <bool>false</bool>
+       </property>
+       <layout class="QGridLayout" name="gridLayout_2">
+        <item row="1" column="0">
+         <widget class="QTableView" name="tableTasks">
+          <property name="contextMenuPolicy">
+           <enum>Qt::CustomContextMenu</enum>
+          </property>
+          <property name="tabKeyNavigation">
+           <bool>false</bool>
+          </property>
+          <property name="selectionBehavior">
+           <enum>QAbstractItemView::SelectRows</enum>
+          </property>
+          <property name="showGrid">
+           <bool>false</bool>
+          </property>
+          <property name="gridStyle">
+           <enum>Qt::SolidLine</enum>
+          </property>
+          <attribute name="horizontalHeaderMinimumSectionSize">
+           <number>16</number>
+          </attribute>
+          <attribute name="horizontalHeaderStretchLastSection">
+           <bool>true</bool>
+          </attribute>
+          <attribute name="verticalHeaderVisible">
+           <bool>false</bool>
+          </attribute>
+          <attribute name="verticalHeaderDefaultSectionSize">
+           <number>16</number>
+          </attribute>
+          <attribute name="verticalHeaderMinimumSectionSize">
+           <number>16</number>
+          </attribute>
+         </widget>
+        </item>
+        <item row="0" column="0">
+         <layout class="QHBoxLayout" name="horizontalLayout">
+          <item>
+           <widget class="QCheckBox" name="chkRemoveComplete">
+            <property name="text">
+             <string>Automatically remove completed items</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="chkGroupSimilar">
+            <property name="text">
+             <string>Group related items</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="chkShutdown">
+            <property name="toolTip">
+             <string>Shutdown computer after all downloads are finished</string>
+            </property>
+            <property name="text">
+             <string>Shutdown computer afterwards</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="splitter">
+       <property name="maximumSize">
+        <size>
+         <width>16777215</width>
+         <height>4</height>
+        </size>
+       </property>
+       <property name="cursor">
+        <cursorShape>SizeVerCursor</cursorShape>
+       </property>
+       <property name="mouseTracking">
+        <bool>false</bool>
+       </property>
+       <property name="frameShadow">
+        <enum>QFrame::Raised</enum>
+       </property>
+       <property name="lineWidth">
+        <number>2</number>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QGroupBox" name="grpConns">
+       <property name="maximumSize">
+        <size>
+         <width>16777215</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="title">
+        <string>Connections</string>
+       </property>
+       <property name="flat">
+        <bool>false</bool>
+       </property>
+       <layout class="QGridLayout" name="gridLayout_4">
+        <item row="0" column="0">
+         <widget class="QTableView" name="tableConns">
+          <property name="contextMenuPolicy">
+           <enum>Qt::CustomContextMenu</enum>
+          </property>
+          <property name="tabKeyNavigation">
+           <bool>false</bool>
+          </property>
+          <property name="selectionBehavior">
+           <enum>QAbstractItemView::SelectRows</enum>
+          </property>
+          <property name="showGrid">
+           <bool>false</bool>
+          </property>
+          <attribute name="horizontalHeaderMinimumSectionSize">
+           <number>16</number>
+          </attribute>
+          <attribute name="horizontalHeaderStretchLastSection">
+           <bool>true</bool>
+          </attribute>
+          <attribute name="verticalHeaderVisible">
+           <bool>false</bool>
+          </attribute>
+          <attribute name="verticalHeaderDefaultSectionSize">
+           <number>16</number>
+          </attribute>
+          <attribute name="verticalHeaderMinimumSectionSize">
+           <number>16</number>
+          </attribute>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+    </layout>
+   </item>
+  </layout>
+  <action name="actionTaskDelete">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_delete.png</normaloff>:/resource/16x16_ico_png/ico_delete.png</iconset>
+   </property>
+   <property name="text">
+    <string>Delete download</string>
+   </property>
+   <property name="toolTip">
+    <string>Delete selected downloads</string>
+   </property>
+   <property name="shortcut">
+    <string>Del</string>
+   </property>
+  </action>
+  <action name="actionTaskFlush">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_flush.png</normaloff>:/resource/16x16_ico_png/ico_flush.png</iconset>
+   </property>
+   <property name="text">
+    <string>Write headers</string>
+   </property>
+   <property name="toolTip">
+    <string>Write headers to disk during download</string>
+   </property>
+  </action>
+  <action name="actionTaskBoost">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_boost.png</normaloff>:/resource/16x16_ico_png/ico_boost.png</iconset>
+   </property>
+   <property name="text">
+    <string>High priority</string>
+   </property>
+   <property name="toolTip">
+    <string>Toggle high priority for selected downloads</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+B</string>
+   </property>
+  </action>
+  <action name="actionTaskResume">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_resume.png</normaloff>:/resource/16x16_ico_png/ico_resume.png</iconset>
+   </property>
+   <property name="text">
+    <string>Resume</string>
+   </property>
+   <property name="toolTip">
+    <string>Resume paused downloads</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+R</string>
+   </property>
+  </action>
+  <action name="actionTaskPause">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_pause.png</normaloff>:/resource/16x16_ico_png/ico_pause.png</iconset>
+   </property>
+   <property name="text">
+    <string>Pause</string>
+   </property>
+   <property name="toolTip">
+    <string>Pause selected downloads</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+P</string>
+   </property>
+  </action>
+  <action name="actionTaskClear">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_trash.png</normaloff>:/resource/16x16_ico_png/ico_trash.png</iconset>
+   </property>
+   <property name="text">
+    <string>Clear</string>
+   </property>
+   <property name="toolTip">
+    <string>Clear finished downloads</string>
+   </property>
+  </action>
+  <action name="actionTaskShowLog">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_log.png</normaloff>:/resource/16x16_ico_png/ico_log.png</iconset>
+   </property>
+   <property name="text">
+    <string>Open log</string>
+   </property>
+   <property name="toolTip">
+    <string>Open log file</string>
+   </property>
+  </action>
+  <action name="actionConnectionShowLog">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_log.png</normaloff>:/resource/16x16_ico_png/ico_log.png</iconset>
+   </property>
+   <property name="text">
+    <string>Open log</string>
+   </property>
+   <property name="toolTip">
+    <string>Open log file</string>
+   </property>
+  </action>
+  <action name="actionConnectionDelete">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_delete.png</normaloff>:/resource/16x16_ico_png/ico_delete.png</iconset>
+   </property>
+   <property name="text">
+    <string>Remove connection</string>
+   </property>
+   <property name="toolTip">
+    <string>Disconnect and remove selected connections</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+Del</string>
+   </property>
+  </action>
+  <action name="actionAutoConnect">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_start.png</normaloff>:/resource/16x16_ico_png/ico_start.png</iconset>
+   </property>
+   <property name="text">
+    <string>Connect</string>
+   </property>
+   <property name="toolTip">
+    <string>Connect to servers</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+C</string>
+   </property>
+  </action>
+  <action name="actionConnectionClone">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_connection_clone.png</normaloff>:/resource/16x16_ico_png/ico_connection_clone.png</iconset>
+   </property>
+   <property name="text">
+    <string>Clone connection</string>
+   </property>
+   <property name="toolTip">
+    <string>Create new connection based on existing connection</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+C</string>
+   </property>
+  </action>
+  <action name="actionConnectionYield">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_yield.png</normaloff>:/resource/16x16_ico_png/ico_yield.png</iconset>
+   </property>
+   <property name="text">
+    <string>Recycle</string>
+   </property>
+   <property name="toolTip">
+    <string>Request connection to yield current download and take a new one</string>
+   </property>
+  </action>
+  <action name="actionTaskMoveUp">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_up.png</normaloff>:/resource/16x16_ico_png/ico_up.png</iconset>
+   </property>
+   <property name="text">
+    <string>Move Up</string>
+   </property>
+   <property name="toolTip">
+    <string>Move selected downloads up</string>
+   </property>
+  </action>
+  <action name="actionTaskMoveDown">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_down.png</normaloff>:/resource/16x16_ico_png/ico_down.png</iconset>
+   </property>
+   <property name="text">
+    <string>Move Down</string>
+   </property>
+   <property name="toolTip">
+    <string>Move selected downloads down</string>
+   </property>
+  </action>
+  <action name="actionTaskMoveTop">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_top.png</normaloff>:/resource/16x16_ico_png/ico_top.png</iconset>
+   </property>
+   <property name="text">
+    <string>Top</string>
+   </property>
+   <property name="toolTip">
+    <string>Move selected downloads to top</string>
+   </property>
+  </action>
+  <action name="actionTaskMoveBottom">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_bottom.png</normaloff>:/resource/16x16_ico_png/ico_bottom.png</iconset>
+   </property>
+   <property name="text">
+    <string>Bottom</string>
+   </property>
+   <property name="toolTip">
+    <string>Move selected downloads to bottom</string>
+   </property>
+  </action>
+  <action name="actionPreferSSL">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_lock.png</normaloff>:/resource/16x16_ico_png/ico_lock.png</iconset>
+   </property>
+   <property name="text">
+    <string>Prefer SSL</string>
+   </property>
+   <property name="toolTip">
+    <string>Use SSL with SSL enabled servers</string>
+   </property>
+  </action>
+  <action name="actionThrottle">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_throttle.png</normaloff>:/resource/16x16_ico_png/ico_throttle.png</iconset>
+   </property>
+   <property name="text">
+    <string>Throttle</string>
+   </property>
+   <property name="toolTip">
+    <string>Toggle throttle</string>
+   </property>
+  </action>
+ </widget>
+ <tabstops>
+  <tabstop>chkRemoveComplete</tabstop>
+  <tabstop>chkGroupSimilar</tabstop>
+  <tabstop>chkShutdown</tabstop>
+  <tabstop>tableTasks</tabstop>
+  <tabstop>tableConns</tabstop>
+ </tabstops>
+ <resources>
+  <include location="resource.qrc"/>
+ </resources>
+ <connections/>
+</ui>

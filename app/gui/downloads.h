@@ -25,49 +25,47 @@
 #include <newsflash/config.h>
 
 #include <newsflash/warnpush.h>
-#  include <QObject>
 #include <newsflash/warnpop.h>
 
 #include <memory>
+#include "ui_downloads.h"
+#include "mainwidget.h"
+#include "../tasklist.h"
+#include "../connlist.h"
 
-#include "mainmodel.h"
-#include "nzbthread.h"
+class QEvent;
 
-class QFile;
-
-namespace app
+namespace gui
 {
-    class nzbfile : public QObject, public mainmodel
+    class downloads : public mainwidget
     {
         Q_OBJECT
 
     public:
-        nzbfile();
-       ~nzbfile();
+        downloads(app::tasklist& tasks, app::connlist& conns);
+       ~downloads();
 
-        virtual void clear() override;
+        virtual void add_actions(QMenu& menu) override;
+        virtual void add_actions(QToolBar& bar) override;
 
-        virtual QAbstractItemModel* view() override;
+        virtual void load(const app::datastore& data) override;
+        virtual void save(app::datastore& data) override;
 
-        // begin loading the NZB contents from the given file
-        // returns true if file was succesfully opened and then subsequently
-        // emits ready() once the file has been parsed.
-        // otherwise returns false and no signal will arrive.
-        bool load(const QString& file);
-
-    signals:
-        void ready();
-
-    private slots:
-        void parse_complete();
+        virtual info information() const override {
+            return {"downloads.html", true};
+        }
+    private:
+        bool eventFilter(QObject* obj, QEvent* event);
 
     private:
-        struct item;
-        class model;
+        Ui::Downloads ui_;
 
     private:
-        std::unique_ptr<nzbthread> thread_;
-        std::unique_ptr<model> model_;
+        app::tasklist& tasks_;
+        app::connlist& conns_;
+
+    private:
+        int panels_y_pos_;
     };
 
-} // app
+} // gui

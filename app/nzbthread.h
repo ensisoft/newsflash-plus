@@ -25,49 +25,50 @@
 #include <newsflash/config.h>
 
 #include <newsflash/warnpush.h>
-#  include <QObject>
+#  include <QThread>
 #include <newsflash/warnpop.h>
 
 #include <memory>
+#include <vector>
+#include <mutex>
+#include "nzbparse.h"
 
-#include "mainmodel.h"
-#include "nzbthread.h"
-
-class QFile;
+class QIODevice;
 
 namespace app
 {
-    class nzbfile : public QObject, public mainmodel
+    // this is a class in app scope because MOC doesn't support nested classes...
+    // nzbthread provides one-shot background thread for parsing NZB content 
+    // from an already opened IO object.
+    class nzbthread : public QThread
     {
         Q_OBJECT
 
     public:
-        nzbfile();
-       ~nzbfile();
+        // create a new one-shot thread object with the 
+        // given IO object. The IO should be already opened.
+        nzbthread(std::unique_ptr<QIODevice> io);
+       ~nzbthread();
 
-        virtual void clear() override;
-
-        virtual QAbstractItemModel* view() override;
-
-        // begin loading the NZB contents from the given file
-        // returns true if file was succesfully opened and then subsequently
-        // emits ready() once the file has been parsed.
-        // otherwise returns false and no signal will arrive.
-        bool load(const QString& file);
+        // get the result of the parse operation.
+        // this should be called once the complete() signal
+        // has been emitted indicating completion.
+        nzberror result(std::vector<nzbcontent>& data);
 
     signals:
-        void ready();
-
-    private slots:
-        void parse_complete();
-
-    private:
-        struct item;
-        class model;
+        // complete signal is emitted once the data from the IO object
+        // has been read and parsed. The result + the parsed nzb data
+        // can then be retrieved with a call to result()
+        void complete();
 
     private:
-        std::unique_ptr<nzbthread> thread_;
-        std::unique_ptr<model> model_;
+        virtual void run() override;
+
+    private:
+        std::unique_ptr<QIODevice> io_;
+        std::vector<nzbcontent> data_;
+        std::mutex mutex_;
+        nzberror error_;
     };
 
 } // app
