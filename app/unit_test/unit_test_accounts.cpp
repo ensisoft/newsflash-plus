@@ -24,38 +24,35 @@
 
 #include <boost/test/minimal.hpp>
 
-#include <newsflash/sdk/datastore.h>
-
+#include "../datastore.h"
 #include "../accounts.h"
+#include "../account.h"
 
 int test_main(int, char* argv[])
 {
-    sdk::datastore data;
+    app::datastore data;
 
     {
         app::accounts accounts;
 
-        app::accounts::account acc {};
-        acc.id                    = 123;
-        acc.name                  = "account";
-        acc.username              = "user";
-        acc.password              = "pass";
-        acc.general_host          = "news.tcp.com";
-        acc.general_port          = 119;
-        acc.secure_host           = "news.ssl.com";
-        acc.secure_port           = 546;
-        acc.enable_general_server = true;
-        acc.enable_secure_server  = true;
-        acc.enable_login          = true;
-        acc.enable_compression    = true;
-        acc.enable_pipelining     = true;
-        acc.enable_quota          = true;
-        acc.connections           = 5;
-        acc.quota_avail           = 8000;
-        acc.quota_spent           = 4000;
-        acc.downloads_all_time    = 1;
-        acc.downloads_this_month  = 2;
-        acc.quota_type            = app::accounts::quota::monthly;
+        app::account acc {"test"};
+        acc.username("user");
+        acc.password("pass");
+        acc.general_host("news.tcp.com");
+        acc.general_port(119);
+        acc.secure_host("news.ssl.com");
+        acc.secure_port(546);
+        acc.enable_general_server(true);
+        acc.enable_secure_server(true);
+        acc.enable_login(true);
+        acc.enable_compression(true);
+        acc.enable_pipelining(true);
+        acc.quota_type(app::account::quota::fixed);
+        acc.connections(5);
+        acc.quota_total(8000);
+        acc.quota_spent(4000);
+        acc.downloads_all_time(1);
+        acc.downloads_this_month(2);
 
         accounts.set(acc);
         accounts.save(data);
@@ -64,30 +61,25 @@ int test_main(int, char* argv[])
         accounts.load(data);
 
         acc = accounts.get(0);
-        BOOST_REQUIRE(acc.id == 123);
-        BOOST_REQUIRE(acc.name == "account");
-        BOOST_REQUIRE(acc.username == "user");
-        BOOST_REQUIRE(acc.password == "pass");
-        BOOST_REQUIRE(acc.general_host == "news.tcp.com");
-        BOOST_REQUIRE(acc.general_port == 119);
-        BOOST_REQUIRE(acc.secure_host == "news.ssl.com");
-        BOOST_REQUIRE(acc.secure_port == 546);
-        BOOST_REQUIRE(acc.enable_general_server == true);
-        BOOST_REQUIRE(acc.enable_secure_server == true);
-        BOOST_REQUIRE(acc.enable_login == true);
-        BOOST_REQUIRE(acc.enable_compression == true);
-        BOOST_REQUIRE(acc.enable_pipelining == true);
-        BOOST_REQUIRE(acc.enable_quota == true);
-        BOOST_REQUIRE(acc.connections == 5);
-        BOOST_REQUIRE(acc.quota_avail == 8000);
-        BOOST_REQUIRE(acc.quota_spent == 4000);
-        BOOST_REQUIRE(acc.downloads_all_time == 1);
-        BOOST_REQUIRE(acc.downloads_this_month == 2);
-        BOOST_REQUIRE(acc.quota_type == app::accounts::quota::monthly);
+        BOOST_REQUIRE(acc.name() == "test");
+        BOOST_REQUIRE(acc.username() == "user");
+        BOOST_REQUIRE(acc.password() == "pass");
+        BOOST_REQUIRE(acc.general_host() == "news.tcp.com");
+        BOOST_REQUIRE(acc.general_port() == 119);
+        BOOST_REQUIRE(acc.secure_host() == "news.ssl.com");
+        BOOST_REQUIRE(acc.secure_port() == 546);
+        BOOST_REQUIRE(acc.enable_general_server() == true);
+        BOOST_REQUIRE(acc.enable_secure_server() == true);
+        BOOST_REQUIRE(acc.enable_login() == true);
+        BOOST_REQUIRE(acc.enable_compression() == true);
+        BOOST_REQUIRE(acc.enable_pipelining() == true);
+        BOOST_REQUIRE(acc.connections() == 5);
+        BOOST_REQUIRE(acc.quota_total() == 8000);
+        BOOST_REQUIRE(acc.quota_spent() == 4000);
+        BOOST_REQUIRE(acc.downloads_all_time() == 1);
+        BOOST_REQUIRE(acc.downloads_this_month() == 2);
+        BOOST_REQUIRE(acc.quota_type() == app::account::quota::fixed);
     }
-
-    
-
 
     return 0;
 }        

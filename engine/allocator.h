@@ -26,7 +26,7 @@
 #include <mutex>
 #include <map>
 
-namespace corelib
+namespace newsflash
 {
     // simple buffer caching allocator
     class allocator : boost::noncopyable
@@ -50,4 +50,4 @@ namespace corelib
         size_t allocated_;
     };
 
-} // corelib
+} // newsflash

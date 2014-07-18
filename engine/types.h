@@ -31,8 +31,8 @@
 
 #include <cstdint>
 
-namespace corelib
+namespace newsflash
 {
     typedef std::uint32_t bitflag_t;
     
-} // corelib
+} // newsflash

@@ -26,6 +26,7 @@
 #include <QCoreApplication>
 #include <QFile>
 #include <QEventLoop>
+#include <vector>
 #include "../nzbparse.h"
 
 void test_sync()
@@ -36,7 +37,7 @@ void test_sync()
         input.open(QIODevice::ReadOnly);
         BOOST_REQUIRE(input.isOpen());
 
-        QList<app::nzbcontent> content;
+        std::vector<app::nzbcontent> content;
         const auto err = app::parse_nzb(input, content);
         BOOST_REQUIRE(err == app::nzberror::none);
 
@@ -60,7 +61,7 @@ void test_sync()
     // Io error 
     {
         QFile input;
-        QList<app::nzbcontent> content;
+        std::vector<app::nzbcontent> content;
         const auto err = app::parse_nzb(input, content);
 
         BOOST_REQUIRE(err == app::nzberror::io);
@@ -69,7 +70,7 @@ void test_sync()
     // nzb content error
     {
         QFile input("ubuntu-12.04.4-server-amd64.iso-nzb-error.nzb");
-        QList<app::nzbcontent> content;
+        std::vector<app::nzbcontent> content;
 
         input.open(QIODevice::ReadOnly);      
         BOOST_REQUIRE(input.isOpen());
@@ -81,7 +82,7 @@ void test_sync()
     // xml error
     {
         QFile input("ubuntu-12.04.4-server-amd64.iso-xml-error.nzb");
-        QList<app::nzbcontent> content;
+        std::vector<app::nzbcontent> content;
 
         input.open(QIODevice::ReadOnly);      
         BOOST_REQUIRE(input.isOpen());

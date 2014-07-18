@@ -29,7 +29,7 @@
 #include <memory>
 #include <utility>
 
-namespace corelib
+namespace newsflash
 {
     // bigfile handles big files up to 2^63-1 bytes in size
     class bigfile
@@ -101,7 +101,7 @@ namespace corelib
         std::unique_ptr<impl> pimpl_;
     };
 
-} // corelib
+} // newsflash
 
 
 

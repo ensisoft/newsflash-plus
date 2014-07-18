@@ -23,7 +23,7 @@
 #include "update.h"
 #include "buffer.h"
 
-namespace corelib
+namespace newsflash
 {
 
 
@@ -45,4 +45,4 @@ namespace corelib
 // void update::finalize()
 // {}
 
-} // corelib
+} // newsflash

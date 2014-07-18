@@ -30,7 +30,7 @@
 #include <sys/types.h>
 #include <cerrno>
 
-namespace corelib
+namespace newsflash
 {
     typedef int    native_handle_t;
     typedef int    native_socket_t;
@@ -41,4 +41,4 @@ namespace corelib
     const int OS_INVALID_HANDLE = -1;
     const int OS_INVALID_SOCKET = -1;
 
-} // corelib
+} // newsflash

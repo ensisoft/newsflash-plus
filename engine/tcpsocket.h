@@ -25,7 +25,7 @@
 #include <boost/noncopyable.hpp>
 #include "socket.h"
 
-namespace corelib
+namespace newsflash
 {
     // transfer data over raw TCP socket. 
     class tcpsocket : public socket, boost::noncopyable
@@ -67,4 +67,4 @@ namespace corelib
         native_handle_t handle_;
     };
 
-} // corelib
+} // newsflash

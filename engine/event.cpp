@@ -33,7 +33,7 @@
 #include <cassert>
 #include "event.h"
 
-namespace corelib
+namespace newsflash
 {
 
 #if defined(WINDOWS_OS)
@@ -144,4 +144,4 @@ void event::reset()
 
 #endif
 
-} // corelib
+} // newsflash

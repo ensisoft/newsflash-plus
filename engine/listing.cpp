@@ -32,7 +32,7 @@
 #include "buffer.h"
 #include "platform.h"
 
-namespace corelib
+namespace newsflash
 {
 
 listing::listing(std::string filename) : filename_(std::move(filename))
@@ -110,4 +110,4 @@ void listing::finalize()
             "io failure on " + filename_);
 }
 
-} // corelib
+} // newsflash

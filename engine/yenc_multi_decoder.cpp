@@ -24,7 +24,7 @@
 #include "yenc_multi_decoder.h"
 #include "yenc.h"
 
-namespace corelib
+namespace newsflash
 {
 
 yenc_multi_decoder::yenc_multi_decoder() 
@@ -119,4 +119,4 @@ void yenc_multi_decoder::finish()
 
 }
 
-} // corelib
+} // newsflash

@@ -26,12 +26,12 @@
 #include <string>
 #include <cstdint>
 #include <vector>
-#include "task.h"
+#include "taskcore.h"
 
-namespace corelib
+namespace newsflash
 {
     // produce a listing of available newsgroups
-    class listing : public task
+    class listing : public taskcore
     {
     public:
         listing(std::string filename);
@@ -54,4 +54,4 @@ namespace corelib
         std::vector<group_info> groups_;
     };
 
-} // corelib
+} // newsflash

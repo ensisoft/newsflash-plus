@@ -27,7 +27,7 @@
 #include "protocol.h"
 #include "cmdlist.h"
 
-namespace corelib
+namespace newsflash
 {
     // generate request to download group listing 
     class grouplist : public cmdlist
@@ -79,4 +79,4 @@ namespace corelib
         bool first_;
     };
 
-} // corelib
+} // newsflash

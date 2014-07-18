@@ -24,7 +24,7 @@
 
 #include <cstddef>
 
-namespace corelib
+namespace newsflash
 {
     enum class encoding {
         yenc_single,
@@ -37,4 +37,4 @@ namespace corelib
     // try to identify the used encoding (ascii-armoring) based on some input data.
     encoding identify_encoding(const char* line, std::size_t len);
 
-} // corelib
+} // newsflash

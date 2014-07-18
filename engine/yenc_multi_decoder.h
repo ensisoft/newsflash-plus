@@ -29,7 +29,7 @@
 #include <string>
 #include "decoder.h"
 
-namespace corelib
+namespace newsflash
 {
     // decoder for multi part yenc encoded content
     class yenc_multi_decoder : public decoder
@@ -55,4 +55,4 @@ namespace corelib
         bool has_header_;
     };
 
-} // corelib
+} // newsflash

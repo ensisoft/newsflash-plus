@@ -27,7 +27,7 @@
 
 // collection of generic usable utility functions
 
-namespace corelib
+namespace newsflash
 {
 
     template<typename Handle, typename Deleter>

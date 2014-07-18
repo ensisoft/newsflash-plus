@@ -26,7 +26,7 @@
 #include <openssl/ssl.h>
 #include <mutex>
 
-namespace corelib
+namespace newsflash
 {
     // OpenSSL client context handle.
     class sslcontext
@@ -44,4 +44,4 @@ namespace corelib
     
     void openssl_init();
     
-} // corelib
+} // newsflash

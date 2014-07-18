@@ -25,7 +25,7 @@
 #include <cstdint>
 #include "types.h"
 
-namespace corelib
+namespace newsflash
 {
     // index for the catalog file data access.
     class index
@@ -68,4 +68,4 @@ namespace corelib
     private:
 
     };
-} // corelib
+} // newsflash

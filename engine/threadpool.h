@@ -33,7 +33,7 @@
 #include <atomic>
 #include <cstddef>
 
-namespace corelib
+namespace newsflash
 {
     class threadpool
     {
@@ -108,4 +108,4 @@ namespace corelib
         tid_t key_;
     };
 
-} // corelib
+} // newsflash

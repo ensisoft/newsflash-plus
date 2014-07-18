@@ -32,7 +32,7 @@
 
 namespace {
 
-class text_decoder : public corelib::decoder 
+class text_decoder : public newsflash::decoder 
 {
 public:
     virtual std::size_t decode(const void* data, std::size_t len) override
@@ -52,7 +52,7 @@ private:
 
 } // 
 
-namespace corelib
+namespace newsflash
 {
 
 download::download(std::string path, std::string name) : path_(std::move(path)), name_(std::move(name)), overwrite_(true), keeptext_(false)
@@ -263,5 +263,5 @@ void download::on_error(decoder::error error, const std::string& what, download:
     content.errors.push_back(what);
 }
 
-} // corelib
+} // newsflash
 

@@ -29,7 +29,7 @@
 #include <map>
 #include <cstddef>
 
-namespace corelib
+namespace newsflash
 {
     // string lookup table
     class stringtable 
@@ -105,4 +105,4 @@ namespace corelib
         std::size_t rawbytes_;
 #endif
     };
-} // corelib
+} // newsflash

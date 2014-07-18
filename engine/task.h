@@ -22,6 +22,8 @@
 
 #pragma once
 
+#include <newsflash/config.h>
+
 #include <cstddef>
 #include <string>
 

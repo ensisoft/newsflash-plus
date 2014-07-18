@@ -26,7 +26,7 @@
 #include <memory>
 #include "waithandle.h"
 
-namespace corelib
+namespace newsflash
 {
     // event is a signaling object.
     class event
@@ -52,5 +52,5 @@ namespace corelib
         std::unique_ptr<impl> pimpl_;
     }; 
 
-} // corelib
+} // newsflash
 

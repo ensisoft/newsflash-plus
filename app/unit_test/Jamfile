@@ -8,8 +8,8 @@ project test
   <library>/newsflash//qjson
 ;
 
-unit-test unit_test_accounts : unit_test_accounts.cpp ../accounts.cpp ;
+#unit-test unit_test_accounts : unit_test_accounts.cpp ../accounts.cpp ../datastore.cpp ../typereg.cpp ../debug.cpp ../message.cpp ../engine.cpp ;
 
 unit-test unit_test_datastore : unit_test_datastore.cpp ../datastore.cpp ;
 
-unit-test unit_test_nzbparse : unit_test_nzbparse.cpp ../nzbparse.cpp ;
+unit-test unit_test_nzbparse : unit_test_nzbparse.cpp ../nzbparse.cpp ../filetype.cpp ;

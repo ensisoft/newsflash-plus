@@ -24,7 +24,7 @@
 
 #include <chrono>
 
-namespace corelib
+namespace newsflash
 {
     // measure total time for a specific task
     class stopwatch
@@ -110,4 +110,4 @@ namespace corelib
         bool paused_;
     };
 
-} // corelib
+} // newsflash

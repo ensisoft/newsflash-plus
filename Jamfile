@@ -35,7 +35,6 @@ using qt : $(QT_PATH) ;
 # bring stuff into scope so that it's usable in subprojects
 
 use-project /boost/ : $(BOOST_PATH) ;
-use-project corelib : "corelib" ;
 use-project engine  : "engine" ;
 use-project msglib  : "msglib" ;
 use-project pylib   : "pylib"  ;

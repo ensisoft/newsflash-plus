@@ -30,7 +30,7 @@
 #include <cassert>
 #include "types.h"
 
-namespace corelib
+namespace newsflash
 {
     // waitable handle object. the handles are not resuable and should
     // only be used in a single call to wait(...). after that a new
@@ -188,4 +188,4 @@ namespace corelib
         return waithandle::wait(handles, ms);
     }
 
-} // corelib
+} // newsflash

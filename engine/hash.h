@@ -27,7 +27,7 @@
 #include <limits>
 #include <cstddef>
 
-namespace corelib
+namespace newsflash
 {
     // hashing code ripped off from boost TR1
     template<typename T>
@@ -63,4 +63,4 @@ namespace corelib
         std::size_t seed_;
     };    
 
-} // corelib
+} // newsflash

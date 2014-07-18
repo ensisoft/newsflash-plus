@@ -26,7 +26,7 @@
 #include <newsflash/warnpop.h>
 #include "encoding.h"
 
-namespace corelib
+namespace newsflash
 {
 
 encoding identify_encoding(const char* line, std::size_t len)
@@ -66,4 +66,4 @@ encoding identify_encoding(const char* line, std::size_t len)
     
 }
 
-} // corelib
+} // newsflash

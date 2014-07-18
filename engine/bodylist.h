@@ -30,7 +30,7 @@
 #include "cmdlist.h"
 #include "buffer.h"
 
-namespace corelib
+namespace newsflash
 {
     // list of article numbers (or message-ids) to download.
     class bodylist : public cmdlist
@@ -74,4 +74,4 @@ namespace corelib
         std::deque<article> articles_;
     };
 
-} // corelib
+} // newsflash

@@ -26,13 +26,13 @@
 #pragma once
 
 #ifdef NEWSFLASH_ENABLE_LOG
-#  define LOG_E(...) corelib::write_log(corelib::logevent::error, __FILE__, __LINE__, ## __VA_ARGS__)
-#  define LOG_W(...) corelib::write_log(corelib::logevent::warning, __FILE__, __LINE__, ## __VA_ARGS__)
-#  define LOG_I(...) corelib::write_log(corelib::logevent::info,  __FILE__, __LINE__, ## __VA_ARGS__)
-#  define LOG_D(...) corelib::write_log(corelib::logevent::debug, __FILE__, __LINE__, ## __VA_ARGS__)
-#  define LOG_OPEN(file) corelib::open_log(file)
-#  define LOG_FLUSH() corelib::flush_log()
-#  define LOG_CLOSE() corelib::close_log()
+#  define LOG_E(...) newsflash::write_log(newsflash::logevent::error, __FILE__, __LINE__, ## __VA_ARGS__)
+#  define LOG_W(...) newsflash::write_log(newsflash::logevent::warning, __FILE__, __LINE__, ## __VA_ARGS__)
+#  define LOG_I(...) newsflash::write_log(newsflash::logevent::info,  __FILE__, __LINE__, ## __VA_ARGS__)
+#  define LOG_D(...) newsflash::write_log(newsflash::logevent::debug, __FILE__, __LINE__, ## __VA_ARGS__)
+#  define LOG_OPEN(file) newsflash::open_log(file)
+#  define LOG_FLUSH() newsflash::flush_log()
+#  define LOG_CLOSE() newsflash::close_log()
 #else
 #  define LOG_E(...)
 #  define LOG_W(...)
@@ -43,7 +43,7 @@
 #  define LOG_CLOSE();
 #endif
 
-namespace corelib
+namespace newsflash
 {
     enum class logevent {
         error   = 'E',
@@ -91,4 +91,4 @@ namespace corelib
     void flush_log();
     void close_log();
 
-} // corelib
+} // newsflash

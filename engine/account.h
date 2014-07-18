@@ -22,6 +22,8 @@
 
 #pragma once
 
+#include <newsflash/config.h>
+
 #include <string>
 #include <cstddef>
 #include <cstdint>
@@ -76,7 +78,7 @@ namespace newsflash
         // set to true to specify this account as a "fill"
         // (secondary) account. a fill account is consulted
         // when the primary server is missing some data.
-        bool is_fill_account;
+        //bool is_fill_account;
     };
 
 }// engine

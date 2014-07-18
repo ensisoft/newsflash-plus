@@ -27,7 +27,7 @@
 #include <cstddef>
 #include "stopwatch.h"
 
-namespace corelib
+namespace newsflash
 { 
     // implement throttling to conserve/limit bandwidth usage
     class throttle
@@ -49,4 +49,4 @@ namespace corelib
         stopwatch stopwatch_;
     };
 
-} // corelib
+} // newsflash

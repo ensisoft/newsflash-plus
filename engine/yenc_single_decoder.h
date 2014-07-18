@@ -24,7 +24,7 @@
 
 #include "decoder.h"
 
-namespace corelib
+namespace newsflash
 {
     // decoder for a single part yenc encoded content
     class yenc_single_decoder : public decoder
@@ -42,4 +42,4 @@ namespace corelib
     private:
     };
 
-} // corelib
+} // newsflash

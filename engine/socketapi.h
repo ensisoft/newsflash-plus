@@ -28,7 +28,7 @@
 #include <utility> // for pair
 #include "types.h"
 
-namespace corelib
+namespace newsflash
 {
     typedef uint32_t sockerr_t;
     typedef uint32_t ipv4addr_t;
@@ -59,4 +59,4 @@ namespace corelib
 
     void closesocket(native_socket_t sock);
 
-} // corelib
+} // newsflash

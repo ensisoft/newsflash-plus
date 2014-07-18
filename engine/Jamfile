@@ -1,5 +1,5 @@
 
-project corelib
+project engine
 : 
   requirements
    
@@ -10,7 +10,7 @@ project corelib
   
 ;
   
-lib core-lib :  
+lib engine :  
    [ glob *.cpp ] 
    [ glob nntp/*.cpp ]
 

@@ -22,17 +22,18 @@
 
 #pragma once
 
+#include <newsflash/config.h>
 #include <cstddef>
 #include <memory>
 #include "buffer.h"
 
-namespace corelib
+namespace newsflash
 {
     // task interface for performing activities on the data.
-    class task
+    class taskcore
     {
     public:
-        virtual ~task() = default;
+        virtual ~taskcore() = default;
 
         // prepare the task to receive data soon.
         virtual void prepare() = 0;
@@ -53,4 +54,4 @@ namespace corelib
     private:
     };
     
-} // corelib
+} // newsflash

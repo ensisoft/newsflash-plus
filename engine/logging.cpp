@@ -47,7 +47,7 @@ namespace {
 
 } // namespace
 
-namespace corelib
+namespace newsflash
 {
 
 std::ostream& get_log()
@@ -107,4 +107,4 @@ void close_log()
     delete gLog.release();
 }
 
-} // corelib
+} // newsflash

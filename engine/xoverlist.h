@@ -32,7 +32,7 @@
 #include "cmdlist.h"
 #include "buffer.h"
 
-namespace corelib
+namespace newsflash
 {
     // generate a list of xover commands to retrive
     // the headers of a group
@@ -78,4 +78,4 @@ namespace corelib
         bool configured_;
     };
 
-} // corelib
+} // newsflash

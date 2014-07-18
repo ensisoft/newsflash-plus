@@ -34,7 +34,7 @@
 #include "socketapi.h"
 #include "waithandle.h"
 
-namespace corelib
+namespace newsflash
 {
     // socket represents a low level socket connection to the remote server
     // for sending and receiving data
@@ -112,5 +112,5 @@ namespace corelib
     private:
     };
 
-} // corelib
+} // newsflash
 

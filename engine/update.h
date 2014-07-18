@@ -25,9 +25,9 @@
 #include <set>
 #include <memory>
 #include <cstdint>
-#include "task.h"
 
-namespace corelib
+
+namespace newsflash
 {
     // class update : public task
     // {
@@ -55,4 +55,4 @@ namespace corelib
 
     // };
 
-} // corelib
+} // newsflash

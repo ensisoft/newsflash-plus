@@ -31,7 +31,7 @@
 #include "allocator.h"
 #include "assert.h"
 
-namespace corelib
+namespace newsflash
 {
     // nntp data buffer
     class buffer : boost::noncopyable
@@ -220,13 +220,6 @@ namespace corelib
             return size() == 0;
         }
 
-        buffer clone() const
-        {
-            buffer clone((const void*)data_, size_);
-            clone.offset_ = offset_;
-            return clone;
-        }
-
     private:
         template<typename T>
         T steal(T& loot) const
@@ -276,4 +269,4 @@ namespace corelib
         return !std::memcmp(&lhs[0], &rhs[0], lhs.size());
     }
 
-} // corelib
+} // newsflash

@@ -40,7 +40,7 @@ namespace {
     public:
         context() : context_(nullptr)
         {
-            corelib::openssl_init();
+            newsflash::openssl_init();
         }
 
        ~context()
@@ -71,7 +71,7 @@ namespace {
 
 } // namespace
 
-namespace corelib
+namespace newsflash
 {
 
 sslcontext::sslcontext()
@@ -160,7 +160,7 @@ struct openssl {
     static 
     unsigned long identity_callback()
     {
-        return corelib::get_thread_identity();
+        return newsflash::get_thread_identity();
     }
 
     static 
@@ -182,4 +182,4 @@ void openssl_init()
     static openssl lib;
 }
 
-} // corelib
+} // newsflash

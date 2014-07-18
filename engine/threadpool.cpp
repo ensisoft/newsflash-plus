@@ -24,7 +24,7 @@
 #include <cassert>
 #include "threadpool.h"
 
-namespace corelib
+namespace newsflash
 {
 
 threadpool::threadpool(std::size_t num_threads) :qsize_(0), key_(0)
@@ -161,4 +161,4 @@ void threadpool::thread_main(threadpool::thread* self)
     }
 }
 
-} // corelib
+} // newsflash

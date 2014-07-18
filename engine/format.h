@@ -26,7 +26,7 @@
 #include <sstream>
 #include <stdexcept>
 
-namespace corelib
+namespace newsflash
 {
     namespace detail {
 
@@ -58,4 +58,4 @@ std::string format(const Args&... args)
 }
 
 
-} // corelib
+} // newsflash

@@ -22,7 +22,7 @@
 
 #pragma once
 
-namespace corelib
+namespace newsflash
 {
     class buffer;
     class protocol;
@@ -41,4 +41,4 @@ namespace corelib
     private:
     };
 
-} // corelib
+} // newsflash

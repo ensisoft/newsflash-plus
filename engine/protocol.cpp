@@ -41,7 +41,7 @@
 #include "protocol.h"
 #include "buffer.h"
 
-namespace corelib
+namespace newsflash
 {
 
 protocol::protocol() 
@@ -212,4 +212,4 @@ void protocol::authenticate()
         throw exception("authentication failed", error::authentication_failed);    
 }
 
-} // corelib
+} // newsflash

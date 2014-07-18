@@ -26,7 +26,7 @@
 #include <memory>
 #include <vector>
 
-namespace corelib
+namespace newsflash
 {
     class memory_mapped_file
     {
@@ -88,4 +88,4 @@ namespace corelib
         std::size_t map_file_size_;
     };
 
-} // corelib
+} // newsflash

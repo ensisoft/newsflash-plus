@@ -64,7 +64,7 @@
 // http://www.serverframework.com/asynchronousevents/2010/10/using-openssl-with-asynchronous-sockets.html
 // http://www.mail-archive.com/openssl-users@openssl.org/msg34340.html
 
-namespace corelib
+namespace newsflash
 {
 
 sslsocket::sslsocket() : socket_(0), handle_(0), ssl_(nullptr), bio_(nullptr)
@@ -294,13 +294,13 @@ sslsocket& sslsocket::operator=(sslsocket&& other)
 void sslsocket::ssl_wait_write()
 {
     auto can_write = wait(false, true);
-    corelib::wait(can_write);
+    newsflash::wait(can_write);
 }
 
 void sslsocket::ssl_wait_read()
 {
     auto can_read = wait(true, false);
-    corelib::wait(can_read);
+    newsflash::wait(can_read);
 }
 
 void sslsocket::ssl_connect()
@@ -347,4 +347,4 @@ void sslsocket::ssl_connect()
 }
 
 
-} // corelib
+} // newsflash

@@ -29,7 +29,7 @@
 #include "protocol.h"
 #include "buffer.h"
 
-namespace corelib
+namespace newsflash
 {
 
 xoverlist::xoverlist(std::string group) : group_(std::move(group)), first_(true), error_(false), configured_(false)
@@ -149,4 +149,4 @@ bool xoverlist::dequeue(range& next)
     return true;
 }
 
-} // corelib
+} // newsflash

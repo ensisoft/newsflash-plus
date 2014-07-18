@@ -25,7 +25,7 @@
 #include <cstddef>
 #include "stopwatch.h"
 
-namespace corelib
+namespace newsflash
 {
 
     // ETA calculator
@@ -48,4 +48,4 @@ namespace corelib
         std::size_t recved_;
     };
 
-} // corelib
+} // newsflash

@@ -30,7 +30,7 @@
 #include <cstdint>
 #include "nntp/nntp.h"
 
-namespace corelib
+namespace newsflash
 {
     class buffer;
 
@@ -158,4 +158,4 @@ namespace corelib
         std::string group_; // currently selected group
     };
 
-} // corelib
+} // newsflash

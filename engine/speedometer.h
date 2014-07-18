@@ -27,7 +27,7 @@
 #include <cassert>
 #include "stopwatch.h"
 
-namespace corelib
+namespace newsflash
 {
     // track data transfer speeds.
     class speedometer 
@@ -89,5 +89,5 @@ namespace corelib
         double speed_;
     };
 
-} // corelib
+} // newsflash
 

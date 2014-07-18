@@ -27,7 +27,7 @@
 #include "sslcontext.h"
 #include "socket.h"
 
-namespace corelib
+namespace newsflash
 {
     // transfer data over SSL over TCP socket. 
     class sslsocket : public socket, boost::noncopyable
@@ -88,5 +88,5 @@ namespace corelib
 
         sslcontext context_;
     }; 
-} // corelib
+} // newsflash
 

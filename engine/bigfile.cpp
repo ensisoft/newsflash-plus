@@ -42,7 +42,7 @@
 #include "bigfile.h"
 #include "assert.h"
 
-namespace corelib
+namespace newsflash
 {
 
 #if defined(WINDOWS_OS)
@@ -427,5 +427,5 @@ bool bigfile::exists(const std::string& file)
     return false;
 }
 
-} // corelib
+} // newsflash
 

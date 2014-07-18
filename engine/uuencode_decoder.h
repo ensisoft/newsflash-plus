@@ -24,7 +24,7 @@
 
 #include "decoder.h"
 
-namespace corelib
+namespace newsflash
 {
     class uuencode_decoder : public decoder
     {
@@ -39,4 +39,4 @@ namespace corelib
     private:
         bool has_header_;
     };
-} // corelib
+} // newsflash

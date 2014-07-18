@@ -40,7 +40,7 @@
 #include "platform.h"
 
 
-namespace corelib
+namespace newsflash
 {
 
 #if defined(WINDOWS_OS)
@@ -136,5 +136,5 @@ std::ofstream& open_fstream(const std::string& filename, std::ofstream& stream)
 #endif
 
 
-} // corelib
+} // newsflash
 

@@ -30,7 +30,7 @@
 #include <windows.h>
 #include <winsock.h>
 
-namespace corelib
+namespace newsflash
 {
     typedef HANDLE  native_handle_t;
     typedef SOCKET  native_socket_t;
@@ -41,4 +41,4 @@ namespace corelib
     const int OS_INVALID_HANDLE  = NULL;
     const int OS_INVALID_SOCKET = INVALID_SOCKET;
 
-} // corelib
+} // newsflash

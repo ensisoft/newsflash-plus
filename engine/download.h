@@ -22,19 +22,21 @@
 
 #pragma once
 
+#include <newsflash/config.h>
+
 #include <memory>
 #include <vector>
 #include <string>
-#include "task.h"
+#include "taskcore.h"
 #include "decoder.h"
 #include "bigfile.h"
 #include "stopwatch.h"
 #include "encoding.h"
 
-namespace corelib
+namespace newsflash
 {
     // extract encoded content from the buffers
-    class download : public task
+    class download : public taskcore
     {
     public:
         download(std::string path, std::string name);
@@ -80,5 +82,5 @@ namespace corelib
         bool keeptext_;
     };
 
-} // corelib
+} // newsflash
 
