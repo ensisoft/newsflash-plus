@@ -22,82 +22,57 @@
 
 #pragma once
 
-#include <boost/noncopyable.hpp>
-#include <condition_variable>
+#include <newsflash/config.h>
 #include <system_error>
-#include <functional>
 #include <memory>
-#include <thread>
-#include <mutex>
-#include <cstdint>
-#include "event.h"
+#include <queue>
+#include "waithandle.h"
+#include "socketapi.h"
 
-namespace corelib
+namespace newsflash
 {
-    class cmdlist;
+    class command;
+    class datalink;
 
-    // connection to a newsserver
-    class connection : boost::noncopyable
+    class connection
     {
     public:
         enum class error {
-            resolve,     // failed to resolve host address
-            refused,     // host refused the connection attempt
-            forbidden,   // connection was made but user credentials were refused
-            protocol,    // nntp protocol level error occurred
-            socket,      // tcp socket error occurred
-            ssl,         // ssl error occurred
-            timeout,     // no data was received from host within timeout
-            unknown      // something else.
+            none, 
+            connection_refused, 
+            authentication_failed,
+            service_temporarily_unavailable,
+            service_permanently_unavailable,
+            socket, timeout, unknown
         };
 
-        // invoked when connection is ready to execute a cmdlist
-        std::function<void ()> on_ready;
-
-        // invoked when connection encounters an error.
-        // provides a higher level connection error and a lower level
-        // system error code. system error code can be no-error when
-        // for example we have a protocol error.
-        std::function<void (connection::error error, const std::error_code& code)> on_error;
-
-        // invoked when data is read
-        std::function<void (std::size_t bytes)> on_read;
-
-        // invoked when authentication data is needed
-        std::function<void (std::string& user, std::string& pass)> on_auth;
+        enum class state {
+            disconnected, connecting, ready, active, error
+        };
 
         connection();
        ~connection();
 
-        // start the connection
-        void connect(const std::string& logfile, const std::string& host, std::uint16_t port, bool ssl);
+        void connect(ipv4addr_t host, port_t port, bool ssl);
 
-        // execute the commands in the given cmdlist.
-        // the cmdlist is run() repeatedly untill the cmdlist is
-        // complete or the cmdlist is canceled via a call to cancel()
-        void execute(cmdlist* cmds);
+        void enqueue(command* cmd);
 
-        // cancel the current cmdlist.
-        void cancel();
+        void read();
 
+        void write();
+
+        waithandle wait() const;
     private:
-        struct thread_data;
-
-        void thread_main(thread_data* data);
-        bool thread_connect(thread_data* data);
-        void thread_execute(thread_data* data);
-        void thread_send(thread_data* data, const void* buff, std::size_t len);
-        size_t thread_recv(thread_data* data, void* buff, std::size_t len);        
-
-    private:
-        std::unique_ptr<std::thread> thread_;
-        std::mutex mutex_;
-        event shutdown_;
-        event execute_;
-        event cancel_;
-        cmdlist* cmds_;
+        std::unique_ptr<datalink> link_;
+        std::queue<command*> pipeline_;
+        std::string current_group_;
+        error error_;
+        state state_;
+        bool has_compress_gzip_;
+        bool has_xzver_;
+        bool has_mode_reader_;
     };
 
-} // corelib
+} // newsflash
 
 
