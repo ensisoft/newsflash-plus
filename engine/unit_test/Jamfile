@@ -1,12 +1,33 @@
-
+#
 # newsflash/engine/unit_test/Jamfile
+#
 
 import testing ;
 
-project engine-test
+project 
   : requirements
-    <library>/engine//engine-lib/<link>static
+    <library>/corelib//core-lib/<link>static 
   ;
 
-unit-test unit_test_task_stm : unit_test_task_stm.cpp ;
-unit-test unit_test_engine   : unit_test_engine.cpp ;
+unit-test unit_test_utf8               : unit_test_utf8.cpp ;
+unit-test unit_test_uuencode           : unit_test_uuencode.cpp ;
+unit-test unit_test_yenc               : unit_test_yenc.cpp ;
+unit-test unit_test_protocol           : unit_test_protocol.cpp ;
+unit-test unit_test_buffer             : unit_test_buffer.cpp ;
+unit-test unit_test_threadpool         : unit_test_threadpool.cpp ;
+unit-test unit_test_event              : unit_test_event.cpp ;
+unit-test unit_test_bigfile            : unit_test_bigfile.cpp ;
+unit-test unit_test_memory_mapped_file : unit_test_memory_mapped_file.cpp ;
+unit-test unit_test_connection         : unit_test_connection.cpp ;
+unit-test unit_test_tcpsocket          : unit_test_tcpsocket.cpp ;
+unit-test unit_test_sslsocket          : unit_test_sslsocket.cpp ;
+unit-test unit_test_listing            : unit_test_listing.cpp ;
+unit-test unit_test_download           : unit_test_download.cpp ;
+unit-test unit_test_yenc_decoder       : unit_test_yenc_decoder.cpp ;
+unit-test unit_test_speedometer        : unit_test_speedometer.cpp ;
+unit-test unit_test_stringtable        : unit_test_stringtable.cpp ;
+unit-test unit_test_bodylist           : unit_test_bodylist.cpp ;
+unit-test unit_test_xoverlist          : unit_test_xoverlist.cpp ;
+
+#unit-test unit_test_uuencode_decoder   : unit_test_uuencode_decoder.cpp ;
+#unit-test unit_test_grouplist          : unit_test_grouplist.cpp ;

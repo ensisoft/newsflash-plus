@@ -18,92 +18,86 @@
 //  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 //  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-//  THE SOFTWARE.            
+//  THE SOFTWARE.
 
 #pragma once
 
-#include <cstddef>
-#include <string>
+#include <boost/noncopyable.hpp>
+#include <condition_variable>
+#include <system_error>
+#include <functional>
+#include <memory>
+#include <thread>
+#include <mutex>
+#include <cstdint>
+#include "event.h"
 
-namespace newsflash
+namespace corelib
 {
-    // a connection managed by the engine.
-    struct connection
+    class cmdlist;
+
+    // connection to a newsserver
+    class connection : boost::noncopyable
     {
-        // possible connection errors.
+    public:
         enum class error {
-            // no error
-            none,
-
-            // could not resolve host. this could because the theres a DNS problem
-            // in the network, or the network itself is down or the hostname 
-            // is not known by the DNS resolver.
-            resolve,
-
-            // connection was refused by the remote party.
-            refused,
-
-            // connection was made to the server but the server
-            // denied access based on incorrect authentication.
-            authentication_failed,
-
-            // a NNTP protocol fault has occurred. wth.
-            protocol,
-
-            // network problem, for example network is down.
-            network,
-
-            // active timeout, usully preceeds a network problem.
-            timeout
-        }; 
-
-        enum class state {
-
-            // connection is connecting to the remote host.
-            connecting,
-
-            // connection is authenticating.
-            authenticating,
-
-            // connection is transferring data.
-            active,
-
-            // connection is idle and ready.
-            ready,
-
-            // connection has suffered an error.
-            error
+            resolve,     // failed to resolve host address
+            refused,     // host refused the connection attempt
+            forbidden,   // connection was made but user credentials were refused
+            protocol,    // nntp protocol level error occurred
+            socket,      // tcp socket error occurred
+            ssl,         // ssl error occurred
+            timeout,     // no data was received from host within timeout
+            unknown      // something else.
         };
 
-        // current error if any.
-        error err;
+        // invoked when connection is ready to execute a cmdlist
+        std::function<void ()> on_ready;
 
-        // current state.
-        state st;
+        // invoked when connection encounters an error.
+        // provides a higher level connection error and a lower level
+        // system error code. system error code can be no-error when
+        // for example we have a protocol error.
+        std::function<void (connection::error error, const std::error_code& code)> on_error;
 
-        // unique connection id
-        std::size_t id;
+        // invoked when data is read
+        std::function<void (std::size_t bytes)> on_read;
 
-        // the task id currently being processed.
-        std::size_t task;
+        // invoked when authentication data is needed
+        std::function<void (std::string& user, std::string& pass)> on_auth;
 
-        // the account to which this connection is connected to.
-        std::size_t account;
+        connection();
+       ~connection();
 
-        // total bytes downloaded.
-        std::uint64_t down;
+        // start the connection
+        void connect(const std::string& logfile, const std::string& host, std::uint16_t port, bool ssl);
 
-        // current host
-        std::string host;
+        // execute the commands in the given cmdlist.
+        // the cmdlist is run() repeatedly untill the cmdlist is
+        // complete or the cmdlist is canceled via a call to cancel()
+        void execute(cmdlist* cmds);
 
-        // current description.
-        std::string desc;
+        // cancel the current cmdlist.
+        void cancel();
 
-        // secure or not
-        bool secure;
+    private:
+        struct thread_data;
 
-        // current speed in bytes per second.
-        int bps;
+        void thread_main(thread_data* data);
+        bool thread_connect(thread_data* data);
+        void thread_execute(thread_data* data);
+        void thread_send(thread_data* data, const void* buff, std::size_t len);
+        size_t thread_recv(thread_data* data, void* buff, std::size_t len);        
+
+    private:
+        std::unique_ptr<std::thread> thread_;
+        std::mutex mutex_;
+        event shutdown_;
+        event execute_;
+        event cancel_;
+        cmdlist* cmds_;
     };
 
-} // engine
+} // corelib
+
+
