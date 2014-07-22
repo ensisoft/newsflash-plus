@@ -22,40 +22,35 @@
 
 #include <newsflash/config.h>
 
-#include <newsflash/warnpush.h>
-#  include <boost/thread/tss.hpp>
-#include <newsflash/warnpop.h>
 #include <iostream>
 #include <fstream>
 #include <iomanip>
+#include <mutex>
 #include "platform.h"
 #include "logging.h"
 #include "utf8.h"
 
 namespace {
 
-//     thread_local std::ofstream gLog; msvc doesn't have thread_local
-
-    // http://www.boost.org/doc/libs/1_51_0/doc/html/thread/thread_local_storage.html#thread.thread_local_storage.thread_specific_ptr
-    // Note: on some platforms, cleanup of thread-specific data is not performed 
-    // for threads created with the platform's native API. 
-    // On those platforms such cleanup is only done for threads that 
-    // are started with boost::thread unless boost::on_thread_exit() 
-    // is called manually from that thread. 
-
-    boost::thread_specific_ptr<std::ofstream> gLog;
+std::mutex     logMutex;
+std::ofstream  logStream;
 
 } // namespace
 
 namespace newsflash
 {
 
-std::ostream& get_log()
+std::ostream& get_global_log()
 {
-    return *gLog.get();
+    return logStream;
 }
 
-void begin_log_event(std::ostream& stream, logevent type, const char* file, int line)
+std::mutex& get_global_log_mutex()
+{
+    return logMutex;
+}
+
+void beg_log_event(std::ostream& stream, logevent type, const char* file, int line)
 {
     using namespace std;
 
@@ -74,37 +69,37 @@ void end_log_event(std::ostream& stream)
 
 void open_log(const std::string& filename)
 {
-    if (!gLog.get())
+    if (logStream.is_open())
     {
-        gLog.reset(new std::ofstream);
+        logStream.flush();
+        logStream.close();
     }
 
     if (filename == "clog")
     {
-        std::ios& base = *gLog.get();
+        std::ios& base = logStream;
         base.rdbuf(std::clog.rdbuf());
     }
     else
     {
 #if defined(WINDOWS_OS)
         const std::wstring& wide = utf8::decode(filename);
-        gLog->open(wide.c_str());
+        logStream.open(wide.c_str());
 #else
-        gLog->open(filename.c_str());
+        logStream.open(filename.c_str());
 #endif
     }
 }
 
 void flush_log()
 {
-    gLog->flush();
+    logStream.flush();
 }
 
 void close_log()
 {
-    gLog->flush();
-    gLog->close();
-    delete gLog.release();
+    logStream.flush();
+    logStream.close();
 }
 
 } // newsflash

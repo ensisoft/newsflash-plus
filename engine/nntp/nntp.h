@@ -25,26 +25,20 @@
 #pragma once
 
 #include <newsflash/config.h>
-
-#include <initializer_list>
-#include <vector>
-#include <deque>
+#include <newsflash/warnpush.h>
+#  include <boost/algorithm/string/trim.hpp>
+#include <newsflash/warnpop.h>
+#include <sstream>
+#include <iomanip>
 #include <string>
-#include <cassert>
-#include <iterator>
 #include <limits>
 #include <ctime>
 #include <cstddef>
 #include <cstdint>
+#include <exception>
 
 namespace nntp
 {
-    typedef unsigned int code_t;
-    typedef std::initializer_list<code_t> code_list_t;
-
-    const code_t AUTHENTICATION_REQUIRED = 480;
-    const code_t AUTHENTICATION_ACCEPTED = 281;
-    const code_t PASSWORD_REQUIRED       = 381;
 
     // broken down Usenet article overview fields.
     struct overview {
@@ -86,10 +80,6 @@ namespace nntp
         std::size_t numerator;  // 1        
         std::size_t denominator; // 34
     };
-
-
-    // check the list of allowed codes for the given code.
-    bool check_code(code_t code, const code_list_t& allowed_codes);
 
     // inspect the subject line and try to figure out whether
     // it indicates that post contains binary data.
@@ -136,7 +126,77 @@ namespace nntp
     // if no body is found returns 0.
     std::size_t find_body(const void* buff, std::size_t size);
 
-    // split input string into a collection of lines
-    std::deque<std::string> split_lines(const std::string& input);
+    struct trailing_comment {
+        std::string str;
+    };
+
+    namespace detail {
+        template<typename T>
+        void extract_value(std::stringstream& ss, T& value)
+        {
+            ss >> std::skipws >> value;
+        }
+
+        inline
+        void extract_value(std::stringstream& ss, std::string& str)
+        {
+            ss >> std::skipws >> str;
+        }
+
+        inline
+        void extract_value(std::stringstream& ss, trailing_comment& comment)
+        {
+            std::getline(ss, comment.str);
+            boost::algorithm::trim(comment.str);
+        }
+
+        template<typename Value>
+        void scan_next_value(std::stringstream& ss, Value& next)
+        {
+            extract_value(ss, next);
+        }
+
+        template<typename Value, typename... Rest>
+        void scan_next_value(std::stringstream& ss, Value& next, Rest&... gang)
+        {
+            extract_value(ss, next);
+            scan_next_value(ss, gang...);
+        }
+
+    } // detail
+
+
+    // scan response string for a sequence of values given their specific type. 
+    // returns true if scan was succesful, otherwise false.
+    template<typename... Values>
+    bool scan_response(const std::string& response, Values&... values)
+    {
+        std::stringstream ss(response);
+        detail::scan_next_value(ss, values...);
+        return !ss.fail();
+    }
+
+    // gets thrown when things go wrong
+    class exception : public std::exception
+    {
+    public:
+        exception(std::string what) NOTHROW 
+           : what_(std::move(what))
+           {}
+        const char* what() const NOTHROW
+        {
+            return what_.c_str();
+        }
+    private:
+        std::string what_;
+    };
+
+    inline
+    bool find_status(int status, 
+        std::initializer_list<int> statuses)
+    {
+        return std::find(std::begin(statuses), std::end(statuses),
+            status) != std::end(statuses);
+    }
 
 } // nntp

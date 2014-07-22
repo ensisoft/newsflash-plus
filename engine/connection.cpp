@@ -23,50 +23,57 @@
 #include <newsflash/config.h>
 #include <cassert>
 #include "connection.h"
-#include "datalink.h"
-#include "command.h"
+#include "tcpsocket.h"
+#include "sslsocket.h"
 #include "socket.h"
+#include "utf8.h"
 
 namespace newsflash
 {
 
-connection::connection() : error_(error::none), state_(state::disconnected)
-{}
+connection::connection(const std::string& logfile) : error_(error::none), state_(state::disconnected)
+{
+    LOG_OPEN(logfile);
+}
 
 connection::~connection()
-{}
+{
+    LOG_FLUSH();
+    LOG_CLOSE();
+}
 
 void connection::connect(ipv4addr_t host, port_t port, bool ssl)
 {
-    link_.reset(new datalink(host, port, ssl));
-    state_             = state::connecting;
-    has_compress_gzip_ = false;
-    has_xzver_         = false;
-    has_mode_reader_   = false;
+    if (ssl)
+        socket_.reset(new sslsocket());
+    else socket_.reset(new  tcpsocket());
+    socket_->begin_connect(host, port);
+
+    state_ = state::connecting;
+
 }
 
-void connection::enqueue(command* cmd)
-{
-    try
-    {
-        link_->send(cmd);
-        pipeline_.push(cmd);
-        state_ = state::active;
-    }
-    catch (const socket::tcp_exception& e)
-    {}
-    catch (const socket::ssl_exception& e)
-    {}
-    catch (const std::exception& e)
-    {}
-}
+// void connection::enqueue(command* cmd)
+// {
+//     try
+//     {
+//     }
+//     catch (const socket::tcp_exception& e)
+//     {}
+//     catch (const socket::ssl_exception& e)
+//     {}
+//     catch (const std::exception& e)
+//     {}
+// }
 
 void connection::read()
 {
     switch (state_)
     {
         case state::connecting:
-        break;
+            socket_->complete_connect();
+            
+            break;
 
         case state::active:
         break;
@@ -75,6 +82,26 @@ void connection::read()
            assert(0);
            break;
     }
+}
+
+void connection::open_log(const std::string& filename)
+{
+#if defined(WINDOWS_OS)
+    const auto& wide = utf8::decode(filename);
+    log_.open(wide.c_str());
+#else
+    log_.open(filename.c_str());
+#endif
+}
+
+void connection::flush_log()
+{
+    log_.flush();
+}
+
+void connection::close_log()
+{
+    log_.close();
 }
 
 } // newsflash

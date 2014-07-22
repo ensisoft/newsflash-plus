@@ -1,3 +1,4 @@
+
 // Copyright (c) 2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
@@ -22,17 +23,18 @@
 
 #include <newsflash/config.h>
 #include <ostream>
+#include <mutex>
 
 #pragma once
 
 #ifdef NEWSFLASH_ENABLE_LOG
-#  define LOG_E(...) newsflash::write_log(newsflash::logevent::error, __FILE__, __LINE__, ## __VA_ARGS__)
-#  define LOG_W(...) newsflash::write_log(newsflash::logevent::warning, __FILE__, __LINE__, ## __VA_ARGS__)
-#  define LOG_I(...) newsflash::write_log(newsflash::logevent::info,  __FILE__, __LINE__, ## __VA_ARGS__)
-#  define LOG_D(...) newsflash::write_log(newsflash::logevent::debug, __FILE__, __LINE__, ## __VA_ARGS__)
-#  define LOG_OPEN(file) newsflash::open_log(file)
-#  define LOG_FLUSH() newsflash::flush_log()
-#  define LOG_CLOSE() newsflash::close_log()
+#  define LOG_E(...) write_log(newsflash::logevent::error, __FILE__, __LINE__, ## __VA_ARGS__)
+#  define LOG_W(...) write_log(newsflash::logevent::warning, __FILE__, __LINE__, ## __VA_ARGS__)
+#  define LOG_I(...) write_log(newsflash::logevent::info,  __FILE__, __LINE__, ## __VA_ARGS__)
+#  define LOG_D(...) write_log(newsflash::logevent::debug, __FILE__, __LINE__, ## __VA_ARGS__)
+#  define LOG_OPEN(file) open_log(file)
+#  define LOG_FLUSH() flush_log()
+#  define LOG_CLOSE() close_log()
 #else
 #  define LOG_E(...)
 #  define LOG_W(...)
@@ -72,17 +74,21 @@ namespace newsflash
         write_log_args(stream, gang...);
     }
 
-    std::ostream& get_log();
-
-    void begin_log_event(std::ostream& stream, logevent type, const char* file, int line);
+    void beg_log_event(std::ostream& stream, logevent type, const char* file, int line);
     void end_log_event(std::ostream& stream);
+
+
+    std::ostream& get_global_log();
+    std::mutex& get_global_log_mutex();
 
     template<typename... Args>
     void write_log(logevent type, const char* file, int line, const Args&... args)
     {
-        std::ostream& stream = get_log(); 
+        std::lock_guard<std::mutex> lock(get_global_log_mutex());
 
-        begin_log_event(stream, type, file, line);
+        auto& stream = get_global_log();         
+
+        beg_log_event(stream, type, file, line);
         write_log_args(stream, args...);
         end_log_event(stream);
     }

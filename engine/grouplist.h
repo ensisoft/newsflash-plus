@@ -30,53 +30,53 @@
 namespace newsflash
 {
     // generate request to download group listing 
-    class grouplist : public cmdlist
-    {
-    public:
-        struct list {
-            buffer buff;
-        };
+    // class grouplist : public cmdlist
+    // {
+    // public:
+    //     struct list {
+    //         buffer buff;
+    //     };
 
-        // callback to invoke when the grouplist has been downloaded.
-        std::function<void (grouplist::list list)> on_list;
+    //     // callback to invoke when the grouplist has been downloaded.
+    //     std::function<void (grouplist::list list)> on_list;
 
-        virtual bool run(protocol& proto) override
-        {
-            // work for only one thread.
-            if (first_thread())
-            {
-                std::lock_guard<std::mutex> lock(mutex_);
-                grouplist::list list;                
-                try
-                {
-                    list.buff.reserve(1024 * 1024);
+    //     virtual bool run(protocol& proto) override
+    //     {
+    //         // work for only one thread.
+    //         if (first_thread())
+    //         {
+    //             std::lock_guard<std::mutex> lock(mutex_);
+    //             grouplist::list list;                
+    //             try
+    //             {
+    //                 list.buff.reserve(1024 * 1024);
 
-                    proto.list(list.buff);
-                }
-                catch (const std::exception&)
-                {
-                    // if an exception occurs restore the state so that
-                    // the operation can be retried at later time.
-                    first_ = true;
-                    throw;
-                }
-                on_list(std::move(list));
-            }
-            return false;
-        }
+    //                 proto.list(list.buff);
+    //             }
+    //             catch (const std::exception&)
+    //             {
+    //                 // if an exception occurs restore the state so that
+    //                 // the operation can be retried at later time.
+    //                 first_ = true;
+    //                 throw;
+    //             }
+    //             on_list(std::move(list));
+    //         }
+    //         return false;
+    //     }
 
-    private:
-        bool first_thread()
-        {
-            std::unique_lock<std::mutex> lock(mutex_);
-            bool ret = first_;
-            first_ = false;
-            return ret;
-        }
+    // private:
+    //     bool first_thread()
+    //     {
+    //         std::unique_lock<std::mutex> lock(mutex_);
+    //         bool ret = first_;
+    //         first_ = false;
+    //         return ret;
+    //     }
 
-    private:
-        std::mutex mutex_;
-        bool first_;
-    };
+    // private:
+    //     std::mutex mutex_;
+    //     bool first_;
+    // };
 
 } // newsflash

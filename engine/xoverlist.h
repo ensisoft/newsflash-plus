@@ -34,48 +34,48 @@
 
 namespace newsflash
 {
-    // generate a list of xover commands to retrive
-    // the headers of a group
-    class xoverlist : public cmdlist
-    {
-    public:
-        struct xover {
-            std::uint64_t start;
-            std::uint64_t end;
-            buffer buff;
-        };
+    // // generate a list of xover commands to retrive
+    // // the headers of a group
+    // class xoverlist : public cmdlist
+    // {
+    // public:
+    //     struct xover {
+    //         std::uint64_t start;
+    //         std::uint64_t end;
+    //         buffer buff;
+    //     };
 
-        // callback to be invoked on xover data
-        std::function<void (xoverlist::xover&& xover)> on_xover;
+    //     // callback to be invoked on xover data
+    //     std::function<void (xoverlist::xover&& xover)> on_xover;
 
-        // callback to be invoked when the number of xover ranges is known.
-        std::function<void (std::size_t range_count)> on_prepare_ranges;
+    //     // callback to be invoked when the number of xover ranges is known.
+    //     std::function<void (std::size_t range_count)> on_prepare_ranges;
 
-        // callback to be invoked when the group is not available.
-        std::function<void ()> on_unavailable;
+    //     // callback to be invoked when the group is not available.
+    //     std::function<void ()> on_unavailable;
 
-        xoverlist(std::string group);
+    //     xoverlist(std::string group);
 
-        virtual bool run(protocol& proto) override;
+    //     virtual bool run(protocol& proto) override;
 
-    private:
-        struct range {
-            std::uint64_t start;
-            std::uint64_t end;
-        };
+    // private:
+    //     struct range {
+    //         std::uint64_t start;
+    //         std::uint64_t end;
+    //     };
 
-    private:
-        bool first_thread();
-        bool dequeue(range& next);
+    // private:
+    //     bool first_thread();
+    //     bool dequeue(range& next);
 
-    private:
-        const std::string group_;
-        std::condition_variable cond_;
-        std::mutex mutex_;
-        std::deque<range> ranges_;
-        bool first_;
-        bool error_;
-        bool configured_;
-    };
+    // private:
+    //     const std::string group_;
+    //     std::condition_variable cond_;
+    //     std::mutex mutex_;
+    //     std::deque<range> ranges_;
+    //     bool first_;
+    //     bool error_;
+    //     bool configured_;
+    // };
 
 } // newsflash

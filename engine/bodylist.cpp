@@ -26,75 +26,75 @@
 
 namespace newsflash
 {
-bodylist::bodylist(std::deque<std::string> groups,
-                  const std::deque<std::string>& articles)
-    : groups_(std::move(groups))
+// bodylist::bodylist(std::deque<std::string> groups,
+//                   const std::deque<std::string>& articles)
+//     : groups_(std::move(groups))
 
-{
-    for (std::size_t i=0; i<articles.size(); ++i)
-        articles_.push_back(article { articles[i], i});
-}
+// {
+//     for (std::size_t i=0; i<articles.size(); ++i)
+//         articles_.push_back(article { articles[i], i});
+// }
 
 
-bodylist::~bodylist()
-{}
+// bodylist::~bodylist()
+// {}
 
-bool bodylist::run(protocol& proto)
-{
-    article next;
-    if (!dequeue(next))
-        return false;
+// bool bodylist::run(protocol& proto)
+// {
+//     article next;
+//     if (!dequeue(next))
+//         return false;
 
-    bodylist::body body;
+//     bodylist::body body;
 
-    try
-    {
-        body.id      = next.id;
-        body.article = next.messageid;
-        body.status  = bodylist::status::unavailable;
-        body.buff.reserve(1024 * 1024);
+//     try
+//     {
+//         body.id      = next.id;
+//         body.article = next.messageid;
+//         body.status  = bodylist::status::unavailable;
+//         body.buff.reserve(1024 * 1024);
 
-        for (const auto& group : groups_)
-        {
-            if (group.empty())
-                continue;
+//         for (const auto& group : groups_)
+//         {
+//             if (group.empty())
+//                 continue;
 
-            if (!proto.group(group))
-                continue;
+//             if (!proto.group(group))
+//                 continue;
 
-            const auto ret = proto.body(next.messageid, body.buff);
-            if (ret == protocol::status::success)
-                body.status = status::success;
-            else if (ret == protocol::status::dmca)
-                body.status = status::dmca;
-            else if (ret == protocol::status::unavailable)
-                body.status = status::unavailable;
+//             const auto ret = proto.body(next.messageid, body.buff);
+//             if (ret == protocol::status::success)
+//                 body.status = status::success;
+//             else if (ret == protocol::status::dmca)
+//                 body.status = status::dmca;
+//             else if (ret == protocol::status::unavailable)
+//                 body.status = status::unavailable;
 
-            if (body.status != status::unavailable)
-                break;
-        }
-    }
-    catch (const std::exception&)
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        articles_.push_front(next);
-        throw ;
-    }
+//             if (body.status != status::unavailable)
+//                 break;
+//         }
+//     }
+//     catch (const std::exception&)
+//     {
+//         std::lock_guard<std::mutex> lock(mutex_);
+//         articles_.push_front(next);
+//         throw ;
+//     }
 
-    on_body(std::move(body));
+//     on_body(std::move(body));
 
-    return true;
-}
+//     return true;
+// }
 
-bool bodylist::dequeue(article& next)
-{
-    std::lock_guard<std::mutex> lock(mutex_);
-    if (articles_.empty())
-        return false;
+// bool bodylist::dequeue(article& next)
+// {
+//     std::lock_guard<std::mutex> lock(mutex_);
+//     if (articles_.empty())
+//         return false;
 
-    next = articles_.front();
-    articles_.pop_front();
-    return true;
-}
+//     next = articles_.front();
+//     articles_.pop_front();
+//     return true;
+// }
 
 } // newsflash

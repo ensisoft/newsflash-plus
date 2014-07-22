@@ -32,46 +32,46 @@
 
 namespace newsflash
 {
-    // list of article numbers (or message-ids) to download.
-    class bodylist : public cmdlist
-    {
-    public:
-        // article status
-        enum class status {
-            unavailable, dmca, success
-        };
+    // // list of article numbers (or message-ids) to download.
+    // class bodylist : public cmdlist
+    // {
+    // public:
+    //     // article status
+    //     enum class status {
+    //         unavailable, dmca, success
+    //     };
 
-        // article body response
-        struct body {
-            std::string article;
-            std::size_t id;
-            bodylist::status status;
-            buffer buff;
-        };
+    //     // article body response
+    //     struct body {
+    //         std::string article;
+    //         std::size_t id;
+    //         bodylist::status status;
+    //         buffer buff;
+    //     };
 
-        // callback to be invoked on each body in the list.
-        std::function<void (bodylist::body&& body)> on_body;
+    //     // callback to be invoked on each body in the list.
+    //     std::function<void (bodylist::body&& body)> on_body;
 
-        bodylist(std::deque<std::string> groups,
-           const std::deque<std::string>& articles);
+    //     bodylist(std::deque<std::string> groups,
+    //        const std::deque<std::string>& articles);
 
-       ~bodylist();
+    //    ~bodylist();
 
-        virtual bool run(protocol& proto) override;
+    //     virtual bool run(protocol& proto) override;
 
-    private:
-        struct article {
-            std::string messageid;
-            std::size_t id;
-        };
+    // private:
+    //     struct article {
+    //         std::string messageid;
+    //         std::size_t id;
+    //     };
 
-    private:
-        bool dequeue(article& next);
+    // private:
+    //     bool dequeue(article& next);
 
-    private:
-        const std::deque<std::string> groups_;
-        std::mutex mutex_;
-        std::deque<article> articles_;
-    };
+    // private:
+    //     const std::deque<std::string> groups_;
+    //     std::mutex mutex_;
+    //     std::deque<article> articles_;
+    // };
 
 } // newsflash

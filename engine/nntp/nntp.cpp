@@ -170,14 +170,6 @@ private:
 namespace nntp
 {
 
-
-bool check_code(code_t code, const code_list_t& allowed_codes)
-{
-    const auto it = std::find(allowed_codes.begin(), 
-        allowed_codes.end(), code);
-    return it != allowed_codes.end();
-}
-
 bool is_binary_post(const char* str, size_t len)
 {
     // TODO: consider separating this functionality into two functions.
@@ -591,18 +583,5 @@ std::size_t find_body(const void* buff, std::size_t size)
     }
     return 0;
 }
-
-std::deque<std::string> split_lines(const std::string& input)
-{
-    std::deque<std::string> ret;
-    std::stringstream ss(input);
-    std::string line;
-    while (!ss.eof())
-    {
-        std::getline(ss, line);
-        ret.push_back(line);
-    }
-    return ret;
-} 
 
 } // nntp

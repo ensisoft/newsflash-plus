@@ -1,4 +1,4 @@
-// Copyright (c) 2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -23,66 +23,69 @@
 #pragma once
 
 #include <newsflash/config.h>
-#include <system_error>
-#include <memory>
+#include <functional>
+#include <string>
 #include <deque>
-#include <fstream>
-#include "waithandle.h"
-#include "socketapi.h"
-#include "logging.h"
+#include <memory>
+#include "response.h"
 
-namespace newsflash
+namespace nntp
 {
-    class socket;
-
-    class connection
+    class session
     {
     public:
         enum class error {
-            none, 
-            connection_refused, 
+            none,
             authentication_failed,
             service_temporarily_unavailable,
-            service_permanently_unavailable,
-            socket, timeout, ssl, unknown
+            service_permanently_unavailable
         };
 
-        enum class state {
-            disconnected, connecting, authenticating, ready, active, error
+        enum class status {
+            none, error, want_read, want_write
         };
 
-        connection(const std::string& logfile);
-       ~connection();
+        std::function<size_t (void* buff, size_t len)> on_recv;
 
-        void connect(ipv4addr_t host, port_t port, bool ssl);
+        // send data callback
+        std::function<void (const void* buff, std::size_t len)> on_send;
 
-        //void enqueue(command* cmd);
+        // authentication callback
+        std::function<void (std::string& user, std::string& pass)> on_auth;
 
-        void read();
+        session();
+
+       ~session();
+
+        status check();
+
+        error err() const;
+
+        void start();
 
         void write();
 
-        waithandle wait() const;
-    private:
-        void open_log(const std::string& filename);
-        void flush_log();
-        void close_log();
-
-        template<typename... Args>
-        void write_log(logevent type, const char* file, int line, const Args&... args)
-        {
-            beg_log_event(log_, type, file, line);
-            write_log_args(log_, args...);
-            end_log_event(log_);
-        }
+        void read();
 
     private:
-        std::unique_ptr<socket> socket_;
-        std::ofstream log_;
-        error error_;
-        state state_;
+        class command;
+        class state;
+        class read_welcome;
+        class read_capabilities;        
+        class send_mode_reader;
+        class authenticate;
+        class run_pipeline;
+
+    private:
+        std::unique_ptr<state> state_;
+        std::deque<std::unique_ptr<command>> send_;
+        std::deque<std::unique_ptr<command>> recv_;
+        std::string current_group_;
+        bool has_compress_gzip_;
+        bool has_xzver_;
+        bool has_mode_reader_;
+        bool have_session_;
+        response buff_;
     };
 
-} // newsflash
-
-
+} // nntp

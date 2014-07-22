@@ -67,9 +67,9 @@ namespace app
     private:
         QCoreApplication& app_;
     private:
-        std::unique_ptr<newsflash::engine> engine_;
-        std::unique_ptr<newsflash::settings> settings_;
-        std::unique_ptr<listener> listener_;
+        // std::unique_ptr<newsflash::engine> engine_;
+        // std::unique_ptr<newsflash::settings> settings_;
+        // std::unique_ptr<listener> listener_;
     private:
 
     };
