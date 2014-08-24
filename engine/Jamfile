@@ -14,8 +14,8 @@ lib engine-lib :
    [ glob *.cpp ] 
    #[ glob nntp/*.cpp ]
 
-   nntp/session.cpp
-   nntp/nntp.cpp
+   #nntp/session.cpp
+   #nntp/nntp.cpp
 
    /boost//filesystem/
    /boost//regex/

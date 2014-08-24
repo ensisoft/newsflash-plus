@@ -23,250 +23,73 @@
 #pragma once
 
 #include <newsflash/config.h>
-
-#include <boost/noncopyable.hpp>
-#include <cassert>
-#include <cstring>
+#include <stdexcept>
+#include <vector>
 #include <cstdint>
-#include "allocator.h"
-#include "assert.h"
+#include <cassert>
+#include "utility.h"
 
 namespace newsflash
 {
-    // nntp data buffer
-    class buffer : boost::noncopyable
+    // NNTP data buffer. the buffer contents are split into 2 segments
+    // the payload (body) and the response line that preceeds the data
+    class buffer
     {
     public:
-        class header
-        {
-        public:
-            header(const buffer& buff) : buffer_(buff)
-            {}
-            const char* data() const
-            {
-                return &buffer_[0];
-            }
-            std::size_t size() const
-            {
-                return buffer_.offset();
-            }
-        private:
-            const buffer& buffer_;
-        };
+        using u8 = char;
 
-        class payload
-        {
-        public:
-            payload(const buffer& buff) : buffer_(buff), crop_(0)
-            {}
-
-            const char* data() const
-            {
-                return &buffer_[buffer_.offset() + crop_];
-            }
-            std::size_t size() const
-            {
-                return buffer_.size() - (buffer_.offset() + crop_);
-            }
-            void crop(std::size_t bytes)
-            {
-                crop_ += bytes;
-            }
-            bool empty() const
-            {
-                return size() == 0;
-            }
-        private:
-            const buffer& buffer_;
-            std::size_t crop_;
-
-        };
-
-        // construct an empty buffer without any data capacity
-        buffer() : data_(nullptr), capacity_(0), size_(0), offset_(0)
+        buffer(std::size_t initial_capacity) : buffer_(initial_capacity), used_(0), header_length_(0), body_length_(0)
         {}
 
-        // construct an empty buffer with some initial data capacity 
-        explicit
-        buffer(std::size_t capacity) : buffer()
+        // increase buffer size by some amount
+        void increase()
         {
-            reserve(capacity);
+            const auto size = buffer_.size();
+            if (size * 2 > MB(5))
+                throw std::runtime_error("buffer capacity exceeded");
+
+            buffer_.resize(size * 2);
         }
 
-        // construct a buffer from the contents of the NUL terminated string.
-        explicit 
-        buffer(const char* str) : buffer()
-        {
-            const std::size_t s = std::strlen(str);
+        const u8* head() const
+        { return &buffer_[0]; }
 
-            reserve(s);
-            std::memcpy(data_, str, s);
-            size_ = s;
+        // return back pointer for writing data 
+        u8* back() 
+        { return &buffer_[used_]; }
+
+        // after writing to the back() pointer, commit the number
+        // of bytes written
+        void commit(std::size_t num_bytes)
+        {
+            assert(used_ + num_bytes < buffer_.size());
+            used_ += num_bytes;
         }
 
-        buffer(const void* data, std::size_t len) : buffer()
-        {
-            reserve(len);
-            std::memcpy(data_, data, len);
-            size_ = len;
-        }
+        // buffer split()
+        // {
 
-        buffer(buffer&& other)
-        {
-            data_     = steal(other.data_);
-            capacity_ = steal(other.capacity_);
-            size_     = steal(other.size_);            
-            offset_   = steal(other.offset_);
-        }
+        // }
 
-       ~buffer()
-        {
-            if (data_)
-            {
-                const auto bird = CANARY;
-                ASSERT(!std::memcmp(data_ + capacity_, &bird, sizeof(bird)) &&
-                    "Buffer overrun detected.");
-            }
-            allocator& alloc = allocator::get();
-            alloc.free(data_, capacity_);
-        }
+        // 
+        void set_header_length(std::size_t length)
+        { header_length_ = length; }
 
-        std::size_t capacity() const
-        {
-            return capacity_;
-        }
-        std::size_t size() const
-        {
-            return size_;
-        }
-        std::size_t offset() const
-        {
-            return offset_;
-        }
+        void set_body_length(std::size_t length)
+        { body_length_ = length; }
 
-        char* data()
-        {
-            return data_;
-        }
-        const char* data() const
-        {
-            return data_;
-        }
+        // return the size of the whole buffer
+        std::size_t size() const 
+        { return used_; }
 
-        void reserve(std::size_t capacity)
-        {
-            assert(capacity > capacity_);
-            allocator& alloc = allocator::get();
-
-            const auto bird = CANARY;
-
-            auto data = (char*)alloc.allocate(capacity + sizeof(bird));
-#ifdef NEWSFLASH_DEBUG
-            memset(data, 0, capacity);
-#endif
-
-            if (data_)
-            {
-                ASSERT(!std::memcmp(data_ + capacity_, &bird, sizeof(bird)) && 
-                    "Buffer overrun detected");
-
-                std::memcpy(data, data_, size_);
-                alloc.free(data_, capacity_);
-            }
-            data_ = data;
-            capacity_ = capacity;
-
-            std::memcpy(data_ + capacity_, &bird, sizeof(bird));
-        }
-
-        void resize(std::size_t size)
-        {
-            if (size > capacity_)
-                reserve(size);
-            size_ = size;
-        }
-
-        void offset(std::size_t off)
-        {
-            offset_ = off;
-        }
-
-        char& operator[](std::size_t i)
-        {
-            assert(i < size_);
-            return data_[i];
-        }
-        const char& operator[](std::size_t i) const
-        {
-            assert(i < size_);
-            return data_[i];
-        }
-
-        buffer& operator=(buffer&& other)
-        {
-            if (this == &other)
-                return *this;
-
-            buffer tmp(std::move(*this));
-            data_     = steal(other.data_);
-            capacity_ = steal(other.capacity_);
-            size_     = steal(other.size_);
-            offset_   = steal(other.offset_);
-            return *this;
-        }
-
-        bool empty() const
-        {
-            return size() == 0;
-        }
+        // return how many bytes are available for appending through back() pointer
+        std::size_t available() const 
+        { return buffer_.size() - used_; }
 
     private:
-        template<typename T>
-        T steal(T& loot) const
-        {
-            T val = loot;
-            loot  = T();
-            return val;
-        }
-
-        enum : std::uint32_t { CANARY= 0xcafebabe };
-
-        char* data_;
-        std::size_t capacity_; // current buffer capacity, i.e. amount of bytes pointed by data_
-        std::size_t size_; // current total data size
-        std::size_t offset_; // offset where the payload data begins.
+        std::vector<u8> buffer_;
+        std::size_t used_;
+        std::size_t header_length_;
+        std::size_t body_length_;
     };
-
-    inline
-    std::size_t buffer_capacity(const buffer& buff)
-    {
-        return buff.size();
-    }
-
-    inline
-    void* buffer_data(buffer& buff)
-    {
-        return &buff[0];
-    }
-
-    inline
-    void grow_buffer(buffer& buff, size_t capacity)
-    {
-        buff.resize(capacity);
-    }
-
-    inline
-    void trim_buffer(buffer& buff, size_t size)
-    {
-        buff.resize(size);
-    }
-
-    inline
-    bool operator==(const buffer& lhs, const buffer& rhs)
-    {
-        if (lhs.size() != rhs.size())
-            return false;
-        return !std::memcmp(&lhs[0], &rhs[0], lhs.size());
-    }
-
 } // newsflash

@@ -73,86 +73,86 @@ void download::prepare()
 
 void download::receive(buffer&& buff, std::size_t id)
 {
-    buffer::payload body(buff);
+    // buffer::payload body(buff);
 
-    // iterate over the data line by line and inspect
-    // every line untill we can identify a binary content
-    // encoded with some encoding scheme. then if data remains
-    // in the buffer we continue processing it line by line
-    // repeating the same inspection
-    // todo: MIME and base64 based encoding.
+    // // iterate over the data line by line and inspect
+    // // every line untill we can identify a binary content
+    // // encoded with some encoding scheme. then if data remains
+    // // in the buffer we continue processing it line by line
+    // // repeating the same inspection
+    // // todo: MIME and base64 based encoding.
 
-    while (!body.empty())
-    {
-        const nntp::linebuffer lines(body.data(), body.size());
-        const auto& iter = lines.begin();
-        const auto& line = *iter;
+    // while (!body.empty())
+    // {
+    //     const nntp::linebuffer lines(body.data(), body.size());
+    //     const auto& iter = lines.begin();
+    //     const auto& line = *iter;
 
-        download::content* content = nullptr;
+    //     download::content* content = nullptr;
 
-        const auto enc = identify_encoding(line.start, line.length);
-        switch (enc)
-        {
-            case encoding::yenc_single:
-                {
-                    download::content yenc;
-                    yenc.size  = 0;
-                    yenc.enc   = encoding::yenc_single;
-                    yenc.codec.reset(new yenc_single_decoder);
-                    content = bind_content(std::move(yenc));
-                }
-                break;
+    //     const auto enc = identify_encoding(line.start, line.length);
+    //     switch (enc)
+    //     {
+    //         case encoding::yenc_single:
+    //             {
+    //                 download::content yenc;
+    //                 yenc.size  = 0;
+    //                 yenc.enc   = encoding::yenc_single;
+    //                 yenc.codec.reset(new yenc_single_decoder);
+    //                 content = bind_content(std::move(yenc));
+    //             }
+    //             break;
 
-            case encoding::yenc_multi:
-                content = find_content(encoding::yenc_multi);
-                break;
+    //         case encoding::yenc_multi:
+    //             content = find_content(encoding::yenc_multi);
+    //             break;
 
-            case encoding::uuencode_single:
-                {
-                    download::content uu;
-                    uu.size = 0;
-                    uu.enc  = encoding::uuencode_single;
-                    uu.codec.reset(new uuencode_decoder);
-                    content = bind_content(std::move(uu));
-                }
-                break;
+    //         case encoding::uuencode_single:
+    //             {
+    //                 download::content uu;
+    //                 uu.size = 0;
+    //                 uu.enc  = encoding::uuencode_single;
+    //                 uu.codec.reset(new uuencode_decoder);
+    //                 content = bind_content(std::move(uu));
+    //             }
+    //             break;
 
-                // uuencoding scheme doesn't officially cater for messages split
-                // into several articles, however in practice it does happen, typically
-                // with large images (larger than maximum single nntp article size ~800kb).
-                // if we find a headerless uuencoded data we simply assume that it belongs
-                // to some previous uuencoded data blob.
-            case encoding::uuencode_multi:
-                content = find_content(encoding::uuencode_single);
-                break;
+    //             // uuencoding scheme doesn't officially cater for messages split
+    //             // into several articles, however in practice it does happen, typically
+    //             // with large images (larger than maximum single nntp article size ~800kb).
+    //             // if we find a headerless uuencoded data we simply assume that it belongs
+    //             // to some previous uuencoded data blob.
+    //         case encoding::uuencode_multi:
+    //             content = find_content(encoding::uuencode_single);
+    //             break;
 
-            case encoding::unknown:
-                {
-                    // if we're not keeping text then simply discard this line
-                    if (!keeptext_)
-                        break;
+    //         case encoding::unknown:
+    //             {
+    //                 // if we're not keeping text then simply discard this line
+    //                 if (!keeptext_)
+    //                     break;
 
-                    content = find_content(encoding::unknown);
-                    if (!content)
-                    {
-                        download::content text;
-                        text.size = 0;
-                        text.enc  = encoding::unknown;
-                        text.codec.reset(new text_decoder);
-                        content = bind_content(std::move(text));
-                    }
-                }
-                break;
-        }
-        if (!content)
-            throw std::runtime_error("no such content found!");
+    //                 content = find_content(encoding::unknown);
+    //                 if (!content)
+    //                 {
+    //                     download::content text;
+    //                     text.size = 0;
+    //                     text.enc  = encoding::unknown;
+    //                     text.codec.reset(new text_decoder);
+    //                     content = bind_content(std::move(text));
+    //                 }
+    //             }
+    //             break;
+    //     }
+    //     if (!content)
+    //         throw std::runtime_error("no such content found!");
 
-        decoder& dec = *content->codec;
+    //     decoder& dec = *content->codec;
 
-        const auto consumed = dec.decode(body.data(), body.size());
+    //     const auto consumed = dec.decode(body.data(), body.size());
 
-        body.crop(consumed);
-    }
+    //     body.crop(consumed);
+    // }
 }
 
 void download::cancel()

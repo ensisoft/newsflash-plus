@@ -30,6 +30,17 @@
 namespace newsflash
 {
 
+    class noncopyable 
+    {
+        noncopyable(const noncopyable&) = delete;
+
+        noncopyable& operator=(const noncopyable&) = delete;
+    protected:
+         noncopyable() {}
+        ~noncopyable() {}
+    };
+
+
     template<typename Handle, typename Deleter>
     class unique_handle 
     {

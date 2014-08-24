@@ -43,37 +43,37 @@ void listing::prepare()
 
 void listing::receive(buffer&& buff, std::size_t id)
 {
-    const buffer::payload body(buff);
-    if (body.empty())
-        return;
+    // const buffer::payload body(buff);
+    // if (body.empty())
+    //     return;
     
-    const nntp::linebuffer lines(body.data(), body.size());
+    // const nntp::linebuffer lines(body.data(), body.size());
 
-    auto beg = lines.begin();
-    auto end = lines.end();
-    while (beg != end)
-    {
-        const auto& line = *beg;
-        const auto& ret  = nntp::parse_group(line.start, line.length);
-        if (ret.first)
-        {
-            const auto& data = ret.second;
+    // auto beg = lines.begin();
+    // auto end = lines.end();
+    // while (beg != end)
+    // {
+    //     const auto& line = *beg;
+    //     const auto& ret  = nntp::parse_group(line.start, line.length);
+    //     if (ret.first)
+    //     {
+    //         const auto& data = ret.second;
 
-            group_info group;
-            group.size = 0;
-            group.name = data.name;
-            const std::uint64_t first = boost::lexical_cast<std::uint64_t>(data.first);
-            const std::uint64_t last  = boost::lexical_cast<std::uint64_t>(data.last);
+    //         group_info group;
+    //         group.size = 0;
+    //         group.name = data.name;
+    //         const std::uint64_t first = boost::lexical_cast<std::uint64_t>(data.first);
+    //         const std::uint64_t last  = boost::lexical_cast<std::uint64_t>(data.last);
 
-            // if the last field is less than the first field then
-            // there are no articles in the group.
-            if (last > first)
-                group.size = last - first + 1; // inclusive
+    //         // if the last field is less than the first field then
+    //         // there are no articles in the group.
+    //         if (last > first)
+    //             group.size = last - first + 1; // inclusive
 
-            groups_.push_back(std::move(group));
-        }
-        ++beg;
-    }
+    //         groups_.push_back(std::move(group));
+    //     }
+    //     ++beg;
+    // }
 }
 
 void listing::cancel()
@@ -90,24 +90,24 @@ void listing::finalize()
             return lhs.name < rhs.name;
         });
 
-    std::ofstream out;
-    open_fstream(filename_, out);
+    // std::ofstream out;
+    // open_fstream(filename_, out);
 
-    if (!out.is_open())
-        throw std::system_error(std::error_code(errno, std::generic_category()), 
-            "failed to open " + filename_);
+    // if (!out.is_open())
+    //     throw std::system_error(std::error_code(errno, std::generic_category()), 
+    //         "failed to open " + filename_);
 
-    out << groups_.size() << std::endl;
+    // out << groups_.size() << std::endl;
 
-    for (const auto& group : groups_)
-    {
-         out << group.name << "," << group.size;
-         out << std::endl;
-    }
+    // for (const auto& group : groups_)
+    // {
+    //      out << group.name << "," << group.size;
+    //      out << std::endl;
+    // }
 
-    if (out.fail())
-        throw std::system_error(std::error_code(errno, std::generic_category()),
-            "io failure on " + filename_);
+    // if (out.fail())
+    //     throw std::system_error(std::error_code(errno, std::generic_category()),
+    //         "io failure on " + filename_);
 }
 
 } // newsflash
