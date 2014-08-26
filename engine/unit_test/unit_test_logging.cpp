@@ -1,4 +1,4 @@
-// Copyright (c) 2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -22,54 +22,57 @@
 
 #include <newsflash/config.h>
 
-#include <vector>
-#include "bodyiter.h"
-#include "uuencode_decoder.h"
-#include "uuencode.h"
+#include <boost/test/minimal.hpp>
+#include <boost/filesystem.hpp>
+#include <thread>
+#include "../logging.h"
 
-namespace newsflash
+namespace boost_fs = boost::filesystem;
+
+void erase(const std::string& f)
 {
-
-uuencode_decoder::uuencode_decoder() : has_header_(false)
-{}
-
-uuencode_decoder::~uuencode_decoder()
-{}
-
-std::size_t uuencode_decoder::decode(const void* data, std::size_t len)
-{
-    nntp::bodyiter beg((const char*)data);
-    nntp::bodyiter end((const char*)data, len);
-
-    if (!has_header_)
-    {
-        const auto& ret = uuencode::parse_begin(beg, end);
-        if (!ret.first)
-            throw decoder::exception("broken or missing header");
-
-        if (on_info)
-        {
-            decoder::info info;
-            info.size = 0;
-            info.name = ret.second.file;
-            on_info(info);
-        }
-        
-        has_header_ = true;
-    }
-
-    std::vector<char> buff;
-    uuencode::decode(beg, end, std::back_inserter(buff));
-    
-    if (!uuencode::parse_end(beg, end))
-        throw decoder::exception("broken or missing end");
-
-    on_write(buff.data(), buff.size(), 0, false);
-
-    return len - distance(beg, end);
+    boost_fs::path p(f);
+    boost_fs::remove(p);
 }
 
-void uuencode_decoder::finish()
-{}
+void thread_entry()
+{
+    LOG_OPEN("foo", "thread-foo.log");
+    LOG_OPEN("bar", "thread-bar.log");
 
-} // newsflash
+    LOG_D("This is a BAR debug");
+    LOG_E("This is a BAR error");
+    LOG_I("This is a BAR information");
+
+    LOG_SELECT("foo");
+    LOG_D("This is a FOO debug");
+    LOG_E("This is a FOO error");
+    LOG_I("This is a FOO information");
+    LOG_CLOSE();
+}
+
+int test_main(int, char*[])
+{
+    erase("thread-foo.log");
+    erase("thread-bar.log");
+    erase("foo.log");
+    erase("bar.log");
+
+    std::thread thread(thread_entry);
+
+    LOG_OPEN("foo", "foo.log");
+    LOG_OPEN("bar", "bar.log");
+
+    LOG_D("This is BAR debug");
+    LOG_E("This is BAR error");
+    LOG_E("This is BAR information");
+
+
+    LOG_SELECT("foo");
+    LOG_D("This is FOO debug");
+    LOG_E("This is FOO error");
+    LOG_E("this is FOO information");
+
+    thread.join();
+    return 0;
+}

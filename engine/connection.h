@@ -23,17 +23,18 @@
 #pragma once
 
 #include <newsflash/config.h>
+
 #include <system_error>
 #include <memory>
-#include <deque>
-#include <fstream>
+#include <queue>
 #include "waithandle.h"
 #include "socketapi.h"
-#include "logging.h"
+
+
 
 namespace newsflash
 {
-    class socket;
+    class command;
 
     class connection
     {
@@ -42,45 +43,46 @@ namespace newsflash
             none, 
             connection_refused, 
             authentication_failed,
+            forbidden,
             service_temporarily_unavailable,
             service_permanently_unavailable,
-            socket, timeout, ssl, unknown
+            timeout,
+            tcp, ssl, nntp,
+            other
         };
 
-        enum class state {
-            disconnected, connecting, authenticating, ready, active, error
-        };
+        // enum class state {
+        //     disconnected, 
+        //     connecting, 
+        //     authenticating, 
+        //     ready, active, error
+        // };
 
-        connection(const std::string& logfile);
+        connection();
        ~connection();
 
         void connect(ipv4addr_t host, port_t port, bool ssl);
 
-        //void enqueue(command* cmd);
+        void enqueue(command* cmd);
 
-        void read();
+        bool readsocket();
 
-        void write();
-
-        waithandle wait() const;
+        waithandle get_wait_handle() const;
     private:
-        void open_log(const std::string& filename);
-        void flush_log();
-        void close_log();
-
-        template<typename... Args>
-        void write_log(logevent type, const char* file, int line, const Args&... args)
-        {
-            beg_log_event(log_, type, file, line);
-            write_log_args(log_, args...);
-            end_log_event(log_);
-        }
+        void do_send(const std::string& cmd);
+        void do_auth(std::string& user, std::string& pass);
 
     private:
-        std::unique_ptr<socket> socket_;
-        std::ofstream log_;
-        error error_;
-        state state_;
+        struct data;
+
+        class state;
+        class connect;
+        class initialize;
+        class transfer;
+
+    private:
+        std::unique_ptr<state> state_;
+        std::unique_ptr<data> data_;
     };
 
 } // newsflash

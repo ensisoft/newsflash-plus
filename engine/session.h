@@ -33,22 +33,23 @@ namespace newsflash
 {
     class buffer;
 
-    // implements NNTP session state
     class session
     {
     public:
         enum class error {
             none, 
-            authentication_failed,
             service_temporarily_unavailable,
-            service_permanently_unavailable
+            service_permanently_unavailable,
+            authentication_rejected,
+            no_permission
+        };
+
+        enum class state {
+            none, init, authenticate, ready, error
         };
 
         // called when session wants to send data
         std::function<void (const std::string& cmd)> on_send;
-
-        // called for logging events
-        std::function<void (const std::string& str)> on_log;
 
         // called when session wants to authenticate
         std::function<void (std::string& user, std::string& pass)> on_auth;
@@ -56,25 +57,20 @@ namespace newsflash
         session();
        ~session();
 
-        // this should be called when data link connection
-        // is established and data begins to flow.
-        void start();
+        void reset();
 
-        // call inspect to inspect the contents of the buffer and 
-        // change the session state when complete command responses
-        // are parsed out of the buffer.
-        // returns true if a complete message was found, otherwise false
-        // in which case further data should be received into the buffer.
-        bool inspect(buffer& buff);
+        bool initialize(buffer& buff);
 
-        struct capabilities {
-            bool gzip; // gzip compression
-            bool xzver; // compressed headers
-            bool modereader;
-        };
+        error get_error() const;
+
+        state get_state() const;
+
+        bool has_xzver() const;
+
+        bool has_gzip_compress() const;
 
     private:
-        struct state;
+        struct impl;
 
         class command;
         class welcome;
@@ -84,9 +80,9 @@ namespace newsflash
         class authpass;
 
     private:
-        std::unique_ptr<command> command_;
-        std::unique_ptr<command> needs_authentication_;
-        std::unique_ptr<state> state_;
+        std::unique_ptr<command> current_;
+        std::unique_ptr<command> retry_;
+        std::unique_ptr<impl> state_;
     };
 
 } // newsflash

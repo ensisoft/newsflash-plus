@@ -10,7 +10,7 @@ project engine
   
 ;
   
-lib engine-lib :  
+lib engine :  
    [ glob *.cpp ] 
    #[ glob nntp/*.cpp ]
 

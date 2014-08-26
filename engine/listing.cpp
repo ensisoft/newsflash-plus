@@ -25,9 +25,9 @@
 #  include <boost/lexical_cast.hpp>
 #include <newsflash/warnpop.h>
 #include <algorithm>
-#include "nntp/nntp.h"
-#include "nntp/linebuffer.h"
 #include <fstream>
+#include "nntp.h"
+#include "linebuffer.h"
 #include "listing.h"
 #include "buffer.h"
 #include "platform.h"

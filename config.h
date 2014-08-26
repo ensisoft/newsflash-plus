@@ -105,14 +105,26 @@
   #define NOTHROW noexcept
 #endif
 
+
+#ifndef _NDEBUG
+#  define NEWSFLASH_DEBUG
+#endif
+
+
 #if defined(LINUX_OS)
 #  ifndef _LARGEFILE64_SOURCE
 #    define _LARGEFILE64_SOURCE
 #  endif
-#endif
 
-#ifndef _NDEBUG
-#  define NEWSFLASH_DEBUG
+//#  ifndef _POSIX_SOURCE
+//#    define _POSIX_SOURCE
+//#  endif
+//#  ifndef _REENTRANT
+//#    define _REENTRANT
+//#  endif
+#  ifdef NEWSFLASH_DEBUG
+//#    define _FORTIFY_SOURCE 1
+#  endif
 #endif
 
 #define NEWSFLASH_ENABLE_LOG

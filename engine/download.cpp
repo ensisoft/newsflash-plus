@@ -22,7 +22,7 @@
 
 #include <functional>
 #include <algorithm>
-#include "nntp/linebuffer.h"
+#include "linebuffer.h"
 #include "download.h"
 #include "buffer.h"
 #include "filesys.h"

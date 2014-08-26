@@ -22,84 +22,118 @@
 
 #include <newsflash/config.h>
 
-#include <iostream>
+#include <newsflash/warnpush.h>
+#  include <boost/thread/tss.hpp>
+#include <newsflash/warnpop.h>
+
+#include <cassert>
+#include <thread>
 #include <fstream>
 #include <iomanip>
 #include <mutex>
+#include <map>
 #include "platform.h"
 #include "logging.h"
 #include "utf8.h"
 
 namespace {
 
-std::mutex     logMutex;
-std::ofstream  logStream;
+struct logger {
+    std::map<std::string, std::shared_ptr<std::ofstream>> streams;
+    std::ofstream* current_stream;
+    std::string current_context;
+};
+
+boost::thread_specific_ptr<logger> ThreadLogger;
 
 } // namespace
 
 namespace newsflash
 {
+namespace detail {
 
-std::ostream& get_global_log()
-{
-    return logStream;
-}
-
-std::mutex& get_global_log_mutex()
-{
-    return logMutex;
-}
-
-void beg_log_event(std::ostream& stream, logevent type, const char* file, int line)
-{
-    using namespace std;
-
-    const auto& timeval = get_localtime();
-
-    stream << setw(2) << setfill('0') << timeval.hours << ":"
-           << setw(2) << setfill('0') << timeval.minutes << ":"
-           << setw(3) << setfill('0') << timeval.millis << " ";
-    stream << (char)type << " ";
-}
-
-void end_log_event(std::ostream& stream)
-{
-    stream << std::endl;
-}
-
-void open_log(const std::string& filename)
-{
-    if (logStream.is_open())
+    void beg_log_event(std::ostream& current_stream, const std::string& context, logevent type, const char* file, int line)
     {
-        logStream.flush();
-        logStream.close();
+        using namespace std;
+
+        const auto& timeval = get_localtime();
+
+        current_stream << setw(2) << setfill('0') << timeval.hours << ":"
+               << setw(2) << setfill('0') << timeval.minutes << ":"
+               << setw(3) << setfill('0') << timeval.millis << " ";
+        current_stream << "[" << context << "] ";
+        current_stream << (char)type << " ";
     }
 
-    if (filename == "clog")
+    void end_log_event(std::ostream& current_stream)
     {
-        std::ios& base = logStream;
-        base.rdbuf(std::clog.rdbuf());
+        current_stream << std::endl;
     }
-    else
+
+    std::ostream& get_current_thread_current_log(std::string& context)
     {
-#if defined(WINDOWS_OS)
-        const std::wstring& wide = utf8::decode(filename);
-        logStream.open(wide.c_str());
-#else
-        logStream.open(filename.c_str());
-#endif
+        auto logger = ThreadLogger.get();
+
+        assert(logger->current_stream);
+
+        context = logger->current_context;
+        return *logger->current_stream;
     }
+
+} // detail
+
+void open_log(std::string context, std::string file)
+{
+    if (!ThreadLogger.get())
+    {
+        ThreadLogger.reset(new logger);
+    }
+
+    auto logger = ThreadLogger.get();
+
+    auto it = logger->streams.find(file);
+    if (it == std::end(logger->streams))
+    {
+        auto stream = std::make_shared<std::ofstream>();
+        stream->open(file, std::ios::trunc);
+        if (!stream->is_open())
+            throw std::runtime_error("failed to open log file: " + file);
+
+        it = logger->streams.insert(std::make_pair(context, stream)).first;
+    }
+
+    auto& stream = it->second;
+    logger->current_stream  = stream.get();
+    logger->current_context = context;
 }
 
 void flush_log()
 {
-    logStream.flush();
+    auto logger = ThreadLogger.get();
+    logger->current_stream->flush();
+}
+
+void select_log(const std::string& context)
+{
+    auto logger = ThreadLogger.get();
+    auto it = logger->streams.find(context);
+
+    assert(it != std::end(logger->streams));
+
+    logger->current_stream  = it->second.get();
+    logger->current_context = it->first;
 }
 
 void close_log()
 {
-    logStream.flush();
-    logStream.close();
+    auto logger = ThreadLogger.get();
+    logger->streams.erase(logger->current_context);
+    logger->current_stream = nullptr;
+    logger->current_context = "";
+
+    if (logger->streams.empty())
+        ThreadLogger.reset();
+
 }
 
 } // newsflash

@@ -20,7 +20,7 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-#include "nntp/bodyiter.h"
+#include "bodyiter.h"
 #include "yenc_multi_decoder.h"
 #include "yenc.h"
 

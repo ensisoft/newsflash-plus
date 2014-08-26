@@ -20,6 +20,8 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
+#include <newsflash/config.h>
+
 #include <boost/test/minimal.hpp>
 #include <boost/lexical_cast.hpp>
 #include <iostream>
@@ -522,6 +524,45 @@ void test_find_body()
     }    
 }
 
+#define REQUIRE_EXCEPTION(x) \
+    try { \
+        x; \
+        BOOST_FAIL("exception was expected"); \
+    } \
+    catch(const std::exception& e) {}
+
+void test_scan_response()
+{
+    {
+        int value;
+        std::string foo, bar;
+        BOOST_REQUIRE(nntp::scan_response({123}, "123 234254 foo bar", 
+            strlen("123 234254 foo bar"), value, foo, bar) == 123);
+        BOOST_REQUIRE(value == 234254);
+        BOOST_REQUIRE(foo == "foo");
+        BOOST_REQUIRE(bar == "bar");
+
+    }
+
+    {
+        int value;
+        nntp::trailing_comment cmt;
+        BOOST_REQUIRE(nntp::scan_response({233, 200, 405}, "233 12344 welcome posting allowed", 
+            strlen("233 12344 welcome posting allowed"), value, cmt) == 233);
+
+        BOOST_REQUIRE(value == 12344);
+        BOOST_REQUIRE(cmt.str == "welcome posting allowed");
+    }
+
+    int value;
+    std::string str;
+
+    REQUIRE_EXCEPTION(nntp::scan_response({100}, "asdgasgas", strlen("asdgasgas")));
+    REQUIRE_EXCEPTION(nntp::scan_response({100}, "123 foobar keke", strlen("123 foobar keke")));
+    REQUIRE_EXCEPTION(nntp::scan_response({100}, "100 foobar keke", strlen("100 foobar keke"), value));
+}
+
+
 int test_main(int, char* [])
 {
     test_parse_overview();
@@ -532,6 +573,7 @@ int test_main(int, char* [])
     test_find_filename();
     test_find_response();
     test_find_body();
+    test_scan_response();
 
     return 0;
 }

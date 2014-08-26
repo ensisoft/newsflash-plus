@@ -25,7 +25,7 @@
 #include <newsflash/warnpush.h>
 #  include <boost/crc.hpp>
 #include <newsflash/warnpop.h>
-#include "nntp/bodyiter.h"
+#include "bodyiter.h"
 #include "yenc_single_decoder.h"
 #include "yenc.h"
 

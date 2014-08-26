@@ -6,13 +6,13 @@ import testing ;
 
 project 
   : requirements
-    <library>/corelib//core-lib/<link>static 
+    <library>/newsflash//engine/<link>static 
   ;
 
 unit-test unit_test_utf8               : unit_test_utf8.cpp ;
 unit-test unit_test_uuencode           : unit_test_uuencode.cpp ;
 unit-test unit_test_yenc               : unit_test_yenc.cpp ;
-unit-test unit_test_protocol           : unit_test_protocol.cpp ;
+unit-test unit_test_session            : unit_test_session.cpp ;
 unit-test unit_test_buffer             : unit_test_buffer.cpp ;
 unit-test unit_test_threadpool         : unit_test_threadpool.cpp ;
 unit-test unit_test_event              : unit_test_event.cpp ;
@@ -31,3 +31,9 @@ unit-test unit_test_xoverlist          : unit_test_xoverlist.cpp ;
 
 #unit-test unit_test_uuencode_decoder   : unit_test_uuencode_decoder.cpp ;
 #unit-test unit_test_grouplist          : unit_test_grouplist.cpp ;
+
+unit-test unit_test_logging : unit_test_logging.cpp ;
+
+unit-test unit_test_nntp : unit_test_nntp.cpp ;
+unit-test unit_test_linebuffer : unit_test_linebuffer.cpp ;
+unit-test unit_test_bodyiter : unit_test_bodyiter.cpp ;

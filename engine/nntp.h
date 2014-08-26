@@ -168,15 +168,17 @@ namespace nntp
     class exception : public std::exception
     {
     public:
-        exception(std::string what) NOTHROW 
-           : what_(std::move(what))
-           {}
+        exception(std::string what, int response_code) NOTHROW : what_(std::move(what)), code_(response_code)
+        {}
         const char* what() const NOTHROW
-        {
-            return what_.c_str();
-        }
+        { return what_.c_str(); }
+
+        int code() const NOTHROW
+        { return code_; }
+
     private:
         std::string what_;
+        int code_;
     };
 
 
@@ -188,12 +190,12 @@ namespace nntp
         std::string str(response, len);
         std::stringstream ss(str);
         int code = 0;
-        detail::scan_next_value(ss, code);
+        detail::extract_value(ss, code);
         if (std::find(std::begin(codes), std::end(codes), code) == std::end(codes))
-            throw nntp::exception("incorrect response code: " + str);
+            throw nntp::exception("incorrect response code: " + str, code);
         detail::scan_next_value(ss, values...);
         if (ss.fail())
-            throw nntp::exception("scan response failed: " + str);
+            throw nntp::exception("scan response failed: " + str, 0);
 
         return code;
     }
@@ -204,12 +206,12 @@ namespace nntp
         std::string str(response, len);
         std::stringstream ss(str);
         int code = 0;
-        detail::scan_next_value(ss, code);
+        detail::extract_value(ss, code);
         if (ss.fail())
-            throw nntp::exception("scan response failed: " + str);
+            throw nntp::exception("scan response failed: " + str, 0);
         
         if (std::find(std::begin(codes), std::end(codes), code) == std::end(codes))
-            throw nntp::exception("incorrect response code: " + str);
+            throw nntp::exception("incorrect response code: " + str, code);
 
         return code;
     }

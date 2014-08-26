@@ -29,13 +29,19 @@
 namespace newsflash
 {
 
-struct session::state {
-    capabilities caps;
-    session::error err;
-    bool authentication_required;
+struct session::impl {
+    bool has_gzip;
+    bool has_xzver;
+    bool has_modereader;
+    bool auth_user_required;
+    bool auth_pass_required;
+    std::string user;
+    std::string pass;
+    session::error error;
+    session::state state;
 };
 
-class session::command 
+class session::command
 {
 public:
     enum class type {
@@ -43,16 +49,21 @@ public:
     };
 
     virtual ~command() = default;
-    virtual bool inspect(buffer& buff, state& st) const = 0; 
+
+    virtual bool execute(buffer& buff, impl& st) const = 0;
+
     virtual type identity() const = 0;
+
+    virtual std::string str() const = 0;
 protected:
+private:
 };
 
 // read initial greeting from the server
 class session::welcome : public session::command
 {
 public:
-    virtual bool inspect(buffer& buff, session::state& st) const override
+    virtual bool execute(buffer& buff, session::impl& st) const override
     {
         const auto len = nntp::find_response(buff.head(), buff.size());
         if (len == 0)
@@ -60,32 +71,37 @@ public:
 
         const auto code = nntp::scan_response({200, 201, 400, 502}, buff.head(), len-2);
         if (code == 400)
-            st.err = error::service_temporarily_unavailable;
+            st.error = error::service_temporarily_unavailable;
         else if (code == 502)
-            st.err = error::service_permanently_unavailable;
+            st.error = error::service_permanently_unavailable;
 
         buff.set_header_length(len);
         return true;
     }
     virtual type identity() const override
     { return type::welcome; }
-public:
+
+    virtual std::string str() const 
+    { return ""; }
+private:
 };
 
+// query server for supported capabilities
 class session::getcaps : public session::command
 {
 public:
-    virtual bool inspect(buffer& buff, session::state& st) const override
+    virtual bool execute(buffer& buff, session::impl& st) const override
     {
         const auto res = nntp::find_response(buff.head(), buff.size());
         if (res == 0)
             return false;
 
         const auto code = nntp::scan_response({101, 480, 500}, buff.head(), res-2);
-        if (code == 500)
-            return true; // we're done, they don't understand
-        else if (code == 480) {
-            st.authentication_required = true;
+        if (code != 101)
+        {
+            if (code == 480)
+                st.auth_user_required = true;
+            buff.set_header_length(res);
             return true;
         }
 
@@ -100,12 +116,12 @@ public:
         while (std::getline(ss, line))
         {
             if (line.find("MODE-READER") != std::string::npos)
-                st.caps.modereader = true;
+                st.has_modereader = true;
             else if (line.find("XZVER") != std::string::npos)
-                st.caps.xzver = true;
+                st.has_xzver = true;
             else if (line.find("COMPRESS") != std::string::npos &&
                 line.find("GZIP") != std::string::npos)
-                st.caps.gzip = true;
+                st.has_gzip = true;
         }
         buff.set_header_length(res);
         buff.set_body_length(len);
@@ -113,79 +129,207 @@ public:
     }
     virtual type identity() const override
     { return type::capabilities; }
+
+    virtual std::string str() const override
+    { return "CAPABILITIES\r\n"; }
+private:
 };
 
+// perform user authentication 
 class session::authuser : public session::command
 {
 public:
-    virtual bool inspect(buffer& buff, state& st)const override
+    authuser(std::string username) : username_(std::move(username))
     {}
+
+    virtual bool execute(buffer& buff, impl& st) const override
+    {
+        const auto len = nntp::find_response(buff.head(), buff.size());
+        if (len == 0)
+            return false;
+
+        // we also have 482 and 502 responses in the spec but
+        // consider these to be a "programmer error"
+        // 482 authentication command issued out of sequence
+        // 502 command unavailable
+
+        const auto code = nntp::scan_response({281, 381, 482, 502}, buff.head(), len-2);
+        if (code == 381)
+            st.auth_pass_required = true;
+        else if (code == 482)
+            st.error = error::authentication_rejected;
+        else if (code == 502)
+            st.error = error::no_permission;
+
+        buff.set_header_length(len);
+        return true;
+    }
     virtual type identity() const 
     { return type::authuser; }
+
+    virtual std::string str() const 
+    { return "AUTHINFO USER " + username_ + "\r\n"; }
 private:
+    std::string username_;
 };
+
 
 class session::authpass : public session::command
 {
 public:
-    virtual bool inspect(buffer& buff, state& st) const override
-    { }
+    authpass(std::string password) : password_(std::move(password))
+    {}
+
+    virtual bool execute(buffer& buff, impl& st) const override
+    { 
+        const auto len = nntp::find_response(buff.head(), buff.size());
+        if (len == 0)
+            return false;
+
+        const auto code = nntp::scan_response({281, 482, 502}, buff.head(), len-2);
+        if (code == 482)
+            st.error = error::authentication_rejected;
+        else if (code == 502)
+            st.error = error::no_permission;
+
+        buff.set_header_length(len);
+        return true;
+    }
     virtual type identity() const 
     { return type::authpass; }
+
+    virtual std::string str() const
+    { return "AUTHINFO PASS " + password_ + "\r\n"; }
+private:
+    std::string password_;
 };
+
 
 class session::modereader : public session::command
 {
 public:
-    virtual bool inspect(buffer& buff, state& st) const override
-    {}
+    virtual bool execute(buffer& buff, impl& st) const override
+    {
+        const auto len = nntp::find_response(buff.head(), buff.size());
+        if (len == 0)
+            return false;
+        const auto code = nntp::scan_response({200, 201, 480}, buff.head(), len-2);
+        if (code == 480)
+            st.auth_user_required = true;
+
+        buff.set_header_length(len);
+        return true;
+    }
     virtual type identity() const 
     { return type::modereader; }
+
+    virtual std::string str() const 
+    { return "MODE READER\r\n"; }
+private:
 };
 
-session::session()
-{}
+
+session::session() : state_(new impl)
+{
+    reset();
+}
 
 session::~session()
 {}
 
-void session::start()
+void session::reset()
 {
-    command_.reset(new welcome);
+    current_.reset(new welcome);
+    state_->auth_user_required = false;
+    state_->auth_pass_required = false;
+    state_->has_gzip           = false;
+    state_->has_modereader     = false;
+    state_->has_xzver          = false;
+    state_->error              = error::none;
+    state_->state              = state::none;
 }
 
-bool session::inspect(buffer& buff)
+bool session::initialize(buffer& buff)
 {
-    bool ret = command_->inspect(buff, *state_);
-    if (ret)
-    {
-        if (state_->authentication_required)
-        {
-            needs_authentication_ = std::move(command_);
-            std::string username;
-            std::string password;
-            on_auth(username, password);
-            command_.reset(new authuser);
-            on_send("AUTHINFO USER " + username + "\r\n");
-            return true;
-        }
+    if (state_->state == state::none)
+        state_->state = state::init;
 
-        switch (command_->identity())
+    if (!current_->execute(buff, *state_))
+        return false;
+
+    if (state_->error != error::none)
+    {
+        state_->state = state::error;
+        current_.reset();
+        retry_.reset();
+    }
+    else if (state_->auth_user_required)
+    {
+        retry_ = std::move(current_);
+
+        std::string username;
+        std::string password;
+        on_auth(username, password);
+        current_.reset(new authuser(username));
+        state_->auth_user_required = false;
+        state_->state = state::authenticate;
+    }
+    else if (state_->auth_pass_required)
+    {
+        std::string username;
+        std::string password;
+        on_auth(username, password);
+        current_.reset(new authpass(password));
+        state_->auth_pass_required = false;
+        state_->state = state::authenticate;        
+    }
+    else
+    {
+        const auto type = current_->identity();
+        current_.reset();
+        switch (type)
         {
             case command::type::welcome:
-                on_send("CAPABILITIES\r\n");
-                command_.reset(new getcaps);
+                current_.reset(new getcaps);
                 break;
+
             case command::type::capabilities:
-                if (state_->caps.modereader)
-                {
-                    on_send("MODE READER\r\n");
-                    command_.reset(new modereader);
-                }
+                current_.reset(new modereader);
+                break;
+
+            case command::type::authuser:
+            case command::type::authpass:
+                current_ = std::move(retry_);
+                break;
+
+            case command::type::modereader:
                 break;
         }
+        state_->state = state::init;                        
     }
-    return ret;
+    if (current_)
+    {
+        const auto str = current_->str();
+        if (!str.empty())
+            on_send(current_->str());            
+    }
+    else if (state_->error == error::none)
+        state_->state = state::ready;
+
+    return !current_;
+
 }
+
+session::error session::get_error() const
+{ return state_->error; }
+
+session::state session::get_state() const
+{ return state_->state; }
+
+bool session::has_xzver() const 
+{ return state_->has_xzver; }
+
+bool session::has_gzip_compress() const
+{ return state_->has_gzip; }
 
 } // newsflash

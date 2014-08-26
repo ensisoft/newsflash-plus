@@ -38,7 +38,7 @@ namespace newsflash
     public:
         using u8 = char;
 
-        buffer(std::size_t initial_capacity) : buffer_(initial_capacity), used_(0), header_length_(0), body_length_(0)
+        buffer(std::size_t initial_capacity = MB(1)) : buffer_(initial_capacity), size_(0), header_length_(0), body_length_(0)
         {}
 
         // increase buffer size by some amount
@@ -56,15 +56,23 @@ namespace newsflash
 
         // return back pointer for writing data 
         u8* back() 
-        { return &buffer_[used_]; }
+        { return &buffer_[size_]; }
 
         // after writing to the back() pointer, commit the number
         // of bytes written
-        void commit(std::size_t num_bytes)
+        void resize(std::size_t size)
         {
-            assert(used_ + num_bytes < buffer_.size());
-            used_ += num_bytes;
+            assert(size  < buffer_.size());
+            size_ = size;
         }
+
+        void clear()
+        {
+            size_ = 0;
+            header_length_ = 0;
+            body_length_ = 0;
+        }
+
 
         // buffer split()
         // {
@@ -80,15 +88,15 @@ namespace newsflash
 
         // return the size of the whole buffer
         std::size_t size() const 
-        { return used_; }
+        { return size_; }
 
         // return how many bytes are available for appending through back() pointer
         std::size_t available() const 
-        { return buffer_.size() - used_; }
+        { return buffer_.size() - size_; }
 
     private:
         std::vector<u8> buffer_;
-        std::size_t used_;
+        std::size_t size_;
         std::size_t header_length_;
         std::size_t body_length_;
     };
