@@ -25,18 +25,20 @@
 namespace newsflash
 {
     class buffer;
-    class protocol;
+    class session;
 
-    // list of commands to execute.
-    // all the cmdlist implementations must provide commit/rollback exception safety
-    // and not loose any state so that operations can be restarted at later time.
     class cmdlist
     {
     public:
         virtual ~cmdlist() = default;
 
-        // run the cmdlist once. returns true if next run is expected otherwise false.
-        virtual bool run(protocol& proto) = 0;
+        virtual bool is_done() const;
+
+        virtual void submit_command(session& ses) = 0;
+
+        virtual void receive(buffer& buff) = 0;
+
+        virtual void next() = 0;
     protected:
     private:
     };

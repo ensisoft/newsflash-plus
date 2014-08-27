@@ -27,6 +27,7 @@
 #include <functional>
 #include <string>
 #include <memory>
+#include <deque>
 #include <cstddef>
 
 namespace newsflash
@@ -45,7 +46,7 @@ namespace newsflash
         };
 
         enum class state {
-            none, init, authenticate, ready, error
+            none, init, authenticate, ready, transfer, error
         };
 
         // called when session wants to send data
@@ -59,15 +60,17 @@ namespace newsflash
 
         void reset();
 
-        bool initialize(buffer& buff);
+        bool parse_next(buffer& buff, buffer& out);
+
+        bool pending() const;
 
         error get_error() const;
 
         state get_state() const;
 
-        bool has_xzver() const;
-
         bool has_gzip_compress() const;
+
+        bool has_xzver() const;
 
     private:
         struct impl;
@@ -78,10 +81,11 @@ namespace newsflash
         class modereader;
         class authuser;
         class authpass;
+        class group;
+        class body;
 
     private:
-        std::unique_ptr<command> current_;
-        std::unique_ptr<command> retry_;
+        std::deque<std::unique_ptr<command>> pipeline_;
         std::unique_ptr<impl> state_;
     };
 

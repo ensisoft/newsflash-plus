@@ -176,18 +176,14 @@ void tcpsocket::close()
 
 waithandle tcpsocket::wait() const
 {
-    return waithandle {
-        handle_, socket_, true, true
-    };
+    return { handle_, socket_, true, true };
 }
 
 waithandle tcpsocket::wait(bool waitread, bool waitwrite) const
 {
     assert(waitread || waitwrite);
     
-    return waithandle {
-        handle_, socket_, waitread, waitwrite
-    };
+    return { handle_, socket_, waitread, waitwrite };
 }
 
 tcpsocket& tcpsocket::operator=(tcpsocket&& other)

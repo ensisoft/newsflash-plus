@@ -32,7 +32,7 @@ void set(nf::buffer& buff, const char* str)
 {
     buff.clear();
     std::strcpy(buff.back(), str);
-    buff.resize(std::strlen(str));
+    buff.append(std::strlen(str));
 }
 
 
@@ -52,33 +52,35 @@ void unit_test_init_session_success()
     };
 
     nf::buffer incoming;
-    BOOST_REQUIRE(!session.initialize(incoming));
+    nf::buffer tmp;
+    BOOST_REQUIRE(!session.parse_next(incoming, tmp));
     BOOST_REQUIRE(session.get_error() == nf::session::error::none);
     BOOST_REQUIRE(session.get_state() == nf::session::state::init);
 
     set(incoming, "200 welcome posting allowed\r\n");
-    session.initialize(incoming);
+    session.parse_next(incoming, tmp);
     BOOST_REQUIRE(output == "CAPABILITIES\r\n");
 
     set(incoming, "500 what?\r\n");
-    session.initialize(incoming);
+    session.parse_next(incoming, tmp);
     BOOST_REQUIRE(output == "MODE READER\r\n");
 
     set(incoming, "480 authentication required\r\n");
-    session.initialize(incoming);
+    session.parse_next(incoming, tmp);
     BOOST_REQUIRE(output == "AUTHINFO USER foo\r\n");
     BOOST_REQUIRE(session.get_state() == nf::session::state::authenticate);
 
     set(incoming, "381 password required\r\n");
-    session.initialize(incoming);
+    session.parse_next(incoming, tmp);
     BOOST_REQUIRE(output == "AUTHINFO PASS bar\r\n");
 
     set(incoming, "281 authentication accepted\r\n");
-    session.initialize(incoming);
+    session.parse_next(incoming, tmp);
     BOOST_REQUIRE(output == "MODE READER\r\n");
 
     set(incoming, "200 posting allowed\r\n");
-    BOOST_REQUIRE(session.initialize(incoming));
+    session.parse_next(incoming, tmp);
+    BOOST_REQUIRE(!session.pending());
     BOOST_REQUIRE(session.get_error() == nf::session::error::none);
     BOOST_REQUIRE(session.get_state() == nf::session::state::ready);
 
@@ -100,12 +102,10 @@ void unit_test_init_session_success_caps()
     };
 
     nf::buffer incoming;
-    BOOST_REQUIRE(!session.initialize(incoming));
-    BOOST_REQUIRE(session.get_error() == nf::session::error::none);
-    BOOST_REQUIRE(session.get_state() == nf::session::state::init);
+    nf::buffer tmp;
 
     set(incoming, "200 welcome posting allowed\r\n");
-    session.initialize(incoming);
+    session.parse_next(incoming, tmp);
     BOOST_REQUIRE(output == "CAPABILITIES\r\n");
 
     set(incoming, "101 capabilities list follows\r\n"
@@ -114,11 +114,13 @@ void unit_test_init_session_success_caps()
         "IHAVE\r\n"
         "\r\n"
         ".\r\n");
-    session.initialize(incoming);
+    session.parse_next(incoming, tmp);
     BOOST_REQUIRE(output == "MODE READER\r\n");
 
     set(incoming, "200 posting allowed\r\n");
-    BOOST_REQUIRE(session.initialize(incoming)); // done
+    session.parse_next(incoming, tmp);    
+
+    BOOST_REQUIRE(!session.pending()); // done;
     BOOST_REQUIRE(session.has_gzip_compress() == false);
     BOOST_REQUIRE(session.has_xzver() == true);
 
@@ -140,24 +142,26 @@ void unit_test_init_session_failure_authenticate()
     };
 
     nf::buffer incoming;
+    nf::buffer tmp;
     set(incoming, "200 welcome posting allowed\r\n");
-    session.initialize(incoming);
+    session.parse_next(incoming, tmp);
     BOOST_REQUIRE(output == "CAPABILITIES\r\n");
 
     set(incoming, "500 what?\r\n");
-    session.initialize(incoming);
+    session.parse_next(incoming, tmp);
     BOOST_REQUIRE(output == "MODE READER\r\n");
 
     set(incoming, "480 authentication required\r\n");
-    session.initialize(incoming);
+    session.parse_next(incoming, tmp);
     BOOST_REQUIRE(output == "AUTHINFO USER foo\r\n");
     
     set(incoming, "381 password required\r\n");
-    session.initialize(incoming);
+    session.parse_next(incoming, tmp);
     BOOST_REQUIRE(output == "AUTHINFO PASS bar\r\n");
 
     set(incoming, "482 authentication rejected\r\n");
-    BOOST_REQUIRE(session.initialize(incoming)); // done
+    session.parse_next(incoming, tmp);
+    BOOST_REQUIRE(session.pending());
     BOOST_REQUIRE(session.get_state() == nf::session::state::error);
     BOOST_REQUIRE(session.get_error() == nf::session::error::authentication_rejected);
 

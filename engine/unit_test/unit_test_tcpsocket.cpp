@@ -22,7 +22,9 @@
 
 //#include <boost/test/minimal.hpp>
 
-#include "test_minimal.h"
+#include <newsflash/config.h>
+
+#include <newsflash/test_minimal.h>
 
 #include <thread>
 #include <chrono>
@@ -40,7 +42,7 @@
 #endif
 
 
-using namespace corelib;
+using namespace newsflash;
 
 native_socket_t openhost(int& port)
 {
@@ -87,7 +89,7 @@ void test_connection_failure()
         tcpsocket sock;
         sock.begin_connect(resolve_host_ipv4("127.0.0.1"), 8000);
 
-        corelib::wait(sock);
+        newsflash::wait(sock);
         TEST_EXCEPTION(sock.complete_connect());
     }
 
@@ -96,7 +98,7 @@ void test_connection_failure()
         tcpsocket sock;
         sock.begin_connect(resolve_host_ipv4("blahbalaha"), 9999);
 
-        corelib::wait(sock);
+        newsflash::wait(sock);
         TEST_EXCEPTION(sock.complete_connect());
     }
 
@@ -116,7 +118,7 @@ void test_connection_success()
     tcpsocket client = ::accept(sock);
     tcp.complete_connect();
 
-    corelib::closesocket(sock);
+    newsflash::closesocket(sock);
 
     // allocate buffers of various sizes and transfer them
     struct buffer {
@@ -151,7 +153,7 @@ void test_connection_success()
             if (sent != buff.len)
             {
                 auto handle = client.wait(false, true);
-                corelib::wait(handle);
+                newsflash::wait(handle);
                 TEST_REQUIRE(handle.write());                
             
                 int ret = client.sendsome(buff.data + sent, buff.len - sent);
@@ -162,7 +164,7 @@ void test_connection_success()
             if (recv != buff.len)
             {
                 auto handle = tcp.wait(true, false);
-                corelib::wait(handle);
+                newsflash::wait(handle);
                 TEST_REQUIRE(handle.read());
 
                 int ret = tcp.recvsome(buff.buff + recv, buff.len - recv);
@@ -184,7 +186,7 @@ void test_connection_success()
         delete [] buff.buff;
     }
 
-    corelib::closesocket(sock);
+    newsflash::closesocket(sock);
 }
 
 int test_main(int, char*[])

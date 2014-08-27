@@ -79,18 +79,20 @@ namespace newsflash
         void beg_log_event(std::ostream& stream, const std::string& context, logevent type, const char* file, int line);
         void end_log_event(std::ostream& stream);
 
-        std::ostream& get_current_thread_current_log(std::string& context);
+        std::ostream* get_current_thread_current_log(std::string& context);
     } // detail
 
     template<typename... Args>
     void write_log(logevent type, const char* file, int line, const Args&... args)
     {
         std::string context;
-        auto& stream = detail::get_current_thread_current_log(context);
+        auto stream = detail::get_current_thread_current_log(context);
+        if (stream == nullptr)
+            return;
 
-        detail::beg_log_event(stream, context, type, file, line);
-        detail::write_log_args(stream, args...);
-        detail::end_log_event(stream);
+        detail::beg_log_event(*stream, context, type, file, line);
+        detail::write_log_args(*stream, args...);
+        detail::end_log_event(*stream);
     }
 
     void open_log(std::string context, std::string file);

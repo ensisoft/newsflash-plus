@@ -27,6 +27,7 @@
 #include <vector>
 #include <cstdint>
 #include <cassert>
+#include <cstring>
 #include "utility.h"
 
 namespace newsflash
@@ -36,21 +37,27 @@ namespace newsflash
     class buffer
     {
     public:
+        enum class type {
+            none, overview, article, grouplist, groupinfo
+        };
+
+        enum class status {
+            none, success, unavailable, dmca
+        };
+
         using u8 = char;
 
-        buffer(std::size_t initial_capacity = MB(1)) : buffer_(initial_capacity), size_(0), header_length_(0), body_length_(0)
-        {}
-
-        // increase buffer size by some amount
-        void increase()
+        buffer(std::size_t initial_capacity = MB(1)) : buffer_(initial_capacity), size_(0), content_start_(0), content_length_(0),
+            content_type_(type::none), content_status_(status::none)
         {
-            const auto size = buffer_.size();
-            if (size * 2 > MB(5))
-                throw std::runtime_error("buffer capacity exceeded");
-
-            buffer_.resize(size * 2);
+            buffer_.resize(initial_capacity);
         }
 
+        // return body pointer to the start of the body/payload data
+        const u8* body() const
+        { return &buffer_[content_start_]; }
+
+        // return head pointer to the start of the whole buffer
         const u8* head() const
         { return &buffer_[0]; }
 
@@ -60,31 +67,73 @@ namespace newsflash
 
         // after writing to the back() pointer, commit the number
         // of bytes written
-        void resize(std::size_t size)
+        void append(std::size_t size)
         {
-            assert(size  < buffer_.size());
-            size_ = size;
+            assert(size + size_  < buffer_.size());
+            size_ += size;
         }
 
         void clear()
         {
             size_ = 0;
-            header_length_ = 0;
-            body_length_ = 0;
+            content_start_  = 0;
+            content_length_ = 0;
+            content_type_   = buffer::type::none;
+            content_status_ = buffer::status::none;
         }
 
+        // split the buffer into two buffers at the specified splitpoint.
+        // the size, capacity and the contents of the split buffer are those
+        // of this buffer from 0 to splitpoint.
+        // after the split the contents of this buffer are shifted to 0 
+        // and current size is decreased by splitpoint bytes.
+        buffer split(std::size_t splitpoint)
+        {
+            assert(splitpoint <= size_);
 
-        // buffer split()
-        // {
+            const auto bytes_to_copy = splitpoint;
+            const auto bytes_to_move = size_ - splitpoint;
 
-        // }
+            buffer ret(bytes_to_copy);
 
-        // 
-        void set_header_length(std::size_t length)
-        { header_length_ = length; }
+            std::memcpy(&ret.buffer_[0],&buffer_[0], bytes_to_copy);
+            std::memmove(&buffer_[0], &buffer_[splitpoint], bytes_to_move);
 
-        void set_body_length(std::size_t length)
-        { body_length_ = length; }
+            ret.size_ = bytes_to_copy;
+            size_ = bytes_to_move;
+            return ret;
+        }
+
+        // set the buffer status
+        void set_status(buffer::status status)
+        { content_status_ = status; }
+
+        // set content type
+        void set_content_type(buffer::type type)
+        { content_type_ = type;}
+
+
+        // the buffer can contain both the simple nntp response header 
+        // and the actual data content. instead of removing the header
+        // we just specificy a start offset for the content to begin in the buffer
+        void set_content_start(std::size_t start)
+        { 
+            assert(start + content_length_ <= size_);
+            content_start_ = start; 
+        }
+
+        // set the actual length of the content data.
+        void set_content_length(std::size_t length)
+        { 
+            assert(content_start_ + length <= size_);
+            content_length_ = length; 
+        }
+
+        type content_type() const 
+        { return content_type_; }
+
+        status content_status() const
+        { return content_status_; }
 
         // return the size of the whole buffer
         std::size_t size() const 
@@ -94,10 +143,16 @@ namespace newsflash
         std::size_t available() const 
         { return buffer_.size() - size_; }
 
+        bool full() const
+        { return available() == 0; }
+
     private:
         std::vector<u8> buffer_;
         std::size_t size_;
-        std::size_t header_length_;
-        std::size_t body_length_;
+        std::size_t content_start_;
+        std::size_t content_length_;
+    private:
+        type content_type_;
+        status content_status_;
     };
 } // newsflash

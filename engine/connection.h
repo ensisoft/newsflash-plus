@@ -24,23 +24,23 @@
 
 #include <newsflash/config.h>
 
-#include <system_error>
+#include <condition_variable>
 #include <memory>
+#include <thread>
+#include <mutex>
+#include <string>
 #include <queue>
-#include "waithandle.h"
-#include "socketapi.h"
-
-
 
 namespace newsflash
 {
-    class command;
+    class cmdlist;
 
     class connection
     {
     public:
         enum class error {
             none, 
+            resolve_host,
             connection_refused, 
             authentication_failed,
             forbidden,
@@ -51,38 +51,40 @@ namespace newsflash
             other
         };
 
-        // enum class state {
-        //     disconnected, 
-        //     connecting, 
-        //     authenticating, 
-        //     ready, active, error
-        // };
+        enum class state {
+            disconnected, 
+            connecting, 
+            ready, active, error
+        };
 
-        connection();
+        connection(std::string logfile);
        ~connection();
 
-        void connect(ipv4addr_t host, port_t port, bool ssl);
+        void shutdown();
 
-        void enqueue(command* cmd);
+        void connect(std::string username, std::string password, 
+            std::string hostname, std::uint16_t port, bool ssl);
 
-        bool readsocket();
+        void execute(cmdlist* cmds);
 
-        waithandle get_wait_handle() const;
-    private:
-        void do_send(const std::string& cmd);
-        void do_auth(std::string& user, std::string& pass);
+        void cancel();
 
     private:
-        struct data;
+        void thread_loop(std::string logfile);
 
-        class state;
+    private:
+        class exception;
+    private:
+        class action;
         class connect;
-        class initialize;
-        class transfer;
+        class execute;
+        class shutdown;
 
     private:
-        std::unique_ptr<state> state_;
-        std::unique_ptr<data> data_;
+        std::unique_ptr<std::thread> thread_;
+        std::queue<std::unique_ptr<action>> actions_;
+        std::mutex mutex_;
+        std::condition_variable cond_;
     };
 
 } // newsflash

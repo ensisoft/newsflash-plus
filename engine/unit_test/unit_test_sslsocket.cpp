@@ -20,6 +20,8 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
+#include <newsflash/config.h>
+
 #include <boost/test/minimal.hpp>
 #include <condition_variable>
 #include <openssl/err.h>
@@ -40,7 +42,7 @@
 #  include <netinet/in.h>
 #endif
 
-using namespace corelib;
+using namespace newsflash;
 
 
 void test_connection_failure()
@@ -171,7 +173,7 @@ void ssl_server_main(int port)
         do
         {
             auto can_read = sock.wait(true, false);
-            corelib::wait(can_read);
+            newsflash::wait(can_read);
             int ret = sock.recvsome(buff.buff + recv, buff.len - recv);
             recv += ret;
         }
@@ -187,7 +189,7 @@ void ssl_server_main(int port)
     BIO_free(pem);
     SSL_CTX_free(ctx);
 
-    corelib::closesocket(listener);
+    newsflash::closesocket(listener);
 }
 
 void test_connection_success()
@@ -219,7 +221,7 @@ void test_connection_success()
         do
         {
             auto can_write = sock.wait(false, true);
-            corelib::wait(can_write);
+            newsflash::wait(can_write);
             int ret = sock.sendsome(buff.data + sent, buff.len - sent);
             sent += ret;
         }
@@ -241,7 +243,7 @@ void test_connection_success()
 
 int test_main(int argc, char* argv[])
 {
-    corelib::openssl_init();
+    newsflash::openssl_init();
 
     test_connection_failure();
     test_connection_success();

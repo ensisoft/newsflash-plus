@@ -263,18 +263,14 @@ void sslsocket::close()
 
 waithandle sslsocket::wait() const
 {
-    return waithandle {
-        handle_, socket_, true, true
-    };
+    return { handle_, socket_, true, true };
 }
 
 waithandle sslsocket::wait(bool waitread, bool waitwrite) const
 {
     assert(waitread || waitwrite);
     
-    return waithandle {
-        handle_, socket_, waitread, waitwrite
-    };
+    return { handle_, socket_, waitread, waitwrite };
 }
 
 sslsocket& sslsocket::operator=(sslsocket&& other)

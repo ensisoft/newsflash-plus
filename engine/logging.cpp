@@ -70,14 +70,15 @@ namespace detail {
         current_stream << std::endl;
     }
 
-    std::ostream& get_current_thread_current_log(std::string& context)
+    std::ostream* get_current_thread_current_log(std::string& context)
     {
         auto logger = ThreadLogger.get();
-
-        assert(logger->current_stream);
-
-        context = logger->current_context;
-        return *logger->current_stream;
+        if (logger && logger->current_stream)
+        {
+            context = logger->current_context;
+            return logger->current_stream;
+        }
+        return nullptr;
     }
 
 } // detail
