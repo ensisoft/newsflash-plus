@@ -70,11 +70,11 @@ namespace nntp
     private:
         class command;
         class state;
-        class read_welcome;
-        class read_capabilities;        
-        class send_mode_reader;
+        class welcome;
+        class capabilities;        
+        class modereader;
         class authenticate;
-        class run_pipeline;
+        class pipeline;
 
     private:
         std::unique_ptr<state> state_;
@@ -84,7 +84,6 @@ namespace nntp
         bool has_compress_gzip_;
         bool has_xzver_;
         bool has_mode_reader_;
-        bool have_session_;
         response buff_;
     };
 

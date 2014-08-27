@@ -31,7 +31,7 @@ exe newsflash
   /newsflash//dl
   /newsflash//util
 
-  /engine//engine-lib/<link>static
+  /engine//engine/<link>static
 
   ../keygen/keygen.cpp
 ;

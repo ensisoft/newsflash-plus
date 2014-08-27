@@ -44,11 +44,8 @@ namespace newsflash
             connection_refused, 
             authentication_failed,
             forbidden,
-            service_temporarily_unavailable,
-            service_permanently_unavailable,
             timeout,
-            tcp, ssl, nntp,
-            other
+            tcp, ssl, nntp, other
         };
 
         enum class state {

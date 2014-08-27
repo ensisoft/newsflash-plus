@@ -126,6 +126,18 @@ public:
                 buffer.append(bytes);
             }
         }
+        const auto err = session_->get_error();
+        switch (err)
+        {
+            case session::error::authentication_rejected:
+                throw connection::exception("authentication rejected", connection::error::authentication_failed);
+                break;
+            case session::error::no_permission:
+                throw connection::exception("no permission", connection::error::forbidden);
+                break; 
+            case session::error::none:
+                break;
+        }
 
         LOG_I("Connection established!");
 
@@ -176,7 +188,7 @@ public:
 
         while (!cmdlist_->is_done())
         {
-            cmdlist_->submit_command(session);
+            cmdlist_->submit(session);
 
             while (session.pending())
             {
@@ -191,6 +203,18 @@ public:
                 }
                 cmdlist_->receive(payload);                
                 cmdlist_->next();                
+            }
+            const auto err = session.get_error();
+            switch (err)
+            {
+                case session::error::authentication_rejected:
+                    throw connection::exception("authentication rejected", connection::error::authentication_failed);
+                    break;
+                case session::error::no_permission:
+                    throw connection::exception("no permission", connection::error::forbidden);
+                    break;
+                case session::error::none:
+                    break;
             }
         }
     }
@@ -250,6 +274,8 @@ void connection::thread_loop(std::string logfile)
 
         auto action = std::move(actions_.front());
         actions_.pop();
+
+        lock.unlock();
 
         try
         {

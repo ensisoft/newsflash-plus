@@ -34,7 +34,7 @@ namespace newsflash
 
         virtual bool is_done() const;
 
-        virtual void submit_command(session& ses) = 0;
+        virtual void submit(session& ses) = 0;
 
         virtual void receive(buffer& buff) = 0;
 

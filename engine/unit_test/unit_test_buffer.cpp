@@ -20,64 +20,31 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
+#include <newsflash/config.h>
+
 #include <boost/test/minimal.hpp>
+#include <cstring>
 #include "../buffer.h"
 
 int test_main(int, char*[])
 {
-    {
-        corelib::buffer buff;
+    newsflash::buffer buff(1024);
+    BOOST_REQUIRE(buff.size() == 0);
+    BOOST_REQUIRE(buff.available() == 1024);
 
-        BOOST_REQUIRE(buff.capacity() == 0);
-        BOOST_REQUIRE(buff.size() == 0);
+    const char* str = "jeesus ajaa mopolla";
 
-        buff.reserve(100);
-        BOOST_REQUIRE(buff.size() == 0);
-        BOOST_REQUIRE(buff.capacity() >= 100);
+    std::strcpy(buff.back(), str);
+    buff.append(std::strlen(str));
 
-        buff.resize(1);
-        BOOST_REQUIRE(buff.size() == 1);
-        BOOST_REQUIRE(buff.capacity() == 100);
-        buff[0] = 0x10;
+    BOOST_REQUIRE(buff.size() == std::strlen(str));
 
-        buff.resize(50);
-        BOOST_REQUIRE(buff.size() == 50);
-        BOOST_REQUIRE(buff.capacity() == 100);
-        buff[49] = 0x11;
+    auto other = buff.split(6);
 
-        buff.resize(150);
-        BOOST_REQUIRE(buff.size() == 150);
-        BOOST_REQUIRE(buff.capacity() >= 150);
-        BOOST_REQUIRE(buff[0] == 0x10);
-        BOOST_REQUIRE(buff[49] == 0x11);
-
-        buff.resize(0);
-        BOOST_REQUIRE(buff.size() == 0);
-        BOOST_REQUIRE(buff.empty());
-    }
-
-
-    {
-        corelib::buffer buff;
-        buff.resize(512);
-        buff.offset(100);
-
-        corelib::buffer::header header(buff);
-        BOOST_REQUIRE(header.data() == buff.data());
-        BOOST_REQUIRE(header.size() == 100);
-
-        corelib::buffer::payload body(buff);
-        BOOST_REQUIRE(body.data() == buff.data() + 100);
-        BOOST_REQUIRE(body.size() == 412);
-
-        body.crop(1);
-        BOOST_REQUIRE(body.size() == 411);
-        BOOST_REQUIRE(body.data() == buff.data() + 101);
-        body.crop(2);
-        BOOST_REQUIRE(body.size() == 409);
-        BOOST_REQUIRE(body.data() == buff.data() + 103);
-    }
-
+    BOOST_REQUIRE(other.size() == 6);
+    BOOST_REQUIRE(buff.size() == std::strlen(str) - 6);
+    BOOST_REQUIRE(!std::memcmp(buff.head(), &str[6], buff.size()));
+    BOOST_REQUIRE(!std::memcmp(other.head(), "jeesus", 6));
 
     return 0;
 }

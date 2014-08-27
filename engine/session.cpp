@@ -67,12 +67,11 @@ public:
         if (len == 0)
             return false;
 
-        const auto code = nntp::scan_response({200, 201, 400, 502}, buff.head(), len);
-        if (code == 400)
-            st.error = error::service_temporarily_unavailable;
-        else if (code == 502)
-            st.error = error::service_permanently_unavailable;
-
+        // i have never seen these actually being used so we're just 
+        // going to pretend they dont exist.
+        // 400 service temporarily unavailable
+        // 502 service permantly unavailable
+        const auto code = nntp::scan_response({200, 201}, buff.head(), len);
         buff.clear();
         return true;
     }
@@ -344,6 +343,7 @@ bool session::parse_next(buffer& buff, buffer& out)
     if (state_->error != error::none)
     {
         state_->state = state::error;
+        pipeline_.clear();
         return true;
     }
     else if (state_->auth_required)

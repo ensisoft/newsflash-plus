@@ -135,15 +135,15 @@ QString format(const app::event& event)
         break;
 
         case app::event::when::this_month:
-        str = date.toString("dddd, dd");
+        str = date.toString("dddd dd MMM hh:mm");
         break;
 
         case app::event::when::this_year:
-        str = date.toString("MMMM, dd");
+        str = date.toString("dddd dd MMM hh:mm");
         break;
 
         case app::event::when::before:
-        str = date.toString("yyyy, MMM, dd");
+        str = date.toString("dddd dd MMM hh:mm");
         break;
     }
     return str;

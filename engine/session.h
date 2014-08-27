@@ -39,8 +39,6 @@ namespace newsflash
     public:
         enum class error {
             none, 
-            service_temporarily_unavailable,
-            service_permanently_unavailable,
             authentication_rejected,
             no_permission
         };
