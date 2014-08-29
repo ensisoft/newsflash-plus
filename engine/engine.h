@@ -22,166 +22,109 @@
 
 #pragma once
 
-// #include <corelib/connection.h>
-// #include <corelib/speedometer.h>
-// #include <corelib/throttle.h>
-// #include <corelib/bodylist.h>
-// #include <corelib/xoverlist.h>
-// #include <msglib/queue.h>
-// #include <msglib/message.h>
-// #include <memory>
-// #include <mutex>
-// #include <vector>
-// #include <deque>
-// #include <string>
-// #include <queue>
-// #include <cstdint>
-// #include "task_state_machine.h"
-// #include "settings.h"
+#include <newsflash/config.h>
 
-// namespace newsflash
-// {
-//     struct file;    
-//     struct account;
-//     struct task;
-//     struct connection;
-//     class listener;
+#include <functional>
+#include <mutex>
+#include <string>
+#include <deque>
+#include <memory>
+#include <vector>
+#include <queue>
+#include <cstdint>
 
-//     // engine manages collections of connections
-//     // and download tasks/items. 
-//     class engine
-//     {
-//         struct task_t;
-//         struct conn_t;
-//         struct batch_t;        
+#include "ui/account.h"
+#include "ui/task.h"
+#include "ui/connection.h"
+#include "ui/error.h"
+#include "ui/file.h"
+#include "ui/settings.h"
+#include "threadpool.h"
 
-//     public:
+namespace newsflash
+{
+    class task;
+    class connection;
+    class action;
 
-//         // list provides read-only access to the current objects
-//         // managed by the engine. (tasks, connections and batches)
-//         template<typename InternalType, typename VisibleType>
-//         class list
-//         {
-//         public:
-//             typedef std::deque<std::unique_ptr<InternalType>> list_type;
+    class engine
+    {
+    private:
+        class batch;
 
-//             list(list_type* list) : list_(list)
-//             {}
-//             std::size_t size() const
-//             {
-//                 return list_->size();
-//             }
+    public:
+        // this callback is invoked when an error has occurred.
+        // the error object carries information and details about 
+        // what happened. 
+        std::function<void (const ui::error& error)> on_error;
 
-//             const VisibleType& operator[](std::size_t i) const
-//             {
-//                 assert(i < size());
+        // this callback is invoked when a new file has been completed.
+        std::function<void (const ui::file& file)> on_file;
 
-//                 const auto& private_item = (*list_)[i];
-//                 const auto& visible_item = get_visible_state(private_item);
-//                 return visible_item;
-//             }
+        // this callback is invoked when there are pending events inside the engine
+        // the handler function should organize for a call into engine::pump() 
+        // to process the pending events. 
+        // note that this callback handler needs to be thread safe and the notifications
+        // can come from multiple threads inside the engine.
+        std::function<void ()> on_async_notify;
 
-//         private:
-//             list_type* list_;
-//         };
+        template<typename UiType, typename EngineType>
+        class list
+        {
+        public:
+            using list_t = std::deque<std::unique_ptr<EngineType>>;
 
-//         typedef list<task_t, newsflash::task> tasklist;
-//         typedef list<conn_t, newsflash::connection> connlist;
-//         typedef list<batch_t, newsflash::task> batchlist;
+            list(list_t& list) : list_(&list)
+            {}
 
-//         struct stats {
-//             std::uint64_t bytes_downloaded;
-//             std::uint64_t bytes_written;
-//             std::uint64_t bytes_queued;
-//         };
+            UiType operator[](std::size_t i) const 
+            { return (*list_)[i]->get_ui_state(); }
 
-//         // create a new engine with the given listener object and logs folder.
-//         engine(listener& callback, std::string logs);
-//        ~engine();
+            std::size_t size() const 
+            { return list_->size(); }
+        private:
+            list_t* list_;
+        };
 
-//         // set the engine settings.
-//         void set(const newsflash::settings& settings);
+        engine(std::string logdir);
+       ~engine();
 
-//         // set an account in the engine.
-//         // if the account already exists then the account is updated, otherwise add account.
-//         void set(const newsflash::account& account);
+        using task_list = list<ui::task, newsflash::task>;
+        using conn_list = list<ui::connection, newsflash::connection>;
 
+        void download(const ui::account& account, const ui::file& file);
 
-//         tasklist tasks() const;
+        void download(const ui::account& account, const std::vector<ui::file>& files);
 
-//         connlist conns() const;
+        void pump();
 
+        void configure(const ui::settings& settings);
 
+    private:
+        void on_action_complete(action* act);
+    private:
+        void start();        
+        void stop();
+        void complete_action(action* act, connection* conn);
+        void complete_action(action* act, task* task);
+        void remove_completed_tasks();
 
-//         // download a single file
-//         void download(const newsflash::account& account, const newsflash::file& file);
+    private:
+        std::deque<std::unique_ptr<task>> tasks_;
+        std::deque<std::unique_ptr<connection>> conns_;
+//        std::deque<std::unique_ptr<batch>> batches_;
+        std::vector<ui::account> accounts_;
+    private:
+        std::uint64_t bytes_downloaded_;
+        std::uint64_t bytes_queued_;
+        std::uint64_t bytes_written_;
+    private:
+        std::mutex mutex_;
+        std::queue<action*> actions_;
+    private:
+        threadpool threads_;
+    private:
+        ui::settings settings_;
+    };
+} // newsflash
 
-//         // download a batch of files
-//         void download(const newsflash::account& account, const std::vector<newsflash::file>& files);
-
-//         // process pending messages coming from asynchronous worker threads.
-//         // this function should be called as a response to listener::on_events()
-//         void pump();
-
-//         // master switch. when stopped all processing is halted
-//         // and connections are killed.
-//         void stop();
-
-//         void start();
-
-//         bool is_running() const;
-
-
-//         // request the engine to initiate permanent shutdown. when the engine is ready is shutting
-//         // down a callback is invoked. Then the engine can be deleted.
-//         // This 2 phase stop allows the GUI to for example animate while 
-//         // the engine performs an orderly shutdown
-//         //void shutdown();        
-
-//     private:
-//         void on_task_start(task_t* task, batch_t* batch);
-//         void on_task_stop(task_t* task, batch_t* batch);
-//         void on_task_action(task_t* task, batch_t* batch, task::action action);
-//         void on_task_state(task_t* task, batch_t* batch, task::state current, task::state next);
-//         void on_task_body(task_t* task, batch_t* batch, corelib::bodylist::body&& body);
-//         void on_task_xover(task_t* task, batch_t* batch, corelib::xoverlist::xover&& xover);
-//         void on_task_xover_prepare(task_t* task, batch_t* batch, std::size_t range_count);
-
-//         void on_conn_ready(conn_t* conn);
-//         void on_conn_error(conn_t* conn, corelib::connection::error error, const std::error_code& system_error);
-//         void on_conn_read(conn_t* conn, std::size_t bytes);
-//         void on_conn_auth(conn_t* conn, std::string& user, std::string& pass);
-
-//     private:
-//         void start_next_task(std::size_t account);
-//         void start_connections(std::size_t account);
-
-//     private:
-//         newsflash::account& find_account(std::size_t id);
-
-//     private:
-//         typedef std::function<void (void) > message;
-
-//     private:
-//         struct process_buffer;
-
-//     private:
-//         std::string logs_;
-//         std::mutex mutex_;
-//         std::deque<std::unique_ptr<task_t>> tasks_;
-//         std::deque<std::unique_ptr<conn_t>> conns_;
-//         std::deque<std::unique_ptr<batch_t>> batches_;
-//         std::vector<account> accounts_;
-//         std::uint64_t bytes_downloaded_;
-//         std::uint64_t bytes_written_;
-//         std::uint64_t bytes_queued_;
-//         double bps_;
-//         corelib::throttle throttle_;
-//         corelib::speedometer meter_;
-//         msglib::queue<message> messages_;
-//         settings settings_;
-//         listener& listener_;
-//         bool stop_;
-//     };
-
-// } // engine

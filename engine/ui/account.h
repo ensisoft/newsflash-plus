@@ -31,6 +31,8 @@
 
 namespace newsflash
 {
+    namespace ui {
+
     // newsserver account. 
     struct account 
     {
@@ -81,4 +83,5 @@ namespace newsflash
         //bool is_fill_account;
     };
 
+} // ui
 }// engine

@@ -1,4 +1,4 @@
-// Copyright (c) 2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -18,121 +18,48 @@
 //  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 //  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-//  THE SOFTWARE.            
+//  THE SOFTWARE.
 
-#pragma once
+#pragma once 
 
 #include <newsflash/config.h>
+#include <memory>
 
-#include <cstddef>
-#include <string>
+#include "ui/task.h"
 
 namespace newsflash
 {
-    // a single task that the engine is performing, such as download
-    // or header update.
-    struct task
+    class action;
+    class cmdlist;
+
+    class task 
     {
-        enum class error {
-            // succesfully completed without any errors.
-            none,
+    public:
+        using state = ui::task::state;
+        using error = ui::task::error;
 
-            // the requested data was not available
-            unavailable,
+        virtual ~task() = default;
 
-            // the requested data was taken down
-            dmca,
+        virtual ui::task get_ui_state() const = 0;
 
-            // local system error has occurred 
-            // for example a file cannot be created because of insufficient
-            // permissions or storage space is exhausted.
-            system,
-        };
+        virtual void start() = 0;
 
-        enum class state {
-            // the task is currently queued in the engine
-            // and will be scheduled for execution at some point.
-            queued,
+        virtual void kill() = 0;
 
-            // task was being run before, but now it's waiting
-            // for input data. (for example connection went down,
-            // or there are no free connections).
-            waiting,
+        virtual void flush() = 0;
 
-            // currently active and performing actions on data.
-            // see action for details.
-            active,
+        virtual void pause() = 0;
 
-            // a cap for limiting max buffered data was hit.
-            // drain the queue below the treshold to avoid
-            // consuming too much memory.
-            debuffering,
+        virtual bool complete(std::unique_ptr<action> act) = 0;
 
-            // paused by the user
-            paused,
+        virtual std::size_t get_id() const = 0;
 
-            // task is done. see damaged and error flags for details
-            complete,
+        virtual std::size_t get_account() const = 0;
 
-            // killed, will be removed.
-            killed
-        };
+        virtual state get_state() const = 0;
 
-        enum class action {
-            // no action
-            none,
-
-            // task is being prepared 
-            prepare,
-
-            // flushing buffered data to the disk
-            flush,
-
-            // processing data buffer(s)
-            process,
-
-            // finaling the task data
-            finalize,
-
-            // canceling pending data and changes so far.
-            cancel,
-
-            kill
-        };
-
-        // error if any
-        error err;
-
-        // current task execution state.
-        state st;
-
-        // current data action
-        action act;
-
-        // unique task id.
-        std::size_t id;
-
-        // the account to which the task is connected.
-        std::size_t account;
-
-        std::size_t batch;
-
-        // the human readable description of the task.
-        std::string desc;
-
-        // download/transfer size in bytes (if known)
-        std::uint64_t size;
-
-        // the time (in seconds) elapsed running the task. 
-        int runtime; 
-
-        // the estimated completion time (in seconds), or -1 if not known.
-        int eta;
-
-        // the current completion %  (range 0.0 - 100.0)
-        double completion;
-
-        bool damaged;
+        virtual error get_error() const = 0;
+    protected:
+    private:
     };
-
-} // engine
+} // newsflash

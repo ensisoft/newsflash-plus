@@ -58,6 +58,8 @@ namespace newsflash
 
         void reset();
 
+        void start();
+
         bool parse_next(buffer& buff, buffer& out);
 
         bool pending() const;

@@ -20,95 +20,43 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.            
 
+#include <newsflash/config.h>
+
 #include <boost/test/minimal.hpp>
 #include <atomic>
 #include "../threadpool.h"
-
-std::atomic_int counter;
-
-struct counter_increment : public corelib::threadpool::work
-{
-    void execute() NOTHROW override
-    {
-        counter++;
-    }
-};
-
-
-struct affinity_tester : public corelib::threadpool::work
-{
-    affinity_tester(std::thread::id id) : tid(id)
-    {}
-
-    virtual void execute() NOTHROW override
-    {
-        BOOST_REQUIRE(tid == std::this_thread::get_id());
-    }
-    const std::thread::id tid;
-};
-
-struct affinity_grabber : public corelib::threadpool::work
-{
-    affinity_grabber() : ready(false)
-    {}
-
-    virtual void execute() NOTHROW override
-    {
-        std::lock_guard<std::mutex> lock(mutex);
-        tid = std::this_thread::get_id();
-        ready = true;
-        cond.notify_one();
-    }
-    void wait()
-    {
-        std::unique_lock<std::mutex> lock(mutex);
-        cond.wait(lock, [&]() { return ready; });
-    }
-
-    std::thread::id tid;
-    std::mutex mutex;
-    std::condition_variable cond;
-    bool ready;
-};
-
-void test_work_queue()
-{
-    corelib::threadpool pool(1);
-
-    for (int i=0; i<5000; ++i)
-    {
-        auto tid = pool.allocate();
-        pool.submit(std::unique_ptr<counter_increment>(new counter_increment), tid);
-    }
-
-    pool.drain();
-
-    BOOST_REQUIRE(counter == 5000);
-}
-
-void test_affinity()
-{
-    corelib::threadpool pool(5);
-
-    affinity_grabber grabber;
-
-    const auto thread = pool.allocate();
-
-    pool.submit(&grabber, thread);
-    grabber.wait();
-
-    for (int i=0; i<5000; ++i)
-    {
-        std::unique_ptr<affinity_tester> work(new affinity_tester(grabber.tid));
-        pool.submit(std::move(work), thread);
-    }
-
-}
+#include "../action.h"
 
 int test_main(int, char*[])
 {
-    test_work_queue();
-    test_affinity();
+    std::atomic_int counter;
+
+    struct action : public newsflash::action
+    {
+    public:
+        action(std::atomic_int& c) : counter_(c)
+        {}
+
+        virtual void xperform()
+        {
+            counter_++;
+        }
+    private:
+        std::atomic_int& counter_;
+    };
+
+    newsflash::threadpool threads(5);
+    threads.on_complete = [](newsflash::action* a) { delete a; };
+
+    for (int i=0; i<10000; ++i)
+    {
+        threads.submit(new action(counter));
+    }
+
+    threads.wait();
+
+    BOOST_REQUIRE(counter == 10000);
+
 
     return 0;
 }

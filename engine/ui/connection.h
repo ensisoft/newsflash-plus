@@ -22,11 +22,15 @@
 
 #pragma once
 
+#include <newsflash/config.h>
+
 #include <cstddef>
 #include <string>
 
 namespace newsflash
 {
+    namespace ui {
+
     // a connection managed by the engine.
     struct connection
     {
@@ -45,33 +49,41 @@ namespace newsflash
 
             // connection was made to the server but the server
             // denied access based on incorrect authentication.
-            authentication_failed,
+            authentication_rejected,
 
-            // a NNTP protocol fault has occurred. wth.
-            protocol,
+            no_permission,
 
             // network problem, for example network is down.
             network,
 
             // active timeout, usully preceeds a network problem.
-            timeout
+            timeout,
+
+            other
         }; 
 
         enum class state {
+            // disconnected state
+            disconnected,
+
+            // connection is resolving the host address 
+            resolving,
 
             // connection is connecting to the remote host.
             connecting,
 
-            // connection is authenticating.
-            authenticating,
+            // connection is initializing the protocol stack
+            initializing,
+
+            // connection is connected, idle and ready.
+            connected,
 
             // connection is transferring data.
             active,
 
-            // connection is idle and ready.
-            ready,
+            // connection is currently disconnecting.
+            disconnecting,
 
-            // connection has suffered an error.
             error
         };
 
@@ -106,4 +118,5 @@ namespace newsflash
         int bps;
     };
 
+} // ui
 } // engine

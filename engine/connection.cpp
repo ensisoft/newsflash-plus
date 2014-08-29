@@ -36,6 +36,22 @@
 namespace newsflash
 {
 
+class connection::exception : public std::exception
+{
+public:
+    exception(std::string what, connection::error err) : what_(std::move(what)), error_(err)
+    {}
+
+    const char* what() const noexcept
+    { return what_.c_str(); }
+
+    connection::error error() const noexcept
+    { return error_; }
+private:
+    std::string what_;
+    connection::error error_;
+};
+
 // resolve the host name to an ipv4 address 
 class connection::resolve : public action
 {
@@ -43,7 +59,7 @@ public:
     resolve(std::string hostname) : hostname_(std::move(hostname)), address_(0)
     {}
 
-    virtual void perform(event& cancellation) override
+    virtual void xperform() override
     {
         address_ = resolve_host_ipv4(hostname_);
         if (address_ == 0)
@@ -66,19 +82,19 @@ private:
 class connection::connect : public action
 {
 public:
-    connect(ipv4addr_t addr, std::uint16_t port, bool ssl) : addr_(addr), port_(port)
+    connect(event& cancel, ipv4addr_t addr, std::uint16_t port, bool ssl) : addr_(addr), port_(port), cancel_(cancel)
     {
         if (ssl)
             socket_.reset(new sslsocket);
         else socket_.reset(new tcpsocket);
     }
 
-    virtual void perform(event& cancellation) override
+    virtual void xperform() override
     {
         socket_->begin_connect(addr_, port_);
 
         auto connect = socket_->wait(true, false);
-        auto cancel  = cancellation.wait();
+        auto cancel  = cancel_.wait();
         newsflash::wait(connect, cancel);
         if (cancel)
             return;
@@ -93,13 +109,16 @@ private:
 private:    
     ipv4addr_t addr_;
     std::uint16_t port_;
+private: 
+    event& cancel_;
 };
 
 class connection::initialize : public action
 {
 public:
-    initialize(std::unique_ptr<socket> socket, std::string username, std::string password) 
-       : socket_(std::move(socket)), username_(std::move(username)), password_(std::move(password))
+    initialize(event& cancel, std::unique_ptr<socket> socket, std::string username, std::string password) 
+       : socket_(std::move(socket)), username_(std::move(username)), password_(std::move(password)), cancel_(cancel)
+
     {
         session_.reset(new session);
         session_->on_auth = std::bind(&initialize::do_auth, this, 
@@ -107,7 +126,7 @@ public:
         session_->on_send = std::bind(&initialize::do_send, this,
             std::placeholders::_1);
     }
-    virtual void perform(event& cancellation) override
+    virtual void xperform() override
     {
         session_->start();
 
@@ -115,16 +134,16 @@ public:
         newsflash::buffer temp(1);
         while (session_->pending())
         {
-            auto data   = socket_->wait(true, false);
-            auto cancel = cancellation.wait();
-            newsflash::wait(data, cancel);
-            if (cancel) 
-                return;
-
             while (!session_->parse_next(buff, temp))
             {
+                auto data   = socket_->wait(true, false);
+                auto cancel = cancel_.wait();
+                newsflash::wait(data, cancel);
+                if (cancel) 
+                    return;
+
                 const auto bytes = socket_->recvsome(buff.back(), buff.available());
-                if (bytes == 0)
+                if (bytes == 0) 
                     throw std::runtime_error("socket was closed  unexpectedly");
                 buff.append(bytes);
             }
@@ -150,37 +169,77 @@ private:
     std::unique_ptr<session> session_;
     std::string username_;
     std::string password_;
-
+private:
+    event& cancel_;
 };
 
-connection::connection() : state_(state::disconnected)
-{}
+connection::connection(std::size_t account, std::size_t id)
+{
+    ui_.err     = error::none;
+    ui_.account = account;
+    ui_.id      = id;
+    ui_.task    = 0;
+    ui_.down    = 0;
+    ui_.host    = "";
+    ui_.desc    = "";
+    ui_.secure  = false;
+    ui_.bps     = 0;
+}
 
 connection::~connection()
 {}
 
 void connection::connect(const connection::server& serv)
 {
+    cancellation_.reset();
+
     std::unique_ptr<newsflash::action> act(new connection::resolve(serv.hostname));
     on_action(std::move(act));
     serv_  = serv;
-    state_ = state::resolving;
+    ui_.st     = state::resolving;
+    ui_.err    = error::none;    
+    ui_.host   = serv.hostname;
+    ui_.secure = serv.use_ssl;
 }
 
-bool connection::complete(std::unique_ptr<action> act)
+void connection::complete(std::unique_ptr<action> act)
 {
     if (act->has_exception())
     {
         socket_.reset();
         session_.reset();
-        state_ = state::error;
-
-        act->rethrow();
+        ui_.st = state::error;
+        try
+        {
+            act->rethrow();
+        }
+        catch (const exception& e)
+        {
+            LOG_E(e.what());
+            ui_.err = e.error();
+        }
+        catch (const socket::tcp_exception& e)
+        {
+            const auto errc = e.code();
+            LOG_E(e.what(), ", ", errc.message());            
+            ui_.err = error::network;
+        }
+        catch (const std::system_error& e)
+        {
+            LOG_E("System error: ", e.what(), e.code().message());
+            
+        }
+        catch (const std::exception& e)
+        {
+            LOG_E("Exception: ", e.what());
+            ui_.err = error::other;
+        }
+        return;
     }
 
     std::unique_ptr<action> next;
 
-    switch (state_)
+    switch (ui_.st)
     {
         case state::resolving:
             {
@@ -188,8 +247,8 @@ bool connection::complete(std::unique_ptr<action> act)
                 const auto resolved_address = action_resolve_host.get_resolved_address();
                 const auto port = serv_.port;
                 const auto ssl = serv_.use_ssl;
-                next.reset(new class connect(resolved_address, port, ssl));
-                state_ = state::connecting;
+                next.reset(new class connect(cancellation_, resolved_address, port, ssl));
+                ui_.st = state::connecting;
             }
             break;
 
@@ -199,28 +258,28 @@ bool connection::complete(std::unique_ptr<action> act)
                 const auto username = serv_.username;
                 const auto password = serv_.password;
                 auto connected_socket = action_connect.get_connected_socket();
-                next.reset(new class initialize(std::move(connected_socket), username, password));
-                state_ = state::initialize;
+                next.reset(new class initialize(cancellation_, std::move(connected_socket), username, password));
+                ui_.st = state::initializing;
             }
             break;
 
-        case state::initialize:
+        case state::initializing:
             {
 
-                state_ = state::connected;
+                ui_.st = state::connected;
             }
             break;
 
         case state::active:
             {
 
-                state_ = state::connected;
+                ui_.st = state::connected;
             }
             break;
 
         case state::disconnecting:
             {
-                state_ = state::disconnected;
+                ui_.st = state::disconnected;
             }
             break;
 
@@ -231,12 +290,8 @@ bool connection::complete(std::unique_ptr<action> act)
             break;
     }
 
-    if (!next)
-        return true;
-
-    on_action(std::move(next));
-    return false;
-
+    if (next)
+        on_action(std::move(next));
 }
 
 } // newsflash

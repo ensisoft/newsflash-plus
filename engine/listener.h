@@ -24,9 +24,11 @@
 
 namespace newsflash
 {
-    struct file;
-    struct task;
-    struct error;
+    namespace ui {
+        struct file;
+        struct task;
+        struct error;
+    }
 
     // listener interface for listening to engine events.
     class listener
@@ -35,10 +37,10 @@ namespace newsflash
         virtual ~listener() = default;
 
         // an error has occurred. 
-        virtual void handle(const newsflash::error& error) = 0;
+        virtual void handle(const ui::error& error) = 0;
 
         // a file completed
-        virtual void acknowledge(const newsflash::file& file) = 0;
+        virtual void acknowledge(const ui::file& file) = 0;
 
         // notify the listener that there are pending messages in the engine's
         // message queue. the callback should organize for a call to engine::pump()

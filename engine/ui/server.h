@@ -22,23 +22,37 @@
 
 #pragma once
 
-#include <system_error>
-#include <string>
+#include <newsflash/config.h>
 
+#include <string>
+#include <cstddef>
 
 namespace newsflash
 {
-    // a system error, for example when file cannot be created, network error etc.
-    struct error
+    namespace ui {
+
+    // newsserver configuration
+    struct server 
     {
-        // description of the error.
-        std::string what;
+        // hostname or IP4/6 address.
+        std::string host; 
 
-        // the resource in question, i.e. filepath or hostname
-        std::string resource;
+        // the port number. typically Usenet servers
+        // run on port 119 for the general non-encrypted
+        // server and 443 or 563 for an encrypted server
+        // if that is supported.
+        std::uint16_t port; // port
 
-        // system specific error code.
-        std::error_code code;
+        // true if ipv6 should be used.
+        bool ipv6;          
+
     };
 
+    inline
+    bool is_valid(const server& server)
+    {
+        return !server.host.empty() && server.port;
+    }
+
+} // ui
 } // engine

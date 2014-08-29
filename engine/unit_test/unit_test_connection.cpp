@@ -128,75 +128,75 @@ void test_connection()
     LOG_OPEN("test", "test_connection.log");
 
     // resolve fails
-    // {
-    //     nf::connection::server serv;
-    //     serv.hostname = "foobar";
-    //     serv.port     = 1818;
-    //     conn.connect(serv);
-    //     BOOST_REQUIRE(conn.get_state() == state::resolving);
-    //     act->perform();
-    //     BOOST_REQUIRE(act->has_exception());
-    //     REQUIRE_EXCEPTION(conn.complete(std::move(act)));
-    //     BOOST_REQUIRE(conn.get_state() == state::error);
+    {
+        nf::connection::server serv;
+        serv.hostname = "foobar";
+        serv.port     = 1818;
+        conn.connect(serv);
+        BOOST_REQUIRE(conn.get_state() == state::resolving);
+        act->perform();
+        BOOST_REQUIRE(act->has_exception());
+        REQUIRE_EXCEPTION(conn.complete(std::move(act)));
+        BOOST_REQUIRE(conn.get_state() == state::error);
 
-    //     LOG_D("end");
-    //     LOG_FLUSH();
-    // }
+        LOG_D("end");
+        LOG_FLUSH();
+    }
 
-    // // connect fails
-    // {
-    //     nf::connection::server serv;
-    //     serv.hostname = "localhost";
-    //     serv.port     = 1818;
-    //     serv.use_ssl  = false;
-    //     conn.connect(serv);
-    //     act->perform();
-    //     BOOST_REQUIRE(!act->has_exception());
+    // connect fails
+    {
+        nf::connection::server serv;
+        serv.hostname = "localhost";
+        serv.port     = 1818;
+        serv.use_ssl  = false;
+        conn.connect(serv);
+        act->perform();
+        BOOST_REQUIRE(!act->has_exception());
 
-    //     conn.complete(std::move(act));
-    //     BOOST_REQUIRE(conn.get_state() == state::connecting);
-    //     act->perform();
-    //     BOOST_REQUIRE(act->has_exception());
-    //     REQUIRE_EXCEPTION(conn.complete(std::move(act)));
-    //     BOOST_REQUIRE(conn.get_state() == state::error);
+        conn.complete(std::move(act));
+        BOOST_REQUIRE(conn.get_state() == state::connecting);
+        act->perform();
+        BOOST_REQUIRE(act->has_exception());
+        REQUIRE_EXCEPTION(conn.complete(std::move(act)));
+        BOOST_REQUIRE(conn.get_state() == state::error);
 
-    //     LOG_D("end");        
-    //     LOG_FLUSH();        
-    // }
+        LOG_D("end");        
+        LOG_FLUSH();        
+    }
 
-    // // nntp init fails
-    // {
-    //     auto sp = open_server();
+    // nntp init fails
+    {
+        auto sp = open_server();
 
-    //     nf::connection::server serv;
-    //     serv.hostname = "localhost";
-    //     serv.port     = sp.second;  //{}, {"this is total bullcrap"});
-    //     serv.use_ssl  = false;
-    //     conn.connect(serv);
-    //     act->perform(); // resolve
-    //     conn.complete(std::move(act));
+        nf::connection::server serv;
+        serv.hostname = "localhost";
+        serv.port     = sp.second;  //{}, {"this is total bullcrap"});
+        serv.use_ssl  = false;
+        conn.connect(serv);
+        act->perform(); // resolve
+        conn.complete(std::move(act));
 
-    //     std::deque<std::string> commands;
-    //     std::deque<std::string> responses = {
-    //         "this is crap response"
-    //     };
-    //     std::thread thread(std::bind(server_loop, sp.first, commands, responses));
+        std::deque<std::string> commands;
+        std::deque<std::string> responses = {
+            "this is crap response"
+        };
+        std::thread thread(std::bind(server_loop, sp.first, commands, responses));
 
-    //     std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
-    //     act->perform(); // connect
-    //     conn.complete(std::move(act));
-    //     BOOST_REQUIRE(conn.get_state() == state::initialize);
-    //     act->perform(); // initialize
-    //     BOOST_REQUIRE(act->has_exception());
-    //     REQUIRE_EXCEPTION(conn.complete(std::move(act)));
-    //     BOOST_REQUIRE(conn.get_state() == state::error);
+        act->perform(); // connect
+        conn.complete(std::move(act));
+        BOOST_REQUIRE(conn.get_state() == state::initialize);
+        act->perform(); // initialize
+        BOOST_REQUIRE(act->has_exception());
+        REQUIRE_EXCEPTION(conn.complete(std::move(act)));
+        BOOST_REQUIRE(conn.get_state() == state::error);
 
-    //     thread.join();
+        thread.join();
 
-    //     LOG_D("end");        
-    //     LOG_FLUSH();
-    // }
+        LOG_D("end");        
+        LOG_FLUSH();
+    }
 
     // authentication fails
     {

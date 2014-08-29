@@ -35,64 +35,29 @@
 
 namespace newsflash
 {
+    class action;
+
     class threadpool
     {
     public:
-        class work 
-        {
-        public:
-            virtual ~work() = default;
-
-            // execute this chunk of work.
-            // it is an error to allow an exception to propagate 
-            // out of the execute() function
-            virtual void execute() NOTHROW = 0;
-        protected:
-        private:
-        };
-
-        // thread identifier type
-        typedef std::size_t tid_t;
+        std::function<void (action*)> on_complete;
 
         // initialize the pool with num_threads.
         // precondition: num_threads > 0
         threadpool(std::size_t num_threads);
        ~threadpool();
 
-        // allocate a thread from the pool.
-        // the thread is subsequently identified by the returned tid.
-        tid_t allocate();
+        void submit(action* act);
 
-        // submit work to the threadpool to be executed the thread
-        // specified by the tid.
-        // the ownership of the work object to be executed
-        // is transferred to the threadpool.
-        void submit(std::unique_ptr<work> work, tid_t key);
-
-        // submit work to the threadpool with the given
-        // thread affinity key.
-        // the ownership of the work object remains with the caller
-        // and the object needs to remain valid untill the work
-        // has been executed.
-        void submit(work* work, tid_t key);
-
-        // submit work to the threadpool with the given thread affinity key.
-        void submit(std::function<void (void)> work, tid_t key);
-
-        // block untill all the work queues are drained.
-        void drain();
+        void wait();
 
    private:
-        enum class action {
-            none, quit, work
-        };
-
         struct thread {
             std::mutex mutex;
             std::condition_variable cond;
             std::unique_ptr<std::thread> thread;
-            std::queue<std::unique_ptr<work>> queue;
-            action act;
+            std::queue<action*> queue;
+            bool run_loop;
         };
 
         typedef std::vector<std::unique_ptr<thread>> container;
@@ -103,9 +68,9 @@ namespace newsflash
     private:
         std::condition_variable cond_;
         std::mutex mutex_;
-        std::size_t qsize_;
-        container threads_;
-        tid_t key_;
+        std::vector<std::unique_ptr<thread>> threads_;
+        std::size_t round_robin_;
+        std::atomic<std::size_t> queue_size_;
     };
 
 } // newsflash

@@ -29,6 +29,8 @@
 #include <string>
 #include <stdexcept>
 #include <cstdint>
+#include "ui/connection.h"
+#include "event.h"
 
 namespace newsflash
 {
@@ -40,39 +42,8 @@ namespace newsflash
     class connection
     {
     public:
-        enum class error {
-            none, 
-            authentication_rejected,
-            no_permission
-        };
-
-        enum class state {
-            disconnected, 
-            resolving, 
-            connecting,
-            initialize, 
-            connected, 
-            active, 
-            disconnecting,
-            error
-        };
-
-        class exception : public std::exception
-        {
-        public:
-            exception(std::string what, connection::error err) : what_(std::move(what)), error_(err)
-            {}
-
-            const char* what() const noexcept
-            { return what_.c_str(); }
-
-            connection::error error() const noexcept
-            { return error_; }
-        private:
-            std::string what_;
-            connection::error error_;
-        };
-
+        using error = ui::connection::error;
+        using state = ui::connection::state;
 
         std::function<void(std::unique_ptr<action>)> on_action;
 
@@ -84,7 +55,7 @@ namespace newsflash
             bool use_ssl;
         };
 
-        connection();
+        connection(std::size_t account, std::size_t id);
        ~connection();
 
         void connect(const connection::server& serv);
@@ -93,12 +64,27 @@ namespace newsflash
 
         void execute(cmdlist* cmds);
 
-        bool complete(std::unique_ptr<action> act);
+        void complete(std::unique_ptr<action> act);
+
+        void cancel();
 
         state get_state() const 
-        { return state_; }
+        { return ui_.st; }
+
+        error get_error() const 
+        { return ui_.err; }
+
+        std::size_t get_account() const
+        { return ui_.account; }
+
+        std::size_t get_id() const 
+        { return ui_.id; }
+
+        ui::connection get_ui_state() const
+        { return ui_; }
 
     private:
+        class exception;
         class resolve;
         class connect;
         class initialize;
@@ -108,9 +94,11 @@ namespace newsflash
         std::unique_ptr<socket> socket_;
         std::unique_ptr<session> session_;
     private:
-        state state_;
+        event cancellation_;        
     private:
         server serv_;
+    private:
+        ui::connection ui_;
     };
 
 } // newsflash

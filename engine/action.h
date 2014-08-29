@@ -24,12 +24,15 @@
 
 #include <newsflash/config.h>
 #include <exception>
-#include "event.h"
 
 namespace newsflash
 {
     class event;
 
+    // action class encapsulates a single state transition
+    // when the action completes successfully and is returned 
+    // to the originating object the object is expected to complete
+    // a state transition to another state succesfully.
     class action
     {
     public:
@@ -39,26 +42,25 @@ namespace newsflash
 
         virtual ~action() = default;
 
-        action(affinity a = affinity::any_thread) : affinity_(a)
+        action(affinity a = affinity::any_thread) : id_(0), affinity_(a)
         {}
 
+        // return wheather an exception happened in perform()
         bool has_exception() const 
         { return exptr_ != std::exception_ptr(); }
 
-        bool was_canceled() const 
-        {
-            return cancellation_.is_set();
-        }
-
+        // if theres a captured exception throw it
         void rethrow() const 
         {
             std::rethrow_exception(exptr_);
         }
+
+        // perform the action
         void perform()
         {
             try
             {
-                perform(cancellation_);
+                xperform();
             }
             catch (const std::exception& e)
             {
@@ -66,20 +68,21 @@ namespace newsflash
             }
         }
 
-        void cancel()
-        {
-            cancellation_.set();
-        }
-
         affinity get_affinity() const 
         { return affinity_; }
+
+        std::size_t get_id() const 
+        { return id_; }
+
+        std::size_t set_id(std::size_t id) 
+        { return id_ = id;}
+
     protected:
-        virtual void perform(event& cancellation) = 0;        
+        virtual void xperform() = 0;        
 
     private:
         std::exception_ptr exptr_;
-    private:
-        event cancellation_;
+        std::size_t id_;
     private:
         affinity affinity_;
     };

@@ -22,12 +22,16 @@
 
 #pragma once
 
+#include <newsflash/config.h>
+
 #include <deque>
 #include <string>
 #include <cstddef>
 
 namespace newsflash
 {
+    namespace ui {
+
     // a file available in usenet network. each file
     // is identified by a list of message-ids or message numbers.
     struct file
@@ -60,4 +64,5 @@ namespace newsflash
         bool damaged;
     };
 
+} // ui
 } // engine

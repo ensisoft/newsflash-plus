@@ -22,8 +22,13 @@
 
 #pragma once
 
+#include <newsflash/config.h>
+
+#include <cstddef>
+
 namespace newsflash
 {
+    namespace ui {
     // engine settings
     struct settings
     {
@@ -43,6 +48,8 @@ namespace newsflash
         // and kill completed items.
         bool auto_remove_completed;
 
+        bool auto_connect;
+
         // set to true to choose the secure server over the
         // general server with accounts that provide 
         // secure server. if no secure server is available
@@ -57,11 +64,15 @@ namespace newsflash
         // set to true to enable the use of any fillservers.
         // fillservers are used when the primary download
         // server has missing data.
-        bool enable_fillserver;
+        bool enable_fill_account;
+
+        std::size_t fill_account;
 
         // throttle speed to this limit. specified in bytes per second.
         int throttle;
 
     };
 
+    } // ui
+    
 } // engine

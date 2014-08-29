@@ -23,20 +23,22 @@
 #include <functional>
 #include <cassert>
 #include "threadpool.h"
+#include "action.h"
 
 namespace newsflash
 {
 
-threadpool::threadpool(std::size_t num_threads) :qsize_(0), key_(0)
+threadpool::threadpool(std::size_t num_threads) : round_robin_(0)
 {
     assert(num_threads);
 
     for (std::size_t i=0; i<num_threads; ++i)
     {
         std::unique_ptr<threadpool::thread> thread(new threadpool::thread);
-        thread->act = action::none;
-        thread->thread.reset(new std::thread(
-            std::bind(&threadpool::thread_main, this, thread.get())));
+        std::lock_guard<std::mutex> lock(thread->mutex);
+
+        thread->run_loop = true;
+        thread->thread.reset(new std::thread(std::bind(&threadpool::thread_main, this, thread.get())));
         threads_.push_back(std::move(thread));
     }
 }
@@ -47,117 +49,68 @@ threadpool::~threadpool()
     {
         {
             std::lock_guard<std::mutex> lock(thread->mutex);
-            thread->act = action::quit;
+            thread->run_loop = false;
             thread->cond.notify_one();
         }
         thread->thread->join();
     }
 }
 
-threadpool::tid_t threadpool::allocate()
+void threadpool::submit(action* act)
 {
-    auto ret = key_ % threads_.size();
-    ++key_;
-    return ret;
-}
+    const auto num_threads  = threads_.size();
+    const auto affinity = act->get_affinity();
+    thread* worker = nullptr;
 
-void threadpool::submit(std::unique_ptr<work> work, tid_t key)
-{
-    auto& thread = threads_.at(key);
-
-    std::lock_guard<std::mutex> lock(thread->mutex);
-
-    thread->queue.push(std::move(work));
-    thread->act = action::work;
-    thread->cond.notify_one();
-
+    if (affinity == action::affinity::any_thread)
     {
-        std::lock_guard<std::mutex> lock(mutex_);
-        ++qsize_;
+        worker = threads_[round_robin_ % num_threads].get();
+        round_robin_++;
     }
-}
-
-void threadpool::submit(work* work, tid_t key)
-{
-    struct non_delete_wrapper : public work {
-        work* the_real_thing;
-
-        void execute() NOTHROW {
-            the_real_thing->execute();
-        }
-    };
-
-    std::unique_ptr<non_delete_wrapper> wrapper(new non_delete_wrapper);
-    wrapper->the_real_thing = work;
-    submit(std::move(wrapper), key);
-}
-
-void threadpool::submit(std::function<void (void)> work, tid_t key)
-{
-    typedef std::function<void (void)> function_t;
-
-    struct callable_wrapper : public work {
-        function_t func;
-
-        callable_wrapper(function_t&& fun) : func(std::move(fun))
-        {}
-
-        void execute() NOTHROW {
-            func();
-        }
-    };
-
-    std::unique_ptr<callable_wrapper> wrapper(new callable_wrapper(std::move(work)));
-    submit(std::move(wrapper), key);
-}
-
-void threadpool::drain()
-{
-    for (;;)
+    else
     {
-        std::unique_lock<std::mutex> lock (mutex_);
-        if (!qsize_)
-            return;
-        cond_.wait(lock);
+        const auto act_id = act->get_id();        
+        worker = threads_[act_id % num_threads].get();
     }
+
+    std::lock_guard<std::mutex> lock(worker->mutex);
+    worker->queue.push(act);
+    worker->cond.notify_one();    
+
+    queue_size_++;    
 }
+
+void threadpool::wait()
+{
+    while (queue_size_ > 0)
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+}
+
 
 void threadpool::thread_main(threadpool::thread* self)
 {
-    for (;;)
+    while (true)
     {
-        std::unique_ptr<work> work;
-        action act = action::none;
-        do 
+        std::unique_lock<std::mutex> lock(self->mutex);
+        if (!self->run_loop)
+            return;
+        else if (self->queue.empty())
         {
-            std::unique_lock<std::mutex> lock(self->mutex);
-            if (self->act == action::none)
-                self->cond.wait(lock);
-
-            if (self->act == action::work)
-            {
-                assert(!self->queue.empty());
-                work = std::move(self->queue.front());
-                self->queue.pop();
-                if (self->queue.empty())
-                    self->act = action::none;
-
-                act = action::work;
-            }
-            else if (self->act == action::quit)
-                act = action::quit;
+            self->cond.wait(lock);
+            continue;
         }
-        while (act == action::none);
 
-        if (act == action::quit)
-            break;
+        assert(!self->queue.empty());
 
-        work->execute();
+        action* next = self->queue.front();
+        self->queue.pop();
+        lock.unlock();
 
-        // support drain signaling
-        std::lock_guard<std::mutex> lock(mutex_);
-        if (--qsize_ == 0)
-            cond_.notify_all();
+        next->perform();
+
+        on_complete(next);
+
+        queue_size_--;
     }
 }
 
