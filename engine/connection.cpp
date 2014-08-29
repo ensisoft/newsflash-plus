@@ -29,269 +29,214 @@
 #include "logging.h"
 #include "buffer.h"
 #include "session.h"
-#include "event.h"
 #include "cmdlist.h"
+#include "action.h"
+#include "event.h"
 
 namespace newsflash
 {
 
-
-struct connection_state {
-    std::unique_ptr<newsflash::socket> socket;
-    std::unique_ptr<newsflash::session> session;
-    bool run_thread;
-    event cancel;
-};
-
-class connection::exception : public std::exception
+// resolve the host name to an ipv4 address 
+class connection::resolve : public action
 {
 public:
-    exception(std::string what, connection::error err) : what_(std::move(what)), error_(err)
+    resolve(std::string hostname) : hostname_(std::move(hostname)), address_(0)
     {}
 
-    const char* what() const noexcept
-    { return what_.c_str(); }
-
-    connection::error error() const noexcept
-    { return error_; }
-private:
-    std::string what_;
-    connection::error error_;
-};
-
-
-class connection::action 
-{
-public:
-    virtual ~action() = default;
-
-    virtual void perform(connection_state& st) = 0;
-protected:
-private:
-};
-
-
-class connection::connect : public connection::action
-{
-public:
-    connect(std::string username, std::string password, std::string host, std::uint16_t port, bool use_ssl)
-        : username_(std::move(username)), password_(std::move(password)), hostname_(std::move(host)), port_(port)
+    virtual void perform(event& cancellation) override
     {
-        if (use_ssl)
-            socket_.reset(new sslsocket);
-        else socket_.reset(new tcpsocket);
-
-        session_.reset(new session);
-        session_->on_auth = std::bind(&connect::do_auth, this,
-            std::placeholders::_1, std::placeholders::_2);
-        session_->on_send = std::bind(&connect::do_send, this,
-            std::placeholders::_1);        
+        address_ = resolve_host_ipv4(hostname_);
+        if (address_ == 0)
+        {
+            std::error_code errc = get_last_socket_error();
+            throw std::system_error(errc, "resolve host failed");
+        }
     }
 
-    virtual void perform(connection_state& st) override
+    ipv4addr_t get_resolved_address() const 
+    { return address_; }
+
+private:
+    std::string hostname_;
+private:
+    ipv4addr_t address_;
+};
+
+// try to connect a socket to the given resolved host address and port
+class connection::connect : public action
+{
+public:
+    connect(ipv4addr_t addr, std::uint16_t port, bool ssl) : addr_(addr), port_(port)
     {
-        LOG_I("Resolving host address... (", hostname_, ":", port_, ")");
-        const auto addr = resolve_host_ipv4(hostname_);
-        if (!addr)
-            throw connection::exception("resolve host failed", connection::error::resolve_host);
+        if (ssl)
+            socket_.reset(new sslsocket);
+        else socket_.reset(new tcpsocket);
+    }
 
-        LOG_D("Connecting...");
-        socket_->begin_connect(addr, port_);
+    virtual void perform(event& cancellation) override
+    {
+        socket_->begin_connect(addr_, port_);
 
-        // wait shit be here
         auto connect = socket_->wait(true, false);
-        auto cancel  = st.cancel.wait();
+        auto cancel  = cancellation.wait();
         newsflash::wait(connect, cancel);
-        if  (cancel)
-        {
-            LOG_D("Connection was canceled");
+        if (cancel)
             return;
-        }
 
         socket_->complete_connect();
+    }
+    std::unique_ptr<socket> get_connected_socket() 
+    { return std::move(socket_); }
 
-        LOG_D("Initialize session...");
+private:
+    std::unique_ptr<socket> socket_;
+private:    
+    ipv4addr_t addr_;
+    std::uint16_t port_;
+};
 
-        // initialize the session
-        newsflash::buffer buffer(1024);
-        newsflash::buffer tmp(1);
+class connection::initialize : public action
+{
+public:
+    initialize(std::unique_ptr<socket> socket, std::string username, std::string password) 
+       : socket_(std::move(socket)), username_(std::move(username)), password_(std::move(password))
+    {
+        session_.reset(new session);
+        session_->on_auth = std::bind(&initialize::do_auth, this, 
+            std::placeholders::_1, std::placeholders::_2);
+        session_->on_send = std::bind(&initialize::do_send, this,
+            std::placeholders::_1);
+    }
+    virtual void perform(event& cancellation) override
+    {
+        session_->start();
 
+        newsflash::buffer buff(1024);
+        newsflash::buffer temp(1);
         while (session_->pending())
         {
-            while (!session_->parse_next(buffer, tmp))
+            auto data   = socket_->wait(true, false);
+            auto cancel = cancellation.wait();
+            newsflash::wait(data, cancel);
+            if (cancel) 
+                return;
+
+            while (!session_->parse_next(buff, temp))
             {
-                const auto bytes = socket_->recvsome(buffer.back(), buffer.available());
+                const auto bytes = socket_->recvsome(buff.back(), buff.available());
                 if (bytes == 0)
-                    throw connection::exception("connection was closed", connection::error::other);
-                buffer.append(bytes);
+                    throw std::runtime_error("socket was closed  unexpectedly");
+                buff.append(bytes);
             }
         }
         const auto err = session_->get_error();
-        switch (err)
-        {
-            case session::error::authentication_rejected:
-                throw connection::exception("authentication rejected", connection::error::authentication_failed);
-                break;
-            case session::error::no_permission:
-                throw connection::exception("no permission", connection::error::forbidden);
-                break; 
-            case session::error::none:
-                break;
-        }
-
-        LOG_I("Connection established!");
-
-        st.session = std::move(session_);
-        st.socket  = std::move(socket_);
+        if (err == session::error::authentication_rejected)
+            throw connection::exception("authentication rejected", connection::error::authentication_rejected);
+        else if (err == session::error::no_permission)
+            throw connection::exception("no permission", connection::error::no_permission);
     }
 private:
-    void do_auth(std::string& user, std::string& pass)
+    void do_auth(std::string&  user, std::string& pass) const
     { 
         user = username_;
         pass = password_;
     }
     void do_send(const std::string& cmd)
-    {}
-private:
-    std::string username_;
-    std::string password_;
-    std::string hostname_;
-    std::uint16_t port_;
+    {
+        socket_->sendall(cmd.data(), cmd.size());
+    }
 private:
     std::unique_ptr<socket> socket_;
     std::unique_ptr<session> session_;
+    std::string username_;
+    std::string password_;
+
 };
 
-class connection::shutdown : public connection::action
-{
-public:
-    void perform(connection_state& state) override
-    {
-        state.run_thread = false;
-    }
-private:
-};
-
-class connection::execute : public connection::action
-{
-public:
-    void perform(connection_state& state) override
-    {
-        auto& session = *state.session;
-        auto& socket  = *state.socket;
-
-        session.on_send = std::bind(&execute::do_send, this,
-            std::placeholders::_1, std::ref(socket));
-
-        newsflash::buffer buffer(MB(4));
-        newsflash::buffer payload(MB(4));
-
-        while (!cmdlist_->is_done())
-        {
-            cmdlist_->submit(session);
-
-            while (session.pending())
-            {
-                while (!session.parse_next(buffer, payload))
-                {
-                    if (buffer.full())
-                        throw connection::exception("out of buffer space", connection::error::other);
-                    const auto bytes = socket.recvsome(buffer.back(), buffer.available());
-                    if (bytes == 0)
-                        throw connection::exception("connection was closed", connection::error::other);
-                    buffer.append(bytes);
-                }
-                cmdlist_->receive(payload);                
-                cmdlist_->next();                
-            }
-            const auto err = session.get_error();
-            switch (err)
-            {
-                case session::error::authentication_rejected:
-                    throw connection::exception("authentication rejected", connection::error::authentication_failed);
-                    break;
-                case session::error::no_permission:
-                    throw connection::exception("no permission", connection::error::forbidden);
-                    break;
-                case session::error::none:
-                    break;
-            }
-        }
-    }
-private:
-    void do_send(const std::string& cmd, newsflash::socket& socket)
-    {
-        socket.sendall(cmd.data(), cmd.size());
-    }
-private:
-    cmdlist* cmdlist_;
-};
-
-connection::connection(std::string logfile)
-{
-    thread_.reset(new std::thread(
-        std::bind(&connection::thread_loop, this, std::move(logfile))));
-}
-
-connection::~connection() 
+connection::connection() : state_(state::disconnected)
 {}
 
-void connection::shutdown()
-{
-    std::unique_ptr<action> ptr(new class shutdown);
+connection::~connection()
+{}
 
-    std::lock_guard<std::mutex> lock(mutex_);
-    actions_.push(std::move(ptr));
-    cond_.notify_one();
+void connection::connect(const connection::server& serv)
+{
+    std::unique_ptr<newsflash::action> act(new connection::resolve(serv.hostname));
+    on_action(std::move(act));
+    serv_  = serv;
+    state_ = state::resolving;
 }
 
-void connection::connect(std::string username, std::string password, 
-    std::string hostname, std::uint16_t port, bool ssl)
+bool connection::complete(std::unique_ptr<action> act)
 {
-    std::unique_ptr<action> ptr(new class connect(
-        username, password, hostname, port, ssl));
-
-    std::lock_guard<std::mutex> lock(mutex_);
-    actions_.push(std::move(ptr));
-    cond_.notify_one();
-}
-
-void connection::thread_loop(std::string logfile)
-{
-    LOG_OPEN("Connection", logfile);
-
-    connection_state cstate;
-    cstate.run_thread = true;
-
-    while (cstate.run_thread)
+    if (act->has_exception())
     {
-        std::unique_lock<std::mutex> lock(mutex_);
-        if (actions_.empty())
-            cond_.wait(lock);
+        socket_.reset();
+        session_.reset();
+        state_ = state::error;
 
-        if (actions_.empty())
-            continue;
-
-        auto action = std::move(actions_.front());
-        actions_.pop();
-
-        lock.unlock();
-
-        try
-        {
-            action->perform(cstate);
-        }
-        catch (const socket::tcp_exception& e)
-        {}
-        catch (const socket::ssl_exception& e)
-        {}
-        catch (const connection::exception& e)
-        {}
-        catch (const std::exception& e)
-        {}
+        act->rethrow();
     }
 
-    LOG_CLOSE();
+    std::unique_ptr<action> next;
+
+    switch (state_)
+    {
+        case state::resolving:
+            {
+                const auto& action_resolve_host = dynamic_cast<resolve&>(*act);
+                const auto resolved_address = action_resolve_host.get_resolved_address();
+                const auto port = serv_.port;
+                const auto ssl = serv_.use_ssl;
+                next.reset(new class connect(resolved_address, port, ssl));
+                state_ = state::connecting;
+            }
+            break;
+
+        case state::connecting:
+            {
+                auto& action_connect = dynamic_cast<class connect&>(*act);
+                const auto username = serv_.username;
+                const auto password = serv_.password;
+                auto connected_socket = action_connect.get_connected_socket();
+                next.reset(new class initialize(std::move(connected_socket), username, password));
+                state_ = state::initialize;
+            }
+            break;
+
+        case state::initialize:
+            {
+
+                state_ = state::connected;
+            }
+            break;
+
+        case state::active:
+            {
+
+                state_ = state::connected;
+            }
+            break;
+
+        case state::disconnecting:
+            {
+                state_ = state::disconnected;
+            }
+            break;
+
+        case state::disconnected:
+        case state::connected:
+        case state::error:
+            assert(!"wtufh");
+            break;
+    }
+
+    if (!next)
+        return true;
+
+    on_action(std::move(next));
+    return false;
+
 }
 
 } // newsflash

@@ -24,64 +24,93 @@
 
 #include <newsflash/config.h>
 
-#include <condition_variable>
+#include <functional>
 #include <memory>
-#include <thread>
-#include <mutex>
 #include <string>
-#include <queue>
+#include <stdexcept>
+#include <cstdint>
 
 namespace newsflash
 {
     class cmdlist;
+    class action;
+    class session;
+    class socket;
 
     class connection
     {
     public:
         enum class error {
             none, 
-            resolve_host,
-            connection_refused, 
-            authentication_failed,
-            forbidden,
-            timeout,
-            tcp, ssl, nntp, other
+            authentication_rejected,
+            no_permission
         };
 
         enum class state {
             disconnected, 
-            connecting, 
-            ready, active, error
+            resolving, 
+            connecting,
+            initialize, 
+            connected, 
+            active, 
+            disconnecting,
+            error
         };
 
-        connection(std::string logfile);
+        class exception : public std::exception
+        {
+        public:
+            exception(std::string what, connection::error err) : what_(std::move(what)), error_(err)
+            {}
+
+            const char* what() const noexcept
+            { return what_.c_str(); }
+
+            connection::error error() const noexcept
+            { return error_; }
+        private:
+            std::string what_;
+            connection::error error_;
+        };
+
+
+        std::function<void(std::unique_ptr<action>)> on_action;
+
+        struct server {
+            std::string username;
+            std::string password;
+            std::string hostname;
+            std::uint16_t port;
+            bool use_ssl;
+        };
+
+        connection();
        ~connection();
 
-        void shutdown();
-
-        void connect(std::string username, std::string password, 
-            std::string hostname, std::uint16_t port, bool ssl);
+        void connect(const connection::server& serv);
+        
+        void disconnect();
 
         void execute(cmdlist* cmds);
 
-        void cancel();
+        bool complete(std::unique_ptr<action> act);
+
+        state get_state() const 
+        { return state_; }
 
     private:
-        void thread_loop(std::string logfile);
-
-    private:
-        class exception;
-    private:
-        class action;
+        class resolve;
         class connect;
+        class initialize;
         class execute;
-        class shutdown;
 
     private:
-        std::unique_ptr<std::thread> thread_;
-        std::queue<std::unique_ptr<action>> actions_;
-        std::mutex mutex_;
-        std::condition_variable cond_;
+        std::unique_ptr<socket> socket_;
+        std::unique_ptr<session> session_;
+    private:
+        state state_;
+    private:
+        server serv_;
     };
 
 } // newsflash

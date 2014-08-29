@@ -63,7 +63,7 @@ event::~event()
 
 waithandle event::wait() const
 {
-    return waithandle {pimpl_->handle, waithandle::type::event, true, false};
+    return { pimpl_->handle, waithandle::type::event, true, false};
 }
 
 void event::set()
@@ -84,6 +84,17 @@ void event::reset()
     ResetEvent(pimpl_->handle);
 
     pimpl_->signaled = false;
+}
+
+bool event::is_set() const 
+{
+    const auto ret = WaitSingleObject(pimpl_->handle, 0);
+    if (ret == WAIT_OBJECT_0)
+        return true;
+    else if (ret == WAIT_TIMEOUT)
+        return false;
+
+    throw std::runtime_error("WaitSingleObject failed");
 }
 
 
@@ -111,7 +122,7 @@ event::~event()
 
 waithandle event::wait() const
 {
-    return waithandle {pimpl_->fd, waithandle::type::event, true, false};
+    return {pimpl_->fd, waithandle::type::event, true, false};
 }
 
 void event::set()
@@ -140,6 +151,12 @@ void event::reset()
         throw std::runtime_error("event reset failed");
 
     pimpl_->signaled = false;
+}
+
+bool event::is_set() const
+{
+    std::lock_guard<std::mutex> lock(pimpl_->mutex);
+    return pimpl_->signaled;
 }
 
 #endif

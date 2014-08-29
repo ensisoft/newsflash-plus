@@ -310,9 +310,7 @@ session::~session()
 
 void session::reset()
 {
-    pipeline_.emplace_back(new welcome);
-    pipeline_.emplace_back(new getcaps);
-    pipeline_.emplace_back(new modereader);
+    pipeline_.clear();
     state_->auth_required  = false;
     state_->has_gzip       = false;
     state_->has_modereader = false;
@@ -320,6 +318,13 @@ void session::reset()
     state_->error          = error::none;
     state_->state          = state::none;
     state_->group          = "";
+}
+
+void session::start()
+{
+    pipeline_.emplace_back(new welcome);
+    pipeline_.emplace_back(new getcaps);
+    pipeline_.emplace_back(new modereader);
 }
 
 bool session::parse_next(buffer& buff, buffer& out)
@@ -331,14 +336,14 @@ bool session::parse_next(buffer& buff, buffer& out)
 
     command* current = pipeline_.front().get();
 
-    if (!current->parse(buff, out, *state_))
-        return false;
-
     const auto len = nntp::find_response(buff.head(), buff.size());
     if (len != 0)
     {
         LOG_I(std::string(buff.head(), len-2));
     }
+
+    if (!current->parse(buff, out, *state_))
+        return false;
 
     if (state_->error != error::none)
     {
@@ -371,7 +376,8 @@ bool session::parse_next(buffer& buff, buffer& out)
 
         if (str.find("AUTHINFO PASS") != std::string::npos)
             LOG_I("AUTHINFO PASS *******");
-        else LOG_I(str);
+        else 
+            LOG_I(str);
 
         state_->state = current->state();
     }

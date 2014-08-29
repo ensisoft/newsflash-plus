@@ -46,6 +46,8 @@ namespace newsflash
 
         // reset to closed state
         void reset();
+
+        bool is_set() const;
     private:
         struct impl;
 

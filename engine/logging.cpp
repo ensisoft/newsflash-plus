@@ -39,10 +39,11 @@
 namespace {
 
 struct logger {
-    std::map<std::string, std::shared_ptr<std::ofstream>> streams;
-    std::ofstream* current_stream;
-    std::string current_context;
+    std::shared_ptr<std::ofstream> stream;
 };
+
+std::mutex mutex;
+std::map<std::string, std::shared_ptr<std::ofstream>> streams;
 
 boost::thread_specific_ptr<logger> ThreadLogger;
 
@@ -52,7 +53,7 @@ namespace newsflash
 {
 namespace detail {
 
-    void beg_log_event(std::ostream& current_stream, const std::string& context, logevent type, const char* file, int line)
+    void beg_log_event(std::ostream& current_stream, logevent type, const char* file, int line)
     {
         using namespace std;
 
@@ -61,7 +62,6 @@ namespace detail {
         current_stream << setw(2) << setfill('0') << timeval.hours << ":"
                << setw(2) << setfill('0') << timeval.minutes << ":"
                << setw(3) << setfill('0') << timeval.millis << " ";
-        current_stream << "[" << context << "] ";
         current_stream << (char)type << " ";
     }
 
@@ -70,15 +70,12 @@ namespace detail {
         current_stream << std::endl;
     }
 
-    std::ostream* get_current_thread_current_log(std::string& context)
+    std::ostream* get_current_thread_current_log()
     {
-        auto logger = ThreadLogger.get();
-        if (logger && logger->current_stream)
-        {
-            context = logger->current_context;
-            return logger->current_stream;
-        }
-        return nullptr;
+        if (!ThreadLogger.get())
+            return nullptr;
+
+        return ThreadLogger->stream.get();
     }
 
 } // detail
@@ -86,55 +83,56 @@ namespace detail {
 void open_log(std::string context, std::string file)
 {
     if (!ThreadLogger.get())
-    {
         ThreadLogger.reset(new logger);
-    }
 
-    auto logger = ThreadLogger.get();
+    std::lock_guard<std::mutex> lock(mutex);
 
-    auto it = logger->streams.find(file);
-    if (it == std::end(logger->streams))
+    auto it = streams.find(context);
+    if (it == std::end(streams))
     {
         auto stream = std::make_shared<std::ofstream>();
         stream->open(file, std::ios::trunc);
         if (!stream->is_open())
             throw std::runtime_error("failed to open log file: " + file);
 
-        it = logger->streams.insert(std::make_pair(context, stream)).first;
+        it = streams.insert(std::make_pair(context, stream)).first;
     }
 
-    auto& stream = it->second;
-    logger->current_stream  = stream.get();
-    logger->current_context = context;
+    ThreadLogger->stream = it->second;
+}
+
+void close_log(const std::string& name)
+{
+    std::lock_guard<std::mutex> lock(mutex);
+
+    streams.erase(name);
 }
 
 void flush_log()
 {
-    auto logger = ThreadLogger.get();
-    logger->current_stream->flush();
+    if (!ThreadLogger.get())
+        ThreadLogger.reset(new logger);
+
+    if (!ThreadLogger->stream)
+        return;
+
+    ThreadLogger->stream->flush();
 }
 
 void select_log(const std::string& context)
 {
-    auto logger = ThreadLogger.get();
-    auto it = logger->streams.find(context);
+    if (!ThreadLogger.get())
+        ThreadLogger.reset(new logger);
 
-    assert(it != std::end(logger->streams));
+    std::lock_guard<std::mutex> lock(mutex);
 
-    logger->current_stream  = it->second.get();
-    logger->current_context = it->first;
+    const auto it = streams.find(context);
+
+    assert(it != std::end(streams));
+
+    ThreadLogger->stream = it->second;
 }
 
-void close_log()
-{
-    auto logger = ThreadLogger.get();
-    logger->streams.erase(logger->current_context);
-    logger->current_stream = nullptr;
-    logger->current_context = "";
 
-    if (logger->streams.empty())
-        ThreadLogger.reset();
-
-}
 
 } // newsflash
