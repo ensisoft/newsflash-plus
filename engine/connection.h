@@ -30,6 +30,7 @@
 #include <stdexcept>
 #include <cstdint>
 #include "ui/connection.h"
+#include "ui/error.h"
 #include "event.h"
 
 namespace newsflash
@@ -39,13 +40,28 @@ namespace newsflash
     class session;
     class socket;
 
+    // connection class handles the details of a NNTP connection
+    // including buffering, reading and writing from/to socket and
+    // nntp session management. 
+    // each connection method such as connecting to a remote host
+    // is split into multiple actions. Each action then represents a single
+    // step in the whole operation. each action is invoked through the
+    // on_action callback. once the action has been performed the 
+    // complete(action) function should be called to complete
+    // the pending state transition. after a call to complete
+    // the connection state should be inspected for possible error condition.
     class connection
     {
     public:
         using error = ui::connection::error;
         using state = ui::connection::state;
 
+        // this callback is invoked when theres a new action to be performed.
         std::function<void(std::unique_ptr<action>)> on_action;
+
+        // this callback is invoked when an error occurs.
+        // the error object carries more error information.
+        std::function<void(const ui::error&)> on_error;
 
         struct server {
             std::string username;
@@ -55,19 +71,27 @@ namespace newsflash
             bool use_ssl;
         };
 
+        // create a new connection with the given account and connection ids.
         connection(std::size_t account, std::size_t id);
        ~connection();
 
+        // begin connecting to the given server.
         void connect(const connection::server& serv);
         
+        // begin disconnect
         void disconnect();
 
-        void execute(cmdlist* cmds);
+        // execute the given cmdlist. also update the current
+        // connection status to the given descriptor and task ids.
+        void execute(std::string desc, std::size_t task, cmdlist* cmds);
 
+        // complete the given action and complete the pending state transition.
         void complete(std::unique_ptr<action> act);
 
+        // cancel the pending action.
         void cancel();
 
+        // observers
         state get_state() const 
         { return ui_.st; }
 
@@ -80,6 +104,7 @@ namespace newsflash
         std::size_t get_id() const 
         { return ui_.id; }
 
+        // get all state visible towards the UI
         ui::connection get_ui_state() const
         { return ui_; }
 
@@ -89,14 +114,17 @@ namespace newsflash
         class connect;
         class initialize;
         class execute;
+        class disconnect;
 
     private:
         std::unique_ptr<socket> socket_;
         std::unique_ptr<session> session_;
+        std::string username_;
+        std::string password_;
+        std::uint16_t port_;
+        bool ssl_;
     private:
         event cancellation_;        
-    private:
-        server serv_;
     private:
         ui::connection ui_;
     };

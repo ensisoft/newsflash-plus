@@ -37,3 +37,8 @@ unit-test unit_test_logging : unit_test_logging.cpp ;
 unit-test unit_test_nntp : unit_test_nntp.cpp ;
 unit-test unit_test_linebuffer : unit_test_linebuffer.cpp ;
 unit-test unit_test_bodyiter : unit_test_bodyiter.cpp ;
+
+
+exe server : server.cpp ;
+
+install ./ : server ;

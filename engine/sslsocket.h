@@ -51,7 +51,7 @@ namespace newsflash
 
        ~sslsocket();
 
-       virtual void begin_connect(ipv4addr_t host, port_t port) override;
+       virtual void begin_connect(ipv4addr_t host, ipv4port_t port) override;
 
        virtual void complete_connect() override;
 

@@ -34,17 +34,47 @@ namespace newsflash
 {
     class buffer;
 
+    // session encapsulates the details of nntp. it provides a simple
+    // api to request data and state changes in the session.
+    // each such request might result in multiple pending commands in the 
+    // session pipeline. thus the client should call parse_next repeatedly
+    // while there are pending commands in the session and fill the input
+    // buffer with more data between calls to parse_next
     class session
     {
     public:
         enum class error {
             none, 
-            authentication_rejected,
-            no_permission
+
+            // possibly incorrect username/password pair            
+            authentication_rejected, 
+
+            // possibly out of quota 
+            no_permission 
         };
 
         enum class state {
-            none, init, authenticate, ready, transfer, error
+            // initial state            
+            none, 
+
+            // session is initializing with initial greeting etc.
+            init, 
+
+            // session is authenticating 
+            authenticate, 
+
+            // session is ready and there are no pending commands
+            ready, 
+
+            // session is performing data transfer 
+            // such as getting article data, overview data or group (listing) data
+            transfer, 
+
+            // session is quitting
+            quitting, 
+
+            // an error has occurred. see error enum for details
+            error
         };
 
         // called when session wants to send data
@@ -56,20 +86,42 @@ namespace newsflash
         session();
        ~session();
 
+        // reset session state to none
         void reset();
 
+        // start new session. this prepares the session pipeline
+        // with initial session start commands.
         void start();
 
+        // quit the session. prepares a quit command 
+        void quit();
+
+        // parse the buff for input data and try to complete
+        // currently pending session command. 
+        // if the command is succesfully completed returns true
+        // in which case the session state should be inspected
+        // next for possible errors. Also if the current command
+        // is transferring content data the contents are placed
+        // into the given out buffer. 
+        // otherwise if the current command could not be completed
+        // the function returns false.
         bool parse_next(buffer& buff, buffer& out);
 
+        // returns true if there are pending commands. i.e. 
+        // more calls to parse_next are required to complete
+        // the session state changes.
         bool pending() const;
 
+        // get current error
         error get_error() const;
 
+        // get current state
         state get_state() const;
 
+        // true if server supports zlib compression
         bool has_gzip_compress() const;
 
+        // true if server supports xzver i.e. compressed headers.
         bool has_xzver() const;
 
     private:
@@ -83,6 +135,9 @@ namespace newsflash
         class authpass;
         class group;
         class body;
+        class quit;
+        class xover;
+        class xzver;
 
     private:
         std::deque<std::unique_ptr<command>> pipeline_;

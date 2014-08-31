@@ -40,92 +40,22 @@ namespace nf = newsflash;
         BOOST_FAIL("exception was expected"); \
     } catch(const std::exception& e) {}
 
-void server_loop(nf::native_socket_t l, std::deque<std::string> commands, std::deque<std::string> responses)
-{
-    struct sockaddr_in addr {0};
-    socklen_t len = sizeof(addr);
-    auto s = ::accept(l, static_cast<sockaddr*>((void*)&addr), &len);
-    BOOST_REQUIRE(s != nf::OS_INVALID_SOCKET);
 
-
-    const auto& greeting = responses.front() + "\r\n";
-    int bytes = ::send(s, greeting.data(), greeting.size(), 0);
-    BOOST_REQUIRE(bytes == (int)greeting.size());
-
-    responses.pop_front();
-
-    while (!commands.empty())
-    {
-        const auto& cmd = commands.front();
-        const auto& ret = responses.front() + "\r\n";
-
-        std::string buff;
-        buff.resize(64);
-        int bytes = ::recv(s, &buff[0], buff.size(), 0);
-        if (bytes == -1)
-            std::printf("error %s\n", strerror(errno));
-
-        BOOST_REQUIRE(bytes > 2);
-
-        buff.resize(bytes-2);
-        std::printf("Received command: %s", buff.c_str());
-
-        BOOST_REQUIRE(buff == cmd);
-
-        bytes = ::send(s, ret.data(), ret.size(), 0);
-        BOOST_REQUIRE(bytes == (int)ret.size());
-
-        std::printf("Sending response: %s\n", ret.c_str());
-
-        commands.pop_front();
-        responses.pop_front();
-    }
-
-    nf::closesocket(s);
-    nf::closesocket(l);
-}
-
-
-std::pair<nf::native_socket_t, int> open_server()
-{
-    auto p = 1119;
-    auto s = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    for (;;)
-    {
-        struct sockaddr_in addr {0};
-        addr.sin_family      = AF_INET;
-        addr.sin_port        = htons(p);
-        addr.sin_addr.s_addr = INADDR_ANY;
-
-        const int ret = bind(s, static_cast<sockaddr*>((void*)&addr), sizeof(addr));
-        if (ret != nf::OS_SOCKET_ERROR)
-            break;
-
-        std::cout << "bind failed: " << p;
-        ++p;
-    }
-    BOOST_REQUIRE(listen(s, 10) != nf::OS_SOCKET_ERROR);
-
-    //std::thread serv(std::bind(server_loop, s, std::move(commands), std::move(responses)));
-    //serv.detach();
-
-    return {s, p};
-}
-
-void test_connection()
+void test_connect()
 {
     std::unique_ptr<nf::action> act;
 
-    nf::connection conn;
+    nf::connection conn(1, 1);
     conn.on_action = [&](std::unique_ptr<nf::action> a) {
         act = std::move(a);
     };
 
     using state = nf::connection::state;
+    using error = nf::connection::error;
 
     BOOST_REQUIRE(conn.get_state() == state::disconnected);
 
-    LOG_OPEN("test", "test_connection.log");
+    LOG_OPEN("test", "test_connect.log");
 
     // resolve fails
     {
@@ -136,8 +66,9 @@ void test_connection()
         BOOST_REQUIRE(conn.get_state() == state::resolving);
         act->perform();
         BOOST_REQUIRE(act->has_exception());
-        REQUIRE_EXCEPTION(conn.complete(std::move(act)));
+        conn.complete(std::move(act));
         BOOST_REQUIRE(conn.get_state() == state::error);
+        BOOST_REQUIRE(conn.get_error() == error::resolve);
 
         LOG_D("end");
         LOG_FLUSH();
@@ -157,94 +88,111 @@ void test_connection()
         BOOST_REQUIRE(conn.get_state() == state::connecting);
         act->perform();
         BOOST_REQUIRE(act->has_exception());
-        REQUIRE_EXCEPTION(conn.complete(std::move(act)));
+        conn.complete(std::move(act));
         BOOST_REQUIRE(conn.get_state() == state::error);
+        BOOST_REQUIRE(conn.get_error() == error::refused);
 
         LOG_D("end");        
         LOG_FLUSH();        
     }
 
     // nntp init fails
-    {
-        auto sp = open_server();
+    // {
+    //     //auto sp = open_server();
 
-        nf::connection::server serv;
-        serv.hostname = "localhost";
-        serv.port     = sp.second;  //{}, {"this is total bullcrap"});
-        serv.use_ssl  = false;
-        conn.connect(serv);
-        act->perform(); // resolve
-        conn.complete(std::move(act));
+    //     nf::connection::server serv;
+    //     serv.hostname = "localhost";
+    //     serv.port     = 1919;
+    //     serv.use_ssl  = false;
+    //     conn.connect(serv);
+    //     act->perform(); // resolve
+    //     conn.complete(std::move(act));
 
-        std::deque<std::string> commands;
-        std::deque<std::string> responses = {
-            "this is crap response"
-        };
-        std::thread thread(std::bind(server_loop, sp.first, commands, responses));
+    //     act->perform(); // connect
+    //     conn.complete(std::move(act));
+    //     BOOST_REQUIRE(conn.get_state() == state::initializing);
+    //     act->perform(); // initialize
+    //     BOOST_REQUIRE(act->has_exception());
+    //     conn.complete(std::move(act));
+    //     BOOST_REQUIRE(conn.get_state() == state::error);
+    //     BOOST_REQUIRE(conn.get_error() == error::other);
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-
-        act->perform(); // connect
-        conn.complete(std::move(act));
-        BOOST_REQUIRE(conn.get_state() == state::initialize);
-        act->perform(); // initialize
-        BOOST_REQUIRE(act->has_exception());
-        REQUIRE_EXCEPTION(conn.complete(std::move(act)));
-        BOOST_REQUIRE(conn.get_state() == state::error);
-
-        thread.join();
-
-        LOG_D("end");        
-        LOG_FLUSH();
-    }
+    //     LOG_D("end");        
+    //     LOG_FLUSH();
+    // }
 
     // authentication fails
     {
 
-        auto sp = open_server();
         nf::connection::server serv;
         serv.hostname = "localhost";
-        serv.port     = sp.second; 
+        serv.port     = 1919;
         serv.use_ssl  = false;
-        serv.username = "foo";
-        serv.password = "bar";
+        serv.username = "fail";
+        serv.password = "fail";
         conn.connect(serv); 
         act->perform(); // resolve
         conn.complete(std::move(act));
 
-        std::deque<std::string> commands = {
-            "CAPABILITIES",
-            "MODE READER",
-            "AUTHINFO USER foo",
-            "AUTHINFO PASS bar"
-        };
-        std::deque<std::string> responses = {
-            "200 welcome",
-            "500 what?",
-            "480 authentication required",
-            "381 password required",
-            "482 authentication rejected"
-        };
-        std::thread thread(std::bind(server_loop, sp.first, commands, responses));
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-
         act->perform(); // connect
         conn.complete(std::move(act));
         act->perform(); // initialize
-        REQUIRE_EXCEPTION(conn.complete(std::move(act)));
+        conn.complete(std::move(act));
         BOOST_REQUIRE(conn.get_state() == state::error);
-
-        thread.join();
+        BOOST_REQUIRE(conn.get_error() == error::authentication_rejected);
 
         LOG_D("end");        
-        LOG_FLUSH();
+        LOG_FLUSH();            
+    }
+
+    // cancel
+    {
+        nf::connection::server serv;
+        serv.hostname = "localhost";
+        serv.port     = 1919;
+        serv.use_ssl  = false;
+        serv.username = "pass";
+        serv.password = "pass";
+        conn.connect(serv);
+
+        act->perform(); // resolve
+        conn.complete(std::move(act));
+
+        conn.cancel();
+        act->perform(); // connect
+        conn.complete(std::move(act));
+
+        BOOST_REQUIRE(conn.get_state() == state::disconnected);
+        BOOST_REQUIRE(conn.get_error() == error::none);
+    }
+
+    // succesful connect
+    {
+        nf::connection::server serv;
+        serv.hostname = "localhost";
+        serv.port = 1919;
+        serv.use_ssl = false;
+        serv.username = "pass";
+        serv.password = "pass";
+        conn.connect(serv);
+
+        act->perform();
+        conn.complete(std::move(act)); // resolve
+
+        act->perform(); 
+        conn.complete(std::move(act)); // connect
+
+        act->perform();
+        conn.complete(std::move(act)); // initialize
+
+        BOOST_REQUIRE(conn.get_state() == state::connected);
+        BOOST_REQUIRE(conn.get_error() == error::none);
     }
 }
 
 int test_main(int argc, char* argv[])
 {
-    test_connection();
+    test_connect();
 
     return 0;
 }

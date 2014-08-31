@@ -27,17 +27,12 @@
 #if !defined(LINUX_OS)
 #  error this file is only for Linux
 #endif
-#include <sys/types.h>
-#include <cerrno>
 
 namespace newsflash
 {
-    typedef int    native_handle_t;
-    typedef int    native_socket_t;
-    typedef int    native_errcode_t;
-
-
-    const int OS_SOCKET_ERROR = -1;
+    typedef int native_handle_t;
+    typedef int native_socket_t;
+    const int OS_SOCKET_ERROR   = -1;
     const int OS_INVALID_HANDLE = -1;
     const int OS_INVALID_SOCKET = -1;
 

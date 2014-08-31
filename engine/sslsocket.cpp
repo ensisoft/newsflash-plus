@@ -95,7 +95,7 @@ sslsocket::~sslsocket()
     close();
 }
 
-void sslsocket::begin_connect(ipv4addr_t host, port_t port)
+void sslsocket::begin_connect(ipv4addr_t host, ipv4port_t port)
 {
     assert(!socket_);
     assert(!handle_);

@@ -22,6 +22,8 @@
 
 #pragma once
 
+#include <newsflash/config.h>
+
 #include <iterator>
 #include <cstddef>
 #include <cassert>

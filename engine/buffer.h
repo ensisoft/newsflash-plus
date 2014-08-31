@@ -42,13 +42,16 @@ namespace newsflash
         };
 
         enum class status {
-            none, success, unavailable, dmca
+            none, success, unavailable, dmca, error
         };
 
         using u8 = char;
 
-        buffer(std::size_t initial_capacity = MB(1)) : buffer_(initial_capacity), size_(0), content_start_(0), content_length_(0),
+        buffer() : size_(0), content_start_(0), content_length_(0),
             content_type_(type::none), content_status_(status::none)
+        {}
+
+        buffer(std::size_t initial_capacity) : buffer()
         {
             buffer_.resize(initial_capacity);
         }
@@ -71,6 +74,14 @@ namespace newsflash
         {
             assert(size + size_  < buffer_.size());
             size_ += size;
+        }
+
+        void allocate(std::size_t capacity)
+        {
+            if (capacity < buffer_.size())
+                return;
+
+            buffer_.resize(capacity);
         }
 
         void clear()

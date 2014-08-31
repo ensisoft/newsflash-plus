@@ -50,7 +50,7 @@ tcpsocket::~tcpsocket()
     close();
 }
 
-void tcpsocket::begin_connect(ipv4addr_t host, uint16_t port) 
+void tcpsocket::begin_connect(ipv4addr_t host, ipv4port_t port) 
 {
     const auto& ret = begin_socket_connect(host, port);
 

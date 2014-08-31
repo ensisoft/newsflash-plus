@@ -171,7 +171,7 @@ ipv4addr_t resolve_host_ipv4(const std::string& hostname)
     return ntohl(host);
 }
 
-std::pair<native_socket_t, native_handle_t> begin_socket_connect(ipv4addr_t host, port_t port)
+std::pair<native_socket_t, native_handle_t> begin_socket_connect(ipv4addr_t host, ipv4port_t port)
 {
     auto sock = make_unique_handle(::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP), close);
     if (sock == -1)
@@ -232,18 +232,5 @@ native_handle_t get_wait_handle(native_socket_t sock)
 
 
 #endif
-
-std::string format_ipv4(ipv4addr_t addr)
-{
-    std::stringstream ss;
-    ss << ((addr >> 24) & 0xff) << "."
-       << ((addr >> 16) & 0xff) << "."
-       << ((addr >> 8) & 0xff) << "."
-       << (addr & 0xff);
-
-    std::string s;
-    ss >> s;
-    return s;
-}
 
 } // newsflash

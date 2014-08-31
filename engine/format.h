@@ -22,40 +22,72 @@
 
 #pragma once
 
+#include <newsflash/config.h>
+
 #include <string>
 #include <sstream>
 #include <stdexcept>
+#include <cstdint>
+#include "types.h"
 
 namespace newsflash
 {
-    namespace detail {
+    inline
+    void str(std::ostream& ss, const newsflash::ipv4& ip)
+    {
+        ss << ((ip.addr >> 24) & 0xff) << "."
+           << ((ip.addr >> 16) & 0xff) << "."
+           << ((ip.addr >> 8) & 0xff) << "."
+           << (ip.addr & 0xff);
+    }
 
-        template<typename T>
-        void format_next(std::stringstream& ss, const T& value)
-        {
-            ss << value;
-        }
+    inline
+    void str(std::ostream& ss, const newsflash::kb& kb)
+    {
+        ss << kb.value / 1024.0 << " Kib";
+    }
 
-        template<typename T, typename... Rest>
-        void format_next(std::stringstream& ss, const T& value, const Rest&... rest)
-        {
-            ss << value;
-            format_next(ss, rest...);
-        }
+    inline
+    void str(std::ostream& ss, const newsflash::mb& mb)
+    {
+        ss << mb.value / (1024.0 * 1024.0) << " Mib";
+    }
 
-    } // detail
+    inline
+    void str(std::ostream& ss, const newsflash::gb& gb)
+    {
+        ss << gb.value / (1024.0 * 1024.0 * 1024.0) << " Gib";
+    }
 
-template<typename... Args>
-std::string format(const Args&... args)
-{
-    std::stringstream ss;
-    if (!ss.good())
-        throw std::runtime_error("string format error");
+    inline 
+    void str(std::ostream& ss, bool val)
+    {
+        ss << (val ? "True" : "False");
+    }
 
-    detail::format_next(ss, args...);
 
-    return ss.str();
-}
+    template<typename T>
+    void str(std::ostream& ss, const T& value)
+    {
+        ss << value;
+    }
 
+    template<typename T, typename... Rest>
+    void str(std::ostream& ss, const T& value, const Rest&... rest)
+    {
+        ss << value;
+        str(ss, rest...);
+    }
+
+    template<typename... Args>
+    std::string str(const Args&... args)
+    {
+        std::stringstream ss;
+        if (!ss.good())
+            throw std::runtime_error("string format error");
+
+        str(ss, args...);
+        return ss.str();
+    }
 
 } // newsflash

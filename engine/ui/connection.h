@@ -49,8 +49,11 @@ namespace newsflash
 
             // connection was made to the server but the server
             // denied access based on incorrect authentication.
+            // possibly username/password is wrong
             authentication_rejected,
 
+            // connection was made to the server but the server
+            // denied access. possibly the account is locked/out of quota.
             no_permission,
 
             // network problem, for example network is down.

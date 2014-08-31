@@ -181,12 +181,7 @@ void engine::complete_action(action* act, task* t)
 
     std::unique_ptr<action> a(act);
 
-    try
-    {
-        t->complete(std::move(a));
-    }
-    catch (const std::exception& e)
-    {}
+    t->complete(std::move(a));
 
     if (settings_.auto_connect)
         start();

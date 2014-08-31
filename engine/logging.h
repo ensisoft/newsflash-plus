@@ -23,7 +23,7 @@
 
 #include <newsflash/config.h>
 #include <ostream>
-#include <mutex>
+#include "format.h"
 
 #pragma once
 
@@ -60,19 +60,15 @@ namespace newsflash
         template<typename Arg>
         void write_log_args(std::ostream& stream, const Arg& arg)
         {
-            stream << arg;
-        }
-
-        inline
-        void write_log_args(std::ostream& stream, bool value)
-        {
-            stream << (value ? "True" : "False");
+            //stream << str(arg);
+            str(stream, arg);
         }
 
         template<typename Arg, typename... Rest>
         void write_log_args(std::ostream& stream, const Arg& arg, const Rest&... gang)
         {
-            stream << arg;
+            //stream << arg;
+            str(stream, arg);
             write_log_args(stream, gang...);
         }
 

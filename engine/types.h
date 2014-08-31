@@ -33,6 +33,31 @@
 
 namespace newsflash
 {
-    typedef std::uint32_t bitflag_t;
-    
+    using ipv4addr_t = std::uint32_t;
+    using ipv4port_t = std::uint16_t;
+
+    struct kb {
+        kb(std::uint64_t bytes) : value(bytes) 
+        {}
+        std::uint64_t value;
+    };
+
+    struct mb {
+        mb(std::uint64_t bytes) : value(bytes) 
+        {}
+        std::uint64_t value;
+    };
+
+    struct gb {
+        gb(std::uint64_t bytes) 
+        {}
+        std::uint64_t value;
+    };
+
+    struct ipv4 {
+        ipv4(std::uint32_t ip) : addr(ip)
+        {}
+        std::uint32_t addr;
+    };
+
 } // newsflash

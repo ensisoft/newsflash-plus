@@ -22,13 +22,14 @@
 
 #pragma once
 
-#include <boost/noncopyable.hpp>
+#include <newsflash/config.h>
+#include "utility.h"
 #include "socket.h"
 
 namespace newsflash
 {
     // transfer data over raw TCP socket. 
-    class tcpsocket : public socket, boost::noncopyable
+    class tcpsocket : noncopyable, public socket
     {
     public:
         // construct a non-connected socket.
@@ -42,7 +43,7 @@ namespace newsflash
 
        ~tcpsocket();
 
-        virtual void begin_connect(ipv4addr_t host, uint16_t port) override;
+        virtual void begin_connect(ipv4addr_t host, ipv4port_t port) override;
 
         virtual void complete_connect() override;
 
