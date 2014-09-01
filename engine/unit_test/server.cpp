@@ -157,13 +157,13 @@ void service_client(newsflash::native_socket_t sock)
         {
             send_response(sock, "222 body follows");
             std::string content = 
-               "here is some textual content\r\n"
-               "first line.\r\n"
-               ". second line starts with a dot\r\n"
-               ".. two dots\r\n"
-               "foo . bar\r\n"
-               "...\r\n"
-               "end\r\n";
+               "here is some textual content\n"
+               "first line.\n"
+               ". second line starts with a dot\n"
+               ".. two dots\n"
+               "foo . bar\n"
+               "...\n"
+               "end\n";
 
             std::stringstream ss(content);
 
@@ -174,7 +174,7 @@ void service_client(newsflash::native_socket_t sock)
                     line = "." + line;
                 send_response(sock, line);
             }
-            send_response(sock, line);
+            send_response(sock, ".");
         }
 
         else if (cmd == "GROUP alt.binaries.foo")

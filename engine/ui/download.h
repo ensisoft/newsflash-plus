@@ -18,35 +18,42 @@
 //  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 //  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-//  THE SOFTWARE.
+//  THE SOFTWARE.            
 
 #pragma once
 
 #include <newsflash/config.h>
 
+#include <deque>
+#include <string>
+#include <cstddef>
+
 namespace newsflash
 {
-    class buffer;
-    class session;
+    namespace ui {
 
-    class cmdlist
+    // a download job details for downloading content
+    struct download
     {
-    public:
-        enum class step {
-            configure, transfer
-        };
+        // list of message id's or message numbers.
+        // note that message numbers are specific to a server
+        // while message-ids are portable across servers.
+        std::deque<std::string> articles;
 
-        virtual ~cmdlist() = default;
+        // the list of groups into which look for the messge ids.
+        std::deque<std::string> groups;
 
-        virtual bool is_done(step s) const = 0;
+        // the local filesystem path where the downloadded/decoded content
+        // is to the be placed.
+        std::string path;
 
-        virtual void submit(step s, session& ses) = 0;
+        // the human readable description. 
+        // this will appear in task::description.
+        std::string desc;
 
-        virtual void receive(step s, buffer& buff) = 0;
-
-        virtual void next(step s) = 0;
-    protected:
-    private:
+        // the esimated size of the content to be downloaded in bytes. 
+        std::uint64_t size;
     };
 
-} // newsflash
+} // ui
+} // engine

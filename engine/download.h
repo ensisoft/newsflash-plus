@@ -27,59 +27,72 @@
 #include <memory>
 #include <vector>
 #include <string>
-#include "taskcore.h"
-#include "decoder.h"
+#include <deque>
+#include "task.h"
 #include "bigfile.h"
-#include "stopwatch.h"
 #include "encoding.h"
+#include "decoder.h"
 
 namespace newsflash
 {
+    namespace ui {
+        class file;
+        class download;
+    } // ui
+
     // extract encoded content from the buffers
-    class download : public taskcore
+    class download : public task
     {
     public:
-        download(std::string path, std::string name);
+        download(std::size_t id, std::size_t account, const ui::download& details);
+       ~download();
 
-        // set overwrite flag to true/false.
-        // overwrite defaults to true.
-        void overwrite(bool val);
+        virtual void start() override;
 
-        // set keeptext flag to true/false
-        // keeptext defaults to false.
-        void keeptext(bool val);
+        virtual void kill() override;
 
-        // task implementation
-        void prepare() override;
-        void receive(buffer&& buff, std::size_t id) override;
-        void cancel() override;
-        void flush() override;
-        void finalize() override;
+        virtual void flush() override;
 
-    private:
-        struct content {
-            std::size_t size;            
-            std::string name;
-            std::unique_ptr<decoder> codec;
-            std::vector<std::string> errors;
-            bigfile file;
-            encoding enc;
-        };
+        virtual void pause() override;
 
-        content* find_content(encoding enc);
-        content* bind_content(content&& cont);
+        virtual void execute() override;
 
-    private:
-        void on_info(const decoder::info& info, content& cont);
-        void on_write(const void* data, std::size_t size, std::size_t offset, bool has_offset, content& cont);
-        void on_error(decoder::error error, const std::string& what, content& cont);
+        virtual void complete(std::unique_ptr<action> act);
+
+        virtual void complete(std::unique_ptr<cmdlist> cmd);
+
+        virtual ui::task get_ui_state() const override
+        { return state_; }
+
+        virtual std::size_t get_id() const 
+        { return id_; }
+
+        virtual std::size_t get_account() const
+        { return account_; }
+
+        virtual state get_state() const 
+        { return state_.st; }
+
+        virtual error get_error() const 
+        { return state_.err; }
 
     private:
-        std::vector<content> contents_;
+        class decode;
+        class write;
+        class bodylist;
+
+    private:
+        std::size_t id_;
+        std::size_t account_;
         std::string path_;
         std::string name_;
+        std::deque<std::string> groups_;
+        std::deque<std::string> articles_;
+    private:
         bool overwrite_;
         bool keeptext_;
+    private:
+        ui::task state_;
     };
 
 } // newsflash

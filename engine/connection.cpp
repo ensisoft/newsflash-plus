@@ -239,12 +239,12 @@ public:
         session_.on_auth = [](std::string&, std::string&) { throw exception("no permission", connection::error::no_permission); };
         session_.on_send = std::bind(&execute::do_send, this,
             std::placeholders::_1);
+        down_ = 0;
     }
 
     virtual void xperform() override
     {
-        newsflash::buffer ibuff(MB(4));
-        newsflash::buffer obuff(MB(4));
+        newsflash::buffer recvbuf(MB(4));
 
         // the cmdlist contains a list of commands
         // we pass the session object to the cmdlist to allow
@@ -255,11 +255,35 @@ public:
         // once a command is completed we pass the output buffer
         // to the cmdlist so that it can update its own state.
 
-        while (!cmdlist_.is_done())
+        do 
         {
-            cmdlist_.submit(session_);
+            cmdlist_.submit(cmdlist::step::configure, session_);
+            if (!session_.pending())
+                break;
+
+            newsflash::buffer config(KB(1));
+            do 
+            {
+                auto data   = socket_.wait(true, false);
+                auto cancel = cancel_.wait();
+                if (!newsflash::wait_for(data, cancel, std::chrono::seconds(10)))
+                    throw exception("socket timeout", connection::error::timeout);
+                else if (cancel)
+                    return;
+            }
+            while (!session_.parse_next(recvbuf, config));
+
+            cmdlist_.receive(cmdlist::step::configure, config);
+            cmdlist_.next(cmdlist::step::configure);
+        }
+        while (!cmdlist_.is_done(cmdlist::step::configure));
+
+        do 
+        {
+            cmdlist_.submit(cmdlist::step::transfer, session_);
             while (session_.pending())
             {
+                newsflash::buffer content(MB(4));                
                 do 
                 {
                     // wait for data or cancellation
@@ -271,24 +295,30 @@ public:
                         return;
 
                     // readsome
-                    const auto bytes = socket_.recvsome(ibuff.back(), ibuff.available());
+                    const auto bytes = socket_.recvsome(recvbuf.back(), recvbuf.available());
                     if (bytes == 0)
                         throw exception("socket was closed unexpectedly", connection::error::network);
 
-                    ibuff.append(bytes);
+                    down_ += bytes; // this includes header
+                    recvbuf.append(bytes);
                 }
-                while (!session_.parse_next(ibuff, obuff));
+                while (!session_.parse_next(recvbuf, content));
 
                 // todo: is this oK? (in case when quota finishes..??)
                 const auto err = session_.get_error();
                 if (err != session::error::none)
                     throw exception("no permission", connection::error::no_permission);
 
-                cmdlist_.receive(obuff);
-                cmdlist_.next();
+                cmdlist_.receive(cmdlist::step::transfer, content);
+                cmdlist_.next(cmdlist::step::transfer);
             }
         }
+        while (!cmdlist_.is_done(cmdlist::step::transfer));
     }
+
+    std::uint64_t downloaded_bytes() const 
+    { return down_; }
+
 private:
     void do_send(const std::string& cmd)
     {
@@ -302,6 +332,8 @@ private:
     socket& socket_;
 private:
     event& cancel_;
+private:
+    std::uint64_t down_;
 };
 
 class connection::disconnect : public action
@@ -525,10 +557,15 @@ void connection::complete(std::unique_ptr<action> act)
             break;
 
         case state::active:
-            ui_.bps  = 0;
-            ui_.desc = "";
-            ui_.task = 0;
-            ui_.st   = state::connected;                
+            {
+                auto& action = dynamic_cast<class execute&>(*act);
+
+                ui_.bps  = 0;
+                ui_.desc = "";
+                ui_.task = 0;
+                ui_.st   = state::connected;                
+                ui_.down += action.downloaded_bytes();
+            }
             break;
 
         case state::disconnecting:

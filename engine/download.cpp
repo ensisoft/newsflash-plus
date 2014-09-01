@@ -26,9 +26,15 @@
 #include "download.h"
 #include "buffer.h"
 #include "filesys.h"
+#include "logging.h"
+#include "action.h"
+#include "cmdlist.h"
+#include "session.h"
 #include "yenc_single_decoder.h"
 #include "yenc_multi_decoder.h"
 #include "uuencode_decoder.h"
+#include "ui/file.h"
+#include "ui/download.h"
 
 namespace {
 
@@ -50,217 +56,69 @@ public:
 private:
 };
 
-} // 
+} // namespace
 
 namespace newsflash
 {
 
-download::download(std::string path, std::string name) : path_(std::move(path)), name_(std::move(name)), overwrite_(true), keeptext_(false)
-{}
-
-void download::overwrite(bool val)
+class download::bodylist : public cmdlist
 {
-    overwrite_ = val;
-}
+public:
+    bodylist(std::deque<std::string> groups, std::deque<std::string> messages) : groups_(std::move(groups)), messages_(std::move(messages))
+    {}
 
-void download::keeptext(bool val)
-{
-    keeptext_ = val;
-}
-
-void download::prepare()
-{}
-
-void download::receive(buffer&& buff, std::size_t id)
-{
-    // buffer::payload body(buff);
-
-    // // iterate over the data line by line and inspect
-    // // every line untill we can identify a binary content
-    // // encoded with some encoding scheme. then if data remains
-    // // in the buffer we continue processing it line by line
-    // // repeating the same inspection
-    // // todo: MIME and base64 based encoding.
-
-    // while (!body.empty())
-    // {
-    //     const nntp::linebuffer lines(body.data(), body.size());
-    //     const auto& iter = lines.begin();
-    //     const auto& line = *iter;
-
-    //     download::content* content = nullptr;
-
-    //     const auto enc = identify_encoding(line.start, line.length);
-    //     switch (enc)
-    //     {
-    //         case encoding::yenc_single:
-    //             {
-    //                 download::content yenc;
-    //                 yenc.size  = 0;
-    //                 yenc.enc   = encoding::yenc_single;
-    //                 yenc.codec.reset(new yenc_single_decoder);
-    //                 content = bind_content(std::move(yenc));
-    //             }
-    //             break;
-
-    //         case encoding::yenc_multi:
-    //             content = find_content(encoding::yenc_multi);
-    //             break;
-
-    //         case encoding::uuencode_single:
-    //             {
-    //                 download::content uu;
-    //                 uu.size = 0;
-    //                 uu.enc  = encoding::uuencode_single;
-    //                 uu.codec.reset(new uuencode_decoder);
-    //                 content = bind_content(std::move(uu));
-    //             }
-    //             break;
-
-    //             // uuencoding scheme doesn't officially cater for messages split
-    //             // into several articles, however in practice it does happen, typically
-    //             // with large images (larger than maximum single nntp article size ~800kb).
-    //             // if we find a headerless uuencoded data we simply assume that it belongs
-    //             // to some previous uuencoded data blob.
-    //         case encoding::uuencode_multi:
-    //             content = find_content(encoding::uuencode_single);
-    //             break;
-
-    //         case encoding::unknown:
-    //             {
-    //                 // if we're not keeping text then simply discard this line
-    //                 if (!keeptext_)
-    //                     break;
-
-    //                 content = find_content(encoding::unknown);
-    //                 if (!content)
-    //                 {
-    //                     download::content text;
-    //                     text.size = 0;
-    //                     text.enc  = encoding::unknown;
-    //                     text.codec.reset(new text_decoder);
-    //                     content = bind_content(std::move(text));
-    //                 }
-    //             }
-    //             break;
-    //     }
-    //     if (!content)
-    //         throw std::runtime_error("no such content found!");
-
-    //     decoder& dec = *content->codec;
-
-    //     const auto consumed = dec.decode(body.data(), body.size());
-
-    //     body.crop(consumed);
-    // }
-}
-
-void download::cancel()
-{
-    for (auto& content : contents_)
+    virtual bool is_done(cmdlist::step step) const override
     {
-        bigfile& big = content.file;
-        if (big.is_open())
+        
+    }
+    virtual void submit(cmdlist::step step, session& sess) override
+    {
+        if (step == cmdlist::step::configure)
         {
-            big.close();
-            bigfile::erase(fs::joinpath(path_, content.name));
+
+        }
+        else if (step == cmdlist::step::transfer)
+        {
+            for (const auto& message : messages_)
+                sess.retrieve_article(message);
         }
     }
-}
 
-void download::flush()
-{}
-
-void download::finalize()
-{
-    for (auto& content : contents_)
+    virtual void receive(cmdlist::step step, buffer& buff) override
     {
-        decoder& dec = *content.codec;
-        dec.finish();
     }
+private:
+    std::deque<std::string> groups_;
+    std::deque<std::string> messages_;
+    std::deque<buffer> buffers_;
+};
+
+download::download(std::size_t id, std::size_t account, const ui::download& details)
+{
+    state_.err = task::error::none;
+    state_.st  = task::state::queued;
+    state_.account = account;
+    state_.id      = id;
+    state_.desc    = details.desc;
+    state_.size    = details.size;
+    state_.runtime = 0;
+    state_.eta     = -1;
+    state_.completion = 0.0f;
+    state_.damaged = false;
+
+    LOG_D("Task ", id_, " created");    
 }
 
-download::content* download::find_content(encoding enc)
+download::~download()
 {
-    const auto it = std::find_if(contents_.begin(), contents_.end(), 
-        [&](const content& c)
-        {
-            return c.enc == enc;
-        });
-    if (it == contents_.end())
-        return nullptr;
-
-    return &(*it);
+    LOG_D("Task ", id_, " deleted");
 }
 
-download::content* download::bind_content(download::content&& content)
+void download::start()
 {
-    decoder& dec = *content.codec;
+    state_.st = task::state::waiting;
 
-    dec.on_info = std::bind(&download::on_info, this, 
-        std::placeholders::_1, std::ref(content));
-    dec.on_write = std::bind(&download::on_write, this, 
-        std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4,
-        std::ref(content));
-    dec.on_error = std::bind(&download::on_error, this,
-        std::placeholders::_1, std::placeholders::_2, std::ref(content));
 
-    contents_.push_back(std::move(content));
-    return &contents_.back();
-}
-
-void download::on_info(const decoder::info& info, download::content& content)
-{
-    const auto name = fs::remove_illegal_filename_chars(info.name);
-    if (!name.empty())
-        content.name = name;
-    if (info.size)
-        content.size = info.size;
-}
-
-void download::on_write(const void* data, std::size_t size, std::size_t offset, bool has_offset, download::content& content)
-{
-    bigfile& big = content.file;
-
-    if (!big.is_open())
-    {
-        // try to open the file multiple times in case 
-        // the filename we're trying to use already exists.
-        for (int i=0; i<10; ++i)
-        {
-            const auto& name = fs::filename(i, content.name);
-            const auto& file = fs::joinpath(path_, name);
-            if (!overwrite_ && bigfile::exists(file))
-                continue;
-
-            const auto error = big.create(file);
-            if (error != std::error_code())
-                throw std::system_error(error, "error creating file: " + file);
-            if (content.size)
-            {
-                const auto error = bigfile::resize(file, content.size);
-                if (error != std::error_code())
-                    throw std::system_error(error, "error resizing file: " + file);
-            }
-            content.name = name;
-            content.file = std::move(big);
-            break;
-        }
-    }
-    if (!big.is_open())
-        throw std::runtime_error("unable to create files at:" + path_);    
-
-    if (has_offset)
-    {
-        big.seek(offset);
-    }
-
-    big.write(data, size);
-}
-
-void download::on_error(decoder::error error, const std::string& what, download::content& content)
-{
-    content.errors.push_back(what);
 }
 
 } // newsflash

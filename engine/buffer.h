@@ -47,17 +47,19 @@ namespace newsflash
 
         using u8 = char;
 
-        buffer() : size_(0), content_start_(0), content_length_(0),
+        buffer(std::size_t initial_capacity) : size_(0), content_start_(0), content_length_(0),
             content_type_(type::none), content_status_(status::none)
-        {}
-
-        buffer(std::size_t initial_capacity) : buffer()
         {
             buffer_.resize(initial_capacity);
         }
 
-        // return body pointer to the start of the body/payload data
-        const u8* body() const
+        // buffer(std::size_t initial_capacity) : buffer()
+        // {
+        //     buffer_.resize(initial_capacity);
+        // }
+
+        // return content pointer to the start of the body/payload data
+        const u8* content() const
         { return &buffer_[content_start_]; }
 
         // return head pointer to the start of the whole buffer
@@ -149,6 +151,12 @@ namespace newsflash
         // return the size of the whole buffer
         std::size_t size() const 
         { return size_; }
+
+        std::size_t content_length() const
+        { return content_length_; }
+
+        std::size_t content_start() const 
+        { return content_start_; }
 
         // return how many bytes are available for appending through back() pointer
         std::size_t available() const 

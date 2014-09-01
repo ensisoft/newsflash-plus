@@ -38,6 +38,8 @@ struct session::impl {
     bool has_xzver;
     bool has_modereader;
     bool auth_required;
+    bool enable_pipelining;
+    bool enable_compression;
     std::string user;
     std::string pass;
     std::string group;
@@ -54,6 +56,8 @@ public:
     // parse the input buffer and store the possible data contents
     // into output buffer.
     virtual bool parse(buffer& buff, buffer& out, impl& st) = 0;
+
+    virtual bool can_pipeline() const = 0;
 
     // get the state represented by this command
     virtual session::state state() const = 0;
@@ -83,6 +87,9 @@ public:
         buff.clear();
         return true;
     }
+    virtual bool can_pipeline() const override
+    { return false; }
+
     virtual session::state state() const override
     { return session::state::init; }
 
@@ -131,6 +138,10 @@ public:
         buff.clear();
         return true;
     }
+
+    virtual bool can_pipeline() const override
+    { return false; }
+
     virtual session::state state() const override
     { return session::state::init; }
 
@@ -166,6 +177,10 @@ public:
         buff.clear();
         return true;
     }
+
+    virtual bool can_pipeline() const override
+    { return false; }
+
     virtual session::state state() const override
     { return session::state::authenticate; }
 
@@ -197,6 +212,9 @@ public:
         buff.clear();
         return true;
     }
+    virtual bool can_pipeline() const override
+    { return false; }
+
     virtual session::state state() const override
     { return session::state::authenticate; }
 
@@ -222,6 +240,9 @@ public:
         buff.clear();
         return true;
     }
+    virtual bool can_pipeline() const override
+    { return false; }
+
     virtual session::state state() const override
     { return session::state::init; }
 
@@ -259,16 +280,15 @@ public:
         return true;
     }
 
-    virtual session::state state() const override
-    {
-        return session::state::transfer;
-    }
+    virtual bool can_pipeline() const override
+    { return false; }
 
+    virtual session::state state() const override
+    { return session::state::transfer; }
 
     virtual std::string str() const override
-    { 
-        return "GROUP " + group_; 
-    }
+    { return "GROUP " + group_; }
+
 private:
     std::string group_;
 private:
@@ -290,15 +310,19 @@ public:
         if (len == 0)
             return false;
 
-        out.set_content_type(buffer::type::article);
-
         nntp::trailing_comment comment;
         const auto code = nntp::scan_response({222, 423, 420}, buff.head(), len, comment);
         if (code == 423 || code == 420)
         {
+            // the output buffer only carries meta information
+            // i.e. that there was no content data available.
             if (comment.str.find("dmca") != std::string::npos)
                 out.set_status(buffer::status::dmca);
             else out.set_status(buffer::status::unavailable);
+
+            out.set_content_type(buffer::type::article);
+
+            // throw away the response line
             buff.split(len);
             return true;
         }
@@ -309,21 +333,21 @@ public:
 
         const auto size = len + blen;
         out = buff.split(size);
+        out.set_content_type(buffer::type::article);
         out.set_content_length(blen);
         out.set_content_start(len);
         out.set_status(buffer::status::success);
         return true;
     }
 
+    virtual bool can_pipeline() const override
+    { return true; }
+
     virtual session::state state() const override
-    { 
-        return session::state::transfer; 
-    }
+    { return session::state::transfer; }
 
     virtual std::string str() const override
-    { 
-        return "BODY " + messageid_; 
-    }
+    { return "BODY " + messageid_; }
 private:
     std::string messageid_;
 };
@@ -344,16 +368,14 @@ public:
         return true;
     }
 
+    virtual bool can_pipeline() const override
+    { return false; }
+
     virtual session::state state() const override
-    { 
-        return session::state::quitting;
-    }
+    { return session::state::quitting; }
 
     virtual std::string str() const override
-    { 
-        return "QUIT"; 
-    }
-
+    { return "QUIT"; }
 private:
 
 };
@@ -454,7 +476,8 @@ session::~session()
 
 void session::reset()
 {
-    pipeline_.clear();
+    recv_.clear();
+    send_.clear();
     state_->auth_required  = false;
     state_->has_gzip       = false;
     state_->has_modereader = false;
@@ -462,28 +485,46 @@ void session::reset()
     state_->error          = error::none;
     state_->state          = state::none;
     state_->group          = "";
+    state_->enable_pipelining = false;
+    state_->enable_compression = false;
 }
 
 void session::start()
 {
-    pipeline_.emplace_back(new welcome);
-    pipeline_.emplace_back(new getcaps);
-    pipeline_.emplace_back(new modereader);
+    send_.emplace_back(new welcome);
+    send_.emplace_back(new getcaps);
+    send_.emplace_back(new modereader);  
+
+    submit_next_commands();
 }
 
 void session::quit()
 {
-    pipeline_.emplace_back(new class quit);
+    send_.emplace_back(new class quit);
+
+    submit_next_commands();
 }
+
+void session::change_group(std::string name)
+{
+    send_.emplace_back(new group(std::move(name)));
+
+    submit_next_commands();
+}
+
+void session::retrieve_article(std::string messageid)
+{
+    send_.emplace_back(new body(std::move(messageid)));
+
+    submit_next_commands();
+}
+
 
 bool session::parse_next(buffer& buff, buffer& out)
 {
-    if (state_->state == state::none)
-        state_->state = state::init;
+    assert(!recv_.empty());
 
-    assert(!pipeline_.empty());
-
-    command* current = pipeline_.front().get();
+    auto& next = recv_.front();
 
     const auto len = nntp::find_response(buff.head(), buff.size());
     if (len != 0)
@@ -491,13 +532,14 @@ bool session::parse_next(buffer& buff, buffer& out)
         LOG_I(std::string(buff.head(), len-2));
     }
 
-    if (!current->parse(buff, out, *state_))
+    if (!next->parse(buff, out, *state_))
         return false;
 
     if (state_->error != error::none)
     {
         state_->state = state::error;
-        pipeline_.clear();
+        recv_.clear();
+        send_.clear();
         return true;
     }
     else if (state_->auth_required)
@@ -505,41 +547,32 @@ bool session::parse_next(buffer& buff, buffer& out)
         std::string username;
         std::string password;
         on_auth(username, password);
-        pipeline_.emplace_front(new authpass(password));                
-        pipeline_.emplace_front(new authuser(username));
+        if (recv_.size() != 1)
+            throw std::runtime_error("authentication requested during pipelined commands");
+
+        send_.push_front(std::move(next));
+        send_.emplace_front(new authpass(password));                
+        send_.emplace_front(new authuser(username));
+        recv_.pop_front();
         state_->auth_required = false;
     }
     else
     {
-        pipeline_.pop_front();
-    }
-    current = nullptr;
-    if (!pipeline_.empty())
-        current = pipeline_.front().get();
-
-    if (current)
-    {
-        const auto str = current->str();
-        if (!str.empty())
-            on_send(str + "\r\n");
-
-        if (str.find("AUTHINFO PASS") != std::string::npos)
-            LOG_I("AUTHINFO PASS *******");
-        else 
-            LOG_I(str);
-
-        state_->state = current->state();
-    }
-    else
-    {
-        state_->state = state::ready;
+        recv_.pop_front();
     }
 
-    return current == nullptr;
+    submit_next_commands();
+    return true;
 }
 
 bool session::pending() const
-{ return !pipeline_.empty(); }
+{ return !recv_.empty() || !send_.empty(); }
+
+void session::enable_pipelining(bool on_off)
+{ state_->enable_pipelining = on_off; }
+
+void session::enable_compression(bool on_off)
+{ state_->enable_compression = on_off; }
 
 session::error session::get_error() const
 { return state_->error; }
@@ -553,4 +586,73 @@ bool session::has_gzip_compress() const
 bool session::has_xzver() const 
 { return state_->has_xzver; }
 
+void session::submit_next_commands()
+{
+    // command pipelining is a mechanism which allows us to send
+    // multiple commands back-to-back and then receive multiple responses
+    // back to back. 
+    // so instead of sending BODY 1 and then receiving the article data for body1
+    // and then sending BODY 2 and receiving data we can do
+    // BODY 1\r\n BODY 2\r\n ... BODY N\r\n
+    // and then read body1, body2 ... bodyN article datas
+
+    // however in case of commands that may not be pipelined
+    // we may not send any commands before the response for the 
+    // non-pipelined command has been received.
+
+    if (send_.empty()) 
+    {
+        state_->state = state::ready;
+        return;
+    }
+
+    if (!recv_.empty())
+    {
+        // if the last command we have sent is non-pipelineable
+        // we must wait for the response untill sending more commands.
+        const auto& last = recv_.back();
+        if (!last->can_pipeline())
+            return;
+
+        if (!state_->enable_pipelining)
+            return;
+    }
+
+    for (;;)
+    {
+        auto& next = send_.front();
+
+        const auto& str = next->str();
+        if (!str.empty())
+        {
+            if (str.find("AUTHINFO PASS") != std::string::npos)
+                LOG_I("AUTHINFO PASS ****");
+            else LOG_I(str);
+
+            on_send(str + "\r\n");
+        }
+
+        state_->state = next->state();
+
+        recv_.push_back(std::move(next));
+        send_.pop_front();
+
+        // if pipelining is not enable we only run this loop once,
+        // essentially reducing the operation to send/recv pairs
+        if (!state_->enable_pipelining)
+            break;
+
+        if (send_.empty())
+            break;
+
+        // first non-pipelineable command will stall the sending queue
+        if (!send_.front()->can_pipeline())
+            break;
+    }
+}
+
 } // newsflash
+
+
+
+

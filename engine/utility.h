@@ -117,4 +117,10 @@ namespace newsflash
         return megs * 1024 * 1024;
     }
 
+    inline 
+    std::size_t KB(std::size_t kbs)
+    {
+        return kbs * 1024;
+    }
+
 } // namespace

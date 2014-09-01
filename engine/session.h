@@ -96,6 +96,10 @@ namespace newsflash
         // quit the session. prepares a quit command 
         void quit();
 
+        void change_group(std::string name);
+
+        void retrieve_article(std::string messageid);
+
         // parse the buff for input data and try to complete
         // currently pending session command. 
         // if the command is succesfully completed returns true
@@ -112,6 +116,10 @@ namespace newsflash
         // the session state changes.
         bool pending() const;
 
+        void enable_pipelining(bool on_off);
+
+        void enable_compression(bool on_off);
+
         // get current error
         error get_error() const;
 
@@ -123,6 +131,9 @@ namespace newsflash
 
         // true if server supports xzver i.e. compressed headers.
         bool has_xzver() const;
+
+    private:
+        void submit_next_commands();
 
     private:
         struct impl;
@@ -140,7 +151,8 @@ namespace newsflash
         class xzver;
 
     private:
-        std::deque<std::unique_ptr<command>> pipeline_;
+        std::deque<std::unique_ptr<command>> send_;
+        std::deque<std::unique_ptr<command>> recv_;        
         std::unique_ptr<impl> state_;
     };
 

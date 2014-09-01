@@ -23,9 +23,11 @@
 #pragma once 
 
 #include <newsflash/config.h>
-#include <memory>
 
+#include <functional>
+#include <memory>
 #include "ui/task.h"
+#include "ui/error.h"
 
 namespace newsflash
 {
@@ -38,9 +40,16 @@ namespace newsflash
         using state = ui::task::state;
         using error = ui::task::error;
 
-        virtual ~task() = default;
+        // this callback is invoked when theres a new action to be performed.
+        std::function<void (std::unique_ptr<action>)> on_action;
 
-        virtual ui::task get_ui_state() const = 0;
+//        std::function<void (std::unique_ptr<cmdlist>)> on_cmdlist;
+
+        // this callback is invoked when an error occurs.
+        // the error object carries more information
+        std::function<void (const ui::error&)> on_error;
+
+        virtual ~task() = default;
 
         virtual void start() = 0;
 
@@ -50,7 +59,11 @@ namespace newsflash
 
         virtual void pause() = 0;
 
-        virtual bool complete(std::unique_ptr<action> act) = 0;
+        virtual void execute() = 0;
+
+        virtual void complete(std::unique_ptr<action> act) = 0;
+
+        virtual void complete(std::unique_ptr<cmdlist> cmd) = 0;
 
         virtual std::size_t get_id() const = 0;
 
@@ -59,6 +72,8 @@ namespace newsflash
         virtual state get_state() const = 0;
 
         virtual error get_error() const = 0;
+
+        virtual ui::task get_ui_state() const = 0;        
     protected:
     private:
     };
