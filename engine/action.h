@@ -27,8 +27,6 @@
 
 namespace newsflash
 {
-    class event;
-
     // action class encapsulates a single state transition
     // when the action completes successfully and is returned 
     // to the originating object the object is expected to complete
@@ -37,7 +35,15 @@ namespace newsflash
     {
     public:
         enum class affinity {
-            any_thread, unique_thread
+            // dispatch the action to any available thread
+            // this means that multiple actions from the same originating
+            // object may complete in any order.
+            any_thread, 
+
+            // dispatch the action to a single thread with affinity to the
+            // originating object. this means that all actions with single_thread
+            // affinity will execute in the order they are queued.
+            single_thread
         };
 
         virtual ~action() = default;
@@ -47,7 +53,9 @@ namespace newsflash
 
         // return wheather an exception happened in perform()
         bool has_exception() const 
-        { return exptr_ != std::exception_ptr(); }
+        { 
+            return exptr_ != std::exception_ptr(); 
+        }
 
         // if theres a captured exception throw it
         void rethrow() const 
@@ -74,8 +82,11 @@ namespace newsflash
         std::size_t get_id() const 
         { return id_; }
 
-        std::size_t set_id(std::size_t id) 
-        { return id_ = id;}
+        void set_id(std::size_t id) 
+        { id_ = id;}
+
+        void set_affinity(affinity aff)
+        { affinity_ = aff; }
 
     protected:
         virtual void xperform() = 0;        

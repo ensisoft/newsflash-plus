@@ -27,6 +27,8 @@
 #include <cstddef>
 #include <string>
 
+#include "../bitflag.h"
+
 namespace newsflash
 {
     namespace ui {
@@ -35,87 +37,51 @@ namespace newsflash
     // or header update.
     struct task
     {
-        enum class error {
-            // succesfully completed without any errors.
-            none,
-
-            // the requested data was not available
+        enum class flags {
+        
+            // some of the requested data was not available
             unavailable,
 
-            // the requested data was taken down
+            // some the requested data was taken down
             dmca,
 
-            // local system error has occurred 
-            // for example a file cannot be created because of insufficient
-            // permissions or storage space is exhausted.
-            system,
+            // some error occurred trying to retrieve the data
+            error,
+
+            // some data appears to be damaged
+            damaged
         };
 
         enum class state {
-            // the task is currently queued in the engine
-            // and will be scheduled for execution at some point.
+            // the task is currently queued
             queued,
 
-            // task was being run before, but now it's waiting
-            // for input data. (for example connection went down,
-            // or there are no free connections).
+            // waiting for input data from the server
             waiting,
 
             // currently active and performing actions on data.
-            // see action for details.
             active,
-
-            // a cap for limiting max buffered data was hit.
-            // drain the queue below the treshold to avoid
-            // consuming too much memory.
-            debuffering,
 
             // paused by the user
             paused,
 
             // task is done. see damaged and error flags for details
             complete,
-
-            // killed, will be removed.
-            killed
+            
+            // some error occurred making it impossible for the task
+            // to continue. examples could be inability to create
+            // files in the filesystem.
+            error
         };
 
-        enum class action {
-            // no action
-            none,
-
-            // task is being prepared 
-            prepare,
-
-            // flushing buffered data to the disk
-            flush,
-
-            // processing data buffer(s)
-            process,
-
-            // finaling the task data
-            finalize,
-
-            // canceling pending data and changes so far.
-            cancel,
-
-            kill
-        };
-
-        // error if any
-        error err;
+        // content error flags if any
+        bitflag<flags> errors;
 
         // current task execution state.
         state st;
 
-        // current data action
-        action act;
-
         // unique task id.
         std::size_t id;
-
-        // the account to which the task is connected.
-        std::size_t account;
 
         std::size_t batch;
 
@@ -125,16 +91,14 @@ namespace newsflash
         // download/transfer size in bytes (if known)
         std::uint64_t size;
 
-        // the time (in seconds) elapsed running the task. 
-        int runtime; 
+        // the time elapsed running the task (in seconds)
+        std::size_t runtime; 
 
-        // the estimated completion time (in seconds), or -1 if not known.
-        int eta;
+        // the estimated completion time (in seconds),
+        std::size_t etatime;
 
         // the current completion %  (range 0.0 - 100.0)
         double completion;
-
-        bool damaged;
     };
 } // ui
 } // engine

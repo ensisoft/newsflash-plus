@@ -28,6 +28,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <cstdint>
+#include "utility.h"
 #include "types.h"
 
 namespace newsflash
@@ -57,6 +58,16 @@ namespace newsflash
     void str(std::ostream& ss, const newsflash::gb& gb)
     {
         ss << gb.value / (1024.0 * 1024.0 * 1024.0) << " Gib";
+    }
+
+    inline
+    void str(std::ostream& ss, const newsflash::size& s)
+    {
+        if (s.value >= GB(1))
+            str(ss, gb{s.value});
+        else if (s.value >= MB(1))
+            str(ss, mb{s.value});
+        else str(ss, kb{s.value});
     }
 
     inline 

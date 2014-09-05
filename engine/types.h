@@ -49,7 +49,13 @@ namespace newsflash
     };
 
     struct gb {
-        gb(std::uint64_t bytes) 
+        gb(std::uint64_t bytes) : value(bytes)
+        {}
+        std::uint64_t value;
+    };
+
+    struct size {
+        size(std::uint64_t bytes) : value(bytes)
         {}
         std::uint64_t value;
     };

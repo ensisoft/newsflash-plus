@@ -93,20 +93,20 @@ namespace newsflash
 
         // observers
         state get_state() const 
-        { return ui_.st; }
+        { return state_.st; }
 
         error get_error() const 
-        { return ui_.err; }
+        { return state_.err; }
 
         std::size_t get_account() const
-        { return ui_.account; }
+        { return state_.account; }
 
         std::size_t get_id() const 
-        { return ui_.id; }
+        { return state_.id; }
 
         // get all state visible towards the UI
         ui::connection get_ui_state() const
-        { return ui_; }
+        { return state_; }
 
     private:
         class exception;
@@ -126,7 +126,7 @@ namespace newsflash
     private:
         event cancellation_;        
     private:
-        ui::connection ui_;
+        ui::connection state_;
     };
 
 } // newsflash

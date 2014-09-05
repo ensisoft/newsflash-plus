@@ -24,6 +24,8 @@
 
 #include <newsflash/config.h>
 
+#include <cstddef>
+
 namespace newsflash
 {
     class buffer;
@@ -38,13 +40,19 @@ namespace newsflash
 
         virtual ~cmdlist() = default;
 
-        virtual bool is_done(step s) const = 0;
+        virtual bool is_done(cmdlist::step step) const = 0;
 
-        virtual void submit(step s, session& ses) = 0;
+        virtual bool is_good(cmdlist::step step) const = 0;
 
-        virtual void receive(step s, buffer& buff) = 0;
+        virtual void submit(cmdlist::step step, session& ses) = 0;
 
-        virtual void next(step s) = 0;
+        virtual void receive(cmdlist::step step, buffer& buff) = 0;
+
+        virtual void next(cmdlist::step step) = 0;
+
+        virtual std::size_t account() const = 0;
+
+        virtual std::size_t task() const = 0;
     protected:
     private:
     };

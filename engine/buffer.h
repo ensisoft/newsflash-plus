@@ -53,10 +53,14 @@ namespace newsflash
             buffer_.resize(initial_capacity);
         }
 
-        // buffer(std::size_t initial_capacity) : buffer()
-        // {
-        //     buffer_.resize(initial_capacity);
-        // }
+        buffer(buffer&& other) : buffer_(std::move(other.buffer_))
+        {
+            size_           = other.size_;
+            content_start_  = other.content_start_;
+            content_length_ = other.content_length_;
+            content_type_   = other.content_type_;
+            content_status_ = other.content_status_;
+        }
 
         // return content pointer to the start of the body/payload data
         const u8* content() const
@@ -164,6 +168,20 @@ namespace newsflash
 
         bool full() const
         { return available() == 0; }
+
+
+        buffer& operator=(buffer&& other)
+        {
+            buffer tmp(std::move(*this));
+            
+            buffer_         = std::move(other.buffer_);
+            size_           = other.size_;
+            content_start_  = other.content_start_;
+            content_length_ = other.content_length_;
+            content_type_   = other.content_type_;
+            content_status_ = other.content_status_;
+            return *this;
+        }
 
     private:
         std::vector<u8> buffer_;

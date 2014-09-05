@@ -69,19 +69,19 @@ namespace newsflash
         }
 
         inline
-        ms_t ms() const
+        ms_t milliseconds() const
         {
             return get_time<std::chrono::milliseconds>();
         }
 
         inline
-        s_t s() const 
+        s_t seconds() const 
         {
             return get_time<std::chrono::seconds>();
         }
 
         inline
-        us_t us() const
+        us_t microseconds() const
         {
             return get_time<std::chrono::microseconds>();
         }

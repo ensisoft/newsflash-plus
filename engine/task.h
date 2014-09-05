@@ -27,10 +27,14 @@
 #include <functional>
 #include <memory>
 #include "ui/task.h"
-#include "ui/error.h"
 
 namespace newsflash
 {
+    namespace ui {
+        struct error;
+        struct settings;
+    }
+
     class action;
     class cmdlist;
 
@@ -38,12 +42,9 @@ namespace newsflash
     {
     public:
         using state = ui::task::state;
-        using error = ui::task::error;
 
         // this callback is invoked when theres a new action to be performed.
         std::function<void (std::unique_ptr<action>)> on_action;
-
-//        std::function<void (std::unique_ptr<cmdlist>)> on_cmdlist;
 
         // this callback is invoked when an error occurs.
         // the error object carries more information
@@ -59,19 +60,19 @@ namespace newsflash
 
         virtual void pause() = 0;
 
-        virtual void execute() = 0;
+        virtual void resume() = 0;
+
+        virtual bool get_next_cmdlist(std::unique_ptr<cmdlist>& cmds) = 0;
 
         virtual void complete(std::unique_ptr<action> act) = 0;
 
         virtual void complete(std::unique_ptr<cmdlist> cmd) = 0;
 
+        virtual void configure(const ui::settings& settings) = 0;
+
         virtual std::size_t get_id() const = 0;
 
-        virtual std::size_t get_account() const = 0;
-
         virtual state get_state() const = 0;
-
-        virtual error get_error() const = 0;
 
         virtual ui::task get_ui_state() const = 0;        
     protected:

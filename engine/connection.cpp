@@ -278,6 +278,9 @@ public:
         }
         while (!cmdlist_.is_done(cmdlist::step::configure));
 
+        if (!cmdlist_.is_good(cmdlist::step::configure))
+            return;
+
         do 
         {
             cmdlist_.submit(cmdlist::step::transfer, session_);
@@ -385,23 +388,23 @@ private:
 
 connection::connection(std::size_t account, std::size_t id) : port_(0), ssl_(false)
 {
-    ui_.st      = state::disconnected;
-    ui_.err     = error::none;
-    ui_.account = account;
-    ui_.id      = id;
-    ui_.task    = 0;
-    ui_.down    = 0;
-    ui_.host    = "";
-    ui_.desc    = "";
-    ui_.secure  = false;
-    ui_.bps     = 0;
+    state_.st      = state::disconnected;
+    state_.err     = error::none;
+    state_.account = account;
+    state_.id      = id;
+    state_.task    = 0;
+    state_.down    = 0;
+    state_.host    = "";
+    state_.desc    = "";
+    state_.secure  = false;
+    state_.bps     = 0;
 
     LOG_D("New connection ", id);
 }
 
 connection::~connection()
 {
-    LOG_D("Deleted connection ", ui_.id);
+    LOG_D("Deleted connection ", state_.id);
 }
 
 void connection::connect(const connection::server& serv)
@@ -416,26 +419,26 @@ void connection::connect(const connection::server& serv)
     password_  = serv.password;
     port_      = serv.port;
     ssl_       = serv.use_ssl;
-    ui_.st     = state::resolving;
-    ui_.err    = error::none;    
-    ui_.host   = serv.hostname;
-    ui_.secure = serv.use_ssl;
+    state_.st     = state::resolving;
+    state_.err    = error::none;    
+    state_.host   = serv.hostname;
+    state_.secure = serv.use_ssl;
 }
 
 void connection::disconnect()
 {
-    assert(ui_.st == state::connected);
+    assert(state_.st == state::connected);
 
     std::unique_ptr<newsflash::action> act(new class disconnect(*session_, *socket_));
 
     on_action(std::move(act));
 
-    ui_.st = state::disconnecting;
+    state_.st = state::disconnecting;
 }
 
 void connection::execute(std::string desc, std::size_t task, cmdlist* cmd)
 {
-    assert(ui_.st == state::connected);
+    assert(state_.st == state::connected);
 
     cancellation_.reset();
 
@@ -444,10 +447,10 @@ void connection::execute(std::string desc, std::size_t task, cmdlist* cmd)
 
     on_action(std::move(act));
 
-    ui_.st   = state::active;
-    ui_.err  = error::none;
-    ui_.task = task;
-    ui_.desc = desc;
+    state_.st   = state::active;
+    state_.err  = error::none;
+    state_.task = task;
+    state_.desc = desc;
 }
 
 void connection::complete(std::unique_ptr<action> act)
@@ -462,7 +465,7 @@ void connection::complete(std::unique_ptr<action> act)
 
         socket_.reset();
         session_.reset();
-        ui_.st = state::error;
+        state_.st = state::error;
         try
         {
             act->rethrow();
@@ -490,11 +493,11 @@ void connection::complete(std::unique_ptr<action> act)
             err  = error::other;
         }
         if (on_error)
-            on_error({what, ui_.host, errc});
+            on_error({what, state_.host, errc});
 
         if (errc == std::errc::connection_refused)
-            ui_.err = error::refused;
-        else ui_.err = err;
+            state_.err = error::refused;
+        else state_.err = err;
 
         LOG_E("Connection error: ", what);
         if (errc != std::error_code())
@@ -507,26 +510,26 @@ void connection::complete(std::unique_ptr<action> act)
 
     // switch based on the current state and create a state transition
     // action for the following state (if any)
-    switch (ui_.st)
+    switch (state_.st)
     {
         case state::resolving:
             if (cancellation_.is_set())
             {
-                ui_.st = state::disconnected;
+                state_.st = state::disconnected;
             }
             else
             {
                 const auto& action_resolve_host = dynamic_cast<resolve&>(*act);
                 const auto resolved_address = action_resolve_host.get_resolved_address();
                 next.reset(new class connect(cancellation_, resolved_address, port_, ssl_));
-                ui_.st = state::connecting;
+                state_.st = state::connecting;
             }
             break;
 
         case state::connecting:
             if (cancellation_.is_set())
             {
-                ui_.st = state::disconnected;
+                state_.st = state::disconnected;
                 socket_.reset();
                 session_.reset();
             }
@@ -535,14 +538,14 @@ void connection::complete(std::unique_ptr<action> act)
                 auto& action_connect = dynamic_cast<class connect&>(*act);
                 auto connected_socket = action_connect.get_connected_socket();
                 next.reset(new class initialize(cancellation_, std::move(connected_socket), username_, password_));
-                ui_.st = state::initializing;
+                state_.st = state::initializing;
             }
             break;
 
         case state::initializing:
             if (cancellation_.is_set())
             {
-                ui_.st = state::disconnected;
+                state_.st = state::disconnected;
                 socket_.reset();
                 session_.reset();
             }
@@ -552,7 +555,7 @@ void connection::complete(std::unique_ptr<action> act)
                 socket_  = action_init.get_connected_socket();
                 session_ = action_init.get_connected_session();
 
-                ui_.st = state::connected;                                        
+                state_.st = state::connected;                                        
             }
             break;
 
@@ -560,16 +563,16 @@ void connection::complete(std::unique_ptr<action> act)
             {
                 auto& action = dynamic_cast<class execute&>(*act);
 
-                ui_.bps  = 0;
-                ui_.desc = "";
-                ui_.task = 0;
-                ui_.st   = state::connected;                
-                ui_.down += action.downloaded_bytes();
+                state_.bps  = 0;
+                state_.desc = "";
+                state_.task = 0;
+                state_.st   = state::connected;                
+                state_.down += action.downloaded_bytes();
             }
             break;
 
         case state::disconnecting:
-            ui_.st = state::disconnected;
+            state_.st = state::disconnected;
             break;
 
         case state::disconnected:

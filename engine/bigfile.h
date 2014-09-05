@@ -23,19 +23,21 @@
 
 #pragma once
 
+#include <newsflash/config.h>
+
 #include <system_error>
 #include <cstdint>
 #include <string>
 #include <memory>
-#include <utility>
+#include "utility.h"
 
 namespace newsflash
 {
     // bigfile handles big files up to 2^63-1 bytes in size
-    class bigfile
+    class bigfile : noncopyable
     {
     public:
-        typedef int64_t big_t;
+        typedef std::int64_t big_t;
 
         bigfile();
        ~bigfile();
@@ -67,6 +69,9 @@ namespace newsflash
         // get current file pointer poisition in the file.
         big_t position() const;
 
+        // get current file size
+        big_t size() const;
+
         // Seek to a file location specified by offset.
         // Seeking always occurs from the start of the file.
         void seek(big_t offset);
@@ -82,6 +87,9 @@ namespace newsflash
         void flush();
 
         bigfile& operator=(bigfile&& other);
+
+        // get the filename
+        std::string name() const ;
 
         // get file size. 
         static std::pair<std::error_code, big_t> size(const std::string& file);

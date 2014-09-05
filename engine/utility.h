@@ -112,15 +112,16 @@ namespace newsflash
 
 
     inline
+    std::size_t GB(std::size_t gigs)
+    { return gigs * 1024 * 1024 * 1024; }
+
+
+    inline
     std::size_t MB(std::size_t megs)
-    {
-        return megs * 1024 * 1024;
-    }
+    { return megs * 1024 * 1024; }
 
     inline 
     std::size_t KB(std::size_t kbs)
-    {
-        return kbs * 1024;
-    }
+    { return kbs * 1024; }
 
 } // namespace

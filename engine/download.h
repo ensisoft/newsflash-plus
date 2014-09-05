@@ -25,26 +25,29 @@
 #include <newsflash/config.h>
 
 #include <memory>
-#include <vector>
 #include <string>
 #include <deque>
-#include "task.h"
+#include <map>
+#include "stopwatch.h"
+#include "etacalc.h"
 #include "bigfile.h"
-#include "encoding.h"
-#include "decoder.h"
+#include "task.h"
 
 namespace newsflash
 {
     namespace ui {
-        class file;
-        class download;
+        struct file;
+        struct download;
     } // ui
 
     // extract encoded content from the buffers
     class download : public task
     {
     public:
-        download(std::size_t id, std::size_t account, const ui::download& details);
+        // this callback is invoked when a new file has been completed.
+        std::function<void (const ui::file& file)> on_file;
+
+        download(std::size_t id, std::size_t batch, std::size_t account, const ui::download& details);
        ~download();
 
         virtual void start() override;
@@ -55,42 +58,52 @@ namespace newsflash
 
         virtual void pause() override;
 
-        virtual void execute() override;
+        virtual void resume() override;
 
-        virtual void complete(std::unique_ptr<action> act);
+        virtual bool get_next_cmdlist(std::unique_ptr<cmdlist>& cmds) override;
 
-        virtual void complete(std::unique_ptr<cmdlist> cmd);
+        virtual void complete(std::unique_ptr<action> act) override;
 
-        virtual ui::task get_ui_state() const override
-        { return state_; }
+        virtual void complete(std::unique_ptr<cmdlist> cmd) override;
+
+        virtual void configure(const ui::settings& settings) override;
+
+        virtual ui::task get_ui_state() const override;
 
         virtual std::size_t get_id() const 
         { return id_; }
 
-        virtual std::size_t get_account() const
-        { return account_; }
-
         virtual state get_state() const 
         { return state_.st; }
 
-        virtual error get_error() const 
-        { return state_.err; }
-
     private:
+        class file;
         class decode;
         class write;
         class bodylist;
+    private:
+        void complete(decode& d);
+        void complete(write& w);
 
     private:
-        std::size_t id_;
-        std::size_t account_;
+        const std::size_t id_;
+        const std::size_t main_account_;
+        const std::size_t num_articles_total_;        
+        std::size_t num_articles_ready_;        
+        std::size_t num_decoding_actions_;
+        std::size_t fill_account_;
         std::string path_;
         std::string name_;
-        std::deque<std::string> groups_;
-        std::deque<std::string> articles_;
+        std::deque<std::unique_ptr<bodylist>> cmds_;
+        std::map<std::string, std::shared_ptr<file>> files_;
+    private:
+        stopwatch timer_;
+//        etacalc eta_;
     private:
         bool overwrite_;
-        bool keeptext_;
+        bool discard_text_;
+    private:
+        bool started_;
     private:
         ui::task state_;
     };

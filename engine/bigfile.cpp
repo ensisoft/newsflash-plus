@@ -50,6 +50,7 @@ namespace newsflash
 struct bigfile::impl {
     HANDLE file;
     bool append;
+    std::string filename;
 
     std::error_code open_file(const std::string& filename, unsigned flags)
     {
@@ -82,6 +83,7 @@ struct bigfile::impl {
             CHECK(CloseHandle(this->file), TRUE);
 
         this->file = file;
+        this->filename = filename;
         return std::error_code();
     }
 };
@@ -148,6 +150,17 @@ bigfile::big_t bigfile::position() const
     const big_t ret = (big_t(high) << 32) | low;
 
     return ret;
+}
+
+bigfile::big_t bigfile::size() const
+{
+    assert(is_open());
+
+    LARGE_INTEGER size = {0};
+    if (!GetFileSizeEx(pimpl_->file, &size))
+        throw std::runtime_error("get file size failed");
+
+    return size.QuadPart;
 }
 
 void bigfile::seek(big_t offset)
@@ -258,6 +271,7 @@ std::error_code bigfile::resize(const std::string& file, big_t size)
 
 struct bigfile::impl {
     int fd;
+    std::string filename;
 
     std::error_code open_file(const std::string& filename, unsigned flags, unsigned mode)
     {
@@ -271,6 +285,7 @@ struct bigfile::impl {
              CHECK(::close(this->fd), 0);
 
         this->fd = fd;
+        this->filename = filename;
         return std::error_code();
     }
 };
@@ -284,9 +299,6 @@ bigfile::~bigfile()
 {
     close();
 }
-
-
-
 
 std::error_code bigfile::open(const std::string& file)
 {
@@ -329,6 +341,17 @@ bigfile::big_t bigfile::position() const
         throw std::runtime_error("get current file position failed (lseek64)");
 
     return big_t(pos);
+}
+
+bigfile::big_t bigfile::size() const 
+{
+    assert(is_open());
+
+    const auto ret = bigfile::size(name());
+    if (ret.first != std::error_code())
+        throw std::runtime_error("failed to get file size");
+
+    return ret.second;
 }
 
 void bigfile::seek(big_t offset)
@@ -417,6 +440,9 @@ bigfile& bigfile::operator=(bigfile&& other)
     pimpl_ = std::move(other.pimpl_);
     return *this;
 }
+
+std::string bigfile::name() const 
+{ return pimpl_->filename; }
 
 bool bigfile::exists(const std::string& file)
 {

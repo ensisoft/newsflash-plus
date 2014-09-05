@@ -38,7 +38,7 @@
 #include <cassert>
 #include "assert.h"
 #include "bigfile.h"
-#include "memory_mapped_file.h"
+#include "memfile.h"
 #include "utf8.h"
 
 namespace newsflash
@@ -46,7 +46,7 @@ namespace newsflash
 
 #if defined(WINDOWS_OS)
 
-struct memory_mapped_file::impl 
+struct memfile::impl 
 {
     HANDLE file;
     HANDLE map;
@@ -134,7 +134,7 @@ std::size_t get_page_size()
 
 }
 
-struct memory_mapped_file::impl 
+struct memfile::impl 
 {
     int file;    
 
@@ -183,10 +183,10 @@ std::size_t align(std::size_t s, std::size_t boundary)
     return (s + boundary - 1) & ~(boundary - 1);
 }
 
-memory_mapped_file::memory_mapped_file() : map_max_count_(0), map_size_(0), map_file_size_(0)
+memfile::memfile() : map_max_count_(0), map_size_(0), map_file_size_(0)
 {}
 
-memory_mapped_file::~memory_mapped_file()
+memfile::~memfile()
 {
     if (!pimpl_)
         return;
@@ -198,7 +198,7 @@ memory_mapped_file::~memory_mapped_file()
 }
 
 
-std::error_code memory_mapped_file::map(const std::string& file)
+std::error_code memfile::map(const std::string& file)
 {
     // todo: think about a mapping strategy for large files.
 
@@ -212,7 +212,7 @@ std::error_code memory_mapped_file::map(const std::string& file)
     return map(file, info.second, 1);
 }
 
-std::error_code memory_mapped_file::map(const std::string& file, std::size_t map_size, std::size_t map_max_count)
+std::error_code memfile::map(const std::string& file, std::size_t map_size, std::size_t map_max_count)
 {
     std::unique_ptr<impl> map(new impl);
 
@@ -229,7 +229,7 @@ std::error_code memory_mapped_file::map(const std::string& file, std::size_t map
     return ret;
 }
 
-void* memory_mapped_file::data(std::size_t offset, std::size_t size)
+void* memfile::data(std::size_t offset, std::size_t size)
 {
     assert(size <= map_size_);
 
@@ -248,17 +248,17 @@ void* memory_mapped_file::data(std::size_t offset, std::size_t size)
     return ret->data + chunk_offset;
 }
 
-std::size_t memory_mapped_file::file_size() const
+std::size_t memfile::file_size() const
 {
     return map_file_size_;
 }
 
-std::size_t memory_mapped_file::map_count() const
+std::size_t memfile::map_count() const
 {
     return chunks_.size();
 }
 
-memory_mapped_file::chunk* memory_mapped_file::find_chunk(std::size_t offset, std::size_t size)
+memfile::chunk* memfile::find_chunk(std::size_t offset, std::size_t size)
 {
     // find a mapped chunk that covers the region specified by
     // offset and size
@@ -279,7 +279,7 @@ memory_mapped_file::chunk* memory_mapped_file::find_chunk(std::size_t offset, st
 }
 
 
-memory_mapped_file::chunk* memory_mapped_file::map_chunk(std::size_t offset, std::size_t size)
+memfile::chunk* memfile::map_chunk(std::size_t offset, std::size_t size)
 {
     assert(offset + size <= map_file_size_);
 
@@ -294,7 +294,7 @@ memory_mapped_file::chunk* memory_mapped_file::map_chunk(std::size_t offset, std
     return &chunks_.back();
 }
 
-void memory_mapped_file::evict()
+void memfile::evict()
 {
     // evict a chunk that has the smallest refcount
     auto it = std::min_element(chunks_.begin(), chunks_.end(),

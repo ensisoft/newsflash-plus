@@ -24,7 +24,6 @@
 
 #include <newsflash/config.h>
 
-#include <deque>
 #include <string>
 #include <cstddef>
 
@@ -32,36 +31,20 @@ namespace newsflash
 {
     namespace ui {
 
-    // a file available in usenet network. each file
-    // is identified by a list of message-ids or message numbers.
+    // a new file produced by downloading and decoding content
     struct file
     {
-        // list of message id's or message numbers.
-        // note that message numbers are specific to a server
-        // while message-ids are portable across servers.
-        std::deque<std::string> articles;
-
-        // the list of groups into which look for the messge ids.
-        std::deque<std::string> groups;
-
-        // the local filesystem path where the content
-        // is to the be placed.
+        // complete path to the file including the filename
         std::string path;
-
-        std::string name;
-
-        // the human readable description. 
-        // this will appear in task::description.
-        std::string desc;
 
         // the esimated size of the content to be downloaded in bytes. 
         std::uint64_t size;
 
-        // the account to be used for downloading the content.
-        std::size_t account;
-
-        // contents are suspected to be damaged
+        // this is set to true if contents are suspected to be damaged
         bool damaged;
+
+        // this is set to true if the file is binary data
+        bool binary;
     };
 
 } // ui

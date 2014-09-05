@@ -22,18 +22,21 @@
 
 #pragma once
 
+#include <newsflash/config.h>
+
 #include <system_error>
 #include <memory>
 #include <vector>
 
 namespace newsflash
 {
-    class memory_mapped_file
+    // memory mapped file maps the contents of a file on the disk
+    // into system ram in chunks. 
+    class memfile
     {
     public:
-        memory_mapped_file();
-
-       ~memory_mapped_file();
+        memfile();
+       ~memfile();
 
         // map the given file fully into process and let the implementation
         // figure out optimal values for map_size and map_max_count
