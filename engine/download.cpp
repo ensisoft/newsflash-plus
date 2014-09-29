@@ -418,7 +418,7 @@ public:
         }
     }
 
-    virtual void receive(cmdlist::step step, buffer& buff) override
+    virtual void receive(cmdlist::step step, buffer&& buff) override
     {
         if (step == cmdlist::step::configure)
         {
@@ -461,6 +461,12 @@ public:
     std::deque<buffer>& get_buffers()
     { return buffers_; }
 
+    void reset()
+    {
+        group_index_ = 0;
+        group_fail_  = false;
+    }
+
 private:
     const std::deque<std::string> groups_;
     const std::deque<std::string> messages_;
@@ -487,10 +493,11 @@ download::download(std::size_t id, std::size_t batch, std::size_t account, const
 
     path_ = fs::remove_illegal_filepath_chars(details.path);
     name_ = fs::remove_illegal_filename_chars(details.desc);
-    num_articles_ready_ = 0;
-    overwrite_ = false;
-    discard_text_ = false;
-    started_ = false;
+    num_articles_ready_   = 0;
+    fill_account_         = 0;
+    overwrite_            = false;
+    discard_text_         = false;
+    started_              = false;
 
     const auto& groups   = details.groups;
     const auto& articles = details.articles;
@@ -538,6 +545,7 @@ void download::start()
 
 void download::kill()
 {
+
     for (auto& it : files_)
     {
         auto& file = it.second;
@@ -586,6 +594,12 @@ bool download::get_next_cmdlist(std::unique_ptr<cmdlist>& cmds)
 {
     if (cmds_.empty())
         return false;
+
+    if (state_.st != task::state::active)
+    {
+        state_.st = task::state::active;
+        timer_.start();
+    }
 
     cmds = std::move(cmds_.front());
     cmds_.pop_front();
@@ -640,6 +654,8 @@ void download::complete(std::unique_ptr<cmdlist> cmd)
     // we will move them onto the fill account
     auto& cmdlist = dynamic_cast<bodylist&>(*cmd);
 
+
+
     const auto account = cmdlist.account();
     const auto task = cmdlist.task();
     assert(task == id_);
@@ -648,66 +664,90 @@ void download::complete(std::unique_ptr<cmdlist> cmd)
     auto& buffers = cmdlist.get_buffers();
     auto articles = cmdlist.get_articles();
 
-    std::deque<std::string> fill_messages;
+    bool have_decoding_actions = false;
 
-    for (std::size_t i=0; i<buffers.size(); ++i)
+    if (!cmdlist.is_good(cmdlist::step::configure))
     {
-        auto& buffer  = buffers[i];
-        const auto& article = articles[0];
-        const auto status = buffer.content_status();
-
-        if (status != buffer::status::success)
+        if (!fill_account_)
         {
-            if (account != fill_account_)
+            state_.st = state::complete;
+            state_.errors.set(ui::task::flags::unavailable);
+        }        
+        else
+        {
+            std::unique_ptr<bodylist> cmds(new bodylist(groups, std::move(articles)));
+            cmds->set_task(id_);
+            cmds->set_account(fill_account_);
+            cmds_.push_back(std::move(cmds));
+        }
+    }
+    else
+    {
+        std::deque<std::string> fill_messages;
+
+        for (std::size_t i=0; i<buffers.size(); ++i)
+        {
+            auto& buffer  = buffers[i];
+            const auto& article = articles[0];
+            const auto status = buffer.content_status();
+
+            if (status != buffer::status::success)
             {
-                if (fill_account_)
-                    fill_messages.push_back(article);
+                if (fill_account_ && account != fill_account_)
+                {
+                    if (fill_account_)
+                        fill_messages.push_back(article);
+                }
+                else
+                {
+                    if (status == buffer::status::dmca)
+                        state_.errors.set(ui::task::flags::dmca);
+                    else if (status == buffer::status::unavailable)
+                        state_.errors.set(ui::task::flags::unavailable);
+                    else if (status == buffer::status::error)
+                        state_.errors.set(ui::task::flags::error);        
+                }
             }
             else
             {
-                if (status == buffer::status::dmca)
-                    state_.errors.set(ui::task::flags::dmca);
-                else if (status == buffer::status::unavailable)
-                    state_.errors.set(ui::task::flags::unavailable);
-                else if (status == buffer::status::error)
-                    state_.errors.set(ui::task::flags::error);        
+                std::unique_ptr<decode> dec(new decode(std::move(buffer)));
+                dec->set_id(id_);
+                dec->set_affinity(action::affinity::any_thread);
+                on_action(std::move(dec));
+
+                have_decoding_actions = true;
             }
+            articles.pop_front();
         }
-        else
+
+        // if there are more articles than buffers it means that
+        // not all articles were retrieved yet.
+        // therefore create a cmdlist of the remaining articles
+        if (!articles.empty())
         {
-            std::unique_ptr<decode> dec(new decode(std::move(buffer)));
-            dec->set_id(id_);
-            dec->set_affinity(action::affinity::any_thread);
-            on_action(std::move(dec));
-
-            if (state_.st == state::waiting)
-                state_.st = state::active;
-
-            ++num_decoding_actions_;
+            std::unique_ptr<bodylist> cmds(new bodylist(groups, std::move(articles)));
+            cmds->set_task(id_);
+            cmds->set_account(main_account_);
+            cmds_.push_back(std::move(cmds));
         }
-        articles.pop_front();
-    }
-    // if there are more articles than buffers it means that
-    // not all articles were retrieved yet.
-    // therefore create a cmdlist of the remaining articles
-    if (!articles.empty())
-    {
-        std::unique_ptr<bodylist> cmds(new bodylist(groups, std::move(articles)));
-        cmds->set_task(id_);
-        cmds->set_account(main_account_);
-        cmds_.push_back(std::move(cmds));
+
+        // fill messages are messages that were not available on the primary
+        // account. if we have any then create a new fill message cmdlist
+        // using the fill server.
+        if (!fill_messages.empty())
+        {
+            std::unique_ptr<bodylist> cmds(new bodylist(groups, std::move(fill_messages)));
+            cmds->set_task(id_);
+            cmds->set_account(fill_account_);
+            cmds_.push_back(std::move(cmds));
+        }
     }
 
-    // fill messages are messages that were not available on the primary
-    // account. if we have any then create a new fill message cmdlist
-    // using the fill server.
-    if (!fill_messages.empty())
+    if (cmds_.empty() && !have_decoding_actions)
     {
-        std::unique_ptr<bodylist> cmds(new bodylist(groups, std::move(fill_messages)));
-        cmds->set_task(id_);
-        cmds->set_account(fill_account_);
-        cmds_.push_back(std::move(cmds));
+        state_.st = state::complete;
     }
+
 }
 
 void download::configure(const ui::settings& settings)
@@ -725,8 +765,7 @@ ui::task download::get_ui_state() const
     ret.etatime    = 0;
 
     // todo: update eta, time spent 
-    if (state_.st == state::active || 
-        state_.st == state::waiting)
+    if (state_.st == state::active || state_.st == state::waiting)
     {
         // todo: eta
     }
@@ -790,21 +829,17 @@ void download::complete(decode& d)
 
 void download::complete(write& w)
 {
-    --num_decoding_actions_;
-    ++num_articles_ready_;
-    
-    if (num_decoding_actions_ == 0)
-    {
-        if (state_.st == state::active)
-            state_.st = state::waiting;
-    }
+    num_articles_ready_++;
 
     if (num_articles_ready_ != num_articles_total_)
         return;
 
     if (state_.st == state::active)
+    {
         state_.st = state::complete;
+    }
 
+    // notifications for downloaded content
     for (auto& it : files_)
     {
         const auto& big = it.second;

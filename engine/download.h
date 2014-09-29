@@ -90,7 +90,6 @@ namespace newsflash
         const std::size_t main_account_;
         const std::size_t num_articles_total_;        
         std::size_t num_articles_ready_;        
-        std::size_t num_decoding_actions_;
         std::size_t fill_account_;
         std::string path_;
         std::string name_;

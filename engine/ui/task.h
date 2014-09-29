@@ -59,7 +59,7 @@ namespace newsflash
             // waiting for input data from the server
             waiting,
 
-            // currently active and performing actions on data.
+            // currently being downloaded.
             active,
 
             // paused by the user

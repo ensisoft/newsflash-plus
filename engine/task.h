@@ -38,6 +38,8 @@ namespace newsflash
     class action;
     class cmdlist;
 
+    // tasks implement some nntp data based activity in the engine, for
+    // example extracting binary content from article data.
     class task 
     {
     public:
@@ -52,16 +54,32 @@ namespace newsflash
 
         virtual ~task() = default;
 
+        // start the task.
+        // precondition: task is queued
+        // postcondition: transitions the task from queued to waiting state
         virtual void start() = 0;
 
+        // kill the task. if the task is not complete then this has the effect
+        // of canceling all the work that has been done, for example removing
+        // any files created on the filesystem etc. if task is complete then
+        // simply the non-persistent data is cleaned away. 
+        // after this call returns the object can be deleted.
         virtual void kill() = 0;
 
+        //
         virtual void flush() = 0;
 
+        // transition the task to paused state.
+        // precondition: task is neither paused, complete or errored
+        // postcondition: task is paused
         virtual void pause() = 0;
 
+        // resume a previously paused task.
+        // precondition: task is paused
+        // postcondition: task is queued if it hasn't run at all. otherwise waiting.
         virtual void resume() = 0;
 
+        //
         virtual bool get_next_cmdlist(std::unique_ptr<cmdlist>& cmds) = 0;
 
         virtual void complete(std::unique_ptr<action> act) = 0;
@@ -78,4 +96,5 @@ namespace newsflash
     protected:
     private:
     };
+
 } // newsflash

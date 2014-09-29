@@ -273,7 +273,7 @@ public:
             }
             while (!session_.parse_next(recvbuf, config));
 
-            cmdlist_.receive(cmdlist::step::configure, config);
+            cmdlist_.receive(cmdlist::step::configure, std::move(config));
             cmdlist_.next(cmdlist::step::configure);
         }
         while (!cmdlist_.is_done(cmdlist::step::configure));
@@ -312,7 +312,7 @@ public:
                 if (err != session::error::none)
                     throw exception("no permission", connection::error::no_permission);
 
-                cmdlist_.receive(cmdlist::step::transfer, content);
+                cmdlist_.receive(cmdlist::step::transfer, std::move(content));
                 cmdlist_.next(cmdlist::step::transfer);
             }
         }

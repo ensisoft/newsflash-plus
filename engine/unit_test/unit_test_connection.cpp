@@ -240,6 +240,10 @@ void test_execute()
 
             return buffers_ == 2;
         }
+        virtual bool is_good(nf::cmdlist::step step) const override
+        {
+            return true;
+        }
 
         virtual void submit(nf::cmdlist::step step, nf::session& session) override
         {
@@ -251,7 +255,7 @@ void test_execute()
             session.retrieve_article("4");
         }
 
-        virtual void receive(nf::cmdlist::step, nf::buffer& buffer) override
+        virtual void receive(nf::cmdlist::step, nf::buffer&& buffer) override
         {
             if (buffers_ == 0)
             {
@@ -280,6 +284,12 @@ void test_execute()
 
         virtual void next(nf::cmdlist::step) 
         {}
+
+        virtual std::size_t account() const override
+        { return 0; }
+
+        virtual std::size_t task() const override
+        { return 0; }
     public:
         int buffers_;
         int content_len_;
