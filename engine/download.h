@@ -40,6 +40,9 @@ namespace newsflash
         struct download;
     } // ui
 
+    class decode;
+    class bodylist;
+
     // extract encoded content from the buffers
     class download : public task
     {
@@ -78,9 +81,8 @@ namespace newsflash
 
     private:
         class file;
-        class decode;
         class write;
-        class bodylist;
+
     private:
         void complete(decode& d);
         void complete(write& w);
@@ -90,6 +92,7 @@ namespace newsflash
         const std::size_t main_account_;
         const std::size_t num_articles_total_;        
         std::size_t num_articles_ready_;        
+        std::size_t num_commands_active_;
         std::size_t fill_account_;
         std::string path_;
         std::string name_;
@@ -97,11 +100,8 @@ namespace newsflash
         std::map<std::string, std::shared_ptr<file>> files_;
     private:
         stopwatch timer_;
-//        etacalc eta_;
-    private:
         bool overwrite_;
         bool discard_text_;
-    private:
         bool started_;
     private:
         ui::task state_;

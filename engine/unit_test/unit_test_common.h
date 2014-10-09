@@ -44,6 +44,8 @@
 #include <vector>
 #include <ctime>
 
+#include "../buffer.h"
+
   //#define BOOST_FILESYSTEM_VERSION 2
 
 #if defined(WINDOWS_OS)
@@ -51,6 +53,30 @@
 #elif defined(LINUX_OS)
 #  include <unistd.h>
 #endif
+
+newsflash::buffer read_file_buffer(const char* file)
+{
+    auto* f = std::fopen(file, "rb");
+    BOOST_REQUIRE(f);
+
+    std::fseek(f, 0, SEEK_END);
+    const auto size = ftell(f);
+    std::fseek(f, 0, SEEK_SET);
+
+    newsflash::buffer buff(size);
+
+    std::fread(buff.back(), 1, size, f);
+    std::fclose(f);
+
+    buff.append(size);
+    buff.set_content_type(newsflash::buffer::type::article);
+    buff.set_content_length(size);
+    buff.set_content_start(0);
+
+    return std::move(buff);
+}
+
+
 
 int random_int()
 {

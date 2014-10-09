@@ -33,7 +33,7 @@ namespace nntp
     public:
         struct line {
             const char* start;
-            size_t length;
+            size_t length; // length of the line including the \r\n (or \n)
         };
 
         class iterator : public
@@ -116,9 +116,9 @@ namespace nntp
         {
             if (size_ - pos < 2)
                 return {nullptr, 0 };
-            for (std::size_t i=pos+1; i<size_; ++i)
+            for (std::size_t i=pos; i<size_; ++i)
             {
-                if (buffer_[i] == '\n' && buffer_[i-1] == '\r')
+                if (buffer_[i] == '\n')// && buffer_[i-1] == '\r')
                     return line {&buffer_[pos], i - pos + 1};
             }
             return line { nullptr, 0 };

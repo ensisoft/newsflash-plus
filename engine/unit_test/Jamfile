@@ -26,9 +26,9 @@ unit-test unit_test_download           : unit_test_download.cpp ;
 unit-test unit_test_yenc_decoder       : unit_test_yenc_decoder.cpp ;
 unit-test unit_test_speedometer        : unit_test_speedometer.cpp ;
 unit-test unit_test_stringtable        : unit_test_stringtable.cpp ;
-unit-test unit_test_bodylist           : unit_test_bodylist.cpp ;
-unit-test unit_test_xoverlist          : unit_test_xoverlist.cpp ;
 
+#unit-test unit_test_bodylist           : unit_test_bodylist.cpp ;
+#unit-test unit_test_xoverlist          : unit_test_xoverlist.cpp ;
 #unit-test unit_test_uuencode_decoder   : unit_test_uuencode_decoder.cpp ;
 #unit-test unit_test_grouplist          : unit_test_grouplist.cpp ;
 
@@ -38,6 +38,7 @@ unit-test unit_test_nntp : unit_test_nntp.cpp ;
 unit-test unit_test_linebuffer : unit_test_linebuffer.cpp ;
 unit-test unit_test_bodyiter : unit_test_bodyiter.cpp ;
 
+unit-test unit_test_decode : unit_test_decode.cpp ;
 
 exe server : server.cpp ;
 

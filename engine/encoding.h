@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include <newsflash/config.h>
 #include <cstddef>
 
 namespace newsflash

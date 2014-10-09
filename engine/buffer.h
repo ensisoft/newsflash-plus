@@ -53,6 +53,10 @@ namespace newsflash
             buffer_.resize(initial_capacity);
         }
 
+        buffer() : size_(0), content_start_(0), content_length_(0),
+            content_type_(type::none), content_status_(status::none)
+        {}
+
         buffer(buffer&& other) : buffer_(std::move(other.buffer_))
         {
             size_           = other.size_;
@@ -78,8 +82,15 @@ namespace newsflash
         // of bytes written
         void append(std::size_t size)
         {
-            assert(size + size_  < buffer_.size());
+            assert(size + size_  <= buffer_.size());
             size_ += size;
+        }
+
+        void append(const char* str)
+        {
+            assert(std::strlen(str) + size_ <= buffer_.size());
+            std::strcpy(back(), str);
+            size_ += std::strlen(str);
         }
 
         void allocate(std::size_t capacity)

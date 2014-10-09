@@ -24,7 +24,7 @@
 
 #include <newsflash/config.h>
 
-#include <deque>
+#include <vector>
 #include <string>
 #include <cstddef>
 
@@ -38,10 +38,10 @@ namespace newsflash
         // list of message id's or message numbers.
         // note that message numbers are specific to a server
         // while message-ids are portable across servers.
-        std::deque<std::string> articles;
+        std::vector<std::string> articles;
 
         // the list of groups into which look for the messge ids.
-        std::deque<std::string> groups;
+        std::vector<std::string> groups;
 
         // the local filesystem path where the downloadded/decoded content
         // is to the be placed.

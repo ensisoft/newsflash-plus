@@ -91,6 +91,21 @@ void test_linebuffer()
         ++beg;
         BOOST_REQUIRE(beg == end);
     }
+
+    // mixed "\r\n" and just "\n"
+    {
+        const char* str = "foo\r\nbar\nkeke\n";
+
+        nntp::linebuffer buffer(str, std::strlen(str));
+
+        auto beg = buffer.begin();
+        auto end = buffer.end();
+        BOOST_REQUIRE(beg.to_str() == "foo\r\n");
+        ++beg;
+        BOOST_REQUIRE(beg.to_str() == "bar\n");
+        ++beg;
+        BOOST_REQUIRE(beg.to_str() == "keke\n");
+    }
 }
 
 int test_main(int, char*[])

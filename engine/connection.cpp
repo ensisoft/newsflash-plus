@@ -255,41 +255,15 @@ public:
         // once a command is completed we pass the output buffer
         // to the cmdlist so that it can update its own state.
 
-        do 
+        bool configure_success = false;
+
+        for (std::size_t i=0; ; ++i)
         {
-            cmdlist_.submit(cmdlist::step::configure, session_);
-            if (!session_.pending())
-                break;
-
-            newsflash::buffer config(KB(1));
-            do 
+            if (cmdlist_.submit_configure_command(i, session_))
             {
-                auto data   = socket_.wait(true, false);
-                auto cancel = cancel_.wait();
-                if (!newsflash::wait_for(data, cancel, std::chrono::seconds(10)))
-                    throw exception("socket timeout", connection::error::timeout);
-                else if (cancel)
-                    return;
-            }
-            while (!session_.parse_next(recvbuf, config));
-
-            cmdlist_.receive(cmdlist::step::configure, std::move(config));
-            cmdlist_.next(cmdlist::step::configure);
-        }
-        while (!cmdlist_.is_done(cmdlist::step::configure));
-
-        if (!cmdlist_.is_good(cmdlist::step::configure))
-            return;
-
-        do 
-        {
-            cmdlist_.submit(cmdlist::step::transfer, session_);
-            while (session_.pending())
-            {
-                newsflash::buffer content(MB(4));                
+                newsflash::buffer config(KB(1));
                 do 
                 {
-                    // wait for data or cancellation
                     auto data   = socket_.wait(true, false);
                     auto cancel = cancel_.wait();
                     if (!newsflash::wait_for(data, cancel, std::chrono::seconds(10)))
@@ -297,26 +271,56 @@ public:
                     else if (cancel)
                         return;
 
-                    // readsome
                     const auto bytes = socket_.recvsome(recvbuf.back(), recvbuf.available());
                     if (bytes == 0)
                         throw exception("socket was closed unexpectedly", connection::error::network);
 
-                    down_ += bytes; // this includes header
                     recvbuf.append(bytes);
                 }
-                while (!session_.parse_next(recvbuf, content));
+                while (!session_.parse_next(recvbuf, config));
 
-                // todo: is this oK? (in case when quota finishes..??)
-                const auto err = session_.get_error();
-                if (err != session::error::none)
-                    throw exception("no permission", connection::error::no_permission);
-
-                cmdlist_.receive(cmdlist::step::transfer, std::move(content));
-                cmdlist_.next(cmdlist::step::transfer);
+                if (cmdlist_.receive_configure_buffer(i, std::move(config)))
+                {
+                    configure_success = true;
+                    break;
+                }
             }
         }
-        while (!cmdlist_.is_done(cmdlist::step::transfer));
+        if (!configure_success)
+            return;
+
+        cmdlist_.submit_data_commands(session_);
+
+        while (session_.pending())
+        {
+            newsflash::buffer content(MB(4));                
+            do 
+            {
+                // wait for data or cancellation
+                auto data   = socket_.wait(true, false);
+                auto cancel = cancel_.wait();
+                if (!newsflash::wait_for(data, cancel, std::chrono::seconds(10)))
+                    throw exception("socket timeout", connection::error::timeout);
+                else if (cancel)
+                    return;
+
+                // readsome
+                const auto bytes = socket_.recvsome(recvbuf.back(), recvbuf.available());
+                if (bytes == 0)
+                    throw exception("socket was closed unexpectedly", connection::error::network);
+
+                down_ += bytes; // this includes header
+                recvbuf.append(bytes);
+            }
+            while (!session_.parse_next(recvbuf, content));
+
+            // todo: is this oK? (in case when quota finishes..??)
+            const auto err = session_.get_error();
+            if (err != session::error::none)
+                throw exception("no permission", connection::error::no_permission);
+
+            cmdlist_.receive_data_buffer(std::move(content));
+        }
     }
 
     std::uint64_t downloaded_bytes() const 

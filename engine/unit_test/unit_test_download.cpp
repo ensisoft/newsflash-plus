@@ -24,8 +24,9 @@
 
 #include <boost/test/minimal.hpp>
 #include <thread>
+#include "../bodylist.h"
+#include "../download_state_machine.h"
 #include "../download.h"
-#include "../cmdlist.h"
 #include "../session.h"
 #include "../buffer.h"
 #include "../action.h"
@@ -33,313 +34,130 @@
 #include "../ui/settings.h"
 #include "unit_test_common.h"
 
-
 namespace nf = newsflash;
 namespace ui = newsflash::ui;
 
 using state = newsflash::ui::task::state;
 
-void set(nf::buffer& buff, const char* str)
+void unit_test_bodylist()
 {
-    buff.clear();
-    std::strcpy(buff.back(), str);
-    buff.append(std::strlen(str));
-}
+    nf::bodylist list(1, 2, {"alt.binaries.foo", "alt.binaries.bar"}, {"123", "234", "345"});
 
-void unit_test_state()
-{
-    ui::download details;
-    details.articles.push_back("1");
-    details.desc = "test";
-    details.groups.push_back("alt.binaries.foo");
-    details.path = "./";
-    details.size = 1024;    
+    BOOST_REQUIRE(list.task() == 1);
+    BOOST_REQUIRE(list.account() == 2);    
+    BOOST_REQUIRE(!list.is_complete());
+    BOOST_REQUIRE(!list.configure_fail());
 
-    nf::download download(123, 321, 111, details);    
-
-    auto ui = download.get_ui_state();
-    BOOST_REQUIRE(ui.st == state::queued);
-    BOOST_REQUIRE(ui.id == 123);
-    BOOST_REQUIRE(ui.batch == 321);
-    BOOST_REQUIRE(ui.desc == "test");
-    BOOST_REQUIRE(ui.size == 1024);
-    BOOST_REQUIRE(ui.runtime == 0);
-    BOOST_REQUIRE(ui.etatime == 0);
-    BOOST_REQUIRE(ui.errors.value() == 0);
-
-    download.pause();
-    BOOST_REQUIRE(download.get_state() == state::paused);
-
-    download.resume();
-    BOOST_REQUIRE(download.get_state() == state::queued);
-
-    download.start();
-    BOOST_REQUIRE(download.get_state() == state::waiting);
-
-    ui = download.get_ui_state();
-    auto runtime = ui.runtime;
-    auto etatime = ui.etatime;
-    BOOST_REQUIRE(runtime != 0);    
-  //BOOST_REQUIRE(etatime != 0);
-
-    download.pause();
-    BOOST_REQUIRE(download.get_state() == state::paused);
-    ui = download.get_ui_state();
-    runtime = ui.runtime;
-    etatime = ui.etatime;
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-    ui = download.get_ui_state();
-    BOOST_REQUIRE(ui.runtime == runtime);
-    BOOST_REQUIRE(ui.etatime == etatime);
-
-    download.resume();
-    BOOST_REQUIRE(download.get_state() == state::waiting);
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-    ui = download.get_ui_state();
-    BOOST_REQUIRE(ui.runtime > runtime);
-
-
-}
-
-void unit_test_cmdlist()
-{
-    std::string command;
-    nf::session session;
-    session.on_send = [&](const std::string& cmd) {
-        command = cmd;
-    };
-    session.on_auth = [](std::string& user, std::string& pass) {
-        user = "roger";
-        pass = "rabbit";
-    };
-
-    ui::download details;
-    details.articles.push_back("1");
-    details.articles.push_back("2");
-    details.articles.push_back("3");
-    details.articles.push_back("4");    
-    details.desc = "test";
-    details.groups.push_back("alt.binaries.foo");
-    details.groups.push_back("alt.binaries.bar");    
-    details.path = "./";
-    details.size = 1024;
-
-    // configure fails, neither group exists, no fill server
+    // no such group
     {
-        nf::download download(123, 321, 111, details);
-        download.on_action = [](std::unique_ptr<nf::action> a) {};
-        download.on_error  = [](const ui::error&) { 
-            BOOST_FAIL("unexpected error"); 
-        };
-
-        nf::buffer recvbuf(1024);
-        nf::buffer body1(1024);
-        nf::buffer body2(1024);        
-        nf::buffer body3(1024);        
-        nf::buffer body4(1024);        
-
-        std::unique_ptr<nf::cmdlist> cmds;
-        BOOST_REQUIRE(download.get_next_cmdlist(cmds));
-        BOOST_REQUIRE(cmds->account() == 111);
-        BOOST_REQUIRE(cmds->task() == 123);
-        BOOST_REQUIRE(!cmds->is_done(nf::cmdlist::step::configure));
-
-        cmds->submit(nf::cmdlist::step::configure, session);
-        BOOST_REQUIRE(command == "GROUP alt.binaries.foo\r\n");
-
-        set(recvbuf, "411 no such group\r\n");
-        session.parse_next(recvbuf, body1);
-        cmds->receive(nf::cmdlist::step::configure, std::move(body1));
-        BOOST_REQUIRE(!cmds->is_done(nf::cmdlist::step::configure));
-
-        cmds->next(nf::cmdlist::step::configure);
-        cmds->submit(nf::cmdlist::step::configure, session);
-        BOOST_REQUIRE(command == "GROUP alt.binaries.bar\r\n");
-
-        set(recvbuf, "411 no such group\r\n");
-        session.parse_next(recvbuf, body2);
-        cmds->receive(nf::cmdlist::step::configure, std::move(body2));
-        cmds->next(nf::cmdlist::step::configure);
-
-        BOOST_REQUIRE(cmds->is_done(nf::cmdlist::step::configure));
-        BOOST_REQUIRE(cmds->is_good(nf::cmdlist::step::configure) == false);
-
-        download.complete(std::move(cmds));
-        auto ui = download.get_ui_state();
-        BOOST_REQUIRE(ui.st == state::complete);
-        BOOST_REQUIRE(ui.errors.test(ui::task::flags::unavailable));
-    }
-
-    // configure fails, fill server enabled so try again
-    {
-        nf::download download(123, 321, 111, details);
-        download.on_action = [](std::unique_ptr<nf::action> a) {};
-        download.on_error  = [](const ui::error&) {
-            BOOST_FAIL("unexpected error");
-        };
-
-        nf::buffer recvbuf(1024);
-        nf::buffer body1(1024);
-        nf::buffer body2(1024);        
-        nf::buffer body3(1024);
-
-        ui::settings settings;
-        settings.fill_account = 666;
-        settings.enable_fill_account = true;
-        download.configure(settings);
-        download.start();
-
-        std::unique_ptr<nf::cmdlist> cmds;
-        BOOST_REQUIRE(download.get_next_cmdlist(cmds));
-
-        cmds->submit(nf::cmdlist::step::configure, session);
-        set(recvbuf, "411 no such group\r\n");
-        session.parse_next(recvbuf, body1);
-        cmds->receive(nf::cmdlist::step::configure, std::move(body1));
-
-        cmds->next(nf::cmdlist::step::configure);
-        cmds->submit(nf::cmdlist::step::configure, session);
-
-        set(recvbuf, "411 no such group\r\n");
-        session.parse_next(recvbuf, body2);
-        cmds->receive(nf::cmdlist::step::configure, std::move(body2));
-        cmds->next(nf::cmdlist::step::configure);
-
-        BOOST_REQUIRE(cmds->is_done(nf::cmdlist::step::configure));
-        BOOST_REQUIRE(cmds->is_good(nf::cmdlist::step::configure) == false);
-
-        download.complete(std::move(cmds));
-        auto  ui = download.get_ui_state();
-        BOOST_REQUIRE(ui.st == state::waiting);
-
-        BOOST_REQUIRE(download.get_next_cmdlist(cmds));
-        BOOST_REQUIRE(cmds->account() == 666);
-        BOOST_REQUIRE(cmds->task() == 123);
-
-    }
-
-    // configure success cases
-
-
-    // all content not available, no fill server
-    {
-        nf::download download(123, 321, 111, details);
-        download.on_action = [](std::unique_ptr<nf::action> a) {};
-        download.on_error  = [](const ui::error&e) {
-            BOOST_FAIL("unexpected error");
-        };
-
-        nf::buffer recvbuf(1024);
-        nf::buffer body1(1024);
-        nf::buffer body2(1024);
-        nf::buffer body3(1024);
-        nf::buffer body4(1024);                        
-
-        download.start();
-
-        std::unique_ptr<nf::cmdlist> cmds;
-        BOOST_REQUIRE(download.get_next_cmdlist(cmds));
-
-        command.clear();
-
-        session.enable_pipelining(true);
-        session.on_send = [&](const std::string& cmd) {
-            command += cmd;
-        };        
-
-        cmds->submit(nf::cmdlist::step::transfer, session);
-        BOOST_REQUIRE(command == "BODY 1\r\nBODY 2\r\nBODY 3\r\nBODY 4\r\n");
-
-        set(recvbuf, "420 no such message\r\n"
-            "420 no such message\r\n"
-            "420 no such message\r\n"
-            "420 no such message\r\n");
-
-        session.parse_next(recvbuf, body1);
-        cmds->receive(nf::cmdlist::step::transfer, std::move(body1));
-
-        session.parse_next(recvbuf, body2);
-        cmds->receive(nf::cmdlist::step::transfer, std::move(body2));
-
-        session.parse_next(recvbuf, body3);
-        cmds->receive(nf::cmdlist::step::transfer, std::move(body3));
-
-        session.parse_next(recvbuf, body4);
-        cmds->receive(nf::cmdlist::step::transfer, std::move(body4));
-
-        BOOST_REQUIRE(cmds->is_done(nf::cmdlist::step::transfer));
-
-        download.complete(std::move(cmds));
-        auto ui = download.get_ui_state();
-        BOOST_REQUIRE(ui.st == state::complete);
-        BOOST_REQUIRE(ui.errors.test(nf::ui::task::flags::unavailable));
-
-    }
-
-    // some content not available, fill server
-    {
-        nf::download download(123, 321, 111, details);
-
-        download.on_action = [](std::unique_ptr<nf::action> a) {};
-        download.on_error  = [](const ui::error&e) {
-            BOOST_FAIL("unexpected error");
-        };
-
-        nf::buffer recvbuf(1024);
-        nf::buffer body1(1024);
-        nf::buffer body2(1024);
-        nf::buffer body3(1024);
-        nf::buffer body4(1024);                        
-
-        ui::settings settings;
-        settings.enable_fill_account = true;
-        settings.fill_account = 666;
-
-        download.configure(settings);
-        download.start();
-
-        std::unique_ptr<nf::cmdlist> cmds;
-        BOOST_REQUIRE(download.get_next_cmdlist(cmds));
-
-        command.clear();
-
-        //session.enable_pipelining(true);
+        std::string command;
+        nf::session session;
         session.on_send = [&](const std::string& cmd) {
             command = cmd;
-        };        
+        };
 
-        cmds->submit(nf::cmdlist::step::transfer, session);
-        BOOST_REQUIRE(command == "BODY 1\r\n");
-        set(recvbuf, "420 no such message\r\n");
-        session.parse_next(recvbuf, body1);
-        cmds->receive(nf::cmdlist::step::transfer, std::move(body1));
+        BOOST_REQUIRE(list.submit_configure_command(0, session));
+        BOOST_REQUIRE(command == "GROUP alt.binaries.foo\r\n");
 
-        cmds->submit(nf::cmdlist::step::transfer, session);
-        BOOST_REQUIRE(command == "BODY 2\r\n");
-        set(recvbuf, "420 no such message\r\n");
-        session.parse_next(recvbuf, body2);
-        cmds->receive(nf::cmdlist::step::transfer, std::move(body2));
+        {
+            nf::buffer recv(1024);
+            nf::buffer conf;
+            recv.append("411 no such group\r\n");
+            session.parse_next(recv, conf);
+            BOOST_REQUIRE(!list.receive_configure_buffer(0, std::move(conf)));
+        }
 
-        cmds->submit(nf::cmdlist::step::transfer, session);
-        BOOST_REQUIRE(command == "BODY 3\r\n");
-        set(recvbuf, "420 no such message\r\n");
-        session.parse_next(recvbuf, body3);
-        cmds->receive(nf::cmdlist::step::transfer, std::move(body3));
+        BOOST_REQUIRE(list.submit_configure_command(1, session));
+        BOOST_REQUIRE(command == "GROUP alt.binaries.bar\r\n");
 
-        cmds->submit(nf::cmdlist::step::transfer, session);
-        BOOST_REQUIRE(command == "BODY 4\r\n");
-        set(recvbuf, "211 body follows\r\nkeke\r\n.\r\n");
-        session.parse_next(recvbuf, body4);
-        cmds->receive(nf::cmdlist::step::transfer, std::move(body4));
+        {
+            nf::buffer recv(1024);
+            nf::buffer conf;
+            recv.append("411 no such group\r\n");
+            session.parse_next(recv, conf);
+            BOOST_REQUIRE(!list.receive_configure_buffer(1, std::move(conf)));
+        }
+
+        BOOST_REQUIRE(!list.submit_configure_command(2, session));
+        BOOST_REQUIRE(list.configure_fail());
+    }
+
+    // try again
+    list.clear_fail_bits();
+    BOOST_REQUIRE(!list.configure_fail());
+
+    {
+
+
+        std::string command;
+        nf::session session;
+        session.on_send = [&](const std::string& cmd) {
+            command += cmd;
+        };
+
+
+        // configure
+        {
+            list.submit_configure_command(0, session);
+
+            nf::buffer recv(1024);
+            nf::buffer conf;
+            recv.append("211 4 1 4 alt.binaries.foo group succesfully selected\r\n");
+
+            session.parse_next(recv, conf);
+            BOOST_REQUIRE(list.receive_configure_buffer(0, std::move(conf)));
+        }
+
+        command = "";
+
+        session.enable_pipelining(true);
+
+        // send data commands
+        {
+            list.submit_data_commands(session);
+            BOOST_REQUIRE(command == "BODY 123\r\nBODY 234\r\nBODY 345\r\n");
+
+            nf::buffer recv(1024);
+            nf::buffer body1, body2, body3;
+            recv.append("420 no article with that message\r\n"
+                "222 body follows\r\nhello\r\n.\r\n"
+                "420 no article with that message\r\n");
+
+            session.parse_next(recv, body1);
+            list.receive_data_buffer(std::move(body1));
+
+            session.parse_next(recv, body2);
+            list.receive_data_buffer(std::move(body2));
+
+            session.parse_next(recv, body3);
+            list.receive_data_buffer(std::move(body3));
+
+            auto buffers = list.get_buffers();
+            BOOST_REQUIRE(buffers.size() == 3);
+
+            BOOST_REQUIRE(buffers[0].content_status() == nf::buffer::status::unavailable);
+            BOOST_REQUIRE(buffers[2].content_status() == nf::buffer::status::unavailable);
+            BOOST_REQUIRE(buffers[1].content_status() == nf::buffer::status::success);
+            BOOST_REQUIRE(buffers[1].content_length() == std::strlen("hello\r\n.\r\n"));
+        }
     }
 
 }
 
+void unit_test_state_machine()
+{
+    using state = ui::task::state;
+
+    nf::download_state_machine stm(5);
+
+    BOOST_REQUIRE(stm.get_state() == state::queued);
+
+}
 
 int test_main(int, char*[])
 {
-    unit_test_state();
-    unit_test_cmdlist();
+    unit_test_bodylist();
+    unit_test_state_machine();
 
     return 0;
 }

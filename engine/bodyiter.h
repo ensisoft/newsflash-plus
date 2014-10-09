@@ -36,13 +36,12 @@ namespace nntp
         public std::iterator<std::bidirectional_iterator_tag, char>
     {
     public:
-        // construct an iterator that points to the start of the string
-        bodyiter(const char* ptr) : ptr_(ptr), pos_(0)
+        // construct an iterator that points to the start of the string of length len
+        bodyiter(const char* ptr, std::size_t len) : ptr_(ptr), pos_(0), len_(len)
         {}
 
-        // construct an iterator that points to the specific position
-        // in the string.
-        bodyiter(const char* ptr, std::size_t pos) : ptr_(ptr), pos_(pos)
+        // construct an iterator that points to a specific position of the string length len
+        bodyiter(const char* ptr, std::size_t pos, std::size_t len) : ptr_(ptr), pos_(pos), len_(len)
         {}
 
         // this should be const char& operator * () const and value_type should be "const char"
@@ -91,6 +90,10 @@ namespace nntp
         {
             return !(other == *this);
         }
+
+        std::size_t position() const 
+        { return pos_;}
+
     private:
         bool double_dot() const
         {
@@ -111,8 +114,11 @@ namespace nntp
         void forward()
         {
             ++pos_;
-            if (double_dot())
-                ++pos_;
+            if (pos_ < len_)
+            {
+                if (double_dot())
+                    ++pos_;
+            }
         }
 
         void backward()
@@ -127,6 +133,7 @@ namespace nntp
     private:
         const char* ptr_;
         std::size_t pos_;
+        std::size_t len_;
     };
 
     // return absolute distance (in bytes, inclusive of double dots) between
