@@ -44,7 +44,7 @@ namespace newsflash
         std::function<void ()> on_activate;
 
         download_state_machine(std::size_t num_articles) : 
-            num_articles_pending_(num_articles), num_actions_(0), started_(false)
+            num_articles_pending_(num_articles), num_actions_(0), state_(state::queued), started_(false)
         {}
 
        ~download_state_machine()
@@ -133,12 +133,17 @@ namespace newsflash
 
         void deactivate()
         {
+            assert(num_actions_);          
+
             if (--num_actions_ == 0)
             {
-                if (state_ == state::active) {
-                    state_ = state::waiting;
-                    on_stop();
+                if (state_ == state::active)
+                {
+                    if (!num_articles_pending_)
+                        state_ = state::complete;
+                    else state_ = state::waiting;
                 }
+                on_stop();
             }
         }
 
@@ -154,4 +159,4 @@ namespace newsflash
         bool started_;
     };
 
-} // newsflash
+} // newsflash<2

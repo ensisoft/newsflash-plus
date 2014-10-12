@@ -149,8 +149,56 @@ void unit_test_state_machine()
     using state = ui::task::state;
 
     nf::download_state_machine stm(5);
+    stm.on_stop   = [] {};
+    stm.on_cancel = [] {};
+    stm.on_complete = [] {};
+    stm.on_activate = [] {};
 
     BOOST_REQUIRE(stm.get_state() == state::queued);
+
+    stm.pause();
+    stm.resume();
+    BOOST_REQUIRE(stm.get_state() == state::queued);
+
+    stm.start();
+    BOOST_REQUIRE(stm.get_state() == state::waiting);
+
+    stm.activate();
+    BOOST_REQUIRE(stm.get_state() == state::active);
+
+    stm.activate();
+    stm.activate();
+    BOOST_REQUIRE(stm.get_state() == state::active);
+    stm.deactivate();
+    stm.deactivate();
+    stm.deactivate();
+    BOOST_REQUIRE(stm.get_state() == state::waiting);
+
+    stm.pause();
+    BOOST_REQUIRE(stm.get_state() == state::paused);
+
+    stm.resume();
+    BOOST_REQUIRE(stm.get_state() == state::waiting);
+
+    stm.activate();
+    stm.activate();
+    stm.activate();
+    stm.pause();
+    BOOST_REQUIRE(stm.get_state() == state::paused);
+
+    stm.deactivate();
+    stm.deactivate();
+    stm.deactivate();
+    BOOST_REQUIRE(stm.get_state() == state::paused);
+
+    stm.resume();
+
+    stm.activate();
+    stm.complete_articles(5);
+    BOOST_REQUIRE(stm.get_state() == state::active);
+
+    stm.deactivate();
+    BOOST_REQUIRE(stm.get_state() == state::complete);
 
 }
 
