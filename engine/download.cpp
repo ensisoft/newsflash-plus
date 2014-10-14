@@ -37,6 +37,7 @@
 #include "stopwatch.h"
 #include "decode.h"
 #include "bodylist.h"
+#include "format.h"
 
 #include "ui/file.h"
 #include "ui/download.h"
@@ -118,25 +119,16 @@ private:
 };
 
 
-download::download(std::size_t id, std::size_t batch, std::size_t account, const ui::download& details) : 
-    id_(id), main_account_(account), num_articles_total_(details.articles.size())
+download::download(std::size_t id, std::size_t batch, std::size_t account, const ui::download& details) : stm_(details.articles.size())
 {
-    state_.st         = task::state::queued;
-    state_.batch      = batch;
-    state_.id         = id;
-    state_.desc       = details.desc;
-    state_.size       = details.size;
-    state_.runtime    = 0;
-    state_.etatime    = 0;
-    state_.completion = 0.0f;
-
-
-    num_articles_ready_   = 0;
-    num_commands_active_  = 0;
-    fill_account_         = 0;
-    overwrite_            = false;
-    discard_text_         = false;
-    started_              = false;
+    task_id_      = id;
+    batch_id_     = batch;
+    main_account_ = account;
+    fill_account_ = 0;
+    path_         = details.path;
+    desc_         = details.desc;
+    overwrite_    = false;
+    discard_text_ = false;
 
     const auto& groups   = details.groups;
     const auto& articles = details.articles;
@@ -160,39 +152,65 @@ download::download(std::size_t id, std::size_t batch, std::size_t account, const
         cmds_.push_back(std::move(cmd));
     }
 
-    LOG_D("Task ", id_, " created '", details.desc, "'");
-    LOG_D("Task has ", details.articles.size(), " articles for expected size of ", size(details.size));
+    //LOG_D("Task ", id_, " created '", details.desc, "'");
+    //LOG_D("Task has ", details.articles.size(), " articles for expected size of ", size(details.size));
+
+    stm_.on_stop = [&] {
+        timer_.pause();
+    };
+
+    stm_.on_cancel = [&] {
+        // the task is canceled, rollback changes done to the file system, i.e. any files 
+        // that we might have created.
+        // note that there might be pending write actions on the files but we simply reduce
+        // them to no-ops by setting the discard flag on true and then when the last
+        // shared ref to the file goes away and discard is on, the file is deleted.
+        for (auto& it : files_)
+        {
+            auto& file = it.second;
+            file->discard_on_close();
+        }
+    };
+
+    stm_.on_complete = [&] {
+        // notify the listeners of any files that we have decoded 
+        for (auto& it : files_)
+        {
+            const auto& big = it.second;
+
+            ui::file file;
+            file.path    = big->name();
+            file.size    = big->size();
+            file.binary  = true;
+            file.damaged = errors_.test(ui::task::flags::damaged);
+            on_file(file);
+
+            LOG_D("File completed ", file.path);
+        }            
+    };
+
+    stm_.on_activate = [&] {
+        timer_.start();
+    };
+
+    stm_.on_state_change = [&] (ui::task::state old, ui::task::state now) {
+        LOG_D("Task ", task_id_, old, " => ", now);
+    };
 }
 
 download::~download()
 {
-    LOG_D("Task ", id_, " deleted");    
+    LOG_D("Task ", task_id_, " deleted");    
 }
 
 void download::start()
 {
-    if (state_.st != state::queued)
-        return;
-
-    state_.st = task::state::waiting;
-    timer_.start();
-    started_ = true;
+    stm_.start();
 }
-
 
 void download::kill()
 {
-    if (state_.st == state::queued || 
-        state_.st == state::complete)
-        return;
-
-    // there might be pending write actions on the file but we simply
-    // reduce them to no-ops by setting the discard flag to true
-    for (auto& it : files_)
-    {
-        auto& file = it.second;
-        file->discard_on_close();
-    }
+    stm_.kill();
 }
 
 void download::flush()
@@ -200,36 +218,12 @@ void download::flush()
 
 void download::pause()
 {
-    if (state_.st == state::paused || 
-        state_.st == state::complete || 
-        state_.st == state::error)
-        return;
-
-    state_.st  = state::paused;
-    timer_.pause();
+    stm_.pause();
 }
 
 void download::resume() 
 {
-    if (state_.st != state::paused)
-        return;
-
-    if (started_)
-    {
-        if (num_articles_ready_ == num_articles_total_)
-        {
-            state_.st = task::state::complete;
-        }
-        else
-        {
-            state_.st = task::state::waiting;
-            timer_.start();
-        }
-    }
-    else 
-    {
-        state_.st = task::state::queued;
-    }
+    stm_.resume();
 }
 
 bool download::get_next_cmdlist(std::unique_ptr<cmdlist>& cmds)
@@ -237,16 +231,9 @@ bool download::get_next_cmdlist(std::unique_ptr<cmdlist>& cmds)
     if (cmds_.empty())
         return false;
 
-    if (state_.st != task::state::active)
-    {
-        state_.st = task::state::active;
-        timer_.start();
-    }
-
     cmds = std::move(cmds_.front());
     cmds_.pop_front();
-
-    num_commands_active_++;
+    stm_.activate();
     return true;
 }
 
@@ -256,6 +243,8 @@ void download::complete(std::unique_ptr<action> act)
     std::string what;
     try
     {
+        stm_.deactivate();
+
         if (act->has_exception())
             act->rethrow();
 
@@ -283,22 +272,18 @@ void download::complete(std::unique_ptr<action> act)
     }
 
     if (on_error)
-        on_error({what, state_.desc, errc});
+        on_error({what, desc_, errc});
 
-    LOG_E("Task ", state_.id, " error: ", what);
+    //LOG_E("Task ", state_.id, " error: ", what);
     if (errc != std::error_code())
         LOG_E("Error details: ", errc.value(), ", ", errc.message());
 
-    state_.st  = state::error;
+    stm_.error();
 }
 
 void download::complete(std::unique_ptr<cmdlist> cmd)
 {
-    if (--num_commands_active_ == 0)
-    {
-        state_.st = state::waiting;
-        timer_.pause();
-    }
+    stm_.deactivate();
 
     // 1. all succesfully downloaded buffers are sent for decoding
     // 2. those that have not been succesfully downloaded yet are rescheduled
@@ -317,7 +302,8 @@ void download::complete(std::unique_ptr<cmdlist> cmd)
         }
         else
         {
-            state_.errors.set(ui::task::flags::unavailable);
+            errors_.set(ui::task::flags::unavailable);
+            stm_.complete_articles(list->num_messages());
         }
         return;
     }
@@ -343,19 +329,22 @@ void download::complete(std::unique_ptr<cmdlist> cmd)
             else
             {
                 if (status == buffer::status::dmca)
-                    state_.errors.set(ui::task::flags::dmca);
+                    errors_.set(ui::task::flags::dmca);
                 else if (status == buffer::status::unavailable)
-                    state_.errors.set(ui::task::flags::unavailable);
+                    errors_.set(ui::task::flags::unavailable);
                 else if (status == buffer::status::error)
-                    state_.errors.set(ui::task::flags::error);
+                    errors_.set(ui::task::flags::error);
+
+                stm_.complete_articles(1);
             }
         }
         else
         {
             std::unique_ptr<decode> dec(new decode(std::move(buf)));
-            dec->set_id(id_);
+            dec->set_id(task_id_);
             dec->set_affinity(action::affinity::any_thread);
             on_action(std::move(dec));
+            stm_.activate();
         }
     }
     
@@ -366,7 +355,7 @@ void download::complete(std::unique_ptr<cmdlist> cmd)
 
     if (!fillers.empty())
     {
-        std::unique_ptr<bodylist> cmd(new bodylist(id_, fill_account_, groups, fillers));
+        std::unique_ptr<bodylist> cmd(new bodylist(task_id_, fill_account_, groups, fillers));
         cmds_.push_back(std::move(cmd));
     }
 }
@@ -380,17 +369,28 @@ void download::configure(const ui::settings& settings)
 
 ui::task download::get_ui_state() const
 {
-    auto ret = state_;
-    ret.completion = double(num_articles_ready_) / double(num_articles_total_);        
-    ret.runtime    = timer_.seconds();    
-    ret.etatime    = 0;
+    ui::task state;
+    state.batch   = batch_id_;
+    state.id      = task_id_;
+    state.errors  = errors_;
+    state.desc    = desc_;
+    state.size    = expected_size_;
+    state.runtime = timer_.seconds();
 
-    // todo: update eta, time spent 
-    if (state_.st == state::active || state_.st == state::waiting)
-    {
-        // todo: eta
-    }
-    return ret;
+    return state;
+
+    // auto ret = state_;
+    // //ret.completion = double(num_articles_ready_) / double(num_articles_total_);        
+    // ret.runtime    = timer_.seconds();    
+    // ret.etatime    = 0;
+    // ret.st         = stm_.get_state();
+
+    // // todo: update eta, time spent 
+    // if (state_.st == state::active || state_.st == state::waiting)
+    // {
+    //     // todo: eta
+    // }
+    // return ret;
 }
 
 void download::complete(decode& d)
@@ -400,11 +400,18 @@ void download::complete(decode& d)
     const auto offset = d.get_binary_offset();    
     const auto data   = d.get_binary_data();    
 
+    if (data.empty())
+    {
+        stm_.deactivate();        
+        stm_.complete_articles(1);
+        return;
+    }
+
     auto name = d.get_binary_name();
     if (name.empty())
     {
         if (files_.empty())
-            name = name_;
+            name = desc_;
        else name = files_.begin()->first;
    }
 
@@ -442,39 +449,17 @@ void download::complete(decode& d)
     auto& big = it->second;
     std::unique_ptr<write> w(new write(offset, std::move(data), big));
     on_action(std::move(w));
+    stm_.activate();
 
     if (flags.any_bit())
-        state_.errors.set(ui::task::flags::damaged);
+        errors_.set(ui::task::flags::damaged);
 
 }
 
 void download::complete(write& w)
 {
-    num_articles_ready_++;
-
-    if (num_articles_ready_ != num_articles_total_)
-        return;
-
-    if (state_.st == state::active)
-    {
-        state_.st = state::complete;
-    }
-
-    // notifications for downloaded content
-    for (auto& it : files_)
-    {
-        const auto& big = it.second;
-
-        ui::file file;
-        file.path    = big->name();
-        file.size    = big->size();
-        file.binary  = true;
-        file.damaged = state_.errors.test(ui::task::flags::damaged);
-
-        on_file(file);
-
-        LOG_D("File completed ", file.path);
-    }    
+    stm_.deactivate();    
+    stm_.complete_articles(1);
 }
 
 } // newsflash

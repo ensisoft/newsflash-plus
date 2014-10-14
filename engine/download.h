@@ -28,10 +28,12 @@
 #include <string>
 #include <deque>
 #include <map>
+#include "download_state_machine.h"
 #include "stopwatch.h"
 #include "etacalc.h"
-#include "bigfile.h"
 #include "task.h"
+#include "bitflag.h"
+#include "ui/task.h"
 
 namespace newsflash
 {
@@ -74,10 +76,10 @@ namespace newsflash
         virtual ui::task get_ui_state() const override;
 
         virtual std::size_t get_id() const 
-        { return id_; }
+        { return task_id_; }
 
         virtual state get_state() const 
-        { return state_.st; }
+        { return stm_.get_state(); }
 
     private:
         class file;
@@ -88,23 +90,23 @@ namespace newsflash
         void complete(write& w);
 
     private:
-        const std::size_t id_;
-        const std::size_t main_account_;
-        const std::size_t num_articles_total_;        
-        std::size_t num_articles_ready_;        
-        std::size_t num_commands_active_;
+        std::size_t task_id_;
+        std::size_t batch_id_;
+        std::size_t main_account_;
         std::size_t fill_account_;
+        std::size_t expected_size_;
         std::string path_;
-        std::string name_;
+        std::string desc_;
+    private:
         std::deque<std::unique_ptr<bodylist>> cmds_;
         std::map<std::string, std::shared_ptr<file>> files_;
     private:
         stopwatch timer_;
-        bool overwrite_;
-        bool discard_text_;
-        bool started_;
+        download_state_machine stm_;
+        bitflag<ui::task::flags> errors_;
     private:
-        ui::task state_;
+        bool overwrite_;
+        bool discard_text_;        
     };
 
 } // newsflash

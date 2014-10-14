@@ -30,6 +30,8 @@
 #include <cstdint>
 #include "utility.h"
 #include "types.h"
+#include "ui/task.h"
+#include "ui/connection.h"
 
 namespace newsflash
 {
@@ -70,6 +72,15 @@ namespace newsflash
         else str(ss, kb{s.value});
     }
 
+    const char* str(ui::task::state s);
+
+
+    inline
+    void str(std::ostream& ss, ui::task::state s)
+    {
+        ss << str(s);
+    }
+
     inline 
     void str(std::ostream& ss, bool val)
     {
@@ -100,5 +111,8 @@ namespace newsflash
         str(ss, args...);
         return ss.str();
     }
+
+
+
 
 } // newsflash

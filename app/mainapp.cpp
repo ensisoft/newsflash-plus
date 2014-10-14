@@ -36,8 +36,8 @@
 #  include <QLibrary>
 #include <newsflash/warnpop.h>
 
+#include <newsflash/engine/ui/account.h>
 #include <newsflash/engine/engine.h>
-#include <newsflash/engine/account.h>
 #include <newsflash/engine/listener.h>
 #include <vector>
 #include "mainapp.h"
@@ -48,7 +48,45 @@
 #include "debug.h"
 #include "format.h"
 #include "netreq.h"
-#include "home.h"
+#include "homedir.h"
+
+namespace {
+
+const char* nstr(QNetworkReply::NetworkError err)
+{
+    switch (err)
+    {
+        case QNetworkReply::ConnectionRefusedError: return "connection refused";
+        case QNetworkReply::RemoteHostClosedError: return "remote host closed";
+        case QNetworkReply::HostNotFoundError: return "host not found";
+        case QNetworkReply::TimeoutError: return "timeout";
+        case QNetworkReply::OperationCanceledError: return "operation canceled";
+        case QNetworkReply::SslHandshakeFailedError: return "SSL handshake failed";
+        case QNetworkReply::TemporaryNetworkFailureError: return "temporary network failure";
+        case QNetworkReply::ProxyConnectionRefusedError: return "proxy connection refused";
+        case QNetworkReply::ProxyConnectionClosedError: return "proxy connection closed";
+        case QNetworkReply::ProxyNotFoundError: return "proxy not found";
+        case QNetworkReply::ProxyAuthenticationRequiredError: return "proxy authentication required";
+        case QNetworkReply::ProxyTimeoutError: return "proxy timeout";
+        case QNetworkReply::ContentOperationNotPermittedError: return "content operation not permitted";
+        case QNetworkReply::ContentNotFoundError: return "content not found";
+        case QNetworkReply::ContentReSendError: return "content re-send";
+        case QNetworkReply::AuthenticationRequiredError: return "authentication required";
+        case QNetworkReply::ProtocolUnknownError: return "unknown protocol";
+        case QNetworkReply::ProtocolInvalidOperationError: return "invalid protocol operation";
+        case QNetworkReply::UnknownNetworkError: return "unknown network";
+        case QNetworkReply::UnknownProxyError: return "unknown proxy";
+        case QNetworkReply::UnknownContentError: return "unknown content";
+        case QNetworkReply::ContentAccessDenied: return "access denied";
+        case QNetworkReply::ProtocolFailure: return "protocol failure";
+        case QNetworkReply::NoError: return "success";
+    }
+    Q_ASSERT(!"wat");
+    return nullptr;
+}
+
+} // namespace
+
 
 namespace app
 {
@@ -58,6 +96,8 @@ mainapp::mainapp() : net_submit_timer_(0), net_timeout_timer_(0)
 {
     QObject::connect(&net_, SIGNAL(finished(QNetworkReply*)),
         this, SLOT(replyAvailable(QNetworkReply*)));
+
+    submission_id_ = 1;
 
     DEBUG("Application created");        
 }
@@ -70,7 +110,7 @@ mainapp::~mainapp()
 void mainapp::loadstate()
 {
     datastore data;
-    const auto file = home::file("app.json");
+    const auto file = homedir::file("app.json");
     if (QFile::exists(file))
     {
         const auto error = data.load(file);
@@ -94,7 +134,7 @@ bool mainapp::savestate()
         model->save(data);
     }
 
-    const auto file  = home::file("app.json");
+    const auto file  = homedir::file("app.json");
     const auto error = data.save(file);
     if (error != QFile::NoError)
     {
@@ -105,13 +145,41 @@ bool mainapp::savestate()
 }
 
 void mainapp::shutdown()
-{}
+{
+    DEBUG("Shutdown");
+    DEBUG(str("Have _1 pending network requests", submits_.size()));
 
-void mainapp::submit(mainmodel* model, netreq* req)
+    killTimer(net_submit_timer_);
+    killTimer(net_timeout_timer_);
+
+    for (auto it = submits_.begin(); it != submits_.end(); ++it)
+    {
+        auto& submission = *it;
+        if (!submission.reply)
+        {
+            delete submission.request;
+        }
+        else
+        {
+            submission.cancel = true;
+            submission.reply->abort();
+        }
+        it = submits_.erase(it);
+    }
+
+
+    DEBUG("Shutdown done");
+}
+
+void mainapp::submit(mainmodel* model, std::unique_ptr<netreq> req)
 {
     const auto submit_interval_millis = 1000;
 
-    submits_.push_back({0, req, model, nullptr});
+    // todo: maybe hold the request in a unique_ptr in the submission
+    // in the submission object.
+    submits_.push_back({submission_id_, 0, req.get(), model, nullptr, false});
+
+    req.release();
 
     if (submits_.size() == 1)
     {
@@ -123,7 +191,39 @@ void mainapp::submit(mainmodel* model, netreq* req)
         DEBUG(str("Starting submit timer..."));
     }
 
-    DEBUG(str("New submit, total _1", submits_.size()));
+    DEBUG(str("New submission _1", submission_id_));
+
+    ++submission_id_;
+}
+
+
+void mainapp::cancel_all(mainmodel* model)
+{
+    DEBUG("cancel all");
+
+    // again keep in mind that calling reply::abort() will invoke the replyAVailable signal
+    // so that will fuck up the iteration here.
+
+    for (auto it = submits_.begin(); it != submits_.end(); ++it)
+    {
+        auto& submission = *it;
+
+        if (submission.model != model)
+            continue;
+
+        if (!submission.reply)
+        {
+            delete submission.request;
+        }
+        else
+        {
+            submission.cancel = true;
+            submission.reply->abort();
+        }
+        it = submits_.erase(it);       
+
+        DEBUG(str("Canceled submission _1", submission.id));
+    }
 }
 
 void mainapp::attach(mainmodel* model)
@@ -133,68 +233,36 @@ void mainapp::attach(mainmodel* model)
 
 void mainapp::replyAvailable(QNetworkReply* reply)
 {
-    QString err;
-
-#define CASE(x) case QNetworkReply::x##Error : err = #x"Error"; break;
-
-    switch (reply->error())
-    {
-        CASE(ConnectionRefused);
-        CASE(RemoteHostClosed);
-        CASE(HostNotFound);
-        CASE(Timeout);
-        CASE(OperationCanceled);
-        CASE(SslHandshakeFailed);
-        CASE(TemporaryNetworkFailure);
-        CASE(ProxyConnectionRefused);
-        CASE(ProxyConnectionClosed);
-        CASE(ProxyNotFound);
-        CASE(ProxyAuthenticationRequired)
-        CASE(ProxyTimeout);
-        CASE(ContentOperationNotPermitted);
-        CASE(ContentNotFound);
-        CASE(ContentReSend);
-        CASE(AuthenticationRequired);
-        CASE(ProtocolUnknown);
-        CASE(ProtocolInvalidOperation);
-        CASE(UnknownNetwork);
-        CASE(UnknownProxy);
-        CASE(UnknownContent);
-
-        case QNetworkReply::ContentAccessDenied:
-            err = "ContentAccessDenied";
-            break;
-        case QNetworkReply::ProtocolFailure: 
-            err = "ProtocolFailure"; 
-            break;
-        case QNetworkReply::NoError:
-            err = "Success";
-            break;
-    }
-
-    DEBUG(str("Got network reply for _1, _2", reply->url(), err));
-
-#undef CASE
-
-    if (reply->error() != QNetworkReply::NoError)
-    {
-        ERROR(str("Network request _1 failed, _2", reply->url(), err));
-    }
-    
     auto it = std::find_if(std::begin(submits_), std::end(submits_),
         [=](const submission& sub) {
             return sub.reply == reply;
         });
     Q_ASSERT(it != std::end(submits_));
 
-    auto& submit = *it;
+    auto& submit   = *it;
+    const auto err = reply->error();
+    const auto url = reply->url();
 
-    submit.request->receive(*reply);
-    submit.model->complete(submit.request);
+    DEBUG(str("Got network reply for submission _1, _2", submit.id, nstr(err)));
+
+    if (err != QNetworkReply::NoError)
+    {
+        ERROR(str("Network request _1 failed, _2", url, nstr(err)));
+    }
+
+    std::unique_ptr<netreq> r(submit.request);
+    if (!submit.cancel)
+    {
+        submit.request->receive(*reply);
+        submit.model->complete(std::move(r));
+        submits_.erase(it);
+    }
+    else
+    {
+        DEBUG("Submit is canceled. Ignoring...");        
+    }
 
     reply->deleteLater();
-
-    submits_.erase(it);
 
     DEBUG(str("Pending submits _1", submits_.size()));
 }

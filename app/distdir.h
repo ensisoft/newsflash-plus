@@ -32,7 +32,7 @@ namespace app
 {
     // access to our installation environment, based 
     // on the application installation location.
-    class dist 
+    class distdir
     {
     public:
         static

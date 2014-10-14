@@ -42,6 +42,7 @@ namespace newsflash
         std::function<void ()> on_cancel;
         std::function<void ()> on_complete;
         std::function<void ()> on_activate;
+        std::function<void (state old, state now)> on_state_change;
 
         download_state_machine(std::size_t num_articles) : 
             num_articles_pending_(num_articles), num_actions_(0), state_(state::queued), started_(false)
@@ -55,9 +56,8 @@ namespace newsflash
             if (state_ != state::queued)
                 return;
 
-            state_  = state::waiting;
+            goto_state(state::waiting);
             started_ = true;
-            //on_start();                        
         }
 
         // transition to paused state.
@@ -70,7 +70,7 @@ namespace newsflash
                 state_ == state::error)
                 return;
 
-            state_ = state::paused;
+            goto_state(state::paused);
             on_stop();
         }
 
@@ -85,12 +85,13 @@ namespace newsflash
             if (started_)
             {
                 if (!num_articles_pending_ && !num_actions_)
-                    state_ = state::complete;
-                else state_ = state::waiting;
+                    goto_state(state::complete);
+                else 
+                    goto_state(state::waiting);
             }
             else
             {
-                state_ = state::queued;
+                goto_state(state::queued);
             }
         }
 
@@ -114,8 +115,9 @@ namespace newsflash
 
             if (!num_articles_pending_ && !num_actions_)
             {
-                if (state_ == state::active) {
-                    state_ = state::complete;
+                if (state_ == state::active) 
+                {
+                    goto_state(state::complete);
                     on_stop();
                     on_complete();
                 }
@@ -127,7 +129,7 @@ namespace newsflash
             assert(state_ == state::waiting || state_ == state::active);
 
             num_actions_++;
-            state_ = state::active;
+            goto_state(state::active);
             on_activate();
         }
 
@@ -140,8 +142,8 @@ namespace newsflash
                 if (state_ == state::active)
                 {
                     if (!num_articles_pending_)
-                        state_ = state::complete;
-                    else state_ = state::waiting;
+                        goto_state(state::complete);
+                    else goto_state(state::waiting);
                 }
                 on_stop();
             }
@@ -149,6 +151,26 @@ namespace newsflash
 
         state get_state() const 
         { return state_; }
+
+        void error()
+        {
+            if (state_ == state::queued)
+                return;
+
+            if (state_ == state::active)
+                on_stop();
+
+            on_cancel();
+            goto_state(state::error);
+        }
+
+    private:
+        void goto_state(state s) 
+        {
+            if (on_state_change)
+                on_state_change(state_, s);
+            state_ = s;
+        }
 
     private:
         std::size_t num_articles_pending_;

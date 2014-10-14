@@ -55,7 +55,7 @@ namespace app
 
         virtual void save(datastore& store) const override;
 
-        virtual void complete(netreq* request) override;
+        virtual void complete(std::unique_ptr<netreq> request) override;
 
         virtual void clear() override;
 
@@ -70,16 +70,22 @@ namespace app
 
         bool refresh(media m);
 
+        bool save_nzb(int row, const QString& folder);
+
         void set_params(const QString& site, const QVariantMap& values);
         
         void enable(const QString& site, bool val);        
+
+        void stop();
+
+        void download(int row, const QString& folder);
 
     private:
         struct item {
             media type;
             QString title;
             QString id;
-            QString nzb;
+            QString nzbLink;
             QDateTime pubdate;
             quint64 size;
             bool password;
@@ -90,6 +96,8 @@ namespace app
         class womble;
         class nzbs;
         class refresh;
+        class savenzb;
+        class download;
 
     private:
         enum class columns {

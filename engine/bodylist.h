@@ -85,6 +85,9 @@ namespace newsflash
         void clear_fail_bits() 
         { configure_fail_bit_ = false; }
 
+        std::size_t num_messages() const 
+        { return messages_.size(); }
+
     private:
         const std::size_t task_;        
         const std::vector<std::string> groups_;

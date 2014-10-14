@@ -264,5 +264,6 @@ namespace app
     QString widen(const wchar_t* str);
 
 
+
 } // sdk
 

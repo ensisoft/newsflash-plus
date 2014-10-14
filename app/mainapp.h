@@ -73,11 +73,12 @@ namespace app
         void get(app::settings& settings);
         void set(const app::settings& settings);
 
-        // submit a new network request. ownership of the
-        // request remains with the model doing the submission.
-        // a completion callback will be invoked on the model
-        // object once the request has been completed.
-        void submit(mainmodel* model, netreq* request);
+        // submit a new network request. ownership of the new request
+        // is transferred to the mainapp which upon completion will
+        // dispatch it back to the model where the request came from.
+        void submit(mainmodel* model, std::unique_ptr<netreq> request);
+
+        void cancel_all(mainmodel* model);
 
         // attach a new module to the application. ownership of the module
         // remains with the caller.
@@ -94,12 +95,15 @@ namespace app
 
     private:
         struct submission {
+            std::size_t id;
             std::size_t ticks;
+            //std::unique_ptr<netreq> request;
             netreq* request;
             mainmodel* model;
             QNetworkReply* reply;
+            bool cancel;
         };        
-
+        std::size_t submission_id_;
         std::vector<mainmodel*> models_;
         std::list<submission> submits_;
         QNetworkAccessManager net_;

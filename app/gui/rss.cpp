@@ -258,7 +258,10 @@ void rss::save(app::datastore& store)
     //store.set("rss", "nzbs_feedsize", nzbs_.feedsize);
 
     const auto* model = ui_.tableView->model();
-    for (int i=0; i<model->columnCount(); ++i)
+
+    // the last column has auto-stretch flag set so it's width
+    // is implied. and in fact setting the width will cause rendering bugs
+    for (int i=0; i<model->columnCount()-1; ++i)
     {
         const auto width = ui_.tableView->columnWidth(i);
         const auto name  = QString("table_col_%1_width").arg(i);
@@ -293,7 +296,9 @@ void rss::load(const app::datastore& store)
     ui_.btnWomble->setChecked(store.get("rss", "womble_active", false));
 
     const auto* model = ui_.tableView->model();
-    for (int i=0; i<model->columnCount(); ++i)
+
+    // see the comments about the columnCount in save()
+    for (int i=0; i<model->columnCount()-1; ++i)
     {
         const auto name  = QString("table_col_%1_width").arg(i);
         const auto width = store.get("rss", name, ui_.tableView->columnWidth(i));
@@ -412,7 +417,20 @@ void rss::on_actionSave_triggered()
     if (folder.isEmpty())
         return;
 
-    
+    bool have_actions = false;
+
+    for (int i=0; i<indices.size(); ++i)
+    {
+        const auto row = indices[i].row();
+        if (model_.save_nzb(row, folder))
+            have_actions = true;
+    }
+
+    if (!have_actions)
+        return;
+
+    ui_.progressBar->setVisible(true);
+    ui_.actionStop->setEnabled(true);
 }
 
 void rss::on_actionOpen_triggered()
@@ -427,7 +445,7 @@ void rss::on_actionSettings_triggered()
 
 void rss::on_actionStop_triggered()
 {
-    DEBUG("stop");
+    model_.stop();
 }
 
 void rss::on_actionBrowse_triggered()

@@ -53,8 +53,8 @@
 #include "../eventlog.h"
 #include "../debug.h"
 #include "../format.h"
-#include "../dist.h"
-#include "../home.h"
+#include "../distdir.h"
+#include "../homedir.h"
 #include "../datastore.h"
 #include "../accounts.h"
 #include "../groups.h"
@@ -76,7 +76,7 @@ void openurl(const QString& url)
 
 void openhelp(const QString& page)
 {
-    const auto& help = app::dist::path("help");
+    const auto& help = app::distdir::path("help");
     const auto& file = QString("file://%1/%2").arg(help).arg(page);
     QDesktopServices::openUrl(file);
 }
@@ -85,7 +85,7 @@ void openhelp(const QString& page)
 // thing before any Qt application object is instance is created.
 void setstyle()
 {
-    const auto& file = app::home::file("style");
+    const auto& file = app::homedir::file("style");
     if (!QFile::exists(file))
         return;
 
@@ -155,15 +155,15 @@ int run(int argc, char* argv[])
     }
 
 
-    app::home::init(".newsflash");
-    app::dist::init();
+    app::homedir::init(".newsflash");
+    app::distdir::init();
 
     setstyle();
     copyright();    
 
     QCoreApplication::setLibraryPaths(QStringList());
-    QCoreApplication::addLibraryPath(app::dist::path());
-    QCoreApplication::addLibraryPath(app::dist::path("plugins-qt"));
+    QCoreApplication::addLibraryPath(app::distdir::path());
+    QCoreApplication::addLibraryPath(app::distdir::path("plugins-qt"));
 
     app::engine eng(qtinstance);
     app::g_engine = &eng;
@@ -188,6 +188,7 @@ int run(int argc, char* argv[])
     app.attach(&app_groups);
     win.attach(&gui_groups);
 
+    // downloads module
     app::tasklist app_tasks;
     app::connlist app_conns;
     gui::downloads gui_downloads(app_tasks, app_conns);

@@ -34,11 +34,6 @@
 namespace newsflash
 {
 
-class engine::batch : public task
-{
-public:
-};
-
 engine::engine(std::string logdir) : threads_(4)
 {
     LOG_OPEN("engine", fs::joinpath(logdir, "engine.log"));

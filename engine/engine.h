@@ -46,12 +46,10 @@ namespace newsflash
     class task;
     class connection;
     class action;
+    class batch;
 
     class engine
     {
-    private:
-        class batch;
-
     public:
         // this callback is invoked when an error has occurred.
         // the error object carries information and details about 
@@ -126,5 +124,6 @@ namespace newsflash
     private:
         ui::settings settings_;
     };
+    
 } // newsflash
 

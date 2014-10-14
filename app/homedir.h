@@ -20,33 +20,40 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-#include <newsflash/warnpush.h>
-#  include <QCoreApplication>
-#  include <QDir>
-#include <newsflash/warnpop.h>
+#pragma once
 
-#include <cstring>
-#include "dist.h"
-#include "format.h"
+#include <newsflash/config.h>
+
+#include <newsflash/warnpush.h>
+#  include <QString>
+#include <newsflash/warnpop.h>
 
 namespace app
 {
+    // applications home directory in user home
+    class homedir
+    {
+    public:
+        // initialize once. 
+        // folder is name for our application specific folder
+        // in the user's real home. for example /home/roger/ on 
+        // a linux system and "c:\Documents and Settings\roger\"
+        // on a windows system, so we get 
+        // "home/roger/folder" and "c:\documents and settings\roger\folder".
+        static 
+        void init(const QString& folder);
 
-void dist::init()
-{
-    pathstr = QCoreApplication::applicationDirPath();
-}
+        // get absolute path to the applications home directory
+        static 
+        QString path();
 
-QString dist::path()
-{
-    return pathstr;
-}
+        // get the path to a file in the home directory 
+        // in system specific path notation.
+        static 
+        QString file(const QString& name);
 
-QString dist::path(const QString& path)
-{
-    return QDir::toNativeSeparators(pathstr + "/" + path);
-}
-
-QString dist::pathstr;
+    private:
+        static QString pathstr;
+    };
 
 } // app

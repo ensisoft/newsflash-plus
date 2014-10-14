@@ -54,7 +54,7 @@
 #include "../debug.h"
 #include "../format.h"
 #include "../message.h"
-#include "../home.h"
+#include "../homedir.h"
 
 using app::str;
 
@@ -125,7 +125,7 @@ void mainwindow::attach(mainwidget* widget)
 void mainwindow::loadstate()
 {
     // load gui settings, we need this for the rest of the stuff
-    const auto file = app::home::file("gui.json");
+    const auto file = app::homedir::file("gui.json");
     if (!QFile::exists(file))
     {
         // assuming first launch if settings file doesn't exist
@@ -451,7 +451,7 @@ bool mainwindow::savestate()
         widgets_[i]->save(settings_);
     }
 
-    const auto file  = app::home::file("gui.json");
+    const auto file  = app::homedir::file("gui.json");
     const auto error = settings_.save(file);
     if (error != QFile::NoError)
         ERROR(str("Failed to save settings _1, _2", error, file));

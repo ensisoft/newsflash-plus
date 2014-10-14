@@ -32,6 +32,7 @@
 #  include <QUrl>
 #  include <QByteArray>
 #  include <QBuffer>
+#  include <QDir>
 #include <newsflash/warnpop.h>
 
 #include "rss.h"
@@ -41,6 +42,7 @@
 #include "format.h"
 #include "netreq.h"
 #include "mainapp.h"
+#include "nzbparse.h"
 
 namespace app
 {
@@ -90,7 +92,7 @@ public:
             item.id       = elem.firstChildElement("link").text();
             item.pubdate  = parse_date(elem.firstChildElement("pubDate").text());
             item.password = false;
-            item.nzb      = item.id;
+            item.nzbLink  = item.id;
             item.size     = 0; // not known
             rss.push_back(std::move(item));
         }
@@ -187,7 +189,7 @@ public:
             rss::item item {};
             item.title   = elem.firstChildElement("title").text();
             item.id      = elem.firstChildElement("guid").text();
-            item.nzb     = elem.firstChildElement("link").text();
+            item.nzbLink = elem.firstChildElement("link").text();
             item.pubdate = parse_rss_date(elem.firstChildElement("pubDate").text());
 
             const auto& attrs = elem.elementsByTagName("newznab:attr");
@@ -207,8 +209,8 @@ public:
             // we have a simple hack here to change the feed link to get link
             // http://nzbs.org/index.php?action=view&nzbid=334012
             // http://nzbs.org/index.php?action=getnzb&nzbid=334012
-            if (item.nzb.contains("action=view&"))
-                item.nzb.replace("action=view&", "action=getnzb&");
+            if (item.nzbLink.contains("action=view&"))
+                item.nzbLink.replace("action=view&", "action=getnzb&");
 
             rss.push_back(std::move(item));
         }
@@ -294,7 +296,10 @@ public:
     virtual void receive(QNetworkReply& reply) override
     {
         if (reply.error() != QNetworkReply::NoError)
+        {
+            ERROR("Unable to refresh the RSS content because the network request failed");
             return;
+        }
 
         QByteArray bytes = reply.readAll();
         QBuffer io(&bytes);
@@ -310,6 +315,8 @@ public:
 
             item.pubdate = item.pubdate.toLocalTime();
         }
+
+        INFO(str("RSS feed from _1 complete", url_));
     }
     const
     std::vector<item>& items() const {
@@ -322,6 +329,89 @@ private:
     const feed* feed_;
 private:
     std::vector<item> items_;
+};
+
+class rss::savenzb : public netreq
+{
+public:
+    savenzb(QString link, QString file) : link_(std::move(link)), file_(std::move(file))
+    {}
+   ~savenzb()
+    {}
+
+    virtual void prepare(QNetworkRequest& request) override
+    {
+        request.setUrl(QUrl(link_));
+    }
+
+    virtual void receive(QNetworkReply& reply) override
+    {
+        if (reply.error() != QNetworkReply::NoError)
+        {
+            ERROR("Unable to save the NZB because the network request failed");
+            return;
+        }
+
+        QFile file(file_);
+        file.open(QIODevice::WriteOnly);
+        if (!file.isOpen())
+        {
+            const auto err = file.error();
+            ERROR(str("Failed to write file _1, _2", file, err));
+            return;
+        }
+
+        QByteArray bytes = reply.readAll();
+
+        file.write(bytes);
+        file.flush();
+        file.close();
+
+        INFO(str("Saved NZB file _1", file));
+    }
+private:
+    const QString link_;
+    const QString file_;
+};
+
+class rss::download : public netreq
+{
+public:
+    download(QString link, QString folder) : link_(std::move(link)), folder_(std::move(folder))
+    {}
+
+   ~download()
+    {}
+
+    virtual void prepare(QNetworkRequest& request) override
+    {
+        request.setUrl(QUrl(link_));
+    }
+    virtual void receive(QNetworkReply& reply) override
+    {
+        if (reply.error() != QNetworkReply::NoError)
+        {
+            ERROR("Unable to start download because the network request failed");
+            return;
+        }
+
+        QByteArray bytes = reply.readAll();
+        QBuffer io(&bytes);
+
+        std::vector<nzbcontent> content;
+
+        if (parse_nzb(io, content) != nzberror::none)
+        {
+            ERROR("Parsing NZB content failed");
+            return;
+        }
+
+        
+    }
+
+private:
+    const QString link_;
+    const QString folder_;
 };
 
 
@@ -364,15 +454,32 @@ bool rss::refresh(media type)
         {
             std::unique_ptr<class refresh> action(new class refresh(url, type, feed.get()));
 
-            app_.submit(this, action.get());
+            app_.submit(this, std::move(action));
 
             ++pending_;
-
-            action.release();
         }
     }
 
     return (currently_pending != pending_);
+}
+
+bool rss::save_nzb(int row, const QString& folder)
+{
+    Q_ASSERT(row >= 0);
+    Q_ASSERT(row < items_.size());
+
+    const auto& item = items_[row];
+    const auto& link = item.nzbLink;
+    const auto& name = item.title;
+    const auto& file = QDir::toNativeSeparators(folder + "/" + name + ".nzb");
+
+    std::unique_ptr<class savenzb> action(new class savenzb(link, file));
+
+    app_.submit(this, std::move(action));
+
+    ++pending_;    
+
+    return true;
 }
 
 void rss::set_params(const QString& site, const QVariantMap& values)
@@ -391,6 +498,21 @@ void rss::set_params(const QString& site, const QVariantMap& values)
 void rss::enable(const QString& site, bool val)
 {
     enabled_[site] = val;
+}
+
+void rss::stop()
+{
+    app_.cancel_all(this);
+    
+    pending_ = 0;
+    if (on_ready)
+        on_ready();
+}
+
+void rss::download(int row, const QString& folder)
+{
+    Q_ASSERT(row >= 0);
+    Q_ASSERT(row < items_.size());    
 }
 
 QAbstractItemModel* rss::view() 
@@ -493,20 +615,24 @@ int rss::columnCount(const QModelIndex&) const
     return (int)columns::sentinel;
 }
 
-void rss::complete(netreq* request) 
+void rss::complete(std::unique_ptr<netreq> request) 
 {
-    std::unique_ptr<netreq> carcass(request);
-
-    if (class refresh* action = dynamic_cast<class refresh*>(request))
+    if (class refresh* action = dynamic_cast<class refresh*>(request.get()))
     {
         const auto& items = action->items();
         const auto count  = items.size();
 
-        beginInsertRows(QModelIndex(),
-            items_.size(), items_.size() + count);
-        std::copy(std::begin(items), std::end(items),
-            std::back_inserter(items_));
+        beginInsertRows(QModelIndex(), items_.size(), items_.size() + count);
+        std::copy(std::begin(items), std::end(items), std::back_inserter(items_));
         endInsertRows();
+    }
+    else if (class savenzb* action = dynamic_cast<class savenzb*>(request.get()))
+    {
+        DEBUG("Save nzb complete");
+    }
+    else if (class download* action = dynamic_cast<class download*>(request.get()))
+    {
+        DEBUG("Download nzb complete");
     }
 
     if (--pending_ == 0)

@@ -38,7 +38,7 @@
 #include "engine.h"
 #include "debug.h"
 #include "datastore.h"
-#include "home.h"
+#include "homedir.h"
 #include "format.h"
 #include "eventlog.h"
 #include "account.h"
@@ -93,7 +93,7 @@ engine* g_engine;
 engine::engine(QCoreApplication& application) : app_(application)
 {
     datastore data;
-    const auto file = home::file("engine.json");
+    const auto file = homedir::file("engine.json");
     if (QFile::exists(file))
     {
         const auto error = data.load(file);

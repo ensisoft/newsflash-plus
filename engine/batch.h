@@ -1,4 +1,4 @@
-// Copyright (c) 2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -18,56 +18,14 @@
 //  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 //  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-//  THE SOFTWARE.            
-
-#pragma once
+//  THE SOFTWARE.
 
 #include <newsflash/config.h>
 
-#include <newsflash/warnpush.h>
-#  include <QVariant>
-#  include <QString>
-#include <newsflash/warnpop.h>
-#include <memory>
-
-class QAbstractItemModel;
-
-namespace app
+namespace newsflash
 {
-    class datastore;
-    class netreq;
-
-    // data model
-    class mainmodel
+    class batch
     {
     public:
-        virtual ~mainmodel() = default;
-
-        // clear all the data in the model
-        virtual void clear() {};
-
-        // returns true if model has no data.
-        virtual bool is_empty() const { return true; }
-
-        // get a Qt view compatible model object
-        // for quickly showing the data in a Qt view widget
-        virtual QAbstractItemModel* view() { return nullptr; }
-
-        // save model state to the datastore.
-        virtual void save(datastore& store) const {}
-
-        // load model state from the datastore.
-        virtual void load(const datastore& store) {}
-
-        virtual void complete(std::unique_ptr<netreq> request) {};
-
-        virtual bool shutdown() { return true; }
-
-    protected:
-    private:
-
     };
-
-} // app
-
-
+} // newsflash

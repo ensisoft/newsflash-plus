@@ -25,15 +25,15 @@
 #include <newsflash/warnpop.h>
 
 #include <stdexcept>
-#include "home.h"
+#include "homedir.h"
 #include "format.h"
 
 namespace app
 {
 
-QString home::pathstr;
+QString homedir::pathstr;
 
-void home::init(const QString& folder)
+void homedir::init(const QString& folder)
 {
     const auto& home = QDir::homePath();
     const auto& mine = home + "/" + folder;
@@ -45,12 +45,12 @@ void home::init(const QString& folder)
     pathstr = mine;
 }
 
-QString home::path() 
+QString homedir::path() 
 {
     return pathstr;
 }
 
-QString home::file(const QString& name)
+QString homedir::file(const QString& name)
 {
     // pathstr is an absolute path so then this is also
     // an absolute path.
