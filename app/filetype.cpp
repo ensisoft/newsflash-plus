@@ -33,7 +33,7 @@
 namespace app
 {
 
-QString filepattern(filetype type)
+const char* filepattern(filetype type)
 {
     switch (type)
     {
@@ -47,9 +47,7 @@ QString filepattern(filetype type)
         case filetype::image:
             return ".jpe?g | .bmp | .png | .gif";
         case filetype::text:
-            return ".txt | .nfo | .sfv";
-        case filetype::log:
-            return ".log";
+            return ".txt | .nfo | .sfv | .log";
         case filetype::archive:
             return ".zip | .rar | .r[0-9]{1,3} | .7z";
         case filetype::parity:
@@ -62,7 +60,7 @@ QString filepattern(filetype type)
     return "";
 }
 
-QString str(filetype type)
+const char* str(filetype type)
 {
     switch (type)
     {
@@ -76,8 +74,8 @@ QString str(filetype type)
             return "Image";
         case filetype::text:
             return "Text";
-        case filetype::log:
-            return "Log";
+        // case filetype::log:
+        //     return "Log";
         case filetype::archive:
             return "Archive";
         case filetype::parity:
@@ -97,7 +95,7 @@ filetype find_filetype(const QString& filename)
         filepattern(filetype::video),
         filepattern(filetype::image),
         filepattern(filetype::text),
-        filepattern(filetype::log),
+//        filepattern(filetype::log),
         filepattern(filetype::archive),
         filepattern(filetype::parity),
         filepattern(filetype::document),
@@ -136,8 +134,8 @@ QIcon iconify(filetype type)
             return QIcon(":/resource/16x16_ico_png/ico_image.png");
         case filetype::text:
             return QIcon(":/resource/16x16_ico_png/ico_text.png");
-        case filetype::log:
-            return QIcon(":/resource/16x16_ico_png/ico_log.png");
+        // case filetype::log:
+        //     return QIcon(":/resource/16x16_ico_png/ico_log.png");
         case filetype::archive:
             return QIcon(":/resource/16x16_ico_png/ico_archive.png");
         case filetype::parity:
@@ -147,6 +145,8 @@ QIcon iconify(filetype type)
         case filetype::other:
             return QIcon(":/resource/16x16_ico_png/ico_document.png");
     }
+
+    Q_ASSERT(!"wat");
 
     return QIcon();
 }

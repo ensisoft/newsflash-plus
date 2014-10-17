@@ -25,41 +25,50 @@
 #include <newsflash/config.h>
 
 #include <newsflash/warnpush.h>
-#  include <QtGlobal>
-#  include <QString>
+#  include "ui_coresettings.h"
 #include <newsflash/warnpop.h>
+#include <memory>
+#include "mainmodule.h"
+#include "settings.h"
 
-namespace app
+namespace gui
 {
-    struct msg_file_complete {
-        // the account that was used to download this file from.
-        quint32 account;
+    // have to be namespace scope class because MOC doesnt support
+    // shitty signals and slots for nested classes... 
+    class coresettings  : public settings
+    {
+        Q_OBJECT
+    public:
+        coresettings();
+       ~coresettings();
 
-        // the path in the file system 
-        QString path;
+        virtual bool validate() const override;
+    private slots:
+        void on_btnBrowseLog_clicked();
+        void on_btnBrowseDownloads_clicked();
 
-        // the name of the file
-        QString name;
-
-        // true if file is expected to be damaged someway
-        bool damaged;
-
-        // size on the disk 
-        quint64 local_size;
-
-        // size/amount of bytes transferred over the network
-        quint64 network_size;
-    };
-    
-    struct msg_file_unavailable {
-        // the account that was used to download this file from.
-        quint32 account;
-
-        // the original description of the file
-        QString description;
-
-        // true if dmca takedown was detected
-        bool dmca;
+    private:
+        Ui::CoreSettings ui_;
+    private:
+        friend class coremodule;
     };
 
-} // app
+    // this is a dumping ground for a bunch of stuff that doesn't really belong
+    // anywhere else such as engine configuration, feedback configuration etc.
+    class coremodule : public mainmodule
+    {
+    public:
+        coremodule();
+       ~coremodule();
+
+        virtual void loadstate(app::settings& s) override;
+        virtual bool savestate(app::settings& s) override;
+        virtual void first_launch() override;
+
+        virtual gui::settings* get_settings(app::settings& s) override;
+        virtual void apply_settings(settings* gui, app::settings& backend) override;
+        virtual void free_settings(settings* s) override;
+
+    private:
+    };
+} // gui

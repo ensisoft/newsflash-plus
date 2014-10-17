@@ -25,19 +25,20 @@
 #include <newsflash/config.h>
 
 #include <newsflash/warnpush.h>
+#  include <QAbstractTableModel>
 #  include <QObject>
+#  include <QString>
 #include <newsflash/warnpop.h>
-
 #include <memory>
-
-#include "mainmodel.h"
-#include "nzbthread.h"
-
-class QFile;
+#include <vector>
+#include <functional>
+#include "nzbparse.h"
 
 namespace app
 {
-    class nzbfile : public QObject, public mainmodel
+    class nzbthread;
+
+    class nzbfile : public QAbstractTableModel
     {
         Q_OBJECT
 
@@ -45,9 +46,7 @@ namespace app
         nzbfile();
        ~nzbfile();
 
-        virtual void clear() override;
-
-        virtual QAbstractItemModel* view() override;
+        std::function<void ()> on_ready;
 
         // begin loading the NZB contents from the given file
         // returns true if file was succesfully opened and then subsequently
@@ -55,19 +54,22 @@ namespace app
         // otherwise returns false and no signal will arrive.
         bool load(const QString& file);
 
-    signals:
-        void ready();
+        // clear the contents of the model
+        void clear();
+
+        // QAbstractTableModel
+        virtual int rowCount(const QModelIndex&) const override;
+        virtual int columnCount(const QModelIndex&) const override;                
+        virtual void sort(int column, Qt::SortOrder order) override;
+        virtual QVariant data(const QModelIndex& index, int role) const override;
+        virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const override;                
 
     private slots:
         void parse_complete();
 
     private:
-        struct item;
-        class model;
-
-    private:
         std::unique_ptr<nzbthread> thread_;
-        std::unique_ptr<model> model_;
+        std::vector<nzbcontent> data_;
     };
 
 } // app

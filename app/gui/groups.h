@@ -38,7 +38,7 @@ namespace gui
         Q_OBJECT
 
     public:
-        groups(app::groups& model);
+        groups();
        ~groups();
 
         virtual void add_actions(QMenu& menu) override;
@@ -59,7 +59,7 @@ namespace gui
         Ui::Groups ui_;
 
     private:
-        app::groups& model_;
+        app::groups model_;
     };
 
 } // gui

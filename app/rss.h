@@ -35,31 +35,19 @@
 #include <vector>
 #include <map>
 #include <functional>
-#include "mainmodel.h"
 #include "media.h"
+#include "netman.h"
+#include "rssfeed.h"
 
 namespace app
 {
-    class netreq;
-    class mainapp;
-
-    class rss : public mainmodel, public QAbstractTableModel
+    class rss : public QAbstractTableModel
     {
     public:
-        rss(mainapp& app);
+        rss();
        ~rss();
         
         std::function<void()> on_ready;
-
-        virtual void load(const datastore& store) override;
-
-        virtual void save(datastore& store) const override;
-
-        virtual void complete(std::unique_ptr<netreq> request) override;
-
-        virtual void clear() override;
-
-        virtual QAbstractItemModel* view() override;
 
         // QAbstractTableModel
         virtual QVariant data(const QModelIndex& index, int role) const override;
@@ -68,36 +56,29 @@ namespace app
         virtual int rowCount(const QModelIndex&) const  override;
         virtual int columnCount(const QModelIndex&) const override;
 
+        // clear the data model and remove all RSS feed items.
+        void clear();
+
+        // refresh the RSS stream for media type m.
+        // returns true if there are RSS feeds in this media
+        // category to be refreshed. otherwise false and no network activity occurs.
         bool refresh(media m);
 
-        bool save_nzb(int row, const QString& folder);
+        void enable_feed(const QString& feed, bool on_off);
 
-        void set_params(const QString& site, const QVariantMap& values);
-        
-        void enable(const QString& site, bool val);        
+        void set_credentials(const QString& feed, const QString& user, const QString& apikey);
 
+        // save NZB description of the RSS item and place the .nzb file in the given folder.
+        void download_nzb_file(int row, const QString& folder);
+
+        // download the contents of the RSS item.
+        void download_nzb_content(int row, const QString& folder);
+
+        // stop/cancel pending network operations.
         void stop();
 
-        void download(int row, const QString& folder);
-
     private:
-        struct item {
-            media type;
-            QString title;
-            QString id;
-            QString nzbLink;
-            QDateTime pubdate;
-            quint64 size;
-            bool password;
-        };
-
-    private:
-        class feed;
-        class womble;
-        class nzbs;
-        class refresh;
-        class savenzb;
-        class download;
+        void on_refresh_complete(rssfeed* feed, media type, QNetworkReply& reply);
 
     private:
         enum class columns {
@@ -105,11 +86,10 @@ namespace app
         };                
 
     private:
-        std::vector<std::unique_ptr<feed>> feeds_;
-        std::vector<item> items_;            
-        std::size_t pending_;                        
-        std::map<QString, bool> enabled_;
-        mainapp& app_;
+        std::vector<std::unique_ptr<rssfeed>> feeds_;
+        std::vector<mediaitem> items_;          
+    private:
+        netman net_;
     };
 
 } // rss

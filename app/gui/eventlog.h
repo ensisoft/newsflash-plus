@@ -22,9 +22,10 @@
 
 #pragma once
 
+#include <newsflash/config.h>
+
 #include "mainwidget.h"
 #include "ui_eventlog.h"
-#include "../eventlog.h"
 
 namespace gui
 {
@@ -33,7 +34,7 @@ namespace gui
         Q_OBJECT
 
     public:
-        eventlog(app::eventlog& model);
+        eventlog();
        ~eventlog();
 
         virtual void add_actions(QMenu& menu) override;
@@ -41,18 +42,12 @@ namespace gui
         virtual void activate(QWidget*);
         mainwidget::info information() const override;
 
-    private:
-        void on_event(const app::eventlog::event_t& e);
-
     private slots:
         void on_actionClearLog_triggered();
         void on_listLog_customContextMenuRequested(QPoint pos);
 
     private:
         Ui::Eventlog ui_;
-
-    private:
-        app::eventlog& model_;
     };
 
 } // gui

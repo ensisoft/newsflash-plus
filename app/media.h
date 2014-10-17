@@ -9,7 +9,7 @@
 //  copies of the Software, and to permit persons to whom the Software is
 //  furnished to do so, subject to the following conditions:
 //
-// The above copyright notice and this permission notice shall be included in
+// The above copyright notice and this perioimission notice shall be included in
 //  all copies or substantial portions of the Software.
 //
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
@@ -20,138 +20,123 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
+#pragma once
+
 #include <newsflash/config.h>
+#include <newsflash/warnpush.h>
+#  include <QString>
+#  include <QDateTime>
+#include <newsflash/warnpop.h>
+
+#include <newsflash/engine/bitflag.h>
 
 #include <iterator>
 
-#include "types.h"
-
-#pragma once
-
 namespace app
 {
-    // media type. each item is traditionally tagged into a single media. 
+    // media types tags that apply to any particular media object.
+    // coming from RSS feeds, Newznab etc.
     // int = international
     // sd  = standard definition
     // hd  = high definition
     enum class media {
-        none            = 0,
         //console,
-        console_nds     = (1 << 1),
-        console_wii     = (1 << 2),
-        console_xbox    = (1<< 3),
-        console_xbox360 = (1 << 4),
-        console_psp     = (1<< 5),
-        console_ps2     = (1 << 6),
-        console_ps3     = (1 << 7),
-        console_ps4     = (1 << 8),
-        console = (console_nds | console_wii | console_xbox | console_xbox360 | 
-            console_psp | console_ps2 | console_ps3 | console_ps4),
-        console_nintendo = (console_nds | console_wii),
-        console_playstation = (console_psp | console_ps2 | console_ps3 | console_ps3 | console_ps4),
-        console_microsoft = (console_xbox | console_xbox360),        
+        console_nds,    
+        console_wii,    
+        console_xbox,   
+        console_xbox360,
+        console_psp,    
+        console_ps2,    
+        console_ps3,   
+        console_ps4,   
 
         //movies,
-        movies_int      = (1 << 9),
-        movies_sd       = (1 << 10),
-        movies_hd       = (1 << 11),
-        movies = (movies_int | movies_sd | movies_hd),
+        movies_int,
+        movies_sd, 
+        movies_hd, 
         
         //audio,
-        audio_mp3       = (1 << 12),
-        audio_video     = (1 << 13),
-        audio_audiobook = (1 << 14),
-        audio_lossless  = (1 << 15),
-        audio = (audio_mp3 | audio_video | audio_audiobook | audio_lossless),
+        audio_mp3,
+        audio_video,
+        audio_audiobook,
+        audio_lossless,
 
         //apps,
-        apps_pc         = (1 << 16),
-        apps_iso        = (1 << 17),
-        apps_mac        = (1 << 18),
-        apps_android    = (1 << 19),
-        apps_ios        = (1 << 20),
-        apps = (apps_pc | apps_ios | apps_mac | apps_android | apps_ios),
+        apps_pc,    
+        apps_iso,   
+        apps_mac,   
+        apps_android,
+        apps_ios,    
 
         //tv,
-        tv_int          = (1 << 21),
-        tv_sd           = (1 << 22),
-        tv_hd           = (1 << 23),
-        tv_other        = (1<< 24),
-        tv_sport        = (1 << 25),
-        tv = (tv_int | tv_sd | tv_hd | tv_other | tv_sport),
+        tv_int,
+        tv_sd, 
+        tv_hd, 
+        tv_other,
+        tv_sport, 
 
         //xxx,
-        xxx_dvd         = (1<< 26),
-        xxx_hd          = (1 << 27),
-        xxx_sd          = (1 << 28),
-        xxx = (xxx_dvd | xxx_hd | xxx_sd),
+        xxx_dvd, 
+        xxx_hd,
+        xxx_sd,
 
-        //other,
-        ebook = ( 1 << 29),
-        other = (ebook),
+        //other
+        ebook,
 
-        // sentinel
-        last = (1 << 30),
-
-        all = (console | movies | audio | apps | tv | xxx | other)
+        // needs to be last value!
+        sentinel
     };
 
-    inline 
-    bitflag_t operator | (media lhs, media rhs) 
-    {
-        return bitflag_t(lhs) | bitflag_t(rhs);
-    }
-    inline
-    bitflag_t operator | (bitflag_t lhs, media rhs) 
-    {
-        return lhs | bitflag_t(rhs);
-    }
-    inline
-    bitflag_t operator | (media lhs, bitflag_t rhs) 
-    {
-        return bitflag_t(lhs) | rhs;
-    }
 
-    inline
-    bitflag_t operator & (media lhs, media rhs) 
-    {
-        return bitflag_t(lhs) & bitflag_t(rhs);
-    }
-    inline
-    bitflag_t operator & (bitflag_t lhs, media rhs) 
-    {
-        return lhs & bitflag_t(rhs);
-    }
-    inline
-    bitflag_t operator & (media lhs, bitflag_t rhs) 
-    {
-        return bitflag_t(lhs) & rhs;
-    }
+    // media item. these items are retrieved from RSS feeds/newznab etc. searches.
+    struct mediaitem {
 
+        // media tag flags set on this item
+        media type;
+
+        // human readable title
+        QString title;
+
+        // globally unique item id
+        QString gid;
+
+        // link to the NZB file content
+        QString nzblink;
+
+        // publishing date and time
+        QDateTime pubdate;
+
+        // size in bytes if known, otherwise 0
+        quint64 size;
+
+        // true if password is required for the item
+        bool password;
+    };
+
+    // media iterator to iterate over media tags.
     class media_iterator : public std::iterator<std::forward_iterator_tag, media>
     {
     public:
         media_iterator(media beg) : cur_(beg)
         {}
-        media_iterator() : cur_(media::last)
+        media_iterator() : cur_(media::sentinel)
         {}
 
         // postfix
         media_iterator operator ++(int)
         {
             media_iterator tmp(cur_);
-            auto value = BITFLAG(cur_);
-            value <<= 1;
-            cur_ = static_cast<media>(value);
-
+            auto value = (unsigned)cur_;
+            ++value;
+            cur_ = (media)value;
             return tmp;
         }
 
         media_iterator& operator++()
         {
-            auto value = BITFLAG(cur_);
-            value <<= 1;
-            cur_ = static_cast<media>(value);
+            auto value = (unsigned)cur_;
+            ++value;
+            cur_ = (media)value;
             return *this;
         }
         media operator*() const 
@@ -170,7 +155,7 @@ namespace app
         static
         media_iterator end() 
         {
-            return media_iterator(media::last);
+            return media_iterator(media::sentinel);
         }
 
     private:
@@ -190,6 +175,7 @@ namespace app
         return !(lhs == rhs);
     }
 
+    // stringify media tag name
     const char* str(media m);
 
 } // app

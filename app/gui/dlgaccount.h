@@ -25,11 +25,10 @@
 #include <newsflash/config.h>
 #include <newsflash/warnpush.h>
 #  include <QtGui/QDialog>
+#  include "ui_dlgaccount.h"
 #include <newsflash/warnpop.h>
 
-#include "ui_dlgaccount.h"
-
-#include "../accounts.h"
+#include "../account.h"
 
 namespace gui
 {
@@ -40,7 +39,6 @@ namespace gui
     public:
         DlgAccount(QWidget* parent, app::account& acc);
        ~DlgAccount();
-
         
     private:
         void changeEvent(QEvent *e);

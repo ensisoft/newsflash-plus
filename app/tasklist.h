@@ -28,19 +28,13 @@
 #  include <QAbstractTableModel>
 #include <newsflash/warnpop.h>
 
-#include "mainmodel.h"
-
 namespace app
 {
-    class tasklist : public mainmodel, public QAbstractTableModel
+    class tasklist : public QAbstractTableModel
     {
     public:
         tasklist();
        ~tasklist();
-
-        virtual QAbstractItemModel* view() override {
-            return this;
-        }
 
         // QAbstractTableModel
         virtual QVariant data(const QModelIndex& index, int role) const override;

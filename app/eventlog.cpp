@@ -69,11 +69,6 @@ void eventlog::clear()
     endRemoveRows();
 }
 
-QAbstractItemModel* eventlog::view()
-{
-    return this;
-}
-
 int eventlog::rowCount(const QModelIndex&) const
 {
     return static_cast<int>(events_.size());

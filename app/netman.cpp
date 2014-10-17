@@ -50,43 +50,6 @@
 // the request doesn't work either because then it still seems to be in Qt queues and on exiting the 
 // application application gets stuck in pthread_cond_wait when destruction QApplication.
 
-namespace {
-
-const char* nstr(QNetworkReply::NetworkError err)
-{
-    switch (err)
-    {
-        case QNetworkReply::ConnectionRefusedError: return "connection refused";
-        case QNetworkReply::RemoteHostClosedError: return "remote host closed";
-        case QNetworkReply::HostNotFoundError: return "host not found";
-        case QNetworkReply::TimeoutError: return "timeout";
-        case QNetworkReply::OperationCanceledError: return "operation canceled";
-        case QNetworkReply::SslHandshakeFailedError: return "SSL handshake failed";
-        case QNetworkReply::TemporaryNetworkFailureError: return "temporary network failure";
-        case QNetworkReply::ProxyConnectionRefusedError: return "proxy connection refused";
-        case QNetworkReply::ProxyConnectionClosedError: return "proxy connection closed";
-        case QNetworkReply::ProxyNotFoundError: return "proxy not found";
-        case QNetworkReply::ProxyAuthenticationRequiredError: return "proxy authentication required";
-        case QNetworkReply::ProxyTimeoutError: return "proxy timeout";
-        case QNetworkReply::ContentOperationNotPermittedError: return "content operation not permitted";
-        case QNetworkReply::ContentNotFoundError: return "content not found";
-        case QNetworkReply::ContentReSendError: return "content re-send";
-        case QNetworkReply::AuthenticationRequiredError: return "authentication required";
-        case QNetworkReply::ProtocolUnknownError: return "unknown protocol";
-        case QNetworkReply::ProtocolInvalidOperationError: return "invalid protocol operation";
-        case QNetworkReply::UnknownNetworkError: return "unknown network";
-        case QNetworkReply::UnknownProxyError: return "unknown proxy";
-        case QNetworkReply::UnknownContentError: return "unknown content";
-        case QNetworkReply::ContentAccessDenied: return "access denied";
-        case QNetworkReply::ProtocolFailure: return "protocol failure";
-        case QNetworkReply::NoError: return "success";
-    }
-    Q_ASSERT(!"wat");
-    return nullptr;
-}
-
-} // namespace
-
 namespace app
 {
 
@@ -129,9 +92,10 @@ void netman::submit(callback completion, QUrl url)
     s.id     = submission_id_;
     s.ticks  = 0;
     s.reply  = nullptr;
-    s.url    = std::move(url);
+    s.url    = url;
     s.cancel = false;
     s.timeout = false;
+    s.cb      = std::move(completion);
     submissions_.push_back(s);
 
     if (submissions_.size() == 1)
@@ -175,12 +139,7 @@ void netman::finished(QNetworkReply* reply)
     const auto err = reply->error();
     const auto url = reply->url();
 
-    DEBUG(str("Got network reply for submission _1, _2", submit.id, nstr(err)));
-
-    if (err != QNetworkReply::NoError)
-    {
-        ERROR(str("Network request _1 failed, _2", url, nstr(err)));
-    }
+    DEBUG(str("Got network reply for submission _1, _2", submit.id, str(err)));
 
     if (submit.cancel)
     {
@@ -196,6 +155,9 @@ void netman::finished(QNetworkReply* reply)
     reply->deleteLater();
 
     DEBUG(str("Pending submissions _1", submissions_.size()));
+
+    if (submissions_.empty())
+        on_ready();
 }
 
 void netman::timeout()
@@ -224,6 +186,8 @@ void netman::submit_next()
     submit.reply = qnam_.get(request);
     if (!submit.reply)
         throw std::runtime_error("network request failed");
+
+    DEBUG(str("Submit HTTP request to _1", submit.url));
 }
 
 void netman::update_ticks()
@@ -240,12 +204,44 @@ void netman::update_ticks()
         {
             submission.timeout = true;
             submission.reply->abort();
+            DEBUG(str("Timedout submission _1", submission.id));
+            it = submissions_.erase(it);            
         }
-        DEBUG(str("Timedout submission _1", submission.id));
-
-        submissions_.erase(it);
     }
 
+}
+
+const char* str(QNetworkReply::NetworkError err)
+{
+    switch (err)
+    {
+        case QNetworkReply::ConnectionRefusedError: return "connection refused";
+        case QNetworkReply::RemoteHostClosedError: return "remote host closed";
+        case QNetworkReply::HostNotFoundError: return "host not found";
+        case QNetworkReply::TimeoutError: return "timeout";
+        case QNetworkReply::OperationCanceledError: return "operation canceled";
+        case QNetworkReply::SslHandshakeFailedError: return "SSL handshake failed";
+        case QNetworkReply::TemporaryNetworkFailureError: return "temporary network failure";
+        case QNetworkReply::ProxyConnectionRefusedError: return "proxy connection refused";
+        case QNetworkReply::ProxyConnectionClosedError: return "proxy connection closed";
+        case QNetworkReply::ProxyNotFoundError: return "proxy not found";
+        case QNetworkReply::ProxyAuthenticationRequiredError: return "proxy authentication required";
+        case QNetworkReply::ProxyTimeoutError: return "proxy timeout";
+        case QNetworkReply::ContentOperationNotPermittedError: return "content operation not permitted";
+        case QNetworkReply::ContentNotFoundError: return "content not found";
+        case QNetworkReply::ContentReSendError: return "content re-send";
+        case QNetworkReply::AuthenticationRequiredError: return "authentication required";
+        case QNetworkReply::ProtocolUnknownError: return "unknown protocol";
+        case QNetworkReply::ProtocolInvalidOperationError: return "invalid protocol operation";
+        case QNetworkReply::UnknownNetworkError: return "unknown network";
+        case QNetworkReply::UnknownProxyError: return "unknown proxy";
+        case QNetworkReply::UnknownContentError: return "unknown content";
+        case QNetworkReply::ContentAccessDenied: return "access denied";
+        case QNetworkReply::ProtocolFailure: return "protocol failure";
+        case QNetworkReply::NoError: return "success";
+    }
+    Q_ASSERT(!"wat");
+    return nullptr;
 }
 
 } // namespace

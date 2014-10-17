@@ -35,20 +35,20 @@
 #include "../debug.h"
 #include "../format.h"
 #include "../eventlog.h"
-#include "../datastore.h"
 
 namespace gui
 {
-nzbfile::nzbfile(app::nzbfile& model) : model_(model)
+nzbfile::nzbfile()
 {
     ui_.setupUi(this);
     ui_.progressBar->setVisible(false);
     ui_.progressBar->setValue(0);
     ui_.progressBar->setRange(0, 0);
-    ui_.tableView->setModel(model_.view());
+    ui_.tableView->setModel(&model_);
 
-    QObject::connect(&model_, SIGNAL(ready()),
-        this, SLOT(ready()));
+    model_.on_ready = [&]() {
+        ui_.progressBar->setVisible(false);
+    };
 }
 
 nzbfile::~nzbfile()
@@ -104,7 +104,10 @@ void nzbfile::on_actionDownload_triggered()
 
 void nzbfile::on_actionClear_triggered()
 {
-
+    model_.clear();
+    ui_.grpBox->setTitle(tr("NZB File"));
+    ui_.actionDownload->setEnabled(false);
+    ui_.actionDelete->setEnabled(false);
 }
 
 void nzbfile::on_listFiles_customContextMenuRequested(QPoint)

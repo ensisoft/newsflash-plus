@@ -34,11 +34,9 @@
 
 #include <functional>
 
-#include "mainmodel.h"
-
 namespace app
 {
-    class eventlog : public mainmodel, public QAbstractListModel
+    class eventlog : public QAbstractListModel
     {
     public:
         enum class event {
@@ -58,9 +56,7 @@ namespace app
         void write(event type, const QString& msg, const QString& tag);
 
         // clear the event log
-        virtual void clear() override;
-
-        virtual QAbstractItemModel* view() override;
+        void clear();
 
         // abstraclistmodel data accessor
         virtual int rowCount(const QModelIndex&) const override;
@@ -76,7 +72,6 @@ namespace app
        ~eventlog();
 
     private:
-
         boost::circular_buffer<event_t> events_;
     };
 

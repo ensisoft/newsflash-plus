@@ -34,11 +34,50 @@ DlgSettings::DlgSettings(QWidget* parent) : QDialog(parent)
 }
 
 DlgSettings::~DlgSettings()
-{}
+{
+    for (int i=0; i<ui_.tab->count(); ++i)
+    {
+        QWidget* w = ui_.tab->widget(i);
+        w->setParent(nullptr);
+    }
+    ui_.tab->clear();
+}
 
 void DlgSettings::attach(settings* tab)
 {
-    ui_.tab->addTab(tab, tab->windowTitle());
+    Q_ASSERT(!tab->parent());
+
+    // apparently this reparents the object.
+    // GAY QT shite again
+    //ui_.tab->addTab(tab, tab->windowTitle());
+    stash_.insert({tab->windowTitle(), tab});
+}
+
+void DlgSettings::organize()
+{
+    const char* tab_layout[] = {
+        "Settings"
+    };
+
+    int index = 0;
+    for (auto it = std::begin(tab_layout); it != std::end(tab_layout); ++it, ++index)
+    {
+        auto p = stash_.find(*it);
+        if (p == std::end(stash_)) {
+            Q_ASSERT(!"incorrect tab name in the tab layout table");
+            continue;
+        }
+        settings* widget = p->second;
+        ui_.tab->insertTab(index, widget, widget->windowTitle());
+        stash_.erase(p);
+    }
+
+    // append the rest
+    for (auto p = std::begin(stash_); p != std::end(stash_); ++p)
+    {
+        settings* widget = p->second;
+        ui_.tab->addTab(widget, widget->windowTitle());
+    }
 }
 
 void DlgSettings::show(const QString& title)
@@ -88,6 +127,7 @@ void DlgSettings::on_btnCancel_clicked()
         auto* tab = static_cast<settings*>(ptr);
         tab->cancel();
     }
+    reject();
 }
 
 } // gui

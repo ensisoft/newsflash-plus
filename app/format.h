@@ -94,38 +94,33 @@ namespace app
     };
 
     struct event {
-        event() : epoch_(QDateTime::currentDateTime()), event_(QDateTime::currentDateTime())
+        event() : event_(QDateTime::currentDateTime())
         {}
 
-        event(QDateTime epoch, QDateTime event) : epoch_(std::move(epoch)), event_(std::move(event))
-        {
-            Q_ASSERT(epoch <= event);
-        }
+        event(QDateTime event) : event_(event)
+        {}
 
         enum class when {
             today, yesterday, this_week, this_month, this_year, before
         };
 
         bool valid() const
-        {
-            return epoch_.isValid() && event_.isValid();
-        }
+        { return event_.isValid(); }
 
         when as_when() const 
         {
-            const auto& epoch = epoch_.date();
-            const auto& event = event_.date();
-            const auto& days  = epoch_.daysTo(event_);
+            const auto now  = QDateTime::currentDateTime();
+            const auto days = event_.daysTo(now);
 
             if (days == 0)
                 return when::today;
             else if (days == 1)
                 return when::yesterday;
-            else if (epoch.year() == event.year())
+            else if (event_.date().year() == now.date().year())
             {
-                if (epoch.weekNumber() == event.weekNumber())
+                if (event_.date().weekNumber() == now.date().weekNumber())
                     return when::this_week;
-                if (epoch.month() == event.month())
+                if (event_.date().month() == now.date().month())
                     return when::this_month;
                 
                 return when::this_year;
@@ -136,7 +131,6 @@ namespace app
             return event_;
         }
     private:
-        QDateTime epoch_;
         QDateTime event_;
     };
 

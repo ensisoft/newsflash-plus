@@ -35,16 +35,16 @@
 #include "../debug.h"
 #include "../format.h"
 #include "../eventlog.h"
-#include "../datastore.h"
+#include "../settings.h"
 
 namespace gui
 {
 
-downloads::downloads(app::tasklist& tasks, app::connlist& conns) : tasks_(tasks), conns_(conns), panels_y_pos_(0)
+downloads::downloads() : panels_y_pos_(0)
 {
     ui_.setupUi(this);
-    ui_.tableConns->setModel(conns.view());
-    ui_.tableTasks->setModel(tasks.view());
+    ui_.tableConns->setModel(&conns_);
+    ui_.tableTasks->setModel(&tasks_);
 
     // auto* splitter = new QSplitter(this);
     // splitter->setOrientation(Qt::Vertical);
@@ -84,27 +84,27 @@ void downloads::add_actions(QToolBar& bar)
 
 }
 
-void downloads::load(const app::datastore& data) 
-{
-    const auto task_list_height = data.get("downloads", "task_list_height", 0);
-    if (task_list_height)
-        ui_.grpConns->setFixedHeight(task_list_height);
+// void downloads::load(const app::datastore& data) 
+// {
+//     const auto task_list_height = data.get("downloads", "task_list_height", 0);
+//     if (task_list_height)
+//         ui_.grpConns->setFixedHeight(task_list_height);
 
-    ui_.actionThrottle->setChecked(data.get("downloads", "throttle", false));
-    ui_.actionAutoConnect->setChecked(data.get("downloads", "connect", false));
-    ui_.actionPreferSSL->setChecked(data.get("downloads", "ssl", true));
-    //ui_.action
-}
+//     ui_.actionThrottle->setChecked(data.get("downloads", "throttle", false));
+//     ui_.actionAutoConnect->setChecked(data.get("downloads", "connect", false));
+//     ui_.actionPreferSSL->setChecked(data.get("downloads", "ssl", true));
+//     //ui_.action
+// }
 
-void downloads::save(app::datastore& data)
-{
-    data.set("downloads", "task_list_height", ui_.grpConns->height());
-    data.set("downloads", "throttle", ui_.actionThrottle->isChecked());
-    data.set("downloads", "connect", ui_.actionAutoConnect->isChecked());
-    data.set("downloads", "ssl", ui_.actionPreferSSL->isChecked());
-    data.set("downloads", "remove_complete", ui_.chkRemoveComplete->isChecked());
-    data.set("downloads", "group_related", ui_.chkGroupSimilar->isChecked());
-}
+// void downloads::save(app::datastore& data)
+// {
+//     data.set("downloads", "task_list_height", ui_.grpConns->height());
+//     data.set("downloads", "throttle", ui_.actionThrottle->isChecked());
+//     data.set("downloads", "connect", ui_.actionAutoConnect->isChecked());
+//     data.set("downloads", "ssl", ui_.actionPreferSSL->isChecked());
+//     data.set("downloads", "remove_complete", ui_.chkRemoveComplete->isChecked());
+//     data.set("downloads", "group_related", ui_.chkGroupSimilar->isChecked());
+// }
 
 bool downloads::eventFilter(QObject* obj, QEvent* event)
 {

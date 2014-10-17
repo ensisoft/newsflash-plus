@@ -34,10 +34,10 @@
 namespace gui
 {
 
-groups::groups(app::groups& model) : model_(model)
+groups::groups()
 {
     ui_.setupUi(this);
-    ui_.tableGroups->setModel(model.view());
+    ui_.tableGroups->setModel(&model_);
     ui_.tableGroups->setColumnWidth(0, 150);
     ui_.progressBar->setVisible(false);
 }

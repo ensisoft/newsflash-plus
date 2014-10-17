@@ -26,6 +26,7 @@
 
 #include <newsflash/warnpush.h>
 #  include <QtNetwork/QNetworkAccessManager>
+#  include <QtNetwork/QNetworkReply>
 #  include <QObject>
 #  include <QString>
 #  include <QUrl>
@@ -46,6 +47,9 @@ namespace app
         Q_OBJECT
 
     public:
+        // callback invoked when all actions are ready.
+        std::function<void (void)> on_ready;
+
         using callback = std::function<void(QNetworkReply&)>;
 
         netman();
@@ -83,4 +87,7 @@ namespace app
         QNetworkAccessManager qnam_;
         QTimer timer_;
     };
+
+    const char* str(QNetworkReply::NetworkError err);
+
 } // app

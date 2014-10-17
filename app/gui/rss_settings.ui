@@ -1,35 +1,35 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>rss_settings</class>
- <widget class="QWidget" name="rss_settings">
+ <class>RSSSettings</class>
+ <widget class="QWidget" name="RSSSettings">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>593</width>
-    <height>579</height>
+    <width>658</width>
+    <height>628</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>RSS</string>
   </property>
-  <layout class="QGridLayout" name="gridLayout_2">
-   <item row="0" column="0">
-    <widget class="QGroupBox" name="groupBox">
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <widget class="QGroupBox" name="groupBox_11">
      <property name="title">
-      <string>Categories</string>
+      <string>RSS Media Categories</string>
      </property>
-     <layout class="QGridLayout" name="gridLayout_8">
+     <layout class="QGridLayout" name="gridLayout_11">
       <item row="1" column="0">
-       <layout class="QGridLayout" name="gridLayout_7">
+       <layout class="QGridLayout" name="gridLayout_12">
         <item row="0" column="1">
-         <widget class="QGroupBox" name="groupBox_3">
+         <widget class="QGroupBox" name="groupBox_12">
           <property name="title">
            <string>Movies</string>
           </property>
-          <layout class="QVBoxLayout" name="verticalLayout_2">
+          <layout class="QVBoxLayout" name="verticalLayout_14">
            <item>
-            <widget class="QCheckBox" name="chkMoviesForeign">
+            <widget class="QCheckBox" name="chkMoviesInt">
              <property name="text">
               <string>International</string>
              </property>
@@ -53,27 +53,27 @@
          </widget>
         </item>
         <item row="0" column="0">
-         <widget class="QGroupBox" name="groupBox_2">
+         <widget class="QGroupBox" name="groupBox_13">
           <property name="title">
            <string>TV</string>
           </property>
-          <layout class="QVBoxLayout" name="verticalLayout">
+          <layout class="QVBoxLayout" name="verticalLayout_15">
            <item>
-            <widget class="QCheckBox" name="chkTVForeign">
+            <widget class="QCheckBox" name="chkTvInt">
              <property name="text">
               <string>International</string>
              </property>
             </widget>
            </item>
            <item>
-            <widget class="QCheckBox" name="chkTVSD">
+            <widget class="QCheckBox" name="chkTvSD">
              <property name="text">
               <string>SD</string>
              </property>
             </widget>
            </item>
            <item>
-            <widget class="QCheckBox" name="chkTVHD">
+            <widget class="QCheckBox" name="chkTvHD">
              <property name="text">
               <string>HD</string>
              </property>
@@ -83,11 +83,11 @@
          </widget>
         </item>
         <item row="1" column="0">
-         <widget class="QGroupBox" name="groupBox_4">
+         <widget class="QGroupBox" name="groupBox_14">
           <property name="title">
            <string>Computer</string>
           </property>
-          <layout class="QVBoxLayout" name="verticalLayout_3">
+          <layout class="QVBoxLayout" name="verticalLayout_16">
            <item>
             <widget class="QCheckBox" name="chkComputerPC">
              <property name="text">
@@ -120,11 +120,11 @@
          </widget>
         </item>
         <item row="2" column="0">
-         <widget class="QGroupBox" name="groupBox_6">
+         <widget class="QGroupBox" name="groupBox_15">
           <property name="title">
            <string>Music</string>
           </property>
-          <layout class="QVBoxLayout" name="verticalLayout_5">
+          <layout class="QVBoxLayout" name="verticalLayout_17">
            <item>
             <widget class="QCheckBox" name="chkMusicMP3">
              <property name="text">
@@ -150,11 +150,11 @@
          </widget>
         </item>
         <item row="2" column="1">
-         <widget class="QGroupBox" name="groupBox_7">
+         <widget class="QGroupBox" name="groupBox_16">
           <property name="title">
            <string>XXX</string>
           </property>
-          <layout class="QVBoxLayout" name="verticalLayout_6">
+          <layout class="QVBoxLayout" name="verticalLayout_18">
            <item>
             <widget class="QCheckBox" name="chkXXXDVD">
              <property name="text">
@@ -180,11 +180,11 @@
          </widget>
         </item>
         <item row="1" column="1">
-         <widget class="QGroupBox" name="groupBox_5">
+         <widget class="QGroupBox" name="groupBox_17">
           <property name="title">
            <string>Console</string>
           </property>
-          <layout class="QVBoxLayout" name="verticalLayout_4">
+          <layout class="QVBoxLayout" name="verticalLayout_19">
            <item>
             <widget class="QCheckBox" name="chkConsoleNintendo">
              <property name="text">
@@ -214,28 +214,103 @@
      </layout>
     </widget>
    </item>
+   <item>
+    <widget class="QGroupBox" name="grpEnable">
+     <property name="title">
+      <string>RSS Sites</string>
+     </property>
+     <property name="checkable">
+      <bool>false</bool>
+     </property>
+     <property name="checked">
+      <bool>false</bool>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_22">
+      <item>
+       <widget class="QGroupBox" name="grpWomble">
+        <property name="title">
+         <string>Womble</string>
+        </property>
+        <property name="checkable">
+         <bool>true</bool>
+        </property>
+        <layout class="QHBoxLayout" name="horizontalLayout_7">
+         <item>
+          <widget class="QLabel" name="label_11">
+           <property name="text">
+            <string>Womble aka newshost.co.za is a hasle free RSS feed provider. Just enable it and you're good to go!</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <widget class="QGroupBox" name="grpNZBS">
+        <property name="title">
+         <string>Nzbs</string>
+        </property>
+        <property name="checkable">
+         <bool>true</bool>
+        </property>
+        <property name="checked">
+         <bool>false</bool>
+        </property>
+        <layout class="QVBoxLayout" name="verticalLayout_20">
+         <item>
+          <widget class="QLabel" name="label_4">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="text">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;In order to use the RSS feeds provided by &lt;a href=&quot;http://nzbs.org&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;nzbs.org&lt;/span&gt;&lt;/a&gt; your unique User ID and API Key must be used for authentication. You can find these in your &lt;a href=&quot;http://nzbs.org/profile/&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;profile page&lt;/span&gt;&lt;/a&gt; after logging in.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+           <property name="textFormat">
+            <enum>Qt::RichText</enum>
+           </property>
+           <property name="wordWrap">
+            <bool>true</bool>
+           </property>
+           <property name="openExternalLinks">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <layout class="QGridLayout" name="gridLayout_2">
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_6">
+             <property name="text">
+              <string>User ID</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QLineEdit" name="edtNZBSUserId"/>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="label_7">
+             <property name="text">
+              <string>API Key</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QLineEdit" name="edtNZBSApikey"/>
+           </item>
+          </layout>
+         </item>
+        </layout>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
   </layout>
  </widget>
- <tabstops>
-  <tabstop>chkTVForeign</tabstop>
-  <tabstop>chkTVSD</tabstop>
-  <tabstop>chkTVHD</tabstop>
-  <tabstop>chkMoviesForeign</tabstop>
-  <tabstop>chkMoviesSD</tabstop>
-  <tabstop>chkMoviesHD</tabstop>
-  <tabstop>chkComputerPC</tabstop>
-  <tabstop>chkComputerISO</tabstop>
-  <tabstop>chkComputerMac</tabstop>
-  <tabstop>chkComputerAndroid</tabstop>
-  <tabstop>chkConsoleNintendo</tabstop>
-  <tabstop>chkConsoleXbox</tabstop>
-  <tabstop>chkMusicMP3</tabstop>
-  <tabstop>chkMusicLosless</tabstop>
-  <tabstop>chkMusicVideo</tabstop>
-  <tabstop>chkXXXDVD</tabstop>
-  <tabstop>chkXXXSD</tabstop>
-  <tabstop>chkXXXHD</tabstop>
- </tabstops>
  <resources/>
  <connections/>
 </ui>

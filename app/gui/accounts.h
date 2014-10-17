@@ -23,20 +23,11 @@
 #pragma once
 
 #include <newsflash/config.h>
-
 #include <newsflash/warnpush.h>
-
+#  include "ui_accounts.h"
 #include <newsflash/warnpop.h>
 
-#include <memory>
-#include "message.h"
 #include "mainwidget.h"
-#include "ui_accounts.h"
-#include "../accounts.h"
-#include "../msg_account.h"
-
-class QMovie;
-class QAbstractItemModel;
 
 namespace gui
 {
@@ -45,24 +36,21 @@ namespace gui
         Q_OBJECT
         
     public:
-        accounts(app::accounts& model);
+        accounts();
        ~accounts();
 
         virtual void add_actions(QMenu& menu) override;
         virtual void add_actions(QToolBar& bar) override;
         virtual info information() const override;
-        virtual void load(const app::datastore& data) override;
-        virtual void save(app::datastore& data) override;
+        virtual void loadstate(app::settings& s) override;
+        virtual bool savestate(app::settings& s) override;
+        virtual void first_launch(bool add_account) override;
 
-        void on_message(const char* sender, msg_first_launch& msg);
-        void on_message(const char* sender, app::msg_account_downloads_update& msg);
-        void on_message(const char* sender, app::msg_account_quota_update& msg);
-
-    private:
-        void advertise(bool show);        
-        
     private:
         bool eventFilter(QObject* object, QEvent* event);
+
+    private:
+        void updatePie();
 
     private slots:
         void on_actionNew_triggered();
@@ -77,16 +65,11 @@ namespace gui
         void on_listView_doubleClicked(const QModelIndex& index);
         void on_listView_customContextMenuRequested(QPoint pos);
         void on_grpQuota_toggled(bool on);
-
         void currentRowChanged();
 
     private:
         Ui::Accounts ui_;
-
     private:
-        app::accounts& model_;
-        std::unique_ptr<QMovie> movie_;
-        QString license_;
         bool in_row_changed_;
     };
 

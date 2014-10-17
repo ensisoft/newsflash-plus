@@ -1,4 +1,4 @@
-// Copyright (c) 2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -18,56 +18,59 @@
 //  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 //  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-//  THE SOFTWARE.            
+//  THE SOFTWARE.
 
 #pragma once
 
 #include <newsflash/config.h>
 
 #include <newsflash/warnpush.h>
-#  include <QVariant>
 #  include <QString>
 #include <newsflash/warnpop.h>
-#include <memory>
 
-class QAbstractItemModel;
+namespace app {
+    class settings;
+}
 
-namespace app
+namespace gui
 {
-    class datastore;
-    class netreq;
+    class settings;
 
-    // data model
-    class mainmodel
+    // mainmodule extends the application functionality
+    // in a headless fashion, i.e. without providing any user visible GUI.
+    // this is in contrast to the mainwidget which provides GUI and functionality.
+    class mainmodule
     {
     public:
-        virtual ~mainmodel() = default;
+        struct info {
+            QString helpurl;
+        };
 
-        // clear all the data in the model
-        virtual void clear() {};
+        virtual ~mainmodule() = default;
 
-        // returns true if model has no data.
-        virtual bool is_empty() const { return true; }
+        // load the module state
+        virtual void loadstate(app::settings& s) {};
 
-        // get a Qt view compatible model object
-        // for quickly showing the data in a Qt view widget
-        virtual QAbstractItemModel* view() { return nullptr; }
+        // save the module state
+        virtual bool savestate(app::settings& s) { return true; };
 
-        // save model state to the datastore.
-        virtual void save(datastore& store) const {}
+        // prepare the module for shutdown.
+        virtual void shutdown() {};
 
-        // load model state from the datastore.
-        virtual void load(const datastore& store) {}
+        // perform first launch activities.
+        virtual void first_launch() {}
 
-        virtual void complete(std::unique_ptr<netreq> request) {};
+        virtual info information() const { return {""}; }
 
-        virtual bool shutdown() { return true; }
+        // get a settings widget if any. 
+        virtual settings* get_settings(app::settings& s) { return nullptr; }
+
+        // notify that the application settings have been changed.
+        virtual void apply_settings(settings* gui, app::settings& backend) {}
+
+        virtual void free_settings(settings* s) {}
 
     protected:
     private:
-
     };
-
-} // app
-
-
+} // gui

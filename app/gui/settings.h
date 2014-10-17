@@ -37,10 +37,10 @@ namespace gui
     public:
         virtual ~settings() = default;
 
-        // check if the settings are valid. 
-        // if the settings are not valid the 
-        // dialog is not dismissed and user
-        // can continue editing settings.
+        // check if the settings are valid. if settings are not valid
+        // a settings object can veto the accept() by returning false.
+        // this prevents the dialog from closing.
+        // otherwise if all the settings are ok then true should be returned.
         virtual bool validate() const { return true; };
 
         // apply was clicked.
@@ -53,7 +53,6 @@ namespace gui
         virtual void accept() {}
     protected:
     private:
-
     };
 
 } // gui

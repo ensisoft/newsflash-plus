@@ -30,22 +30,34 @@
 
 #include "eventlog.h"
 #include "mainwindow.h"
+#include "../eventlog.h"
 
 namespace gui
 {
 
-eventlog::eventlog(app::eventlog& model) : model_(model)
+eventlog::eventlog()
 {
+    auto& model = app::eventlog::get();
+
     ui_.setupUi(this);
-    ui_.listLog->setModel(model.view());
+    ui_.listLog->setModel(&model);
     ui_.actionClearLog->setEnabled(false);
 
-    model.on_event = std::bind(&eventlog::on_event, this,
-        std::placeholders::_1);
+    model.on_event = [&](const app::eventlog::event_t& e) {
+        if (e.type == app::eventlog::event::error)
+        {
+            setWindowIcon(QIcon(":/resource/16x16_ico_png/ico_error.png"));
+            g_win->update(this);
+        }
+        ui_.actionClearLog->setEnabled(true);
+    };
 }
 
 eventlog::~eventlog()
-{}
+{
+    auto& model = app::eventlog::get();
+    model.on_event = [](const app::eventlog::event_t&) {};
+}
 
 void eventlog::add_actions(QMenu& menu)
 {
@@ -68,21 +80,13 @@ mainwidget::info eventlog::information() const
     return {"eventlog.html", false};
 }
 
-void eventlog::on_event(const app::eventlog::event_t& e)
-{
-    if (e.type == app::eventlog::event::error)
-    {
-        setWindowIcon(QIcon(":/resource/16x16_ico_png/ico_error.png"));
-        g_win->update(this);
-    }
-    ui_.actionClearLog->setEnabled(true);
-}
-
 void eventlog::on_actionClearLog_triggered()
 {
+    auto& model = app::eventlog::get();
+
     ui_.actionClearLog->setEnabled(false);
     
-    model_.clear();
+    model.clear();
 }
 
 void eventlog::on_listLog_customContextMenuRequested(QPoint pos)

@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>EngineSettings</class>
- <widget class="QWidget" name="EngineSettings">
+ <class>CoreSettings</class>
+ <widget class="QWidget" name="CoreSettings">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>419</width>
-    <height>540</height>
+    <width>406</width>
+    <height>566</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>General</string>
+   <string>Settings</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
@@ -25,12 +25,12 @@
         <item row="0" column="0">
          <widget class="QLabel" name="label_2">
           <property name="text">
-           <string>Data files</string>
+           <string>Log files</string>
           </property>
          </widget>
         </item>
         <item row="0" column="1">
-         <widget class="QLineEdit" name="editDataFiles">
+         <widget class="QLineEdit" name="editLogFiles">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
             <horstretch>0</horstretch>
@@ -99,7 +99,7 @@
       <string>Downloading options</string>
      </property>
      <layout class="QGridLayout" name="gridLayout_4">
-      <item row="0" column="0">
+      <item row="1" column="0">
        <widget class="QCheckBox" name="chkOverwriteExisting">
         <property name="toolTip">
          <string/>
@@ -112,7 +112,7 @@
         </property>
        </widget>
       </item>
-      <item row="1" column="0">
+      <item row="2" column="0">
        <widget class="QCheckBox" name="chkDiscardText">
         <property name="layoutDirection">
          <enum>Qt::LeftToRight</enum>
@@ -122,35 +122,45 @@
         </property>
        </widget>
       </item>
+      <item row="0" column="0">
+       <widget class="QCheckBox" name="chkKeepalive">
+        <property name="toolTip">
+         <string>Keep connections alive by sending messages to the server at regular intervals.</string>
+        </property>
+        <property name="text">
+         <string>Keep connections alive</string>
+        </property>
+       </widget>
+      </item>
      </layout>
     </widget>
    </item>
    <item>
     <widget class="QGroupBox" name="groupBox_9">
      <property name="title">
-      <string>Preferred primary account</string>
+      <string>Main account</string>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_5">
       <item>
        <layout class="QVBoxLayout" name="verticalLayout_6">
         <item>
-         <widget class="QRadioButton" name="rdConfirm">
+         <widget class="QRadioButton" name="rdbAskAccount">
           <property name="text">
-           <string>In case of multiple accounts ask which one I want to use</string>
+           <string>Ask me which one to use</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QRadioButton" name="rdPrefer">
+         <widget class="QRadioButton" name="rdbUseAccount">
           <property name="text">
            <string>Always use this account</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QComboBox" name="cmbPreferredServer">
+         <widget class="QComboBox" name="cmbMainAccount">
           <property name="enabled">
-           <bool>false</bool>
+           <bool>true</bool>
           </property>
          </widget>
         </item>
@@ -160,9 +170,9 @@
     </widget>
    </item>
    <item>
-    <widget class="QGroupBox" name="grpFillServer">
+    <widget class="QGroupBox" name="grpFillAccount">
      <property name="title">
-      <string>Preferred fill account</string>
+      <string>Fill account</string>
      </property>
      <property name="checkable">
       <bool>true</bool>
@@ -172,18 +182,15 @@
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_8">
       <item>
-       <widget class="QComboBox" name="cmbFillServer"/>
+       <widget class="QComboBox" name="cmbFillAccount"/>
       </item>
      </layout>
     </widget>
    </item>
    <item>
-    <widget class="QGroupBox" name="grpThrottle">
+    <widget class="QGroupBox" name="groupBox_2">
      <property name="title">
       <string>Throttle</string>
-     </property>
-     <property name="checkable">
-      <bool>true</bool>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_9">
       <item>
@@ -242,6 +249,23 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>editLogFiles</tabstop>
+  <tabstop>btnBrowseLog</tabstop>
+  <tabstop>editDownloads</tabstop>
+  <tabstop>btnBrowseDownloads</tabstop>
+  <tabstop>chkKeepalive</tabstop>
+  <tabstop>chkOverwriteExisting</tabstop>
+  <tabstop>chkDiscardText</tabstop>
+  <tabstop>rdbAskAccount</tabstop>
+  <tabstop>rdbUseAccount</tabstop>
+  <tabstop>cmbMainAccount</tabstop>
+  <tabstop>grpFillAccount</tabstop>
+  <tabstop>cmbFillAccount</tabstop>
+  <tabstop>sliderThrottle</tabstop>
+  <tabstop>editThrottle</tabstop>
+  <tabstop>chkUpdates</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

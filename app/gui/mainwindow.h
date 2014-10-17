@@ -27,14 +27,9 @@
 #include <newsflash/warnpush.h>
 #  include <QtGui/QMainWindow>
 #  include <QtGui/QSystemTrayIcon>
-#  include <QtGui/QAction>
 #  include <QList>
+#  include "ui_mainwindow.h"
 #include <newsflash/warnpop.h>
-
-#include "ui_mainwindow.h"
-#include "../mainapp.h"
-#include "../datastore.h"
-
 #include <vector>
 #include <memory>
 
@@ -43,10 +38,21 @@ class QAction;
 class QCloseEvent;
 class QCoreApplication;
 
+namespace app {
+    class settings;
+} // app
+
 namespace gui
 {
     class mainwidget;
+    class mainmodule;
 
+    // application's mainwindow. mainwindow manages the mainwidgets and
+    // provides core GUI functionality that for example displaying common dialogs
+    // for opening and saving application specific files (such as NZB).
+    // it features a TabWidget that hosts between the mainwidgets.
+    // Actions such as shutdown, drag&drop etc are handled initially
+    // in the mainwindow and then propagated down to mainwidgets for handling.
     class mainwindow : public QMainWindow
     {
         Q_OBJECT
@@ -54,29 +60,44 @@ namespace gui
     public:
         using QMainWindow::show;
 
-        mainwindow(app::mainapp& app);
+        // ctor/dtor
+        mainwindow(app::settings& settings);
        ~mainwindow();
        
+        // attach a new widget to the mainwindow and display it.
+        // ownership of the object remains with the caller.
         void attach(mainwidget* widget);
 
+        // attach a new module to the mainwindow.
+        // ownership of the module remains with the caller.
+        void attach(mainmodule* module);
+
+        // update the widget's display state
+        void update(mainwidget* widget);
+    
+        // detach all widgets
+        void detach_all_widgets();
+
+        // load previously stored application/gui state.
         void loadstate();
 
-        void load(const app::datastore& store);
-        void save(app::datastore& store);
-
+        // change application focus to the widget with the matching name      
         void show_widget(const QString& name);
 
+        // open and show the application settings and select the
+        // matching settings page.
         void show_setting(const QString& name);
 
+        // perform a common action and select a download folder for some content.
         QString select_download_folder();
 
+        // select a folder for storing a nzb file into.
         QString select_save_nzb_folder();
 
-        QString select_nzb_file();
+        // select a NZB file for opening.
+        QString select_nzb_file(); 
         
         void recents(QStringList& paths) const;
-
-        void update(mainwidget* widget);
 
    private:
         void show(const QString& name);
@@ -85,13 +106,9 @@ namespace gui
         void hide(mainwidget* widget);        
         void hide(std::size_t index);
         void focus(mainwidget* widget);    
-
-    private:
-        void closeEvent(QCloseEvent* event);
-
-    private:
         void build_window_menu();
         bool savestate();
+        void closeEvent(QCloseEvent* event);        
         
     private slots:
         void on_mainTab_currentChanged(int index);
@@ -108,7 +125,6 @@ namespace gui
         void on_actionOpenNZB_triggered();
         void actionWindowToggleView_triggered();
         void actionWindowFocus_triggered();
-
         void actionTray_activated(QSystemTrayIcon::ActivationReason);
         void timerWelcome_timeout();
 
@@ -116,8 +132,7 @@ namespace gui
         Ui::MainWindow ui_;
 
     private:
-        app::mainapp& app_;        
-        app::datastore settings_;
+        std::vector<mainmodule*> modules_;
         std::vector<mainwidget*> widgets_;
         std::vector<QAction*> actions_;
         std::vector<std::unique_ptr<mainwidget>> extras_;
@@ -127,6 +142,8 @@ namespace gui
         QStringList recents_;
         QString recent_save_nzb_path_;
         QString recent_load_nzb_path_;
+    private:
+        app::settings& settings_;
     };
     
     extern mainwindow* g_win;

@@ -20,7 +20,7 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-#define LOGTAG "gui"
+#define LOGTAG "main"
 
 #include <newsflash/config.h>
 
@@ -49,13 +49,13 @@
 #include "rss.h"
 #include "nzbfile.h"
 #include "downloads.h"
-#include "../mainapp.h"
+#include "coremodule.h"
+#include "appearance.h"
 #include "../eventlog.h"
 #include "../debug.h"
 #include "../format.h"
 #include "../distdir.h"
 #include "../homedir.h"
-#include "../datastore.h"
 #include "../accounts.h"
 #include "../groups.h"
 #include "../rss.h"
@@ -63,6 +63,7 @@
 #include "../connlist.h"
 #include "../tasklist.h"
 #include "../engine.h"
+#include "../settings.h"
 
 using app::str;
 
@@ -79,31 +80,6 @@ void openhelp(const QString& page)
     const auto& help = app::distdir::path("help");
     const auto& file = QString("file://%1/%2").arg(help).arg(page);
     QDesktopServices::openUrl(file);
-}
-
-// note that any Qt style must be applied first
-// thing before any Qt application object is instance is created.
-void setstyle()
-{
-    const auto& file = app::homedir::file("style");
-    if (!QFile::exists(file))
-        return;
-
-    QFile io(file);
-    QTextStream in(&io);
-    QString name = in.readLine();
-    if (name.isEmpty())
-        return;
-
-    if (name.toLower() == "default")
-        return;
-
-    DEBUG(str("Qt style _1", name));    
-
-    QStyle* style = QApplication::setStyle(name);
-    if (style)
-        QApplication::setPalette(style->standardPalette());
-
 }
 
 void copyright()
@@ -154,72 +130,87 @@ int run(int argc, char* argv[])
         return 0;
     }
 
-
-    app::homedir::init(".newsflash");
+    // this requires QApplication object to be created...
     app::distdir::init();
+    app::homedir::init(".newsflash");    
 
-    setstyle();
     copyright();    
 
     QCoreApplication::setLibraryPaths(QStringList());
     QCoreApplication::addLibraryPath(app::distdir::path());
     QCoreApplication::addLibraryPath(app::distdir::path("plugins-qt"));
 
-    app::engine eng(qtinstance);
-    app::g_engine = &eng;
+    // settings is that everything depends on 
+    // load settings first.
+    app::settings set;
+    app::g_settings = &set;    
 
-    // main application module
-    app::mainapp app;
-    app::g_app = &app;
+    const auto file = app::homedir::file("settings.json");
+    if (QFile::exists(file))
+    {
+        const auto err = set.load(file);
+        if (err != QFile::NoError)
+            ERROR(str("Failed to read settings _1, _2", file, err));
+    }
 
-    // main application window
-    gui::mainwindow win(app);
+    gui::appearance style;
+
+    app::accounts acc;
+    app::g_accounts = &acc;
+
+    //app::engine eng(qtinstance);
+    //app::g_engine = &eng;
+
+    // todo: maybe create the widgets and modules on the free store
+    // instead of the stack..
+
+     // main application window
+    gui::mainwindow win(set);
     gui::g_win = &win;
 
-    // accounts module
-    app::accounts app_accounts;
-    gui::accounts gui_accounts(app_accounts);
-    app.attach(&app_accounts);
-    win.attach(&gui_accounts);
+    // accounts widget
+    gui::accounts gacc;
+    win.attach(&gacc);
 
-    // groups module
-    app::groups app_groups;
-    gui::groups gui_groups(app_groups);
-    app.attach(&app_groups);
-    win.attach(&gui_groups);
+    // groups widget
+    gui::groups groups;
+    win.attach(&groups);
 
-    // downloads module
-    app::tasklist app_tasks;
-    app::connlist app_conns;
-    gui::downloads gui_downloads(app_tasks, app_conns);
-    win.attach(&gui_downloads);
+    // downloads widget
+    gui::downloads downloads;
+    win.attach(&downloads);
 
-    // eventlog module
-    app::eventlog& app_eventlog = app::eventlog::get();
-    gui::eventlog  gui_eventlog(app_eventlog);
-    app.attach(&app_eventlog);
-    win.attach(&gui_eventlog);
+    // eventlog widget
+    gui::eventlog log;
+    win.attach(&log);
 
-    // RSS module
-    app::rss app_rss(app);
-    gui::rss gui_rss(win, app_rss);
-    app.attach(&app_rss);
-    win.attach(&gui_rss);
+    // RSS widget
+    gui::rss rss;
+    win.attach(&rss);
 
-    // NZB module
-    app::nzbfile app_nzb;
-    gui::nzbfile gui_nzb(app_nzb);
-    app.attach(&app_nzb);
-    win.attach(&gui_nzb);
+    // NZB widget
+    gui::nzbfile nzb;
+    win.attach(&nzb);
 
-    app.loadstate();
+    // core module
+    gui::coremodule core;
+    win.attach(&core);
+
+    win.attach(&style);
+
     win.loadstate();
-
     win.show();
 
+    auto ret = qtinstance.exec();
 
+    // its important to keep in mind that the modules and widgets
+    // are created simply on the stack here and what is the actual
+    // destruction order. our mainwindow outlives the widgets and modules
+    // so before we start destructing those objects its better to make clean
+    // all the references to those in the mainwindow.
+    win.detach_all_widgets();
 
-    return qtinstance.exec();
+    return ret;
 }
 
 } // gui

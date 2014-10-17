@@ -37,7 +37,6 @@
 
 #include "engine.h"
 #include "debug.h"
-#include "datastore.h"
 #include "homedir.h"
 #include "format.h"
 #include "eventlog.h"
@@ -92,16 +91,16 @@ engine* g_engine;
 
 engine::engine(QCoreApplication& application) : app_(application)
 {
-    datastore data;
-    const auto file = homedir::file("engine.json");
-    if (QFile::exists(file))
-    {
-        const auto error = data.load(file);
-        if (error != QFile::NoError)
-        {
-            ERROR(str("Failed to read engine settings _1, _2", file, error));
-        }
-    }
+    // datastore data;
+    // const auto file = homedir::file("engine.json");
+    // if (QFile::exists(file))
+    // {
+    //     const auto error = data.load(file);
+    //     if (error != QFile::NoError)
+    //     {
+    //         ERROR(str("Failed to read engine settings _1, _2", file, error));
+    //     }
+    // }
     // settings_.reset(new newsflash::settings);
     // settings_->overwrite_existing_files = data.get("engine", "overwrite_existing_files", false);
     // settings_->discard_text_content     = data.get("engine", "discard_text_content", false);
@@ -111,25 +110,25 @@ engine::engine(QCoreApplication& application) : app_(application)
     // settings_->enable_fillserver        = data.get("engine", "enable_fillserver", false);
     // settings_->throttle                 = data.get("engine", "throttle", 0);
 
-    QString logs = data.get("engine", "log_files", "");
-    if (logs.isEmpty())
-    {
-#if defined(LINUX_OS)
-        // we use /tmp instead of /var/logs because most likely
-        // we don't have the permission to write into /var/logs
-        logs = "/tmp/newsflash";
-#elif defined(WINDOWS_OS)
+//     QString logs = data.get("engine", "log_files", "");
+//     if (logs.isEmpty())
+//     {
+// #if defined(LINUX_OS)
+//         // we use /tmp instead of /var/logs because most likely
+//         // we don't have the permission to write into /var/logs
+//         logs = "/tmp/newsflash";
+// #elif defined(WINDOWS_OS)
 
-#endif
-    }
+// #endif
+//     }
 
-    DEBUG(str("Engine log files will be stored in _1", logs));
+    //DEBUG(str("Engine log files will be stored in _1", logs));
 
-    QDir dir(logs);
-    if (!dir.mkpath(logs))
-    {
-        ERROR(str("Failed to create log folder _1. Log files will not be available", dir));            
-    }
+    //QDir dir(logs);
+    //if (!dir.mkpath(logs))
+    //{
+        //ERROR(str("Failed to create log folder _1. Log files will not be available", dir));            
+    //}
 
     //listener_.reset(new listener(this));
     //engine_.reset(new newsflash::engine(*listener_, utf8(logs)));
@@ -165,7 +164,7 @@ void engine::set(const account& acc)
     // a.enable_pipelining     = acc.enable_pipelining();
     // engine_->set(a);
 
-    DEBUG(str("Configure engine with account _1", acc.name()));
+    //DEBUG(str("Configure engine with account _1", acc.name()));
 }
 
 bool engine::eventFilter(QObject* object, QEvent* event)

@@ -42,18 +42,18 @@ namespace gui
         Q_OBJECT
 
     public:
-        downloads(app::tasklist& tasks, app::connlist& conns);
+        downloads();
        ~downloads();
 
         virtual void add_actions(QMenu& menu) override;
         virtual void add_actions(QToolBar& bar) override;
 
-        virtual void load(const app::datastore& data) override;
-        virtual void save(app::datastore& data) override;
+        //virtual void load(const app::datastore& data) override;
+        //virtual void save(app::datastore& data) override;
 
-        virtual info information() const override {
-            return {"downloads.html", true};
-        }
+        virtual info information() const override 
+        { return {"downloads.html", true}; }
+
     private:
         bool eventFilter(QObject* obj, QEvent* event);
 
@@ -61,10 +61,8 @@ namespace gui
         Ui::Downloads ui_;
 
     private:
-        app::tasklist& tasks_;
-        app::connlist& conns_;
-
-    private:
+        app::tasklist tasks_;
+        app::connlist conns_;
         int panels_y_pos_;
     };
 

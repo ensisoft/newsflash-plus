@@ -20,10 +20,11 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-#include <newsflash/config.h>
+#define LOGTAG "conn"
 
+#include <newsflash/config.h>
 #include "connlist.h"
-#include "mainapp.h"
+
 
 namespace app
 {

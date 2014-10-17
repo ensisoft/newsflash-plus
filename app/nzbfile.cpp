@@ -30,110 +30,18 @@
 #  include <QAbstractListModel>
 #include <newsflash/warnpop.h>
 
-#include <memory>
-
 #include "nzbfile.h"
-#include "nzbparse.h"
+#include "nzbthread.h"
 #include "debug.h"
 #include "format.h"
 #include "eventlog.h"
-#include "mainapp.h"
 #include "filetype.h"
+
 
 namespace app
 {
 
-class nzbfile::model : public QAbstractTableModel
-{
-public:
-    virtual int rowCount(const QModelIndex&) const override
-    {
-        return (int)data_.size();
-    }
-    virtual int columnCount(const QModelIndex&) const override
-    {
-        return 3;
-    }
-    virtual QVariant data(const QModelIndex& index, int role) const override
-    {
-        if (role == Qt::DisplayRole)
-        {
-            const auto& item = data_[index.row()];            
-            if (index.column() == 0)
-                return str(item.type);
-            else if (index.column() == 1)
-                return str(app::size { item.bytes });
-            else if (index.column() == 2)
-                return item.subject;
-        }
-        else if (role == Qt::DecorationRole)
-        {
-            if (index.column() == 0)
-            {
-                const auto& item = data_[index.row()];                            
-                return iconify(item.type);
-            }
-        }
-        return QVariant();
-    }
-    virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const override
-    {
-        if (role != Qt::DisplayRole)
-            return QVariant();
-
-        if (section == 0)
-            return "Type";
-        else if (section == 1)
-            return "Size";
-        else if (section == 2)
-            return "File";
-
-        return QVariant();
-    }
-
-    virtual void sort(int column, Qt::SortOrder order) override
-    {
-        emit layoutAboutToBeChanged();
-        if (column == 0)
-        {
-            std::sort(std::begin(data_), std::end(data_),
-                [&](const nzbcontent& lhs, const nzbcontent& rhs) {
-                    if (order == Qt::AscendingOrder)
-                        return lhs.type < rhs.type;
-                    return lhs.type > rhs.type;
-                });
-        }
-        else if (column == 1)
-        {
-            std::sort(std::begin(data_), std::end(data_),
-                [=](const nzbcontent& lhs, const nzbcontent& rhs) {
-                    if (order == Qt::AscendingOrder)
-                        return lhs.bytes < rhs.bytes;
-                    return lhs.bytes > rhs.bytes;
-                });
-        }
-
-        else if (column == 2)
-        {
-            std::sort(std::begin(data_), std::end(data_),
-                [&](const nzbcontent& lhs, const nzbcontent& rhs) {
-                    if (order == Qt::AscendingOrder)
-                        return lhs.subject < rhs.subject;
-                    return lhs.subject > rhs.subject;
-                });
-        }
-
-        emit layoutChanged();
-    }
-
-private:
-    friend class nzbfile;
-
-private:
-    std::vector<nzbcontent> data_;
-};
-
-nzbfile::nzbfile() : model_(new nzbfile::model)
+nzbfile::nzbfile()
 {
     DEBUG("nzbfile created");
 }
@@ -148,14 +56,6 @@ nzbfile::~nzbfile()
     }
 
     DEBUG("nzbfile destroyed");    
-}
-
-void nzbfile::clear()
-{}
-
-QAbstractItemModel* nzbfile::view() 
-{
-    return model_.get();
 }
 
 bool nzbfile::load(const QString& file)
@@ -180,11 +80,99 @@ bool nzbfile::load(const QString& file)
     return true;
 }
 
+void nzbfile::clear()
+{
+    data_.clear();
+    QAbstractTableModel::reset();
+}
+
+
+int nzbfile::rowCount(const QModelIndex&) const
+{
+    return (int)data_.size();
+}
+
+int nzbfile::columnCount(const QModelIndex&) const
+{
+    return 3;
+}
+
+void nzbfile::sort(int column, Qt::SortOrder order)
+{
+    emit layoutAboutToBeChanged();
+    if (column == 0)
+    {
+        std::sort(std::begin(data_), std::end(data_),
+            [&](const nzbcontent& lhs, const nzbcontent& rhs) {
+                if (order == Qt::AscendingOrder)
+                    return lhs.type < rhs.type;
+                return lhs.type > rhs.type;
+            });
+    }
+    else if (column == 1)
+    {
+        std::sort(std::begin(data_), std::end(data_),
+            [=](const nzbcontent& lhs, const nzbcontent& rhs) {
+                if (order == Qt::AscendingOrder)
+                    return lhs.bytes < rhs.bytes;
+                return lhs.bytes > rhs.bytes;
+            });
+    }
+    else if (column == 2)
+    {
+        std::sort(std::begin(data_), std::end(data_),
+            [&](const nzbcontent& lhs, const nzbcontent& rhs) {
+                if (order == Qt::AscendingOrder)
+                    return lhs.subject < rhs.subject;
+                return lhs.subject > rhs.subject;
+            });
+    }
+    emit layoutChanged();
+}
+
+QVariant nzbfile::data(const QModelIndex& index, int role) const
+{
+    if (role == Qt::DisplayRole)
+    {
+        const auto& item = data_[index.row()];            
+        if (index.column() == 0)
+            return str(item.type);
+        else if (index.column() == 1)
+            return str(app::size { item.bytes });
+        else if (index.column() == 2)
+            return item.subject;
+    }
+    else if (role == Qt::DecorationRole)
+    {
+        if (index.column() == 0)
+        {
+            const auto& item = data_[index.row()];                            
+            return iconify(item.type);
+        }
+    }
+    return QVariant();
+}
+
+QVariant nzbfile::headerData(int section, Qt::Orientation orientation, int role) const
+{
+    if (role != Qt::DisplayRole)
+        return QVariant();
+
+    if (section == 0)
+        return "Type";
+    else if (section == 1)
+        return "Size";
+    else if (section == 2)
+        return "File";
+
+    return QVariant();
+}
+
 void nzbfile::parse_complete()
 {
     DEBUG(str("parse_complete _1", QThread::currentThreadId()));
 
-    const auto result = thread_->result(model_->data_);
+    const auto result = thread_->result(data_);
 
     switch (result)
     {
@@ -208,9 +196,9 @@ void nzbfile::parse_complete()
             break;
     }
 
-    model_->reset();
+    reset();
 
-    emit ready();
+    on_ready();
 }
 
 

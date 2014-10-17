@@ -33,24 +33,24 @@
 
 #include <stdexcept>
 #include <sstream>
-#include "datastore.h"
+#include "settings.h"
 #include "format.h"
 
 namespace app
 {
 
-datastore::datastore()
+settings::settings()
 {}
 
-datastore::~datastore()
+settings::~settings()
 {}
 
 
-void datastore::load(QIODevice& io, datastore::format format)
+void settings::load(QIODevice& io, settings::format format)
 {
     Q_ASSERT(io.isOpen());
 
-    if (format == datastore::format::json)
+    if (format == settings::format::json)
     {
         bool ok = false;
         QJson::Parser parser;
@@ -76,11 +76,11 @@ void datastore::load(QIODevice& io, datastore::format format)
     }
 }
 
-void datastore::save(QIODevice& io, datastore::format format) const
+void settings::save(QIODevice& io, settings::format format) const
 {
     Q_ASSERT(io.isOpen());
 
-    if (format == datastore::format::json)
+    if (format == settings::format::json)
     {
         bool ok = false;
         QJson::Serializer serializer;
@@ -95,7 +95,7 @@ void datastore::save(QIODevice& io, datastore::format format) const
     }
 }
 
-QFile::FileError datastore::load(const QString& file, datastore::format format)
+QFile::FileError settings::load(const QString& file, settings::format format)
 {
     QFile io(file);
     if (!io.open(QIODevice::ReadOnly))
@@ -105,7 +105,7 @@ QFile::FileError datastore::load(const QString& file, datastore::format format)
     return QFile::NoError;
 }
 
-QFile::FileError datastore::save(const QString& file, datastore::format format)
+QFile::FileError settings::save(const QString& file, settings::format format)
 {
     QFile io(file);
     if (!io.open(QIODevice::WriteOnly))
@@ -115,12 +115,12 @@ QFile::FileError datastore::save(const QString& file, datastore::format format)
     return QFile::NoError;
 }
 
-void datastore::clear()
+void settings::clear()
 {
     values_.clear();
 }
 
-bool datastore::contains(const char* context, const char* name) const
+bool settings::contains(const char* context, const char* name) const
 {
     const auto& value = get(context, name);
     if (value.isNull())
@@ -129,7 +129,7 @@ bool datastore::contains(const char* context, const char* name) const
     return true;
 }
 
-QVariant datastore::get(const QString& key, const QString& attr, const QVariant& defval) const
+QVariant settings::get(const QString& key, const QString& attr, const QVariant& defval) const
 {
     const QVariantMap& map = values_[key].toMap();
     if (map.isEmpty())
@@ -139,12 +139,19 @@ QVariant datastore::get(const QString& key, const QString& attr, const QVariant&
     return value;
 }
 
-void datastore::set(const QString& key, const QString& attr, const QVariant& value)
+void settings::set(const QString& key, const QString& attr, const QVariant& value)
 {
     QVariantMap map = values_[key].toMap();
     map[attr] = value;
     values_[key] = map;
 }
+
+void settings::del(const QString& key)
+{
+    values_.remove(key);
+}
+
+settings* g_settings;
 
 } // app
 

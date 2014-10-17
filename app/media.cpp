@@ -29,7 +29,7 @@ const char* str(media m)
 {
     switch (m)
     {
-        case media::none: return "none";
+        //case media::none: return "none";
         case media::console_nds: return "Nintento DS";
         case media::console_wii: return "Nintendo Wii";
         case media::console_xbox: return "Xbox";
@@ -38,37 +38,37 @@ const char* str(media m)
         case media::console_ps2: return "Playstation 2";
         case media::console_ps3: return "Playstation 3";
         case media::console_ps4: return "Playstation 4";
-        case media::console_playstation: return "Playstation";
-        case media::console_nintendo: return "Nintendo";
-        case media::console_microsoft: return "Microsoft Xbox/360";        
-        case media::console: return "Console";
+        //case media::console_playstation: return "Playstation";
+        //case media::console_nintendo: return "Nintendo";
+        //case media::console_microsoft: return "Microsoft Xbox/360";        
+        //case media::console: return "Console";
         case media::movies_int: return "Movies Int.";
         case media::movies_sd: return "Movies SD";
         case media::movies_hd: return "Movies HD";
-        case media::movies: return "Movies";
+        //case media::movies: return "Movies";
         case media::audio_mp3: return "Mp3";
         case media::audio_video: return "Music Videos";
         case media::audio_audiobook: return "Audiobook";
         case media::audio_lossless: return "Lossless Audio";
-        case media::audio: return "Audio";
+        //case media::audio: return "Audio";
         case media::apps_pc: return "PC";
         case media::apps_iso: return "ISO";
         case media::apps_mac: return "Mac";
         case media::apps_android: return "Android";
         case media::apps_ios: return "iOS";
-        case media::apps: return "Apps";
+        //case media::apps: return "Apps";
         case media::tv_int: return "TV Int.";
         case media::tv_sd: return "TV SD";
         case media::tv_hd: return "TV HD";
         case media::tv_other: return "TV Other";
         case media::tv_sport: return "TV Sports";
-        case media::tv: return "TV";
+        //case media::tv: return "TV";
         case media::xxx_dvd: return "XXX DVD";
         case media::xxx_hd: return "XXX HD";
         case media::xxx_sd: return "XXX SD";
-        case media::xxx: return "XXX";
+        //case media::xxx: return "XXX";
         case media::ebook: return "EBook";
-        case media::all: return "All";
+        //case media::all: return "All";
         assert(!"unknown media");
     }
     return "???";

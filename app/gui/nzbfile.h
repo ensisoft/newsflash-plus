@@ -39,7 +39,7 @@ namespace gui
         Q_OBJECT
 
     public:
-        nzbfile(app::nzbfile& model);
+        nzbfile();
        ~nzbfile();
 
         virtual void add_actions(QMenu& menu) override;
@@ -58,7 +58,7 @@ namespace gui
         Ui::NZB ui_;
 
     private:
-        app::nzbfile& model_;
+        app::nzbfile model_;
     };
 
 } // gui

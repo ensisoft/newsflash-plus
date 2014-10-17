@@ -23,27 +23,53 @@
 #pragma once
 
 #include <newsflash/config.h>
+#include <newsflash/warnpush.h>
+#  include <QString>
+#include <newsflash/warnpop.h>
 
 class QIcon;
 class QString;
 
 namespace app
 {
+    // filetypes categorizes files into broad categories
+    // of possible types.
     enum class filetype {
-        none, audio, video, image, text, log, archive, parity, document, other
+        none, 
+
+        // audio and music files such as .mp3, .ogg, .flac
+        audio, 
+
+        // videos and movies such as .mkv, .wmv, .avi
+        video,
+
+        // images and pictures such as .jpg, .png
+        image, 
+
+        // textual contents such as .txt and .nfo
+        text, 
+
+        // data archive files such as .zip and .rar
+        archive, 
+
+        // parity i.e. par2 files. 
+        parity, 
+
+        // document files such as .pdf, .doc, .xml
+        document, 
+
+        // unknown filetype
+        other
     };
 
     // get the default hardcoded filepattern string for the given filetype
-    QString filepattern(filetype type);
+    const char* filepattern(filetype type);
 
-    QString str(filetype type);
+    const char* str(filetype type);
 
     // try to identify file's type.
     filetype find_filetype(const QString& filename);
 
     QIcon iconify(filetype type);
-
-
-
 
 } // app

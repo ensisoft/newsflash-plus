@@ -1,4 +1,4 @@
-// Copyright (c) 2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -22,24 +22,81 @@
 
 #pragma once
 
-#include <newsflash/config.h>
-
 #include <newsflash/warnpush.h>
-#  include <QString>
+#  include <QVariant>
+#  include <QMap>
+#  include <QFile>
 #include <newsflash/warnpop.h>
+
+class QIODevice;
 
 namespace app
 {
-    struct settings {
-        QString logs_path;
-        QString data_path;
-        QString downloads_path;
-        bool enable_throttle;
-        bool discard_text_content;
-        bool overwrite_existing;
-        bool remove_complete;
-        bool prefer_secure;
-        int throttle;
+    // store arbitrary values/objects with a context/name key.
+    // values are keyed by context-name pair so that for example
+    // "some-context", "value" and "other-context", "value" point
+    // to different actual value objects.
+    class settings
+    {
+    public:
+        enum class format {
+            json
+        };
+
+        settings();
+       ~settings();
+
+        // load the store from the given stream.
+        // io must be already opened.
+        void load(QIODevice& io, settings::format format = format::json);
+
+        // save the store to a stream.
+        // io must be already opened.
+        void save(QIODevice& io, settings::format format = format::json) const;
+
+        QFile::FileError load(const QString& file, settings::format format = format::json);
+
+        QFile::FileError save(const QString& file, settings::format format = format::json);
+
+        // clear all values
+        void clear();
+
+        // returns true if a value identifief by context/name key
+        // exists in the settings. otherwise returns false.
+        bool contains(const char* context, const char* name) const;
+
+        // set the value for the named attribute under the specified key
+        void set(const QString& key, const QString& attr, const QVariant& value);
+
+        // get the value under the named attribute in the specified key
+        QVariant get(const QString& key, const QString& attr, const QVariant& defval = QVariant()) const;
+
+        // convenience accessor
+        template<typename T>
+        T get(const QString& key, const QString& attr, const T& defval) const
+        {
+            const auto& var = get(key, attr);
+            if (var.isValid())
+                return qvariant_cast<T>(var);
+            return qvariant_cast<T>(defval);
+        }
+
+        QString get(const QString& key, const QString& attr, const char* str) const
+        {
+            const auto& var = get(key, attr);
+            if (var.isValid())
+                return qvariant_cast<QString>(var);
+            return QString(str);
+        }
+
+        // delete the whole section under the key
+        void del(const QString& key);
+
+    private:
+        QVariantMap values_;
     };
-    
+
+
+    extern settings* g_settings;
+
 } // app

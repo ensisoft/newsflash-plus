@@ -1,4 +1,4 @@
-// Copyright (c) 2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -18,17 +18,35 @@
 //  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 //  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-//  THE SOFTWARE.            
+//  THE SOFTWARE.
 
-#include "message.h"
+#pragma once
+
+#include <newsflash/config.h>
+#include <newsflash/warnpush.h>
+
+#include <newsflash/warnpop.h>
+
+#include "rssfeed.h"
 
 namespace app
 {
+    // womble, aka. newshost.co.za provides simple and hassle free RSS feed for usenet. 
+    // also no registration or user credentials are required.
+    class womble : public rssfeed
+    {
+    public:
+        virtual bool parse(QIODevice& io, std::vector<mediaitem>& rss) override;
 
-message_dispatcher& message_dispatcher::get()
-{
-    static message_dispatcher dispatch;
-    return dispatch;
-}
+        // user authentication is not required.
+        virtual void prepare(media m, std::vector<QUrl>& urls) override;
 
+        virtual QString site() const override
+        { return "http://newshost.co.za"; }
+
+        virtual QString name() const override
+        { return "womble"; }
+    protected:
+    private:
+    };
 } // app

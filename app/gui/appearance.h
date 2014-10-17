@@ -1,4 +1,4 @@
-// Copyright (c) 2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -22,28 +22,29 @@
 
 #pragma once
 
-#include "ui_engine_settings.h"
+#include <newsflash/config.h>
+
+#include <newsflash/warnpush.h>
+
+#include <newsflash/warnpop.h>
+
 #include "settings.h"
-#include "../settings.h"
+#include "mainmodule.h"
 
 namespace gui
 {
-    // settings tab for the engine
-    class engine_settings : public settings
+    // depends on settings module
+    class appearance : public mainmodule
     {
-        Q_OBJECT
-
     public:
-        engine_settings(app::settings& settings);
-       ~engine_settings();
+        appearance();
+       ~appearance();
 
-        bool validate() const override;
-
-        void accept() override;
-
+        virtual void loadstate(app::settings& s) override;
+        virtual gui::settings* get_settings(app::settings& s) override;
+        virtual void apply_settings(gui::settings* gui, app::settings& backend) override;
+        virtual void free_settings(gui::settings* s) override;
     private:
-        Ui::EngineSettings ui_;
-    private:
-        app::settings& settings_;
+        QString current_style_name_;
     };
 } // gui

@@ -40,6 +40,8 @@ namespace newsflash
         {
             set(initial);
         }
+        bitflag(Bits value) : bits_(value)
+        {}
 
         bitflag& set(Enum value) 
         {
@@ -76,29 +78,31 @@ namespace newsflash
         Bits value() const 
         { return bits_; }        
 
-    private:
-        bitflag(Bits b) : bits_(b)
-        {}
-    private:
-        template<typename E> friend bitflag operator | (bitflag<E>, bitflag<E>);
-        template<typename E> friend bitflag operator & (bitflag<E>, bitflag<E>);
-
+        void set_from_value(Bits b)
+        { bits_ = b; }
     private:
         Bits bits_;
     };
 
+    // we only provide this operator, since its global
+    // this also covers Enum | bitflag<Enum> and bitflag<Enum> | Enum
+    // through implicit conversion to bitflag<Enum>
     template<typename Enum>
     auto operator | (bitflag<Enum> lhs, bitflag<Enum> rhs) -> decltype(lhs)
     {
-        return { lhs.bits_ | rhs.bits_ };
+        return { lhs.value() | rhs.value() };
     }
 
     template<typename Enum>
     auto operator & (bitflag<Enum> lhs, bitflag<Enum> rhs) -> decltype(lhs)
     {
-        return { lhs.bits_ & rhs.bits_ };
+        return { lhs.value() & rhs.value() };
     }
 
+    enum class keke {
+        bar, foo
+    };
+    
 } // newsflash
 
 

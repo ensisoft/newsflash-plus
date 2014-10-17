@@ -25,29 +25,15 @@
 #include <newsflash/config.h>
 
 #include <newsflash/warnpush.h>
-#  include <QDate>
 #  include <QtGlobal>
 #  include <QString>
-#  include <QList>
+#  include <QDate>
 #include <newsflash/warnpop.h>
-
-#include <ctime>
-
-#include "datastore.h"
-#include "message.h"
-#include "msg_account.h"
-#include "msg_file.h"
-
-#define RW_PROPERTY(type, name, value) \
-    private: type m_##name { value }; \
-    public:  type name() const { return m_##name; } \
-    public:  void name(const type& val) { m_##name = val; }
 
 namespace app
 {
-    class account 
+    struct account
     {
-    public:
         // different quota types
         enum class quota {
             // quota is not being used
@@ -61,149 +47,26 @@ namespace app
             monthly
         };
 
-        // public properties
-        RW_PROPERTY(quint32, id, 0);
-        RW_PROPERTY(QString, name, "");
-        RW_PROPERTY(QString, username, "");
-        RW_PROPERTY(QString, password, "");
-        RW_PROPERTY(QString, general_host, "");
-        RW_PROPERTY(quint16, general_port, 119);
-        RW_PROPERTY(QString, secure_host, "");
-        RW_PROPERTY(quint16, secure_port, 563);
-        RW_PROPERTY(bool, enable_general_server, false);
-        RW_PROPERTY(bool, enable_secure_server, false);
-        RW_PROPERTY(bool, enable_login, false);
-        RW_PROPERTY(bool, enable_compression, false);
-        RW_PROPERTY(bool, enable_pipelining, false);
-        RW_PROPERTY(int, connections, 5);
-        RW_PROPERTY(quint64, quota_total, 0);
-        RW_PROPERTY(quint64, quota_spent, 0);
-        RW_PROPERTY(quint64, downloads_this_month, 0);
-        RW_PROPERTY(quint64, downloads_all_time, 0);
-        RW_PROPERTY(quota, quota_type, quota::none);
-
-        account(QString name) : m_name(std::move(name))
-        {
-            m_id   = (quint32)std::time(nullptr);
-            m_downloads_date = QDate::currentDate();
-        }
-
-        account(const QString& key, const datastore& store)
-        {
-#define LOAD(x) \
-    m_##x = store.get(key, #x, m_##x)
-
-            LOAD(id);
-            LOAD(name);
-            LOAD(username);
-            LOAD(password);
-            LOAD(general_host);
-            LOAD(general_port);
-            LOAD(secure_host);
-            LOAD(secure_port);
-            LOAD(enable_general_server);
-            LOAD(enable_secure_server);
-            LOAD(enable_login);
-            LOAD(enable_compression);
-            LOAD(enable_pipelining);
-            LOAD(connections);
-            LOAD(quota_total);
-            LOAD(quota_spent);
-            LOAD(downloads_this_month);
-            LOAD(downloads_all_time);     
-            m_quota_type = (quota)store.get(key, "quota_type").toInt();
-            m_downloads_date = store.get(key, "downloads_date").toDate();
-#undef LOAD
-
-        }
-
-       ~account()
-        {}
-
-        void save(const QString& key, datastore& store) const
-        {
-#define SAVE(x) \
-    store.set(key, #x, m_##x)
-
-            SAVE(id);
-            SAVE(name);
-            SAVE(username);
-            SAVE(password);
-            SAVE(general_host);
-            SAVE(general_port);
-            SAVE(secure_host);
-            SAVE(secure_port);
-            SAVE(enable_general_server);
-            SAVE(enable_secure_server);
-            SAVE(enable_login);
-            SAVE(enable_compression);
-            SAVE(enable_pipelining);
-            SAVE(connections);
-            SAVE(quota_total);
-            SAVE(quota_spent);
-            SAVE(downloads_this_month);
-            SAVE(downloads_all_time);     
-            store.set(key, "quota_type", (int)m_quota_type);
-            store.set(key, "downloads_date", m_downloads_date);
-
-#undef SAVE
-        }
-
-        void reset_month()
-        {
-            m_downloads_this_month = 0;
-        }
-
-        void reset_all_time()
-        {
-            m_downloads_all_time = 0;
-        }
-
-        quint64 quota_avail() const {
-            if (m_quota_spent >= m_quota_total)
-                return 0;
-            return m_quota_total - m_quota_spent;
-        }
-
-    public:
-        void on_message(const char* sender, msg_file_complete& msg)
-        {
-            if (msg.account != m_id)
-                return;
-
-            const auto& today = QDate::currentDate();
-            if (today.month() > m_downloads_date.month() ||
-                today.year() > m_downloads_date.year())
-            {
-                m_downloads_date = today;
-                m_downloads_this_month = 0;
-            }
-
-            // respond to a file complete, update quotas and download counters
-
-            bool enabled = m_quota_type != quota::none;
-            bool monthly = m_quota_type == quota::monthly;
-
-            m_quota_spent += msg.local_size;
-
-            send(msg_account_quota_update{
-                m_id, 
-                m_quota_total,
-                m_quota_total - m_quota_spent,
-                m_quota_spent, 
-                enabled, 
-                monthly}, "accounts");
-
-            m_downloads_all_time += msg.local_size;
-            m_downloads_this_month += msg.local_size;
-
-            send(msg_account_downloads_update{
-                m_id,
-                m_downloads_all_time,
-                m_downloads_this_month}, "accounts");
-        }
-    private:
-        QDate m_downloads_date;
+        quint32 id;
+        QString name;
+        QString username;
+        QString password;
+        QString general_host;
+        quint16 general_port;        
+        QString secure_host;
+        quint16 secure_port;
+        bool enable_general_server;
+        bool enable_secure_server;
+        bool enable_compression;
+        bool enable_pipelining;
+        bool enable_login;
+        quint64 quota_spent;
+        quint64 quota_avail;
+        quint64 downloads_this_month;
+        quint64 downloads_all_time;
+        quota quota_type;
+        int max_connections;
+        QDate last_use_date;
     };
 
 } // app

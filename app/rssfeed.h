@@ -23,45 +23,56 @@
 #pragma once
 
 #include <newsflash/config.h>
-
 #include <newsflash/warnpush.h>
-#  include <QtGlobal>
 #  include <QString>
+#  include <QUrl>
 #include <newsflash/warnpop.h>
+
+#include <vector>
+#include "media.h"
+
+class QIODevice;
+class QUrl;
 
 namespace app
 {
-    struct msg_set_account {
-        quint32 id;
-        QString name;
-    };
+    // RSS feed processing interface
+    class rssfeed
+    {
+    public:
+        struct params {
+            QString user;
+            QString key;
+            int feedsize;
+        };
+        rssfeed() : enabled_(true)
+        {}
 
-    struct msg_del_account {
-        quint32 id;
-    };
+        virtual ~rssfeed() = default;
 
-    struct msg_get_account {
-        quint32 id;
-        bool success;
-        QString name;
-        QString username;
-        QString password;
-        // etc.
-    };
+        // parse the RSS feed coming from the IO device and store the 
+        // parsed media items into the vector.
+        virtual bool parse(QIODevice& io, std::vector<mediaitem>& rss) = 0;
 
-    struct msg_account_quota_update {
-        quint32 id;
-        quint64 total;
-        quint64 avail;
-        quint64 used;
-        bool enabled;
-        bool montly;
-    };
+        // prepare available URLs to retrieve the RSS feed for the matching media type.
+        virtual void prepare(media m, std::vector<QUrl>& urls) = 0;
 
-    struct msg_account_downloads_update {
-        quint32 id;
-        quint64 all_time;
-        quint64 this_month;
+        // get site URL
+        virtual QString site() const = 0;
+
+        // get site name
+        virtual QString name() const = 0;
+
+        virtual void set_params(const params& p) {}
+
+        virtual void enable(bool on_off)
+        { enabled_ = on_off; }
+
+        virtual bool is_enabled() const 
+        { return enabled_; }
+    protected:
+        bool enabled_;
+    private:
     };
 
 } // app

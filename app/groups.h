@@ -32,34 +32,24 @@
 #include <newsflash/warnpop.h>
 
 #include <vector>
-#include "mainmodel.h"
 
 namespace app
 {
-    class groups : public mainmodel, public QAbstractTableModel
+    class groups : public QAbstractTableModel
     {
 
     public:
         groups();
        ~groups();
 
-        virtual void save(datastore& values) const override;
+        void savestate() const;
 
-        virtual void load(const datastore& values) override;
-
-        // sdk::model
-        virtual QAbstractItemModel* view() override;
+        void loadstate();
 
         // QAbstractTableModel
         QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
-
-        // QAbstractTableMode
         QVariant data(const QModelIndex& index, int role) const override;
-
-        // QAbstractTableModel
         int rowCount(const QModelIndex&) const override;
-
-        // QAbstractTableModel
         int columnCount(const QModelIndex&) const override;
 
     private:

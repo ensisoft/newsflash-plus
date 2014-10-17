@@ -208,9 +208,7 @@ nzberror parse_nzb(QIODevice& io, std::vector<nzbcontent>& content)
         return nzberror::xml;
     }
     //content.append(data);
-    std::copy(std::begin(data), std::end(data), 
-        std::back_inserter(content));
-
+    std::copy(std::begin(data), std::end(data), std::back_inserter(content));
     return nzberror::none;    
 }
 

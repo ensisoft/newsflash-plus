@@ -1,4 +1,4 @@
-// Copyright (c) 2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -18,25 +18,40 @@
 //  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 //  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-//  THE SOFTWARE.            
+//  THE SOFTWARE.
 
-#include "typereg.h"
+#pragma once
+
+#include <newsflash/config.h>
+#include <newsflash/warnpush.h>
+#  include <QString>
+#include <newsflash/warnpop.h>
+
+#include "rssfeed.h"
 
 namespace app
 {
+    // nzbs aka. http://nzbs.org provides nice RSS feeds but requires registration.
+    class nzbs : public rssfeed
+    {
+    public:
+        virtual bool parse(QIODevice& io, std::vector<mediaitem>& rss) override;
 
-std::size_t typereg::next_type_identity()
-{
-    static std::size_t tid;
-    return ++tid;
-}
+        virtual void prepare(media m, std::vector<QUrl>& urls) override;
 
-typereg::map_t& typereg::types()
-{
-    // must be in a translation unit, need to make sure that
-    // all modules can share the same registry.
-    static map_t m;
-    return m;
-}
+        virtual QString site() const override
+        { return "http://nzbs.org"; }
 
+        virtual QString name() const override
+        { return "nzbs"; }
+
+        virtual void set_params(const params& p) override
+        {
+            userid_ = p.user;
+            apikey_ = p.key;
+        }
+    private:
+        QString userid_;
+        QString apikey_;
+    };
 } // app

@@ -30,7 +30,7 @@
 #  include <QFile>
 #include <newsflash/warnpop.h>
 
-#include "datastore.h"
+#include "settings.h"
 #include "eventlog.h"
 #include "debug.h"
 #include "groups.h"
@@ -50,65 +50,35 @@ groups::~groups()
     DEBUG("groups deleted");
 }
 
-void groups::save(datastore& values) const
+void groups::savestate() const
 {
-    QStringList list;
-    for (const auto& group : groups_)
-    {
-        const auto& key = group.name;
-        values.set(key, "name", group.name);
-        values.set(key, "updated", group.updated);
-        values.set(key, "articles", group.articles);
-        list.push_back(key);
-    }
-    values.set("groups", "list", list);    
+    // QStringList list;
+    // for (const auto& group : groups_)
+    // {
+    //     const auto& key = group.name;
+    //     values.set(key, "name", group.name);
+    //     values.set(key, "updated", group.updated);
+    //     values.set(key, "articles", group.articles);
+    //     list.push_back(key);
+    // }
+    // values.set("groups", "list", list);    
 }
 
 
-void groups::load(const datastore& values) 
+void groups::loadstate()
 {
 
-    const QStringList& list = values.get("groups", "list").toStringList();
-    for (const auto& key : list)
-    {
-        groups::group group {};
-        group.name     = values.get(key, "name").toString();
-        group.updated  = values.get(key, "updated").toDateTime();
-        group.headers  = 0;
-        group.articles = values.get(key, "articles").toULongLong();
-        group.size_on_disk = 0;
+    // const QStringList& list = values.get("groups", "list").toStringList();
+    // for (const auto& key : list)
+    // {
+    //     groups::group group {};
+    //     group.name     = values.get(key, "name").toString();
+    //     group.updated  = values.get(key, "updated").toDateTime();
+    //     group.headers  = 0;
+    //     group.articles = values.get(key, "articles").toULongLong();
+    //     group.size_on_disk = 0;
 
-    }
-}
-
-// void groups::load_content()
-// {
-//     const auto listing = sdk::home::file("newsgroups.txt");
-//     if (!QFile::exists(listing))
-//     {
-
-//     }
-
-//     QFile io(listing);
-//     if (!io.open(QIODevice::ReadOnly))
-//     {
-//         ERROR(str("Failed to open listing file _1, _2", io, io.error()));
-//         return;
-//     }
-
-//     QTextStream stream(&io);
-//     while (!stream.atEnd())
-//     {
-//         const auto& line = stream.readLine();
-//     }
-
-
-//     io.close();
-// }
-
-QAbstractItemModel* groups::view() 
-{
-    return this;
+    // }
 }
 
 QVariant groups::headerData(int section, Qt::Orientation orietantation, int role) const 

@@ -39,10 +39,8 @@
             "-I${home}/coding/qt-4.8.2/include/QtCore",
 
             // for MOC
-            "-I${home}/coding/newsflash/app/bin/gcc-4.9.0/debug/threading-multi/",        
-            "-I${home}/coding/newsflash/app/gui/bin/gcc-4.9.0/debug/threading-multi/",
-            "-I${home}/coding/newsflash/plugins/rss/bin/gcc-4.9.0/debug/threading-multi/",            
-            "-I${home}/coding/newsflash/plugins/womble/bin/gcc-4.9.0/debug/threading-multi/"
+            "-I${home}/coding/newsflash/app/bin/gcc-4.9.1/debug/threading-multi/",        
+            "-I${home}/coding/newsflash/app/gui/bin/gcc-4.9.1/debug/threading-multi/"
         ]
     }
 }

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>997</width>
-    <height>558</height>
+    <width>1090</width>
+    <height>659</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -89,6 +89,9 @@
             <height>16777215</height>
            </size>
           </property>
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
          </widget>
         </item>
         <item row="1" column="0">
@@ -120,7 +123,11 @@
          </widget>
         </item>
         <item row="1" column="1">
-         <widget class="QLineEdit" name="edtAllTime"/>
+         <widget class="QLineEdit" name="edtAllTime">
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
         </item>
        </layout>
       </widget>
@@ -262,15 +269,15 @@
           <item>
            <widget class="PieView" name="pie" native="true">
             <property name="sizePolicy">
-             <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
               <horstretch>0</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
             </property>
             <property name="minimumSize">
              <size>
-              <width>300</width>
-              <height>300</height>
+              <width>400</width>
+              <height>400</height>
              </size>
             </property>
             <property name="maximumSize">

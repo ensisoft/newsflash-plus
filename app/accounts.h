@@ -28,22 +28,18 @@
 #  include <QAbstractListModel>
 #  include <QDateTime>
 #  include <QString>
-#  include <QList>
 #  include <QObject>
 #include <newsflash/warnpop.h>
 
 #include <memory>
 #include <vector>
-
-#include "mainmodel.h"
 #include "account.h"
-#include "message.h"
-#include "msg_account.h"
-#include "msg_file.h"
 
 namespace app
 {
-    class accounts : public mainmodel, public QAbstractListModel
+    class settings;
+
+    class accounts : public QAbstractListModel
     {
     public:
         accounts();
@@ -58,6 +54,12 @@ namespace app
 
         account& get(std::size_t index);
         
+        const 
+        account* get_fill_account() const;
+
+        const 
+        account* get_main_account() const;
+
         // delete the account at index 
         void del(std::size_t index);
 
@@ -65,14 +67,18 @@ namespace app
         // if account already exists it's modified otherwise it's inserted
         void set(const account& acc);
 
+        void set_main_account(quint32 id);
+
+        void set_fill_account(quint32 id);
+
         // persist accounts into datastore
-        virtual void save(datastore& datastore) const override;
+        void savestate(settings& store) const;
 
         // retrieve accounts from datastore
-        virtual void load(const datastore& datastore) override;
+        void loadstate(settings& store); 
 
-        // model impl
-        virtual QAbstractItemModel* view() override;
+        std::size_t num_accounts() const
+        { return accounts_.size(); }
 
         // AbstractListModel impl
         virtual int rowCount(const QModelIndex&) const override;
@@ -80,12 +86,13 @@ namespace app
         // AbstractListMode impl
         virtual QVariant data(const QModelIndex&, int role) const override;
 
-        void on_message(const char* sender, msg_get_account& msg);   
-        void on_message(const char* sender, msg_file_complete& msg);
-
     private:
-        QList<account> accounts_;
+        std::vector<account> accounts_;
+        quint32 main_account_;
+        quint32 fill_account_;
     };
+
+    extern accounts* g_accounts;
 
 } // app
    

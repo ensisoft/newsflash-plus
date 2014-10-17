@@ -28,11 +28,10 @@
 #  include <QtGui/QDialog>
 #  include <QModelIndex>
 #  include <QList>
+#  include <QString>
+#  include "ui_dlgsettings.h"
 #include <newsflash/warnpop.h>
-#include "ui_dlgsettings.h"
-
-class QTableWidgetItem;
-class QEvent;
+#include <map>
 
 namespace gui
 {
@@ -46,15 +45,22 @@ namespace gui
         DlgSettings(QWidget* parent);
        ~DlgSettings();
 
+        // attach a new settings tab to the dialog
         void attach(settings* tab);
-        void show(const QString& title);
 
+        void organize();
+
+        // show the tab that has the matching title.
+        void show(const QString& title);
+        
     private slots:
         void on_btnAccept_clicked();
         void on_btnCancel_clicked();
 
     private:
         Ui::DlgSettings ui_;
+    private:
+        std::map<QString, settings*> stash_;
     };
 
 } // gui

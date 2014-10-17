@@ -35,13 +35,11 @@
 
 #include "dlgaccount.h"
 #include "accounts.h"
-#include "message.h"
 
 #include "../accounts.h"
-#include "../datastore.h"
+#include "../settings.h"
 #include "../debug.h"
 #include "../format.h"
-#include "../message.h"
 
 using app::str;
 
@@ -50,13 +48,13 @@ namespace gui
 
 void openurl(const QString&);
 
-accounts::accounts(app::accounts& model) : model_(model)
+accounts::accounts()
 {
     ui_.setupUi(this);
-    ui_.listView->setModel(model.view());
+    ui_.listView->setModel(app::g_accounts);
     ui_.lblMovie->installEventFilter(this);
 
-    const bool empty = model.is_empty();
+    const bool empty = app::g_accounts->num_accounts() == 0;
 
     ui_.actionDel->setEnabled(!empty);
     ui_.actionProperties->setEnabled(!empty);
@@ -76,9 +74,39 @@ accounts::accounts(app::accounts& model) : model_(model)
     pie->setHeaderData(1, Qt::Horizontal, tr("Used"));
     ui_.pie->setModel(pie);
 
-    app::listen<msg_first_launch>(this);
-    app::listen<app::msg_account_downloads_update>(this);
-    app::listen<app::msg_account_quota_update>(this);
+    qsrand(std::time(nullptr));
+
+    QString resource;
+    QString campaing;    
+    if ((qrand() >> 7) & 1)
+    {
+        resource = ":/resource/uns-special-2.gif";
+        campaing = "https://usenetserver.com/partners/?a_aid=foobar1234&amp;a_bid=dcec941d";
+    }
+    else
+    {
+        resource = ":/resource/nh-special.gif";
+        campaing = "http://www.newshosting.com/en/index.php?&amp;a_aid=foobar1234&amp;a_bid=2b57ce3a";
+    }    
+    DEBUG(str("Usenet campaing '_1' '_2'", resource, campaing));    
+
+    // NOTE: if the movie doesn't show up the problem might have
+    // to do with Qt image plugins!    
+
+    QMovie* mov = new QMovie(this);
+    mov->setFileName(resource);
+    mov->start();
+    mov->setSpeed(200);    
+
+    const auto& pix  = mov->currentPixmap();
+    const auto& size = pix.size();
+    ui_.lblMovie->setMinimumSize(size);
+    ui_.lblMovie->resize(size);
+    ui_.lblMovie->setMovie(mov);
+    ui_.lblMovie->setVisible(true);
+    ui_.lblMovie->setProperty("url", campaing);    
+    ui_.lblPlead->setVisible(true);
+    ui_.lblRegister->setVisible(true);
 }
 
 accounts::~accounts()
@@ -107,108 +135,66 @@ mainwidget::info accounts::information() const
     return {"accounts.html", true};
 }
 
-void accounts::load(const app::datastore& data)
+void accounts::loadstate(app::settings& s)
 {
-    const auto license  = data.get("accounts", "license", "");
+    const auto license  = s.get("accounts", "license", "");
     const bool validate = keygen::verify_code(license);
     if (validate)
-        advertise(false);
-    else advertise(true);
-
-    license_ = license;
-}
-
-void accounts::save(app::datastore& data)
-{
-    data.set("accounts", "license", license_);
-}
-
-void accounts::advertise(bool show)
-{
-    ui_.lblMovie->setMovie(nullptr);
-    ui_.lblMovie->setVisible(false);
-    ui_.lblPlead->setVisible(false);
-    ui_.lblRegister->setVisible(false);
-    movie_.release();
-
-    if (!show) return;
-
-    qsrand(std::time(nullptr));
-
-    QString resource;
-    QString campaing;    
-    if ((qrand() >> 7) & 1)
     {
-        resource = ":/resource/uns-special-2.gif";
-        campaing = "https://usenetserver.com/partners/?a_aid=foobar1234&amp;a_bid=dcec941d";
+        ui_.lblMovie->setMovie(nullptr);
+        ui_.lblMovie->setVisible(false);
+        ui_.lblPlead->setVisible(false);
+        ui_.lblRegister->setVisible(false);
     }
-    else
-    {
-        resource = ":/resource/nh-special.gif";
-        campaing = "http://www.newshosting.com/en/index.php?&amp;a_aid=foobar1234&amp;a_bid=2b57ce3a";
-    }    
-
-    // NOTE: if the movie doesn't show up the problem might have
-    // to do with Qt image plugins!    
-    movie_.reset(new QMovie(resource));
-    Q_ASSERT(movie_->isValid());
-
-    DEBUG(str("Usenet campaing '_1' '_2'", resource, campaing));
-
-    movie_->start();
-    movie_->setSpeed(200);    
-
-    const auto& pix  = movie_->currentPixmap();
-    const auto& size = pix.size();
-    ui_.lblMovie->setMinimumSize(size);
-    ui_.lblMovie->resize(size);
-    ui_.lblMovie->setMovie(movie_.get());
-    ui_.lblMovie->setVisible(true);
-    ui_.lblMovie->setProperty("url", campaing);    
-    ui_.lblPlead->setVisible(true);
-    ui_.lblRegister->setVisible(true);
+    //app::g_accounts->loadstate();
 }
 
-void accounts::on_message(const char*, msg_first_launch& msg)
+bool accounts::savestate(app::settings& s)
 {
-    if (!msg.add_account)
+    //app::g_accounts->savestate();
+    return true;
+}
+
+void accounts::first_launch(bool add_account)
+{
+    if (!add_account)
         return;
 
-    auto account = model_.suggest();
+    auto account = app::g_accounts->suggest();
 
     DlgAccount dlg(this, account);
     if (dlg.exec() == QDialog::Accepted)
-        model_.set(account);
-
+        app::g_accounts->set(account);
 }
 
-void accounts::on_message(const char*, app::msg_account_downloads_update& msg)
-{
-    const auto row = ui_.listView->currentIndex().row();
-    if (row == -1)
-        return;
 
-    const auto& account  = model_.get(row);
-    if (account.id() != msg.id)
-        return;
+// void accounts::on_message(const char*, app::msg_account_downloads_update& msg)
+// {
+//     const auto row = ui_.listView->currentIndex().row();
+//     if (row == -1)
+//         return;
 
-    // update gui 
-    currentRowChanged();
-}
+//     const auto& account  = app::g_accounts->get(row);
+//     if (account.id() != msg.id)
+//         return;
 
-void accounts::on_message(const char*, app::msg_account_quota_update& msg)
-{
-    const auto row = ui_.listView->currentIndex().row();
-    if (row == -1)
-        return;
+//     // update gui 
+//     currentRowChanged();
+// }
 
-    const auto& account = model_.get(row);
-    if (account.id() != msg.id)
-        return;
+// void accounts::on_message(const char*, app::msg_account_quota_update& msg)
+// {
+//     const auto row = ui_.listView->currentIndex().row();
+//     if (row == -1)
+//         return;
 
-    // update gui
-    currentRowChanged();
-}
+//     const auto& account = app::g_accounts->get(row);
+//     if (account.id() != msg.id)
+//         return;
+
+//     // update gui
+//     currentRowChanged();
+// }
 
 bool accounts::eventFilter(QObject* object, QEvent* event)
 {
@@ -222,13 +208,49 @@ bool accounts::eventFilter(QObject* object, QEvent* event)
     return QObject::eventFilter(object, event);
 }
 
+void accounts::updatePie()
+{
+    QStandardItemModel* pie = static_cast<QStandardItemModel*>(ui_.pie->model());
+    if (pie->rowCount())
+    {
+        Q_ASSERT(pie->rowCount() == 2);
+        pie->removeRow(0);
+        pie->removeRow(0);
+    }    
+
+    const auto row = ui_.listView->currentIndex().row();
+    if (row == -1)
+        return;
+
+    const auto& account = app::g_accounts->get(row);    
+
+    const auto quota_spent = app::gigs(account.quota_spent);
+    const auto quota_total = app::gigs(account.quota_avail);
+    const auto quota_avail = app::gigs(account.quota_avail - account.quota_spent);
+    const auto slice_avail = 100 * (quota_avail.as_float() / quota_total.as_float());
+    const auto slice_used  = 100 * (quota_spent.as_float() / quota_total.as_float());
+
+    DEBUG(str("quota avail _1, used _2", slice_avail, slice_used));
+
+    pie->insertRows(0, 1, QModelIndex());
+    pie->insertRows(1, 1, QModelIndex());
+    pie->setData(pie->index(0, 0), "Avail");
+    pie->setData(pie->index(0, 1), slice_avail);
+    pie->setData(pie->index(0, 0), QColor(0, 0x80, 0), Qt::DecorationRole);
+    pie->setData(pie->index(1, 0), "Used");
+    pie->setData(pie->index(1, 1), slice_used);    
+    pie->setData(pie->index(1, 0), QColor(0x80, 0, 0), Qt::DecorationRole);
+
+}
+
+
 void accounts::on_actionNew_triggered()
 {
-    auto account  = model_.suggest();
+    auto account  = app::g_accounts->suggest();
 
     DlgAccount dlg(this, account);
     if (dlg.exec() == QDialog::Accepted)
-        model_.set(account);
+        app::g_accounts->set(account);
 }
 
 void accounts::on_actionDel_triggered()
@@ -237,7 +259,7 @@ void accounts::on_actionDel_triggered()
     if (row == -1)
         return;
 
-    model_.del(row);
+    app::g_accounts->del(row);
 }
 
 void accounts::on_actionProperties_triggered()
@@ -246,23 +268,15 @@ void accounts::on_actionProperties_triggered()
     if (row == -1)
         return;
 
-    auto account = model_.get(row);
+    auto account = app::g_accounts->get(row);
 
     DlgAccount dlg(this, account);
     if (dlg.exec() == QDialog::Accepted)
-        model_.set(account);
+        app::g_accounts->set(account);
 }
 
 void accounts::currentRowChanged()
 {
-    QStandardItemModel* model = static_cast<QStandardItemModel*>(ui_.pie->model());
-    if (model->rowCount())
-    {
-        Q_ASSERT(model->rowCount() == 2);
-        model->removeRow(0);
-        model->removeRow(0);
-    }    
-
     const auto row = ui_.listView->currentIndex().row();
     if (row == -1)
     {
@@ -277,27 +291,30 @@ void accounts::currentRowChanged()
         return;
     }
 
-    in_row_changed_ = true;
-
     ui_.grpServer->setEnabled(true);
     ui_.grpQuota->setEnabled(true);
     ui_.actionDel->setEnabled(true);
     ui_.actionProperties->setEnabled(true);
 
-    const auto& account = model_.get(row);
+    const auto& account = app::g_accounts->get(row);
 
-    const auto quota_type   = account.quota_type();            
-    const auto quota_total  = app::gigs(account.quota_total());
-    const auto quota_spent  = app::gigs(account.quota_spent());
-    const auto quota_avail  = app::gigs(account.quota_avail());
-    const auto gigs_alltime = app::gigs(account.downloads_all_time());
-    const auto gigs_month   = app::gigs(account.downloads_this_month());
+    const auto quota_type   = account.quota_type;
+    const auto quota_spent  = app::gigs(account.quota_spent);
+    const auto quota_total  = app::gigs(account.quota_avail);
+    //const auto quota_avail  = app::gigs(account.quota_avail - account.quota_spent);
+    const auto gigs_alltime = app::gigs(account.downloads_all_time);
+    const auto gigs_month   = app::gigs(account.downloads_this_month);
+
+    in_row_changed_ = true;
 
     ui_.edtMonth->setText(str(gigs_month));
     ui_.edtAllTime->setText(str(gigs_alltime));
     ui_.spinTotal->setValue(quota_total.as_float());
     ui_.spinSpent->setValue(quota_spent.as_float());
-    ui_.spinSpent->setMaximum(quota_total.as_float());
+    ui_.spinSpent->setMaximum(quota_total.as_float());    
+
+    in_row_changed_ = false;
+
     
     if (quota_type == app::account::quota::none)
     {
@@ -316,24 +333,7 @@ void accounts::currentRowChanged()
         ui_.grpQuota->setChecked(true);        
     }
 
-    const auto slice_avail = 100 * (quota_avail.as_float() / quota_total.as_float());
-    const auto slice_used  = 100 * (quota_spent.as_float() / quota_total.as_float());
-
-    DEBUG(str("quota avail _1, used _2", slice_avail, slice_used));
-
-    model->insertRows(0, 1, QModelIndex());
-    model->insertRows(1, 1, QModelIndex());
-    model->setData(model->index(0, 0), "Avail");
-    model->setData(model->index(0, 1), slice_avail);
-    model->setData(model->index(0, 0), 
-        QColor(0, 0x80, 0), Qt::DecorationRole);
-
-    model->setData(model->index(1, 0), "Used");
-    model->setData(model->index(1, 1), slice_used);    
-    model->setData(model->index(1, 0),
-        QColor(0x80, 0, 0), Qt::DecorationRole);
-
-    in_row_changed_ = false;
+    updatePie();
 }
 
 void accounts::on_btnResetMonth_clicked()
@@ -342,9 +342,9 @@ void accounts::on_btnResetMonth_clicked()
     if (row == -1)
         return;
 
-    auto& account = model_.get(row);
+    auto& account = app::g_accounts->get(row);
 
-    account.reset_month();
+    account.downloads_this_month = 0;
 
     const app::gigs nada;
 
@@ -357,9 +357,9 @@ void accounts::on_btnResetAllTime_clicked()
     if (row == -1)
         return;
 
-    auto& account = model_.get(row);
+    auto& account = app::g_accounts->get(row);
 
-    account.reset_all_time();
+    account.downloads_all_time = 0;
 
     const app::gigs nada;
 
@@ -372,9 +372,9 @@ void accounts::on_btnMonthlyQuota_toggled(bool checked)
     if (row == -1)
         return;
 
-    auto& account = model_.get(row);
+    auto& account = app::g_accounts->get(row);
 
-    account.quota_type(app::account::quota::monthly);
+    account.quota_type = app::account::quota::monthly;
 
     ui_.btnFixedQuota->setChecked(false);
 }
@@ -385,9 +385,9 @@ void accounts::on_btnFixedQuota_toggled(bool checked)
     if (row == -1)
         return;
 
-    auto& account = model_.get(row);
+    auto& account = app::g_accounts->get(row);
 
-    account.quota_type(app::account::quota::fixed);
+    account.quota_type = app::account::quota::fixed;
 
     ui_.btnMonthlyQuota->setChecked(false);
 }
@@ -401,15 +401,17 @@ void accounts::on_spinTotal_valueChanged(double value)
     if (row == -1)
         return;
 
-    auto& account = model_.get(row);
+    auto& account = app::g_accounts->get(row);
 
-    DEBUG(str("Quota total value _1", value));
+    DEBUG(str("Quota available value _1", value));
 
     const app::gigs gigs { value };
 
-    account.quota_total(gigs.as_bytes());
+    account.quota_avail = gigs.as_bytes();
 
-    currentRowChanged();
+    ui_.spinSpent->setMaximum(gigs.as_float());
+
+    updatePie();
 }
 
 void accounts::on_spinSpent_valueChanged(double value)
@@ -423,13 +425,13 @@ void accounts::on_spinSpent_valueChanged(double value)
 
     DEBUG(str("Quota spent value _1", value));
 
-    auto& account = model_.get(row);    
+    auto& account = app::g_accounts->get(row);    
 
     const app::gigs gigs { value };
 
-    account.quota_spent(gigs.as_bytes());
+    account.quota_spent = gigs.as_bytes();
 
-    currentRowChanged();
+    updatePie();
 }
 
 void accounts::on_listView_doubleClicked(const QModelIndex& index)
@@ -451,17 +453,17 @@ void accounts::on_grpQuota_toggled(bool on)
     if (row == -1)
         return;
 
-    auto& account = model_.get(row);
+    auto& account = app::g_accounts->get(row);
 
     if (!on)
     {
-        account.quota_type(app::account::quota::none);
+        account.quota_type = app::account::quota::none;
     }
     else 
     {
         if (ui_.btnFixedQuota->isChecked())
-            account.quota_type(app::account::quota::fixed);
-        else account.quota_type(app::account::quota::monthly);
+            account.quota_type = app::account::quota::fixed;
+        else account.quota_type = app::account::quota::monthly;
     }
 }
 

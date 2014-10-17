@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>845</width>
-    <height>402</height>
+    <width>820</width>
+    <height>553</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -86,43 +86,6 @@
           </property>
           <property name="checked">
            <bool>false</bool>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="btnWomble">
-          <property name="toolTip">
-           <string>http://newshost.co.za</string>
-          </property>
-          <property name="text">
-           <string>Womble</string>
-          </property>
-          <property name="icon">
-           <iconset resource="resource.qrc">
-            <normaloff>:/resource/16x16_ico_png/ico_rss.png</normaloff>:/resource/16x16_ico_png/ico_rss.png</iconset>
-          </property>
-          <property name="checkable">
-           <bool>true</bool>
-          </property>
-          <property name="flat">
-           <bool>false</bool>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="btnNzbs">
-          <property name="toolTip">
-           <string>http://nzbs.org</string>
-          </property>
-          <property name="text">
-           <string>NZBS</string>
-          </property>
-          <property name="icon">
-           <iconset resource="resource.qrc">
-            <normaloff>:/resource/16x16_ico_png/ico_rss.png</normaloff>:/resource/16x16_ico_png/ico_rss.png</iconset>
-          </property>
-          <property name="checkable">
-           <bool>true</bool>
           </property>
          </widget>
         </item>
