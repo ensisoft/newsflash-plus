@@ -79,6 +79,7 @@ namespace app
 
     private:
         void on_refresh_complete(rssfeed* feed, media type, QNetworkReply& reply);
+        void on_nzbfile_complete(const QString& file, QNetworkReply& reply);
 
     private:
         enum class columns {

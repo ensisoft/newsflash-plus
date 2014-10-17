@@ -224,6 +224,9 @@ void rss::download_nzb_file(int row, const QString& folder)
     const auto& link = item.nzblink;
     const auto& name = item.title;
     const auto& file = QDir::toNativeSeparators(folder + "/" + name + ".nzb");
+
+    net_.submit(std::bind(&rss::on_nzbfile_complete, this, file,
+        std::placeholders::_1), link);
 }
 
 void rss::download_nzb_content(int row, const QString& folder)
@@ -241,7 +244,7 @@ void rss::on_refresh_complete(rssfeed* feed, media type, QNetworkReply& reply)
 {
     const auto err = reply.error();
     const auto url = reply.url();
-    if (reply.error())
+    if (reply.error() != QNetworkReply::NoError)
     {
         ERROR(str("RSS refresh failed (_1), _2)", url, str(err)));
         return;
@@ -274,6 +277,28 @@ void rss::on_refresh_complete(rssfeed* feed, media type, QNetworkReply& reply)
     endInsertRows();
 
     INFO(str("RSS feed from _1 complete", url));
+}
+
+void rss::on_nzbfile_complete(const QString& file, QNetworkReply& reply)
+{
+    const auto err = reply.error();
+    const auto url = reply.url();
+    if (reply.error() != QNetworkReply::NoError)
+    {
+        ERROR(str("Failed to retrieve NZB file (_1)", url, str(err)));
+        return;
+    }
+    QFile io(file);
+    if (!io.open(QIODevice::WriteOnly | QIODevice::Truncate))
+    {
+        ERROR(str("Failed to open file _1 for writing", io));
+        return;
+    }
+
+    QByteArray bytes = reply.readAll();
+    io.write(bytes);
+    io.close();
+    INFO(str("Saved NZB file _1 _2", io, size { (unsigned)bytes.size() }));
 }
 
 } // app

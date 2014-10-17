@@ -450,28 +450,22 @@ void rss::on_actionDownloadTo_triggered()
 
 void rss::on_actionSave_triggered()
 {
-    // const auto& indices = ui_.tableView->selectionModel()->selectedRows();
-    // if (indices.isEmpty())
-    //     return;
+    const auto& indices = ui_.tableView->selectionModel()->selectedRows();
+    if (indices.isEmpty())
+        return;
 
-    // const auto& folder = win_.select_save_nzb_folder();
-    // if (folder.isEmpty())
-    //     return;
+    const auto& folder = g_win->select_save_nzb_folder();
+    if (folder.isEmpty())
+        return;
+    
+    for (int i=0; i<indices.size(); ++i)
+    {
+        const auto row = indices[i].row();
+        model_.download_nzb_file(row, folder);
+    }
 
-    // bool have_actions = false;
-
-    // for (int i=0; i<indices.size(); ++i)
-    // {
-    //     const auto row = indices[i].row();
-    //     if (model_.save_nzb(row, folder))
-    //         have_actions = true;
-    // }
-
-    // if (!have_actions)
-    //     return;
-
-    // ui_.progressBar->setVisible(true);
-    // ui_.actionStop->setEnabled(true);
+    ui_.progressBar->setVisible(true);
+    ui_.actionStop->setEnabled(true);
 }
 
 void rss::on_actionOpen_triggered()
