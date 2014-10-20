@@ -27,6 +27,7 @@
 #include <newsflash/warnpush.h>
 #  include <QtGui/QIcon>
 #  include <QFile>
+#  include <QBuffer>
 #  include <QAbstractListModel>
 #include <newsflash/warnpop.h>
 
@@ -73,9 +74,35 @@ bool nzbfile::load(const QString& file)
         thread_->wait();
         thread_.reset();
     }
+    file_ = file;
     thread_.reset(new nzbthread(std::move(io)));
+
     QObject::connect(thread_.get(), SIGNAL(complete()),
         this, SLOT(parse_complete()), Qt::QueuedConnection);
+
+    thread_->start();
+    return true;
+}
+
+bool nzbfile::load(const QByteArray& bytes, const QString& desc)
+{
+    if (thread_.get())
+    {
+        DEBUG("Waiting existing parsing thread...");
+        thread_->wait();
+        thread_.reset();
+    }
+    buffer_ = bytes;
+    file_   = desc;    
+
+    std::unique_ptr<QBuffer> io(new QBuffer);
+    io->setBuffer(&buffer_);
+
+    thread_.reset(new nzbthread(std::move(io)));
+
+    QObject::connect(thread_.get(), SIGNAL(complete()),
+        this, SLOT(parse_complete()), Qt::QueuedConnection);
+
     thread_->start();
     return true;
 }
@@ -170,7 +197,7 @@ QVariant nzbfile::headerData(int section, Qt::Orientation orientation, int role)
 
 void nzbfile::parse_complete()
 {
-    DEBUG(str("parse_complete _1", QThread::currentThreadId()));
+    DEBUG(str("parse_complete _1", file_));
 
     const auto result = thread_->result(data_);
 
@@ -180,19 +207,19 @@ void nzbfile::parse_complete()
             DEBUG("NZB parse succesful!");
             break;
         case nzberror::xml:
-            ERROR("XML error while parsing NZB file");
+            ERROR(str("XML error while parsing NZB file _1", file_));;
             break;
 
         case nzberror::nzb:
-            ERROR("Error in NZB file content");
+            ERROR(str("Error in NZB file content _1", file_));
             break;
 
         case nzberror::io:
-            ERROR("I/O error while parsing NZB file");
+            ERROR(str("I/O error while parsing NZB file _1",file_));
             break;
 
         case nzberror::other:
-            ERROR("Unknown error while parsing NZB file");
+            ERROR(str("Unknown error while parsing NZB file _1", file_));
             break;
     }
 

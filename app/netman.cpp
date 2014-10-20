@@ -154,9 +154,16 @@ void netman::finished(QNetworkReply* reply)
 
     reply->deleteLater();
 
-    DEBUG(str("Pending submissions _1", submissions_.size()));
+    std::size_t pending = 0;
+    for (auto& s : submissions_)
+    {
+        if (!s.cancel && !s.timeout)
+            ++pending;
+    }
 
-    if (submissions_.empty())
+    DEBUG(str("Pending submissions _1", pending));
+
+    if (!pending)
         on_ready();
 }
 

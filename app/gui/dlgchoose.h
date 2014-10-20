@@ -23,58 +23,33 @@
 #pragma once
 
 #include <newsflash/config.h>
-
 #include <newsflash/warnpush.h>
-#  include <QAbstractTableModel>
-#  include <QObject>
+#  include <QtGui/QDialog>
 #  include <QString>
+#  include <QStringList>
+#  include "ui_dlgchoose.h"
 #include <newsflash/warnpop.h>
-#include <memory>
-#include <vector>
-#include <functional>
-#include "nzbparse.h"
 
-namespace app
+namespace gui
 {
-    class nzbthread;
-
-    class nzbfile : public QAbstractTableModel
+    class DlgChoose : public QDialog
     {
         Q_OBJECT
-
     public:
-        nzbfile();
-       ~nzbfile();
+        DlgChoose(QWidget* parent, const QStringList& accounts, const QString& task);
+       ~DlgChoose();
 
-        std::function<void ()> on_ready;
+        QString account() const;
 
-        // begin loading the NZB contents from the given file
-        // returns true if file was succesfully opened and then subsequently
-        // emits ready() once the file has been parsed.
-        // otherwise returns false and no signal will arrive.
-        bool load(const QString& file);
-
-        bool load(const QByteArray& array, const QString& desc);
-
-        // clear the contents of the model
-        void clear();
-
-        // QAbstractTableModel
-        virtual int rowCount(const QModelIndex&) const override;
-        virtual int columnCount(const QModelIndex&) const override;                
-        virtual void sort(int column, Qt::SortOrder order) override;
-        virtual QVariant data(const QModelIndex& index, int role) const override;
-        virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const override;                
+        bool remember() const;
 
     private slots:
-        void parse_complete();
+        void on_btnAccept_clicked();
+        void on_btnCancel_clicked();
+    private:
+        void changeEvent(QEvent* e);
 
     private:
-        std::unique_ptr<nzbthread> thread_;
-        std::vector<nzbcontent> data_;
-    private:
-        QString file_;
-        QByteArray buffer_;
+        Ui::DlgChoose ui_;
     };
-
-} // app
+} // gui

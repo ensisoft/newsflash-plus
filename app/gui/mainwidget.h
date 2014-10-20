@@ -56,6 +56,10 @@ namespace gui
 
             // Whether the component should be visible by default (on first launch).
             bool visible_by_default;            
+
+            // permant widgets are only hidden when closed.
+            // non-permanent widgets are deleted when closed.
+            bool permanent;
         };
 
         virtual ~mainwidget() = default;
@@ -73,6 +77,9 @@ namespace gui
         // This function is invoked when this ui component is hidden in the host GUI.
         virtual void deactivate() {}
 
+        // this function is called when the widget is closed 
+        virtual void close_widget() {}
+
         // load the widget/component state on application startup
         virtual void loadstate(app::settings& s) {}
 
@@ -86,7 +93,7 @@ namespace gui
         virtual void first_launch(bool add_account) {}
 
         // get information about the widget/component.
-        virtual info information() const { return {"", false}; }
+        virtual info information() const { return {"", false, false}; }
 
         // get a settings widget if any. the object ownership is 
         // transferred to the caller.

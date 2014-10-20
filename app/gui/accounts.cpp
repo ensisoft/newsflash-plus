@@ -132,7 +132,7 @@ void accounts::add_actions(QToolBar& bar)
 
 mainwidget::info accounts::information() const
 {
-    return {"accounts.html", true};
+    return {"accounts.html", true, true};
 }
 
 void accounts::loadstate(app::settings& s)
@@ -166,35 +166,6 @@ void accounts::first_launch(bool add_account)
     if (dlg.exec() == QDialog::Accepted)
         app::g_accounts->set(account);
 }
-
-
-// void accounts::on_message(const char*, app::msg_account_downloads_update& msg)
-// {
-//     const auto row = ui_.listView->currentIndex().row();
-//     if (row == -1)
-//         return;
-
-//     const auto& account  = app::g_accounts->get(row);
-//     if (account.id() != msg.id)
-//         return;
-
-//     // update gui 
-//     currentRowChanged();
-// }
-
-// void accounts::on_message(const char*, app::msg_account_quota_update& msg)
-// {
-//     const auto row = ui_.listView->currentIndex().row();
-//     if (row == -1)
-//         return;
-
-//     const auto& account = app::g_accounts->get(row);
-//     if (account.id() != msg.id)
-//         return;
-
-//     // update gui
-//     currentRowChanged();
-// }
 
 bool accounts::eventFilter(QObject* object, QEvent* event)
 {

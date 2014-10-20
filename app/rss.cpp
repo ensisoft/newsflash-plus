@@ -42,6 +42,8 @@
 #include "nzbparse.h"
 #include "womble.h"
 #include "nzbs.h"
+#include "nzbparse.h"
+#include "engine.h"
 
 namespace app
 {
@@ -215,7 +217,7 @@ void rss::set_credentials(const QString& feed, const QString& user, const QStrin
 }
 
 
-void rss::download_nzb_file(int row, const QString& folder)
+void rss::download_nzb_file(int row, const QString& file)
 {
     Q_ASSERT(row >= 0);
     Q_ASSERT(row < items_.size());
@@ -223,16 +225,32 @@ void rss::download_nzb_file(int row, const QString& folder)
     const auto& item = items_[row];
     const auto& link = item.nzblink;
     const auto& name = item.title;
-    const auto& file = QDir::toNativeSeparators(folder + "/" + name + ".nzb");
-
     net_.submit(std::bind(&rss::on_nzbfile_complete, this, file,
         std::placeholders::_1), link);
 }
 
-void rss::download_nzb_content(int row, const QString& folder)
+void rss::download_nzb_content(int row, quint32 account, const QString& folder)
 {
     Q_ASSERT(row >= 0);
     Q_ASSERT(row < items_.size());    
+
+    const auto& item = items_[row];
+    const auto& link = item.nzblink;
+    const auto& desc = item.title;
+    net_.submit(std::bind(&rss::on_nzbdata_complete, this, folder, desc, account,
+        std::placeholders::_1), link);
+}
+
+void rss::view_nzb_content(int row, data_callback cb)
+{
+    Q_ASSERT(row >= 0);
+    Q_ASSERT(row < items_.size());
+
+    const auto& item = items_[row];
+    const auto& link = item.nzblink;
+
+    net_.submit(std::bind(&rss::on_nzbdata_complete_callback, this, std::move(cb), 
+        std::placeholders::_1), link);
 }
 
 void rss::stop()
@@ -244,7 +262,7 @@ void rss::on_refresh_complete(rssfeed* feed, media type, QNetworkReply& reply)
 {
     const auto err = reply.error();
     const auto url = reply.url();
-    if (reply.error() != QNetworkReply::NoError)
+    if (err != QNetworkReply::NoError)
     {
         ERROR(str("RSS refresh failed (_1), _2)", url, str(err)));
         return;
@@ -283,9 +301,9 @@ void rss::on_nzbfile_complete(const QString& file, QNetworkReply& reply)
 {
     const auto err = reply.error();
     const auto url = reply.url();
-    if (reply.error() != QNetworkReply::NoError)
+    if (err != QNetworkReply::NoError)
     {
-        ERROR(str("Failed to retrieve NZB file (_1)", url, str(err)));
+        ERROR(str("Failed to retrieve NZB file (_1), _2", url, str(err)));
         return;
     }
     QFile io(file);
@@ -300,5 +318,60 @@ void rss::on_nzbfile_complete(const QString& file, QNetworkReply& reply)
     io.close();
     INFO(str("Saved NZB file _1 _2", io, size { (unsigned)bytes.size() }));
 }
+
+void rss::on_nzbdata_complete(const QString& folder, const QString& desc, quint32 acc, QNetworkReply& reply)
+{
+    const auto err = reply.error();
+    const auto url = reply.url();
+    if (err != QNetworkReply::NoError)
+    {
+        ERROR(str("Failed to retrieve NZB content (_1), _2", url, str(err)));
+        return;
+    }
+
+    QByteArray bytes = reply.readAll();
+    QBuffer io(&bytes);
+
+    std::vector<nzbcontent> data;
+    const auto e = parse_nzb(io, data);
+    switch (e)
+    {
+        case nzberror::none: break;
+
+        case nzberror::xml: 
+            ERROR("NZB XML parse error");
+            return;
+
+        case nzberror::nzb:
+            ERROR("NZB content error");
+            return;
+
+        default: 
+           ERROR("Error reading NZB");
+           return;
+    }
+
+    // todo:
+    //g_engine->download()
+}
+
+void rss::on_nzbdata_complete_callback(const data_callback& cb, QNetworkReply& reply)
+{
+    const auto err = reply.error();
+    const auto url = reply.url();
+    if (err != QNetworkReply::NoError)
+    {
+        ERROR(str("Failed to retrieve NZB content (_1), _2", url, str(err)));
+        return;
+    }
+    const auto buff = reply.readAll();
+
+    cb(buff);
+
+    DEBUG(str("NZB buffer _1 bytes", buff.size()));
+
+}
+
+
 
 } // app

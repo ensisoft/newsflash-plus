@@ -49,16 +49,18 @@ nzbfile::nzbfile()
     model_.on_ready = [&]() {
         ui_.progressBar->setVisible(false);
     };
+    DEBUG("nzbfile created");
 }
 
 nzbfile::~nzbfile()
-{}
+{
+    DEBUG("nzbfile deleted");
+}
 
 void nzbfile::add_actions(QMenu& menu)
 {
-    // The open is in the file menu, so we don't repeat it here    
-    //menu.addAction(ui_.actionOpen);
-    //menu.addSeparator();
+    menu.addAction(ui_.actionOpen);
+    menu.addSeparator();
     menu.addAction(ui_.actionDownload);
     menu.addSeparator();
     menu.addAction(ui_.actionClear);
@@ -79,6 +81,34 @@ void nzbfile::add_actions(QToolBar& bar)
     bar.addAction(ui_.actionDelete);
     bar.addSeparator();
     bar.addAction(ui_.actionSettings);
+}
+
+void nzbfile::close_widget()
+{
+    delete this;
+}
+
+void nzbfile::open(const QString& nzbfile)
+{
+    Q_ASSERT(!nzbfile.isEmpty());
+
+    if (model_.load(nzbfile))
+    {
+        ui_.progressBar->setVisible(true);
+        ui_.grpBox->setTitle(nzbfile);
+    }
+}
+
+void nzbfile::open(const QByteArray& bytes, const QString& desc)
+{
+    Q_ASSERT(!bytes.isEmpty());
+    Q_ASSERT(!desc.isEmpty());
+
+    if (model_.load(bytes, desc))
+    {
+        ui_.progressBar->setVisible(true);
+        ui_.grpBox->setTitle(desc);
+    }
 }
 
 void nzbfile::ready()

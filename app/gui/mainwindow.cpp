@@ -43,6 +43,8 @@
 #include "settings.h"
 #include "dlgwelcome.h"
 #include "dlgsettings.h"
+#include "dlgaccount.h"
+#include "dlgchoose.h"
 #include "config.h"
 #include "../eventlog.h"
 #include "../debug.h"
@@ -81,11 +83,7 @@ mainwindow::mainwindow(app::settings& s) : QMainWindow(nullptr), current_(nullpt
     ui_.statusBar->insertPermanentWidget(3, ui_.frmGraph);
     ui_.statusBar->insertPermanentWidget(4, ui_.frmKbs);    
 
-    if (!QSystemTrayIcon::isSystemTrayAvailable())
-    {
-        WARN("System tray is not available. Notifications disabled");
-    }
-    else
+    if (QSystemTrayIcon::isSystemTrayAvailable())
     {
         DEBUG("Setup system tray");
 
@@ -125,21 +123,30 @@ void mainwindow::attach(mainwidget* widget)
 
     const auto& text = widget->windowTitle();
     const auto& icon = widget->windowIcon();
-    //const auto& info = widget->information();
+    const auto& info = widget->information();
 
-    QAction* action = ui_.menuView->addAction(text);
-    action->setCheckable(true);
-    action->setChecked(true);
-    action->setProperty("index", index);
-    QObject::connect(action, SIGNAL(triggered()), this, 
-        SLOT(actionWindowToggleView_triggered()));
+    // only permanent widgets get a view action.
+    // permant widgets are those that instead of being closed
+    // are just hidden and toggled in the View menu. 
+    if (info.permanent)
+    {
+        QAction* action = ui_.menuView->addAction(text);
+        action->setCheckable(true);
+        action->setChecked(true);
+        action->setProperty("index", index);
+        QObject::connect(action, SIGNAL(triggered()), this, 
+            SLOT(actionWindowToggleView_triggered()));
 
-    actions_.push_back(action);
-    //if (info.visible_by_default)
-    //{
-    //    ui_.mainTab->insertTab(index, widget, icon, text);
-    //    ui_.mainTab->setCurrentIndex(0);
-    //}
+        actions_.push_back(action);
+    }
+    else
+    {
+        const auto count = ui_.mainTab->count();
+        ui_.mainTab->addTab(widget, icon, text);
+        ui_.mainTab->setCurrentIndex(count);
+    }
+
+    build_window_menu();
 }
 
 void mainwindow::attach(mainmodule* module)
@@ -215,7 +222,7 @@ void mainwindow::loadstate()
     // todo: should this be elsewhere?
     app::g_accounts->loadstate(settings_);
 
-    ui_.mainTab->setCurrentIndex(0);        
+
 }
 
 void mainwindow::show_widget(const QString& name)
@@ -278,6 +285,27 @@ void mainwindow::show_setting(const QString& name)
     }    
 }
 
+void mainwindow::prepare_file_menu()
+{
+    if (QSystemTrayIcon::isSystemTrayAvailable())
+    {
+        ui_.menuFile->addAction(ui_.actionMinimize);
+        ui_.menuFile->addSeparator();
+    }
+
+    for (auto* m : modules_)
+        if (m->add_actions(*ui_.menuFile))
+            ui_.menuFile->addSeparator();
+
+    ui_.menuFile->addSeparator();
+    ui_.menuFile->addAction(ui_.actionExit);        
+}
+
+void mainwindow::prepare_main_tab()
+{
+    ui_.mainTab->setCurrentIndex(0);            
+}
+
 QString mainwindow::select_download_folder()
 {
     QString latest;
@@ -292,8 +320,8 @@ QString mainwindow::select_download_folder()
         return QString();
 
     auto dir = dlg.selectedFiles().first();
-
-    Q_ASSERT(dir.isEmpty());
+    dir = QDir(dir).absolutePath();
+    dir = QDir::toNativeSeparators(dir);
 
     if (!recents_.contains(dir))
         recents_.push_back(dir);
@@ -301,7 +329,7 @@ QString mainwindow::select_download_folder()
     if (recents_.size() > 10)
         recents_.pop_front();
 
-    return QDir::toNativeSeparators(dir);
+    return dir;
 }
 
 QString mainwindow::select_save_nzb_folder()
@@ -331,15 +359,61 @@ QString mainwindow::select_nzb_file()
     return QDir::toNativeSeparators(file);
 }
 
-void mainwindow::recents(QStringList& paths) const 
+QString mainwindow::select_nzb_save_file(const QString& filename)
 {
-    for (const auto& path : recents_)
+    const auto& file = QFileDialog::getSaveFileName(this,
+        tr("Save NZB file"), recent_save_nzb_path_ + "/" + filename, "*.nzb");
+    if (file.isEmpty())
+        return "";
+
+    recent_save_nzb_path_ = QFileInfo(file).absolutePath();
+    return file;
+}
+
+QStringList mainwindow::get_recent_paths() const 
+{
+    return recents_;
+}
+
+quint32 mainwindow::choose_account(const QString& description)
+{
+    if (app::g_accounts->num_accounts() == 0)
     {
-        QDir dir(path);
-        const auto& clean    = QDir::cleanPath(dir.absolutePath());
-        const auto& native   = QDir::toNativeSeparators(clean);
-        paths << native;
+        auto account = app::g_accounts->suggest();
+        DlgAccount dlg(this, account);
+        if (dlg.exec() == QDialog::Rejected)
+            return 0;
+
+        app::g_accounts->set(account);
+        return account.id;
     }
+
+    auto* main = app::g_accounts->get_main_account();
+    if (main)
+        return main->id;
+
+    QStringList names;
+
+    const auto num_acc = app::g_accounts->num_accounts();
+    for (std::size_t i=0; i<num_acc; ++i)
+    {
+        const auto& acc = app::g_accounts->get(i);
+        names << acc.name;
+    }
+    DlgChoose dlg(this, names, description);
+    if (dlg.exec() == QDialog::Rejected)
+        return 0;
+
+    const auto& acc_name = dlg.account();
+
+    int account_index;
+    for (account_index=0; account_index<names.size(); ++account_index)
+    {
+        if (names[account_index] == acc_name)
+            break;
+    }
+    const auto& acc = app::g_accounts->get(account_index);
+    return acc.id;
 }
 
 void mainwindow::update(mainwidget* widget)
@@ -500,7 +574,8 @@ bool mainwindow::savestate()
         settings_.set("paths", "load_nzb", recent_load_nzb_path_);
 
         // save tab visibility values
-        for (std::size_t i=0; i<widgets_.size(); ++i)
+        // but only for permanent widgets, i.e. those that have actions.
+        for (std::size_t i=0; i<actions_.size(); ++i)
         {
             const auto& text = widgets_[i]->windowTitle();
             const auto show  = actions_[i]->isChecked();
@@ -575,46 +650,36 @@ void mainwindow::on_mainTab_currentChanged(int index)
     ui_.mainToolBar->addSeparator();
     ui_.mainToolBar->addAction(ui_.actionContextHelp);
 
-    // build file menu
-    ui_.menuFile->clear();
-    ui_.menuFile->addAction(ui_.actionOpenNZB);
-    ui_.menuFile->addAction(ui_.actionLoadNZB);
 
-    if (QSystemTrayIcon::isSystemTrayAvailable())
-    {
-        ui_.menuFile->addSeparator();
-        ui_.menuFile->addAction(ui_.actionMinimize);
-    }
-    ui_.menuFile->addSeparator();
-    ui_.menuFile->addAction(ui_.actionExit);
 
     build_window_menu();
 }
 
 void mainwindow::on_mainTab_tabCloseRequested(int tab)
 {
-    const auto* widget = static_cast<mainwidget*>(ui_.mainTab->widget(tab));
-
-    // find in the array
-    auto it = std::find(std::begin(widgets_), std::end(widgets_), widget);
-    if (it == std::end(widgets_))
-    {
-        auto it = std::find_if(std::begin(extras_), std::end(extras_), 
-            [=](const std::unique_ptr<mainwidget>& w) {
-                return w.get() == widget;
-            });
-        Q_ASSERT(it != std::end(extras_));
-        extras_.erase(it);
-    }
-    else
-    {
-        const auto index = std::distance(std::begin(widgets_), it);
-        auto* action = actions_[index];
-        action->setChecked(false);
-    }
+    auto* widget = static_cast<mainwidget*>(ui_.mainTab->widget(tab));
 
     ui_.mainTab->removeTab(tab);
 
+    // find in the array
+    auto it = std::find(std::begin(widgets_), std::end(widgets_), widget);
+
+    Q_ASSERT(it != std::end(widgets_));
+
+    const auto info = widget->information();
+    if (info.permanent)
+    {
+        const auto index = std::distance(std::begin(widgets_), it);
+        Q_ASSERT(index < actions_.size());
+
+        auto* action = actions_[index];
+        action->setChecked(false);
+    }
+    else
+    {
+        widget->close_widget();
+        widgets_.erase(it);
+    }
     build_window_menu();
 }
 
@@ -699,11 +764,6 @@ void mainwindow::on_actionExit_triggered()
 void mainwindow::on_actionSettings_triggered()
 {
     show_setting("");
-}
-
-void mainwindow::on_actionOpenNZB_triggered()
-{
-
 }
 
 void mainwindow::actionWindowToggleView_triggered()

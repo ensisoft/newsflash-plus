@@ -20,38 +20,53 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-#pragma once
-
 #include <newsflash/config.h>
-#include <newsflash/warnpush.h>
-#  include "ui_eventlog.h"
-#include <newsflash/warnpop.h>
 
-#include "mainwidget.h"
+#include "dlgchoose.h"
 
 namespace gui
 {
-    class eventlog : public mainwidget
-    {
-        Q_OBJECT
 
-    public:
-        eventlog();
-       ~eventlog();
+DlgChoose::DlgChoose(QWidget* parent, const QStringList& accounts, const QString& task)
+{
+    ui_.setupUi(this);
 
-        virtual void add_actions(QMenu& menu) override;
-        virtual void add_actions(QToolBar& bar) override;
-        virtual void activate(QWidget*);
-        mainwidget::info information() const override;
+    for (int i=0; i<accounts.size(); ++i)
+        ui_.cmbList->addItem(accounts[i]);
 
-    private slots:
-        void on_actionClearLog_triggered();
-        void on_listLog_customContextMenuRequested(QPoint pos);
+    ui_.lblHint->setText(task);
+}
 
-    private:
-        Ui::Eventlog ui_;
-    };
+DlgChoose::~DlgChoose()
+{}
+
+QString DlgChoose::account() const 
+{ return ui_.cmbList->currentText(); }
+
+bool DlgChoose::remember() const 
+{ return ui_.chkRemember->isChecked(); }
+
+void DlgChoose::on_btnAccept_clicked()
+{
+    accept();
+}
+
+void DlgChoose::on_btnCancel_clicked()
+{
+    reject();
+}
+
+void DlgChoose::changeEvent(QEvent* e)
+{
+    QDialog::changeEvent(e);
+    switch (e->type()) {
+    case QEvent::LanguageChange:
+        ui_.retranslateUi(this);
+        break;
+    default:
+        break;
+    }    
+}
+
 
 } // gui
-
-

@@ -69,17 +69,28 @@ namespace app
         void set_credentials(const QString& feed, const QString& user, const QString& apikey);
 
         // save NZB description of the RSS item and place the .nzb file in the given folder.
-        void download_nzb_file(int row, const QString& folder);
+        void download_nzb_file(int row, const QString& file);
 
         // download the contents of the RSS item.
-        void download_nzb_content(int row, const QString& folder);
+        void download_nzb_content(int row, quint32 account, const QString& folder);
+
+        using data_callback = std::function<void (const QByteArray&)>;
+
+        // download the contents of the RSS item and upon completion
+        // invoke the callback handler.
+        void view_nzb_content(int row, data_callback cb);
 
         // stop/cancel pending network operations.
         void stop();
 
+        const mediaitem& get_item(std::size_t i) const
+        { return items_[i]; }
+
     private:
         void on_refresh_complete(rssfeed* feed, media type, QNetworkReply& reply);
         void on_nzbfile_complete(const QString& file, QNetworkReply& reply);
+        void on_nzbdata_complete(const QString& folder, const QString& title, quint32 acc, QNetworkReply& rely);
+        void on_nzbdata_complete_callback(const data_callback& cb, QNetworkReply& reply);
 
     private:
         enum class columns {

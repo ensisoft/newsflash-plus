@@ -33,6 +33,7 @@
 
 #include "rss.h"
 #include "mainwindow.h"
+#include "nzbfile.h"
 #include "../debug.h"
 #include "../format.h"
 #include "../eventlog.h"
@@ -206,7 +207,7 @@ void rss::loadstate(app::settings& s)
 
 mainwidget::info rss::information() const
 {
-    return {"rss.html", true};
+    return {"rss.html", true, true};
 }
 
 gui::settings* rss::get_settings(app::settings& s)
@@ -339,7 +340,26 @@ void rss::download_selected(const QString& folder)
     if (indices.isEmpty())
         return;
 
+    bool actions = false;
 
+    for (int i=0; i<indices.size(); ++i)
+    {
+        const auto row = indices[i].row();
+        const auto& item = model_.get_item(row);
+        const auto& desc = item.title;
+        const auto acc = g_win->choose_account(desc);
+        if (acc == 0)
+            continue;
+
+        model_.download_nzb_content(row, acc, folder);
+        actions = true;
+    }
+
+    if (actions)
+    {
+        ui_.progressBar->setVisible(true);        
+        ui_.actionStop->setEnabled(true);        
+    }
 }
 
 void rss::on_actionRefresh_triggered()
@@ -436,16 +456,16 @@ void rss::on_actionRefresh_triggered()
 
 void rss::on_actionDownload_triggered()
 {
-    DEBUG("download");
+    download_selected("");
 }
 
 void rss::on_actionDownloadTo_triggered()
 {
-    // const auto& folder = win_.select_download_folder();
-    // if (folder.isEmpty())
-    //     return;
+    const auto& folder = g_win->select_download_folder();
+    if (folder.isEmpty())
+        return;
 
-    // download_selected(folder);
+    download_selected(folder);
 }
 
 void rss::on_actionSave_triggered()
@@ -454,23 +474,41 @@ void rss::on_actionSave_triggered()
     if (indices.isEmpty())
         return;
 
-    const auto& folder = g_win->select_save_nzb_folder();
-    if (folder.isEmpty())
-        return;
-    
     for (int i=0; i<indices.size(); ++i)
     {
-        const auto row = indices[i].row();
-        model_.download_nzb_file(row, folder);
+        const auto& item = model_.get_item(indices[i].row());
+        const auto& nzb  = g_win->select_nzb_save_file(item.title + ".nzb");
+        if (nzb.isEmpty())
+            continue;
+        model_.download_nzb_file(indices[i].row(), nzb);
     }
-
     ui_.progressBar->setVisible(true);
     ui_.actionStop->setEnabled(true);
 }
 
 void rss::on_actionOpen_triggered()
 {
-    DEBUG("open");
+    const auto& indices = ui_.tableView->selectionModel()->selectedRows();
+    if (indices.isEmpty())
+        return;
+
+    static auto callback = [](const QByteArray& bytes, const QString& desc) {
+        auto* view = new nzbfile();
+        g_win->attach(view);
+        view->open(bytes, desc);
+    };
+
+    for (int i=0; i<indices.size(); ++i)
+    {
+        const auto  row  = indices[i].row();
+        const auto& item = model_.get_item(row);
+        const auto& desc = item.title;
+        model_.view_nzb_content(row, std::bind(callback,
+            std::placeholders::_1, desc));
+    }
+
+    ui_.progressBar->setVisible(true);
+    ui_.actionStop->setEnabled(true);
 }
 
 void rss::on_actionSettings_triggered()
@@ -485,11 +523,11 @@ void rss::on_actionStop_triggered()
 
 void rss::on_actionBrowse_triggered()
 {
-    // const auto& folder = win_.select_download_folder();
-    // if (folder.isEmpty())
-    //     return;
+    const auto& folder = g_win->select_download_folder();
+    if (folder.isEmpty())
+        return;
 
-    // download_selected(folder);    
+    download_selected(folder);    
 }
 
 void rss::on_tableView_customContextMenuRequested(QPoint point)
@@ -497,8 +535,7 @@ void rss::on_tableView_customContextMenuRequested(QPoint point)
     QMenu sub("Download to");
     sub.setIcon(QIcon(":/ico/ico_download.png"));
 
-    QStringList paths;
-    //win_.recents(paths);
+    QStringList paths = g_win->get_recent_paths();
     for (const auto& path : paths)
     {
         QAction* action = sub.addAction(QIcon(":/ico/ico_folder.png"),            

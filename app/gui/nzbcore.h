@@ -23,58 +23,63 @@
 #pragma once
 
 #include <newsflash/config.h>
-
 #include <newsflash/warnpush.h>
-#  include <QAbstractTableModel>
 #  include <QObject>
-#  include <QString>
+#  include "ui_nzbcore.h"
 #include <newsflash/warnpop.h>
-#include <memory>
-#include <vector>
-#include <functional>
-#include "nzbparse.h"
+#include "mainwidget.h"
+#include "mainmodule.h"
+#include "settings.h"
+#include "../nzbcore.h"
 
-namespace app
+namespace gui
 {
-    class nzbthread;
+    class nzbfile;
 
-    class nzbfile : public QAbstractTableModel
+    class nzbsettings : public settings
     {
         Q_OBJECT
-
     public:
-        nzbfile();
-       ~nzbfile();
+        nzbsettings();
+       ~nzbsettings();
 
-        std::function<void ()> on_ready;
-
-        // begin loading the NZB contents from the given file
-        // returns true if file was succesfully opened and then subsequently
-        // emits ready() once the file has been parsed.
-        // otherwise returns false and no signal will arrive.
-        bool load(const QString& file);
-
-        bool load(const QByteArray& array, const QString& desc);
-
-        // clear the contents of the model
-        void clear();
-
-        // QAbstractTableModel
-        virtual int rowCount(const QModelIndex&) const override;
-        virtual int columnCount(const QModelIndex&) const override;                
-        virtual void sort(int column, Qt::SortOrder order) override;
-        virtual QVariant data(const QModelIndex& index, int role) const override;
-        virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const override;                
+        virtual bool validate() const override;
 
     private slots:
-        void parse_complete();
-
+        void on_btnAddWatchFolder_clicked();
+        void on_btnDelWatchFolder_clicked();
+        void on_btnSelectDumpFolder_clicked();
+        void on_btnSelectDownloadFolder_clicked();
     private:
-        std::unique_ptr<nzbthread> thread_;
-        std::vector<nzbcontent> data_;
+        Ui::NZBCore ui_;
     private:
-        QString file_;
-        QByteArray buffer_;
+        friend class nzbcore;
     };
 
-} // app
+    // nzbcore UI functionality
+    class nzbcore : public QObject, public mainmodule
+    {
+        Q_OBJECT
+    public:
+        nzbcore();
+       ~nzbcore();
+
+        virtual bool add_actions(QMenu& menu) override;
+
+        virtual void loadstate(app::settings& s) override;
+        virtual bool savestate(app::settings& s) override;
+
+        virtual settings* get_settings(app::settings& s) override;
+
+        virtual void apply_settings(settings* gui, app::settings& backend) override;
+
+        virtual void free_settings(settings* s) override;
+
+    private slots:
+        void downloadTriggered();
+        void displayTriggered();
+
+    private:
+        app::nzbcore module_;
+    };
+} // gui

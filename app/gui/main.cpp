@@ -48,6 +48,7 @@
 #include "eventlog.h"
 #include "rss.h"
 #include "nzbfile.h"
+#include "nzbcore.h"
 #include "downloads.h"
 #include "coremodule.h"
 #include "appearance.h"
@@ -188,17 +189,19 @@ int run(int argc, char* argv[])
     gui::rss rss;
     win.attach(&rss);
 
-    // NZB widget
-    gui::nzbfile nzb;
-    win.attach(&nzb);
-
     // core module
     gui::coremodule core;
     win.attach(&core);
 
+    // nzb module
+    gui::nzbcore nzb;
+    win.attach(&nzb);
+
     win.attach(&style);
 
     win.loadstate();
+    win.prepare_file_menu();
+    win.prepare_main_tab();
     win.show();
 
     auto ret = qtinstance.exec();

@@ -77,7 +77,7 @@ void eventlog::activate(QWidget*)
 
 mainwidget::info eventlog::information() const 
 {
-    return {"eventlog.html", false};
+    return {"eventlog.html", false, true};
 }
 
 void eventlog::on_actionClearLog_triggered()

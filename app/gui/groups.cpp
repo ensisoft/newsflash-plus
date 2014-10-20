@@ -68,7 +68,7 @@ void groups::add_actions(QToolBar& bar)
 
 mainwidget::info groups::information() const
 {
-    return {"groups.html", true};
+    return {"groups.html", true, true};
 }
 
 void groups::on_actionAdd_triggered()

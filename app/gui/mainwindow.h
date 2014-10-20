@@ -88,6 +88,9 @@ namespace gui
         // matching settings page.
         void show_setting(const QString& name);
 
+        void prepare_file_menu();
+        void prepare_main_tab();
+
         // perform a common action and select a download folder for some content.
         QString select_download_folder();
 
@@ -97,7 +100,11 @@ namespace gui
         // select a NZB file for opening.
         QString select_nzb_file(); 
         
-        void recents(QStringList& paths) const;
+        QString select_nzb_save_file(const QString& filename);
+
+        QStringList get_recent_paths() const;
+
+        quint32 choose_account(const QString& description);
 
    private:
         void show(const QString& name);
@@ -122,7 +129,6 @@ namespace gui
         void on_actionRestore_triggered();        
         void on_actionExit_triggered();
         void on_actionSettings_triggered();
-        void on_actionOpenNZB_triggered();
         void actionWindowToggleView_triggered();
         void actionWindowFocus_triggered();
         void actionTray_activated(QSystemTrayIcon::ActivationReason);
@@ -135,7 +141,6 @@ namespace gui
         std::vector<mainmodule*> modules_;
         std::vector<mainwidget*> widgets_;
         std::vector<QAction*> actions_;
-        std::vector<std::unique_ptr<mainwidget>> extras_;
         mainwidget* current_;                
     private:
         QSystemTrayIcon tray_;

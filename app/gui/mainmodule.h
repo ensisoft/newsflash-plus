@@ -32,6 +32,8 @@ namespace app {
     class settings;
 }
 
+class QMenu;
+
 namespace gui
 {
     class settings;
@@ -47,6 +49,9 @@ namespace gui
         };
 
         virtual ~mainmodule() = default;
+
+        // add the module specific actions to a menu inside the host application
+        virtual bool add_actions(QMenu& menu) { return false;}
 
         // load the module state
         virtual void loadstate(app::settings& s) {};

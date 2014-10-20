@@ -25,10 +25,10 @@
 #include <newsflash/config.h>
 
 #include <newsflash/warnpush.h>
+#  include "ui_downloads.h"
 #include <newsflash/warnpop.h>
-
 #include <memory>
-#include "ui_downloads.h"
+
 #include "mainwidget.h"
 #include "../tasklist.h"
 #include "../connlist.h"
@@ -52,7 +52,7 @@ namespace gui
         //virtual void save(app::datastore& data) override;
 
         virtual info information() const override 
-        { return {"downloads.html", true}; }
+        { return {"downloads.html", true, true}; }
 
     private:
         bool eventFilter(QObject* obj, QEvent* event);

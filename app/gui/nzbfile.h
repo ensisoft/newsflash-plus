@@ -25,15 +25,16 @@
 #include <newsflash/config.h>
 
 #include <newsflash/warnpush.h>
+#  include "ui_nzbfile.h"
 #include <newsflash/warnpop.h>
-
 #include <memory>
-#include "ui_nzbfile.h"
+
 #include "mainwidget.h"
 #include "../nzbfile.h"
 
 namespace gui
 {
+    // nzbfile widget displays the contents of a single NZB file
     class nzbfile : public mainwidget
     {
         Q_OBJECT
@@ -44,6 +45,16 @@ namespace gui
 
         virtual void add_actions(QMenu& menu) override;
         virtual void add_actions(QToolBar& bar) override;
+        virtual void close_widget() override;
+
+        virtual info information() const override
+        { return {"nzb.html", false, false}; }
+
+        // open and display the contents of the given NZB file.
+        void open(const QString& nzbfile);
+
+        // open and display the contents of the given in memory buffer.
+        void open(const QByteArray& nzb, const QString& desc);
 
     private slots:
         void ready();
