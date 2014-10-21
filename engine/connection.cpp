@@ -23,6 +23,7 @@
 #include <newsflash/config.h>
 
 #include <mutex>
+#include <fstream>
 #include <cassert>
 #include "connection.h"
 #include "tcpsocket.h"
@@ -43,6 +44,8 @@ struct connection::privstate {
     std::string username;
     std::string password;
     std::string hostname;
+    std::string logfile;
+    std::ofstream log;
     std::uint16_t port;
     std::uint32_t addr;
     std::uint32_t bytes;
@@ -187,7 +190,7 @@ public:
         session->start();
 
         newsflash::buffer buff(1024);
-        newsflash::buffer temp(1);
+        newsflash::buffer temp;
 
         // while there are pending commands in the session we read 
         // data from the socket into the buffer and then feed the buffer
@@ -235,6 +238,8 @@ private:
     std::shared_ptr<privstate> state_;
 };
 
+
+// execute cmdlist 
 class connection::execute : public action
 {
 public:
@@ -242,9 +247,13 @@ public:
     {
         auto& session = state->session;
 
-        session->on_auth = [](std::string&, std::string&) { throw exception("no permission", connection::error::no_permission); };
+        session->on_auth = [](std::string&, std::string&) { 
+            throw exception("no permission", connection::error::no_permission); 
+        };
+        
         session->on_send = std::bind(&execute::do_send, this,
             std::placeholders::_1);
+            
         state->bytes = 0;
     }
 
@@ -262,7 +271,7 @@ public:
         // the cmdlist contains a list of commands
         // we pass the session object to the cmdlist to allow
         // it to submit a request into the session.
-        // then while there are pending commands in the sesion
+        // then while there are pending commands in the session
         // we read data from the socket into the buffer and pass 
         // it into the session in order to update the session state.
         // once a command is completed we pass the output buffer
@@ -549,8 +558,8 @@ void connection::complete(std::unique_ptr<action> act)
             what = e.what();
             err  = error::other;
         }
-        if (on_error)
-            on_error({what, uistate_.host, errc});
+        
+        on_error({what, uistate_.host, errc});
 
         if (errc == std::errc::connection_refused)
             uistate_.err = error::refused;

@@ -41,18 +41,12 @@ engine::engine() : threads_(4)
     threads_.on_complete = std::bind(&engine::on_action_complete, this,
         std::placeholders::_1);
 
-    settings_.auto_remove_completed    = false;
-    settings_.discard_text_content     = false;
-    settings_.enable_fill_account      = false;
-    settings_.overwrite_existing_files = false;
-    settings_.prefer_secure            = true;
-    settings_.throttle                 = 0;
-    settings_.fill_account             = 0;
+    flags_.set(flags::prefer_secure);
 }
 
 engine::~engine()
 {
-    threads_.wait();
+//    threads_.wait();
 }
 
 void engine::set(const account& acc)
@@ -162,7 +156,7 @@ void engine::pump()
             complete_task_action(act, it->get());
         }
     }
-    if (settings_.auto_remove_completed)
+    if (flags_.test(flags::auto_remove_complete))
         remove_completed_tasks();
 }
 
@@ -202,17 +196,33 @@ void engine::stop()
 }
 
 
-void engine::configure(const settings& s)
+void engine::configure(bitflag<flags> settings)
 {
-    settings_ = s;
+    LOG_D("Ovewrite existing files: ", 
+        settings.test(flags::overwrite_existing_files));
+    LOG_D("Discard text content: ", 
+        settings.test(flags::discard_text_content));
+    LOG_D("Auto remove complete",
+        settings.test(flags::auto_remove_complete));
+    LOG_D("Prefer secure: ",
+        settings.test(flags::prefer_secure));
 
-    for (auto& t : tasks_)
-        t->configure(s);
+    flags_ = settings;
+
+    //for (auto& t : tasks_)
+    //    t->configure(s);
 }
 
 void engine::set_log_folder(std::string path)
 {
+    LOG_D("Logfile path: ", path);
     logpath_ = std::move(path);
+}
+
+void engine::set_throttle(bool on_off, unsigned value)
+{
+    LOG_D("Throttle is: ", on_off, " value: ", value);
+    // todo:
 }
 
 void engine::on_action_complete(action* act)
@@ -249,5 +259,8 @@ void engine::begin_next_task()
 {
 
 }
+
+std::ostream* engine::get_log() 
+{ return &log_; }
 
 } // newsflash

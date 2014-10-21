@@ -36,9 +36,7 @@ namespace newsflash
 {
     class cmdlist;
     class action;
-    class session;
-    class socket;
-
+    
     // connection class handles the details of a NNTP connection
     // including buffering, reading and writing from/to socket and
     // nntp session management. 
@@ -66,6 +64,7 @@ namespace newsflash
             std::string username;
             std::string password;
             std::string hostname;
+            std::string logfile;
             std::uint16_t port;
             std::size_t account;
             std::size_t id;
@@ -90,26 +89,35 @@ namespace newsflash
         void complete(std::unique_ptr<action> act);
 
         // observers
+        
+        // get state
         state get_state() const
         { return uistate_.st; }
 
+        // get error state
         error get_error() const 
         { return uistate_.err; }
 
+        // get the account this connection belongs to
         std::size_t get_account() const
         { return uistate_.account; }
 
+        // get connection id
         std::size_t get_id() const 
         { return uistate_.id; }
 
+        // get connection hostname
         std::string hostname() const 
         { return uistate_.host; }
 
+        // get connection port
         std::uint16_t hostport() const 
         { return uistate_.port; }
 
+        // get NNTP username
         std::string username() const;
 
+        // get NNTP password
         std::string password() const;
 
         // get all state visible towards the UI

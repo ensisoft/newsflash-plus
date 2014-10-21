@@ -146,12 +146,10 @@ void accounts::loadstate(app::settings& s)
         ui_.lblPlead->setVisible(false);
         ui_.lblRegister->setVisible(false);
     }
-    //app::g_accounts->loadstate();
 }
 
 bool accounts::savestate(app::settings& s)
 {
-    //app::g_accounts->savestate();
     return true;
 }
 

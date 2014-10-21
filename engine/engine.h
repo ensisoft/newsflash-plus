@@ -42,6 +42,7 @@
 #include "threadpool.h"
 #include "settings.h"
 #include "account.h"
+#include "bitflag.h"
 
 namespace newsflash
 {
@@ -53,6 +54,23 @@ namespace newsflash
     class engine
     {
     public:
+        enum class flags {
+            // if set to true engine will overwrite files that already exist in the filesystem.
+            // otherwise file name collisions are resolved by some naming scheme
+            overwrite_existing_files,
+
+            // if set engine discards any textual data and only keeps binary content.
+            discard_text_content,
+
+            // if set engine will automatically prune the task list
+            auto_remove_complete,
+
+            // if set engine will prefer secure SSL/TCP connections 
+            // instead of basic TCP connections whenever secure servers
+            // are enabled for the given account.
+            prefer_secure
+        };
+
         // this callback is invoked when an error has occurred.
         // the error object carries information and details about 
         // what happened. 
@@ -97,6 +115,8 @@ namespace newsflash
 
         void set(const account& acc);
 
+        void del(const account& acc);
+
         void download(std::size_t acc, std::vector<ui::download> batch);
 
         void pump();
@@ -105,18 +125,25 @@ namespace newsflash
 
         void stop();
 
-        void configure(const settings& s);
+        void configure(bitflag<flags> settings);
 
         void set_log_folder(std::string path);
+
+        void set_throttle(bool on_off, unsigned value);
+
+        bool is_started() const 
+        { return started_; }
+
+
 
     private:
         void on_action_complete(action* act);
     private:
-
         void complete_conn_action(action* act, connection* conn);
         void complete_task_action(action* act, task* task);
         void remove_completed_tasks();
         void begin_next_task();
+        std::ostream* get_log();
 
     private:
         std::deque<std::unique_ptr<task>> tasks_;
@@ -132,9 +159,10 @@ namespace newsflash
     private:
         threadpool threads_;
     private:
-        settings settings_;
+        bitflag<flags> flags_;
     private:
         bool started_;
+        //bool throttle_;
     };
     
 } // newsflash

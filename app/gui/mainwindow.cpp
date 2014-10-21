@@ -172,18 +172,24 @@ void mainwindow::detach_all_widgets()
 
 void mainwindow::loadstate()
 {
+    // load global objects state.
+    app::g_accounts->loadstate(settings_);
+    app::g_engine->loadstate(settings_);
+
     if (!settings_.contains("window", "width"))
     {
         // if the settings file doesn't exist then we assume that this is the
         // first launch of the application and just setup for the user welcome
         QTimer::singleShot(500, this, SLOT(timerWelcome_timeout()));
-        return;
     }
 
-    const auto width  = settings_.get("window", "width", 1200);
-    const auto height = settings_.get("window", "height", 800);
-    DEBUG(str("mainwindow dimensions _1 x _2", width, height));
-    resize(width, height);
+    const auto width  = settings_.get("window", "width", 0);
+    const auto height = settings_.get("window", "height", 0);
+    if (width && height)
+    {
+        DEBUG(str("mainwindow dimensions _1 x _2", width, height));        
+        resize(width, height);
+    }
 
     const auto x = settings_.get("window", "x", 0);
     const auto y = settings_.get("window", "y", 0);
@@ -223,12 +229,6 @@ void mainwindow::loadstate()
 
     for (auto* m : modules_)
         m->loadstate(settings_);
-
-    // load global objects state.
-    // todo: should this be elsewhere?
-    app::g_accounts->loadstate(settings_);
-
-
 }
 
 void mainwindow::show_widget(const QString& name)
@@ -573,6 +573,12 @@ bool mainwindow::savestate()
 {
     try
     {
+        if (!app::g_accounts->savestate(settings_))
+            return false;
+
+        if (!app::g_engine->savestate(settings_))
+            return false;
+
         settings_.set("window", "width", width());
         settings_.set("window", "height", height());
         settings_.set("window", "x", x());
@@ -594,19 +600,17 @@ bool mainwindow::savestate()
 
         // save widget states
         for (auto* w : widgets_)
+        {
             if (!w->savestate(settings_))
                 return false;
+        }
 
         // save module state
         for (auto* m : modules_)
+        {
             if (!m->savestate(settings_))
                 return false;
-
-        // save global objects state
-        // todo: should this be elsewhere??
-        app::g_accounts->savestate(settings_);
-        //app::g_engine->
-
+        }
 
         const auto file = app::homedir::file("settings.json");
         const auto err  = settings_.save(file);

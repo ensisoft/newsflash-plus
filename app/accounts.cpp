@@ -245,7 +245,7 @@ void accounts::set_fill_account(quint32 id)
     DEBUG(str("Fill account set to _1", it->name));
 }
 
-void accounts::savestate(settings& store) const
+bool accounts::savestate(settings& store) const
 {
     QStringList list;
 
@@ -276,6 +276,7 @@ void accounts::savestate(settings& store) const
     store.set("accounts", "list", list);
     store.set("accounts", "main", main_account_);
     store.set("accounts", "fill", fill_account_);
+    return true;
 }
 
 void accounts::loadstate(settings& store)

@@ -52,22 +52,6 @@ namespace newsflash
         // secure server. if no secure server is available
         // then general server is used.
         bool prefer_secure;
-
-        // set to true to enable network throttlin to converse
-        // bandwidth for other processes. if set to true
-        // throttle specifies the actual value.
-        bool enable_throttle;
-
-        // set to true to enable the use of any fillservers.
-        // fillservers are used when the primary download
-        // server has missing data.
-        bool enable_fill_account;
-
-        std::size_t fill_account;
-
-        // throttle speed to this limit. specified in bytes per second.
-        int throttle;
-
     };
     
 } // newsflash

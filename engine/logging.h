@@ -28,10 +28,10 @@
 #pragma once
 
 #ifdef NEWSFLASH_ENABLE_LOG
-#  define LOG_E(...) newsflash::write_log(newsflash::logevent::error, __FILE__, __LINE__, ## __VA_ARGS__)
-#  define LOG_W(...) newsflash::write_log(newsflash::logevent::warning, __FILE__, __LINE__, ## __VA_ARGS__)
-#  define LOG_I(...) newsflash::write_log(newsflash::logevent::info,  __FILE__, __LINE__, ## __VA_ARGS__)
-#  define LOG_D(...) newsflash::write_log(newsflash::logevent::debug, __FILE__, __LINE__, ## __VA_ARGS__)
+#  define LOG_E(...) write_log(get_log(), newsflash::logevent::error, __FILE__, __LINE__, ## __VA_ARGS__)
+#  define LOG_W(...) write_log(get_log(), newsflash::logevent::warning, __FILE__, __LINE__, ## __VA_ARGS__)
+#  define LOG_I(...) write_log(get_log(), newsflash::logevent::info,  __FILE__, __LINE__, ## __VA_ARGS__)
+#  define LOG_D(...) write_log(get_log(), newsflash::logevent::debug, __FILE__, __LINE__, ## __VA_ARGS__)
 #else
 #  define LOG_E(...)
 #  define LOG_W(...)
@@ -69,16 +69,20 @@ namespace newsflash
 
     } // detail
 
-    template<typename... Args>
-    void write_log(logevent type, const char* file, int line, const Args&... args)
-    {
-        // auto stream = get_log();
-        // if (stream == nullptr)
-        //     return;
+    inline
+    std::ostream* get_log() 
+    { return nullptr; }
 
-        // detail::beg_log_event(*stream, type, file, line);
-        // detail::write_log_args(*stream, args...);
-        // detail::end_log_event(*stream);
+
+    template<typename... Args>
+    void write_log(std::ostream* stream, logevent type, const char* file, int line, const Args&... args)
+    {
+        if (stream == nullptr)
+             return;
+
+        detail::beg_log_event(*stream, type, file, line);
+        detail::write_log_args(*stream, args...);
+        detail::end_log_event(*stream);
     }
 
 } // newsflash

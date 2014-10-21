@@ -365,7 +365,7 @@ void download::configure(const settings& s)
 {
     overwrite_    = s.overwrite_existing_files;
     discard_text_ = s.discard_text_content;
-    fill_account_ = s.enable_fill_account ? s.fill_account : 0;
+    //fill_account_ = s.enable_fill_account ? s.fill_account : 0;
 }
 
 ui::task download::get_ui_state() const

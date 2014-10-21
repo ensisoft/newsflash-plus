@@ -29,6 +29,7 @@
 #include <newsflash/warnpop.h>
 #include <newsflash/engine/engine.h>
 #include <newsflash/engine/settings.h>
+#include <newsflash/engine/bitflag.h>
 #include <memory>
 #include <vector>
 #include <string>
@@ -43,6 +44,7 @@ namespace newsflash {
 namespace app
 {
     class account;
+    class settings;
 
     // manager class around newsflash engine + engine state
     // translate between native c++ and Qt types and events.
@@ -60,25 +62,96 @@ namespace app
 
         void download_nzb_contents(quint32 acc, const QString& path, const QString& desc, const QByteArray& nzb);
 
-        // set the default download path that is used when 
-        // no specific path is specified for the download.
-        // void set_download_path(const QString& path)
-        // { downloads_ = path; }
+        void loadstate(settings& s);
+        bool savestate(settings& s);
 
-        // void set_logfiles_path(const QString& path)
-        // { logifiles_ = path; }
+        void start();
 
-        //void refresh();
+        void stop();
 
+        void apply_settings();
+
+
+
+
+        const QString& get_logfiles_path() const
+        { 
+            return logifiles_; 
+        }
+
+        const QString& get_download_path() const 
+        { 
+            return downloads_; 
+        }
+
+        bool get_overwrite_existing_files() const
+        {
+            return flags_.test(newsflash::engine::flags::overwrite_existing_files);
+        }
+
+        bool get_discard_text_content() const 
+        { 
+            return flags_.test(newsflash::engine::flags::discard_text_content);
+        }
+
+        bool get_auto_remove_complete() const
+        { 
+            return flags_.test(newsflash::engine::flags::auto_remove_complete);
+        }
+
+        bool get_prefer_secure() const
+        {
+            return flags_.test(newsflash::engine::flags::prefer_secure);
+        }
+
+        bool is_started() const
+        {
+            return engine_.is_started(); 
+        }
+
+        void set_overwrite_existing_files(bool on_off)
+        {
+            flags_.set(newsflash::engine::flags::overwrite_existing_files, on_off);
+        }
+
+        void set_discard_text_content(bool on_off)
+        {
+            flags_.set(newsflash::engine::flags::discard_text_content, on_off);
+        }
+
+        void set_auto_remove_complete(bool on_off)
+        {
+            flags_.set(newsflash::engine::flags::auto_remove_complete, on_off);
+        }
+
+        void set_download_path(const QString& path)
+        {
+            downloads_ = path;
+        }        
+
+        void set_logfiles_path(const QString& path)
+        {
+            logifiles_ = path;
+        }
+
+        void set_throttle(bool on_off, unsigned value)
+        {
+
+        }
     private:
         virtual bool eventFilter(QObject* object, QEvent* event) override;
 
     private:
-        //void on_engine_error(const newsflash::ui::error& e);
-        //void on_engine_file(const newsflash::ui::file& f);
+        void on_engine_error(const newsflash::ui::error& e);
+        void on_engine_file(const newsflash::ui::file& f);
+    private:
+        QString logifiles_;
+        QString downloads_;
     private:
         newsflash::engine engine_;
-        newsflash::settings settings_;
+        newsflash::bitflag<newsflash::engine::flags> flags_;
+        bool throttle_;
+        unsigned throttle_value_;
     };
 
     extern engine* g_engine;

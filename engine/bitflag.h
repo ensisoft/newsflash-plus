@@ -43,16 +43,18 @@ namespace newsflash
         bitflag(Bits value) : bits_(value)
         {}
 
-        bitflag& set(Enum value) 
+        bitflag& set(Enum value, bool on = true) 
         {
-            bits_ |= (1 << Bits(value));
+            if (on)
+                bits_ |= (1 << Bits(value));
+            else bits_ &= ~(1 << Bits(value));
             return *this;
         }
-        bitflag& unset(Enum value)
-        {
-            bits_ &= ~(1 << value);
-            return *this;
-        }
+        // bitflag& unset(Enum value)
+        // {
+        //     bits_ &= ~(1 << value);
+        //     return *this;
+        // }
 
         bitflag& operator |= (bitflag other)
         {

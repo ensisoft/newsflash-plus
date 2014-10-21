@@ -53,18 +53,14 @@ namespace gui
         friend class coremodule;
     };
 
-    // this is a dumping ground for a bunch of stuff that doesn't really belong
-    // anywhere else such as engine configuration, feedback configuration etc.
+    // glue code for general application settings and engine + feedback system
+    // translates settings data to UI state and vice versa.
     class coremodule : public mainmodule
     {
     public:
         coremodule();
        ~coremodule();
-
-        virtual void loadstate(app::settings& s) override;
-        virtual bool savestate(app::settings& s) override;
-        virtual void first_launch() override;
-
+       
         virtual gui::settings* get_settings(app::settings& s) override;
         virtual void apply_settings(settings* gui, app::settings& backend) override;
         virtual void free_settings(settings* s) override;

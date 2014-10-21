@@ -72,7 +72,7 @@ namespace app
         void set_fill_account(quint32 id);
 
         // persist accounts into datastore
-        void savestate(settings& store) const;
+        bool savestate(settings& store) const;
 
         // retrieve accounts from datastore
         void loadstate(settings& store); 

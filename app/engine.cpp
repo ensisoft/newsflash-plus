@@ -20,7 +20,7 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-#define LOGTAG "app"
+#define LOGTAG "engine"
 
 #include <newsflash/config.h>
 
@@ -74,25 +74,23 @@ namespace app
 
 engine::engine()
 {
-    // engine_.on_error = std::bind(&engine::on_engine_error, this,
-    //     std::placeholders::_1);
-    // engine_.on_file  = std::bind(&engine::on_engine_file, this,
-    //     std::placeholders::_1);
+    logifiles_ = QDir::toNativeSeparators(QDir::tempPath() + "/Newsflash");
+    downloads_ = QDir::toNativeSeparators(QDir::homePath() + "/Newsflash");
 
-    // engine_.on_async_notify = [=]() {
-    //     QCoreApplication::postEvent(this, new AsyncNotifyEvent);
-    // };
+    engine_.on_error = std::bind(&engine::on_engine_error, this,
+        std::placeholders::_1);
+    engine_.on_file  = std::bind(&engine::on_engine_file, this,
+        std::placeholders::_1);
 
-    // settings_.auto_connect             = true;
-    // settings_.auto_remove_completed    = false;
-    // settings_.discard_text_content     = true;
-    // settings_.enable_fill_account      = false;
-    // settings_.enable_throttle          = false;
-    // settings_.fill_account             = 0;
-    // settings_.overwrite_existing_files = false;
-    // settings_.prefer_secure            = true;
-    // settings_.throttle                 = 0;
-    // engine_.configure(settings_);
+    engine_.on_async_notify = [=]() {
+        QCoreApplication::postEvent(this, new AsyncNotifyEvent);
+    };
+
+    using f = newsflash::engine::flags;
+
+    flags_.set(f::prefer_secure);
+    flags_.set(f::discard_text_content);
+    engine_.configure(flags_);
 
     DEBUG("Engine created");
 }
@@ -117,16 +115,19 @@ void engine::set(const account& acc)
     a.enable_pipelining     = acc.enable_pipelining;
     a.enable_general_server = acc.enable_general_server;
     a.enable_secure_server  = acc.enable_secure_server;
-    //engine_.set(a);
+    engine_.set(a);
 }
 
 void engine::del(const account& acc)
 {
     // todo:
+    //engine_.del(const newsflash::account &acc)
 }
 
 void engine::set_fill_account(quint32 id)
-{}
+{
+    //engine_.set_fill_account(id);
+}
 
 void engine::download_nzb_contents(quint32 acc, const QString& path, const QString& desc, const QByteArray& buff)
 {
@@ -175,22 +176,67 @@ void engine::download_nzb_contents(quint32 acc, const QString& path, const QStri
     INFO(str("Downloading _1", desc));
 }
 
+void engine::loadstate(settings& s)
+{
+    using f = newsflash::engine::flags;
+
+    logifiles_ = s.get("engine", "logfiles", logifiles_);
+    downloads_ = s.get("engine", "downloads", downloads_);
+    throttle_  = s.get("engine", "enable_throttle", throttle_);
+    throttle_value_ = s.get("engine", "throttle_value", throttle_value_);
+    flags_.set_from_value(s.get("engine", "flags", flags_.value()));
+
+    engine_.configure(flags_);
+    engine_.set_log_folder(utf8(logifiles_));
+    engine_.set_throttle(throttle_, throttle_value_);
+}
+
+bool engine::savestate(settings& s)
+{
+    s.set("engine", "flags", flags_.value());
+    s.set("engine", "logfiles", logifiles_);
+    s.set("engine", "downloads", downloads_);
+    return true;
+}
+
+void engine::start()
+{ 
+    QDir dir;
+    if (!dir.mkpath(logifiles_))
+    {
+        ERROR(str("Error creating log path _1", dir));
+    }
+
+    engine_.start();
+}
+
+void engine::stop()
+{ 
+    engine_.stop();
+}
+
+void engine::apply_settings()
+{
+    engine_.configure(flags_);
+    engine_.set_log_folder(utf8(logifiles_));
+    engine_.set_throttle(throttle_, throttle_value_);
+}
+
 bool engine::eventFilter(QObject* object, QEvent* event)
 {
     if (object == this && event->type() == AsyncNotifyEvent::identity())
     {
-        //engine_.pump();
+        engine_.pump();
         return true;
     }
     return QObject::eventFilter(object, event);
 }
 
-// void engine::on_engine_error(const newsflash::ui::error& e)
-// {}
+void engine::on_engine_error(const newsflash::ui::error& e)
+{}
 
-// void engine::on_engine_file(const newsflash::ui::file& f)
-// {}
-
+void engine::on_engine_file(const newsflash::ui::file& f)
+{}
 
 engine* g_engine;
 

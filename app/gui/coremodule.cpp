@@ -95,52 +95,22 @@ coremodule::coremodule()
 coremodule::~coremodule()
 {}
 
-void coremodule::loadstate(app::settings& s)
-{
-    // todo: load engine state
-}
-
-bool coremodule::savestate(app::settings& s)
-{
-    // todo: save engine state
-    return true;
-}
-
-void coremodule::first_launch()
-{}
-
 gui::settings* coremodule::get_settings(app::settings& s)
 {
     auto* ptr = new coresettings;
     auto& ui = ptr->ui_;
 
-    const bool keepalive = s.get("settings", "keep_connections_alive", true);
-    const bool overwrite = s.get("settings", "overwrite_existing_files", false);
-    const bool discard   = s.get("settings", "discard_text_content", true);
-    const bool updates   = s.get("settings", "check_for_software_updates", true);
+    const auto overwrite = app::g_engine->get_overwrite_existing_files();
+    const auto discard   = app::g_engine->get_discard_text_content();
+    const auto logfiles  = app::g_engine->get_logfiles_path();
+    const auto downloads = app::g_engine->get_download_path();
+    const auto updates   = true; // todo:    
 
-    ui.chkKeepalive->setChecked(keepalive);
     ui.chkOverwriteExisting->setChecked(overwrite);
     ui.chkDiscardText->setChecked(discard);
     ui.chkUpdates->setChecked(updates);
-
-    QString logs;
-    QString files;
-
-#if defined(LINUX_OS)
-    // we use /tmp instead of /var/logs because most likely
-    // we don't have permissions for /var/logs
-    logs  = "/tmp/newsflash";
-    files = QDir::toNativeSeparators(QDir::homePath() + "/Newsflash");
-#elif defined(WINDOWS_OS)
-    //logs = 
-#endif
-
-    logs  = s.get("paths", "logs", logs);
-    files = s.get("paths", "files", files);
-
-    ui.editLogFiles->setText(logs);
-    ui.editDownloads->setText(files);
+    ui.editLogFiles->setText(logfiles);
+    ui.editDownloads->setText(downloads);
 
     const auto num_acc = app::g_accounts->num_accounts();
     for (std::size_t i=0; i<num_acc; ++i)
@@ -172,7 +142,6 @@ gui::settings* coremodule::get_settings(app::settings& s)
     {
         ui.grpFillAccount->setChecked(false);
     }
-
     return ptr;
 }
 
@@ -185,15 +154,8 @@ void coremodule::apply_settings(settings* gui, app::settings& backend)
     const bool overwrite = ui.chkOverwriteExisting->isChecked();
     const bool discard   = ui.chkDiscardText->isChecked();
     const bool updates   = ui.chkUpdates->isChecked();
-    const auto logs  = ui.editLogFiles->text();
-    const auto files = ui.editDownloads->text();
-
-    backend.set("settings", "keep_connections_alive", keepalive);
-    backend.set("settings", "overwrite_existing_files", overwrite);
-    backend.set("settings", "discard_text_content", discard);
-    backend.set("settings", "check_for_software_updates", updates);
-    backend.set("paths", "logs", logs);
-    backend.set("paths", "files", files);
+    const auto logfiles  = ui.editLogFiles->text();
+    const auto download  = ui.editDownloads->text();
 
     const auto ask_for_account = ui.rdbAskAccount->isChecked();
     const auto use_one_account = ui.rdbUseAccount->isChecked();
@@ -236,12 +198,13 @@ void coremodule::apply_settings(settings* gui, app::settings& backend)
         }
     }
 
-    //app::g_engine->set_download_path(files);
-    //app::g_engine->set_logfiles_path(logs);
+    app::g_engine->set_download_path(download);
+    app::g_engine->set_logfiles_path(logfiles);
+    app::g_engine->set_overwrite_existing_files(overwrite);
+    app::g_engine->set_discard_text_content(discard);
+    app::g_engine->apply_settings();
 
-    // todo: configure engine
     // todo: configure feedback 
-    // todo: configure accounts
 }
 
 void coremodule::free_settings(settings* s)
