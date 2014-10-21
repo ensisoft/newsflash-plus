@@ -71,7 +71,7 @@ namespace newsflash
 
         virtual void complete(std::unique_ptr<cmdlist> cmd) override;
 
-        virtual void configure(const ui::settings& settings) override;
+        virtual void configure(const settings& s) override;
 
         virtual ui::task get_ui_state() const override;
 

@@ -38,11 +38,12 @@
 #include "decode.h"
 #include "bodylist.h"
 #include "format.h"
+#include "settings.h"
 
 #include "ui/file.h"
 #include "ui/download.h"
-#include "ui/settings.h"
 #include "ui/error.h"
+
 
 namespace newsflash
 {
@@ -360,11 +361,11 @@ void download::complete(std::unique_ptr<cmdlist> cmd)
     }
 }
 
-void download::configure(const ui::settings& settings)
+void download::configure(const settings& s)
 {
-    overwrite_    = settings.overwrite_existing_files;
-    discard_text_ = settings.discard_text_content;
-    fill_account_ = settings.enable_fill_account ? settings.fill_account : 0;
+    overwrite_    = s.overwrite_existing_files;
+    discard_text_ = s.discard_text_content;
+    fill_account_ = s.enable_fill_account ? s.fill_account : 0;
 }
 
 ui::task download::get_ui_state() const

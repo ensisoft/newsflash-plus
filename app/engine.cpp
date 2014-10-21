@@ -29,11 +29,9 @@
 #  include <QEvent>
 #  include <QFile>
 #  include <QDir>
+#  include <QBuffer>
 #include <newsflash/warnpop.h>
-//#include <newsflash/engine/engine.h>
-//#include <newsflash/engine/listener.h>
-//#include <newsflash/engine/settings.h>
-//#include <newsflash/engine/account.h>
+#include <newsflash/engine/account.h>
 
 #include "engine.h"
 #include "debug.h"
@@ -41,16 +39,29 @@
 #include "format.h"
 #include "eventlog.h"
 #include "account.h"
+#include "settings.h"
+#include "nzbparse.h"
+
+namespace nf = newsflash;
+namespace ui = newsflash::ui;
 
 namespace {
-    class notify : public QEvent
+    // this event object is posted to the application's
+    // event queue when the core engine has pending actions.
+    // the callback from the engine comes from anothread thread
+    // and we post the event to the app's main thread's event
+    // queue which then picks up the event and calls the engine's 
+    // message dispatcher.
+    class AsyncNotifyEvent : public QEvent
     {
     public:
-        notify() : QEvent(identity())
+        AsyncNotifyEvent() : QEvent(identity())
+        {}
+       ~AsyncNotifyEvent()
         {}
 
-        static 
-        QEvent::Type identity() {
+        static QEvent::Type identity() 
+        {
             static auto id = QEvent::registerEventType();
             return (QEvent::Type)id;
         }
@@ -61,121 +72,127 @@ namespace {
 namespace app
 {
 
-engine* g_engine;
-
-// class engine::listener : public newsflash::listener
-// {
-// public:
-//     listener(app::engine* eng) : engine_(eng)
-//     {}
-
-//     virtual void handle(const newsflash::error& error) override
-//     {}
-
-//     virtual void acknowledge(const newsflash::file& file) override
-//     {
-
-//     }
-//     // this callback gets invoked by a thread in the engine when there 
-//     // are new pending/queued events that need processing. 
-//     // this is an asynchronous callback and can occur from multiple threads.
-//     virtual void async_notify() override
-//     {
-//         QCoreApplication::postEvent(engine_, new notify());
-//     }
-// private:
-//     friend class app::engine;
-// private:
-//     app::engine* engine_;
-// };
-
-engine::engine(QCoreApplication& application) : app_(application)
+engine::engine()
 {
-    // datastore data;
-    // const auto file = homedir::file("engine.json");
-    // if (QFile::exists(file))
-    // {
-    //     const auto error = data.load(file);
-    //     if (error != QFile::NoError)
-    //     {
-    //         ERROR(str("Failed to read engine settings _1, _2", file, error));
-    //     }
-    // }
-    // settings_.reset(new newsflash::settings);
-    // settings_->overwrite_existing_files = data.get("engine", "overwrite_existing_files", false);
-    // settings_->discard_text_content     = data.get("engine", "discard_text_content", false);
-    // settings_->auto_remove_completed    = data.get("engine", "remove_complete", false);
-    // settings_->prefer_secure            = data.get("engine", "prefer_secure", true);
-    // settings_->enable_throttle          = data.get("engine", "enable_throttle", false);
-    // settings_->enable_fillserver        = data.get("engine", "enable_fillserver", false);
-    // settings_->throttle                 = data.get("engine", "throttle", 0);
+    // engine_.on_error = std::bind(&engine::on_engine_error, this,
+    //     std::placeholders::_1);
+    // engine_.on_file  = std::bind(&engine::on_engine_file, this,
+    //     std::placeholders::_1);
 
-//     QString logs = data.get("engine", "log_files", "");
-//     if (logs.isEmpty())
-//     {
-// #if defined(LINUX_OS)
-//         // we use /tmp instead of /var/logs because most likely
-//         // we don't have the permission to write into /var/logs
-//         logs = "/tmp/newsflash";
-// #elif defined(WINDOWS_OS)
+    // engine_.on_async_notify = [=]() {
+    //     QCoreApplication::postEvent(this, new AsyncNotifyEvent);
+    // };
 
-// #endif
-//     }
-
-    //DEBUG(str("Engine log files will be stored in _1", logs));
-
-    //QDir dir(logs);
-    //if (!dir.mkpath(logs))
-    //{
-        //ERROR(str("Failed to create log folder _1. Log files will not be available", dir));            
-    //}
-
-    //listener_.reset(new listener(this));
-    //engine_.reset(new newsflash::engine(*listener_, utf8(logs)));
-    //engine_->set(*settings_);
-
-    app_.installEventFilter(this);
+    // settings_.auto_connect             = true;
+    // settings_.auto_remove_completed    = false;
+    // settings_.discard_text_content     = true;
+    // settings_.enable_fill_account      = false;
+    // settings_.enable_throttle          = false;
+    // settings_.fill_account             = 0;
+    // settings_.overwrite_existing_files = false;
+    // settings_.prefer_secure            = true;
+    // settings_.throttle                 = 0;
+    // engine_.configure(settings_);
 
     DEBUG("Engine created");
 }
 
 engine::~engine()
 {
-    app_.removeEventFilter(this);
-
     DEBUG("Engine destroyed");
 }
 
 void engine::set(const account& acc)
 {
-    // newsflash::account a;
-    // a.id                    = acc.id();
-    // a.name                  = utf8(acc.name());
-    // a.username              = utf8(acc.username());
-    // a.password              = utf8(acc.password());
-    // a.secure_host           = latin(acc.secure_host());
-    // a.secure_port           = acc.secure_port();
-    // a.general_host          = latin(acc.general_host());
-    // a.general_port          = acc.general_port();
-    // a.connections           = acc.connections();
-    // a.enable_secure_server  = acc.enable_secure_server();
-    // a.enable_general_server = acc.enable_general_server();
-    // a.enable_compression    = acc.enable_compression();    
-    // a.enable_pipelining     = acc.enable_pipelining();
-    // engine_->set(a);
+    newsflash::account a;
+    a.id                    = acc.id;
+    a.name                  = utf8(acc.name);
+    a.username              = utf8(acc.username);
+    a.password              = utf8(acc.password);
+    a.secure_host           = latin(acc.secure_host);
+    a.secure_port           = acc.secure_port;    
+    a.general_host          = latin(acc.general_host);
+    a.general_port          = acc.general_port;    
+    a.enable_compression    = acc.enable_compression;
+    a.enable_pipelining     = acc.enable_pipelining;
+    a.enable_general_server = acc.enable_general_server;
+    a.enable_secure_server  = acc.enable_secure_server;
+    //engine_.set(a);
+}
 
-    //DEBUG(str("Configure engine with account _1", acc.name()));
+void engine::del(const account& acc)
+{
+    // todo:
+}
+
+void engine::set_fill_account(quint32 id)
+{}
+
+void engine::download_nzb_contents(quint32 acc, const QString& path, const QString& desc, const QByteArray& buff)
+{
+    QBuffer io(const_cast<QByteArray*>(&buff));
+
+    std::vector<nzbcontent> items;
+
+    const auto err = parse_nzb(io, items);
+    switch (err)
+    {
+        case nzberror::none: break;
+
+        case nzberror::xml:
+            ERROR(str("NZB XML parse error (_1)", desc));
+            return;
+
+        case nzberror::nzb:
+            ERROR(str("NZB content error (_1)", desc));
+            return;
+
+        default:
+            ERROR(str("Error reading NZB (_1)", desc));
+            return;
+    }
+
+    QDir dir;
+    if (!dir.mkpath(path))
+    {
+        ERROR(str("Error creating path _1", dir));
+        return;
+    }
+
+    std::vector<newsflash::ui::download> jobs;
+    for (auto& item : items)
+    {
+        newsflash::ui::download download;
+        download.articles = std::move(item.segments);
+        download.groups   = std::move(item.groups);
+        download.size     = item.bytes;
+        download.path     = utf8(path);
+        download.desc     = utf8(desc);
+        jobs.push_back(std::move(download));
+    }
+    engine_.download(acc, std::move(jobs));
+
+    INFO(str("Downloading _1", desc));
 }
 
 bool engine::eventFilter(QObject* object, QEvent* event)
 {
-    if (object == this  &&
-        event->type() == notify::identity())
+    if (object == this && event->type() == AsyncNotifyEvent::identity())
     {
-        //engine_->pump();
+        //engine_.pump();
         return true;
     }
     return QObject::eventFilter(object, event);
 }
+
+// void engine::on_engine_error(const newsflash::ui::error& e)
+// {}
+
+// void engine::on_engine_file(const newsflash::ui::file& f)
+// {}
+
+
+engine* g_engine;
+
 
 } // app

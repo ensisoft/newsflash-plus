@@ -156,11 +156,11 @@ int run(int argc, char* argv[])
 
     gui::appearance style;
 
+    app::engine eng;
+    app::g_engine = &eng;
+
     app::accounts acc;
     app::g_accounts = &acc;
-
-    //app::engine eng(qtinstance);
-    //app::g_engine = &eng;
 
     // todo: maybe create the widgets and modules on the free store
     // instead of the stack..

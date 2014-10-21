@@ -23,21 +23,21 @@
 #include <newsflash/config.h>
 
 #include <algorithm>
+#include <cassert>
 #include "engine.h"
 #include "connection.h"
-#include "task.h"
+#include "download.h"
 #include "action.h"
 #include "assert.h"
 #include "filesys.h"
 #include "logging.h"
+#include "utf8.h"
 
 namespace newsflash
 {
 
-engine::engine(std::string logdir) : threads_(4)
+engine::engine() : threads_(4)
 {
-    LOG_OPEN("engine", fs::joinpath(logdir, "engine.log"));
-
     threads_.on_complete = std::bind(&engine::on_action_complete, this,
         std::placeholders::_1);
 
@@ -46,8 +46,8 @@ engine::engine(std::string logdir) : threads_(4)
     settings_.enable_fill_account      = false;
     settings_.overwrite_existing_files = false;
     settings_.prefer_secure            = true;
-    settings_.throttle                 =  0;
-    settings_.fill_account = 0;
+    settings_.throttle                 = 0;
+    settings_.fill_account             = 0;
 }
 
 engine::~engine()
@@ -55,24 +55,79 @@ engine::~engine()
     threads_.wait();
 }
 
-void engine::download(const ui::account& account, const ui::file& file)
+void engine::set(const account& acc)
 {
-    download(account, {file});
-}
-
-void engine::download(const ui::account& account, const std::vector<ui::file>& files)
-{
-    auto it = std::find_if(std::begin(accounts_), std::end(accounts_), 
-        [&](const ui::account& acc) {
-            return acc.id == account.id;
+    auto it = std::find_if(std::begin(accounts_), std::end(accounts_),
+        [&](const account& a) {
+            return a.id == acc.id;
         });
     if (it == std::end(accounts_))
-        accounts_.push_back(account);
-    else 
-        *it = account;
+    {
+        accounts_.push_back(acc);
+        return;
+    }
 
-    if (settings_.auto_connect)
-        start();
+    const auto& old = *it;
+
+    const bool general_host_updated = (old.general_host != acc.general_host) ||
+        (old.general_port != acc.general_port);
+    const bool secure_host_updated = (old.secure_host != acc.secure_host) ||
+        (old.secure_port != acc.secure_port);
+    const bool credentials_updated = (old.username != acc.username) ||
+        (old.password != acc.password);
+
+    for (auto it = conns_.begin(); it != conns_.end(); ++it)
+    {
+        auto& conn = *it;
+        if (conn->get_account() != acc.id)
+            continue;
+
+        bool discard = false;
+
+        if (general_host_updated)
+        {
+            if (conn->hostname() == old.general_host ||
+                conn->hostport() == old.general_port)
+                discard = true;
+        }
+        if (secure_host_updated)
+        {
+            if (conn->hostname() == old.secure_host ||
+                conn->hostport() == old.secure_port)
+                discard = true;
+        }
+        if (credentials_updated)
+            discard = true;
+
+        if (!discard)
+            continue;
+
+        conn->disconnect();
+        it = conns_.erase(it);
+    }
+}
+
+void engine::download(std::size_t acc, std::vector<ui::download> batch)
+{
+    auto it = std::find_if(std::begin(accounts_), std::end(accounts_),
+        [=](const account& a) {
+            return a.id == acc;
+        });
+    assert(it != std::end(accounts_));
+
+    for (auto& spec : batch)
+    {
+        const std::size_t tid = tasks_.size();
+        const std::size_t bid = 1234;
+        std::unique_ptr<task> job(new class download(tid, bid, acc, spec));
+
+        LOG_D("New download: (", tid, "), '", spec.desc, ")");
+
+        tasks_.push_back(std::move(job));
+    }
+
+    if (started_)
+        begin_next_task();
 }
 
 void engine::pump()
@@ -95,7 +150,7 @@ void engine::pump()
                     return conn->get_id() == id;
                 });
             ASSERT(it != std::end(conns_));
-            complete_action(act, it->get());
+            complete_conn_action(act, it->get());
         }
         else
         {
@@ -104,85 +159,93 @@ void engine::pump()
                     return task->get_id() == id;
                 });
             ASSERT(it != std::end(tasks_));
-            complete_action(act, it->get());
+            complete_task_action(act, it->get());
         }
     }
     if (settings_.auto_remove_completed)
         remove_completed_tasks();
 }
 
-void engine::configure(const ui::settings& settings)
+void engine::start()
 {
-    settings_ = settings;
-    if (settings_.auto_connect)
-        start();
-    else stop();
+    if (started_)
+        return;
+
+    if (!log_.is_open())
+    {
+        const auto& file = fs::joinpath(logpath_, "engine.log");
+        log_.open(file, std::ios::trunc);
+        if (!log_.is_open())
+        {
+            ui::error err;
+            err.what = "failed to open logfile";
+            err.resource = file;
+            //err.code = std::err
+            on_error(err);
+        }
+    }
+
+    LOG_I("Engine starting...");
+
+
+    started_ = true;
+}
+
+void engine::stop()
+{
+    if (!started_)
+        return;
+
+    // ...
+
+    started_ = false;
+}
+
+
+void engine::configure(const settings& s)
+{
+    settings_ = s;
+
+    for (auto& t : tasks_)
+        t->configure(s);
+}
+
+void engine::set_log_folder(std::string path)
+{
+    logpath_ = std::move(path);
 }
 
 void engine::on_action_complete(action* act)
 {
+    // this callback gets invoked by the thread pool threads
+    // it needs to be thread safe.
+
+    // push an action completed on the background into the ready action
+    // queue and then notify the client thread.
     std::unique_lock<std::mutex> lock(mutex_);
     actions_.push(act);
     lock.unlock();
 
+    // notify for pump()
     on_async_notify();
 }
 
-void engine::start()
+
+
+
+void engine::complete_conn_action(action* act, connection* conn)
 {
-    // find a next runnable task
-    task* runnable = nullptr;
-
-    using state = task::state;
-
-    for (auto& t : tasks_)
-    {
-        const auto st = t->get_state();
-        // if (st == state::queued || st == state::waiting || st == state::active)
-        // {
-
-        // }
-    }
-
 }
 
-void engine::stop()
-{}
-
-void engine::complete_action(action* act, connection* conn)
+void engine::complete_task_action(action* act, task* t)
 {
-    std::unique_ptr<action> a(act);
-
-    conn->complete(std::move(a));
-
-    const auto state = conn->get_state();
-
-    if (state == connection::state::connected)
-    {
-
-    }
-    else if (state == connection::state::error)
-    {
-
-    }
-    else if (state == connection::state::disconnected)
-    {}
-
-}
-
-void engine::complete_action(action* act, task* t)
-{
-    LOG_SELECT("engine");
-
-    std::unique_ptr<action> a(act);
-
-    t->complete(std::move(a));
-
-    if (settings_.auto_connect)
-        start();
 }
 
 void engine::remove_completed_tasks()
+{
+}
+
+void engine::begin_next_task()
 {
 
 }

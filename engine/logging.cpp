@@ -21,33 +21,9 @@
 //  THE SOFTWARE.
 
 #include <newsflash/config.h>
-
-#include <newsflash/warnpush.h>
-#  include <boost/thread/tss.hpp>
-#include <newsflash/warnpop.h>
-
-#include <cassert>
-#include <thread>
-#include <fstream>
 #include <iomanip>
-#include <mutex>
-#include <map>
 #include "platform.h"
 #include "logging.h"
-#include "utf8.h"
-
-namespace {
-
-struct logger {
-    std::shared_ptr<std::ofstream> stream;
-};
-
-std::mutex mutex;
-std::map<std::string, std::shared_ptr<std::ofstream>> streams;
-
-boost::thread_specific_ptr<logger> ThreadLogger;
-
-} // namespace
 
 namespace newsflash
 {
@@ -70,69 +46,6 @@ namespace detail {
         current_stream << std::endl;
     }
 
-    std::ostream* get_current_thread_current_log()
-    {
-        if (!ThreadLogger.get())
-            return nullptr;
-
-        return ThreadLogger->stream.get();
-    }
-
 } // detail
-
-void open_log(std::string context, std::string file)
-{
-    if (!ThreadLogger.get())
-        ThreadLogger.reset(new logger);
-
-    std::lock_guard<std::mutex> lock(mutex);
-
-    auto it = streams.find(context);
-    if (it == std::end(streams))
-    {
-        auto stream = std::make_shared<std::ofstream>();
-        stream->open(file, std::ios::trunc);
-        if (!stream->is_open())
-            throw std::runtime_error("failed to open log file: " + file);
-
-        it = streams.insert(std::make_pair(context, stream)).first;
-    }
-
-    ThreadLogger->stream = it->second;
-}
-
-void close_log(const std::string& name)
-{
-    std::lock_guard<std::mutex> lock(mutex);
-
-    streams.erase(name);
-}
-
-void flush_log()
-{
-    if (!ThreadLogger.get())
-        ThreadLogger.reset(new logger);
-
-    if (!ThreadLogger->stream)
-        return;
-
-    ThreadLogger->stream->flush();
-}
-
-void select_log(const std::string& context)
-{
-    if (!ThreadLogger.get())
-        ThreadLogger.reset(new logger);
-
-    std::lock_guard<std::mutex> lock(mutex);
-
-    const auto it = streams.find(context);
-
-    assert(it != std::end(streams));
-
-    ThreadLogger->stream = it->second;
-}
-
-
 
 } // newsflash

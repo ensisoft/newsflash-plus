@@ -28,7 +28,6 @@
 
 namespace newsflash
 {
-    namespace ui {
     // engine settings
     struct settings
     {
@@ -47,8 +46,6 @@ namespace newsflash
         // set to true to automatically prune the task list
         // and kill completed items.
         bool auto_remove_completed;
-
-        bool auto_connect;
 
         // set to true to choose the secure server over the
         // general server with accounts that provide 
@@ -72,7 +69,5 @@ namespace newsflash
         int throttle;
 
     };
-
-    } // ui
     
-} // engine
+} // newsflash

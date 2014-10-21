@@ -153,13 +153,11 @@ void accounts::del(std::size_t index)
     else if (id == fill_account_)
         fill_account_ = 0;
 
+    g_engine->del(*it);
+
     accounts_.erase(it);
 
     endRemoveRows();
-
-    //store.del(key);
-
-    // todo: configure engine
 }
 
 void accounts::set(const account& acc)
@@ -197,7 +195,7 @@ void accounts::set(const account& acc)
         emit dataChanged(first, last);
     }
 
-    // todo: configure engine??
+    g_engine->set(acc);
 }
 
 void accounts::set_main_account(quint32 id)
@@ -231,6 +229,7 @@ void accounts::set_fill_account(quint32 id)
     if (id == 0)
     {
         fill_account_ = 0;
+        g_engine->set_fill_account(0);
         return;
     }
     auto it = std::find_if(std::begin(accounts_), std::end(accounts_),
@@ -241,6 +240,7 @@ void accounts::set_fill_account(quint32 id)
     Q_ASSERT(it != std::end(accounts_));
 
     fill_account_ = id;
+    g_engine->set_fill_account(id);
 
     DEBUG(str("Fill account set to _1", it->name));
 }
@@ -308,10 +308,12 @@ void accounts::loadstate(settings& store)
         accounts_.push_back(acc);
         DEBUG(str("Account loaded _1", acc.name));
 
-        // todo: configure engine
+        g_engine->set(acc);
     }
     main_account_ = store.get("accounts", "main", quint32(0));
     fill_account_ = store.get("accounts", "fill", quint32(0));
+
+    g_engine->set_fill_account(fill_account_);
 
     QAbstractItemModel::reset();
 }

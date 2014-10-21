@@ -32,19 +32,11 @@
 #  define LOG_W(...) newsflash::write_log(newsflash::logevent::warning, __FILE__, __LINE__, ## __VA_ARGS__)
 #  define LOG_I(...) newsflash::write_log(newsflash::logevent::info,  __FILE__, __LINE__, ## __VA_ARGS__)
 #  define LOG_D(...) newsflash::write_log(newsflash::logevent::debug, __FILE__, __LINE__, ## __VA_ARGS__)
-#  define LOG_OPEN(name, file) newsflash::open_log(name, file)
-#  define LOG_SELECT(name) newsflash::select_log(name)
-#  define LOG_FLUSH() newsflash::flush_log()
-#  define LOG_CLOSE(name) newsflash::close_log(name)
-
 #else
 #  define LOG_E(...)
 #  define LOG_W(...)
 #  define LOG_I(...)
 #  define LOG_D(...)
-#  define LOG_OPEN(file)
-#  define LOG_FLUSH()
-#  define LOG_CLOSE(file);
 #endif
 
 namespace newsflash
@@ -75,24 +67,18 @@ namespace newsflash
         void beg_log_event(std::ostream& stream, logevent type, const char* file, int line);
         void end_log_event(std::ostream& stream);
 
-        std::ostream* get_current_thread_current_log();
     } // detail
 
     template<typename... Args>
     void write_log(logevent type, const char* file, int line, const Args&... args)
     {
-        auto stream = detail::get_current_thread_current_log();
-        if (stream == nullptr)
-            return;
+        // auto stream = get_log();
+        // if (stream == nullptr)
+        //     return;
 
-        detail::beg_log_event(*stream, type, file, line);
-        detail::write_log_args(*stream, args...);
-        detail::end_log_event(*stream);
+        // detail::beg_log_event(*stream, type, file, line);
+        // detail::write_log_args(*stream, args...);
+        // detail::end_log_event(*stream);
     }
-
-    void open_log(std::string name, std::string file);
-    void close_log(const std::string& name);
-    void select_log(const std::string& name);
-    void flush_log();
 
 } // newsflash

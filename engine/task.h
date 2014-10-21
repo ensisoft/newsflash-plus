@@ -32,11 +32,11 @@ namespace newsflash
 {
     namespace ui {
         struct error;
-        struct settings;
     }
 
     class action;
     class cmdlist;
+    struct settings;
 
     // tasks implement some nntp data based activity in the engine, for
     // example extracting binary content from article data.
@@ -86,7 +86,7 @@ namespace newsflash
 
         virtual void complete(std::unique_ptr<cmdlist> cmd) = 0;
 
-        virtual void configure(const ui::settings& settings) = 0;
+        virtual void configure(const settings& s) = 0;
 
         virtual std::size_t get_id() const = 0;
 

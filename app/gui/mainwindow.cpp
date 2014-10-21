@@ -52,6 +52,7 @@
 #include "../homedir.h"
 #include "../settings.h"
 #include "../accounts.h"
+#include "../engine.h"
 
 using app::str;
 
@@ -106,6 +107,11 @@ mainwindow::mainwindow(app::settings& s) : QMainWindow(nullptr), current_(nullpt
     ui_.actionViewStatusbar->setChecked(true);
 
     DEBUG("mainwindow created");
+
+    QObject::connect(&refresh_timer_, SIGNAL(timeout()),
+        this, SLOT(timerRefresh_timeout()));
+    refresh_timer_.setInterval(30 * 1000);
+    refresh_timer_.start();
 }
 
 mainwindow::~mainwindow()
@@ -413,6 +419,10 @@ quint32 mainwindow::choose_account(const QString& description)
             break;
     }
     const auto& acc = app::g_accounts->get(account_index);
+
+    if (dlg.remember())
+        app::g_accounts->set_main_account(acc.id);
+
     return acc.id;
 }
 
@@ -833,5 +843,17 @@ void mainwindow::timerWelcome_timeout()
         m->first_launch();
 }
 
+void mainwindow::timerRefresh_timeout()
+{
+    for (auto* w : widgets_)
+        w->refresh();
+
+    //app::g_engine->refresh();
+
+    // todo: update network monitor
+    // todo: update disk availability status
+    // todo: update uploads/downloads
+    // todo: update queue size
+}
 
 } // gui

@@ -27,13 +27,10 @@
 #include <string>
 #include <cstddef>
 #include <cstdint>
-#include "server.h"
 
 namespace newsflash
 {
-    namespace ui {
-
-    // newsserver account. 
+    // news account
     struct account 
     {
         // unique id for the account. used to refer to the
@@ -65,7 +62,7 @@ namespace newsflash
 
         // maximum number of connections to be opened
         // to the servers under this account.
-        int connections;
+        std::uint16_t connections;
 
         bool enable_secure_server;
 
@@ -76,12 +73,6 @@ namespace newsflash
 
         // todo:
         bool enable_pipelining;
-
-        // set to true to specify this account as a "fill"
-        // (secondary) account. a fill account is consulted
-        // when the primary server is missing some data.
-        //bool is_fill_account;
     };
 
-} // ui
 }// engine

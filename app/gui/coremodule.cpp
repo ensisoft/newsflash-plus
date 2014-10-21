@@ -236,6 +236,9 @@ void coremodule::apply_settings(settings* gui, app::settings& backend)
         }
     }
 
+    //app::g_engine->set_download_path(files);
+    //app::g_engine->set_logfiles_path(logs);
+
     // todo: configure engine
     // todo: configure feedback 
     // todo: configure accounts

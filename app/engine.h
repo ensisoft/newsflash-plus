@@ -27,51 +27,58 @@
 #  include <QObject>
 #  include <QString>
 #include <newsflash/warnpop.h>
+#include <newsflash/engine/engine.h>
+#include <newsflash/engine/settings.h>
 #include <memory>
+#include <vector>
 #include <string>
-#include <deque>
+
+class QEvent;
 
 namespace newsflash {
     class engine;
     class settings;
-}
-
-class QCoreApplication;
-class QEvent;
+} // 
 
 namespace app
 {
     class account;
 
     // manager class around newsflash engine + engine state
+    // translate between native c++ and Qt types and events.
     class engine : public QObject
     {
         Q_OBJECT
     public:
-        struct file {
-            QString description;
-
-        };
-
-        engine(QCoreApplication& application);
+        engine();
        ~engine();
 
         void set(const account& acc);
+        void del(const account& acc);
 
-        //void download()
+        void set_fill_account(quint32 id);
+
+        void download_nzb_contents(quint32 acc, const QString& path, const QString& desc, const QByteArray& nzb);
+
+        // set the default download path that is used when 
+        // no specific path is specified for the download.
+        // void set_download_path(const QString& path)
+        // { downloads_ = path; }
+
+        // void set_logfiles_path(const QString& path)
+        // { logifiles_ = path; }
+
+        //void refresh();
+
     private:
         virtual bool eventFilter(QObject* object, QEvent* event) override;
 
     private:
-        class listener;
+        //void on_engine_error(const newsflash::ui::error& e);
+        //void on_engine_file(const newsflash::ui::file& f);
     private:
-        QCoreApplication& app_;
-    private:
-        // std::unique_ptr<newsflash::engine> engine_;
-        // std::unique_ptr<newsflash::settings> settings_;
-        // std::unique_ptr<listener> listener_;
-    private:
-
+        newsflash::engine engine_;
+        newsflash::settings settings_;
     };
 
     extern engine* g_engine;

@@ -31,7 +31,6 @@
 #include <cstdint>
 #include "ui/connection.h"
 #include "ui/error.h"
-#include "event.h"
 
 namespace newsflash
 {
@@ -63,52 +62,61 @@ namespace newsflash
         // the error object carries more error information.
         std::function<void(const ui::error&)> on_error;
 
-        struct server {
+        struct spec {
             std::string username;
             std::string password;
             std::string hostname;
             std::uint16_t port;
+            std::size_t account;
+            std::size_t id;
             bool use_ssl;
         };
 
         // create a new connection with the given account and connection ids.
-        connection(std::size_t account, std::size_t id);
+        connection(const spec& s);
        ~connection();
 
         // begin connecting to the given server.
-        void connect(const connection::server& serv);
+        void connect();
         
         // begin disconnect
         void disconnect();
 
         // execute the given cmdlist. also update the current
         // connection status to the given descriptor and task ids.
-        void execute(std::string desc, std::size_t task, cmdlist* cmds);
+        void execute(std::shared_ptr<cmdlist> cmd, std::string desc, std::size_t task);
 
         // complete the given action and complete the pending state transition.
         void complete(std::unique_ptr<action> act);
 
-        // cancel the pending action.
-        void cancel();
-
         // observers
-        state get_state() const 
-        { return state_.st; }
+        state get_state() const
+        { return uistate_.st; }
 
         error get_error() const 
-        { return state_.err; }
+        { return uistate_.err; }
 
         std::size_t get_account() const
-        { return state_.account; }
+        { return uistate_.account; }
 
         std::size_t get_id() const 
-        { return state_.id; }
+        { return uistate_.id; }
+
+        std::string hostname() const 
+        { return uistate_.host; }
+
+        std::uint16_t hostport() const 
+        { return uistate_.port; }
+
+        std::string username() const;
+
+        std::string password() const;
 
         // get all state visible towards the UI
-        ui::connection get_ui_state() const
-        { return state_; }
+        ui::connection get_ui_state() const;
 
     private:
+        struct privstate;        
         class exception;
         class resolve;
         class connect;
@@ -117,16 +125,10 @@ namespace newsflash
         class disconnect;
 
     private:
-        std::unique_ptr<socket> socket_;
-        std::unique_ptr<session> session_;
-        std::string username_;
-        std::string password_;
-        std::uint16_t port_;
-        bool ssl_;
+        std::shared_ptr<privstate> state_;
+
     private:
-        event cancellation_;        
-    private:
-        ui::connection state_;
+        ui::connection uistate_;
     };
 
 } // newsflash

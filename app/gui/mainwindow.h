@@ -27,6 +27,7 @@
 #include <newsflash/warnpush.h>
 #  include <QtGui/QMainWindow>
 #  include <QtGui/QSystemTrayIcon>
+#  include <QTimer>
 #  include <QList>
 #  include "ui_mainwindow.h"
 #include <newsflash/warnpop.h>
@@ -133,6 +134,7 @@ namespace gui
         void actionWindowFocus_triggered();
         void actionTray_activated(QSystemTrayIcon::ActivationReason);
         void timerWelcome_timeout();
+        void timerRefresh_timeout();
 
     private:
         Ui::MainWindow ui_;
@@ -147,6 +149,7 @@ namespace gui
         QStringList recents_;
         QString recent_save_nzb_path_;
         QString recent_load_nzb_path_;
+        QTimer  refresh_timer_;
     private:
         app::settings& settings_;
     };

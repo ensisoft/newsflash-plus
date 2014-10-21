@@ -52,7 +52,8 @@ namespace newsflash
         std::string desc;
 
         // the esimated size of the content to be downloaded in bytes. 
-        std::uint64_t size;
+        std::uint64_t size;        
+        
     };
 
 } // ui

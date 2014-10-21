@@ -111,6 +111,8 @@ namespace newsflash
         // current host
         std::string host;
 
+        std::uint16_t port;
+
         // current description.
         std::string desc;
 

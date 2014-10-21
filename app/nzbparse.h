@@ -28,6 +28,7 @@
 #  include <QString>
 #include <newsflash/warnpop.h>
 
+#include <string>
 #include <vector>
 #include "filetype.h"
 
@@ -49,10 +50,10 @@ namespace app
         QString poster; 
 
         // the list of newsgroups where the file has been posted
-        std::vector<QString> groups;
+        std::vector<std::string> groups;
 
         // the list of message-ids that comprise this content
-        std::vector<QString> segments;
+        std::vector<std::string> segments;
 
         // the presumed size of the content in bytes
         quint64 bytes;

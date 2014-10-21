@@ -31,15 +31,17 @@
 #include <memory>
 #include <vector>
 #include <queue>
+#include <fstream>
 #include <cstdint>
 
-#include "ui/account.h"
 #include "ui/task.h"
 #include "ui/connection.h"
+#include "ui/download.h"
 #include "ui/error.h"
 #include "ui/file.h"
-#include "ui/settings.h"
 #include "threadpool.h"
+#include "settings.h"
+#include "account.h"
 
 namespace newsflash
 {
@@ -84,45 +86,55 @@ namespace newsflash
             list_t* list_;
         };
 
-        engine(std::string logdir);
-       ~engine();
-
+        // list of UI visible engine task states.
         using task_list = list<ui::task, newsflash::task>;
+
+        // list of UI visible engine connection states.
         using conn_list = list<ui::connection, newsflash::connection>;
 
-        void download(const ui::account& account, const ui::file& file);
+        engine();
+       ~engine();
 
-        void download(const ui::account& account, const std::vector<ui::file>& files);
+        void set(const account& acc);
+
+        void download(std::size_t acc, std::vector<ui::download> batch);
 
         void pump();
 
-        void configure(const ui::settings& settings);
+        void start();
+
+        void stop();
+
+        void configure(const settings& s);
+
+        void set_log_folder(std::string path);
 
     private:
         void on_action_complete(action* act);
     private:
-        void start();        
-        void stop();
-        void complete_action(action* act, connection* conn);
-        void complete_action(action* act, task* task);
+
+        void complete_conn_action(action* act, connection* conn);
+        void complete_task_action(action* act, task* task);
         void remove_completed_tasks();
+        void begin_next_task();
 
     private:
         std::deque<std::unique_ptr<task>> tasks_;
         std::deque<std::unique_ptr<connection>> conns_;
-//        std::deque<std::unique_ptr<batch>> batches_;
-        std::vector<ui::account> accounts_;
-    private:
+        std::vector<account> accounts_;
         std::uint64_t bytes_downloaded_;
         std::uint64_t bytes_queued_;
         std::uint64_t bytes_written_;
-    private:
         std::mutex mutex_;
         std::queue<action*> actions_;
+        std::string logpath_;        
+        std::ofstream log_;
     private:
         threadpool threads_;
     private:
-        ui::settings settings_;
+        settings settings_;
+    private:
+        bool started_;
     };
     
 } // newsflash

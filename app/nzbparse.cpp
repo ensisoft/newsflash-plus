@@ -54,7 +54,7 @@ public:
             if (group.isEmpty())
                 return true;
 
-            content.groups.push_back(group);
+            content.groups.push_back(group.toStdString());
         }
         else if (curr_element_is("segment"))
         {
@@ -71,7 +71,7 @@ public:
             if (segment[segment.size()-1] != '>')
                 segment.append('>');
 
-            content.segments.push_back(segment);
+            content.segments.push_back(segment.toStdString());
         }
         return true;
     }

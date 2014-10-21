@@ -27,7 +27,7 @@
 namespace gui
 {
 
-DlgChoose::DlgChoose(QWidget* parent, const QStringList& accounts, const QString& task)
+DlgChoose::DlgChoose(QWidget* parent, const QStringList& accounts, const QString& task) : QDialog(parent)
 {
     ui_.setupUi(this);
 

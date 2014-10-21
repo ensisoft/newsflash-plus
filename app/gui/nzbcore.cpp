@@ -162,13 +162,14 @@ settings* nzbcore::get_settings(app::settings& s)
         ui.watchList->addItem(list[i]);
 
     const auto enable_watch = s.get("nzb", "enable_watching", false);
-    const auto& dumps = s.get("nzb", "nzb_dump_folder", "");
-    const auto& downloads = s.get("nzb", "download_folder", "");
+    const auto dumps = s.get("nzb", "nzb_dump_folder", "");
+    const auto downloads = s.get("nzb", "download_folder", "");
+    const auto enable_download_folder = s.get("nzb", "enable_custom_download_folder", false);
 
     ui.editDumpFolder->setText(dumps);
     ui.editCustomDownloadFolder->setText(downloads);
     ui.grpAutoDownload->setChecked(enable_watch);    
-
+    ui.grpCustomDownloadFolder->setChecked(enable_download_folder);
     return ptr;
 }
 
