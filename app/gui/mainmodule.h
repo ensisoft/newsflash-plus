@@ -75,6 +75,7 @@ namespace gui
 
         virtual void free_settings(settings* s) {}
 
+        virtual void drop_file(const QString& name) {}
     protected:
     private:
     };

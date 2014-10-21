@@ -107,6 +107,8 @@ namespace gui
         // notify that application settings have changed. 
         virtual void free_settings(settings* s) {}
 
+        virtual void drop_file(const QString& file) {};
+
     private:
     };
 

@@ -71,8 +71,7 @@ namespace app
 
         void apply_settings();
 
-
-
+        void refresh();
 
         const QString& get_logfiles_path() const
         { 
@@ -147,6 +146,7 @@ namespace app
     private:
         QString logifiles_;
         QString downloads_;
+        quint64 diskspace_;
     private:
         newsflash::engine engine_;
         newsflash::bitflag<newsflash::engine::flags> flags_;

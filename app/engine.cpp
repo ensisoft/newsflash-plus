@@ -33,6 +33,12 @@
 #include <newsflash/warnpop.h>
 #include <newsflash/engine/account.h>
 
+#if defined(WINDOWS_OS)
+#  include <windows.h>
+#elif defined(LINUX_OS)
+#  include <sys/vfs.h>
+#endif
+
 #include "engine.h"
 #include "debug.h"
 #include "homedir.h"
@@ -76,6 +82,7 @@ engine::engine()
 {
     logifiles_ = QDir::toNativeSeparators(QDir::tempPath() + "/Newsflash");
     downloads_ = QDir::toNativeSeparators(QDir::homePath() + "/Newsflash");
+    diskspace_ = 0;
 
     engine_.on_error = std::bind(&engine::on_engine_error, this,
         std::placeholders::_1);
@@ -220,6 +227,54 @@ void engine::apply_settings()
     engine_.configure(flags_);
     engine_.set_log_folder(utf8(logifiles_));
     engine_.set_throttle(throttle_, throttle_value_);
+}
+
+void engine::refresh()
+{
+    diskspace_ = 0;
+
+    // rescan the default download location volume
+    // for free space. note that the location might 
+    // point to a folder that doesn't yet exist.. 
+    // so traverse the path towards the root untill 
+    // an existing path is found.
+    QDir dir(downloads_);
+    auto path = dir.absolutePath();
+    auto list = path.split("/");
+
+    while (!list.isEmpty())
+    {
+        path = list.join("/");
+        if (QDir(path).exists())
+            break;
+        list.removeLast();
+    }
+
+    const auto native = QDir::toNativeSeparators(path);    
+
+#if defined(WINDOWS_OS)
+
+    ULARGE_INTEGER free = {};
+    if (!GetDiskFreeSpaceEx(native.utf16(), &free, nullptr, nullptr))
+        return;
+
+    diskspace_ = free.QuadPart;
+
+#elif defined(LINUX_OS)
+
+    const auto u8 = narrow(native);
+
+    struct statfs64 st = {};
+    if (statfs64(u8.c_str(), &st) == -1)
+        return;
+
+    // f_bsize is the "optimal transfer block size"
+    // not sure if this reliable and always the same as the
+    // actual file system block size. If it is different then
+    // this is incorrect.  
+    diskspace_ = st.f_bsize * st.f_bavail;
+
+#endif
 }
 
 bool engine::eventFilter(QObject* object, QEvent* event)

@@ -117,6 +117,8 @@ namespace gui
         void build_window_menu();
         bool savestate();
         void closeEvent(QCloseEvent* event);        
+        void dragEnterEvent(QDragEnterEvent* event);
+        void dropEvent(QDropEvent* event);
         
     private slots:
         void on_mainTab_currentChanged(int index);

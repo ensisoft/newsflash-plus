@@ -52,6 +52,7 @@
 #include "downloads.h"
 #include "coremodule.h"
 #include "appearance.h"
+#include "python.h"
 #include "../eventlog.h"
 #include "../debug.h"
 #include "../format.h"
@@ -180,6 +181,12 @@ int run(int argc, char* argv[])
     // downloads widget
     gui::downloads downloads;
     win.attach(&downloads);
+
+    // scripting
+#if defined(NEWSFLASH_ENABLE_PYTHON)
+    gui::python py;
+    win.attach(&py);
+#endif
 
     // eventlog widget
     gui::eventlog log;

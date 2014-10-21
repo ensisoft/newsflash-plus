@@ -223,7 +223,9 @@ void mainwindow::loadstate()
         {
             ui_.mainTab->insertTab(i, widgets_[i], icon, text);
         }
-        actions_[i]->setChecked(show);        
+        if (i < actions_.size())
+            actions_[i]->setChecked(show);        
+          
         widgets_[i]->loadstate(settings_);
     }
 
@@ -542,6 +544,38 @@ void mainwindow::closeEvent(QCloseEvent* event)
     ui_.mainTab->clear();
 }
 
+void mainwindow::dragEnterEvent(QDragEnterEvent* event)
+{
+    DEBUG("dragEnterEvent");
+
+    event->acceptProposedAction();
+}
+
+void mainwindow::dropEvent(QDropEvent* event)
+{
+    DEBUG("dropEvent");
+
+    const auto* mime = event->mimeData();
+    if (!mime->hasUrls())
+        return;
+
+    const auto& urls = mime->urls();
+    for (int i=0; i<urls.size(); ++i)
+    {
+        const auto& name = urls[i].toLocalFile();
+        const auto& info = QFileInfo(name);
+        if (!info.isFile() || !info.exists())
+            continue;
+
+        DEBUG(str("processing _1 file", name));
+        for (auto* w : widgets_)
+            w->drop_file(name);
+
+        for (auto* m : modules_)
+            m->drop_file(name);
+    }
+}
+
 void mainwindow::build_window_menu()
 {
     ui_.menuWindow->clear();
@@ -852,7 +886,9 @@ void mainwindow::timerRefresh_timeout()
     for (auto* w : widgets_)
         w->refresh();
 
-    //app::g_engine->refresh();
+    app::g_engine->refresh();
+
+    //ui_.lblDiskFree
 
     // todo: update network monitor
     // todo: update disk availability status

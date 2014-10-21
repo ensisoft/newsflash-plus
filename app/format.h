@@ -235,16 +235,14 @@ namespace app
     std::string utf8(const QString& str)
     {
         const auto& bytes = str.toUtf8();
-        return std::string(bytes.data(), 
-            bytes.size());
+        return std::string(bytes.data(), bytes.size());
     }
 
     inline
     std::string latin(const QString& str)
     {
         const auto& bytes = str.toLatin1();
-        return std::string(bytes.data(),
-            bytes.size());
+        return std::string(bytes.data(), bytes.size());
     }
 
     // get a string in systems native narrow character encoding.
