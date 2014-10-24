@@ -1,0 +1,321 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>NZBCore</class>
+ <widget class="QWidget" name="NZBCore">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>441</width>
+    <height>533</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>NZB</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout_4">
+   <item row="0" column="0">
+    <widget class="QGroupBox" name="grpAutoDownload">
+     <property name="title">
+      <string>Enable automatic download</string>
+     </property>
+     <property name="checkable">
+      <bool>true</bool>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_5">
+      <item row="0" column="0">
+       <widget class="QGroupBox" name="groupBox_2">
+        <property name="title">
+         <string>Watched folders</string>
+        </property>
+        <layout class="QGridLayout" name="gridLayout">
+         <item row="0" column="0">
+          <widget class="QListWidget" name="watchList"/>
+         </item>
+         <item row="2" column="0">
+          <layout class="QHBoxLayout" name="horizontalLayout">
+           <item>
+            <spacer name="horizontalSpacer">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item>
+            <widget class="QPushButton" name="btnAddWatchFolder">
+             <property name="text">
+              <string>Add</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="btnDelWatchFolder">
+             <property name="text">
+              <string>Delete</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+        </layout>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="3" column="0">
+    <widget class="QGroupBox" name="grpCustomDownloadFolder">
+     <property name="title">
+      <string>Use custom download folder</string>
+     </property>
+     <property name="checkable">
+      <bool>true</bool>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_2">
+      <item row="0" column="0">
+       <layout class="QHBoxLayout" name="horizontalLayout_2">
+        <item>
+         <widget class="QLineEdit" name="editCustomDownloadFolder"/>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btnSelectDownloadFolder">
+          <property name="text">
+           <string>Browse...</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="1" column="0">
+    <widget class="QGroupBox" name="groupBox_3">
+     <property name="title">
+      <string>Action on NZB file Drop &amp;&amp; Drop</string>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_3">
+      <item row="0" column="0">
+       <layout class="QVBoxLayout" name="verticalLayout">
+        <item>
+         <widget class="QRadioButton" name="rdbDropActionDownload">
+          <property name="text">
+           <string>Download content</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QRadioButton" name="rdbDropActionOpen">
+          <property name="text">
+           <string>Open NZB file</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="2" column="0">
+    <widget class="QGroupBox" name="groupBox_4">
+     <property name="title">
+      <string>NZB file post processing</string>
+     </property>
+     <property name="checkable">
+      <bool>false</bool>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_2">
+      <item>
+       <widget class="QRadioButton" name="rdbMarkProcessed">
+        <property name="text">
+         <string>Mark processed (prepends &quot;remove_&quot; in the file name)</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QRadioButton" name="rdbDeleteProcessed">
+        <property name="text">
+         <string>Delete file</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QRadioButton" name="rdbMoveProcessed">
+        <property name="text">
+         <string>Move to another location</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_3">
+        <item>
+         <widget class="QLineEdit" name="editDumpFolder"/>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btnSelectDumpFolder">
+          <property name="text">
+           <string>Browse...</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <tabstops>
+  <tabstop>grpAutoDownload</tabstop>
+  <tabstop>watchList</tabstop>
+  <tabstop>btnAddWatchFolder</tabstop>
+  <tabstop>btnDelWatchFolder</tabstop>
+  <tabstop>rdbDropActionDownload</tabstop>
+  <tabstop>rdbDropActionOpen</tabstop>
+  <tabstop>rdbMarkProcessed</tabstop>
+  <tabstop>rdbDeleteProcessed</tabstop>
+  <tabstop>rdbMoveProcessed</tabstop>
+  <tabstop>editDumpFolder</tabstop>
+  <tabstop>btnSelectDumpFolder</tabstop>
+  <tabstop>grpCustomDownloadFolder</tabstop>
+  <tabstop>editCustomDownloadFolder</tabstop>
+  <tabstop>btnSelectDownloadFolder</tabstop>
+ </tabstops>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>grpCustomDownloadFolder</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>editCustomDownloadFolder</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>220</x>
+     <y>469</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>177</x>
+     <y>477</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>grpCustomDownloadFolder</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>btnSelectDownloadFolder</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>220</x>
+     <y>469</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>382</x>
+     <y>477</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>rdbMarkProcessed</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>editDumpFolder</receiver>
+   <slot>setDisabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>220</x>
+     <y>350</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>177</x>
+     <y>424</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>rdbMarkProcessed</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>btnSelectDumpFolder</receiver>
+   <slot>setDisabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>220</x>
+     <y>350</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>382</x>
+     <y>424</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>rdbDeleteProcessed</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>editDumpFolder</receiver>
+   <slot>setDisabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>220</x>
+     <y>372</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>177</x>
+     <y>424</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>rdbDeleteProcessed</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>btnSelectDumpFolder</receiver>
+   <slot>setDisabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>220</x>
+     <y>372</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>382</x>
+     <y>424</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>rdbMoveProcessed</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>editDumpFolder</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>220</x>
+     <y>394</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>177</x>
+     <y>424</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>rdbMoveProcessed</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>btnSelectDumpFolder</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>220</x>
+     <y>394</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>382</x>
+     <y>424</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>

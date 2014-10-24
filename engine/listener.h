@@ -22,31 +22,36 @@
 
 #pragma once
 
+#include <newsflash/config.h>
+#include <memory>
+#include "ui/task.h"
+#include "ui/file.h"
+#include "ui/error.h"
+#include "ui/connection.h"
+
 namespace newsflash
 {
-    namespace ui {
-        struct file;
-        struct task;
-        struct error;
-    }
+    class cmdlist;
+    class action;
+    class task;
 
-    // listener interface for listening to engine events.
+    // listener interface for listening to task events
     class listener
     {
     public:
         virtual ~listener() = default;
 
         // an error has occurred. 
-        virtual void handle(const ui::error& error) = 0;
+        virtual void on_error(task* t, const ui::error& error) = 0;
 
         // a file completed
-        virtual void acknowledge(const ui::file& file) = 0;
+        virtual void on_file_complete(task* t, const ui::file& file) = 0;
 
-        // notify the listener that there are pending messages in the engine's
-        // message queue. the callback should organize for a call to engine::pump()
-        // to process the pending messages.
-        virtual void async_notify() = 0;
+        virtual void on_state_change(task* t, ui::task::state old, ui::task::state now) = 0;
 
+        virtual void on_execute(task* t, std::unique_ptr<action> a) = 0;
+
+        virtual void on_execute(task* t, std::unique_ptr<cmdlist> c) = 0;
     protected:
     private:
 

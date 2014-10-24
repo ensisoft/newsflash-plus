@@ -20,40 +20,32 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-#pragma once
-
 #include <newsflash/config.h>
-#include <vector>
-#include <memory>
 
-namespace newsflash
+#include "script.h"
+
+#if defined(NEWSFLASH_ENABLE_PYTHON)
+
+namespace app
 {
-    class taskcore;
-    class buffer;
 
-    class taskpool
-    {
-    public:
-        taskpool(int num_threads);
-       ~taskpool();
+script::script(const QString& module) : module_(module)
+{}
 
-        void insert(std::size_t id, std::unique_ptr<taskcore> task);
+script::~script()
+{}
 
-        void prepare(std::size_t id);
+bool script::load()
+{
+    return false;
+}
 
-        void enqueue(std::size_t id, std::unique_ptr<buffer> buffer);
+int script::priority() const
+{
+    return 0;
+}
 
-        void cancel(std::size_t id);
 
-        void flush(std::size_t id);
+} // app
 
-        void finalize(std::size_t id);
-
-    private:
-        class thread;
-
-    private:
-        std::vector<std::unique_ptr<thread>> threads_;
-
-    };
-} // engine
+#endif // ENABLE_NEWSFLASH_PYTHON

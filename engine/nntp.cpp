@@ -452,7 +452,7 @@ std::uint32_t hashvalue(const char* subjectline, size_t len)
     return std::uint32_t(seed);
 }
 
-std::pair<const char*, size_t> find_filename(const char* str, size_t len)
+std::string find_filename(const char* str, size_t len)
 {
     const static boost::regex regex(REVERSE_FILE_EXTENSION_REGEX, boost::regbase::icase | boost::regbase::perl);
 
@@ -462,7 +462,7 @@ std::pair<const char*, size_t> find_filename(const char* str, size_t len)
     boost::match_results<reverse_c_str_iterator> res;
     
     if (!regex_search(itbeg, itend, res, regex))
-        return {nullptr, 0};
+        return "";
 
     // first returns an iterator pointing to the 
     // start of the sequence, which in this case is the end of the filename
@@ -491,6 +491,8 @@ std::pair<const char*, size_t> find_filename(const char* str, size_t len)
             start_marker = '(';
         else if (*end == ']')
             start_marker = '[';
+        else if (*end == '#')
+            start_marker = '#';
     }
 
     if (start_marker)
@@ -521,9 +523,9 @@ std::pair<const char*, size_t> find_filename(const char* str, size_t len)
     assert(start <= dot && dot < end);
 
     if (start - dot == 0)
-        return {nullptr, 0};
+        return "";
 
-    return {start, end-start};
+    return std::string(start, end-start);
 }
 
 std::size_t find_response(const void* buff, std::size_t size)

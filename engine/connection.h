@@ -24,120 +24,117 @@
 
 #include <newsflash/config.h>
 
-#include <functional>
-#include <memory>
-#include <string>
+#include <system_error>
 #include <stdexcept>
-#include <cstdint>
-#include "ui/connection.h"
-#include "ui/error.h"
+#include <string>
+#include <memory>
+#include "action.h"
 
 namespace newsflash
 {
     class cmdlist;
-    class action;
-    
-    // connection class handles the details of a NNTP connection
-    // including buffering, reading and writing from/to socket and
-    // nntp session management. 
-    // each connection method such as connecting to a remote host
-    // is split into multiple actions. Each action then represents a single
-    // step in the whole operation. each action is invoked through the
-    // on_action callback. once the action has been performed the 
-    // complete(action) function should be called to complete
-    // the pending state transition. after a call to complete
-    // the connection state should be inspected for possible error condition.
+
     class connection
     {
+        struct state;
     public:
-        using error = ui::connection::error;
-        using state = ui::connection::state;
+        enum class error {
+            resolve, refused,
+            authentication_rejected,
+            no_permission,
+            network,
+            timeout
+        };
+        class exception : public std::exception
+        {
+        public:
+            exception(connection::error err, std::string what, std::error_code errc = std::error_code()) 
+                : error_(err), what_(std::move(what)), errc_(errc)
+            {}
 
-        // this callback is invoked when theres a new action to be performed.
-        std::function<void(std::unique_ptr<action>)> on_action;
+            const char* what() const noexcept
+            { return what_.c_str(); }
 
-        // this callback is invoked when an error occurs.
-        // the error object carries more error information.
-        std::function<void(const ui::error&)> on_error;
+            connection::error error() const noexcept
+            { return error_; }
+
+            std::error_code code() const noexcept
+            { return errc_; }
+        private:
+            connection::error error_;
+            std::string what_;
+            std::error_code errc_;
+        };
+
+        // perform host resolution
+        class resolve : public action
+        {
+        public:
+            resolve(std::shared_ptr<state> s) : state_(s)
+            {}
+
+            virtual void xperform() override;
+        private:
+            std::shared_ptr<state> state_;
+        };
+
+        // perform socket connect 
+        class connect : public action
+        {
+        public:
+            connect(std::shared_ptr<state> s);
+
+            virtual void xperform() override;
+        private:
+            std::shared_ptr<state> state_;
+        };
+
+        // perform nntp init
+        class initialize : public action
+        {
+        public:
+            initialize(std::shared_ptr<state> s);
+
+            virtual void xperform() override;
+        private:
+            std::shared_ptr<state> state_;
+        };
+
+        // execute cmdlist 
+        class execute : public action
+        {
+        public:
+            execute(std::shared_ptr<state> s);
+
+            virtual void xperform() override;
+        private:
+            std::shared_ptr<state> state_;
+        };
+
 
         struct spec {
             std::string username;
             std::string password;
             std::string hostname;
-            std::string logfile;
-            std::uint16_t port;
-            std::size_t account;
-            std::size_t id;
+            std::uint16_t hostport;         
             bool use_ssl;
         };
 
-        // create a new connection with the given account and connection ids.
-        connection(const spec& s);
-       ~connection();
+        std::unique_ptr<action> connect(spec s);
 
-        // begin connecting to the given server.
-        void connect();
-        
-        // begin disconnect
-        void disconnect();
+        std::unique_ptr<action> disconnect();
 
-        // execute the given cmdlist. also update the current
-        // connection status to the given descriptor and task ids.
-        void execute(std::shared_ptr<cmdlist> cmd, std::string desc, std::size_t task);
+        std::unique_ptr<action> complete(std::unique_ptr<action> a);
 
-        // complete the given action and complete the pending state transition.
-        void complete(std::unique_ptr<action> act);
-
-        // observers
-        
-        // get state
-        state get_state() const
-        { return uistate_.st; }
-
-        // get error state
-        error get_error() const 
-        { return uistate_.err; }
-
-        // get the account this connection belongs to
-        std::size_t get_account() const
-        { return uistate_.account; }
-
-        // get connection id
-        std::size_t get_id() const 
-        { return uistate_.id; }
-
-        // get connection hostname
-        std::string hostname() const 
-        { return uistate_.host; }
-
-        // get connection port
-        std::uint16_t hostport() const 
-        { return uistate_.port; }
-
-        // get NNTP username
-        std::string username() const;
-
-        // get NNTP password
-        std::string password() const;
-
-        // get all state visible towards the UI
-        ui::connection get_ui_state() const;
+        std::unique_ptr<action> execute(std::shared_ptr<cmdlist> cmd);
 
     private:
-        struct privstate;        
-        class exception;
-        class resolve;
-        class connect;
-        class initialize;
-        class execute;
-        class disconnect;
+        std::shared_ptr<state> state_;
 
-    private:
-        std::shared_ptr<privstate> state_;
-
-    private:
-        ui::connection uistate_;
     };
+
+    
+
 
 } // newsflash
 

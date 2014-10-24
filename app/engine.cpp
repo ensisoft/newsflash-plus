@@ -32,6 +32,7 @@
 #  include <QBuffer>
 #include <newsflash/warnpop.h>
 #include <newsflash/engine/account.h>
+#include <newsflash/engine/nntp.h>
 
 #if defined(WINDOWS_OS)
 #  include <windows.h>
@@ -80,8 +81,7 @@ namespace app
 
 engine::engine()
 {
-    logifiles_ = QDir::toNativeSeparators(QDir::tempPath() + "/Newsflash");
-    downloads_ = QDir::toNativeSeparators(QDir::homePath() + "/Newsflash");
+
     diskspace_ = 0;
 
     engine_.on_error = std::bind(&engine::on_engine_error, this,
@@ -90,14 +90,11 @@ engine::engine()
         std::placeholders::_1);
 
     engine_.on_async_notify = [=]() {
+        DEBUG("on_async_notify callback");
         QCoreApplication::postEvent(this, new AsyncNotifyEvent);
     };
 
-    using f = newsflash::engine::flags;
-
-    flags_.set(f::prefer_secure);
-    flags_.set(f::discard_text_content);
-    engine_.configure(flags_);
+    installEventFilter(this);
 
     DEBUG("Engine created");
 }
@@ -111,9 +108,9 @@ void engine::set(const account& acc)
 {
     newsflash::account a;
     a.id                    = acc.id;
-    a.name                  = utf8(acc.name);
-    a.username              = utf8(acc.username);
-    a.password              = utf8(acc.password);
+    a.name                  = to_utf8(acc.name);
+    a.username              = to_utf8(acc.username);
+    a.password              = to_utf8(acc.password);
     a.secure_host           = latin(acc.secure_host);
     a.secure_port           = acc.secure_port;    
     a.general_host          = latin(acc.general_host);
@@ -122,6 +119,7 @@ void engine::set(const account& acc)
     a.enable_pipelining     = acc.enable_pipelining;
     a.enable_general_server = acc.enable_general_server;
     a.enable_secure_server  = acc.enable_secure_server;
+    a.connections           = acc.max_connections;
     engine_.set(a);
 }
 
@@ -160,73 +158,100 @@ void engine::download_nzb_contents(quint32 acc, const QString& path, const QStri
             return;
     }
 
+    QString location = path.isEmpty() ? 
+        downloads_ : path;
+    location.append("/");
+    location.append(desc);
+
     QDir dir;
-    if (!dir.mkpath(path))
+    if (!dir.mkpath(location))
     {
         ERROR(str("Error creating path _1", dir));
         return;
     }
 
-    std::vector<newsflash::ui::download> jobs;
+    newsflash::ui::download download;
+    download.account = acc;
+    download.path = narrow(location);
+    download.desc = to_utf8(desc);
     for (auto& item : items)
     {
-        newsflash::ui::download download;
-        download.articles = std::move(item.segments);
-        download.groups   = std::move(item.groups);
-        download.size     = item.bytes;
-        download.path     = utf8(path);
-        download.desc     = utf8(desc);
-        jobs.push_back(std::move(download));
+        newsflash::ui::download::file file;
+        file.articles = std::move(item.segments);
+        file.groups   = std::move(item.groups);
+        file.size     = item.bytes;
+        file.name     = nntp::find_filename(to_utf8(item.subject));
+        if (file.name.size() < 5)
+            file.name = to_utf8(item.subject);
+        download.files.push_back(std::move(file));
     }
-    engine_.download(acc, std::move(jobs));
+    engine_.download(std::move(download));
+    if (connect_)
+    {
+        QDir dir;
+        if (!dir.mkpath(logifiles_))
+        {
+            ERROR(str("Error creating log path _1", dir));
+        }
+        engine_.start(to_utf8(logifiles_));
+    }
+
 
     INFO(str("Downloading _1", desc));
 }
 
 void engine::loadstate(settings& s)
 {
-    using f = newsflash::engine::flags;
+    logifiles_ = s.get("engine", "logfiles", 
+        QDir::toNativeSeparators(QDir::tempPath() + "/Newsflash"));
+    downloads_ = s.get("engine", "downloads", 
+        QDir::toNativeSeparators(QDir::homePath() + "/Downloads"));
 
-    logifiles_ = s.get("engine", "logfiles", logifiles_);
-    downloads_ = s.get("engine", "downloads", downloads_);
-    throttle_  = s.get("engine", "enable_throttle", throttle_);
-    throttle_value_ = s.get("engine", "throttle_value", throttle_value_);
-    flags_.set_from_value(s.get("engine", "flags", flags_.value()));
+    const auto overwrite = s.get("engine", "overwrite_existing_files", false);
+    const auto discard   = s.get("engine", "discard_text", true);
+    const auto secure    = s.get("engine", "prefer_secure", true);
+    const auto throttle  = s.get("engine", "throttle", false);
+    const auto throttleval = s.get("engine", "throttle_value", 0);
+    connect_ = s.get("engine", "connect", true);
 
-    engine_.configure(flags_);
-    engine_.set_log_folder(utf8(logifiles_));
-    engine_.set_throttle(throttle_, throttle_value_);
+    engine_.set_overwrite_existing_files(overwrite);
+    engine_.set_discard_text_content(discard);
+    engine_.set_throttle(throttle);
+    engine_.set_throttle_value(throttleval);
 }
 
 bool engine::savestate(settings& s)
 {
-    s.set("engine", "flags", flags_.value());
+    const auto overwrite = engine_.get_overwrite_existing_files();
+    const auto discard   = engine_.get_discard_text_content();
+    const auto secure    = engine_.get_prefer_secure();
+    //const auto throttle  = engine_.get_th
+    const auto throttle = false;
+
+    s.set("engine", "throttle", throttle);
+    s.set("engine", "overwrite_existing_files", overwrite);
+    s.set("engine", "discard_text", discard);
+    s.set("engine", "prefer_secure", secure);
     s.set("engine", "logfiles", logifiles_);
     s.set("engine", "downloads", downloads_);
+    s.set("engine", "connect", connect_);
     return true;
 }
 
-void engine::start()
+void engine::connect(bool on_off)
 { 
-    QDir dir;
-    if (!dir.mkpath(logifiles_))
+    connect_ = on_off;
+    if (!connect_)
+        engine_.stop();
+    else
     {
-        ERROR(str("Error creating log path _1", dir));
+        QDir dir;
+        if (!dir.mkpath(logifiles_))
+        {
+            ERROR(str("Error creating log path _1", dir));
+        }
+        engine_.start(to_utf8(logifiles_));
     }
-
-    engine_.start();
-}
-
-void engine::stop()
-{ 
-    engine_.stop();
-}
-
-void engine::apply_settings()
-{
-    engine_.configure(flags_);
-    engine_.set_log_folder(utf8(logifiles_));
-    engine_.set_throttle(throttle_, throttle_value_);
 }
 
 void engine::refresh()
@@ -281,6 +306,7 @@ bool engine::eventFilter(QObject* object, QEvent* event)
 {
     if (object == this && event->type() == AsyncNotifyEvent::identity())
     {
+        //DEBUG("got it!");
         engine_.pump();
         return true;
     }

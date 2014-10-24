@@ -21,9 +21,21 @@
 //  THE SOFTWARE.
 
 #include <newsflash/config.h>
+#include <newsflash/warnpush.h>
+#  include <boost/thread/tss.hpp>
+#include <newsflash/warnpop.h>
+
 #include <iomanip>
 #include "platform.h"
 #include "logging.h"
+
+namespace {
+    struct logger {
+        std::ostream* out;
+    };
+
+    boost::thread_specific_ptr<logger> threadLogger;
+} // namespace
 
 namespace newsflash
 {
@@ -47,5 +59,25 @@ namespace detail {
     }
 
 } // detail
+
+std::ostream* get_thread_log()
+{
+    if (!threadLogger.get())
+        return nullptr;
+
+    return threadLogger->out;
+}
+
+std::ostream* set_thread_log(std::ostream* out)
+{
+    std::ostream* current = nullptr;
+
+    if (!threadLogger.get())
+        threadLogger.reset(new logger);
+    else current = threadLogger->out;
+
+    threadLogger->out = out;
+    return current;
+}
 
 } // newsflash

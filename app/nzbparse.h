@@ -25,6 +25,7 @@
 #include <newsflash/config.h>
 
 #include <newsflash/warnpush.h>
+#  include <QtGui/QIcon>
 #  include <QString>
 #include <newsflash/warnpop.h>
 
@@ -38,7 +39,11 @@ namespace app
 {
     // content data parsed from a NZB file
     struct nzbcontent {
+        // filetype is here for convenience, but its not parsed
         filetype type;
+
+        // filetype icon is here for convenience but its not parsed
+        QIcon icon;
 
         //subject line
         QString subject;

@@ -56,10 +56,10 @@ namespace newsflash
         virtual void receive_data_buffer(buffer&& buff) = 0;
 
         // get the account to which this cmdlist is associated with.
-        virtual std::size_t account() const = 0;
+        //virtual std::size_t account() const = 0;
 
         // get the owner task id. 
-        virtual std::size_t task() const = 0;
+        //virtual std::size_t task() const = 0;
         
     protected:
     private:

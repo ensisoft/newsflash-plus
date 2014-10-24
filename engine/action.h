@@ -24,6 +24,8 @@
 
 #include <newsflash/config.h>
 #include <exception>
+#include <memory>
+#include "logging.h"
 
 namespace newsflash
 {
@@ -66,6 +68,7 @@ namespace newsflash
         // perform the action
         void perform()
         {
+            set_thread_log(log_.get());
             try
             {
                 xperform();
@@ -74,6 +77,7 @@ namespace newsflash
             {
                 exptr_ = std::current_exception();
             }
+            set_thread_log(nullptr);
         }
 
         affinity get_affinity() const 
@@ -88,12 +92,16 @@ namespace newsflash
         void set_affinity(affinity aff)
         { affinity_ = aff; }
 
+        void set_log(std::shared_ptr<std::ostream> out)
+        { log_ = out; }
+
     protected:
         virtual void xperform() = 0;        
 
     private:
         std::exception_ptr exptr_;
         std::size_t id_;
+        std::shared_ptr<std::ostream> log_;
     private:
         affinity affinity_;
     };

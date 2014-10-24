@@ -35,7 +35,7 @@ namespace newsflash
     struct connection
     {
         // possible connection errors.
-        enum class error {
+        enum class errors {
             // no error
             none,
 
@@ -65,7 +65,7 @@ namespace newsflash
             other
         }; 
 
-        enum class state {
+        enum class states {
             // disconnected state
             disconnected,
 
@@ -91,10 +91,10 @@ namespace newsflash
         };
 
         // current error if any.
-        error err;
+        errors error;
 
         // current state.
-        state st;
+        states state;
 
         // unique connection id
         std::size_t id;
@@ -120,7 +120,7 @@ namespace newsflash
         bool secure;
 
         // current speed in bytes per second.
-        int bps;
+        std::uint32_t bps;
     };
 
 } // ui

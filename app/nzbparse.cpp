@@ -94,7 +94,7 @@ public:
                 return false;            
             content.date    = attrs.value("date");
             content.poster  = attrs.value("poster");
-            content.type    = app::find_filetype(content.subject);
+            content.type    = app::filetype::none;//app::find_filetype(content.subject);
             contents_.push_back(content);
         }
         else if (element == "segment")

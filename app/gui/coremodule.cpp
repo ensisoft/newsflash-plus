@@ -198,11 +198,12 @@ void coremodule::apply_settings(settings* gui, app::settings& backend)
         }
     }
 
-    app::g_engine->set_download_path(download);
+    app::g_engine->set_downloads_path(download);
     app::g_engine->set_logfiles_path(logfiles);
     app::g_engine->set_overwrite_existing_files(overwrite);
     app::g_engine->set_discard_text_content(discard);
-    app::g_engine->apply_settings();
+
+    // todo: throttle value.
 
     // todo: configure feedback 
 }
@@ -211,8 +212,5 @@ void coremodule::free_settings(settings* s)
 {
     delete s;
 }
-
-
-
 
 } // gui

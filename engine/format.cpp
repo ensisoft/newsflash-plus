@@ -29,21 +29,21 @@ namespace newsflash
 
 #define CASE(x) case x: return #x
 
-const char* str(ui::task::state s)
-{
-    using state = ui::task::state;
-    switch (s)
-    {
-        CASE(state::queued);
-        CASE(state::waiting);
-        CASE(state::active);
-        CASE(state::paused);
-        CASE(state::complete);
-        CASE(state::error);
-    }    
-    assert(!"wat");
-    return nullptr;
-}
+// const char* str(ui::task::state s)
+// {
+//     using state = ui::task::state;
+//     switch (s)
+//     {
+//         CASE(state::queued);
+//         CASE(state::waiting);
+//         CASE(state::active);
+//         CASE(state::paused);
+//         CASE(state::complete);
+//         CASE(state::error);
+//     }    
+//     assert(!"wat");
+//     return nullptr;
+// }
 
 #undef CASE
 

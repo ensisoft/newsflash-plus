@@ -58,9 +58,7 @@ namespace gui
 
     private:
         void download_selected(const QString& path);
-        //void save_selected(const QString& path);
-        //void open_selected()
-        void ready();
+        void refresh(bool verbose);
 
     private slots:
         void on_actionRefresh_triggered();

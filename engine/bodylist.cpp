@@ -28,11 +28,9 @@
 namespace newsflash
 {
 
-bodylist::bodylist(std::size_t task, std::size_t account, 
-    std::vector<std::string> groups,
-    std::vector<std::string> messages) : task_(task), groups_(std::move(groups)), messages_(std::move(messages)), account_(account)
+bodylist::bodylist(std::vector<std::string> groups,
+    std::vector<std::string> messages) : groups_(std::move(groups)), messages_(std::move(messages))
 {
-    message_ = 0;
     configure_fail_bit_ = false;
 }
 
@@ -66,16 +64,14 @@ bool bodylist::receive_configure_buffer(std::size_t i, buffer&& buff)
 void bodylist::submit_data_commands(session& ses)
 {
     // queue all the article commands that have not been received yet.
-    for (auto i=message_; i<messages_.size(); ++i)
-        ses.retrieve_article(messages_[i]);
+    for (auto m : messages_)
+        ses.retrieve_article(m);
 }
 
 void bodylist::receive_data_buffer(buffer&& buff)
 {
     // got a response buffer, store it for later
     buffers_.push_back(std::move(buff));
-
-    message_++;
 }
 
 } // newsflash

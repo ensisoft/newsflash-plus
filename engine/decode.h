@@ -63,14 +63,12 @@ namespace newsflash
        ~decode();
 
         // get text content buffer (if any)
-        const 
-        std::vector<char>& get_text_data() const
-        { return text_; }
+        std::vector<char>&& get_text_data() &&
+        { return std::move(text_); }
 
         // get the binary content (if any)
-        const 
-        std::vector<char>& get_binary_data() const
-        { return binary_; }
+        std::vector<char>&& get_binary_data() &&
+        { return std::move(binary_); }
 
         // if binary is part of a multipart binary then 
         // it might have a specific offset in the final output binary.

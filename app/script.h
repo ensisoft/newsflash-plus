@@ -24,50 +24,31 @@
 
 #include <newsflash/config.h>
 
+#if defined(NEWSFLASH_ENABLE_PYTHON)
+
 #include <newsflash/warnpush.h>
-#  include "ui_downloads.h"
+#  include <QString>
 #include <newsflash/warnpop.h>
-#include <memory>
 
-#include "mainwidget.h"
-#include "../tasklist.h"
-#include "../connlist.h"
+#include <Python.h>
 
-class QEvent;
-
-namespace gui
+namespace app
 {
-    class downloads : public mainwidget
+    class script
     {
-        Q_OBJECT
-
     public:
-        downloads();
-       ~downloads();
+        // module names are always without .py ending.
+        script(const QString& module);
+       ~script();
 
-        virtual void add_actions(QMenu& menu) override;
-        virtual void add_actions(QToolBar& bar) override;
-        virtual void loadstate(app::settings& s) override;
-        virtual bool savestate(app::settings& s) override;
-        virtual void refresh() override;
-        virtual info information() const override 
-        { return {"downloads.html", true, true}; }
+        // try to load the module. 
+        bool load();
 
-    private slots:
-        void on_actionConnect_triggered();
-        void on_actionPreferSSL_triggered();
-        void on_actionThrottle_triggered();
-
+        // get script priority
+        int priority() const;
     private:
-        bool eventFilter(QObject* obj, QEvent* event);
-
-    private:
-        Ui::Downloads ui_;
-
-    private:
-        app::tasklist tasks_;
-        app::connlist conns_;
-        int panels_y_pos_;
+        QString module_;
     };
+} // app
 
-} // gui
+#endif // NEWSFLASH_ENABLE_PYTHON

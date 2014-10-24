@@ -1,4 +1,4 @@
-// Copyright (c) 2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -23,35 +23,41 @@
 #pragma once
 
 #include <newsflash/config.h>
-#include <cstddef>
+
+#if defined(NEWSFLASH_ENABLE_PYTHON)
+
+#include <newsflash/warnpush.h>
+#  include <QAbstractTableModel>
+#  include <QObject>
+#include <newsflash/warnpop.h>
 #include <memory>
-#include "buffer.h"
+#include <vector>
 
-namespace newsflash
+#include <Python.h>
+
+namespace app
 {
-    // task interface for performing activities on the data.
-    class taskcore
+    class settings;
+
+    class python : public QObject
     {
+        Q_OBJECT
+
     public:
-        virtual ~taskcore() = default;
+        python();
+       ~python();
 
-        // prepare the task to receive data soon.
-        virtual void prepare() = 0;
+        void loadstate(settings& s);
+        void savestate(settings& s);
 
-        // receive and process a buffer of NNTP data.
-        virtual void receive(buffer&& buff, std::size_t id) = 0;
-
-        // cancel the task, rolllback any changes.
-        virtual void cancel() = 0;
-
-        // flush a temporary snapshot to the disk
-        // and commit changes so far.
-        virtual void flush() = 0;
-
-        // finalize (commit) the task. makes changes permanent.
-        virtual void finalize() = 0;
-    protected:
     private:
+        virtual bool eventFilter(QObject* object, QEvent* event) override;
+
+    private:
+        //PyThreadState* thread_state_;
+        //PyInterpreterState* interp_state_;
+        //std::vector<std::unique_ptr<script>> scripts_;
     };
-    
-} // newsflash
+} // app
+
+#endif // ENABLE_PYTHON

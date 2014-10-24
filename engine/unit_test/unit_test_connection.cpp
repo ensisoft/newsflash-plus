@@ -32,7 +32,6 @@
 #include "../action.h"
 #include "../sockets.h"
 #include "../socketapi.h"
-#include "../logging.h"
 #include "../cmdlist.h"
 #include "../session.h"
 #include "../buffer.h"
@@ -50,65 +49,38 @@ void test_connect()
 {
     std::unique_ptr<nf::action> act;
 
-    using state = nf::connection::state;
-    using error = nf::connection::error;
-
-    LOG_OPEN("test", "test_connect.log");
-
     // resolve fails
     {
         nf::connection::spec s;
-        s.account  = 1;
-        s.id       = 1;
         s.hostname = "foobar";
-        s.port     = 1818;
+        s.hostport = 1818;
         s.use_ssl  = false;
 
-        nf::connection conn(s);
-        conn.on_action = [&](std::unique_ptr<nf::action> a) {
-            act = std::move(a);
-        };
+        nf::connection conn;
 
-        conn.connect();
-        BOOST_REQUIRE(conn.get_state() == state::resolving);
+        act = conn.connect(s);
         act->perform();
         BOOST_REQUIRE(act->has_exception());
-        conn.complete(std::move(act));
-        BOOST_REQUIRE(conn.get_state() == state::error);
-        BOOST_REQUIRE(conn.get_error() == error::resolve);
-
-        LOG_D("end");
-        LOG_FLUSH();
     }
 
     // connect fails
     {
         nf::connection::spec s;
-        s.account  = 1;
-        s.id       = 1;
         s.hostname = "localhost";
-        s.port     = 1818;
+        s.hostport = 1818;
         s.use_ssl  = false;
 
-        nf::connection conn(s);
-        conn.on_action = [&](std::unique_ptr<nf::action> a) {
-            act = std::move(a);
-        };
+        nf::connection conn;
 
-        conn.connect();
+        // resolve
+        act = conn.connect(s);
         act->perform();
         BOOST_REQUIRE(!act->has_exception());
 
-        conn.complete(std::move(act));
-        BOOST_REQUIRE(conn.get_state() == state::connecting);
+        // connect
+        act = conn.complete(std::move(act));
         act->perform();
         BOOST_REQUIRE(act->has_exception());
-        conn.complete(std::move(act));
-        BOOST_REQUIRE(conn.get_state() == state::error);
-        BOOST_REQUIRE(conn.get_error() == error::refused);
-
-        LOG_D("end");        
-        LOG_FLUSH();        
     }
 
     // nntp init fails
@@ -139,122 +111,107 @@ void test_connect()
     // authentication fails
     {
         nf::connection::spec s;
-        s.account  = 1;
-        s.id       = 1;
         s.hostname = "localhost";
-        s.port     = 1919;
+        s.hostport = 1919;
         s.use_ssl  = false;
         s.username = "fail";
         s.password = "fail";
 
-        nf::connection conn(s);
-        conn.on_action = [&](std::unique_ptr<nf::action> a) {
-            act = std::move(a);
-        };
+        nf::connection conn;
 
-        conn.connect(); 
-        act->perform(); // resolve
-        conn.complete(std::move(act));
+        // resolve
+        act = conn.connect(s); 
+        act->perform(); 
+        act = conn.complete(std::move(act));
 
-        act->perform(); // connect
-        conn.complete(std::move(act));
-        act->perform(); // initialize
-        conn.complete(std::move(act));
-        BOOST_REQUIRE(conn.get_state() == state::error);
-        BOOST_REQUIRE(conn.get_error() == error::authentication_rejected);
+        // connect
+        act->perform(); 
+        act = conn.complete(std::move(act));
 
-        LOG_D("end");        
-        LOG_FLUSH();            
+        // initialize
+        act->perform(); 
+        BOOST_REQUIRE(act->has_exception());
     }
 
     // disconnect
     {
-        nf::connection::spec s;
-        s.account  = 1;
-        s.id       = 1;
-        s.hostname = "localhost";
-        s.port     = 1919;
-        s.use_ssl  = false;
-        s.username = "pass";
-        s.password = "pass";
+        // nf::connection::spec s;
+        // s.hostname = "localhost";
+        // s.hostport     = 1919;
+        // s.use_ssl  = false;
+        // s.username = "pass";
+        // s.password = "pass";
 
-        nf::connection conn(s);
-        conn.on_action = [&](std::unique_ptr<nf::action> a) {
-            act = std::move(a);
-        };
+        // nf::connection conn;
 
-        conn.connect();
-        act->perform(); // resolve
-        conn.complete(std::move(act));
+        // conn.connect();
+        // act->perform(); // resolve
+        // conn.complete(std::move(act));
 
-        conn.disconnect();
-        act->perform(); // connect
-        conn.complete(std::move(act));
+        // conn.disconnect();
+        // act->perform(); // connect
+        // conn.complete(std::move(act));
 
-        BOOST_REQUIRE(conn.get_state() == state::disconnected);
-        BOOST_REQUIRE(conn.get_error() == error::none);
+        // BOOST_REQUIRE(conn.get_state() == state::disconnected);
+        // BOOST_REQUIRE(conn.get_error() == error::none);
     }
 
     // succesful connect
     {
         nf::connection::spec s;
-        s.account  = 1;
-        s.id       = 1;
         s.hostname = "localhost";
-        s.port     = 1919;
+        s.hostport = 1919;
         s.use_ssl  = false;
         s.username = "pass";
         s.password = "pass";
 
-        nf::connection conn(s);
-        conn.on_action = [&](std::unique_ptr<nf::action> a) {
-            act = std::move(a);
-        };
+        nf::connection conn;
 
-        conn.connect();
+        // resolve
+        act = conn.connect(s);
         act->perform();
-        conn.complete(std::move(act)); // resolve
+        act = conn.complete(std::move(act)); // resolve
 
+        // connect
         act->perform(); 
-        conn.complete(std::move(act)); // connect
+        act = conn.complete(std::move(act)); 
 
+        // initialize
         act->perform();
-        conn.complete(std::move(act)); // initialize
+        BOOST_REQUIRE(!act->has_exception());
 
-        BOOST_REQUIRE(conn.get_state() == state::connected);
-        BOOST_REQUIRE(conn.get_error() == error::none);
     }
 
     // discard the connection object while connecting
     {
-        nf::connection::spec s;
-        s.account = 1;
-        s.id      = 1;
-        s.hostname = "localhost";
-        s.port     = 1919;
-        s.use_ssl  = false;
-        s.username = "pass";
-        s.password = "pass";
+        // nf::connection::spec s;
+        // s.account = 1;
+        // s.id      = 1;
+        // s.hostname = "localhost";
+        // s.port     = 1919;
+        // s.use_ssl  = false;
+        // s.username = "pass";
+        // s.password = "pass";
 
-        std::unique_ptr<nf::connection> conn(new nf::connection(s));
-        conn->on_action = [&](std::unique_ptr<nf::action> a) {
-            act = std::move(a);
-        };
+        // std::unique_ptr<nf::connection> conn(new nf::connection(s));
+        // conn->on_action = [&](std::unique_ptr<nf::action> a) {
+        //     act = std::move(a);
+        // };
 
-        conn->connect();
-        act->perform(); 
-        conn->complete(std::move(act)); // resolve.
+        // conn->connect();
+        // act->perform(); 
+        // conn->complete(std::move(act)); // resolve.
 
-        // spawn a new thread that executes the action the background
-        // meanwhile the main thread destroys the object.
-        std::thread thread([&]() {
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-            act->perform();
-        });
+        // // spawn a new thread that executes the action the background
+        // // meanwhile the main thread destroys the object.
+        // std::thread thread([&]() {
+        //     std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        //     act->perform();
+        // });
         
-        conn->disconnect();
-        conn.reset();
-        thread.join();
+        // conn->disconnect();
+        // conn.reset();
+        // thread.join();
     }
 }
 

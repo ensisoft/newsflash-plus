@@ -36,9 +36,7 @@ namespace newsflash
     class bodylist : public cmdlist
     {
     public:
-        bodylist(std::size_t task, std::size_t account, 
-            std::vector<std::string> groups,
-            std::vector<std::string> messages);
+        bodylist(std::vector<std::string> groups, std::vector<std::string> messages);
        ~bodylist();
 
         virtual bool submit_configure_command(std::size_t i, session& ses) override;
@@ -49,12 +47,6 @@ namespace newsflash
 
         virtual void receive_data_buffer(buffer&& buff) override;
 
-        virtual std::size_t task() const override
-        { return task_; }
-
-        virtual std::size_t account() const override
-        { return account_; }
-
         std::vector<buffer> get_buffers()
         {
             std::vector<buffer> ret;
@@ -64,10 +56,6 @@ namespace newsflash
             return ret;
         }
 
-        void set_account(std::size_t acc)
-        { account_ = acc; }
-
-
         const 
         std::vector<std::string>& get_messages() const 
         { return messages_; }
@@ -76,26 +64,13 @@ namespace newsflash
         std::vector<std::string>& get_groups() const
         { return groups_; }
 
-        bool is_complete() const 
-        { return message_ == messages_.size(); }
-
         bool configure_fail() const
         { return configure_fail_bit_; }
 
-        void clear_fail_bits() 
-        { configure_fail_bit_ = false; }
-
-        std::size_t num_messages() const 
-        { return messages_.size(); }
-
     private:
-        const std::size_t task_;        
-        const std::vector<std::string> groups_;
-        const std::vector<std::string> messages_;
-    private:
+        std::vector<std::string> groups_;
+        std::vector<std::string> messages_;
         std::vector<buffer> buffers_;
-        std::size_t account_;
-        std::size_t message_;
     private:
         bool configure_fail_bit_;
     }; 

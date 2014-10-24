@@ -28,6 +28,9 @@
 #  include <QAbstractTableModel>
 #include <newsflash/warnpop.h>
 
+#include <newsflash/engine/ui/connection.h>
+#include <deque>
+
 namespace app
 {
     class connlist : public QAbstractTableModel
@@ -42,9 +45,11 @@ namespace app
         virtual int rowCount(const QModelIndex&) const override;
         virtual int columnCount(const QModelIndex&) const override;        
 
+        void refresh();
+
     private:
         enum class columns { status, server, data, kbs, desc, sentinel };
     private:
-
+        std::deque<const newsflash::ui::connection*> conns_;
     };
 } // app

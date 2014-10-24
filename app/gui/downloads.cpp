@@ -36,6 +36,7 @@
 #include "../format.h"
 #include "../eventlog.h"
 #include "../settings.h"
+#include "../engine.h"
 
 namespace gui
 {
@@ -45,12 +46,6 @@ downloads::downloads() : panels_y_pos_(0)
     ui_.setupUi(this);
     ui_.tableConns->setModel(&conns_);
     ui_.tableTasks->setModel(&tasks_);
-
-    // auto* splitter = new QSplitter(this);
-    // splitter->setOrientation(Qt::Vertical);
-    // splitter->addWidget(ui_.grpTasks);
-    // splitter->addWidget(ui_.grpConns);    
-
     ui_.splitter->installEventFilter(this);
 
     DEBUG("Created downloads UI");
@@ -67,7 +62,7 @@ void downloads::add_actions(QMenu& menu)
 
 void downloads::add_actions(QToolBar& bar)
 {
-    bar.addAction(ui_.actionAutoConnect);
+    bar.addAction(ui_.actionConnect);
     bar.addAction(ui_.actionPreferSSL);
     bar.addAction(ui_.actionThrottle);
     bar.addSeparator();
@@ -84,27 +79,62 @@ void downloads::add_actions(QToolBar& bar)
 
 }
 
-// void downloads::load(const app::datastore& data) 
-// {
-//     const auto task_list_height = data.get("downloads", "task_list_height", 0);
-//     if (task_list_height)
-//         ui_.grpConns->setFixedHeight(task_list_height);
+void downloads::loadstate(app::settings& s) 
+{
+    const auto task_list_height = s.get("downloads", "task_list_height", 0);
+    if (task_list_height)
+         ui_.grpConns->setFixedHeight(task_list_height);
 
-//     ui_.actionThrottle->setChecked(data.get("downloads", "throttle", false));
-//     ui_.actionAutoConnect->setChecked(data.get("downloads", "connect", false));
-//     ui_.actionPreferSSL->setChecked(data.get("downloads", "ssl", true));
-//     //ui_.action
-// }
+    //const auto enable_throttle = app::g_engine->get_
+    const auto prefer_ssl = app::g_engine->get_prefer_secure();
+    const auto connect = app::g_engine->get_connect();
+    const auto throttle = app::g_engine->get_throttle();
+    const auto group_related = s.get("downloads", "group_related", false);
+    const auto remove_complete = s.get("downloads", "remove_complete", false);
 
-// void downloads::save(app::datastore& data)
-// {
-//     data.set("downloads", "task_list_height", ui_.grpConns->height());
-//     data.set("downloads", "throttle", ui_.actionThrottle->isChecked());
-//     data.set("downloads", "connect", ui_.actionAutoConnect->isChecked());
-//     data.set("downloads", "ssl", ui_.actionPreferSSL->isChecked());
-//     data.set("downloads", "remove_complete", ui_.chkRemoveComplete->isChecked());
-//     data.set("downloads", "group_related", ui_.chkGroupSimilar->isChecked());
-// }
+    ui_.actionConnect->setChecked(connect);
+    ui_.actionThrottle->setChecked(throttle);
+    ui_.actionPreferSSL->setChecked(prefer_ssl);
+    ui_.chkGroupSimilar->setChecked(group_related);
+    ui_.chkRemoveComplete->setChecked(remove_complete);
+}
+
+bool downloads::savestate(app::settings& s)
+{
+    s.set("downloads", "task_list_height", ui_.grpConns->height());
+    return true;
+}
+
+void downloads::refresh()
+{
+    //DEBUG("Refresh");
+
+    const auto remove_complete = ui_.chkRemoveComplete->isChecked();
+    const auto group_similar   = ui_.chkGroupSimilar->isChecked();
+    tasks_.refresh(remove_complete, group_similar);
+    conns_.refresh();
+}
+
+void downloads::on_actionConnect_triggered()
+{
+    const auto on_off = ui_.actionConnect->isChecked();
+
+    app::g_engine->connect(on_off);
+}
+
+void downloads::on_actionPreferSSL_triggered()
+{
+    const auto on_off = ui_.actionPreferSSL->isChecked();
+
+    app::g_engine->set_prefer_secure(on_off);
+}
+
+void downloads::on_actionThrottle_triggered()
+{
+    const auto on_off = ui_.actionThrottle->isChecked();
+
+    app::g_engine->set_throttle(on_off);
+}
 
 bool downloads::eventFilter(QObject* obj, QEvent* event)
 {

@@ -26,21 +26,20 @@
 #include <string>
 #include <cstdint>
 #include <vector>
-#include "taskcore.h"
 
 namespace newsflash
 {
     // produce a listing of available newsgroups
-    class listing : public taskcore
+    class listing 
     {
     public:
         listing(std::string filename);
 
-        virtual void prepare() override;
-        virtual void receive(buffer&& buff, std::size_t id) override;
-        virtual void cancel() override;
-        virtual void flush() override;
-        virtual void finalize() override;
+        //virtual void prepare() override;
+        //virtual void receive(buffer&& buff, std::size_t id) override;
+        //virtual void cancel() override;
+        //virtual void flush() override;
+        //virtual void finalize() override;
 
     private:
         const std::string filename_;

@@ -392,8 +392,9 @@ void test_find_filename()
 {
     struct test {
         const char* str;
-        const char* expected;
+        std::string expected;
     } tests[] = {
+        {"Ip.Man.The.Final.Fight.2013.COMPLETE.BluRay-oOo - [1/7] - #34;Ip.Man.The.Final.Fight.2013.COMPLETE.BluRay-oOo.rar#34; yEnc (204/204)", "34;Ip.Man.The.Final.Fight.2013.COMPLETE.BluRay-oOo.rar"},        
         {"fooobar music.mp3 foobar", "music.mp3"},
         {"foobar (music-file.mp3) bla blah", "music-file.mp3"},
         {"foobar [music file.mp3] bla blah", "music file.mp3"},
@@ -421,34 +422,23 @@ void test_find_filename()
         {"[music.mp3 (1/10)]", "music.mp3"},
         {"1.mp3", "1.mp3"},
 
+
         {"blah blah blah ----image.jpeg", "image.jpeg"},
         {"blah blah ----image.jpeg----", "image.jpeg"},
 
-        {"", nullptr},
-        {"foobar kekeke herp derp", nullptr},
-        {".pdf foobar", nullptr},
-        {"how to deal with .pdf files?", nullptr},
-        {"anyone know about .pdf", nullptr},
-        {"REQ...Metallica - Cunning stunts", nullptr},
-        {"schalke(9/9) $ yEnc (70/121)", nullptr}
+        {"", ""},
+        {"foobar kekeke herp derp", ""},
+        {".pdf foobar", ""},
+        {"how to deal with .pdf files?", ""},
+        {"anyone know about .pdf", ""},
+        {"REQ...Metallica - Cunning stunts", ""},
+        {"schalke(9/9) $ yEnc (70/121)", ""}
     };
 
     for (const auto& it : tests)
     {
         const auto& ret = nntp::find_filename(it.str, std::strlen(it.str));
-
-        //std::cout << it.test << std::endl;
-
-        if (it.expected)
-        {
-            BOOST_REQUIRE(ret.second == std::strlen(it.expected));
-            BOOST_REQUIRE(!std::strncmp(it.expected, ret.first, ret.second));
-        }
-        else
-        {
-            BOOST_REQUIRE(ret.first == nullptr);
-            BOOST_REQUIRE(ret.second == 0);
-        }
+        BOOST_REQUIRE(ret == it.expected);
     }
 }
 

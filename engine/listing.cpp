@@ -38,11 +38,11 @@ namespace newsflash
 listing::listing(std::string filename) : filename_(std::move(filename))
 {}
 
-void listing::prepare()
-{}
+//void listing::prepare()
+//{}
 
-void listing::receive(buffer&& buff, std::size_t id)
-{
+//void listing::receive(buffer&& buff, std::size_t id)
+//{
     // const buffer::payload body(buff);
     // if (body.empty())
     //     return;
@@ -74,21 +74,21 @@ void listing::receive(buffer&& buff, std::size_t id)
     //     }
     //     ++beg;
     // }
-}
+//}
 
-void listing::cancel()
-{}
+//void listing::cancel()
+//{}
 
-void listing::flush()
-{}
+//void listing::flush()
+//{}
 
-void listing::finalize()
-{
-    std::sort(groups_.begin(), groups_.end(), 
-        [](const group_info& lhs, const group_info& rhs)
-        {
-            return lhs.name < rhs.name;
-        });
+//void listing::finalize()
+//{
+//    std::sort(groups_.begin(), groups_.end(), 
+//        [](const group_info& lhs, const group_info& rhs)
+//        {
+//            return lhs.name < rhs.name;
+//        });
 
     // std::ofstream out;
     // open_fstream(filename_, out);
@@ -108,6 +108,6 @@ void listing::finalize()
     // if (out.fail())
     //     throw std::system_error(std::error_code(errno, std::generic_category()),
     //         "io failure on " + filename_);
-}
+//}
 
 } // newsflash

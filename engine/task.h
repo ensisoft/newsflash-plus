@@ -26,73 +26,55 @@
 
 #include <functional>
 #include <memory>
-#include "ui/task.h"
+#include <vector>
+#include "bitflag.h"
 
 namespace newsflash
 {
-    namespace ui {
-        struct error;
-    }
-
     class action;
     class cmdlist;
-    struct settings;
 
     // tasks implement some nntp data based activity in the engine, for
     // example extracting binary content from article data.
     class task 
     {
     public:
-        using state = ui::task::state;
-
-        // this callback is invoked when theres a new action to be performed.
-        std::function<void (std::unique_ptr<action>)> on_action;
-
-        // this callback is invoked when an error occurs.
-        // the error object carries more information
-        std::function<void (const ui::error&)> on_error;
+        enum class error {
+            unavailable,
+            dmca,
+            damaged
+        };
 
         virtual ~task() = default;
 
-        // start the task.
-        // precondition: task is queued
-        // postcondition: transitions the task from queued to waiting state
-        virtual void start() = 0;
+        virtual std::unique_ptr<cmdlist> create_commands() = 0;
+
+        virtual std::unique_ptr<action> start() = 0;
 
         // kill the task. if the task is not complete then this has the effect
         // of canceling all the work that has been done, for example removing
         // any files created on the filesystem etc. if task is complete then
         // simply the non-persistent data is cleaned away. 
         // after this call returns the object can be deleted.
-        virtual void kill() = 0;
+        virtual std::unique_ptr<action> kill() = 0;
 
-        //
-        virtual void flush() = 0;
+        // flush task intermediate state to the disk and make it permanent.
+        virtual std::unique_ptr<action> flush() = 0;
 
-        // transition the task to paused state.
-        // precondition: task is neither paused, complete or errored
-        // postcondition: task is paused
-        virtual void pause() = 0;
+        // complete the action. create actions (if any) and store
+        // them in the next list
+        virtual void complete(std::unique_ptr<action> act,
+            std::vector<std::unique_ptr<action>>& next) = 0;
 
-        // resume a previously paused task.
-        // precondition: task is paused
-        // postcondition: task is queued if it hasn't run at all. otherwise waiting.
-        virtual void resume() = 0;
+        // complete the cmdlist. create actions (if any) and store
+        // them in the next list
+        virtual void complete(std::unique_ptr<cmdlist> cmd,
+            std::vector<std::unique_ptr<action>>& next) = 0;
 
-        //
-        virtual bool get_next_cmdlist(std::unique_ptr<cmdlist>& cmds) = 0;
+        //virtual void configure(const settings& s) = 0;
 
-        virtual void complete(std::unique_ptr<action> act) = 0;
-
-        virtual void complete(std::unique_ptr<cmdlist> cmd) = 0;
-
-        virtual void configure(const settings& s) = 0;
-
-        virtual std::size_t get_id() const = 0;
-
-        virtual state get_state() const = 0;
-
-        virtual ui::task get_ui_state() const = 0;        
+        // update UI state object
+        //virtual void update(ui::task& state) = 0;
     protected:
     private:
     };

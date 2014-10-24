@@ -23,25 +23,14 @@
 #pragma once
 
 #include <newsflash/config.h>
-
 #include <memory>
 #include <string>
-#include <deque>
-#include <map>
-#include "download_state_machine.h"
-#include "stopwatch.h"
-#include "etacalc.h"
+#include <vector>
 #include "task.h"
-#include "bitflag.h"
-#include "ui/task.h"
 
 namespace newsflash
 {
-    namespace ui {
-        struct file;
-        struct download;
-    } // ui
-
+    class datafile;
     class decode;
     class bodylist;
 
@@ -49,64 +38,33 @@ namespace newsflash
     class download : public task
     {
     public:
-        // this callback is invoked when a new file has been completed.
-        std::function<void (const ui::file& file)> on_file;
-
-        download(std::size_t id, std::size_t batch, std::size_t account, const ui::download& details);
+        download(std::vector<std::string> groups, std::vector<std::string> articles,
+            std::string path, std::string name);
        ~download();
 
-        virtual void start() override;
+        virtual std::unique_ptr<cmdlist> create_commands() override;
+        virtual std::unique_ptr<action> start() override;
+        virtual std::unique_ptr<action> kill() override;
+        virtual std::unique_ptr<action> flush() override;
 
-        virtual void kill() override;
+        virtual void complete(std::unique_ptr<action> act,
+            std::vector<std::unique_ptr<action>>& next) override;
 
-        virtual void flush() override;
-
-        virtual void pause() override;
-
-        virtual void resume() override;
-
-        virtual bool get_next_cmdlist(std::unique_ptr<cmdlist>& cmds) override;
-
-        virtual void complete(std::unique_ptr<action> act) override;
-
-        virtual void complete(std::unique_ptr<cmdlist> cmd) override;
-
-        virtual void configure(const settings& s) override;
-
-        virtual ui::task get_ui_state() const override;
-
-        virtual std::size_t get_id() const 
-        { return task_id_; }
-
-        virtual state get_state() const 
-        { return stm_.get_state(); }
+        virtual void complete(std::unique_ptr<cmdlist> cmd,
+            std::vector<std::unique_ptr<action>>& next) override;
 
     private:
-        class file;
-        class write;
-
-    private:
-        void complete(decode& d);
-        void complete(write& w);
-
-    private:
-        std::size_t task_id_;
-        std::size_t batch_id_;
-        std::size_t main_account_;
-        std::size_t fill_account_;
-        std::size_t expected_size_;
+        std::vector<std::string> groups_;
+        std::vector<std::string> pending_;
+        std::vector<std::string> failed_;
+        std::vector<std::shared_ptr<datafile>> files_;
         std::string path_;
-        std::string desc_;
-    private:
-        std::deque<std::unique_ptr<bodylist>> cmds_;
-        std::map<std::string, std::shared_ptr<file>> files_;
-    private:
-        stopwatch timer_;
-        download_state_machine stm_;
-        bitflag<ui::task::flags> errors_;
+        std::string name_;
     private:
         bool overwrite_;
-        bool discard_text_;        
+        bool discardtext_;
+    private:
+        bitflag<task::error> errors_;
     };
 
 } // newsflash

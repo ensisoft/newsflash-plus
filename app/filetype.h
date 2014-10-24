@@ -70,6 +70,6 @@ namespace app
     // try to identify file's type.
     filetype find_filetype(const QString& filename);
 
-    QIcon iconify(filetype type);
+    QIcon find_fileicon(filetype type);
 
 } // app

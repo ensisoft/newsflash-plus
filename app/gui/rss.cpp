@@ -146,7 +146,12 @@ void rss::add_actions(QToolBar& bar)
 }
 
 void rss::activate(QWidget*)
-{}
+{
+    if (model_.empty())
+    {
+        refresh(false);
+    }
+}
 
 bool rss::savestate(app::settings& s)
 {
@@ -362,15 +367,18 @@ void rss::download_selected(const QString& folder)
     }
 }
 
-void rss::on_actionRefresh_triggered()
+void rss::refresh(bool verbose)
 {
     if (!enable_nzbs_ && !enable_womble_)
     {
-        QMessageBox msg(this);
-        msg.setStandardButtons(QMessageBox::Ok);
-        msg.setIcon(QMessageBox::Information);
-        msg.setText(tr("You haven't enabled any RSS feed sites.\n\rYou can enable them in the RSS settings."));
-        msg.exec();
+        if (verbose)
+        {
+            QMessageBox msg(this);
+            msg.setStandardButtons(QMessageBox::Ok);
+            msg.setIcon(QMessageBox::Information);
+            msg.setText(tr("You haven't enabled any RSS feed sites.\n\rYou can enable them in the RSS settings."));
+            msg.exec();
+        }
         return;       
     }
 
@@ -428,21 +436,27 @@ void rss::on_actionRefresh_triggered()
 
     if (!have_selections)
     {
-        QMessageBox msg(this);
-        msg.setStandardButtons(QMessageBox::Ok);
-        msg.setIcon(QMessageBox::Information);
-        msg.setText("You haven't selected any RSS Media categories.\r\n" 
-                    "Select the sub-categories in RSS settings and main categories in the RSS main window");
-        msg.exec();
+        if (verbose)
+        {
+            QMessageBox msg(this);
+            msg.setStandardButtons(QMessageBox::Ok);
+            msg.setIcon(QMessageBox::Information);
+            msg.setText("You haven't selected any RSS Media categories.\r\n" 
+                "Select the sub-categories in RSS settings and main categories in the RSS main window");
+            msg.exec();
+        }
         return; 
     }
     else if (!have_feeds)
     {
-        QMessageBox msg(this);
-        msg.setStandardButtons(QMessageBox::Ok);
-        msg.setIcon(QMessageBox::Information);
-        msg.setText("There are no feeds available matching the selected categories.");
-        msg.exec();
+        if (verbose)
+        {
+            QMessageBox msg(this);
+            msg.setStandardButtons(QMessageBox::Ok);
+            msg.setIcon(QMessageBox::Information);
+            msg.setText("There are no feeds available matching the selected categories.");
+            msg.exec();
+        }
         return;
     }
 
@@ -451,7 +465,12 @@ void rss::on_actionRefresh_triggered()
     ui_.progressBar->setVisible(true);
     ui_.actionDownload->setEnabled(false);
     ui_.actionDownloadTo->setEnabled(false);
-    ui_.actionStop->setEnabled(true);
+    ui_.actionStop->setEnabled(true);    
+}
+
+void rss::on_actionRefresh_triggered()
+{
+    refresh(true);
 }
 
 void rss::on_actionDownload_triggered()
@@ -533,13 +552,12 @@ void rss::on_actionBrowse_triggered()
 void rss::on_tableView_customContextMenuRequested(QPoint point)
 {
     QMenu sub("Download to");
-    sub.setIcon(QIcon(":/ico/ico_download.png"));
+    sub.setIcon(QIcon(":/resource/16x16_ico_png/ico_download.png"));
 
     QStringList paths = g_win->get_recent_paths();
     for (const auto& path : paths)
     {
-        QAction* action = sub.addAction(QIcon(":/ico/ico_folder.png"),            
-            path);
+        QAction* action = sub.addAction(QIcon(":/resource/16x16_ico_png/ico_folder.png"), path);
         QObject::connect(action, SIGNAL(triggered(bool)),
             this, SLOT(downloadToPrevious()));
     }

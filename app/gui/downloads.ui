@@ -310,7 +310,7 @@
     <string>Shift+Del</string>
    </property>
   </action>
-  <action name="actionAutoConnect">
+  <action name="actionConnect">
    <property name="checkable">
     <bool>true</bool>
    </property>

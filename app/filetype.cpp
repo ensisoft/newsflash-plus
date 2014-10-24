@@ -74,8 +74,6 @@ const char* str(filetype type)
             return "Image";
         case filetype::text:
             return "Text";
-        // case filetype::log:
-        //     return "Log";
         case filetype::archive:
             return "Archive";
         case filetype::parity:
@@ -90,37 +88,35 @@ const char* str(filetype type)
 
 filetype find_filetype(const QString& filename)
 {
-    static const QString patterns[] = {
-        filepattern(filetype::audio),
-        filepattern(filetype::video),
-        filepattern(filetype::image),
-        filepattern(filetype::text),
-//        filepattern(filetype::log),
-        filepattern(filetype::archive),
-        filepattern(filetype::parity),
-        filepattern(filetype::document),
-        filepattern(filetype::other)
+    struct map {
+        filetype type;
+        QString pattern;
+    } patterns[] = {
+        {filetype::audio, filepattern(filetype::audio)},
+        {filetype::video, filepattern(filetype::video)},
+        {filetype::image, filepattern(filetype::image)},
+        {filetype::text,  filepattern(filetype::text)},
+        {filetype::archive, filepattern(filetype::archive)},
+        {filetype::parity, filepattern(filetype::parity)},
+        {filetype::document, filepattern(filetype::document)}
     };
 
-    static_assert((int)filetype::none == 0, 
-        "none should be the first filetype and actual types start at 1 (see the cast in the tokens loop");
-
-    for (const auto& pattern : patterns)
+    for (auto it = std::begin(patterns); it != std::end(patterns); ++it)
     {
-        const auto& tokens = pattern.split("|");
+        const auto& tokens = it->pattern.split("|");
         for (int i=0; i<tokens.size(); ++i)
         {
             // match the end of the filestring only
             QRegExp regex(QString("\\%1$").arg(tokens[i].simplified()));
             regex.setCaseSensitivity(Qt::CaseInsensitive);
             if (regex.indexIn(filename) != -1)
-                return static_cast<filetype>(i+1);
+                return it->type;
         }
     }
-    return filetype::none;
+    return filetype::other;
 }
 
-QIcon iconify(filetype type)
+QIcon find_fileicon(filetype type)
 {
     switch (type)
     {
@@ -134,8 +130,6 @@ QIcon iconify(filetype type)
             return QIcon(":/resource/16x16_ico_png/ico_image.png");
         case filetype::text:
             return QIcon(":/resource/16x16_ico_png/ico_text.png");
-        // case filetype::log:
-        //     return QIcon(":/resource/16x16_ico_png/ico_log.png");
         case filetype::archive:
             return QIcon(":/resource/16x16_ico_png/ico_archive.png");
         case filetype::parity:
@@ -143,7 +137,7 @@ QIcon iconify(filetype type)
         case filetype::document:
             return QIcon(":/resource/16x16_ico_png/ico_document.png");
         case filetype::other:
-            return QIcon(":/resource/16x16_ico_png/ico_document.png");
+            return QIcon(":/resource/16x16_ico_png/ico_other.png");
     }
 
     Q_ASSERT(!"wat");

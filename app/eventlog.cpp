@@ -94,13 +94,13 @@ QVariant eventlog::data(const QModelIndex& index, int role) const
             break;
 
             case Qt::DisplayRole:
-                // return QString("[%1] [%2] %3")
-                //     .arg(ev.time.toString("hh:mm:ss:zzz"))
-                //     .arg(ev.logtag)
-                //     .arg(ev.message);                
-                return QString("[%1] %2")
-                    .arg(ev.time.toString("hh:mm:ss:zzz"))
-                    .arg(ev.message);                                    
+                return QString("[%1] [%2] %3")
+                     .arg(ev.time.toString("hh:mm:ss:zzz"))
+                     .arg(ev.logtag)
+                     .arg(ev.message);                
+                //return QString("[%1] %2")
+                //    .arg(ev.time.toString("hh:mm:ss:zzz"))
+                //    .arg(ev.message);                                    
                     break;
     }
     return QVariant();    

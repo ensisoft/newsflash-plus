@@ -33,11 +33,8 @@
 #  include <QFile>
 #  include <QUrl>
 #include <newsflash/warnpop.h>
-
 #include <iostream>
 #include <exception>
-
-#include <Python.h>
 
 #include "qtsingleapplication/qtsingleapplication.h"
 #include "mainwindow.h"
@@ -106,9 +103,6 @@ void copyright()
     INFO("http://www.famfamfam.com/lab/icons/silk/");
     INFO(str("Qt cross-platform application and UI framework _1", QT_VERSION_STR));
     INFO("http://qt.nokia.com");
-    //INFO(str("Python _1", Py_GetVersion()));
-    INFO("Python 2.5.1");
-    INFO("http://www.python.org");
     INFO("Zlib compression library 1.2.5");
     INFO("Copyright (c) 1995-2010 Jean-Loup Gailly & Mark Adler");
     INFO("http://zlib.net");        

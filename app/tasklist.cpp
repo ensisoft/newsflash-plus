@@ -20,14 +20,37 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-#define LOGTAG "tasklist"
+#define LOGTAG "tasks"
 
 #include <newsflash/config.h>
+#include <newsflash/warnpush.h>
+#  include <QtGui/QIcon>
+#include <newsflash/warnpop.h>
 
 #include "tasklist.h"
+#include "engine.h"
+#include "debug.h"
+#include "format.h"
 
 namespace app
 {
+
+using states = newsflash::ui::task::states;
+
+const char* str(states s)
+{
+    switch (s)
+    {
+        case states::queued: return "Queued";
+        case states::waiting: return "Waiting";
+        case states::active: return "Active";
+        case states::paused: return "Paused";
+        case states::complete: return "Complete";
+        case states::error: return "Error";
+    }
+    return "???";
+}
+
 
 tasklist::tasklist()
 {}
@@ -37,6 +60,62 @@ tasklist::~tasklist()
 
 QVariant tasklist::data(const QModelIndex& index, int role) const 
 {
+    const auto col = index.column();
+    const auto row = index.row();
+    const auto& ui = *tasks_[row];
+
+    static const auto infinity = QChar(0x221E);
+
+    if (role == Qt::DisplayRole)
+    {
+        switch ((columns)col)
+        {
+            case columns::status:
+                return str(ui.state);
+
+            case columns::done:
+                return QString("%1%").arg(ui.completion, 0, 'f', 2);
+
+            case columns::time:
+                return format(runtime{ui.runtime});
+
+            case columns::eta:
+                if (ui.etatime == -1)
+                    return QString("  %1  ").arg(infinity);
+                return format(runtime{ui.etatime});
+
+            case columns::size:
+                if (ui.size == 0)
+                    return QString("n/a");
+                return format(size{ui.size});
+
+            case columns::desc:
+                return from_utf8(ui.desc);
+
+            case columns::sentinel: break;
+        }
+    }
+    if (role == Qt::DecorationRole)
+    {
+        if (col != (int)columns::status)
+            return QVariant();
+
+        switch (ui.state)
+        {
+            case states::queued: 
+                return QIcon(":/resource/16x16_ico_png/ico_task_queued.png");
+            case states::waiting: 
+                return QIcon(":/resource/16x16_ico_png/ico_task_waiting.png");
+            case states::active: 
+                return QIcon(":/resource/16x16_ico_png/ico_task_active.png");
+            case states::paused: 
+                return QIcon(":/resource/16x16_ico_png/ico_task_paused.png");                                
+            case states::complete: 
+                return QIcon(":/resource/16x16_ico_png/ico_task_complete.png");                
+            case states::error: 
+                return QIcon(":/resource/16x16_ico_png/ico_task_error.png");                
+        }
+    }
     return QVariant();
 }
 
@@ -49,8 +128,6 @@ QVariant tasklist::headerData(int section, Qt::Orientation orientation, int role
     {
         case columns::status:
             return "Status";
-        case columns::priority:
-            return "Priority";
         case columns::done:
             return "Done";
         case columns::time:
@@ -70,12 +147,32 @@ QVariant tasklist::headerData(int section, Qt::Orientation orientation, int role
 
 int tasklist::rowCount(const QModelIndex&) const 
 {
-    return 0;
+    return (int)tasks_.size();
 }
 
 int tasklist::columnCount(const QModelIndex&) const
 {
     return (int)columns::sentinel;
+}
+
+void tasklist::refresh(bool remove_complete, bool group_similar)
+{
+    //DEBUG("refresh tasklist");
+
+    const auto cur_size = tasks_.size();
+
+    g_engine->update_task_list(tasks_);
+    if (tasks_.size() != cur_size)
+    {
+        reset();        
+    }
+    else
+    {
+        auto first = QAbstractTableModel::index(0, 0);
+        auto last  = QAbstractTableModel::index(tasks_.size(), (int)columns::sentinel);
+        emit dataChanged(first, last);
+    }
+
 }
 
 } // app

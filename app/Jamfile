@@ -30,7 +30,7 @@ exe newsflash
   /newsflash//python
   /newsflash//dl
   /newsflash//util
-
+  /newsflash//python
   /engine//engine/<link>static
 
   ../keygen/keygen.cpp

@@ -110,14 +110,12 @@
     <file>resource/16x16_ico_png/ico_task_waiting.png</file>
     <file>resource/16x16_ico_png/ico_task_debuffering.png</file>
 
-    <file>resource/16x16_ico_png/ico_connection_connecting.png</file>
-    <file>resource/16x16_ico_png/ico_connection_active.png</file>
-    <file>resource/16x16_ico_png/ico_connection_ready.png</file>
-    <file>resource/16x16_ico_png/ico_connection_error.png</file>
-    <file>resource/16x16_ico_png/ico_connection_error_tcp.png</file>
-    <file>resource/16x16_ico_png/ico_connection_error_auth.png</file>
-    <file>resource/16x16_ico_png/ico_connection_dead.png</file>
-    <file>resource/16x16_ico_png/ico_connection_killed.png</file>
+    <file>resource/16x16_ico_png/ico_conn_disconnected.png</file>
+    <file>resource/16x16_ico_png/ico_conn_connecting.png</file>
+    <file>resource/16x16_ico_png/ico_conn_connected.png</file>
+    <file>resource/16x16_ico_png/ico_conn_active.png</file>
+    <file>resource/16x16_ico_png/ico_conn_disconnected.png</file>
+    <file>resource/16x16_ico_png/ico_conn_error.png</file>
 
     <file>resource/png/logo_black.png</file>
     <file>resource/png/python-logo.png</file>

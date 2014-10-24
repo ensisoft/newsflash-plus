@@ -330,29 +330,8 @@ void rss::on_nzbdata_complete(const QString& folder, const QString& desc, quint3
     }
 
     QByteArray bytes = reply.readAll();
-    QBuffer io(&bytes);
 
-    std::vector<nzbcontent> data;
-    const auto e = parse_nzb(io, data);
-    switch (e)
-    {
-        case nzberror::none: break;
-
-        case nzberror::xml: 
-            ERROR("NZB XML parse error");
-            return;
-
-        case nzberror::nzb:
-            ERROR("NZB content error");
-            return;
-
-        default: 
-           ERROR("Error reading NZB");
-           return;
-    }
-
-    // todo:
-    //g_engine->download()
+    g_engine->download_nzb_contents(acc, folder, desc, bytes);
 }
 
 void rss::on_nzbdata_complete_callback(const data_callback& cb, QNetworkReply& reply)

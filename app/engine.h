@@ -27,19 +27,15 @@
 #  include <QObject>
 #  include <QString>
 #include <newsflash/warnpop.h>
+#include <newsflash/engine/ui/connection.h>
+#include <newsflash/engine/ui/task.h>
 #include <newsflash/engine/engine.h>
-#include <newsflash/engine/settings.h>
-#include <newsflash/engine/bitflag.h>
 #include <memory>
 #include <vector>
 #include <string>
 
-class QEvent;
 
-namespace newsflash {
-    class engine;
-    class settings;
-} // 
+class QEvent;
 
 namespace app
 {
@@ -65,17 +61,33 @@ namespace app
         void loadstate(settings& s);
         bool savestate(settings& s);
 
-        void start();
-
-        void stop();
-
-        void apply_settings();
+        void connect(bool on_off);
 
         void refresh();
+
+        void update_task_list(std::deque<const newsflash::ui::task*>& list)
+        {
+            engine_.update(list);
+        }
+
+        void update_conn_list(std::deque<const newsflash::ui::connection*>& list)
+        {
+            engine_.update(list);
+        }
+
+        quint64 get_free_disk_space() const
+        { 
+            return diskspace_; 
+        }
 
         const QString& get_logfiles_path() const
         { 
             return logifiles_; 
+        }
+
+        void set_logfiles_path(const QString& path)
+        {
+            logifiles_ = path;
         }
 
         const QString& get_download_path() const 
@@ -83,24 +95,24 @@ namespace app
             return downloads_; 
         }
 
+        void set_downloads_path(const QString& path)
+        {
+            downloads_ = path;
+        }
+
         bool get_overwrite_existing_files() const
         {
-            return flags_.test(newsflash::engine::flags::overwrite_existing_files);
+            return engine_.get_overwrite_existing_files();
         }
 
         bool get_discard_text_content() const 
         { 
-            return flags_.test(newsflash::engine::flags::discard_text_content);
-        }
-
-        bool get_auto_remove_complete() const
-        { 
-            return flags_.test(newsflash::engine::flags::auto_remove_complete);
+            return engine_.get_discard_text_content();
         }
 
         bool get_prefer_secure() const
         {
-            return flags_.test(newsflash::engine::flags::prefer_secure);
+            return engine_.get_prefer_secure();
         }
 
         bool is_started() const
@@ -108,35 +120,41 @@ namespace app
             return engine_.is_started(); 
         }
 
+        bool get_connect() const
+        { 
+            return connect_; 
+        }
+
+        bool get_throttle() const 
+        {
+            return engine_.get_throttle();
+        }
+
         void set_overwrite_existing_files(bool on_off)
         {
-            flags_.set(newsflash::engine::flags::overwrite_existing_files, on_off);
+            engine_.set_overwrite_existing_files(on_off);
         }
 
         void set_discard_text_content(bool on_off)
         {
-            flags_.set(newsflash::engine::flags::discard_text_content, on_off);
+            engine_.set_discard_text_content(on_off);
         }
 
-        void set_auto_remove_complete(bool on_off)
+        void set_prefer_secure(bool on_off)
         {
-            flags_.set(newsflash::engine::flags::auto_remove_complete, on_off);
+            engine_.set_prefer_secure(on_off);
         }
 
-        void set_download_path(const QString& path)
+        void set_throttle(bool on_off)
         {
-            downloads_ = path;
-        }        
-
-        void set_logfiles_path(const QString& path)
-        {
-            logifiles_ = path;
+            engine_.set_throttle(on_off);
         }
 
-        void set_throttle(bool on_off, unsigned value)
+        void set_throttle_value(unsigned val)
         {
-
+            engine_.set_throttle_value(val);
         }
+
     private:
         virtual bool eventFilter(QObject* object, QEvent* event) override;
 
@@ -149,9 +167,8 @@ namespace app
         quint64 diskspace_;
     private:
         newsflash::engine engine_;
-        newsflash::bitflag<newsflash::engine::flags> flags_;
-        bool throttle_;
-        unsigned throttle_value_;
+    private:
+        bool connect_;
     };
 
     extern engine* g_engine;

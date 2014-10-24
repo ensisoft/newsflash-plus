@@ -31,13 +31,14 @@
 #  include <QAbstractListModel>
 #include <newsflash/warnpop.h>
 
+#include <newsflash/engine/nntp.h>
+
 #include "nzbfile.h"
 #include "nzbthread.h"
 #include "debug.h"
 #include "format.h"
 #include "eventlog.h"
 #include "filetype.h"
-
 
 namespace app
 {
@@ -159,9 +160,10 @@ void nzbfile::sort(int column, Qt::SortOrder order)
 
 QVariant nzbfile::data(const QModelIndex& index, int role) const
 {
+    const auto& item = data_[index.row()];                
+
     if (role == Qt::DisplayRole)
     {
-        const auto& item = data_[index.row()];            
         if (index.column() == 0)
             return str(item.type);
         else if (index.column() == 1)
@@ -172,10 +174,8 @@ QVariant nzbfile::data(const QModelIndex& index, int role) const
     else if (role == Qt::DecorationRole)
     {
         if (index.column() == 0)
-        {
-            const auto& item = data_[index.row()];                            
-            return iconify(item.type);
-        }
+            return item.icon;
+
     }
     return QVariant();
 }
@@ -221,6 +221,19 @@ void nzbfile::parse_complete()
         case nzberror::other:
             ERROR(str("Unknown error while parsing NZB file _1", file_));
             break;
+    }
+
+    for (auto& item : data_)
+    {
+        const auto utf8 = app::to_utf8(item.subject);
+        auto name = nntp::find_filename(utf8);
+        if (name.size() < 5)
+            name = utf8;
+        if (!name.empty())
+        {
+            item.type = find_filetype(app::from_utf8(name));
+            item.icon = find_fileicon(item.type);
+        }
     }
 
     reset();

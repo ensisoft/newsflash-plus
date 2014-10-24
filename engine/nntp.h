@@ -113,7 +113,12 @@ namespace nntp
     // then returns (nullptr, 0), otherwise a pointer to the start of the filename
     // and the length of the name. 
     // example: "South.park "Southpark.S1E3.par2" yEnc" returns ("southpark.S1E3.par2", 19)
-    std::pair<const char*, size_t> find_filename(const char* str, size_t len);
+    std::string find_filename(const char* str, size_t len);
+
+    inline
+    std::string find_filename(const std::string& s)
+    { return find_filename(s.c_str(), s.size()); }
+
 
     // scan the given buffer for a complete nntp response.
     // returns the length of the response if found including the terminating sequence.

@@ -110,7 +110,7 @@ mainwindow::mainwindow(app::settings& s) : QMainWindow(nullptr), current_(nullpt
 
     QObject::connect(&refresh_timer_, SIGNAL(timeout()),
         this, SLOT(timerRefresh_timeout()));
-    refresh_timer_.setInterval(30 * 1000);
+    refresh_timer_.setInterval(1000);
     refresh_timer_.start();
 }
 
@@ -883,12 +883,20 @@ void mainwindow::timerWelcome_timeout()
 
 void mainwindow::timerRefresh_timeout()
 {
+    //DEBUG("refresh view timer!");
+
     for (auto* w : widgets_)
         w->refresh();
 
     app::g_engine->refresh();
 
-    //ui_.lblDiskFree
+    const auto freespace = app::g_engine->get_free_disk_space();
+    const auto downloads = app::g_engine->get_download_path();
+//    const auto netspeed  = app::g_engine->get_download_speed();
+//    const auto netbytes  = app::g_engine->get_download_bytes();
+
+    ui_.lblDiskFree->setText(str("_1 _2", downloads, app::size{freespace}));
+
 
     // todo: update network monitor
     // todo: update disk availability status

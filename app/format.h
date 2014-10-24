@@ -46,6 +46,10 @@ namespace app
         quint32 bps;
     };
 
+    struct runtime {
+        quint32 value;
+    };    
+
     struct gigs {
         gigs() : bytes(0)
         {}
@@ -155,6 +159,8 @@ namespace app
     };
 
 
+
+
     // generic format method, supports whatever Qt QString::arg supports
     template<typename T>
     QString format(const T& t)
@@ -174,6 +180,7 @@ namespace app
     QString format(const app::megs& megs);
     QString format(const app::event& event);
     QString format(const app::age& age);
+    QString format(const app::runtime& rt);
     QString format(const std::string& str);        
 
 
@@ -232,10 +239,16 @@ namespace app
     }
 
     inline
-    std::string utf8(const QString& str)
+    std::string to_utf8(const QString& str)
     {
         const auto& bytes = str.toUtf8();
         return std::string(bytes.data(), bytes.size());
+    }
+
+    inline
+    QString from_utf8(const std::string& s)
+    {
+        return QString::fromUtf8(s.c_str());
     }
 
     inline
@@ -248,12 +261,13 @@ namespace app
     // get a string in systems native narrow character encoding.
     std::string narrow(const QString& str);
 
+    QString widen(const std::string& s);
+
     // get a Qstring from a native system string.
     // the string is expected to be in the systems 
     // native narrow character encoding (whatever that is)
-    QString widen(const char* str);
-
-    QString widen(const wchar_t* str);
+    //QString widen(const char* str);
+    //QString widen(const wchar_t* str);
 
 
 

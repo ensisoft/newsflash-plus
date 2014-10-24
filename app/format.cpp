@@ -154,6 +154,24 @@ QString format(const app::age& age)
     return QString("%1 days").arg(age.days());
 }
 
+QString format(const app::runtime& rt)
+{
+    const auto hours = rt.value / 3600;
+    const auto mins  = (rt.value - hours * 3600) / 60;
+    const auto secs  = (rt.value - hours * 3600 - mins * 60);
+
+    if (hours)
+        return QString("%1:%2:%3")
+          .arg(hours, 2, 10, QChar('0'))
+          .arg(mins, 2, 10, QChar('0'))
+          .arg(secs, 2, 10, QChar('0'));
+
+    return QString("%1:%2")
+        .arg(mins, 2, 10, QChar('0'))
+        .arg(secs, 2, 10, QChar('0'));
+}
+
+
 QString format(const std::string& str)
 {
     return QString(str.c_str());
@@ -199,7 +217,7 @@ std::string narrow(const QString& str)
 #elif defined(LINUX_OS)
     const char* codeset = nl_langinfo(CODESET);
     if (!std::strcmp(codeset, "UTF-8"))
-        return utf8(str);
+        return to_utf8(str);
 
     const auto& bytes = str.toLocal8Bit();
     return std::string(bytes.data(),
@@ -207,33 +225,34 @@ std::string narrow(const QString& str)
 #endif
 }
 
-QString widen(const char* str)
+QString widen(std::string& s)
 {
 #if defined(WINDOWS_OS)
-    return QString::fromLatin1(str);
+    return QString::fromUtf8(s.c_str());
 
 #elif defined(LINUX_OS)
     const char* codeset = nl_langinfo(CODESET);
     if (!std::strcmp(codeset, "UTF-8"))
-        return QString::fromUtf8(str);
-    return QString::fromLocal8Bit(str);
+        return from_utf8(s);
+
+    return QString::fromLocal8Bit(s.c_str());
 #endif
 }
 
-QString widen(const wchar_t* str)
-{
-    // windows uses UTF-16 (UCS-2 with surrogate pairs for non BMP characters)    
-    // if this gives a compiler error it means that wchar_t is treated
-    // as a native type by msvc. In order to compile wchar_t needs to be
-    // unsigned short. Doing a cast will help but then a linker error will 
-    // follow since Qt build assumes that wchar_t = unsigned short
-#if defined(WINDOWS_OS)
-    return QString::fromUtf16(str);
-#elif defined(LINUX_OS)
-    static_assert(sizeof(wchar_t) == sizeof(uint), "");
+// QString widen(const wchar_t* str)
+// {
+//     // windows uses UTF-16 (UCS-2 with surrogate pairs for non BMP characters)    
+//     // if this gives a compiler error it means that wchar_t is treated
+//     // as a native type by msvc. In order to compile wchar_t needs to be
+//     // unsigned short. Doing a cast will help but then a linker error will 
+//     // follow since Qt build assumes that wchar_t = unsigned short
+// #if defined(WINDOWS_OS)
+//     return QString::fromUtf16(str);
+// #elif defined(LINUX_OS)
+//     static_assert(sizeof(wchar_t) == sizeof(uint), "");
 
-    return QString::fromUcs4((const uint*)str);
-#endif
-}
+//     return QString::fromUcs4((const uint*)str);
+// #endif
+// }
 
 } // app

@@ -36,55 +36,46 @@
 namespace newsflash
 {
     inline
-    void str(std::ostream& ss, const newsflash::ipv4& ip)
+    std::ostream& operator<<(std::ostream& ss, const newsflash::ipv4& ip)
     {
         ss << ((ip.addr >> 24) & 0xff) << "."
            << ((ip.addr >> 16) & 0xff) << "."
            << ((ip.addr >> 8) & 0xff) << "."
            << (ip.addr & 0xff);
+        return ss;
     }
 
     inline
-    void str(std::ostream& ss, const newsflash::kb& kb)
+    std::ostream& operator<<(std::ostream& ss, const newsflash::kb& kb)
     {
         ss << kb.value / 1024.0 << " Kib";
+        return ss;
     }
 
     inline
-    void str(std::ostream& ss, const newsflash::mb& mb)
+    std::ostream& operator<<(std::ostream& ss, const newsflash::mb& mb)
     {
         ss << mb.value / (1024.0 * 1024.0) << " Mib";
+        return ss;
     }
 
     inline
-    void str(std::ostream& ss, const newsflash::gb& gb)
+    std::ostream& operator<<(std::ostream& ss, const newsflash::gb& gb)
     {
         ss << gb.value / (1024.0 * 1024.0 * 1024.0) << " Gib";
+        return ss;
     }
 
     inline
-    void str(std::ostream& ss, const newsflash::size& s)
+    std::ostream& operator<<(std::ostream& ss, const newsflash::size& s)
     {
         if (s.value >= GB(1))
-            str(ss, gb{s.value});
+            ss << gb{s.value};
         else if (s.value >= MB(1))
-            str(ss, mb{s.value});
-        else str(ss, kb{s.value});
-    }
+            ss << mb{s.value};
+        else ss << kb{s.value};
 
-    const char* str(ui::task::state s);
-
-
-    inline
-    void str(std::ostream& ss, ui::task::state s)
-    {
-        ss << str(s);
-    }
-
-    inline 
-    void str(std::ostream& ss, bool val)
-    {
-        ss << (val ? "True" : "False");
+        return ss;
     }
 
 
@@ -105,10 +96,10 @@ namespace newsflash
     std::string str(const Args&... args)
     {
         std::stringstream ss;
+        str(ss, args...);
         if (!ss.good())
             throw std::runtime_error("string format error");
-
-        str(ss, args...);
+        
         return ss.str();
     }
 

@@ -15,7 +15,7 @@
   </property>
   <property name="windowIcon">
    <iconset resource="../../../../svnroot/tags/newsflash_3_4_0b4/newsflash/gui/resource.qrc">
-    <normaloff>:/resource/16x16_ico_png/ico_repair.png</normaloff>:/resource/16x16_ico_png/ico_repair.png</iconset>
+    <normaloff>:/resource/16x16_ico_png/ico_python.png</normaloff>:/resource/16x16_ico_png/ico_python.png</iconset>
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="0" column="0">

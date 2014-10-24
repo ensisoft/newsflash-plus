@@ -36,8 +36,6 @@ using qt : $(QT_PATH) ;
 
 use-project /boost/ : $(BOOST_PATH) ;
 use-project engine  : "engine" ;
-use-project msglib  : "msglib" ;
-use-project pylib   : "pylib"  ;
 
 project newsflash 
 : 
@@ -85,6 +83,8 @@ lib zlib   : : <name>zlib <search>"zlib/lib" ;
 
 # python. we want to be able to debug into python also
 # hence the debug and release versions
+# note that even though we build python with boost.build 
+# it's still considered a kind of "pre-built" binary
 lib python : : <name>python25 <search>"python/debug" <variant>debug ;
 lib python : : <name>python25 <search>"python/release" <variant>release ;
 

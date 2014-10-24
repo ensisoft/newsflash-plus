@@ -25,52 +25,23 @@
 #include <newsflash/config.h>
 
 #include <functional>
-#include <mutex>
-#include <string>
-#include <deque>
 #include <memory>
-#include <vector>
-#include <queue>
-#include <fstream>
-#include <cstdint>
-
+#include <deque>
 #include "ui/task.h"
 #include "ui/connection.h"
 #include "ui/download.h"
 #include "ui/error.h"
 #include "ui/file.h"
-#include "threadpool.h"
-#include "settings.h"
 #include "account.h"
 #include "bitflag.h"
 
 namespace newsflash
 {
-    class task;
-    class connection;
-    class action;
-    class batch;
+    class account;
 
     class engine
     {
     public:
-        enum class flags {
-            // if set to true engine will overwrite files that already exist in the filesystem.
-            // otherwise file name collisions are resolved by some naming scheme
-            overwrite_existing_files,
-
-            // if set engine discards any textual data and only keeps binary content.
-            discard_text_content,
-
-            // if set engine will automatically prune the task list
-            auto_remove_complete,
-
-            // if set engine will prefer secure SSL/TCP connections 
-            // instead of basic TCP connections whenever secure servers
-            // are enabled for the given account.
-            prefer_secure
-        };
-
         // this callback is invoked when an error has occurred.
         // the error object carries information and details about 
         // what happened. 
@@ -86,30 +57,6 @@ namespace newsflash
         // can come from multiple threads inside the engine.
         std::function<void ()> on_async_notify;
 
-        template<typename UiType, typename EngineType>
-        class list
-        {
-        public:
-            using list_t = std::deque<std::unique_ptr<EngineType>>;
-
-            list(list_t& list) : list_(&list)
-            {}
-
-            UiType operator[](std::size_t i) const 
-            { return (*list_)[i]->get_ui_state(); }
-
-            std::size_t size() const 
-            { return list_->size(); }
-        private:
-            list_t* list_;
-        };
-
-        // list of UI visible engine task states.
-        using task_list = list<ui::task, newsflash::task>;
-
-        // list of UI visible engine connection states.
-        using conn_list = list<ui::connection, newsflash::connection>;
-
         engine();
        ~engine();
 
@@ -117,52 +64,72 @@ namespace newsflash
 
         void del(const account& acc);
 
-        void download(std::size_t acc, std::vector<ui::download> batch);
+        void download(ui::download spec);
 
+        // process pending actions in the engine. You should call this function
+        // as a response to to the async_notify.
         void pump();
 
-        void start();
+        // start engine. this will start connections and being processing the
+        // tasks currently queued in the tasklist.
+        void start(std::string logs);
 
+        // stop the engine. kill all connections and stop all processing.
         void stop();
 
-        void configure(bitflag<flags> settings);
+        // if set to true engine will overwrite files that already exist in the filesystem.
+        // otherwise file name collisions are resolved by some naming scheme
+        void set_overwrite_existing_files(bool on_off);
 
-        void set_log_folder(std::string path);
+        // if set engine discards any textual data and only keeps binary content.
+        void set_discard_text_content(bool on_off);
 
-        void set_throttle(bool on_off, unsigned value);
+        // if set engine will prefer secure SSL/TCP connections 
+        // instead of basic TCP connections whenever secure servers
+        // are enabled for the given account.
+        void set_prefer_secure(bool on_off);
 
-        bool is_started() const 
-        { return started_; }
+        // set throttle. If throttle is true then download speed is capped
+        // at the given throttle value. (see set_throttle_value)
+        void set_throttle(bool on_off);
 
+        // set the maximum number of bytes to be tranferred in seconds
+        // by all engine connections.
+        void set_throttle_value(unsigned value);
 
+        // get overwrite value
+        bool get_overwrite_existing_files() const;
+
+        // get discard value
+        bool get_discard_text_content() const;
+
+        // get secure value
+        bool get_prefer_secure() const;
+
+        bool get_throttle() const;
+
+        // get whether engine is started or not.
+        bool is_started() const;
+
+        // update the tasklist to contain the latest UI states
+        // of all the tasks in the engine.
+        void update(std::deque<const ui::task*>& tasklist);
+
+        // update the connlist to contain the latest UI states
+        // of all the connections in the engine.
+        void update(std::deque<const ui::connection*>& connlist);
 
     private:
-        void on_action_complete(action* act);
-    private:
-        void complete_conn_action(action* act, connection* conn);
-        void complete_task_action(action* act, task* task);
-        void remove_completed_tasks();
-        void begin_next_task();
-        std::ostream* get_log();
+        void begin_connect(std::size_t account);
 
     private:
-        std::deque<std::unique_ptr<task>> tasks_;
-        std::deque<std::unique_ptr<connection>> conns_;
-        std::vector<account> accounts_;
-        std::uint64_t bytes_downloaded_;
-        std::uint64_t bytes_queued_;
-        std::uint64_t bytes_written_;
-        std::mutex mutex_;
-        std::queue<action*> actions_;
-        std::string logpath_;        
-        std::ofstream log_;
+        class task;
+        class conn;
+        class batch;
+        struct state;
+
     private:
-        threadpool threads_;
-    private:
-        bitflag<flags> flags_;
-    private:
-        bool started_;
-        //bool throttle_;
+        std::shared_ptr<state> state_;
     };
     
 } // newsflash

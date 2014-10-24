@@ -86,6 +86,9 @@ namespace app
         const mediaitem& get_item(std::size_t i) const
         { return items_[i]; }
 
+        bool empty() const
+        { return items_.empty(); }
+
     private:
         void on_refresh_complete(rssfeed* feed, media type, QNetworkReply& reply);
         void on_nzbfile_complete(const QString& file, QNetworkReply& reply);

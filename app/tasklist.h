@@ -28,6 +28,9 @@
 #  include <QAbstractTableModel>
 #include <newsflash/warnpop.h>
 
+#include <newsflash/engine/ui/task.h>
+#include <deque>
+
 namespace app
 {
     class tasklist : public QAbstractTableModel
@@ -41,10 +44,14 @@ namespace app
         virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
         virtual int rowCount(const QModelIndex&) const override;
         virtual int columnCount(const QModelIndex&) const override;
+
+
+        void refresh(bool remove_complete, bool group_similar);
     private:
-        enum class columns { status, priority, done, time, eta, size, desc, sentinel };
+        enum class columns { status, done, time, eta, size, desc, sentinel };
 
     private:
+        std::deque<const newsflash::ui::task*> tasks_;
     };
 
 } // app

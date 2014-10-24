@@ -52,7 +52,7 @@ namespace newsflash
             damaged
         };
 
-        enum class state {
+        enum class states {
             // the task is currently queued
             queued,
 
@@ -78,12 +78,16 @@ namespace newsflash
         bitflag<flags> errors;
 
         // current task execution state.
-        state st;
+        states state;
 
         // unique task id.
         std::size_t id;
 
-        std::size_t batch;
+        // batch id
+        std::size_t bid;
+
+        // account id
+        std::size_t account;
 
         // the human readable description of the task.
         std::string desc;
@@ -92,10 +96,10 @@ namespace newsflash
         std::uint64_t size;
 
         // the time elapsed running the task (in seconds)
-        std::size_t runtime; 
+        std::uint32_t runtime; 
 
         // the estimated completion time (in seconds),
-        std::size_t etatime;
+        std::uint32_t etatime;
 
         // the current completion %  (range 0.0 - 100.0)
         double completion;

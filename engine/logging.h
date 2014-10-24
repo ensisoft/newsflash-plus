@@ -28,10 +28,10 @@
 #pragma once
 
 #ifdef NEWSFLASH_ENABLE_LOG
-#  define LOG_E(...) write_log(get_log(), newsflash::logevent::error, __FILE__, __LINE__, ## __VA_ARGS__)
-#  define LOG_W(...) write_log(get_log(), newsflash::logevent::warning, __FILE__, __LINE__, ## __VA_ARGS__)
-#  define LOG_I(...) write_log(get_log(), newsflash::logevent::info,  __FILE__, __LINE__, ## __VA_ARGS__)
-#  define LOG_D(...) write_log(get_log(), newsflash::logevent::debug, __FILE__, __LINE__, ## __VA_ARGS__)
+#  define LOG_E(...) write_log(get_thread_log(), newsflash::logevent::error, __FILE__, __LINE__, ## __VA_ARGS__)
+#  define LOG_W(...) write_log(get_thread_log(), newsflash::logevent::warning, __FILE__, __LINE__, ## __VA_ARGS__)
+#  define LOG_I(...) write_log(get_thread_log(), newsflash::logevent::info,  __FILE__, __LINE__, ## __VA_ARGS__)
+#  define LOG_D(...) write_log(get_thread_log(), newsflash::logevent::debug, __FILE__, __LINE__, ## __VA_ARGS__)
 #else
 #  define LOG_E(...)
 #  define LOG_W(...)
@@ -52,15 +52,13 @@ namespace newsflash
         template<typename Arg>
         void write_log_args(std::ostream& stream, const Arg& arg)
         {
-            //stream << str(arg);
-            str(stream, arg);
+            stream << arg;
         }
 
         template<typename Arg, typename... Rest>
         void write_log_args(std::ostream& stream, const Arg& arg, const Rest&... gang)
         {
-            //stream << arg;
-            str(stream, arg);
+            stream << arg;
             write_log_args(stream, gang...);
         }
 
@@ -69,10 +67,8 @@ namespace newsflash
 
     } // detail
 
-    inline
-    std::ostream* get_log() 
-    { return nullptr; }
-
+    std::ostream* get_thread_log();
+    std::ostream* set_thread_log(std::ostream* out);    
 
     template<typename... Args>
     void write_log(std::ostream* stream, logevent type, const char* file, int line, const Args&... args)
