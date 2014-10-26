@@ -698,8 +698,6 @@ void mainwindow::on_mainTab_currentChanged(int index)
     ui_.mainToolBar->addSeparator();
     ui_.mainToolBar->addAction(ui_.actionContextHelp);
 
-
-
     build_window_menu();
 }
 
@@ -822,6 +820,9 @@ void mainwindow::actionWindowToggleView_triggered()
     const auto* action = static_cast<QAction*>(sender());
     const auto index   = action->property("index").toInt();
     const bool visible = action->isChecked();
+
+    Q_ASSERT(index < widgets_.size());
+    Q_ASSERT(index < actions_.size());
 
     auto& widget = widgets_[index];
 

@@ -43,8 +43,8 @@ namespace newsflash
             any_thread, 
 
             // dispatch the action to a single thread with affinity to the
-            // originating object. this means that all actions with single_thread
-            // affinity will execute in the order they are queued.
+            // action id. this means that all actions with single_thread
+            // affinity and with the same id will execute in the same thread.
             single_thread
         };
 
@@ -76,6 +76,7 @@ namespace newsflash
             catch (const std::exception& e)
             {
                 exptr_ = std::current_exception();
+                LOG_E(e.what());
             }
             set_thread_log(nullptr);
         }
@@ -83,16 +84,20 @@ namespace newsflash
         affinity get_affinity() const 
         { return affinity_; }
 
+        // get action object id.
         std::size_t get_id() const 
         { return id_; }
 
+        // set the action id
         void set_id(std::size_t id) 
         { id_ = id;}
 
+        // set the thread affinity.
         void set_affinity(affinity aff)
         { affinity_ = aff; }
 
-        void set_log(std::shared_ptr<std::ostream> out)
+        // set the logger object to be used for this action.
+        void set_log(std::shared_ptr<logger> out)
         { log_ = out; }
 
     protected:
@@ -101,7 +106,7 @@ namespace newsflash
     private:
         std::exception_ptr exptr_;
         std::size_t id_;
-        std::shared_ptr<std::ostream> log_;
+        std::shared_ptr<logger> log_;
     private:
         affinity affinity_;
     };

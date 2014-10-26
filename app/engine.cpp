@@ -81,7 +81,6 @@ namespace app
 
 engine::engine()
 {
-
     diskspace_ = 0;
 
     engine_.on_error = std::bind(&engine::on_engine_error, this,
@@ -90,11 +89,12 @@ engine::engine()
         std::placeholders::_1);
 
     engine_.on_async_notify = [=]() {
-        DEBUG("on_async_notify callback");
+        //DEBUG("on_async_notify callback");
         QCoreApplication::postEvent(this, new AsyncNotifyEvent);
     };
 
     installEventFilter(this);
+    startTimer(1000);
 
     DEBUG("Engine created");
 }
@@ -120,7 +120,8 @@ void engine::set(const account& acc)
     a.enable_general_server = acc.enable_general_server;
     a.enable_secure_server  = acc.enable_secure_server;
     a.connections           = acc.max_connections;
-    engine_.set(a);
+
+    engine_.set_account(a);
 }
 
 void engine::del(const account& acc)
@@ -311,6 +312,12 @@ bool engine::eventFilter(QObject* object, QEvent* event)
         return true;
     }
     return QObject::eventFilter(object, event);
+}
+
+void engine::timerEvent(QTimerEvent* event)
+{
+    // service the engine periodically
+    engine_.tick();
 }
 
 void engine::on_engine_error(const newsflash::ui::error& e)

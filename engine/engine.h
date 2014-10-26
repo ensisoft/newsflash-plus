@@ -33,12 +33,9 @@
 #include "ui/error.h"
 #include "ui/file.h"
 #include "account.h"
-#include "bitflag.h"
 
 namespace newsflash
 {
-    class account;
-
     class engine
     {
     public:
@@ -60,15 +57,21 @@ namespace newsflash
         engine();
        ~engine();
 
-        void set(const account& acc);
+        void set_account(const account& acc);
 
-        void del(const account& acc);
+        void del_account(std::size_t id);
 
         void download(ui::download spec);
 
         // process pending actions in the engine. You should call this function
         // as a response to to the async_notify.
         void pump();
+
+        // service engine periodically to perform activities such as 
+        // reconnect after a specific timeout period.
+        // the client should call this function at some steady interval
+        // such as 1s or so.
+        void tick();
 
         // start engine. this will start connections and being processing the
         // tasks currently queued in the tasklist.
@@ -118,6 +121,10 @@ namespace newsflash
         // update the connlist to contain the latest UI states
         // of all the connections in the engine.
         void update(std::deque<const ui::connection*>& connlist);
+
+        void kill_connection(std::size_t i);
+
+        void clone_connection(std::size_t i);
 
     private:
         void begin_connect(std::size_t account);

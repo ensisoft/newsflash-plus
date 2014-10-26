@@ -47,6 +47,10 @@ namespace app
 
         void refresh();
 
+        void kill(QModelIndexList& list);
+
+        void clone(QModelIndexList& list);
+
     private:
         enum class columns { status, server, data, kbs, desc, sentinel };
     private:

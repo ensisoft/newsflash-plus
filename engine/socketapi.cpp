@@ -55,15 +55,17 @@ namespace newsflash
 {
 #if defined(WINDOWS_OS)
 
-ipv4addr_t resolve_host_ipv4(const std::string& hostname)
+std::error_code resolve_host_ipv4(const std::string& hostname, 
+    std::uint32_t& addr)
 {
     // gethostbyname allocates data from TLS so it's thread safe
     const HOSTENT* hp = gethostbyname(hostname.c_str());
     if (hp == nullptr)
-        return 0;
+        return get_last_socket_error();
 
     const in_addr* addr = static_cast<const in_addr*>((void*)hp->h_addr);
-    return ntohl(addr->s_addr);
+    addr = ntohl(addr->s_addr);
+    return std::error_code();
 }
 
 std::pair<native_socket_t, native_handle_t> begin_socket_connect(ipv4addr_t host, port_t port)
@@ -147,12 +149,15 @@ void closesocket(native_socket_t sock)
 
 #elif defined(LINUX_OS)
 
-ipv4addr_t resolve_host_ipv4(const std::string& hostname)
+std::error_code resolve_host_ipv4(const std::string& hostname, 
+    std::uint32_t& addr)
 {
     struct addrinfo* addrs = nullptr;
     const int ret = getaddrinfo(hostname.c_str(), nullptr, nullptr, &addrs);
-    if (ret)
-        return 0;
+    if (ret == EAI_SYSTEM)
+        return std::error_code(errno, std::generic_category());
+    else if (ret != 0)
+        return std::error_code(ret, std::system_category());
 
     ipv4addr_t host = 0;
     // take the first IPv4 address
@@ -168,7 +173,8 @@ ipv4addr_t resolve_host_ipv4(const std::string& hostname)
         iter = iter->ai_next;
     }
     freeaddrinfo(addrs);
-    return ntohl(host);
+    addr = ntohl(host);
+    return std::error_code();
 }
 
 std::pair<native_socket_t, native_handle_t> begin_socket_connect(ipv4addr_t host, ipv4port_t port)

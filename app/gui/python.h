@@ -50,6 +50,9 @@ namespace gui
         python();
        ~python();
 
+        virtual info information() const override
+        { return {"python.html", true, true }; }
+
     private:
         Ui::Python ui_;
     };

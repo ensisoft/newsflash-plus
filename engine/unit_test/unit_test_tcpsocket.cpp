@@ -86,22 +86,16 @@ void test_connection_failure()
 
     // refused
     {
+        std::uint32_t addr;
+        resolve_host_ipv4("127.0.0.1", addr);
+
         tcpsocket sock;
-        sock.begin_connect(resolve_host_ipv4("127.0.0.1"), 8000);
+        sock.begin_connect(addr, 8000);
 
         newsflash::wait(sock);
-        TEST_EXCEPTION(sock.complete_connect());
+        const auto err = sock.complete_connect();
+        TEST_REQUIRE(err != std::error_code());
     }
-
-    // resolve error
-    {
-        tcpsocket sock;
-        sock.begin_connect(resolve_host_ipv4("blahbalaha"), 9999);
-
-        newsflash::wait(sock);
-        TEST_EXCEPTION(sock.complete_connect());
-    }
-
 }
 
 void test_connection_success()
@@ -112,8 +106,11 @@ void test_connection_success()
 
     auto sock = openhost(port);
 
+    std::uint32_t addr;
+    resolve_host_ipv4("127.0.0.1", addr);
+
     tcpsocket tcp;
-    tcp.begin_connect(resolve_host_ipv4("127.0.0.1"), port);
+    tcp.begin_connect(addr, port);
 
     tcpsocket client = ::accept(sock);
     tcp.complete_connect();

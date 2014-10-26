@@ -70,6 +70,7 @@ namespace gui
         void on_actionStop_triggered();
         void on_actionBrowse_triggered();
         void on_tableView_customContextMenuRequested(QPoint point);
+        void on_tableView_doubleClicked(const QModelIndex&);
 
     private slots:
         void rowChanged();

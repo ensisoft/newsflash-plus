@@ -84,9 +84,6 @@ namespace newsflash
             // connection is transferring data.
             active,
 
-            // connection is currently disconnecting.
-            disconnecting,
-
             error
         };
 

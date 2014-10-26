@@ -37,6 +37,7 @@
 #include "logging.h"
 #include "utf8.h"
 #include "threadpool.h"
+#include "socket.h"
 
 namespace newsflash
 {
@@ -51,7 +52,8 @@ struct engine::state {
     std::size_t bytes_written;
     std::size_t oid; // object id for tasks/connections
     std::string logpath;
-    std::ofstream log;
+
+    std::unique_ptr<class logger> logger;
 
     std::mutex  mutex;
     std::queue<action*> actions;
@@ -62,6 +64,13 @@ struct engine::state {
     bool discard_text;
     bool started;
 
+   ~state()
+    {
+        batches.clear();
+        tasks.clear();
+        conns.clear();
+
+    }
     const account& find_account(std::size_t id) const 
     {
         auto it = std::find_if(accounts.begin(), accounts.end(),
@@ -79,10 +88,17 @@ struct engine::state {
         if (started)
             return false;
 
-        log.open(fs::joinpath(logs, "engine.log"), std::ios::trunc);
-        if (log.is_open())
-            set_thread_log(&log);
-        else set_thread_log(nullptr);
+        if (logs != logpath)
+        {
+            const auto logfile = fs::joinpath(logs, "engine.log");
+
+            std::unique_ptr<class logger> log(new filelogger(logfile, true));
+            if (log->is_open())
+                set_thread_log(log.get());
+            else set_thread_log(nullptr);
+
+            logger  = std::move(log);            
+        }
 
         logpath = logs;
         started = true;
@@ -93,11 +109,29 @@ struct engine::state {
 
 class engine::conn
 {
-public:
+private:
+    conn(engine::state& s) : state_(s)
+    {
+        ui_.error   = error::none;
+        ui_.state   = state::disconnected;
+        ui_.id      = s.oid++;
+        ui_.task    = 0;
+        ui_.account = 0;
+        ui_.down    = 0;
+        ui_.bps     = 0;
+        ticks_to_ping_ = 30;
+        ticks_to_conn_ = 5;
+        conn_number_   = ++current_num_connections;
+        conn_logger_   = std::make_shared<filelogger>(fs::joinpath(s.logpath,
+            str("connection", conn_number_, ".log")), true);
+    }    
+
     using state = ui::connection::states;
     using error = ui::connection::errors;
 
-    conn(std::size_t account, engine::state& s) : state_(s)
+public:
+
+    conn(std::size_t account, engine::state& s) : conn(s)
     {
         const auto& acc = s.find_account(account);
 
@@ -122,28 +156,88 @@ public:
             ui_.host      = acc.general_host;
             ui_.port      = acc.general_port;
         }
-
         ui_.account = account;
-        ui_.bps     = 0;
-        ui_.desc    = "";
-        ui_.error   = error::none;
-        ui_.state   = state::disconnected;
-        ui_.down    = 0;
-        ui_.id      = s.oid++;
 
-        auto action = conn_.connect(spec);        
-        do_action(std::move(action));
+        do_action(conn_.connect(spec));
 
-        LOG_I("Connection ", ui_.id, " ", ui_.host, ":", ui_.port);
+        LOG_I("Connection ", conn_number_, " ", ui_.host, ":", ui_.port);        
+    }
 
-        log_ = std::make_shared<std::fstream>();
-        log_->open(fs::joinpath(s.logpath, "connection.log"),
-            std::ios::trunc);
+    conn(const conn& other) : conn(other.state_)
+    {
+        ui_.account = other.ui_.account;
+        ui_.host    = other.ui_.host;
+        ui_.port    = other.ui_.port;
+        ui_.secure  = other.ui_.secure;
+
+        const auto& acc = state_.find_account(ui_.account);
+
+        connection::spec spec;
+        spec.password = acc.password;
+        spec.username = acc.username;
+        spec.hostname = other.ui_.host;
+        spec.hostport = other.ui_.port;
+        spec.use_ssl  = other.ui_.secure;
+
+        do_action(conn_.connect(spec));
+
+        LOG_I("Connection ", conn_number_, " ", ui_.host, ":", ui_.port);                
     }
 
    ~conn()
     {
-        LOG_I("Deleted connection ", ui_.id);
+        stop();
+
+        LOG_I("Deleted connection ", conn_number_);
+
+        --current_num_connections;
+    }
+
+    void tick()
+    {
+        if (ui_.state == state::connected)
+        {
+            if (--ticks_to_ping_ == 0)
+                do_action(conn_.ping());
+
+        }
+        else if (ui_.state == state::error)
+        {
+            if (ui_.error == error::resolve ||
+                ui_.error == error::refused ||
+                ui_.error == error::network ||
+                ui_.error == error::timeout)
+            {
+                if (--ticks_to_conn_)
+                    return;
+
+                LOG_D("Reconnecting...");
+                ui_.error = error::none;
+                ui_.state = state::disconnected;
+
+                const auto& acc = state_.find_account(ui_.account);
+                connection::spec s;
+                s.password = acc.password;
+                s.username = acc.username;
+                s.use_ssl  = ui_.secure;
+                s.hostname = ui_.host;
+                s.hostport = ui_.port;
+                do_action(conn_.connect(s));                
+            }
+        }
+    }
+
+    void stop()
+    {
+        if (ui_.state == state::disconnected)
+            return;
+
+        conn_.cancel();
+        if (ui_.state == state::connected || 
+            ui_.state == state::active)
+        {
+            do_action(conn_.disconnect());
+        }
     }
 
     void update(const ui::connection*& ui)
@@ -152,19 +246,56 @@ public:
     }
     void on_action(action* a)
     {
-        assert(a->get_id() == ui_.id);
+        ticks_to_ping_ = 30;
+        ticks_to_conn_ = 5;
 
         if (a->has_exception())
         {
+            ui_.state = state::error;
+            ui_.bps   = 0;
+            ui_.task  = 0;
+            ui_.desc  = "";
             try
             {
                 a->rethrow();
             }
+            catch (const connection::exception& e)
+            {
+                switch (e.error())
+                {
+                    case connection::error::resolve:
+                        ui_.error = ui::connection::errors::resolve;
+                        break;
+                    case connection::error::authentication_rejected:
+                        ui_.error = ui::connection::errors::authentication_rejected;
+                        break;
+                    case connection::error::no_permission:
+                        ui_.error = ui::connection::errors::no_permission;
+                        break;
+                    case connection::error::network:
+                        ui_.error = ui::connection::errors::network;
+                        break;
+                    case connection::error::timeout:
+                        ui_.error = ui::connection::errors::timeout;
+                        break;
+                }
+                LOG_E("Connection ", conn_number_, " ", e.what());
+            }
+            catch (const std::system_error& e)
+            {
+                const auto code = e.code();
+                if (code == std::errc::connection_refused)
+                    ui_.error = ui::connection::errors::refused;
+                else ui_.error = ui::connection::errors::other;
+
+                LOG_E("Connection ", conn_number_, " (", code.value(), ") ", code.message());
+            }
             catch (const std::exception &e)
             {
-                ui_.state = state::error;
                 ui_.error = error::other;                
+                LOG_E("Connection ", conn_number_, " ", e.what());
             }
+            conn_logger_->flush();
             return;
         }
 
@@ -179,6 +310,8 @@ public:
             ui_.state = state::connected;
         else if (ui_.state == state::active)
             ui_.state = state::connected;
+
+        conn_logger_->flush();
     }
 
     std::size_t account() const
@@ -202,7 +335,8 @@ private:
             ui_.state = state::active;
 
         a->set_id(ui_.id);
-        a->set_log(log_);
+        a->set_log(conn_logger_);
+        a->set_affinity(action::affinity::any_thread);
         state_.threads->submit(a.release());
     }
 
@@ -210,10 +344,15 @@ private:
     ui::connection ui_;
     connection conn_;
     engine::state& state_;
-    std::shared_ptr<std::fstream> log_;
+    std::shared_ptr<logger> conn_logger_;
+    unsigned conn_number_;
+    unsigned ticks_to_ping_;
+    unsigned ticks_to_conn_;
 private:
-    static unsigned NUMBER;
+    static unsigned current_num_connections;
 };
+
+unsigned engine::conn::current_num_connections;
 
 class engine::task 
 {
@@ -307,7 +446,7 @@ engine::~engine()
 //    threads_.wait();
 }
 
-void engine::set(const account& acc)
+void engine::set_account(const account& acc)
 {
     auto it = std::find_if(std::begin(state_->accounts), std::end(state_->accounts),
         [&](const account& a) {
@@ -319,44 +458,21 @@ void engine::set(const account& acc)
         return;
     }
 
-    // const auto& old = *it;
+    *it = acc;
 
-    // const bool general_host_updated = (old.general_host != acc.general_host) ||
-    //     (old.general_port != acc.general_port);
-    // const bool secure_host_updated = (old.secure_host != acc.secure_host) ||
-    //     (old.secure_port != acc.secure_port);
-    // const bool credentials_updated = (old.username != acc.username) ||
-    //     (old.password != acc.password);
+    auto end = std::remove_if(std::begin(state_->conns), std::end(state_->conns),
+        [&](const std::unique_ptr<conn>& c) {
+            return c->account() == acc.id;
+        });
 
-    // for (auto it = conns_.begin(); it != conns_.end(); ++it)
-    // {
-    //     auto& conn = *it;
-    //     if (conn->get_account() != acc.id)
-    //         continue;
+    state_->conns.erase(end, std::end(state_->conns));
 
-    //     bool discard = false;
+    begin_connect(acc.id);
+}
 
-    //     if (general_host_updated)
-    //     {
-    //         if (conn->hostname() == old.general_host ||
-    //             conn->hostport() == old.general_port)
-    //             discard = true;
-    //     }
-    //     if (secure_host_updated)
-    //     {
-    //         if (conn->hostname() == old.secure_host ||
-    //             conn->hostport() == old.secure_port)
-    //             discard = true;
-    //     }
-    //     if (credentials_updated)
-    //         discard = true;
-
-    //     if (!discard)
-    //         continue;
-
-    //     conn->disconnect();
-    //     it = conns_.erase(it);
-    // }
+void engine::del_account(std::size_t id)
+{
+    // todo:
 }
 
 void engine::download(ui::download spec)
@@ -398,6 +514,7 @@ void engine::pump()
                 ready = true;
             }
         }
+        state_->logger->flush();        
         if (ready)
             continue;
 
@@ -408,8 +525,20 @@ void engine::pump()
                 task->on_action(a);
             }
         }
+        state_->logger->flush();        
     }
 }
+
+void engine::tick()
+{
+    // todo: measure time here instead of relying on the clientr
+
+    for (auto& conn : state_->conns)
+    {
+        conn->tick();
+    }
+}
+
 
 void engine::start(std::string logs)
 {
@@ -442,12 +571,16 @@ void engine::start(std::string logs)
 
 void engine::stop()
 {
-    // if (!started_)
-    //     return;
+    if (!state_->started)
+        return;
 
-    // // ...
-
-    // started_ = false;
+    LOG_I("Engine stopping");
+    for (auto& conn : state_->conns)
+    {
+        conn->stop();
+    }
+    state_->conns.clear();
+    state_->started = false;
 }
 
 void engine::set_overwrite_existing_files(bool on_off)
@@ -524,6 +657,29 @@ void engine::update(std::deque<const ui::connection*>& connlist)
         conns[i]->update(connlist[i]);
     }
 }
+
+void engine::kill_connection(std::size_t i)
+{
+    LOG_D("Kill connection ", i);
+
+    assert(i < state_->conns.size());
+
+    auto it = state_->conns.begin();
+    it += i;
+    state_->conns.erase(it);
+}
+
+void engine::clone_connection(std::size_t i)
+{
+    LOG_D("Clone connection ", i);
+
+    assert(i < state_->conns.size());
+
+    auto& dna  = state_->conns[i];
+    auto dolly = std::unique_ptr<conn>(new conn(*dna));
+    state_->conns.push_back(std::move(dolly));
+}
+
 
 void engine::begin_connect(std::size_t account)
 {

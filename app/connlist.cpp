@@ -48,7 +48,6 @@ const char* str(states s)
         case states::initializing: return "Authenticating";
         case states::connected: return "Connected";
         case states::active: return "Active";
-        case states::disconnecting: return "Disconnecting";
         case states::error: return "Error";
     }
     return "???";
@@ -107,11 +106,8 @@ QVariant connlist::data(const QModelIndex& index, int role) const
                 Q_ASSERT(false);
         }
     }
-    else if (role == Qt::DecorationRole)
+    else if (role == Qt::DecorationRole && col == (int)columns::status)
     {
-        if (col != (int)columns::status)
-            return QVariant();
-
         switch (ui.state)
         {
             case states::disconnected: 
@@ -126,15 +122,17 @@ QVariant connlist::data(const QModelIndex& index, int role) const
                 return QIcon(":/resource/16x16_ico_png/ico_conn_connected.png");
             case states::active: 
                 return QIcon(":/resource/16x16_ico_png/ico_conn_active.png");                                                                
-            case states::disconnecting: 
-                return QIcon(":/resource/16x16_ico_png/ico_conn_disconnected.png");
             case states::error: 
                 return QIcon(":/resource/16x16_ico_png/ico_conn_error.png");                                                                                
         }
     }
-
+    else if (role == Qt::DecorationRole && col == (int)columns::server)
+    {
+       return ui.secure ? 
+            QIcon(":/resource/16x16_ico_png/ico_lock.png") :
+            QIcon(":/resource/16x16_ico_png/ico_unlock.png");
+    }
     return QVariant();
-
 }
 
 QVariant connlist::headerData(int section, Qt::Orientation, int role) const
@@ -190,6 +188,35 @@ void connlist::refresh()
         emit dataChanged(first, last);
     }
 
+}
+
+void connlist::kill(QModelIndexList& list)
+{
+    qSort(list);
+
+    int removed = 0;
+
+    for (int i=0; i<list.size(); ++i)
+    {
+        const auto row = list[i].row() - removed;
+        beginRemoveRows(QModelIndex(), row, row);
+        g_engine->kill_connection(row);
+        g_engine->update_conn_list(conns_);
+        endRemoveRows();
+        ++removed;
+    }
+}
+
+void connlist::clone(QModelIndexList& list)
+{
+    for (int i=0; i<list.size(); ++i)
+    {
+        const auto row = list[i].row();
+        beginInsertRows(QModelIndex(), conns_.size(), conns_.size());
+        g_engine->clone_connection(row);
+        g_engine->update_conn_list(conns_);
+        endInsertRows();
+    }
 }
 
 } // app

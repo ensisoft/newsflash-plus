@@ -61,11 +61,9 @@ void tcpsocket::begin_connect(ipv4addr_t host, ipv4port_t port)
     handle_ = ret.second;    
 }
 
-void tcpsocket::complete_connect()
+std::error_code tcpsocket::complete_connect()
 {
-    const auto err = complete_socket_connect(handle_, socket_);
-    if (err)
-        throw socket::tcp_exception("connect failed", err);
+    return complete_socket_connect(handle_, socket_);
 }
 
 void tcpsocket::sendall(const void* buff, int len)
@@ -89,7 +87,7 @@ void tcpsocket::sendall(const void* buff, int len)
         { 
             const auto err = get_last_socket_error();
             if (err != std::errc::operation_would_block)
-                throw socket::tcp_exception("socket send", err);
+                throw std::system_error(err, "socket send");
 
             auto handle = wait(false, true);
             newsflash::wait(handle);
@@ -127,7 +125,7 @@ int tcpsocket::sendsome(const void* buff, int len)
     {
         const auto err = get_last_socket_error();
         if (err != std::errc::operation_would_block)
-            throw socket::tcp_exception("socket send", err);
+            throw std::system_error(err, "socket send");
 
         // on windows writeability is edge triggered, 
         // i.e. the event is signaled once when the socket is writeable and a call
@@ -157,7 +155,7 @@ int tcpsocket::recvsome(void* buff, int capacity)
     {
         const auto err = get_last_socket_error();
         if (err != std::errc::operation_would_block)
-            throw socket::tcp_exception("socket recv", err);
+            throw std::system_error(err, "socket recv");
 
         return 0;
     }

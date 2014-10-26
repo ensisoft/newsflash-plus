@@ -33,7 +33,7 @@
 #include "cmdlist.h"
 #include "action.h"
 #include "event.h"
-#include "sockets.h"
+#include "socketapi.h"
 
 namespace newsflash
 {
@@ -61,44 +61,19 @@ void connection::resolve::xperform()
 
     const auto hostname = state_->hostname;
 
-#if defined(LINUX_OS)
+    LOG_D("Resolving hostname ", hostname);
 
-    struct addrinfo* addrs = nullptr;
-    const auto ret = getaddrinfo(hostname.c_str(), nullptr, nullptr, &addrs);
-    if (ret == EAI_SYSTEM)
-        throw exception(connection::error::resolve, "resolve host error", 
-            std::error_code(errno, std::generic_category()));
-    else if (ret != 0)
-        throw exception(connection::error::resolve, "resolve host error");
+    std::uint32_t addr;
 
-    std::uint32_t host = 0;
-    const struct addrinfo* iter = addrs;
-    while (iter)
+    const auto err = resolve_host_ipv4(hostname, addr);
+    if (err)
     {
-        if (iter->ai_addrlen == sizeof(sockaddr_in))
-        {
-            const auto* ptr = static_cast<const sockaddr_in*>((void*)iter->ai_addr);
-            host = ptr->sin_addr.s_addr;
-            break;
-        }
-        iter = iter->ai_next;
+        LOG_E("Failed to resolve host (", err.value(), ") ", err.message());
+        throw exception(error::resolve, "resolve failed");
     }
-    freeaddrinfo(addrs);
-    state_->addr = ntohl(host);
+    state_->addr = addr;
 
-#elif defined(WINDOWS_OS)
-
-    const auto* hostent = gethostbyname(hostname.c_str());
-    if (hostent == nullptr)
-    {
-        throw exception("resolve host error", std::error_code(WSAGetLastError(), std::system_category()),
-            connection::error::resolve);
-    }
-    const auto* addr = static_cast<const in_addr*>((void*)hostent->h_addr);
-    state_->addr = ntohl(addr->s_addr);
-
-#endif
-
+    LOG_D("Hostname resolved to ", ipv4{state_->addr});
 }
 
 connection::connect::connect(std::shared_ptr<state> s) : state_(s)
@@ -115,6 +90,8 @@ void connection::connect::xperform()
 {
     std::lock_guard<std::mutex> lock(state_->mutex);
 
+    LOG_D("Connecting to ", ipv4{state_->addr}, ", ", state_->port);
+
     const auto& socket = state_->socket;
     const auto& cancel = state_->cancel;
     const auto addr = state_->addr;
@@ -126,18 +103,27 @@ void connection::connect::xperform()
     // wait for completion or cancellation event.
     auto connected = socket->wait(true, false);
     auto canceled  = cancel->wait();
-    newsflash::wait(connected, canceled);
+    if (!newsflash::wait_for(connected, canceled, std::chrono::seconds(4)))
+        throw exception(error::timeout, "connection attempt timed out");
     if (canceled)
+    {
+        LOG_D("Connection was canceled");
         return;
+    }
 
-    // complete connect, throws on error
-    socket->complete_connect();    
+    const auto err = socket->complete_connect();    
+    if (err)
+        throw std::system_error(err, "connect failed");
+
+    LOG_D("Socket connection ready!");
 }
 
 connection::initialize::initialize(std::shared_ptr<state> s) : state_(s)
 {
     state_->session.reset(new session);
     state_->session->on_auth = [=](std::string& user, std::string& pass) {
+        if (state_->username.empty() || state_->password.empty())
+            throw exception(error::no_permission, "authentication required but no credentials provided");
         user = state_->username;
         pass = state_->password;
     };
@@ -150,6 +136,8 @@ connection::initialize::initialize(std::shared_ptr<state> s) : state_(s)
 void connection::initialize::xperform()
 {
     std::lock_guard<std::mutex> lock(state_->mutex);
+
+    LOG_D("Initializing NNTP session");
 
     auto& session = state_->session;
     auto& socket  = state_->socket;
@@ -173,7 +161,10 @@ void connection::initialize::xperform()
             auto canceled = cancel->wait();
             newsflash::wait(received, canceled);
             if (canceled) 
+            {
+                LOG_D("Initialize was canceled");
                 return;
+            }
 
             // readsome data
             const auto bytes = socket->recvsome(buff.back(), buff.available());
@@ -190,18 +181,18 @@ void connection::initialize::xperform()
     const auto err = session->get_error();
 
     if (err == session::error::authentication_rejected)
-        throw connection::exception(connection::error::authentication_rejected, 
-            "authentication rejected");
+        throw exception(connection::error::authentication_rejected, "authentication rejected");
     else if (err == session::error::no_permission)
-        throw connection::exception(connection::error::no_permission, 
-            "no permission");
+        throw exception(connection::error::no_permission, "no permission");
+
+    LOG_D("NNTP Session ready");
 }
 
 connection::execute::execute(std::shared_ptr<state> s) : state_(s)
 {
     state_->session->on_auth = [](std::string&, std::string&) { 
         throw exception(connection::error::no_permission, 
-            "unexpeded authentication requested"); 
+            "unexpected authentication requested"); 
     };
         
     state_->session->on_send = [=](const std::string& cmd) {
@@ -244,13 +235,13 @@ void connection::execute::xperform()
             auto received = socket->wait(true, false);
             auto canceled = cancel->wait();
             if (!newsflash::wait_for(received, canceled, std::chrono::seconds(10)))
-                throw exception(connection::error::timeout, "socket timeout");
+                throw exception(connection::error::timeout, "connection timeout");
             else if (cancel)
                 return;
 
             const auto bytes = socket->recvsome(recvbuf.back(), recvbuf.available());
             if (bytes == 0)
-                throw exception(connection::error::network, "socket was closed unexpectedly");
+                throw exception(connection::error::network, "connection was closed unexpectedly");
 
             recvbuf.append(bytes);
         }
@@ -276,14 +267,14 @@ void connection::execute::xperform()
             auto received = socket->wait(true, false);
             auto canceled = cancel->wait();
             if (!newsflash::wait_for(received, canceled, std::chrono::seconds(10)))
-                throw exception(connection::error::timeout, "socket timeout");
+                throw exception(connection::error::timeout, "connection timeout");
             else if (cancel)
                 return;
 
             // readsome
             const auto bytes = socket->recvsome(recvbuf.back(), recvbuf.available());
             if (bytes == 0)
-                throw exception(connection::error::network, "socket was closed unexpectedly");
+                throw exception(connection::error::network, "connection was closed unexpectedly");
 
             state_->bytes += bytes; // this includes header data
             recvbuf.append(bytes);
@@ -299,6 +290,89 @@ void connection::execute::xperform()
     }    
 }
 
+connection::disconnect::disconnect(std::shared_ptr<state> s) : state_(s)
+{
+    state_->session->on_send = [=](const std::string& cmd) {
+        state_->socket->sendall(&cmd[0], cmd.size());
+    };
+}
+
+void connection::disconnect::xperform()
+{
+    std::lock_guard<std::mutex> lock(state_->mutex);
+
+    LOG_D("Perform disconnect");
+
+    auto& session = state_->session;
+    auto& socket  = state_->socket;
+
+    newsflash::buffer buff(64);
+    newsflash::buffer temp;
+
+    session->quit();
+    do 
+    {
+        // wait for data, if no response then khtx bye whatever, we're done anyway
+        auto received = socket->wait(true, false);
+        if (!newsflash::wait_for(received, std::chrono::seconds(1)))
+            break;
+
+        const auto bytes = socket->recvsome(buff.back(), buff.available());
+        if (bytes == 0)
+        {
+            LOG_D("Received socket close");
+            break;
+        }
+        buff.append(bytes);
+    }
+    while (!session->parse_next(buff, temp));
+
+    socket->close();
+
+    LOG_D("Disconnect complete");
+}
+
+connection::ping::ping(std::shared_ptr<state> s) : state_(s)
+{
+    state_->session->on_send = [=](const std::string& cmd) {
+        state_->socket->sendall(&cmd[0], cmd.size());
+    };
+}
+
+void connection::ping::xperform() 
+{
+    std::lock_guard<std::mutex> lock(state_->mutex);
+
+    LOG_D("Perform ping");
+
+    auto& session = state_->session;
+    auto& socket  = state_->socket;
+
+    newsflash::buffer buff(64);
+    newsflash::buffer temp;
+
+    // NNTP doesn't have a "real" ping built into it
+    // so we simply send a mundane command (change group)
+    // to perform some activity on the transmission line.
+    session->change_group("keeping.session.alive");
+
+    do
+    {
+        auto received = socket->wait(true, false);
+        if (!newsflash::wait_for(received, std::chrono::seconds(4)))
+            throw exception(connection::error::timeout, "connection timeout (no ping)");
+
+        const auto bytes = socket->recvsome(buff.back(), buff.available());
+        if (bytes == 0)
+            throw exception(connection::error::network, "connection was closed unexpectedly");
+
+        buff.append(bytes);
+    }
+    while (!session->parse_next(buff, temp));
+
+
+}
+
 std::unique_ptr<action> connection::connect(spec s)
 {
     state_ = std::make_shared<state>();
@@ -311,8 +385,21 @@ std::unique_ptr<action> connection::connect(spec s)
     state_->ssl      = s.use_ssl;
 
     std::unique_ptr<action> act(new resolve(state_));
-
     return act;
+}
+
+std::unique_ptr<action> connection::disconnect()
+{
+    std::unique_ptr<action> a(new class disconnect(state_));
+
+    return a;
+}
+
+std::unique_ptr<action> connection::ping()
+{
+    std::unique_ptr<action> a(new class ping(state_));
+
+    return a;
 }
 
 std::unique_ptr<action> connection::complete(std::unique_ptr<action> a)
@@ -337,10 +424,16 @@ std::unique_ptr<action> connection::execute(std::shared_ptr<cmdlist> cmd)
     assert(!state_->cmds);
 
     state_->cmds = cmd;
+    state_->cancel->reset();
 
     std::unique_ptr<action> act(new class execute(state_));
 
     return act;
+}
+
+void connection::cancel()
+{
+    state_->cancel->set();
 }
 
 } // newsflash

@@ -28,7 +28,7 @@
 namespace newsflash
 {
 
-threadpool::threadpool(std::size_t num_threads) : round_robin_(0)
+threadpool::threadpool(std::size_t num_threads) : round_robin_(0), queue_size_(0)
 {
     assert(num_threads);
 

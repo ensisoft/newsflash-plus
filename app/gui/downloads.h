@@ -57,6 +57,23 @@ namespace gui
         void on_actionConnect_triggered();
         void on_actionPreferSSL_triggered();
         void on_actionThrottle_triggered();
+        void on_actionTaskPause_triggered();
+        void on_actionTaskResume_triggered();
+        void on_actionTaskMoveUp_triggered();
+        void on_actionTaskMoveDown_triggered();
+        void on_actionTaskMoveTop_triggered();
+        void on_actionTaskMoveBottom_triggered();
+        void on_actionTaskDelete_triggered();
+        void on_actionTaskClear_triggered();
+        void on_actionTaskOpenLog_triggered();
+        void on_actionConnClone_triggered();
+        void on_actionConnDelete_triggered();
+        void on_actionConnRecycle_triggered();
+        void on_actionConnOpenLog_triggered();
+        void on_tableTasks_customContextMenuRequested(QPoint pos);
+        void on_tableConns_customContextMenuRequested(QPoint pos);
+
+
 
     private:
         bool eventFilter(QObject* obj, QEvent* event);

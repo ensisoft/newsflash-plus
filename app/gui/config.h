@@ -29,7 +29,7 @@
 #define NEWSFLASH_COPYRIGHT "Copyright (c) Sami V\303\244is\303\244nen 2009-2014"
 #define NEWSFLASH_WEBSITE   "http://www.ensisoft.com"
 
-#ifndef _NDEBUG
+#ifdef _NDEBUG
 #  define NEWSFLASH_TITLE "Newsflash Plus"
 #else 
 #  define NEWSFLASH_TITLE "Newsflash Plus DEBUG"

@@ -108,16 +108,18 @@ void sslsocket::begin_connect(ipv4addr_t host, ipv4port_t port)
     handle_ = ret.second;
 }
 
-void sslsocket::complete_connect()
+std::error_code sslsocket::complete_connect()
 {
     assert(socket_);
 
     const auto err = complete_socket_connect(handle_, socket_);
     if (err)
-        throw tcp_exception("connect failed", err);
+        return err;
 
     ssl_connect();
+    return std::error_code();
 }
+
 
 void sslsocket::sendall(const void* buff, int len) 
 {
@@ -162,7 +164,7 @@ int sslsocket::sendsome(const void* buff, int len)
                 {
                     const auto err = get_last_socket_error();
                     if (err != std::errc::operation_would_block)
-                        throw socket::tcp_exception("socket send", err);
+                        throw std::system_error(err, "socket send");
 
                     // on windows writeability is edge triggered, 
                     // i.e. the event is signaled once when the socket is writeable and a call
@@ -173,7 +175,7 @@ int sslsocket::sendsome(const void* buff, int len)
                 }
                 break;
             default:
-               throw ssl_exception("SSL_write");
+                throw std::runtime_error("SSL_write");
         }
     }
     while (!sent);
@@ -220,7 +222,7 @@ int sslsocket::recvsome(void* buff, int capacity)
                {
                     const auto err = get_last_socket_error();
                     if (err != std::errc::operation_would_block)
-                        throw socket::tcp_exception("socket send", err);
+                        throw std::system_error(err, "socket send");
 
                     return 0;
                 }
@@ -231,7 +233,7 @@ int sslsocket::recvsome(void* buff, int capacity)
                 return 0;                
 
             default:
-                throw socket::ssl_exception("SSL_read");
+                throw std::runtime_error("SSL_read");
         }
     }
     while (!recv);
@@ -307,12 +309,12 @@ void sslsocket::ssl_connect()
 
     ssl_ = SSL_new(ctx);
     if (!ssl_)
-        throw socket::ssl_exception("SSL_new failed");
+        throw std::runtime_error("SSL_new failed");
 
     // create new IO object
     bio_ = BIO_new_socket(socket_, BIO_NOCLOSE);
     if (!bio_)
-        throw socket::ssl_exception("BIO_new_socket");
+        throw std::runtime_error("BIO_new_socket failed");
 
     // connect the IO object with SSL, this takes the ownership
     // of the BIO object.
@@ -337,7 +339,7 @@ void sslsocket::ssl_connect()
                 break;
 
             default:
-                throw socket::ssl_exception("SSL_connect");
+                throw std::runtime_error("SSL_connect failed");
         }
     }
 }

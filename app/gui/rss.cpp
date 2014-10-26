@@ -582,6 +582,11 @@ void rss::on_tableView_customContextMenuRequested(QPoint point)
     menu.exec(QCursor::pos());
 }
 
+void rss::on_tableView_doubleClicked(const QModelIndex&)
+{
+    on_actionDownload_triggered();
+}
+
 void rss::rowChanged()
 {
     const auto list = ui_.tableView->selectionModel()->selectedRows();

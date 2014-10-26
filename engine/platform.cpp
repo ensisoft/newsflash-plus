@@ -36,43 +36,27 @@
 #include <cstring>
 #include <cerrno>
 #include <fstream>
-
 #include "platform.h"
-
 
 namespace newsflash
 {
 
-#if defined(WINDOWS_OS)
-
-std::string get_error_string(int code)
-{
-    //const LCID language = GetUserDefaultLCID();
-
-    char* buff = nullptr;
-    const DWORD ret = FormatMessageA(
-        FORMAT_MESSAGE_ALLOCATE_BUFFER | 
-        FORMAT_MESSAGE_FROM_SYSTEM  |
-        FORMAT_MESSAGE_IGNORE_INSERTS,
-        NULL,
-        code,
-        MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
-        (LPSTR)&buff, 
-        0,
-        NULL);
-    if (ret == 0 || !buff)
-        throw std::runtime_error("format message failed");
-
-    std::string str(buff, strlen(buff)-2); // erase the new line added by FormatMessage
-    LocalFree(buff);
-    return str;    
-}
-
-
 localtime get_localtime()
 {
-    localtime ret {0};
-
+    localtime ret = {0};
+#if defined(LINUX_OS)
+    struct timeval tv;
+    // get seconds and microseconds
+    gettimeofday(&tv, NULL);
+    
+    tm time;
+    localtime_r(&tv.tv_sec, &time);
+    
+    ret.hours   = time.tm_hour;
+    ret.minutes = time.tm_min;
+    ret.seconds = time.tm_sec;
+    ret.millis  = tv.tv_usec / 1000;
+#elif defined(WINDOWS_OS)
     SYSTEMTIME sys;
     GetLocalTime(&sys);
     ret.hours   = sys.wHour;
@@ -80,61 +64,19 @@ localtime get_localtime()
     ret.seconds = sys.wSecond;
     ret.millis  = sys.wMilliseconds;    
 
-    return ret;
-}
-
-unsigned long get_thread_identity()
-{
-    return (unsigned long)GetCurrentThreadId();
-}
-
-std::ofstream& open_fstream(const std::string &filename, std::ofstream &stream)
-{
-    const std::wstring& wide = utf8::decode(filename);
-
-    stream.open(wide);
-    return stream;
-}
-
-#elif defined(LINUX_OS)
-
-std::string get_error_string(int code)
-{
-    char buff[128] = {0};
-    return std::string(strerror_r(code, buff, sizeof(buff)));
-}
-
-
-localtime get_localtime()
-{
-    struct timeval tv;
-    gettimeofday(&tv, nullptr);
-    
-    struct tm time;
-    localtime_r(&tv.tv_sec, &time);
-    
-    localtime ret {0};
-
-    ret.hours   = time.tm_hour;
-    ret.minutes = time.tm_min;
-    ret.seconds = time.tm_sec;
-    ret.millis  = tv.tv_usec / 1000;    
-    return ret;
-}
-
-unsigned long get_thread_identity()
-{
-    return (unsigned long)pthread_self();
-}
-
-std::ofstream& open_fstream(const std::string& filename, std::ofstream& stream)
-{
-    stream.open(filename);
-    return stream;
-}
-
 #endif
+    return ret;
 
+}
+
+unsigned long get_thread_identity()
+{
+#if defined(LINUX_OS)
+    return (unsigned long)pthread_self();
+#elif defined(WINDOWS_OS)
+    return (unsigned long)GetCurrentThreadId();    
+#endif
+}
 
 } // newsflash
 

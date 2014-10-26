@@ -22,8 +22,11 @@
 
 // $Id: unit_test_file.cpp,v 1.7 2010/02/25 13:12:40 svaisane Exp $
 
-#include <boost/filesystem/operations.hpp>
-#include <boost/test/minimal.hpp>
+#include <newsflash/config.h>
+#include <newsflash/warnpush.h>
+#  include <boost/filesystem/operations.hpp>
+#  include <boost/test/minimal.hpp>
+#include <newsflash/warnpop.h>
 #include <iostream>
 #include "unit_test_common.h"
 #include "../bigfile.h"
@@ -39,12 +42,12 @@ void test_basic_file_ops()
 {
     delete_file("test0.file");
 
-    BOOST_REQUIRE(corelib::bigfile::size("test0.file").first);
-    BOOST_REQUIRE(corelib::bigfile::resize("test0.file", 100));
+    BOOST_REQUIRE(newsflash::bigfile::size("test0.file").first);
+    BOOST_REQUIRE(newsflash::bigfile::resize("test0.file", 100));
 
     // try opening non-existing file
     {
-        corelib::bigfile file;
+        newsflash::bigfile file;
         BOOST_REQUIRE(file.open("test0.file"));
         BOOST_REQUIRE(file.is_open() == false);
     }
@@ -53,15 +56,15 @@ void test_basic_file_ops()
     {
         generate_file("test0.file", 1024);
 
-        BOOST_REQUIRE(corelib::bigfile::size("test0.file").second == 1024);
-        corelib::bigfile::resize("test0.file", 512);
-        BOOST_REQUIRE(corelib::bigfile::size("test0.file").second == 512);
-        corelib::bigfile::resize("test0.file", 0);
-        BOOST_REQUIRE(corelib::bigfile::size("test0.file").second == 0);        
-        corelib::bigfile::resize("test0.file", 1234);
-        BOOST_REQUIRE(corelib::bigfile::size("test0.file").second == 1234);                
+        BOOST_REQUIRE(newsflash::bigfile::size("test0.file").second == 1024);
+        newsflash::bigfile::resize("test0.file", 512);
+        BOOST_REQUIRE(newsflash::bigfile::size("test0.file").second == 512);
+        newsflash::bigfile::resize("test0.file", 0);
+        BOOST_REQUIRE(newsflash::bigfile::size("test0.file").second == 0);        
+        newsflash::bigfile::resize("test0.file", 1234);
+        BOOST_REQUIRE(newsflash::bigfile::size("test0.file").second == 1234);                
 
-        corelib::bigfile file;
+        newsflash::bigfile file;
 
         BOOST_REQUIRE(!file.open("test0.file"));
         BOOST_REQUIRE(file.is_open());
@@ -73,14 +76,14 @@ void test_basic_file_ops()
 
     // try opening objects that cant be opened
     {
-        corelib::bigfile file;
+        newsflash::bigfile file;
 
         BOOST_REQUIRE(file.open("."));
         BOOST_REQUIRE(!file.is_open());
 #if defined(LINUX_OS)
         BOOST_REQUIRE(file.open("/dev/mem")); // no permission 
-//        REQUIRE_EXCEPTION(corelib::bigfile::size("/dev/mem"));
-//        REQUIRE_EXCEPTION(corelib::bigfile::resize("/dev/mem", 100));
+//        REQUIRE_EXCEPTION(newsflash::bigfile::size("/dev/mem"));
+//        REQUIRE_EXCEPTION(newsflash::bigfile::resize("/dev/mem", 100));
 #elif defined(WINDOWS_OS)
         BOOST_REQUIRE(file.open("\\\foobar\file"));
 #endif
@@ -91,7 +94,7 @@ void test_basic_file_ops()
 
         delete_file("test0.file");
 
-        corelib::bigfile file;
+        newsflash::bigfile file;
 
         BOOST_REQUIRE(!file.append("test0.file"));
         BOOST_REQUIRE(file.is_open());
@@ -119,18 +122,18 @@ void test_basic_file_ops()
         delete_file("test0.file");        
 
         // file doesn't exist, its created
-        corelib::bigfile file;
+        newsflash::bigfile file;
 
         BOOST_REQUIRE(!file.create("test0.file"));
         BOOST_REQUIRE(file.is_open());
-        BOOST_REQUIRE(corelib::bigfile::size("test0.file").second == 0);        
+        BOOST_REQUIRE(newsflash::bigfile::size("test0.file").second == 0);        
         file.close();
 
         generate_file("test0.file", 1024);
 
         // open existing file and truncate it's contents
         BOOST_REQUIRE(!file.create("test0.file"));
-        BOOST_REQUIRE(corelib::bigfile::size("test0.file").second == 0);
+        BOOST_REQUIRE(newsflash::bigfile::size("test0.file").second == 0);
 
         delete_file("test0.file");                
     }
@@ -156,7 +159,7 @@ void test_file_write_read()
     delete_file("test1.file");
 
     {
-        corelib::bigfile file;
+        newsflash::bigfile file;
 
         BOOST_REQUIRE(!file.create("test1.file"));
 
@@ -183,7 +186,7 @@ void test_file_write_read()
 
         generate_file("test1.file", 512);
 
-        corelib::bigfile file;
+        newsflash::bigfile file;
         BOOST_REQUIRE(!file.open("test1.file"));
 
         BOOST_REQUIRE(file.read(&empty[0], 512) == 512);
@@ -197,13 +200,13 @@ void test_large_file()
 {
     delete_file("test2.file");
 
-    corelib::bigfile file;
+    newsflash::bigfile file;
     file.create("test2.file");
 
-    using big_t = corelib::bigfile::big_t;
+    using big_t = newsflash::bigfile::big_t;
 
-    corelib::bigfile::resize("test2.file", big_t(0xffffffffL) + 1);
-    BOOST_REQUIRE(corelib::bigfile::size("test2.file").second == big_t(0xffffffffL) + 1);
+    newsflash::bigfile::resize("test2.file", big_t(0xffffffffL) + 1);
+    BOOST_REQUIRE(newsflash::bigfile::size("test2.file").second == big_t(0xffffffffL) + 1);
 
     const char buff[] = "foobar";
 
@@ -217,7 +220,7 @@ void test_large_file()
     file.append("test2.file");
     file.write(buff, sizeof(buff));
 
-    BOOST_REQUIRE(corelib::bigfile::size("test2.file").second == big_t(0xffffffffL) + sizeof(buff));
+    BOOST_REQUIRE(newsflash::bigfile::size("test2.file").second == big_t(0xffffffffL) + sizeof(buff));
 
     delete_file("test2.file");    
 }
@@ -229,17 +232,17 @@ void test_unicode_filename()
     //const char* utf8 = u8"\u308f\u305f\u3057\u308f\u3055\u307f";
     const char utf8[] = {0xe3, 0x82, 0x8f, 0xe3, 0x81, 0x9f, 0xe3, 0x81, 0x97, 0xe3, 0x82, 0x8f, 0xe3, 0x81, 0x95, 0xe3, 0x81, 0xbf, 0};
 
-    corelib::bigfile file;
+    newsflash::bigfile file;
 
     BOOST_REQUIRE(file.create(utf8) == std::error_code());
     BOOST_REQUIRE(file.is_open());
     file.close();
-    BOOST_REQUIRE(!corelib::bigfile::erase(utf8));
+    BOOST_REQUIRE(!newsflash::bigfile::erase(utf8));
 
     BOOST_REQUIRE(file.append(utf8) == std::error_code());
     BOOST_REQUIRE(file.is_open());
     file.close();
-    BOOST_REQUIRE(!corelib::bigfile::erase(utf8));
+    BOOST_REQUIRE(!newsflash::bigfile::erase(utf8));
 
 #endif
 }
@@ -253,7 +256,7 @@ void print_err(const std::error_code& err)
 
 void test_error_codes()
 {
-    corelib::bigfile file;
+    newsflash::bigfile file;
 
     // no such file
     auto err = file.open("nosuchfile");

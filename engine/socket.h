@@ -40,39 +40,6 @@ namespace newsflash
     class socket 
     {
     public:
-        // error in TCP protocol level.
-        class tcp_exception : public std::exception
-        {
-        public:
-            tcp_exception(std::string what, std::error_code code) NOTHROW // noexcept
-               : what_(std::move(what)), 
-                 code_(std::move(code))
-            {}
-            const char* what() const NOTHROW // noexcept
-            {
-                return what_.c_str();
-            }
-            const std::error_code& code() const NOTHROW // noexcept 
-            {
-                return code_;
-            }
-        private:
-            const std::string what_;
-            const std::error_code code_;
-        };
-
-        // error in SSL protocol level.
-        class ssl_exception : public std::exception
-        {
-        public:
-            ssl_exception(std::string what) : what_(std::move(what))
-            {}
-
-        private:
-            const std::string what_;
-        };
-
-
         virtual ~socket() = default;
         // Connect this socket to the specified host on the specified port.
         // This function is non-blocking and returns immediately.
@@ -82,21 +49,20 @@ namespace newsflash
 
         // Complete the connection attempt. On succesful return
         // the connection is ready to be used for sending and receiving data.
-        // On error an exception is thrown.
-        virtual void complete_connect() = 0;
+        virtual std::error_code complete_connect() = 0;
         
         // Write all of the input data to the socket.
-        // On error an exception is thrown.
+        // On error a system_error is thrown.
         virtual void sendall(const void* buff, int len) = 0;
 
         // Write some input data to the socket.
         // Returns numbers of bytes written.
-        // On error an exception is thrown.
+        // on error a system_exception is thrown.
         virtual int sendsome(const void* buff, int len) = 0;
 
         // Receive some data into the buffer.
         // Returns the number of bytes received (which can be 0).
-        // On error an exception is thrown.
+        // on error a system_exception is thrown.
         virtual int recvsome(void* buff, int capacity) = 0;
 
         // Close the socket.

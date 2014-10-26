@@ -48,6 +48,10 @@ downloads::downloads() : panels_y_pos_(0)
     ui_.tableTasks->setModel(&tasks_);
     ui_.splitter->installEventFilter(this);
 
+    const auto defwidth = ui_.tableConns->columnWidth(0);
+    ui_.tableConns->setColumnWidth(0, 2 * defwidth);
+    ui_.tableConns->setColumnWidth(1, 2 * defwidth);
+
     DEBUG("Created downloads UI");
 }
 
@@ -58,7 +62,24 @@ downloads::~downloads()
 }
 
 void downloads::add_actions(QMenu& menu)
-{}
+{
+    menu.addAction(ui_.actionConnect);
+    menu.addAction(ui_.actionPreferSSL);
+    menu.addAction(ui_.actionThrottle);
+    menu.addSeparator();
+    menu.addAction(ui_.actionTaskPause);
+    menu.addAction(ui_.actionTaskResume);
+    menu.addAction(ui_.actionTaskMoveUp);
+    menu.addAction(ui_.actionTaskMoveDown);
+    menu.addAction(ui_.actionTaskMoveTop);
+    menu.addAction(ui_.actionTaskMoveBottom);
+    menu.addAction(ui_.actionTaskDelete);
+    menu.addAction(ui_.actionTaskClear);    
+    menu.addSeparator();        
+    menu.addAction(ui_.actionConnClone);
+    menu.addAction(ui_.actionConnDelete);
+    menu.addAction(ui_.actionConnRecycle);    
+}
 
 void downloads::add_actions(QToolBar& bar)
 {
@@ -72,10 +93,12 @@ void downloads::add_actions(QToolBar& bar)
     bar.addAction(ui_.actionTaskMoveDown);
     bar.addAction(ui_.actionTaskMoveTop);
     bar.addAction(ui_.actionTaskMoveBottom);
-    bar.addSeparator();    
     bar.addAction(ui_.actionTaskDelete);
     bar.addAction(ui_.actionTaskClear);    
     bar.addSeparator();        
+    bar.addAction(ui_.actionConnClone);
+    bar.addAction(ui_.actionConnDelete);
+    bar.addAction(ui_.actionConnRecycle);
 
 }
 
@@ -135,6 +158,99 @@ void downloads::on_actionThrottle_triggered()
 
     app::g_engine->set_throttle(on_off);
 }
+
+void downloads::on_actionTaskPause_triggered()
+{
+    DEBUG("task pause");    
+}
+
+void downloads::on_actionTaskResume_triggered()
+{
+    DEBUG("task resume");
+}
+
+void downloads::on_actionTaskMoveUp_triggered()
+{}
+
+void downloads::on_actionTaskMoveDown_triggered()
+{}
+
+void downloads::on_actionTaskMoveTop_triggered()
+{}
+
+void downloads::on_actionTaskMoveBottom_triggered()
+{}
+
+void downloads::on_actionTaskDelete_triggered()
+{}
+
+void downloads::on_actionTaskClear_triggered()
+{}
+
+void downloads::on_actionTaskOpenLog_triggered()
+{}
+
+void downloads::on_actionConnClone_triggered()
+{
+    QModelIndexList indices = ui_.tableConns->selectionModel()->selectedRows();
+    if (indices.isEmpty())
+        return;
+
+    conns_.clone(indices);
+}
+
+void downloads::on_actionConnDelete_triggered()
+{
+    QModelIndexList indices = ui_.tableConns->selectionModel()->selectedRows();
+    if (indices.isEmpty())
+        return;
+
+    conns_.kill(indices);
+}
+
+
+void downloads::on_actionConnRecycle_triggered()
+{}
+
+void downloads::on_actionConnOpenLog_triggered()
+{}
+
+void downloads::on_tableTasks_customContextMenuRequested(QPoint point)
+{
+    QMenu menu(this);
+    menu.addAction(ui_.actionTaskPause);
+    menu.addAction(ui_.actionTaskResume);
+    menu.addSeparator();
+    menu.addAction(ui_.actionTaskMoveTop);    
+    menu.addAction(ui_.actionTaskMoveUp);
+    menu.addAction(ui_.actionTaskMoveDown);
+    menu.addAction(ui_.actionTaskMoveBottom);
+    menu.addSeparator();
+    menu.addAction(ui_.actionTaskDelete);
+    menu.addSeparator();
+    menu.addAction(ui_.actionTaskClear);
+    menu.addAction(ui_.actionTaskOpenLog);
+
+
+    menu.exec(QCursor::pos());
+}
+
+void downloads::on_tableConns_customContextMenuRequested(QPoint point)
+{
+    QMenu menu(this);
+    menu.addAction(ui_.actionConnect);
+    menu.addAction(ui_.actionPreferSSL);
+    menu.addAction(ui_.actionThrottle);
+    menu.addSeparator();
+    menu.addAction(ui_.actionConnClone);
+    menu.addAction(ui_.actionConnDelete);
+    menu.addAction(ui_.actionConnRecycle);
+    menu.addSeparator();
+    menu.addAction(ui_.actionConnOpenLog);
+
+    menu.exec(QCursor::pos());
+}
+
 
 bool downloads::eventFilter(QObject* obj, QEvent* event)
 {

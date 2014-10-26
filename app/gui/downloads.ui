@@ -193,7 +193,7 @@
      <normaloff>:/resource/16x16_ico_png/ico_delete.png</normaloff>:/resource/16x16_ico_png/ico_delete.png</iconset>
    </property>
    <property name="text">
-    <string>Delete download</string>
+    <string>Delete Download</string>
    </property>
    <property name="toolTip">
     <string>Delete selected downloads</string>
@@ -212,21 +212,6 @@
    </property>
    <property name="toolTip">
     <string>Write headers to disk during download</string>
-   </property>
-  </action>
-  <action name="actionTaskBoost">
-   <property name="icon">
-    <iconset resource="resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_boost.png</normaloff>:/resource/16x16_ico_png/ico_boost.png</iconset>
-   </property>
-   <property name="text">
-    <string>High priority</string>
-   </property>
-   <property name="toolTip">
-    <string>Toggle high priority for selected downloads</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+B</string>
    </property>
   </action>
   <action name="actionTaskResume">
@@ -271,7 +256,7 @@
     <string>Clear finished downloads</string>
    </property>
   </action>
-  <action name="actionTaskShowLog">
+  <action name="actionTaskOpenLog">
    <property name="icon">
     <iconset resource="resource.qrc">
      <normaloff>:/resource/16x16_ico_png/ico_log.png</normaloff>:/resource/16x16_ico_png/ico_log.png</iconset>
@@ -283,7 +268,7 @@
     <string>Open log file</string>
    </property>
   </action>
-  <action name="actionConnectionShowLog">
+  <action name="actionConnOpenLog">
    <property name="icon">
     <iconset resource="resource.qrc">
      <normaloff>:/resource/16x16_ico_png/ico_log.png</normaloff>:/resource/16x16_ico_png/ico_log.png</iconset>
@@ -295,16 +280,16 @@
     <string>Open log file</string>
    </property>
   </action>
-  <action name="actionConnectionDelete">
+  <action name="actionConnDelete">
    <property name="icon">
     <iconset resource="resource.qrc">
      <normaloff>:/resource/16x16_ico_png/ico_delete.png</normaloff>:/resource/16x16_ico_png/ico_delete.png</iconset>
    </property>
    <property name="text">
-    <string>Remove connection</string>
+    <string>Delete Connection</string>
    </property>
    <property name="toolTip">
-    <string>Disconnect and remove selected connections</string>
+    <string>Disconnect and deleted selected connections</string>
    </property>
    <property name="shortcut">
     <string>Shift+Del</string>
@@ -328,7 +313,7 @@
     <string>Ctrl+C</string>
    </property>
   </action>
-  <action name="actionConnectionClone">
+  <action name="actionConnClone">
    <property name="icon">
     <iconset resource="resource.qrc">
      <normaloff>:/resource/16x16_ico_png/ico_connection_clone.png</normaloff>:/resource/16x16_ico_png/ico_connection_clone.png</iconset>
@@ -343,7 +328,7 @@
     <string>Ctrl+Shift+C</string>
    </property>
   </action>
-  <action name="actionConnectionYield">
+  <action name="actionConnRecycle">
    <property name="icon">
     <iconset resource="resource.qrc">
      <normaloff>:/resource/16x16_ico_png/ico_yield.png</normaloff>:/resource/16x16_ico_png/ico_yield.png</iconset>

@@ -24,33 +24,35 @@
 #include <newsflash/warnpush.h>
 #  include <boost/thread/tss.hpp>
 #include <newsflash/warnpop.h>
+#include <chrono>
 
 #include <iomanip>
 #include "platform.h"
 #include "logging.h"
 
 namespace {
-    struct logger {
-        std::ostream* out;
+    struct TLS {
+        newsflash::logger* logger;
     };
 
-    boost::thread_specific_ptr<logger> threadLogger;
+    boost::thread_specific_ptr<TLS> threadLogger;
 } // namespace
 
 namespace newsflash
 {
 namespace detail {
 
-    void beg_log_event(std::ostream& current_stream, logevent type, const char* file, int line)
+    void beg_log_event(std::ostream& out, logevent type, const char* file, int line)
     {
         using namespace std;
 
         const auto& timeval = get_localtime();
 
-        current_stream << setw(2) << setfill('0') << timeval.hours << ":"
-               << setw(2) << setfill('0') << timeval.minutes << ":"
-               << setw(3) << setfill('0') << timeval.millis << " ";
-        current_stream << (char)type << " ";
+        out << setw(2) << setfill('0') << timeval.hours   << ":"
+            << setw(2) << setfill('0') << timeval.minutes << ":"
+            << setw(2) << setfill('0') << timeval.seconds << ":"
+            << setw(3) << setfill('0') << timeval.millis  << " ";
+        out << (char)type << " ";
     }
 
     void end_log_event(std::ostream& current_stream)
@@ -60,23 +62,23 @@ namespace detail {
 
 } // detail
 
-std::ostream* get_thread_log()
+logger* get_thread_log()
 {
     if (!threadLogger.get())
         return nullptr;
 
-    return threadLogger->out;
+    return threadLogger->logger;
 }
 
-std::ostream* set_thread_log(std::ostream* out)
+logger* set_thread_log(logger* log)
 {
-    std::ostream* current = nullptr;
+    logger* current = nullptr;
 
     if (!threadLogger.get())
-        threadLogger.reset(new logger);
-    else current = threadLogger->out;
+        threadLogger.reset(new TLS);
+    else current = threadLogger->logger;
 
-    threadLogger->out = out;
+    threadLogger->logger = log;
     return current;
 }
 

@@ -31,26 +31,16 @@
 
 namespace newsflash
 {
-    // get a platform provided human readable error string.
-    std::string get_error_string(int code);
-
     struct localtime {
         size_t millis;
         size_t seconds;        
         size_t minutes;
         size_t hours;
     };
-
+    
     localtime get_localtime();
 
     unsigned long get_thread_identity();
-
-    // doesn't work with libstd++
-    //std::ofstream open_fstream(const std::string& filename);
-
-    std::ofstream& open_fstream(const std::string& filename, std::ofstream& stream);
-
-    void throw_system_error(int code, std::string what);
 
 } // newsflash
 

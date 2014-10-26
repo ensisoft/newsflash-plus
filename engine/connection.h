@@ -39,17 +39,17 @@ namespace newsflash
         struct state;
     public:
         enum class error {
-            resolve, refused,
+            resolve,
             authentication_rejected,
             no_permission,
-            network,
-            timeout
+            timeout,
+            network
         };
         class exception : public std::exception
         {
         public:
-            exception(connection::error err, std::string what, std::error_code errc = std::error_code()) 
-                : error_(err), what_(std::move(what)), errc_(errc)
+            exception(connection::error err, std::string what) 
+                : error_(err), what_(std::move(what))
             {}
 
             const char* what() const noexcept
@@ -58,12 +58,9 @@ namespace newsflash
             connection::error error() const noexcept
             { return error_; }
 
-            std::error_code code() const noexcept
-            { return errc_; }
         private:
             connection::error error_;
             std::string what_;
-            std::error_code errc_;
         };
 
         // perform host resolution
@@ -111,6 +108,26 @@ namespace newsflash
             std::shared_ptr<state> state_;
         };
 
+        class disconnect : public action
+        {
+        public:
+            disconnect(std::shared_ptr<state> s);
+
+            virtual void xperform() override;
+        private:
+            std::shared_ptr<state> state_;
+        };
+
+        class ping : public action
+        {
+        public:
+            ping(std::shared_ptr<state> s);
+
+            virtual void xperform() override;
+
+        private:
+            std::shared_ptr<state> state_;
+        };
 
         struct spec {
             std::string username;
@@ -120,13 +137,22 @@ namespace newsflash
             bool use_ssl;
         };
 
+        // begin connecting to the given host specification.
         std::unique_ptr<action> connect(spec s);
 
+        // perform disconnect from the host. 
         std::unique_ptr<action> disconnect();
 
+        // perform ping
+        std::unique_ptr<action> ping();
+
+        // complete the given action. returns a new action if any.
         std::unique_ptr<action> complete(std::unique_ptr<action> a);
 
+        // execute the given cmdlist
         std::unique_ptr<action> execute(std::shared_ptr<cmdlist> cmd);
+
+        void cancel();
 
     private:
         std::shared_ptr<state> state_;

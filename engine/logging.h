@@ -22,16 +22,19 @@
 //  THE SOFTWARE.
 
 #include <newsflash/config.h>
+#include <system_error>
+#include <fstream>
 #include <ostream>
+#include <cerrno>
 #include "format.h"
 
 #pragma once
 
 #ifdef NEWSFLASH_ENABLE_LOG
-#  define LOG_E(...) write_log(get_thread_log(), newsflash::logevent::error, __FILE__, __LINE__, ## __VA_ARGS__)
-#  define LOG_W(...) write_log(get_thread_log(), newsflash::logevent::warning, __FILE__, __LINE__, ## __VA_ARGS__)
-#  define LOG_I(...) write_log(get_thread_log(), newsflash::logevent::info,  __FILE__, __LINE__, ## __VA_ARGS__)
-#  define LOG_D(...) write_log(get_thread_log(), newsflash::logevent::debug, __FILE__, __LINE__, ## __VA_ARGS__)
+#  define LOG_E(...) write_log(newsflash::logevent::error, __FILE__, __LINE__, ## __VA_ARGS__)
+#  define LOG_W(...) write_log(newsflash::logevent::warning, __FILE__, __LINE__, ## __VA_ARGS__)
+#  define LOG_I(...) write_log(newsflash::logevent::info,  __FILE__, __LINE__, ## __VA_ARGS__)
+#  define LOG_D(...) write_log(newsflash::logevent::debug, __FILE__, __LINE__, ## __VA_ARGS__)
 #else
 #  define LOG_E(...)
 #  define LOG_W(...)
@@ -67,18 +70,81 @@ namespace newsflash
 
     } // detail
 
-    std::ostream* get_thread_log();
-    std::ostream* set_thread_log(std::ostream* out);    
+    class logger 
+    {
+    public:
+        virtual ~logger() = default;
+
+        virtual void write(const std::string& msg) = 0;
+
+        virtual void flush() = 0;
+
+        virtual bool is_open() const = 0;
+    protected:
+    private:
+    };
+
+    class filelogger : public logger
+    {
+    public:
+        filelogger(std::string file, bool ignore_failures)
+        {
+            out_.open(file, std::ios::trunc);
+            if (!out_.is_open() && !ignore_failures)
+                throw std::system_error(std::error_code(errno, 
+                    std::system_category()), "failed to open log file: " + file);
+        }
+        virtual void write(const std::string& msg) override
+        {
+            out_ << msg;
+        }
+
+        virtual void flush() override
+        {
+            out_.flush();
+        }
+
+        virtual bool is_open() const override
+        { return out_.is_open(); }
+    private:
+        std::ofstream out_;
+    };
+
+    class stdlog : public logger
+    {
+    public:
+        stdlog(std::ostream& out) : out_(out)
+        {}
+        virtual void write(const std::string& msg) override
+        { 
+            out_ << msg;
+        }
+        virtual void flush() override
+        {
+            out_.flush();
+        }
+
+        virtual bool is_open() const override
+        { return true; }
+    private:
+        std::ostream& out_;
+    };
+
+    logger* get_thread_log();
+    logger* set_thread_log(logger* log);
 
     template<typename... Args>
-    void write_log(std::ostream* stream, logevent type, const char* file, int line, const Args&... args)
+    void write_log(logevent type, const char* file, int line, const Args&... args)
     {
-        if (stream == nullptr)
-             return;
+        auto* log = get_thread_log();
+        if (log == nullptr)
+            return;
 
-        detail::beg_log_event(*stream, type, file, line);
-        detail::write_log_args(*stream, args...);
-        detail::end_log_event(*stream);
+        std::stringstream ss;
+        detail::beg_log_event(ss, type, file, line);
+        detail::write_log_args(ss, args...);
+        detail::end_log_event(ss);
+        log->write(ss.str());        
     }
 
 } // newsflash

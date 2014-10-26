@@ -49,20 +49,15 @@ void test_connection_failure()
 {
     // refused
     {
+        uint32_t addr;
+        resolve_host_ipv4("127.0.0.1", addr);
+
         sslsocket sock;
-        sock.begin_connect(resolve_host_ipv4("127.0.0.1"), 8000);
+        sock.begin_connect(addr, 8000);
 
-        wait(sock);
-        REQUIRE_EXCEPTION(sock.complete_connect());
-    }
-
-    // resolve error
-    {
-        sslsocket sock;
-        sock.begin_connect(resolve_host_ipv4("blablahaa"), 9999);
-
-        wait(sock);
-        REQUIRE_EXCEPTION(sock.complete_connect());
+        newsflash::wait(sock);
+        const auto err = sock.complete_connect();
+        BOOST_REQUIRE(err != std::error_code());
     }
 }
 
@@ -206,11 +201,19 @@ void test_connection_success()
 
     open_socket.check();
 
+    std::uint32_t addr;
+    resolve_host_ipv4("127.0.0.1", addr);
+
     // connect the client socket
     sslsocket sock;
-    sock.begin_connect(0x7F000001, 8001);
-    wait(sock);
-    sock.complete_connect();
+    sock.begin_connect(addr, 8001);
+    newsflash::wait(sock);
+    const auto err = sock.complete_connect();
+
+    //std::cout << err.message() << std::endl;
+    //std::cout << err.value() << std::endl;
+
+    BOOST_REQUIRE(err == std::error_code());
 
     // transfer data
     for (auto& buff : buffers)
@@ -243,6 +246,8 @@ void test_connection_success()
 
 int test_main(int argc, char* argv[])
 {
+    // $ netstat --tcp --numeric --listen --program
+
     newsflash::openssl_init();
 
     test_connection_failure();

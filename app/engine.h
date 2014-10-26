@@ -155,8 +155,19 @@ namespace app
             engine_.set_throttle_value(val);
         }
 
+        void kill_connection(std::size_t i)
+        {
+            engine_.kill_connection(i);
+        }
+
+        void clone_connection(std::size_t i)
+        {
+            engine_.clone_connection(i);
+        }
+
     private:
         virtual bool eventFilter(QObject* object, QEvent* event) override;
+        virtual void timerEvent(QTimerEvent* event) override;
 
     private:
         void on_engine_error(const newsflash::ui::error& e);

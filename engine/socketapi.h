@@ -33,7 +33,8 @@ namespace newsflash
 
     // resolve the host name and return the first address in network byte order
     // or 0 if host could not be resolved. (use socket_error() to query for error)
-    ipv4addr_t resolve_host_ipv4(const std::string& hostname);
+    std::error_code resolve_host_ipv4(const std::string& hostname,
+        std::uint32_t& addr);
 
     native_handle_t get_wait_handle(native_socket_t sock);
 

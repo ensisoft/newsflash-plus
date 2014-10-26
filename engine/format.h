@@ -80,13 +80,13 @@ namespace newsflash
 
 
     template<typename T>
-    void str(std::ostream& ss, const T& value)
+    void str(std::stringstream& ss, const T& value)
     {
         ss << value;
     }
 
     template<typename T, typename... Rest>
-    void str(std::ostream& ss, const T& value, const Rest&... rest)
+    void str(std::stringstream& ss, const T& value, const Rest&... rest)
     {
         ss << value;
         str(ss, rest...);
