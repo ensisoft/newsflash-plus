@@ -62,7 +62,7 @@ QVariant tasklist::data(const QModelIndex& index, int role) const
 {
     const auto col = index.column();
     const auto row = index.row();
-    const auto& ui = *tasks_[row];
+    const auto& ui = tasks_[row];
 
     static const auto infinity = QChar(0x221E);
 

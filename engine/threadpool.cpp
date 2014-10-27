@@ -45,15 +45,7 @@ threadpool::threadpool(std::size_t num_threads) : round_robin_(0), queue_size_(0
 
 threadpool::~threadpool()
 {
-    for (auto& thread : threads_)
-    {
-        {
-            std::lock_guard<std::mutex> lock(thread->mutex);
-            thread->run_loop = false;
-            thread->cond.notify_one();
-        }
-        thread->thread->join();
-    }
+
 }
 
 void threadpool::submit(action* act)
@@ -84,6 +76,19 @@ void threadpool::wait()
 {
     while (queue_size_ > 0)
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
+}
+
+void threadpool::shutdown()
+{
+    for (auto& thread : threads_)
+    {
+        {
+            std::lock_guard<std::mutex> lock(thread->mutex);
+            thread->run_loop = false;
+            thread->cond.notify_one();
+        }
+        thread->thread->join();
+    }
 }
 
 

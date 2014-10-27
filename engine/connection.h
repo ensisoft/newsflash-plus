@@ -154,6 +154,12 @@ namespace newsflash
 
         void cancel();
 
+        // some getters
+        const std::string& username() const;
+
+        const std::string& password() const;
+
+
     private:
         std::shared_ptr<state> state_;
 

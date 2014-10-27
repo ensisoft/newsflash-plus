@@ -79,7 +79,7 @@ QVariant connlist::data(const QModelIndex& index, int role) const
 {
     const auto col = index.column();
     const auto row = index.row();
-    const auto& ui = *conns_[row];
+    const auto& ui = conns_[row];
 
     if (role == Qt::DisplayRole)
     {

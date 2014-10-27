@@ -45,6 +45,7 @@ namespace gui
     {
     public:
         struct info {
+            QString name;
             QString helpurl;
         };
 
@@ -65,7 +66,7 @@ namespace gui
         // perform first launch activities.
         virtual void first_launch() {}
 
-        virtual info information() const { return {""}; }
+        virtual info information() const { return {"", ""}; }
 
         // get a settings widget if any. 
         virtual settings* get_settings(app::settings& s) { return nullptr; }

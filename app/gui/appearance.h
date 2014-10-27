@@ -44,6 +44,8 @@ namespace gui
         virtual gui::settings* get_settings(app::settings& s) override;
         virtual void apply_settings(gui::settings* gui, app::settings& backend) override;
         virtual void free_settings(gui::settings* s) override;
+        virtual info information() const override
+        { return {"appearance", ""}; }
     private:
         QString current_style_name_;
     };

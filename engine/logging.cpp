@@ -52,7 +52,7 @@ namespace detail {
             << setw(2) << setfill('0') << timeval.minutes << ":"
             << setw(2) << setfill('0') << timeval.seconds << ":"
             << setw(3) << setfill('0') << timeval.millis  << " ";
-        out << (char)type << " ";
+        //out << (char)type << " ";
     }
 
     void end_log_event(std::ostream& current_stream)

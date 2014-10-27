@@ -42,17 +42,17 @@ namespace newsflash
         // this callback is invoked when an error has occurred.
         // the error object carries information and details about 
         // what happened. 
-        std::function<void (const ui::error& error)> on_error;
+        using on_error = std::function<void (const ui::error& error)>;
 
         // this callback is invoked when a new file has been completed.
-        std::function<void (const ui::file& file)> on_file;
+        using on_file = std::function<void (const ui::file& file)>;
 
         // this callback is invoked when there are pending events inside the engine
         // the handler function should organize for a call into engine::pump() 
         // to process the pending events. 
         // note that this callback handler needs to be thread safe and the notifications
         // can come from multiple threads inside the engine.
-        std::function<void ()> on_async_notify;
+        using on_async_notify = std::function<void ()>;
 
         engine();
        ~engine();
@@ -65,7 +65,9 @@ namespace newsflash
 
         // process pending actions in the engine. You should call this function
         // as a response to to the async_notify.
-        void pump();
+        // returns true if there are still pending actions to be completed later
+        // or false if the pending action queue is empty.
+        bool pump();
 
         // service engine periodically to perform activities such as 
         // reconnect after a specific timeout period.
@@ -79,6 +81,12 @@ namespace newsflash
 
         // stop the engine. kill all connections and stop all processing.
         void stop();
+
+        void set_error_callback(on_error error_callback);
+
+        void set_file_callback(on_file file_callback);
+
+        void set_notify_callback(on_async_notify notify_callback);
 
         // if set to true engine will overwrite files that already exist in the filesystem.
         // otherwise file name collisions are resolved by some naming scheme
@@ -116,18 +124,18 @@ namespace newsflash
 
         // update the tasklist to contain the latest UI states
         // of all the tasks in the engine.
-        void update(std::deque<const ui::task*>& tasklist);
+        void update(std::deque<ui::task>& tasklist);
 
         // update the connlist to contain the latest UI states
         // of all the connections in the engine.
-        void update(std::deque<const ui::connection*>& connlist);
+        void update(std::deque<ui::connection>& connlist);
 
         void kill_connection(std::size_t i);
 
         void clone_connection(std::size_t i);
 
     private:
-        void begin_connect(std::size_t account);
+        void connect();
 
     private:
         class task;

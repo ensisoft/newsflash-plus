@@ -65,14 +65,19 @@ namespace app
 
         void refresh();
 
-        void update_task_list(std::deque<const newsflash::ui::task*>& list)
+        // begin engine shutdown. returns true if complete immediately
+        // otherwise false in which case the a signal is emitted
+        // once all pending actions have been processed in the engine.
+        bool shutdown();
+
+        void update_task_list(std::deque<newsflash::ui::task>& list)
         {
-            engine_.update(list);
+            engine_->update(list);
         }
 
-        void update_conn_list(std::deque<const newsflash::ui::connection*>& list)
+        void update_conn_list(std::deque<newsflash::ui::connection>& list)
         {
-            engine_.update(list);
+            engine_->update(list);
         }
 
         quint64 get_free_disk_space() const
@@ -102,22 +107,22 @@ namespace app
 
         bool get_overwrite_existing_files() const
         {
-            return engine_.get_overwrite_existing_files();
+            return engine_->get_overwrite_existing_files();
         }
 
         bool get_discard_text_content() const 
         { 
-            return engine_.get_discard_text_content();
+            return engine_->get_discard_text_content();
         }
 
         bool get_prefer_secure() const
         {
-            return engine_.get_prefer_secure();
+            return engine_->get_prefer_secure();
         }
 
         bool is_started() const
         {
-            return engine_.is_started(); 
+            return engine_->is_started(); 
         }
 
         bool get_connect() const
@@ -127,43 +132,46 @@ namespace app
 
         bool get_throttle() const 
         {
-            return engine_.get_throttle();
+            return engine_->get_throttle();
         }
 
         void set_overwrite_existing_files(bool on_off)
         {
-            engine_.set_overwrite_existing_files(on_off);
+            engine_->set_overwrite_existing_files(on_off);
         }
 
         void set_discard_text_content(bool on_off)
         {
-            engine_.set_discard_text_content(on_off);
+            engine_->set_discard_text_content(on_off);
         }
 
         void set_prefer_secure(bool on_off)
         {
-            engine_.set_prefer_secure(on_off);
+            engine_->set_prefer_secure(on_off);
         }
 
         void set_throttle(bool on_off)
         {
-            engine_.set_throttle(on_off);
+            engine_->set_throttle(on_off);
         }
 
         void set_throttle_value(unsigned val)
         {
-            engine_.set_throttle_value(val);
+            engine_->set_throttle_value(val);
         }
 
         void kill_connection(std::size_t i)
         {
-            engine_.kill_connection(i);
+            engine_->kill_connection(i);
         }
 
         void clone_connection(std::size_t i)
         {
-            engine_.clone_connection(i);
+            engine_->clone_connection(i);
         }
+
+    signals:
+        void shutdownComplete();
 
     private:
         virtual bool eventFilter(QObject* object, QEvent* event) override;
@@ -176,10 +184,12 @@ namespace app
         QString logifiles_;
         QString downloads_;
         quint64 diskspace_;
+        int ticktimer_;
     private:
-        newsflash::engine engine_;
+        std::unique_ptr<newsflash::engine> engine_;
     private:
         bool connect_;
+        bool shutdown_;
     };
 
     extern engine* g_engine;

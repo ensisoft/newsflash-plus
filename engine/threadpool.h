@@ -51,6 +51,11 @@ namespace newsflash
 
         void wait();
 
+        void shutdown();
+
+        std::size_t num_pending_actions() const
+        { return queue_size_; }
+
    private:
         struct thread {
             std::mutex mutex;

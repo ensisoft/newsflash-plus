@@ -176,6 +176,12 @@ bool rss::savestate(app::settings& s)
     return true;
 }
 
+void rss::shutdown()
+{
+    // we're shutting down. cancel all pending requests if any.
+    model_.stop();
+}
+
 void rss::loadstate(app::settings& s)
 {
     ui_.chkMusic->setChecked(s.get("rss", "music", true));

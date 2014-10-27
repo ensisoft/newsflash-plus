@@ -51,6 +51,7 @@ namespace gui
         virtual void activate(QWidget*) override;
         virtual void loadstate(app::settings& s) override;
         virtual bool savestate(app::settings& s) override;
+        virtual void shutdown() override;
         virtual info information() const override;
         virtual gui::settings* get_settings(app::settings& s) override;
         virtual void apply_settings(gui::settings* gui, app::settings& backend) override;

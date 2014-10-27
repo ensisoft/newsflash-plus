@@ -54,6 +54,6 @@ namespace app
     private:
         enum class columns { status, server, data, kbs, desc, sentinel };
     private:
-        std::deque<const newsflash::ui::connection*> conns_;
+        std::deque<newsflash::ui::connection> conns_;
     };
 } // app

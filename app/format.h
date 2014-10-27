@@ -246,17 +246,24 @@ namespace app
     }
 
     inline
+    std::string to_latin(const QString& str)
+    {
+        const auto& bytes = str.toLatin1();
+        return std::string(bytes.data(), bytes.size());
+    }
+
+    inline
     QString from_utf8(const std::string& s)
     {
         return QString::fromUtf8(s.c_str());
     }
 
-    inline
-    std::string latin(const QString& str)
+    inline 
+    QString from_latin(const std::string& s)
     {
-        const auto& bytes = str.toLatin1();
-        return std::string(bytes.data(), bytes.size());
+        return QString::fromLatin1(s.c_str());
     }
+
 
     // get a string in systems native narrow character encoding.
     std::string narrow(const QString& str);

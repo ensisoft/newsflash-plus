@@ -47,6 +47,7 @@ namespace gui
 {
     class mainwidget;
     class mainmodule;
+    class DlgShutdown;
 
     // application's mainwindow. mainwindow manages the mainwidgets and
     // provides core GUI functionality that for example displaying common dialogs
@@ -115,7 +116,7 @@ namespace gui
         void hide(std::size_t index);
         void focus(mainwidget* widget);    
         void build_window_menu();
-        bool savestate();
+        bool savestate(DlgShutdown* dlg);
         void closeEvent(QCloseEvent* event);        
         void dragEnterEvent(QDragEnterEvent* event);
         void dropEvent(QDropEvent* event);

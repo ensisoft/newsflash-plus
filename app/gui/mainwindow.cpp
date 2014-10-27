@@ -45,6 +45,7 @@
 #include "dlgsettings.h"
 #include "dlgaccount.h"
 #include "dlgchoose.h"
+#include "dlgshutdown.h"
 #include "config.h"
 #include "../eventlog.h"
 #include "../debug.h"
@@ -518,7 +519,46 @@ void mainwindow::focus(mainwidget* ui)
 
 void mainwindow::closeEvent(QCloseEvent* event)
 {
-    if (!savestate())
+    DEBUG("Begin shutdown...");
+
+    DEBUG("Block signals");
+    refresh_timer_.stop();
+    refresh_timer_.blockSignals(true);
+
+    ui_.mainTab->blockSignals(true);
+    ui_.mainToolBar->blockSignals(true);
+    ui_.menuBar->blockSignals(true);
+
+    for (auto* w : widgets_)
+    {
+        DEBUG(str("Shutting down: _1", w->windowTitle()));
+        w->shutdown();
+        DEBUG("Complete!");
+    }
+
+    for (auto* m : modules_)
+    {
+        const auto& info = m->information();
+        DEBUG(str("Shutting down module: _1", info.name));
+        m->shutdown();
+        DEBUG("Complete");
+    }
+
+    DEBUG("Begin engine shutdown");
+
+    // try to perform orderly engine shutdown.
+    DlgShutdown dlg(this);
+    dlg.setText(tr("Shutting down engine"));
+    dlg.show();    
+
+    QEventLoop loop;
+    QObject::connect(app::g_engine, SIGNAL(shutdownComplete()), &loop, SLOT(quit()));
+    if (!app::g_engine->shutdown())
+        loop.exec();
+
+    DEBUG("Begin save state");
+
+    if (!savestate(&dlg))
     {
         if (QMainWindow::isHidden())
         {
@@ -603,12 +643,16 @@ void mainwindow::build_window_menu()
     ui_.menuWindow->addAction(ui_.actionWindowPrev);    
 }
 
-bool mainwindow::savestate()
+bool mainwindow::savestate(DlgShutdown* dlg)
 {
     try
     {
+        dlg->setText(tr("Saving accounts"));
+
         if (!app::g_accounts->savestate(settings_))
             return false;
+
+        dlg->setText(tr("Saving settings"));
 
         if (!app::g_engine->savestate(settings_))
             return false;

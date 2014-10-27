@@ -81,9 +81,6 @@ connection::connect::connect(std::shared_ptr<state> s) : state_(s)
     if (state_->ssl)
         state_->socket.reset(new sslsocket);
     else state_->socket.reset(new tcpsocket);
-
-    state_->cancel.reset(new event);
-    state_->cancel->reset();
 }
 
 void connection::connect::xperform()
@@ -103,7 +100,7 @@ void connection::connect::xperform()
     // wait for completion or cancellation event.
     auto connected = socket->wait(true, false);
     auto canceled  = cancel->wait();
-    if (!newsflash::wait_for(connected, canceled, std::chrono::seconds(4)))
+    if (!newsflash::wait_for(connected, canceled, std::chrono::seconds(10)))
         throw exception(error::timeout, "connection attempt timed out");
     if (canceled)
     {
@@ -383,7 +380,8 @@ std::unique_ptr<action> connection::connect(spec s)
     state_->addr     = 0;
     state_->bytes    = 0;
     state_->ssl      = s.use_ssl;
-
+    state_->cancel.reset(new event);
+    state_->cancel->reset();
     std::unique_ptr<action> act(new resolve(state_));
     return act;
 }
@@ -435,5 +433,12 @@ void connection::cancel()
 {
     state_->cancel->set();
 }
+
+const std::string& connection::username() const 
+{ return state_->username; }
+
+const std::string& connection::password() const 
+{ return state_->password; }
+
 
 } // newsflash

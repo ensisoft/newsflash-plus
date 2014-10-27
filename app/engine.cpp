@@ -82,25 +82,34 @@ namespace app
 engine::engine()
 {
     diskspace_ = 0;
+    shutdown_  = false;
 
-    engine_.on_error = std::bind(&engine::on_engine_error, this,
-        std::placeholders::_1);
-    engine_.on_file  = std::bind(&engine::on_engine_file, this,
-        std::placeholders::_1);
+    engine_.reset(new newsflash::engine);
+    engine_->set_error_callback(std::bind(&engine::on_engine_error, this,
+        std::placeholders::_1));
+    engine_->set_file_callback(std::bind(&engine::on_engine_file, this,
+         std::placeholders::_1));
 
-    engine_.on_async_notify = [=]() {
-        //DEBUG("on_async_notify callback");
+    // remember that the notify callback can come from any thread
+    // within the engine and it has to be thread safe.
+    // so we simply post a notification to the main threads
+    // event queue and then handle it in the eventFilter
+    engine_->set_notify_callback([=]() {
         QCoreApplication::postEvent(this, new AsyncNotifyEvent);
-    };
+    });
 
     installEventFilter(this);
-    startTimer(1000);
+    ticktimer_ = startTimer(1000);
 
     DEBUG("Engine created");
 }
 
 engine::~engine()
 {
+
+
+    engine_.reset();
+
     DEBUG("Engine destroyed");
 }
 
@@ -111,9 +120,9 @@ void engine::set(const account& acc)
     a.name                  = to_utf8(acc.name);
     a.username              = to_utf8(acc.username);
     a.password              = to_utf8(acc.password);
-    a.secure_host           = latin(acc.secure_host);
+    a.secure_host           = to_latin(acc.secure_host);
     a.secure_port           = acc.secure_port;    
-    a.general_host          = latin(acc.general_host);
+    a.general_host          = to_latin(acc.general_host);
     a.general_port          = acc.general_port;    
     a.enable_compression    = acc.enable_compression;
     a.enable_pipelining     = acc.enable_pipelining;
@@ -121,7 +130,7 @@ void engine::set(const account& acc)
     a.enable_secure_server  = acc.enable_secure_server;
     a.connections           = acc.max_connections;
 
-    engine_.set_account(a);
+    engine_->set_account(a);
 }
 
 void engine::del(const account& acc)
@@ -186,7 +195,7 @@ void engine::download_nzb_contents(quint32 acc, const QString& path, const QStri
             file.name = to_utf8(item.subject);
         download.files.push_back(std::move(file));
     }
-    engine_.download(std::move(download));
+    engine_->download(std::move(download));
     if (connect_)
     {
         QDir dir;
@@ -194,7 +203,7 @@ void engine::download_nzb_contents(quint32 acc, const QString& path, const QStri
         {
             ERROR(str("Error creating log path _1", dir));
         }
-        engine_.start(to_utf8(logifiles_));
+        engine_->start(to_utf8(logifiles_));
     }
 
 
@@ -215,17 +224,17 @@ void engine::loadstate(settings& s)
     const auto throttleval = s.get("engine", "throttle_value", 0);
     connect_ = s.get("engine", "connect", true);
 
-    engine_.set_overwrite_existing_files(overwrite);
-    engine_.set_discard_text_content(discard);
-    engine_.set_throttle(throttle);
-    engine_.set_throttle_value(throttleval);
+    engine_->set_overwrite_existing_files(overwrite);
+    engine_->set_discard_text_content(discard);
+    engine_->set_throttle(throttle);
+    engine_->set_throttle_value(throttleval);
 }
 
 bool engine::savestate(settings& s)
 {
-    const auto overwrite = engine_.get_overwrite_existing_files();
-    const auto discard   = engine_.get_discard_text_content();
-    const auto secure    = engine_.get_prefer_secure();
+    const auto overwrite = engine_->get_overwrite_existing_files();
+    const auto discard   = engine_->get_discard_text_content();
+    const auto secure    = engine_->get_prefer_secure();
     //const auto throttle  = engine_.get_th
     const auto throttle = false;
 
@@ -243,7 +252,7 @@ void engine::connect(bool on_off)
 { 
     connect_ = on_off;
     if (!connect_)
-        engine_.stop();
+        engine_->stop();
     else
     {
         QDir dir;
@@ -251,7 +260,7 @@ void engine::connect(bool on_off)
         {
             ERROR(str("Error creating log path _1", dir));
         }
-        engine_.start(to_utf8(logifiles_));
+        engine_->start(to_utf8(logifiles_));
     }
 }
 
@@ -303,12 +312,33 @@ void engine::refresh()
 #endif
 }
 
+bool engine::shutdown()
+{
+    killTimer(ticktimer_);    
+    shutdown_  = true;
+    ticktimer_ = 0;
+
+    engine_->stop();
+
+    if (!engine_->pump())
+        return true;
+
+    DEBUG("Engine has pending actions");
+    return false;
+}
+
 bool engine::eventFilter(QObject* object, QEvent* event)
 {
     if (object == this && event->type() == AsyncNotifyEvent::identity())
     {
-        //DEBUG("got it!");
-        engine_.pump();
+        if (!engine_->pump())
+        {
+            if (shutdown_)
+            {
+                DEBUG("Engine shutdown complete");
+                emit shutdownComplete();
+            }
+        }
         return true;
     }
     return QObject::eventFilter(object, event);
@@ -317,11 +347,26 @@ bool engine::eventFilter(QObject* object, QEvent* event)
 void engine::timerEvent(QTimerEvent* event)
 {
     // service the engine periodically
-    engine_.tick();
+    engine_->tick();
 }
 
 void engine::on_engine_error(const newsflash::ui::error& e)
-{}
+{
+    const auto resource = from_utf8(e.resource);
+    const auto code = e.code;
+
+    if (code)
+    {
+        std::stringstream ss;
+        ss << code;
+
+        ERROR(str("_1 _2", resource, ss.str()));
+    }
+    else
+    {
+        ERROR(str("_1 _2", resource, e.what));
+    }
+}
 
 void engine::on_engine_file(const newsflash::ui::file& f)
 {}
@@ -330,3 +375,4 @@ engine* g_engine;
 
 
 } // app
+    

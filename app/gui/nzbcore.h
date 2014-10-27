@@ -65,14 +65,13 @@ namespace gui
        ~nzbcore();
 
         virtual bool add_actions(QMenu& menu) override;
-
         virtual void loadstate(app::settings& s) override;
         virtual bool savestate(app::settings& s) override;
+        virtual info information() const override
+        { return {"nzbcore", "nzb.html"}; }
 
         virtual settings* get_settings(app::settings& s) override;
-
         virtual void apply_settings(settings* gui, app::settings& backend) override;
-
         virtual void free_settings(settings* s) override;
 
     private slots:

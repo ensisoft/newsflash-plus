@@ -193,7 +193,7 @@
      <normaloff>:/resource/16x16_ico_png/ico_delete.png</normaloff>:/resource/16x16_ico_png/ico_delete.png</iconset>
    </property>
    <property name="text">
-    <string>Delete Download</string>
+    <string>Delete</string>
    </property>
    <property name="toolTip">
     <string>Delete selected downloads</string>
@@ -286,7 +286,7 @@
      <normaloff>:/resource/16x16_ico_png/ico_delete.png</normaloff>:/resource/16x16_ico_png/ico_delete.png</iconset>
    </property>
    <property name="text">
-    <string>Delete Connection</string>
+    <string>Delete</string>
    </property>
    <property name="toolTip">
     <string>Disconnect and deleted selected connections</string>
@@ -319,7 +319,7 @@
      <normaloff>:/resource/16x16_ico_png/ico_connection_clone.png</normaloff>:/resource/16x16_ico_png/ico_connection_clone.png</iconset>
    </property>
    <property name="text">
-    <string>Clone connection</string>
+    <string>Clone</string>
    </property>
    <property name="toolTip">
     <string>Create new connection based on existing connection</string>
@@ -338,6 +338,9 @@
    </property>
    <property name="toolTip">
     <string>Request connection to yield current download and take a new one</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+R</string>
    </property>
   </action>
   <action name="actionTaskMoveUp">
@@ -416,6 +419,9 @@
    </property>
    <property name="toolTip">
     <string>Toggle throttle</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+T</string>
    </property>
   </action>
  </widget>

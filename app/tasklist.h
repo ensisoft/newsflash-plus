@@ -51,7 +51,7 @@ namespace app
         enum class columns { status, done, time, eta, size, desc, sentinel };
 
     private:
-        std::deque<const newsflash::ui::task*> tasks_;
+        std::deque<newsflash::ui::task> tasks_;
     };
 
 } // app

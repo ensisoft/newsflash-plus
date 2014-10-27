@@ -25,49 +25,30 @@
 #include <newsflash/config.h>
 
 #include <newsflash/warnpush.h>
-#  include "ui_coresettings.h"
+#  include <QtGui/QDialog>
+#  include "ui_dlgshutdown.h"
 #include <newsflash/warnpop.h>
-#include <memory>
-#include "mainmodule.h"
-#include "settings.h"
 
 namespace gui
 {
-    // have to be namespace scope class because MOC doesnt support
-    // shitty signals and slots for nested classes... 
-    class coresettings  : public settings
+    class DlgShutdown : public QDialog
     {
         Q_OBJECT
     public:
-        coresettings();
-       ~coresettings();
+        DlgShutdown(QWidget* parent) : QDialog(parent)
+        {
+            ui_.setupUi(this);
+            ui_.progressBar->setValue(0);
+            ui_.progressBar->setRange(0, 0);
+        }
+       ~DlgShutdown()
+        {}
 
-        virtual bool validate() const override;
-    private slots:
-        void on_btnBrowseLog_clicked();
-        void on_btnBrowseDownloads_clicked();
-
+        void setText(const QString& s)
+        {
+            ui_.lblAction->setText(s);
+        }
     private:
-        Ui::CoreSettings ui_;
-    private:
-        friend class coremodule;
-    };
-
-    // glue code for general application settings and engine + feedback system
-    // translates settings data to UI state and vice versa.
-    class coremodule : public mainmodule
-    {
-    public:
-        coremodule();
-       ~coremodule();
-       
-        virtual gui::settings* get_settings(app::settings& s) override;
-        virtual void apply_settings(settings* gui, app::settings& backend) override;
-        virtual void free_settings(settings* s) override;
-
-        virtual info information() const override
-        { return {"coremodule", ""}; }
-
-    private:
+        Ui::DlgShutdown ui_;
     };
 } // gui

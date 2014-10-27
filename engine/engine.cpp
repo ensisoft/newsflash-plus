@@ -58,11 +58,16 @@ struct engine::state {
     std::mutex  mutex;
     std::queue<action*> actions;
     std::unique_ptr<threadpool> threads;
+    std::size_t num_pending_actions;
 
     bool prefer_secure;
     bool overwrite_existing;
     bool discard_text;
     bool started;
+
+    engine::on_error on_error_callback;
+    engine::on_file  on_file_callback;
+    engine::on_async_notify on_notify_callback;
 
    ~state()
     {
@@ -97,12 +102,18 @@ struct engine::state {
                 set_thread_log(log.get());
             else set_thread_log(nullptr);
 
-            logger  = std::move(log);            
+            logger = std::move(log);            
         }
 
         logpath = logs;
         started = true;
         return true;
+    }
+
+    void submit(action* a)
+    {
+        threads->submit(a);
+        num_pending_actions++;
     }
 };
 
@@ -240,9 +251,9 @@ public:
         }
     }
 
-    void update(const ui::connection*& ui)
+    void update(ui::connection& ui)
     {
-        ui = &ui_;
+        ui = ui_;
     }
     void on_action(action* a)
     {
@@ -255,6 +266,9 @@ public:
             ui_.bps   = 0;
             ui_.task  = 0;
             ui_.desc  = "";
+            ui::error err;
+            err.resource = ui_.host;
+
             try
             {
                 a->rethrow();
@@ -280,6 +294,8 @@ public:
                         break;
                 }
                 LOG_E("Connection ", conn_number_, " ", e.what());
+                err.resource = ui_.host;
+                err.what     = e.what();
             }
             catch (const std::system_error& e)
             {
@@ -289,12 +305,18 @@ public:
                 else ui_.error = ui::connection::errors::other;
 
                 LOG_E("Connection ", conn_number_, " (", code.value(), ") ", code.message());
+                err.code = code;
+                err.what = e.what();
             }
             catch (const std::exception &e)
             {
                 ui_.error = error::other;                
                 LOG_E("Connection ", conn_number_, " ", e.what());
+                err.what = e.what();
             }
+
+            state_.on_error_callback(err);
+
             conn_logger_->flush();
             return;
         }
@@ -320,6 +342,18 @@ public:
     std::size_t id() const 
     { return ui_.id; }
 
+    std::uint16_t port() const 
+    { return ui_.port; }
+
+    const std::string& host() const 
+    { return ui_.host; }
+
+    const std::string& username() const
+    { return conn_.username(); }
+
+    const std::string& password() const 
+    { return conn_.password(); }
+
 private:
     void do_action(std::unique_ptr<action> a)
     {
@@ -337,7 +371,7 @@ private:
         a->set_id(ui_.id);
         a->set_log(conn_logger_);
         a->set_affinity(action::affinity::any_thread);
-        state_.threads->submit(a.release());
+        state_.submit(a.release());
     }
 
 private:
@@ -388,9 +422,9 @@ public:
     {
     }
 
-    void update(const ui::task*& ui)
+    void update(ui::task& ui)
     {
-        ui = &ui_;
+        ui = ui_;
     }
 
     void on_action(action* a)
@@ -430,20 +464,22 @@ engine::engine() : state_(new state)
     {
         std::lock_guard<std::mutex> lock(state_->mutex);
         state_->actions.push(a);
-        on_async_notify();
+        state_->on_notify_callback();
     };
 
     state_->oid = 1;
     state_->bytes_downloaded = 0;
     state_->bytes_queued = 0;
     state_->bytes_written = 0;
+    state_->num_pending_actions = 0;
     state_->prefer_secure = true;
     state_->started = false;
 }
 
 engine::~engine()
 {
-//    threads_.wait();
+    state_->threads->shutdown();
+    state_->threads.reset();
 }
 
 void engine::set_account(const account& acc)
@@ -458,21 +494,96 @@ void engine::set_account(const account& acc)
         return;
     }
 
+    const auto& old = *it;
+
+    // if the hosts or credentials are modified restart the connections.
+    const auto secure_modified = old.secure_host != acc.secure_host ||
+        old.secure_port != acc.secure_port;
+    const auto general_modified = old.general_host != acc.general_host ||
+        old.general_port != acc.general_port;
+    const auto credentials_modified = old.username != acc.username ||
+        old.password != acc.password;
+
     *it = acc;
 
+    // remove connections whose matching properties have been modified.
     auto end = std::remove_if(std::begin(state_->conns), std::end(state_->conns),
-        [&](const std::unique_ptr<conn>& c) {
-            return c->account() == acc.id;
+        [&](const std::unique_ptr<conn>& c) 
+        {
+            if (c->account() != acc.id)
+                return false;
+
+            const auto& host = c->host();
+            const auto& port = c->port();
+
+            if (secure_modified)
+            {
+                if (host != acc.secure_host || port != acc.secure_port)
+                    return true;
+            }
+            else if (general_modified)
+            {
+                if (host != acc.general_host || port != acc.general_port)
+                    return true;
+            }
+            else if (credentials_modified)
+            {
+                const auto& user = c->username();
+                const auto& pass = c->password();
+                if (user != acc.username || pass != acc.password)
+                    return true;
+            }
+            return false;
         });
 
     state_->conns.erase(end, std::end(state_->conns));
 
-    begin_connect(acc.id);
+    //const auto have_tasks = std::find_if(std::begin(state_->tasks), std::end(state_->tasks),
+    //    [&](const std::unique_ptr<task>& t) {
+    //        return t->account() == acc.id;
+    //    }) != std::end(state_->tasks);
+    //if (!have_tasks)
+    //    return;
+
+    // count the number of connections we have now for this account.
+    // if there are less than the minimum number of allowed, we spawn
+    // new connections, otherwise the shrink the connection list down
+    // to the max allowed.
+    const auto num_conns = std::count_if(std::begin(state_->conns), std::end(state_->conns),
+        [&](const std::unique_ptr<conn>& c) {
+            return c->account() == acc.id;
+        });
+
+    if (num_conns < acc.connections)
+    {
+        if (!state_->started)
+            return;
+
+        for (auto i = num_conns; i<acc.connections; ++i)
+            state_->conns.emplace_back(new engine::conn(acc.id, *state_));
+    }
+    else if (num_conns > acc.connections)
+    {
+        state_->conns.resize(acc.connections);
+    }
 }
 
 void engine::del_account(std::size_t id)
 {
-    // todo:
+    auto end = std::remove_if(std::begin(state_->conns), std::end(state_->conns),
+        [&](const std::unique_ptr<conn>& c) {
+            return c->account() == id;
+        });
+
+    state_->conns.erase(end, std::end(state_->conns));
+
+    auto it = std::find_if(std::begin(state_->accounts), std::end(state_->accounts),
+        [&](const account& a) { 
+            return a.id == id;
+        });
+    ASSERT(it != std::end(state_->accounts));
+
+    state_->accounts.erase(it);
 }
 
 void engine::download(ui::download spec)
@@ -488,16 +599,16 @@ void engine::download(ui::download spec)
         state_->tasks.push_back(std::move(state));
     }
 
-    begin_connect(spec.account);
+    connect();
 }
 
-void engine::pump()
+bool engine::pump()
 {
     for (;;)
     {
         std::unique_lock<std::mutex> lock(state_->mutex);
         if (state_->actions.empty())
-            return;
+            break;
 
         action* a = state_->actions.front();
         state_->actions.pop();
@@ -514,19 +625,21 @@ void engine::pump()
                 ready = true;
             }
         }
-        state_->logger->flush();        
-        if (ready)
-            continue;
-
-        for (auto& task : state_->tasks)
+        if (!ready)
         {
-            if (task->id() == id)
+            for (auto& task : state_->tasks)
             {
-                task->on_action(a);
+                if (task->id() == id)
+                {
+                    task->on_action(a);
+                }
             }
         }
+        state_->num_pending_actions--;
         state_->logger->flush();        
     }
+
+    return state_->num_pending_actions != 0;
 }
 
 void engine::tick()
@@ -537,6 +650,8 @@ void engine::tick()
     {
         conn->tick();
     }
+
+    connect();
 }
 
 
@@ -550,22 +665,7 @@ void engine::start(std::string logs)
         LOG_D("Discard text content: ", state_->discard_text);
         LOG_D("Prefer secure:", state_->prefer_secure);
 
-        for (const auto& acc : state_->accounts)
-        {
-            bool has_tasks = false;
-            for (const auto& task : state_->tasks)
-            {
-                if (task->account() == acc.id)
-                {
-                    has_tasks = true;                
-                    break;
-                }
-            }
-            if (!has_tasks)
-                continue;
-
-            begin_connect(acc.id);
-        }
+        connect();
     }
 }
 
@@ -581,6 +681,21 @@ void engine::stop()
     }
     state_->conns.clear();
     state_->started = false;
+}
+
+void engine::set_error_callback(on_error error_callback)
+{
+    state_->on_error_callback = std::move(error_callback);
+}
+
+void engine::set_file_callback(on_file file_callback)
+{
+    state_->on_file_callback = std::move(file_callback);
+}
+
+void engine::set_notify_callback(on_async_notify notify_callback)
+{
+    state_->on_notify_callback = std::move(notify_callback);
 }
 
 void engine::set_overwrite_existing_files(bool on_off)
@@ -634,7 +749,7 @@ bool engine::is_started() const
     return state_->started;
 }
 
-void engine::update(std::deque<const ui::task*>& tasklist)
+void engine::update(std::deque<ui::task>& tasklist)
 {
     const auto& tasks = state_->tasks;
 
@@ -646,7 +761,7 @@ void engine::update(std::deque<const ui::task*>& tasklist)
     }
 }
 
-void engine::update(std::deque<const ui::connection*>& connlist)
+void engine::update(std::deque<ui::connection>& connlist)
 {
     const auto& conns = state_->conns;
 
@@ -681,27 +796,20 @@ void engine::clone_connection(std::size_t i)
 }
 
 
-void engine::begin_connect(std::size_t account)
+void engine::connect()
 {
     if (!state_->started)
         return;
 
-    std::uint16_t num_conns = 0;
-
-    for (auto& conn : state_->conns) 
+    for (const auto& acc : state_->accounts)
     {
-        if (conn->account() == account)
-            num_conns++;
-    }
-
-    const auto& acc = state_->find_account(account);
-
-    LOG_D("Account ", acc.name, " has ", num_conns, "/", acc.connections, " connections");
-
-    for (; num_conns < acc.connections; ++num_conns)
-    {
-        std::unique_ptr<engine::conn> conn(new engine::conn(account, *state_));
-        state_->conns.push_back(std::move(conn));
+        const auto num_conns = std::count_if(std::begin(state_->conns), std::end(state_->conns),
+            [&](const std::unique_ptr<conn>& c) {
+                return c->account() == acc.id;
+            });
+        
+        for (auto i = num_conns; i<acc.connections; ++i)
+            state_->conns.emplace_back(new engine::conn(acc.id, *state_));
     }
 }
 

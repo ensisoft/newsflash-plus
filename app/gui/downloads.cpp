@@ -69,16 +69,18 @@ void downloads::add_actions(QMenu& menu)
     menu.addSeparator();
     menu.addAction(ui_.actionTaskPause);
     menu.addAction(ui_.actionTaskResume);
+    menu.addSeparator();
+    menu.addAction(ui_.actionTaskMoveTop);    
     menu.addAction(ui_.actionTaskMoveUp);
     menu.addAction(ui_.actionTaskMoveDown);
-    menu.addAction(ui_.actionTaskMoveTop);
     menu.addAction(ui_.actionTaskMoveBottom);
+    menu.addSeparator();
     menu.addAction(ui_.actionTaskDelete);
     menu.addAction(ui_.actionTaskClear);    
-    menu.addSeparator();        
-    menu.addAction(ui_.actionConnClone);
-    menu.addAction(ui_.actionConnDelete);
-    menu.addAction(ui_.actionConnRecycle);    
+    //menu.addSeparator();        
+    //menu.addAction(ui_.actionConnClone);
+    //menu.addAction(ui_.actionConnDelete);
+    //menu.addAction(ui_.actionConnRecycle);    
 }
 
 void downloads::add_actions(QToolBar& bar)
@@ -89,16 +91,18 @@ void downloads::add_actions(QToolBar& bar)
     bar.addSeparator();
     bar.addAction(ui_.actionTaskPause);
     bar.addAction(ui_.actionTaskResume);
+    bar.addSeparator();
+    bar.addAction(ui_.actionTaskMoveTop);    
     bar.addAction(ui_.actionTaskMoveUp);
     bar.addAction(ui_.actionTaskMoveDown);
-    bar.addAction(ui_.actionTaskMoveTop);
     bar.addAction(ui_.actionTaskMoveBottom);
+    bar.addSeparator();
     bar.addAction(ui_.actionTaskDelete);
     bar.addAction(ui_.actionTaskClear);    
-    bar.addSeparator();        
-    bar.addAction(ui_.actionConnClone);
-    bar.addAction(ui_.actionConnDelete);
-    bar.addAction(ui_.actionConnRecycle);
+    //bar.addSeparator();        
+    //bar.addAction(ui_.actionConnClone);
+    //bar.addAction(ui_.actionConnDelete);
+    //bar.addAction(ui_.actionConnRecycle);
 
 }
 
@@ -229,6 +233,7 @@ void downloads::on_tableTasks_customContextMenuRequested(QPoint point)
     menu.addAction(ui_.actionTaskDelete);
     menu.addSeparator();
     menu.addAction(ui_.actionTaskClear);
+    menu.addSeparator();
     menu.addAction(ui_.actionTaskOpenLog);
 
 
@@ -251,6 +256,11 @@ void downloads::on_tableConns_customContextMenuRequested(QPoint point)
     menu.exec(QCursor::pos());
 }
 
+
+void downloads::on_tableconns_doubleClicked(const QModelIndex&)
+{
+    on_actionConnClone_triggered();
+}
 
 bool downloads::eventFilter(QObject* obj, QEvent* event)
 {

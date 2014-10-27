@@ -26,8 +26,8 @@
 
 #include <newsflash/warnpush.h>
 #  include <QtGui/QDialog>
+#  include "ui_dlgwelcome.h"
 #include <newsflash/warnpop.h>
-#include "ui_dlgwelcome.h"
 
 #include "config.h"
 
