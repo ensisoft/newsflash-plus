@@ -37,7 +37,7 @@
 #include "logging.h"
 #include "utf8.h"
 #include "threadpool.h"
-#include "socket.h"
+#include "cmdlist.h"
 
 namespace newsflash
 {
@@ -251,16 +251,26 @@ public:
         }
     }
 
+    void execute(std::shared_ptr<cmdlist> cmds, std::size_t tid, std::string desc)
+    {
+        ui_.task  = tid;
+        ui_.desc  = std::move(desc);
+        ui_.state = state::active;
+        do_action(conn_.execute(cmds));
+    }
+
     void update(ui::connection& ui)
     {
         ui = ui_;
     }
     void on_action(action* a)
     {
+        std::unique_ptr<action> act(a);
+
         ticks_to_ping_ = 30;
         ticks_to_conn_ = 5;
 
-        if (a->has_exception())
+        if (act->has_exception())
         {
             ui_.state = state::error;
             ui_.bps   = 0;
@@ -271,7 +281,7 @@ public:
 
             try
             {
-                a->rethrow();
+                act->rethrow();
             }
             catch (const connection::exception& e)
             {
@@ -321,20 +331,26 @@ public:
             return;
         }
 
-        auto next = conn_.complete(std::unique_ptr<action>(a));
+        auto next = conn_.complete(std::move(act));
         if (next)
         {
             do_action(std::move(next));
-            return;
         }
-        
-        if (ui_.state == state::initializing)
-            ui_.state = state::connected;
-        else if (ui_.state == state::active)
-            ui_.state = state::connected;
+        else
+        {
+            if (ui_.state == state::initializing)
+                ui_.state = state::connected;
+            else if (ui_.state == state::active)
+                ui_.state = state::connected;
+        }
 
         conn_logger_->flush();
     }
+    bool is_ready() const 
+    {
+        return ui_.state == state::connected;
+    }
+
 
     std::size_t account() const
     { return ui_.account; }
@@ -404,22 +420,54 @@ public:
         ui_.runtime    = 0;
         ui_.etatime    = 0;
         ui_.completion = 0.0;
+        started_       = false;
 
         LOG_I("Created task ", ui_.id);
     }
 
    ~task()
     {
+        if (ui_.state != state::complete)
+            do_action(task_->kill());
+
         LOG_I("Deleted task ", ui_.id);
     }
 
-    bool start(conn* c)
+    bool run(conn& c)
     {
-        return false;
+        if (ui_.state == state::complete || 
+            ui_.state == state::error ||
+            ui_.state == state::paused)
+            return false;
+
+        if (!started_)
+        {
+            do_action(task_->start());
+            started_ = true;
+        }
+
+        auto cmds = task_->create_commands();
+        if (!cmds)
+            return false;
+
+        //c.execute(std::move(cmds), ui_.id, ui_.desc);        
+        //if (num_active_cmdlists == 0)
+        //    ui_.state = state::waiting;
+
+        //num_active_cmdlists++;
+        return true;
     }
 
     void pause()
     {
+        if (ui_.state == state::paused ||
+            ui_.state == state::error ||
+            ui_.state == state::complete)
+            return;
+
+        ui_.state = state::paused;
+        // todo: stop timer.
+
     }
 
     void update(ui::task& ui)
@@ -429,7 +477,28 @@ public:
 
     void on_action(action* a)
     {
+        std::unique_ptr<action> act(a);
 
+        if (act->has_exception())
+        {
+            ui_.state   = state::error;
+            ui_.etatime = 0;
+            try
+            {
+                act->rethrow();
+            }
+            catch (const std::system_error& e)
+            {}
+            catch (const std::exception& e)
+            {}
+            return;
+        }
+        std::vector<std::unique_ptr<action>> actions;
+        task_->complete(std::move(act), 
+            actions);
+
+        for (auto& a : actions)
+            do_action(std::move(a));
     }
 
     std::size_t account() const 
@@ -439,10 +508,18 @@ public:
     { return ui_.id; }
 
 private:
+    void do_action(std::unique_ptr<action> a) 
+    {
+        a->set_id(ui_.id);
+        a->set_affinity(action::affinity::single_thread);
+        state_.submit(a.release());
+    }
+
+private:
     ui::task ui_;    
     std::unique_ptr<newsflash::task> task_;
+    std::vector<std::shared_ptr<cmdlist>> cmds_;
     engine::state& state_;
-
 private:
     bool started_;
 };
@@ -478,6 +555,10 @@ engine::engine() : state_(new state)
 
 engine::~engine()
 {
+    assert(state_->num_pending_actions == 0);
+    assert(state_->conns.empty());
+    assert(state_->started == false);
+
     state_->threads->shutdown();
     state_->threads.reset();
 }
@@ -616,16 +697,25 @@ bool engine::pump()
 
         const auto id = a->get_id();
 
-        bool ready = false;
+        bool action_dispatched = false;
         for (auto& conn : state_->conns)
         {
-            if (conn->id() == id)
+            if (conn->id() != id)
+                continue;
+
+            conn->on_action(a);
+            if (conn->is_ready())
             {
-                conn->on_action(a);
-                ready = true;
+                for (auto& task : state_->tasks)
+                {
+                    if (task->run(*conn))
+                        break;
+                }
             }
+            action_dispatched = true;
+            break;
         }
-        if (!ready)
+        if (!action_dispatched)
         {
             for (auto& task : state_->tasks)
             {
@@ -808,6 +898,13 @@ void engine::connect()
                 return c->account() == acc.id;
             });
         
+        const auto have_tasks = std::find_if(std::begin(state_->tasks), std::end(state_->tasks),
+            [&](const std::unique_ptr<task>& t) {
+                return t->account() == acc.id;
+            }) != std::end(state_->tasks);
+        if (!have_tasks)
+            continue;
+
         for (auto i = num_conns; i<acc.connections; ++i)
             state_->conns.emplace_back(new engine::conn(acc.id, *state_));
     }

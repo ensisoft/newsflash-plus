@@ -35,7 +35,9 @@
 namespace app
 {
 
-using states = newsflash::ui::task::states;
+using states  = newsflash::ui::task::states;
+using flags   = newsflash::ui::task::flags;
+using bitflag = newsflash::bitflag<newsflash::ui::task::flags>;
 
 const char* str(states s)
 {
@@ -48,6 +50,20 @@ const char* str(states s)
         case states::complete: return "Complete";
         case states::error: return "Error";
     }
+    return "???";
+}
+
+const char* str(bitflag f)
+{
+    if (f.test(flags::dmca))
+        return "DMCA";
+    else if (f.test(flags::unavailable))
+        return "Unavailable";
+    else if (f.test(flags::damaged))
+        return "Damaged";
+    else if (f.test(flags::error))
+        return "NNTP Error";
+
     return "???";
 }
 
@@ -71,6 +87,8 @@ QVariant tasklist::data(const QModelIndex& index, int role) const
         switch ((columns)col)
         {
             case columns::status:
+                if (ui.state == states::complete)
+                    return str(ui.errors);
                 return str(ui.state);
 
             case columns::done:

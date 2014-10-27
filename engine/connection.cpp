@@ -51,7 +51,6 @@ struct connection::state {
     std::unique_ptr<class socket> socket;
     std::unique_ptr<class session> session;
     std::unique_ptr<event> cancel;
-    std::shared_ptr<cmdlist> cmds;
     bool ssl;
 };
 
@@ -98,7 +97,9 @@ void connection::connect::xperform()
     socket->begin_connect(addr, port);
 
     // wait for completion or cancellation event.
-    auto connected = socket->wait(true, false);
+    // when an async socket connect is performed the socket will become writeable
+    // once the connection is established.
+    auto connected = socket->wait(false, true);
     auto canceled  = cancel->wait();
     if (!newsflash::wait_for(connected, canceled, std::chrono::seconds(10)))
         throw exception(error::timeout, "connection attempt timed out");
@@ -185,7 +186,7 @@ void connection::initialize::xperform()
     LOG_D("NNTP Session ready");
 }
 
-connection::execute::execute(std::shared_ptr<state> s) : state_(s)
+connection::execute::execute(std::shared_ptr<state> s, std::shared_ptr<cmdlist> cmd) : state_(s), cmds_(cmd)
 {
     state_->session->on_auth = [](std::string&, std::string&) { 
         throw exception(connection::error::no_permission, 
@@ -206,7 +207,7 @@ void connection::execute::xperform()
     auto& session = state_->session;
     auto& cancel  = state_->cancel;
     auto& socket  = state_->socket;
-    auto& cmdlist = state_->cmds;
+    auto& cmdlist = cmds_;
 
     newsflash::buffer recvbuf(MB(4));
 
@@ -419,12 +420,9 @@ std::unique_ptr<action> connection::complete(std::unique_ptr<action> a)
 
 std::unique_ptr<action> connection::execute(std::shared_ptr<cmdlist> cmd)
 {
-    assert(!state_->cmds);
-
-    state_->cmds = cmd;
     state_->cancel->reset();
 
-    std::unique_ptr<action> act(new class execute(state_));
+    std::unique_ptr<action> act(new class execute(state_, std::move(cmd)));
 
     return act;
 }

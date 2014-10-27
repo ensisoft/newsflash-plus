@@ -40,6 +40,7 @@ struct session::impl {
     bool auth_required;
     bool enable_pipelining;
     bool enable_compression;
+    bool have_caps;
     std::string user;
     std::string pass;
     std::string group;
@@ -136,6 +137,7 @@ public:
                 st.has_gzip = true;
         }
         buff.clear();
+        st.have_caps = true;
         return true;
     }
 
@@ -482,6 +484,7 @@ void session::reset()
     state_->has_gzip       = false;
     state_->has_modereader = false;
     state_->has_xzver      = false;
+    state_->have_caps      = false;
     state_->error          = error::none;
     state_->state          = state::none;
     state_->group          = "";
@@ -551,8 +554,12 @@ bool session::parse_next(buffer& buff, buffer& out)
             throw std::runtime_error("authentication requested during pipelined commands");
 
         send_.push_front(std::move(next));
+        if (!state_->have_caps)
+            send_.emplace_front(new getcaps);
+
         send_.emplace_front(new authpass(password));                
         send_.emplace_front(new authuser(username));
+
         recv_.pop_front();
         state_->auth_required = false;
     }

@@ -83,6 +83,10 @@ void unit_test_init_session_success()
 
     set(incoming, "281 authentication accepted\r\n");
     session.parse_next(incoming, tmp);
+    BOOST_REQUIRE(output == "CAPABILITIES\r\n");
+
+    set(incoming, "500 what?\r\n");
+    session.parse_next(incoming, tmp);
     BOOST_REQUIRE(output == "MODE READER\r\n");
 
     set(incoming, "200 posting allowed\r\n");

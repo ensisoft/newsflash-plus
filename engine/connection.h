@@ -101,11 +101,12 @@ namespace newsflash
         class execute : public action
         {
         public:
-            execute(std::shared_ptr<state> s);
+            execute(std::shared_ptr<state> s, std::shared_ptr<cmdlist> cmds);
 
             virtual void xperform() override;
         private:
             std::shared_ptr<state> state_;
+            std::shared_ptr<cmdlist> cmds_;
         };
 
         class disconnect : public action
