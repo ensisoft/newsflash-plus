@@ -43,7 +43,7 @@ const char* str(states s)
 {
     switch (s)
     {
-        case states::queued: return "Queued";
+        //case states::queued: return "Queued";
         case states::waiting: return "Waiting";
         case states::active: return "Active";
         case states::paused: return "Paused";
@@ -120,8 +120,8 @@ QVariant tasklist::data(const QModelIndex& index, int role) const
 
         switch (ui.state)
         {
-            case states::queued: 
-                return QIcon(":/resource/16x16_ico_png/ico_task_queued.png");
+            //case states::queued: 
+            //    return QIcon(":/resource/16x16_ico_png/ico_task_queued.png");
             case states::waiting: 
                 return QIcon(":/resource/16x16_ico_png/ico_task_waiting.png");
             case states::active: 

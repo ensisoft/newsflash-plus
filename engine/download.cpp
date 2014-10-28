@@ -48,6 +48,8 @@ download::download(std::vector<std::string> groups, std::vector<std::string> art
     path_(std::move(path))
 {
     name_ = fs::remove_illegal_filename_chars(name);
+    overwrite_ = false;
+    discardtext_ = false;
 }
 
 download::~download()
@@ -97,6 +99,14 @@ std::unique_ptr<action> download::kill()
 std::unique_ptr<action> download::flush()
 {
     // not supported
+    return nullptr;
+}
+
+std::unique_ptr<action> download::finalize()
+{
+    for (auto& f : files_)
+        f->close();
+
     return nullptr;
 }
 
@@ -198,6 +208,12 @@ void download::complete(std::unique_ptr<cmdlist> cmd, std::vector<std::unique_pt
 
 }
 
+
+void download::configure(const settings& s) 
+{
+    overwrite_   = s.overwrite_existing_files;
+    discardtext_ = s.discard_text_content;
+}
 
 } // newsflash
 

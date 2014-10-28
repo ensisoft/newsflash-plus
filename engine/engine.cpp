@@ -38,6 +38,7 @@
 #include "utf8.h"
 #include "threadpool.h"
 #include "cmdlist.h"
+#include "settings.h"
 
 namespace newsflash
 {
@@ -189,6 +190,8 @@ public:
         spec.hostname = other.ui_.host;
         spec.hostport = other.ui_.port;
         spec.use_ssl  = other.ui_.secure;
+        spec.enable_compression = acc.enable_compression;
+        spec.enable_pipelining = acc.enable_pipelining;
 
         do_action(conn_.connect(spec));
 
@@ -233,6 +236,8 @@ public:
                 s.use_ssl  = ui_.secure;
                 s.hostname = ui_.host;
                 s.hostport = ui_.port;
+                s.enable_compression = acc.enable_compression;
+                s.enable_pipelining  = acc.enable_pipelining;
                 do_action(conn_.connect(s));                
             }
         }
@@ -302,6 +307,9 @@ public:
                     case connection::error::timeout:
                         ui_.error = ui::connection::errors::timeout;
                         break;
+                    case connection::error::pipeline_reset:
+                        ui_.error = ui::connection::errors::other;
+                        break;
                 }
                 LOG_E("Connection ", conn_number_, " ", e.what());
                 err.resource = ui_.host;
@@ -341,7 +349,12 @@ public:
             if (ui_.state == state::initializing)
                 ui_.state = state::connected;
             else if (ui_.state == state::active)
+            {
                 ui_.state = state::connected;
+                ui_.bps   = 0;
+                ui_.task  = 0;
+                ui_.desc  = "";
+            }
         }
 
         conn_logger_->flush();
@@ -351,6 +364,8 @@ public:
         return ui_.state == state::connected;
     }
 
+    std::size_t task() const 
+    { return ui_.task; }
 
     std::size_t account() const
     { return ui_.account; }
@@ -386,7 +401,7 @@ private:
 
         a->set_id(ui_.id);
         a->set_log(conn_logger_);
-        a->set_affinity(action::affinity::any_thread);
+        //a->set_affinity(action::affinity::any_thread);
         state_.submit(a.release());
     }
 
@@ -412,7 +427,7 @@ public:
     task(std::size_t account, std::uint64_t size, std::string desc,
         std::unique_ptr<newsflash::task> task, engine::state& s) : task_(std::move(task)), state_(s)
     {
-        ui_.state      = state::queued;
+        ui_.state      = state::waiting;
         ui_.id         = state_.oid++;
         ui_.account    = account;
         ui_.desc       = desc;
@@ -433,6 +448,12 @@ public:
         LOG_I("Deleted task ", ui_.id);
     }
 
+    void configure(const settings& s)
+    {
+        if (task_)
+            task_->configure(s);
+    }
+
     bool run(conn& c)
     {
         if (ui_.state == state::complete || 
@@ -450,12 +471,22 @@ public:
         if (!cmds)
             return false;
 
-        //c.execute(std::move(cmds), ui_.id, ui_.desc);        
-        //if (num_active_cmdlists == 0)
-        //    ui_.state = state::waiting;
-
-        //num_active_cmdlists++;
+        std::shared_ptr<cmdlist> cmd(cmds.release());
+        cmds_.push_back(cmd);
+        c.execute(cmd, ui_.id, ui_.desc);
         return true;
+    }
+
+    void complete(std::shared_ptr<cmdlist> cmds)
+    {
+        //auto it = std::find_if(cmds_.begin(), cmds_.end(), cmds);
+        //assert(it != cmds_.end());
+
+        //cmds_.erase(it);
+
+        //std::unique_ptr<cmdlist> c(cmds.get());
+        //cmds.reset();
+
     }
 
     void pause()
@@ -479,6 +510,9 @@ public:
     {
         std::unique_ptr<action> act(a);
 
+        if (ui_.state == state::error)
+            return;
+
         if (act->has_exception())
         {
             ui_.state   = state::error;
@@ -494,9 +528,7 @@ public:
             return;
         }
         std::vector<std::unique_ptr<action>> actions;
-        task_->complete(std::move(act), 
-            actions);
-
+        task_->complete(std::move(act), actions);
         for (auto& a : actions)
             do_action(std::move(a));
     }
@@ -511,7 +543,6 @@ private:
     void do_action(std::unique_ptr<action> a) 
     {
         a->set_id(ui_.id);
-        a->set_affinity(action::affinity::single_thread);
         state_.submit(a.release());
     }
 
@@ -671,10 +702,15 @@ void engine::download(ui::download spec)
 {
     const auto bid = state_->oid;
 
+    settings s;
+    s.discard_text_content = state_->discard_text;
+    s.overwrite_existing_files = state_->overwrite_existing;
+
     for (auto& file : spec.files)
     {
-        std::unique_ptr<newsflash::task> job(new class download(
+        std::unique_ptr<newsflash::download> job(new class download(
             std::move(file.groups), std::move(file.articles), spec.path, file.name));            
+        job->configure(s);
 
         std::unique_ptr<task> state(new task(spec.account, file.size, file.name, std::move(job), *state_));
         state_->tasks.push_back(std::move(state));
@@ -702,6 +738,18 @@ bool engine::pump()
         {
             if (conn->id() != id)
                 continue;
+
+            if (auto* e = dynamic_cast<class connection::execute*>(a))
+            {
+                auto cmds = e->get_cmdlist();
+                auto task = conn->task();
+                auto it = std::find_if(std::begin(state_->tasks), std::end(state_->tasks), 
+                    [&](const std::unique_ptr<engine::task>& t) {
+                        return t->id() == task;
+                    });
+                if (it != std::end(state_->tasks))
+                    (*it)->complete(cmds);
+            }
 
             conn->on_action(a);
             if (conn->is_ready())
@@ -791,11 +839,25 @@ void engine::set_notify_callback(on_async_notify notify_callback)
 void engine::set_overwrite_existing_files(bool on_off)
 {
     state_->overwrite_existing = on_off;
+
+    settings s;
+    s.overwrite_existing_files = on_off;
+    s.discard_text_content = state_->discard_text;
+
+    for (auto& t: state_->tasks)
+        t->configure(s);
 }
 
 void engine::set_discard_text_content(bool on_off)
 {
     state_->discard_text = on_off;
+
+    settings s;
+    s.discard_text_content = on_off;
+    s.overwrite_existing_files = state_->overwrite_existing;
+
+    for (auto& t : state_->tasks)
+        t->configure(s);
 }
 
 void engine::set_prefer_secure(bool on_off)

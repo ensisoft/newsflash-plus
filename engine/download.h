@@ -46,6 +46,7 @@ namespace newsflash
         virtual std::unique_ptr<action> start() override;
         virtual std::unique_ptr<action> kill() override;
         virtual std::unique_ptr<action> flush() override;
+        virtual std::unique_ptr<action> finalize() override;
 
         virtual void complete(std::unique_ptr<action> act,
             std::vector<std::unique_ptr<action>>& next) override;
@@ -53,6 +54,7 @@ namespace newsflash
         virtual void complete(std::unique_ptr<cmdlist> cmd,
             std::vector<std::unique_ptr<action>>& next) override;
 
+        virtual void configure(const settings& s) override;
     private:
         std::vector<std::string> groups_;
         std::vector<std::string> pending_;

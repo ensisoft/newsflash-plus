@@ -53,10 +53,7 @@ namespace newsflash
         };
 
         enum class states {
-            // the task is currently queued
-            queued,
-
-            // waiting for input data from the server
+            // waiting in the queue
             waiting,
 
             // currently being downloaded.

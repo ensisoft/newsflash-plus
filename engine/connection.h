@@ -43,7 +43,8 @@ namespace newsflash
             authentication_rejected,
             no_permission,
             timeout,
-            network
+            network,
+            pipeline_reset
         };
         class exception : public std::exception
         {
@@ -104,6 +105,9 @@ namespace newsflash
             execute(std::shared_ptr<state> s, std::shared_ptr<cmdlist> cmds);
 
             virtual void xperform() override;
+
+            std::shared_ptr<cmdlist> get_cmdlist() const
+            { return cmds_; }
         private:
             std::shared_ptr<state> state_;
             std::shared_ptr<cmdlist> cmds_;
@@ -136,6 +140,8 @@ namespace newsflash
             std::string hostname;
             std::uint16_t hostport;         
             bool use_ssl;
+            bool enable_pipelining;
+            bool enable_compression;
         };
 
         // begin connecting to the given host specification.

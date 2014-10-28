@@ -42,16 +42,6 @@ namespace newsflash
         // some binary content.
         // set to false to have the text data stored to the disk.
         bool discard_text_content;
-
-        // set to true to automatically prune the task list
-        // and kill completed items.
-        bool auto_remove_completed;
-
-        // set to true to choose the secure server over the
-        // general server with accounts that provide 
-        // secure server. if no secure server is available
-        // then general server is used.
-        bool prefer_secure;
     };
     
 } // newsflash

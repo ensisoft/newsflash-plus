@@ -33,6 +33,7 @@ namespace newsflash
 {
     class action;
     class cmdlist;
+    struct settings;
 
     // tasks implement some nntp data based activity in the engine, for
     // example extracting binary content from article data.
@@ -61,6 +62,8 @@ namespace newsflash
         // flush task intermediate state to the disk and make it permanent.
         virtual std::unique_ptr<action> flush() = 0;
 
+        virtual std::unique_ptr<action> finalize() = 0;
+
         // complete the action. create actions (if any) and store
         // them in the next list
         virtual void complete(std::unique_ptr<action> act,
@@ -71,10 +74,9 @@ namespace newsflash
         virtual void complete(std::unique_ptr<cmdlist> cmd,
             std::vector<std::unique_ptr<action>>& next) = 0;
 
-        //virtual void configure(const settings& s) = 0;
+        // update task settings
+        virtual void configure(const settings& s) = 0;
 
-        // update UI state object
-        //virtual void update(ui::task& state) = 0;
     protected:
     private:
     };

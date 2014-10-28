@@ -21,35 +21,25 @@
 //  THE SOFTWARE.
 
 #include <newsflash/config.h>
-
-#include <boost/test/minimal.hpp>
+#include <newsflash/warnpush.h>
+#  include <boost/test/minimal.hpp>
+#  include <boost/lexical_cast.hpp>
+#include <newsflash/warnpop.h>
 #include <thread>
-#include "../bodylist.h"
-#include "../download_state_machine.h"
 #include "../download.h"
-#include "../session.h"
-#include "../buffer.h"
+#include "../bodylist.h"
 #include "../action.h"
-#include "../ui/download.h"
-#include "../ui/settings.h"
+#include "../session.h"
 #include "unit_test_common.h"
 
 namespace nf = newsflash;
-namespace ui = newsflash::ui;
-
-using state = newsflash::ui::task::state;
 
 void unit_test_bodylist()
 {
-    nf::bodylist list(1, 2, {"alt.binaries.foo", "alt.binaries.bar"}, {"123", "234", "345"});
-
-    BOOST_REQUIRE(list.task() == 1);
-    BOOST_REQUIRE(list.account() == 2);    
-    BOOST_REQUIRE(!list.is_complete());
-    BOOST_REQUIRE(!list.configure_fail());
-
     // no such group
     {
+        nf::bodylist list({"alt.binaries.foo", "alt.binaries.bar"}, {"123", "234", "345"});
+
         std::string command;
         nf::session session;
         session.on_send = [&](const std::string& cmd) {
@@ -82,12 +72,9 @@ void unit_test_bodylist()
         BOOST_REQUIRE(list.configure_fail());
     }
 
-    // try again
-    list.clear_fail_bits();
-    BOOST_REQUIRE(!list.configure_fail());
-
     {
 
+        nf::bodylist list({"alt.binaries.foo", "alt.binaries.bar"}, {"123", "234", "345"});
 
         std::string command;
         nf::session session;
@@ -141,71 +128,86 @@ void unit_test_bodylist()
             BOOST_REQUIRE(buffers[1].content_length() == std::strlen("hello\r\n.\r\n"));
         }
     }
-
 }
 
-void unit_test_state_machine()
+void unit_test_create_cmds()
 {
-    using state = ui::task::state;
+    std::vector<std::string> articles;
+    for (int i=0; i<10000; ++i)
+        articles.push_back(boost::lexical_cast<std::string>(i));
 
-    nf::download_state_machine stm(5);
-    stm.on_stop   = [] {};
-    stm.on_cancel = [] {};
-    stm.on_complete = [] {};
-    stm.on_activate = [] {};
+    std::size_t cmd_number = 0;
 
-    BOOST_REQUIRE(stm.get_state() == state::queued);
+    nf::download download({"alt.binaries.foobar"}, articles, "", "test");
+    nf::session session;
+    session.on_send = [&](const std::string& cmd) {
+        BOOST_REQUIRE(cmd == "BODY " + 
+            boost::lexical_cast<std::string>(cmd_number) + "\r\n");
+        ++cmd_number;
+    };
 
-    stm.pause();
-    stm.resume();
-    BOOST_REQUIRE(stm.get_state() == state::queued);
+    session.enable_pipelining(true);
 
-    stm.start();
-    BOOST_REQUIRE(stm.get_state() == state::waiting);
+    for (;;)
+    {
+        auto cmds = download.create_commands();
+        if (!cmds)
+            break;
 
-    stm.activate();
-    BOOST_REQUIRE(stm.get_state() == state::active);
-
-    stm.activate();
-    stm.activate();
-    BOOST_REQUIRE(stm.get_state() == state::active);
-    stm.deactivate();
-    stm.deactivate();
-    stm.deactivate();
-    BOOST_REQUIRE(stm.get_state() == state::waiting);
-
-    stm.pause();
-    BOOST_REQUIRE(stm.get_state() == state::paused);
-
-    stm.resume();
-    BOOST_REQUIRE(stm.get_state() == state::waiting);
-
-    stm.activate();
-    stm.activate();
-    stm.activate();
-    stm.pause();
-    BOOST_REQUIRE(stm.get_state() == state::paused);
-
-    stm.deactivate();
-    stm.deactivate();
-    stm.deactivate();
-    BOOST_REQUIRE(stm.get_state() == state::paused);
-
-    stm.resume();
-
-    stm.activate();
-    stm.complete_articles(5);
-    BOOST_REQUIRE(stm.get_state() == state::active);
-
-    stm.deactivate();
-    BOOST_REQUIRE(stm.get_state() == state::complete);
+        cmds->submit_data_commands(session);
+    }
+    BOOST_REQUIRE(cmd_number == articles.size());
 
 }
+
+void unit_test_decode_binary()
+{
+    delete_file("1489406.jpg");
+
+    nf::download download({"alt.binaries.foobar"}, {"1", "2", "3"}, "", "test");
+    nf::session session;
+    session.on_send = [&](const std::string&) {};
+
+    auto cmdlist = download.create_commands();
+
+    cmdlist->submit_data_commands(session);
+    cmdlist->receive_data_buffer(read_file_buffer("test_data/1489406.jpg-001.ync"));
+    cmdlist->receive_data_buffer(read_file_buffer("test_data/1489406.jpg-002.ync"));
+    cmdlist->receive_data_buffer(read_file_buffer("test_data/1489406.jpg-003.ync"));
+
+    std::vector<std::unique_ptr<nf::action>> actions1;
+    std::vector<std::unique_ptr<nf::action>> actions2;
+    download.complete(std::move(cmdlist), actions1);
+
+    while (!actions1.empty())
+    {
+        for (auto& it : actions1)
+        {
+            it->perform();
+            download.complete(std::move(it), actions2);
+        }
+        actions1 = std::move(actions2);
+        actions2 = std::vector<std::unique_ptr<nf::action>>();
+    }
+
+    download.finalize();
+
+    const auto& jpg = read_file_contents("1489406.jpg");
+    const auto& ref = read_file_contents("test_data/1489406.jpg");
+    BOOST_REQUIRE(jpg == ref);
+
+    delete_file("1489406.jpg");    
+}
+
+void unit_test_decode_text()
+{}
 
 int test_main(int, char*[])
 {
     unit_test_bodylist();
-    unit_test_state_machine();
+    unit_test_create_cmds();
+    unit_test_decode_binary();
+    unit_test_decode_text();
 
     return 0;
 }

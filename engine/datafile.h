@@ -24,6 +24,7 @@
 #include <string>
 #include <atomic>
 #include <vector>
+#include <cassert>
 #include "bigfile.h"
 #include "action.h"
 #include "filesys.h"
@@ -39,7 +40,13 @@ namespace newsflash
             write(std::size_t offset, 
                 std::vector<char> data, std::shared_ptr<datafile> file) : offset_(offset),
                 data_(std::move(data)), file_(file)
-            {}
+            {
+            #ifdef NEWSFLASH_DEBUG
+                file_->num_writes_++;
+            #endif
+
+                set_affinity(affinity::single_thread);
+            }
 
             virtual void xperform() override
             {
@@ -49,6 +56,9 @@ namespace newsflash
                     file_->big_.seek(offset_);
 
                 file_->big_.write(&data_[0], data_.size());
+            #ifdef NEWSFLASH_DEBUG
+                file_->num_writes_--;
+            #endif
             }
         private:
             std::size_t offset_;
@@ -56,14 +66,15 @@ namespace newsflash
             std::shared_ptr<datafile> file_;
         };
 
-        datafile(std::string path, std::string name, std::size_t size, bool bin, bool overwrite) : discard_(false), binary_(bin)
+        datafile(std::string path, std::string suggested_file_name, std::size_t size, bool bin, bool overwrite) : discard_(false), binary_(bin)
         {
             std::string file;
+            std::string name;
             // try to open the file at the given location under different
             // filenames unless ovewrite flag is set.
             for (int i=0; i<10; ++i)
             {
-                name = fs::filename(i, name);
+                name = fs::filename(i, suggested_file_name);
                 file = fs::joinpath(path, name);
                 if (!overwrite && bigfile::exists(file))
                     continue;
@@ -77,19 +88,35 @@ namespace newsflash
                     if (error != std::error_code())
                         throw std::system_error(error, "error resizing file: " + file);
                 }
+                break;
             }
             if (!big_.is_open())
                 throw std::runtime_error("unable to create files at: " + path);
 
             path_ = path;
             name_ = name;
+        #ifdef NEWSFLASH_DEBUG
+            num_writes_ = 0;
+        #endif
         }
 
        ~datafile()
         {
+            close();
+        }
+
+        void close()
+        {
+            if (!big_.is_open())
+                return;
+
+        #ifdef NEWSFLASH_DEBUG
+            assert(num_writes_ == 0);
+        #endif
+
             big_.close();
             if (discard_)
-                bigfile::erase(big_.name());
+                bigfile::erase(big_.name());            
         }
 
         void discard_on_close()
@@ -115,6 +142,9 @@ namespace newsflash
         std::string path_;
         std::string name_;
         bool binary_;
+    #ifdef NEWSFLASH_DEBUG
+        std::atomic<std::size_t> num_writes_;
+    #endif
     };
 
 } // newsflash

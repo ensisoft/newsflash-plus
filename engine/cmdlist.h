@@ -23,8 +23,8 @@
 #pragma once
 
 #include <newsflash/config.h>
-
 #include <cstddef>
+#include <atomic>
 
 namespace newsflash
 {
@@ -55,13 +55,14 @@ namespace newsflash
         // receive a data buffer response to submit_data_commands
         virtual void receive_data_buffer(buffer&& buff) = 0;
 
-        // get the account to which this cmdlist is associated with.
-        //virtual std::size_t account() const = 0;
-
-        // get the owner task id. 
-        //virtual std::size_t task() const = 0;
+        virtual void cancel()
+        { cancel_ = true; }
         
+        virtual bool is_canceled() const
+        { return cancel_;}
+
     protected:
+        std::atomic<bool> cancel_;
     private:
     };
 

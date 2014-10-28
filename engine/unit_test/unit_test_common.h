@@ -70,6 +70,7 @@ newsflash::buffer read_file_buffer(const char* file)
 
     buff.append(size);
     buff.set_content_type(newsflash::buffer::type::article);
+    buff.set_status(newsflash::buffer::status::success);
     buff.set_content_length(size);
     buff.set_content_start(0);
 

@@ -45,7 +45,7 @@ threadpool::threadpool(std::size_t num_threads) : round_robin_(0), queue_size_(0
 
 threadpool::~threadpool()
 {
-
+    shutdown();
 }
 
 void threadpool::submit(action* act)
@@ -89,6 +89,7 @@ void threadpool::shutdown()
         }
         thread->thread->join();
     }
+    threads_.clear();
 }
 
 

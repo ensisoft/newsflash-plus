@@ -52,6 +52,8 @@ struct connection::state {
     std::unique_ptr<class session> session;
     std::unique_ptr<event> cancel;
     bool ssl;
+    bool pipelining;
+    bool compression;
 };
 
 void connection::resolve::xperform()
@@ -129,6 +131,9 @@ connection::initialize::initialize(std::shared_ptr<state> s) : state_(s)
     state_->session->on_send = [=](const std::string& cmd) {
         state_->socket->sendall(&cmd[0], cmd.size());
     };
+
+    state_->session->enable_pipelining(s->pipelining);
+    state_->session->enable_compression(s->compression);
 }
 
 void connection::initialize::xperform()
@@ -219,6 +224,8 @@ void connection::execute::xperform()
     // it into the session in order to update the session state.
     // once a command is completed we pass the output buffer
     // to the cmdlist so that it can update its own state.
+    if (cmdlist->is_canceled())
+        return;
 
     bool configure_success = false;
 
@@ -253,6 +260,9 @@ void connection::execute::xperform()
     }
     if (!configure_success)
         return;
+    
+    if (cmdlist->is_canceled())
+        return;
 
     cmdlist->submit_data_commands(*session);
 
@@ -284,6 +294,18 @@ void connection::execute::xperform()
         if (err != session::error::none)
             throw exception(connection::error::no_permission, "no permission");
 
+        // if the session is pipelined there's no way to stop the data transmission
+        // of already pipelined commands other than by doing a hard socket reset.
+        // if the session is not pipelined we can just exit the reading loop after 
+        // a complete command is completed and we can maintain the socket/session.
+        if (cmdlist->is_canceled())
+        {
+            if (state_->pipelining)
+                throw exception(connection::error::pipeline_reset, "pipeline reset");
+
+            assert(!session->pending());            
+            return;
+        }
         cmdlist->receive_data_buffer(std::move(content));
     }    
 }
@@ -381,6 +403,8 @@ std::unique_ptr<action> connection::connect(spec s)
     state_->addr     = 0;
     state_->bytes    = 0;
     state_->ssl      = s.use_ssl;
+    state_->compression = s.enable_compression;
+    state_->pipelining = s.enable_pipelining;
     state_->cancel.reset(new event);
     state_->cancel->reset();
     std::unique_ptr<action> act(new resolve(state_));
