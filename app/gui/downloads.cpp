@@ -257,7 +257,7 @@ void downloads::on_tableConns_customContextMenuRequested(QPoint point)
 }
 
 
-void downloads::on_tableconns_doubleClicked(const QModelIndex&)
+void downloads::on_tableConns_doubleClicked(const QModelIndex&)
 {
     on_actionConnClone_triggered();
 }

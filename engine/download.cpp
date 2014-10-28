@@ -110,9 +110,11 @@ std::unique_ptr<action> download::finalize()
     return nullptr;
 }
 
-void download::complete(std::unique_ptr<action> act, std::vector<std::unique_ptr<action>>& next)
+void download::complete(action& act, std::vector<std::unique_ptr<action>>& next)
 {
-    auto* dec = dynamic_cast<decode*>(act.get());
+    // the action is either a decoding action or a datafile::write action.
+    // for the write there's nothing we need to do.
+    auto* dec = dynamic_cast<decode*>(&act);
     if (dec == nullptr)
         return;
 
@@ -165,20 +167,20 @@ void download::complete(std::unique_ptr<action> act, std::vector<std::unique_ptr
     }
 }
 
-void download::complete(std::unique_ptr<cmdlist> cmd, std::vector<std::unique_ptr<action>>& next)
+void download::complete(cmdlist& cmd, std::vector<std::unique_ptr<action>>& next)
 {
-    auto* list = dynamic_cast<bodylist*>(cmd.get());
+    auto& list = dynamic_cast<bodylist&>(cmd);
 
-    auto messages = list->get_messages();
+    auto messages = list.get_messages();
 
-    if (list->configure_fail())
+    if (list.configure_fail())
     {
         std::copy(std::begin(messages), std::end(messages), std::back_inserter(failed_));
         errors_.set(task::error::unavailable);
         return;
     }
 
-    auto buffers = list->get_buffers();
+    auto buffers = list.get_buffers();
 
     for (std::size_t i=0; i<buffers.size(); ++i)
     {

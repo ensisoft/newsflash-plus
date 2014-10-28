@@ -427,7 +427,7 @@ public:
     task(std::size_t account, std::uint64_t size, std::string desc,
         std::unique_ptr<newsflash::task> task, engine::state& s) : task_(std::move(task)), state_(s)
     {
-        ui_.state      = state::waiting;
+        ui_.state      = state::queued;
         ui_.id         = state_.oid++;
         ui_.account    = account;
         ui_.desc       = desc;
@@ -436,6 +436,7 @@ public:
         ui_.etatime    = 0;
         ui_.completion = 0.0;
         started_       = false;
+        executed_      = false;
 
         LOG_I("Created task ", ui_.id);
     }
@@ -443,7 +444,12 @@ public:
    ~task()
     {
         if (ui_.state != state::complete)
+        {
+            for (auto& cmd : cmds_)
+                cmd->cancel();
+
             do_action(task_->kill());
+        }
 
         LOG_I("Deleted task ", ui_.id);
     }
@@ -463,30 +469,39 @@ public:
 
         if (!started_)
         {
+            LOG_D("Starting task ", ui_.id);
+
             do_action(task_->start());
             started_ = true;
         }
 
         auto cmds = task_->create_commands();
         if (!cmds)
+        {
+            executed_ = true;
             return false;
+        }
 
         std::shared_ptr<cmdlist> cmd(cmds.release());
         cmds_.push_back(cmd);
         c.execute(cmd, ui_.id, ui_.desc);
+
+        ui_.state = state::active;
+        // todo: timer
         return true;
     }
 
     void complete(std::shared_ptr<cmdlist> cmds)
     {
-        //auto it = std::find_if(cmds_.begin(), cmds_.end(), cmds);
-        //assert(it != cmds_.end());
+        auto it = std::find(cmds_.begin(), cmds_.end(), cmds);
+        assert(it != cmds_.end());
 
-        //cmds_.erase(it);
+        cmds_.erase(it);
 
-        //std::unique_ptr<cmdlist> c(cmds.get());
-        //cmds.reset();
-
+        std::vector<std::unique_ptr<action>> actions;
+        task_->complete(*cmds, actions);
+        for (auto& a : actions)
+            do_action(std::move(a));
     }
 
     void pause()
@@ -528,9 +543,23 @@ public:
             return;
         }
         std::vector<std::unique_ptr<action>> actions;
-        task_->complete(std::move(act), actions);
+        task_->complete(*act, actions);
         for (auto& a : actions)
             do_action(std::move(a));
+
+        if (executed_)
+        {
+            if (actions.empty())
+            {
+                ui_.state      = state::complete;
+                ui_.etatime    = 0;
+                ui_.completion = 100.0;
+            }
+            else
+            {
+
+            }
+        }
     }
 
     std::size_t account() const 
@@ -542,6 +571,8 @@ public:
 private:
     void do_action(std::unique_ptr<action> a) 
     {
+        if (!a)
+            return;
         a->set_id(ui_.id);
         state_.submit(a.release());
     }
@@ -553,6 +584,7 @@ private:
     engine::state& state_;
 private:
     bool started_;
+    bool executed_;
 };
 
 

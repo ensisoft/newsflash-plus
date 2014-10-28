@@ -48,10 +48,10 @@ namespace newsflash
         virtual std::unique_ptr<action> flush() override;
         virtual std::unique_ptr<action> finalize() override;
 
-        virtual void complete(std::unique_ptr<action> act,
+        virtual void complete(action& act,
             std::vector<std::unique_ptr<action>>& next) override;
 
-        virtual void complete(std::unique_ptr<cmdlist> cmd,
+        virtual void complete(cmdlist& cmd,
             std::vector<std::unique_ptr<action>>& next) override;
 
         virtual void configure(const settings& s) override;

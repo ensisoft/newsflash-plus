@@ -53,6 +53,8 @@ namespace newsflash
         };
 
         enum class states {
+            queued,
+
             // waiting in the queue
             waiting,
 

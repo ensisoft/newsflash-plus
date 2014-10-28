@@ -72,7 +72,7 @@ namespace gui
         void on_actionConnOpenLog_triggered();
         void on_tableTasks_customContextMenuRequested(QPoint pos);
         void on_tableConns_customContextMenuRequested(QPoint pos);
-        void on_tableconns_doubleClicked(const QModelIndex&);
+        void on_tableConns_doubleClicked(const QModelIndex&);
 
 
     private:

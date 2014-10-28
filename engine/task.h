@@ -66,12 +66,12 @@ namespace newsflash
 
         // complete the action. create actions (if any) and store
         // them in the next list
-        virtual void complete(std::unique_ptr<action> act,
+        virtual void complete(action& act,
             std::vector<std::unique_ptr<action>>& next) = 0;
 
         // complete the cmdlist. create actions (if any) and store
         // them in the next list
-        virtual void complete(std::unique_ptr<cmdlist> cmd,
+        virtual void complete(cmdlist& cmd,
             std::vector<std::unique_ptr<action>>& next) = 0;
 
         // update task settings

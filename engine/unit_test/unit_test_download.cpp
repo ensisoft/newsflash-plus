@@ -177,14 +177,14 @@ void unit_test_decode_binary()
 
     std::vector<std::unique_ptr<nf::action>> actions1;
     std::vector<std::unique_ptr<nf::action>> actions2;
-    download.complete(std::move(cmdlist), actions1);
+    download.complete(*cmdlist, actions1);
 
     while (!actions1.empty())
     {
         for (auto& it : actions1)
         {
             it->perform();
-            download.complete(std::move(it), actions2);
+            download.complete(*it, actions2);
         }
         actions1 = std::move(actions2);
         actions2 = std::vector<std::unique_ptr<nf::action>>();

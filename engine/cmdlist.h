@@ -36,6 +36,8 @@ namespace newsflash
     class cmdlist
     {
     public:
+        cmdlist() : cancel_(false)
+        {}
         // the cmdlist operation is divided into 2 steps, session configuration
         // and then the actual data transfer. 
         // session configuration is performed step-by-step (without pipelining)

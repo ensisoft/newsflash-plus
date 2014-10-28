@@ -36,15 +36,9 @@
 #include "../session.h"
 #include "../buffer.h"
 #include "../logging.h"
+#include "unit_test_common.h"
 
 namespace nf = newsflash;
-
-#define REQUIRE_EXCEPTION(x) \
-    try { \
-        x; \
-        BOOST_FAIL("exception was expected"); \
-    } catch(const std::exception& e) {}
-
 
 void test_connect()
 {
@@ -242,6 +236,75 @@ void test_connect()
 
 void test_execute()
 {
+    struct cmdlist : public nf::cmdlist 
+    {
+        virtual bool submit_configure_command(std::size_t i, nf::session& ses)
+        {
+            if (i == 0) {
+                ses.change_group("alt.binaries.foo");
+                return true;
+            }
+            return false;
+        }
+        virtual bool receive_configure_buffer(std::size_t i, nf::buffer&& buff)
+        {
+            return true;
+        }
+        virtual void submit_data_commands(nf::session& ses)
+        {
+            ses.retrieve_article("3");
+        }
+        virtual void receive_data_buffer(nf::buffer&& buff)
+        {
+            BOOST_REQUIRE(buff.content_status() == nf::buffer::status::success);
+            BOOST_REQUIRE(buff.content_type() == nf::buffer::type::article);
+
+            const auto ref = read_file_buffer("test_data/newsflash_2_0_0.uuencode");
+            BOOST_REQUIRE(buff.content_length() ==
+                ref.content_length());
+
+            BOOST_REQUIRE(!std::memcmp(ref.content(), 
+                buff.content(), ref.content_length()));
+        }
+    };
+
+    auto log = std::make_shared<nf::stdlog>(std::cout);
+
+    std::unique_ptr<nf::action> act;
+
+    nf::connection::spec s;
+    s.hostname = "localhost";
+    s.hostport = 1919;
+    s.use_ssl  = false;
+    s.enable_compression = false;
+    s.enable_pipelining  = false;
+    s.username  = "pass";
+    s.password  = "pass";
+
+    nf::connection conn;
+
+    // resolve
+    act = conn.connect(s);
+    act->set_log(log);
+    act->perform();
+
+    // connect
+    act = conn.complete(std::move(act));
+    act->set_log(log);
+    act->perform();
+
+    // initialize
+    act = conn.complete(std::move(act));
+    act->set_log(log);
+    act->perform();
+
+    auto cmds = std::make_shared<cmdlist>();
+
+    // execute
+    act = conn.execute(cmds);
+    act->perform();
+    act = conn.complete(std::move(act));
+    BOOST_REQUIRE(!act);
 }
 
 void test_cancel_execute()
