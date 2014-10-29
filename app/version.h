@@ -22,7 +22,15 @@
 
 #pragma once
 
+#include <newsflash/config.h>
 
+class QString;
 
+namespace app
+{
 
+// check if latest version is newer thant current version.
+// returns true if so, otherwise returns false.
+bool check_version_update(const QString& current, const QString& latest);
 
+} // app

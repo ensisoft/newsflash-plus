@@ -136,3 +136,15 @@
 
 #define QT_NO_CAST_TO_ASCII
 
+// these are macros so that they can be embedded
+// inside string literals easily for exaple L"yadi yadi" VERSION_STRING "yadi yadi"
+#define NEWSFLASH_VERSION   "3.5.0b0"
+
+#define NEWSFLASH_COPYRIGHT "Copyright (c) Sami V\303\244is\303\244nen 2009-2014"
+#define NEWSFLASH_WEBSITE   "http://www.ensisoft.com"
+
+#ifdef _NDEBUG
+#  define NEWSFLASH_TITLE "Newsflash Plus"
+#else 
+#  define NEWSFLASH_TITLE "Newsflash Plus DEBUG"
+#endif  

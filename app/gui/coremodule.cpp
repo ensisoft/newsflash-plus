@@ -25,10 +25,12 @@
 #include <newsflash/config.h>
 #include <newsflash/warnpush.h>
 #  include <QtGui/QFileDialog>
+#  include <QtGui/QMessageBox>
 #  include <QDir>
 #include <newsflash/warnpop.h>
 
 #include "coremodule.h"
+#include "mainwindow.h"
 #include "../engine.h"
 #include "../feedback.h"
 #include "../settings.h"
@@ -36,7 +38,7 @@
 #include "../homedir.h"
 #include "../debug.h"
 #include "../format.h"
-
+#include "../telephone.h"
 
 using app::str;
 
@@ -95,6 +97,18 @@ coremodule::coremodule()
 coremodule::~coremodule()
 {}
 
+void coremodule::loadstate(app::settings& s) 
+{
+    const bool callhome = s.get("settings", "check_for_software_updates", true);
+    if (callhome)
+    {
+        et_.reset(new app::telephone);
+        QObject::connect(et_.get(), SIGNAL(completed(bool, QString)), 
+            this, SLOT(calledHome(bool, QString)));
+        et_->callhome();
+    }
+}
+
 gui::settings* coremodule::get_settings(app::settings& s)
 {
     auto* ptr = new coresettings;
@@ -104,7 +118,7 @@ gui::settings* coremodule::get_settings(app::settings& s)
     const auto discard   = app::g_engine->get_discard_text_content();
     const auto logfiles  = app::g_engine->get_logfiles_path();
     const auto downloads = app::g_engine->get_download_path();
-    const auto updates   = true; // todo:    
+    const auto updates   = s.get("settings", "check_for_software_updates", true);
 
     ui.chkOverwriteExisting->setChecked(overwrite);
     ui.chkDiscardText->setChecked(discard);
@@ -150,7 +164,6 @@ void coremodule::apply_settings(settings* gui, app::settings& backend)
     auto* ptr = dynamic_cast<coresettings*>(gui);
     auto& ui = ptr->ui_;
 
-    const bool keepalive = ui.chkKeepalive->isChecked();
     const bool overwrite = ui.chkOverwriteExisting->isChecked();
     const bool discard   = ui.chkDiscardText->isChecked();
     const bool updates   = ui.chkUpdates->isChecked();
@@ -205,12 +218,28 @@ void coremodule::apply_settings(settings* gui, app::settings& backend)
 
     // todo: throttle value.
 
-    // todo: configure feedback 
+    backend.set("settings", "check_for_software_updates", updates);
 }
 
 void coremodule::free_settings(settings* s)
 {
     delete s;
+}
+
+void coremodule::calledHome(bool new_version_available, QString latest)
+{
+    if (new_version_available)
+    {
+        QMessageBox::information(g_win, 
+            tr("A New Version Is Available"),
+            tr("A new version of the software is available.\n"
+               "Current version %1\n"
+               "Latest version %2\n\n"
+               "The latest software can be downloaded from www.ensisoft.com").arg(NEWSFLASH_VERSION)
+            .arg(latest),
+            QMessageBox::Ok);
+    }
+    et_.release();
 }
 
 } // gui

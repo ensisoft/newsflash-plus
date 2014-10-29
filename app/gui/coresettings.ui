@@ -99,7 +99,7 @@
       <string>Downloading options</string>
      </property>
      <layout class="QGridLayout" name="gridLayout_4">
-      <item row="1" column="0">
+      <item row="0" column="0">
        <widget class="QCheckBox" name="chkOverwriteExisting">
         <property name="toolTip">
          <string/>
@@ -112,23 +112,13 @@
         </property>
        </widget>
       </item>
-      <item row="2" column="0">
+      <item row="1" column="0">
        <widget class="QCheckBox" name="chkDiscardText">
         <property name="layoutDirection">
          <enum>Qt::LeftToRight</enum>
         </property>
         <property name="text">
          <string>Discard text content</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="0">
-       <widget class="QCheckBox" name="chkKeepalive">
-        <property name="toolTip">
-         <string>Keep connections alive by sending messages to the server at regular intervals.</string>
-        </property>
-        <property name="text">
-         <string>Keep connections alive</string>
         </property>
        </widget>
       </item>
@@ -254,7 +244,6 @@
   <tabstop>btnBrowseLog</tabstop>
   <tabstop>editDownloads</tabstop>
   <tabstop>btnBrowseDownloads</tabstop>
-  <tabstop>chkKeepalive</tabstop>
   <tabstop>chkOverwriteExisting</tabstop>
   <tabstop>chkDiscardText</tabstop>
   <tabstop>rdbAskAccount</tabstop>

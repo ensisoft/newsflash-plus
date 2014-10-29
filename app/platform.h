@@ -22,7 +22,20 @@
 
 #pragma once
 
+#include <newsflash/config.h>
+#include <newsflash/warnpush.h>
+#  include <QString>
+#include <newsflash/warnpush.h>
 
+// platform specific functions that are not provided by Qt.
 
+namespace app
+{
 
+// return the name of the operating system that we're running on
+// for example Mint Linux, Ubuntu, Windows XP, Windows 7  etc.
+QString get_platform_name();
 
+QString resolve_mount_point(const QString& path);
+
+} // app

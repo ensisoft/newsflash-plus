@@ -22,7 +22,37 @@
 
 #pragma once
 
+#include <newsflash/config.h>
+#include <newsflash/warnpush.h>
+#  include <QtNetwork/QNetworkAccessManager>
+#  include <QObject>
+#include <newsflash/warnpop.h>
 
+class QNetworkReply;
 
+namespace app
+{
+    // telephone class performs "callhome" to check for software updates.
+    // it requires the .php backend in the website and does a HTTP query
+    // with QNAM
+    class telephone : public QObject
+    {
+        Q_OBJECT
 
+    public:
+        telephone();
+       ~telephone();
+        
+        // callhome, check for software updates.
+        void callhome();
+    signals:
+        void completed(bool new_version_available, QString latest);
 
+    private slots:
+        void finished(QNetworkReply* reply);
+
+    private:
+        QNetworkAccessManager net_;
+
+    };
+} // app

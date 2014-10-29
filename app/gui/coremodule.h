@@ -25,11 +25,16 @@
 #include <newsflash/config.h>
 
 #include <newsflash/warnpush.h>
+#  include <QObject>
 #  include "ui_coresettings.h"
 #include <newsflash/warnpop.h>
 #include <memory>
 #include "mainmodule.h"
 #include "settings.h"
+
+namespace app {
+    class telephone;
+} // app
 
 namespace gui
 {
@@ -55,12 +60,15 @@ namespace gui
 
     // glue code for general application settings and engine + feedback system
     // translates settings data to UI state and vice versa.
-    class coremodule : public mainmodule
+    class coremodule : public QObject, public mainmodule
     {
+        Q_OBJECT
+
     public:
         coremodule();
        ~coremodule();
-       
+
+        virtual void loadstate(app::settings& s) override;       
         virtual gui::settings* get_settings(app::settings& s) override;
         virtual void apply_settings(settings* gui, app::settings& backend) override;
         virtual void free_settings(settings* s) override;
@@ -68,6 +76,10 @@ namespace gui
         virtual info information() const override
         { return {"coremodule", ""}; }
 
+    private slots:
+        void calledHome(bool new_version_available, QString latest);
+
     private:
+        std::unique_ptr<app::telephone> et_;
     };
 } // gui
