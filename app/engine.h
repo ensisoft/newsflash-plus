@@ -33,7 +33,7 @@
 #include <memory>
 #include <vector>
 #include <string>
-
+#include "platform.h"
 
 class QEvent;
 
@@ -102,7 +102,8 @@ namespace app
 
         void set_downloads_path(const QString& path)
         {
-            downloads_ = path;
+            downloads_  = path;
+            mountpoint_ = resolve_mount_point(downloads_);
         }
 
         bool get_overwrite_existing_files() const
@@ -183,6 +184,7 @@ namespace app
     private:
         QString logifiles_;
         QString downloads_;
+        QString mountpoint_;
         quint64 diskspace_;
         int ticktimer_;
     private:

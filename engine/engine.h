@@ -119,6 +119,8 @@ namespace newsflash
 
         bool get_throttle() const;
 
+        unsigned get_throttle_value() const;
+
         // get whether engine is started or not.
         bool is_started() const;
 

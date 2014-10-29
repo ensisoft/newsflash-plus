@@ -26,6 +26,7 @@
 #include <deque>
 #include <mutex>
 #include <fstream>
+#include <list>
 #include <cassert>
 
 #include "engine.h"
@@ -207,7 +208,7 @@ public:
         --current_num_connections;
     }
 
-    void tick()
+    void tick(const std::chrono::milliseconds& elapsed)
     {
         if (ui_.state == state::connected)
         {
@@ -225,7 +226,7 @@ public:
                 if (--ticks_to_conn_)
                     return;
 
-                LOG_D("Reconnecting...");
+                LOG_D("Connection ", conn_number_, " reconnecting...");
                 ui_.error = error::none;
                 ui_.state = state::disconnected;
 
@@ -262,6 +263,7 @@ public:
         ui_.desc  = std::move(desc);
         ui_.state = state::active;
         do_action(conn_.execute(cmds));
+        LOG_D("Connection ", conn_number_, " executing ", desc);
     }
 
     void update(ui::connection& ui)
@@ -271,6 +273,15 @@ public:
     void on_action(action* a)
     {
         std::unique_ptr<action> act(a);
+
+        if (auto* e = dynamic_cast<class connection::execute*>(a))
+        {
+            ui_.down += e->bytes();
+            ui_.task  = 0;
+            ui_.desc  = "";
+            ui_.state = state::connected;
+            LOG_D("Connection ", conn_number_, " completed execute!");
+        }
 
         ticks_to_ping_ = 30;
         ticks_to_conn_ = 5;
@@ -311,9 +322,7 @@ public:
                         ui_.error = ui::connection::errors::other;
                         break;
                 }
-                LOG_E("Connection ", conn_number_, " ", e.what());
-                err.resource = ui_.host;
-                err.what     = e.what();
+                err.what = e.what();
             }
             catch (const std::system_error& e)
             {
@@ -322,20 +331,23 @@ public:
                     ui_.error = ui::connection::errors::refused;
                 else ui_.error = ui::connection::errors::other;
 
-                LOG_E("Connection ", conn_number_, " (", code.value(), ") ", code.message());
                 err.code = code;
                 err.what = e.what();
             }
             catch (const std::exception &e)
             {
                 ui_.error = error::other;                
-                LOG_E("Connection ", conn_number_, " ", e.what());
-                err.what = e.what();
+                err.what  = e.what();
+            }
+
+            if (err.code) {
+                LOG_E("Connection ", conn_number_, " (", err.code.value(), ") ", err.code.message());
+            } else {
+                LOG_E("Connection ", conn_number_, " ", err.what);
             }
 
             state_.on_error_callback(err);
-
-            conn_logger_->flush();
+            state_.logger->flush();
             return;
         }
 
@@ -356,8 +368,6 @@ public:
                 ui_.desc  = "";
             }
         }
-
-        conn_logger_->flush();
     }
     bool is_ready() const 
     {
@@ -401,7 +411,6 @@ private:
 
         a->set_id(ui_.id);
         a->set_log(conn_logger_);
-        //a->set_affinity(action::affinity::any_thread);
         state_.submit(a.release());
     }
 
@@ -423,6 +432,7 @@ class engine::task
 {
 public:
     using state = ui::task::states;
+    using clock = std::chrono::steady_clock;
 
     task(std::size_t account, std::uint64_t size, std::string desc,
         std::unique_ptr<newsflash::task> task, engine::state& s) : task_(std::move(task)), state_(s)
@@ -437,6 +447,7 @@ public:
         ui_.completion = 0.0;
         started_       = false;
         executed_      = false;
+        num_pending_actions_ = 0;
 
         LOG_I("Created task ", ui_.id);
     }
@@ -458,6 +469,13 @@ public:
     {
         if (task_)
             task_->configure(s);
+    }
+
+    void tick(const std::chrono::milliseconds& elapsed)
+    {
+        // todo: actually measure the time
+        if (ui_.state == state::active)
+            ui_.runtime++;
     }
 
     bool run(conn& c)
@@ -487,7 +505,8 @@ public:
         c.execute(cmd, ui_.id, ui_.desc);
 
         ui_.state = state::active;
-        // todo: timer
+
+        LOG_D("Task ", ui_.id, " running ", cmds_.size(), " command lists");
         return true;
     }
 
@@ -499,9 +518,14 @@ public:
         cmds_.erase(it);
 
         std::vector<std::unique_ptr<action>> actions;
+
         task_->complete(*cmds, actions);
         for (auto& a : actions)
             do_action(std::move(a));
+
+        LOG_D("Task ", ui_.id, " command list complete. ", cmds_.size(), " remaining");
+
+        update_completion();
     }
 
     void pause()
@@ -512,8 +536,18 @@ public:
             return;
 
         ui_.state = state::paused;
-        // todo: stop timer.
+        LOG_D("Task ", ui_.id, " paused");
+    }
 
+    void resume()
+    {
+        if (ui_.state != state::paused)
+            return;
+
+        if (started_)
+             ui_.state = state::waiting;
+        else ui_.state = state::queued;
+        LOG_D("Task ", ui_.id, " resumed");
     }
 
     void update(ui::task& ui)
@@ -523,6 +557,8 @@ public:
 
     void on_action(action* a)
     {
+        --num_pending_actions_;
+
         std::unique_ptr<action> act(a);
 
         if (ui_.state == state::error)
@@ -532,34 +568,39 @@ public:
         {
             ui_.state   = state::error;
             ui_.etatime = 0;
+            ui::error err;
+            err.resource = ui_.desc;
+
             try
             {
                 act->rethrow();
             }
             catch (const std::system_error& e)
-            {}
+            {
+                err.code = e.code();
+                err.what = e.what();
+            }
             catch (const std::exception& e)
-            {}
+            {
+                err.what = e.what();
+            }
+            if(err.code) {
+                LOG_E("Task ", ui_.id, " (", err.code.value(), ") ", err.code.message());
+            } else {
+                LOG_E("Task ", ui_.id, " ", err.what);
+            }
+            state_.on_error_callback(err);
+            state_.logger->flush();
             return;
         }
+
         std::vector<std::unique_ptr<action>> actions;
+
         task_->complete(*act, actions);
         for (auto& a : actions)
             do_action(std::move(a));
 
-        if (executed_)
-        {
-            if (actions.empty())
-            {
-                ui_.state      = state::complete;
-                ui_.etatime    = 0;
-                ui_.completion = 100.0;
-            }
-            else
-            {
-
-            }
-        }
+        update_completion();
     }
 
     std::size_t account() const 
@@ -569,18 +610,41 @@ public:
     { return ui_.id; }
 
 private:
+    void update_completion()
+    {
+        if (!num_pending_actions_)
+        {
+            if (executed_)
+            {
+                ui_.state   = state::complete;
+                ui_.etatime = 0;
+                ui_.completion = 100.0;
+                //task_->finalize();
+                //task_.reset();
+                LOG_D("Task ", ui_.id, " complete");
+            }
+            else if (ui_.state == state::active)
+            {
+                ui_.state   = state::waiting;
+                ui_.etatime = 0; // todo:
+            }
+        }
+    }
+
     void do_action(std::unique_ptr<action> a) 
     {
-        if (!a)
-            return;
+        if (!a) return;
+
         a->set_id(ui_.id);
         state_.submit(a.release());
+        num_pending_actions_++;
     }
 
 private:
     ui::task ui_;    
     std::unique_ptr<newsflash::task> task_;
-    std::vector<std::shared_ptr<cmdlist>> cmds_;
+    std::list<std::shared_ptr<cmdlist>> cmds_;
+    std::size_t num_pending_actions_;
     engine::state& state_;
 private:
     bool started_;
@@ -740,6 +804,8 @@ void engine::download(ui::download spec)
 
     for (auto& file : spec.files)
     {
+        LOG_D("New download with ", file.articles.size());
+
         std::unique_ptr<newsflash::download> job(new class download(
             std::move(file.groups), std::move(file.articles), spec.path, file.name));            
         job->configure(s);
@@ -814,11 +880,15 @@ bool engine::pump()
 
 void engine::tick()
 {
-    // todo: measure time here instead of relying on the clientr
-
     for (auto& conn : state_->conns)
     {
-        conn->tick();
+    // todo: measure time here instead of relying on the clientr        
+        conn->tick(std::chrono::seconds(1));
+    }
+
+    for (auto& task : state_->tasks)
+    {
+        task->tick(std::chrono::seconds(1));
     }
 
     connect();
@@ -926,6 +996,12 @@ bool engine::get_throttle() const
 {
     // todo:
     return false;
+}
+
+unsigned engine::get_throttle_value() const
+{ 
+    // todo:
+    return 0;
 }
 
 bool engine::is_started() const 

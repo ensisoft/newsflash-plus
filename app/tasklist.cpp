@@ -57,14 +57,14 @@ const char* str(bitflag f)
 {
     if (f.test(flags::dmca))
         return "DMCA";
+    else if (f.test(flags::damaged))
+        return "Damaged";    
     else if (f.test(flags::unavailable))
         return "Unavailable";
-    else if (f.test(flags::damaged))
-        return "Damaged";
     else if (f.test(flags::error))
         return "NNTP Error";
 
-    return "???";
+    return "Complete";
 }
 
 
@@ -98,7 +98,7 @@ QVariant tasklist::data(const QModelIndex& index, int role) const
                 return format(runtime{ui.runtime});
 
             case columns::eta:
-                if (ui.etatime == -1)
+                if (ui.etatime == newsflash::ui::WHO_KNOWS)
                     return QString("  %1  ").arg(infinity);
                 return format(runtime{ui.etatime});
 
@@ -129,7 +129,11 @@ QVariant tasklist::data(const QModelIndex& index, int role) const
             case states::paused: 
                 return QIcon(":/resource/16x16_ico_png/ico_task_paused.png");                                
             case states::complete: 
+                if (ui.errors.any_bit())
+                    return QIcon(":/resource/16x16_ico_png/ico_damaged.png");
+
                 return QIcon(":/resource/16x16_ico_png/ico_task_complete.png");                
+
             case states::error: 
                 return QIcon(":/resource/16x16_ico_png/ico_task_error.png");                
         }

@@ -108,9 +108,13 @@ namespace newsflash
 
             std::shared_ptr<cmdlist> get_cmdlist() const
             { return cmds_; }
+
+            std::size_t bytes() const 
+            { return bytes_; }
         private:
             std::shared_ptr<state> state_;
             std::shared_ptr<cmdlist> cmds_;
+            std::size_t bytes_;
         };
 
         class disconnect : public action

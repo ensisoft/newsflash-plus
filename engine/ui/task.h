@@ -26,6 +26,7 @@
 
 #include <cstddef>
 #include <string>
+#include <limits>
 
 #include "../bitflag.h"
 
@@ -98,10 +99,16 @@ namespace newsflash
         std::uint32_t runtime; 
 
         // the estimated completion time (in seconds),
+        // will be set to WHO_KNOWS when eta cannot be calculated
+        // for example when task has been paused by the user
+        // or is waiting for input.
         std::uint32_t etatime;
 
         // the current completion %  (range 0.0 - 100.0)
         double completion;
     };
+
+    const std::uint32_t WHO_KNOWS = std::numeric_limits<std::uint32_t>::max();
+
 } // ui
 } // engine

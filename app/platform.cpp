@@ -26,13 +26,18 @@
 #  include <QTextStream>
 #  include <QIODevice>
 #  include <QStringList>
+#  include <QDir>
 #include <newsflash/warnpop.h>
 
 #if defined(WINDOWS_OS)
 #  include <windows.h>
 #endif
+#if defined(LINUX_OS)
+#  include <sys/vfs.h>
+#endif
 
 #include "platform.h"
+#include "format.h"
 
 namespace app
 {
@@ -161,6 +166,71 @@ QString get_platform_name()
    return "GNU/Linux";
 }
 
+QString resolve_mount_point(const QString& directory)
+{
+    QDir dir(directory);
+    QString path = dir.canonicalPath(); // resolves symbolic links
+
+    // have to read /proc/mounts and compare the mount points to 
+    // the given directory path. an alternative could be /etc/mtab
+    // but apparently /proc/mounts is more up to date and should exist
+    // on any new modern kernel
+    QFile mtab("/proc/mounts");
+    if (!mtab.open(QIODevice::ReadOnly))
+        return "";
+    
+    QStringList mounts;
+    QString line;
+    QTextStream stream(&mtab);
+    do 
+    {
+        line = stream.readLine();
+        if (line.isEmpty() || line.isNull())
+            continue;
+        
+        QStringList split = line.split(" ");
+        if (split.size() != 6)
+            continue;
+        
+        // /proc/mounts should look something like this...
+        // rootfs / rootfs rw 0 0
+        // none /sys sysfs rw,nosuid,nodev,noexec 0 0
+        // none /proc proc rw,nosuid,nodev,noexec 0 0
+        // udev /dev tmpfs rw 0 0
+        // ...
+        mounts.append(split[1]);
+    }
+    while (!line.isNull());
+
+    QString mount_point;
+    for (int i=0; i<mounts.size(); ++i)
+    {
+        if (path.startsWith(mounts[i]))
+        {
+            if (mounts[i].size() > mount_point.size())
+                mount_point = mounts[i];
+        }
+    }
+    return mount_point;    
+}
+
+quint64 get_free_disk_space(const QString& filename)
+{
+    const auto native = QDir::toNativeSeparators(filename);
+
+    const auto u8 = narrow(native);
+
+    struct statfs64 st = {};
+    if (statfs64(u8.c_str(), &st) == -1)
+        return 0;
+
+    // f_bsize is the "optimal transfer block size"
+    // not sure if this reliable and always the same as the
+    // actual file system block size. If it is different then
+    // this is incorrect.  
+    auto ret = st.f_bsize * st.f_bavail;    
+    return ret;
+}
 
 #endif
 

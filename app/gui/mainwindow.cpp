@@ -46,6 +46,7 @@
 #include "dlgaccount.h"
 #include "dlgchoose.h"
 #include "dlgshutdown.h"
+#include "dlgabout.h"
 #include "config.h"
 #include "../eventlog.h"
 #include "../debug.h"
@@ -854,6 +855,12 @@ void mainwindow::on_actionExit_triggered()
 void mainwindow::on_actionSettings_triggered()
 {
     show_setting("");
+}
+
+void mainwindow::on_actionAbout_triggered()
+{
+    DlgAbout dlg(this);
+    dlg.exec();
 }
 
 void mainwindow::actionWindowToggleView_triggered()

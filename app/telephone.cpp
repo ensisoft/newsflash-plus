@@ -51,7 +51,9 @@ telephone::telephone()
 }
 
 telephone::~telephone()
-{}
+{
+    net_.blockSignals(true);
+}
 
 void telephone::callhome()
 {

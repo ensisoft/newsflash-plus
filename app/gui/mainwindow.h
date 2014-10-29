@@ -133,6 +133,7 @@ namespace gui
         void on_actionRestore_triggered();        
         void on_actionExit_triggered();
         void on_actionSettings_triggered();
+        void on_actionAbout_triggered();
         void actionWindowToggleView_triggered();
         void actionWindowFocus_triggered();
         void actionTray_activated(QSystemTrayIcon::ActivationReason);

@@ -47,7 +47,6 @@ struct connection::state {
     std::ofstream log;
     std::uint16_t port;
     std::uint32_t addr;
-    std::uint32_t bytes;
     std::unique_ptr<class socket> socket;
     std::unique_ptr<class session> session;
     std::unique_ptr<event> cancel;
@@ -162,7 +161,8 @@ void connection::initialize::xperform()
             // wait for data or cancellation
             auto received = socket->wait(true, false);
             auto canceled = cancel->wait();
-            newsflash::wait(received, canceled);
+            if (!newsflash::wait_for(received, canceled, std::chrono::seconds(5)))
+                throw exception(connection::error::timeout, "connection timeout");
             if (canceled) 
             {
                 LOG_D("Initialize was canceled");
@@ -191,7 +191,7 @@ void connection::initialize::xperform()
     LOG_D("NNTP Session ready");
 }
 
-connection::execute::execute(std::shared_ptr<state> s, std::shared_ptr<cmdlist> cmd) : state_(s), cmds_(cmd)
+connection::execute::execute(std::shared_ptr<state> s, std::shared_ptr<cmdlist> cmd) : state_(s), cmds_(cmd), bytes_(0)
 {
     state_->session->on_auth = [](std::string&, std::string&) { 
         throw exception(connection::error::no_permission, 
@@ -201,8 +201,6 @@ connection::execute::execute(std::shared_ptr<state> s, std::shared_ptr<cmdlist> 
     state_->session->on_send = [=](const std::string& cmd) {
         state_->socket->sendall(&cmd[0], cmd.size());
     };
-            
-    state_->bytes = 0;    
 }
 
 void connection::execute::xperform()
@@ -241,7 +239,7 @@ void connection::execute::xperform()
             auto canceled = cancel->wait();
             if (!newsflash::wait_for(received, canceled, std::chrono::seconds(10)))
                 throw exception(connection::error::timeout, "connection timeout");
-            else if (cancel)
+            else if (canceled)
                 return;
 
             const auto bytes = socket->recvsome(recvbuf.back(), recvbuf.available());
@@ -260,7 +258,7 @@ void connection::execute::xperform()
     }
     if (!configure_success)
         return;
-    
+
     if (cmdlist->is_canceled())
         return;
 
@@ -276,7 +274,7 @@ void connection::execute::xperform()
             auto canceled = cancel->wait();
             if (!newsflash::wait_for(received, canceled, std::chrono::seconds(10)))
                 throw exception(connection::error::timeout, "connection timeout");
-            else if (cancel)
+            else if (canceled)
                 return;
 
             // readsome
@@ -284,7 +282,7 @@ void connection::execute::xperform()
             if (bytes == 0)
                 throw exception(connection::error::network, "connection was closed unexpectedly");
 
-            state_->bytes += bytes; // this includes header data
+            bytes_ += bytes; // this includes header data
             recvbuf.append(bytes);
         }
         while (!session->parse_next(recvbuf, content));
@@ -401,7 +399,6 @@ std::unique_ptr<action> connection::connect(spec s)
     state_->hostname = s.hostname;
     state_->port     = s.hostport;
     state_->addr     = 0;
-    state_->bytes    = 0;
     state_->ssl      = s.use_ssl;
     state_->compression = s.enable_compression;
     state_->pipelining = s.enable_pipelining;

@@ -36,6 +36,11 @@ namespace app
 // for example Mint Linux, Ubuntu, Windows XP, Windows 7  etc.
 QString get_platform_name();
 
-QString resolve_mount_point(const QString& path);
+// resolve the directory path to a mount-point / disk 
+QString resolve_mount_point(const QString& directory);
+
+// get free space available on the disk that contains
+// the object identified by filename
+quint64 get_free_disk_space(const QString& filename);
 
 } // app

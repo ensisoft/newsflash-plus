@@ -36,6 +36,7 @@
 #include "../session.h"
 #include "../buffer.h"
 #include "../logging.h"
+#include "../decode.h"
 #include "unit_test_common.h"
 
 namespace nf = newsflash;
@@ -259,12 +260,13 @@ void test_execute()
             BOOST_REQUIRE(buff.content_status() == nf::buffer::status::success);
             BOOST_REQUIRE(buff.content_type() == nf::buffer::type::article);
 
-            const auto ref = read_file_buffer("test_data/newsflash_2_0_0.uuencode");
-            BOOST_REQUIRE(buff.content_length() ==
-                ref.content_length());
+            nf::decode dec(std::move(buff));
+            dec.perform();
 
-            BOOST_REQUIRE(!std::memcmp(ref.content(), 
-                buff.content(), ref.content_length()));
+            const auto png = read_file_contents("test_data/newsflash_2_0_0.png");
+            const auto bin = dec.get_binary_data();
+
+            BOOST_REQUIRE(png == bin);
         }
     };
 

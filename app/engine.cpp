@@ -228,6 +228,7 @@ void engine::loadstate(settings& s)
     engine_->set_discard_text_content(discard);
     engine_->set_throttle(throttle);
     engine_->set_throttle_value(throttleval);
+    engine_->set_prefer_secure(secure);
 }
 
 bool engine::savestate(settings& s)
@@ -235,10 +236,11 @@ bool engine::savestate(settings& s)
     const auto overwrite = engine_->get_overwrite_existing_files();
     const auto discard   = engine_->get_discard_text_content();
     const auto secure    = engine_->get_prefer_secure();
-    //const auto throttle  = engine_.get_th
-    const auto throttle = false;
+    const auto throttle  = engine_->get_throttle();
+    const auto throttleval = engine_->get_throttle_value();
 
     s.set("engine", "throttle", throttle);
+    s.set("engine", "throttle_value", throttleval);
     s.set("engine", "overwrite_existing_files", overwrite);
     s.set("engine", "discard_text", discard);
     s.set("engine", "prefer_secure", secure);
@@ -285,31 +287,7 @@ void engine::refresh()
         list.removeLast();
     }
 
-    const auto native = QDir::toNativeSeparators(path);    
-
-#if defined(WINDOWS_OS)
-
-    ULARGE_INTEGER free = {};
-    if (!GetDiskFreeSpaceEx(native.utf16(), &free, nullptr, nullptr))
-        return;
-
-    diskspace_ = free.QuadPart;
-
-#elif defined(LINUX_OS)
-
-    const auto u8 = narrow(native);
-
-    struct statfs64 st = {};
-    if (statfs64(u8.c_str(), &st) == -1)
-        return;
-
-    // f_bsize is the "optimal transfer block size"
-    // not sure if this reliable and always the same as the
-    // actual file system block size. If it is different then
-    // this is incorrect.  
-    diskspace_ = st.f_bsize * st.f_bavail;
-
-#endif
+    diskspace_ = app::get_free_disk_space(path);
 }
 
 bool engine::shutdown()

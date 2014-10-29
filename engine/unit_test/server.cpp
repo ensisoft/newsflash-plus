@@ -26,6 +26,7 @@
 #include <fstream>
 #include <thread>
 #include <sstream>
+#include <vector>
 #include "../socketapi.h"
 #include "../sockets.h"
 
@@ -176,7 +177,6 @@ void service_client(newsflash::native_socket_t sock)
             }
             send_response(sock, ".");
         }
-
         else if (cmd == "GROUP alt.binaries.foo")
         {
             send_response(sock, "211 5 1 5 alt.binaries.foo Group selected");

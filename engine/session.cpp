@@ -29,6 +29,7 @@
 #include "nntp.h"
 #include "logging.h"
 #include "format.h"
+#include "types.h"
 
 namespace newsflash
 {
@@ -339,6 +340,8 @@ public:
         out.set_content_length(blen);
         out.set_content_start(len);
         out.set_status(buffer::status::success);
+
+        LOG_D("Read content data ", newsflash::size{blen});
         return true;
     }
 
@@ -529,14 +532,14 @@ bool session::parse_next(buffer& buff, buffer& out)
 
     auto& next = recv_.front();
 
+    if (!next->parse(buff, out, *state_))
+        return false;
+
     const auto len = nntp::find_response(buff.head(), buff.size());
     if (len != 0)
     {
         LOG_I(std::string(buff.head(), len-2));
     }
-
-    if (!next->parse(buff, out, *state_))
-        return false;
 
     if (state_->error != error::none)
     {
