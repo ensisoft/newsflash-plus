@@ -50,12 +50,14 @@ namespace app
 
 rss::rss()
 {
+    net_ = g_net->get_submission_context();
+
     feeds_.emplace_back(new womble);
     feeds_.emplace_back(new nzbs);
     INFO("RSS http://nzbs.org");
     INFO("RSS http://newshost.co.za");
 
-    net_.on_ready = [=]() {
+    net_.callback = [=] {
         on_ready();
     };
 
@@ -160,7 +162,6 @@ int rss::columnCount(const QModelIndex&) const
     return (int)columns::sentinel;
 }
 
-
 void rss::clear()
 {
     items_.clear();
@@ -180,8 +181,8 @@ bool rss::refresh(media type)
         feed->prepare(type, urls);
         for (const auto& url : urls)
         {
-            net_.submit(std::bind(&rss::on_refresh_complete, this, feed.get(), type,
-                std::placeholders::_1), url);
+            g_net->submit(std::bind(&rss::on_refresh_complete, this, feed.get(), type,
+                std::placeholders::_1), url, net_);
             ret = true;
         }
     }
@@ -225,8 +226,8 @@ void rss::download_nzb_file(int row, const QString& file)
     const auto& item = items_[row];
     const auto& link = item.nzblink;
     const auto& name = item.title;
-    net_.submit(std::bind(&rss::on_nzbfile_complete, this, file,
-        std::placeholders::_1), link);
+    g_net->submit(std::bind(&rss::on_nzbfile_complete, this, file,
+        std::placeholders::_1), link, net_);
 }
 
 void rss::download_nzb_content(int row, quint32 account, const QString& folder)
@@ -237,8 +238,8 @@ void rss::download_nzb_content(int row, quint32 account, const QString& folder)
     const auto& item = items_[row];
     const auto& link = item.nzblink;
     const auto& desc = item.title;
-    net_.submit(std::bind(&rss::on_nzbdata_complete, this, folder, desc, account,
-        std::placeholders::_1), link);
+    g_net->submit(std::bind(&rss::on_nzbdata_complete, this, folder, desc, account,
+        std::placeholders::_1), link, net_);
 }
 
 void rss::view_nzb_content(int row, data_callback cb)
@@ -249,13 +250,13 @@ void rss::view_nzb_content(int row, data_callback cb)
     const auto& item = items_[row];
     const auto& link = item.nzblink;
 
-    net_.submit(std::bind(&rss::on_nzbdata_complete_callback, this, std::move(cb), 
-        std::placeholders::_1), link);
+    g_net->submit(std::bind(&rss::on_nzbdata_complete_callback, this, std::move(cb), 
+        std::placeholders::_1), link, net_);
 }
 
 void rss::stop()
 {
-    net_.cancel();
+    g_net->cancel(net_);
 }
 
 void rss::on_refresh_complete(rssfeed* feed, media type, QNetworkReply& reply)

@@ -27,8 +27,7 @@
 #  include <QtNetwork/QNetworkAccessManager>
 #  include <QObject>
 #include <newsflash/warnpop.h>
-
-class QNetworkReply;
+#include "netman.h"
 
 namespace app
 {
@@ -45,14 +44,13 @@ namespace app
         
         // callhome, check for software updates.
         void callhome();
+
     signals:
         void completed(bool new_version_available, QString latest);
-
-    private slots:
-        void finished(QNetworkReply* reply);
+    private:
+        void on_finished(QNetworkReply& reply);
 
     private:
-        QNetworkAccessManager net_;
-
+        netman::context net_;
     };
 } // app

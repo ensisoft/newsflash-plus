@@ -345,3 +345,24 @@ void QtSingleApplication::activateWindow()
 
     \obsolete
 */
+
+#include <QMessageBox>
+
+#include "../mainwindow.h"
+
+bool QtSingleApplication::notify(QObject* receiver, QEvent* e)
+{
+    try
+    {
+        return QApplication::notify(receiver, e);
+    }
+    catch (const std::exception& e)
+    {
+        QMessageBox::critical(gui::g_win, 
+            "Unhandled Error",
+            QString("Newsflash Plus has encountered an error that was not correctly handled.\n"
+            "You might find more information in the application log files.\n"
+            "%1").arg(e.what()));
+    }
+    return false;
+}

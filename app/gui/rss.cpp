@@ -106,6 +106,7 @@ rss::rss()
     model_.on_ready = [&]() {
         ui_.progressBar->hide();
         ui_.actionStop->setEnabled(false);
+        ui_.actionRefresh->setEnabled(true);
     };
 
     DEBUG("rss gui created");
@@ -472,6 +473,7 @@ void rss::refresh(bool verbose)
     ui_.actionDownload->setEnabled(false);
     ui_.actionDownloadTo->setEnabled(false);
     ui_.actionStop->setEnabled(true);    
+    ui_.actionRefresh->setEnabled(false);
 }
 
 void rss::on_actionRefresh_triggered()
@@ -544,6 +546,9 @@ void rss::on_actionSettings_triggered()
 void rss::on_actionStop_triggered()
 {
     model_.stop();
+    ui_.progressBar->hide();
+    ui_.actionStop->setEnabled(false);    
+    ui_.actionRefresh->setEnabled(true);
 }
 
 void rss::on_actionBrowse_triggered()

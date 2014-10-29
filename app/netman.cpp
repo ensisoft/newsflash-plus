@@ -53,7 +53,9 @@
 namespace app
 {
 
-netman::netman() : submission_id_(1)
+netman* g_net;
+
+netman::netman()
 {
     DEBUG("netman created");
 
@@ -68,6 +70,7 @@ netman::~netman()
     if (!submissions_.empty())
     {
         timer_.stop();
+        timer_.blockSignals(true);
 
         DEBUG(str("netman has _1 pending submissions...", submissions_.size()));
 
@@ -76,27 +79,26 @@ netman::~netman()
             auto& submission = *it;
             if (submission.reply)
             {
-                submission.cancel = true;
+                submission.reply->blockSignals(true);
                 submission.reply->abort();
             }
-            it = submissions_.erase(it);
         }
     }
 
     DEBUG("netman destroyed");
 }
 
-void netman::submit(callback completion, QUrl url)
+void netman::submit(on_reply callback, QUrl url, context& c)
 {
     submission s;
-    s.id     = submission_id_;
-    s.ticks  = 0;
-    s.reply  = nullptr;
-    s.url    = url;
-    s.cancel = false;
-    s.timeout = false;
-    s.cb      = std::move(completion);
+    s.id       = submissions_.size() + 1;
+    s.ticks    = 0;
+    s.reply    = nullptr;
+    s.url      = url;
+    s.ctx      = &c;
+    s.callback = std::move(callback);
     submissions_.push_back(s);
+    c.num_pending_requests_++;
 
     if (submissions_.size() == 1)
     {
@@ -105,26 +107,26 @@ void netman::submit(callback completion, QUrl url)
         timer_.start();
     }
 
-    DEBUG(str("New submission _1", submission_id_));
-
-    ++submission_id_;
+    DEBUG(str("New submission _1", s.id));
 }
 
-void netman::cancel()
+void netman::cancel(context& c)
 {
     for (auto it = submissions_.begin(); it != submissions_.end(); ++it)
     {
         auto& submission = *it;
+        if (submission.ctx != &c)
+            continue;
+
         if (submission.reply)
         {
-            submission.cancel = true;
+            submission.reply->blockSignals(true);
             submission.reply->abort();
         }
-
         DEBUG(str("Canceled submission _1", submission.id));
-
         it = submissions_.erase(it);        
     }
+    c.num_pending_requests_ = 0;
 }
 
 void netman::finished(QNetworkReply* reply)
@@ -141,30 +143,19 @@ void netman::finished(QNetworkReply* reply)
 
     DEBUG(str("Got network reply for submission _1, _2", submit.id, str(err)));
 
-    if (submit.cancel)
-    {
-        DEBUG("Submit was canceled. Ignoring...");
-    }
-    else
-    {
-        submit.cb(*reply);
-        if (!submit.timeout)
-            submissions_.erase(it);
-    }
+    submit.callback(*reply);
+    
+    auto* ctx = submit.ctx;
 
+    if (--ctx->num_pending_requests_ == 0)
+    {
+        if (ctx->callback)
+            ctx->callback();
+    }
+    submissions_.erase(it);
     reply->deleteLater();
 
-    std::size_t pending = 0;
-    for (auto& s : submissions_)
-    {
-        if (!s.cancel && !s.timeout)
-            ++pending;
-    }
-
-    DEBUG(str("Pending submissions _1", pending));
-
-    if (!pending)
-        on_ready();
+    DEBUG(str("Pending submissions _1", submissions_.size()));
 }
 
 void netman::timeout()
@@ -192,9 +183,13 @@ void netman::submit_next()
     request.setUrl(submit.url);
     submit.reply = qnam_.get(request);
     if (!submit.reply)
-        throw std::runtime_error("network request failed");
-
-    DEBUG(str("Submit HTTP request to _1", submit.url));
+    {
+        ERROR("Submit request failed...");
+    }
+    else
+    {
+        DEBUG(str("Submit HTTP request to _1", submit.url));
+    }
 }
 
 void netman::update_ticks()
@@ -209,13 +204,21 @@ void netman::update_ticks()
 
         if (++submission.ticks == timeout_ticks)
         {
-            submission.timeout = true;
+            DEBUG(str("Timedout submission _1", submission.id));            
+            submission.reply->blockSignals(true);
             submission.reply->abort();
-            DEBUG(str("Timedout submission _1", submission.id));
+            submission.callback(*submission.reply);
+
+            auto* ctx = submission.ctx;
+            if (--ctx->num_pending_requests_ == 0)
+            {
+                if ( ctx->callback)
+                    ctx->callback();
+            }
+
             it = submissions_.erase(it);            
         }
     }
-
 }
 
 const char* str(QNetworkReply::NetworkError err)

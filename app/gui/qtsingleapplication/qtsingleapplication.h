@@ -87,6 +87,12 @@ public:
     void initialize(bool dummy = true)
         { isRunning(); Q_UNUSED(dummy) }
 
+        // this is added to provide for a single global
+        // catch all place for handling propagated exceptions.
+        // the default implementation will only print a message into
+        // stdout and then exit the application.
+    virtual bool notify(QObject* receiver, QEvent* e);
+
 public Q_SLOTS:
     bool sendMessage(const QString &message, int timeout = 5000);
     void activateWindow();

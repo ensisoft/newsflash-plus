@@ -151,6 +151,9 @@ int run(int argc, char* argv[])
 
     gui::appearance style;
 
+    app::netman net;
+    app::g_net = &net;
+
     app::engine eng;
     app::g_engine = &eng;
 

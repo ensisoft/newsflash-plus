@@ -46,14 +46,11 @@ telephone::telephone()
 {
     DEBUG(str("Current platform _1", get_platform_name()));
 
-    QObject::connect(&net_, SIGNAL(finished(QNetworkReply*)),
-        this, SLOT(finished(QNetworkReply*)));
+    net_ = g_net->get_submission_context();
 }
 
 telephone::~telephone()
-{
-    net_.blockSignals(true);
-}
+{}
 
 void telephone::callhome()
 {
@@ -66,19 +63,15 @@ void telephone::callhome()
     url.addQueryItem("platform", platform);    
     url.addQueryItem("fingerprint", fingerprint);
 
-    QNetworkRequest req;
-    req.setRawHeader("User-Agent", "NewsflashPlus");
-    req.setUrl(url);
-    net_.get(req);
+    g_net->submit(std::bind(&telephone::on_finished, this, 
+        std::placeholders::_1), url, net_);
 
     DEBUG("Calling home...");
 }
 
-void telephone::finished(QNetworkReply* reply)
+void telephone::on_finished(QNetworkReply& reply)
 {
-    reply->deleteLater();
-
-    const auto err = reply->error();
+    const auto err = reply.error();
     if (err != QNetworkReply::NoError)
     {
         ERROR(str("Checking for new version failed _1", str(err)));
@@ -86,7 +79,7 @@ void telephone::finished(QNetworkReply* reply)
         return;
     }
 
-    QByteArray response = reply->readAll();
+    QByteArray response = reply.readAll();
     QString latest  = QString::fromUtf8(response.constData(), response.size());
     QString current = NEWSFLASH_VERSION;
 

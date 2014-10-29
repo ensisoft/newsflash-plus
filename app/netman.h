@@ -41,26 +41,56 @@ class QNetworkRequest;
 
 namespace app
 {
+    class netman;
+
     // simple network manager class
     class netman : public QObject
     {
         Q_OBJECT
 
     public:
-        // callback invoked when all actions are ready.
-        std::function<void (void)> on_ready;
+        class context
+        {
+        public:
+            // callback to be invoked (per token) when all requests
+            // within that token are ready.
+            using on_ready = std::function<void()>;
 
-        using callback = std::function<void(QNetworkReply&)>;
+            on_ready callback;
+
+            context() : num_pending_requests_(0)
+            {}
+            context(netman& m) : manager_(&m)
+            {}
+
+           ~context()
+            {
+                manager_->cancel(*this);
+            }
+
+        private:
+            friend class netman;
+        private:
+            std::size_t num_pending_requests_;
+        private:
+            netman* manager_;
+        };
+
+        // callback to be invoked when a request has completed.
+        using on_reply = std::function<void(QNetworkReply&)>;
 
         netman();
        ~netman();
 
+        context get_submission_context()
+        { return context(*this); }
+
         // submit a new request to retrieve the content
         // at the specified URL.
-        void submit(callback completion, QUrl url);
+        void submit(on_reply callback, QUrl url, context& c);
 
         // cancel pending submissions. callback will not be invoked.
-        void cancel();
+        void cancel(context& c);
 
     private slots:
         void finished(QNetworkReply* reply);
@@ -76,18 +106,19 @@ namespace app
             std::size_t id;
             std::size_t ticks;
             QNetworkReply* reply;
+            QString token;
             QUrl url;
-            bool cancel;
-            bool timeout;
-            callback cb;
+            context* ctx;            
+            on_reply callback;
         };
     private:
-        std::size_t submission_id_;
         std::list<submission> submissions_;
         QNetworkAccessManager qnam_;
         QTimer timer_;
     };
 
     const char* str(QNetworkReply::NetworkError err);
+
+    extern netman* g_net;
 
 } // app
