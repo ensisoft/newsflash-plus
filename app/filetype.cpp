@@ -51,7 +51,7 @@ const char* filepattern(filetype type)
         case filetype::archive:
             return ".zip | .rar | .r[0-9]{1,3} | .7z";
         case filetype::parity:
-            return ".par | par2";
+            return ".par | .par2";
         case filetype::document:
             return ".doc | .chm | .pdf";
         case filetype::other:

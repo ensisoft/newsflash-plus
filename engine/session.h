@@ -111,10 +111,14 @@ namespace newsflash
         // the function returns false.
         bool parse_next(buffer& buff, buffer& out);
 
+        void clear();
+
         // returns true if there are pending commands. i.e. 
         // more calls to parse_next are required to complete
         // the session state changes.
         bool pending() const;
+
+
 
         void enable_pipelining(bool on_off);
 

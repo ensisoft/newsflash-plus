@@ -60,7 +60,7 @@ namespace app
 
             context() : num_pending_requests_(0)
             {}
-            context(netman& m) : manager_(&m)
+            context(netman& m) : num_pending_requests_(0), manager_(&m)
             {}
 
            ~context()

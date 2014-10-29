@@ -314,8 +314,8 @@ public:
             return false;
 
         nntp::trailing_comment comment;
-        const auto code = nntp::scan_response({222, 423, 420}, buff.head(), len, comment);
-        if (code == 423 || code == 420)
+        const auto code = nntp::scan_response({222, 423, 420, 430}, buff.head(), len, comment);
+        if (code == 423 || code == 420 || code == 430)
         {
             // the output buffer only carries meta information
             // i.e. that there was no content data available.
@@ -573,6 +573,12 @@ bool session::parse_next(buffer& buff, buffer& out)
 
     submit_next_commands();
     return true;
+}
+
+void session::clear()
+{
+    recv_.clear();
+    send_.clear();
 }
 
 bool session::pending() const

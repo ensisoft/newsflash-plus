@@ -108,6 +108,10 @@ namespace newsflash
         // by all engine connections.
         void set_throttle_value(unsigned value);
 
+        void set_group_items(bool on_off);
+
+        bool get_group_items() const;
+
         // get overwrite value
         bool get_overwrite_existing_files() const;
 
@@ -132,9 +136,16 @@ namespace newsflash
         // of all the connections in the engine.
         void update(std::deque<ui::connection>& connlist);
 
-        void kill_connection(std::size_t i);
+        void kill_connection(std::size_t index);
 
-        void clone_connection(std::size_t i);
+        void clone_connection(std::size_t index);
+
+        void kill_task(std::size_t index);
+
+        void pause_task(std::size_t index);
+
+        void resume_task(std::size_t index);
+
 
     private:
         void connect();

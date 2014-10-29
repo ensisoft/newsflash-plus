@@ -44,6 +44,44 @@
 namespace newsflash
 {
 
+#define CASE(x) case x: return #x
+
+const char* str(ui::task::states s)
+{
+    using state = ui::task::states;
+    switch (s)
+    {
+        CASE(state::queued);
+        CASE(state::waiting);
+        CASE(state::active);
+        CASE(state::paused);
+        CASE(state::finalize);
+        CASE(state::complete);
+        CASE(state::error);
+    }
+    assert(0);
+    return nullptr;    
+}
+
+const char* str(ui::connection::states s)
+{
+    using state = ui::connection::states;
+    switch (s)
+    {
+        CASE(state::disconnected);
+        CASE(state::resolving);
+        CASE(state::connecting);
+        CASE(state::initializing);
+        CASE(state::connected);
+        CASE(state::active);
+        CASE(state::error);
+    }    
+    assert(0);
+    return nullptr;
+}
+
+#undef CASE
+
 struct engine::state {
     std::deque<std::unique_ptr<engine::task>> tasks;
     std::deque<std::unique_ptr<engine::conn>> conns;
@@ -66,6 +104,7 @@ struct engine::state {
     bool overwrite_existing;
     bool discard_text;
     bool started;
+    bool group_items;
 
     engine::on_error on_error_callback;
     engine::on_file  on_file_callback;
@@ -137,6 +176,8 @@ private:
         conn_number_   = ++current_num_connections;
         conn_logger_   = std::make_shared<filelogger>(fs::joinpath(s.logpath,
             str("connection", conn_number_, ".log")), true);
+
+        LOG_D("Connection ", conn_number_, " log file: ", conn_logger_->name());        
     }    
 
     using state = ui::connection::states;
@@ -203,7 +244,7 @@ public:
     {
         stop();
 
-        LOG_I("Deleted connection ", conn_number_);
+        LOG_I("Connection ", conn_number_, " deleted");
 
         --current_num_connections;
     }
@@ -263,12 +304,13 @@ public:
         ui_.desc  = std::move(desc);
         ui_.state = state::active;
         do_action(conn_.execute(cmds));
-        LOG_D("Connection ", conn_number_, " executing ", desc);
     }
 
     void update(ui::connection& ui)
     {
         ui = ui_;
+        if (ui_.state == state::active)
+            ui.bps = conn_.bps();
     }
     void on_action(action* a)
     {
@@ -277,10 +319,8 @@ public:
         if (auto* e = dynamic_cast<class connection::execute*>(a))
         {
             ui_.down += e->bytes();
-            ui_.task  = 0;
-            ui_.desc  = "";
-            ui_.state = state::connected;
             LOG_D("Connection ", conn_number_, " completed execute!");
+            LOG_D("Connection ", conn_number_, " transferred ", newsflash::size{e->bytes()});
         }
 
         ticks_to_ping_ = 30;
@@ -348,26 +388,24 @@ public:
 
             state_.on_error_callback(err);
             state_.logger->flush();
+            conn_logger_->flush();
             return;
         }
 
         auto next = conn_.complete(std::move(act));
         if (next)
-        {
             do_action(std::move(next));
-        }
-        else
+        else if (ui_.state == state::initializing)
+            ui_.state = state::connected;
+        else if (ui_.state == state::active)
         {
-            if (ui_.state == state::initializing)
-                ui_.state = state::connected;
-            else if (ui_.state == state::active)
-            {
-                ui_.state = state::connected;
-                ui_.bps   = 0;
-                ui_.task  = 0;
-                ui_.desc  = "";
-            }
+           ui_.state = state::connected;
+           ui_.bps   = 0;
+           ui_.task  = 0;
+           ui_.desc  = "";
+           LOG_D("Connection ", conn_number_, " => state::connected");
         }
+        conn_logger_->flush();
     }
     bool is_ready() const 
     {
@@ -409,6 +447,9 @@ private:
         else if (dynamic_cast<class connection::execute*>(ptr))
             ui_.state = state::active;
 
+        LOG_D("Connection ", conn_number_,  " => ", str(ui_.state));
+        LOG_D("Connection ", conn_number_, " current task ", ui_.task, " (", ui_.desc, ")");
+
         a->set_id(ui_.id);
         a->set_log(conn_logger_);
         state_.submit(a.release());
@@ -449,7 +490,7 @@ public:
         executed_      = false;
         num_pending_actions_ = 0;
 
-        LOG_I("Created task ", ui_.id);
+        LOG_I("Task ", ui_.id, "(", ui_.desc, ") created");
     }
 
    ~task()
@@ -459,10 +500,11 @@ public:
             for (auto& cmd : cmds_)
                 cmd->cancel();
 
-            do_action(task_->kill());
+            if (task_)
+                do_action(task_->kill());
         }
 
-        LOG_I("Deleted task ", ui_.id);
+        LOG_I("Task ", ui_.id, " deleted");
     }
 
     void configure(const settings& s)
@@ -474,56 +516,49 @@ public:
     void tick(const std::chrono::milliseconds& elapsed)
     {
         // todo: actually measure the time
-        if (ui_.state == state::active)
+        if (ui_.state == state::active ||
+            ui_.state == state::finalize)
             ui_.runtime++;
     }
 
-    bool run(conn& c)
+    bool run(engine::conn& conn)
     {
         if (ui_.state == state::complete || 
             ui_.state == state::error ||
-            ui_.state == state::paused)
+            ui_.state == state::paused ||
+            ui_.state == state::finalize)
             return false;
-
-        if (!started_)
-        {
-            LOG_D("Starting task ", ui_.id);
-
-            do_action(task_->start());
-            started_ = true;
-        }
 
         auto cmds = task_->create_commands();
         if (!cmds)
         {
             executed_ = true;
+            update_completion();
             return false;
         }
 
         std::shared_ptr<cmdlist> cmd(cmds.release());
         cmds_.push_back(cmd);
-        c.execute(cmd, ui_.id, ui_.desc);
 
-        ui_.state = state::active;
+        conn.execute(cmd, ui_.id, ui_.desc);
 
-        LOG_D("Task ", ui_.id, " running ", cmds_.size(), " command lists");
+        goto_state(state::active);
         return true;
     }
 
     void complete(std::shared_ptr<cmdlist> cmds)
     {
-        auto it = std::find(cmds_.begin(), cmds_.end(), cmds);
-        assert(it != cmds_.end());
+        cmds_.erase(std::find(std::begin(cmds_), 
+            std::end(cmds_), cmds));
 
-        cmds_.erase(it);
+        if (ui_.state == state::error)
+            return;
 
         std::vector<std::unique_ptr<action>> actions;
 
         task_->complete(*cmds, actions);
         for (auto& a : actions)
             do_action(std::move(a));
-
-        LOG_D("Task ", ui_.id, " command list complete. ", cmds_.size(), " remaining");
 
         update_completion();
     }
@@ -535,8 +570,7 @@ public:
             ui_.state == state::complete)
             return;
 
-        ui_.state = state::paused;
-        LOG_D("Task ", ui_.id, " paused");
+        goto_state(state::paused);
     }
 
     void resume()
@@ -545,9 +579,8 @@ public:
             return;
 
         if (started_)
-             ui_.state = state::waiting;
-        else ui_.state = state::queued;
-        LOG_D("Task ", ui_.id, " resumed");
+            goto_state(state::waiting);
+        else goto_state(state::queued);
     }
 
     void update(ui::task& ui)
@@ -557,50 +590,48 @@ public:
 
     void on_action(action* a)
     {
-        --num_pending_actions_;
-
         std::unique_ptr<action> act(a);
+
+        num_pending_actions_--;
 
         if (ui_.state == state::error)
             return;
 
-        if (act->has_exception())
+        ui::error err;
+        err.resource = ui_.desc;
+        try
         {
-            ui_.state   = state::error;
-            ui_.etatime = 0;
-            ui::error err;
-            err.resource = ui_.desc;
-
-            try
-            {
+            if (act->has_exception())
                 act->rethrow();
-            }
-            catch (const std::system_error& e)
-            {
-                err.code = e.code();
-                err.what = e.what();
-            }
-            catch (const std::exception& e)
-            {
-                err.what = e.what();
-            }
-            if(err.code) {
-                LOG_E("Task ", ui_.id, " (", err.code.value(), ") ", err.code.message());
-            } else {
-                LOG_E("Task ", ui_.id, " ", err.what);
-            }
-            state_.on_error_callback(err);
-            state_.logger->flush();
+
+            std::vector<std::unique_ptr<action>> actions;
+
+            task_->complete(*act, actions);
+            for (auto& a : actions)
+                do_action(std::move(a));
+
+            update_completion();
             return;
         }
+        catch (const std::system_error& e)
+        {
+            err.code = e.code();
+            err.what = e.what();
+        }
+        catch (const std::exception& e)
+        {
+            err.what = e.what();
+        }
 
-        std::vector<std::unique_ptr<action>> actions;
+        if(err.code) {
+            LOG_E("Task ", ui_.id, " (", err.code.value(), ") ", err.code.message());
+        } else {
+            LOG_E("Task ", ui_.id, " ", err.what);
+        }
 
-        task_->complete(*act, actions);
-        for (auto& a : actions)
-            do_action(std::move(a));
-
-        update_completion();
+        state_.on_error_callback(err);
+        state_.logger->flush();
+        goto_state(state::error);            
     }
 
     std::size_t account() const 
@@ -612,23 +643,17 @@ public:
 private:
     void update_completion()
     {
-        if (!num_pending_actions_)
-        {
-            if (executed_)
-            {
-                ui_.state   = state::complete;
-                ui_.etatime = 0;
-                ui_.completion = 100.0;
-                //task_->finalize();
-                //task_.reset();
-                LOG_D("Task ", ui_.id, " complete");
-            }
-            else if (ui_.state == state::active)
-            {
-                ui_.state   = state::waiting;
-                ui_.etatime = 0; // todo:
-            }
-        }
+        ui_.completion = task_->completion();
+
+        if (num_pending_actions_)
+            return;
+
+        if (executed_)
+            goto_state(state::finalize);
+        else if (ui_.state == state::waiting)
+            goto_state(state::waiting);
+        else if (ui_.state == state::finalize)
+            goto_state(state::complete);
     }
 
     void do_action(std::unique_ptr<action> a) 
@@ -638,6 +663,52 @@ private:
         a->set_id(ui_.id);
         state_.submit(a.release());
         num_pending_actions_++;
+    }
+
+    void goto_state(state s)
+    {
+        ui_.state = s;
+        switch (s)
+        {
+            case state::active:
+                if (!started_)
+                {
+                    LOG_D("Task ", ui_.id,  " starting...");
+                    do_action(task_->start());
+                    started_ = true;
+                }
+                LOG_D("Task ", ui_.id, " has ", cmds_.size(),  " command lists");
+                LOG_D("Task ", ui_.id, " has ", num_pending_actions_, " pending actions");
+                break;
+
+            case state::error:
+                ui_.etatime = 0;
+                do_action(task_->kill());
+                task_.release();
+                break;
+
+            case state::finalize:
+                {
+                    ui_.etatime = 0;
+                    auto act = task_->finalize();
+                    if (!act)
+                    {
+                        ui_.state = state::complete;
+                        ui_.completion = 100.0f;
+                    }
+                    else do_action(std::move(act));
+                }
+                break;
+
+            case state::complete:
+                ui_.completion = 100.0;
+                break;
+
+            default:
+                break;
+        }
+
+        LOG_D("Task ", ui_.id, " => ", str(s));
     }
 
 private:
@@ -655,7 +726,20 @@ private:
 class engine::batch
 {
 public:
+    using state = ui::task::states;
 
+    batch(std::size_t account, std::size_t size, std::string desc)
+    {
+        ui_.state   = state::queued;
+        ui_.id      = 123;
+        ui_.account = account;
+        ui_.desc    = std::move(desc);
+        ui_.size    = size;
+    }
+   ~batch()
+    {}
+private:
+    ui::task ui_;
 };
 
 
@@ -678,6 +762,7 @@ engine::engine() : state_(new state)
     state_->num_pending_actions = 0;
     state_->prefer_secure = true;
     state_->started = false;
+    state_->group_items = false;
 }
 
 engine::~engine()
@@ -804,7 +889,7 @@ void engine::download(ui::download spec)
 
     for (auto& file : spec.files)
     {
-        LOG_D("New download with ", file.articles.size());
+        LOG_D("New '", spec.desc, "' download with ", file.articles.size());
 
         std::unique_ptr<newsflash::download> job(new class download(
             std::move(file.groups), std::move(file.articles), spec.path, file.name));            
@@ -824,6 +909,8 @@ bool engine::pump()
         std::unique_lock<std::mutex> lock(state_->mutex);
         if (state_->actions.empty())
             break;
+
+        //LOG_D("Dispatch action");
 
         action* a = state_->actions.front();
         state_->actions.pop();
@@ -854,6 +941,8 @@ bool engine::pump()
             {
                 for (auto& task : state_->tasks)
                 {
+                    if (task->account() != conn->account())
+                        continue;
                     if (task->run(*conn))
                         break;
                 }
@@ -1004,6 +1093,16 @@ unsigned engine::get_throttle_value() const
     return 0;
 }
 
+void engine::set_group_items(bool on_off)
+{
+    state_->group_items = on_off;
+}
+
+bool engine::get_group_items() const 
+{
+    return state_->group_items;
+}
+
 bool engine::is_started() const 
 {
     return state_->started;
@@ -1055,6 +1154,66 @@ void engine::clone_connection(std::size_t i)
     state_->conns.push_back(std::move(dolly));
 }
 
+void engine::kill_task(std::size_t i)
+{
+    if (state_->group_items)
+    {
+        LOG_D("Kill batch ", i);
+
+        assert(i < state_->batches.size());
+
+        auto it = state_->batches.begin();
+        it += i;
+        state_->batches.erase(it);
+    }
+    else
+    {
+        LOG_D("Kill task ", i);
+
+        assert(i < state_->tasks.size());
+
+        auto it = state_->tasks.begin();
+        it += i;
+        state_->tasks.erase(it);
+    }
+}
+
+void engine::pause_task(std::size_t index)
+{
+    if (state_->group_items)
+    {
+        LOG_D("Pause batch ", index);
+
+        assert(index < state_->batches.size());
+
+        //state_->batches[index]->pause();
+    }
+    else
+    {
+        LOG_D("Pause task ", index);
+
+        assert(index < state_->tasks.size());
+
+        state_->tasks[index]->pause();
+    }
+}
+
+void engine::resume_task(std::size_t index)
+{
+    if (state_->group_items)
+    {
+
+    }
+    else
+    {
+        LOG_D("Resume task ", index);
+
+        assert(index < state_->tasks.size());
+
+        state_->tasks[index]->resume();
+    }
+}
+
 
 void engine::connect()
 {
@@ -1063,20 +1222,35 @@ void engine::connect()
 
     for (const auto& acc : state_->accounts)
     {
-        const auto num_conns = std::count_if(std::begin(state_->conns), std::end(state_->conns),
-            [&](const std::unique_ptr<conn>& c) {
-                return c->account() == acc.id;
-            });
-        
-        const auto have_tasks = std::find_if(std::begin(state_->tasks), std::end(state_->tasks),
-            [&](const std::unique_ptr<task>& t) {
-                return t->account() == acc.id;
-            }) != std::end(state_->tasks);
-        if (!have_tasks)
-            continue;
+        bool have_tasks = false;
 
-        for (auto i = num_conns; i<acc.connections; ++i)
-            state_->conns.emplace_back(new engine::conn(acc.id, *state_));
+        std::size_t num_conns = 0;
+        for (auto& conn : state_->conns)
+        {
+            if (conn->account() != acc.id)
+                continue;
+
+            if (conn->is_ready())
+            {
+                for (auto& task : state_->tasks)
+                {
+                    if (task->account() != acc.id)
+                        continue;
+                    if (task->run(*conn))
+                    {
+                        have_tasks = true;
+                        break;
+                    }
+                }
+            }
+            ++num_conns;
+        }
+        if (have_tasks)
+        {
+            for (auto i = num_conns; i<acc.connections; ++i)
+                state_->conns.emplace_back(new engine::conn(acc.id, *state_));
+        }
+
     }
 }
 

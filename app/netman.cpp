@@ -147,6 +147,8 @@ void netman::finished(QNetworkReply* reply)
     
     auto* ctx = submit.ctx;
 
+    DEBUG(str("Context has _1 pending submissions", ctx->num_pending_requests_));
+
     if (--ctx->num_pending_requests_ == 0)
     {
         if (ctx->callback)

@@ -165,12 +165,20 @@ void downloads::on_actionThrottle_triggered()
 
 void downloads::on_actionTaskPause_triggered()
 {
-    DEBUG("task pause");    
+    QModelIndexList indices = ui_.tableTasks->selectionModel()->selectedRows();
+    if (indices.isEmpty())
+        return;
+
+    tasks_.pause(indices);
 }
 
 void downloads::on_actionTaskResume_triggered()
 {
-    DEBUG("task resume");
+    QModelIndexList indices = ui_.tableTasks->selectionModel()->selectedRows();
+    if (indices.isEmpty())
+        return;
+
+    tasks_.resume(indices);    
 }
 
 void downloads::on_actionTaskMoveUp_triggered()
@@ -186,7 +194,13 @@ void downloads::on_actionTaskMoveBottom_triggered()
 {}
 
 void downloads::on_actionTaskDelete_triggered()
-{}
+{
+    QModelIndexList indices = ui_.tableTasks->selectionModel()->selectedRows();
+    if (indices.isEmpty())
+        return;
+
+    tasks_.kill(indices);
+}
 
 void downloads::on_actionTaskClear_triggered()
 {}

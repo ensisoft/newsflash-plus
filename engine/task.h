@@ -77,6 +77,8 @@ namespace newsflash
         // update task settings
         virtual void configure(const settings& s) = 0;
 
+        virtual double completion() const = 0;
+
     protected:
     private:
     };

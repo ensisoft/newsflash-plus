@@ -69,7 +69,6 @@ PYTHON="Python-2.5.1"
 
 makedir "tools"
 makedir "media"
-makedir "plugins"
 makedir "plugins-qt"
 makedir "plugins-qt/imageformats"
 makedir "$PYTHON"
@@ -136,9 +135,9 @@ copy "bin/launcher" "tools/"
 cd ..
 cd ..
 
-bjam -j8 "sdk" $VARIANT
-bjam -j8 "plugins/rss" $VARIANT
-bjam -j8 "plugins/womble" $VARIANT
+#bjam -j8 "sdk" $VARIANT
+#bjam -j8 "plugins/rss" $VARIANT
+#bjam -j8 "plugins/womble" $VARIANT
 bjam -j8 "app" $VARIANT
 
 

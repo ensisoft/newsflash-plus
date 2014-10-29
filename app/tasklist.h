@@ -45,8 +45,13 @@ namespace app
         virtual int rowCount(const QModelIndex&) const override;
         virtual int columnCount(const QModelIndex&) const override;
 
-
         void refresh(bool remove_complete, bool group_similar);
+
+        void pause(QModelIndexList& list);
+
+        void resume(QModelIndexList& list);
+
+        void kill(QModelIndexList& list);
     private:
         enum class columns { status, done, time, eta, size, desc, sentinel };
 

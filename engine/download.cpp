@@ -47,8 +47,10 @@ download::download(std::vector<std::string> groups, std::vector<std::string> art
     groups_(std::move(groups)), pending_(std::move(articles)), 
     path_(std::move(path))
 {
-    name_ = fs::remove_illegal_filename_chars(name);
-    overwrite_ = false;
+    name_        = fs::remove_illegal_filename_chars(name);
+    done_        = 0;
+    total_       = pending_.size();
+    overwrite_   = false;
     discardtext_ = false;
 }
 
@@ -134,7 +136,7 @@ void download::complete(action& act, std::vector<std::unique_ptr<action>>& next)
 
         auto it = std::find_if(std::begin(files_), std::end(files_),
             [=](const std::shared_ptr<datafile>& f) {
-                return f->is_binary() && f->name() == name;
+                return f->is_binary() && f->binary_name() == name;
             });
         if (it == std::end(files_))
         {
@@ -165,6 +167,8 @@ void download::complete(action& act, std::vector<std::unique_ptr<action>>& next)
         std::unique_ptr<action> write(new datafile::write(0, std::move(text), file));
         next.push_back(std::move(write));
     }
+
+    ++done_;
 }
 
 void download::complete(cmdlist& cmd, std::vector<std::unique_ptr<action>>& next)
@@ -215,6 +219,11 @@ void download::configure(const settings& s)
 {
     overwrite_   = s.overwrite_existing_files;
     discardtext_ = s.discard_text_content;
+}
+
+double download::completion() const 
+{ 
+    return 100.0 * double(done_) / double(total_);
 }
 
 } // newsflash

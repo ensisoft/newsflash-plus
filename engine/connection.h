@@ -170,7 +170,7 @@ namespace newsflash
 
         const std::string& password() const;
 
-
+        bool bps() const;
     private:
         std::shared_ptr<state> state_;
 

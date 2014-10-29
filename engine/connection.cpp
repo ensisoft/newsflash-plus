@@ -34,6 +34,7 @@
 #include "action.h"
 #include "event.h"
 #include "socketapi.h"
+#include "speedometer.h"
 
 namespace newsflash
 {
@@ -53,6 +54,7 @@ struct connection::state {
     bool ssl;
     bool pipelining;
     bool compression;
+    double bps;
 };
 
 void connection::resolve::xperform()
@@ -264,6 +266,9 @@ void connection::execute::xperform()
 
     cmdlist->submit_data_commands(*session);
 
+    speedometer meter;
+    meter.start();
+
     while (session->pending())
     {
         newsflash::buffer content(MB(4));                
@@ -284,6 +289,8 @@ void connection::execute::xperform()
 
             bytes_ += bytes; // this includes header data
             recvbuf.append(bytes);
+            meter.submit(bytes);
+            state_->bps = meter.bps();
         }
         while (!session->parse_next(recvbuf, content));
 
@@ -301,7 +308,7 @@ void connection::execute::xperform()
             if (state_->pipelining)
                 throw exception(connection::error::pipeline_reset, "pipeline reset");
 
-            assert(!session->pending());            
+            session->clear();
             return;
         }
         cmdlist->receive_data_buffer(std::move(content));
@@ -402,6 +409,7 @@ std::unique_ptr<action> connection::connect(spec s)
     state_->ssl      = s.use_ssl;
     state_->compression = s.enable_compression;
     state_->pipelining = s.enable_pipelining;
+    state_->bps = 0;
     state_->cancel.reset(new event);
     state_->cancel->reset();
     std::unique_ptr<action> act(new resolve(state_));
@@ -459,5 +467,8 @@ const std::string& connection::username() const
 const std::string& connection::password() const 
 { return state_->password; }
 
+
+bool connection::bps() const
+{ return state_->bps; }
 
 } // newsflash

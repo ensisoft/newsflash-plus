@@ -55,6 +55,8 @@ namespace newsflash
             std::vector<std::unique_ptr<action>>& next) override;
 
         virtual void configure(const settings& s) override;
+
+        virtual double completion() const override;
     private:
         std::vector<std::string> groups_;
         std::vector<std::string> pending_;
@@ -62,6 +64,8 @@ namespace newsflash
         std::vector<std::shared_ptr<datafile>> files_;
         std::string path_;
         std::string name_;
+        std::size_t done_;
+        std::size_t total_;
     private:
         bool overwrite_;
         bool discardtext_;

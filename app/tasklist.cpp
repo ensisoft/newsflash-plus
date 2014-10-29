@@ -47,6 +47,7 @@ const char* str(states s)
         case states::waiting: return "Waiting";
         case states::active: return "Active";
         case states::paused: return "Paused";
+        case states::finalize: return "Finalize";
         case states::complete: return "Complete";
         case states::error: return "Error";
     }
@@ -127,7 +128,9 @@ QVariant tasklist::data(const QModelIndex& index, int role) const
             case states::active: 
                 return QIcon(":/resource/16x16_ico_png/ico_task_running.png");
             case states::paused: 
-                return QIcon(":/resource/16x16_ico_png/ico_task_paused.png");                                
+                return QIcon(":/resource/16x16_ico_png/ico_task_paused.png");   
+            case states::finalize:
+                return QIcon(":/resource/16x16_ico_png/ico_task_finalize.png");                             
             case states::complete: 
                 if (ui.errors.any_bit())
                     return QIcon(":/resource/16x16_ico_png/ico_damaged.png");
@@ -194,7 +197,71 @@ void tasklist::refresh(bool remove_complete, bool group_similar)
         auto last  = QAbstractTableModel::index(tasks_.size(), (int)columns::sentinel);
         emit dataChanged(first, last);
     }
+}
 
+void tasklist::pause(QModelIndexList& list)
+{
+    int min_index = std::numeric_limits<int>::max();
+    int max_index = std::numeric_limits<int>::min();
+    for (int i=0; i<list.size(); ++i)
+    {
+        const auto row = list[i].row();
+        if (row > max_index)
+            max_index = row;
+        if (row < min_index)
+            min_index = row;
+
+        g_engine->pause_task(row);
+    }
+    Q_ASSERT(min_index >= 0);
+    Q_ASSERT(max_index < tasks_.size());
+
+    g_engine->update_task_list(tasks_);
+
+    auto first = QAbstractTableModel::index(min_index, 0);
+    auto last  = QAbstractTableModel::index(max_index, 1);
+    emit dataChanged(first, last);
+}
+
+void tasklist::resume(QModelIndexList& list)
+{
+    int min_index = std::numeric_limits<int>::max();
+    int max_index = std::numeric_limits<int>::min();
+    for (int i=0; i<list.size(); ++i)
+    {
+        const auto row = list[i].row();
+        if (row > max_index)
+            max_index = row;
+        if (row < min_index)
+            min_index = row;
+
+        g_engine->resume_task(row);
+    }
+    Q_ASSERT(min_index >= 0);
+    Q_ASSERT(max_index < tasks_.size());
+
+    g_engine->update_task_list(tasks_);
+
+    auto first = QAbstractTableModel::index(min_index, 0);
+    auto last  = QAbstractTableModel::index(max_index, 1);
+    emit dataChanged(first, last);
+}
+
+void tasklist::kill(QModelIndexList& list)
+{
+    qSort(list);
+
+    int removed = 0;
+
+    for (int i=0; i<list.size(); ++i)
+    {
+        const auto row = list[i].row() - removed;
+        beginRemoveRows(QModelIndex(), row, row);
+        g_engine->kill_task(row);
+        g_engine->update_task_list(tasks_);
+        endRemoveRows();
+        ++removed;
+    }
 }
 
 } // app

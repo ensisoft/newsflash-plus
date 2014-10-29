@@ -161,14 +161,29 @@ namespace app
             engine_->set_throttle_value(val);
         }
 
-        void kill_connection(std::size_t i)
+        void kill_connection(std::size_t index)
         {
-            engine_->kill_connection(i);
+            engine_->kill_connection(index);
         }
 
-        void clone_connection(std::size_t i)
+        void clone_connection(std::size_t index)
         {
-            engine_->clone_connection(i);
+            engine_->clone_connection(index);
+        }
+
+        void kill_task(std::size_t index)
+        {
+            engine_->kill_task(index);
+        }
+
+        void pause_task(std::size_t index)
+        {
+            engine_->pause_task(index);
+        }
+
+        void resume_task(std::size_t index)
+        {
+            engine_->resume_task(index);
         }
 
     signals:

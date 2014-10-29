@@ -20,7 +20,10 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-#include <boost/test/minimal.hpp>
+#include <newsflash/config.h>
+#include <newsflash/warnpush.h>
+#  include <boost/test/minimal.hpp>
+#include <newsflash/warnpop.h>
 #include <condition_variable>
 #include <mutex>
 #include <atomic>
@@ -58,7 +61,7 @@ private:
 void unit_test_event()
 {
     {
-        corelib::event event;
+        newsflash::event event;
 
         auto handle = event.wait();
         BOOST_REQUIRE(!wait_for(handle, std::chrono::milliseconds(0)));
@@ -77,7 +80,7 @@ void unit_test_event()
     }    
 
     {
-        corelib::event event1, event2;
+        newsflash::event event1, event2;
 
         auto handle1 = event1.wait();
         auto handle2 = event2.wait();
@@ -106,7 +109,7 @@ void unit_test_event()
 
     }
 
-    const auto& waiter = [](corelib::event& event, barrier& bar, std::atomic_flag& flag)
+    const auto& waiter = [](newsflash::event& event, barrier& bar, std::atomic_flag& flag)
     {
         // rendezvous
         bar.wait();
@@ -126,7 +129,7 @@ void unit_test_event()
     {
         for (int i=0; i<1000; ++i)
         {
-            corelib::event event;
+            newsflash::event event;
 
             barrier bar(2);
 
@@ -153,7 +156,7 @@ void unit_test_event()
     {
         for (int i=0; i<1000; ++i)
         {
-            corelib::event event;
+            newsflash::event event;
 
             barrier bar(4);
 

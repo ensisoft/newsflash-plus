@@ -66,35 +66,36 @@ namespace newsflash
             std::shared_ptr<datafile> file_;
         };
 
-        datafile(std::string path, std::string suggested_file_name, std::size_t size, bool bin, bool overwrite) : discard_(false), binary_(bin)
+        datafile(std::string path, std::string binaryname, std::size_t size, bool bin, bool overwrite) : discard_(false), binary_(bin)
         {
             std::string file;
-            std::string name;
+            std::string name = fs::remove_illegal_filename_chars(binaryname);
             // try to open the file at the given location under different
             // filenames unless ovewrite flag is set.
             for (int i=0; i<10; ++i)
             {
-                name = fs::filename(i, suggested_file_name);
+                name = fs::filename(i, name);
                 file = fs::joinpath(path, name);
                 if (!overwrite && bigfile::exists(file))
                     continue;
 
                 const auto error = big_.create(file);
-                if (error != std::error_code())
+                if (error)
                     throw std::system_error(error, "error creating file: " + file);
                 if (size)
                 {
                     const auto error = bigfile::resize(file, size);
-                    if (error != std::error_code())
+                    if (error)
                         throw std::system_error(error, "error resizing file: " + file);
                 }
                 break;
             }
             if (!big_.is_open())
-                throw std::runtime_error("unable to create files at: " + path);
+                throw std::runtime_error("unable to create file at: " + path);
 
             path_ = path;
             name_ = name;
+            binary_name_ = binaryname;
         #ifdef NEWSFLASH_DEBUG
             num_writes_ = 0;
         #endif
@@ -125,11 +126,14 @@ namespace newsflash
         std::uint64_t size() const 
         { return big_.size(); }
 
-        std::string name() const
+        const std::string& name() const
         { return name_; }
 
-        std::string path() const 
+        const std::string& path() const 
         { return path_; }
+
+        const std::string& binary_name() const 
+        { return binary_name_; }
 
         bool is_binary() const 
         { return binary_; }
@@ -141,6 +145,7 @@ namespace newsflash
         std::atomic<bool> discard_;
         std::string path_;
         std::string name_;
+        std::string binary_name_;
         bool binary_;
     #ifdef NEWSFLASH_DEBUG
         std::atomic<std::size_t> num_writes_;

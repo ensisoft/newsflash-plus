@@ -80,6 +80,8 @@ namespace newsflash
         virtual void flush() = 0;
 
         virtual bool is_open() const = 0;
+
+        virtual std::string name() const = 0;
     protected:
     private:
     };
@@ -93,6 +95,8 @@ namespace newsflash
             if (!out_.is_open() && !ignore_failures)
                 throw std::system_error(std::error_code(errno, 
                     std::system_category()), "failed to open log file: " + file);
+
+            file_ = std::move(file);
         }
         virtual void write(const std::string& msg) override
         {
@@ -106,8 +110,12 @@ namespace newsflash
 
         virtual bool is_open() const override
         { return out_.is_open(); }
+
+        virtual std::string name() const override
+        { return file_; }
     private:
         std::ofstream out_;
+        std::string file_;
     };
 
     class stdlog : public logger
@@ -126,6 +134,9 @@ namespace newsflash
 
         virtual bool is_open() const override
         { return true; }
+
+        virtual std::string name() const override
+        { return "stdlog"; }
     private:
         std::ostream& out_;
     };

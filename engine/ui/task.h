@@ -65,6 +65,8 @@ namespace newsflash
             // paused by the user
             paused,
 
+            finalize,
+
             // task is done. see damaged and error flags for details
             complete,
             
