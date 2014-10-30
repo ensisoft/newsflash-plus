@@ -130,7 +130,10 @@ void download::complete(action& act, std::vector<std::unique_ptr<action>>& next)
             throw std::runtime_error("binary has no name");
 
         const auto size   = dec->get_binary_size();
-        const auto offset = dec->get_binary_offset();
+
+        // see comment in datafile about the +1 for offset
+        const auto offset = dec->get_encoding() == encoding::yenc_multi ?
+           dec->get_binary_offset() + 1 : 0;
 
         std::shared_ptr<datafile> file;
 
@@ -174,8 +177,8 @@ void download::complete(action& act, std::vector<std::unique_ptr<action>>& next)
 void download::complete(cmdlist& cmd, std::vector<std::unique_ptr<action>>& next)
 {
     auto& list = dynamic_cast<bodylist&>(cmd);
-
-    auto messages = list.get_messages();
+    auto& messages = list.get_messages();
+    auto& contents = list.get_buffers();    
 
     if (list.configure_fail())
     {
@@ -184,34 +187,37 @@ void download::complete(cmdlist& cmd, std::vector<std::unique_ptr<action>>& next
         return;
     }
 
-    auto buffers = list.get_buffers();
-
-    for (std::size_t i=0; i<buffers.size(); ++i)
+    for (std::size_t i=0; i<contents.size(); ++i)
     {
-        auto& buffer = buffers[i];
-        auto message = messages[i];
-        auto status  = buffer.content_status();
+        auto& content = contents[i];
+        auto& message = messages[i];
+        auto status   = content.content_status();
 
+        // if the article content was succesfully retrieved
+        // create a decoding job and push into the output queue
         if (status == buffer::status::success)
         {
-            std::unique_ptr<action> dec(new decode(std::move(buffer)));
+            std::unique_ptr<action> dec(new decode(std::move(content)));
             dec->set_affinity(action::affinity::any_thread);
             next.push_back(std::move(dec));
             continue;
         }
 
+        // look at the reason for the content failure and set
+        // approprite flags
         failed_.push_back(message);
         if (status == buffer::status::dmca)
             errors_.set(task::error::dmca);
         else if (status == buffer::status::unavailable)
             errors_.set(task::error::unavailable);
         else throw std::runtime_error("data buffer error");
+
+        ++done_;
     }
 
     // all not yet processed messages go back into pending list
-    std::copy(std::begin(messages) + buffers.size(), std::end(messages),
+    std::copy(std::begin(messages) + contents.size(), std::end(messages),
         std::back_inserter(pending_));
-
 }
 
 

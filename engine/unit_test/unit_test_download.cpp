@@ -24,6 +24,7 @@
 #include <newsflash/warnpush.h>
 #  include <boost/test/minimal.hpp>
 #  include <boost/lexical_cast.hpp>
+#  include <boost/filesystem.hpp>
 #include <newsflash/warnpop.h>
 #include <thread>
 #include "../download.h"
@@ -119,7 +120,7 @@ void unit_test_bodylist()
             session.parse_next(recv, body3);
             list.receive_data_buffer(std::move(body3));
 
-            auto buffers = list.get_buffers();
+            const auto& buffers = list.get_buffers();
             BOOST_REQUIRE(buffers.size() == 3);
 
             BOOST_REQUIRE(buffers[0].content_status() == nf::buffer::status::unavailable);
@@ -202,12 +203,58 @@ void unit_test_decode_binary()
 void unit_test_decode_text()
 {}
 
+void test_decode_from_files()
+{
+    // this test case assumes that we've got some raw NNTP dumps somewhere on the disk and then a 
+    // reference binary somewhere 
+    namespace fs = boost::filesystem;
+
+    //nf::download 
+    std::vector<std::string> articles;
+
+    for (auto it = fs::directory_iterator("/tmp/Newsflash/"); it != fs::directory_iterator(); ++it)
+    {
+        auto entry = *it;
+        auto file  = entry.path().string();
+        if (file.find(".log") != std::string::npos)
+            continue;
+        articles.push_back(file);
+    }
+    nf::download download({"alt.binaries.foo"}, articles, "", "test");
+    nf::session ses;
+    ses.on_send = [&](const std::string&) {};
+
+    for (std::size_t i=0; i<articles.size();)
+    {
+        auto cmds = download.create_commands();
+        if (!cmds)
+            break;
+        for (std::size_t j=0; j<cmds->num_data_commands(); ++j, ++i)
+        {
+            nf::buffer buff = read_file_buffer(articles[i].c_str());
+            cmds->receive_data_buffer(std::move(buff));
+        }
+        std::vector<std::unique_ptr<nf::action>> decodes;
+        download.complete(*cmds, decodes);
+        for (auto& dec : decodes)
+        {
+            dec->perform();
+            std::vector<std::unique_ptr<nf::action>> writes;            
+            download.complete(*dec, writes);
+            for (auto& io : writes)
+                io->perform();
+        }
+    }
+}
+
 int test_main(int, char*[])
 {
     unit_test_bodylist();
     unit_test_create_cmds();
     unit_test_decode_binary();
     unit_test_decode_text();
+
+    //test_decode_from_files();
 
     return 0;
 }

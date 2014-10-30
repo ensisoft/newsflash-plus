@@ -1,4 +1,4 @@
-// Copyright (c) 2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -20,56 +20,31 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
+#pragma once
+
 #include <newsflash/config.h>
+
 #include <newsflash/warnpush.h>
-#  include <boost/test/minimal.hpp>
+#  include <QtGui/QDialog>
+#  include "ui_dlgabout.h"
 #include <newsflash/warnpop.h>
-#include <thread>
-#include <functional>
-#include <iostream>
-#include <cstdlib>
-#include <ctime>
-#include "../speedometer.h"
 
-void produce_sample(int num_samples, int sample_bytes, newsflash::speedometer& meter)
+namespace gui
 {
-    std::srand(std::time(NULL));
-    meter.start();
-
-    for (int i=0; i<num_samples; ++i)
+    class DlgAbout : public QDialog
     {
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        Q_OBJECT
 
-        const int bytes = 0.8 * sample_bytes + (rand() % (int)(sample_bytes * 0.2));
+    public:
+        DlgAbout(QWidget* parent) : QDialog(parent)
+        {
+            ui_.setupUi(this);
+            ui_.lblCopyright->setText(QString::fromUtf8(NEWSFLASH_COPYRIGHT));
+        }
+       ~DlgAbout()
+        {}
 
-        assert(bytes >= (int)0.8 * sample_bytes && 
-            bytes <= sample_bytes);
-
-        meter.submit(bytes);
-    }
-}
-
-
-void test_multiple_thread()
-{
-    newsflash::speedometer meter;
-
-    std::thread thread(std::bind(produce_sample, 100, 128, std::ref(meter)));
-
-    // read the meter. 
-    for (int i=0; i<200; ++i)
-    {
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
-        std::cout << meter.bps() << std::endl;
-    }
-
-    thread.join();
-}
-
-
-int test_main(int, char*[])
-{
-    test_multiple_thread();
-
-    return 0;
-}
+    private:
+        Ui::DlgAbout ui_;
+    };
+} // gui

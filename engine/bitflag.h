@@ -101,10 +101,6 @@ namespace newsflash
         return { lhs.value() & rhs.value() };
     }
 
-    enum class keke {
-        bar, foo
-    };
-    
 } // newsflash
 
 

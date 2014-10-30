@@ -47,21 +47,16 @@ namespace newsflash
 
         virtual void receive_data_buffer(buffer&& buff) override;
 
-        std::vector<buffer> get_buffers()
-        {
-            std::vector<buffer> ret;
-            for (auto& buff : buffers_)
-                ret.push_back(std::move(buff));
+        virtual std::size_t num_data_commands() const 
+        { return messages_.size(); }
 
-            return ret;
-        }
+        std::vector<buffer>& get_buffers()
+        { return buffers_; };
 
-        const 
-        std::vector<std::string>& get_messages() const 
+        std::vector<std::string>& get_messages()
         { return messages_; }
 
-        const
-        std::vector<std::string>& get_groups() const
+        std::vector<std::string>& get_groups()
         { return groups_; }
 
         bool configure_fail() const
@@ -71,7 +66,6 @@ namespace newsflash
         std::vector<std::string> groups_;
         std::vector<std::string> messages_;
         std::vector<buffer> buffers_;
-    private:
         bool configure_fail_bit_;
     }; 
 

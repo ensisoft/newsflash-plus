@@ -12,10 +12,6 @@ project engine
   
 lib engine :  
    [ glob *.cpp ] 
-   #[ glob nntp/*.cpp ]
-
-   #nntp/session.cpp
-   #nntp/nntp.cpp
 
    /boost//filesystem/
    /boost//regex/

@@ -77,7 +77,8 @@ namespace newsflash
             {
                 exptr_ = std::current_exception();
                 LOG_E(e.what());
-                log_->flush();
+                if (log_)
+                    log_->flush();
             }
             set_thread_log(nullptr);
         }

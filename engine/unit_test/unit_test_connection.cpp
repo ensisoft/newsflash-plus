@@ -21,8 +21,9 @@
 //  THE SOFTWARE.
 
 #include <newsflash/config.h>
-
-#include <boost/test/minimal.hpp>
+#include <newsflash/warnpush.h>
+#  include <boost/test/minimal.hpp>
+#include <newsflash/warnpop.h>
 #include <thread>
 #include <deque>
 #include <string>
@@ -268,6 +269,8 @@ void test_execute()
 
             BOOST_REQUIRE(png == bin);
         }
+        virtual std::size_t num_data_commands() const 
+        { return 1; }
     };
 
     auto log = std::make_shared<nf::stdlog>(std::cout);
@@ -314,11 +317,12 @@ void test_cancel_execute()
     // todo:
 }
 
+
+
 int test_main(int argc, char* argv[])
 {
     test_connect();
     test_execute();
     test_cancel_execute();
-
     return 0;
 }

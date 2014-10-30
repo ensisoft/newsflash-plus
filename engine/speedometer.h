@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include <newsflash/config.h>
 #include <chrono>
 #include <cstddef>
 #include <cassert>
@@ -33,8 +34,8 @@ namespace newsflash
     class speedometer 
     {
     public:
-        typedef std::chrono::steady_clock clock_t;
-        typedef clock_t::time_point point_t;
+        using clock_t = std::chrono::steady_clock;
+        using point_t = clock_t::time_point;
 
         speedometer() : speed_(0)
         {}

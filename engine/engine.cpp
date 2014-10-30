@@ -40,6 +40,7 @@
 #include "threadpool.h"
 #include "cmdlist.h"
 #include "settings.h"
+#include "bodylist.h"
 
 namespace newsflash
 {
@@ -490,7 +491,7 @@ public:
         executed_      = false;
         num_pending_actions_ = 0;
 
-        LOG_I("Task ", ui_.id, "(", ui_.desc, ") created");
+        LOG_I("Task ", ui_.id, " (", ui_.desc, ") created");
     }
 
    ~task()
@@ -519,6 +520,16 @@ public:
         if (ui_.state == state::active ||
             ui_.state == state::finalize)
             ui_.runtime++;
+    }
+
+    bool eligible_for_run() const 
+    {
+        if (ui_.state == state::waiting ||
+            ui_.state == state::queued ||
+            ui_.state == state::active)
+            return true;
+        
+        return false;
     }
 
     bool run(engine::conn& conn)
@@ -553,6 +564,21 @@ public:
 
         if (ui_.state == state::error)
             return;
+
+        // code to dump raw NNTP data to the disk
+        // auto& list = dynamic_cast<bodylist&>(*cmds.get());
+        // const auto& contents = list.get_buffers();
+        // const auto& articles = list.get_messages();
+        // for (int i=0; i<contents.size(); ++i)
+        // {
+        //     const auto& content = contents[i];
+        //     const auto& article = articles[i];
+        //     const auto filename = fs::joinpath("/tmp/Newsflash/", article);
+        //     std::ofstream out(filename, std::ios::binary);
+        //     out.write(content.content(),
+        //         content.content_length());
+        //     out.close();
+        // }
 
         std::vector<std::unique_ptr<action>> actions;
 
@@ -889,7 +915,9 @@ void engine::download(ui::download spec)
 
     for (auto& file : spec.files)
     {
-        LOG_D("New '", spec.desc, "' download with ", file.articles.size());
+        LOG_D("New file download created");
+        LOG_D("Download has ", file.articles.size(), " articles");
+        LOG_D("Download is stored in '", spec.path, "'");
 
         std::unique_ptr<newsflash::download> job(new class download(
             std::move(file.groups), std::move(file.articles), spec.path, file.name));            
@@ -980,7 +1008,6 @@ void engine::tick()
         task->tick(std::chrono::seconds(1));
     }
 
-    connect();
 }
 
 
@@ -1220,37 +1247,59 @@ void engine::connect()
     if (!state_->started)
         return;
 
-    for (const auto& acc : state_->accounts)
-    {
-        bool have_tasks = false;
+    // scan the list of queued tasks and look for one that is ready to be run.
+    // when the task is found see which account it belongs to and spawn the connections
+    // finally if we have already ready connections we set them to work on the 
+    // eligible task possibly looking for a new task once the current task
+    // has no more work to be done.
 
-        std::size_t num_conns = 0;
+    for (auto tit = std::begin(state_->tasks); tit != std::end(state_->tasks); ++tit)
+    {
+        auto& task = *tit;
+        if (!task->eligible_for_run())
+            continue;
+
+        // how many conns do we have in total associated with this account.
+        const auto num_conns = std::count_if(std::begin(state_->conns), std::end(state_->conns),
+            [&](const std::unique_ptr<engine::conn>& c) {
+                return c->account() == task->account();
+            });
+
+        // must find the account
+        const auto a = std::find_if(std::begin(state_->accounts), std::end(state_->accounts),
+            [&](const account& a) {
+                return a.id == task->account();
+            });
+        ASSERT(a != std::end(state_->accounts));
+
+        // if there's space, spawn new connections.
+        for (auto i=num_conns; i<(*a).connections; ++i)
+            state_->conns.emplace_back(new engine::conn((*a).id, *state_));
+
+        // starting with the current task assing ready connections to work on this task.
+        engine::task* candidate = task.get();
+
         for (auto& conn : state_->conns)
         {
-            if (conn->account() != acc.id)
+            if (!conn->is_ready())
                 continue;
 
-            if (conn->is_ready())
-            {
-                for (auto& task : state_->tasks)
-                {
-                    if (task->account() != acc.id)
-                        continue;
-                    if (task->run(*conn))
-                    {
-                        have_tasks = true;
-                        break;
-                    }
-                }
-            }
-            ++num_conns;
-        }
-        if (have_tasks)
-        {
-            for (auto i = num_conns; i<acc.connections; ++i)
-                state_->conns.emplace_back(new engine::conn(acc.id, *state_));
-        }
+            // if candidate returns true it means it might have more work
+            // on next iteration as well. 
+            if (candidate->run(*conn))
+                continue;
 
+            // candidate didn't have any more work. hence we can inspect the  
+            // remainder of the task list looking for another task that belongs
+            // to the *same* account and is runnable
+            auto it = std::find_if(tit, std::end(state_->tasks),
+                [&](const std::unique_ptr<engine::task>& t) {
+                    return t->account() == conn->account() && t->eligible_for_run();
+                });
+            if (it == std::end(state_->tasks))
+                break;
+            candidate = (*it).get();
+        }
     }
 }
 

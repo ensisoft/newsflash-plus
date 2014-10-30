@@ -37,6 +37,8 @@ namespace newsflash
         class write : public action
         {
         public:
+            // note that there's a little hack here and the offset is offset by +1
+            // so that we're using 0 for indicating that offset is not being used at all.
             write(std::size_t offset, 
                 std::vector<char> data, std::shared_ptr<datafile> file) : offset_(offset),
                 data_(std::move(data)), file_(file)
@@ -52,8 +54,10 @@ namespace newsflash
             {
                 if (file_->discard_)
                     return;
+
+                // see the comment in the constructor about the offset value
                 if (offset_)
-                    file_->big_.seek(offset_);
+                    file_->big_.seek(offset_-1);
 
                 file_->big_.write(&data_[0], data_.size());
             #ifdef NEWSFLASH_DEBUG

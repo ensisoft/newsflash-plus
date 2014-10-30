@@ -63,6 +63,8 @@ namespace newsflash
         virtual bool is_canceled() const
         { return cancel_;}
 
+        virtual std::size_t num_data_commands() const = 0;
+
     protected:
         std::atomic<bool> cancel_;
     private:

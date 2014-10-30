@@ -214,6 +214,10 @@ void connection::execute::xperform()
     auto& socket  = state_->socket;
     auto& cmdlist = cmds_;
 
+    LOG_D("Execute cmdlist");
+
+    LOG_D("Cmdlist has ", cmdlist->num_data_commands(), " data commands");
+
     newsflash::buffer recvbuf(MB(4));
 
     // the cmdlist contains a list of commands
@@ -259,7 +263,10 @@ void connection::execute::xperform()
         }
     }
     if (!configure_success)
+    {
+        LOG_E("Cmdlist session configuration failed");
         return;
+    }
 
     if (cmdlist->is_canceled())
         return;
@@ -313,6 +320,8 @@ void connection::execute::xperform()
         }
         cmdlist->receive_data_buffer(std::move(content));
     }    
+
+    LOG_D("Cmdlist complete");
 }
 
 connection::disconnect::disconnect(std::shared_ptr<state> s) : state_(s)
