@@ -157,6 +157,13 @@ struct engine::state {
         threads->submit(a);
         num_pending_actions++;
     }
+
+    void submit(action* a, threadpool::thread* thread)
+    {
+        threads->submit(a, thread);
+        num_pending_actions++;
+
+    }
 };
 
 
@@ -250,6 +257,8 @@ public:
         LOG_I("Connection ", conn_number_, " deleted");
 
         --current_num_connections;
+
+        state_.threads->detach(thread_);
     }
 
     void tick(const std::chrono::milliseconds& elapsed)
@@ -455,8 +464,7 @@ private:
 
         a->set_id(ui_.id);
         a->set_log(conn_logger_);
-        //state_.submit(a.release());
-        state_.threads->submit(a.release(), thread_);
+        state_.submit(a.release(), thread_);
     }
 
 private:

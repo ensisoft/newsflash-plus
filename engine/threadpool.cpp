@@ -36,7 +36,7 @@ struct threadpool::thread {
     std::unique_ptr<std::thread> thread;
     std::queue<action*> queue;
     bool run_loop;
-    bool detach;
+    bool in_use;
 };
 
 threadpool::threadpool(std::size_t num_threads) : round_robin_(0), pool_size_(num_threads), queue_size_(0)
@@ -49,7 +49,6 @@ threadpool::threadpool(std::size_t num_threads) : round_robin_(0), pool_size_(nu
         std::lock_guard<std::mutex> lock(thread->mutex);
 
         thread->run_loop = true;
-        thread->detach   = false;
         thread->thread.reset(new std::thread(std::bind(&threadpool::thread_main, this, thread.get())));
         threads_.push_back(std::move(thread));
     }
@@ -93,10 +92,11 @@ void threadpool::submit(action* act, threadpool::thread* t)
     queue_size_++;
 }
 
-void threadpool::wait()
+void threadpool::wait_all_actions()
 {
+    // this is quick and dirty waiting
     while (queue_size_ > 0)
-        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
 }
 
 void threadpool::shutdown()
@@ -115,13 +115,23 @@ void threadpool::shutdown()
 
 threadpool::thread* threadpool::allocate()
 {
+    for (std::size_t i=pool_size_; i<threads_.size(); ++i)
+    {
+        auto& thread = threads_[i];
+        if (!thread->in_use)
+        {
+            thread->in_use = true;
+            return thread.get();
+        }
+    }
+
     std::unique_ptr<threadpool::thread> thread(new threadpool::thread);
     std::lock_guard<std::mutex> lock(thread->mutex);
 
     auto* handle = thread.get();
 
     thread->run_loop = true;
-    thread->detach   = false;
+    thread->in_use = true;
     thread->thread.reset(new std::thread(std::bind(&threadpool::thread_main, this, 
         handle)));
 
@@ -131,22 +141,7 @@ threadpool::thread* threadpool::allocate()
 
 void threadpool::detach(threadpool::thread* thread)
 {
-    auto it = std::find_if(std::begin(threads_), std::end(threads_), 
-        [&](const std::unique_ptr<threadpool::thread>& t) {
-            return t.get() == thread;
-        });
-    assert(it != std::end(threads_));
-    assert(std::distance(std::begin(threads_), it) >= pool_size_);
-
-    {
-        std::lock_guard<std::mutex> lock(thread->mutex);
-        thread->detach   = true;
-        thread->cond.notify_one();
-        thread->thread->detach();        
-    }
-
-    it->release();
-    threads_.erase(it);
+    thread->in_use = false;
 }
 
 void threadpool::thread_main(threadpool::thread* self)
@@ -158,8 +153,6 @@ void threadpool::thread_main(threadpool::thread* self)
             return;
         else if (self->queue.empty())
         {
-            if (self->detach)
-                break;
             self->cond.wait(lock);
             continue;
         }
@@ -176,9 +169,6 @@ void threadpool::thread_main(threadpool::thread* self)
 
         queue_size_--;
     }
-    assert(self->detach);
-    assert(self->queue.empty());
-    delete self;
 }
 
 } // newsflash

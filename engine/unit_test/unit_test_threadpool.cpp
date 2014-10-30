@@ -64,7 +64,7 @@ void unit_test_pool()
         a->set_id(i);
         threads.submit(a);
     }
-    threads.wait();
+    threads.wait_all_actions();
     threads.shutdown();
 
     BOOST_REQUIRE(counter == 10000);
@@ -123,6 +123,7 @@ void unit_test_private_thread()
         threads.submit(b, handle);
     }
     threads.detach(handle);
+    threads.wait_all_actions();
     threads.shutdown();
 
     BOOST_REQUIRE(generic_counter == 10000);

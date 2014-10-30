@@ -58,7 +58,7 @@ namespace newsflash
         void submit(action* act, thread* t);
 
         // 
-        void wait();
+        void wait_all_actions();
 
         void shutdown();
 
