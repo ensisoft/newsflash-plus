@@ -35,6 +35,7 @@
 #include "../debug.h"
 #include "../format.h"
 #include "../eventlog.h"
+#include "../settings.h"
 
 namespace gui
 {
@@ -86,6 +87,22 @@ void nzbfile::add_actions(QToolBar& bar)
 void nzbfile::close_widget()
 {
     delete this;
+}
+
+void nzbfile::loadstate(app::settings& s)
+{
+    const bool filenames = s.get("nzb", "show_filename_only", false);
+
+    ui_.chkFilenamesOnly->setChecked(filenames);
+
+    model_.set_show_filenames_only(filenames);
+}
+
+bool nzbfile::savestate(app::settings& s)
+{
+    s.set("nzb", "show_filename_only", 
+        ui_.chkFilenamesOnly->isChecked());
+    return true;
 }
 
 void nzbfile::open(const QString& nzbfile)
@@ -146,6 +163,13 @@ void nzbfile::on_listFiles_customContextMenuRequested(QPoint)
     //sub.setIcon()
 
     //QMenu menu(this);
+}
+
+void nzbfile::on_chkFilenamesOnly_clicked()
+{
+    const bool on_off = ui_.chkFilenamesOnly->isChecked();
+
+    model_.set_show_filenames_only(on_off);
 }
 
 } // gui

@@ -43,7 +43,7 @@
 namespace app
 {
 
-nzbfile::nzbfile()
+nzbfile::nzbfile() : show_filename_only_(false)
 {
     DEBUG("nzbfile created");
 }
@@ -114,6 +114,17 @@ void nzbfile::clear()
     QAbstractTableModel::reset();
 }
 
+void nzbfile::set_show_filenames_only(bool on_off)
+{
+    if (on_off == show_filename_only_)
+        return;
+    show_filename_only_ = on_off;
+
+    auto first = QAbstractTableModel::index(0, 0);
+    auto last  = QAbstractTableModel::index(data_.size(), 3);
+    emit dataChanged(first, last);
+}
+
 
 int nzbfile::rowCount(const QModelIndex&) const
 {
@@ -169,7 +180,16 @@ QVariant nzbfile::data(const QModelIndex& index, int role) const
         else if (index.column() == 1)
             return str(app::size { item.bytes });
         else if (index.column() == 2)
+        {
+            if (show_filename_only_)
+            {
+                const auto& utf8 = to_utf8(item.subject);
+                const auto& name = nntp::find_filename(utf8);
+                if (name.size() > 5)
+                    return from_utf8(name);
+            }
             return item.subject;
+        }
     }
     else if (role == Qt::DecorationRole)
     {

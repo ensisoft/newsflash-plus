@@ -50,6 +50,9 @@ namespace gui
         virtual info information() const override
         { return {"nzb.html", false, false}; }
 
+        virtual void loadstate(app::settings& s) override;
+        virtual bool savestate(app::settings& s) override;
+
         // open and display the contents of the given NZB file.
         void open(const QString& nzbfile);
 
@@ -64,6 +67,7 @@ namespace gui
         void on_actionDownload_triggered();
         void on_actionClear_triggered();
         void on_listFiles_customContextMenuRequested(QPoint);
+        void on_chkFilenamesOnly_clicked();
 
     private:
         Ui::NZB ui_;

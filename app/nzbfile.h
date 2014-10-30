@@ -59,6 +59,8 @@ namespace app
         // clear the contents of the model
         void clear();
 
+        void set_show_filenames_only(bool on_off);
+
         // QAbstractTableModel
         virtual int rowCount(const QModelIndex&) const override;
         virtual int columnCount(const QModelIndex&) const override;                
@@ -75,6 +77,7 @@ namespace app
     private:
         QString file_;
         QByteArray buffer_;
+        bool show_filename_only_;
     };
 
 } // app
