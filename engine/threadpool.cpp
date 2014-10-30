@@ -20,15 +20,26 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.            
 
+#include <newsflash/config.h>
 #include <functional>
+#include <algorithm>
 #include <cassert>
+#include <thread>
 #include "threadpool.h"
 #include "action.h"
 
 namespace newsflash
 {
+struct threadpool::thread {
+    std::mutex mutex;
+    std::condition_variable cond;
+    std::unique_ptr<std::thread> thread;
+    std::queue<action*> queue;
+    bool run_loop;
+    bool detach;
+};
 
-threadpool::threadpool(std::size_t num_threads) : round_robin_(0), queue_size_(0)
+threadpool::threadpool(std::size_t num_threads) : round_robin_(0), pool_size_(num_threads), queue_size_(0)
 {
     assert(num_threads);
 
@@ -38,6 +49,7 @@ threadpool::threadpool(std::size_t num_threads) : round_robin_(0), queue_size_(0
         std::lock_guard<std::mutex> lock(thread->mutex);
 
         thread->run_loop = true;
+        thread->detach   = false;
         thread->thread.reset(new std::thread(std::bind(&threadpool::thread_main, this, thread.get())));
         threads_.push_back(std::move(thread));
     }
@@ -50,7 +62,7 @@ threadpool::~threadpool()
 
 void threadpool::submit(action* act)
 {
-    const auto num_threads  = threads_.size();
+    const auto num_threads  = pool_size_;
     const auto affinity = act->get_affinity();
     thread* worker = nullptr;
 
@@ -70,6 +82,15 @@ void threadpool::submit(action* act)
     worker->cond.notify_one();    
 
     queue_size_++;    
+}
+
+void threadpool::submit(action* act, threadpool::thread* t)
+{
+    std::lock_guard<std::mutex> lock(t->mutex);
+    t->queue.push(act);
+    t->cond.notify_one();
+
+    queue_size_++;
 }
 
 void threadpool::wait()
@@ -92,6 +113,41 @@ void threadpool::shutdown()
     threads_.clear();
 }
 
+threadpool::thread* threadpool::allocate()
+{
+    std::unique_ptr<threadpool::thread> thread(new threadpool::thread);
+    std::lock_guard<std::mutex> lock(thread->mutex);
+
+    auto* handle = thread.get();
+
+    thread->run_loop = true;
+    thread->detach   = false;
+    thread->thread.reset(new std::thread(std::bind(&threadpool::thread_main, this, 
+        handle)));
+
+    threads_.push_back(std::move(thread));
+    return handle;
+}
+
+void threadpool::detach(threadpool::thread* thread)
+{
+    auto it = std::find_if(std::begin(threads_), std::end(threads_), 
+        [&](const std::unique_ptr<threadpool::thread>& t) {
+            return t.get() == thread;
+        });
+    assert(it != std::end(threads_));
+    assert(std::distance(std::begin(threads_), it) >= pool_size_);
+
+    {
+        std::lock_guard<std::mutex> lock(thread->mutex);
+        thread->detach   = true;
+        thread->cond.notify_one();
+        thread->thread->detach();        
+    }
+
+    it->release();
+    threads_.erase(it);
+}
 
 void threadpool::thread_main(threadpool::thread* self)
 {
@@ -102,6 +158,8 @@ void threadpool::thread_main(threadpool::thread* self)
             return;
         else if (self->queue.empty())
         {
+            if (self->detach)
+                break;
             self->cond.wait(lock);
             continue;
         }
@@ -118,6 +176,9 @@ void threadpool::thread_main(threadpool::thread* self)
 
         queue_size_--;
     }
+    assert(self->detach);
+    assert(self->queue.empty());
+    delete self;
 }
 
 } // newsflash

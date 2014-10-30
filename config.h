@@ -106,7 +106,7 @@
 #endif
 
 
-#ifndef _NDEBUG
+#ifndef NDEBUG
 #  define NEWSFLASH_DEBUG
 #endif
 
@@ -143,7 +143,7 @@
 #define NEWSFLASH_COPYRIGHT "Copyright (c) Sami V\303\244is\303\244nen 2005-2014"
 #define NEWSFLASH_WEBSITE   "http://www.ensisoft.com"
 
-#ifdef _NDEBUG
+#ifdef NDEBUG
 #  define NEWSFLASH_TITLE "Newsflash Plus"
 #else 
 #  define NEWSFLASH_TITLE "Newsflash Plus DEBUG"

@@ -179,6 +179,8 @@ private:
             str("connection", conn_number_, ".log")), true);
 
         LOG_D("Connection ", conn_number_, " log file: ", conn_logger_->name());        
+
+        thread_ = state_.threads->allocate();
     }    
 
     using state = ui::connection::states;
@@ -453,7 +455,8 @@ private:
 
         a->set_id(ui_.id);
         a->set_log(conn_logger_);
-        state_.submit(a.release());
+        //state_.submit(a.release());
+        state_.threads->submit(a.release(), thread_);
     }
 
 private:
@@ -461,6 +464,7 @@ private:
     connection conn_;
     engine::state& state_;
     std::shared_ptr<logger> conn_logger_;
+    threadpool::thread* thread_;
     unsigned conn_number_;
     unsigned ticks_to_ping_;
     unsigned ticks_to_conn_;
