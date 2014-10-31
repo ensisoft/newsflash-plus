@@ -21,9 +21,10 @@
 //  THE SOFTWARE.
 
 #include <newsflash/config.h>
-
-#include <boost/test/minimal.hpp>
-#include <boost/lexical_cast.hpp>
+#include <newsflash/warnpush.h>
+#  include <boost/test/minimal.hpp>
+#  include <boost/lexical_cast.hpp>
+#include <newsflash/warnpop.h>
 #include <iostream>
 #include <algorithm>
 #include <vector>
@@ -394,6 +395,8 @@ void test_find_filename()
         const char* str;
         std::string expected;
     } tests[] = {
+        {"[#scnzb@efnet][529762] Automata.2014.BRrip.x264.Ac3-MiLLENiUM [1/4] - \"Automata.2014.BRrip.x264.Ac3-MiLLENiUM.mkv\" yEnc (1/1513)",
+            "Automata.2014.BRrip.x264.Ac3-MiLLENiUM.mkv"},
         {"Ip.Man.The.Final.Fight.2013.COMPLETE.BluRay-oOo - [1/7] - #34;Ip.Man.The.Final.Fight.2013.COMPLETE.BluRay-oOo.rar#34; yEnc (204/204)", "34;Ip.Man.The.Final.Fight.2013.COMPLETE.BluRay-oOo.rar"},        
         {"fooobar music.mp3 foobar", "music.mp3"},
         {"foobar (music-file.mp3) bla blah", "music-file.mp3"},

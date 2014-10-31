@@ -202,6 +202,8 @@ public:
         connection::spec spec;
         spec.password = acc.password;
         spec.username = acc.username;
+        spec.enable_compression = acc.enable_compression;
+        spec.enable_pipelining = acc.enable_pipelining;
         if (s.prefer_secure && acc.enable_secure_server)
         {
             spec.hostname = acc.secure_host;
@@ -271,29 +273,27 @@ public:
         }
         else if (ui_.state == state::error)
         {
-            if (ui_.error == error::resolve ||
-                ui_.error == error::refused ||
-                ui_.error == error::network ||
-                ui_.error == error::timeout)
-            {
-                if (--ticks_to_conn_)
-                    return;
+            if (ui_.error == error::authentication_rejected ||
+                ui_.error == error::no_permission)
+                return;
 
-                LOG_D("Connection ", conn_number_, " reconnecting...");
-                ui_.error = error::none;
-                ui_.state = state::disconnected;
+            if (--ticks_to_conn_)
+                return;
 
-                const auto& acc = state_.find_account(ui_.account);
-                connection::spec s;
-                s.password = acc.password;
-                s.username = acc.username;
-                s.use_ssl  = ui_.secure;
-                s.hostname = ui_.host;
-                s.hostport = ui_.port;
-                s.enable_compression = acc.enable_compression;
-                s.enable_pipelining  = acc.enable_pipelining;
-                do_action(conn_.connect(s));                
-            }
+            LOG_D("Connection ", conn_number_, " reconnecting...");
+            ui_.error = error::none;
+            ui_.state = state::disconnected;
+
+            const auto& acc = state_.find_account(ui_.account);
+            connection::spec s;
+            s.password = acc.password;
+            s.username = acc.username;
+            s.use_ssl  = ui_.secure;
+            s.hostname = ui_.host;
+            s.hostport = ui_.port;
+            s.enable_compression = acc.enable_compression;
+            s.enable_pipelining  = acc.enable_pipelining;
+            do_action(conn_.connect(s));                
         }
     }
 
@@ -321,19 +321,21 @@ public:
     void update(ui::connection& ui)
     {
         ui = ui_;
+        ui.bps = 0;
         if (ui_.state == state::active)
-            ui.bps = conn_.bps();
+        {
+            // if bytes value hasn't increased since the last read
+            // then bps reading will not be valid but the connection has stalled.
+            // note that ui
+            const auto bytes = ui_.down;
+            ui_.down = conn_.bytes();
+            if (bytes != ui_.down)
+                ui.bps = conn_.bps();
+        }
     }
     void on_action(action* a)
     {
         std::unique_ptr<action> act(a);
-
-        if (auto* e = dynamic_cast<class connection::execute*>(a))
-        {
-            ui_.down += e->bytes();
-            LOG_D("Connection ", conn_number_, " completed execute!");
-            LOG_D("Connection ", conn_number_, " transferred ", newsflash::size{e->bytes()});
-        }
 
         ticks_to_ping_ = 30;
         ticks_to_conn_ = 5;
@@ -415,6 +417,7 @@ public:
            ui_.bps   = 0;
            ui_.task  = 0;
            ui_.desc  = "";
+           LOG_D("Connection ", conn_number_, " completed execute!");           
            LOG_D("Connection ", conn_number_, " => state::connected");
         }
         conn_logger_->flush();

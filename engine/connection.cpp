@@ -25,6 +25,7 @@
 #include <mutex>
 #include <fstream>
 #include <cassert>
+#include <atomic>
 #include "connection.h"
 #include "tcpsocket.h"
 #include "sslsocket.h"
@@ -48,6 +49,7 @@ struct connection::state {
     std::ofstream log;
     std::uint16_t port;
     std::uint32_t addr;
+    std::atomic<std::uint64_t> bytes;
     std::unique_ptr<class socket> socket;
     std::unique_ptr<class session> session;
     std::unique_ptr<event> cancel;
@@ -193,7 +195,7 @@ void connection::initialize::xperform()
     LOG_D("NNTP Session ready");
 }
 
-connection::execute::execute(std::shared_ptr<state> s, std::shared_ptr<cmdlist> cmd) : state_(s), cmds_(cmd), bytes_(0)
+connection::execute::execute(std::shared_ptr<state> s, std::shared_ptr<cmdlist> cmd) : state_(s), cmds_(cmd)
 {
     state_->session->on_auth = [](std::string&, std::string&) { 
         throw exception(connection::error::no_permission, 
@@ -273,8 +275,13 @@ void connection::execute::xperform()
 
     cmdlist->submit_data_commands(*session);
 
-    speedometer meter;
-    meter.start();
+    state_->bps = 0;
+
+    using clock = std::chrono::steady_clock;
+
+    const auto start = clock::now();
+
+    std::uint64_t accum = 0;
 
     while (session->pending())
     {
@@ -284,7 +291,7 @@ void connection::execute::xperform()
             // wait for data or cancellation
             auto received = socket->wait(true, false);
             auto canceled = cancel->wait();
-            if (!newsflash::wait_for(received, canceled, std::chrono::seconds(10)))
+            if (!newsflash::wait_for(received, canceled, std::chrono::seconds(30)))
                 throw exception(connection::error::timeout, "connection timeout");
             else if (canceled)
                 return;
@@ -294,10 +301,14 @@ void connection::execute::xperform()
             if (bytes == 0)
                 throw exception(connection::error::network, "connection was closed unexpectedly");
 
-            bytes_ += bytes; // this includes header data
             recvbuf.append(bytes);
-            meter.submit(bytes);
-            state_->bps = meter.bps();
+            accum += bytes;
+
+            const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() - start);
+            const auto seconds = ms.count() / 1000.0;
+            const auto bps = accum / seconds;
+            state_->bps    = 0.05 * bps + (0.95 * state_->bps);
+            state_->bytes += bytes;
         }
         while (!session->parse_next(recvbuf, content));
 
@@ -403,8 +414,6 @@ void connection::ping::xperform()
         buff.append(bytes);
     }
     while (!session->parse_next(buff, temp));
-
-
 }
 
 std::unique_ptr<action> connection::connect(spec s)
@@ -415,6 +424,7 @@ std::unique_ptr<action> connection::connect(spec s)
     state_->hostname = s.hostname;
     state_->port     = s.hostport;
     state_->addr     = 0;
+    state_->bytes    = 0;
     state_->ssl      = s.use_ssl;
     state_->compression = s.enable_compression;
     state_->pipelining = s.enable_pipelining;
@@ -477,7 +487,10 @@ const std::string& connection::password() const
 { return state_->password; }
 
 
-bool connection::bps() const
+double connection::bps() const
 { return state_->bps; }
+
+std::uint64_t connection::bytes() const
+{ return state_->bytes; }
 
 } // newsflash

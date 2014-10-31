@@ -454,6 +454,15 @@ std::uint32_t hashvalue(const char* subjectline, size_t len)
 
 std::string find_filename(const char* str, size_t len)
 {
+    using namespace boost::spirit::classic;
+    
+    // see if it's an yEnc subjectline match.
+    std::string yenc_name;
+    const auto ret = parse(str, str + len,
+        (*(anychar_p - '"') >> str_p("\"") >> (*(anychar_p - '"'))[assign(yenc_name)] >> str_p("\" yEnc")));
+    if (ret.hit)
+        return yenc_name;
+
     const static boost::regex regex(REVERSE_FILE_EXTENSION_REGEX, boost::regbase::icase | boost::regbase::perl);
 
     reverse_c_str_iterator itbeg(str + len - 1);
