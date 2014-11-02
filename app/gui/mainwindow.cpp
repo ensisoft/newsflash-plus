@@ -77,7 +77,7 @@ mainwindow::mainwindow(app::settings& s) : QMainWindow(nullptr), current_(nullpt
     greenish.grad1   = QColor(232, 232, 232);
     greenish.grad2   = QColor(200, 200, 200);
     greenish.outline = QColor(97, 212, 55);
-    ui_.netGraph->set_colors(greenish);
+    ui_.netGraph->setColors(greenish);
 
     // put the various little widgets in their correct places
     ui_.statusBar->insertPermanentWidget(0, ui_.frmProgress);
@@ -936,24 +936,24 @@ void mainwindow::timerWelcome_timeout()
 void mainwindow::timerRefresh_timeout()
 {
     //DEBUG("refresh view timer!");
+    app::g_engine->refresh();
 
     for (auto* w : widgets_)
         w->refresh();
 
-    app::g_engine->refresh();
-
-    const auto freespace = app::g_engine->get_free_disk_space();
-    const auto downloads = app::g_engine->get_download_path();
-//    const auto netspeed  = app::g_engine->get_download_speed();
-//    const auto netbytes  = app::g_engine->get_download_bytes();
+    const auto freespace        = app::g_engine->get_free_disk_space();
+    const auto downloads        = app::g_engine->get_download_path();
+    const auto netspeed         = app::g_engine->get_download_speed();
+    const auto bytes_downloaded = app::g_engine->get_bytes_downloaded();
+    const auto bytes_queued     = app::g_engine->get_bytes_queued();
+    const auto bytes_written    = app::g_engine->get_bytes_written();
 
     ui_.lblDiskFree->setText(str("_1 _2", downloads, app::size{freespace}));
+    ui_.lblNetIO->setText(str("_1 _2",  app::speed { netspeed }, app::size {bytes_downloaded}));     
+    ui_.lblDiskIO->setText(str("_1", app::size { bytes_written }));
+    ui_.lblQueue->setText(str("_1", app::size { bytes_queued }));
 
-
-    // todo: update network monitor
-    // todo: update disk availability status
-    // todo: update uploads/downloads
-    // todo: update queue size
+    ui_.netGraph->addSample(netspeed);
 }
 
 } // gui

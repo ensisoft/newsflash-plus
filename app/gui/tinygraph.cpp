@@ -32,7 +32,8 @@
 #  include <QtGui/QContextMenuEvent>
 #  include <QtGui/QAction>
 #  include <QVector>
-
+#include <newsflash/warnpop.h>
+#include <chrono>
 #include "tinygraph.h"
 
 namespace {
@@ -45,8 +46,7 @@ namespace {
 namespace gui
 {
 
-TinyGraph::TinyGraph(QWidget* parent)  : QWidget(parent),
-    maxval_(0), width_(0)
+TinyGraph::TinyGraph(QWidget* parent)  : QWidget(parent), maxval_(0)
 {
     colors_.grad1   = QColor(0, 0, 0);
     colors_.grad2   = QColor(0, 0, 0);
@@ -58,16 +58,22 @@ TinyGraph::~TinyGraph()
 {}
 
 
-void TinyGraph::add_sample(double value, unsigned int timestamp)
+void TinyGraph::addSample(unsigned value)
 {
+    using clock = std::chrono::steady_clock;
+    const auto now  = clock::now();
+    const auto gone = now.time_since_epoch();
+    const auto ms   = std::chrono::duration_cast<std::chrono::milliseconds>(gone);
+    const auto timestamp = (unsigned)ms.count();
+
     sample s = { value, timestamp };
     timeline_.append(s);
-    
+
     maxval_ = std::max(value, maxval_);
 
     // how many milliseconds worth of history are we showing?
-    int width = std::max(this->width(), width_);
-    unsigned int millis = ((double)width / PIXELS_PER_SECOND) * 1000 + 5000;
+    const auto width  = this->width();
+    const auto millis = ((double)width / PIXELS_PER_SECOND) * 1000 + 5000;
 
     // crop samples that are tool old
     while (!timeline_.isEmpty())
@@ -82,19 +88,19 @@ void TinyGraph::add_sample(double value, unsigned int timestamp)
     update();
 }
 
-void TinyGraph::set_text(const QString& str)
+void TinyGraph::setText(const QString& str)
 {
     text_ = str;
     update();
 }
 
-void TinyGraph::set_colors(const colors& c)
+void TinyGraph::setColors(const colors& c)
 {
     colors_ = c;
     update();
 }
 
-const TinyGraph::colors& TinyGraph::get_colors() const
+const TinyGraph::colors& TinyGraph::getColors() const
 {
     return colors_;
 }
@@ -161,7 +167,7 @@ void TinyGraph::paintEvent(QPaintEvent* event)
             
         double t = epoch - s.timestamp;
         int x = width - ((t / 1000.0) * PIXELS_PER_SECOND);      
-        int y = height - (int)((s.value / maxval_) * height);
+        int y = height - (int)((s.value / double(maxval_)) * height);
         QPoint p(x, y);
         points.append(p);
     }

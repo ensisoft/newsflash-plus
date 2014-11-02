@@ -77,32 +77,35 @@ void unit_test_discard()
 
     // discard while pending actions
     {
-        auto file = std::make_shared<nf::datafile>("", "datafile", 0, true, true);
-
         // prepare some write actions 
-        nf::threadpool threads(1);
+        nf::threadpool threads(4);
 
         threads.on_complete = [&](nf::action* a) {
             BOOST_REQUIRE(a->has_exception() == false);
             delete a;
         };
 
-        std::vector<char> buff;
-        buff.resize(1024);
-        fill_random(&buff[0], buff.size());
+        for (int i=0; i<1000; ++i)
+        {
+            auto file = std::make_shared<nf::datafile>("", "datafile", 0, true, true);
 
-        threads.submit(new nf::datafile::write(0, buff, file));
-        threads.submit(new nf::datafile::write(0, buff, file));
-        threads.submit(new nf::datafile::write(0, buff, file));
-        file->discard_on_close();        
-        threads.submit(new nf::datafile::write(0, buff, file));
-        threads.submit(new nf::datafile::write(0, buff, file));        
-        file.reset();                                
+            std::vector<char> buff;
+            buff.resize(1024);
+            fill_random(&buff[0], buff.size());
 
-        threads.wait();
+            threads.submit(new nf::datafile::write(0, buff, file));
+            threads.submit(new nf::datafile::write(0, buff, file));
+            threads.submit(new nf::datafile::write(0, buff, file));
+            file->discard_on_close();        
+            threads.submit(new nf::datafile::write(0, buff, file));
+            threads.submit(new nf::datafile::write(0, buff, file));        
+            file.reset();                                
+
+            threads.wait();            
+            BOOST_REQUIRE(!file_exists("datafile"));            
+        }
+
         threads.shutdown();
-
-        BOOST_REQUIRE(!file_exists("datafile"));
     }
 }
 

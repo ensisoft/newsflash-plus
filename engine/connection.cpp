@@ -35,7 +35,6 @@
 #include "action.h"
 #include "event.h"
 #include "socketapi.h"
-#include "speedometer.h"
 
 namespace newsflash
 {
@@ -195,7 +194,7 @@ void connection::initialize::xperform()
     LOG_D("NNTP Session ready");
 }
 
-connection::execute::execute(std::shared_ptr<state> s, std::shared_ptr<cmdlist> cmd) : state_(s), cmds_(cmd)
+connection::execute::execute(std::shared_ptr<state> s, std::shared_ptr<cmdlist> cmd, std::size_t tid) : state_(s), cmds_(cmd), tid_(tid), bytes_(0)
 {
     state_->session->on_auth = [](std::string&, std::string&) { 
         throw exception(connection::error::no_permission, 
@@ -309,6 +308,7 @@ void connection::execute::xperform()
             const auto bps = accum / seconds;
             state_->bps    = 0.05 * bps + (0.95 * state_->bps);
             state_->bytes += bytes;
+            bytes_ += bytes;
         }
         while (!session->parse_next(recvbuf, content));
 
@@ -466,11 +466,11 @@ std::unique_ptr<action> connection::complete(std::unique_ptr<action> a)
     return next;
 }
 
-std::unique_ptr<action> connection::execute(std::shared_ptr<cmdlist> cmd)
+std::unique_ptr<action> connection::execute(std::shared_ptr<cmdlist> cmd, std::size_t tid)
 {
     state_->cancel->reset();
 
-    std::unique_ptr<action> act(new class execute(state_, std::move(cmd)));
+    std::unique_ptr<action> act(new class execute(state_, std::move(cmd), tid));
 
     return act;
 }

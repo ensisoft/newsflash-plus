@@ -81,8 +81,10 @@ namespace app
 
 engine::engine()
 {
-    diskspace_ = 0;
+    diskspace_  = 0;
+    totalspeed_ = 0;
     shutdown_  = false;
+
 
     engine_.reset(new newsflash::engine);
     engine_->set_error_callback(std::bind(&engine::on_engine_error, this,
@@ -217,6 +219,8 @@ void engine::loadstate(settings& s)
     downloads_ = s.get("engine", "downloads", 
         QDir::toNativeSeparators(QDir::homePath() + "/Downloads"));
 
+    mountpoint_ = resolve_mount_point(downloads_);
+
     const auto overwrite = s.get("engine", "overwrite_existing_files", false);
     const auto discard   = s.get("engine", "discard_text", true);
     const auto secure    = s.get("engine", "prefer_secure", true);
@@ -268,26 +272,12 @@ void engine::connect(bool on_off)
 
 void engine::refresh()
 {
-    diskspace_ = 0;
-
     // rescan the default download location volume
     // for free space. note that the location might 
     // point to a folder that doesn't yet exist.. 
     // so traverse the path towards the root untill 
     // an existing path is found.
-    QDir dir(downloads_);
-    auto path = dir.absolutePath();
-    auto list = path.split("/");
-
-    while (!list.isEmpty())
-    {
-        path = list.join("/");
-        if (QDir(path).exists())
-            break;
-        list.removeLast();
-    }
-
-    diskspace_ = app::get_free_disk_space(path);
+    diskspace_ = app::get_free_disk_space(mountpoint_);
 }
 
 bool engine::shutdown()

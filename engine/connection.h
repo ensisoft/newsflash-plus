@@ -102,16 +102,24 @@ namespace newsflash
         class execute : public action
         {
         public:
-            execute(std::shared_ptr<state> s, std::shared_ptr<cmdlist> cmds);
+            execute(std::shared_ptr<state> s, std::shared_ptr<cmdlist> cmds, std::size_t tid);
 
             virtual void xperform() override;
 
             std::shared_ptr<cmdlist> get_cmdlist() const
             { return cmds_; }
 
+            std::size_t get_tid() const 
+            { return tid_; }
+
+            std::size_t get_bytes_transferred() const
+            { return bytes_; }
+
         private:
             std::shared_ptr<state> state_;
             std::shared_ptr<cmdlist> cmds_;
+            std::size_t tid_;
+            std::size_t bytes_;
         };
 
         class disconnect : public action
@@ -158,7 +166,7 @@ namespace newsflash
         std::unique_ptr<action> complete(std::unique_ptr<action> a);
 
         // execute the given cmdlist
-        std::unique_ptr<action> execute(std::shared_ptr<cmdlist> cmd);
+        std::unique_ptr<action> execute(std::shared_ptr<cmdlist> cmd, std::size_t tid);
 
         void cancel();
 

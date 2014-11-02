@@ -46,8 +46,14 @@ namespace newsflash
             #ifdef NEWSFLASH_DEBUG
                 file_->num_writes_++;
             #endif
-
                 set_affinity(affinity::single_thread);
+            }
+
+           ~write()
+            {
+            #ifdef NEWSFLASH_DEBUG
+                file_->num_writes_--;
+            #endif
             }
 
             virtual void xperform() override
@@ -60,10 +66,10 @@ namespace newsflash
                     file_->big_.seek(offset_-1);
 
                 file_->big_.write(&data_[0], data_.size());
-            #ifdef NEWSFLASH_DEBUG
-                file_->num_writes_--;
-            #endif
             }
+            std::size_t get_write_size() const 
+            { return data_.size(); }
+
         private:
             std::size_t offset_;
             std::vector<char> data_;
@@ -141,6 +147,9 @@ namespace newsflash
 
         bool is_binary() const 
         { return binary_; }
+
+        bool is_open() const
+        { return big_.is_open(); }
 
     private:
         friend class write;

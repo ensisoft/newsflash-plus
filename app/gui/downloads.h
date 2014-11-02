@@ -73,7 +73,8 @@ namespace gui
         void on_tableTasks_customContextMenuRequested(QPoint pos);
         void on_tableConns_customContextMenuRequested(QPoint pos);
         void on_tableConns_doubleClicked(const QModelIndex&);
-
+        void tableTasks_selectionChanged();
+        void tableConns_selectionChanged();
 
     private:
         bool eventFilter(QObject* obj, QEvent* event);

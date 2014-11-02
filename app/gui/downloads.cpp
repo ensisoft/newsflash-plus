@@ -52,6 +52,17 @@ downloads::downloads() : panels_y_pos_(0)
     ui_.tableConns->setColumnWidth(0, 2 * defwidth);
     ui_.tableConns->setColumnWidth(1, 2 * defwidth);
 
+    QObject::connect(ui_.tableConns->selectionModel(),
+        SIGNAL(selectionChanged(const QItemSelection&, const QItemSelection&)),
+        this, SLOT(tableConns_selectionChanged()));
+
+    QObject::connect(ui_.tableTasks->selectionModel(),
+        SIGNAL(selectionChanged(const QItemSelection&, const QItemSelection&)),
+        this, SLOT(tableTasks_selectionChanged()));
+
+    tableTasks_selectionChanged();
+    tableConns_selectionChanged();
+
     DEBUG("Created downloads UI");
 }
 
@@ -80,7 +91,6 @@ void downloads::add_actions(QMenu& menu)
     //menu.addSeparator();        
     //menu.addAction(ui_.actionConnClone);
     //menu.addAction(ui_.actionConnDelete);
-    //menu.addAction(ui_.actionConnRecycle);    
 }
 
 void downloads::add_actions(QToolBar& bar)
@@ -102,7 +112,6 @@ void downloads::add_actions(QToolBar& bar)
     //bar.addSeparator();        
     //bar.addAction(ui_.actionConnClone);
     //bar.addAction(ui_.actionConnDelete);
-    //bar.addAction(ui_.actionConnRecycle);
 
 }
 
@@ -140,6 +149,12 @@ void downloads::refresh()
     const auto group_similar   = ui_.chkGroupSimilar->isChecked();
     tasks_.refresh(remove_complete, group_similar);
     conns_.refresh();
+
+    const auto num_conns = conns_.rowCount(QModelIndex());
+    const auto num_tasks = tasks_.rowCount(QModelIndex());
+
+    ui_.grpTasks->setTitle(tr("Downloads (%1)").arg(num_tasks));
+    ui_.grpConns->setTitle(tr("Connections (%1)").arg(num_conns));
 }
 
 void downloads::on_actionConnect_triggered()
@@ -263,7 +278,6 @@ void downloads::on_tableConns_customContextMenuRequested(QPoint point)
     menu.addSeparator();
     menu.addAction(ui_.actionConnClone);
     menu.addAction(ui_.actionConnDelete);
-    menu.addAction(ui_.actionConnRecycle);
     menu.addSeparator();
     menu.addAction(ui_.actionConnOpenLog);
 
@@ -274,6 +288,72 @@ void downloads::on_tableConns_customContextMenuRequested(QPoint point)
 void downloads::on_tableConns_doubleClicked(const QModelIndex&)
 {
     on_actionConnClone_triggered();
+}
+
+void downloads::tableTasks_selectionChanged()
+{
+    const auto& indices = ui_.tableTasks->selectionModel()->selectedRows();
+    if (indices.isEmpty())
+    {
+        ui_.actionTaskPause->setEnabled(false);
+        ui_.actionTaskResume->setEnabled(false);
+        ui_.actionTaskMoveTop->setEnabled(false);
+        ui_.actionTaskMoveBottom->setEnabled(false);
+        ui_.actionTaskDelete->setEnabled(false);
+        ui_.actionTaskClear->setEnabled(false);
+        return;
+    }
+    ui_.actionTaskPause->setEnabled(true);
+    ui_.actionTaskResume->setEnabled(true);
+    ui_.actionTaskMoveTop->setEnabled(true);
+    ui_.actionTaskMoveBottom->setEnabled(true);
+    ui_.actionTaskDelete->setEnabled(true);
+    ui_.actionTaskClear->setEnabled(true);    
+
+    using state = newsflash::ui::task::states;
+
+    const auto num_tasks = tasks_.rowCount(QModelIndex());
+
+    for (int i=0; i<indices.size(); ++i)
+    {
+        const auto row = indices[i].row();
+        const auto& ui = tasks_.getItem(row);
+        if (ui.state == state::complete ||
+            ui.state == state::error)
+            ui_.actionTaskPause->setEnabled(false);
+
+        if (ui.state != state::paused)
+            ui_.actionTaskResume->setEnabled(false);
+
+        if (row == 0)
+        {
+            ui_.actionTaskMoveTop->setEnabled(false);
+            ui_.actionTaskMoveUp->setEnabled(false);
+        }
+        if (row == num_tasks -1)
+        {
+            ui_.actionTaskMoveBottom->setEnabled(false);
+            ui_.actionTaskMoveDown->setEnabled(false);
+        }
+    }
+
+}
+
+void downloads::tableConns_selectionChanged()
+{
+    const auto& indices = ui_.tableConns->selectionModel()->selectedRows();
+    if (indices.isEmpty())
+    {
+        ui_.actionConnClone->setEnabled(false);
+        ui_.actionConnDelete->setEnabled(false);
+        ui_.actionConnOpenLog->setEnabled(false);
+    }
+    else
+    {
+        ui_.actionConnClone->setEnabled(true);
+        ui_.actionConnDelete->setEnabled(true);
+        ui_.actionConnOpenLog->setEnabled(true);        
+    }
 }
 
 bool downloads::eventFilter(QObject* obj, QEvent* event)

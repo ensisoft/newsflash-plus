@@ -52,6 +52,11 @@ namespace app
         void resume(QModelIndexList& list);
 
         void kill(QModelIndexList& list);
+
+        const 
+        newsflash::ui::task& getItem(std::size_t i) const 
+        { return tasks_[i]; }
+
     private:
         enum class columns { status, done, time, eta, size, desc, sentinel };
 

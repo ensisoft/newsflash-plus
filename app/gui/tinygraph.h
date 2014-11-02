@@ -52,15 +52,15 @@ namespace gui
 
         // sample value is any arbitrary value
         // timestamp should be the timestamp of the sample in milliseconds
-        void add_sample(double value, unsigned int timestamp);
+        void addSample(unsigned value);
         
         // set any text to be rendered within the graph
-        void set_text(const QString& str);
+        void setText(const QString& str);
 
         // set colors
-        void set_colors(const colors& c);
+        void setColors(const colors& c);
         
-        const colors& get_colors() const;
+        const colors& getColors() const;
 
     private:
         void paintEvent(QPaintEvent* event);
@@ -75,16 +75,15 @@ namespace gui
 
     private:
         struct sample {
-            double value;
-            unsigned int timestamp;
+            unsigned value;
+            unsigned timestamp;
         };
 
         QList<sample> timeline_;
         colors  colors_;
         QString text_;
         QFont   font_;
-        double  maxval_;
-        int     width_;
+        unsigned maxval_;
     };
 
 } // gui

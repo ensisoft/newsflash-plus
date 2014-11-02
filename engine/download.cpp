@@ -145,7 +145,12 @@ void download::complete(action& act, std::vector<std::unique_ptr<action>>& next)
         {
             file = std::make_shared<datafile>(path_, name, size, true, overwrite_);
             files_.push_back(file);
-        } else file = *it;
+        } 
+        else 
+        {
+            file = *it;
+            assert(file->is_open());
+        }
 
         std::unique_ptr<action> write(new datafile::write(offset, std::move(binary), file));
         next.push_back(std::move(write));

@@ -57,14 +57,19 @@ namespace newsflash
         // submit work to the specific thread
         void submit(action* act, thread* t);
 
-        // 
+        // wait for all actions to be completed before returning.
         void wait_all_actions();
 
+        // shutdown the threadpool. will block and join all the threads.
         void shutdown();
 
-        // allocate a private thread 
+        // allocate a private thread.
+        // returns a handle to the private thread.
         thread* allocate();
 
+        // detach and return the thread to the threadpool.
+        // the thread will continue to perform all the actions queued
+        // in it's queue and then become eligible for using again
         void detach(thread* t);
 
         std::size_t num_pending_actions() const

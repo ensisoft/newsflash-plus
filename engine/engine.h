@@ -125,6 +125,12 @@ namespace newsflash
 
         unsigned get_throttle_value() const;
 
+        std::uint64_t get_queue_size() const;
+
+        std::uint64_t get_bytes_written() const;
+
+        std::uint64_t get_bytes_downloaded() const;
+
         // get whether engine is started or not.
         bool is_started() const;
 

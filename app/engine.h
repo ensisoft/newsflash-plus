@@ -78,11 +78,41 @@ namespace app
         void update_conn_list(std::deque<newsflash::ui::connection>& list)
         {
             engine_->update(list);
+
+            totalspeed_ = 0;
+
+            // at any given moment the current engine combined download
+            // speed should equal that of of all it's connections. 
+            // however this is the only place where we are able to get that
+            // information. so in order to be able to call get_download_speed() 
+            // reliable a call to update_conn_list has to be made first.
+            for (const auto& ui : list)
+                totalspeed_ += ui.bps;
         }
 
         quint64 get_free_disk_space() const
         { 
             return diskspace_; 
+        }
+
+        quint32 get_download_speed() const
+        {
+            return totalspeed_;
+        }
+
+        quint64 get_bytes_downloaded() const
+        {
+            return engine_->get_bytes_downloaded();
+        }
+
+        quint64 get_bytes_queued() const
+        {
+            return engine_->get_queue_size();
+        }
+
+        quint64 get_bytes_written() const 
+        {
+            return engine_->get_bytes_written();
         }
 
         const QString& get_logfiles_path() const
@@ -201,6 +231,7 @@ namespace app
         QString downloads_;
         QString mountpoint_;
         quint64 diskspace_;
+        quint32 totalspeed_;
         int ticktimer_;
     private:
         std::unique_ptr<newsflash::engine> engine_;

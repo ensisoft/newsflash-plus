@@ -41,6 +41,7 @@
 #include "cmdlist.h"
 #include "settings.h"
 #include "bodylist.h"
+#include "datafile.h"
 
 namespace newsflash
 {
@@ -315,7 +316,7 @@ public:
         ui_.task  = tid;
         ui_.desc  = std::move(desc);
         ui_.state = state::active;
-        do_action(conn_.execute(cmds));
+        do_action(conn_.execute(cmds, tid));
     }
 
     void update(ui::connection& ui)
@@ -518,6 +519,8 @@ public:
 
             if (task_)
                 do_action(task_->kill());
+                
+            state_.bytes_queued -= ui_.size;
         }
 
         LOG_I("Task ", ui_.id, " deleted");
@@ -611,6 +614,9 @@ public:
             ui_.state == state::complete)
             return;
 
+        for (auto& cmd : cmds_)
+            cmd->cancel();
+
         goto_state(state::paused);
     }
 
@@ -648,6 +654,8 @@ public:
             std::vector<std::unique_ptr<action>> actions;
 
             task_->complete(*act, actions);
+            act.reset();
+
             for (auto& a : actions)
                 do_action(std::move(a));
 
@@ -688,9 +696,13 @@ private:
 
         if (num_pending_actions_)
             return;
+        if (!cmds_.empty())
+            return;
 
         if (executed_)
             goto_state(state::finalize);
+        else if (ui_.state == state::active)
+            goto_state(state::waiting);
         else if (ui_.state == state::waiting)
             goto_state(state::waiting);
         else if (ui_.state == state::finalize)
@@ -743,6 +755,7 @@ private:
 
             case state::complete:
                 ui_.completion = 100.0;
+                state_.bytes_queued -= ui_.size;
                 break;
 
             default:
@@ -796,14 +809,14 @@ engine::engine() : state_(new state)
         state_->on_notify_callback();
     };
 
-    state_->oid = 1;
-    state_->bytes_downloaded = 0;
-    state_->bytes_queued = 0;
-    state_->bytes_written = 0;
+    state_->oid                 = 1;
+    state_->bytes_downloaded    = 0;
+    state_->bytes_queued        = 0;
+    state_->bytes_written       = 0;
     state_->num_pending_actions = 0;
-    state_->prefer_secure = true;
-    state_->started = false;
-    state_->group_items = false;
+    state_->prefer_secure       = true;
+    state_->started             = false;
+    state_->group_items         = false;
 }
 
 engine::~engine()
@@ -940,6 +953,8 @@ void engine::download(ui::download spec)
 
         std::unique_ptr<task> state(new task(spec.account, file.size, file.name, std::move(job), *state_));
         state_->tasks.push_back(std::move(state));
+        
+        state_->bytes_queued += file.size;
     }
 
     connect();
@@ -959,25 +974,35 @@ bool engine::pump()
         state_->actions.pop();
         lock.unlock();
 
+        bool action_dispatched = false;
+
+        if (auto* e = dynamic_cast<class connection::execute*>(a))
+        {
+            auto cmds  = e->get_cmdlist();
+            auto tid   = e->get_tid();
+            auto bytes = e->get_bytes_transferred();
+            auto tit  = std::find_if(std::begin(state_->tasks), std::end(state_->tasks),
+                [&](const std::unique_ptr<engine::task>& t) {
+                    return t->id() == tid;
+                });
+            if (tit != std::end(state_->tasks))
+                (*tit)->complete(cmds);
+
+            state_->bytes_downloaded += bytes;
+        }
+        else if (auto* w = dynamic_cast<class datafile::write*>(a))
+        {
+            auto bytes = w->get_write_size();
+            if (!w->has_exception())
+                state_->bytes_written += bytes;
+        }
+
         const auto id = a->get_id();
 
-        bool action_dispatched = false;
         for (auto& conn : state_->conns)
         {
             if (conn->id() != id)
                 continue;
-
-            if (auto* e = dynamic_cast<class connection::execute*>(a))
-            {
-                auto cmds = e->get_cmdlist();
-                auto task = conn->task();
-                auto it = std::find_if(std::begin(state_->tasks), std::end(state_->tasks), 
-                    [&](const std::unique_ptr<engine::task>& t) {
-                        return t->id() == task;
-                    });
-                if (it != std::end(state_->tasks))
-                    (*it)->complete(cmds);
-            }
 
             conn->on_action(a);
             if (conn->is_ready())
@@ -1133,6 +1158,21 @@ unsigned engine::get_throttle_value() const
 { 
     // todo:
     return 0;
+}
+
+std::uint64_t engine::get_queue_size() const 
+{
+    return state_->bytes_queued;
+}
+
+std::uint64_t engine::get_bytes_written() const
+{
+    return state_->bytes_written;
+}
+
+std::uint64_t engine::get_bytes_downloaded() const
+{
+    return state_->bytes_downloaded;
 }
 
 void engine::set_group_items(bool on_off)
