@@ -66,8 +66,11 @@ std::unique_ptr<cmdlist> download::create_commands()
     // if each article is about half a meg then this is
     // about 5 megs. if we're running on a 50mbit/s LAN
     // at full throttle it will take about a second to download
+    //const std::size_t num_articles_per_cmdlist = 10;
 
     const std::size_t num_articles_per_cmdlist = 10;
+
+
     const std::size_t num_articles = std::min(pending_.size(), 
         num_articles_per_cmdlist);
 

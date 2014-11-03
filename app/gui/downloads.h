@@ -68,7 +68,6 @@ namespace gui
         void on_actionTaskOpenLog_triggered();
         void on_actionConnClone_triggered();
         void on_actionConnDelete_triggered();
-        void on_actionConnRecycle_triggered();
         void on_actionConnOpenLog_triggered();
         void on_tableTasks_customContextMenuRequested(QPoint pos);
         void on_tableConns_customContextMenuRequested(QPoint pos);

@@ -45,7 +45,7 @@ namespace newsflash
 
         virtual void begin_connect(ipv4addr_t host, ipv4port_t port) override;
 
-        virtual std::error_code complete_connect() override;
+        virtual void complete_connect() override;
 
         virtual void sendall(const void* buff, int len) override;
 

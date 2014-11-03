@@ -204,16 +204,17 @@ std::pair<native_socket_t, native_handle_t> begin_socket_connect(ipv4addr_t host
     return {fd, fd};
 }
 
-std::error_code complete_socket_connect(native_handle_t handle, native_socket_t sock)
+void complete_socket_connect(native_handle_t handle, native_socket_t sock)
 {
     assert(handle == sock);
 
-    int err = 0;
+    int connection_error = 0;
     socklen_t len = sizeof(len);
-    if (getsockopt(sock, SOL_SOCKET, SO_ERROR, &err, &len))
+    if (getsockopt(sock, SOL_SOCKET, SO_ERROR, &connection_error, &len))
         throw std::runtime_error("getsockopt failed");
 
-    return std::error_code(err, std::generic_category());
+    if (connection_error)
+        throw std::system_error(connection_error, std::generic_category());
 }
 
 std::error_code get_last_socket_error()

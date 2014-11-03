@@ -228,12 +228,78 @@ void tasklist::kill(QModelIndexList& list)
 
 void tasklist::move_up(QModelIndexList& list)
 {
+    qSort(list.begin(), list.end(), qLess<QModelIndex>());
+
     manage_tasks(list, action::move_up);
 }
 
 void tasklist::move_down(QModelIndexList& list)
 {
+    qSort(list.begin(), list.end(), qGreater<QModelIndex>());
+
     manage_tasks(list, action::move_down);
+}
+
+void tasklist::move_to_top(QModelIndexList& list)
+{
+    qSort(list.begin(), list.end(), qLess<QModelIndex>());
+
+    const auto distance = list[0].row();
+
+    int min_index = std::numeric_limits<int>::max();
+    int max_index = std::numeric_limits<int>::min();
+    for (int i=0; i<list.size(); ++i)
+    {
+        const auto row = list[i].row();
+        if (row > max_index)
+            max_index = row;
+        if (row < min_index)
+            min_index = row;
+
+        for (int j=0; j<distance; ++j)
+            g_engine->move_task_up(row - j);
+
+        list[i] = index(row - distance, 0);
+    }
+    Q_ASSERT(min_index >= 0);
+    Q_ASSERT(max_index < tasks_.size());
+
+    g_engine->update_task_list(tasks_);
+
+    auto first = QAbstractTableModel::index(min_index, 0);
+    auto last  = QAbstractTableModel::index(max_index, (int)columns::sentinel);
+    emit dataChanged(first, last);
+}
+
+void tasklist::move_to_bottom(QModelIndexList& list)
+{
+    qSort(list.begin(), list.end(), qGreater<QModelIndex>());
+
+    const auto distance = tasks_.size() - list[0].row() -1;
+
+    int min_index = std::numeric_limits<int>::max();
+    int max_index = std::numeric_limits<int>::min();
+    for (int i=0; i<list.size(); ++i)
+    {
+        const auto row = list[i].row();
+        if (row > max_index)
+            max_index = row;
+        if (row < min_index)
+            min_index = row;
+
+        for (int j=0; j<distance; ++j)
+            g_engine->move_task_down(row + j);
+
+        list[i] = index(row + distance, 0);
+    }
+    Q_ASSERT(min_index >= 0);
+    Q_ASSERT(max_index < tasks_.size());
+
+    g_engine->update_task_list(tasks_);
+
+    auto first = QAbstractTableModel::index(min_index, 0);
+    auto last  = QAbstractTableModel::index(max_index, (int)columns::sentinel);
+    emit dataChanged(first, last);
 }
 
 void tasklist::manage_tasks(QModelIndexList& list, tasklist::action a)
@@ -252,18 +318,22 @@ void tasklist::manage_tasks(QModelIndexList& list, tasklist::action a)
         {
             case action::pause:
                 g_engine->pause_task(row);
+                list[i] = index(row, 0);
                 break;
 
             case action::resume:
                 g_engine->resume_task(row);
+                list[i] = index(row, 0);
                 break;
 
             case action::move_up:
                 g_engine->move_task_up(row);
+                list[i] = index(row - 1, 0);
                 break;
 
             case action::move_down:
                 g_engine->move_task_down(row);
+                list[i] = index(row + 1, 0);
                 break;
         }
     }

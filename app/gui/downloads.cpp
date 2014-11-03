@@ -210,11 +210,7 @@ void downloads::on_actionTaskMoveUp_triggered()
 
     QItemSelection selection;
     for (int i=0; i<indices.size(); ++i)
-    {
-        const auto row = indices[i].row();
-        Q_ASSERT(row > 1);
-        selection.select(tasks_.index(row - 1, 0), tasks_.index(row - 1,0));
-    }
+        selection.select(indices[i], indices[i]);
 
     auto* model = ui_.tableTasks->selectionModel();
     model->setCurrentIndex(selection.indexes()[0], 
@@ -231,15 +227,9 @@ void downloads::on_actionTaskMoveDown_triggered()
 
     tasks_.move_down(indices);
 
-    const auto rows = tasks_.rowCount(QModelIndex());
-
     QItemSelection selection;
     for (int i=0; i<indices.size(); ++i)
-    {
-        const auto row = indices[i].row();
-        Q_ASSERT(row < rows - 1);
-        selection.select(tasks_.index(row + 1, 0), tasks_.index(row + 1, 0));
-    }    
+        selection.select(indices[i], indices[i]);
 
     auto* model = ui_.tableTasks->selectionModel();
     model->setCurrentIndex(selection.indexes()[0],
@@ -250,12 +240,40 @@ void downloads::on_actionTaskMoveDown_triggered()
 
 void downloads::on_actionTaskMoveTop_triggered()
 {
-    tableTasks_selectionChanged();    
+    QModelIndexList indices = ui_.tableTasks->selectionModel()->selectedRows();
+    if (indices.isEmpty())
+        return;
+
+    tasks_.move_to_top(indices);
+
+    QItemSelection selection;
+    for (int i=0; i<indices.size(); ++i)
+        selection.select(indices[i], indices[i]);
+
+    auto* model = ui_.tableTasks->selectionModel();
+    model->setCurrentIndex(selection.indexes()[0],
+        QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+    model->select(selection,
+        QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
 }
 
 void downloads::on_actionTaskMoveBottom_triggered()
 {
-    tableTasks_selectionChanged();    
+    QModelIndexList indices = ui_.tableTasks->selectionModel()->selectedRows();
+    if (indices.isEmpty())
+        return;
+
+    tasks_.move_to_bottom(indices);
+
+    QItemSelection selection;
+    for (int i=0; i<indices.size(); ++i)
+        selection.select(indices[i], indices[i]);
+
+    auto* model = ui_.tableTasks->selectionModel();
+    model->setCurrentIndex(selection.indexes()[0],
+        QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+    model->select(selection,
+        QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
 }
 
 void downloads::on_actionTaskDelete_triggered()
@@ -294,10 +312,6 @@ void downloads::on_actionConnDelete_triggered()
 
     tableConns_selectionChanged();
 }
-
-
-void downloads::on_actionConnRecycle_triggered()
-{}
 
 void downloads::on_actionConnOpenLog_triggered()
 {}

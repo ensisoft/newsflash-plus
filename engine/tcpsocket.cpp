@@ -61,9 +61,9 @@ void tcpsocket::begin_connect(ipv4addr_t host, ipv4port_t port)
     handle_ = ret.second;    
 }
 
-std::error_code tcpsocket::complete_connect()
+void tcpsocket::complete_connect()
 {
-    return complete_socket_connect(handle_, socket_);
+    complete_socket_connect(handle_, socket_);
 }
 
 void tcpsocket::sendall(const void* buff, int len)

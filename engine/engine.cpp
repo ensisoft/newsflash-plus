@@ -1071,12 +1071,14 @@ void engine::stop()
         return;
 
     LOG_I("Engine stopping");
+
     for (auto& conn : state_->conns)
     {
         conn->stop();
     }
     state_->conns.clear();
     state_->started = false;
+    state_->logger->flush();
 }
 
 void engine::set_error_callback(on_error error_callback)
@@ -1307,7 +1309,7 @@ void engine::move_task_up(std::size_t index)
         assert(state_->tasks.size() > 1);        
         assert(index < state_->tasks.size());
         assert(index > 0);
-        std::swap(state_->tasks[index-1], state_->tasks[index]);
+        std::swap(state_->tasks[index], state_->tasks[index - 1]);
     }
 }
 
@@ -1321,7 +1323,7 @@ void engine::move_task_down(std::size_t index)
     {
         assert(state_->tasks.size() > 1);
         assert(index < state_->tasks.size()-1);
-        std::swap(state_->tasks[index],state_->tasks[index + 1]);
+        std::swap(state_->tasks[index], state_->tasks[index + 1]);
     }
 }
 

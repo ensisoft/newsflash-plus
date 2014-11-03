@@ -53,7 +53,7 @@ namespace newsflash
 
        virtual void begin_connect(ipv4addr_t host, ipv4port_t port) override;
 
-       virtual std::error_code complete_connect() override;
+       virtual void complete_connect() override;
 
        virtual void sendall(const void* buff, int len) override;
 
@@ -71,7 +71,7 @@ namespace newsflash
     private:
         void ssl_wait_write();
         void ssl_wait_read();
-        void ssl_connect();
+        void complete_secure_connect();
 
     private:
         // actual socket handle

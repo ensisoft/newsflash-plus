@@ -136,9 +136,7 @@ void connection::connect::xperform()
         return;
     }
 
-    const auto err = socket->complete_connect();    
-    if (err)
-        throw std::system_error(err, "connect failed");
+    socket->complete_connect();    
 
     LOG_D("Socket connection ready!");
 }
@@ -388,27 +386,33 @@ void connection::disconnect::xperform()
     auto& session = state_->session;
     auto& socket  = state_->socket;
 
-    newsflash::buffer buff(64);
-    newsflash::buffer temp;
-
-    session->quit();
-    session->send_next();
-    do 
+    // if the connection is disconnecting while there are pending
+    // transactions in the session we're just simply going to close the socket
+    // and not perform a clean protocol shutdown.
+    if (!session->pending())
     {
-        // wait for data, if no response then khtx bye whatever, we're done anyway
-        auto received = socket->wait(true, false);
-        if (!newsflash::wait_for(received, std::chrono::seconds(1)))
-            break;
+        newsflash::buffer buff(64);
+        newsflash::buffer temp;
 
-        const auto bytes = socket->recvsome(buff.back(), buff.available());
-        if (bytes == 0)
+        session->quit();
+        session->send_next();
+        do 
         {
-            LOG_D("Received socket close");
-            break;
+            // wait for data, if no response then khtx bye whatever, we're done anyway
+            auto received = socket->wait(true, false);
+            if (!newsflash::wait_for(received, std::chrono::seconds(1)))
+                break;
+
+            const auto bytes = socket->recvsome(buff.back(), buff.available());
+            if (bytes == 0)
+            {
+                LOG_D("Received socket close");
+                break;
+            }
+            buff.append(bytes);
         }
-        buff.append(bytes);
+        while (!session->recv_next(buff, temp));
     }
-    while (!session->recv_next(buff, temp));
 
     socket->close();
 

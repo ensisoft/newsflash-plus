@@ -638,7 +638,7 @@ void session::clear()
 }
 
 bool session::pending() const
-{ return !recv_.empty(); }
+{ return !send_.empty() || !recv_.empty(); }
 
 void session::enable_pipelining(bool on_off)
 { state_->enable_pipelining = on_off; }

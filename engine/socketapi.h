@@ -44,10 +44,9 @@ namespace newsflash
     std::pair<native_socket_t, native_handle_t> begin_socket_connect(ipv4addr_t host, ipv4port_t port);
 
     // complete the previously started connection attempt. 
-    // makes the socket blocking again and returns a platform specific
-    // error code indicating the status of the connection attempt.
-    //sockerr_t complete_socket_connect(native_handle_t handle, native_socket_t sock);
-    std::error_code complete_socket_connect(native_handle_t handle, native_socket_t sock);
+    // if connection was succesful this also makes the socket blocking again.
+    // on error an exception is thrown.
+    void complete_socket_connect(native_handle_t handle, native_socket_t sock);
 
     // get the last occurred socket error.
     std::error_code get_last_socket_error();

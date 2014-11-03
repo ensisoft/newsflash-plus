@@ -74,7 +74,7 @@ sslsocket::sslsocket() : socket_(0), handle_(0), ssl_(nullptr), bio_(nullptr)
 sslsocket::sslsocket(native_socket_t sock, native_handle_t handle) : 
     socket_(sock), handle_(handle), ssl_(nullptr), bio_(nullptr)
 {
-    ssl_connect();
+    complete_secure_connect();
 }
 
 sslsocket::sslsocket(native_socket_t sock, native_handle_t handle, SSL* ssl, BIO* bio) : 
@@ -108,16 +108,13 @@ void sslsocket::begin_connect(ipv4addr_t host, ipv4port_t port)
     handle_ = ret.second;
 }
 
-std::error_code sslsocket::complete_connect()
+void sslsocket::complete_connect()
 {
     assert(socket_);
+    assert(handle_);
 
-    const auto err = complete_socket_connect(handle_, socket_);
-    if (err)
-        return err;
-
-    ssl_connect();
-    return std::error_code();
+    complete_socket_connect(handle_, socket_);
+    complete_secure_connect();
 }
 
 
@@ -301,7 +298,7 @@ void sslsocket::ssl_wait_read()
     newsflash::wait(can_read);
 }
 
-void sslsocket::ssl_connect()
+void sslsocket::complete_secure_connect()
 {
     // create SSL and BIO objects and then initialize ssl client mode.
     // setup SSL session now that we have TCP connection.
@@ -337,6 +334,12 @@ void sslsocket::ssl_connect()
             case SSL_ERROR_WANT_WRITE:
                 ssl_wait_write();
                 break;
+
+            case SSL_ERROR_SYSCALL:
+                if (ret == -1)
+                    throw std::system_error(get_last_socket_error(), 
+                        "SSL socket I/O error");
+                // fallthrough intended
 
             default:
                 throw std::runtime_error("SSL_connect failed");

@@ -57,6 +57,10 @@ namespace app
 
         void move_down(QModelIndexList& list);
 
+        void move_to_top(QModelIndexList& list);
+
+        void move_to_bottom(QModelIndexList& list);
+
         const 
         newsflash::ui::task& getItem(std::size_t i) const 
         { return tasks_[i]; }
