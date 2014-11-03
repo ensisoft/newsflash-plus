@@ -26,6 +26,7 @@
 #include <fstream>
 #include <cassert>
 #include <atomic>
+#include <map>
 #include "connection.h"
 #include "tcpsocket.h"
 #include "sslsocket.h"
@@ -38,6 +39,9 @@
 
 namespace newsflash
 {
+
+std::map<std::string, std::uint32_t> g_addr_cache;
+std::mutex g_addr_cache_mutex;
 
 struct connection::state {
     std::mutex  mutex;
@@ -66,13 +70,32 @@ void connection::resolve::xperform()
 
     LOG_D("Resolving hostname ", hostname);
 
-    std::uint32_t addr;
+    std::uint32_t addr = 0;
 
-    const auto err = resolve_host_ipv4(hostname, addr);
-    if (err)
     {
-        LOG_E("Failed to resolve host (", err.value(), ") ", err.message());
-        throw exception(error::resolve, "resolve failed");
+        std::lock_guard<std::mutex> lock(g_addr_cache_mutex);
+        auto it = g_addr_cache.find(hostname);
+        if (it != std::end(g_addr_cache))
+            addr = it->second;
+    }
+
+    if (addr)
+    {
+        LOG_D("Using cached address");
+    }
+    else
+    {
+        const auto err = resolve_host_ipv4(hostname, addr);
+        if (err)
+        {
+            LOG_E("Failed to resolve host (", err.value(), ") ", err.message());
+            throw exception(error::resolve, "resolve failed");
+        }
+
+        {
+            std::lock_guard<std::mutex> lock(g_addr_cache_mutex);
+            g_addr_cache.insert(std::make_pair(hostname, addr));
+        }
     }
     state_->addr = addr;
 
@@ -157,7 +180,7 @@ void connection::initialize::xperform()
     // while there are pending commands in the session we read 
     // data from the socket into the buffer and then feed the buffer
     // into the session to update the session state.
-    while (session->pending())
+    while (session->send_next())
     {
         do 
         {
@@ -180,7 +203,7 @@ void connection::initialize::xperform()
             // commit
             buff.append(bytes);
         }
-        while (!session->parse_next(buff, temp));
+        while (!session->recv_next(buff, temp));
     }    
 
     // check for errors
@@ -230,7 +253,10 @@ void connection::execute::xperform()
     // once a command is completed we pass the output buffer
     // to the cmdlist so that it can update its own state.
     if (cmdlist->is_canceled())
+    {
+        LOG_D("Cmdlist was canceled");
         return;
+    }
 
     bool configure_success = false;
 
@@ -240,6 +266,8 @@ void connection::execute::xperform()
             break;
 
         newsflash::buffer config(KB(1));
+
+        session->send_next();
         do 
         {
             auto received = socket->wait(true, false);
@@ -255,7 +283,7 @@ void connection::execute::xperform()
 
             recvbuf.append(bytes);
         }
-        while (!session->parse_next(recvbuf, config));
+        while (!session->recv_next(recvbuf, config));
 
         if (cmdlist->receive_configure_buffer(i, std::move(config)))
         {
@@ -270,7 +298,12 @@ void connection::execute::xperform()
     }
 
     if (cmdlist->is_canceled())
+    {
+        LOG_D("Cmdlist was canceled");
         return;
+    }
+
+    LOG_D("Submit data commands");
 
     cmdlist->submit_data_commands(*session);
 
@@ -285,6 +318,8 @@ void connection::execute::xperform()
     while (session->pending())
     {
         newsflash::buffer content(MB(4));                
+
+        session->send_next();        
         do 
         {
             // wait for data or cancellation
@@ -310,7 +345,7 @@ void connection::execute::xperform()
             state_->bytes += bytes;
             bytes_ += bytes;
         }
-        while (!session->parse_next(recvbuf, content));
+        while (!session->recv_next(recvbuf, content));
 
         // todo: is this oK? (in case when quota finishes..??)
         const auto err = session->get_error();
@@ -323,6 +358,8 @@ void connection::execute::xperform()
         // a complete command is completed and we can maintain the socket/session.
         if (cmdlist->is_canceled())
         {
+            LOG_D("Cmdlist was canceled");
+
             if (state_->pipelining)
                 throw exception(connection::error::pipeline_reset, "pipeline reset");
 
@@ -355,6 +392,7 @@ void connection::disconnect::xperform()
     newsflash::buffer temp;
 
     session->quit();
+    session->send_next();
     do 
     {
         // wait for data, if no response then khtx bye whatever, we're done anyway
@@ -370,7 +408,7 @@ void connection::disconnect::xperform()
         }
         buff.append(bytes);
     }
-    while (!session->parse_next(buff, temp));
+    while (!session->recv_next(buff, temp));
 
     socket->close();
 
@@ -400,6 +438,7 @@ void connection::ping::xperform()
     // so we simply send a mundane command (change group)
     // to perform some activity on the transmission line.
     session->change_group("keeping.session.alive");
+    session->send_next();
 
     do
     {
@@ -413,7 +452,7 @@ void connection::ping::xperform()
 
         buff.append(bytes);
     }
-    while (!session->parse_next(buff, temp));
+    while (!session->recv_next(buff, temp));
 }
 
 std::unique_ptr<action> connection::connect(spec s)

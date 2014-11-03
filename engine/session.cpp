@@ -500,33 +500,88 @@ void session::start()
     send_.emplace_back(new welcome);
     send_.emplace_back(new getcaps);
     send_.emplace_back(new modereader);  
-
-    submit_next_commands();
 }
 
 void session::quit()
 {
     send_.emplace_back(new class quit);
-
-    submit_next_commands();
 }
 
 void session::change_group(std::string name)
 {
     send_.emplace_back(new group(std::move(name)));
-
-    submit_next_commands();
 }
 
 void session::retrieve_article(std::string messageid)
 {
     send_.emplace_back(new body(std::move(messageid)));
+}
 
-    submit_next_commands();
+bool session::send_next()
+{
+    if (send_.empty())
+        return false;
+
+    // command pipelining is a mechanism which allows us to send
+    // multiple commands back-to-back and then receive multiple responses
+    // back to back. 
+    // so instead of sending BODY 1 and then receiving the article data for body1
+    // and then sending BODY 2 and receiving data we can do
+    // BODY 1\r\n BODY 2\r\n ... BODY N\r\n
+    // and then read body1, body2 ... bodyN article datas
+
+    // however in case of commands that may not be pipelined
+    // we may not send any commands before the response for the 
+    // non-pipelined command has been received.
+
+    if (!recv_.empty())
+    {
+        // if the last command we have sent is non-pipelineable
+        // we must wait for the response untill sending more commands.
+        const auto& last = recv_.back();
+        if (!last->can_pipeline())
+            return false;
+
+        if (!state_->enable_pipelining)
+            return false;
+    }
+
+    for (;;)
+    {
+        auto& next = send_.front();
+
+        const auto& str = next->str();
+        if (!str.empty())
+        {
+            if (str.find("AUTHINFO PASS") != std::string::npos)
+                LOG_I("AUTHINFO PASS ****");
+            else LOG_I(str);
+
+            on_send(str + "\r\n");
+        }
+
+        state_->state = next->state();
+
+        recv_.push_back(std::move(next));
+        send_.pop_front();
+
+        // if pipelining is not enable we only run this loop once,
+        // essentially reducing the operation to send/recv pairs
+        if (!state_->enable_pipelining)
+            break;
+
+        if (send_.empty())
+            break;
+
+        // first non-pipelineable command will stall the sending queue
+        if (!send_.front()->can_pipeline())
+            break;
+    }
+    return true;
 }
 
 
-bool session::parse_next(buffer& buff, buffer& out)
+bool session::recv_next(buffer& buff, buffer& out)
 {
     assert(!recv_.empty());
 
@@ -570,8 +625,9 @@ bool session::parse_next(buffer& buff, buffer& out)
     {
         recv_.pop_front();
     }
+    if (recv_.empty())
+        state_->state = state::ready;
 
-    submit_next_commands();
     return true;
 }
 
@@ -582,7 +638,7 @@ void session::clear()
 }
 
 bool session::pending() const
-{ return !recv_.empty() || !send_.empty(); }
+{ return !recv_.empty(); }
 
 void session::enable_pipelining(bool on_off)
 { state_->enable_pipelining = on_off; }
@@ -604,67 +660,7 @@ bool session::has_xzver() const
 
 void session::submit_next_commands()
 {
-    // command pipelining is a mechanism which allows us to send
-    // multiple commands back-to-back and then receive multiple responses
-    // back to back. 
-    // so instead of sending BODY 1 and then receiving the article data for body1
-    // and then sending BODY 2 and receiving data we can do
-    // BODY 1\r\n BODY 2\r\n ... BODY N\r\n
-    // and then read body1, body2 ... bodyN article datas
 
-    // however in case of commands that may not be pipelined
-    // we may not send any commands before the response for the 
-    // non-pipelined command has been received.
-
-    if (send_.empty()) 
-    {
-        state_->state = state::ready;
-        return;
-    }
-
-    if (!recv_.empty())
-    {
-        // if the last command we have sent is non-pipelineable
-        // we must wait for the response untill sending more commands.
-        const auto& last = recv_.back();
-        if (!last->can_pipeline())
-            return;
-
-        if (!state_->enable_pipelining)
-            return;
-    }
-
-    for (;;)
-    {
-        auto& next = send_.front();
-
-        const auto& str = next->str();
-        if (!str.empty())
-        {
-            if (str.find("AUTHINFO PASS") != std::string::npos)
-                LOG_I("AUTHINFO PASS ****");
-            else LOG_I(str);
-
-            on_send(str + "\r\n");
-        }
-
-        state_->state = next->state();
-
-        recv_.push_back(std::move(next));
-        send_.pop_front();
-
-        // if pipelining is not enable we only run this loop once,
-        // essentially reducing the operation to send/recv pairs
-        if (!state_->enable_pipelining)
-            break;
-
-        if (send_.empty())
-            break;
-
-        // first non-pipelineable command will stall the sending queue
-        if (!send_.front()->can_pipeline())
-            break;
-    }
 }
 
 } // newsflash

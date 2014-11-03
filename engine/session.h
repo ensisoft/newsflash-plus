@@ -96,9 +96,20 @@ namespace newsflash
         // quit the session. prepares a quit command 
         void quit();
 
+        // request to change the currently selected newsgroup 
+        // to the new group identified by name. the result will be a
+        // groupinfo buffer with group details (low/high water mark + total article count)
+        // in the buffer header.
         void change_group(std::string name);
 
+        // retrieve the article identified by the given messageid.
+        // the result will be an article buffer with content carrying
+        // the article body.
         void retrieve_article(std::string messageid);
+
+        // send next queued command.
+        // returns true if next command was sent otherwise false.
+        bool send_next();
 
         // parse the buff for input data and try to complete
         // currently pending session command. 
@@ -109,16 +120,15 @@ namespace newsflash
         // into the given out buffer. 
         // otherwise if the current command could not be completed
         // the function returns false.
-        bool parse_next(buffer& buff, buffer& out);
+        bool recv_next(buffer& buff, buffer& out);
 
+        // clear pending commands.
         void clear();
 
         // returns true if there are pending commands. i.e. 
         // more calls to parse_next are required to complete
         // the session state changes.
         bool pending() const;
-
-
 
         void enable_pipelining(bool on_off);
 

@@ -306,7 +306,7 @@ void test_execute()
     auto cmds = std::make_shared<cmdlist>();
 
     // execute
-    act = conn.execute(cmds);
+    act = conn.execute(cmds, 123);
     act->perform();
     act = conn.complete(std::move(act));
     BOOST_REQUIRE(!act);

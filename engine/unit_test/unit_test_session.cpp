@@ -56,45 +56,52 @@ void unit_test_init_session_success()
         pass = "bar";
     };
 
-    session.start();
-
     nf::buffer incoming(1024);
     nf::buffer tmp(1);
-    BOOST_REQUIRE(!session.parse_next(incoming, tmp));
     BOOST_REQUIRE(session.get_error() == nf::session::error::none);
-    BOOST_REQUIRE(session.get_state() == nf::session::state::init);
+    BOOST_REQUIRE(session.get_state() == nf::session::state::none);
 
+    session.start();
+
+    session.send_next();
+    BOOST_REQUIRE(output == ""); 
     set(incoming, "200 welcome posting allowed\r\n");
-    session.parse_next(incoming, tmp);
+    session.recv_next(incoming, tmp);
+
+    session.send_next();
     BOOST_REQUIRE(output == "CAPABILITIES\r\n");
-
     set(incoming, "500 what?\r\n");
-    session.parse_next(incoming, tmp);
-    BOOST_REQUIRE(output == "MODE READER\r\n");
+    session.recv_next(incoming, tmp);
 
+    session.send_next();
+    BOOST_REQUIRE(output == "MODE READER\r\n");
     set(incoming, "480 authentication required\r\n");
-    session.parse_next(incoming, tmp);
+    session.recv_next(incoming, tmp);
+
+    session.send_next();
     BOOST_REQUIRE(output == "AUTHINFO USER foo\r\n");
     BOOST_REQUIRE(session.get_state() == nf::session::state::authenticate);
-
     set(incoming, "381 password required\r\n");
-    session.parse_next(incoming, tmp);
+    session.recv_next(incoming, tmp);
+
+    session.send_next();
     BOOST_REQUIRE(output == "AUTHINFO PASS bar\r\n");
-
     set(incoming, "281 authentication accepted\r\n");
-    session.parse_next(incoming, tmp);
+    session.recv_next(incoming, tmp);
+
+    session.send_next();
     BOOST_REQUIRE(output == "CAPABILITIES\r\n");
-
     set(incoming, "500 what?\r\n");
-    session.parse_next(incoming, tmp);
-    BOOST_REQUIRE(output == "MODE READER\r\n");
+    session.recv_next(incoming, tmp);
 
+    session.send_next();
+    BOOST_REQUIRE(output == "MODE READER\r\n");
     set(incoming, "200 posting allowed\r\n");
-    session.parse_next(incoming, tmp);
+    session.recv_next(incoming, tmp);
+
     BOOST_REQUIRE(!session.pending());
     BOOST_REQUIRE(session.get_error() == nf::session::error::none);
     BOOST_REQUIRE(session.get_state() == nf::session::state::ready);
-
 }
 
 void unit_test_init_session_success_caps()
@@ -112,26 +119,31 @@ void unit_test_init_session_success_caps()
         pass = "bar";
     };
 
-    session.start();
-
     nf::buffer incoming(1024);
     nf::buffer tmp(1);
 
-    set(incoming, "200 welcome posting allowed\r\n");
-    session.parse_next(incoming, tmp);
-    BOOST_REQUIRE(output == "CAPABILITIES\r\n");
+    session.start();
 
+    session.send_next();
+    BOOST_REQUIRE(output == "");
+    set(incoming, "200 welcome posting allowed\r\n");
+    session.recv_next(incoming, tmp);
+
+
+    session.send_next();
+    BOOST_REQUIRE(output == "CAPABILITIES\r\n");
     set(incoming, "101 capabilities list follows\r\n"
         "MODE-READER\r\n"
         "XZVER\r\n"
         "IHAVE\r\n"
         "\r\n"
         ".\r\n");
-    session.parse_next(incoming, tmp);
-    BOOST_REQUIRE(output == "MODE READER\r\n");
+    session.recv_next(incoming, tmp);
 
+    session.send_next();
+    BOOST_REQUIRE(output == "MODE READER\r\n");
     set(incoming, "200 posting allowed\r\n");
-    session.parse_next(incoming, tmp);    
+    session.recv_next(incoming, tmp);    
 
     BOOST_REQUIRE(!session.pending()); // done;
     BOOST_REQUIRE(session.has_gzip_compress() == false);
@@ -154,28 +166,36 @@ void unit_test_init_session_failure_authenticate()
         pass = "bar";
     };
 
-    session.start();
-
     nf::buffer incoming(1024);
     nf::buffer tmp(1);
+
+    session.start();
+
+    session.send_next();
+    BOOST_REQUIRE(output == "");
     set(incoming, "200 welcome posting allowed\r\n");
-    session.parse_next(incoming, tmp);
+    session.recv_next(incoming, tmp);
+
+    session.send_next();
     BOOST_REQUIRE(output == "CAPABILITIES\r\n");
-
     set(incoming, "500 what?\r\n");
-    session.parse_next(incoming, tmp);
+    session.recv_next(incoming, tmp);
+
+    session.send_next();
     BOOST_REQUIRE(output == "MODE READER\r\n");
-
     set(incoming, "480 authentication required\r\n");
-    session.parse_next(incoming, tmp);
-    BOOST_REQUIRE(output == "AUTHINFO USER foo\r\n");
-    
-    set(incoming, "381 password required\r\n");
-    session.parse_next(incoming, tmp);
-    BOOST_REQUIRE(output == "AUTHINFO PASS bar\r\n");
+    session.recv_next(incoming, tmp);
 
+    session.send_next();
+    BOOST_REQUIRE(output == "AUTHINFO USER foo\r\n");
+    set(incoming, "381 password required\r\n");
+    session.recv_next(incoming, tmp);
+
+    session.send_next();
+    BOOST_REQUIRE(output == "AUTHINFO PASS bar\r\n");
     set(incoming, "482 authentication rejected\r\n");
-    session.parse_next(incoming, tmp);
+    session.recv_next(incoming, tmp);
+
     BOOST_REQUIRE(!session.pending());
     BOOST_REQUIRE(session.get_state() == nf::session::state::error);
     BOOST_REQUIRE(session.get_error() == nf::session::error::authentication_rejected);
@@ -195,11 +215,10 @@ void unit_test_change_group()
     nf::buffer tmp(1024);
 
     session.change_group("alt.binaries.foo");
-
+    session.send_next();
     BOOST_REQUIRE(output == "GROUP alt.binaries.foo\r\n");    
-
     set(incoming, "211 4 1 4 alt.binaries.foo group succesfully selected\r\n");
-    session.parse_next(incoming, tmp);
+    session.recv_next(incoming, tmp);
 
     BOOST_REQUIRE(!session.pending());
     BOOST_REQUIRE(session.get_state() == nf::session::state::ready);
@@ -221,18 +240,19 @@ void unit_test_retrieve_article()
         output = cmd;
     };
 
+    // single command
     {
         nf::buffer incoming(1024);
         nf::buffer content(1024);
 
         session.retrieve_article("1234");
+        session.send_next();
         BOOST_REQUIRE(output == "BODY 1234\r\n");
         BOOST_REQUIRE(session.get_state() == nf::session::state::transfer);
-
         set(incoming, "222 body follows\r\n"
             "here's some text data\r\n"
             ".\r\n");
-        session.parse_next(incoming, content);
+        session.recv_next(incoming, content);
         BOOST_REQUIRE(!session.pending());
         BOOST_REQUIRE(session.get_state() == nf::session::state::ready);
         BOOST_REQUIRE(session.get_error() == nf::session::error::none);
@@ -244,7 +264,7 @@ void unit_test_retrieve_article()
             "here's some text data\r\n.\r\n", content.content_length()));
     }
 
-    // multiple enqueued commands
+    // multiple enqueued commands, no pipelining
     {
         nf::buffer incoming(1024);
         nf::buffer content(1024);
@@ -253,24 +273,26 @@ void unit_test_retrieve_article()
         session.retrieve_article("2345");
         session.retrieve_article("3456");
 
-
-        set(incoming, "222 body follows\r\nthis is first content\r\n.\r\n");
+        session.send_next();
         BOOST_REQUIRE(output == "BODY 1234\r\n");
-        session.parse_next(incoming, content);
+        set(incoming, "222 body follows\r\nthis is first content\r\n.\r\n");
+        session.recv_next(incoming, content);
         BOOST_REQUIRE(content.content_type() == nf::buffer::type::article);
         BOOST_REQUIRE(content.content_status() == nf::buffer::status::success);
         BOOST_REQUIRE(!std::strncmp(content.content(),
             "this is first content\r\n.\r\n", content.content_length()));
 
+        session.send_next();
         BOOST_REQUIRE(output == "BODY 2345\r\n");
         set(incoming, "420 no article with that message id dmca takedown\r\n");
-        session.parse_next(incoming, content);
+        session.recv_next(incoming, content);
         BOOST_REQUIRE(content.content_type() == nf::buffer::type::article);
         BOOST_REQUIRE(content.content_status() == nf::buffer::status::dmca);
 
+        session.send_next();
         BOOST_REQUIRE(output == "BODY 3456\r\n");
         set(incoming, "423 no article with that number\r\n");
-        session.parse_next(incoming, content);
+        session.recv_next(incoming, content);
         BOOST_REQUIRE(content.content_type() == nf::buffer::type::article);
         BOOST_REQUIRE(content.content_status() == nf::buffer::status::unavailable);
 
@@ -282,7 +304,7 @@ void unit_test_retrieve_article()
         nf::buffer incoming(1024);
         nf::buffer content(1024);
 
-        session.enable_pipelining(true);
+
         session.on_send = [&](const std::string& cmd) {
             output.append(cmd);
             output.append("/");
@@ -290,15 +312,18 @@ void unit_test_retrieve_article()
 
         output.clear();
 
+        session.enable_pipelining(true);
         session.retrieve_article("1234");
         session.retrieve_article("2345");
         session.retrieve_article("3456");
-        BOOST_REQUIRE(output == "BODY 1234\r\n/BODY 2345\r\n/BODY 3456\r\n/");
 
+        session.send_next();
+
+        BOOST_REQUIRE(output == "BODY 1234\r\n/BODY 2345\r\n/BODY 3456\r\n/");
         set(incoming, "222 body follows\r\nthis is first content\r\n.\r\n"
             "222 body fol");
 
-        BOOST_REQUIRE(session.parse_next(incoming, content));
+        BOOST_REQUIRE(session.recv_next(incoming, content));
         BOOST_REQUIRE(content.content_type() == nf::buffer::type::article);
         BOOST_REQUIRE(!std::strncmp(content.content(),
             "this is first content\r\n.\r\n", content.content_length()));
@@ -306,12 +331,14 @@ void unit_test_retrieve_article()
         append(incoming, "lows\r\nsecond content\r\n.\r\n"
             "423 no such article with that number\r\n");
 
-        BOOST_REQUIRE(session.parse_next(incoming, content));
+        BOOST_REQUIRE(session.recv_next(incoming, content));
         BOOST_REQUIRE(!std::strncmp(content.content(),
             "second content\r\n.\r\n", content.content_length()));
 
-        BOOST_REQUIRE(session.parse_next(incoming, content));
+        BOOST_REQUIRE(session.recv_next(incoming, content));
         BOOST_REQUIRE(content.content_status() == nf::buffer::status::unavailable);
+
+        BOOST_REQUIRE(!session.pending());
     }
 
 }
