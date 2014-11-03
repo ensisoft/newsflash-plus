@@ -140,7 +140,7 @@ void rss::sort(int column, Qt::SortOrder order)
         switch (columns(column))
         {
             case columns::date:     SORT(pubdate); break;
-            //case columns::category: SORT(tags);    break;
+            case columns::category: SORT(type);    break;
             case columns::size:     SORT(size);    break;
             case columns::title:    SORT(title);   break;
             default:

@@ -28,6 +28,7 @@
 #  include <QtGui/QMenu>
 #  include <QtGui/QToolBar>
 #  include <QtGui/QMessageBox>
+#  include <QFileInfo>
 #include <newsflash/warnpop.h>
 
 #include "nzbfile.h"
@@ -47,8 +48,18 @@ nzbfile::nzbfile()
     ui_.progressBar->setRange(0, 0);
     ui_.tableView->setModel(&model_);
 
-    model_.on_ready = [&]() {
+    ui_.actionDownload->setEnabled(false);
+    ui_.actionBrowse->setEnabled(false);
+    ui_.actionClear->setEnabled(false);
+    ui_.actionDelete->setEnabled(false);
+
+    model_.on_ready = [&](bool success) 
+    {
         ui_.progressBar->setVisible(false);
+        ui_.actionDownload->setEnabled(success);
+        ui_.actionClear->setEnabled(success);
+        ui_.actionDelete->setEnabled(success);
+        ui_.actionBrowse->setEnabled(success);        
     };
     DEBUG("nzbfile created");
 }
@@ -109,6 +120,10 @@ void nzbfile::open(const QString& nzbfile)
 {
     Q_ASSERT(!nzbfile.isEmpty());
 
+    const bool filenames = ui_.chkFilenamesOnly->isChecked();
+
+    model_.set_show_filenames_only(filenames);
+
     if (model_.load(nzbfile))
     {
         ui_.progressBar->setVisible(true);
@@ -121,16 +136,15 @@ void nzbfile::open(const QByteArray& bytes, const QString& desc)
     Q_ASSERT(!bytes.isEmpty());
     Q_ASSERT(!desc.isEmpty());
 
+    const bool filenames = ui_.chkFilenamesOnly->isChecked();
+
+    model_.set_show_filenames_only(filenames);
+
     if (model_.load(bytes, desc))
     {
         ui_.progressBar->setVisible(true);
         ui_.grpBox->setTitle(desc);
     }
-}
-
-void nzbfile::ready()
-{
-    ui_.progressBar->setVisible(false);
 }
 
 void nzbfile::on_actionOpen_triggered()
@@ -147,7 +161,18 @@ void nzbfile::on_actionOpen_triggered()
 }
 
 void nzbfile::on_actionDownload_triggered()
-{}
+{
+    download_selected("");
+}
+
+void nzbfile::on_actionBrowse_triggered()
+{
+    const auto& folder = g_win->select_download_folder();
+    if (folder.isEmpty())
+        return;
+
+    download_selected(folder);
+}
 
 void nzbfile::on_actionClear_triggered()
 {
@@ -157,12 +182,48 @@ void nzbfile::on_actionClear_triggered()
     ui_.actionDelete->setEnabled(false);
 }
 
-void nzbfile::on_listFiles_customContextMenuRequested(QPoint)
+void nzbfile::on_actionDelete_triggered()
 {
-    //QMenu sub("Download to");
-    //sub.setIcon()
+    auto indices = ui_.tableView->selectionModel()->selectedRows();
+    if (indices.isEmpty())
+        return;
 
-    //QMenu menu(this);
+    model_.kill(indices);
+}
+
+void nzbfile::on_actionSettings_triggered()
+{
+    g_win->show_setting("NZB");
+}
+
+void nzbfile::on_tableView_customContextMenuRequested(QPoint)
+{
+    QMenu sub("Download to");
+    sub.setIcon(QIcon(":/resource/16x16_ico_png/ico_download.png"));
+
+    const auto& recents = g_win->get_recent_paths();
+    for (const auto& recent : recents)
+    {
+        QAction* action = sub.addAction(QIcon(":/resource/16x16_ico_png/ico_folder.png"), recent);
+        QObject::connect(action, SIGNAL(triggered(bool)),
+            this, SLOT(downloadToPrevious()));
+    }
+    sub.addSeparator();
+    sub.addAction(ui_.actionBrowse);
+    sub.setEnabled(ui_.actionDownload->isEnabled());
+
+    QMenu menu;
+    menu.addAction(ui_.actionOpen);
+    menu.addSeparator();
+    menu.addAction(ui_.actionDownload);
+    menu.addMenu(&sub);
+    menu.addSeparator();
+    menu.addAction(ui_.actionClear);
+    menu.addSeparator();
+    menu.addAction(ui_.actionDelete);
+    menu.addSeparator();
+    menu.addAction(ui_.actionSettings);
+    menu.exec(QCursor::pos());
 }
 
 void nzbfile::on_chkFilenamesOnly_clicked()
@@ -170,6 +231,31 @@ void nzbfile::on_chkFilenamesOnly_clicked()
     const bool on_off = ui_.chkFilenamesOnly->isChecked();
 
     model_.set_show_filenames_only(on_off);
+}
+
+void nzbfile::downloadToPrevious()
+{
+    const auto* action = qobject_cast<const QAction*>(sender());
+
+    const auto folder = action->text();
+
+    download_selected(folder);
+}
+
+void nzbfile::download_selected(const QString& folder)
+{
+    const auto& indices = ui_.tableView->selectionModel()->selectedRows();
+    if (indices.isEmpty())
+        return;
+
+    const auto& filename = ui_.grpBox->title();
+    const auto& basename = QFileInfo(filename).completeBaseName();
+
+    const auto acc = g_win->choose_account(basename);
+    if (!acc)
+        return;
+
+    model_.download(indices, acc, folder, basename);
 }
 
 } // gui

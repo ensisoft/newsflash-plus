@@ -40,7 +40,7 @@ namespace app
     {
     public:
         enum class event {
-            warning, info, error
+            warning, info, note, error
         };
 
         struct event_t {
@@ -50,7 +50,7 @@ namespace app
             QTime   time;
         };
 
-        std::function<void (const event_t&)> on_event;
+        std::function<bool (const event_t&)> on_event;
 
         // record a new event in the log
         void write(event type, const QString& msg, const QString& tag);
@@ -89,5 +89,8 @@ namespace app
 
 #define INFO(m) \
     app::eventlog::get().write(app::eventlog::event::info, m, LOGTAG)    
+
+#define NOTE(m) \
+    app::eventlog::get().write(app::eventlog::event::note, m, LOGTAG)
 
 } // app

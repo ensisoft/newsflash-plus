@@ -45,6 +45,9 @@ void eventlog::write(event type, const QString& msg, const QString& tag)
     const auto time = QTime::currentTime();
     const event_t e {type, msg, tag, time };
 
+    if (on_event && !on_event(e))
+        return;
+
     if (events_.full())
     {
         const auto first = index(0, 0);
@@ -58,8 +61,6 @@ void eventlog::write(event type, const QString& msg, const QString& tag)
         events_.push_front(e);
         endInsertRows();
     }    
-    if (on_event)
-        on_event(e);
 }
 
 void eventlog::clear()

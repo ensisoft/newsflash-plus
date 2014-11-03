@@ -85,35 +85,33 @@ mainwindow::mainwindow(app::settings& s) : QMainWindow(nullptr), current_(nullpt
     ui_.statusBar->insertPermanentWidget(2, ui_.frmDiskWrite);
     ui_.statusBar->insertPermanentWidget(3, ui_.frmGraph);
     ui_.statusBar->insertPermanentWidget(4, ui_.frmKbs);    
-
-    if (QSystemTrayIcon::isSystemTrayAvailable())
-    {
-        DEBUG("Setup system tray");
-
-        ui_.actionRestore->setEnabled(false);
-        ui_.actionMinimize->setEnabled(true);
-
-        tray_.setIcon(QIcon(":/resource/16x16_ico_png/ico_newsflash.png"));
-        tray_.setToolTip(NEWSFLASH_TITLE " " NEWSFLASH_VERSION);
-        tray_.setVisible(true);
-
-        QObject::connect(&tray_, SIGNAL(activated(QSystemTrayIcon::ActivationReason)),
-            this, SLOT(actionTray_activated(QSystemTrayIcon::ActivationReason)));
-    }
-
-    setWindowTitle(NEWSFLASH_TITLE);
-
     ui_.mainToolBar->setVisible(true);
     ui_.statusBar->setVisible(true);
     ui_.actionViewToolbar->setChecked(true);
     ui_.actionViewStatusbar->setChecked(true);
 
-    DEBUG("mainwindow created");
+    if (QSystemTrayIcon::isSystemTrayAvailable())
+    {
+        DEBUG("Setup system tray");
+        ui_.actionRestore->setEnabled(false);
+        ui_.actionMinimize->setEnabled(true);
+        tray_.setIcon(QIcon(":/resource/16x16_ico_png/ico_newsflash.png"));
+        tray_.setToolTip(NEWSFLASH_TITLE " " NEWSFLASH_VERSION);
+        tray_.setVisible(true);
+        QObject::connect(&tray_, SIGNAL(activated(QSystemTrayIcon::ActivationReason)),
+            this, SLOT(actionTray_activated(QSystemTrayIcon::ActivationReason)));
+    }
 
     QObject::connect(&refresh_timer_, SIGNAL(timeout()),
         this, SLOT(timerRefresh_timeout()));
     refresh_timer_.setInterval(1000);
     refresh_timer_.start();
+
+    setWindowTitle(NEWSFLASH_TITLE);
+    setAcceptDrops(true);    
+
+    DEBUG("mainwindow created");
+
 }
 
 mainwindow::~mainwindow()
@@ -121,7 +119,7 @@ mainwindow::~mainwindow()
     DEBUG("mainwindow deleted");
 }
 
-void mainwindow::attach(mainwidget* widget)
+void mainwindow::attach(mainwidget* widget, bool loadstate)
 {
     Q_ASSERT(!widget->parent());
 
@@ -154,10 +152,13 @@ void mainwindow::attach(mainwidget* widget)
         ui_.mainTab->setCurrentIndex(count);
     }
 
+    if (loadstate)
+        widget->loadstate(settings_);
+
     build_window_menu();
 }
 
-void mainwindow::attach(mainmodule* module)
+void mainwindow::attach(mainmodule* module, bool loadstate)
 {
     modules_.push_back(module);
 }
@@ -855,6 +856,11 @@ void mainwindow::on_actionExit_triggered()
 void mainwindow::on_actionSettings_triggered()
 {
     show_setting("");
+}
+
+void mainwindow::show_message(const QString& message)
+{
+    ui_.statusBar->showMessage(message, 5000);
 }
 
 void mainwindow::on_actionAbout_triggered()

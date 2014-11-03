@@ -146,7 +146,7 @@ void engine::set_fill_account(quint32 id)
     //engine_.set_fill_account(id);
 }
 
-void engine::download_nzb_contents(quint32 acc, const QString& path, const QString& desc, const QByteArray& buff)
+bool engine::download_nzb_contents(quint32 acc, const QString& path, const QString& desc, const QByteArray& buff)
 {
     QBuffer io(const_cast<QByteArray*>(&buff));
 
@@ -159,27 +159,29 @@ void engine::download_nzb_contents(quint32 acc, const QString& path, const QStri
 
         case nzberror::xml:
             ERROR(str("NZB XML parse error (_1)", desc));
-            return;
+            break;
 
         case nzberror::nzb:
             ERROR(str("NZB content error (_1)", desc));
-            return;
+            break;
 
         default:
             ERROR(str("Error reading NZB (_1)", desc));
-            return;
+            break;
     }
+    if (err != nzberror::none)
+        return false;
 
     QString location = path.isEmpty() ? 
         downloads_ : path;
     location.append("/");
     location.append(desc);
 
-    QDir dir;
+    QDir dir(location);
     if (!dir.mkpath(location))
     {
         ERROR(str("Error creating path _1", dir));
-        return;
+        return false;
     }
 
     newsflash::ui::download download;
@@ -207,10 +209,62 @@ void engine::download_nzb_contents(quint32 acc, const QString& path, const QStri
         }
         engine_->start(to_utf8(logifiles_));
     }
-
-
     INFO(str("Downloading _1", desc));
+    NOTE(str("Downloading _1", desc));
+
+    emit newDownloadQueued(desc);
+
+    return true;
 }
+
+
+bool engine::download_nzb_contents(quint32 acc, const QString& path, const QString& desc, 
+    const std::vector<const nzbcontent*>& nzb)
+{
+    QString location = path.isEmpty() ?
+        downloads_ : path;
+    location.append("/");
+    location.append(desc);
+
+    QDir dir(location);
+    if (!dir.mkpath(location))
+    {
+        ERROR(str("Error creating path _1", dir));
+        return false;
+    }
+
+    newsflash::ui::download download;
+    download.account = acc;
+    download.path    = narrow(location);
+    download.desc    = to_utf8(desc);
+    for (auto* item : nzb)
+    {
+        newsflash::ui::download::file file;
+        file.articles = item->segments;
+        file.groups   = item->groups;
+        file.size     = item->bytes;
+        file.name     = nntp::find_filename(to_utf8(item->subject));
+        if (file.name.size() < 5)
+            file.name = to_utf8(item->subject);
+        download.files.push_back(std::move(file));
+    }
+    engine_->download(std::move(download));
+    if (connect_)
+    {
+        QDir dir;
+        if (!dir.mkpath(logifiles_))
+        {
+            ERROR(str("Error creating log path _1", dir));
+        }
+        engine_->start(to_utf8(logifiles_));
+    }
+    INFO(str("Downloading _1", desc));
+    NOTE(str("Downloading _1", desc));
+
+    emit newDownloadQueued(desc);
+    return true;
+}
+
 
 void engine::loadstate(settings& s)
 {

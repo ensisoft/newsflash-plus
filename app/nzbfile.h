@@ -46,7 +46,7 @@ namespace app
         nzbfile();
        ~nzbfile();
 
-        std::function<void ()> on_ready;
+        std::function<void (bool success)> on_ready;
 
         // begin loading the NZB contents from the given file
         // returns true if file was succesfully opened and then subsequently
@@ -54,10 +54,18 @@ namespace app
         // otherwise returns false and no signal will arrive.
         bool load(const QString& file);
 
+        // load NZB contents from a byte array. 
         bool load(const QByteArray& array, const QString& desc);
 
         // clear the contents of the model
         void clear();
+
+        // kill the items specified by the index list from the data list.
+        void kill(QModelIndexList& list);
+
+        // download the items specified by the index list 
+        void download(const QModelIndexList& list, quint32 account, const QString& folder, const QString& desc);
+
 
         void set_show_filenames_only(bool on_off);
 

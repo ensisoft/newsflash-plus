@@ -152,7 +152,9 @@ namespace newsflash
 
         void resume_task(std::size_t index);
 
+        void move_task_up(std::size_t index);
 
+        void move_task_down(std::size_t index);
     private:
         void connect();
 

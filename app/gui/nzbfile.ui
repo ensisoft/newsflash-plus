@@ -92,6 +92,9 @@ p, li { white-space: pre-wrap; }
         <layout class="QHBoxLayout" name="horizontalLayout">
          <item>
           <widget class="QTableView" name="tableView">
+           <property name="contextMenuPolicy">
+            <enum>Qt::CustomContextMenu</enum>
+           </property>
            <property name="selectionMode">
             <enum>QAbstractItemView::ExtendedSelection</enum>
            </property>
@@ -192,24 +195,6 @@ p, li { white-space: pre-wrap; }
     <string>Del</string>
    </property>
   </action>
-  <action name="actionDownloadEdit">
-   <property name="icon">
-    <iconset>
-     <normaloff>:/ico/ico_folder.png</normaloff>:/ico/ico_folder.png</iconset>
-   </property>
-   <property name="text">
-    <string>Edit...</string>
-   </property>
-  </action>
-  <action name="actionDownloadBrowse">
-   <property name="icon">
-    <iconset>
-     <normaloff>:/ico/ico_folder.png</normaloff>:/ico/ico_folder.png</iconset>
-   </property>
-   <property name="text">
-    <string>Browse...</string>
-   </property>
-  </action>
   <action name="actionSettings">
    <property name="icon">
     <iconset resource="resource.qrc">
@@ -222,16 +207,13 @@ p, li { white-space: pre-wrap; }
     <string>Open NZB settings</string>
    </property>
   </action>
-  <action name="actionDownloadNZB">
+  <action name="actionBrowse">
    <property name="icon">
-    <iconset>
-     <normaloff>:/ico/ico_download.png</normaloff>:/ico/ico_download.png</iconset>
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_folder.png</normaloff>:/resource/16x16_ico_png/ico_folder.png</iconset>
    </property>
    <property name="text">
-    <string>Download NZB</string>
-   </property>
-   <property name="toolTip">
-    <string>Download the contents of a NZB file</string>
+    <string>Browse ...</string>
    </property>
   </action>
  </widget>

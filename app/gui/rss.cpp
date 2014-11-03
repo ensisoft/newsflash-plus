@@ -150,6 +150,9 @@ void rss::activate(QWidget*)
 {
     if (model_.empty())
     {
+        const bool refreshing = ui_.progressBar->isVisible();
+        if (refreshing)
+            return;
         refresh(false);
     }
 }
@@ -521,7 +524,7 @@ void rss::on_actionOpen_triggered()
 
     static auto callback = [](const QByteArray& bytes, const QString& desc) {
         auto* view = new nzbfile();
-        g_win->attach(view);
+        g_win->attach(view, true);
         view->open(bytes, desc);
     };
 
@@ -565,10 +568,10 @@ void rss::on_tableView_customContextMenuRequested(QPoint point)
     QMenu sub("Download to");
     sub.setIcon(QIcon(":/resource/16x16_ico_png/ico_download.png"));
 
-    QStringList paths = g_win->get_recent_paths();
-    for (const auto& path : paths)
+    const auto& recents = g_win->get_recent_paths();
+    for (const auto& recent : recents)
     {
-        QAction* action = sub.addAction(QIcon(":/resource/16x16_ico_png/ico_folder.png"), path);
+        QAction* action = sub.addAction(QIcon(":/resource/16x16_ico_png/ico_folder.png"), recent);
         QObject::connect(action, SIGNAL(triggered(bool)),
             this, SLOT(downloadToPrevious()));
     }

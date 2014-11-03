@@ -207,6 +207,18 @@ void nzbcore::free_settings(settings* s)
     delete s;
 }
 
+void nzbcore::drop_file(const QString& file)
+{
+    QFileInfo info(file);
+    if (!info.exists())
+        return;
+
+    if (info.suffix() != ".nzb")
+        return;
+
+    
+}
+
 
 void nzbcore::downloadTriggered()
 {
@@ -224,7 +236,7 @@ void nzbcore::displayTriggered()
         return;
 
     auto* file = new nzbfile();
-    g_win->attach(file);
+    g_win->attach(file, true);
 
     file->open(nzb);
 }

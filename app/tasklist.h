@@ -53,9 +53,20 @@ namespace app
 
         void kill(QModelIndexList& list);
 
+        void move_up(QModelIndexList& list);
+
+        void move_down(QModelIndexList& list);
+
         const 
         newsflash::ui::task& getItem(std::size_t i) const 
         { return tasks_[i]; }
+
+    private:
+        enum class action {
+            pause, resume, move_up, move_down
+        };
+
+        void manage_tasks(QModelIndexList& list, action a);
 
     private:
         enum class columns { status, done, time, eta, size, desc, sentinel };

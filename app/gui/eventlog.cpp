@@ -43,20 +43,28 @@ eventlog::eventlog()
     ui_.listLog->setModel(&model);
     ui_.actionClearLog->setEnabled(false);
 
-    model.on_event = [&](const app::eventlog::event_t& e) {
+    model.on_event = [&](const app::eventlog::event_t& e) 
+    {
+        if (e.type == app::eventlog::event::note)
+        {
+            g_win->show_message(e.message);
+            return false;
+        }
+
         if (e.type == app::eventlog::event::error)
         {
             setWindowIcon(QIcon(":/resource/16x16_ico_png/ico_error.png"));
             g_win->update(this);
         }
         ui_.actionClearLog->setEnabled(true);
+        return true;
     };
 }
 
 eventlog::~eventlog()
 {
     auto& model = app::eventlog::get();
-    model.on_event = [](const app::eventlog::event_t&) {};
+    model.on_event = [](const app::eventlog::event_t&) { return false; };
 }
 
 void eventlog::add_actions(QMenu& menu)

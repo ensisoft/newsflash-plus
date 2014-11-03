@@ -68,11 +68,11 @@ namespace gui
        
         // attach a new widget to the mainwindow and display it.
         // ownership of the object remains with the caller.
-        void attach(mainwidget* widget);
+        void attach(mainwidget* widget, bool loadstate = false);
 
         // attach a new module to the mainwindow.
         // ownership of the module remains with the caller.
-        void attach(mainmodule* module);
+        void attach(mainmodule* module, bool loadstate = false);
 
         // update the widget's display state
         void update(mainwidget* widget);
@@ -89,6 +89,9 @@ namespace gui
         // open and show the application settings and select the
         // matching settings page.
         void show_setting(const QString& name);
+
+        // show message in the window's message area
+        void show_message(const QString& message);
 
         void prepare_file_menu();
         void prepare_main_tab();

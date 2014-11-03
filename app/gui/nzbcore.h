@@ -74,6 +74,8 @@ namespace gui
         virtual void apply_settings(settings* gui, app::settings& backend) override;
         virtual void free_settings(settings* s) override;
 
+        virtual void drop_file(const QString& file) override;
+
     private slots:
         void downloadTriggered();
         void displayTriggered();

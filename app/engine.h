@@ -41,6 +41,7 @@ namespace app
 {
     class account;
     class settings;
+    class nzbcontent;
 
     // manager class around newsflash engine + engine state
     // translate between native c++ and Qt types and events.
@@ -56,7 +57,9 @@ namespace app
 
         void set_fill_account(quint32 id);
 
-        void download_nzb_contents(quint32 acc, const QString& path, const QString& desc, const QByteArray& nzb);
+        bool download_nzb_contents(quint32 acc, const QString& path, const QString& desc, const QByteArray& nzb);
+        bool download_nzb_contents(quint32 acc, const QString& path, const QString& desc, 
+            const std::vector<const nzbcontent*>& nzb);
 
         void loadstate(settings& s);
         bool savestate(settings& s);
@@ -216,8 +219,19 @@ namespace app
             engine_->resume_task(index);
         }
 
+        void move_task_up(std::size_t index)
+        {
+            engine_->move_task_up(index);
+        }
+
+        void move_task_down(std::size_t index)
+        {
+            engine_->move_task_down(index);
+        }
+
     signals:
         void shutdownComplete();
+        void newDownloadQueued(const QString& desc);
 
     private:
         virtual bool eventFilter(QObject* object, QEvent* event) override;

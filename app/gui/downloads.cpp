@@ -185,6 +185,8 @@ void downloads::on_actionTaskPause_triggered()
         return;
 
     tasks_.pause(indices);
+
+    tableTasks_selectionChanged();    
 }
 
 void downloads::on_actionTaskResume_triggered()
@@ -194,19 +196,67 @@ void downloads::on_actionTaskResume_triggered()
         return;
 
     tasks_.resume(indices);    
+
+    tableTasks_selectionChanged();    
 }
 
 void downloads::on_actionTaskMoveUp_triggered()
-{}
+{
+    QModelIndexList indices = ui_.tableTasks->selectionModel()->selectedRows();
+    if (indices.isEmpty())
+        return;
+
+    tasks_.move_up(indices);
+
+    QItemSelection selection;
+    for (int i=0; i<indices.size(); ++i)
+    {
+        const auto row = indices[i].row();
+        Q_ASSERT(row > 1);
+        selection.select(tasks_.index(row - 1, 0), tasks_.index(row - 1,0));
+    }
+
+    auto* model = ui_.tableTasks->selectionModel();
+    model->setCurrentIndex(selection.indexes()[0], 
+        QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+    model->select(selection, 
+        QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+}
 
 void downloads::on_actionTaskMoveDown_triggered()
-{}
+{
+    QModelIndexList indices = ui_.tableTasks->selectionModel()->selectedRows();
+    if (indices.isEmpty())
+        return;
+
+    tasks_.move_down(indices);
+
+    const auto rows = tasks_.rowCount(QModelIndex());
+
+    QItemSelection selection;
+    for (int i=0; i<indices.size(); ++i)
+    {
+        const auto row = indices[i].row();
+        Q_ASSERT(row < rows - 1);
+        selection.select(tasks_.index(row + 1, 0), tasks_.index(row + 1, 0));
+    }    
+
+    auto* model = ui_.tableTasks->selectionModel();
+    model->setCurrentIndex(selection.indexes()[0],
+        QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+    model->select(selection,
+        QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+}
 
 void downloads::on_actionTaskMoveTop_triggered()
-{}
+{
+    tableTasks_selectionChanged();    
+}
 
 void downloads::on_actionTaskMoveBottom_triggered()
-{}
+{
+    tableTasks_selectionChanged();    
+}
 
 void downloads::on_actionTaskDelete_triggered()
 {
@@ -218,7 +268,9 @@ void downloads::on_actionTaskDelete_triggered()
 }
 
 void downloads::on_actionTaskClear_triggered()
-{}
+{
+    tableTasks_selectionChanged();
+}
 
 void downloads::on_actionTaskOpenLog_triggered()
 {}
@@ -239,6 +291,8 @@ void downloads::on_actionConnDelete_triggered()
         return;
 
     conns_.kill(indices);
+
+    tableConns_selectionChanged();
 }
 
 
@@ -298,15 +352,19 @@ void downloads::tableTasks_selectionChanged()
         ui_.actionTaskPause->setEnabled(false);
         ui_.actionTaskResume->setEnabled(false);
         ui_.actionTaskMoveTop->setEnabled(false);
+        ui_.actionTaskMoveUp->setEnabled(false);
         ui_.actionTaskMoveBottom->setEnabled(false);
+        ui_.actionTaskMoveDown->setEnabled(false);
         ui_.actionTaskDelete->setEnabled(false);
         ui_.actionTaskClear->setEnabled(false);
         return;
     }
     ui_.actionTaskPause->setEnabled(true);
     ui_.actionTaskResume->setEnabled(true);
+    ui_.actionTaskMoveUp->setEnabled(true);
     ui_.actionTaskMoveTop->setEnabled(true);
     ui_.actionTaskMoveBottom->setEnabled(true);
+    ui_.actionTaskMoveDown->setEnabled(true);
     ui_.actionTaskDelete->setEnabled(true);
     ui_.actionTaskClear->setEnabled(true);    
 

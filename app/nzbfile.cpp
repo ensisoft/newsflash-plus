@@ -39,6 +39,7 @@
 #include "format.h"
 #include "eventlog.h"
 #include "filetype.h"
+#include "engine.h"
 
 namespace app
 {
@@ -112,6 +113,41 @@ void nzbfile::clear()
 {
     data_.clear();
     QAbstractTableModel::reset();
+}
+
+void nzbfile::kill(QModelIndexList& list)
+{
+    qSort(list);
+
+    int removed = 0;
+
+    for (int i=0; i<list.size(); ++i)
+    {
+        const auto row = list[i].row() - removed;
+        beginRemoveRows(QModelIndex(), row, row);
+
+        auto it = data_.begin();
+        it += row;
+        data_.erase(it);
+
+        endRemoveRows();
+
+        ++removed;
+    }
+}
+
+void nzbfile::download(const QModelIndexList& list, quint32 account, const QString& folder, const QString& desc)
+{
+    std::vector<const nzbcontent*> selected;
+
+    for (int i=0; i<list.size(); ++i)
+    {
+        const auto row = list[i].row();
+        selected.push_back(&data_[row]);
+    }
+
+    g_engine->download_nzb_contents(account, folder, desc, selected);
+
 }
 
 void nzbfile::set_show_filenames_only(bool on_off)
@@ -258,7 +294,7 @@ void nzbfile::parse_complete()
 
     reset();
 
-    on_ready();
+    on_ready(result == nzberror::none);
 }
 
 

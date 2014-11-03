@@ -259,7 +259,7 @@ public:
 
         LOG_I("Connection ", conn_number_, " deleted");
 
-        --current_num_connections;
+        //--current_num_connections;
 
         state_.threads->detach(thread_);
     }
@@ -1296,6 +1296,34 @@ void engine::resume_task(std::size_t index)
     }
 }
 
+void engine::move_task_up(std::size_t index)
+{
+    if (state_->group_items)
+    {
+
+    }
+    else
+    {
+        assert(state_->tasks.size() > 1);        
+        assert(index < state_->tasks.size());
+        assert(index > 0);
+        std::swap(state_->tasks[index-1], state_->tasks[index]);
+    }
+}
+
+void engine::move_task_down(std::size_t index)
+{
+    if (state_->group_items)
+    {
+
+    }
+    else
+    {
+        assert(state_->tasks.size() > 1);
+        assert(index < state_->tasks.size()-1);
+        std::swap(state_->tasks[index],state_->tasks[index + 1]);
+    }
+}
 
 void engine::connect()
 {
