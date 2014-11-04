@@ -42,4 +42,6 @@ std::string joinpath(const std::string& path, const std::string& str);
 // create the path recursively with all the directories in the path.
 std::string createpath(const std::string& path);
 
+bool exists(const std::string& path);
+
 } // fs

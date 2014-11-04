@@ -34,6 +34,7 @@
 #include <vector>
 #include <string>
 #include "platform.h"
+#include "format.h"
 
 class QEvent;
 
@@ -110,7 +111,12 @@ namespace app
 
         quint64 get_bytes_queued() const
         {
-            return engine_->get_queue_size();
+            return engine_->get_bytes_queued();
+        }
+
+        quint64 get_bytes_ready() const 
+        {
+            return engine_->get_bytes_ready();
         }
 
         quint64 get_bytes_written() const 
@@ -121,6 +127,11 @@ namespace app
         const QString& get_logfiles_path() const
         { 
             return logifiles_; 
+        }
+
+        QString get_engine_logfile() const
+        {
+            return from_utf8(engine_->get_logfile());
         }
 
         void set_logfiles_path(const QString& path)

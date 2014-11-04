@@ -187,6 +187,25 @@ void tasklist::refresh(bool remove_complete, bool group_similar)
     const auto cur_size = tasks_.size();
 
     g_engine->update_task_list(tasks_);
+
+    if (remove_complete)
+    {
+        std::size_t removed = 0;
+        for (std::size_t i=0; i<tasks_.size(); ++i)
+        {
+            const auto& task = tasks_[i];
+            const auto& row  = i - removed;
+            if (task.state == states::complete || task.state == states::error)
+            {
+                beginRemoveRows(QModelIndex(), row, row);
+                g_engine->kill_task(row);
+                g_engine->update_task_list(tasks_);
+                endRemoveRows();
+                ++removed;
+            }
+        }
+    }
+
     if (tasks_.size() != cur_size)
     {
         reset();        

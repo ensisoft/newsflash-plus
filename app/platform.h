@@ -24,13 +24,20 @@
 
 #include <newsflash/config.h>
 #include <newsflash/warnpush.h>
+#  include <QtGui/QIcon>
 #  include <QString>
 #include <newsflash/warnpush.h>
+
 
 // platform specific functions that are not provided by Qt.
 
 namespace app
 {
+
+// extract appliation icon from a 3rd party executable specified
+// by binary. binary is expected to be the complete path to the
+// executable in question.
+QIcon extract_icon(const QString& binary);
 
 // return the name of the operating system that we're running on
 // for example Mint Linux, Ubuntu, Windows XP, Windows 7  etc.
@@ -42,5 +49,24 @@ QString resolve_mount_point(const QString& directory);
 // get free space available on the disk that contains
 // the object identified by filename
 quint64 get_free_disk_space(const QString& filename);
+
+// open a file on the local computer
+void open_file(const QString& file);
+
+void open_web(const QString& url);
+
+// perform computer shutdown.
+void shutdown_computer();
+
+#if defined(LINUX_OS)
+
+    void set_open_command(const QString& cmd);
+
+    void set_shutdown_command(const QString& cmd);
+
+    QString get_open_command();
+
+    QString get_shutdown_command();
+#endif
 
 } // app

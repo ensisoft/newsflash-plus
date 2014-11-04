@@ -40,13 +40,12 @@
 #include "../settings.h"
 #include "../debug.h"
 #include "../format.h"
+#include "../platform.h"
 
 using app::str;
 
 namespace gui
 {
-
-void openurl(const QString&);
 
 accounts::accounts()
 {
@@ -171,7 +170,7 @@ bool accounts::eventFilter(QObject* object, QEvent* event)
         event->type() == QEvent::MouseButtonPress)
     {
         const auto& url = ui_.lblMovie->property("url").toString();
-        openurl(url);
+        app::open_web(url);
         return true;
     }
     return QObject::eventFilter(object, event);

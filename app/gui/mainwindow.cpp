@@ -56,6 +56,8 @@
 #include "../settings.h"
 #include "../accounts.h"
 #include "../engine.h"
+#include "../platform.h"
+#include "../distdir.h"
 
 using app::str;
 
@@ -64,9 +66,8 @@ namespace gui
 
 mainwindow* g_win;    
 
-void openurl(const QString& url);
-void openhelp(const QString& page);
-
+//void openurl(const QString& url);
+//void openhelp(const QString& page);
 
 mainwindow::mainwindow(app::settings& s) : QMainWindow(nullptr), current_(nullptr), settings_(s)
 {
@@ -813,7 +814,8 @@ void mainwindow::on_actionWindowPrev_triggered()
 
 void mainwindow::on_actionHelp_triggered()
 {
-    openhelp("index.html");
+    const auto& help = app::distdir::path("help/index.html");
+    app::open_file(help);
 }
 
 void mainwindow::on_actionMinimize_triggered()
@@ -843,8 +845,9 @@ void mainwindow::on_actionContextHelp_triggered()
         return;
 
     const auto& info = widget->information();
-
-    openhelp(info.helpurl);
+    const auto& help = info.helpurl;
+    const auto& file = app::distdir::path("help/" + help);
+    app::open_file(file);
 }
 
 void mainwindow::on_actionExit_triggered()
@@ -955,7 +958,10 @@ void mainwindow::timerWelcome_timeout()
     const auto show_help   = dlg.open_guide();
 
     if (show_help)
-        openhelp("quick.html");
+    {
+        const auto& help = app::distdir::path("help/quick.html");
+        app::open_file(help);
+    }
 
     for (auto* w : widgets_)
         w->first_launch(add_account);
@@ -977,12 +983,22 @@ void mainwindow::timerRefresh_timeout()
     const auto netspeed         = app::g_engine->get_download_speed();
     const auto bytes_downloaded = app::g_engine->get_bytes_downloaded();
     const auto bytes_queued     = app::g_engine->get_bytes_queued();
+    const auto bytes_ready      = app::g_engine->get_bytes_ready();
     const auto bytes_written    = app::g_engine->get_bytes_written();
+    const auto bytes_remaining  = bytes_queued - bytes_ready;
+
+    const double done = ((double)bytes_ready / (double)bytes_queued) * 100.0;
+
+    ui_.progressBar->setMinimum(0);
+    ui_.progressBar->setMaximum(100);
+    ui_.progressBar->setValue((int)done);
+    ui_.progressBar->setVisible(true);
+    ui_.progressBar->setTextVisible(bytes_queued != 0);
 
     ui_.lblDiskFree->setText(str("_1 _2", downloads, app::size{freespace}));
     ui_.lblNetIO->setText(str("_1 _2",  app::speed { netspeed }, app::size {bytes_downloaded}));     
     ui_.lblDiskIO->setText(str("_1", app::size { bytes_written }));
-    ui_.lblQueue->setText(str("_1", app::size { bytes_queued }));
+    ui_.lblQueue->setText(str("_1", app::size { bytes_remaining }));
 
     ui_.netGraph->addSample(netspeed);
 }

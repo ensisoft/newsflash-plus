@@ -133,4 +133,10 @@ std::string createpath(const std::string& path)
     return p.string();
 }
 
+bool exists(const std::string& path)
+{
+    bfs::path p(path);
+    return bfs::exists(p);    
+}
+
 } // fs

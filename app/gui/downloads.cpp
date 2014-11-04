@@ -37,6 +37,7 @@
 #include "../eventlog.h"
 #include "../settings.h"
 #include "../engine.h"
+#include "../platform.h"
 
 namespace gui
 {
@@ -290,8 +291,13 @@ void downloads::on_actionTaskClear_triggered()
     tableTasks_selectionChanged();
 }
 
+void openfile(const QString& file);
+
 void downloads::on_actionTaskOpenLog_triggered()
-{}
+{
+    const auto& file = app::g_engine->get_engine_logfile();
+    app::open_file(file);
+}
 
 void downloads::on_actionConnClone_triggered()
 {
@@ -314,10 +320,22 @@ void downloads::on_actionConnDelete_triggered()
 }
 
 void downloads::on_actionConnOpenLog_triggered()
-{}
+{
+    QModelIndexList indices = ui_.tableConns->selectionModel()->selectedRows();
+    for (int i=0; i<indices.size(); ++i)
+    {
+        const auto row = indices[i].row();
+        const auto& item = conns_.getItem(row);
+        const auto& file = app::from_utf8(item.logfile);
+        app::open_file(file);
+    }
+}
 
 void downloads::on_tableTasks_customContextMenuRequested(QPoint point)
 {
+    ui_.actionTaskOpenLog->setEnabled(
+        app::g_engine->is_started());
+
     QMenu menu(this);
     menu.addAction(ui_.actionTaskPause);
     menu.addAction(ui_.actionTaskResume);
@@ -332,8 +350,6 @@ void downloads::on_tableTasks_customContextMenuRequested(QPoint point)
     menu.addAction(ui_.actionTaskClear);
     menu.addSeparator();
     menu.addAction(ui_.actionTaskOpenLog);
-
-
     menu.exec(QCursor::pos());
 }
 
@@ -348,7 +364,6 @@ void downloads::on_tableConns_customContextMenuRequested(QPoint point)
     menu.addAction(ui_.actionConnDelete);
     menu.addSeparator();
     menu.addAction(ui_.actionConnOpenLog);
-
     menu.exec(QCursor::pos());
 }
 

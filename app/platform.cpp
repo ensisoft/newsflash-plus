@@ -22,11 +22,13 @@
 
 #include <newsflash/config.h>
 #include <newsflash/warnpush.h>
+#  include <QtGui/QDesktopServices>
 #  include <QFile>
 #  include <QTextStream>
 #  include <QIODevice>
 #  include <QStringList>
 #  include <QDir>
+
 #include <newsflash/warnpop.h>
 
 #if defined(WINDOWS_OS)
@@ -43,6 +45,86 @@ namespace app
 {
 
 #if defined(WINDOWS_OS)
+
+QIcon extract_icon(const QString& binary)
+{
+    HICON small_icon[1] = {0};
+    ExtractIconEx(binary.utf16(), 0, NULL, small_icon, 1);
+    if (small_icon[0])
+    {
+        bool foundAlpha  = false;
+        HDC screenDevice = GetDC(0);
+        HDC hdc = CreateCompatibleDC(screenDevice);
+        ReleaseDC(0, screenDevice);
+
+        ICONINFO iconinfo = {0};
+        bool result = GetIconInfo(small_icon[0], &iconinfo); //x and y Hotspot describes the icon center
+        if (result)
+        {
+            int w = iconinfo.xHotspot * 2;
+            int h = iconinfo.yHotspot * 2;
+
+            BITMAPINFOHEADER bitmapInfo;
+            bitmapInfo.biSize        = sizeof(BITMAPINFOHEADER);
+            bitmapInfo.biWidth       = w;
+            bitmapInfo.biHeight      = h;
+            bitmapInfo.biPlanes      = 1;
+            bitmapInfo.biBitCount    = 32;
+            bitmapInfo.biCompression = BI_RGB;
+            bitmapInfo.biSizeImage   = 0;
+            bitmapInfo.biXPelsPerMeter = 0;
+            bitmapInfo.biYPelsPerMeter = 0;
+            bitmapInfo.biClrUsed       = 0;
+            bitmapInfo.biClrImportant  = 0;
+            DWORD* bits;
+            
+            HBITMAP winBitmap = CreateDIBSection(hdc, (BITMAPINFO*)&bitmapInfo, DIB_RGB_COLORS, (VOID**)&bits, NULL, 0);
+            HGDIOBJ oldhdc = (HBITMAP)SelectObject(hdc, winBitmap);
+            DrawIconEx( hdc, 0, 0, small_icon[0], iconinfo.xHotspot * 2, iconinfo.yHotspot * 2, 0, 0, DI_NORMAL);
+            QImage image = qt_fromWinHBITMAP(hdc, winBitmap, w, h);
+            
+            for (int y = 0 ; y < h && !foundAlpha ; y++) 
+            {
+                QRgb *scanLine= reinterpret_cast<QRgb *>(image.scanLine(y));
+                for (int x = 0; x < w ; x++) 
+                {
+                    if (qAlpha(scanLine[x]) != 0) 
+                    {
+                        foundAlpha = true;
+                        break;
+                    }
+                }
+            }
+            if (!foundAlpha) 
+            {
+                //If no alpha was found, we use the mask to set alpha values
+                DrawIconEx( hdc, 0, 0, small_icon[0], w, h, 0, 0, DI_MASK);
+                QImage mask = qt_fromWinHBITMAP(hdc, winBitmap, w, h);
+                
+                for (int y = 0 ; y < h ; y++)
+                {
+                    QRgb *scanlineImage = reinterpret_cast<QRgb *>(image.scanLine(y));
+                    QRgb *scanlineMask = mask.isNull() ? 0 : reinterpret_cast<QRgb *>(mask.scanLine(y));
+                    for (int x = 0; x < w ; x++)
+                    {
+                        if (scanlineMask && qRed(scanlineMask[x]) != 0)
+                            scanlineImage[x] = 0; //mask out this pixel
+                        else
+                            scanlineImage[x] |= 0xff000000; // set the alpha channel to 255
+                    }
+                }
+            }
+            //dispose resources created by iconinfo call
+            DeleteObject(iconinfo.hbmMask);
+            DeleteObject(iconinfo.hbmColor);
+        
+            SelectObject(hdc, oldhdc); //restore state
+            DeleteObject(winBitmap);
+            DeleteDC(hdc);        
+            return QIcon(QPixmap::fromImage(image));
+        }
+    }
+}
 
 QString get_platform_name()
 {
@@ -130,8 +212,57 @@ QString get_platform_name()
     return ret;    
 }
 
+QString resolve_mount_point(const QString& directory)
+{
+    QDir dir(directory);
+    QString path = dir.canonicalPath();
+    if (path.isEmpty())
+        return "";
+
+    // extract the drive letter
+    QString ret;
+    ret.append(path[0]);
+    ret.append(":");
+    return ret;
+}
+
+quint64 get_free_disk_space(const QString& filename)
+{
+    const auto& native = QDir::toNativeSeparators(filename);
+
+    ULARGE_INTEGER large = {};
+    if (!GetDiskFreeSpaceEx(native.utf16(), &large, nullptr, nullptr))
+        return 0;
+
+    return large.QuadPart;
+}
+
+void open_file(const QString& file)
+{
+    HINSTANCE ret = ShellExecute(nullptr,
+        L"open",
+        file.utf16(),
+        NULL, // executable parameters, don't care
+        NULL, // working directory
+        SW_SHOWNORMAL);
+}
+
+void open_web(const QString& url)
+{
+    // todo:
+}
+
+void shutdown_computer()
+{
+    //todo:
+}
 
 #elif defined(LINUX_OS)
+
+QIcon extract_icon(const QString& binary)
+{
+    return QIcon();
+}
 
 QString get_platform_name()
 {
@@ -231,6 +362,49 @@ quint64 get_free_disk_space(const QString& filename)
     auto ret = st.f_bsize * st.f_bavail;    
     return ret;
 }
+
+// gnome alternatives
+// gnome-open
+// gnome-session-quit --power-off --no-prompt
+
+QString open_file_command = "xdg-open";
+QString shutdown_computer_command = "systemctl poweroff";
+
+void set_open_command(const QString& cmd)
+{
+    open_file_command = cmd;
+}
+
+void set_shutdown_command(const QString& cmd)
+{
+    shutdown_computer_command = cmd;
+}
+
+void open_file(const QString& file)
+{
+    QDesktopServices::openUrl("file:///" + file);
+}
+
+void open_web(const QString& url)
+{
+    QDesktopServices::openUrl(url);
+}
+
+void shutdown_computer()
+{
+    // todo:
+}
+
+QString get_open_command()
+{
+    return open_file_command;
+}
+
+QString get_shutdown_command()
+{
+    return shutdown_computer_command;
+}
+
 
 #endif
 

@@ -91,6 +91,7 @@ struct engine::state {
     std::vector<account> accounts;
     std::size_t bytes_downloaded;
     std::size_t bytes_queued;
+    std::size_t bytes_ready;
     std::size_t bytes_written;
     std::size_t oid; // object id for tasks/connections
     std::string logpath;
@@ -173,6 +174,20 @@ class engine::conn
 private:
     conn(engine::state& s) : state_(s)
     {
+        std::string file;
+        std::string name;
+        for (int i=0; i<1000; ++i)
+        {
+            name = str("connection", i, ".log");
+            file = fs::joinpath(state_.logpath, name);            
+            auto it = std::find_if(std::begin(state_.conns), std::end(state_.conns),
+                [&](const std::unique_ptr<conn>& c) {
+                    return c->ui_.logfile == file;
+                });
+            if (it == std::end(state_.conns))
+                break;
+        }
+
         ui_.error   = error::none;
         ui_.state   = state::disconnected;
         ui_.id      = s.oid++;
@@ -180,15 +195,14 @@ private:
         ui_.account = 0;
         ui_.down    = 0;
         ui_.bps     = 0;
+        ui_.logfile = file;        
         ticks_to_ping_ = 30;
         ticks_to_conn_ = 5;
         conn_number_   = ++current_num_connections;
-        conn_logger_   = std::make_shared<filelogger>(fs::joinpath(s.logpath,
-            str("connection", conn_number_, ".log")), true);
-
-        LOG_D("Connection ", conn_number_, " log file: ", conn_logger_->name());        
-
+        logger_ = std::make_shared<filelogger>(file, true);
         thread_ = state_.threads->allocate();
+
+        LOG_D("Connection ", conn_number_, " log file: ", file);
     }    
 
     using state = ui::connection::states;
@@ -259,7 +273,7 @@ public:
 
         LOG_I("Connection ", conn_number_, " deleted");
 
-        //--current_num_connections;
+        --current_num_connections;
 
         state_.threads->detach(thread_);
     }
@@ -403,7 +417,7 @@ public:
 
             state_.on_error_callback(err);
             state_.logger->flush();
-            conn_logger_->flush();
+            logger_->flush();
             return;
         }
 
@@ -421,7 +435,7 @@ public:
            LOG_D("Connection ", conn_number_, " completed execute!");           
            LOG_D("Connection ", conn_number_, " => state::connected");
         }
-        conn_logger_->flush();
+        logger_->flush();
     }
     bool is_ready() const 
     {
@@ -462,12 +476,14 @@ private:
             ui_.state = state::initializing;
         else if (dynamic_cast<class connection::execute*>(ptr))
             ui_.state = state::active;
+        else if (dynamic_cast<class connection::disconnect*>(ptr))
+            ui_.state = state::disconnected;
 
         LOG_D("Connection ", conn_number_,  " => ", str(ui_.state));
         LOG_D("Connection ", conn_number_, " current task ", ui_.task, " (", ui_.desc, ")");
 
         a->set_id(ui_.id);
-        a->set_log(conn_logger_);
+        a->set_log(logger_);
         state_.submit(a.release(), thread_);
     }
 
@@ -475,7 +491,7 @@ private:
     ui::connection ui_;
     connection conn_;
     engine::state& state_;
-    std::shared_ptr<logger> conn_logger_;
+    std::shared_ptr<logger> logger_;
     threadpool::thread* thread_;
     unsigned conn_number_;
     unsigned ticks_to_ping_;
@@ -519,10 +535,9 @@ public:
 
             if (task_)
                 do_action(task_->kill());
-                
+
             state_.bytes_queued -= ui_.size;
         }
-
         LOG_I("Task ", ui_.id, " deleted");
     }
 
@@ -736,6 +751,7 @@ private:
 
             case state::error:
                 ui_.etatime = 0;
+                //state_.bytes_ready += ui_.size; 
                 do_action(task_->kill());
                 task_.release();
                 break;
@@ -748,6 +764,7 @@ private:
                     {
                         ui_.state = state::complete;
                         ui_.completion = 100.0f;
+                        state_.bytes_ready += ui_.size;
                     }
                     else do_action(std::move(act));
                 }
@@ -755,7 +772,7 @@ private:
 
             case state::complete:
                 ui_.completion = 100.0;
-                state_.bytes_queued -= ui_.size;
+                state_.bytes_ready += ui_.size;
                 break;
 
             default:
@@ -812,6 +829,7 @@ engine::engine() : state_(new state)
     state_->oid                 = 1;
     state_->bytes_downloaded    = 0;
     state_->bytes_queued        = 0;
+    state_->bytes_ready         = 0;
     state_->bytes_written       = 0;
     state_->num_pending_actions = 0;
     state_->prefer_secure       = true;
@@ -1162,9 +1180,14 @@ unsigned engine::get_throttle_value() const
     return 0;
 }
 
-std::uint64_t engine::get_queue_size() const 
+std::uint64_t engine::get_bytes_queued() const 
 {
     return state_->bytes_queued;
+}
+
+std::uint64_t engine::get_bytes_ready() const 
+{
+    return state_->bytes_ready;
 }
 
 std::uint64_t engine::get_bytes_written() const
@@ -1175,6 +1198,11 @@ std::uint64_t engine::get_bytes_written() const
 std::uint64_t engine::get_bytes_downloaded() const
 {
     return state_->bytes_downloaded;
+}
+
+std::string engine::get_logfile() const 
+{
+    return fs::joinpath(state_->logpath, "engine.log");
 }
 
 void engine::set_group_items(bool on_off)
@@ -1260,6 +1288,12 @@ void engine::kill_task(std::size_t i)
         it += i;
         state_->tasks.erase(it);
     }
+
+    if (state_->tasks.empty())
+    {
+        state_->bytes_queued = 0;
+        state_->bytes_ready  = 0;
+    }
 }
 
 void engine::pause_task(std::size_t index)
@@ -1295,6 +1329,8 @@ void engine::resume_task(std::size_t index)
         assert(index < state_->tasks.size());
 
         state_->tasks[index]->resume();
+
+        connect();
     }
 }
 

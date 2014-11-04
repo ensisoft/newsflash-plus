@@ -51,6 +51,10 @@ namespace app
 
         void clone(QModelIndexList& list);
 
+        const
+        newsflash::ui::connection& getItem(std::size_t index) const 
+        { return conns_[index]; }
+
     private:
         enum class columns { status, server, data, kbs, desc, sentinel };
     private:

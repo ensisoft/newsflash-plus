@@ -28,7 +28,6 @@
 #  include <boost/version.hpp>
 #  include <QtGui/QStyle>
 #  include <QtGui/QMessageBox>
-#  include <QtGui/QDesktopServices>
 #  include <QDir>
 #  include <QFile>
 #  include <QUrl>
@@ -68,18 +67,6 @@ using app::str;
 
 namespace gui
 {
-
-void openurl(const QString& url)
-{
-    QDesktopServices::openUrl(url);
-}
-
-void openhelp(const QString& page)
-{
-    const auto& help = app::distdir::path("help");
-    const auto& file = QString("file://%1/%2").arg(help).arg(page);
-    QDesktopServices::openUrl(file);
-}
 
 void copyright()
 {
