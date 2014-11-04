@@ -172,54 +172,54 @@ struct engine::state {
 class engine::conn
 {
 private:
-    conn(engine::state& s) : state_(s)
+    conn(engine::state& state, std::size_t cid)
     {
         std::string file;
         std::string name;
         for (int i=0; i<1000; ++i)
         {
             name = str("connection", i, ".log");
-            file = fs::joinpath(state_.logpath, name);            
-            auto it = std::find_if(std::begin(state_.conns), std::end(state_.conns),
+            file = fs::joinpath(state.logpath, name);            
+            auto it = std::find_if(std::begin(state.conns), std::end(state.conns),
                 [&](const std::unique_ptr<conn>& c) {
                     return c->ui_.logfile == file;
                 });
-            if (it == std::end(state_.conns))
+            if (it == std::end(state.conns))
                 break;
         }
 
-        ui_.error   = error::none;
-        ui_.state   = state::disconnected;
-        ui_.id      = s.oid++;
-        ui_.task    = 0;
-        ui_.account = 0;
-        ui_.down    = 0;
-        ui_.bps     = 0;
-        ui_.logfile = file;        
+        ui_.error      = errors::none;
+        ui_.state      = states::disconnected;
+        ui_.id         = cid;
+        ui_.task       = 0;
+        ui_.account    = 0;
+        ui_.down       = 0;
+        ui_.bps        = 0;
+        ui_.logfile    = file;        
         ticks_to_ping_ = 30;
         ticks_to_conn_ = 5;
         conn_number_   = ++current_num_connections;
-        logger_ = std::make_shared<filelogger>(file, true);
-        thread_ = state_.threads->allocate();
+        logger_        = std::make_shared<filelogger>(file, true);
+        thread_        = state.threads->allocate();
 
         LOG_D("Connection ", conn_number_, " log file: ", file);
     }    
 
-    using state = ui::connection::states;
-    using error = ui::connection::errors;
+    using states = ui::connection::states;
+    using errors = ui::connection::errors;
 
 public:
 
-    conn(std::size_t account, engine::state& s) : conn(s)
+    conn(std::size_t aid, std::size_t cid, engine::state& state) : conn(state, cid)
     {
-        const auto& acc = s.find_account(account);
+        const auto& acc = state.find_account(aid);
 
         connection::spec spec;
         spec.password = acc.password;
         spec.username = acc.username;
         spec.enable_compression = acc.enable_compression;
         spec.enable_pipelining = acc.enable_pipelining;
-        if (s.prefer_secure && acc.enable_secure_server)
+        if (state.prefer_secure && acc.enable_secure_server)
         {
             spec.hostname = acc.secure_host;
             spec.hostport = acc.secure_port;
@@ -237,69 +237,66 @@ public:
             ui_.host      = acc.general_host;
             ui_.port      = acc.general_port;
         }
-        ui_.account = account;
+        ui_.account = aid;
 
-        do_action(conn_.connect(spec));
+        do_action(state, conn_.connect(spec));
 
         LOG_I("Connection ", conn_number_, " ", ui_.host, ":", ui_.port);        
     }
 
-    conn(const conn& other) : conn(other.state_)
+    conn(std::size_t cid, engine::state& state, const conn& dna) : conn(state, cid)
     {
-        ui_.account = other.ui_.account;
-        ui_.host    = other.ui_.host;
-        ui_.port    = other.ui_.port;
-        ui_.secure  = other.ui_.secure;
+        ui_.account = dna.ui_.account;
+        ui_.host    = dna.ui_.host;
+        ui_.port    = dna.ui_.port;
+        ui_.secure  = dna.ui_.secure;
+        ui_.account = dna.ui_.account;
 
-        const auto& acc = state_.find_account(ui_.account);
+        const auto& acc = state.find_account(dna.ui_.account);
 
         connection::spec spec;
         spec.password = acc.password;
         spec.username = acc.username;
-        spec.hostname = other.ui_.host;
-        spec.hostport = other.ui_.port;
-        spec.use_ssl  = other.ui_.secure;
         spec.enable_compression = acc.enable_compression;
-        spec.enable_pipelining = acc.enable_pipelining;
+        spec.enable_pipelining  = acc.enable_pipelining;        
+        spec.hostname = dna.ui_.host;
+        spec.hostport = dna.ui_.port;
+        spec.use_ssl  = dna.ui_.secure;
 
-        do_action(conn_.connect(spec));
+        do_action(state, conn_.connect(spec));
 
         LOG_I("Connection ", conn_number_, " ", ui_.host, ":", ui_.port);                
     }
 
    ~conn()
     {
-        stop();
+        current_num_connections--;
 
         LOG_I("Connection ", conn_number_, " deleted");
-
-        --current_num_connections;
-
-        state_.threads->detach(thread_);
     }
 
-    void tick(const std::chrono::milliseconds& elapsed)
+    void tick(engine::state& state, const std::chrono::milliseconds& elapsed)
     {
-        if (ui_.state == state::connected)
+        if (ui_.state == states::connected)
         {
             if (--ticks_to_ping_ == 0)
-                do_action(conn_.ping());
+                do_action(state, conn_.ping());
 
         }
-        else if (ui_.state == state::error)
+        else if (ui_.state == states::error)
         {
-            if (ui_.error == error::authentication_rejected ||
-                ui_.error == error::no_permission)
+            if (ui_.error == errors::authentication_rejected ||
+                ui_.error == errors::no_permission)
                 return;
 
             if (--ticks_to_conn_)
                 return;
 
             LOG_D("Connection ", conn_number_, " reconnecting...");
-            ui_.error = error::none;
-            ui_.state = state::disconnected;
+            ui_.error = errors::none;
+            ui_.state = states::disconnected;
 
-            const auto& acc = state_.find_account(ui_.account);
+            const auto& acc = state.find_account(ui_.account);
             connection::spec s;
             s.password = acc.password;
             s.username = acc.username;
@@ -308,36 +305,38 @@ public:
             s.hostport = ui_.port;
             s.enable_compression = acc.enable_compression;
             s.enable_pipelining  = acc.enable_pipelining;
-            do_action(conn_.connect(s));                
+            do_action(state, conn_.connect(s));                
         }
     }
 
-    void stop()
+    void stop(engine::state& state)
     {
-        if (ui_.state == state::disconnected)
+        if (ui_.state == states::disconnected)
             return;
 
         conn_.cancel();
-        if (ui_.state == state::connected || 
-            ui_.state == state::active)
+        if (ui_.state == states::connected || 
+            ui_.state == states::active)
         {
-            do_action(conn_.disconnect());
+            do_action(state, conn_.disconnect());
         }
+
+        state.threads->detach(thread_);
     }
 
-    void execute(std::shared_ptr<cmdlist> cmds, std::size_t tid, std::string desc)
+    void execute(engine::state& state, std::shared_ptr<cmdlist> cmds, std::size_t tid, std::string desc)
     {
         ui_.task  = tid;
         ui_.desc  = std::move(desc);
-        ui_.state = state::active;
-        do_action(conn_.execute(cmds, tid));
+        ui_.state = states::active;
+        do_action(state, conn_.execute(cmds, tid));
     }
 
     void update(ui::connection& ui)
     {
         ui = ui_;
         ui.bps = 0;
-        if (ui_.state == state::active)
+        if (ui_.state == states::active)
         {
             // if bytes value hasn't increased since the last read
             // then bps reading will not be valid but the connection has stalled.
@@ -348,7 +347,7 @@ public:
                 ui.bps = conn_.bps();
         }
     }
-    void on_action(action* a)
+    void on_action(engine::state& state, action* a)
     {
         std::unique_ptr<action> act(a);
 
@@ -357,7 +356,7 @@ public:
 
         if (act->has_exception())
         {
-            ui_.state = state::error;
+            ui_.state = states::error;
             ui_.bps   = 0;
             ui_.task  = 0;
             ui_.desc  = "";
@@ -405,7 +404,7 @@ public:
             }
             catch (const std::exception &e)
             {
-                ui_.error = error::other;                
+                ui_.error = errors::other;                
                 err.what  = e.what();
             }
 
@@ -415,20 +414,20 @@ public:
                 LOG_E("Connection ", conn_number_, " ", err.what);
             }
 
-            state_.on_error_callback(err);
-            state_.logger->flush();
+            state.on_error_callback(err);
+            state.logger->flush();
             logger_->flush();
             return;
         }
 
         auto next = conn_.complete(std::move(act));
         if (next)
-            do_action(std::move(next));
-        else if (ui_.state == state::initializing)
-            ui_.state = state::connected;
-        else if (ui_.state == state::active)
+            do_action(state, std::move(next));
+        else if (ui_.state == states::initializing)
+            ui_.state = states::connected;
+        else if (ui_.state == states::active)
         {
-           ui_.state = state::connected;
+           ui_.state = states::connected;
            ui_.bps   = 0;
            ui_.task  = 0;
            ui_.desc  = "";
@@ -439,7 +438,7 @@ public:
     }
     bool is_ready() const 
     {
-        return ui_.state == state::connected;
+        return ui_.state == states::connected;
     }
 
     std::size_t task() const 
@@ -464,33 +463,32 @@ public:
     { return conn_.password(); }
 
 private:
-    void do_action(std::unique_ptr<action> a)
+    void do_action(engine::state& state, std::unique_ptr<action> a)
     {
         auto* ptr = a.get();
 
         if (dynamic_cast<class connection::resolve*>(ptr))
-            ui_.state = state::resolving;
+            ui_.state = states::resolving;
         else if (dynamic_cast<class connection::connect*>(ptr))
-            ui_.state = state::connecting;
+            ui_.state = states::connecting;
         else if (dynamic_cast<class connection::initialize*>(ptr))
-            ui_.state = state::initializing;
+            ui_.state = states::initializing;
         else if (dynamic_cast<class connection::execute*>(ptr))
-            ui_.state = state::active;
+            ui_.state = states::active;
         else if (dynamic_cast<class connection::disconnect*>(ptr))
-            ui_.state = state::disconnected;
+            ui_.state = states::disconnected;
 
         LOG_D("Connection ", conn_number_,  " => ", str(ui_.state));
         LOG_D("Connection ", conn_number_, " current task ", ui_.task, " (", ui_.desc, ")");
 
         a->set_id(ui_.id);
         a->set_log(logger_);
-        state_.submit(a.release(), thread_);
+        state.submit(a.release(), thread_);
     }
 
 private:
     ui::connection ui_;
     connection conn_;
-    engine::state& state_;
     std::shared_ptr<logger> logger_;
     threadpool::thread* thread_;
     unsigned conn_number_;
@@ -505,15 +503,16 @@ unsigned engine::conn::current_num_connections;
 class engine::task 
 {
 public:
-    using state = ui::task::states;
-    using clock = std::chrono::steady_clock;
+    using states = ui::task::states;
+    using clock  = std::chrono::steady_clock;
 
-    task(std::size_t account, std::uint64_t size, std::string desc,
-        std::unique_ptr<newsflash::task> task, engine::state& s) : task_(std::move(task)), state_(s)
+    task(std::size_t aid, std::size_t tid, std::size_t bid, std::uint64_t size, 
+        std::string desc, std::unique_ptr<newsflash::task> task) : task_(std::move(task))
     {
-        ui_.state      = state::queued;
-        ui_.id         = state_.oid++;
-        ui_.account    = account;
+        ui_.state      = states::queued;
+        ui_.id         = tid;
+        ui_.bid        = bid;
+        ui_.account    = aid;
         ui_.desc       = desc;
         ui_.size       = size;
         ui_.runtime    = 0;
@@ -528,17 +527,21 @@ public:
 
    ~task()
     {
-        if (ui_.state != state::complete)
+        LOG_I("Task ", ui_.id, " deleted");
+    }
+
+    void kill(engine::state& state)
+    {
+        if (ui_.state != states::complete)
         {
             for (auto& cmd : cmds_)
                 cmd->cancel();
 
             if (task_)
-                do_action(task_->kill());
+                do_action(state, task_->kill());
 
-            state_.bytes_queued -= ui_.size;
+            state.bytes_queued -= ui_.size;
         }
-        LOG_I("Task ", ui_.id, " deleted");
     }
 
     void configure(const settings& s)
@@ -547,55 +550,55 @@ public:
             task_->configure(s);
     }
 
-    void tick(const std::chrono::milliseconds& elapsed)
+    void tick(engine::state& state, const std::chrono::milliseconds& elapsed)
     {
         // todo: actually measure the time
-        if (ui_.state == state::active ||
-            ui_.state == state::finalize)
+        if (ui_.state == states::active ||
+            ui_.state == states::finalize)
             ui_.runtime++;
     }
 
     bool eligible_for_run() const 
     {
-        if (ui_.state == state::waiting ||
-            ui_.state == state::queued ||
-            ui_.state == state::active)
+        if (ui_.state == states::waiting ||
+            ui_.state == states::queued ||
+            ui_.state == states::active)
             return true;
         
         return false;
     }
 
-    bool run(engine::conn& conn)
+    bool run(engine::state& state, engine::conn& conn)
     {
-        if (ui_.state == state::complete || 
-            ui_.state == state::error ||
-            ui_.state == state::paused ||
-            ui_.state == state::finalize)
+        if (ui_.state == states::complete || 
+            ui_.state == states::error ||
+            ui_.state == states::paused ||
+            ui_.state == states::finalize)
             return false;
 
         auto cmds = task_->create_commands();
         if (!cmds)
         {
             executed_ = true;
-            update_completion();
+            update_completion(state);
             return false;
         }
 
         std::shared_ptr<cmdlist> cmd(cmds.release());
         cmds_.push_back(cmd);
 
-        conn.execute(cmd, ui_.id, ui_.desc);
+        conn.execute(state, cmd, ui_.id, ui_.desc);
 
-        goto_state(state::active);
+        goto_state(state, states::active);
         return true;
     }
 
-    void complete(std::shared_ptr<cmdlist> cmds)
+    void complete(engine::state& state, std::shared_ptr<cmdlist> cmds)
     {
         cmds_.erase(std::find(std::begin(cmds_), 
             std::end(cmds_), cmds));
 
-        if (ui_.state == state::error)
+        if (ui_.state == states::error)
             return;
 
         // code to dump raw NNTP data to the disk
@@ -617,32 +620,32 @@ public:
 
         task_->complete(*cmds, actions);
         for (auto& a : actions)
-            do_action(std::move(a));
+            do_action(state, std::move(a));
 
-        update_completion();
+        update_completion(state);
     }
 
-    void pause()
+    void pause(engine::state& state)
     {
-        if (ui_.state == state::paused ||
-            ui_.state == state::error ||
-            ui_.state == state::complete)
+        if (ui_.state == states::paused ||
+            ui_.state == states::error ||
+            ui_.state == states::complete)
             return;
 
         for (auto& cmd : cmds_)
             cmd->cancel();
 
-        goto_state(state::paused);
+        goto_state(state, states::paused);
     }
 
-    void resume()
+    void resume(engine::state& state)
     {
-        if (ui_.state != state::paused)
+        if (ui_.state != states::paused)
             return;
 
         if (started_)
-            goto_state(state::waiting);
-        else goto_state(state::queued);
+            goto_state(state, states::waiting);
+        else goto_state(state, states::queued);
     }
 
     void update(ui::task& ui)
@@ -650,13 +653,13 @@ public:
         ui = ui_;
     }
 
-    void on_action(action* a)
+    void on_action(engine::state& state, action* a)
     {
         std::unique_ptr<action> act(a);
 
         num_pending_actions_--;
 
-        if (ui_.state == state::error)
+        if (ui_.state == states::error)
             return;
 
         ui::error err;
@@ -672,9 +675,9 @@ public:
             act.reset();
 
             for (auto& a : actions)
-                do_action(std::move(a));
+                do_action(state, std::move(a));
 
-            update_completion();
+            update_completion(state);
             return;
         }
         catch (const std::system_error& e)
@@ -693,19 +696,22 @@ public:
             LOG_E("Task ", ui_.id, " ", err.what);
         }
 
-        state_.on_error_callback(err);
-        state_.logger->flush();
-        goto_state(state::error);            
+        state.on_error_callback(err);
+        state.logger->flush();
+        goto_state(state, states::error);            
     }
 
     std::size_t account() const 
     { return ui_.account; }
 
-    std::size_t id() const
+    std::size_t tid() const
     { return ui_.id; }
 
+    std::size_t bid() const 
+    { return ui_.bid; }
+
 private:
-    void update_completion()
+    void update_completion(engine::state& state)
     {
         ui_.completion = task_->completion();
 
@@ -715,71 +721,73 @@ private:
             return;
 
         if (executed_)
-            goto_state(state::finalize);
-        else if (ui_.state == state::active)
-            goto_state(state::waiting);
-        else if (ui_.state == state::waiting)
-            goto_state(state::waiting);
-        else if (ui_.state == state::finalize)
-            goto_state(state::complete);
+            goto_state(state, states::finalize);
+        else if (ui_.state == states::active)
+            goto_state(state, states::waiting);
+        else if (ui_.state == states::waiting)
+            goto_state(state, states::waiting);
+        else if (ui_.state == states::finalize)
+            goto_state(state, states::complete);
     }
 
-    void do_action(std::unique_ptr<action> a) 
+    void do_action(engine::state& state, std::unique_ptr<action> a) 
     {
         if (!a) return;
 
         a->set_id(ui_.id);
-        state_.submit(a.release());
+
+        state.submit(a.release());
+
         num_pending_actions_++;
     }
 
-    void goto_state(state s)
+    void goto_state(engine::state& state, states new_task_state)
     {
-        ui_.state = s;
-        switch (s)
+        ui_.state = new_task_state;
+        switch (new_task_state)
         {
-            case state::active:
+            case states::active:
                 if (!started_)
                 {
                     LOG_D("Task ", ui_.id,  " starting...");
-                    do_action(task_->start());
+                    do_action(state, task_->start());
                     started_ = true;
                 }
                 LOG_D("Task ", ui_.id, " has ", cmds_.size(),  " command lists");
                 LOG_D("Task ", ui_.id, " has ", num_pending_actions_, " pending actions");
                 break;
 
-            case state::error:
+            case states::error:
                 ui_.etatime = 0;
                 //state_.bytes_ready += ui_.size; 
-                do_action(task_->kill());
+                do_action(state, task_->kill());
                 task_.release();
                 break;
 
-            case state::finalize:
+            case states::finalize:
                 {
                     ui_.etatime = 0;
                     auto act = task_->finalize();
                     if (!act)
                     {
-                        ui_.state = state::complete;
+                        ui_.state = states::complete;
                         ui_.completion = 100.0f;
-                        state_.bytes_ready += ui_.size;
+                        state.bytes_ready += ui_.size;
                     }
-                    else do_action(std::move(act));
+                    else do_action(state, std::move(act));
                 }
                 break;
 
-            case state::complete:
+            case states::complete:
                 ui_.completion = 100.0;
-                state_.bytes_ready += ui_.size;
+                state.bytes_ready += ui_.size;
                 break;
 
             default:
                 break;
         }
 
-        LOG_D("Task ", ui_.id, " => ", str(s));
+        LOG_D("Task ", ui_.id, " => ", str(new_task_state));
     }
 
 private:
@@ -787,7 +795,7 @@ private:
     std::unique_ptr<newsflash::task> task_;
     std::list<std::shared_ptr<cmdlist>> cmds_;
     std::size_t num_pending_actions_;
-    engine::state& state_;
+    //engine::state& state_;
 private:
     bool started_;
     bool executed_;
@@ -799,16 +807,36 @@ class engine::batch
 public:
     using state = ui::task::states;
 
-    batch(std::size_t account, std::size_t size, std::string desc)
+    batch(std::size_t account, std::size_t id, std::size_t size, std::string desc)
     {
         ui_.state   = state::queued;
-        ui_.id      = 123;
+        ui_.id      = id;
+        ui_.bid     = id;
         ui_.account = account;
         ui_.desc    = std::move(desc);
         ui_.size    = size;
     }
    ~batch()
     {}
+
+    void pause(engine::state& state)
+    {
+        for (auto& task : state.tasks)
+        {
+            if (task->bid() == ui_.id)
+                task->pause(state);
+        }
+    }
+
+    void resumse(engine::state& state)
+    {
+        for (auto& task : state.tasks)
+        {
+            if (task->bid() == ui_.id)
+                task->resume(state);
+        }
+    }
+
 private:
     ui::task ui_;
 };
@@ -925,7 +953,10 @@ void engine::set_account(const account& acc)
             return;
 
         for (auto i = num_conns; i<acc.connections; ++i)
-            state_->conns.emplace_back(new engine::conn(acc.id, *state_));
+        {
+            const auto cid = state_->oid++;
+            state_->conns.emplace_back(new engine::conn(acc.id, cid, *state_));
+        }
     }
     else if (num_conns > acc.connections)
     {
@@ -953,7 +984,10 @@ void engine::del_account(std::size_t id)
 
 void engine::download(ui::download spec)
 {
-    const auto bid = state_->oid;
+    const auto bid = state_->oid++;
+    const auto aid = spec.account;
+
+    std::unique_ptr<batch> batch(new class batch(aid, bid, 0, spec.desc));
 
     settings s;
     s.discard_text_content = state_->discard_text;
@@ -965,11 +999,13 @@ void engine::download(ui::download spec)
         LOG_D("Download has ", file.articles.size(), " articles");
         LOG_D("Download is stored in '", spec.path, "'");
 
+        const auto tid = state_->oid++;
+
         std::unique_ptr<newsflash::download> job(new class download(
             std::move(file.groups), std::move(file.articles), spec.path, file.name));            
         job->configure(s);
 
-        std::unique_ptr<task> state(new task(spec.account, file.size, file.name, std::move(job), *state_));
+        std::unique_ptr<task> state(new task(aid, tid, bid, file.size, file.name, std::move(job)));
         state_->tasks.push_back(std::move(state));
         
         state_->bytes_queued += file.size;
@@ -1001,10 +1037,10 @@ bool engine::pump()
             auto bytes = e->get_bytes_transferred();
             auto tit  = std::find_if(std::begin(state_->tasks), std::end(state_->tasks),
                 [&](const std::unique_ptr<engine::task>& t) {
-                    return t->id() == tid;
+                    return t->tid() == tid;
                 });
             if (tit != std::end(state_->tasks))
-                (*tit)->complete(cmds);
+                (*tit)->complete(*state_, cmds);
 
             state_->bytes_downloaded += bytes;
         }
@@ -1022,14 +1058,14 @@ bool engine::pump()
             if (conn->id() != id)
                 continue;
 
-            conn->on_action(a);
+            conn->on_action(*state_, a);
             if (conn->is_ready())
             {
                 for (auto& task : state_->tasks)
                 {
                     if (task->account() != conn->account())
                         continue;
-                    if (task->run(*conn))
+                    if (task->run(*state_, *conn))
                         break;
                 }
             }
@@ -1040,9 +1076,9 @@ bool engine::pump()
         {
             for (auto& task : state_->tasks)
             {
-                if (task->id() == id)
+                if (task->tid() == id)
                 {
-                    task->on_action(a);
+                    task->on_action(*state_, a);
                 }
             }
         }
@@ -1058,12 +1094,12 @@ void engine::tick()
     for (auto& conn : state_->conns)
     {
     // todo: measure time here instead of relying on the clientr        
-        conn->tick(std::chrono::seconds(1));
+        conn->tick(*state_, std::chrono::seconds(1));
     }
 
     for (auto& task : state_->tasks)
     {
-        task->tick(std::chrono::seconds(1));
+        task->tick(*state_, std::chrono::seconds(1));
     }
 
 }
@@ -1092,7 +1128,7 @@ void engine::stop()
 
     for (auto& conn : state_->conns)
     {
-        conn->stop();
+        conn->stop(*state_);
     }
     state_->conns.clear();
     state_->started = false;
@@ -1252,6 +1288,7 @@ void engine::kill_connection(std::size_t i)
 
     auto it = state_->conns.begin();
     it += i;
+    (*it)->stop(*state_);
     state_->conns.erase(it);
 }
 
@@ -1261,8 +1298,10 @@ void engine::clone_connection(std::size_t i)
 
     assert(i < state_->conns.size());
 
+    const auto cid = state_->oid++;
+
     auto& dna  = state_->conns[i];
-    auto dolly = std::unique_ptr<conn>(new conn(*dna));
+    auto dolly = std::unique_ptr<conn>(new conn(cid, *state_, *dna));
     state_->conns.push_back(std::move(dolly));
 }
 
@@ -1286,6 +1325,7 @@ void engine::kill_task(std::size_t i)
 
         auto it = state_->tasks.begin();
         it += i;
+        (*it)->kill(*state_);        
         state_->tasks.erase(it);
     }
 
@@ -1312,7 +1352,7 @@ void engine::pause_task(std::size_t index)
 
         assert(index < state_->tasks.size());
 
-        state_->tasks[index]->pause();
+        state_->tasks[index]->pause(*state_);
     }
 }
 
@@ -1328,7 +1368,7 @@ void engine::resume_task(std::size_t index)
 
         assert(index < state_->tasks.size());
 
-        state_->tasks[index]->resume();
+        state_->tasks[index]->resume(*state_);
 
         connect();
     }
@@ -1395,7 +1435,10 @@ void engine::connect()
 
         // if there's space, spawn new connections.
         for (auto i=num_conns; i<(*a).connections; ++i)
-            state_->conns.emplace_back(new engine::conn((*a).id, *state_));
+        {
+            const auto cid = state_->oid++;
+            state_->conns.emplace_back(new engine::conn((*a).id, cid, *state_));
+        }
 
         // starting with the current task assing ready connections to work on this task.
         engine::task* candidate = task.get();
@@ -1407,7 +1450,7 @@ void engine::connect()
 
             // if candidate returns true it means it might have more work
             // on next iteration as well. 
-            if (candidate->run(*conn))
+            if (candidate->run(*state_, *conn))
                 continue;
 
             // candidate didn't have any more work. hence we can inspect the  
