@@ -88,17 +88,20 @@ netman::~netman()
     DEBUG("netman destroyed");
 }
 
-void netman::submit(on_reply callback, QUrl url, context& c)
+
+void netman::submit(on_reply callback, context& ctx, const QUrl& url)
 {
-    submission s;
-    s.id       = submissions_.size() + 1;
-    s.ticks    = 0;
-    s.reply    = nullptr;
-    s.url      = url;
-    s.ctx      = &c;
-    s.callback = std::move(callback);
-    submissions_.push_back(s);
-    c.num_pending_requests_++;
+    netman::submission get;
+    get.id       = submissions_.size() + 1;
+    get.ticks    = 0;
+    get.reply    = nullptr;
+    get.ctx      = &ctx;
+    get.callback = std::move(callback);
+    get.request.setUrl(url);    
+    get.request.setRawHeader("User-Agent", "NewsflashPlus");    
+
+    submissions_.push_back(get);
+    ctx.num_pending_requests_++;
 
     if (submissions_.size() == 1)
     {
@@ -107,7 +110,41 @@ void netman::submit(on_reply callback, QUrl url, context& c)
         timer_.start();
     }
 
-    DEBUG(str("New submission _1", s.id));
+    DEBUG(str("New HTTP/GET submission _1", get.id));
+}
+
+void netman::submit(on_reply callback, context& ctx, const QUrl& url, const attachment& item)
+{
+    const auto BOUNDARY = "--abcdef123abcdef123";        
+
+    netman::submission post;
+    post.id       = submissions_.size() + 1;
+    post.ticks    = 0;
+    post.reply    = nullptr;
+    post.ctx      = &ctx;
+    post.callback = std::move(callback);
+    post.attachment.append(QString("--%1\r\n").arg(BOUNDARY).toAscii());
+    post.attachment.append(QString("Content-Disposition: form-data; name=\"attachment\"; filename=\"%1\"\r\n").arg(item.name).toAscii());
+    post.attachment.append(QString("Content-Type: application/octet-stream\r\n\r\n").toAscii());
+    post.attachment.append(item.data);
+    post.attachment.append(QString("\r\n--%1--\r\n").arg(BOUNDARY).toAscii());
+    post.request.setUrl(url);
+    post.request.setRawHeader("User-Agent", "NewsflashPlus");
+    post.request.setRawHeader("Content-Type", QString("multipart/form-data; boundary=%1").arg(BOUNDARY).toAscii());
+    post.request.setRawHeader("Content-Length", QString::number(post.attachment.size()).toAscii());
+
+    submissions_.push_back(post);
+
+    ctx.num_pending_requests_++;
+
+    if (submissions_.size() == 1)
+    {
+        submit_next();
+        timer_.setInterval(1000);
+        timer_.start();
+    }
+
+    DEBUG(str("New HTTP/POST submission _1", post.id));
 }
 
 void netman::cancel(context& c)
@@ -179,18 +216,20 @@ void netman::submit_next()
         return;
 
     auto& submit = *it;
+    const auto& req = submit.request;
+    const auto& url = submit.request.url();
+    const auto& attachment = submit.attachment;
+    if (attachment.isEmpty())
+        submit.reply = qnam_.get(submit.request);
+    else submit.reply = qnam_.post(submit.request, attachment);
 
-    QNetworkRequest request;
-    request.setRawHeader("User-Agent", "NewsflashPlus");
-    request.setUrl(submit.url);
-    submit.reply = qnam_.get(request);
     if (!submit.reply)
     {
         ERROR("Submit request failed...");
     }
     else
     {
-        DEBUG(str("Submit HTTP request to _1", submit.url));
+        DEBUG(str("Submit HTTP request to _1", url));
     }
 }
 

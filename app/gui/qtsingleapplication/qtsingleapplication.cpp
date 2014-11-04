@@ -359,9 +359,9 @@ bool QtSingleApplication::notify(QObject* receiver, QEvent* e)
     catch (const std::exception& e)
     {
         QMessageBox::critical(gui::g_win, 
-            "Unhandled Error",
-            QString("Newsflash Plus has encountered an error that was not correctly handled.\n"
-            "You might find more information in the application log files.\n"
+            "An Error Occurred",
+            QString("Something seems to have gone wrong.\n"
+            "You might find more information in the application log files.\n\n"
             "%1").arg(e.what()));
     }
     return false;

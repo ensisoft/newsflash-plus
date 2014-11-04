@@ -23,59 +23,37 @@
 #pragma once
 
 #include <newsflash/config.h>
+
 #include <newsflash/warnpush.h>
-#  include <QString>
-#  include <QByteArray>
+#  include <QtGui/QDialog>
+#  include "ui_dlgfeedback.h"
 #include <newsflash/warnpop.h>
-#include <functional>
-#include "netman.h"
 
-namespace app
+#include "../feedback.h"
+
+namespace gui
 {
-    class feedback
+    class DlgFeedback : public QDialog
     {
+        Q_OBJECT
+
     public:
-        enum class type {
-            feedback,
-            bugreport,
-            request_feature,
-            request_license
-        };
-        enum class feeling {
-            positive, neutral, negative
-        };
+        using mode = app::feedback::type;
 
-        enum class response {
-            success = 0,
-            dirty_rotten_spammer = 1,
-            database_unavailable = 2,
-            database_error = 3, 
-            email_unavailable = 4,
-            network_error = 5            
-        };
+        DlgFeedback(QWidget* parent, mode m);
+       ~DlgFeedback();
 
-        std::function<void (response r)> on_complete;
-
-        feedback();
-       ~feedback();
-
-        struct message {
-            feedback::type type;
-            feedback::feeling feeling;
-
-            QString name;
-            QString email;
-            QString country;
-            QString platform;
-            QString text;
-            QString attachment;
-            QString version;
-        };
-
-        void send(const message& m);
+    private slots:
+        void on_btnSend_clicked();
+        void on_btnClose_clicked();
+        void on_btnBrowse_clicked();
+        void on_txtMessage_textChanged();
 
     private:
-        netman::context net_;
+        Ui::DlgFeedback ui_;
+    private:
+        app::feedback feedback_;
+    private:
+        mode uimode_;
     };
-
-} // app
+} // gui

@@ -182,7 +182,7 @@ bool rss::refresh(media type)
         for (const auto& url : urls)
         {
             g_net->submit(std::bind(&rss::on_refresh_complete, this, feed.get(), type,
-                std::placeholders::_1), url, net_);
+                std::placeholders::_1), net_, url);
             ret = true;
         }
     }
@@ -227,7 +227,7 @@ void rss::download_nzb_file(int row, const QString& file)
     const auto& link = item.nzblink;
     const auto& name = item.title;
     g_net->submit(std::bind(&rss::on_nzbfile_complete, this, file,
-        std::placeholders::_1), link, net_);
+        std::placeholders::_1), net_, link);
 }
 
 void rss::download_nzb_content(int row, quint32 account, const QString& folder)
@@ -239,7 +239,7 @@ void rss::download_nzb_content(int row, quint32 account, const QString& folder)
     const auto& link = item.nzblink;
     const auto& desc = item.title;
     g_net->submit(std::bind(&rss::on_nzbdata_complete, this, folder, desc, account,
-        std::placeholders::_1), link, net_);
+        std::placeholders::_1), net_, link);
 }
 
 void rss::view_nzb_content(int row, data_callback cb)
@@ -251,7 +251,7 @@ void rss::view_nzb_content(int row, data_callback cb)
     const auto& link = item.nzblink;
 
     g_net->submit(std::bind(&rss::on_nzbdata_complete_callback, this, std::move(cb), 
-        std::placeholders::_1), link, net_);
+        std::placeholders::_1), net_, link);
 }
 
 void rss::stop()

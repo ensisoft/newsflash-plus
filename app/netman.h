@@ -87,7 +87,15 @@ namespace app
 
         // submit a new request to retrieve the content
         // at the specified URL.
-        void submit(on_reply callback, QUrl url, context& c);
+        void submit(on_reply callback, context& ctx, const QUrl& url);
+
+        struct attachment {
+            QString name;
+            QByteArray data;
+        };
+
+        void submit(on_reply callback, context& ctx, const QUrl& url,
+            const attachment& item);
 
         // cancel pending submissions. callback will not be invoked.
         void cancel(context& c);
@@ -106,8 +114,8 @@ namespace app
             std::size_t id;
             std::size_t ticks;
             QNetworkReply* reply;
-            QString token;
-            QUrl url;
+            QNetworkRequest request;
+            QByteArray attachment;
             context* ctx;            
             on_reply callback;
         };

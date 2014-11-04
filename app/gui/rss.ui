@@ -199,15 +199,6 @@
     <string>Download selected items</string>
    </property>
   </action>
-  <action name="actionSelectDirectory">
-   <property name="icon">
-    <iconset resource="resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_folder.png</normaloff>:/resource/16x16_ico_png/ico_folder.png</iconset>
-   </property>
-   <property name="text">
-    <string>Select download directory</string>
-   </property>
-  </action>
   <action name="actionSave">
    <property name="icon">
     <iconset resource="resource.qrc">

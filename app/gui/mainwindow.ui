@@ -422,7 +422,7 @@
     <addaction name="separator"/>
     <addaction name="actionReportBug"/>
     <addaction name="separator"/>
-    <addaction name="actionRequestCode"/>
+    <addaction name="actionRequestLicense"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -614,16 +614,16 @@
     <string>Visit discussion forum</string>
    </property>
   </action>
-  <action name="actionRequestCode">
+  <action name="actionRequestLicense">
    <property name="icon">
     <iconset resource="resource.qrc">
      <normaloff>:/resource/16x16_ico_png/ico_register.png</normaloff>:/resource/16x16_ico_png/ico_register.png</iconset>
    </property>
    <property name="text">
-    <string>Request registration code</string>
+    <string>Request license</string>
    </property>
    <property name="toolTip">
-    <string>Request registration code</string>
+    <string>Request license</string>
    </property>
   </action>
   <action name="actionWindowNext">

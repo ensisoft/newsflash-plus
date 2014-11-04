@@ -47,6 +47,7 @@
 #include "dlgchoose.h"
 #include "dlgshutdown.h"
 #include "dlgabout.h"
+#include "dlgfeedback.h"
 #include "config.h"
 #include "../eventlog.h"
 #include "../debug.h"
@@ -866,6 +867,30 @@ void mainwindow::show_message(const QString& message)
 void mainwindow::on_actionAbout_triggered()
 {
     DlgAbout dlg(this);
+    dlg.exec();
+}
+
+void mainwindow::on_actionReportBug_triggered()
+{
+    DlgFeedback dlg(this, DlgFeedback::mode::bugreport);
+    dlg.exec();
+}
+
+void mainwindow::on_actionSendFeedback_triggered()
+{
+    DlgFeedback dlg(this, DlgFeedback::mode::feedback);
+    dlg.exec();
+}
+
+void mainwindow::on_actionRequestFeature_triggered()
+{
+    DlgFeedback dlg(this, DlgFeedback::mode::request_feature);
+    dlg.exec();
+}
+
+void mainwindow::on_actionRequestLicense_triggered()
+{
+    DlgFeedback dlg(this, DlgFeedback::mode::request_license);
     dlg.exec();
 }
 

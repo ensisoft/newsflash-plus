@@ -64,7 +64,7 @@ void telephone::callhome()
     url.addQueryItem("fingerprint", fingerprint);
 
     g_net->submit(std::bind(&telephone::on_finished, this, 
-        std::placeholders::_1), url, net_);
+        std::placeholders::_1), net_, url);
 
     DEBUG("Calling home...");
 }
