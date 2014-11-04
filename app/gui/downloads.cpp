@@ -89,9 +89,6 @@ void downloads::add_actions(QMenu& menu)
     menu.addSeparator();
     menu.addAction(ui_.actionTaskDelete);
     menu.addAction(ui_.actionTaskClear);    
-    //menu.addSeparator();        
-    //menu.addAction(ui_.actionConnClone);
-    //menu.addAction(ui_.actionConnDelete);
 }
 
 void downloads::add_actions(QToolBar& bar)
@@ -110,10 +107,6 @@ void downloads::add_actions(QToolBar& bar)
     bar.addSeparator();
     bar.addAction(ui_.actionTaskDelete);
     bar.addAction(ui_.actionTaskClear);    
-    //bar.addSeparator();        
-    //bar.addAction(ui_.actionConnClone);
-    //bar.addAction(ui_.actionConnDelete);
-
 }
 
 void downloads::loadstate(app::settings& s) 
@@ -134,21 +127,23 @@ void downloads::loadstate(app::settings& s)
     ui_.actionPreferSSL->setChecked(prefer_ssl);
     ui_.chkGroupSimilar->setChecked(group_related);
     ui_.chkRemoveComplete->setChecked(remove_complete);
+    tasks_.set_group_similar(group_related);
 }
 
 bool downloads::savestate(app::settings& s)
 {
     s.set("downloads", "task_list_height", ui_.grpConns->height());
+    s.set("downloads", "group_related", ui_.chkGroupSimilar->isChecked());
+    s.set("downloads", "remove_complete", ui_.chkRemoveComplete->isChecked());
     return true;
 }
 
 void downloads::refresh()
 {
     //DEBUG("Refresh");
-
     const auto remove_complete = ui_.chkRemoveComplete->isChecked();
-    const auto group_similar   = ui_.chkGroupSimilar->isChecked();
-    tasks_.refresh(remove_complete, group_similar);
+    //const auto group_similar   = ui_.chkGroupSimilar->isChecked();
+    tasks_.refresh(remove_complete);
     conns_.refresh();
 
     const auto num_conns = conns_.rowCount(QModelIndex());
@@ -371,6 +366,11 @@ void downloads::on_tableConns_customContextMenuRequested(QPoint point)
 void downloads::on_tableConns_doubleClicked(const QModelIndex&)
 {
     on_actionConnClone_triggered();
+}
+
+void downloads::on_chkGroupSimilar_clicked(bool checked)
+{
+    tasks_.set_group_similar(checked);
 }
 
 void downloads::tableTasks_selectionChanged()

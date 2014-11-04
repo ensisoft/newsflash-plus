@@ -180,10 +180,8 @@ int tasklist::columnCount(const QModelIndex&) const
     return (int)columns::sentinel;
 }
 
-void tasklist::refresh(bool remove_complete, bool group_similar)
+void tasklist::refresh(bool remove_complete)
 {
-    //DEBUG("refresh tasklist");
-
     const auto cur_size = tasks_.size();
 
     g_engine->update_task_list(tasks_);
@@ -319,6 +317,13 @@ void tasklist::move_to_bottom(QModelIndexList& list)
     auto first = QAbstractTableModel::index(min_index, 0);
     auto last  = QAbstractTableModel::index(max_index, (int)columns::sentinel);
     emit dataChanged(first, last);
+}
+
+void tasklist::set_group_similar(bool on_off)
+{
+    g_engine->set_group_similar(on_off);
+    g_engine->update_task_list(tasks_);
+    reset();
 }
 
 void tasklist::manage_tasks(QModelIndexList& list, tasklist::action a)

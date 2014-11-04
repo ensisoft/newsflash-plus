@@ -195,6 +195,11 @@ namespace app
             engine_->set_prefer_secure(on_off);
         }
 
+        void set_group_similar(bool on_off)
+        {
+            engine_->set_group_items(on_off);
+        }
+
         void set_throttle(bool on_off)
         {
             engine_->set_throttle(on_off);

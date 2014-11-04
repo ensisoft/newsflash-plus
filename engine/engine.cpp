@@ -198,11 +198,10 @@ private:
         ui_.logfile    = file;        
         ticks_to_ping_ = 30;
         ticks_to_conn_ = 5;
-        conn_number_   = ++current_num_connections;
         logger_        = std::make_shared<filelogger>(file, true);
         thread_        = state.threads->allocate();
 
-        LOG_D("Connection ", conn_number_, " log file: ", file);
+        LOG_D("Connection ", ui_.id, " log file: ", file);
     }    
 
     using states = ui::connection::states;
@@ -241,7 +240,7 @@ public:
 
         do_action(state, conn_.connect(spec));
 
-        LOG_I("Connection ", conn_number_, " ", ui_.host, ":", ui_.port);        
+        LOG_I("Connection ", ui_.id, " ", ui_.host, ":", ui_.port);        
     }
 
     conn(std::size_t cid, engine::state& state, const conn& dna) : conn(state, cid)
@@ -265,14 +264,12 @@ public:
 
         do_action(state, conn_.connect(spec));
 
-        LOG_I("Connection ", conn_number_, " ", ui_.host, ":", ui_.port);                
+        LOG_I("Connection ", ui_.id, " ", ui_.host, ":", ui_.port);                
     }
 
    ~conn()
     {
-        current_num_connections--;
-
-        LOG_I("Connection ", conn_number_, " deleted");
+        LOG_I("Connection ", ui_.id, " deleted");
     }
 
     void tick(engine::state& state, const std::chrono::milliseconds& elapsed)
@@ -292,7 +289,7 @@ public:
             if (--ticks_to_conn_)
                 return;
 
-            LOG_D("Connection ", conn_number_, " reconnecting...");
+            LOG_D("Connection ", ui_.id, " reconnecting...");
             ui_.error = errors::none;
             ui_.state = states::disconnected;
 
@@ -409,9 +406,9 @@ public:
             }
 
             if (err.code) {
-                LOG_E("Connection ", conn_number_, " (", err.code.value(), ") ", err.code.message());
+                LOG_E("Connection ", ui_.id, " (", err.code.value(), ") ", err.code.message());
             } else {
-                LOG_E("Connection ", conn_number_, " ", err.what);
+                LOG_E("Connection ", ui_.id, " ", err.what);
             }
 
             state.on_error_callback(err);
@@ -431,8 +428,8 @@ public:
            ui_.bps   = 0;
            ui_.task  = 0;
            ui_.desc  = "";
-           LOG_D("Connection ", conn_number_, " completed execute!");           
-           LOG_D("Connection ", conn_number_, " => state::connected");
+           LOG_D("Connection ", ui_.id, " completed execute!");           
+           LOG_D("Connection ", ui_.id, " => state::connected");
         }
         logger_->flush();
     }
@@ -478,8 +475,8 @@ private:
         else if (dynamic_cast<class connection::disconnect*>(ptr))
             ui_.state = states::disconnected;
 
-        LOG_D("Connection ", conn_number_,  " => ", str(ui_.state));
-        LOG_D("Connection ", conn_number_, " current task ", ui_.task, " (", ui_.desc, ")");
+        LOG_D("Connection ", ui_.id,  " => ", str(ui_.state));
+        LOG_D("Connection ", ui_.id, " current task ", ui_.task, " (", ui_.desc, ")");
 
         a->set_id(ui_.id);
         a->set_log(logger_);
@@ -491,14 +488,11 @@ private:
     connection conn_;
     std::shared_ptr<logger> logger_;
     threadpool::thread* thread_;
-    unsigned conn_number_;
     unsigned ticks_to_ping_;
     unsigned ticks_to_conn_;
-private:
-    static unsigned current_num_connections;
 };
 
-unsigned engine::conn::current_num_connections;
+
 
 class engine::task 
 {
@@ -795,7 +789,6 @@ private:
     std::unique_ptr<newsflash::task> task_;
     std::list<std::shared_ptr<cmdlist>> cmds_;
     std::size_t num_pending_actions_;
-    //engine::state& state_;
 private:
     bool started_;
     bool executed_;
@@ -805,19 +798,26 @@ private:
 class engine::batch
 {
 public:
-    using state = ui::task::states;
+    using states = ui::task::states;
 
-    batch(std::size_t account, std::size_t id, std::size_t size, std::string desc)
+    batch(std::size_t account, std::size_t id, std::uint64_t size, std::size_t num_tasks, std::string desc)
     {
-        ui_.state   = state::queued;
+        ui_.state   = states::queued;
         ui_.id      = id;
         ui_.bid     = id;
         ui_.account = account;
         ui_.desc    = std::move(desc);
         ui_.size    = size;
+        ui_.runtime = 0;
+        ui_.etatime = 0;
+        ui_.completion = 0.0;
+
+        LOG_I("Batch ", ui_.id, " (", ui_.desc, ") created");
     }
    ~batch()
-    {}
+    {
+        LOG_I("Batch ", ui_.id, " deleted");
+    }
 
     void pause(engine::state& state)
     {
@@ -828,7 +828,7 @@ public:
         }
     }
 
-    void resumse(engine::state& state)
+    void resume(engine::state& state)
     {
         for (auto& task : state.tasks)
         {
@@ -837,8 +837,35 @@ public:
         }
     }
 
+    void update(ui::task& ui)
+    {
+        ui = ui_;
+    }
+
+    void kill(engine::state& state)
+    {
+        // partition tasks so that the tasks that belong to this batch
+        // are at the end of the the task list.
+        auto it = std::stable_partition(std::begin(state.tasks), std::end(state.tasks),
+            [&](const std::unique_ptr<task>& t) {
+                return t->bid() != ui_.id;
+            });
+
+        for (auto i=it; i != std::end(state.tasks); ++i)
+            (*i)->kill(state);
+
+        state.tasks.erase(it, std::end(state.tasks));
+    }
+
+    void update(engine::state& state, const task& t)
+    {
+
+    }
+
 private:
     ui::task ui_;
+private:
+    std::size_t num_tasks_;
 };
 
 
@@ -987,11 +1014,11 @@ void engine::download(ui::download spec)
     const auto bid = state_->oid++;
     const auto aid = spec.account;
 
-    std::unique_ptr<batch> batch(new class batch(aid, bid, 0, spec.desc));
-
     settings s;
     s.discard_text_content = state_->discard_text;
     s.overwrite_existing_files = state_->overwrite_existing;
+
+    std::uint64_t batch_size = 0;
 
     for (auto& file : spec.files)
     {
@@ -1007,9 +1034,15 @@ void engine::download(ui::download spec)
 
         std::unique_ptr<task> state(new task(aid, tid, bid, file.size, file.name, std::move(job)));
         state_->tasks.push_back(std::move(state));
-        
         state_->bytes_queued += file.size;
+
+        batch_size += file.size;
     }
+
+    const auto num_tasks = spec.files.size();
+
+    std::unique_ptr<batch> batch(new class batch(aid, bid, batch_size, num_tasks, spec.desc));
+    state_->batches.push_back(std::move(batch));
 
     connect();
 }
@@ -1258,13 +1291,19 @@ bool engine::is_started() const
 
 void engine::update(std::deque<ui::task>& tasklist)
 {
-    const auto& tasks = state_->tasks;
-
-    tasklist.resize(tasks.size());
-
-    for (std::size_t i=0; i<tasks.size(); ++i)
+    if (state_->group_items)
     {
-        tasks[i]->update(tasklist[i]);
+        const auto& tasks = state_->batches;
+        tasklist.resize(tasks.size());
+        for (std::size_t i=0; i<tasks.size(); ++i)
+            tasks[i]->update(tasklist[i]);
+    }
+    else
+    {
+        const auto& tasks = state_->tasks;
+        tasklist.resize(tasks.size());
+        for (std::size_t i=0; i<tasks.size(); ++i)
+            tasks[i]->update(tasklist[i]);
     }
 }
 
@@ -1315,6 +1354,7 @@ void engine::kill_task(std::size_t i)
 
         auto it = state_->batches.begin();
         it += i;
+        (*it)->kill(*state_);
         state_->batches.erase(it);
     }
     else
@@ -1327,6 +1367,7 @@ void engine::kill_task(std::size_t i)
         it += i;
         (*it)->kill(*state_);        
         state_->tasks.erase(it);
+
     }
 
     if (state_->tasks.empty())
@@ -1344,7 +1385,7 @@ void engine::pause_task(std::size_t index)
 
         assert(index < state_->batches.size());
 
-        //state_->batches[index]->pause();
+        state_->batches[index]->pause(*state_);
     }
     else
     {
@@ -1360,7 +1401,11 @@ void engine::resume_task(std::size_t index)
 {
     if (state_->group_items)
     {
+        LOG_D("Resume batch ", index);
 
+        assert(index < state_->batches.size());
+
+        state_->batches[index]->resume(*state_);
     }
     else
     {

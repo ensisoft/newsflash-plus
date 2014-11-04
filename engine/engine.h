@@ -57,10 +57,14 @@ namespace newsflash
         engine();
        ~engine();
 
+        // set or modify an account.
         void set_account(const account& acc);
 
+        // delete the account identified by the id.
         void del_account(std::size_t id);
 
+        // download the files included in the dowload.
+        // all the files are grouped together into a single batch.
         void download(ui::download spec);
 
         // process pending actions in the engine. You should call this function
@@ -82,10 +86,13 @@ namespace newsflash
         // stop the engine. kill all connections and stop all processing.
         void stop();
 
+        // set the error callback.
         void set_error_callback(on_error error_callback);
 
+        // set the file callback.
         void set_file_callback(on_file file_callback);
 
+        // set the notify callback. this 
         void set_notify_callback(on_async_notify notify_callback);
 
         // if set to true engine will overwrite files that already exist in the filesystem.
@@ -108,29 +115,36 @@ namespace newsflash
         // by all engine connections.
         void set_throttle_value(unsigned value);
 
+        // if set to true tasklist actions perform actions on batches
+        // instead of individual tasks. this includes kill/pause/resume
+        // and update_task_list
         void set_group_items(bool on_off);
 
+        // getters
         bool get_group_items() const;
-
-        // get overwrite value
         bool get_overwrite_existing_files() const;
-
-        // get discard value
         bool get_discard_text_content() const;
-
-        // get secure value
         bool get_prefer_secure() const;
-
         bool get_throttle() const;
 
+        // get current throttle value.
         unsigned get_throttle_value() const;
 
+        // get how many bytes are currently queued in the engine for downloading.
+        // if there are no items this will be 0.
         std::uint64_t get_bytes_queued() const;
 
+        // get how many bytes have been completed of the items that were queued.
+        // note that this is a historical value and the items may be removed
+        // from the queue. once the queue becomes empty this value drops to 0 as well.
         std::uint64_t get_bytes_ready() const;
 
+        // get the total number of bytes written to disk.
         std::uint64_t get_bytes_written() const;
 
+        // get the total number of bytes downloaded from all the servers/accounts.
+        // this value is the number of bytes coming accross the TPC/SSL transport layer
+        // and includes a few bytes of protocol data per transaction.
         std::uint64_t get_bytes_downloaded() const;
 
         std::string get_logfile() const;
@@ -146,16 +160,22 @@ namespace newsflash
         // of all the connections in the engine.
         void update(std::deque<ui::connection>& connlist);
 
+        // kill the connection at the given index.
         void kill_connection(std::size_t index);
 
+        // clone the connection at the given connection list index.
         void clone_connection(std::size_t index);
 
+        // kill the task at the given task list index
         void kill_task(std::size_t index);
 
+        // pause the task at the given taks list index.
         void pause_task(std::size_t index);
 
+        // resume the task at the given task list index.
         void resume_task(std::size_t index);
 
+        
         void move_task_up(std::size_t index);
 
         void move_task_down(std::size_t index);

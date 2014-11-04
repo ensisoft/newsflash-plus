@@ -45,7 +45,7 @@ namespace app
         virtual int rowCount(const QModelIndex&) const override;
         virtual int columnCount(const QModelIndex&) const override;
 
-        void refresh(bool remove_complete, bool group_similar);
+        void refresh(bool remove_complete);
 
         void pause(QModelIndexList& list);
 
@@ -60,6 +60,8 @@ namespace app
         void move_to_top(QModelIndexList& list);
 
         void move_to_bottom(QModelIndexList& list);
+
+        void set_group_similar(bool on_off);
 
         const 
         newsflash::ui::task& getItem(std::size_t i) const 
