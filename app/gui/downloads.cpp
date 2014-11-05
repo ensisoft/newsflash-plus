@@ -405,18 +405,27 @@ void downloads::tableTasks_selectionChanged()
     {
         const auto row = indices[i].row();
         const auto& ui = tasks_.getItem(row);
-        if (ui.state == state::complete ||
-            ui.state == state::error)
+
+        // completed tasks cannot be paused.
+        if (ui.state == state::complete || ui.state == state::error)
             ui_.actionTaskPause->setEnabled(false);
 
+        // paused tasks cannot be paused again
+        if (ui.state == state::paused)
+            ui_.actionTaskPause->setEnabled(false);
+
+        // only paused tasks can be resumed, so if anything else but paused resume is not possible.
         if (ui.state != state::paused)
             ui_.actionTaskResume->setEnabled(false);
 
+        // if we're already at the top moving up is not possible
         if (row == 0)
         {
             ui_.actionTaskMoveTop->setEnabled(false);
             ui_.actionTaskMoveUp->setEnabled(false);
         }
+
+        // if we're already at the bottom moving down is not possible
         if (row == num_tasks -1)
         {
             ui_.actionTaskMoveBottom->setEnabled(false);

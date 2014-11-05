@@ -117,11 +117,12 @@ struct engine::state {
 
    ~state()
     {
-        batches.clear();
         tasks.clear();
         conns.clear();
-
+        batches.clear();
+        set_thread_log(nullptr);
     }
+
     const account& find_account(std::size_t id) const 
     {
         auto it = std::find_if(accounts.begin(), accounts.end(),
@@ -787,7 +788,7 @@ private:
                 break;
         }
         LOG_D("Task ", ui_.id, " => ", str(new_task_state));
-        LOG_D("Task ", ui_.id, " has ", cmds_.size(),  " active command lists");
+        LOG_D("Task ", ui_.id, " has ", cmds_.size(),  " active cmdlists");
         LOG_D("Task ", ui_.id, " has ", num_pending_actions_, " active actions");        
     }
 
@@ -962,7 +963,14 @@ private:
             break;
         }
 
-        LOG_D("Batch _1 ", ui_.id, " => ", str(new_state));
+        LOG_D("Batch ", ui_.id, " => ", str(new_state));
+        LOG_D("Batch has ", num_tasks_, " tasks");
+        LOG_D("Batch items Queued: ", statesets_[(int)states::queued], 
+                   " Waiting: ", statesets_[(int)states::waiting],
+                   " Active: ", statesets_[(int)states::active],
+                   " Paused: ", statesets_[(int)states::paused],
+                   " Complete: ", statesets_[(int)states::complete],
+                   " Errored: ", statesets_[(int)states::error]);
     }
 private:
     ui::task ui_;
@@ -1279,6 +1287,8 @@ void engine::tick()
         batch->tick(*state_, std::chrono::seconds(1));
     }
 
+    if (state_->logger)
+        state_->logger->flush();
 }
 
 
