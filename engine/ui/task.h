@@ -26,8 +26,6 @@
 
 #include <cstddef>
 #include <string>
-#include <limits>
-
 #include "../bitflag.h"
 
 namespace newsflash
@@ -45,9 +43,6 @@ namespace newsflash
 
             // some the requested data was taken down
             dmca,
-
-            // some error occurred trying to retrieve the data
-            error,
 
             // some data appears to be damaged
             damaged
@@ -110,7 +105,6 @@ namespace newsflash
         double completion;
     };
 
-    const std::uint32_t WHO_KNOWS = std::numeric_limits<std::uint32_t>::max();
-
+    
 } // ui
 } // engine

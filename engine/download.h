@@ -57,6 +57,9 @@ namespace newsflash
         virtual void configure(const settings& s) override;
 
         virtual double completion() const override;
+
+        virtual bitflag<task::error> errors() const override
+        { return errors_; }
     private:
         std::vector<std::string> groups_;
         std::vector<std::string> pending_;

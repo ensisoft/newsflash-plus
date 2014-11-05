@@ -62,8 +62,6 @@ const char* str(bitflag f)
         return "Damaged";    
     else if (f.test(flags::unavailable))
         return "Unavailable";
-    else if (f.test(flags::error))
-        return "NNTP Error";
 
     return "Complete";
 }
@@ -99,9 +97,9 @@ QVariant tasklist::data(const QModelIndex& index, int role) const
                 return format(runtime{ui.runtime});
 
             case columns::eta:
-                if (ui.etatime == newsflash::ui::WHO_KNOWS)
-                    return QString("  %1  ").arg(infinity);
-                return format(runtime{ui.etatime});
+                if (ui.state == states::active || ui.state == states::waiting)
+                    return format(runtime{ui.etatime});
+                return QString("  %1  ").arg(infinity);
 
             case columns::size:
                 if (ui.size == 0)

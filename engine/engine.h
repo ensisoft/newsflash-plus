@@ -182,11 +182,16 @@ namespace newsflash
     private:
         void connect();
 
+
     private:
         class task;
         class conn;
         class batch;
         struct state;
+
+        batch& find_batch(std::size_t id);
+        //conn*  find_connection(std::size_t id);
+        //task*  find_task(std::size_t id);
 
     private:
         std::shared_ptr<state> state_;

@@ -40,9 +40,15 @@ namespace newsflash
     class task 
     {
     public:
+        // soft errors.
         enum class error {
+            // some of the requested data was not available.
             unavailable,
+
+            // some of the requested data was taken down.
             dmca,
+
+            // some of the data was damaged
             damaged
         };
 
@@ -78,6 +84,8 @@ namespace newsflash
         virtual void configure(const settings& s) = 0;
 
         virtual double completion() const = 0;
+
+        virtual bitflag<error> errors() const = 0;
 
     protected:
     private:

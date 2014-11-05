@@ -84,6 +84,7 @@ const char* str(ui::connection::states s)
 
 #undef CASE
 
+
 struct engine::state {
     std::deque<std::unique_ptr<engine::task>> tasks;
     std::deque<std::unique_ptr<engine::conn>> conns;
@@ -108,6 +109,7 @@ struct engine::state {
     bool discard_text;
     bool started;
     bool group_items;
+    bool repartition_task_list;
 
     engine::on_error on_error_callback;
     engine::on_file  on_file_callback;
@@ -164,7 +166,6 @@ struct engine::state {
     {
         threads->submit(a, thread);
         num_pending_actions++;
-
     }
 };
 
@@ -336,8 +337,7 @@ public:
         if (ui_.state == states::active)
         {
             // if bytes value hasn't increased since the last read
-            // then bps reading will not be valid but the connection has stalled.
-            // note that ui
+            // then bps reading will not be valid but the connection has stalled.           
             const auto bytes = ui_.down;
             ui_.down = conn_.bytes();
             if (bytes != ui_.down)
@@ -405,11 +405,8 @@ public:
                 err.what  = e.what();
             }
 
-            if (err.code) {
-                LOG_E("Connection ", ui_.id, " (", err.code.value(), ") ", err.code.message());
-            } else {
-                LOG_E("Connection ", ui_.id, " ", err.what);
-            }
+            LOG_E("Connection ", ui_.id, " (", err.code.value(), ") ", err.code.message());
+            LOG_E("Connection ", ui_.id, " ", err.what);
 
             state.on_error_callback(err);
             state.logger->flush();
@@ -492,8 +489,6 @@ private:
     unsigned ticks_to_conn_;
 };
 
-
-
 class engine::task 
 {
 public:
@@ -515,6 +510,7 @@ public:
         started_       = false;
         executed_      = false;
         num_pending_actions_ = 0;
+        old_state_ = states::queued;
 
         LOG_I("Task ", ui_.id, " (", ui_.desc, ") created");
     }
@@ -645,6 +641,14 @@ public:
     void update(ui::task& ui)
     {
         ui = ui_;
+        ui.etatime = 0;
+
+        if (ui_.state == states::active ||
+            ui_.state == states::waiting)
+        {
+            // todo: eta
+
+        }
     }
 
     void on_action(engine::state& state, action* a)
@@ -684,11 +688,8 @@ public:
             err.what = e.what();
         }
 
-        if(err.code) {
-            LOG_E("Task ", ui_.id, " (", err.code.value(), ") ", err.code.message());
-        } else {
-            LOG_E("Task ", ui_.id, " ", err.what);
-        }
+        LOG_E("Task ", ui_.id, " (", err.code.value(), ") ", err.code.message());
+        LOG_E("Task ", ui_.id, " ", err.what);
 
         state.on_error_callback(err);
         state.logger->flush();
@@ -703,6 +704,15 @@ public:
 
     std::size_t bid() const 
     { return ui_.bid; }
+
+    states cur_state() const 
+    { return ui_.state; }
+
+    states old_state() const
+    { return old_state_; }
+
+    bool state_changed() const 
+    { return old_state_ != ui_.state; } 
 
 private:
     void update_completion(engine::state& state)
@@ -737,6 +747,8 @@ private:
 
     void goto_state(engine::state& state, states new_task_state)
     {
+        old_state_ = ui_.state;
+
         ui_.state = new_task_state;
         switch (new_task_state)
         {
@@ -747,20 +759,14 @@ private:
                     do_action(state, task_->start());
                     started_ = true;
                 }
-                LOG_D("Task ", ui_.id, " has ", cmds_.size(),  " command lists");
-                LOG_D("Task ", ui_.id, " has ", num_pending_actions_, " pending actions");
                 break;
 
             case states::error:
-                ui_.etatime = 0;
-                //state_.bytes_ready += ui_.size; 
-                do_action(state, task_->kill());
                 task_.release();
                 break;
 
             case states::finalize:
                 {
-                    ui_.etatime = 0;
                     auto act = task_->finalize();
                     if (!act)
                     {
@@ -780,8 +786,9 @@ private:
             default:
                 break;
         }
-
         LOG_D("Task ", ui_.id, " => ", str(new_task_state));
+        LOG_D("Task ", ui_.id, " has ", cmds_.size(),  " active command lists");
+        LOG_D("Task ", ui_.id, " has ", num_pending_actions_, " active actions");        
     }
 
 private:
@@ -789,9 +796,11 @@ private:
     std::unique_ptr<newsflash::task> task_;
     std::list<std::shared_ptr<cmdlist>> cmds_;
     std::size_t num_pending_actions_;
+    states old_state_;
 private:
     bool started_;
     bool executed_;
+
 };
 
 
@@ -800,7 +809,7 @@ class engine::batch
 public:
     using states = ui::task::states;
 
-    batch(std::size_t account, std::size_t id, std::uint64_t size, std::size_t num_tasks, std::string desc)
+    batch(std::size_t account, std::size_t id, std::uint64_t size, std::size_t num_tasks, std::string desc) : num_tasks_(num_tasks)
     {
         ui_.state   = states::queued;
         ui_.id      = id;
@@ -811,6 +820,9 @@ public:
         ui_.runtime = 0;
         ui_.etatime = 0;
         ui_.completion = 0.0;
+
+        std::memset(&statesets_, 0, sizeof(statesets_));
+        statesets_[(int)states::queued] = num_tasks;
 
         LOG_I("Batch ", ui_.id, " (", ui_.desc, ") created");
     }
@@ -823,23 +835,40 @@ public:
     {
         for (auto& task : state.tasks)
         {
-            if (task->bid() == ui_.id)
-                task->pause(state);
+            if (task->bid() != ui_.id)
+                continue;
+
+            task->pause(state);
+            leave_state(*task, task->old_state());
+            enter_state(*task, task->cur_state());
         }
+        update(state);
     }
 
     void resume(engine::state& state)
     {
         for (auto& task : state.tasks)
         {
-            if (task->bid() == ui_.id)
-                task->resume(state);
+            if (task->bid() != ui_.id)
+                continue;
+
+            task->resume(state);
+            leave_state(*task, task->old_state());
+            enter_state(*task, task->cur_state());            
         }
+        update(state);
     }
 
     void update(ui::task& ui)
     {
         ui = ui_;
+        ui.etatime = 0;
+
+        if (ui_.state == states::waiting ||
+            ui_.state == states::active)
+        {
+            // todo: eta
+        }
     }
 
     void kill(engine::state& state)
@@ -857,15 +886,89 @@ public:
         state.tasks.erase(it, std::end(state.tasks));
     }
 
-    void update(engine::state& state, const task& t)
+    bool kill(engine::state& state, const task& t)
     {
+        leave_state(t, t.cur_state());
+        num_tasks_--;
+        update(state);
 
+        return num_tasks_ == 0;
     }
 
+    void update(engine::state& state, const task& t)
+    {
+        leave_state(t, t.old_state());
+        enter_state(t, t.cur_state());
+        update(state);
+    }
+
+    void tick(engine::state& state, const std::chrono::milliseconds& elapsed)
+    {
+        if (ui_.state == states::active)
+            ui_.runtime++;
+    }
+
+    std::size_t id() const 
+    { return ui_.id; }
+
+private:
+    void enter_state(const task& t, states s)
+    {
+        statesets_[(int)s]++;
+    }
+    void leave_state(const task& t, states s)
+    {
+        statesets_[(int)s]--;
+    }
+
+    bool is_empty_set(states s)
+    {
+        return statesets_[(int)s] == 0;
+    }
+
+    bool is_full_set(states s)
+    {
+        return statesets_[(int)s] == num_tasks_;
+    }
+    void update(engine::state& state)
+    {
+        const auto num_states = std::accumulate(std::begin(statesets_),
+            std::end(statesets_), 0);
+        assert(num_states == num_tasks_);
+
+        if (!is_empty_set(states::active))
+            goto_state(state, states::active);
+        else if (!is_empty_set(states::waiting))
+            goto_state(state, states::waiting);
+        if (!is_empty_set(states::paused))
+            goto_state(state, states::paused);
+        else if (is_full_set(states::complete))
+            goto_state(state, states::complete);
+        else if (is_full_set(states::error))
+            goto_state(state, states::error);
+    }
+
+    void goto_state(engine::state& state, states new_state)
+    {
+        ui_.state = new_state;
+        switch (new_state)
+        {
+            case states::complete:
+                ui_.completion = 100.0;
+                ui_.etatime    = 0;
+                break;
+
+            default:
+            break;
+        }
+
+        LOG_D("Batch _1 ", ui_.id, " => ", str(new_state));
+    }
 private:
     ui::task ui_;
 private:
     std::size_t num_tasks_;
+    std::size_t statesets_[7];
 };
 
 
@@ -890,6 +993,7 @@ engine::engine() : state_(new state)
     state_->prefer_secure       = true;
     state_->started             = false;
     state_->group_items         = false;
+    state_->repartition_task_list = false;
 }
 
 engine::~engine()
@@ -1073,7 +1177,15 @@ bool engine::pump()
                     return t->tid() == tid;
                 });
             if (tit != std::end(state_->tasks))
-                (*tit)->complete(*state_, cmds);
+            {
+                auto& task = *tit;
+                task->complete(*state_, cmds);
+                if (task->state_changed())
+                {
+                    auto& batch = find_batch(task->bid());
+                    batch.update(*state_, *task);
+                }
+            }
 
             state_->bytes_downloaded += bytes;
         }
@@ -1099,7 +1211,14 @@ bool engine::pump()
                     if (task->account() != conn->account())
                         continue;
                     if (task->run(*state_, *conn))
-                        break;
+                    {
+                        if (task->state_changed())
+                        {
+                            auto& batch = find_batch(task->bid());
+                            batch.update(*state_, *task);
+                        }                        
+                    }
+                    break;
                 }
             }
             action_dispatched = true;
@@ -1109,9 +1228,14 @@ bool engine::pump()
         {
             for (auto& task : state_->tasks)
             {
-                if (task->tid() == id)
+                if (task->tid() != id)
+                    continue;
+
+                task->on_action(*state_, a);
+                if (task->state_changed())
                 {
-                    task->on_action(*state_, a);
+                    auto& batch = find_batch(task->tid());
+                    batch.update(*state_, *task);
                 }
             }
         }
@@ -1124,6 +1248,21 @@ bool engine::pump()
 
 void engine::tick()
 {
+    if (state_->repartition_task_list)
+    {
+        auto tit = std::begin(state_->tasks);
+
+        for (auto& batch : state_->batches)
+        {
+            tit = std::stable_partition(tit, std::end(state_->tasks),
+                [&](const std::unique_ptr<task>& t) {
+                    return t->bid() == batch->id();
+                });
+        }
+
+        state_->repartition_task_list = false;
+    }
+
     for (auto& conn : state_->conns)
     {
     // todo: measure time here instead of relying on the clientr        
@@ -1133,6 +1272,11 @@ void engine::tick()
     for (auto& task : state_->tasks)
     {
         task->tick(*state_, std::chrono::seconds(1));
+    }
+
+    for (auto& batch : state_->batches)
+    {
+        batch->tick(*state_, std::chrono::seconds(1));
     }
 
 }
@@ -1277,6 +1421,21 @@ std::string engine::get_logfile() const
 void engine::set_group_items(bool on_off)
 {
     state_->group_items = on_off;
+
+    if (state_->group_items)
+    {
+        auto tit = std::begin(state_->tasks);
+
+        for (auto& batch : state_->batches)
+        {
+            tit = std::stable_partition(tit, std::end(state_->tasks),
+                [&](const std::unique_ptr<task>& t) {
+                    return t->bid() == batch->id();
+                });
+        }        
+
+        state_->repartition_task_list = false;
+    }
 }
 
 bool engine::get_group_items() const 
@@ -1363,11 +1522,24 @@ void engine::kill_task(std::size_t i)
 
         assert(i < state_->tasks.size());
 
-        auto it = state_->tasks.begin();
-        it += i;
-        (*it)->kill(*state_);        
-        state_->tasks.erase(it);
+        auto tit = state_->tasks.begin();
+        tit += i;
 
+        auto bit = std::find_if(std::begin(state_->batches), std::end(state_->batches),
+            [&](const std::unique_ptr<batch>& b) {
+                return b->id() == (*tit)->bid();
+            });
+        ASSERT(bit != std::end(state_->batches));
+
+        auto& batch = *bit;
+        auto& task  = *tit;
+        if (batch->kill(*state_, *task))
+        {
+            state_->batches.erase(bit);
+        }
+
+        task->kill(*state_);        
+        state_->tasks.erase(tit);
     }
 
     if (state_->tasks.empty())
@@ -1392,8 +1564,10 @@ void engine::pause_task(std::size_t index)
         LOG_D("Pause task ", index);
 
         assert(index < state_->tasks.size());
-
-        state_->tasks[index]->pause(*state_);
+        auto& task  = state_->tasks[index];
+        auto& batch = find_batch(task->bid());
+        task->pause(*state_);            
+        batch.update(*state_, *task);
     }
 }
 
@@ -1412,8 +1586,10 @@ void engine::resume_task(std::size_t index)
         LOG_D("Resume task ", index);
 
         assert(index < state_->tasks.size());
-
-        state_->tasks[index]->resume(*state_);
+        auto& task  = state_->tasks[index];
+        auto& batch = find_batch(task->bid());
+        task->resume(*state_);            
+        batch.update(*state_, *task);
 
         connect();
     }
@@ -1423,7 +1599,12 @@ void engine::move_task_up(std::size_t index)
 {
     if (state_->group_items)
     {
+        assert(state_->batches.size() > 1);
+        assert(index < state_->batches.size());
+        assert(index > 0);
+        std::swap(state_->batches[index], state_->batches[index-1]);
 
+        state_->repartition_task_list = true;
     }
     else
     {
@@ -1438,7 +1619,11 @@ void engine::move_task_down(std::size_t index)
 {
     if (state_->group_items)
     {
+        assert(state_->batches.size() > 1);
+        assert(index < state_->batches.size()-1);
+        std::swap(state_->batches[index], state_->batches[index + 1]);
 
+        state_->repartition_task_list = true;
     }
     else
     {
@@ -1496,7 +1681,14 @@ void engine::connect()
             // if candidate returns true it means it might have more work
             // on next iteration as well. 
             if (candidate->run(*state_, *conn))
+            {
+                if (candidate->state_changed())
+                {
+                    auto& batch = find_batch(candidate->bid());
+                    batch.update(*state_, *candidate);
+                }
                 continue;
+            }
 
             // candidate didn't have any more work. hence we can inspect the  
             // remainder of the task list looking for another task that belongs
@@ -1512,5 +1704,15 @@ void engine::connect()
     }
 }
 
+engine::batch& engine::find_batch(std::size_t id)
+{
+    auto it = std::find_if(std::begin(state_->batches), std::end(state_->batches),
+        [&](const std::unique_ptr<batch>& b) {
+            return b->id() == id;
+        });
+    assert(it != std::end(state_->batches));
+
+    return *(*it);
+}
 
 } // newsflash
