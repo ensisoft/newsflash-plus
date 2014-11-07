@@ -60,6 +60,9 @@ namespace newsflash
 
         virtual bitflag<task::error> errors() const override
         { return errors_; }
+
+        virtual bool has_commands() const override
+        { return !pending_.empty(); }
     private:
         std::vector<std::string> groups_;
         std::vector<std::string> pending_;

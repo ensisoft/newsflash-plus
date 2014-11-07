@@ -987,13 +987,16 @@ void mainwindow::timerRefresh_timeout()
     const auto bytes_written    = app::g_engine->get_bytes_written();
     const auto bytes_remaining  = bytes_queued - bytes_ready;
 
-    const double done = ((double)bytes_ready / (double)bytes_queued) * 100.0;
-
     ui_.progressBar->setMinimum(0);
     ui_.progressBar->setMaximum(100);
-    ui_.progressBar->setValue((int)done);
-    ui_.progressBar->setVisible(true);
-    ui_.progressBar->setTextVisible(bytes_queued != 0);
+    ui_.progressBar->setValue(0);
+    if (bytes_remaining)
+    {
+        const double done = ((double)bytes_ready / (double)bytes_queued) * 100.0;
+        ui_.progressBar->setValue((int)done);
+        ui_.progressBar->setVisible(true);
+        ui_.progressBar->setTextVisible(bytes_queued != 0);
+    }
 
     ui_.lblDiskFree->setText(str("_1 _2", downloads, app::size{freespace}));
     ui_.lblNetIO->setText(str("_1 _2",  app::speed { netspeed }, app::size {bytes_downloaded}));     

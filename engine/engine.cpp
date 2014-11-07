@@ -496,6 +496,18 @@ public:
     using states = ui::task::states;
     using clock  = std::chrono::steady_clock;
 
+    struct transition {
+        states previous;
+        states current;
+
+        operator bool() const 
+        {
+            return previous != current;
+        }
+    };
+
+    constexpr static auto no_transition = transition{states::queued, states::queued};
+
     task(std::size_t aid, std::size_t tid, std::size_t bid, std::uint64_t size, 
         std::string desc, std::unique_ptr<newsflash::task> task) : task_(std::move(task))
     {
@@ -509,9 +521,7 @@ public:
         ui_.etatime    = 0;
         ui_.completion = 0.0;
         started_       = false;
-        executed_      = false;
         num_pending_actions_ = 0;
-        old_state_ = states::queued;
 
         LOG_I("Task ", ui_.id, " (", ui_.desc, ") created");
     }
@@ -523,6 +533,8 @@ public:
 
     void kill(engine::state& state)
     {
+        LOG_D("Task ", ui_.id, " kill");
+
         if (ui_.state != states::complete)
         {
             for (auto& cmd : cmds_)
@@ -554,43 +566,35 @@ public:
         if (ui_.state == states::waiting ||
             ui_.state == states::queued ||
             ui_.state == states::active)
-            return true;
-        
+        {
+            return task_->has_commands();
+        }
         return false;
     }
 
-    bool run(engine::state& state, engine::conn& conn)
+    transition run(engine::state& state, engine::conn& conn)
     {
         if (ui_.state == states::complete || 
             ui_.state == states::error ||
             ui_.state == states::paused ||
             ui_.state == states::finalize)
-            return false;
+            return no_transition;
 
-        auto cmds = task_->create_commands();
-        if (!cmds)
-        {
-            executed_ = true;
-            update_completion(state);
-            return false;
-        }
+        std::unique_ptr<cmdlist> unique(task_->create_commands());
+        std::shared_ptr<cmdlist> shared(unique.release());
+        cmds_.push_back(shared);
 
-        std::shared_ptr<cmdlist> cmd(cmds.release());
-        cmds_.push_back(cmd);
+        conn.execute(state, shared, ui_.id, ui_.desc);
 
-        conn.execute(state, cmd, ui_.id, ui_.desc);
-
-        goto_state(state, states::active);
-        return true;
+        return goto_state(state, states::active);
     }
 
-    void complete(engine::state& state, std::shared_ptr<cmdlist> cmds)
+    transition complete(engine::state& state, std::shared_ptr<cmdlist> cmds)
     {
-        cmds_.erase(std::find(std::begin(cmds_), 
-            std::end(cmds_), cmds));
+        cmds_.erase(std::find(std::begin(cmds_), std::end(cmds_), cmds));
 
         if (ui_.state == states::error)
-            return;
+            return no_transition;
 
         // code to dump raw NNTP data to the disk
         // auto& list = dynamic_cast<bodylist&>(*cmds.get());
@@ -613,30 +617,35 @@ public:
         for (auto& a : actions)
             do_action(state, std::move(a));
 
-        update_completion(state);
+        return update_completion(state);
     }
 
-    void pause(engine::state& state)
+    transition pause(engine::state& state)
     {
+        LOG_D("Task ", ui_.id, " pause");
+
         if (ui_.state == states::paused ||
             ui_.state == states::error ||
             ui_.state == states::complete)
-            return;
+            return no_transition;
 
         for (auto& cmd : cmds_)
             cmd->cancel();
 
-        goto_state(state, states::paused);
+        return goto_state(state, states::paused);
     }
 
-    void resume(engine::state& state)
+    transition resume(engine::state& state)
     {
+        LOG_D("Task ", ui_.id, " resume");
+
         if (ui_.state != states::paused)
-            return;
+            return no_transition;
 
         if (started_)
-            goto_state(state, states::waiting);
-        else goto_state(state, states::queued);
+            return goto_state(state, states::waiting);
+        
+        return goto_state(state, states::queued);
     }
 
     void update(ui::task& ui)
@@ -652,14 +661,14 @@ public:
         }
     }
 
-    void on_action(engine::state& state, action* a)
+    transition on_action(engine::state& state, action* a)
     {
         std::unique_ptr<action> act(a);
 
         num_pending_actions_--;
 
         if (ui_.state == states::error)
-            return;
+            return no_transition;
 
         ui::error err;
         err.resource = ui_.desc;
@@ -676,8 +685,7 @@ public:
             for (auto& a : actions)
                 do_action(state, std::move(a));
 
-            update_completion(state);
-            return;
+            return update_completion(state);
         }
         catch (const std::system_error& e)
         {
@@ -691,10 +699,7 @@ public:
 
         LOG_E("Task ", ui_.id, " (", err.code.value(), ") ", err.code.message());
         LOG_E("Task ", ui_.id, " ", err.what);
-
-        state.on_error_callback(err);
-        state.logger->flush();
-        goto_state(state, states::error);            
+        return goto_state(state, states::error);            
     }
 
     std::size_t account() const 
@@ -706,33 +711,41 @@ public:
     std::size_t bid() const 
     { return ui_.bid; }
 
-    states cur_state() const 
+    states state() const 
     { return ui_.state; }
 
-    states old_state() const
-    { return old_state_; }
-
-    bool state_changed() const 
-    { return old_state_ != ui_.state; } 
-
 private:
-    void update_completion(engine::state& state)
+    transition update_completion(engine::state& state)
     {
+        const auto errors = task_->errors();
+        if (errors.test(newsflash::task::error::unavailable))
+            ui_.error.set(ui::task::errors::unavailable);
+        if (errors.test(newsflash::task::error::dmca))
+            ui_.error.set(ui::task::errors::dmca);
+        if (errors.test(newsflash::task::error::damaged))
+            ui_.error.set(ui::task::errors::damaged);
+
         ui_.completion = task_->completion();
 
         if (num_pending_actions_)
-            return;
-        if (!cmds_.empty())
-            return;
+            return no_transition; 
 
-        if (executed_)
-            goto_state(state, states::finalize);
-        else if (ui_.state == states::active)
-            goto_state(state, states::waiting);
-        else if (ui_.state == states::waiting)
-            goto_state(state, states::waiting);
-        else if (ui_.state == states::finalize)
-            goto_state(state, states::complete);
+        if (!cmds_.empty())
+            return no_transition; 
+
+        if (task_->has_commands())
+        {
+            if (ui_.state == states::active)
+                return goto_state(state, states::waiting);
+        }
+        else
+        {
+            if (ui_.state == states::finalize)
+                return goto_state(state, states::complete);
+            else if (ui_.state == states::active)
+                return goto_state(state, states::finalize);
+        }
+        return no_transition;
     }
 
     void do_action(engine::state& state, std::unique_ptr<action> a) 
@@ -746,12 +759,11 @@ private:
         num_pending_actions_++;
     }
 
-    void goto_state(engine::state& state, states new_task_state)
+    transition goto_state(engine::state& state, states new_state)
     {
-        old_state_ = ui_.state;
+        const auto old_state = ui_.state;
 
-        ui_.state = new_task_state;
-        switch (new_task_state)
+        switch (new_state)
         {
             case states::active:
                 if (!started_)
@@ -760,36 +772,41 @@ private:
                     do_action(state, task_->start());
                     started_ = true;
                 }
+                ui_.state = new_state;
                 break;
 
             case states::error:
                 task_.release();
+                ui_.state = new_state;
                 break;
 
             case states::finalize:
                 {
                     auto act = task_->finalize();
                     if (!act)
-                    {
-                        ui_.state = states::complete;
-                        ui_.completion = 100.0f;
-                        state.bytes_ready += ui_.size;
-                    }
-                    else do_action(state, std::move(act));
+                        return goto_state(state, states::complete);
+                    do_action(state, std::move(act));
+                    ui_.state = new_state;
                 }
                 break;
 
             case states::complete:
                 ui_.completion = 100.0;
+                ui_.etatime    = 0;
+                ui_.state      = new_state;
                 state.bytes_ready += ui_.size;
                 break;
 
             default:
+                ui_.state = new_state;
                 break;
         }
-        LOG_D("Task ", ui_.id, " => ", str(new_task_state));
+
+        LOG_D("Task ", ui_.id, " => ", str(new_state));
         LOG_D("Task ", ui_.id, " has ", cmds_.size(),  " active cmdlists");
         LOG_D("Task ", ui_.id, " has ", num_pending_actions_, " active actions");        
+
+        return { old_state, new_state };
     }
 
 private:
@@ -797,11 +814,8 @@ private:
     std::unique_ptr<newsflash::task> task_;
     std::list<std::shared_ptr<cmdlist>> cmds_;
     std::size_t num_pending_actions_;
-    states old_state_;
 private:
     bool started_;
-    bool executed_;
-
 };
 
 
@@ -834,28 +848,38 @@ public:
 
     void pause(engine::state& state)
     {
+        LOG_D("Batch pause ", ui_.id);
+
         for (auto& task : state.tasks)
         {
             if (task->bid() != ui_.id)
                 continue;
 
-            task->pause(state);
-            leave_state(*task, task->old_state());
-            enter_state(*task, task->cur_state());
+            const auto transition = task->pause(state);
+            if (transition)
+            {
+                leave_state(*task, transition.previous);
+                enter_state(*task, transition.current);
+            }
         }
         update(state);
     }
 
     void resume(engine::state& state)
     {
+        LOG_D("Batch resume ", ui_.id);
+
         for (auto& task : state.tasks)
         {
             if (task->bid() != ui_.id)
                 continue;
 
-            task->resume(state);
-            leave_state(*task, task->old_state());
-            enter_state(*task, task->cur_state());            
+            const auto transition = task->resume(state);
+            if (transition)
+            {
+                leave_state(*task, transition.previous);
+                enter_state(*task, transition.current);
+            }
         }
         update(state);
     }
@@ -874,6 +898,8 @@ public:
 
     void kill(engine::state& state)
     {
+        LOG_D("Batch kill ", ui_.id);
+
         // partition tasks so that the tasks that belong to this batch
         // are at the end of the the task list.
         auto it = std::stable_partition(std::begin(state.tasks), std::end(state.tasks),
@@ -889,17 +915,17 @@ public:
 
     bool kill(engine::state& state, const task& t)
     {
-        leave_state(t, t.cur_state());
+        leave_state(t, t.state());
         num_tasks_--;
         update(state);
 
         return num_tasks_ == 0;
     }
 
-    void update(engine::state& state, const task& t)
+    void update(engine::state& state, const task& t, const task::transition& s)
     {
-        leave_state(t, t.old_state());
-        enter_state(t, t.cur_state());
+        leave_state(t, s.previous);
+        enter_state(t, s.current);
         update(state);
     }
 
@@ -919,6 +945,8 @@ private:
     }
     void leave_state(const task& t, states s)
     {
+        assert(statesets_[(int)s]);
+
         statesets_[(int)s]--;
     }
 
@@ -947,6 +975,8 @@ private:
             goto_state(state, states::complete);
         else if (is_full_set(states::error))
             goto_state(state, states::error);
+        else if (is_full_set(states::queued))
+            goto_state(state, states::queued);
     }
 
     void goto_state(engine::state& state, states new_state)
@@ -1187,11 +1217,11 @@ bool engine::pump()
             if (tit != std::end(state_->tasks))
             {
                 auto& task = *tit;
-                task->complete(*state_, cmds);
-                if (task->state_changed())
+                const auto transition = task->complete(*state_, cmds);
+                if (transition)
                 {
                     auto& batch = find_batch(task->bid());
-                    batch.update(*state_, *task);
+                    batch.update(*state_, *task, transition);
                 }
             }
 
@@ -1218,13 +1248,15 @@ bool engine::pump()
                 {
                     if (task->account() != conn->account())
                         continue;
-                    if (task->run(*state_, *conn))
+
+                    if (!task->eligible_for_run())
+                        continue;
+
+                    const auto transition = task->run(*state_, *conn);
+                    if (transition)
                     {
-                        if (task->state_changed())
-                        {
-                            auto& batch = find_batch(task->bid());
-                            batch.update(*state_, *task);
-                        }                        
+                        auto& batch = find_batch(task->bid());
+                        batch.update(*state_, *task, transition);
                     }
                     break;
                 }
@@ -1239,11 +1271,11 @@ bool engine::pump()
                 if (task->tid() != id)
                     continue;
 
-                task->on_action(*state_, a);
-                if (task->state_changed())
+                const auto transition = task->on_action(*state_, a);
+                if (transition)
                 {
-                    auto& batch = find_batch(task->tid());
-                    batch.update(*state_, *task);
+                    auto& batch = find_batch(task->bid());
+                    batch.update(*state_, *task, transition);
                 }
             }
         }
@@ -1517,8 +1549,6 @@ void engine::kill_task(std::size_t i)
 {
     if (state_->group_items)
     {
-        LOG_D("Kill batch ", i);
-
         assert(i < state_->batches.size());
 
         auto it = state_->batches.begin();
@@ -1528,8 +1558,6 @@ void engine::kill_task(std::size_t i)
     }
     else
     {
-        LOG_D("Kill task ", i);
-
         assert(i < state_->tasks.size());
 
         auto tit = state_->tasks.begin();
@@ -1563,21 +1591,22 @@ void engine::pause_task(std::size_t index)
 {
     if (state_->group_items)
     {
-        LOG_D("Pause batch ", index);
-
         assert(index < state_->batches.size());
 
         state_->batches[index]->pause(*state_);
     }
     else
     {
-        LOG_D("Pause task ", index);
-
         assert(index < state_->tasks.size());
+
         auto& task  = state_->tasks[index];
-        auto& batch = find_batch(task->bid());
-        task->pause(*state_);            
-        batch.update(*state_, *task);
+
+        const auto transition = task->pause(*state_);            
+        if (transition)
+        {
+            auto& batch = find_batch(task->bid());            
+            batch.update(*state_, *task, transition);
+        }
     }
 }
 
@@ -1585,23 +1614,25 @@ void engine::resume_task(std::size_t index)
 {
     if (state_->group_items)
     {
-        LOG_D("Resume batch ", index);
-
         assert(index < state_->batches.size());
 
         state_->batches[index]->resume(*state_);
     }
     else
     {
-        LOG_D("Resume task ", index);
 
         assert(index < state_->tasks.size());
-        auto& task  = state_->tasks[index];
-        auto& batch = find_batch(task->bid());
-        task->resume(*state_);            
-        batch.update(*state_, *task);
 
-        connect();
+        auto& task  = state_->tasks[index];
+
+        const auto transition = task->resume(*state_);            
+        if (transition)
+        {
+            auto& batch = find_batch(task->bid());            
+            batch.update(*state_, *task, transition);
+
+            connect();            
+        }
     }
 }
 
@@ -1688,28 +1719,27 @@ void engine::connect()
             if (!conn->is_ready())
                 continue;
 
-            // if candidate returns true it means it might have more work
-            // on next iteration as well. 
-            if (candidate->run(*state_, *conn))
-            {
-                if (candidate->state_changed())
-                {
-                    auto& batch = find_batch(candidate->bid());
-                    batch.update(*state_, *candidate);
-                }
-                continue;
-            }
-
             // candidate didn't have any more work. hence we can inspect the  
             // remainder of the task list looking for another task that belongs
             // to the *same* account and is runnable
-            auto it = std::find_if(tit, std::end(state_->tasks),
-                [&](const std::unique_ptr<engine::task>& t) {
-                    return t->account() == conn->account() && t->eligible_for_run();
-                });
-            if (it == std::end(state_->tasks))
-                break;
-            candidate = (*it).get();
+            if (!candidate->eligible_for_run())
+            {
+                auto it = std::find_if(tit, std::end(state_->tasks),
+                    [&](const std::unique_ptr<engine::task>& t) {
+                        return t->account() == conn->account() && t->eligible_for_run();
+                    });
+                if (it == std::end(state_->tasks))
+                    break;
+                candidate = (*it).get();
+                continue;
+            }
+
+            const auto transition = candidate->run(*state_, *conn);
+            if (transition)
+            {
+                auto& batch = find_batch(candidate->bid());
+                batch.update(*state_, *candidate, transition);
+            }
         }
     }
 }

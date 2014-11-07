@@ -36,7 +36,8 @@ namespace newsflash
     // or header update.
     struct task
     {
-        enum class flags {
+        // content errors.
+        enum class errors {
         
             // some of the requested data was not available
             unavailable,
@@ -72,7 +73,7 @@ namespace newsflash
         };
 
         // content error flags if any
-        bitflag<flags> errors;
+        bitflag<errors> error;
 
         // current task execution state.
         states state;

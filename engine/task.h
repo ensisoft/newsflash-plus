@@ -87,6 +87,8 @@ namespace newsflash
 
         virtual bitflag<error> errors() const = 0;
 
+        virtual bool has_commands() const = 0;
+
     protected:
     private:
     };

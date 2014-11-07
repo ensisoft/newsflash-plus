@@ -36,8 +36,8 @@ namespace app
 {
 
 using states  = newsflash::ui::task::states;
-using flags   = newsflash::ui::task::flags;
-using bitflag = newsflash::bitflag<newsflash::ui::task::flags>;
+using flags   = newsflash::ui::task::errors;
+using bitflag = newsflash::bitflag<newsflash::ui::task::errors>;
 
 const char* str(states s)
 {
@@ -87,7 +87,7 @@ QVariant tasklist::data(const QModelIndex& index, int role) const
         {
             case columns::status:
                 if (ui.state == states::complete)
-                    return str(ui.errors);
+                    return str(ui.error);
                 return str(ui.state);
 
             case columns::done:
@@ -97,9 +97,12 @@ QVariant tasklist::data(const QModelIndex& index, int role) const
                 return format(runtime{ui.runtime});
 
             case columns::eta:
-                if (ui.state == states::active || ui.state == states::waiting)
-                    return format(runtime{ui.etatime});
+                if (ui.state == states::waiting || 
+                    ui.state == states::paused ||
+                    ui.state == states::queued)
                 return QString("  %1  ").arg(infinity);
+
+                return format(runtime{ui.etatime});
 
             case columns::size:
                 if (ui.size == 0)
@@ -130,7 +133,7 @@ QVariant tasklist::data(const QModelIndex& index, int role) const
             case states::finalize:
                 return QIcon(":/resource/16x16_ico_png/ico_task_finalize.png");                             
             case states::complete: 
-                if (ui.errors.any_bit())
+                if (ui.error.any_bit())
                     return QIcon(":/resource/16x16_ico_png/ico_damaged.png");
 
                 return QIcon(":/resource/16x16_ico_png/ico_task_complete.png");                
@@ -189,8 +192,8 @@ void tasklist::refresh(bool remove_complete)
         std::size_t removed = 0;
         for (std::size_t i=0; i<tasks_.size(); ++i)
         {
-            const auto& task = tasks_[i];
-            const auto& row  = i - removed;
+            const auto& row  = i - removed;            
+            const auto& task = tasks_[row];
             if (task.state == states::complete || task.state == states::error)
             {
                 beginRemoveRows(QModelIndex(), row, row);
