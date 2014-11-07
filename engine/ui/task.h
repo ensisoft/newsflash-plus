@@ -91,7 +91,7 @@ namespace newsflash
         std::string desc;
 
         // download/transfer size in bytes (if known)
-        std::uint64_t size;
+        std::uint32_t size;
 
         // the time elapsed running the task (in seconds)
         std::uint32_t runtime; 

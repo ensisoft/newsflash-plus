@@ -27,7 +27,6 @@
 #include <functional>
 #include <memory>
 #include <vector>
-#include "bitflag.h"
 
 namespace newsflash
 {
@@ -40,18 +39,6 @@ namespace newsflash
     class task 
     {
     public:
-        // soft errors.
-        enum class error {
-            // some of the requested data was not available.
-            unavailable,
-
-            // some of the requested data was taken down.
-            dmca,
-
-            // some of the data was damaged
-            damaged
-        };
-
         virtual ~task() = default;
 
         virtual std::unique_ptr<cmdlist> create_commands() = 0;
@@ -85,7 +72,6 @@ namespace newsflash
 
         virtual double completion() const = 0;
 
-        virtual bitflag<error> errors() const = 0;
 
         virtual bool has_commands() const = 0;
 

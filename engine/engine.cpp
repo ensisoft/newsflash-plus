@@ -90,11 +90,13 @@ struct engine::state {
     std::deque<std::unique_ptr<engine::conn>> conns;
     std::deque<std::unique_ptr<engine::batch>> batches;
     std::vector<account> accounts;
+    std::list<std::shared_ptr<cmdlist>> cmds;
     std::size_t bytes_downloaded;
     std::size_t bytes_queued;
     std::size_t bytes_ready;
     std::size_t bytes_written;
     std::size_t oid; // object id for tasks/connections
+    std::size_t fill_account;
     std::string logpath;
 
     std::unique_ptr<class logger> logger;
@@ -110,6 +112,7 @@ struct engine::state {
     bool started;
     bool group_items;
     bool repartition_task_list;
+
 
     engine::on_error on_error_callback;
     engine::on_file  on_file_callback;
@@ -168,6 +171,11 @@ struct engine::state {
         threads->submit(a, thread);
         num_pending_actions++;
     }
+
+    void enqueue(std::shared_ptr<cmdlist> cmd)
+    {
+        cmds.push_back(cmd);
+    }
 };
 
 
@@ -202,6 +210,7 @@ private:
         ticks_to_conn_ = 5;
         logger_        = std::make_shared<filelogger>(file, true);
         thread_        = state.threads->allocate();
+        speed_         = 0;
 
         LOG_D("Connection ", ui_.id, " log file: ", file);
     }    
@@ -337,14 +346,20 @@ public:
         ui.bps = 0;
         if (ui_.state == states::active)
         {
-            // if bytes value hasn't increased since the last read
-            // then bps reading will not be valid but the connection has stalled.           
-            const auto bytes = ui_.down;
-            ui_.down = conn_.bytes();
-            if (bytes != ui_.down)
-                ui.bps = conn_.bps();
+            // if the bytes value hasn't increased since the last
+            // read then the bps value cannot be valid but has become
+            // stale since the connection has not ready any data. (i.e. it's stalled)
+            const auto bytes_before  = ui_.down;
+            const auto bytes_current = conn_.bytes();
+            if (bytes_current != bytes_before)
+            {
+                ui_.bps  = conn_.bps();
+                ui_.down = bytes_current;
+                speed_   = ui_.bps;
+            }
         }
     }
+
     void on_action(engine::state& state, action* a)
     {
         std::unique_ptr<action> act(a);
@@ -436,6 +451,13 @@ public:
         return ui_.state == states::connected;
     }
 
+    double bps() const
+    {
+        if (ui_.state == states::active)
+            return speed_;
+        return 0.0;
+    }
+
     std::size_t task() const 
     { return ui_.task; }
 
@@ -488,6 +510,7 @@ private:
     threadpool::thread* thread_;
     unsigned ticks_to_ping_;
     unsigned ticks_to_conn_;
+    double   speed_;
 };
 
 class engine::task 
@@ -521,7 +544,9 @@ public:
         ui_.etatime    = 0;
         ui_.completion = 0.0;
         started_       = false;
-        num_pending_actions_ = 0;
+        num_active_cmdlists_ = 0;
+        num_active_actions_  = 0;
+        num_complete_bytes_  = size;
 
         LOG_I("Task ", ui_.id, " (", ui_.desc, ") created");
     }
@@ -537,8 +562,15 @@ public:
 
         if (ui_.state != states::complete)
         {
-            for (auto& cmd : cmds_)
-                cmd->cancel();
+            auto it = std::stable_partition(std::begin(state.cmds), std::end(state.cmds),
+                [&](const std::shared_ptr<cmdlist>& cmd) {
+                    return cmd->task() != ui_.id;
+                });
+
+            for (auto i=it; i != std::end(state.cmds); ++i)
+                (*i)->pause();
+
+            state.cmds.erase(it, std::end(state.cmds));
 
             if (task_)
                 do_action(state, task_->kill());
@@ -572,7 +604,7 @@ public:
         return false;
     }
 
-    transition run(engine::state& state, engine::conn& conn)
+    transition run(engine::state& state)
     {
         if (ui_.state == states::complete || 
             ui_.state == states::error ||
@@ -582,34 +614,57 @@ public:
 
         std::unique_ptr<cmdlist> unique(task_->create_commands());
         std::shared_ptr<cmdlist> shared(unique.release());
-        cmds_.push_back(shared);
-
-        conn.execute(state, shared, ui_.id, ui_.desc);
+        shared->set_account(ui_.account);
+        shared->set_task(ui_.id);
+        state.enqueue(shared);
 
         return goto_state(state, states::active);
     }
 
     transition complete(engine::state& state, std::shared_ptr<cmdlist> cmds)
     {
-        cmds_.erase(std::find(std::begin(cmds_), std::end(cmds_), cmds));
-
         if (ui_.state == states::error)
             return no_transition;
 
-        // code to dump raw NNTP data to the disk
-        // auto& list = dynamic_cast<bodylist&>(*cmds.get());
-        // const auto& contents = list.get_buffers();
-        // const auto& articles = list.get_messages();
-        // for (int i=0; i<contents.size(); ++i)
-        // {
-        //     const auto& content = contents[i];
-        //     const auto& article = articles[i];
-        //     const auto filename = fs::joinpath("/tmp/Newsflash/", article);
-        //     std::ofstream out(filename, std::ios::binary);
-        //     out.write(content.content(),
-        //         content.content_length());
-        //     out.close();
-        // }
+        if (!cmds->is_good())
+        {
+            if (state.fill_account && 
+                state.fill_account != cmds->account())
+            {
+                cmds->set_account(state.fill_account);
+                state.enqueue(cmds);
+                return no_transition;
+            }
+            else
+            {
+                ui_.error.set(ui::task::errors::unavailable);
+                return no_transition;
+            }
+        }
+        else
+        {
+            const auto& buffers = cmds->get_buffers();
+            for (const auto& buff : buffers)
+            {
+                const auto status = buff.content_status();
+                if (status == buffer::status::success)
+                    continue;
+
+                if (state.fill_account && 
+                    state.fill_account != cmds->account())
+                {
+                    cmds->set_account(state.fill_account);
+                    state.enqueue(cmds);
+                    return no_transition;
+                }
+                else if (status == buffer::status::unavailable)
+                    ui_.error.set(ui::task::errors::unavailable);
+                else if (status == buffer::status::dmca)
+                    ui_.error.set(ui::task::errors::dmca);
+                else if (status == buffer::status::error)
+                    return goto_state(state, states::error);
+            }
+        }
 
         std::vector<std::unique_ptr<action>> actions;
 
@@ -629,8 +684,12 @@ public:
             ui_.state == states::complete)
             return no_transition;
 
-        for (auto& cmd : cmds_)
-            cmd->cancel();
+        for (auto& cmd : state.cmds)
+        {
+            if (cmd->task() != ui_.id)
+                continue;
+            cmd->pause();
+        }
 
         return goto_state(state, states::paused);
     }
@@ -642,30 +701,69 @@ public:
         if (ui_.state != states::paused)
             return no_transition;
 
+        // it's possible that user paused the task but all 
+        // command were already processed by the background
+        // threads but are queued waiting for state transition.
+        // then the task completes while it's in the paused state.
+        // hence we expect the completion on resume and possibly
+        // transfer to complete stated instead of waiting/queued.
+        const auto transition = update_completion(state);
+        if (transition)
+            return transition;
+
+        // if we were started before we go to waiting state.
         if (started_)
+        {
+            for (auto& cmd : state.cmds)
+            {
+                if (cmd->task() != ui_.id)
+                    continue;
+
+                cmd->resume();
+            }
             return goto_state(state, states::waiting);
-        
+        }
+
+        // go back into queued state.
         return goto_state(state, states::queued);
     }
 
-    void update(ui::task& ui)
+    void update(engine::state& state, ui::task& ui)
     {
-        ui = ui_;
-        ui.etatime = 0;
+        ui_.etatime = 0;
 
-        if (ui_.state == states::active ||
-            ui_.state == states::waiting)
+        if (ui_.state == states::active || ui_.state == states::waiting)
         {
-            // todo: eta
-
+            if (ui_.size)
+            {
+                double bps = 0.0;
+                for (const auto& conn : state.conns)
+                {
+                    if (conn->task() != ui_.id)
+                        continue;
+                    bps += conn->bps();
+                }
+                const auto num_pending_bytes = ui_.size - num_complete_bytes_;
+                ui_.etatime = num_pending_bytes / bps;
+            }
+            else if (ui_.runtime >= 10)
+            {
+                const auto complete  = ui.completion;
+                const auto remaining = 100.0 - complete;
+                const auto timespent = ui.runtime;
+                const auto time_per_percent = timespent / complete;
+                const auto timeremains = remaining * time_per_percent;
+                ui_.etatime = timeremains;
+            }
         }
+        ui = ui_;        
     }
 
     transition on_action(engine::state& state, action* a)
     {
         std::unique_ptr<action> act(a);
 
-        num_pending_actions_--;
+        num_active_actions_--;
 
         if (ui_.state == states::error)
             return no_transition;
@@ -717,22 +815,30 @@ public:
 private:
     transition update_completion(engine::state& state)
     {
-        const auto errors = task_->errors();
-        if (errors.test(newsflash::task::error::unavailable))
-            ui_.error.set(ui::task::errors::unavailable);
-        if (errors.test(newsflash::task::error::dmca))
-            ui_.error.set(ui::task::errors::dmca);
-        if (errors.test(newsflash::task::error::damaged))
-            ui_.error.set(ui::task::errors::damaged);
-
+        // completion calculation needs to be done in the task because
+        // only the task knows how many actions are to be performed per buffer.
+        // i.e. we can't here reliably count 1 buffer as 1 step towards completion
+        // since the completion updates only when the data is downloaded AND processed.
         ui_.completion = task_->completion();
 
-        if (num_pending_actions_)
+        //num_complete_bytes_ = task_->bytes_complete();
+
+        // if we have pending actions our state should not change
+        // i.e. we're active (or possibly paused)
+        if (num_active_actions_)
             return no_transition; 
 
-        if (!cmds_.empty())
-            return no_transition; 
+        if (num_active_cmdlists_)
+            return no_transition;
 
+        // if we have currently executing cmdlists our state should not change.
+        // i.e. we're active (or possibly paused)
+        //if (!cmds_.empty())
+         //   return no_transition; 
+
+        // if task list has more commands and there are no currently
+        // executing cmdlists or actions and we're not paused
+        // we'll transition into waiting state.
         if (task_->has_commands())
         {
             if (ui_.state == states::active)
@@ -756,7 +862,7 @@ private:
 
         state.submit(a.release());
 
-        num_pending_actions_++;
+        num_active_actions_++;
     }
 
     transition goto_state(engine::state& state, states new_state)
@@ -803,8 +909,8 @@ private:
         }
 
         LOG_D("Task ", ui_.id, " => ", str(new_state));
-        LOG_D("Task ", ui_.id, " has ", cmds_.size(),  " active cmdlists");
-        LOG_D("Task ", ui_.id, " has ", num_pending_actions_, " active actions");        
+        LOG_D("Task ", ui_.id, " has ", num_active_cmdlists_,  " active cmdlists");
+        LOG_D("Task ", ui_.id, " has ", num_active_actions_, " active actions");        
 
         return { old_state, new_state };
     }
@@ -812,8 +918,10 @@ private:
 private:
     ui::task ui_;    
     std::unique_ptr<newsflash::task> task_;
-    std::list<std::shared_ptr<cmdlist>> cmds_;
-    std::size_t num_pending_actions_;
+    //std::list<std::shared_ptr<cmdlist>> cmds_;
+    std::size_t num_active_cmdlists_;
+    std::size_t num_active_actions_;
+    std::size_t num_complete_bytes_;
 private:
     bool started_;
 };
@@ -884,7 +992,7 @@ public:
         update(state);
     }
 
-    void update(ui::task& ui)
+    void update(engine::state& state, ui::task& ui)
     {
         ui = ui_;
         ui.etatime = 0;
@@ -1210,6 +1318,9 @@ bool engine::pump()
             auto cmds  = e->get_cmdlist();
             auto tid   = e->get_tid();
             auto bytes = e->get_bytes_transferred();
+
+            state_->cmds.erase(std::find(std::begin(state_->cmds), std::end(state_->cmds), cmds));
+
             auto tit  = std::find_if(std::begin(state_->tasks), std::end(state_->tasks),
                 [&](const std::unique_ptr<engine::task>& t) {
                     return t->tid() == tid;
@@ -1243,23 +1354,23 @@ bool engine::pump()
 
             conn->on_action(*state_, a);
             if (conn->is_ready())
+                continue;
+
+            for (auto& task : state_->tasks)
             {
-                for (auto& task : state_->tasks)
+                if (task->account() != conn->account())
+                    continue;
+
+                if (!task->eligible_for_run())
+                    continue;
+
+                const auto transition = task->run(*state_);
+                if (transition)
                 {
-                    if (task->account() != conn->account())
-                        continue;
-
-                    if (!task->eligible_for_run())
-                        continue;
-
-                    const auto transition = task->run(*state_, *conn);
-                    if (transition)
-                    {
-                        auto& batch = find_batch(task->bid());
-                        batch.update(*state_, *task, transition);
-                    }
-                    break;
+                    auto& batch = find_batch(task->bid());
+                    batch.update(*state_, *task, transition);
                 }
+                break;
             }
             action_dispatched = true;
             break;
@@ -1494,17 +1605,21 @@ void engine::update(std::deque<ui::task>& tasklist)
 {
     if (state_->group_items)
     {
-        const auto& tasks = state_->batches;
-        tasklist.resize(tasks.size());
-        for (std::size_t i=0; i<tasks.size(); ++i)
-            tasks[i]->update(tasklist[i]);
+        const auto& batches = state_->batches;
+
+        tasklist.resize(batches.size());
+
+        for (std::size_t i=0; i<batches.size(); ++i)
+            batches[i]->update(*state_, tasklist[i]);
     }
     else
     {
         const auto& tasks = state_->tasks;
+
         tasklist.resize(tasks.size());
+
         for (std::size_t i=0; i<tasks.size(); ++i)
-            tasks[i]->update(tasklist[i]);
+            tasks[i]->update(*state_, tasklist[i]);
     }
 }
 
@@ -1734,7 +1849,7 @@ void engine::connect()
                 continue;
             }
 
-            const auto transition = candidate->run(*state_, *conn);
+            const auto transition = candidate->run(*state_);
             if (transition)
             {
                 auto& batch = find_batch(candidate->bid());

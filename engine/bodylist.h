@@ -33,40 +33,40 @@ namespace newsflash
 {
     // retrieve a list of nntp articles known as the messages.
     // the messages are expected to be found in one of the  given newsgroups.
-    class bodylist : public cmdlist
-    {
-    public:
-        bodylist(std::vector<std::string> groups, std::vector<std::string> messages);
-       ~bodylist();
+    // class bodylist : public cmdlist
+    // {
+    // public:
+    //     bodylist(std::vector<std::string> groups, std::vector<std::string> messages);
+    //    ~bodylist();
 
-        virtual bool submit_configure_command(std::size_t i, session& ses) override;
+    //     virtual bool submit_configure_command(std::size_t i, session& ses) override;
 
-        virtual bool receive_configure_buffer(std::size_t i, buffer&& buff) override;
+    //     virtual bool receive_configure_buffer(std::size_t i, buffer&& buff) override;
 
-        virtual void submit_data_commands(session& ses) override;
+    //     virtual void submit_data_commands(session& ses) override;
 
-        virtual void receive_data_buffer(buffer&& buff) override;
+    //     virtual void receive_data_buffer(buffer&& buff) override;
 
-        virtual std::size_t num_data_commands() const 
-        { return messages_.size(); }
+    //     virtual std::size_t num_data_commands() const 
+    //     { return messages_.size(); }
 
-        std::vector<buffer>& get_buffers()
-        { return buffers_; };
+    //     std::vector<buffer>& get_buffers()
+    //     { return buffers_; };
 
-        std::vector<std::string>& get_messages()
-        { return messages_; }
+    //     std::vector<std::string>& get_messages()
+    //     { return messages_; }
 
-        std::vector<std::string>& get_groups()
-        { return groups_; }
+    //     std::vector<std::string>& get_groups()
+    //     { return groups_; }
 
-        bool configure_fail() const
-        { return configure_fail_bit_; }
+    //     bool configure_fail() const
+    //     { return configure_fail_bit_; }
 
-    private:
-        std::vector<std::string> groups_;
-        std::vector<std::string> messages_;
-        std::vector<buffer> buffers_;
-        bool configure_fail_bit_;
-    }; 
+    // private:
+    //     std::vector<std::string> groups_;
+    //     std::vector<std::string> messages_;
+    //     std::vector<buffer> buffers_;
+    //     bool configure_fail_bit_;
+    // }; 
 
 } // newsflash

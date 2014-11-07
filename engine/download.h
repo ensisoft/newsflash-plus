@@ -58,9 +58,6 @@ namespace newsflash
 
         virtual double completion() const override;
 
-        virtual bitflag<task::error> errors() const override
-        { return errors_; }
-
         virtual bool has_commands() const override
         { return !pending_.empty(); }
     private:
@@ -70,13 +67,12 @@ namespace newsflash
         std::vector<std::shared_ptr<datafile>> files_;
         std::string path_;
         std::string name_;
-        std::size_t done_;
-        std::size_t total_;
+        std::size_t num_commands_done_;
+        std::size_t num_commands_total_;
+        std::size_t num_bytes_done_;
     private:
-        bool overwrite_;
-        bool discardtext_;
-    private:
-        bitflag<task::error> errors_;
+        bool enable_overwrite_;
+        bool enable_discardtext_;
     };
 
 } // newsflash

@@ -35,10 +35,10 @@
 #include "bitflag.h"
 #include "stopwatch.h"
 #include "decode.h"
-#include "bodylist.h"
 #include "format.h"
 #include "settings.h"
 #include "datafile.h"
+#include "cmdlist.h"
 
 namespace newsflash
 {
@@ -48,10 +48,11 @@ download::download(std::vector<std::string> groups, std::vector<std::string> art
     path_(std::move(path))
 {
     name_        = fs::remove_illegal_filename_chars(name);
-    done_        = 0;
-    total_       = pending_.size();
-    overwrite_   = false;
-    discardtext_ = false;
+    num_commands_done_  = 0;
+    num_commands_total_ = pending_.size();
+    num_bytes_done_     = 0;
+    enable_overwrite_   = false;
+    enable_discardtext_ = false;
 }
 
 download::~download()
@@ -80,7 +81,8 @@ std::unique_ptr<cmdlist> download::create_commands()
 
     pending_.erase(std::begin(pending_), std::begin(pending_) + num_articles);
 
-    std::unique_ptr<cmdlist> cmd(new bodylist(groups_, std::move(next)));
+    std::unique_ptr<cmdlist> cmd(new cmdlist(groups_, std::move(next),
+        cmdlist::type::body));
     return std::move(cmd);
 }
 
@@ -146,7 +148,7 @@ void download::complete(action& act, std::vector<std::unique_ptr<action>>& next)
             });
         if (it == std::end(files_))
         {
-            file = std::make_shared<datafile>(path_, name, size, true, overwrite_);
+            file = std::make_shared<datafile>(path_, name, size, true, enable_overwrite_);
             files_.push_back(file);
         } 
         else 
@@ -159,7 +161,7 @@ void download::complete(action& act, std::vector<std::unique_ptr<action>>& next)
         next.push_back(std::move(write));
     }
 
-    if (!text.empty() && !discardtext_)
+    if (!text.empty() && !enable_discardtext_)
     {
         std::shared_ptr<datafile> file;
 
@@ -170,7 +172,7 @@ void download::complete(action& act, std::vector<std::unique_ptr<action>>& next)
 
         if (it == std::end(files_))
         {
-            file = std::make_shared<datafile>(path_, name_, 0, false, overwrite_);
+            file = std::make_shared<datafile>(path_, name_, 0, false, enable_overwrite_);
             files_.push_back(file);
         }
         else file = *it;
@@ -179,21 +181,20 @@ void download::complete(action& act, std::vector<std::unique_ptr<action>>& next)
         next.push_back(std::move(write));
     }
 
-    ++done_;
+    ++num_commands_done_;
 }
 
 void download::complete(cmdlist& cmd, std::vector<std::unique_ptr<action>>& next)
 {
-    auto& list = dynamic_cast<bodylist&>(cmd);
-    auto& messages = list.get_messages();
-    auto& contents = list.get_buffers();    
+    auto& messages = cmd.get_commands();
+    auto& contents = cmd.get_buffers();    
 
-    if (list.configure_fail())
-    {
-        std::copy(std::begin(messages), std::end(messages), std::back_inserter(failed_));
-        errors_.set(task::error::unavailable);
-        return;
-    }
+    // if (list.configure_fail())
+    // {
+    //     std::copy(std::begin(messages), std::end(messages), std::back_inserter(failed_));
+    //     errors_.set(task::error::unavailable);
+    //     return;
+    // }
 
     for (std::size_t i=0; i<contents.size(); ++i)
     {
@@ -211,16 +212,7 @@ void download::complete(cmdlist& cmd, std::vector<std::unique_ptr<action>>& next
             continue;
         }
 
-        // look at the reason for the content failure and set
-        // approprite flags
-        failed_.push_back(message);
-        if (status == buffer::status::dmca)
-            errors_.set(task::error::dmca);
-        else if (status == buffer::status::unavailable)
-            errors_.set(task::error::unavailable);
-        else throw std::runtime_error("data buffer error");
-
-        ++done_;
+        ++num_commands_done_;
     }
 
     // all not yet processed messages go back into pending list
@@ -231,13 +223,13 @@ void download::complete(cmdlist& cmd, std::vector<std::unique_ptr<action>>& next
 
 void download::configure(const settings& s) 
 {
-    overwrite_   = s.overwrite_existing_files;
-    discardtext_ = s.discard_text_content;
+    enable_overwrite_   = s.overwrite_existing_files;
+    enable_discardtext_ = s.discard_text_content;
 }
 
 double download::completion() const 
 { 
-    return 100.0 * double(done_) / double(total_);
+    return 100.0 * double(num_commands_done_) / double(num_commands_total_);
 }
 
 } // newsflash

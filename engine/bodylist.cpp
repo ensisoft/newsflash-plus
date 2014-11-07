@@ -28,50 +28,5 @@
 namespace newsflash
 {
 
-bodylist::bodylist(std::vector<std::string> groups,
-    std::vector<std::string> messages) : groups_(std::move(groups)), messages_(std::move(messages))
-{
-    configure_fail_bit_ = false;
-}
-
-bodylist::~bodylist()
-{}
-
-bool bodylist::submit_configure_command(std::size_t i, session& ses) 
-{
-    if (i == groups_.size())
-        return false;
-
-    // try the ith group in the list of newsgroups that are supposed
-    // to carry the articles. we stop after being able to succesfully
-    // select whatever group comes first.
-    ses.change_group(groups_[i]);
-    return true;
-}
-
-bool bodylist::receive_configure_buffer(std::size_t i, buffer&& buff)
-{
-    // if the group exists, its good enough for us here
-    if (buff.content_status() == buffer::status::success)
-        return true;
-
-    if (i == groups_.size() - 1)
-        configure_fail_bit_ = true;
-
-    return false;
-}
-
-void bodylist::submit_data_commands(session& ses)
-{
-    // queue all the article commands that have not been received yet.
-    for (auto m : messages_)
-        ses.retrieve_article(m);
-}
-
-void bodylist::receive_data_buffer(buffer&& buff)
-{
-    // got a response buffer, store it for later
-    buffers_.push_back(std::move(buff));
-}
 
 } // newsflash
