@@ -1305,7 +1305,7 @@ bool engine::pump()
         if (state_->actions.empty())
             break;
 
-        //LOG_D("Dispatch action");
+        //LOG_D("Dispatch action")
 
         action* a = state_->actions.front();
         state_->actions.pop();
@@ -1353,8 +1353,14 @@ bool engine::pump()
                 continue;
 
             conn->on_action(*state_, a);
-            if (conn->is_ready())
+            if (!conn->is_ready())
                 continue;
+
+            //auto it = std::find_if(std::begin(state_->cmds), std::end(state_->cmds),
+            //    [&](const std::shared_ptr<cmdlist>& cmd) {
+            //        return !cmd->paused(); 
+            //    });
+
 
             for (auto& task : state_->tasks)
             {

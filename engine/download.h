@@ -59,11 +59,10 @@ namespace newsflash
         virtual double completion() const override;
 
         virtual bool has_commands() const override
-        { return !pending_.empty(); }
+        { return !articles_.empty(); }
     private:
         std::vector<std::string> groups_;
-        std::vector<std::string> pending_;
-        std::vector<std::string> failed_;
+        std::vector<std::string> articles_;
         std::vector<std::shared_ptr<datafile>> files_;
         std::string path_;
         std::string name_;

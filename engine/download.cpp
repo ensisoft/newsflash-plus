@@ -44,12 +44,12 @@ namespace newsflash
 {
 
 download::download(std::vector<std::string> groups, std::vector<std::string> articles, std::string path, std::string name) : 
-    groups_(std::move(groups)), pending_(std::move(articles)), 
+    groups_(std::move(groups)), articles_(std::move(articles)), 
     path_(std::move(path))
 {
     name_        = fs::remove_illegal_filename_chars(name);
     num_commands_done_  = 0;
-    num_commands_total_ = pending_.size();
+    num_commands_total_ = articles_.size();
     num_bytes_done_     = 0;
     enable_overwrite_   = false;
     enable_discardtext_ = false;
@@ -60,7 +60,7 @@ download::~download()
 
 std::unique_ptr<cmdlist> download::create_commands()
 {
-    if (pending_.empty())
+    if (articles_.empty())
         return nullptr;
 
     // take the next list of articles to be downloaded
@@ -72,14 +72,14 @@ std::unique_ptr<cmdlist> download::create_commands()
     const std::size_t num_articles_per_cmdlist = 10;
 
 
-    const std::size_t num_articles = std::min(pending_.size(), 
+    const std::size_t num_articles = std::min(articles_.size(), 
         num_articles_per_cmdlist);
 
     std::vector<std::string> next;
-    std::copy(std::begin(pending_), std::begin(pending_) + num_articles,
+    std::copy(std::begin(articles_), std::begin(articles_) + num_articles,
         std::back_inserter(next));
 
-    pending_.erase(std::begin(pending_), std::begin(pending_) + num_articles);
+    articles_.erase(std::begin(articles_), std::begin(articles_) + num_articles);
 
     std::unique_ptr<cmdlist> cmd(new cmdlist(groups_, std::move(next),
         cmdlist::type::body));
@@ -217,7 +217,7 @@ void download::complete(cmdlist& cmd, std::vector<std::unique_ptr<action>>& next
 
     // all not yet processed messages go back into pending list
     std::copy(std::begin(messages) + contents.size(), std::end(messages),
-        std::back_inserter(pending_));
+        std::back_inserter(articles_));
 }
 
 
