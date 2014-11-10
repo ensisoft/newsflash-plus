@@ -43,7 +43,7 @@ namespace newsflash
 
         using list = std::vector<std::string>;
 
-        cmdlist(list groups, list commands, cmdlist::type type) : cancelbit_(false), failbit_(false), account_(0), task_(0),
+        cmdlist(list groups, list commands, cmdlist::type type) : cancelbit_(false), failbit_(false), account_(0), task_(0), conn_(0),
             groups_(std::move(groups)), commands_(std::move(commands)), cmdtype_(type)
         {}
         // the cmdlist operation is divided into 2 steps, session configuration
@@ -124,6 +124,9 @@ namespace newsflash
         std::size_t task() const 
         { return task_; }
 
+        std::size_t conn() const 
+        { return conn_; }
+
         void pause()
         { cancelbit_ = true; }
         
@@ -142,12 +145,16 @@ namespace newsflash
         void set_task(std::size_t tid)
         { task_ = tid; }
 
+        void set_conn(std::size_t cid)
+        { conn_ = cid; }
+
 
     protected:
         std::atomic<bool> cancelbit_;
         std::atomic<bool> failbit_;
         std::size_t account_;
         std::size_t task_;
+        std::size_t conn_;
         std::vector<buffer> buffers_;
     private:
         list groups_;

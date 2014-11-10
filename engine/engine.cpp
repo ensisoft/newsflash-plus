@@ -176,6 +176,20 @@ struct engine::state {
     {
         cmds.push_back(cmd);
     }
+
+    action* get_action() 
+    {
+        std::lock_guard<std::mutex> lock(mutex);
+        if (actions.empty())
+            return nullptr;
+        action* act = actions.front(); actions.pop();
+        return act;
+
+    }
+
+    engine::batch& find_batch(std::size_t id);
+
+    void connect();
 };
 
 
@@ -617,6 +631,7 @@ public:
         shared->set_account(ui_.account);
         shared->set_task(ui_.id);
         state.enqueue(shared);
+        ++num_active_cmdlists_;
 
         return goto_state(state, states::active);
     }
@@ -671,6 +686,8 @@ public:
         task_->complete(*cmds, actions);
         for (auto& a : actions)
             do_action(state, std::move(a));
+
+        --num_active_cmdlists_;
 
         return update_completion(state);
     }
@@ -812,6 +829,9 @@ public:
     states state() const 
     { return ui_.state; }
 
+    std::string desc() const 
+    { return ui_.desc; }
+
 private:
     transition update_completion(engine::state& state)
     {
@@ -918,7 +938,6 @@ private:
 private:
     ui::task ui_;    
     std::unique_ptr<newsflash::task> task_;
-    //std::list<std::shared_ptr<cmdlist>> cmds_;
     std::size_t num_active_cmdlists_;
     std::size_t num_active_actions_;
     std::size_t num_complete_bytes_;
@@ -1117,6 +1136,60 @@ private:
     std::size_t statesets_[7];
 };
 
+engine::batch& engine::state::find_batch(std::size_t id)
+{
+    auto it = std::find_if(std::begin(batches), std::end(batches),
+        [&](const std::unique_ptr<batch>& b) {
+            return b->id() == id;
+        });
+    assert(it != std::end(batches));
+    return *(*it);
+}
+
+void engine::state::connect()
+{
+    if (!started)
+        return;
+
+    for (auto tit = std::begin(tasks); tit != std::end(tasks); ++tit)
+    {
+        auto& task = *tit;
+        if (!task->eligible_for_run())
+            continue;
+
+        const auto num_conns = std::count_if(std::begin(conns), std::end(conns),
+            [&](const std::unique_ptr<engine::conn>& c) {
+                return c->account() == task->account();
+            });
+
+        const auto& acc = find_account(task->account());
+        for (auto i = num_conns; i<acc.connections; ++i)
+        {
+            const auto cid = oid++;
+            conns.emplace_back(new engine::conn(acc.id, cid, *this));
+        }
+        engine::task* candidate = task.get();
+
+        for (auto& conn : conns)
+        {
+            if (!conn->is_ready())
+                continue;
+            if (!candidate->eligible_for_run())
+            {
+                auto it = std::find_if(tit, std::end(tasks),
+                    [&](const std::unique_ptr<engine::task>& t) {
+                        return t->account() == conn->account() && t->eligible_for_run();
+                    });
+                if (it == std::end(tasks))
+                    break;
+                candidate = (*it).get();
+            }
+            //const auto transition = 
+
+        }
+
+    }
+}
 
 
 engine::engine() : state_(new state)
@@ -1293,27 +1366,20 @@ void engine::download(ui::download spec)
 
     std::unique_ptr<batch> batch(new class batch(aid, bid, batch_size, num_tasks, spec.desc));
     state_->batches.push_back(std::move(batch));
-
-    connect();
+    state_->connect();
 }
 
 bool engine::pump()
 {
     for (;;)
     {
-        std::unique_lock<std::mutex> lock(state_->mutex);
-        if (state_->actions.empty())
+        auto* action = state_->get_action();
+        if (!action)
             break;
-
-        //LOG_D("Dispatch action")
-
-        action* a = state_->actions.front();
-        state_->actions.pop();
-        lock.unlock();
 
         bool action_dispatched = false;
 
-        if (auto* e = dynamic_cast<class connection::execute*>(a))
+        if (auto* e = dynamic_cast<class connection::execute*>(action))
         {
             auto cmds  = e->get_cmdlist();
             auto tid   = e->get_tid();
@@ -1331,53 +1397,71 @@ bool engine::pump()
                 const auto transition = task->complete(*state_, cmds);
                 if (transition)
                 {
-                    auto& batch = find_batch(task->bid());
+                    auto& batch = state_->find_batch(task->bid());
                     batch.update(*state_, *task, transition);
                 }
             }
 
             state_->bytes_downloaded += bytes;
         }
-        else if (auto* w = dynamic_cast<class datafile::write*>(a))
+        else if (auto* w = dynamic_cast<class datafile::write*>(action))
         {
             auto bytes = w->get_write_size();
             if (!w->has_exception())
                 state_->bytes_written += bytes;
         }
 
-        const auto id = a->get_id();
+        const auto id = action->get_id();
 
         for (auto& conn : state_->conns)
         {
             if (conn->id() != id)
                 continue;
 
-            conn->on_action(*state_, a);
+            conn->on_action(*state_, action);
             if (!conn->is_ready())
                 continue;
 
-            //auto it = std::find_if(std::begin(state_->cmds), std::end(state_->cmds),
-            //    [&](const std::shared_ptr<cmdlist>& cmd) {
-            //        return !cmd->paused(); 
-            //    });
-
-
-            for (auto& task : state_->tasks)
+            auto it = std::find_if(std::begin(state_->cmds), std::end(state_->cmds),
+                [&](const std::shared_ptr<cmdlist>& cmd) {
+                    return !cmd->is_canceled() && 
+                            cmd->account() == conn->account() &&
+                            cmd->conn() == 0;
+                });
+            if (it == std::end(state_->cmds))
             {
-                if (task->account() != conn->account())
-                    continue;
-
-                if (!task->eligible_for_run())
-                    continue;
-
-                const auto transition = task->run(*state_);
-                if (transition)
+                for (auto& task : state_->tasks)
                 {
-                    auto& batch = find_batch(task->bid());
-                    batch.update(*state_, *task, transition);
+                    if (task->account() != conn->account())
+                        continue;
+
+                    if (!task->eligible_for_run())
+                        continue;
+
+                    const auto transition = task->run(*state_);
+                    if (transition)
+                    {
+                        auto& batch = state_->find_batch(task->bid());
+                        batch.update(*state_, *task, transition);
+                    }
+                    auto it = std::find_if(std::begin(state_->cmds), std::end(state_->cmds),
+                        [&](const std::shared_ptr<cmdlist>& cmd) {
+                            return !cmd->is_canceled() &&
+                                   cmd->account() == conn->account();
+                               });
+                    if (it != std::end(state_->cmds))
+                    {
+                        (*it)->set_conn(conn->id());
+                        conn->execute(*state_, *it, task->tid(), task->desc());
+                    }
+                    break;
                 }
-                break;
             }
+            else
+            {
+
+            }
+
             action_dispatched = true;
             break;
         }
@@ -1388,10 +1472,10 @@ bool engine::pump()
                 if (task->tid() != id)
                     continue;
 
-                const auto transition = task->on_action(*state_, a);
+                const auto transition = task->on_action(*state_, action);
                 if (transition)
                 {
-                    auto& batch = find_batch(task->bid());
+                    auto& batch = state_->find_batch(task->bid());
                     batch.update(*state_, *task, transition);
                 }
             }
@@ -1451,7 +1535,7 @@ void engine::start(std::string logs)
         LOG_D("Discard text content: ", state_->discard_text);
         LOG_D("Prefer secure:", state_->prefer_secure);
 
-        connect();
+        state_->connect();
     }
 }
 
@@ -1725,7 +1809,7 @@ void engine::pause_task(std::size_t index)
         const auto transition = task->pause(*state_);            
         if (transition)
         {
-            auto& batch = find_batch(task->bid());            
+            auto& batch = state_->find_batch(task->bid());            
             batch.update(*state_, *task, transition);
         }
     }
@@ -1749,10 +1833,10 @@ void engine::resume_task(std::size_t index)
         const auto transition = task->resume(*state_);            
         if (transition)
         {
-            auto& batch = find_batch(task->bid());            
+            auto& batch = state_->find_batch(task->bid());            
             batch.update(*state_, *task, transition);
 
-            connect();            
+            state_->connect();            
         }
     }
 }
@@ -1793,87 +1877,6 @@ void engine::move_task_down(std::size_t index)
         assert(index < state_->tasks.size()-1);
         std::swap(state_->tasks[index], state_->tasks[index + 1]);
     }
-}
-
-void engine::connect()
-{
-    if (!state_->started)
-        return;
-
-    // scan the list of queued tasks and look for one that is ready to be run.
-    // when the task is found see which account it belongs to and spawn the connections
-    // finally if we have already ready connections we set them to work on the 
-    // eligible task possibly looking for a new task once the current task
-    // has no more work to be done.
-
-    for (auto tit = std::begin(state_->tasks); tit != std::end(state_->tasks); ++tit)
-    {
-        auto& task = *tit;
-        if (!task->eligible_for_run())
-            continue;
-
-        // how many conns do we have in total associated with this account.
-        const auto num_conns = std::count_if(std::begin(state_->conns), std::end(state_->conns),
-            [&](const std::unique_ptr<engine::conn>& c) {
-                return c->account() == task->account();
-            });
-
-        // must find the account
-        const auto a = std::find_if(std::begin(state_->accounts), std::end(state_->accounts),
-            [&](const account& a) {
-                return a.id == task->account();
-            });
-        ASSERT(a != std::end(state_->accounts));
-
-        // if there's space, spawn new connections.
-        for (auto i=num_conns; i<(*a).connections; ++i)
-        {
-            const auto cid = state_->oid++;
-            state_->conns.emplace_back(new engine::conn((*a).id, cid, *state_));
-        }
-
-        // starting with the current task assing ready connections to work on this task.
-        engine::task* candidate = task.get();
-
-        for (auto& conn : state_->conns)
-        {
-            if (!conn->is_ready())
-                continue;
-
-            // candidate didn't have any more work. hence we can inspect the  
-            // remainder of the task list looking for another task that belongs
-            // to the *same* account and is runnable
-            if (!candidate->eligible_for_run())
-            {
-                auto it = std::find_if(tit, std::end(state_->tasks),
-                    [&](const std::unique_ptr<engine::task>& t) {
-                        return t->account() == conn->account() && t->eligible_for_run();
-                    });
-                if (it == std::end(state_->tasks))
-                    break;
-                candidate = (*it).get();
-                continue;
-            }
-
-            const auto transition = candidate->run(*state_);
-            if (transition)
-            {
-                auto& batch = find_batch(candidate->bid());
-                batch.update(*state_, *candidate, transition);
-            }
-        }
-    }
-}
-
-engine::batch& engine::find_batch(std::size_t id)
-{
-    auto it = std::find_if(std::begin(state_->batches), std::end(state_->batches),
-        [&](const std::unique_ptr<batch>& b) {
-            return b->id() == id;
-        });
-    assert(it != std::end(state_->batches));
-
-    return *(*it);
 }
 
 } // newsflash
