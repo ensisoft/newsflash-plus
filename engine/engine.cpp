@@ -172,11 +172,6 @@ struct engine::state {
         num_pending_actions++;
     }
 
-    void enqueue(std::shared_ptr<cmdlist> cmd)
-    {
-        cmds.push_back(cmd);
-    }
-
     action* get_action() 
     {
         std::lock_guard<std::mutex> lock(mutex);
@@ -190,6 +185,8 @@ struct engine::state {
     engine::batch& find_batch(std::size_t id);
 
     void connect();
+    void execute();
+    void enqueue(const task& t, std::shared_ptr<cmdlist> cmd);
 };
 
 
@@ -630,7 +627,7 @@ public:
         std::shared_ptr<cmdlist> shared(unique.release());
         shared->set_account(ui_.account);
         shared->set_task(ui_.id);
-        state.enqueue(shared);
+        state.enqueue(*this, shared);
         ++num_active_cmdlists_;
 
         return goto_state(state, states::active);
@@ -647,7 +644,7 @@ public:
                 state.fill_account != cmds->account())
             {
                 cmds->set_account(state.fill_account);
-                state.enqueue(cmds);
+                state.enqueue(*this, cmds);
                 return no_transition;
             }
             else
@@ -669,7 +666,7 @@ public:
                     state.fill_account != cmds->account())
                 {
                     cmds->set_account(state.fill_account);
-                    state.enqueue(cmds);
+                    state.enqueue(*this, cmds);
                     return no_transition;
                 }
                 else if (status == buffer::status::unavailable)
@@ -1151,44 +1148,64 @@ void engine::state::connect()
     if (!started)
         return;
 
-    for (auto tit = std::begin(tasks); tit != std::end(tasks); ++tit)
+    for (auto& acc : accounts)
     {
-        auto& task = *tit;
-        if (!task->eligible_for_run())
+        const auto it = std::find_if(std::begin(tasks), std::end(tasks),
+            [&](const std::unique_ptr<task>& t) {
+                return t->account() == acc.id && 
+                       t->eligible_for_run();
+            });
+        if (it == std::end(tasks))
             continue;
 
         const auto num_conns = std::count_if(std::begin(conns), std::end(conns),
-            [&](const std::unique_ptr<engine::conn>& c) {
-                return c->account() == task->account();
+            [&](const std::unique_ptr<conn>& c) {
+                return c->account() == acc.id;
             });
-
-        const auto& acc = find_account(task->account());
-        for (auto i = num_conns; i<acc.connections; ++i)
+        for (auto i=num_conns; i<acc.connections; ++i)
         {
-            const auto cid = oid++;
-            conns.emplace_back(new engine::conn(acc.id, cid, *this));
+            const auto id = oid++;
+            conns.emplace_back(new engine::conn(acc.id, id, *this));
         }
-        engine::task* candidate = task.get();
-
-        for (auto& conn : conns)
-        {
-            if (!conn->is_ready())
-                continue;
-            if (!candidate->eligible_for_run())
-            {
-                auto it = std::find_if(tit, std::end(tasks),
-                    [&](const std::unique_ptr<engine::task>& t) {
-                        return t->account() == conn->account() && t->eligible_for_run();
-                    });
-                if (it == std::end(tasks))
-                    break;
-                candidate = (*it).get();
-            }
-            //const auto transition = 
-
-        }
-
     }
+}
+
+
+
+void engine::state::execute()
+{
+    if (!started)
+        return;
+
+    for (auto it = std::begin(tasks); it != std::end(tasks); ++it)
+    {
+        auto& task = *it;
+        if (!task->eligible_for_run())
+            continue;
+    }
+}
+
+void engine::state::enqueue(const task& t, std::shared_ptr<cmdlist> cmd)
+{
+    cmds.push_back(cmd);
+
+    if (!started)
+        return;
+
+    for (auto& conn : conns)
+    {
+        if (conn->account() != cmd->account())
+            continue;
+
+        if (!conn->is_ready())
+            continue;
+
+        cmd->set_conn(conn->id());
+        conn->execute(*this, cmd, t.tid(), t.desc());
+        return;
+    }
+
+    connect();
 }
 
 
@@ -1377,8 +1394,6 @@ bool engine::pump()
         if (!action)
             break;
 
-        bool action_dispatched = false;
-
         if (auto* e = dynamic_cast<class connection::execute*>(action))
         {
             auto cmds  = e->get_cmdlist();
@@ -1412,6 +1427,7 @@ bool engine::pump()
         }
 
         const auto id = action->get_id();
+        bool dispatched = false;
 
         for (auto& conn : state_->conns)
         {
@@ -1419,53 +1435,32 @@ bool engine::pump()
                 continue;
 
             conn->on_action(*state_, action);
-            if (!conn->is_ready())
-                continue;
-
-            auto it = std::find_if(std::begin(state_->cmds), std::end(state_->cmds),
-                [&](const std::shared_ptr<cmdlist>& cmd) {
-                    return !cmd->is_canceled() && 
-                            cmd->account() == conn->account() &&
-                            cmd->conn() == 0;
-                });
-            if (it == std::end(state_->cmds))
+            if (conn->is_ready())
             {
-                for (auto& task : state_->tasks)
+                auto it = std::find_if(std::begin(state_->cmds), std::end(state_->cmds),
+                    [&](const std::shared_ptr<cmdlist>& c) {
+                        return c->conn() == 0 &&
+                               c->account() == conn->account() &&
+                               c->is_canceled() == false;
+                    });
+                if (it != std::end(state_->cmds))
                 {
-                    if (task->account() != conn->account())
-                        continue;
+                    auto cmd = *it;
+                    auto tit = std::find_if(std::begin(state_->tasks), std::end(state_->tasks),
+                        [&](const std::unique_ptr<task>& t) {
+                            return t->tid() == cmd->task();
+                        });
+                    ASSERT(tit != std::end(state_->tasks));
+                    auto& task = *tit;
 
-                    if (!task->eligible_for_run())
-                        continue;
-
-                    const auto transition = task->run(*state_);
-                    if (transition)
-                    {
-                        auto& batch = state_->find_batch(task->bid());
-                        batch.update(*state_, *task, transition);
-                    }
-                    auto it = std::find_if(std::begin(state_->cmds), std::end(state_->cmds),
-                        [&](const std::shared_ptr<cmdlist>& cmd) {
-                            return !cmd->is_canceled() &&
-                                   cmd->account() == conn->account();
-                               });
-                    if (it != std::end(state_->cmds))
-                    {
-                        (*it)->set_conn(conn->id());
-                        conn->execute(*state_, *it, task->tid(), task->desc());
-                    }
-                    break;
+                    conn->execute(*state_, cmd, task->tid(), task->desc());
+                    cmd->set_conn(conn->id());
                 }
             }
-            else
-            {
-
-            }
-
-            action_dispatched = true;
+            dispatched = true;
             break;
         }
-        if (!action_dispatched)
+        if (!dispatched)
         {
             for (auto& task : state_->tasks)
             {
@@ -1478,6 +1473,7 @@ bool engine::pump()
                     auto& batch = state_->find_batch(task->bid());
                     batch.update(*state_, *task, transition);
                 }
+                break;
             }
         }
         state_->num_pending_actions--;
