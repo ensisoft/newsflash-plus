@@ -184,7 +184,6 @@ struct engine::state {
 
     engine::batch& find_batch(std::size_t id);
 
-    void connect();
     void execute();
     void enqueue(const task& t, std::shared_ptr<cmdlist> cmd);
 };
@@ -221,8 +220,6 @@ private:
         ticks_to_conn_ = 5;
         logger_        = std::make_shared<filelogger>(file, true);
         thread_        = state.threads->allocate();
-        speed_         = 0;
-
         LOG_D("Connection ", ui_.id, " log file: ", file);
     }    
 
@@ -364,9 +361,8 @@ public:
             const auto bytes_current = conn_.bytes();
             if (bytes_current != bytes_before)
             {
-                ui_.bps  = conn_.bps();
-                ui_.down = bytes_current;
-                speed_   = ui_.bps;
+                ui_.bps  = ui.bps  = conn_.bps();
+                ui_.down = ui.down = bytes_current;
             }
         }
     }
@@ -465,7 +461,7 @@ public:
     double bps() const
     {
         if (ui_.state == states::active)
-            return speed_;
+            return ui_.bps;
         return 0.0;
     }
 
@@ -521,7 +517,6 @@ private:
     threadpool::thread* thread_;
     unsigned ticks_to_ping_;
     unsigned ticks_to_conn_;
-    double   speed_;
 };
 
 class engine::task 
@@ -579,9 +574,7 @@ public:
                 });
 
             for (auto i=it; i != std::end(state.cmds); ++i)
-                (*i)->pause();
-
-            state.cmds.erase(it, std::end(state.cmds));
+                (*i)->cancel();
 
             if (task_)
                 do_action(state, task_->kill());
@@ -702,7 +695,7 @@ public:
         {
             if (cmd->task() != ui_.id)
                 continue;
-            cmd->pause();
+            cmd->cancel();
         }
 
         return goto_state(state, states::paused);
@@ -727,16 +720,7 @@ public:
 
         // if we were started before we go to waiting state.
         if (started_)
-        {
-            for (auto& cmd : state.cmds)
-            {
-                if (cmd->task() != ui_.id)
-                    continue;
-
-                cmd->resume();
-            }
             return goto_state(state, states::waiting);
-        }
 
         // go back into queued state.
         return goto_state(state, states::queued);
@@ -748,19 +732,7 @@ public:
 
         if (ui_.state == states::active || ui_.state == states::waiting)
         {
-            if (ui_.size)
-            {
-                double bps = 0.0;
-                for (const auto& conn : state.conns)
-                {
-                    if (conn->task() != ui_.id)
-                        continue;
-                    bps += conn->bps();
-                }
-                const auto num_pending_bytes = ui_.size - num_complete_bytes_;
-                ui_.etatime = num_pending_bytes / bps;
-            }
-            else if (ui_.runtime >= 10)
+            if (ui_.runtime >= 10)
             {
                 const auto complete  = ui.completion;
                 const auto remaining = 100.0 - complete;
@@ -845,13 +817,11 @@ private:
         if (num_active_actions_)
             return no_transition; 
 
+        // if we have currently executing cmdlists our state should not change.
+        // i.e. we're active (or possibly paused)
         if (num_active_cmdlists_)
             return no_transition;
 
-        // if we have currently executing cmdlists our state should not change.
-        // i.e. we're active (or possibly paused)
-        //if (!cmds_.empty())
-         //   return no_transition; 
 
         // if task list has more commands and there are no currently
         // executing cmdlists or actions and we're not paused
@@ -918,6 +888,20 @@ private:
                 ui_.etatime    = 0;
                 ui_.state      = new_state;
                 state.bytes_ready += ui_.size;
+                if (auto* ptr = dynamic_cast<class download*>(task_.get()))
+                {
+                    const auto& files = ptr->files();
+                    for (const auto& file : files)
+                    {
+                        ui::file ui;
+                        ui.binary  = file->is_binary();
+                        ui.name    = file->name();
+                        ui.path    = file->path();                        
+                        ui.size    = file->size();                        
+                        ui.damaged = ui_.error.any_bit();
+                        state.on_file_callback(ui);
+                    }
+                }
                 break;
 
             default:
@@ -1143,35 +1127,6 @@ engine::batch& engine::state::find_batch(std::size_t id)
     return *(*it);
 }
 
-void engine::state::connect()
-{
-    if (!started)
-        return;
-
-    for (auto& acc : accounts)
-    {
-        const auto it = std::find_if(std::begin(tasks), std::end(tasks),
-            [&](const std::unique_ptr<task>& t) {
-                return t->account() == acc.id && 
-                       t->eligible_for_run();
-            });
-        if (it == std::end(tasks))
-            continue;
-
-        const auto num_conns = std::count_if(std::begin(conns), std::end(conns),
-            [&](const std::unique_ptr<conn>& c) {
-                return c->account() == acc.id;
-            });
-        for (auto i=num_conns; i<acc.connections; ++i)
-        {
-            const auto id = oid++;
-            conns.emplace_back(new engine::conn(acc.id, id, *this));
-        }
-    }
-}
-
-
-
 void engine::state::execute()
 {
     if (!started)
@@ -1179,9 +1134,35 @@ void engine::state::execute()
 
     for (auto it = std::begin(tasks); it != std::end(tasks); ++it)
     {
-        auto& task = *it;
+        auto& task  = *it;
         if (!task->eligible_for_run())
             continue;
+
+        std::size_t num_conns = std::count_if(std::begin(conns), std::end(conns),
+            [&](const std::unique_ptr<engine::conn>& c) {
+                return c->account() == task->account();
+            });
+
+        const auto& acc = find_account(task->account());
+        for (auto i=num_conns; i<acc.connections; ++i)
+            conns.emplace_back(new engine::conn(acc.id, oid++, *this));
+
+        while (task->eligible_for_run())
+        {
+            auto it = std::find_if(std::begin(conns), std::end(conns),
+                [&](const std::unique_ptr<engine::conn>& c) {
+                    return c->is_ready() && (c->account() == task->account());
+                });
+            if (it == std::end(conns))
+                break;
+
+            const auto transition = task->run(*this);
+            if (transition)
+            {
+                auto& batch = find_batch(task->bid());
+                batch.update(*this, *task, transition);
+            }
+        }
     }
 }
 
@@ -1192,10 +1173,14 @@ void engine::state::enqueue(const task& t, std::shared_ptr<cmdlist> cmd)
     if (!started)
         return;
 
+    std::size_t num_conns = 0;
+
     for (auto& conn : conns)
     {
         if (conn->account() != cmd->account())
             continue;
+
+        ++num_conns;
 
         if (!conn->is_ready())
             continue;
@@ -1205,7 +1190,13 @@ void engine::state::enqueue(const task& t, std::shared_ptr<cmdlist> cmd)
         return;
     }
 
-    connect();
+    const auto& acc = find_account(cmd->account());
+    if (num_conns < acc.connections)
+    {
+        const auto id = oid++;
+        conns.emplace_back(new engine::conn(acc.id, id, *this));
+    }
+
 }
 
 
@@ -1349,6 +1340,11 @@ void engine::del_account(std::size_t id)
     state_->accounts.erase(it);
 }
 
+void engine::set_fill_account(std::size_t id)
+{
+    state_->fill_account = id;
+}
+
 void engine::download(ui::download spec)
 {
     const auto bid = state_->oid++;
@@ -1383,7 +1379,7 @@ void engine::download(ui::download spec)
 
     std::unique_ptr<batch> batch(new class batch(aid, bid, batch_size, num_tasks, spec.desc));
     state_->batches.push_back(std::move(batch));
-    state_->connect();
+    state_->execute();
 }
 
 bool engine::pump()
@@ -1427,13 +1423,13 @@ bool engine::pump()
         }
 
         const auto id = action->get_id();
-        bool dispatched = false;
-
-        for (auto& conn : state_->conns)
+        auto it = std::find_if(std::begin(state_->conns), std::end(state_->conns),
+            [&](const std::unique_ptr<engine::conn>& c) {
+                return c->id() == id;
+            });
+        if (it != std::end(state_->conns))
         {
-            if (conn->id() != id)
-                continue;
-
+            auto& conn = *it;
             conn->on_action(*state_, action);
             if (conn->is_ready())
             {
@@ -1442,7 +1438,7 @@ bool engine::pump()
                         return c->conn() == 0 &&
                                c->account() == conn->account() &&
                                c->is_canceled() == false;
-                    });
+                           });
                 if (it != std::end(state_->cmds))
                 {
                     auto cmd = *it;
@@ -1455,12 +1451,28 @@ bool engine::pump()
 
                     conn->execute(*state_, cmd, task->tid(), task->desc());
                     cmd->set_conn(conn->id());
-                }
+                }                
+                else
+                {
+                    auto it = std::find_if(std::begin(state_->tasks), std::end(state_->tasks),
+                        [&](const std::unique_ptr<engine::task>& t) {
+                            return t->account() == conn->account() &&
+                                   t->eligible_for_run();
+                               });
+                    if (it != std::end(state_->tasks))
+                    {
+                        auto& task = *it;
+                        const auto transition = task->run(*state_);
+                        if (transition)
+                        {
+                            auto& batch = state_->find_batch(task->bid());
+                            batch.update(*state_, *task, transition);
+                        }
+                    }
+                }                
             }
-            dispatched = true;
-            break;
         }
-        if (!dispatched)
+        else
         {
             for (auto& task : state_->tasks)
             {
@@ -1531,7 +1543,7 @@ void engine::start(std::string logs)
         LOG_D("Discard text content: ", state_->discard_text);
         LOG_D("Prefer secure:", state_->prefer_secure);
 
-        state_->connect();
+        state_->execute();
     }
 }
 
@@ -1831,9 +1843,8 @@ void engine::resume_task(std::size_t index)
         {
             auto& batch = state_->find_batch(task->bid());            
             batch.update(*state_, *task, transition);
-
-            state_->connect();            
         }
+        state_->execute();                    
     }
 }
 

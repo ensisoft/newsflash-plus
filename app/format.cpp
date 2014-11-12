@@ -171,6 +171,19 @@ QString format(const app::runtime& rt)
         .arg(secs, 2, 10, QChar('0'));
 }
 
+QString format(const app::etatime& eta)
+{
+    if (eta.value < 10)
+        return "A few seconds...";
+    if (eta.value < 60)
+        return "About a minute";
+    if (eta.value < 60 * 60)
+        return QString("About %1 minutes").arg(eta.value / 60);
+
+    const auto hours = eta.value / 3600;
+    const auto mins  = (eta.value - (hours * 3600)) / 60;
+    return QString("%1 hours and %2 minutes").arg(hours).arg(mins);
+}
 
 QString format(const std::string& str)
 {
@@ -225,8 +238,8 @@ std::string narrow(const QString& str)
 #endif
 }
 
-QString widen(std::string& s)
-{
+QString widen(const std::string& s)
+{ 
 #if defined(WINDOWS_OS)
     return QString::fromUtf8(s.c_str());
 

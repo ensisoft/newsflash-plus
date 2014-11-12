@@ -61,7 +61,7 @@ const char* str(bitflag f)
     else if (f.test(flags::damaged))
         return "Damaged";    
     else if (f.test(flags::unavailable))
-        return "Unavailable";
+        return "Incomplete";
 
     return "Complete";
 }
@@ -100,9 +100,13 @@ QVariant tasklist::data(const QModelIndex& index, int role) const
                 if (ui.state == states::waiting || 
                     ui.state == states::paused ||
                     ui.state == states::queued)
-                return QString("  %1  ").arg(infinity);
+                    return QString("  %1  ").arg(infinity);
+                else if (ui.state == states::complete)
+                    return "";
+                else if (ui.runtime < 10)
+                    return "Estimating...";
 
-                return format(runtime{ui.etatime});
+                return format(etatime{ui.etatime});
 
             case columns::size:
                 if (ui.size == 0)
@@ -134,7 +138,7 @@ QVariant tasklist::data(const QModelIndex& index, int role) const
                 return QIcon(":/resource/16x16_ico_png/ico_task_finalize.png");                             
             case states::complete: 
                 if (ui.error.any_bit())
-                    return QIcon(":/resource/16x16_ico_png/ico_damaged.png");
+                    return QIcon(":/resource/16x16_ico_png/ico_task_damaged.png");
 
                 return QIcon(":/resource/16x16_ico_png/ico_task_complete.png");                
 

@@ -27,6 +27,7 @@
 #include <ostream>
 #include <cerrno>
 #include "format.h"
+#include "utf8.h"
 
 #pragma once
 

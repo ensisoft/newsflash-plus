@@ -32,6 +32,7 @@
 #include "ui/download.h"
 #include "ui/error.h"
 #include "ui/file.h"
+#include "ui/batch.h"
 #include "account.h"
 
 namespace newsflash
@@ -46,6 +47,8 @@ namespace newsflash
 
         // this callback is invoked when a new file has been completed.
         using on_file = std::function<void (const ui::file& file)>;
+
+        using on_batch = std::function<void (const ui::batch& batch)>;
 
         // this callback is invoked when there are pending events inside the engine
         // the handler function should organize for a call into engine::pump() 
@@ -62,6 +65,8 @@ namespace newsflash
 
         // delete the account identified by the id.
         void del_account(std::size_t id);
+
+        void set_fill_account(std::size_t id);
 
         // download the files included in the dowload.
         // all the files are grouped together into a single batch.
@@ -91,6 +96,8 @@ namespace newsflash
 
         // set the file callback.
         void set_file_callback(on_file file_callback);
+
+        void set_batch_callback(on_batch batch_callback);
 
         // set the notify callback. this 
         void set_notify_callback(on_async_notify notify_callback);

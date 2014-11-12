@@ -26,6 +26,7 @@
 #include <newsflash/warnpush.h>
 #  include <QObject>
 #  include <QString>
+#  include <QMetaType>
 #include <newsflash/warnpop.h>
 #include <newsflash/engine/ui/connection.h>
 #include <newsflash/engine/ui/task.h>
@@ -43,6 +44,25 @@ namespace app
     class account;
     class settings;
     class nzbcontent;
+
+    // file message notifies of a downloaded file that
+    // is now available in the filesystem
+    struct file {
+        // path to the file
+        QString path;
+
+        // name of the file at the path
+        QString name;
+
+        // size of the file
+        quint64 size;
+
+        // true if apparently damaged.
+        bool damaged;
+
+        // true if data is binary.
+        bool binary;
+    };
 
     // manager class around newsflash engine + engine state
     // translate between native c++ and Qt types and events.
@@ -248,6 +268,7 @@ namespace app
     signals:
         void shutdownComplete();
         void newDownloadQueued(const QString& desc);
+        void fileCompleted(const app::file& file);
 
     private:
         virtual bool eventFilter(QObject* object, QEvent* event) override;
@@ -273,3 +294,5 @@ namespace app
     extern engine* g_engine;
 
 } // app
+
+    Q_DECLARE_METATYPE(app::file);

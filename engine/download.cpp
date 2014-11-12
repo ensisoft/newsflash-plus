@@ -189,13 +189,6 @@ void download::complete(cmdlist& cmd, std::vector<std::unique_ptr<action>>& next
     auto& messages = cmd.get_commands();
     auto& contents = cmd.get_buffers();    
 
-    // if (list.configure_fail())
-    // {
-    //     std::copy(std::begin(messages), std::end(messages), std::back_inserter(failed_));
-    //     errors_.set(task::error::unavailable);
-    //     return;
-    // }
-
     for (std::size_t i=0; i<contents.size(); ++i)
     {
         auto& content = contents[i];

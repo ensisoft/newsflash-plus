@@ -97,6 +97,8 @@ namespace newsflash
                     {
                         ses.retrieve_article(commands_[i]);
                     }
+                    if (i < buffers_.size())
+                        buffers_[i].clear();
                 }
             }
         }
@@ -104,6 +106,14 @@ namespace newsflash
         // receive a data buffer response to submit_data_commands
         void receive_data_buffer(buffer buff)
         {
+            for (auto& old : buffers_)
+            {
+                if (old.content_status() == buffer::status::none)
+                {
+                    old = std::move(buff);
+                    return;
+                }
+            }
             buffers_.push_back(std::move(buff));
         }
 
@@ -127,12 +137,9 @@ namespace newsflash
         std::size_t conn() const 
         { return conn_; }
 
-        void pause()
+        void cancel()
         { cancelbit_ = true; }
         
-        void resume()
-        { cancelbit_ = false; }
-
         bool is_canceled() const
         { return cancelbit_;}
 

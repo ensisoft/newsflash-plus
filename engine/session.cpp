@@ -587,14 +587,15 @@ bool session::recv_next(buffer& buff, buffer& out)
 
     auto& next = recv_.front();
 
+    std::string response;
+    const auto len = nntp::find_response(buff.head(), buff.size());
+    if (len != 0)
+        response.append(buff.head(), len-2);
+
     if (!next->parse(buff, out, *state_))
         return false;
 
-    const auto len = nntp::find_response(buff.head(), buff.size());
-    if (len != 0)
-    {
-        LOG_I(std::string(buff.head(), len-2));
-    }
+    LOG_I(response);
 
     if (state_->error != error::none)
     {

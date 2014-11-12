@@ -50,6 +50,10 @@ namespace app
         quint32 value;
     };    
 
+    struct etatime {
+        quint32 value;
+    };
+
     struct gigs {
         gigs() : bytes(0)
         {}
@@ -181,6 +185,7 @@ namespace app
     QString format(const app::event& event);
     QString format(const app::age& age);
     QString format(const app::runtime& rt);
+    QString format(const app::etatime& eta);
     QString format(const std::string& str);        
 
 

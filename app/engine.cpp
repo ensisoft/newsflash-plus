@@ -143,7 +143,7 @@ void engine::del(const account& acc)
 
 void engine::set_fill_account(quint32 id)
 {
-    //engine_.set_fill_account(id);
+    engine_->set_fill_account(id);
 }
 
 bool engine::download_nzb_contents(quint32 acc, const QString& path, const QString& desc, const QByteArray& buff)
@@ -391,7 +391,29 @@ void engine::on_engine_error(const newsflash::ui::error& e)
 }
 
 void engine::on_engine_file(const newsflash::ui::file& f)
-{}
+{
+    app::file file;
+    file.binary  = f.binary;
+    file.damaged = f.damaged;
+    file.name    = widen(f.name);
+    file.path    = widen(f.path);
+    file.size    = f.size;
+
+    DEBUG(str("Downloaded _1/_2", file.path, file.name));
+
+    if (f.damaged)
+    {
+        WARN(str("Completed _1", file.name));
+    }
+    else
+    {
+        INFO(str("Completed _1", file.name));
+    }
+
+    emit fileCompleted(file);
+
+    NOTE(str("\"_1\" is ready", file.name));
+}
 
 engine* g_engine;
 

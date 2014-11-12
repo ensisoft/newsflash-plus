@@ -1,4 +1,4 @@
-// Copyright (c) 2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -18,7 +18,7 @@
 //  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 //  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-//  THE SOFTWARE.            
+//  THE SOFTWARE.
 
 #pragma once
 
@@ -31,24 +31,10 @@ namespace newsflash
 {
     namespace ui {
 
-    // a new file produced by downloading and decoding content
-    struct file
-    {
-        // complete path to the file location.
+    struct batch {
         std::string path;
-
-        // the name of the file.
-        std::string name;
-
-        // the esimated size of the content to be downloaded in bytes. 
-        std::uint64_t size;
-
-        // this is set to true if contents are suspected to be damaged
-        bool damaged;
-
-        // this is set to true if the file is binary data
-        bool binary;
+        
     };
 
-} // ui
-} // engine
+    }
+} // newsflash

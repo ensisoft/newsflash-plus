@@ -60,6 +60,11 @@ namespace newsflash
 
         virtual bool has_commands() const override
         { return !articles_.empty(); }
+
+        const 
+        std::vector<std::shared_ptr<datafile>>& files() const 
+        { return files_; }
+
     private:
         std::vector<std::string> groups_;
         std::vector<std::string> articles_;

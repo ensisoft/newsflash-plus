@@ -79,12 +79,13 @@ namespace newsflash
         datafile(std::string path, std::string binaryname, std::size_t size, bool bin, bool overwrite) : discard_(false), binary_(bin)
         {
             std::string file;
-            std::string name = fs::remove_illegal_filename_chars(binaryname);
+            std::string name;
+            binaryname = fs::remove_illegal_filename_chars(binaryname);
             // try to open the file at the given location under different
             // filenames unless ovewrite flag is set.
             for (int i=0; i<10; ++i)
             {
-                name = fs::filename(i, name);
+                name = fs::filename(i, binaryname);
                 file = fs::joinpath(path, name);
                 if (!overwrite && bigfile::exists(file))
                     continue;
