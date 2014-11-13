@@ -202,13 +202,13 @@
   <action name="actionSave">
    <property name="icon">
     <iconset resource="resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_save.png</normaloff>:/resource/16x16_ico_png/ico_save.png</iconset>
+     <normaloff>:/resource/16x16_ico_png/ico_save_nzb.png</normaloff>:/resource/16x16_ico_png/ico_save_nzb.png</iconset>
    </property>
    <property name="text">
-    <string>Save NZB...</string>
+    <string>Save ...</string>
    </property>
    <property name="toolTip">
-    <string>Save selected NZB items to disk</string>
+    <string>Save selected items to disk</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+S</string>
@@ -226,13 +226,13 @@
   <action name="actionSettings">
    <property name="icon">
     <iconset resource="resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_settings.png</normaloff>:/resource/16x16_ico_png/ico_settings.png</iconset>
+     <normaloff>:/resource/16x16_ico_png/ico_app_settings.png</normaloff>:/resource/16x16_ico_png/ico_app_settings.png</iconset>
    </property>
    <property name="text">
     <string>Settings</string>
    </property>
    <property name="toolTip">
-    <string>Open nzbs.org settings</string>
+    <string>Open RSS settings</string>
    </property>
   </action>
   <action name="actionStop">
@@ -247,7 +247,7 @@
   <action name="actionBrowse">
    <property name="icon">
     <iconset resource="resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_folder.png</normaloff>:/resource/16x16_ico_png/ico_folder.png</iconset>
+     <normaloff>:/resource/16x16_ico_png/ico_browse.png</normaloff>:/resource/16x16_ico_png/ico_browse.png</iconset>
    </property>
    <property name="text">
     <string>Browse ...</string>
@@ -256,13 +256,13 @@
   <action name="actionOpen">
    <property name="icon">
     <iconset resource="resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_open.png</normaloff>:/resource/16x16_ico_png/ico_open.png</iconset>
+     <normaloff>:/resource/16x16_ico_png/ico_open_nzb.png</normaloff>:/resource/16x16_ico_png/ico_open_nzb.png</iconset>
    </property>
    <property name="text">
-    <string>Open NZB</string>
+    <string>Open ...</string>
    </property>
    <property name="toolTip">
-    <string>Open NZB</string>
+    <string>Open selected items</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+O</string>

@@ -15,7 +15,7 @@
   </property>
   <property name="windowIcon">
    <iconset resource="resource.qrc">
-    <normaloff>:/resource/16x16_ico_png/ico_account.png</normaloff>:/resource/16x16_ico_png/ico_account.png</iconset>
+    <normaloff>:/resource/16x16_ico_png/ico_accounts.png</normaloff>:/resource/16x16_ico_png/ico_accounts.png</iconset>
   </property>
   <layout class="QHBoxLayout" name="horizontalLayout_2">
    <item>
@@ -416,16 +416,16 @@ p, li { white-space: pre-wrap; }
     </spacer>
    </item>
   </layout>
-  <action name="actionNew">
+  <action name="actionAdd">
    <property name="icon">
     <iconset resource="resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_add.png</normaloff>:/resource/16x16_ico_png/ico_add.png</iconset>
+     <normaloff>:/resource/16x16_ico_png/ico_account_add.png</normaloff>:/resource/16x16_ico_png/ico_account_add.png</iconset>
    </property>
    <property name="text">
-    <string>New account ...</string>
+    <string>Add ...</string>
    </property>
    <property name="toolTip">
-    <string>Create new account</string>
+    <string>Add new account</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+N</string>
@@ -434,25 +434,25 @@ p, li { white-space: pre-wrap; }
   <action name="actionDel">
    <property name="icon">
     <iconset resource="resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_delete.png</normaloff>:/resource/16x16_ico_png/ico_delete.png</iconset>
+     <normaloff>:/resource/16x16_ico_png/ico_account_del.png</normaloff>:/resource/16x16_ico_png/ico_account_del.png</iconset>
    </property>
    <property name="text">
-    <string>Remove</string>
+    <string>Delete</string>
    </property>
    <property name="toolTip">
-    <string>Remove account</string>
+    <string>Delete account</string>
    </property>
   </action>
-  <action name="actionProperties">
+  <action name="actionEdit">
    <property name="icon">
     <iconset resource="resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_properties.png</normaloff>:/resource/16x16_ico_png/ico_properties.png</iconset>
+     <normaloff>:/resource/16x16_ico_png/ico_account_edit.png</normaloff>:/resource/16x16_ico_png/ico_account_edit.png</iconset>
    </property>
    <property name="text">
-    <string>Properties</string>
+    <string>Edit</string>
    </property>
    <property name="toolTip">
-    <string>Open account properties</string>
+    <string>Edit account</string>
    </property>
   </action>
  </widget>

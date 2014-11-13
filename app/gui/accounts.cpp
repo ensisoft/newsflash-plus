@@ -56,7 +56,7 @@ accounts::accounts()
     const bool empty = app::g_accounts->num_accounts() == 0;
 
     ui_.actionDel->setEnabled(!empty);
-    ui_.actionProperties->setEnabled(!empty);
+    ui_.actionEdit->setEnabled(!empty);
 
     ui_.grpServer->setEnabled(false);
     ui_.grpQuota->setEnabled(false);
@@ -115,18 +115,18 @@ accounts::~accounts()
 
 void accounts::add_actions(QMenu& menu)
 {
-    menu.addAction(ui_.actionNew);
+    menu.addAction(ui_.actionAdd);
     menu.addAction(ui_.actionDel);
     menu.addSeparator();
-    menu.addAction(ui_.actionProperties);
+    menu.addAction(ui_.actionEdit);
 }
 
 void accounts::add_actions(QToolBar& bar)
 {
-    bar.addAction(ui_.actionNew);
+    bar.addAction(ui_.actionAdd);
     bar.addAction(ui_.actionDel);
     bar.addSeparator();
-    bar.addAction(ui_.actionProperties);
+    bar.addAction(ui_.actionEdit);
 }
 
 mainwidget::info accounts::information() const
@@ -212,7 +212,7 @@ void accounts::updatePie()
 }
 
 
-void accounts::on_actionNew_triggered()
+void accounts::on_actionAdd_triggered()
 {
     auto account  = app::g_accounts->suggest();
 
@@ -230,7 +230,7 @@ void accounts::on_actionDel_triggered()
     app::g_accounts->del(row);
 }
 
-void accounts::on_actionProperties_triggered()
+void accounts::on_actionEdit_triggered()
 {
     const auto row = ui_.listView->currentIndex().row();
     if (row == -1)
@@ -255,14 +255,14 @@ void accounts::currentRowChanged()
         ui_.spinTotal->setValue(0);
         ui_.spinSpent->setValue(0);
         ui_.actionDel->setEnabled(false);
-        ui_.actionProperties->setEnabled(false);
+        ui_.actionEdit->setEnabled(false);
         return;
     }
 
     ui_.grpServer->setEnabled(true);
     ui_.grpQuota->setEnabled(true);
     ui_.actionDel->setEnabled(true);
-    ui_.actionProperties->setEnabled(true);
+    ui_.actionEdit->setEnabled(true);
 
     const auto& account = app::g_accounts->get(row);
 
@@ -405,7 +405,7 @@ void accounts::on_spinSpent_valueChanged(double value)
 void accounts::on_listView_doubleClicked(const QModelIndex& index)
 {
     // forward
-    on_actionProperties_triggered();
+    on_actionEdit_triggered();
 }
 
 void accounts::on_listView_customContextMenuRequested(QPoint pos)

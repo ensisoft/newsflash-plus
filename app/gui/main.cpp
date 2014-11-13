@@ -49,6 +49,7 @@
 #include "coremodule.h"
 #include "appearance.h"
 #include "python.h"
+#include "files.h"
 #include "../eventlog.h"
 #include "../debug.h"
 #include "../format.h"
@@ -175,6 +176,10 @@ int run(int argc, char* argv[])
     // eventlog widget
     gui::eventlog log;
     win.attach(&log);
+
+    // files widget
+    gui::files files;
+    win.attach(&files);
 
     // RSS widget
     gui::rss rss;

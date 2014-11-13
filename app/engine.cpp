@@ -392,14 +392,21 @@ void engine::on_engine_error(const newsflash::ui::error& e)
 
 void engine::on_engine_file(const newsflash::ui::file& f)
 {
+    QString path = widen(f.path);
+    if (path.isEmpty())
+        path = QDir::currentPath();
+
+    path = QDir(path).absolutePath();
+    path = QDir::toNativeSeparators(path);
+
     app::file file;
     file.binary  = f.binary;
     file.damaged = f.damaged;
     file.name    = widen(f.name);
-    file.path    = widen(f.path);
+    file.path    = path;
     file.size    = f.size;
 
-    DEBUG(str("Downloaded _1/_2", file.path, file.name));
+    DEBUG(str("Downloaded _1/_2", path, file.name));
 
     if (f.damaged)
     {

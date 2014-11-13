@@ -35,17 +35,27 @@ namespace gui
     class files : public mainwidget
     {
         Q_OBJECT
+
     public:
         files();
        ~files();
 
         virtual void add_actions(QMenu& menu) override;
         virtual void add_actions(QToolBar& bar) override;
+        virtual void loadstate(app::settings& s) override;
+        virtual bool savestate(app::settings& s) override;
+        virtual void shutdown() override;
 
         virtual info information() const override
         {
             return {"files.html", true, true};
         }
+    private slots:
+        void on_actionOpenFile_triggered();
+        void on_actionOpenFileWith_triggered();
+        void on_actionOpenFolder_triggered();
+        void on_actionClear_triggered();
+        void on_tableFiles_customContextMenuRequested(QPoint point);
 
     private:
         Ui::Files ui_;

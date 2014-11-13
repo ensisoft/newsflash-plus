@@ -23,11 +23,18 @@
 #define LOGTAG "files"
 
 #include <newsflash/config.h>
+#include <newsflash/warnpush.h>
+#  include <QDir>
+#  include <QFile>
+#  include <QTextStream>
+#include <newsflash/warnpop.h>
 
 #include "eventlog.h"
 #include "debug.h"
 #include "engine.h"
 #include "files.h"
+#include "homedir.h"
+#include "format.h"
 
 namespace {
     enum class columns {
@@ -53,6 +60,30 @@ files::~files()
 
 QVariant files::data(const QModelIndex& index, int role) const
 {
+    // back of the vector is "top of the data"
+    // so that we can just push-back instead of more expensive push_front (on deque)
+    // and the latest item is then always ab table row 0 
+
+    const auto row   = files_.size() - (size_t)index.row()  - 1;
+    const auto col   = (columns)index.column();
+    const auto& file = files_[row];    
+
+    if (role == Qt::DisplayRole)
+    {
+        switch (col)
+        {
+            case columns::type: return str(file.type);
+            case columns::time: return format(app::event { file.time });
+            case columns::path: return file.path;
+            case columns::name: return file.name;
+            case columns::count: Q_ASSERT(0);
+        }
+    }
+    else if (role == Qt::DecorationRole)
+    {
+        if (col == columns::type)
+            return file.icon;
+    }
     return QVariant();
 }
 
@@ -63,11 +94,10 @@ QVariant files::headerData(int section, Qt::Orientation orientation, int role) c
         switch ((columns)section)
         {
             case columns::type:  return "Type";
-            case columns::time:  return "Time";
+            case columns::time:  return "Date";
             case columns::path:  return "Location";
             case columns::name:  return "Name";
-            case columns::count:
-                Q_ASSERT(0);
+            case columns::count: Q_ASSERT(0);
         }
     }
     return QVariant();
@@ -75,7 +105,28 @@ QVariant files::headerData(int section, Qt::Orientation orientation, int role) c
 
 void files::sort(int column, Qt::SortOrder order) 
 {
+    emit layoutAboutToBeChanged();
 
+#define SORT(x) \
+    std::sort(std::begin(files_), std::end(files_), \
+        [&](const files::file& lhs, const files::file& rhs) { \
+            if (order == Qt::AscendingOrder) \
+                return lhs.x < rhs.x; \
+            return lhs.x > rhs.x; \
+        });
+
+    switch ((columns)column)
+    {
+        case columns::type: SORT(type); break;
+        case columns::time: SORT(time); break;
+        case columns::path: SORT(path); break;
+        case columns::name: SORT(name); break;
+        case columns::count: Q_ASSERT(0);        
+    }
+
+#undef SORT
+
+    emit layoutChanged();
 }
 
 int files::rowCount(const QModelIndex&) const 
@@ -88,9 +139,123 @@ int files::columnCount(const QModelIndex&) const
     return (int)columns::count;
 }
 
+void files::loadHistory()
+{
+    const auto& file = homedir::file("file-history.txt");
+
+    QFile history;        
+    history.setFileName(file);
+    if (!history.open(QIODevice::ReadOnly))
+    {
+        if (!QFileInfo(file).exists())
+            return;
+
+        ERROR(str("Unable to read file history _1", history));
+        return;
+    }
+
+    DEBUG(str("Opened history file _1", history));
+
+    QTextStream load(&history);
+    load.setCodec("UTF-8");
+    while (!load.atEnd())
+    {
+        const auto& line = load.readLine();
+        if (line.isNull())
+            break;
+
+        const auto& toks = line.split("\t");
+
+        files::file next;
+        next.type = (filetype)toks[0].toInt();
+        next.time = QDateTime::fromTime_t(toks[1].toLongLong());
+        next.path = toks[2];
+        next.name = toks[3];
+        next.icon = find_fileicon(next.type);
+
+        const QFileInfo info(next.path + "/" + next.name);
+        if (!info.exists())
+            continue;
+
+        files_.push_back(std::move(next));
+    }
+
+    history.close();
+
+    // write back out the history data and truncate the file
+    // this removes lines of data for files that are not available anymore.
+    history_.setFileName(file);
+    if (!history_.open(QIODevice::ReadWrite | QIODevice::Truncate))
+    {
+        ERROR(str("Unable to write file history data _1", history_));
+        return;
+    }
+
+    QTextStream save(&history_);
+    save.setCodec("UTF-8");
+    for (const auto& next : files_)
+    {
+        save << (int)next.type << "\t";
+        save << next.time.toTime_t() << "\t";
+        save << next.path << "\t";
+        save << next.name;
+        save << "\n";
+    }
+
+    reset();
+}
+
+void files::eraseHistory()
+{
+    if (history_.isOpen())
+        history_.close();
+
+    const auto& file = history_.fileName();
+    if (file.isEmpty())
+        return;
+
+    QFile::remove(file);
+
+    DEBUG(str("Erased file history _1", history_));
+
+    reset();
+}
+
 void files::fileCompleted(const app::file& file)
 {
+    files::file next;
+    next.name = file.name;
+    next.path = file.path;
+    next.type = find_filetype(file.name);
+    next.icon = find_fileicon(next.type);
+    next.time = QDateTime::currentDateTime();
 
+    if (!history_.isOpen())
+    {
+        const auto& file = homedir::file("file-history.txt");
+        history_.setFileName(file);
+        if (!history_.open(QIODevice::WriteOnly | QIODevice::Append))
+        {
+            ERROR(str("Unable to write file history data _1", history_));
+        }
+    }
+
+    // record the file download event in the history file.
+    if (history_.isOpen())
+    {
+        QTextStream stream(&history_);
+        stream.setCodec("UTF-8");
+        stream << (int)next.type << "\t";
+        stream << next.time.toTime_t() << "\t";
+        stream << next.path << "\t";
+        stream << next.name;
+        stream << "\n";
+        history_.flush();
+    }
+
+    beginInsertRows(QModelIndex(), 0, 0);
+    files_.push_back(std::move(next));
+    endInsertRows();
 }
 
 } // app

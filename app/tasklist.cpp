@@ -131,7 +131,7 @@ QVariant tasklist::data(const QModelIndex& index, int role) const
             case states::waiting: 
                 return QIcon(":/resource/16x16_ico_png/ico_task_waiting.png");
             case states::active: 
-                return QIcon(":/resource/16x16_ico_png/ico_task_running.png");
+                return QIcon(":/resource/16x16_ico_png/ico_task_active.png");
             case states::paused: 
                 return QIcon(":/resource/16x16_ico_png/ico_task_paused.png");   
             case states::finalize:

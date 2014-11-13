@@ -123,21 +123,21 @@ QIcon find_fileicon(filetype type)
         case filetype::none:
             Q_ASSERT(!"none is not a valid filetype");
         case filetype::audio:
-            return QIcon(":/resource/16x16_ico_png/ico_audio.png");
+            return QIcon(":/resource/16x16_ico_png/ico_filetype_audio.png");
         case filetype::video:
-            return QIcon(":/resource/16x16_ico_png/ico_video.png");
+            return QIcon(":/resource/16x16_ico_png/ico_filetype_video.png");
         case filetype::image:
-            return QIcon(":/resource/16x16_ico_png/ico_image.png");
+            return QIcon(":/resource/16x16_ico_png/ico_filetype_image.png");
         case filetype::text:
-            return QIcon(":/resource/16x16_ico_png/ico_text.png");
+            return QIcon(":/resource/16x16_ico_png/ico_filetype_text.png");
         case filetype::archive:
-            return QIcon(":/resource/16x16_ico_png/ico_archive.png");
+            return QIcon(":/resource/16x16_ico_png/ico_filetype_archive.png");
         case filetype::parity:
-            return QIcon(":/resource/16x16_ico_png/ico_parity.png");
+            return QIcon(":/resource/16x16_ico_png/ico_filetype_parity.png");
         case filetype::document:
-            return QIcon(":/resource/16x16_ico_png/ico_document.png");
+            return QIcon(":/resource/16x16_ico_png/ico_filetype_document.png");
         case filetype::other:
-            return QIcon(":/resource/16x16_ico_png/ico_other.png");
+            return QIcon(":/resource/16x16_ico_png/ico_filetype_other.png");
     }
 
     Q_ASSERT(!"wat");

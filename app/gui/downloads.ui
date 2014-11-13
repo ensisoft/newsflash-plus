@@ -32,40 +32,6 @@
         <bool>false</bool>
        </property>
        <layout class="QGridLayout" name="gridLayout_2">
-        <item row="1" column="0">
-         <widget class="QTableView" name="tableTasks">
-          <property name="contextMenuPolicy">
-           <enum>Qt::CustomContextMenu</enum>
-          </property>
-          <property name="tabKeyNavigation">
-           <bool>false</bool>
-          </property>
-          <property name="selectionBehavior">
-           <enum>QAbstractItemView::SelectRows</enum>
-          </property>
-          <property name="showGrid">
-           <bool>false</bool>
-          </property>
-          <property name="gridStyle">
-           <enum>Qt::SolidLine</enum>
-          </property>
-          <attribute name="horizontalHeaderMinimumSectionSize">
-           <number>16</number>
-          </attribute>
-          <attribute name="horizontalHeaderStretchLastSection">
-           <bool>true</bool>
-          </attribute>
-          <attribute name="verticalHeaderVisible">
-           <bool>false</bool>
-          </attribute>
-          <attribute name="verticalHeaderDefaultSectionSize">
-           <number>16</number>
-          </attribute>
-          <attribute name="verticalHeaderMinimumSectionSize">
-           <number>16</number>
-          </attribute>
-         </widget>
-        </item>
         <item row="0" column="0">
          <layout class="QHBoxLayout" name="horizontalLayout">
           <item>
@@ -106,6 +72,40 @@
            </spacer>
           </item>
          </layout>
+        </item>
+        <item row="1" column="0">
+         <widget class="QTableView" name="tableTasks">
+          <property name="contextMenuPolicy">
+           <enum>Qt::CustomContextMenu</enum>
+          </property>
+          <property name="tabKeyNavigation">
+           <bool>false</bool>
+          </property>
+          <property name="selectionBehavior">
+           <enum>QAbstractItemView::SelectRows</enum>
+          </property>
+          <property name="showGrid">
+           <bool>false</bool>
+          </property>
+          <property name="gridStyle">
+           <enum>Qt::SolidLine</enum>
+          </property>
+          <attribute name="horizontalHeaderMinimumSectionSize">
+           <number>16</number>
+          </attribute>
+          <attribute name="horizontalHeaderStretchLastSection">
+           <bool>true</bool>
+          </attribute>
+          <attribute name="verticalHeaderVisible">
+           <bool>false</bool>
+          </attribute>
+          <attribute name="verticalHeaderDefaultSectionSize">
+           <number>16</number>
+          </attribute>
+          <attribute name="verticalHeaderMinimumSectionSize">
+           <number>16</number>
+          </attribute>
+         </widget>
         </item>
        </layout>
       </widget>
@@ -217,7 +217,7 @@
   <action name="actionTaskResume">
    <property name="icon">
     <iconset resource="resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_resume.png</normaloff>:/resource/16x16_ico_png/ico_resume.png</iconset>
+     <normaloff>:/resource/16x16_ico_png/ico_task_resume.png</normaloff>:/resource/16x16_ico_png/ico_task_resume.png</iconset>
    </property>
    <property name="text">
     <string>Resume</string>
@@ -232,7 +232,7 @@
   <action name="actionTaskPause">
    <property name="icon">
     <iconset resource="resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_pause.png</normaloff>:/resource/16x16_ico_png/ico_pause.png</iconset>
+     <normaloff>:/resource/16x16_ico_png/ico_task_pause.png</normaloff>:/resource/16x16_ico_png/ico_task_pause.png</iconset>
    </property>
    <property name="text">
     <string>Pause</string>
@@ -316,7 +316,7 @@
   <action name="actionConnClone">
    <property name="icon">
     <iconset resource="resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_connection_clone.png</normaloff>:/resource/16x16_ico_png/ico_connection_clone.png</iconset>
+     <normaloff>:/resource/16x16_ico_png/ico_conn_clone.png</normaloff>:/resource/16x16_ico_png/ico_conn_clone.png</iconset>
    </property>
    <property name="text">
     <string>Clone</string>
@@ -328,25 +328,10 @@
     <string>Ctrl+Shift+C</string>
    </property>
   </action>
-  <action name="actionConnRecycle">
-   <property name="icon">
-    <iconset resource="resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_yield.png</normaloff>:/resource/16x16_ico_png/ico_yield.png</iconset>
-   </property>
-   <property name="text">
-    <string>Recycle</string>
-   </property>
-   <property name="toolTip">
-    <string>Request connection to yield current download and take a new one</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+R</string>
-   </property>
-  </action>
   <action name="actionTaskMoveUp">
    <property name="icon">
     <iconset resource="resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_up.png</normaloff>:/resource/16x16_ico_png/ico_up.png</iconset>
+     <normaloff>:/resource/16x16_ico_png/ico_task_moveup.png</normaloff>:/resource/16x16_ico_png/ico_task_moveup.png</iconset>
    </property>
    <property name="text">
     <string>Move Up</string>
@@ -358,7 +343,7 @@
   <action name="actionTaskMoveDown">
    <property name="icon">
     <iconset resource="resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_down.png</normaloff>:/resource/16x16_ico_png/ico_down.png</iconset>
+     <normaloff>:/resource/16x16_ico_png/ico_task_movedown.png</normaloff>:/resource/16x16_ico_png/ico_task_movedown.png</iconset>
    </property>
    <property name="text">
     <string>Move Down</string>
@@ -370,7 +355,7 @@
   <action name="actionTaskMoveTop">
    <property name="icon">
     <iconset resource="resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_top.png</normaloff>:/resource/16x16_ico_png/ico_top.png</iconset>
+     <normaloff>:/resource/16x16_ico_png/ico_task_movetop.png</normaloff>:/resource/16x16_ico_png/ico_task_movetop.png</iconset>
    </property>
    <property name="text">
     <string>Top</string>
@@ -382,7 +367,7 @@
   <action name="actionTaskMoveBottom">
    <property name="icon">
     <iconset resource="resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_bottom.png</normaloff>:/resource/16x16_ico_png/ico_bottom.png</iconset>
+     <normaloff>:/resource/16x16_ico_png/ico_task_movebottom.png</normaloff>:/resource/16x16_ico_png/ico_task_movebottom.png</iconset>
    </property>
    <property name="text">
     <string>Bottom</string>

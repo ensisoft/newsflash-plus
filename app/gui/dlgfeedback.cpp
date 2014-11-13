@@ -49,7 +49,7 @@ DlgFeedback::DlgFeedback(QWidget* parent, mode m) : QDialog(parent), uimode_(m)
     {
         case mode::bugreport:
             setWindowTitle("Report a Bug");
-            setWindowIcon(QIcon(":/resource/16x16_ico_png/ico_bug.png"));
+            setWindowIcon(QIcon(":/resource/16x16_ico_png/ico_app_report_bug.png"));
             ui_.grpMessage->setTitle("Description *");
             ui_.txtMessage->setPlainText(
                 "Description of the problem:\r\n\r\n"
@@ -61,20 +61,20 @@ DlgFeedback::DlgFeedback(QWidget* parent, mode m) : QDialog(parent), uimode_(m)
 
         case mode::feedback:
             setWindowTitle("Send feedback");
-            setWindowIcon(QIcon(":/resource/16x16_ico_png/ico_user_feedback.png"));
+            setWindowIcon(QIcon(":/resource/16x16_ico_png/ico_app_send_feedback.png"));
             ui_.grpMessage->setTitle("Message *");
             ui_.cmbFeelings->setVisible(true);
             break;
 
         case mode::request_feature:
             setWindowTitle("Request a Feature");
-            setWindowIcon(QIcon(":/resource/16x16_ico_png/ico_idea.png"));
+            setWindowIcon(QIcon(":/resource/16x16_ico_png/ico_app_request_feature.png"));
             ui_.grpMessage->setTitle("Request *");
             break;
 
         case mode::request_license:
             setWindowTitle("Request Registration License");
-            setWindowIcon(QIcon(":/resource/16x16_ico_png/ico_register.png"));
+            setWindowIcon(QIcon(":/resource/16x16_ico_png/ico_app_request_license.png"));
             ui_.grpMessage->setTitle("Request License");
             ui_.txtMessage->setPlainText(
                 QString(

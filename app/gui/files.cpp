@@ -32,6 +32,8 @@
 #include "files.h"
 #include "../debug.h"
 #include "../format.h"
+#include "../settings.h"
+#include "../platform.h"
 
 namespace gui
 {
@@ -78,6 +80,91 @@ void files::add_actions(QToolBar& bar)
     bar.addAction(ui_.actionClear);
     bar.addSeparator();
     bar.addAction(ui_.actionDelete);
+}
+
+void files::loadstate(app::settings& s) 
+{
+    const auto sorted  = s.get("files", "keep_sorted", false);
+    const auto clear   = s.get("files", "clear_on_exit", false);
+    const auto confirm = s.get("files", "confirm_file_delete", true);
+
+    ui_.chkKeepSorted->setChecked(sorted);
+    ui_.chkClearOnExit->setChecked(clear);
+    ui_.chkConfirmDelete->setChecked(confirm);
+
+    const auto* model = ui_.tableFiles->model();
+    for (int i=0; i<model->columnCount()-1; ++i)
+    {
+        const auto name  = QString("table_col_%1_width").arg(i);
+        const auto width = s.get("files", name, ui_.tableFiles->columnWidth(i));
+        ui_.tableFiles->setColumnWidth(i, width);
+    }
+
+    model_.loadHistory();
+}
+
+bool files::savestate(app::settings& s)
+{
+    const auto sorted  = ui_.chkKeepSorted->isChecked();
+    const auto clear   = ui_.chkClearOnExit->isChecked();
+    const auto confirm = ui_.chkConfirmDelete->isChecked();
+
+    s.set("files", "keep_sorted", sorted);
+    s.set("files", "clear_on_exit", clear);
+    s.set("files", "confirm_file_delete", confirm);
+
+    const auto* model = ui_.tableFiles->model();
+    // the last column has auto-stretch flag set so it's width
+    // is implied. and in fact setting the width will cause rendering bugs
+    for (int i=0; i<model->columnCount()-1; ++i)
+    {
+        const auto width = ui_.tableFiles->columnWidth(i);
+        const auto name  = QString("table_col_%1_width").arg(i);
+        s.set("files", name, width);
+    }    
+
+    return true;
+}
+
+void files::shutdown() 
+{
+    const auto clear = ui_.chkClearOnExit->isChecked();
+    if (clear)
+    {
+        model_.eraseHistory();
+    }
+}
+
+void files::on_actionOpenFile_triggered()
+{
+    const auto& indices = ui_.tableFiles->selectionModel()->selectedRows();
+    for (int i=0; i<indices.size(); ++i)
+    {
+        const auto row   = indices[i].row();
+        const auto& item = model_.getItem(row);
+        const auto& file = QString("%1/%2").arg(item.path).arg(item.name);
+        app::open_file(file);
+    }
+}
+
+void files::on_actionOpenFileWith_triggered()
+{
+
+}
+
+void files::on_actionOpenFolder_triggered()
+{
+
+}
+
+void files::on_actionClear_triggered()
+{
+    model_.eraseHistory();
+}
+
+void files::on_tableFiles_customContextMenuRequested(QPoint point)
+{
+    
 }
 
 } // gui

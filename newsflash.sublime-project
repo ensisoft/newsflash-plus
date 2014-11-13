@@ -38,9 +38,9 @@
             "-I${home}/coding/qt-4.8.2/include",
             "-I${home}/coding/qt-4.8.2/include/QtCore",
 
-            // for MOC
-            "-I${home}/coding/newsflash/app/bin/gcc-4.9.1/debug/threading-multi/",        
-            "-I${home}/coding/newsflash/app/gui/bin/gcc-4.9.1/debug/threading-multi/"
+            // for MOC and UIC generated headers
+            "-I${home}/coding/newsflash/app/bin/gcc-4.9.2/debug/threading-multi/",        
+            "-I${home}/coding/newsflash/app/gui/bin/gcc-4.9.2/debug/threading-multi/"
         ]
     }
 }

@@ -29,10 +29,12 @@
 #  include <QAbstractTableModel>
 #  include <QString>
 #  include <QDateTime>
+#  include <QFile>
 #include <newsflash/warnpop.h>
 
 #include <vector>
 #include "engine.h"
+#include "filetype.h"
 
 namespace app
 {
@@ -41,6 +43,14 @@ namespace app
         Q_OBJECT
 
     public:
+        struct file {
+            QString   name;
+            QString   path;
+            QDateTime time;
+            QIcon     icon;
+            filetype  type;
+        };
+
         files();
        ~files();
 
@@ -51,15 +61,19 @@ namespace app
         virtual int rowCount(const QModelIndex&) const override;
         virtual int columnCount(const QModelIndex&) const override;
 
+        void loadHistory();
+        void eraseHistory();
+
+        const file& getItem(std::size_t i) const
+        { return files_[files_.size() - i -1]; }
+
     private slots:
         void fileCompleted(const app::file& file);
 
     private:
-        struct file {
-            QString   name;
-            QString   path;
-            QDateTime time;
-        };
+
         std::vector<file> files_;
+    private:
+        QFile history_;
     };
 } // app

@@ -395,7 +395,6 @@
     <addaction name="actionViewForum"/>
     <addaction name="separator"/>
     <addaction name="separator"/>
-    <addaction name="actionBuyNow"/>
     <addaction name="separator"/>
     <addaction name="actionRegister"/>
     <addaction name="separator"/>
@@ -470,7 +469,7 @@
   <action name="actionExit">
    <property name="icon">
     <iconset resource="resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_exit.png</normaloff>:/resource/16x16_ico_png/ico_exit.png</iconset>
+     <normaloff>:/resource/16x16_ico_png/ico_app_exit.png</normaloff>:/resource/16x16_ico_png/ico_app_exit.png</iconset>
    </property>
    <property name="text">
     <string>&amp;Exit</string>
@@ -482,7 +481,7 @@
   <action name="actionSettings">
    <property name="icon">
     <iconset resource="resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_settings.png</normaloff>:/resource/16x16_ico_png/ico_settings.png</iconset>
+     <normaloff>:/resource/16x16_ico_png/ico_app_settings.png</normaloff>:/resource/16x16_ico_png/ico_app_settings.png</iconset>
    </property>
    <property name="text">
     <string>Settings...</string>
@@ -491,7 +490,7 @@
   <action name="actionAbout">
    <property name="icon">
     <iconset resource="resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_about.png</normaloff>:/resource/16x16_ico_png/ico_about.png</iconset>
+     <normaloff>:/resource/16x16_ico_png/ico_app_about.png</normaloff>:/resource/16x16_ico_png/ico_app_about.png</iconset>
    </property>
    <property name="text">
     <string>About</string>
@@ -530,7 +529,7 @@
   <action name="actionHelp">
    <property name="icon">
     <iconset resource="resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_help.png</normaloff>:/resource/16x16_ico_png/ico_help.png</iconset>
+     <normaloff>:/resource/16x16_ico_png/ico_app_help.png</normaloff>:/resource/16x16_ico_png/ico_app_help.png</iconset>
    </property>
    <property name="text">
     <string>More help</string>
@@ -548,19 +547,10 @@
     <string>Ctrl+W</string>
    </property>
   </action>
-  <action name="actionBuyNow">
-   <property name="icon">
-    <iconset resource="resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_euro.png</normaloff>:/resource/16x16_ico_png/ico_euro.png</iconset>
-   </property>
-   <property name="text">
-    <string>Donate</string>
-   </property>
-  </action>
   <action name="actionRegister">
    <property name="icon">
     <iconset resource="resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_register.png</normaloff>:/resource/16x16_ico_png/ico_register.png</iconset>
+     <normaloff>:/resource/16x16_ico_png/ico_app_register.png</normaloff>:/resource/16x16_ico_png/ico_app_register.png</iconset>
    </property>
    <property name="text">
     <string>Register</string>
@@ -569,7 +559,7 @@
   <action name="actionReportBug">
    <property name="icon">
     <iconset resource="resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_bug.png</normaloff>:/resource/16x16_ico_png/ico_bug.png</iconset>
+     <normaloff>:/resource/16x16_ico_png/ico_app_report_bug.png</normaloff>:/resource/16x16_ico_png/ico_app_report_bug.png</iconset>
    </property>
    <property name="text">
     <string>Report a bug</string>
@@ -578,7 +568,7 @@
   <action name="actionSendFeedback">
    <property name="icon">
     <iconset resource="resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_user_feedback.png</normaloff>:/resource/16x16_ico_png/ico_user_feedback.png</iconset>
+     <normaloff>:/resource/16x16_ico_png/ico_app_send_feedback.png</normaloff>:/resource/16x16_ico_png/ico_app_send_feedback.png</iconset>
    </property>
    <property name="text">
     <string>Send feedback</string>
@@ -587,7 +577,7 @@
   <action name="actionRequestFeature">
    <property name="icon">
     <iconset resource="resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_idea.png</normaloff>:/resource/16x16_ico_png/ico_idea.png</iconset>
+     <normaloff>:/resource/16x16_ico_png/ico_app_request_feature.png</normaloff>:/resource/16x16_ico_png/ico_app_request_feature.png</iconset>
    </property>
    <property name="text">
     <string>Request a feature</string>
@@ -596,7 +586,7 @@
   <action name="actionContextHelp">
    <property name="icon">
     <iconset resource="resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_help.png</normaloff>:/resource/16x16_ico_png/ico_help.png</iconset>
+     <normaloff>:/resource/16x16_ico_png/ico_app_help.png</normaloff>:/resource/16x16_ico_png/ico_app_help.png</iconset>
    </property>
    <property name="text">
     <string>Help</string>
@@ -608,7 +598,7 @@
   <action name="actionViewForum">
    <property name="icon">
     <iconset resource="resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_forum.png</normaloff>:/resource/16x16_ico_png/ico_forum.png</iconset>
+     <normaloff>:/resource/16x16_ico_png/ico_app_forum.png</normaloff>:/resource/16x16_ico_png/ico_app_forum.png</iconset>
    </property>
    <property name="text">
     <string>Forum</string>
@@ -620,7 +610,7 @@
   <action name="actionRequestLicense">
    <property name="icon">
     <iconset resource="resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_register.png</normaloff>:/resource/16x16_ico_png/ico_register.png</iconset>
+     <normaloff>:/resource/16x16_ico_png/ico_app_request_license.png</normaloff>:/resource/16x16_ico_png/ico_app_request_license.png</iconset>
    </property>
    <property name="text">
     <string>Request license</string>
@@ -656,7 +646,7 @@
   <action name="actionMinimize">
    <property name="icon">
     <iconset resource="resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_minimize.png</normaloff>:/resource/16x16_ico_png/ico_minimize.png</iconset>
+     <normaloff>:/resource/16x16_ico_png/ico_app_minimize.png</normaloff>:/resource/16x16_ico_png/ico_app_minimize.png</iconset>
    </property>
    <property name="text">
     <string>Minimize</string>
@@ -668,7 +658,7 @@
   <action name="actionRestore">
    <property name="icon">
     <iconset resource="resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_restore.png</normaloff>:/resource/16x16_ico_png/ico_restore.png</iconset>
+     <normaloff>:/resource/16x16_ico_png/ico_app_restore.png</normaloff>:/resource/16x16_ico_png/ico_app_restore.png</iconset>
    </property>
    <property name="text">
     <string>Restore</string>

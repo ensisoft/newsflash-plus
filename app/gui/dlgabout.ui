@@ -14,8 +14,8 @@
    <string>About Newsflash</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="../../../../svnroot/newsflash/gui/resource.qrc">
-    <normaloff>:/resource/16x16_ico_png/ico_about.png</normaloff>:/resource/16x16_ico_png/ico_about.png</iconset>
+   <iconset resource="resource.qrc">
+    <normaloff>:/resource/16x16_ico_png/ico_app_about.png</normaloff>:/resource/16x16_ico_png/ico_app_about.png</iconset>
   </property>
   <layout class="QGridLayout" name="gridLayout_2">
    <item row="0" column="0">
@@ -231,7 +231,7 @@ p, li { white-space: pre-wrap; }
   <tabstop>btnClose</tabstop>
  </tabstops>
  <resources>
-  <include location="../../../../svnroot/newsflash/gui/resource.qrc"/>
+  <include location="resource.qrc"/>
  </resources>
  <connections>
   <connection>

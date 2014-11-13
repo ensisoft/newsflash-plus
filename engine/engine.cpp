@@ -628,6 +628,8 @@ public:
 
     transition complete(engine::state& state, std::shared_ptr<cmdlist> cmds)
     {
+        --num_active_cmdlists_;
+
         if (ui_.state == states::error)
             return no_transition;
 
@@ -638,6 +640,7 @@ public:
             {
                 cmds->set_account(state.fill_account);
                 state.enqueue(*this, cmds);
+                ++num_active_cmdlists_;
                 return no_transition;
             }
             else
@@ -660,6 +663,7 @@ public:
                 {
                     cmds->set_account(state.fill_account);
                     state.enqueue(*this, cmds);
+                    ++num_active_cmdlists_;
                     return no_transition;
                 }
                 else if (status == buffer::status::unavailable)
@@ -676,9 +680,7 @@ public:
         task_->complete(*cmds, actions);
         for (auto& a : actions)
             do_action(state, std::move(a));
-
-        --num_active_cmdlists_;
-
+        
         return update_completion(state);
     }
 
@@ -1844,8 +1846,9 @@ void engine::resume_task(std::size_t index)
             auto& batch = state_->find_batch(task->bid());            
             batch.update(*state_, *task, transition);
         }
-        state_->execute();                    
+
     }
+    state_->execute();                        
 }
 
 void engine::move_task_up(std::size_t index)

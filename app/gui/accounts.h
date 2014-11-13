@@ -53,9 +53,9 @@ namespace gui
         void updatePie();
 
     private slots:
-        void on_actionNew_triggered();
+        void on_actionAdd_triggered();
         void on_actionDel_triggered();
-        void on_actionProperties_triggered();
+        void on_actionEdit_triggered();
         void on_btnResetMonth_clicked();
         void on_btnResetAllTime_clicked();
         void on_btnMonthlyQuota_toggled(bool checked);
