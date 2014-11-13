@@ -47,6 +47,7 @@
 #include "nzbcore.h"
 #include "downloads.h"
 #include "coremodule.h"
+#include "toolmodule.h"
 #include "appearance.h"
 #include "python.h"
 #include "files.h"
@@ -192,6 +193,10 @@ int run(int argc, char* argv[])
     // nzb module
     gui::nzbcore nzb;
     win.attach(&nzb);
+
+    // tool module
+    gui::toolmodule tools;
+    win.attach(&tools);
 
     win.attach(&style);
 

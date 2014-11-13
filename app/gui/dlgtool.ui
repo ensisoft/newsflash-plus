@@ -1,0 +1,337 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>DlgTool</class>
+ <widget class="QDialog" name="DlgTool">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>385</width>
+    <height>322</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Tool settings</string>
+  </property>
+  <property name="windowIcon">
+   <iconset resource="../../../../svnroot/newsflash/gui/resource.qrc">
+    <normaloff>:/resource/16x16_ico_png/ico_settings.png</normaloff>:/resource/16x16_ico_png/ico_settings.png</iconset>
+  </property>
+  <property name="sizeGripEnabled">
+   <bool>true</bool>
+  </property>
+  <layout class="QGridLayout" name="gridLayout_5">
+   <item row="0" column="0">
+    <widget class="QGroupBox" name="groupBox_4">
+     <property name="title">
+      <string>Application details</string>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_4">
+      <item row="0" column="0">
+       <layout class="QGridLayout" name="gridLayout">
+        <item row="0" column="0">
+         <widget class="QLabel" name="label_7">
+          <property name="text">
+           <string>Application</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QLineEdit" name="editApplication">
+          <property name="toolTip">
+           <string>Application binary may include the full path</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="2">
+         <widget class="QPushButton" name="btnBrowse">
+          <property name="text">
+           <string>Browse...</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="label_2">
+          <property name="text">
+           <string>Name</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QLineEdit" name="editName">
+          <property name="toolTip">
+           <string>The name for this tool</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="label_10">
+          <property name="text">
+           <string>Arguments</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <widget class="QLineEdit" name="editArgs">
+          <property name="toolTip">
+           <string>Arguments to be passed to the application when invoked. Pseudo argument ${file} will be expanded to the full file path at runtime</string>
+          </property>
+          <property name="text">
+           <string>${file}</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="2">
+         <widget class="QPushButton" name="btnDefault">
+          <property name="text">
+           <string>Default</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="1">
+         <widget class="QLineEdit" name="editShortcut">
+          <property name="toolTip">
+           <string>Keyboard shortcut</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="0">
+         <widget class="QLabel" name="label_3">
+          <property name="text">
+           <string>Shortcut</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="2">
+         <widget class="QPushButton" name="btnReset">
+          <property name="text">
+           <string>Reset</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="1" column="0">
+    <widget class="QGroupBox" name="groupBox">
+     <property name="title">
+      <string>Applicable file types</string>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_3">
+      <item row="0" column="0">
+       <layout class="QGridLayout" name="gridLayout_2">
+        <item row="0" column="0">
+         <widget class="QPushButton" name="btnAudio">
+          <property name="text">
+           <string>Audio</string>
+          </property>
+          <property name="icon">
+           <iconset resource="../../../../svnroot/newsflash/gui/resource.qrc">
+            <normaloff>:/resource/16x16_ico_png/ico_audio.png</normaloff>:/resource/16x16_ico_png/ico_audio.png</iconset>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="flat">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QPushButton" name="btnVideo">
+          <property name="text">
+           <string>Video</string>
+          </property>
+          <property name="icon">
+           <iconset resource="../../../../svnroot/newsflash/gui/resource.qrc">
+            <normaloff>:/resource/16x16_ico_png/ico_video.png</normaloff>:/resource/16x16_ico_png/ico_video.png</iconset>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="flat">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="2">
+         <widget class="QPushButton" name="btnImage">
+          <property name="text">
+           <string>Image</string>
+          </property>
+          <property name="icon">
+           <iconset resource="../../../../svnroot/newsflash/gui/resource.qrc">
+            <normaloff>:/resource/16x16_ico_png/ico_image.png</normaloff>:/resource/16x16_ico_png/ico_image.png</iconset>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="flat">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="3">
+         <widget class="QPushButton" name="btnParity">
+          <property name="text">
+           <string>Parity</string>
+          </property>
+          <property name="icon">
+           <iconset resource="../../../../svnroot/newsflash/gui/resource.qrc">
+            <normaloff>:/resource/16x16_ico_png/ico_parity.png</normaloff>:/resource/16x16_ico_png/ico_parity.png</iconset>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="flat">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QPushButton" name="btnArchive">
+          <property name="text">
+           <string>Archive</string>
+          </property>
+          <property name="icon">
+           <iconset resource="../../../../svnroot/newsflash/gui/resource.qrc">
+            <normaloff>:/resource/16x16_ico_png/ico_archive.png</normaloff>:/resource/16x16_ico_png/ico_archive.png</iconset>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="flat">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QPushButton" name="btnDocument">
+          <property name="text">
+           <string>Docs</string>
+          </property>
+          <property name="icon">
+           <iconset resource="../../../../svnroot/newsflash/gui/resource.qrc">
+            <normaloff>:/resource/16x16_ico_png/ico_document.png</normaloff>:/resource/16x16_ico_png/ico_document.png</iconset>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="flat">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="2">
+         <widget class="QPushButton" name="btnText">
+          <property name="text">
+           <string>Text</string>
+          </property>
+          <property name="icon">
+           <iconset resource="../../../../svnroot/newsflash/gui/resource.qrc">
+            <normaloff>:/resource/16x16_ico_png/ico_text.png</normaloff>:/resource/16x16_ico_png/ico_text.png</iconset>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="flat">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="3">
+         <widget class="QPushButton" name="btnOther">
+          <property name="text">
+           <string>Other</string>
+          </property>
+          <property name="icon">
+           <iconset resource="../../../../svnroot/newsflash/gui/resource.qrc">
+            <normaloff>:/resource/16x16_ico_png/ico_other.png</normaloff>:/resource/16x16_ico_png/ico_other.png</iconset>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="flat">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="2" column="0">
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btnOK">
+       <property name="text">
+        <string>OK</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btnCancel">
+       <property name="text">
+        <string>Cancel</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <tabstops>
+  <tabstop>editApplication</tabstop>
+  <tabstop>btnBrowse</tabstop>
+  <tabstop>editName</tabstop>
+  <tabstop>editArgs</tabstop>
+  <tabstop>btnDefault</tabstop>
+  <tabstop>editShortcut</tabstop>
+  <tabstop>btnReset</tabstop>
+  <tabstop>btnAudio</tabstop>
+  <tabstop>btnVideo</tabstop>
+  <tabstop>btnImage</tabstop>
+  <tabstop>btnParity</tabstop>
+  <tabstop>btnArchive</tabstop>
+  <tabstop>btnDocument</tabstop>
+  <tabstop>btnOK</tabstop>
+  <tabstop>btnCancel</tabstop>
+ </tabstops>
+ <resources>
+  <include location="../../../../svnroot/newsflash/gui/resource.qrc"/>
+ </resources>
+ <connections>
+  <connection>
+   <sender>btnCancel</sender>
+   <signal>clicked()</signal>
+   <receiver>DlgTool</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>368</x>
+     <y>251</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>207</x>
+     <y>137</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>
