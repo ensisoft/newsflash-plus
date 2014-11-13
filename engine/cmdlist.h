@@ -84,22 +84,19 @@ namespace newsflash
         // submit the data transfer commands as a single batch.
         void submit_data_commands(session& ses) 
         {
-            if (cmdtype_ == type::xover)
+            for (std::size_t i=0; i<commands_.size(); ++i)
             {
-                //for (const auto& over)
-            }
-            else if (cmdtype_ == type::body)
-            {
-                for (std::size_t i=0; i<commands_.size(); ++i)
-                {
-                    if (i >= buffers_.size() ||
-                        buffers_[i].content_status() != buffer::status::success)
-                    {
-                        ses.retrieve_article(commands_[i]);
-                    }
-                    if (i < buffers_.size())
-                        buffers_[i].clear();
-                }
+                if (i < buffers_.size() &&
+                        buffers_[i].content_status() == buffer::status::success)
+                    continue;
+
+                if (cmdtype_ == type::body)
+                    ses.retrieve_article(commands_[i]);
+                else if (cmdtype_ == type::xover)
+                    ses.retrieve_headers(commands_[i]);
+
+                if (i < buffers_.size())
+                    buffers_[i].clear();
             }
         }
 

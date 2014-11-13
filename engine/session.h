@@ -107,6 +107,9 @@ namespace newsflash
         // the article body.
         void retrieve_article(std::string messageid);
 
+        // retrieve the headers in the specified range [start - end]
+        void retrieve_headers(std::string range);
+
         // send next queued command.
         // returns true if next command was sent otherwise false.
         bool send_next();
@@ -130,8 +133,10 @@ namespace newsflash
         // the session state changes.
         bool pending() const;
 
+        // turn on/off command pipelining where applicable.
         void enable_pipelining(bool on_off);
 
+        // turn on/off header compression.
         void enable_compression(bool on_off);
 
         // get current error
@@ -147,11 +152,7 @@ namespace newsflash
         bool has_xzver() const;
 
     private:
-        void submit_next_commands();
-
-    private:
         struct impl;
-
         class command;
         class welcome;
         class getcaps;

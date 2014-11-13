@@ -387,14 +387,35 @@ private:
 
 class session::xover : public session::command
 {
+public:
+    xover(std::string range) : range_(std::move(range))
+    {}
+    virtual bool parse(buffer& buff, buffer& out, impl& st) override
+    {
+        const auto len = nntp::find_response(buff.head(), buff.size());
+        if (len == 0)
+            return false;
 
+        return false;
+    }
+
+    virtual bool can_pipeline() const override
+    { return true; }
+
+    virtual session::state state() const override
+    { return session::state::transfer; }
+
+    virtual std::string str() const override
+    { return "XOVER " + range_; }
+private:
+    std::string range_;
 };
 
 // like xover but libz compressed
 class session::xzver : public session::command
 {
 public:
-    xzver(std::string first, std::string last) : first_(std::move(first)), last_(std::move(last))
+    xzver(std::string range) : range_(std::move(range))
     {}
 
     virtual bool parse(buffer& buff, buffer& out, impl& st) override
@@ -459,15 +480,17 @@ public:
         }
         return true;
     }
+    virtual bool can_pipeline() const override
+    { return false; }
+
     virtual session::state state() const override
     { return session::state::transfer; }
 
     virtual std::string str() const 
-    { return "XOVER " + first_ + "-" + last_; }
+    { return "XZVER " + range_; }
     
 private:
-    std::string first_;
-    std::string last_;
+    std::string range_;
 };
 
 
@@ -515,6 +538,18 @@ void session::change_group(std::string name)
 void session::retrieve_article(std::string messageid)
 {
     send_.emplace_back(new body(std::move(messageid)));
+}
+
+void session::retrieve_headers(std::string range)
+{
+    if (state_->enable_compression)
+    {
+        send_.emplace_back(new xover(std::move(range)));
+    }
+    else
+    {
+        send_.emplace_back(new xzver(std::move(range)));
+    }
 }
 
 bool session::send_next()
@@ -658,11 +693,6 @@ bool session::has_gzip_compress() const
 
 bool session::has_xzver() const 
 { return state_->has_xzver; }
-
-void session::submit_next_commands()
-{
-
-}
 
 } // newsflash
 

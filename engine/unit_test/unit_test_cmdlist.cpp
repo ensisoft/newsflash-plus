@@ -165,8 +165,7 @@ void unit_test_refill()
                 "222 body follows\r\n"
                 "foo\r\n.\r\n"
                 "420 no article with that message\r\n"
-                "222 body follows\r\n"
-                "bar\r\n.\r\n");
+                "420 no article with that message\r\n");
     session.recv_next(recv, b1);
     session.recv_next(recv, b2);
     session.recv_next(recv, b3);
@@ -177,30 +176,45 @@ void unit_test_refill()
     list.receive_data_buffer(std::move(b3));
     list.receive_data_buffer(std::move(b4));            
 
+    using status = nf::buffer::status;
+
+    {
+        const auto& buffers = list.get_buffers();
+        BOOST_REQUIRE(buffers[0].content_status() == status::success);
+        BOOST_REQUIRE(buffers[1].content_status() == status::success);
+        BOOST_REQUIRE(buffers[2].content_status() == status::unavailable);
+        BOOST_REQUIRE(buffers[3].content_status() == status::unavailable);        
+    }
+
     command = "";
     list.submit_data_commands(session);
     session.send_next();
-    BOOST_REQUIRE(command == "BODY 3\r\n");
+    BOOST_REQUIRE(command == "BODY 3\r\nBODY 4\r\n");
 
     recv.clear();
     recv.append("222 body follows\r\n"
-                "adrvardk\r\n.\r\n");
+                "adrvardk\r\n.\r\n"
+                "420 no article with that message dmca\r\n");
     b3 = nf::buffer();
+    b4 = nf::buffer();
     session.recv_next(recv, b3);
+    session.recv_next(recv, b4);
 
     list.receive_data_buffer(std::move(b3));
+    list.receive_data_buffer(std::move(b4));
 
-    using status = nf::buffer::status;
-
-    const auto& buffers = list.get_buffers();
-    BOOST_REQUIRE(buffers.size() == 4);
-    BOOST_REQUIRE(buffers[0].content_status() == status::success);
-    BOOST_REQUIRE(buffers[1].content_status() == status::success);
-    BOOST_REQUIRE(buffers[2].content_status() == status::success);
-    BOOST_REQUIRE(buffers[3].content_status() == status::success);        
+    {
+        const auto& buffers = list.get_buffers();
+        BOOST_REQUIRE(buffers.size() == 4);
+        BOOST_REQUIRE(buffers[0].content_status() == status::success);
+        BOOST_REQUIRE(buffers[1].content_status() == status::success);
+        BOOST_REQUIRE(buffers[2].content_status() == status::success);
+        BOOST_REQUIRE(buffers[3].content_status() == status::dmca);        
     
-    BOOST_REQUIRE(buffers[0] == "hello");
-
+        BOOST_REQUIRE(buffers[0] == "hello\r\n.\r\n");
+        BOOST_REQUIRE(buffers[1] == "foo\r\n.\r\n");
+        BOOST_REQUIRE(buffers[2] == "adrvardk\r\n.\r\n");
+    }
 
 }
 

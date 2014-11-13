@@ -345,7 +345,7 @@ bigfile::big_t bigfile::position() const
 
 bigfile::big_t bigfile::size() const 
 {
-    assert(is_open());
+    //assert(is_open());
 
     const auto ret = bigfile::size(name());
     if (ret.first != std::error_code())
