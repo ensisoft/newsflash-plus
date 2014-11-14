@@ -44,6 +44,11 @@ namespace gui
 
         virtual bool validate() const override;
 
+    private slots:
+        void on_btnAdd_clicked();
+        void on_btnDel_clicked();
+        void on_btnEdit_clicked();
+
     private:
         Ui::Tools ui_;
     private:

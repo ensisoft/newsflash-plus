@@ -50,6 +50,9 @@ bool toolsettings::validate() const
     return true;
 }
 
+
+
+
 toolmodule::toolmodule()
 {}
 
