@@ -16,6 +16,9 @@
     <file>resource/16x16_ico_png/ico_reload.png</file>    
     <file>resource/16x16_ico_png/ico_browse.png</file>
     <file>resource/16x16_ico_png/ico_close.png</file>    
+    <file>resource/16x16_ico_png/ico_move_up.png</file>
+    <file>resource/16x16_ico_png/ico_move_down.png</file>
+    <file>resource/16x16_ico_png/ico_tool.png</file>
 
     <!-- common item icons -->
     <file>resource/16x16_ico_png/ico_folder.png</file>

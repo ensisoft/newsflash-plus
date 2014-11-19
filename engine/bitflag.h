@@ -50,11 +50,6 @@ namespace newsflash
             else bits_ &= ~(1 << Bits(value));
             return *this;
         }
-        // bitflag& unset(Enum value)
-        // {
-        //     bits_ &= ~(1 << value);
-        //     return *this;
-        // }
 
         bitflag& operator |= (bitflag other)
         {
@@ -68,8 +63,14 @@ namespace newsflash
             return *this;
         }
 
+        // test a particular value.
         bool test(Enum value) const
         { return bits_ & (1 << Bits(value)); }
+
+
+        // test for any value.
+        bool test(bitflag values) const 
+        { return bits_ & values.bits_; }
 
         void clear() 
         { bits_ = 0x0; }

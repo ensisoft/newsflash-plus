@@ -27,6 +27,8 @@
 #  include <QString>
 #include <newsflash/warnpop.h>
 
+#include <iterator>
+
 class QIcon;
 class QString;
 
@@ -59,8 +61,64 @@ namespace app
         document, 
 
         // unknown filetype
-        other
+        other,
     };
+
+    class filetype_iterator : public std::iterator<std::forward_iterator_tag, filetype>
+    {
+    public:
+        filetype_iterator(filetype beg) : value_(unsigned(beg))
+        {}
+        filetype_iterator() : value_(unsigned(filetype::other) + 1)
+        {}
+
+        // postfix
+        filetype_iterator operator++(int)
+        {
+            filetype_iterator tmp(value_);
+            ++value_;
+            return tmp;
+        }
+
+        // prefix
+        filetype_iterator& operator++()
+        {
+            ++value_;
+            return *this;
+        }
+
+        filetype operator*() const 
+        { return (filetype)value_; }
+
+        static
+        filetype_iterator begin()
+        { return filetype_iterator(filetype::audio); }
+
+        static
+        filetype_iterator end() 
+        { return filetype_iterator(); }
+
+    private:
+        filetype_iterator(unsigned value) : value_(value)
+        {}
+
+    private:
+        friend bool operator==(const filetype_iterator&, const filetype_iterator&);
+    private:
+        unsigned value_;
+    };
+
+    inline
+    bool operator==(const filetype_iterator& lhs, const filetype_iterator& rhs)
+    {
+        return lhs.value_ == rhs.value_;
+    }
+
+    inline
+    bool operator!=(const filetype_iterator& lhs, const filetype_iterator& rhs)
+    {
+        return !(lhs == rhs);
+    }
 
     // get the default hardcoded filepattern string for the given filetype
     const char* filepattern(filetype type);
@@ -71,5 +129,7 @@ namespace app
     filetype find_filetype(const QString& filename);
 
     QIcon find_fileicon(filetype type);
+
+
 
 } // app

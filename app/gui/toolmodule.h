@@ -31,6 +31,7 @@
 
 #include "mainmodule.h"
 #include "settings.h"
+#include "../tools.h"
 
 namespace gui
 {
@@ -48,11 +49,13 @@ namespace gui
         void on_btnAdd_clicked();
         void on_btnDel_clicked();
         void on_btnEdit_clicked();
+        void on_listTools_doubleClicked(QModelIndex);
 
     private:
         Ui::Tools ui_;
     private:
         friend class toolmodule;
+        std::vector<app::tools::tool> tools_;
     };
 
     class toolmodule : public QObject, public mainmodule

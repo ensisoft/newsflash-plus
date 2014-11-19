@@ -64,6 +64,7 @@
 #include "../tasklist.h"
 #include "../engine.h"
 #include "../settings.h"
+#include "../tools.h"
 
 using app::str;
 
@@ -149,6 +150,9 @@ int run(int argc, char* argv[])
     app::accounts acc;
     app::g_accounts = &acc;
 
+    app::tools tools;
+    app::g_tools = &tools;
+
     // todo: maybe create the widgets and modules on the free store
     // instead of the stack..
 
@@ -195,8 +199,8 @@ int run(int argc, char* argv[])
     win.attach(&nzb);
 
     // tool module
-    gui::toolmodule tools;
-    win.attach(&tools);
+    gui::toolmodule toolsmod;
+    win.attach(&toolsmod);
 
     win.attach(&style);
 

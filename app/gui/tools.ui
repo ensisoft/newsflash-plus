@@ -13,6 +13,10 @@
   <property name="windowTitle">
    <string>Tools</string>
   </property>
+  <property name="windowIcon">
+   <iconset resource="resource.qrc">
+    <normaloff>:/resource/16x16_ico_png/ico_tool.png</normaloff>:/resource/16x16_ico_png/ico_tool.png</iconset>
+  </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
     <widget class="QGroupBox" name="groupBox_5">
@@ -99,8 +103,8 @@
            <string/>
           </property>
           <property name="icon">
-           <iconset resource="../../../../svnroot/newsflash/gui/resource.qrc">
-            <normaloff>:/resource/16x16_ico_png/ico_up.png</normaloff>:/resource/16x16_ico_png/ico_up.png</iconset>
+           <iconset resource="resource.qrc">
+            <normaloff>:/resource/16x16_ico_png/ico_move_up.png</normaloff>:/resource/16x16_ico_png/ico_move_up.png</iconset>
           </property>
          </widget>
         </item>
@@ -113,8 +117,8 @@
            <string/>
           </property>
           <property name="icon">
-           <iconset resource="../../../../svnroot/newsflash/gui/resource.qrc">
-            <normaloff>:/resource/16x16_ico_png/ico_down.png</normaloff>:/resource/16x16_ico_png/ico_down.png</iconset>
+           <iconset resource="resource.qrc">
+            <normaloff>:/resource/16x16_ico_png/ico_move_down.png</normaloff>:/resource/16x16_ico_png/ico_move_down.png</iconset>
           </property>
          </widget>
         </item>
@@ -139,7 +143,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="../../../../svnroot/newsflash/gui/resource.qrc"/>
+  <include location="resource.qrc"/>
  </resources>
  <connections/>
 </ui>

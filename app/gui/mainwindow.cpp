@@ -57,6 +57,7 @@
 #include "../accounts.h"
 #include "../engine.h"
 #include "../platform.h"
+#include "../tools.h"
 #include "../distdir.h"
 
 using app::str;
@@ -180,6 +181,7 @@ void mainwindow::loadstate()
     // load global objects state.
     app::g_accounts->loadstate(settings_);
     app::g_engine->loadstate(settings_);
+    app::g_tools->loadstate(settings_);
 
     if (!settings_.contains("window", "width"))
     {
@@ -660,6 +662,10 @@ bool mainwindow::savestate(DlgShutdown* dlg)
 
         if (!app::g_engine->savestate(settings_))
             return false;
+
+        dlg->setText(tr("Saving tools"));
+        app::g_tools->savestate(settings_);
+
 
         settings_.set("window", "width", width());
         settings_.set("window", "height", height());

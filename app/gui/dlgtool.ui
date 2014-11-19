@@ -14,8 +14,8 @@
    <string>Tool settings</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="../../../../svnroot/newsflash/gui/resource.qrc">
-    <normaloff>:/resource/16x16_ico_png/ico_settings.png</normaloff>:/resource/16x16_ico_png/ico_settings.png</iconset>
+   <iconset resource="resource.qrc">
+    <normaloff>:/resource/16x16_ico_png/ico_tool.png</normaloff>:/resource/16x16_ico_png/ico_tool.png</iconset>
   </property>
   <property name="sizeGripEnabled">
    <bool>true</bool>
@@ -128,8 +128,8 @@
            <string>Audio</string>
           </property>
           <property name="icon">
-           <iconset resource="../../../../svnroot/newsflash/gui/resource.qrc">
-            <normaloff>:/resource/16x16_ico_png/ico_audio.png</normaloff>:/resource/16x16_ico_png/ico_audio.png</iconset>
+           <iconset resource="resource.qrc">
+            <normaloff>:/resource/16x16_ico_png/ico_filetype_audio.png</normaloff>:/resource/16x16_ico_png/ico_filetype_audio.png</iconset>
           </property>
           <property name="checkable">
            <bool>true</bool>
@@ -145,8 +145,8 @@
            <string>Video</string>
           </property>
           <property name="icon">
-           <iconset resource="../../../../svnroot/newsflash/gui/resource.qrc">
-            <normaloff>:/resource/16x16_ico_png/ico_video.png</normaloff>:/resource/16x16_ico_png/ico_video.png</iconset>
+           <iconset resource="resource.qrc">
+            <normaloff>:/resource/16x16_ico_png/ico_filetype_video.png</normaloff>:/resource/16x16_ico_png/ico_filetype_video.png</iconset>
           </property>
           <property name="checkable">
            <bool>true</bool>
@@ -162,8 +162,8 @@
            <string>Image</string>
           </property>
           <property name="icon">
-           <iconset resource="../../../../svnroot/newsflash/gui/resource.qrc">
-            <normaloff>:/resource/16x16_ico_png/ico_image.png</normaloff>:/resource/16x16_ico_png/ico_image.png</iconset>
+           <iconset resource="resource.qrc">
+            <normaloff>:/resource/16x16_ico_png/ico_filetype_image.png</normaloff>:/resource/16x16_ico_png/ico_filetype_image.png</iconset>
           </property>
           <property name="checkable">
            <bool>true</bool>
@@ -179,8 +179,8 @@
            <string>Parity</string>
           </property>
           <property name="icon">
-           <iconset resource="../../../../svnroot/newsflash/gui/resource.qrc">
-            <normaloff>:/resource/16x16_ico_png/ico_parity.png</normaloff>:/resource/16x16_ico_png/ico_parity.png</iconset>
+           <iconset resource="resource.qrc">
+            <normaloff>:/resource/16x16_ico_png/ico_filetype_parity.png</normaloff>:/resource/16x16_ico_png/ico_filetype_parity.png</iconset>
           </property>
           <property name="checkable">
            <bool>true</bool>
@@ -196,8 +196,8 @@
            <string>Archive</string>
           </property>
           <property name="icon">
-           <iconset resource="../../../../svnroot/newsflash/gui/resource.qrc">
-            <normaloff>:/resource/16x16_ico_png/ico_archive.png</normaloff>:/resource/16x16_ico_png/ico_archive.png</iconset>
+           <iconset resource="resource.qrc">
+            <normaloff>:/resource/16x16_ico_png/ico_filetype_archive.png</normaloff>:/resource/16x16_ico_png/ico_filetype_archive.png</iconset>
           </property>
           <property name="checkable">
            <bool>true</bool>
@@ -213,8 +213,8 @@
            <string>Docs</string>
           </property>
           <property name="icon">
-           <iconset resource="../../../../svnroot/newsflash/gui/resource.qrc">
-            <normaloff>:/resource/16x16_ico_png/ico_document.png</normaloff>:/resource/16x16_ico_png/ico_document.png</iconset>
+           <iconset resource="resource.qrc">
+            <normaloff>:/resource/16x16_ico_png/ico_filetype_document.png</normaloff>:/resource/16x16_ico_png/ico_filetype_document.png</iconset>
           </property>
           <property name="checkable">
            <bool>true</bool>
@@ -230,8 +230,8 @@
            <string>Text</string>
           </property>
           <property name="icon">
-           <iconset resource="../../../../svnroot/newsflash/gui/resource.qrc">
-            <normaloff>:/resource/16x16_ico_png/ico_text.png</normaloff>:/resource/16x16_ico_png/ico_text.png</iconset>
+           <iconset resource="resource.qrc">
+            <normaloff>:/resource/16x16_ico_png/ico_filetype_text.png</normaloff>:/resource/16x16_ico_png/ico_filetype_text.png</iconset>
           </property>
           <property name="checkable">
            <bool>true</bool>
@@ -247,8 +247,8 @@
            <string>Other</string>
           </property>
           <property name="icon">
-           <iconset resource="../../../../svnroot/newsflash/gui/resource.qrc">
-            <normaloff>:/resource/16x16_ico_png/ico_other.png</normaloff>:/resource/16x16_ico_png/ico_other.png</iconset>
+           <iconset resource="resource.qrc">
+            <normaloff>:/resource/16x16_ico_png/ico_filetype_other.png</normaloff>:/resource/16x16_ico_png/ico_filetype_other.png</iconset>
           </property>
           <property name="checkable">
            <bool>true</bool>
@@ -279,7 +279,7 @@
       </spacer>
      </item>
      <item>
-      <widget class="QPushButton" name="btnOK">
+      <widget class="QPushButton" name="btnAccept">
        <property name="text">
         <string>OK</string>
        </property>
@@ -310,11 +310,11 @@
   <tabstop>btnParity</tabstop>
   <tabstop>btnArchive</tabstop>
   <tabstop>btnDocument</tabstop>
-  <tabstop>btnOK</tabstop>
+  <tabstop>btnAccept</tabstop>
   <tabstop>btnCancel</tabstop>
  </tabstops>
  <resources>
-  <include location="../../../../svnroot/newsflash/gui/resource.qrc"/>
+  <include location="resource.qrc"/>
  </resources>
  <connections>
   <connection>
