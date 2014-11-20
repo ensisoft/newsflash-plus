@@ -275,8 +275,9 @@ namespace app
         virtual void timerEvent(QTimerEvent* event) override;
 
     private:
-        void on_engine_error(const newsflash::ui::error& e);
-        void on_engine_file(const newsflash::ui::file& f);
+        void on_error(const newsflash::ui::error& e);
+        void on_file_complete(const newsflash::ui::file& f);
+        void on_batch_complete(const newsflash::ui::batch& b);
     private:
         QString logifiles_;
         QString downloads_;

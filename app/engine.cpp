@@ -87,10 +87,12 @@ engine::engine()
 
 
     engine_.reset(new newsflash::engine);
-    engine_->set_error_callback(std::bind(&engine::on_engine_error, this,
+    engine_->set_error_callback(std::bind(&engine::on_error, this,
         std::placeholders::_1));
-    engine_->set_file_callback(std::bind(&engine::on_engine_file, this,
+    engine_->set_file_callback(std::bind(&engine::on_file_complete, this,
          std::placeholders::_1));
+    engine_->set_batch_callback(std::bind(&engine::on_batch_complete, this,
+        std::placeholders::_1));
 
     // remember that the notify callback can come from any thread
     // within the engine and it has to be thread safe.
@@ -209,8 +211,8 @@ bool engine::download_nzb_contents(quint32 acc, const QString& path, const QStri
         }
         engine_->start(to_utf8(logifiles_));
     }
-    INFO(str("Downloading _1", desc));
-    NOTE(str("Downloading _1", desc));
+    INFO(str("Downloading \"_1\"", desc));
+    NOTE(str("Downloading \"_1\"", desc));
 
     emit newDownloadQueued(desc);
 
@@ -258,8 +260,8 @@ bool engine::download_nzb_contents(quint32 acc, const QString& path, const QStri
         }
         engine_->start(to_utf8(logifiles_));
     }
-    INFO(str("Downloading _1", desc));
-    NOTE(str("Downloading _1", desc));
+    INFO(str("Downloading \"_1\"", desc));
+    NOTE(str("Downloading \"_1\"", desc));
 
     emit newDownloadQueued(desc);
     return true;
@@ -372,7 +374,7 @@ void engine::timerEvent(QTimerEvent* event)
     engine_->tick();
 }
 
-void engine::on_engine_error(const newsflash::ui::error& e)
+void engine::on_error(const newsflash::ui::error& e)
 {
     const auto resource = from_utf8(e.resource);
     const auto code = e.code;
@@ -390,7 +392,7 @@ void engine::on_engine_error(const newsflash::ui::error& e)
     }
 }
 
-void engine::on_engine_file(const newsflash::ui::file& f)
+void engine::on_file_complete(const newsflash::ui::file& f)
 {
     QString path = widen(f.path);
     if (path.isEmpty())
@@ -406,20 +408,32 @@ void engine::on_engine_file(const newsflash::ui::file& f)
     file.path    = path;
     file.size    = f.size;
 
-    DEBUG(str("Downloaded _1/_2", path, file.name));
+    DEBUG(str("Downloaded \"_1/_2\"", path, file.name));
 
     if (f.damaged)
     {
-        WARN(str("Completed _1", file.name));
+        WARN(str("Completed \"_1\"", file.name));
     }
     else
     {
-        INFO(str("Completed _1", file.name));
+        INFO(str("Completed \"_1\"", file.name));
     }
 
     emit fileCompleted(file);
 
     NOTE(str("\"_1\" is ready", file.name));
+}
+
+void engine::on_batch_complete(const newsflash::ui::batch& b)
+{
+    QString path = widen(b.path);
+
+    DEBUG(str("Batch complete \"_1\"", path));
+
+    path = QDir(path).absolutePath();
+    path = QDir::toNativeSeparators(path);
+
+
 }
 
 engine* g_engine;

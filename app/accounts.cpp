@@ -142,9 +142,8 @@ void accounts::del(std::size_t index)
 
     beginRemoveRows(QModelIndex(), index, index);
 
-    const QString key = accounts_[index].name;
-
-    auto it = accounts_.begin();
+    auto key = accounts_[index].name;
+    auto it  = accounts_.begin();
     it += index;
 
     auto id = it->id;
@@ -154,6 +153,7 @@ void accounts::del(std::size_t index)
         fill_account_ = 0;
 
     g_engine->del(*it);
+    g_settings->del(key);
 
     accounts_.erase(it);
 

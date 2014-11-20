@@ -33,7 +33,6 @@ namespace newsflash
 
     struct batch {
         std::string path;
-        
     };
 
     }

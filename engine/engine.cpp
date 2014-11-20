@@ -116,6 +116,7 @@ struct engine::state {
 
     engine::on_error on_error_callback;
     engine::on_file  on_file_callback;
+    engine::on_batch on_batch_callback;
     engine::on_async_notify on_notify_callback;
 
    ~state()
@@ -730,7 +731,8 @@ public:
 
     void update(engine::state& state, ui::task& ui)
     {
-        ui_.etatime = 0;
+        ui = ui_;                
+        ui.etatime = 0;
 
         if (ui_.state == states::active || ui_.state == states::waiting)
         {
@@ -744,7 +746,7 @@ public:
                 ui_.etatime = timeremains;
             }
         }
-        ui = ui_;        
+
     }
 
     transition on_action(engine::state& state, action* a)
@@ -802,6 +804,9 @@ public:
 
     std::string desc() const 
     { return ui_.desc; }
+
+    std::uint64_t size() const
+    { return ui_.size; }
 
 private:
     transition update_completion(engine::state& state)
@@ -934,7 +939,8 @@ class engine::batch
 public:
     using states = ui::task::states;
 
-    batch(std::size_t account, std::size_t id, std::uint64_t size, std::size_t num_tasks, std::string desc) : num_tasks_(num_tasks)
+    batch(std::size_t account, std::size_t id, std::uint64_t size, std::size_t num_tasks, 
+        std::string path, std::string desc) : num_tasks_(num_tasks), path_(std::move(path))
     {
         ui_.state   = states::queued;
         ui_.id      = id;
@@ -945,6 +951,7 @@ public:
         ui_.runtime = 0;
         ui_.etatime = 0;
         ui_.completion = 0.0;
+        bytes_complete_ = 0;
 
         std::memset(&statesets_, 0, sizeof(statesets_));
         statesets_[(int)states::queued] = num_tasks;
@@ -998,11 +1005,30 @@ public:
     {
         ui = ui_;
         ui.etatime = 0;
-
-        if (ui_.state == states::waiting ||
-            ui_.state == states::active)
+        if (ui_.size)
         {
-            // todo: eta
+            ui.completion = 100.0 * (double(bytes_complete_) / double(ui_.size));
+        }
+        else
+        {
+            const auto num_complete = 
+                statesets_[(int)states::complete] +
+                statesets_[(int)states::error];
+
+            ui.completion = 100.0 * (double(num_complete) / double(num_tasks_));
+        }
+
+        if (ui_.state == states::waiting || ui_.state == states::active)
+        {
+            if (ui_.runtime >= 10)
+            {
+                const auto complete = ui.completion;
+                const auto remaining = 100.0 - complete;
+                const auto timespent = ui.runtime;
+                const auto time_per_percent = timespent / complete;
+                const auto time_remains = remaining * time_per_percent;
+                ui_.etatime = time_remains;
+            }
         }
     }
 
@@ -1037,6 +1063,17 @@ public:
         leave_state(t, s.previous);
         enter_state(t, s.current);
         update(state);
+
+        if (s.current == states::complete || s.current == states::error)
+        {
+            bytes_complete_ += t.size();
+            if (ui_.state == states::complete)
+            {
+                ui::batch batch;
+                batch.path = path_;
+                state.on_batch_callback(batch);
+            }
+        }
     }
 
     void tick(engine::state& state, const std::chrono::milliseconds& elapsed)
@@ -1117,6 +1154,8 @@ private:
 private:
     std::size_t num_tasks_;
     std::size_t statesets_[7];
+    std::uint64_t bytes_complete_;
+    std::string path_;
 };
 
 engine::batch& engine::state::find_batch(std::size_t id)
@@ -1379,7 +1418,7 @@ void engine::download(ui::download spec)
 
     const auto num_tasks = spec.files.size();
 
-    std::unique_ptr<batch> batch(new class batch(aid, bid, batch_size, num_tasks, spec.desc));
+    std::unique_ptr<batch> batch(new class batch(aid, bid, batch_size, num_tasks, spec.path, spec.desc));
     state_->batches.push_back(std::move(batch));
     state_->execute();
 }
@@ -1578,6 +1617,11 @@ void engine::set_file_callback(on_file file_callback)
 void engine::set_notify_callback(on_async_notify notify_callback)
 {
     state_->on_notify_callback = std::move(notify_callback);
+}
+
+void engine::set_batch_callback(on_batch batch_callback)
+{
+    state_->on_batch_callback = std::move(batch_callback);
 }
 
 void engine::set_overwrite_existing_files(bool on_off)

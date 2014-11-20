@@ -67,9 +67,6 @@ namespace gui
 
 mainwindow* g_win;    
 
-//void openurl(const QString& url);
-//void openhelp(const QString& page);
-
 mainwindow::mainwindow(app::settings& s) : QMainWindow(nullptr), current_(nullptr), settings_(s)
 {
     ui_.setupUi(this);
@@ -92,6 +89,7 @@ mainwindow::mainwindow(app::settings& s) : QMainWindow(nullptr), current_(nullpt
     ui_.statusBar->setVisible(true);
     ui_.actionViewToolbar->setChecked(true);
     ui_.actionViewStatusbar->setChecked(true);
+    ui_.progressBar->setTextVisible(false);
 
     if (QSystemTrayIcon::isSystemTrayAvailable())
     {
@@ -1000,9 +998,8 @@ void mainwindow::timerRefresh_timeout()
     {
         const double done = ((double)bytes_ready / (double)bytes_queued) * 100.0;
         ui_.progressBar->setValue((int)done);
-        ui_.progressBar->setVisible(true);
-        ui_.progressBar->setTextVisible(bytes_queued != 0);
     }
+    ui_.progressBar->setTextVisible(bytes_remaining != 0);
 
     ui_.lblDiskFree->setText(str("_1 _2", downloads, app::size{freespace}));
     ui_.lblNetIO->setText(str("_1 _2",  app::speed { netspeed }, app::size {bytes_downloaded}));     
