@@ -64,8 +64,7 @@ namespace app
         void loadHistory();
         void eraseHistory();
 
-        const file& getItem(std::size_t i) const
-        { return files_[files_.size() - i -1]; }
+        const file& getItem(std::size_t i) const;
 
     private slots:
         void fileCompleted(const app::file& file);

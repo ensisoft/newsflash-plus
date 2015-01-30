@@ -53,8 +53,8 @@ namespace gui
         virtual bool savestate(app::settings& s) override;
         virtual void shutdown() override;
         virtual info information() const override;
-        virtual gui::settings* get_settings(app::settings& s) override;
-        virtual void apply_settings(gui::settings* gui, app::settings& backend) override;
+        virtual gui::settings* get_settings() override;
+        virtual void apply_settings(gui::settings* gui) override;
         virtual void free_settings(gui::settings* s);
 
     private:
@@ -85,6 +85,8 @@ namespace gui
         newsflash::bitflag<app::media> streams_;
         bool enable_nzbs_;
         bool enable_womble_;
+        QString nzbs_userid_;
+        QString nzbs_apikey_;
     };
 
 } // gui

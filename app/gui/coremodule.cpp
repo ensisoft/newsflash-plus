@@ -99,8 +99,8 @@ coremodule::~coremodule()
 
 void coremodule::loadstate(app::settings& s) 
 {
-    const bool callhome = s.get("settings", "check_for_software_updates", true);
-    if (callhome)
+    check_for_updates_ = s.get("settings", "check_for_software_updates", true);
+    if (check_for_updates_)
     {
         et_.reset(new app::telephone);
         QObject::connect(et_.get(), SIGNAL(completed(bool, QString)), 
@@ -109,7 +109,13 @@ void coremodule::loadstate(app::settings& s)
     }
 }
 
-gui::settings* coremodule::get_settings(app::settings& s)
+bool coremodule::savestate(app::settings& s)
+{
+    s.set("settings", "check_for_software_updates", check_for_updates_);
+    return true;
+}
+
+gui::settings* coremodule::get_settings()
 {
     auto* ptr = new coresettings;
     auto& ui = ptr->ui_;
@@ -118,7 +124,7 @@ gui::settings* coremodule::get_settings(app::settings& s)
     const auto discard   = app::g_engine->get_discard_text_content();
     const auto logfiles  = app::g_engine->get_logfiles_path();
     const auto downloads = app::g_engine->get_download_path();
-    const auto updates   = s.get("settings", "check_for_software_updates", true);
+    const auto updates   = check_for_updates_; //s.get("settings", "check_for_software_updates", true);
 
     ui.chkOverwriteExisting->setChecked(overwrite);
     ui.chkDiscardText->setChecked(discard);
@@ -159,7 +165,7 @@ gui::settings* coremodule::get_settings(app::settings& s)
     return ptr;
 }
 
-void coremodule::apply_settings(settings* gui, app::settings& backend)
+void coremodule::apply_settings(settings* gui)
 {
     auto* ptr = dynamic_cast<coresettings*>(gui);
     auto& ui = ptr->ui_;
@@ -218,7 +224,8 @@ void coremodule::apply_settings(settings* gui, app::settings& backend)
 
     // todo: throttle value.
 
-    backend.set("settings", "check_for_software_updates", updates);
+    //backend.set("settings", "check_for_software_updates", updates);
+    check_for_updates_ = updates;
 }
 
 void coremodule::free_settings(settings* s)

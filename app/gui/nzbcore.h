@@ -70,8 +70,8 @@ namespace gui
         virtual info information() const override
         { return {"nzbcore", "nzb.html"}; }
 
-        virtual settings* get_settings(app::settings& s) override;
-        virtual void apply_settings(settings* gui, app::settings& backend) override;
+        virtual settings* get_settings() override;
+        virtual void apply_settings(settings* gui) override;
         virtual void free_settings(settings* s) override;
 
         virtual void drop_file(const QString& file) override;

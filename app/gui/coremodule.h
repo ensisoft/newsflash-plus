@@ -69,9 +69,10 @@ namespace gui
        ~coremodule();
 
         virtual void loadstate(app::settings& s) override;       
-        virtual gui::settings* get_settings(app::settings& s) override;
-        virtual void apply_settings(settings* gui, app::settings& backend) override;
-        virtual void free_settings(settings* s) override;
+        virtual bool savestate(app::settings& s) override;
+        virtual gui::settings* get_settings() override;
+        virtual void apply_settings(settings* gui) override;
+        virtual void free_settings(settings* gui) override;
 
         virtual info information() const override
         { return {"coremodule", ""}; }
@@ -81,5 +82,7 @@ namespace gui
 
     private:
         std::unique_ptr<app::telephone> et_;
+    private:
+        bool check_for_updates_;
     };
 } // gui

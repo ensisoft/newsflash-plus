@@ -252,7 +252,7 @@ void mainwindow::show_setting(const QString& name)
 
     for (auto* w : widgets_)
     {
-        auto* tab = w->get_settings(settings_);
+        auto* tab = w->get_settings();
         if (tab)
             dlg.attach(tab);
 
@@ -261,7 +261,7 @@ void mainwindow::show_setting(const QString& name)
 
     for (auto* m : modules_)
     {
-        auto* tab = m->get_settings(settings_);
+        auto* tab = m->get_settings();
         if (tab) 
             dlg.attach(tab);
 
@@ -280,7 +280,7 @@ void mainwindow::show_setting(const QString& name)
         auto* widget = widgets_[i];
         auto* tab = w_tabs[i];
         if (apply && tab)
-            widget->apply_settings(tab, settings_);
+            widget->apply_settings(tab);
 
         if (tab)
             widget->free_settings(tab);
@@ -291,7 +291,7 @@ void mainwindow::show_setting(const QString& name)
         auto* module = modules_[i];
         auto* tab = m_tabs[i];
         if (apply && tab)
-            module->apply_settings(tab, settings_);
+            module->apply_settings(tab);
 
         if (tab)
             module->free_settings(tab);
@@ -441,6 +441,23 @@ void mainwindow::update(mainwidget* widget)
 
     ui_.mainTab->setTabText(index, widget->windowTitle());
     ui_.mainTab->setTabIcon(index, widget->windowIcon());
+}
+
+void mainwindow::reactivate(mainwidget* widget)
+{
+    if (widget != current_)
+        return;
+
+    ui_.mainToolBar->clear();
+    ui_.menuEdit->clear();
+
+    widget->deactivate();
+    widget->activate(ui_.mainTab);
+    widget->add_actions(*ui_.mainToolBar);
+    widget->add_actions(*ui_.menuEdit);
+
+    ui_.mainToolBar->addSeparator();
+    ui_.mainToolBar->addAction(ui_.actionContextHelp);
 }
 
 void mainwindow::show(const QString& title)
@@ -651,6 +668,11 @@ bool mainwindow::savestate(DlgShutdown* dlg)
 {
     try
     {
+        // we clear the settings here completely. this makes it easy to purge all stale
+        // data from the settings. for example if tools are modified and removed the state
+        // is kept in memory and then persisted cleanly into the settings object on save.
+        settings_.clear();
+
         dlg->setText(tr("Saving accounts"));
 
         if (!app::g_accounts->savestate(settings_))

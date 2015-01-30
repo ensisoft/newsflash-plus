@@ -69,12 +69,12 @@ namespace gui
         virtual info information() const { return {"", ""}; }
 
         // get a settings widget if any. 
-        virtual settings* get_settings(app::settings& s) { return nullptr; }
+        virtual settings* get_settings() { return nullptr; }
 
         // notify that the application settings have been changed.
-        virtual void apply_settings(settings* gui, app::settings& backend) {}
+        virtual void apply_settings(settings* gui) {}
 
-        virtual void free_settings(settings* s) {}
+        virtual void free_settings(settings* gui) {}
 
         virtual void drop_file(const QString& name) {}
     protected:

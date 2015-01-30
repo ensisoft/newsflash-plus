@@ -53,9 +53,16 @@ namespace gui
     private slots:
         void on_actionOpenFile_triggered();
         void on_actionOpenFileWith_triggered();
-        void on_actionOpenFolder_triggered();
         void on_actionClear_triggered();
+        void on_actionOpenFolder_triggered();        
+        void on_actionFind_triggered();
+        void on_actionFindNext_triggered();
+        void on_actionFindPrev_triggered();
+        void on_actionDelete_triggered();
         void on_tableFiles_customContextMenuRequested(QPoint point);
+        void on_tableFiles_doubleClicked();
+        void invokeTool();
+        void toolsUpdated();
 
     private:
         Ui::Files ui_;

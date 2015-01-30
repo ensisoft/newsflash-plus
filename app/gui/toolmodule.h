@@ -45,6 +45,8 @@ namespace gui
 
         virtual bool validate() const override;
 
+        void set_tools(std::vector<app::tools::tool> tools);
+
     private slots:
         void on_btnAdd_clicked();
         void on_btnDel_clicked();
@@ -66,9 +68,9 @@ namespace gui
         toolmodule();
        ~toolmodule();
 
-        virtual gui::settings* get_settings(app::settings& backend) override;
+        virtual gui::settings* get_settings() override;
 
-        virtual void apply_settings(settings* gui, app::settings& backend) override;
+        virtual void apply_settings(settings* gui) override;
         virtual void free_settings(settings* gui) override;
 
         virtual info information() const override

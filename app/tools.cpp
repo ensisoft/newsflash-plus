@@ -20,9 +20,13 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
+#define LOGTAG "tools"
+
 #include <newsflash/config.h>
 
 #include <newsflash/warnpush.h>
+#  include <QProcess>
+#  include <QFileInfo>
 #include <newsflash/warnpop.h>
 
 #include "settings.h"
@@ -30,6 +34,7 @@
 #include "format.h"
 #include "debug.h"
 #include "tools.h"
+#include "eventlog.h"
 
 namespace app
 {
@@ -41,10 +46,29 @@ tools::tool::tool() : types_(0)
     // generate a unique id
     static quint32 guid = 1;
     guid_ = ++guid;
+
+    arguments_ = "${file}";
 }
 
 tools::tool::~tool()
 {}
+
+void tools::tool::startNewInstance(const QString& file) const 
+{
+    QString args = arguments_;
+    args.replace("${file}", QString("\"%1\"").arg(file));
+
+    // we have to call the single argument version of startDetached
+    // because its unknown how many extra arguments have been configured for the
+    // tool (without starting to parse it...)
+    // and Qt encloses each QStringList item in "" marks which makes them 
+    // single arguments to the child process.
+    if (!QProcess::startDetached(QString("\"%1\" %2").arg(binary_).arg(args)))
+    {
+        ERROR(str("Failed to execute command _1 _2", binary_, args));
+        return;
+    }
+}
 
 const QIcon& tools::tool::icon() const 
 {
@@ -132,9 +156,30 @@ std::vector<const tools::tool*> tools::get_tools(bitflag types) const
     return ret;
 }
 
+void tools::set_tools_copy(std::vector<tool> new_tools)
+{
+    tools_ = std::move(new_tools);
+
+    emit toolsUpdated();
+}
+
+tools::tool* tools::get_tool(quint32 guid)
+{
+    auto it = std::find_if(std::begin(tools_), std::end(tools_), 
+        [=](const tool& maybe) {
+            return maybe.guid() == guid;
+        });
+    if (it == std::end(tools_))
+        return nullptr;
+
+    return &(*it);
+}
+
 void tools::add_tool(tools::tool tool)
 {
     tools_.push_back(std::move(tool));
+
+    emit toolsUpdated();
 }
 
 void tools::del_tool(std::size_t i)
@@ -142,6 +187,21 @@ void tools::del_tool(std::size_t i)
     auto it = tools_.begin();
     std::advance(it, i);
     tools_.erase(it);
+
+    emit toolsUpdated();
+}
+
+bool tools::has_tool(const QString& executable)
+{
+    const QString base = QFileInfo(executable).completeBaseName();
+
+    const auto it = std::find_if(std::begin(tools_), std::end(tools_),
+        [&](const tool& t) {
+            const QString b = QFileInfo(t.binary()).completeBaseName();
+            return b == base;
+        });
+
+    return it != std::end(tools_);
 }
 
 

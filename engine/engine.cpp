@@ -40,7 +40,6 @@
 #include "threadpool.h"
 #include "cmdlist.h"
 #include "settings.h"
-#include "bodylist.h"
 #include "datafile.h"
 
 namespace newsflash

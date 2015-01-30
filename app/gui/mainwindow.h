@@ -77,6 +77,8 @@ namespace gui
         // update the widget's display state
         void update(mainwidget* widget);
     
+        void reactivate(mainwidget* widget);
+
         // detach all widgets
         void detach_all_widgets();
 

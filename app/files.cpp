@@ -62,7 +62,7 @@ QVariant files::data(const QModelIndex& index, int role) const
 {
     // back of the vector is "top of the data"
     // so that we can just push-back instead of more expensive push_front (on deque)
-    // and the latest item is then always ab table row 0 
+    // and the latest item is then always at table row 0 
 
     const auto row   = files_.size() - (size_t)index.row()  - 1;
     const auto col   = (columns)index.column();
@@ -218,7 +218,16 @@ void files::eraseHistory()
 
     DEBUG(str("Erased file history _1", history_));
 
+    files_.clear();
+
     reset();
+}
+
+const files::file& files::getItem(std::size_t i) const 
+{
+    // the vector is accessed in reverse manner (item at index 0 is at the end)
+    // so latest item (push_back) comes at the top of the list on the GUI
+    return files_[files_.size() - i -1];
 }
 
 void files::fileCompleted(const app::file& file)

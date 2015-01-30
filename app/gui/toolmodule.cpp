@@ -40,20 +40,6 @@ namespace gui
 toolsettings::toolsettings()
 {
     ui_.setupUi(this);
-
-    for (const auto& tool : tools_)
-    {
-        QListWidgetItem* item = new QListWidgetItem();
-        item->setIcon(tool.icon());
-        item->setText(tool.name());
-        ui_.listTools->addItem(item);
-    }
-
-    const auto num_tools = app::g_tools->num_tools();
-    ui_.btnDel->setEnabled(num_tools != 0);
-    ui_.btnEdit->setEnabled(num_tools != 0);
-    ui_.btnMoveDown->setEnabled(num_tools > 1);
-    ui_.btnMoveUp->setEnabled(num_tools > 1);
 }
 
 toolsettings::~toolsettings()
@@ -65,6 +51,24 @@ bool toolsettings::validate() const
     return true;
 }
 
+void toolsettings::set_tools(std::vector<app::tools::tool> tools)
+{
+    tools_ = std::move(tools);
+
+    for (const auto& tool : tools_)
+    {
+        QListWidgetItem* item = new QListWidgetItem();
+        item->setIcon(tool.icon());
+        item->setText(tool.name());
+        ui_.listTools->addItem(item);
+    }
+
+    ui_.btnDel->setEnabled(!tools_.empty());
+    ui_.btnEdit->setEnabled(!tools_.empty());
+    ui_.btnMoveDown->setEnabled(tools_.size() > 1);
+    ui_.btnMoveUp->setEnabled(tools_.size() > 1);
+}
+
 void toolsettings::on_btnAdd_clicked()
 {
     app::tools::tool tool;
@@ -72,6 +76,16 @@ void toolsettings::on_btnAdd_clicked()
     DlgTool dlg(this, tool);
     if (dlg.exec() == QDialog::Rejected)
         return;
+
+    auto it = std::find_if(std::begin(tools_), std::end(tools_), 
+        [&](const app::tools::tool& t) {
+            return t.name() == tool.name();
+        });
+    if (it != std::end(tools_))
+    {
+        QMessageBox::critical(this, "Tool Already Exists", "A tool by that name already exists. Please use another name.");
+        return;
+    }
 
     tools_.push_back(tool);
 
@@ -149,17 +163,17 @@ toolmodule::toolmodule()
 toolmodule::~toolmodule()
 {}
 
-gui::settings* toolmodule::get_settings(app::settings& backend)
+gui::settings* toolmodule::get_settings()
 {
     auto* ptr = new toolsettings;
 
-    ptr->tools_ = app::g_tools->get_tools_copy();
+    ptr->set_tools(app::g_tools->get_tools_copy());
 
     return ptr;
 }
 
 
-void toolmodule::apply_settings(settings* gui, app::settings& backend)
+void toolmodule::apply_settings(settings* gui)
 {
     auto* ptr = dynamic_cast<toolsettings*>(gui);
 

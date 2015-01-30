@@ -166,6 +166,12 @@ bool rss::savestate(app::settings& s)
     s.set("rss", "computer", ui_.chkComputer->isChecked());
     s.set("rss", "xxx", ui_.chkXXX->isChecked());
 
+    s.set("rss", "enable_nzbs", enable_nzbs_);
+    s.set("rss", "enable_womble", enable_womble_);
+    s.set("rss", "nzbs_apikey", nzbs_apikey_);
+    s.set("rss", "nzbs_userid", nzbs_userid_);
+    s.set("rss", "streams", quint32(streams_.value()));
+
     const auto* model = ui_.tableView->model();
 
     // the last column has auto-stretch flag set so it's width
@@ -197,9 +203,15 @@ void rss::loadstate(app::settings& s)
 
     enable_nzbs_    = s.get("rss", "enable_nzbs", false);
     enable_womble_  = s.get("rss", "enable_womble", true);
+    nzbs_apikey_    = s.get("rss", "nzbs_apikey", "");
+    nzbs_userid_    = s.get("rss", "nzbs_userid", "");    
     const auto bits = s.get("rss", "streams", quint32(~0));
 
     streams_.set_from_value(bits); // enable all bits (streams)
+
+    model_.enable_feed("womble", enable_womble_);
+    model_.enable_feed("nzbs", enable_nzbs_);
+    model_.set_credentials("nzbs", nzbs_userid_, nzbs_apikey_);
 
     const auto* model = ui_.tableView->model();
 
@@ -210,14 +222,6 @@ void rss::loadstate(app::settings& s)
         const auto width = s.get("rss", name, ui_.tableView->columnWidth(i));
         ui_.tableView->setColumnWidth(i, width);
     }
-
-    model_.enable_feed("womble", enable_womble_);
-    model_.enable_feed("nzbs", enable_nzbs_);
-
-    const auto apikey = s.get("rss", "nzbs_apikey", "");
-    const auto userid = s.get("rss", "nzbs_userid", "");
-    model_.set_credentials("nzbs", userid, apikey);
-
 }
 
 mainwidget::info rss::information() const
@@ -225,7 +229,7 @@ mainwidget::info rss::information() const
     return {"rss.html", true, true};
 }
 
-gui::settings* rss::get_settings(app::settings& s)
+gui::settings* rss::get_settings()
 {
     auto* p = new rss_settings;
     auto& ui = p->ui_;
@@ -269,14 +273,14 @@ gui::settings* rss::get_settings(app::settings& s)
 
     ui.grpWomble->setChecked(enable_womble_);
     ui.grpNZBS->setChecked(enable_nzbs_);
-    ui.edtNZBSUserId->setText(s.get("rss", "nzbs_userid", ""));
-    ui.edtNZBSApikey->setText(s.get("rss", "nzbs_apikey", ""));
+    ui.edtNZBSUserId->setText(nzbs_userid_);
+    ui.edtNZBSApikey->setText(nzbs_apikey_);
 
     return p;
 }
 
 
-void rss::apply_settings(gui::settings* gui, app::settings& backend)
+void rss::apply_settings(gui::settings* gui)
 {
     auto* mine = dynamic_cast<rss_settings*>(gui);
     auto& ui = mine->ui_;
@@ -329,18 +333,12 @@ void rss::apply_settings(gui::settings* gui, app::settings& backend)
 
     enable_womble_    = ui.grpWomble->isChecked();
     enable_nzbs_      = ui.grpNZBS->isChecked();
-    const auto apikey = ui.edtNZBSApikey->text();
-    const auto userid = ui.edtNZBSUserId->text();
-
-    backend.set("rss", "nzbs_apikey", apikey);
-    backend.set("rss", "nzbs_userid", userid);
-    backend.set("rss", "enable_nzbs",   enable_nzbs_);
-    backend.set("rss", "enable_womble", enable_womble_);
-    backend.set("rss", "streams", quint32(streams_.value()));
+    nzbs_apikey_      = ui.edtNZBSApikey->text();
+    nzbs_userid_      = ui.edtNZBSUserId->text();
 
     model_.enable_feed("womble", enable_womble_);
     model_.enable_feed("nzbs", enable_nzbs_);
-    model_.set_credentials("nzbs", userid, apikey);    
+    model_.set_credentials("nzbs", nzbs_userid_, nzbs_apikey_);    
 }
 
 void rss::free_settings(gui::settings* s)

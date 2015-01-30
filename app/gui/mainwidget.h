@@ -100,9 +100,9 @@ namespace gui
 
         // get a settings widget if any. the object ownership is 
         // transferred to the caller.
-        virtual settings* get_settings(app::settings& s) { return nullptr; }
+        virtual settings* get_settings() { return nullptr; }
 
-        virtual void apply_settings(settings* gui, app::settings& backed) {}
+        virtual void apply_settings(settings* gui) {}
 
         // notify that application settings have changed. 
         virtual void free_settings(settings* s) {}

@@ -115,19 +115,24 @@ void appearance::loadstate(app::settings& s)
     DEBUG(str("Qt style _1", current_style_name_));
 }
 
-gui::settings* appearance::get_settings(app::settings& s)
+bool appearance::savestate(app::settings& s)
+{
+    s.set("theme", "name", current_style_name_);
+    return true;
+}
+
+gui::settings* appearance::get_settings()
 {
     return new appearance_settings(current_style_name_);
 }
 
-void appearance::apply_settings(gui::settings* gui, app::settings& backend) 
+void appearance::apply_settings(gui::settings* gui) 
 {
     const auto mine = dynamic_cast<appearance_settings*>(gui);    
     const auto name = mine->get_style_name();
 
     current_style_name_ = name;
 
-    backend.set("theme", "name", name);
     if (current_style_name_ == "Default")
         return;
 

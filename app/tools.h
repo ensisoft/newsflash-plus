@@ -27,6 +27,7 @@
 #include <newsflash/warnpush.h>
 #  include <QtGui/QIcon>
 #  include <QString>
+#  include <QObject>
 #include <newsflash/warnpop.h>
 #include <newsflash/engine/bitflag.h>
 #include <vector>
@@ -41,8 +42,10 @@ namespace app
     // for example the user can associate "eog" as an image viewer application
     // and tag it for "image" media types and then launch eog on a particular
     // image file downloaded. 
-    class tools
+    class tools : public QObject
     {
+        Q_OBJECT
+
     public:
         using bitflag = newsflash::bitflag<filetype>;
 
@@ -108,6 +111,8 @@ namespace app
             bool isValid() const 
             { return !binary_.isEmpty(); }
 
+            void startNewInstance(const QString& file) const;
+
         private:
             quint32 guid_;
             QString name_;
@@ -133,11 +138,9 @@ namespace app
         std::vector<tool> get_tools_copy() const 
         { return tools_; }
 
-        void set_tools_copy(std::vector<tool> new_tools) 
-        { tools_ = new_tools; }
+        void set_tools_copy(std::vector<tool> new_tools);
 
-        tool& get_tool(std::size_t index) 
-        { return tools_[index]; }
+        tool* get_tool(quint32 guid);
 
         void add_tool(tools::tool tool);
 
@@ -148,6 +151,11 @@ namespace app
 
         bool empty() const 
         { return tools_.empty(); }
+
+        bool has_tool(const QString& executable);
+
+    signals:
+        void toolsUpdated();
 
     private:
         std::vector<tool> tools_;     

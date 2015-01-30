@@ -149,31 +149,31 @@ bool nzbcore::savestate(app::settings& s)
     return true;
 }
 
-settings* nzbcore::get_settings(app::settings& s)
+settings* nzbcore::get_settings()
 {
     auto* ptr = new nzbsettings();
     auto& ui  = ptr->ui_;
 
-    const auto& list = s.get("nzb", "watched_folders").toStringList();
+    // const auto& list = s.get("nzb", "watched_folders").toStringList();
 
-    ui.btnDelWatchFolder->setEnabled(!list.isEmpty());
+    // ui.btnDelWatchFolder->setEnabled(!list.isEmpty());
 
-    for (int i=0; i<list.size(); ++i)
-        ui.watchList->addItem(list[i]);
+    // for (int i=0; i<list.size(); ++i)
+    //     ui.watchList->addItem(list[i]);
 
-    const auto enable_watch = s.get("nzb", "enable_watching", false);
-    const auto dumps = s.get("nzb", "nzb_dump_folder", "");
-    const auto downloads = s.get("nzb", "download_folder", "");
-    const auto enable_download_folder = s.get("nzb", "enable_custom_download_folder", false);
+    // const auto enable_watch = s.get("nzb", "enable_watching", false);
+    // const auto dumps = s.get("nzb", "nzb_dump_folder", "");
+    // const auto downloads = s.get("nzb", "download_folder", "");
+    // const auto enable_download_folder = s.get("nzb", "enable_custom_download_folder", false);
 
-    ui.editDumpFolder->setText(dumps);
-    ui.editCustomDownloadFolder->setText(downloads);
-    ui.grpAutoDownload->setChecked(enable_watch);    
-    ui.grpCustomDownloadFolder->setChecked(enable_download_folder);
+    // ui.editDumpFolder->setText(dumps);
+    // ui.editCustomDownloadFolder->setText(downloads);
+    // ui.grpAutoDownload->setChecked(enable_watch);    
+    // ui.grpCustomDownloadFolder->setChecked(enable_download_folder);
     return ptr;
 }
 
-void nzbcore::apply_settings(settings* gui, app::settings& backend)
+void nzbcore::apply_settings(settings* gui)
 {
     auto* ptr = dynamic_cast<nzbsettings*>(gui);
     auto& ui  = ptr->ui_;
@@ -191,11 +191,11 @@ void nzbcore::apply_settings(settings* gui, app::settings& backend)
     const auto download_folder = ui.editCustomDownloadFolder->text();
     const auto enable_dowload_folder = ui.grpCustomDownloadFolder->isChecked();
 
-    backend.set("nzb", "watched_folders", list);
-    backend.set("nzb", "enable_watching", enable_watch);
-    backend.set("nzb", "nzb_dump_folder", nzb_dump_folder);
-    backend.set("nzb", "download_folder", download_folder);
-    backend.set("nzb", "enable_custom_download_folder", enable_dowload_folder);
+    // backend.set("nzb", "watched_folders", list);
+    // backend.set("nzb", "enable_watching", enable_watch);
+    // backend.set("nzb", "nzb_dump_folder", nzb_dump_folder);
+    // backend.set("nzb", "download_folder", download_folder);
+    // backend.set("nzb", "enable_custom_download_folder", enable_dowload_folder);
 
     module_.set_watch_folders(list);
     module_.watch(enable_watch);

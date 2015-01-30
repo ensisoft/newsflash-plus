@@ -41,8 +41,9 @@ namespace gui
        ~appearance();
 
         virtual void loadstate(app::settings& s) override;
-        virtual gui::settings* get_settings(app::settings& s) override;
-        virtual void apply_settings(gui::settings* gui, app::settings& backend) override;
+        virtual bool savestate(app::settings& s) override;
+        virtual gui::settings* get_settings() override;
+        virtual void apply_settings(gui::settings* gui) override;
         virtual void free_settings(gui::settings* s) override;
         virtual info information() const override
         { return {"appearance", ""}; }

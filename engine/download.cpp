@@ -33,7 +33,6 @@
 #include "action.h"
 #include "bigfile.h"
 #include "bitflag.h"
-#include "stopwatch.h"
 #include "decode.h"
 #include "format.h"
 #include "settings.h"
