@@ -48,6 +48,7 @@
 #include "downloads.h"
 #include "coremodule.h"
 #include "toolmodule.h"
+#include "linuxmodule.h"
 #include "appearance.h"
 #include "python.h"
 #include "files.h"
@@ -201,6 +202,11 @@ int run(int argc, char* argv[])
     // tool module
     gui::toolmodule toolsmod;
     win.attach(&toolsmod);
+
+#if defined(LINUX_OS)
+    gui::linuxmodule linux;
+    win.attach(&linux);
+#endif
 
     win.attach(&style);
 

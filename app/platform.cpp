@@ -367,17 +367,17 @@ quint64 get_free_disk_space(const QString& filename)
 // gnome-open
 // gnome-session-quit --power-off --no-prompt
 
-QString open_file_command = "xdg-open";
-QString shutdown_computer_command = "systemctl poweroff";
+QString openfile_command = "xdg-open";
+QString shutdown_command = "systemctl poweroff";
 
-void set_open_command(const QString& cmd)
+void set_openfile_command(const QString& cmd)
 {
-    open_file_command = cmd;
+    openfile_command = cmd;
 }
 
 void set_shutdown_command(const QString& cmd)
 {
-    shutdown_computer_command = cmd;
+    shutdown_command = cmd;
 }
 
 void open_file(const QString& file)
@@ -395,14 +395,14 @@ void shutdown_computer()
     // todo:
 }
 
-QString get_open_command()
+QString get_openfile_command()
 {
-    return open_file_command;
+    return openfile_command;
 }
 
 QString get_shutdown_command()
 {
-    return shutdown_computer_command;
+    return shutdown_command;
 }
 
 

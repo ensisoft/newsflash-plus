@@ -60,11 +60,11 @@ void shutdown_computer();
 
 #if defined(LINUX_OS)
 
-    void set_open_command(const QString& cmd);
+    void set_openfile_command(const QString& cmd);
 
     void set_shutdown_command(const QString& cmd);
 
-    QString get_open_command();
+    QString get_openfile_command();
 
     QString get_shutdown_command();
 #endif
