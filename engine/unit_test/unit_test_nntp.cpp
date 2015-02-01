@@ -538,6 +538,11 @@ void test_scan_response()
     }
 
     {
+        BOOST_REQUIRE(nntp::scan_response({125}, "125 foobar jeje\r\n",
+            strlen("125 foobar jeje\r\n")) == 125);
+    }
+
+    {
         int value;
         nntp::trailing_comment cmt;
         BOOST_REQUIRE(nntp::scan_response({233, 200, 405}, "233 12344 welcome posting allowed", 

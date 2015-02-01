@@ -193,6 +193,11 @@ namespace nntp
     int scan_response(std::vector<int> codes, const char* response, std::size_t len, Values&... values)
     {
         std::string str(response, len);
+        if (str.back() == '\n')
+            str.pop_back();
+        if (str.back() == '\r')
+            str.pop_back();
+        
         std::stringstream ss(str);
         int code = 0;
         detail::extract_value(ss, code);
@@ -209,6 +214,11 @@ namespace nntp
     int scan_response(std::vector<int> codes, const char* response, std::size_t len)
     {
         std::string str(response, len);
+        if (str.back() == '\n')
+            str.pop_back();
+        if (str.back() == '\r')
+            str.pop_back();
+
         std::stringstream ss(str);
         int code = 0;
         detail::extract_value(ss, code);

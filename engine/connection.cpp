@@ -217,9 +217,11 @@ void connection::initialize::xperform()
 
 connection::execute::execute(std::shared_ptr<state> s, std::shared_ptr<cmdlist> cmd, std::size_t tid) : state_(s), cmds_(cmd), tid_(tid), bytes_(0)
 {
-    state_->session->on_auth = [](std::string&, std::string&) { 
-        throw exception(connection::error::no_permission, 
-            "unexpected authentication requested"); 
+    state_->session->on_auth = [=](std::string& user, std::string& pass) { 
+        if (state_->username.empty() || state_->password.empty())
+            throw exception(error::no_permission, "authentication required but no credentials provided");
+        user = state_->username;
+        pass = state_->password;
     };
         
     state_->session->on_send = [=](const std::string& cmd) {
@@ -265,23 +267,31 @@ void connection::execute::xperform()
 
         newsflash::buffer config(KB(1));
 
-        session->send_next();
-        do 
+        while (session->send_next())
         {
-            auto received = socket->wait(true, false);
-            auto canceled = cancel->wait();
-            if (!newsflash::wait_for(received, canceled, std::chrono::seconds(10)))
-                throw exception(connection::error::timeout, "connection timeout");
-            else if (canceled)
-                return;
+            do 
+            {
+                auto received = socket->wait(true, false);
+                auto canceled = cancel->wait();
+                if (!newsflash::wait_for(received, canceled, std::chrono::seconds(10)))
+                    throw exception(connection::error::timeout, "connection timeout");
+                else if (canceled)
+                    return;
 
-            const auto bytes = socket->recvsome(recvbuf.back(), recvbuf.available());
-            if (bytes == 0)
-                throw exception(connection::error::network, "connection was closed unexpectedly");
+                const auto bytes = socket->recvsome(recvbuf.back(), recvbuf.available());
+                if (bytes == 0)
+                    throw exception(connection::error::network, "connection was closed unexpectedly");
 
-            recvbuf.append(bytes);
+                recvbuf.append(bytes);
+            }
+            while (!session->recv_next(recvbuf, config));
         }
-        while (!session->recv_next(recvbuf, config));
+
+        const auto err = session->get_error();
+        if (err == session::error::authentication_rejected)
+            throw exception(connection::error::authentication_rejected, "authentication rejected");
+        else if (err == session::error::no_permission)
+            throw exception(connection::error::no_permission, "no permission");
 
         if (cmdlist->receive_configure_buffer(i, std::move(config)))
         {

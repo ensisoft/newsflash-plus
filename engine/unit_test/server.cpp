@@ -185,6 +185,11 @@ void service_client(newsflash::native_socket_t sock)
         {
             send_response(sock, "411 no such newsgroup");
         }
+        else if (cmd == "GROUP alt.binaries.authenticate")
+        {
+
+            send_response(sock, "480 authentication required");
+        }
         else
         {
             send_response(sock, "500 what?");

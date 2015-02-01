@@ -238,41 +238,6 @@ void test_connect()
 
 void test_execute()
 {
-    struct cmdlist : public nf::cmdlist 
-    {
-        virtual bool submit_configure_command(std::size_t i, nf::session& ses)
-        {
-            if (i == 0) {
-                ses.change_group("alt.binaries.foo");
-                return true;
-            }
-            return false;
-        }
-        virtual bool receive_configure_buffer(std::size_t i, nf::buffer&& buff)
-        {
-            return true;
-        }
-        virtual void submit_data_commands(nf::session& ses)
-        {
-            ses.retrieve_article("3");
-        }
-        virtual void receive_data_buffer(nf::buffer&& buff)
-        {
-            BOOST_REQUIRE(buff.content_status() == nf::buffer::status::success);
-            BOOST_REQUIRE(buff.content_type() == nf::buffer::type::article);
-
-            nf::decode dec(std::move(buff));
-            dec.perform();
-
-            const auto png = read_file_contents("test_data/newsflash_2_0_0.png");
-            const auto bin = dec.get_binary_data();
-
-            BOOST_REQUIRE(png == bin);
-        }
-        virtual std::size_t num_data_commands() const 
-        { return 1; }
-    };
-
     auto log = std::make_shared<nf::stdlog>(std::cout);
 
     std::unique_ptr<nf::action> act;
@@ -303,7 +268,7 @@ void test_execute()
     act->set_log(log);
     act->perform();
 
-    auto cmds = std::make_shared<cmdlist>();
+    auto cmds = std::shared_ptr<nf::cmdlist>(new nf::cmdlist({"alt.binaries.foo"}, {"3"}, nf::cmdlist::type::body));
 
     // execute
     act = conn.execute(cmds, 123);

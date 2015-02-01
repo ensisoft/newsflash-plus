@@ -267,8 +267,14 @@ public:
         if (len == 0)
             return false;
 
-        const auto code = nntp::scan_response({211, 411}, buff.head(), len);
-        if (code == 411)
+        const auto code = nntp::scan_response({211, 411, 480}, buff.head(), len);
+        if (code == 480)
+        {
+            st.auth_required = true;
+            buff.clear();
+            return true;
+        }
+        else if (code == 411)
         {
             out.set_status(buffer::status::unavailable);
         }
