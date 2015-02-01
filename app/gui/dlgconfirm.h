@@ -1,4 +1,4 @@
-// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -18,66 +18,44 @@
 //  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 //  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-//  THE SOFTWARE.
+//  THE SOFTWARE.            
 
 #pragma once
 
 #include <newsflash/config.h>
-
 #include <newsflash/warnpush.h>
-#  include <QObject>
-#  include "ui_tools.h"
+#  include <QtGui/QDialog>
+#  include "ui_dlgconfirm.h"
 #include <newsflash/warnpop.h>
-
-#include "mainmodule.h"
-#include "settings.h"
-#include "../tools.h"
 
 namespace gui
 {
-    class toolsettings : public settings
+    // Confirm file delete dialog.
+    class DlgConfirm : public QDialog
     {
         Q_OBJECT
 
     public:
-        toolsettings();
-       ~toolsettings();
+        DlgConfirm(QWidget* parent) : QDialog(parent)
+        {
+            ui_.setupUi(this);
+        }
 
-        virtual bool validate() const override;
-
-        void set_tools(std::vector<app::tools::tool> tools);
-
+        bool askAgain() const 
+        { 
+            return ui_.chkAskAgain->isChecked(); 
+        }
     private slots:
-        void on_btnAdd_clicked();
-        void on_btnDel_clicked();
-        void on_btnEdit_clicked();
-        void on_btnMoveUp_clicked();
-        void on_btnMoveDown_clicked();
-        void on_listTools_doubleClicked(QModelIndex);
+        void on_btnAccept_clicked()
+        {
+            accept();
+        }
+        void on_btnCancel_clicked()
+        {
+            reject();
+        }
 
     private:
-        Ui::Tools ui_;
-    private:
-        friend class toolmodule;
-        std::vector<app::tools::tool> tools_;
+        Ui::DlgConfirm ui_;
     };
-
-    class toolmodule : public QObject, public mainmodule
-    {
-        Q_OBJECT
-
-    public:
-        toolmodule();
-       ~toolmodule();
-
-        virtual gui::settings* get_settings() override;
-
-        virtual void apply_settings(settings* gui) override;
-        virtual void free_settings(settings* gui) override;
-
-        virtual info information() const override
-        { return {"toolmodule", "",}; }
-    private:
-    };
-
 } // gui

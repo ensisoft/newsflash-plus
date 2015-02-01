@@ -152,6 +152,54 @@ void toolsettings::on_btnEdit_clicked()
     ui_.listTools->editItem(item);
 }
 
+void toolsettings::on_btnMoveUp_clicked()
+{
+    int index = ui_.listTools->currentRow();
+    if (index == -1 || index == 0)
+        return;
+
+    if (tools_.size() == 1)
+        return;
+
+    QListWidgetItem* item_current = ui_.listTools->item(index);
+    QListWidgetItem* item_above   = ui_.listTools->item(index - 1);
+
+    auto icon = item_current->icon();
+    auto text = item_current->text();
+    item_current->setIcon(item_above->icon());
+    item_current->setText(item_above->text());
+    item_above->setIcon(icon);
+    item_above->setText(text);
+
+    std::swap(tools_[index], tools_[index-1]);
+
+    ui_.listTools->setCurrentRow(index - 1);
+}
+
+void toolsettings::on_btnMoveDown_clicked()
+{
+    int index = ui_.listTools->currentRow();
+    if (index == -1 || index == tools_.size() - 1)
+        return;
+
+    if (tools_.size() == 1)
+        return;
+
+    QListWidgetItem* item_current = ui_.listTools->item(index);
+    QListWidgetItem* item_below   = ui_.listTools->item(index + 1);
+
+    auto icon = item_current->icon();
+    auto text = item_current->text();
+    item_current->setIcon(item_below->icon());
+    item_current->setText(item_below->text());
+    item_below->setIcon(icon);
+    item_below->setText(text);
+
+    std::swap(tools_[index], tools_[index+1]);
+
+    ui_.listTools->setCurrentRow(index + 1);
+}
+
 void toolsettings::on_listTools_doubleClicked(QModelIndex)
 {
     on_btnEdit_clicked();

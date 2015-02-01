@@ -124,7 +124,7 @@ void tools::savestate(app::settings& store)
     QStringList list;
     for (const auto& tool : tools_)
     {
-        QString key = tool.name();
+        QString key = "tool/" + tool.name();
         store.set(key, "name", tool.name());
         store.set(key, "binary", tool.binary());
         store.set(key, "arguments", tool.arguments());

@@ -63,6 +63,9 @@ namespace app
 
         void loadHistory();
         void eraseHistory();
+        void eraseFiles(QModelIndexList& list);
+
+        void keepSorted(bool onOff);
 
         const file& getItem(std::size_t i) const;
 
@@ -70,8 +73,10 @@ namespace app
         void fileCompleted(const app::file& file);
 
     private:
-
         std::vector<file> files_;
+        bool keepSorted_;
+        int sortColumn_;
+        int sortOrder_;
     private:
         QFile history_;
     };

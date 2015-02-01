@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>Form</class>
- <widget class="QWidget" name="Form">
+ <class>Linux</class>
+ <widget class="QWidget" name="Linux">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -30,14 +30,14 @@
          </widget>
         </item>
         <item row="0" column="1">
-         <widget class="QLineEdit" name="editOpenCommand">
+         <widget class="QLineEdit" name="editOpenfileCommand">
           <property name="text">
            <string>cmd.exe</string>
           </property>
          </widget>
         </item>
         <item row="0" column="2">
-         <widget class="QPushButton" name="btnDefaultOpenCommand">
+         <widget class="QPushButton" name="btnDefaultOpenfileCommand">
           <property name="text">
            <string>Default</string>
           </property>

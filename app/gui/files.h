@@ -61,8 +61,14 @@ namespace gui
         void on_actionDelete_triggered();
         void on_tableFiles_customContextMenuRequested(QPoint point);
         void on_tableFiles_doubleClicked();
+        void on_btnCloseFind_clicked();
+        void on_editFind_returnPressed();
+        void on_chkKeepSorted_clicked();
         void invokeTool();
         void toolsUpdated();
+
+    private:
+        void find_next(bool forward);
 
     private:
         Ui::Files ui_;

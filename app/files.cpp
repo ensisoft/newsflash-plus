@@ -45,7 +45,7 @@ namespace {
 namespace app
 {
 
-files::files()
+files::files() : keepSorted_(false), sortColumn_(0), sortOrder_(Qt::AscendingOrder)
 {
     QObject::connect(g_engine, SIGNAL(fileCompleted(const app::file&)),
         this, SLOT(fileCompleted(const app::file&)));
@@ -105,14 +105,22 @@ QVariant files::headerData(int section, Qt::Orientation orientation, int role) c
 
 void files::sort(int column, Qt::SortOrder order) 
 {
+    if (order == Qt::AscendingOrder)
+        DEBUG("Sort in Ascending Order");
+    else DEBUG("Sort in Descending Order");
+
     emit layoutAboutToBeChanged();
 
+    // note that the comparision operators are reversed here
+    // because the order of the items in the list is reversed 
+    // last item in the list is considered to be the first item
+    // on the UI
 #define SORT(x) \
     std::sort(std::begin(files_), std::end(files_), \
         [&](const files::file& lhs, const files::file& rhs) { \
             if (order == Qt::AscendingOrder) \
-                return lhs.x < rhs.x; \
-            return lhs.x > rhs.x; \
+                return lhs.x > rhs.x; \
+            return lhs.x < rhs.x; \
         });
 
     switch ((columns)column)
@@ -127,6 +135,9 @@ void files::sort(int column, Qt::SortOrder order)
 #undef SORT
 
     emit layoutChanged();
+
+    sortColumn_ = column;
+    sortOrder_  = order;
 }
 
 int files::rowCount(const QModelIndex&) const 
@@ -223,6 +234,44 @@ void files::eraseHistory()
     reset();
 }
 
+void files::eraseFiles(QModelIndexList& list)
+{
+    qSort(list);
+
+    // remember, index 0 is at the back of the vector
+    int removed = 0;
+
+    for (int i=0; i<list.size(); ++i)
+    {
+        const auto row = list[i].row() - removed;
+
+        const auto data = getItem(row);
+        const auto file = QString("%1/%2").arg(data.path).arg(data.name);
+        QFile::remove(file);
+        DEBUG(str("Deleted file _1", file));
+        
+        QDir dir(data.path);
+        QFileInfoList entries = dir.entryInfoList(QDir::NoDotAndDotDot);
+        if (entries.isEmpty())
+        {
+            dir.rmdir(data.path);
+            DEBUG(str("Deleted directory _1", data.path));
+        }
+
+        beginRemoveRows(QModelIndex(), row, row);
+        auto it = std::begin(files_);
+        std::advance(it, files_.size() - row - 1);
+        files_.erase(it);
+        endRemoveRows();
+        ++removed;
+    }
+}
+
+void files::keepSorted(bool onOff)
+{
+    keepSorted_ = onOff;
+}
+
 const files::file& files::getItem(std::size_t i) const 
 {
     // the vector is accessed in reverse manner (item at index 0 is at the end)
@@ -265,6 +314,11 @@ void files::fileCompleted(const app::file& file)
     beginInsertRows(QModelIndex(), 0, 0);
     files_.push_back(std::move(next));
     endInsertRows();
+
+    if (keepSorted_)
+    {
+        sort(sortColumn_, (Qt::SortOrder)sortOrder_);
+    }
 }
 
 } // app

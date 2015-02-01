@@ -31,10 +31,12 @@
 #  include <QDir>
 #  include <QProcess>
 #  include <QFileInfo>
+#  include <QRegExp>
 #include <newsflash/warnpop.h>
 
 #include "mainwindow.h"
 #include "files.h"
+#include "dlgconfirm.h"
 #include "../debug.h"
 #include "../format.h"
 #include "../settings.h"
@@ -54,6 +56,13 @@ files::files()
 
     QObject::connect(app::g_tools, SIGNAL(toolsUpdated()),
         this, SLOT(toolsUpdated()));
+
+    ui_.actionOpenFile->setShortcut(QKeySequence::Open);
+    ui_.actionFind->setShortcut(QKeySequence::Find);
+    ui_.actionFindNext->setShortcut(QKeySequence::FindNext);
+    ui_.actionFindPrev->setShortcut(QKeySequence::FindPrevious);
+
+    ui_.findContainer->setVisible(false);
 
     DEBUG("files gui created");
 }
@@ -119,10 +128,15 @@ void files::loadstate(app::settings& s)
     const auto sorted  = s.get("files", "keep_sorted", false);
     const auto clear   = s.get("files", "clear_on_exit", false);
     const auto confirm = s.get("files", "confirm_file_delete", true);
+    const auto matchcase = s.get("files", "match_case", true);
+
+    const auto sortColumn = s.get("files", "sort_column", 0);
+    const auto sortOrder  = s.get("files", "sort_order", (int)Qt::AscendingOrder);
 
     ui_.chkKeepSorted->setChecked(sorted);
     ui_.chkClearOnExit->setChecked(clear);
     ui_.chkConfirmDelete->setChecked(confirm);
+    ui_.chkMatchCase->setChecked(matchcase);
 
     const auto* model = ui_.tableFiles->model();
     for (int i=0; i<model->columnCount()-1; ++i)
@@ -133,17 +147,28 @@ void files::loadstate(app::settings& s)
     }
 
     model_.loadHistory();
+    model_.keepSorted(sorted);
+
+    ui_.tableFiles->sortByColumn(sortColumn, (Qt::SortOrder)sortOrder);
 }
 
 bool files::savestate(app::settings& s)
 {
-    const auto sorted  = ui_.chkKeepSorted->isChecked();
-    const auto clear   = ui_.chkClearOnExit->isChecked();
-    const auto confirm = ui_.chkConfirmDelete->isChecked();
+    const auto sorted    = ui_.chkKeepSorted->isChecked();
+    const auto clear     = ui_.chkClearOnExit->isChecked();
+    const auto confirm   = ui_.chkConfirmDelete->isChecked();
+    const auto matchcase = ui_.chkMatchCase->isChecked();
+
+    const QHeaderView* header = ui_.tableFiles->horizontalHeader();
+    const auto sortColumn = header->sortIndicatorSection();
+    const auto sortOrder  = header->sortIndicatorOrder();
 
     s.set("files", "keep_sorted", sorted);
     s.set("files", "clear_on_exit", clear);
     s.set("files", "confirm_file_delete", confirm);
+    s.set("files", "match_case", matchcase);
+    s.set("files", "sort_column", sortColumn);
+    s.set("files", "sort_order", sortOrder);
 
     const auto* model = ui_.tableFiles->model();
     // the last column has auto-stretch flag set so it's width
@@ -244,17 +269,37 @@ void files::on_actionOpenFolder_triggered()
 }
 
 void files::on_actionFind_triggered()
-{}
+{
+    ui_.findContainer->setVisible(true);
+    ui_.editFind->setFocus();
+}
 
 void files::on_actionFindNext_triggered()
-{}
+{
+    find_next(true);
+}
 
 void files::on_actionFindPrev_triggered()
-{}
+{
+    find_next(false);
+}
 
 void files::on_actionDelete_triggered()
 {
+    auto indices = ui_.tableFiles->selectionModel()->selectedRows();
+    if (indices.isEmpty())
+        return;
 
+    const auto confirm = ui_.chkConfirmDelete->isChecked();
+    if (confirm)
+    {
+        DlgConfirm dlg(this);
+        if (dlg.exec() == QDialog::Rejected)
+            return;
+        ui_.chkConfirmDelete->setChecked(!dlg.askAgain());
+    }
+
+    model_.eraseFiles(indices);
 }
 
 
@@ -322,6 +367,21 @@ void files::on_tableFiles_doubleClicked()
     on_actionOpenFile_triggered();
 }
 
+void files::on_btnCloseFind_clicked()
+{
+    ui_.findContainer->setVisible(false);
+}
+
+void files::on_editFind_returnPressed()
+{
+    find_next(true);
+}
+
+void files::on_chkKeepSorted_clicked()
+{
+    model_.keepSorted(ui_.chkKeepSorted->isChecked());
+}
+
 void files::invokeTool()
 {
     const auto& indices = ui_.tableFiles->selectionModel()->selectedRows();
@@ -345,10 +405,54 @@ void files::invokeTool()
 
 void files::toolsUpdated()
 {
-    DEBUG("toolsUpdated");
-
     g_win->reactivate(this);
-
 }
+
+void files::find_next(bool forward)
+{
+    QRegExp regex(ui_.editFind->text());
+    if (!regex.isValid())
+    {
+        ui_.label->setText("Incorrectly formed search pattern");
+        return;
+    }
+    ui_.label->clear();
+
+    if (ui_.chkMatchCase->isChecked())
+        regex.setCaseSensitivity(Qt::CaseSensitive);
+    else regex.setCaseSensitivity(Qt::CaseInsensitive);
+
+    int start = 0;
+
+    const auto& indices = ui_.tableFiles->selectionModel()->selectedRows();
+    if (!indices.isEmpty())
+        start = indices.last().row();
+
+    int num_rows = model_.rowCount(QModelIndex());
+
+    for (int i=0; i<num_rows; ++i)
+    {
+        if (forward)
+            start = (start + 1) % num_rows;
+        else if (--start < 0)
+            start = num_rows - 1;
+
+        Q_ASSERT(start >= 0);
+        Q_ASSERT(start < num_rows);
+
+        const auto& item = model_.getItem(start);
+        if (regex.indexIn(item.name) != -1 ||
+            regex.indexIn(item.path) != -1)
+        {
+            QModelIndex index = ui_.tableFiles->model()->index(start, 0);
+            ui_.tableFiles->selectionModel()->setCurrentIndex(index, 
+                QItemSelectionModel::SelectCurrent | QItemSelectionModel::Rows);
+            ui_.tableFiles->scrollTo(index);
+            return;
+        }
+    }    
+    ui_.label->setText("No matches");
+}
+
 
 } // gui
