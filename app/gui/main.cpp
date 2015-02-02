@@ -140,7 +140,7 @@ int run(int argc, char* argv[])
             ERROR(str("Failed to read settings _1, _2", file, err));
     }
 
-    gui::appearance style;
+    gui::Appearance style;
 
     app::netman net;
     app::g_net = &net;
@@ -148,7 +148,7 @@ int run(int argc, char* argv[])
     app::engine eng;
     app::g_engine = &eng;
 
-    app::accounts acc;
+    app::Accounts acc;
     app::g_accounts = &acc;
 
     app::tools tools;
@@ -158,61 +158,61 @@ int run(int argc, char* argv[])
     // instead of the stack..
 
      // main application window
-    gui::mainwindow win(set);
+    gui::MainWindow win(set);
     gui::g_win = &win;
 
     // accounts widget
-    gui::accounts gacc;
+    gui::Accounts gacc;
     win.attach(&gacc);
 
     // groups widget
-    gui::groups groups;
+    gui::Groups groups;
     win.attach(&groups);
 
     // downloads widget
-    gui::downloads downloads;
+    gui::Downloads downloads;
     win.attach(&downloads);
 
     // scripting
 #if defined(NEWSFLASH_ENABLE_PYTHON)
-    gui::python py;
+    gui::Python py;
     win.attach(&py);
 #endif
 
     // eventlog widget
-    gui::eventlog log;
+    gui::EventLog log;
     win.attach(&log);
 
     // files widget
-    gui::files files;
+    gui::Files files;
     win.attach(&files);
 
     // RSS widget
-    gui::rss rss;
+    gui::RSS rss;
     win.attach(&rss);
 
     // core module
-    gui::coremodule core;
+    gui::CoreModule core;
     win.attach(&core);
 
     // nzb module
-    gui::nzbcore nzb;
+    gui::NZBCore nzb;
     win.attach(&nzb);
 
     // tool module
-    gui::toolmodule toolsmod;
-    win.attach(&toolsmod);
+    gui::ToolModule toolsgui;
+    win.attach(&toolsgui);
 
 #if defined(LINUX_OS)
-    gui::linuxmodule linux;
+    gui::LinuxModule linux;
     win.attach(&linux);
 #endif
 
     win.attach(&style);
 
-    win.loadstate();
-    win.prepare_file_menu();
-    win.prepare_main_tab();
+    win.loadState();
+    win.prepareFileMenu();
+    win.prepareMainTab();
     win.show();
 
     auto ret = qtinstance.exec();
@@ -222,7 +222,7 @@ int run(int argc, char* argv[])
     // destruction order. our mainwindow outlives the widgets and modules
     // so before we start destructing those objects its better to make clean
     // all the references to those in the mainwindow.
-    win.detach_all_widgets();
+    win.detachAllWidgets();
 
     return ret;
 }

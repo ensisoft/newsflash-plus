@@ -34,19 +34,22 @@
 namespace gui
 {
     // depends on settings module
-    class appearance : public mainmodule
+    class Appearance : public MainModule
     {
     public:
-        appearance();
-       ~appearance();
+        Appearance();
+       ~Appearance();
 
-        virtual void loadstate(app::settings& s) override;
-        virtual bool savestate(app::settings& s) override;
-        virtual gui::settings* get_settings() override;
-        virtual void apply_settings(gui::settings* gui) override;
-        virtual void free_settings(gui::settings* s) override;
-        virtual info information() const override
-        { return {"appearance", ""}; }
+        virtual void loadState(app::settings& s) override;
+        virtual bool saveState(app::settings& s) override;
+        virtual SettingsWidget* getSettings() override;
+        virtual void applySettings(SettingsWidget* gui) override;
+        virtual void freeSettings(SettingsWidget* gui) override;
+
+        virtual info getInformation() const override
+        { 
+            return {"appearance", ""}; 
+        }
     private:
         QString current_style_name_;
     };

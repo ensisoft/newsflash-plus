@@ -42,7 +42,7 @@
 namespace gui
 {
 
-downloads::downloads() : panels_y_pos_(0)
+Downloads::Downloads() : panels_y_pos_(0)
 {
     ui_.setupUi(this);
     ui_.tableConns->setModel(&conns_);
@@ -68,12 +68,12 @@ downloads::downloads() : panels_y_pos_(0)
 }
 
 
-downloads::~downloads()
+Downloads::~Downloads()
 {
     DEBUG("Destroyed downloads UI");
 }
 
-void downloads::add_actions(QMenu& menu)
+void Downloads::addActions(QMenu& menu)
 {
     menu.addAction(ui_.actionConnect);
     menu.addAction(ui_.actionPreferSSL);
@@ -91,7 +91,7 @@ void downloads::add_actions(QMenu& menu)
     menu.addAction(ui_.actionTaskClear);    
 }
 
-void downloads::add_actions(QToolBar& bar)
+void Downloads::addActions(QToolBar& bar)
 {
     bar.addAction(ui_.actionConnect);
     bar.addAction(ui_.actionPreferSSL);
@@ -109,7 +109,7 @@ void downloads::add_actions(QToolBar& bar)
     bar.addAction(ui_.actionTaskClear);    
 }
 
-void downloads::loadstate(app::settings& s) 
+void Downloads::loadState(app::settings& s) 
 {
     const auto task_list_height = s.get("downloads", "task_list_height", 0);
     if (task_list_height)
@@ -130,7 +130,7 @@ void downloads::loadstate(app::settings& s)
     tasks_.set_group_similar(group_related);
 }
 
-bool downloads::savestate(app::settings& s)
+bool Downloads::saveState(app::settings& s)
 {
     s.set("downloads", "task_list_height", ui_.grpConns->height());
     s.set("downloads", "group_related", ui_.chkGroupSimilar->isChecked());
@@ -138,7 +138,7 @@ bool downloads::savestate(app::settings& s)
     return true;
 }
 
-void downloads::refresh()
+void Downloads::refresh()
 {
     //DEBUG("Refresh");
     const auto remove_complete = ui_.chkRemoveComplete->isChecked();
@@ -153,28 +153,28 @@ void downloads::refresh()
     ui_.grpConns->setTitle(tr("Connections (%1)").arg(num_conns));
 }
 
-void downloads::on_actionConnect_triggered()
+void Downloads::on_actionConnect_triggered()
 {
     const auto on_off = ui_.actionConnect->isChecked();
 
     app::g_engine->connect(on_off);
 }
 
-void downloads::on_actionPreferSSL_triggered()
+void Downloads::on_actionPreferSSL_triggered()
 {
     const auto on_off = ui_.actionPreferSSL->isChecked();
 
     app::g_engine->set_prefer_secure(on_off);
 }
 
-void downloads::on_actionThrottle_triggered()
+void Downloads::on_actionThrottle_triggered()
 {
     const auto on_off = ui_.actionThrottle->isChecked();
 
     app::g_engine->set_throttle(on_off);
 }
 
-void downloads::on_actionTaskPause_triggered()
+void Downloads::on_actionTaskPause_triggered()
 {
     QModelIndexList indices = ui_.tableTasks->selectionModel()->selectedRows();
     if (indices.isEmpty())
@@ -185,7 +185,7 @@ void downloads::on_actionTaskPause_triggered()
     tableTasks_selectionChanged();    
 }
 
-void downloads::on_actionTaskResume_triggered()
+void Downloads::on_actionTaskResume_triggered()
 {
     QModelIndexList indices = ui_.tableTasks->selectionModel()->selectedRows();
     if (indices.isEmpty())
@@ -196,7 +196,7 @@ void downloads::on_actionTaskResume_triggered()
     tableTasks_selectionChanged();    
 }
 
-void downloads::on_actionTaskMoveUp_triggered()
+void Downloads::on_actionTaskMoveUp_triggered()
 {
     QModelIndexList indices = ui_.tableTasks->selectionModel()->selectedRows();
     if (indices.isEmpty())
@@ -215,7 +215,7 @@ void downloads::on_actionTaskMoveUp_triggered()
         QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
 }
 
-void downloads::on_actionTaskMoveDown_triggered()
+void Downloads::on_actionTaskMoveDown_triggered()
 {
     QModelIndexList indices = ui_.tableTasks->selectionModel()->selectedRows();
     if (indices.isEmpty())
@@ -234,7 +234,7 @@ void downloads::on_actionTaskMoveDown_triggered()
         QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
 }
 
-void downloads::on_actionTaskMoveTop_triggered()
+void Downloads::on_actionTaskMoveTop_triggered()
 {
     QModelIndexList indices = ui_.tableTasks->selectionModel()->selectedRows();
     if (indices.isEmpty())
@@ -253,7 +253,7 @@ void downloads::on_actionTaskMoveTop_triggered()
         QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
 }
 
-void downloads::on_actionTaskMoveBottom_triggered()
+void Downloads::on_actionTaskMoveBottom_triggered()
 {
     QModelIndexList indices = ui_.tableTasks->selectionModel()->selectedRows();
     if (indices.isEmpty())
@@ -272,7 +272,7 @@ void downloads::on_actionTaskMoveBottom_triggered()
         QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
 }
 
-void downloads::on_actionTaskDelete_triggered()
+void Downloads::on_actionTaskDelete_triggered()
 {
     QModelIndexList indices = ui_.tableTasks->selectionModel()->selectedRows();
     if (indices.isEmpty())
@@ -281,20 +281,20 @@ void downloads::on_actionTaskDelete_triggered()
     tasks_.kill(indices);
 }
 
-void downloads::on_actionTaskClear_triggered()
+void Downloads::on_actionTaskClear_triggered()
 {
     tableTasks_selectionChanged();
 }
 
 void openfile(const QString& file);
 
-void downloads::on_actionTaskOpenLog_triggered()
+void Downloads::on_actionTaskOpenLog_triggered()
 {
     const auto& file = app::g_engine->get_engine_logfile();
-    app::open_file(file);
+    app::openFile(file);
 }
 
-void downloads::on_actionConnClone_triggered()
+void Downloads::on_actionConnClone_triggered()
 {
     QModelIndexList indices = ui_.tableConns->selectionModel()->selectedRows();
     if (indices.isEmpty())
@@ -303,7 +303,7 @@ void downloads::on_actionConnClone_triggered()
     conns_.clone(indices);
 }
 
-void downloads::on_actionConnDelete_triggered()
+void Downloads::on_actionConnDelete_triggered()
 {
     QModelIndexList indices = ui_.tableConns->selectionModel()->selectedRows();
     if (indices.isEmpty())
@@ -314,7 +314,7 @@ void downloads::on_actionConnDelete_triggered()
     tableConns_selectionChanged();
 }
 
-void downloads::on_actionConnOpenLog_triggered()
+void Downloads::on_actionConnOpenLog_triggered()
 {
     QModelIndexList indices = ui_.tableConns->selectionModel()->selectedRows();
     for (int i=0; i<indices.size(); ++i)
@@ -322,11 +322,11 @@ void downloads::on_actionConnOpenLog_triggered()
         const auto row = indices[i].row();
         const auto& item = conns_.getItem(row);
         const auto& file = app::from_utf8(item.logfile);
-        app::open_file(file);
+        app::openFile(file);
     }
 }
 
-void downloads::on_tableTasks_customContextMenuRequested(QPoint point)
+void Downloads::on_tableTasks_customContextMenuRequested(QPoint point)
 {
     ui_.actionTaskOpenLog->setEnabled(
         app::g_engine->is_started());
@@ -348,7 +348,7 @@ void downloads::on_tableTasks_customContextMenuRequested(QPoint point)
     menu.exec(QCursor::pos());
 }
 
-void downloads::on_tableConns_customContextMenuRequested(QPoint point)
+void Downloads::on_tableConns_customContextMenuRequested(QPoint point)
 {
     QMenu menu(this);
     menu.addAction(ui_.actionConnect);
@@ -363,17 +363,17 @@ void downloads::on_tableConns_customContextMenuRequested(QPoint point)
 }
 
 
-void downloads::on_tableConns_doubleClicked(const QModelIndex&)
+void Downloads::on_tableConns_doubleClicked(const QModelIndex&)
 {
     on_actionConnClone_triggered();
 }
 
-void downloads::on_chkGroupSimilar_clicked(bool checked)
+void Downloads::on_chkGroupSimilar_clicked(bool checked)
 {
     tasks_.set_group_similar(checked);
 }
 
-void downloads::tableTasks_selectionChanged()
+void Downloads::tableTasks_selectionChanged()
 {
     const auto& indices = ui_.tableTasks->selectionModel()->selectedRows();
     if (indices.isEmpty())
@@ -435,7 +435,7 @@ void downloads::tableTasks_selectionChanged()
 
 }
 
-void downloads::tableConns_selectionChanged()
+void Downloads::tableConns_selectionChanged()
 {
     const auto& indices = ui_.tableConns->selectionModel()->selectedRows();
     if (indices.isEmpty())
@@ -452,7 +452,7 @@ void downloads::tableConns_selectionChanged()
     }
 }
 
-bool downloads::eventFilter(QObject* obj, QEvent* event)
+bool Downloads::eventFilter(QObject* obj, QEvent* event)
 {
     if (event->type() == QEvent::MouseMove)
     {

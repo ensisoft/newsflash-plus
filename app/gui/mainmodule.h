@@ -36,12 +36,12 @@ class QMenu;
 
 namespace gui
 {
-    class settings;
+    class SettingsWidget;
 
     // mainmodule extends the application functionality
     // in a headless fashion, i.e. without providing any user visible GUI.
     // this is in contrast to the mainwidget which provides GUI and functionality.
-    class mainmodule
+    class MainModule
     {
     public:
         struct info {
@@ -49,34 +49,34 @@ namespace gui
             QString helpurl;
         };
 
-        virtual ~mainmodule() = default;
+        virtual ~MainModule() = default;
 
         // add the module specific actions to a menu inside the host application
-        virtual bool add_actions(QMenu& menu) { return false;}
+        virtual bool addActions(QMenu& menu) { return false;}
 
         // load the module state
-        virtual void loadstate(app::settings& s) {};
+        virtual void loadState(app::settings& s) {};
 
         // save the module state
-        virtual bool savestate(app::settings& s) { return true; };
+        virtual bool saveState(app::settings& s) { return true; };
 
         // prepare the module for shutdown.
         virtual void shutdown() {};
 
         // perform first launch activities.
-        virtual void first_launch() {}
+        virtual void firstLaunch() {}
 
-        virtual info information() const { return {"", ""}; }
+        virtual info getInformation() const { return {"", ""}; }
 
         // get a settings widget if any. 
-        virtual settings* get_settings() { return nullptr; }
+        virtual SettingsWidget* getSettings() { return nullptr; }
 
         // notify that the application settings have been changed.
-        virtual void apply_settings(settings* gui) {}
+        virtual void applySettings(SettingsWidget* gui) {}
 
-        virtual void free_settings(settings* gui) {}
+        virtual void freeSettings(SettingsWidget* gui) {}
 
-        virtual void drop_file(const QString& name) {}
+        virtual void dropFile(const QString& name) {}
     protected:
     private:
     };

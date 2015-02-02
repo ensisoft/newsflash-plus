@@ -40,7 +40,8 @@
 
 namespace gui
 {
-nzbfile::nzbfile()
+
+NZBFile::NZBFile()
 {
     ui_.setupUi(this);
     ui_.progressBar->setVisible(false);
@@ -61,15 +62,15 @@ nzbfile::nzbfile()
         ui_.actionDelete->setEnabled(success);
         ui_.actionBrowse->setEnabled(success);        
     };
-    DEBUG("nzbfile created");
+    DEBUG("NZBFile created");
 }
 
-nzbfile::~nzbfile()
+NZBFile::~NZBFile()
 {
-    DEBUG("nzbfile deleted");
+    DEBUG("NZBFile deleted");
 }
 
-void nzbfile::add_actions(QMenu& menu)
+void NZBFile::addActions(QMenu& menu)
 {
     menu.addAction(ui_.actionOpen);
     menu.addSeparator();
@@ -82,7 +83,7 @@ void nzbfile::add_actions(QMenu& menu)
     menu.addAction(ui_.actionSettings);
 }
 
-void nzbfile::add_actions(QToolBar& bar)
+void NZBFile::addActions(QToolBar& bar)
 {
     bar.addAction(ui_.actionOpen);
     bar.addSeparator();
@@ -95,12 +96,12 @@ void nzbfile::add_actions(QToolBar& bar)
     bar.addAction(ui_.actionSettings);
 }
 
-void nzbfile::close_widget()
+void NZBFile::closeWidget()
 {
     delete this;
 }
 
-void nzbfile::loadstate(app::settings& s)
+void NZBFile::loadState(app::settings& s)
 {
     const bool filenames = s.get("nzb", "show_filename_only", false);
 
@@ -109,14 +110,14 @@ void nzbfile::loadstate(app::settings& s)
     model_.set_show_filenames_only(filenames);
 }
 
-bool nzbfile::savestate(app::settings& s)
+bool NZBFile::saveState(app::settings& s)
 {
     s.set("nzb", "show_filename_only", 
         ui_.chkFilenamesOnly->isChecked());
     return true;
 }
 
-void nzbfile::open(const QString& nzbfile)
+void NZBFile::open(const QString& nzbfile)
 {
     Q_ASSERT(!nzbfile.isEmpty());
 
@@ -131,7 +132,7 @@ void nzbfile::open(const QString& nzbfile)
     }
 }
 
-void nzbfile::open(const QByteArray& bytes, const QString& desc)
+void NZBFile::open(const QByteArray& bytes, const QString& desc)
 {
     Q_ASSERT(!bytes.isEmpty());
     Q_ASSERT(!desc.isEmpty());
@@ -147,9 +148,9 @@ void nzbfile::open(const QByteArray& bytes, const QString& desc)
     }
 }
 
-void nzbfile::on_actionOpen_triggered()
+void NZBFile::on_actionOpen_triggered()
 {
-    const auto& file = g_win->select_nzb_file();
+    const auto& file = g_win->selectNzbOpenFile();
     if (file.isEmpty())
         return;
 
@@ -160,21 +161,21 @@ void nzbfile::on_actionOpen_triggered()
     }
 }
 
-void nzbfile::on_actionDownload_triggered()
+void NZBFile::on_actionDownload_triggered()
 {
-    download_selected("");
+    downloadSelected("");
 }
 
-void nzbfile::on_actionBrowse_triggered()
+void NZBFile::on_actionBrowse_triggered()
 {
-    const auto& folder = g_win->select_download_folder();
+    const auto& folder = g_win->selectDownloadFolder();
     if (folder.isEmpty())
         return;
 
-    download_selected(folder);
+    downloadSelected(folder);
 }
 
-void nzbfile::on_actionClear_triggered()
+void NZBFile::on_actionClear_triggered()
 {
     model_.clear();
     ui_.grpBox->setTitle(tr("NZB File"));
@@ -182,7 +183,7 @@ void nzbfile::on_actionClear_triggered()
     ui_.actionDelete->setEnabled(false);
 }
 
-void nzbfile::on_actionDelete_triggered()
+void NZBFile::on_actionDelete_triggered()
 {
     auto indices = ui_.tableView->selectionModel()->selectedRows();
     if (indices.isEmpty())
@@ -191,17 +192,17 @@ void nzbfile::on_actionDelete_triggered()
     model_.kill(indices);
 }
 
-void nzbfile::on_actionSettings_triggered()
+void NZBFile::on_actionSettings_triggered()
 {
-    g_win->show_setting("NZB");
+    g_win->showSetting("NZB");
 }
 
-void nzbfile::on_tableView_customContextMenuRequested(QPoint)
+void NZBFile::on_tableView_customContextMenuRequested(QPoint)
 {
     QMenu sub("Download to");
     sub.setIcon(QIcon(":/resource/16x16_ico_png/ico_download.png"));
 
-    const auto& recents = g_win->get_recent_paths();
+    const auto& recents = g_win->getRecentPaths();
     for (const auto& recent : recents)
     {
         QAction* action = sub.addAction(QIcon(":/resource/16x16_ico_png/ico_folder.png"), recent);
@@ -226,23 +227,23 @@ void nzbfile::on_tableView_customContextMenuRequested(QPoint)
     menu.exec(QCursor::pos());
 }
 
-void nzbfile::on_chkFilenamesOnly_clicked()
+void NZBFile::on_chkFilenamesOnly_clicked()
 {
     const bool on_off = ui_.chkFilenamesOnly->isChecked();
 
     model_.set_show_filenames_only(on_off);
 }
 
-void nzbfile::downloadToPrevious()
+void NZBFile::downloadToPrevious()
 {
     const auto* action = qobject_cast<const QAction*>(sender());
 
     const auto folder = action->text();
 
-    download_selected(folder);
+    downloadSelected(folder);
 }
 
-void nzbfile::download_selected(const QString& folder)
+void NZBFile::downloadSelected(const QString& folder)
 {
     const auto& indices = ui_.tableView->selectionModel()->selectedRows();
     if (indices.isEmpty())
@@ -251,7 +252,7 @@ void nzbfile::download_selected(const QString& folder)
     const auto& filename = ui_.grpBox->title();
     const auto& basename = QFileInfo(filename).completeBaseName();
 
-    const auto acc = g_win->choose_account(basename);
+    const auto acc = g_win->chooseAccount(basename);
     if (!acc)
         return;
 

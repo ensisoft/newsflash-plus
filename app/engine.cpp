@@ -93,6 +93,8 @@ engine::engine()
          std::placeholders::_1));
     engine_->set_batch_callback(std::bind(&engine::on_batch_complete, this,
         std::placeholders::_1));
+    engine_->set_list_callback(std::bind(&engine::on_list_complete, this,
+        std::placeholders::_1));
 
     // remember that the notify callback can come from any thread
     // within the engine and it has to be thread safe.
@@ -267,6 +269,11 @@ bool engine::download_nzb_contents(quint32 acc, const QString& path, const QStri
     return true;
 }
 
+void engine::retrieve_newsgroup_listing(quint32 acc)
+{
+    engine_->list_newsgroups(acc);
+}
+
 
 void engine::loadstate(settings& s)
 {
@@ -275,7 +282,7 @@ void engine::loadstate(settings& s)
     downloads_ = s.get("engine", "downloads", 
         QDir::toNativeSeparators(QDir::homePath() + "/Downloads"));
 
-    mountpoint_ = resolve_mount_point(downloads_);
+    mountpoint_ = resolveMountPoint(downloads_);
 
     const auto overwrite = s.get("engine", "overwrite_existing_files", false);
     const auto discard   = s.get("engine", "discard_text", true);
@@ -333,7 +340,7 @@ void engine::refresh()
     // point to a folder that doesn't yet exist.. 
     // so traverse the path towards the root untill 
     // an existing path is found.
-    diskspace_ = app::get_free_disk_space(mountpoint_);
+    diskspace_ = app::getFreeDiskSpace(mountpoint_);
 }
 
 bool engine::shutdown()
@@ -434,6 +441,25 @@ void engine::on_batch_complete(const newsflash::ui::batch& b)
     path = QDir::toNativeSeparators(path);
 
 
+}
+
+void engine::on_list_complete(const newsflash::ui::listing& l)
+{
+    DEBUG("Listing complete");
+
+    QList<newsgroup> list;
+
+    for (const auto& ui : l.groups)
+    {
+        newsgroup group;
+        group.first = ui.first;
+        group.last  = ui.last;
+        group.size  = ui.size;
+        group.name  = from_utf8(ui.name);
+        list.append(group);
+    }
+
+    emit listingCompleted(l.account, list);
 }
 
 engine* g_engine;

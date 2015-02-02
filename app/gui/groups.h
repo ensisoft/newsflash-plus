@@ -25,41 +25,44 @@
 #include <newsflash/config.h>
 
 #include <newsflash/warnpush.h>
+#  include "ui_groups.h"
 #include <newsflash/warnpop.h>
 
-#include "ui_groups.h"
 #include "mainwidget.h"
 #include "../groups.h"
 
 namespace gui
 {
-    class groups : public mainwidget
+    // news group list GUI
+    class Groups : public MainWidget
     {
         Q_OBJECT
 
     public:
-        groups();
-       ~groups();
+        Groups();
+       ~Groups();
 
-        virtual void add_actions(QMenu& menu) override;
-        virtual void add_actions(QToolBar& bar) override;
-        virtual info information() const override;
+        virtual void addActions(QMenu& menu) override;
+        virtual void addActions(QToolBar& bar) override;
+        virtual info getInformation() const override;
+
+        virtual void loadState(app::settings& settings) override;
+        virtual bool saveState(app::settings& settings) override;
 
     private slots:
-        void on_actionAdd_triggered();
-        void on_actionRemove_triggered();
         void on_actionOpen_triggered();
         void on_actionUpdate_triggered();
         void on_actionUpdateOptions_triggered();
         void on_actionDelete_triggered();
         void on_actionClean_triggered();
         void on_actionInfo_triggered();
+        void accountsUpdated();
 
     private:
         Ui::Groups ui_;
 
     private:
-        app::groups model_;
+        app::Groups model_;
     };
 
 } // gui

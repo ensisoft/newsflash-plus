@@ -65,9 +65,9 @@ using app::str;
 namespace gui
 {
 
-mainwindow* g_win;    
+MainWindow* g_win;    
 
-mainwindow::mainwindow(app::settings& s) : QMainWindow(nullptr), current_(nullptr), settings_(s)
+MainWindow::MainWindow(app::settings& s) : QMainWindow(nullptr), current_(nullptr), settings_(s)
 {
     ui_.setupUi(this);
 
@@ -111,16 +111,16 @@ mainwindow::mainwindow(app::settings& s) : QMainWindow(nullptr), current_(nullpt
     setWindowTitle(NEWSFLASH_TITLE);
     setAcceptDrops(true);    
 
-    DEBUG("mainwindow created");
+    DEBUG("MainWindow created");
 
 }
 
-mainwindow::~mainwindow()
+MainWindow::~MainWindow()
 {
-    DEBUG("mainwindow deleted");
+    DEBUG("MainWindow deleted");
 }
 
-void mainwindow::attach(mainwidget* widget, bool loadstate)
+void MainWindow::attach(MainWidget* widget, bool loadstate)
 {
     Q_ASSERT(!widget->parent());
 
@@ -130,7 +130,7 @@ void mainwindow::attach(mainwidget* widget, bool loadstate)
 
     const auto& text = widget->windowTitle();
     const auto& icon = widget->windowIcon();
-    const auto& info = widget->information();
+    const auto& info = widget->getInformation();
 
     // only permanent widgets get a view action.
     // permant widgets are those that instead of being closed
@@ -154,17 +154,17 @@ void mainwindow::attach(mainwidget* widget, bool loadstate)
     }
 
     if (loadstate)
-        widget->loadstate(settings_);
+        widget->loadState(settings_);
 
-    build_window_menu();
+    buildWindowMenu();
 }
 
-void mainwindow::attach(mainmodule* module, bool loadstate)
+void MainWindow::attach(MainModule* module, bool loadstate)
 {
     modules_.push_back(module);
 }
 
-void mainwindow::detach_all_widgets()
+void MainWindow::detachAllWidgets()
 {
     ui_.mainTab->clear();
 
@@ -174,7 +174,7 @@ void mainwindow::detach_all_widgets()
     widgets_.clear();
 }
 
-void mainwindow::loadstate()
+void MainWindow::loadState()
 {
     // load global objects state.
     app::g_accounts->loadstate(settings_);
@@ -192,7 +192,7 @@ void mainwindow::loadstate()
     const auto height = settings_.get("window", "height", 0);
     if (width && height)
     {
-        DEBUG(str("mainwindow dimensions _1 x _2", width, height));        
+        DEBUG(str("MainWindow dimensions _1 x _2", width, height));        
         resize(width, height);
     }
 
@@ -203,7 +203,7 @@ void mainwindow::loadstate()
     auto screen = desktop.availableGeometry(desktop.primaryScreen());
     if (x < screen.width() - 50 && y < screen.height() - 50)
     {
-        DEBUG(str("mainwindow position _1, _2", x, y));
+        DEBUG(str("MainWindow position _1, _2", x, y));
         move(x, y);
     }
 
@@ -222,7 +222,7 @@ void mainwindow::loadstate()
     {
         const auto text = widgets_[i]->windowTitle();
         const auto icon = widgets_[i]->windowIcon();
-        const auto info = widgets_[i]->information();
+        const auto info = widgets_[i]->getInformation();
         const auto show = settings_.get("window_visible_tabs", text, info.visible_by_default);
         if (show)
         {
@@ -231,28 +231,28 @@ void mainwindow::loadstate()
         if (i < actions_.size())
             actions_[i]->setChecked(show);        
           
-        widgets_[i]->loadstate(settings_);
+        widgets_[i]->loadState(settings_);
     }
 
     for (auto* m : modules_)
-        m->loadstate(settings_);
+        m->loadState(settings_);
 }
 
-void mainwindow::show_widget(const QString& name)
+void MainWindow::showWidget(const QString& name)
 {
     show(name);
 }
 
-void mainwindow::show_setting(const QString& name)
+void MainWindow::showSetting(const QString& name)
 {
     DlgSettings dlg(this);
 
-    std::vector<settings*> w_tabs;
-    std::vector<settings*> m_tabs;
+    std::vector<SettingsWidget*> w_tabs;
+    std::vector<SettingsWidget*> m_tabs;
 
     for (auto* w : widgets_)
     {
-        auto* tab = w->get_settings();
+        auto* tab = w->getSettings();
         if (tab)
             dlg.attach(tab);
 
@@ -261,7 +261,7 @@ void mainwindow::show_setting(const QString& name)
 
     for (auto* m : modules_)
     {
-        auto* tab = m->get_settings();
+        auto* tab = m->getSettings();
         if (tab) 
             dlg.attach(tab);
 
@@ -280,10 +280,10 @@ void mainwindow::show_setting(const QString& name)
         auto* widget = widgets_[i];
         auto* tab = w_tabs[i];
         if (apply && tab)
-            widget->apply_settings(tab);
+            widget->applySettings(tab);
 
         if (tab)
-            widget->free_settings(tab);
+            widget->freeSettings(tab);
     }
 
     for (std::size_t i=0; i<modules_.size(); ++i)
@@ -291,14 +291,14 @@ void mainwindow::show_setting(const QString& name)
         auto* module = modules_[i];
         auto* tab = m_tabs[i];
         if (apply && tab)
-            module->apply_settings(tab);
+            module->applySettings(tab);
 
         if (tab)
-            module->free_settings(tab);
+            module->freeSettings(tab);
     }    
 }
 
-void mainwindow::prepare_file_menu()
+void MainWindow::prepareFileMenu()
 {
     if (QSystemTrayIcon::isSystemTrayAvailable())
     {
@@ -307,19 +307,19 @@ void mainwindow::prepare_file_menu()
     }
 
     for (auto* m : modules_)
-        if (m->add_actions(*ui_.menuFile))
+        if (m->addActions(*ui_.menuFile))
             ui_.menuFile->addSeparator();
 
     ui_.menuFile->addSeparator();
     ui_.menuFile->addAction(ui_.actionExit);        
 }
 
-void mainwindow::prepare_main_tab()
+void MainWindow::prepareMainTab()
 {
     ui_.mainTab->setCurrentIndex(0);            
 }
 
-QString mainwindow::select_download_folder()
+QString MainWindow::selectDownloadFolder()
 {
     QString latest;
     if (!recents_.isEmpty())
@@ -345,7 +345,7 @@ QString mainwindow::select_download_folder()
     return dir;
 }
 
-QString mainwindow::select_save_nzb_folder()
+QString MainWindow::selectSaveNzbFolder()
 {
     QFileDialog dlg(this);
     dlg.setFileMode(QFileDialog::Directory);
@@ -361,7 +361,7 @@ QString mainwindow::select_save_nzb_folder()
     return QDir::toNativeSeparators(dir);
 }
 
-QString mainwindow::select_nzb_file()
+QString MainWindow::selectNzbOpenFile()
 {
     const auto& file = QFileDialog::getOpenFileName(this,
         tr("Select NZB file"), recent_load_nzb_path_, "*.nzb");
@@ -372,7 +372,7 @@ QString mainwindow::select_nzb_file()
     return QDir::toNativeSeparators(file);
 }
 
-QString mainwindow::select_nzb_save_file(const QString& filename)
+QString MainWindow::selectNzbSaveFile(const QString& filename)
 {
     const auto& file = QFileDialog::getSaveFileName(this,
         tr("Save NZB file"), recent_save_nzb_path_ + "/" + filename, "*.nzb");
@@ -383,34 +383,34 @@ QString mainwindow::select_nzb_save_file(const QString& filename)
     return file;
 }
 
-QStringList mainwindow::get_recent_paths() const 
+QStringList MainWindow::getRecentPaths() const 
 {
     return recents_;
 }
 
-quint32 mainwindow::choose_account(const QString& description)
+quint32 MainWindow::chooseAccount(const QString& description)
 {
-    if (app::g_accounts->num_accounts() == 0)
+    if (app::g_accounts->numAccounts() == 0)
     {
-        auto account = app::g_accounts->suggest();
+        auto account = app::g_accounts->suggestAccount();
         DlgAccount dlg(this, account);
         if (dlg.exec() == QDialog::Rejected)
             return 0;
 
-        app::g_accounts->set(account);
+        app::g_accounts->setAccount(account);
         return account.id;
     }
 
-    auto* main = app::g_accounts->get_main_account();
+    auto* main = app::g_accounts->getMainAccount();
     if (main)
         return main->id;
 
     QStringList names;
 
-    const auto num_acc = app::g_accounts->num_accounts();
+    const auto num_acc = app::g_accounts->numAccounts();
     for (std::size_t i=0; i<num_acc; ++i)
     {
-        const auto& acc = app::g_accounts->get(i);
+        const auto& acc = app::g_accounts->getAccount(i);
         names << acc.name;
     }
     DlgChoose dlg(this, names, description);
@@ -425,15 +425,15 @@ quint32 mainwindow::choose_account(const QString& description)
         if (names[account_index] == acc_name)
             break;
     }
-    const auto& acc = app::g_accounts->get(account_index);
+    const auto& acc = app::g_accounts->getAccount(account_index);
 
     if (dlg.remember())
-        app::g_accounts->set_main_account(acc.id);
+        app::g_accounts->setMainAccount(acc.id);
 
     return acc.id;
 }
 
-void mainwindow::update(mainwidget* widget)
+void MainWindow::update(MainWidget* widget)
 {
     const auto index = ui_.mainTab->indexOf(widget);
     if (index == -1)
@@ -443,7 +443,7 @@ void mainwindow::update(mainwidget* widget)
     ui_.mainTab->setTabIcon(index, widget->windowIcon());
 }
 
-void mainwindow::reactivate(mainwidget* widget)
+void MainWindow::reactivate(MainWidget* widget)
 {
     if (widget != current_)
         return;
@@ -453,17 +453,17 @@ void mainwindow::reactivate(mainwidget* widget)
 
     widget->deactivate();
     widget->activate(ui_.mainTab);
-    widget->add_actions(*ui_.mainToolBar);
-    widget->add_actions(*ui_.menuEdit);
+    widget->addActions(*ui_.mainToolBar);
+    widget->addActions(*ui_.menuEdit);
 
     ui_.mainToolBar->addSeparator();
     ui_.mainToolBar->addAction(ui_.actionContextHelp);
 }
 
-void mainwindow::show(const QString& title)
+void MainWindow::show(const QString& title)
 {
     const auto it = std::find_if(std::begin(widgets_), std::end(widgets_),
-        [&](const mainwidget* widget) {
+        [&](const MainWidget* widget) {
             return widget->windowTitle() == title;
         });
     if (it == std::end(widgets_))
@@ -472,7 +472,7 @@ void mainwindow::show(const QString& title)
     show(std::distance(std::begin(widgets_), it));
 }
 
-void mainwindow::show(mainwidget* widget)
+void MainWindow::show(MainWidget* widget)
 {
     auto it = std::find(std::begin(widgets_), std::end(widgets_), widget);
     if (it == std::end(widgets_))
@@ -481,7 +481,7 @@ void mainwindow::show(mainwidget* widget)
     show(std::distance(std::begin(widgets_), it));
 }
 
-void mainwindow::show(std::size_t index)
+void MainWindow::show(std::size_t index)
 {
     auto* widget = widgets_[index];
     auto* action = actions_[index];
@@ -496,11 +496,11 @@ void mainwindow::show(std::size_t index)
     const auto& icon = widget->windowIcon();
     const auto& text = widget->windowTitle();
     ui_.mainTab->insertTab(index, widget, icon, text);
-    build_window_menu();
+    buildWindowMenu();
 
 }
 
-void mainwindow::hide(mainwidget* widget)
+void MainWindow::hide(MainWidget* widget)
 {
     auto it = std::find(std::begin(widgets_), std::end(widgets_), widget);
 
@@ -512,7 +512,7 @@ void mainwindow::hide(mainwidget* widget)
 
 }
 
-void mainwindow::hide(std::size_t index)
+void MainWindow::hide(std::size_t index)
 {
     auto* widget = widgets_[index];
     auto* action = actions_[index];
@@ -526,10 +526,10 @@ void mainwindow::hide(std::size_t index)
 
     ui_.mainTab->removeTab(pos);
  
-    build_window_menu();
+    buildWindowMenu();
 }
 
-void mainwindow::focus(mainwidget* ui)
+void MainWindow::focus(MainWidget* ui)
 {
     const auto index = ui_.mainTab->indexOf(ui);
     if (index == -1)
@@ -538,7 +538,7 @@ void mainwindow::focus(mainwidget* ui)
     ui_.mainTab->setCurrentIndex(index);
 }
 
-void mainwindow::closeEvent(QCloseEvent* event)
+void MainWindow::closeEvent(QCloseEvent* event)
 {
     DEBUG("Begin shutdown...");
 
@@ -559,7 +559,7 @@ void mainwindow::closeEvent(QCloseEvent* event)
 
     for (auto* m : modules_)
     {
-        const auto& info = m->information();
+        const auto& info = m->getInformation();
         DEBUG(str("Shutting down module: _1", info.name));
         m->shutdown();
         DEBUG("Complete");
@@ -579,7 +579,7 @@ void mainwindow::closeEvent(QCloseEvent* event)
 
     DEBUG("Begin save state");
 
-    if (!savestate(&dlg))
+    if (!saveState(&dlg))
     {
         if (QMainWindow::isHidden())
         {
@@ -605,14 +605,14 @@ void mainwindow::closeEvent(QCloseEvent* event)
     ui_.mainTab->clear();
 }
 
-void mainwindow::dragEnterEvent(QDragEnterEvent* event)
+void MainWindow::dragEnterEvent(QDragEnterEvent* event)
 {
     DEBUG("dragEnterEvent");
 
     event->acceptProposedAction();
 }
 
-void mainwindow::dropEvent(QDropEvent* event)
+void MainWindow::dropEvent(QDropEvent* event)
 {
     DEBUG("dropEvent");
 
@@ -630,14 +630,14 @@ void mainwindow::dropEvent(QDropEvent* event)
 
         DEBUG(str("processing _1 file", name));
         for (auto* w : widgets_)
-            w->drop_file(name);
+            w->dropFile(name);
 
         for (auto* m : modules_)
-            m->drop_file(name);
+            m->dropFile(name);
     }
 }
 
-void mainwindow::build_window_menu()
+void MainWindow::buildWindowMenu()
 {
     ui_.menuWindow->clear();
 
@@ -664,7 +664,7 @@ void mainwindow::build_window_menu()
     ui_.menuWindow->addAction(ui_.actionWindowPrev);    
 }
 
-bool mainwindow::savestate(DlgShutdown* dlg)
+bool MainWindow::saveState(DlgShutdown* dlg)
 {
     try
     {
@@ -709,14 +709,14 @@ bool mainwindow::savestate(DlgShutdown* dlg)
         // save widget states
         for (auto* w : widgets_)
         {
-            if (!w->savestate(settings_))
+            if (!w->saveState(settings_))
                 return false;
         }
 
         // save module state
         for (auto* m : modules_)
         {
-            if (!m->savestate(settings_))
+            if (!m->saveState(settings_))
                 return false;
         }
 
@@ -741,7 +741,7 @@ bool mainwindow::savestate(DlgShutdown* dlg)
     return false;
 }
 
-void mainwindow::on_mainTab_currentChanged(int index)
+void MainWindow::on_mainTab_currentChanged(int index)
 {
     //DEBUG(str("Current tab _1", index));
 
@@ -753,11 +753,11 @@ void mainwindow::on_mainTab_currentChanged(int index)
 
     if (index != -1)
     {
-        auto* widget = static_cast<mainwidget*>(ui_.mainTab->widget(index)); 
+        auto* widget = static_cast<MainWidget*>(ui_.mainTab->widget(index)); 
 
         widget->activate(ui_.mainTab);
-        widget->add_actions(*ui_.mainToolBar);
-        widget->add_actions(*ui_.menuEdit);
+        widget->addActions(*ui_.mainToolBar);
+        widget->addActions(*ui_.menuEdit);
 
         auto title = widget->windowTitle();
         auto space = title.indexOf(" ");
@@ -772,12 +772,12 @@ void mainwindow::on_mainTab_currentChanged(int index)
     ui_.mainToolBar->addSeparator();
     ui_.mainToolBar->addAction(ui_.actionContextHelp);
 
-    build_window_menu();
+    buildWindowMenu();
 }
 
-void mainwindow::on_mainTab_tabCloseRequested(int tab)
+void MainWindow::on_mainTab_tabCloseRequested(int tab)
 {
-    auto* widget = static_cast<mainwidget*>(ui_.mainTab->widget(tab));
+    auto* widget = static_cast<MainWidget*>(ui_.mainTab->widget(tab));
 
     ui_.mainTab->removeTab(tab);
 
@@ -786,7 +786,7 @@ void mainwindow::on_mainTab_tabCloseRequested(int tab)
 
     Q_ASSERT(it != std::end(widgets_));
 
-    const auto info = widget->information();
+    const auto info = widget->getInformation();
     if (info.permanent)
     {
         const auto index = std::distance(std::begin(widgets_), it);
@@ -797,13 +797,13 @@ void mainwindow::on_mainTab_tabCloseRequested(int tab)
     }
     else
     {
-        widget->close_widget();
+        widget->closeWidget();
         widgets_.erase(it);
     }
-    build_window_menu();
+    buildWindowMenu();
 }
 
-void mainwindow::on_actionWindowClose_triggered()
+void MainWindow::on_actionWindowClose_triggered()
 {
     const auto cur = ui_.mainTab->currentIndex();
     if (cur == -1)
@@ -812,7 +812,7 @@ void mainwindow::on_actionWindowClose_triggered()
     on_mainTab_tabCloseRequested(cur);
 }
 
-void mainwindow::on_actionWindowNext_triggered()
+void MainWindow::on_actionWindowNext_triggered()
 {
     // cycle to next tab in the maintab
 
@@ -825,7 +825,7 @@ void mainwindow::on_actionWindowNext_triggered()
     ui_.mainTab->setCurrentIndex(next);
 }
 
-void mainwindow::on_actionWindowPrev_triggered()
+void MainWindow::on_actionWindowPrev_triggered()
 {
     // cycle to previous tab in the maintab
 
@@ -838,13 +838,13 @@ void mainwindow::on_actionWindowPrev_triggered()
     ui_.mainTab->setCurrentIndex(prev);
 }
 
-void mainwindow::on_actionHelp_triggered()
+void MainWindow::on_actionHelp_triggered()
 {
     const auto& help = app::distdir::path("help/index.html");
-    app::open_file(help);
+    app::openFile(help);
 }
 
-void mainwindow::on_actionMinimize_triggered()
+void MainWindow::on_actionMinimize_triggered()
 {
     DEBUG("Minimize to tray!");
 
@@ -854,7 +854,7 @@ void mainwindow::on_actionMinimize_triggered()
     ui_.actionMinimize->setEnabled(false);
 }
 
-void mainwindow::on_actionRestore_triggered()
+void MainWindow::on_actionRestore_triggered()
 {
     DEBUG("Restore from tray");
 
@@ -864,66 +864,66 @@ void mainwindow::on_actionRestore_triggered()
     ui_.actionMinimize->setEnabled(true);
 }
 
-void mainwindow::on_actionContextHelp_triggered()
+void MainWindow::on_actionContextHelp_triggered()
 {
-    const auto* widget = static_cast<mainwidget*>(ui_.mainTab->currentWidget());
+    const auto* widget = static_cast<MainWidget*>(ui_.mainTab->currentWidget());
     if (widget == nullptr)
         return;
 
-    const auto& info = widget->information();
+    const auto& info = widget->getInformation();
     const auto& help = info.helpurl;
     const auto& file = app::distdir::path("help/" + help);
-    app::open_file(file);
+    app::openFile(file);
 }
 
-void mainwindow::on_actionExit_triggered()
+void MainWindow::on_actionExit_triggered()
 {
     // calling close will generate QCloseEvent which
     // will invoke the normal shutdown sequence.
     QMainWindow::close();
 }
 
-void mainwindow::on_actionSettings_triggered()
+void MainWindow::on_actionSettings_triggered()
 {
-    show_setting("");
+    showSetting("");
 }
 
-void mainwindow::show_message(const QString& message)
+void MainWindow::showMessage(const QString& message)
 {
     ui_.statusBar->showMessage(message, 5000);
 }
 
-void mainwindow::on_actionAbout_triggered()
+void MainWindow::on_actionAbout_triggered()
 {
     DlgAbout dlg(this);
     dlg.exec();
 }
 
-void mainwindow::on_actionReportBug_triggered()
+void MainWindow::on_actionReportBug_triggered()
 {
     DlgFeedback dlg(this, DlgFeedback::mode::bugreport);
     dlg.exec();
 }
 
-void mainwindow::on_actionSendFeedback_triggered()
+void MainWindow::on_actionSendFeedback_triggered()
 {
     DlgFeedback dlg(this, DlgFeedback::mode::feedback);
     dlg.exec();
 }
 
-void mainwindow::on_actionRequestFeature_triggered()
+void MainWindow::on_actionRequestFeature_triggered()
 {
     DlgFeedback dlg(this, DlgFeedback::mode::request_feature);
     dlg.exec();
 }
 
-void mainwindow::on_actionRequestLicense_triggered()
+void MainWindow::on_actionRequestLicense_triggered()
 {
     DlgFeedback dlg(this, DlgFeedback::mode::request_license);
     dlg.exec();
 }
 
-void mainwindow::actionWindowToggleView_triggered()
+void MainWindow::actionWindowToggleView_triggered()
 {
     // the signal comes from the action object in
     // the view menu. the index is the index to the widgets array
@@ -948,7 +948,7 @@ void mainwindow::actionWindowToggleView_triggered()
     }
 }
 
-void mainwindow::actionWindowFocus_triggered()
+void MainWindow::actionWindowFocus_triggered()
 {
     // this signal comes from an action in the
     // window menu. the index is the index of the widget
@@ -963,7 +963,7 @@ void mainwindow::actionWindowFocus_triggered()
     ui_.mainTab->setCurrentIndex(tab_index);
 }
 
-void mainwindow::actionTray_activated(QSystemTrayIcon::ActivationReason reason)
+void MainWindow::actionTray_activated(QSystemTrayIcon::ActivationReason reason)
 {
     if (reason != QSystemTrayIcon::Context)
         return;
@@ -975,7 +975,7 @@ void mainwindow::actionTray_activated(QSystemTrayIcon::ActivationReason reason)
     menu.exec(QCursor::pos());
 }
 
-void mainwindow::timerWelcome_timeout()
+void MainWindow::timerWelcome_timeout()
 {
     DlgWelcome dlg(this);
     dlg.exec();
@@ -986,17 +986,17 @@ void mainwindow::timerWelcome_timeout()
     if (show_help)
     {
         const auto& help = app::distdir::path("help/quick.html");
-        app::open_file(help);
+        app::openFile(help);
     }
 
     for (auto* w : widgets_)
-        w->first_launch(add_account);
+        w->firstLaunch(add_account);
 
     for (auto* m : modules_)
-        m->first_launch();
+        m->firstLaunch();
 }
 
-void mainwindow::timerRefresh_timeout()
+void MainWindow::timerRefresh_timeout()
 {
     //DEBUG("refresh view timer!");
     app::g_engine->refresh();

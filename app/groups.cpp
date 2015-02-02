@@ -40,17 +40,17 @@
 namespace app
 {
 
-groups::groups()
+Groups::Groups()
 {
     DEBUG("groups created");
 }
 
-groups::~groups()
+Groups::~Groups()
 {
     DEBUG("groups deleted");
 }
 
-void groups::savestate() const
+void Groups::savestate() const
 {
     // QStringList list;
     // for (const auto& group : groups_)
@@ -65,7 +65,7 @@ void groups::savestate() const
 }
 
 
-void groups::loadstate()
+void Groups::loadstate()
 {
 
     // const QStringList& list = values.get("groups", "list").toStringList();
@@ -81,7 +81,7 @@ void groups::loadstate()
     // }
 }
 
-QVariant groups::headerData(int section, Qt::Orientation orietantation, int role) const 
+QVariant Groups::headerData(int section, Qt::Orientation orietantation, int role) const 
 {
     if (role != Qt::DisplayRole)
         return QVariant();
@@ -89,7 +89,7 @@ QVariant groups::headerData(int section, Qt::Orientation orietantation, int role
     if (orietantation != Qt::Horizontal)
         return QVariant();
 
-    switch ((groups::column)section)
+    switch ((Groups::column)section)
     {
         case column::name:
             return "Name";
@@ -113,14 +113,14 @@ QVariant groups::headerData(int section, Qt::Orientation orietantation, int role
     return QVariant();
 }
 
-QVariant groups::data(const QModelIndex& index, int role) const
+QVariant Groups::data(const QModelIndex& index, int role) const
 {
     if (role == Qt::DisplayRole)
     {
         const auto col    = index.column();
         const auto row    = index.row();
         const auto& group = groups_[row];
-        switch ((groups::column)col)
+        switch ((Groups::column)col)
         {
             case column::name:
                return group.name;
@@ -144,12 +144,12 @@ QVariant groups::data(const QModelIndex& index, int role) const
     return QVariant();
 }
 
-int groups::rowCount(const QModelIndex&) const 
+int Groups::rowCount(const QModelIndex&) const 
 {
     return groups_.size();
 }
 
-int groups::columnCount(const QModelIndex&) const
+int Groups::columnCount(const QModelIndex&) const
 {
     return (int)column::last;
 }

@@ -35,7 +35,7 @@
 
 namespace gui
 {
-    class settings;
+    class SettingsWidget;
 
     class DlgSettings : public QDialog
     {
@@ -46,7 +46,7 @@ namespace gui
        ~DlgSettings();
 
         // attach a new settings tab to the dialog
-        void attach(settings* tab);
+        void attach(SettingsWidget* tab);
 
         void organize();
 
@@ -60,7 +60,7 @@ namespace gui
     private:
         Ui::DlgSettings ui_;
     private:
-        std::map<QString, settings*> stash_;
+        std::map<QString, SettingsWidget*> stash_;
     };
 
 } // gui

@@ -33,6 +33,7 @@
 #include "ui/error.h"
 #include "ui/file.h"
 #include "ui/batch.h"
+#include "ui/listing.h"
 #include "account.h"
 
 namespace newsflash
@@ -49,6 +50,8 @@ namespace newsflash
         using on_file = std::function<void (const ui::file& file)>;
 
         using on_batch = std::function<void (const ui::batch& batch)>;
+
+        using on_list  = std::function<void (const ui::listing& listing)>;
 
         // this callback is invoked when there are pending events inside the engine
         // the handler function should organize for a call into engine::pump() 
@@ -71,6 +74,8 @@ namespace newsflash
         // download the files included in the dowload.
         // all the files are grouped together into a single batch.
         void download(ui::download spec);
+
+        void list_newsgroups(std::size_t account);
 
         // process pending actions in the engine. You should call this function
         // as a response to to the async_notify.
@@ -98,6 +103,8 @@ namespace newsflash
         void set_file_callback(on_file file_callback);
 
         void set_batch_callback(on_batch batch_callback);
+
+        void set_list_callback(on_list list_callback);
 
         // set the notify callback. this 
         void set_notify_callback(on_async_notify notify_callback);

@@ -32,10 +32,10 @@
 namespace gui
 {
     // settings widget extends the visible settings interface
-    class settings : public QWidget
+    class SettingsWidget : public QWidget
     {
     public:
-        virtual ~settings() = default;
+        virtual ~SettingsWidget() = default;
 
         // check if the settings are valid. if settings are not valid
         // a settings object can veto the accept() by returning false.

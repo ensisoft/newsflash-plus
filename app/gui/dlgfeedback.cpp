@@ -35,7 +35,7 @@ namespace gui
 DlgFeedback::DlgFeedback(QWidget* parent, mode m) : QDialog(parent), uimode_(m)
 {
     const auto& fingerprint = keygen::generate_fingerprint();
-    const auto& platform = app::get_platform_name();    
+    const auto& platform = app::getPlatformName();    
 
     ui_.setupUi(this);
     ui_.editVersion->setText(NEWSFLASH_VERSION);

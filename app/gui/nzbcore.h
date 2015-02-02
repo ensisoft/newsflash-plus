@@ -36,12 +36,12 @@ namespace gui
 {
     class nzbfile;
 
-    class nzbsettings : public settings
+    class NZBSettings : public SettingsWidget
     {
         Q_OBJECT
     public:
-        nzbsettings();
-       ~nzbsettings();
+        NZBSettings();
+       ~NZBSettings();
 
         virtual bool validate() const override;
 
@@ -53,28 +53,28 @@ namespace gui
     private:
         Ui::NZBCore ui_;
     private:
-        friend class nzbcore;
+        friend class NZBCore;
     };
 
     // nzbcore UI functionality
-    class nzbcore : public QObject, public mainmodule
+    class NZBCore : public QObject, public MainModule
     {
         Q_OBJECT
     public:
-        nzbcore();
-       ~nzbcore();
+        NZBCore();
+       ~NZBCore();
 
-        virtual bool add_actions(QMenu& menu) override;
-        virtual void loadstate(app::settings& s) override;
-        virtual bool savestate(app::settings& s) override;
-        virtual info information() const override
-        { return {"nzbcore", "nzb.html"}; }
+        virtual bool addActions(QMenu& menu) override;
+        virtual void loadState(app::settings& s) override;
+        virtual bool saveState(app::settings& s) override;
+        virtual SettingsWidget* getSettings() override;
+        virtual void applySettings(SettingsWidget* gui) override;
+        virtual void freeSettings(SettingsWidget* s) override;
 
-        virtual settings* get_settings() override;
-        virtual void apply_settings(settings* gui) override;
-        virtual void free_settings(settings* s) override;
+        virtual void dropFile(const QString& file) override;
 
-        virtual void drop_file(const QString& file) override;
+        virtual info getInformation() const override
+        { return {"nzbcore", "nzb.html"}; }        
 
     private slots:
         void downloadTriggered();

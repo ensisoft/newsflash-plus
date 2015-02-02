@@ -31,11 +31,11 @@
 namespace gui 
 {
 
-python::python()
+Python::Python()
 {
     ui_.setupUi(this);
 }
-python::~python()
+Python::~Python()
 {}
 
 

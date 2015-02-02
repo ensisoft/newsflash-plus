@@ -45,10 +45,10 @@ namespace {
 
     // default style means that no specific style is set in the application
     // and the style that applies is the system's Qt setting set in qt-config
-    class appearance_settings : public gui::settings
+    class MySettings : public gui::SettingsWidget
     {
     public:
-        appearance_settings(const QString& current_style)
+        MySettings(const QString& current_style)
         {
             ui_.setupUi(this);
 
@@ -64,7 +64,7 @@ namespace {
             if (current_style == "Default")
                 ui_.radioDefaultStyle->setChecked(true);
         }
-       ~appearance_settings()
+       ~MySettings()
         {}
 
         QString get_style_name() const
@@ -91,13 +91,13 @@ namespace {
 namespace gui
 {
 
-appearance::appearance() : current_style_name_("Default")
+Appearance::Appearance() : current_style_name_("Default")
 {}
 
-appearance::~appearance()
+Appearance::~Appearance()
 {}
 
-void appearance::loadstate(app::settings& s)
+void Appearance::loadState(app::settings& s)
 {
     current_style_name_ = s.get("theme", "name", "Default");
     if (current_style_name_ == "Default")
@@ -115,20 +115,20 @@ void appearance::loadstate(app::settings& s)
     DEBUG(str("Qt style _1", current_style_name_));
 }
 
-bool appearance::savestate(app::settings& s)
+bool Appearance::saveState(app::settings& s)
 {
     s.set("theme", "name", current_style_name_);
     return true;
 }
 
-gui::settings* appearance::get_settings()
+SettingsWidget* Appearance::getSettings()
 {
-    return new appearance_settings(current_style_name_);
+    return new MySettings(current_style_name_);
 }
 
-void appearance::apply_settings(gui::settings* gui) 
+void Appearance::applySettings(SettingsWidget* gui) 
 {
-    const auto mine = dynamic_cast<appearance_settings*>(gui);    
+    const auto mine = dynamic_cast<MySettings*>(gui);    
     const auto name = mine->get_style_name();
 
     current_style_name_ = name;
@@ -140,7 +140,7 @@ void appearance::apply_settings(gui::settings* gui)
     QApplication::setPalette(style->standardPalette());
 }
 
-void appearance::free_settings(gui::settings* s)
+void Appearance::freeSettings(SettingsWidget* s)
 {
     delete s;
 }

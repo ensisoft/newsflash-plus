@@ -44,7 +44,7 @@ namespace app
 
 telephone::telephone()
 {
-    DEBUG(str("Current platform _1", get_platform_name()));
+    DEBUG(str("Current platform _1", getPlatformName()));
 
     net_ = g_net->get_submission_context();
 }
@@ -54,7 +54,7 @@ telephone::~telephone()
 
 void telephone::callhome()
 {
-    const auto& platform    = get_platform_name();
+    const auto& platform    = getPlatformName();
     const auto& fingerprint = keygen::generate_fingerprint();
 
     QUrl url;

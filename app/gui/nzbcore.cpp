@@ -38,15 +38,15 @@
 namespace gui
 {
 
-nzbsettings::nzbsettings()
+NZBSettings::NZBSettings()
 {
     ui_.setupUi(this);
 }
 
-nzbsettings::~nzbsettings()
+NZBSettings::~NZBSettings()
 {}
 
-bool nzbsettings::validate() const
+bool NZBSettings::validate() const
 {
     if (ui_.rdbMoveProcessed->isChecked())
     {
@@ -69,7 +69,7 @@ bool nzbsettings::validate() const
     return true;
 }
 
-void nzbsettings::on_btnAddWatchFolder_clicked()
+void NZBSettings::on_btnAddWatchFolder_clicked()
 {
     ui_.btnDelWatchFolder->setEnabled(true);
 
@@ -93,13 +93,13 @@ void nzbsettings::on_btnAddWatchFolder_clicked()
     ui_.btnDelWatchFolder->setEnabled(true);
 }
 
-void nzbsettings::on_btnDelWatchFolder_clicked()
+void NZBSettings::on_btnDelWatchFolder_clicked()
 {
     if (ui_.watchList->count() == 0)
         ui_.btnDelWatchFolder->setEnabled(false);
 }
 
-void nzbsettings::on_btnSelectDumpFolder_clicked()
+void NZBSettings::on_btnSelectDumpFolder_clicked()
 {
     auto dir = QFileDialog::getExistingDirectory(this, tr("Select NZB Dump Folder"));
     if (dir.isEmpty())
@@ -110,7 +110,7 @@ void nzbsettings::on_btnSelectDumpFolder_clicked()
     ui_.editDumpFolder->setText(dir);
 }
 
-void nzbsettings::on_btnSelectDownloadFolder_clicked()
+void NZBSettings::on_btnSelectDownloadFolder_clicked()
 {
     auto dir = QFileDialog::getExistingDirectory(this, tr("Select Custom Download Folder"));
     if (dir.isEmpty())
@@ -121,13 +121,13 @@ void nzbsettings::on_btnSelectDownloadFolder_clicked()
     ui_.editCustomDownloadFolder->setText(dir);
 }
 
-nzbcore::nzbcore()
+NZBCore::NZBCore()
 {}
 
-nzbcore::~nzbcore()
+NZBCore::~NZBCore()
 {}
 
-bool nzbcore::add_actions(QMenu& menu)
+bool NZBCore::addActions(QMenu& menu)
 {
     auto* download = menu.addAction(QIcon(":/resource/16x16_ico_png/ico_download.png"),
         tr("Download NZB"));
@@ -141,17 +141,17 @@ bool nzbcore::add_actions(QMenu& menu)
     return true;
 }
 
-void nzbcore::loadstate(app::settings& s)
+void NZBCore::loadState(app::settings& s)
 {}
 
-bool nzbcore::savestate(app::settings& s)
+bool NZBCore::saveState(app::settings& s)
 {
     return true;
 }
 
-settings* nzbcore::get_settings()
+SettingsWidget* NZBCore::getSettings()
 {
-    auto* ptr = new nzbsettings();
+    auto* ptr = new NZBSettings();
     auto& ui  = ptr->ui_;
 
     // const auto& list = s.get("nzb", "watched_folders").toStringList();
@@ -173,9 +173,9 @@ settings* nzbcore::get_settings()
     return ptr;
 }
 
-void nzbcore::apply_settings(settings* gui)
+void NZBCore::applySettings(SettingsWidget* gui)
 {
-    auto* ptr = dynamic_cast<nzbsettings*>(gui);
+    auto* ptr = dynamic_cast<NZBSettings*>(gui);
     auto& ui  = ptr->ui_;
 
     QStringList list;
@@ -202,12 +202,12 @@ void nzbcore::apply_settings(settings* gui)
 }
 
 
-void nzbcore::free_settings(settings* s)
+void NZBCore::freeSettings(SettingsWidget* s)
 {
     delete s;
 }
 
-void nzbcore::drop_file(const QString& file)
+void NZBCore::dropFile(const QString& file)
 {
     QFileInfo info(file);
     if (!info.exists())
@@ -220,22 +220,22 @@ void nzbcore::drop_file(const QString& file)
 }
 
 
-void nzbcore::downloadTriggered()
+void NZBCore::downloadTriggered()
 {
-    const auto nzb = g_win->select_nzb_file();
+    const auto nzb = g_win->selectNzbOpenFile();
     if (nzb.isEmpty())
         return;
 
     DEBUG("download");
 }
 
-void nzbcore::displayTriggered()
+void NZBCore::displayTriggered()
 {
-    const auto nzb = g_win->select_nzb_file();
+    const auto nzb = g_win->selectNzbOpenFile();
     if (nzb.isEmpty())
         return;
 
-    auto* file = new nzbfile();
+    auto* file = new NZBFile();
     g_win->attach(file, true);
 
     file->open(nzb);

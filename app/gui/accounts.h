@@ -31,20 +31,21 @@
 
 namespace gui
 {
-    class accounts : public mainwidget
+    // accounts GUI module
+    class Accounts : public MainWidget
     {
         Q_OBJECT
         
     public:
-        accounts();
-       ~accounts();
+        Accounts();
+       ~Accounts();
 
-        virtual void add_actions(QMenu& menu) override;
-        virtual void add_actions(QToolBar& bar) override;
-        virtual info information() const override;
-        virtual void loadstate(app::settings& s) override;
-        virtual bool savestate(app::settings& s) override;
-        virtual void first_launch(bool add_account) override;
+        virtual void addActions(QMenu& menu) override;
+        virtual void addActions(QToolBar& bar) override;
+        virtual info getInformation() const override;
+        virtual void loadState(app::settings& s) override;
+        virtual bool saveState(app::settings& s) override;
+        virtual void firstLaunch(bool add_account) override;
 
     private:
         bool eventFilter(QObject* object, QEvent* event);

@@ -37,20 +37,22 @@ class QEvent;
 
 namespace gui
 {
-    class downloads : public mainwidget
+    // GUI module for both task and connection list.
+    class Downloads : public MainWidget
     {
         Q_OBJECT
 
     public:
-        downloads();
-       ~downloads();
+        Downloads();
+       ~Downloads();
 
-        virtual void add_actions(QMenu& menu) override;
-        virtual void add_actions(QToolBar& bar) override;
-        virtual void loadstate(app::settings& s) override;
-        virtual bool savestate(app::settings& s) override;
+        virtual void addActions(QMenu& menu) override;
+        virtual void addActions(QToolBar& bar) override;
+        virtual void loadState(app::settings& s) override;
+        virtual bool saveState(app::settings& s) override;
         virtual void refresh() override;
-        virtual info information() const override 
+
+        virtual info getInformation() const override 
         { return {"downloads.html", true, true}; }
 
     private slots:

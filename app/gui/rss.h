@@ -38,27 +38,28 @@
 
 namespace gui
 {
-    class rss : public mainwidget
+    // RSS feeds GUI
+    class RSS : public MainWidget
     {
         Q_OBJECT
 
     public:
-        rss();
-       ~rss();
+        RSS();
+       ~RSS();
 
-        virtual void add_actions(QMenu& menu) override;
-        virtual void add_actions(QToolBar& bar) override;
+        virtual void addActions(QMenu& menu) override;
+        virtual void addActions(QToolBar& bar) override;
         virtual void activate(QWidget*) override;
-        virtual void loadstate(app::settings& s) override;
-        virtual bool savestate(app::settings& s) override;
+        virtual void loadState(app::settings& s) override;
+        virtual bool saveState(app::settings& s) override;
         virtual void shutdown() override;
-        virtual info information() const override;
-        virtual gui::settings* get_settings() override;
-        virtual void apply_settings(gui::settings* gui) override;
-        virtual void free_settings(gui::settings* s);
+        virtual info getInformation() const override;
+        virtual SettingsWidget* getSettings() override;
+        virtual void applySettings(SettingsWidget* gui) override;
+        virtual void freeSettings(SettingsWidget* s);
 
     private:
-        void download_selected(const QString& path);
+        void downloadSelected(const QString& path);
         void refresh(bool verbose);
 
     private slots:

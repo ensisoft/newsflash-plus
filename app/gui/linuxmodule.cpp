@@ -38,15 +38,15 @@ using app::str;
 namespace gui
 {
 
-linuxsettings::linuxsettings()
+LinuxSettings::LinuxSettings()
 {
     ui_.setupUi(this);
 }
 
-linuxsettings::~linuxsettings()
+LinuxSettings::~LinuxSettings()
 {}
 
-bool linuxsettings::validate() const 
+bool LinuxSettings::validate() const 
 {
     const auto& shutdown = ui_.editShutdownCommand->text();
     const auto& openfile = ui_.editOpenfileCommand->text();
@@ -64,44 +64,44 @@ bool linuxsettings::validate() const
     return true;
 
 }
-void linuxsettings::on_btnDefaultOpenfileCommand_clicked()
+void LinuxSettings::on_btnDefaultOpenfileCommand_clicked()
 {
     ui_.editOpenfileCommand->setText("xdg-open");
 }
 
-void linuxsettings::on_btnDefaultShutdownCommand_clicked()
+void LinuxSettings::on_btnDefaultShutdownCommand_clicked()
 {
     ui_.editShutdownCommand->setText("systemctl poweroff");
 }
 
 
-linuxmodule::linuxmodule()
+LinuxModule::LinuxModule()
 {}
 
-linuxmodule::~linuxmodule()
+LinuxModule::~LinuxModule()
 {}
 
-void linuxmodule::loadstate(app::settings& s)
+void LinuxModule::loadState(app::settings& s)
 {
 #if defined(LINUX_OS)
-    auto shutdown = app::get_shutdown_command();
-    auto openfile = app::get_openfile_command();
+    auto shutdown = app::getShutdownCommand();
+    auto openfile = app::getOpenfileCommand();
 
     shutdown = s.get("linux", "shutdown_command", shutdown);
     openfile = s.get("linux", "openfile_command", openfile);
-    app::set_openfile_command(openfile);
-    app::set_shutdown_command(shutdown);
+    app::setOpenfileCommand(openfile);
+    app::setShutdownCommand(shutdown);
 
     DEBUG(str("Openfile command set to _1", openfile));
     DEBUG(str("Shutdown command set to _1", shutdown));
 #endif
 }
 
-bool linuxmodule::savestate(app::settings& s)
+bool LinuxModule::saveState(app::settings& s)
 {
 #if defined(LINUX_OS)
-    const auto shutdown = app::get_shutdown_command();
-    const auto openfile = app::get_openfile_command();
+    const auto shutdown = app::getShutdownCommand();
+    const auto openfile = app::getOpenfileCommand();
 
     s.set("linux", "shutdown_command", shutdown);
     s.set("linux", "openfile_command", openfile);
@@ -109,14 +109,14 @@ bool linuxmodule::savestate(app::settings& s)
     return true;
 }
 
-gui::settings* linuxmodule::get_settings() 
+SettingsWidget* LinuxModule::getSettings() 
 {
-    auto* ptr = new linuxsettings;
+    auto* ptr = new LinuxSettings;
     auto& gui = ptr->ui_;
 
 #if defined(LINUX_OS)
-    const auto shutdown = app::get_shutdown_command();
-    const auto openfile = app::get_openfile_command();
+    const auto shutdown = app::getShutdownCommand();
+    const auto openfile = app::getOpenfileCommand();
 
     gui.editOpenfileCommand->setText(openfile);
     gui.editShutdownCommand->setText(shutdown);
@@ -125,21 +125,21 @@ gui::settings* linuxmodule::get_settings()
     return ptr;
 }
 
-void linuxmodule::apply_settings(settings* s)
+void LinuxModule::applySettings(SettingsWidget* s)
 {
-    auto* ptr = dynamic_cast<linuxsettings*>(s);
+    auto* ptr = dynamic_cast<LinuxSettings*>(s);
     auto& gui = ptr->ui_;
 
 #if defined(LINUX_OS)
     const auto shutdown = gui.editShutdownCommand->text();
     const auto openfile = gui.editOpenfileCommand->text();
 
-    app::set_openfile_command(openfile);
-    app::set_shutdown_command(shutdown);
+    app::setOpenfileCommand(openfile);
+    app::setShutdownCommand(shutdown);
 #endif
 }
 
-void linuxmodule::free_settings(settings* s)
+void LinuxModule::freeSettings(SettingsWidget* s)
 {
     delete s;
 }

@@ -38,14 +38,14 @@ namespace app {
 
 namespace gui
 {
-    class settings;
+    class SettingsWidget;
 
     // mainwidget objects sit in the mainwindow's main tab 
     // and provides GUI and features to the application.
     // the different between mainwidget and mainmodule is that
     // mainmodules are simpler headless versions that no not provide
     // a user visible GUI
-    class mainwidget : public QWidget
+    class MainWidget : public QWidget
     {
     public:
         struct info {
@@ -62,13 +62,13 @@ namespace gui
             bool permanent;
         };
 
-        virtual ~mainwidget() = default;
+        virtual ~MainWidget() = default;
         
         // Add the component specific menu actions to a menu inside the host application
-        virtual void add_actions(QMenu& menu) {}
+        virtual void addActions(QMenu& menu) {}
         
         // Add the component specific toolbar actions to a toolbar in the host application
-        virtual void add_actions(QToolBar& bar) {}
+        virtual void addActions(QToolBar& bar) {}
 
         // This function is invoked when this ui component is getting activated (becomes visible)
         // in the host GUI.
@@ -78,13 +78,13 @@ namespace gui
         virtual void deactivate() {}
 
         // this function is called when the widget is closed 
-        virtual void close_widget() {}
+        virtual void closeWidget() {}
 
         // load the widget/component state on application startup
-        virtual void loadstate(app::settings& s) {}
+        virtual void loadState(app::settings& s) {}
 
         // save the widget/component state
-        virtual bool savestate(app::settings& s) { return true; }
+        virtual bool saveState(app::settings& s) { return true; }
 
         // prepare the widget/component for shutdown
         virtual void shutdown() {}
@@ -93,21 +93,21 @@ namespace gui
         virtual void refresh() {}
 
         // perform first launch activities.
-        virtual void first_launch(bool add_account) {}
+        virtual void firstLaunch(bool add_account) {}
 
         // get information about the widget/component.
-        virtual info information() const { return {"", false, false}; }
+        virtual info getInformation() const { return {"", false, false}; }
 
         // get a settings widget if any. the object ownership is 
         // transferred to the caller.
-        virtual settings* get_settings() { return nullptr; }
+        virtual SettingsWidget* getSettings() { return nullptr; }
 
-        virtual void apply_settings(settings* gui) {}
+        virtual void applySettings(SettingsWidget* gui) {}
 
         // notify that application settings have changed. 
-        virtual void free_settings(settings* s) {}
+        virtual void freeSettings(SettingsWidget* s) {}
 
-        virtual void drop_file(const QString& file) {};
+        virtual void dropFile(const QString& file) {};
 
     private:
     };

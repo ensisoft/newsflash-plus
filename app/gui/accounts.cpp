@@ -47,13 +47,13 @@ using app::str;
 namespace gui
 {
 
-accounts::accounts()
+Accounts::Accounts()
 {
     ui_.setupUi(this);
     ui_.listView->setModel(app::g_accounts);
     ui_.lblMovie->installEventFilter(this);
 
-    const bool empty = app::g_accounts->num_accounts() == 0;
+    const bool empty = app::g_accounts->numAccounts() == 0;
 
     ui_.actionDel->setEnabled(!empty);
     ui_.actionEdit->setEnabled(!empty);
@@ -108,12 +108,12 @@ accounts::accounts()
     ui_.lblRegister->setVisible(true);
 }
 
-accounts::~accounts()
+Accounts::~Accounts()
 {
     ui_.lblMovie->removeEventFilter(this);
 }
 
-void accounts::add_actions(QMenu& menu)
+void Accounts::addActions(QMenu& menu)
 {
     menu.addAction(ui_.actionAdd);
     menu.addAction(ui_.actionDel);
@@ -121,7 +121,7 @@ void accounts::add_actions(QMenu& menu)
     menu.addAction(ui_.actionEdit);
 }
 
-void accounts::add_actions(QToolBar& bar)
+void Accounts::addActions(QToolBar& bar)
 {
     bar.addAction(ui_.actionAdd);
     bar.addAction(ui_.actionDel);
@@ -129,12 +129,12 @@ void accounts::add_actions(QToolBar& bar)
     bar.addAction(ui_.actionEdit);
 }
 
-mainwidget::info accounts::information() const
+MainWidget::info Accounts::getInformation() const
 {
     return {"accounts.html", true, true};
 }
 
-void accounts::loadstate(app::settings& s)
+void Accounts::loadState(app::settings& s)
 {
     const auto license  = s.get("accounts", "license", "");
     const bool validate = keygen::verify_code(license);
@@ -147,36 +147,36 @@ void accounts::loadstate(app::settings& s)
     }
 }
 
-bool accounts::savestate(app::settings& s)
+bool Accounts::saveState(app::settings& s)
 {
     return true;
 }
 
-void accounts::first_launch(bool add_account)
+void Accounts::firstLaunch(bool add_account)
 {
     if (!add_account)
         return;
 
-    auto account = app::g_accounts->suggest();
+    auto account = app::g_accounts->suggestAccount();
 
     DlgAccount dlg(this, account);
     if (dlg.exec() == QDialog::Accepted)
-        app::g_accounts->set(account);
+        app::g_accounts->setAccount(account);
 }
 
-bool accounts::eventFilter(QObject* object, QEvent* event)
+bool Accounts::eventFilter(QObject* object, QEvent* event)
 {
     if (object == ui_.lblMovie &&
         event->type() == QEvent::MouseButtonPress)
     {
         const auto& url = ui_.lblMovie->property("url").toString();
-        app::open_web(url);
+        app::openWeb(url);
         return true;
     }
     return QObject::eventFilter(object, event);
 }
 
-void accounts::updatePie()
+void Accounts::updatePie()
 {
     QStandardItemModel* pie = static_cast<QStandardItemModel*>(ui_.pie->model());
     if (pie->rowCount())
@@ -190,7 +190,7 @@ void accounts::updatePie()
     if (row == -1)
         return;
 
-    const auto& account = app::g_accounts->get(row);    
+    const auto& account = app::g_accounts->getAccount(row);    
 
     const auto quota_spent = app::gigs(account.quota_spent);
     const auto quota_total = app::gigs(account.quota_avail);
@@ -212,38 +212,38 @@ void accounts::updatePie()
 }
 
 
-void accounts::on_actionAdd_triggered()
+void Accounts::on_actionAdd_triggered()
 {
-    auto account  = app::g_accounts->suggest();
+    auto account  = app::g_accounts->suggestAccount();
 
     DlgAccount dlg(this, account);
     if (dlg.exec() == QDialog::Accepted)
-        app::g_accounts->set(account);
+        app::g_accounts->setAccount(account);
 }
 
-void accounts::on_actionDel_triggered()
+void Accounts::on_actionDel_triggered()
 {
     const auto row = ui_.listView->currentIndex().row();
     if (row == -1)
         return;
 
-    app::g_accounts->del(row);
+    app::g_accounts->delAccount(row);
 }
 
-void accounts::on_actionEdit_triggered()
+void Accounts::on_actionEdit_triggered()
 {
     const auto row = ui_.listView->currentIndex().row();
     if (row == -1)
         return;
 
-    auto account = app::g_accounts->get(row);
+    auto account = app::g_accounts->getAccount(row);
 
     DlgAccount dlg(this, account);
     if (dlg.exec() == QDialog::Accepted)
-        app::g_accounts->set(account);
+        app::g_accounts->setAccount(account);
 }
 
-void accounts::currentRowChanged()
+void Accounts::currentRowChanged()
 {
     const auto row = ui_.listView->currentIndex().row();
     if (row == -1)
@@ -264,7 +264,7 @@ void accounts::currentRowChanged()
     ui_.actionDel->setEnabled(true);
     ui_.actionEdit->setEnabled(true);
 
-    const auto& account = app::g_accounts->get(row);
+    const auto& account = app::g_accounts->getAccount(row);
 
     const auto quota_type   = account.quota_type;
     const auto quota_spent  = app::gigs(account.quota_spent);
@@ -304,13 +304,13 @@ void accounts::currentRowChanged()
     updatePie();
 }
 
-void accounts::on_btnResetMonth_clicked()
+void Accounts::on_btnResetMonth_clicked()
 {
     const auto row = ui_.listView->currentIndex().row();
     if (row == -1)
         return;
 
-    auto& account = app::g_accounts->get(row);
+    auto& account = app::g_accounts->getAccount(row);
 
     account.downloads_this_month = 0;
 
@@ -319,13 +319,13 @@ void accounts::on_btnResetMonth_clicked()
     ui_.edtMonth->setText(str(nada));
 }
 
-void accounts::on_btnResetAllTime_clicked()
+void Accounts::on_btnResetAllTime_clicked()
 {
     const auto row = ui_.listView->currentIndex().row();
     if (row == -1)
         return;
 
-    auto& account = app::g_accounts->get(row);
+    auto& account = app::g_accounts->getAccount(row);
 
     account.downloads_all_time = 0;
 
@@ -334,33 +334,33 @@ void accounts::on_btnResetAllTime_clicked()
     ui_.edtAllTime->setText(str(nada));
 }
 
-void accounts::on_btnMonthlyQuota_toggled(bool checked)
+void Accounts::on_btnMonthlyQuota_toggled(bool checked)
 {
     const auto row = ui_.listView->currentIndex().row();
     if (row == -1)
         return;
 
-    auto& account = app::g_accounts->get(row);
+    auto& account = app::g_accounts->getAccount(row);
 
     account.quota_type = app::account::quota::monthly;
 
     ui_.btnFixedQuota->setChecked(false);
 }
 
-void accounts::on_btnFixedQuota_toggled(bool checked)
+void Accounts::on_btnFixedQuota_toggled(bool checked)
 {
     const auto row = ui_.listView->currentIndex().row();
     if (row == -1)
         return;
 
-    auto& account = app::g_accounts->get(row);
+    auto& account = app::g_accounts->getAccount(row);
 
     account.quota_type = app::account::quota::fixed;
 
     ui_.btnMonthlyQuota->setChecked(false);
 }
 
-void accounts::on_spinTotal_valueChanged(double value)
+void Accounts::on_spinTotal_valueChanged(double value)
 {
     if (in_row_changed_)
         return;
@@ -369,7 +369,7 @@ void accounts::on_spinTotal_valueChanged(double value)
     if (row == -1)
         return;
 
-    auto& account = app::g_accounts->get(row);
+    auto& account = app::g_accounts->getAccount(row);
 
     DEBUG(str("Quota available value _1", value));
 
@@ -382,7 +382,7 @@ void accounts::on_spinTotal_valueChanged(double value)
     updatePie();
 }
 
-void accounts::on_spinSpent_valueChanged(double value)
+void Accounts::on_spinSpent_valueChanged(double value)
 {
     if (in_row_changed_)
         return;
@@ -393,7 +393,7 @@ void accounts::on_spinSpent_valueChanged(double value)
 
     DEBUG(str("Quota spent value _1", value));
 
-    auto& account = app::g_accounts->get(row);    
+    auto& account = app::g_accounts->getAccount(row);    
 
     const app::gigs gigs { value };
 
@@ -402,26 +402,26 @@ void accounts::on_spinSpent_valueChanged(double value)
     updatePie();
 }
 
-void accounts::on_listView_doubleClicked(const QModelIndex& index)
+void Accounts::on_listView_doubleClicked(const QModelIndex& index)
 {
     // forward
     on_actionEdit_triggered();
 }
 
-void accounts::on_listView_customContextMenuRequested(QPoint pos)
+void Accounts::on_listView_customContextMenuRequested(QPoint pos)
 {
     QMenu menu(this);
-    add_actions(menu);
+    addActions(menu);
     menu.exec(QCursor::pos());
 }
 
-void accounts::on_grpQuota_toggled(bool on)
+void Accounts::on_grpQuota_toggled(bool on)
 {
     const auto row = ui_.listView->currentIndex().row();
     if (row == -1)
         return;
 
-    auto& account = app::g_accounts->get(row);
+    auto& account = app::g_accounts->getAccount(row);
 
     if (!on)
     {

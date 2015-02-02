@@ -35,7 +35,7 @@
 namespace gui
 {
 
-eventlog::eventlog()
+EventLog::EventLog()
 {
     auto& model = app::eventlog::get();
 
@@ -47,7 +47,7 @@ eventlog::eventlog()
     {
         if (e.type == app::eventlog::event::note)
         {
-            g_win->show_message(e.message);
+            g_win->showMessage(e.message);
             return false;
         }
 
@@ -61,34 +61,34 @@ eventlog::eventlog()
     };
 }
 
-eventlog::~eventlog()
+EventLog::~EventLog()
 {
     auto& model = app::eventlog::get();
     model.on_event = [](const app::eventlog::event_t&) { return false; };
 }
 
-void eventlog::add_actions(QMenu& menu)
+void EventLog::addActions(QMenu& menu)
 {
     menu.addAction(ui_.actionClearLog);
 }
 
-void eventlog::add_actions(QToolBar& bar)
+void EventLog::addActions(QToolBar& bar)
 {
     bar.addAction(ui_.actionClearLog);
 }
 
-void eventlog::activate(QWidget*)
+void EventLog::activate(QWidget*)
 {
     setWindowIcon(QIcon(":/resource/16x16_ico_png/ico_info.png"));
     g_win->update(this);
 }
 
-mainwidget::info eventlog::information() const 
+MainWidget::info EventLog::getInformation() const 
 {
     return {"eventlog.html", false, true};
 }
 
-void eventlog::on_actionClearLog_triggered()
+void EventLog::on_actionClearLog_triggered()
 {
     auto& model = app::eventlog::get();
 
@@ -97,7 +97,7 @@ void eventlog::on_actionClearLog_triggered()
     model.clear();
 }
 
-void eventlog::on_listLog_customContextMenuRequested(QPoint pos)
+void EventLog::on_listLog_customContextMenuRequested(QPoint pos)
 {
     QMenu menu(this);
     menu.addAction(ui_.actionClearLog);

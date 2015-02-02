@@ -40,12 +40,12 @@ namespace gui
 {
     // have to be namespace scope class because MOC doesnt support
     // shitty signals and slots for nested classes... 
-    class coresettings  : public settings
+    class CoreSettings  : public SettingsWidget
     {
         Q_OBJECT
     public:
-        coresettings();
-       ~coresettings();
+        CoreSettings();
+       ~CoreSettings();
 
         virtual bool validate() const override;
     private slots:
@@ -55,26 +55,26 @@ namespace gui
     private:
         Ui::CoreSettings ui_;
     private:
-        friend class coremodule;
+        friend class CoreModule;
     };
 
     // glue code for general application settings and engine + feedback system
     // translates settings data to UI state and vice versa.
-    class coremodule : public QObject, public mainmodule
+    class CoreModule : public QObject, public MainModule
     {
         Q_OBJECT
 
     public:
-        coremodule();
-       ~coremodule();
+        CoreModule();
+       ~CoreModule();
 
-        virtual void loadstate(app::settings& s) override;       
-        virtual bool savestate(app::settings& s) override;
-        virtual gui::settings* get_settings() override;
-        virtual void apply_settings(settings* gui) override;
-        virtual void free_settings(settings* gui) override;
+        virtual void loadState(app::settings& s) override;       
+        virtual bool saveState(app::settings& s) override;
+        virtual SettingsWidget* getSettings() override;
+        virtual void applySettings(SettingsWidget* gui) override;
+        virtual void freeSettings(SettingsWidget* gui) override;
 
-        virtual info information() const override
+        virtual info getInformation() const override
         { return {"coremodule", ""}; }
 
     private slots:

@@ -46,7 +46,7 @@ namespace app
 
 #if defined(WINDOWS_OS)
 
-QIcon extract_icon(const QString& binary)
+QIcon extractIcon(const QString& binary)
 {
     HICON small_icon[1] = {0};
     ExtractIconEx(binary.utf16(), 0, NULL, small_icon, 1);
@@ -126,7 +126,7 @@ QIcon extract_icon(const QString& binary)
     }
 }
 
-QString get_platform_name()
+QString getPlatformName()
 {
     OSVERSIONINFOEX info = {};
     info.dwOSVersionInfoSize = sizeof(info);
@@ -212,7 +212,7 @@ QString get_platform_name()
     return ret;    
 }
 
-QString resolve_mount_point(const QString& directory)
+QString resolveMountPoint(const QString& directory)
 {
     QDir dir(directory);
     QString path = dir.canonicalPath();
@@ -226,7 +226,7 @@ QString resolve_mount_point(const QString& directory)
     return ret;
 }
 
-quint64 get_free_disk_space(const QString& filename)
+quint64 getFreeDiskSpace(const QString& filename)
 {
     const auto& native = QDir::toNativeSeparators(filename);
 
@@ -237,7 +237,7 @@ quint64 get_free_disk_space(const QString& filename)
     return large.QuadPart;
 }
 
-void open_file(const QString& file)
+void openFile(const QString& file)
 {
     HINSTANCE ret = ShellExecute(nullptr,
         L"open",
@@ -247,24 +247,24 @@ void open_file(const QString& file)
         SW_SHOWNORMAL);
 }
 
-void open_web(const QString& url)
+void openWeb(const QString& url)
 {
     // todo:
 }
 
-void shutdown_computer()
+void shutdownComputer()
 {
     //todo:
 }
 
 #elif defined(LINUX_OS)
 
-QIcon extract_icon(const QString& binary)
+QIcon extractIcon(const QString& binary)
 {
     return QIcon();
 }
 
-QString get_platform_name()
+QString getPlatformName()
 {
    // works for Ubuntu and possibly for Debian
    // most likely broken for other distros
@@ -297,7 +297,7 @@ QString get_platform_name()
    return "GNU/Linux";
 }
 
-QString resolve_mount_point(const QString& directory)
+QString resolveMountPoint(const QString& directory)
 {
     QDir dir(directory);
     QString path = dir.canonicalPath(); // resolves symbolic links
@@ -345,7 +345,7 @@ QString resolve_mount_point(const QString& directory)
     return mount_point;    
 }
 
-quint64 get_free_disk_space(const QString& filename)
+quint64 getFreeDiskSpace(const QString& filename)
 {
     const auto native = QDir::toNativeSeparators(filename);
 
@@ -370,37 +370,37 @@ quint64 get_free_disk_space(const QString& filename)
 QString openfile_command = "xdg-open";
 QString shutdown_command = "systemctl poweroff";
 
-void set_openfile_command(const QString& cmd)
+void setOpenfileCommand(const QString& cmd)
 {
     openfile_command = cmd;
 }
 
-void set_shutdown_command(const QString& cmd)
+void setShutdownCommand(const QString& cmd)
 {
     shutdown_command = cmd;
 }
 
-void open_file(const QString& file)
+void openFile(const QString& file)
 {
     QDesktopServices::openUrl("file:///" + file);
 }
 
-void open_web(const QString& url)
+void openWeb(const QString& url)
 {
     QDesktopServices::openUrl(url);
 }
 
-void shutdown_computer()
+void shutdownComputer()
 {
     // todo:
 }
 
-QString get_openfile_command()
+QString getOpenfileCommand()
 {
     return openfile_command;
 }
 
-QString get_shutdown_command()
+QString getShutdownCommand()
 {
     return shutdown_command;
 }

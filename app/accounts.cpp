@@ -42,19 +42,19 @@
 namespace app
 {
 
-accounts::accounts()
+Accounts::Accounts()
 {
     main_account_ = 0;
     fill_account_ = 0;
     DEBUG("accounts created");
 }
 
-accounts::~accounts()
+Accounts::~Accounts()
 {
     DEBUG("accounts deleted");
 }
 
-account accounts::suggest() const
+account Accounts::suggestAccount() const
 {
     QString name;
 
@@ -92,17 +92,17 @@ account accounts::suggest() const
 }
 
 const 
-account& accounts::get(std::size_t index) const
+account& Accounts::getAccount(std::size_t index) const
 {
     return accounts_[index];
 }
 
-account& accounts::get(std::size_t index) 
+account& Accounts::getAccount(std::size_t index) 
 {
     return accounts_[index];
 }
 
-const account* accounts::get_fill_account() const 
+const account* Accounts::getFillAccount() const 
 {
     if (fill_account_ == 0)
         return nullptr;
@@ -116,7 +116,7 @@ const account* accounts::get_fill_account() const
     return &(*it);
 }
 
-const account* accounts::get_main_account() const
+const account* Accounts::getMainAccount() const
 {
     if (accounts_.empty())
         return nullptr;
@@ -136,7 +136,7 @@ const account* accounts::get_main_account() const
     return &(*it);
 }
 
-void accounts::del(std::size_t index)
+void Accounts::delAccount(std::size_t index)
 {
     Q_ASSERT(index < accounts_.size());
 
@@ -160,7 +160,7 @@ void accounts::del(std::size_t index)
     endRemoveRows();
 }
 
-void accounts::set(const account& acc)
+void Accounts::setAccount(const account& acc)
 {
     auto it = std::find_if(std::begin(accounts_), std::end(accounts_),
         [&](const account& maybe) {
@@ -198,7 +198,7 @@ void accounts::set(const account& acc)
     g_engine->set(acc);
 }
 
-void accounts::set_main_account(quint32 id)
+void Accounts::setMainAccount(quint32 id)
 {
     // if main account is set to 0 it means that there's
     // no specific main account set and each time
@@ -222,7 +222,7 @@ void accounts::set_main_account(quint32 id)
     DEBUG(str("Main account set to _1", it->name));
 }
 
-void accounts::set_fill_account(quint32 id)
+void Accounts::setFillAccount(quint32 id)
 {
     // if fill account is set to 0 it means 
     // that there's no fill account to be used.
@@ -245,7 +245,7 @@ void accounts::set_fill_account(quint32 id)
     DEBUG(str("Fill account set to _1", it->name));
 }
 
-bool accounts::savestate(settings& store) const
+bool Accounts::savestate(settings& store) const
 {
     QStringList list;
 
@@ -279,7 +279,7 @@ bool accounts::savestate(settings& store) const
     return true;
 }
 
-void accounts::loadstate(settings& store)
+void Accounts::loadstate(settings& store)
 {
     QStringList list = store.get("accounts", "list").toStringList();
 
@@ -319,12 +319,12 @@ void accounts::loadstate(settings& store)
     QAbstractItemModel::reset();
 }
 
-int accounts::rowCount(const QModelIndex&) const 
+int Accounts::rowCount(const QModelIndex&) const 
 {
     return accounts_.size();
 }
 
-QVariant accounts::data(const QModelIndex& index, int role) const
+QVariant Accounts::data(const QModelIndex& index, int role) const
 {
 
     if (role == Qt::DisplayRole)
@@ -345,6 +345,6 @@ QVariant accounts::data(const QModelIndex& index, int role) const
     return QVariant();
 }
 
-accounts* g_accounts;
+Accounts* g_accounts;
 
 } // app

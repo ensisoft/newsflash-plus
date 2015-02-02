@@ -35,12 +35,13 @@
 
 namespace app
 {
-    class groups : public QAbstractTableModel
+    class Groups : public QAbstractTableModel
     {
+        Q_OBJECT
 
     public:
-        groups();
-       ~groups();
+        Groups();
+       ~Groups();
 
         void savestate() const;
 

@@ -34,7 +34,7 @@
 
 namespace gui
 {
-    class python_settings : public settings
+    class PythonSettings : public SettingsWidget
     {
     public:
 
@@ -43,14 +43,14 @@ namespace gui
         friend class python;
     };
 
-    class python : public mainwidget
+    class Python : public MainWidget
     {
         Q_OBJECT
     public:
-        python();
-       ~python();
+        Python();
+       ~Python();
 
-        virtual info information() const override
+        virtual info getInformation() const override
         { return {"python.html", true, true }; }
 
     private:

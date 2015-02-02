@@ -45,15 +45,15 @@ using app::str;
 namespace gui
 {
 
-coresettings::coresettings()
+CoreSettings::CoreSettings()
 {
     ui_.setupUi(this);
 }
 
-coresettings::~coresettings()
+CoreSettings::~CoreSettings()
 {}
 
-bool coresettings::validate() const
+bool CoreSettings::validate() const
 {
     const auto& logs = ui_.editLogFiles->text();
     if (logs.isEmpty())
@@ -71,7 +71,7 @@ bool coresettings::validate() const
     return true;
 }
 
-void coresettings::on_btnBrowseLog_clicked()
+void CoreSettings::on_btnBrowseLog_clicked()
 {
     auto dir = QFileDialog::getExistingDirectory(this, 
         tr("Select Log Folder"));
@@ -81,7 +81,7 @@ void coresettings::on_btnBrowseLog_clicked()
     ui_.editLogFiles->setText(dir);
 }
 
-void coresettings::on_btnBrowseDownloads_clicked()
+void CoreSettings::on_btnBrowseDownloads_clicked()
 {
     auto dir = QFileDialog::getExistingDirectory(this,
         tr("Select Default Download Directory"));
@@ -91,13 +91,13 @@ void coresettings::on_btnBrowseDownloads_clicked()
     ui_.editDownloads->setText(dir);
 }
 
-coremodule::coremodule()
+CoreModule::CoreModule()
 {}
 
-coremodule::~coremodule()
+CoreModule::~CoreModule()
 {}
 
-void coremodule::loadstate(app::settings& s) 
+void CoreModule::loadState(app::settings& s) 
 {
     check_for_updates_ = s.get("settings", "check_for_software_updates", true);
     if (check_for_updates_)
@@ -109,15 +109,15 @@ void coremodule::loadstate(app::settings& s)
     }
 }
 
-bool coremodule::savestate(app::settings& s)
+bool CoreModule::saveState(app::settings& s)
 {
     s.set("settings", "check_for_software_updates", check_for_updates_);
     return true;
 }
 
-gui::settings* coremodule::get_settings()
+SettingsWidget* CoreModule::getSettings()
 {
-    auto* ptr = new coresettings;
+    auto* ptr = new CoreSettings;
     auto& ui = ptr->ui_;
 
     const auto overwrite = app::g_engine->get_overwrite_existing_files();
@@ -132,15 +132,15 @@ gui::settings* coremodule::get_settings()
     ui.editLogFiles->setText(logfiles);
     ui.editDownloads->setText(downloads);
 
-    const auto num_acc = app::g_accounts->num_accounts();
+    const auto num_acc = app::g_accounts->numAccounts();
     for (std::size_t i=0; i<num_acc; ++i)
     {
-        const auto& acc = app::g_accounts->get(i);
+        const auto& acc = app::g_accounts->getAccount(i);
         ui.cmbMainAccount->addItem(acc.name);
         ui.cmbFillAccount->addItem(acc.name);
     }
 
-    const auto* main = app::g_accounts->get_main_account();
+    const auto* main = app::g_accounts->getMainAccount();
     if (!main)
     {
         ui.rdbAskAccount->setChecked(true);
@@ -152,7 +152,7 @@ gui::settings* coremodule::get_settings()
         ui.rdbUseAccount->setChecked(true);
         ui.cmbMainAccount->setCurrentIndex(ui.cmbMainAccount->findText(main->name));
     }
-    const auto* fill = app::g_accounts->get_fill_account();
+    const auto* fill = app::g_accounts->getFillAccount();
     if (fill)
     {
         ui.grpFillAccount->setChecked(true);
@@ -165,9 +165,9 @@ gui::settings* coremodule::get_settings()
     return ptr;
 }
 
-void coremodule::apply_settings(settings* gui)
+void CoreModule::applySettings(SettingsWidget* gui)
 {
-    auto* ptr = dynamic_cast<coresettings*>(gui);
+    auto* ptr = dynamic_cast<CoreSettings*>(gui);
     auto& ui = ptr->ui_;
 
     const bool overwrite = ui.chkOverwriteExisting->isChecked();
@@ -180,19 +180,19 @@ void coremodule::apply_settings(settings* gui)
     const auto use_one_account = ui.rdbUseAccount->isChecked();
     if (ask_for_account)
     {
-        app::g_accounts->set_main_account(0);
+        app::g_accounts->setMainAccount(0);
     }
     else
     {
         const auto name = ui.cmbMainAccount->currentText();
-        const auto num_acc = app::g_accounts->num_accounts();
+        const auto num_acc = app::g_accounts->numAccounts();
         for (std::size_t i=0; i<num_acc; ++i)
         {
-            const auto& acc = app::g_accounts->get(i);
+            const auto& acc = app::g_accounts->getAccount(i);
             if (acc.name != name)
                 continue;
 
-            app::g_accounts->set_main_account(acc.id);
+            app::g_accounts->setMainAccount(acc.id);
             break;
         }
     }
@@ -200,19 +200,19 @@ void coremodule::apply_settings(settings* gui)
     const auto enable_fill = ui.grpFillAccount->isChecked();
     if (!enable_fill)
     {
-        app::g_accounts->set_fill_account(0);
+        app::g_accounts->setFillAccount(0);
     }
     else
     {
         const auto name = ui.cmbFillAccount->currentText();
-        const auto num_acc = app::g_accounts->num_accounts();
+        const auto num_acc = app::g_accounts->numAccounts();
         for (std::size_t i=0; i<num_acc; ++i)
         {
-            const auto& acc = app::g_accounts->get(i);
+            const auto& acc = app::g_accounts->getAccount(i);
             if (acc.name != name)
                 continue;
 
-            app::g_accounts->set_fill_account(acc.id);
+            app::g_accounts->setFillAccount(acc.id);
             break;
         }
     }
@@ -228,12 +228,12 @@ void coremodule::apply_settings(settings* gui)
     check_for_updates_ = updates;
 }
 
-void coremodule::free_settings(settings* s)
+void CoreModule::freeSettings(SettingsWidget* s)
 {
     delete s;
 }
 
-void coremodule::calledHome(bool new_version_available, QString latest)
+void CoreModule::calledHome(bool new_version_available, QString latest)
 {
     if (new_version_available)
     {

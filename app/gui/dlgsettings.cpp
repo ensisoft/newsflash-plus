@@ -43,7 +43,7 @@ DlgSettings::~DlgSettings()
     ui_.tab->clear();
 }
 
-void DlgSettings::attach(settings* tab)
+void DlgSettings::attach(SettingsWidget* tab)
 {
     Q_ASSERT(!tab->parent());
 
@@ -67,7 +67,7 @@ void DlgSettings::organize()
             Q_ASSERT(!"incorrect tab name in the tab layout table");
             continue;
         }
-        settings* widget = p->second;
+        auto* widget = p->second;
         ui_.tab->insertTab(index, widget, widget->windowTitle());
         stash_.erase(p);
     }
@@ -75,7 +75,7 @@ void DlgSettings::organize()
     // append the rest
     for (auto p = std::begin(stash_); p != std::end(stash_); ++p)
     {
-        settings* widget = p->second;
+        auto* widget = p->second;
         ui_.tab->addTab(widget, widget->windowTitle());
     }
 }
@@ -100,7 +100,7 @@ void DlgSettings::on_btnAccept_clicked()
     for (int i=0; i<count; ++i)
     {
         auto* ptr = ui_.tab->widget(i);
-        auto* tab = static_cast<settings*>(ptr);
+        auto* tab = static_cast<SettingsWidget*>(ptr);
         if (!tab->validate())
         {
             ui_.tab->setCurrentIndex(i);
@@ -111,7 +111,7 @@ void DlgSettings::on_btnAccept_clicked()
     for (int i=0; i<count; ++i)
     {
         auto* ptr = ui_.tab->widget(i);
-        auto* tab = static_cast<settings*>(ptr);
+        auto* tab = static_cast<SettingsWidget*>(ptr);
         tab->accept();
     }
 
@@ -124,7 +124,7 @@ void DlgSettings::on_btnCancel_clicked()
     for (int i=0; i<count; ++i)
     {
         auto* ptr = ui_.tab->widget(i);
-        auto* tab = static_cast<settings*>(ptr);
+        auto* tab = static_cast<SettingsWidget*>(ptr);
         tab->cancel();
     }
     reject();

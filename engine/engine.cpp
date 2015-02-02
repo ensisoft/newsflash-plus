@@ -41,6 +41,7 @@
 #include "cmdlist.h"
 #include "settings.h"
 #include "datafile.h"
+#include "listing.h"
 
 namespace newsflash
 {
@@ -116,6 +117,7 @@ struct engine::state {
     engine::on_error on_error_callback;
     engine::on_file  on_file_callback;
     engine::on_batch on_batch_callback;
+    engine::on_list  on_list_callback;
     engine::on_async_notify on_notify_callback;
 
    ~state()
@@ -908,6 +910,23 @@ private:
                         state.on_file_callback(ui);
                     }
                 }
+                else if (auto* ptr = dynamic_cast<listing*>(task_.get()))
+                {
+                    ui::listing listing;
+                    listing.account = ui_.account;
+
+                    const auto& groups = ptr->group_list();
+                    for (const auto& g : groups)
+                    {
+                        ui::listing::group ui;
+                        ui.name = g.name;
+                        ui.first = g.first;
+                        ui.last  = g.last;
+                        ui.size  = g.size;
+                        listing.groups.push_back(ui);
+                    }
+                    state.on_list_callback(listing);
+                }
                 break;
 
             default:
@@ -1422,6 +1441,23 @@ void engine::download(ui::download spec)
     state_->execute();
 }
 
+void engine::list_newsgroups(std::size_t account)
+{
+    std::unique_ptr<newsflash::listing> job(new listing);
+
+    const auto bid = state_->oid++;
+    const auto tid = state_->oid++;
+
+    std::unique_ptr<task> state(new task(account, tid, bid, 0,
+        "Retrieve newsgroup list", std::move(job)));
+    state_->tasks.push_back(std::move(state));
+
+    std::unique_ptr<batch> batch(new class batch(account, bid, 0, 1, "", 
+        "Retrieve newsgroup list"));
+    state_->batches.push_back(std::move(batch));
+    state_->execute();
+}
+
 bool engine::pump()
 {
     for (;;)
@@ -1621,6 +1657,11 @@ void engine::set_notify_callback(on_async_notify notify_callback)
 void engine::set_batch_callback(on_batch batch_callback)
 {
     state_->on_batch_callback = std::move(batch_callback);
+}
+
+void engine::set_list_callback(on_list list_callback)
+{
+    state_->on_list_callback = std::move(list_callback);
 }
 
 void engine::set_overwrite_existing_files(bool on_off)

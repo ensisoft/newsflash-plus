@@ -35,23 +35,24 @@
 namespace gui
 {
     // nzbfile widget displays the contents of a single NZB file
-    class nzbfile : public mainwidget
+    class NZBFile : public MainWidget
     {
         Q_OBJECT
 
     public:
-        nzbfile();
-       ~nzbfile();
+        NZBFile();
+       ~NZBFile();
 
-        virtual void add_actions(QMenu& menu) override;
-        virtual void add_actions(QToolBar& bar) override;
-        virtual void close_widget() override;
+        virtual void addActions(QMenu& menu) override;
+        virtual void addActions(QToolBar& bar) override;
+        virtual void closeWidget() override;
+        virtual void loadState(app::settings& s) override;
+        virtual bool saveState(app::settings& s) override;
 
-        virtual info information() const override
-        { return {"nzb.html", false, false}; }
-
-        virtual void loadstate(app::settings& s) override;
-        virtual bool savestate(app::settings& s) override;
+        virtual info getInformation() const override
+        { 
+            return {"nzb.html", false, false}; 
+        }
 
         // open and display the contents of the given NZB file.
         void open(const QString& nzbfile);
@@ -70,7 +71,7 @@ namespace gui
         void on_chkFilenamesOnly_clicked();
         void downloadToPrevious();
     private:
-        void download_selected(const QString& folder);
+        void downloadSelected(const QString& folder);
 
     private:
         Ui::NZB ui_;

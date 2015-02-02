@@ -79,7 +79,7 @@ const QIcon& tools::tool::icon() const
     // if that fails then we choose the icon of the first 
     // tagged file type.
 
-    icon_ = extract_icon(binary_);
+    icon_ = extractIcon(binary_);
     if (icon_.isNull())
     {
         auto beg = filetype_iterator::begin();

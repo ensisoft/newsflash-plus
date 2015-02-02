@@ -43,9 +43,7 @@ namespace newsflash
        ~download();
 
         virtual std::unique_ptr<cmdlist> create_commands() override;
-        virtual std::unique_ptr<action> start() override;
         virtual std::unique_ptr<action> kill() override;
-        virtual std::unique_ptr<action> flush() override;
         virtual std::unique_ptr<action> finalize() override;
 
         virtual void complete(action& act,

@@ -35,17 +35,17 @@
 
 namespace gui
 {
-    class toolsettings : public settings
+    class ToolSettings : public SettingsWidget
     {
         Q_OBJECT
 
     public:
-        toolsettings();
-       ~toolsettings();
+        ToolSettings();
+       ~ToolSettings();
 
         virtual bool validate() const override;
 
-        void set_tools(std::vector<app::tools::tool> tools);
+        void setTools(std::vector<app::tools::tool> tools);
 
     private slots:
         void on_btnAdd_clicked();
@@ -58,24 +58,23 @@ namespace gui
     private:
         Ui::Tools ui_;
     private:
-        friend class toolmodule;
+        friend class ToolModule;
         std::vector<app::tools::tool> tools_;
     };
 
-    class toolmodule : public QObject, public mainmodule
+    class ToolModule : public QObject, public MainModule
     {
         Q_OBJECT
 
     public:
-        toolmodule();
-       ~toolmodule();
+        ToolModule();
+       ~ToolModule();
 
-        virtual gui::settings* get_settings() override;
+        virtual SettingsWidget* getSettings() override;
+        virtual void applySettings(SettingsWidget* gui) override;
+        virtual void freeSettings(SettingsWidget* gui) override;
 
-        virtual void apply_settings(settings* gui) override;
-        virtual void free_settings(settings* gui) override;
-
-        virtual info information() const override
+        virtual info getInformation() const override
         { return {"toolmodule", "",}; }
     private:
     };

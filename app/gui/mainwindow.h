@@ -45,8 +45,8 @@ namespace app {
 
 namespace gui
 {
-    class mainwidget;
-    class mainmodule;
+    class MainWidget;
+    class MainModule;
     class DlgShutdown;
 
     // application's mainwindow. mainwindow manages the mainwidgets and
@@ -55,7 +55,7 @@ namespace gui
     // it features a TabWidget that hosts between the mainwidgets.
     // Actions such as shutdown, drag&drop etc are handled initially
     // in the mainwindow and then propagated down to mainwidgets for handling.
-    class mainwindow : public QMainWindow
+    class MainWindow : public QMainWindow
     {
         Q_OBJECT
 
@@ -63,65 +63,66 @@ namespace gui
         using QMainWindow::show;
 
         // ctor/dtor
-        mainwindow(app::settings& settings);
-       ~mainwindow();
+        MainWindow(app::settings& settings);
+       ~MainWindow();
        
         // attach a new widget to the mainwindow and display it.
         // ownership of the object remains with the caller.
-        void attach(mainwidget* widget, bool loadstate = false);
+        void attach(MainWidget* widget, bool loadstate = false);
 
         // attach a new module to the mainwindow.
         // ownership of the module remains with the caller.
-        void attach(mainmodule* module, bool loadstate = false);
+        void attach(MainModule* module, bool loadstate = false);
 
         // update the widget's display state
-        void update(mainwidget* widget);
+        void update(MainWidget* widget);
     
-        void reactivate(mainwidget* widget);
+        void reactivate(MainWidget* widget);
 
         // detach all widgets
-        void detach_all_widgets();
+        void detachAllWidgets();
 
         // load previously stored application/gui state.
-        void loadstate();
+        void loadState();
 
         // change application focus to the widget with the matching name      
-        void show_widget(const QString& name);
+        void showWidget(const QString& name);
 
         // open and show the application settings and select the
         // matching settings page.
-        void show_setting(const QString& name);
+        void showSetting(const QString& name);
 
         // show message in the window's message area
-        void show_message(const QString& message);
+        void showMessage(const QString& message);
 
-        void prepare_file_menu();
-        void prepare_main_tab();
+        void prepareFileMenu();
+        void prepareMainTab();
 
         // perform a common action and select a download folder for some content.
-        QString select_download_folder();
+        QString selectDownloadFolder();
 
         // select a folder for storing a nzb file into.
-        QString select_save_nzb_folder();
+        QString selectSaveNzbFolder();
 
         // select a NZB file for opening.
-        QString select_nzb_file(); 
+        QString selectNzbOpenFile(); 
         
-        QString select_nzb_save_file(const QString& filename);
+        // select NZB file for saving data
+        QString selectNzbSaveFile(const QString& filename);
 
-        QStringList get_recent_paths() const;
+        QStringList getRecentPaths() const;
 
-        quint32 choose_account(const QString& description);
+        quint32 chooseAccount(const QString& description);
 
    private:
         void show(const QString& name);
-        void show(mainwidget* widget);
+        void show(MainWidget* widget);
         void show(std::size_t index);
-        void hide(mainwidget* widget);        
+        void hide(MainWidget* widget);        
         void hide(std::size_t index);
-        void focus(mainwidget* widget);    
-        void build_window_menu();
-        bool savestate(DlgShutdown* dlg);
+        void focus(MainWidget* widget);    
+        void buildWindowMenu();
+        bool saveState(DlgShutdown* dlg);
         void closeEvent(QCloseEvent* event);        
         void dragEnterEvent(QDragEnterEvent* event);
         void dropEvent(QDropEvent* event);
@@ -153,10 +154,10 @@ namespace gui
         Ui::MainWindow ui_;
 
     private:
-        std::vector<mainmodule*> modules_;
-        std::vector<mainwidget*> widgets_;
+        std::vector<MainModule*> modules_;
+        std::vector<MainWidget*> widgets_;
         std::vector<QAction*> actions_;
-        mainwidget* current_;                
+        MainWidget* current_;                
     private:
         QSystemTrayIcon tray_;
         QStringList recents_;
@@ -167,7 +168,7 @@ namespace gui
         app::settings& settings_;
     };
     
-    extern mainwindow* g_win;
+    extern MainWindow* g_win;
 
 } // gui
 

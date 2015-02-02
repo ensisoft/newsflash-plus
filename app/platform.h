@@ -37,36 +37,36 @@ namespace app
 // extract appliation icon from a 3rd party executable specified
 // by binary. binary is expected to be the complete path to the
 // executable in question.
-QIcon extract_icon(const QString& binary);
+QIcon extractIcon(const QString& binary);
 
 // return the name of the operating system that we're running on
 // for example Mint Linux, Ubuntu, Windows XP, Windows 7  etc.
-QString get_platform_name();
+QString getPlatformName();
 
 // resolve the directory path to a mount-point / disk 
-QString resolve_mount_point(const QString& directory);
+QString resolveMountPoint(const QString& directory);
 
 // get free space available on the disk that contains
 // the object identified by filename
-quint64 get_free_disk_space(const QString& filename);
+quint64 getFreeDiskSpace(const QString& filename);
 
 // open a file on the local computer
-void open_file(const QString& file);
+void openFile(const QString& file);
 
-void open_web(const QString& url);
+void openWeb(const QString& url);
 
 // perform computer shutdown.
-void shutdown_computer();
+void shutdownComputer();
 
 #if defined(LINUX_OS)
 
-    void set_openfile_command(const QString& cmd);
+    void setOpenfileCommand(const QString& cmd);
 
-    void set_shutdown_command(const QString& cmd);
+    void setShutdownCommand(const QString& cmd);
 
-    QString get_openfile_command();
+    QString getOpenfileCommand();
 
-    QString get_shutdown_command();
+    QString getShutdownCommand();
 #endif
 
 } // app

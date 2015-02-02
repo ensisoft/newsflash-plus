@@ -49,7 +49,7 @@ using app::str;
 namespace gui
 {
 
-files::files()
+Files::Files()
 {
     ui_.setupUi(this);
     ui_.tableFiles->setModel(&model_);
@@ -64,15 +64,15 @@ files::files()
 
     ui_.findContainer->setVisible(false);
 
-    DEBUG("files gui created");
+    DEBUG("Files gui created");
 }
 
-files::~files()
+Files::~Files()
 {
-    DEBUG("files gui deleted");
+    DEBUG("Files gui deleted");
 }
 
-void files::add_actions(QMenu& menu)
+void Files::addActions(QMenu& menu)
 {
     menu.addAction(ui_.actionOpenFile);
     menu.addSeparator();
@@ -88,7 +88,7 @@ void files::add_actions(QMenu& menu)
 
 }
 
-void files::add_actions(QToolBar& bar)
+void Files::addActions(QToolBar& bar)
 {
     bar.addAction(ui_.actionOpenFile);
     bar.addSeparator();
@@ -123,7 +123,7 @@ void files::add_actions(QToolBar& bar)
     }    
 }
 
-void files::loadstate(app::settings& s) 
+void Files::loadState(app::settings& s) 
 {
     const auto sorted  = s.get("files", "keep_sorted", false);
     const auto clear   = s.get("files", "clear_on_exit", false);
@@ -152,7 +152,7 @@ void files::loadstate(app::settings& s)
     ui_.tableFiles->sortByColumn(sortColumn, (Qt::SortOrder)sortOrder);
 }
 
-bool files::savestate(app::settings& s)
+bool Files::saveState(app::settings& s)
 {
     const auto sorted    = ui_.chkKeepSorted->isChecked();
     const auto clear     = ui_.chkClearOnExit->isChecked();
@@ -183,7 +183,7 @@ bool files::savestate(app::settings& s)
     return true;
 }
 
-void files::shutdown() 
+void Files::shutdown() 
 {
     const auto clear = ui_.chkClearOnExit->isChecked();
     if (clear)
@@ -192,7 +192,7 @@ void files::shutdown()
     }
 }
 
-void files::on_actionOpenFile_triggered()
+void Files::on_actionOpenFile_triggered()
 {
     const auto& indices = ui_.tableFiles->selectionModel()->selectedRows();
     for (int i=0; i<indices.size(); ++i)
@@ -200,11 +200,11 @@ void files::on_actionOpenFile_triggered()
         const auto row   = indices[i].row();
         const auto& item = model_.getItem(row);
         const auto& file = QString("%1/%2").arg(item.path).arg(item.name);
-        app::open_file(file);
+        app::openFile(file);
     }
 }
 
-void files::on_actionOpenFileWith_triggered()
+void Files::on_actionOpenFileWith_triggered()
 {
     QString filter;
 #if defined(WINDOWS_OS)
@@ -252,39 +252,39 @@ void files::on_actionOpenFileWith_triggered()
     }
 }
 
-void files::on_actionClear_triggered()
+void Files::on_actionClear_triggered()
 {
     model_.eraseHistory();
 }
 
-void files::on_actionOpenFolder_triggered()
+void Files::on_actionOpenFolder_triggered()
 {
     const auto& indices = ui_.tableFiles->selectionModel()->selectedRows();
     for (int i=0; i<indices.size(); ++i)
     {
         const auto row   = indices[i].row();
         const auto& item = model_.getItem(row);
-        app::open_file(item.path);
+        app::openFile(item.path);
     }
 }
 
-void files::on_actionFind_triggered()
+void Files::on_actionFind_triggered()
 {
     ui_.findContainer->setVisible(true);
     ui_.editFind->setFocus();
 }
 
-void files::on_actionFindNext_triggered()
+void Files::on_actionFindNext_triggered()
 {
-    find_next(true);
+    findNext(true);
 }
 
-void files::on_actionFindPrev_triggered()
+void Files::on_actionFindPrev_triggered()
 {
-    find_next(false);
+    findNext(false);
 }
 
-void files::on_actionDelete_triggered()
+void Files::on_actionDelete_triggered()
 {
     auto indices = ui_.tableFiles->selectionModel()->selectedRows();
     if (indices.isEmpty())
@@ -304,7 +304,7 @@ void files::on_actionDelete_triggered()
 
 
 
-void files::on_tableFiles_customContextMenuRequested(QPoint point)
+void Files::on_tableFiles_customContextMenuRequested(QPoint point)
 {
     newsflash::bitflag<app::filetype> types;
 
@@ -362,27 +362,27 @@ void files::on_tableFiles_customContextMenuRequested(QPoint point)
     menu.exec(QCursor::pos());
 }
 
-void files::on_tableFiles_doubleClicked()
+void Files::on_tableFiles_doubleClicked()
 {
     on_actionOpenFile_triggered();
 }
 
-void files::on_btnCloseFind_clicked()
+void Files::on_btnCloseFind_clicked()
 {
     ui_.findContainer->setVisible(false);
 }
 
-void files::on_editFind_returnPressed()
+void Files::on_editFind_returnPressed()
 {
-    find_next(true);
+    findNext(true);
 }
 
-void files::on_chkKeepSorted_clicked()
+void Files::on_chkKeepSorted_clicked()
 {
     model_.keepSorted(ui_.chkKeepSorted->isChecked());
 }
 
-void files::invokeTool()
+void Files::invokeTool()
 {
     const auto& indices = ui_.tableFiles->selectionModel()->selectedRows();
     if (indices.isEmpty())
@@ -403,12 +403,12 @@ void files::invokeTool()
     }
 }
 
-void files::toolsUpdated()
+void Files::toolsUpdated()
 {
     g_win->reactivate(this);
 }
 
-void files::find_next(bool forward)
+void Files::findNext(bool forward)
 {
     QRegExp regex(ui_.editFind->text());
     if (!regex.isValid())

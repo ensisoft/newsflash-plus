@@ -33,12 +33,12 @@
 
 namespace gui
 {
-    class linuxsettings : public settings
+    class LinuxSettings : public SettingsWidget
     {
         Q_OBJECT
     public:
-        linuxsettings();
-       ~linuxsettings();
+        LinuxSettings();
+       ~LinuxSettings();
 
         virtual bool validate() const override;
 
@@ -48,20 +48,20 @@ namespace gui
     private:
         Ui::Linux ui_;
     private:
-        friend class linuxmodule;
+        friend class LinuxModule;
     };
 
-    class linuxmodule : public mainmodule
+    class LinuxModule : public MainModule
     {
     public:
-        linuxmodule();
-       ~linuxmodule();
+        LinuxModule();
+       ~LinuxModule();
 
-        virtual void loadstate(app::settings& s) override;
-        virtual bool savestate(app::settings& s) override;
-        virtual gui::settings* get_settings() override;
-        virtual void apply_settings(settings* gui) override;
-        virtual void free_settings(settings* gui) override;
+        virtual void loadState(app::settings& s) override;
+        virtual bool saveState(app::settings& s) override;
+        virtual SettingsWidget* getSettings() override;
+        virtual void applySettings(SettingsWidget* gui) override;
+        virtual void freeSettings(SettingsWidget* gui) override;
 
     private:
 

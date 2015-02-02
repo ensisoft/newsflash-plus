@@ -37,21 +37,21 @@
 namespace gui 
 {
 
-toolsettings::toolsettings()
+ToolSettings::ToolSettings()
 {
     ui_.setupUi(this);
 }
 
-toolsettings::~toolsettings()
+ToolSettings::~ToolSettings()
 {}
 
-bool toolsettings::validate() const 
+bool ToolSettings::validate() const 
 {
     // we're always valid.
     return true;
 }
 
-void toolsettings::set_tools(std::vector<app::tools::tool> tools)
+void ToolSettings::setTools(std::vector<app::tools::tool> tools)
 {
     tools_ = std::move(tools);
 
@@ -69,7 +69,7 @@ void toolsettings::set_tools(std::vector<app::tools::tool> tools)
     ui_.btnMoveUp->setEnabled(tools_.size() > 1);
 }
 
-void toolsettings::on_btnAdd_clicked()
+void ToolSettings::on_btnAdd_clicked()
 {
     app::tools::tool tool;
 
@@ -108,7 +108,7 @@ void toolsettings::on_btnAdd_clicked()
         ui_.listTools->setCurrentRow(0);
 }
 
-void toolsettings::on_btnDel_clicked()
+void ToolSettings::on_btnDel_clicked()
 {
     const auto row  = ui_.listTools->currentRow();
     if (row == -1)
@@ -134,7 +134,7 @@ void toolsettings::on_btnDel_clicked()
     }
 }
 
-void toolsettings::on_btnEdit_clicked()
+void ToolSettings::on_btnEdit_clicked()
 {
     const auto row = ui_.listTools->currentRow();
     if (row == -1)
@@ -152,7 +152,7 @@ void toolsettings::on_btnEdit_clicked()
     ui_.listTools->editItem(item);
 }
 
-void toolsettings::on_btnMoveUp_clicked()
+void ToolSettings::on_btnMoveUp_clicked()
 {
     int index = ui_.listTools->currentRow();
     if (index == -1 || index == 0)
@@ -176,7 +176,7 @@ void toolsettings::on_btnMoveUp_clicked()
     ui_.listTools->setCurrentRow(index - 1);
 }
 
-void toolsettings::on_btnMoveDown_clicked()
+void ToolSettings::on_btnMoveDown_clicked()
 {
     int index = ui_.listTools->currentRow();
     if (index == -1 || index == tools_.size() - 1)
@@ -200,35 +200,35 @@ void toolsettings::on_btnMoveDown_clicked()
     ui_.listTools->setCurrentRow(index + 1);
 }
 
-void toolsettings::on_listTools_doubleClicked(QModelIndex)
+void ToolSettings::on_listTools_doubleClicked(QModelIndex)
 {
     on_btnEdit_clicked();
 }
 
-toolmodule::toolmodule()
+ToolModule::ToolModule()
 {}
 
-toolmodule::~toolmodule()
+ToolModule::~ToolModule()
 {}
 
-gui::settings* toolmodule::get_settings()
+SettingsWidget* ToolModule::getSettings()
 {
-    auto* ptr = new toolsettings;
+    auto* ptr = new ToolSettings;
 
-    ptr->set_tools(app::g_tools->get_tools_copy());
+    ptr->setTools(app::g_tools->get_tools_copy());
 
     return ptr;
 }
 
 
-void toolmodule::apply_settings(settings* gui)
+void ToolModule::applySettings(SettingsWidget* gui)
 {
-    auto* ptr = dynamic_cast<toolsettings*>(gui);
+    auto* ptr = dynamic_cast<ToolSettings*>(gui);
 
     app::g_tools->set_tools_copy(ptr->tools_);
 }
 
-void toolmodule::free_settings(settings* gui)
+void ToolModule::freeSettings(SettingsWidget* gui)
 {
     delete gui;
 }

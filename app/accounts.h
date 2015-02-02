@@ -39,37 +39,50 @@ namespace app
 {
     class settings;
 
-    class accounts : public QAbstractListModel
+    // Accounts model stores and manages the accounts configured
+    // in the application.
+    class Accounts : public QAbstractListModel
     {
+        Q_OBJECT
+
     public:
-        accounts();
-       ~accounts();
+        Accounts();
+       ~Accounts();
 
         // suggest a new account object
-        account suggest() const;
+        account suggestAccount() const;
 
         // get account at index
         const 
-        account& get(std::size_t index) const;
-
-        account& get(std::size_t index);
+        account& getAccount(std::size_t index) const;
+        account& getAccount(std::size_t index);
         
-        const 
-        account* get_fill_account() const;
+        // get the currently configured fill account.
+        // if fill account is not set returns a nullptr
+        const account* getFillAccount() const;
 
-        const 
-        account* get_main_account() const;
+        // get the current main account. 
+        const account* getMainAccount() const;
 
         // delete the account at index 
-        void del(std::size_t index);
+        void delAccount(std::size_t index);
 
         // insert or modify an account.
         // if account already exists it's modified otherwise it's inserted
-        void set(const account& acc);
+        void setAccount(const account& acc);
 
-        void set_main_account(quint32 id);
+        // set the account identified by id to be main account.
+        // main account is the primary account used for downloading
+        // as opposed to fill account which is only used for 
+        // downloading the missing pieces. if main account is not
+        // and there are multiple accounts then the user should be asked
+        // for the account that they want to use.
+        void setMainAccount(quint32 id);
 
-        void set_fill_account(quint32 id);
+        // set the account by id to be the current fill account.
+        // fill account is used to download pieces missing on the
+        // primary/main download account.
+        void setFillAccount(quint32 id);
 
         // persist accounts into datastore
         bool savestate(settings& store) const;
@@ -77,8 +90,11 @@ namespace app
         // retrieve accounts from datastore
         void loadstate(settings& store); 
 
-        std::size_t num_accounts() const
-        { return accounts_.size(); }
+        // get the number of accounts.
+        std::size_t numAccounts() const
+        { 
+            return accounts_.size(); 
+        }
 
         // AbstractListModel impl
         virtual int rowCount(const QModelIndex&) const override;
@@ -86,13 +102,16 @@ namespace app
         // AbstractListMode impl
         virtual QVariant data(const QModelIndex&, int role) const override;
 
+    signals:
+        void accountsUpdated();
+
     private:
         std::vector<account> accounts_;
         quint32 main_account_;
         quint32 fill_account_;
     };
 
-    extern accounts* g_accounts;
+    extern Accounts* g_accounts;
 
 } // app
    

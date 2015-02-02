@@ -41,14 +41,16 @@
 
 namespace {
 
-class rss_settings : public gui::settings
+// we can keep the RSS settings in the .cpp because
+// it doesn't use signals so it doesn't need MOC to be run (which requires a .h file)
+class MySettings : public gui::SettingsWidget
 {
 public:
-    rss_settings()
+    MySettings()
     {
         ui_.setupUi(this);
     }
-   ~rss_settings()
+   ~MySettings()
     {}
 
     virtual bool validate() const override
@@ -75,7 +77,7 @@ public:
 private:
     Ui::RSSSettings ui_;
 private:
-    friend class gui::rss;
+    friend class gui::RSS;
 };
 
 } // namespace
@@ -84,7 +86,7 @@ private:
 namespace gui
 {
 
-rss::rss()
+RSS::RSS()
 {
     ui_.setupUi(this);
     ui_.tableView->setModel(&model_);
@@ -109,15 +111,15 @@ rss::rss()
         ui_.actionRefresh->setEnabled(true);
     };
 
-    DEBUG("rss gui created");
+    DEBUG("RSS gui created");
 }
 
-rss::~rss()
+RSS::~RSS()
 {
-    DEBUG("rss gui destroyed");
+    DEBUG("RSS gui destroyed");
 }
 
-void rss::add_actions(QMenu& menu)
+void RSS::addActions(QMenu& menu)
 {
     menu.addAction(ui_.actionRefresh);
     menu.addSeparator();    
@@ -131,7 +133,7 @@ void rss::add_actions(QMenu& menu)
     menu.addAction(ui_.actionStop);
 }
 
-void rss::add_actions(QToolBar& bar)
+void RSS::addActions(QToolBar& bar)
 {
     bar.addAction(ui_.actionRefresh);
     bar.addSeparator();
@@ -146,7 +148,7 @@ void rss::add_actions(QToolBar& bar)
     bar.addAction(ui_.actionStop);    
 }
 
-void rss::activate(QWidget*)
+void RSS::activate(QWidget*)
 {
     if (model_.empty())
     {
@@ -157,7 +159,7 @@ void rss::activate(QWidget*)
     }
 }
 
-bool rss::savestate(app::settings& s)
+bool RSS::saveState(app::settings& s)
 {
     s.set("rss", "music", ui_.chkMusic->isChecked());
     s.set("rss", "movies", ui_.chkMovies->isChecked());
@@ -186,13 +188,13 @@ bool rss::savestate(app::settings& s)
     return true;
 }
 
-void rss::shutdown()
+void RSS::shutdown()
 {
     // we're shutting down. cancel all pending requests if any.
     model_.stop();
 }
 
-void rss::loadstate(app::settings& s)
+void RSS::loadState(app::settings& s)
 {
     ui_.chkMusic->setChecked(s.get("rss", "music", true));
     ui_.chkMovies->setChecked(s.get("rss", "movies", true));
@@ -224,14 +226,14 @@ void rss::loadstate(app::settings& s)
     }
 }
 
-mainwidget::info rss::information() const
+MainWidget::info RSS::getInformation() const
 {
     return {"rss.html", true, true};
 }
 
-gui::settings* rss::get_settings()
+SettingsWidget* RSS::getSettings()
 {
-    auto* p = new rss_settings;
+    auto* p = new MySettings;
     auto& ui = p->ui_;
 
     using m = app::media;
@@ -280,9 +282,9 @@ gui::settings* rss::get_settings()
 }
 
 
-void rss::apply_settings(gui::settings* gui)
+void RSS::applySettings(SettingsWidget* gui)
 {
-    auto* mine = dynamic_cast<rss_settings*>(gui);
+    auto* mine = dynamic_cast<MySettings*>(gui);
     auto& ui = mine->ui_;
 
     using m = app::media;
@@ -341,13 +343,13 @@ void rss::apply_settings(gui::settings* gui)
     model_.set_credentials("nzbs", nzbs_userid_, nzbs_apikey_);    
 }
 
-void rss::free_settings(gui::settings* s)
+void RSS::freeSettings(SettingsWidget* s)
 {
     delete s;
 }
 
 
-void rss::download_selected(const QString& folder)
+void RSS::downloadSelected(const QString& folder)
 {
     const auto& indices = ui_.tableView->selectionModel()->selectedRows();
     if (indices.isEmpty())
@@ -360,7 +362,7 @@ void rss::download_selected(const QString& folder)
         const auto row = indices[i].row();
         const auto& item = model_.get_item(row);
         const auto& desc = item.title;
-        const auto acc = g_win->choose_account(desc);
+        const auto acc = g_win->chooseAccount(desc);
         if (acc == 0)
             continue;
 
@@ -375,7 +377,7 @@ void rss::download_selected(const QString& folder)
     }
 }
 
-void rss::refresh(bool verbose)
+void RSS::refresh(bool verbose)
 {
     if (!enable_nzbs_ && !enable_womble_)
     {
@@ -477,26 +479,26 @@ void rss::refresh(bool verbose)
     ui_.actionRefresh->setEnabled(false);
 }
 
-void rss::on_actionRefresh_triggered()
+void RSS::on_actionRefresh_triggered()
 {
     refresh(true);
 }
 
-void rss::on_actionDownload_triggered()
+void RSS::on_actionDownload_triggered()
 {
-    download_selected("");
+    downloadSelected("");
 }
 
-void rss::on_actionDownloadTo_triggered()
+void RSS::on_actionDownloadTo_triggered()
 {
-    const auto& folder = g_win->select_download_folder();
+    const auto& folder = g_win->selectDownloadFolder();
     if (folder.isEmpty())
         return;
 
-    download_selected(folder);
+    downloadSelected(folder);
 }
 
-void rss::on_actionSave_triggered()
+void RSS::on_actionSave_triggered()
 {
     const auto& indices = ui_.tableView->selectionModel()->selectedRows();
     if (indices.isEmpty())
@@ -505,7 +507,7 @@ void rss::on_actionSave_triggered()
     for (int i=0; i<indices.size(); ++i)
     {
         const auto& item = model_.get_item(indices[i].row());
-        const auto& nzb  = g_win->select_nzb_save_file(item.title + ".nzb");
+        const auto& nzb  = g_win->selectNzbSaveFile(item.title + ".nzb");
         if (nzb.isEmpty())
             continue;
         model_.download_nzb_file(indices[i].row(), nzb);
@@ -514,14 +516,14 @@ void rss::on_actionSave_triggered()
     ui_.actionStop->setEnabled(true);
 }
 
-void rss::on_actionOpen_triggered()
+void RSS::on_actionOpen_triggered()
 {
     const auto& indices = ui_.tableView->selectionModel()->selectedRows();
     if (indices.isEmpty())
         return;
 
     static auto callback = [](const QByteArray& bytes, const QString& desc) {
-        auto* view = new nzbfile();
+        auto* view = new NZBFile();
         g_win->attach(view, true);
         view->open(bytes, desc);
     };
@@ -539,12 +541,12 @@ void rss::on_actionOpen_triggered()
     ui_.actionStop->setEnabled(true);
 }
 
-void rss::on_actionSettings_triggered()
+void RSS::on_actionSettings_triggered()
 {
-    g_win->show_setting("RSS");
+    g_win->showSetting("RSS");
 }
 
-void rss::on_actionStop_triggered()
+void RSS::on_actionStop_triggered()
 {
     model_.stop();
     ui_.progressBar->hide();
@@ -552,21 +554,21 @@ void rss::on_actionStop_triggered()
     ui_.actionRefresh->setEnabled(true);
 }
 
-void rss::on_actionBrowse_triggered()
+void RSS::on_actionBrowse_triggered()
 {
-    const auto& folder = g_win->select_download_folder();
+    const auto& folder = g_win->selectDownloadFolder();
     if (folder.isEmpty())
         return;
 
-    download_selected(folder);    
+    downloadSelected(folder);    
 }
 
-void rss::on_tableView_customContextMenuRequested(QPoint point)
+void RSS::on_tableView_customContextMenuRequested(QPoint point)
 {
     QMenu sub("Download to");
     sub.setIcon(QIcon(":/resource/16x16_ico_png/ico_download.png"));
 
-    const auto& recents = g_win->get_recent_paths();
+    const auto& recents = g_win->getRecentPaths();
     for (const auto& recent : recents)
     {
         QAction* action = sub.addAction(QIcon(":/resource/16x16_ico_png/ico_folder.png"), recent);
@@ -594,12 +596,12 @@ void rss::on_tableView_customContextMenuRequested(QPoint point)
     menu.exec(QCursor::pos());
 }
 
-void rss::on_tableView_doubleClicked(const QModelIndex&)
+void RSS::on_tableView_doubleClicked(const QModelIndex&)
 {
     on_actionDownload_triggered();
 }
 
-void rss::rowChanged()
+void RSS::rowChanged()
 {
     const auto list = ui_.tableView->selectionModel()->selectedRows();
     if (list.isEmpty())
@@ -610,14 +612,14 @@ void rss::rowChanged()
     ui_.actionOpen->setEnabled(true);
 }
 
-void rss::downloadToPrevious()
+void RSS::downloadToPrevious()
 {
     const auto* action = qobject_cast<const QAction*>(sender());
 
     // use the directory from the action title
     const auto folder = action->text();
 
-    download_selected(folder);
+    downloadSelected(folder);
 }
 
 } // gui

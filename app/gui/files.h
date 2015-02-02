@@ -32,21 +32,22 @@
 
 namespace gui
 {
-    class files : public mainwidget
+    // downloaded files GUI
+    class Files : public MainWidget
     {
         Q_OBJECT
 
     public:
-        files();
-       ~files();
+        Files();
+       ~Files();
 
-        virtual void add_actions(QMenu& menu) override;
-        virtual void add_actions(QToolBar& bar) override;
-        virtual void loadstate(app::settings& s) override;
-        virtual bool savestate(app::settings& s) override;
+        virtual void addActions(QMenu& menu) override;
+        virtual void addActions(QToolBar& bar) override;
+        virtual void loadState(app::settings& s) override;
+        virtual bool saveState(app::settings& s) override;
         virtual void shutdown() override;
 
-        virtual info information() const override
+        virtual info getInformation() const override
         {
             return {"files.html", true, true};
         }
@@ -68,7 +69,7 @@ namespace gui
         void toolsUpdated();
 
     private:
-        void find_next(bool forward);
+        void findNext(bool forward);
 
     private:
         Ui::Files ui_;

@@ -31,18 +31,19 @@
 
 namespace gui
 {
-    class eventlog : public mainwidget
+    // eventlog GUI
+    class EventLog : public MainWidget
     {
         Q_OBJECT
 
     public:
-        eventlog();
-       ~eventlog();
+        EventLog();
+       ~EventLog();
 
-        virtual void add_actions(QMenu& menu) override;
-        virtual void add_actions(QToolBar& bar) override;
+        virtual void addActions(QMenu& menu) override;
+        virtual void addActions(QToolBar& bar) override;
         virtual void activate(QWidget*);
-        mainwidget::info information() const override;
+        info getInformation() const override;
 
     private slots:
         void on_actionClearLog_triggered();

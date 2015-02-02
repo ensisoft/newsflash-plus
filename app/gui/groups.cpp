@@ -30,31 +30,36 @@
 #include <newsflash/warnpop.h>
 
 #include "groups.h"
+#include "../accounts.h"
+#include "../homedir.h"
+#include "../settings.h"
 
 namespace gui
 {
 
-groups::groups()
+Groups::Groups()
 {
     ui_.setupUi(this);
     ui_.tableGroups->setModel(&model_);
     ui_.tableGroups->setColumnWidth(0, 150);
     ui_.progressBar->setVisible(false);
+
+    QObject::connect(app::g_accounts, SIGNAL(accountsUpdated()),
+        this, SIGNAL(accountsUpdated()));
+
+    accountsUpdated();
 }
 
-groups::~groups()
+Groups::~Groups()
 {}
 
-void groups::add_actions(QMenu& menu)
+void Groups::addActions(QMenu& menu)
 {
     menu.addAction(ui_.actionAdd);
 }
 
-void groups::add_actions(QToolBar& bar)
+void Groups::addActions(QToolBar& bar)
 {
-    bar.addAction(ui_.actionAdd);
-    bar.addAction(ui_.actionRemove);
-    bar.addSeparator();
     bar.addAction(ui_.actionOpen);
     bar.addSeparator();
     bar.addAction(ui_.actionUpdate);
@@ -66,38 +71,58 @@ void groups::add_actions(QToolBar& bar)
     bar.addAction(ui_.actionInfo);
 }
 
-mainwidget::info groups::information() const
+MainWidget::info Groups::getInformation() const
 {
     return {"groups.html", true, true};
 }
 
-void groups::on_actionAdd_triggered()
+void Groups::loadState(app::settings& settings)
 {
+    const auto subscribedOnly = settings.get("groups", "show_subscribed_only", false);
+    ui_.chkSubscribedOnly->setChecked(subscribedOnly);
 
+    accountsUpdated();
 }
 
-void groups::on_actionRemove_triggered()
+bool Groups::saveState(app::settings& settings)
+{
+    const auto subscribedOnly = ui_.chkSubscribedOnly->isChecked();
+
+    settings.set("groups", "show_subscribed_only", subscribedOnly);
+
+    return true;
+}
+
+void Groups::on_actionOpen_triggered()
 {}
 
-void groups::on_actionOpen_triggered()
+void Groups::on_actionUpdate_triggered()
 {}
 
-void groups::on_actionUpdate_triggered()
-{}
-
-void groups::on_actionUpdateOptions_triggered()
+void Groups::on_actionUpdateOptions_triggered()
 {}
 
 
-void groups::on_actionDelete_triggered()
+void Groups::on_actionDelete_triggered()
 {}
 
-void groups::on_actionClean_triggered()
+void Groups::on_actionClean_triggered()
 {}
 
 
-void groups::on_actionInfo_triggered()
+void Groups::on_actionInfo_triggered()
 {}
 
+void Groups::accountsUpdated()
+{
+    ui_.cmbAccounts->clear();
+
+    const auto numAccounts = app::g_accounts->numAccounts();
+    for (std::size_t i=0; i<numAccounts; ++i)
+    {
+        const auto& account = app::g_accounts->getAccount(i);
+        ui_.cmbAccounts->addItem(account.name);
+    }
+}
 
 } // gui

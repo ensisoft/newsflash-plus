@@ -64,6 +64,22 @@ namespace app
         bool binary;
     };
 
+    // newsgroup message notifies of a group information
+    // as part of a listing event.
+    struct newsgroup {
+        // the estimated number of articles available in the group
+        quint64 size;
+
+        // the first article number
+        quint64 first;
+
+        // the last article number
+        quint64 last;
+
+        // group name
+        QString name;
+    };
+
     // manager class around newsflash engine + engine state
     // translate between native c++ and Qt types and events.
     class engine : public QObject
@@ -81,6 +97,8 @@ namespace app
         bool download_nzb_contents(quint32 acc, const QString& path, const QString& desc, const QByteArray& nzb);
         bool download_nzb_contents(quint32 acc, const QString& path, const QString& desc, 
             const std::vector<const nzbcontent*>& nzb);
+
+        void retrieve_newsgroup_listing(quint32 acc);
 
         void loadstate(settings& s);
         bool savestate(settings& s);
@@ -167,7 +185,7 @@ namespace app
         void set_downloads_path(const QString& path)
         {
             downloads_  = path;
-            mountpoint_ = resolve_mount_point(downloads_);
+            mountpoint_ = resolveMountPoint(downloads_);
         }
 
         bool get_overwrite_existing_files() const
@@ -269,6 +287,7 @@ namespace app
         void shutdownComplete();
         void newDownloadQueued(const QString& desc);
         void fileCompleted(const app::file& file);
+        void listingCompleted(quint32 account, const QList<app::newsgroup>& list);
 
     private:
         virtual bool eventFilter(QObject* object, QEvent* event) override;
@@ -278,6 +297,7 @@ namespace app
         void on_error(const newsflash::ui::error& e);
         void on_file_complete(const newsflash::ui::file& f);
         void on_batch_complete(const newsflash::ui::batch& b);
+        void on_list_complete(const newsflash::ui::listing& l);
     private:
         QString logifiles_;
         QString downloads_;
@@ -297,3 +317,5 @@ namespace app
 } // app
 
     Q_DECLARE_METATYPE(app::file);
+
+    Q_DECLARE_METATYPE(app::newsgroup);
