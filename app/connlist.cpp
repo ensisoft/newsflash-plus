@@ -175,7 +175,7 @@ void connlist::refresh()
 
     const auto cur_size = conns_.size();
 
-    g_engine->update_conn_list(conns_);
+    g_engine->refreshConnList(conns_);
 
     if (conns_.size() != cur_size)
     {
@@ -200,8 +200,8 @@ void connlist::kill(QModelIndexList& list)
     {
         const auto row = list[i].row() - removed;
         beginRemoveRows(QModelIndex(), row, row);
-        g_engine->kill_connection(row);
-        g_engine->update_conn_list(conns_);
+        g_engine->killConnection(row);
+        g_engine->refreshConnList(conns_);
         endRemoveRows();
         ++removed;
     }
@@ -213,8 +213,8 @@ void connlist::clone(QModelIndexList& list)
     {
         const auto row = list[i].row();
         beginInsertRows(QModelIndex(), conns_.size(), conns_.size());
-        g_engine->clone_connection(row);
-        g_engine->update_conn_list(conns_);
+        g_engine->cloneConnection(row);
+        g_engine->refreshConnList(conns_);
         endInsertRows();
     }
 }

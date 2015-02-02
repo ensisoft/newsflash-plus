@@ -101,7 +101,7 @@ void NZBFile::closeWidget()
     delete this;
 }
 
-void NZBFile::loadState(app::settings& s)
+void NZBFile::loadState(app::Settings& s)
 {
     const bool filenames = s.get("nzb", "show_filename_only", false);
 
@@ -110,7 +110,7 @@ void NZBFile::loadState(app::settings& s)
     model_.set_show_filenames_only(filenames);
 }
 
-bool NZBFile::saveState(app::settings& s)
+bool NZBFile::saveState(app::Settings& s)
 {
     s.set("nzb", "show_filename_only", 
         ui_.chkFilenamesOnly->isChecked());

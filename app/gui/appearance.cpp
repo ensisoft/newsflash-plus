@@ -97,7 +97,7 @@ Appearance::Appearance() : current_style_name_("Default")
 Appearance::~Appearance()
 {}
 
-void Appearance::loadState(app::settings& s)
+void Appearance::loadState(app::Settings& s)
 {
     current_style_name_ = s.get("theme", "name", "Default");
     if (current_style_name_ == "Default")
@@ -115,7 +115,7 @@ void Appearance::loadState(app::settings& s)
     DEBUG(str("Qt style _1", current_style_name_));
 }
 
-bool Appearance::saveState(app::settings& s)
+bool Appearance::saveState(app::Settings& s)
 {
     s.set("theme", "name", current_style_name_);
     return true;

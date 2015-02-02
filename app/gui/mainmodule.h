@@ -29,7 +29,7 @@
 #include <newsflash/warnpop.h>
 
 namespace app {
-    class settings;
+    class Settings;
 }
 
 class QMenu;
@@ -55,10 +55,10 @@ namespace gui
         virtual bool addActions(QMenu& menu) { return false;}
 
         // load the module state
-        virtual void loadState(app::settings& s) {};
+        virtual void loadState(app::Settings& s) {};
 
         // save the module state
-        virtual bool saveState(app::settings& s) { return true; };
+        virtual bool saveState(app::Settings& s) { return true; };
 
         // prepare the module for shutdown.
         virtual void shutdown() {};

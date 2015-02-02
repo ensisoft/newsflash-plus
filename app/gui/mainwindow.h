@@ -40,7 +40,7 @@ class QCloseEvent;
 class QCoreApplication;
 
 namespace app {
-    class settings;
+    class Settings;
 } // app
 
 namespace gui
@@ -63,7 +63,7 @@ namespace gui
         using QMainWindow::show;
 
         // ctor/dtor
-        MainWindow(app::settings& settings);
+        MainWindow(app::Settings& settings);
        ~MainWindow();
        
         // attach a new widget to the mainwindow and display it.
@@ -165,7 +165,7 @@ namespace gui
         QString recent_load_nzb_path_;
         QTimer  refresh_timer_;
     private:
-        app::settings& settings_;
+        app::Settings& settings_;
     };
     
     extern MainWindow* g_win;

@@ -44,12 +44,12 @@
 namespace app
 {
 
-nzbfile::nzbfile() : show_filename_only_(false)
+NZBFile::NZBFile() : show_filename_only_(false)
 {
-    DEBUG("nzbfile created");
+    DEBUG("NZBFile created");
 }
 
-nzbfile::~nzbfile()
+NZBFile::~NZBFile()
 {
     if (thread_.get())
     {
@@ -58,10 +58,10 @@ nzbfile::~nzbfile()
         thread_.reset();
     }
 
-    DEBUG("nzbfile destroyed");    
+    DEBUG("NZBFile destroyed");    
 }
 
-bool nzbfile::load(const QString& file)
+bool NZBFile::load(const QString& file)
 {
     std::unique_ptr<QFile> io(new QFile(file));
     if (!io->open(QIODevice::ReadOnly))
@@ -77,7 +77,7 @@ bool nzbfile::load(const QString& file)
         thread_.reset();
     }
     file_ = file;
-    thread_.reset(new nzbthread(std::move(io)));
+    thread_.reset(new NZBThread(std::move(io)));
 
     QObject::connect(thread_.get(), SIGNAL(complete()),
         this, SLOT(parse_complete()), Qt::QueuedConnection);
@@ -86,7 +86,7 @@ bool nzbfile::load(const QString& file)
     return true;
 }
 
-bool nzbfile::load(const QByteArray& bytes, const QString& desc)
+bool NZBFile::load(const QByteArray& bytes, const QString& desc)
 {
     if (thread_.get())
     {
@@ -100,7 +100,7 @@ bool nzbfile::load(const QByteArray& bytes, const QString& desc)
     std::unique_ptr<QBuffer> io(new QBuffer);
     io->setBuffer(&buffer_);
 
-    thread_.reset(new nzbthread(std::move(io)));
+    thread_.reset(new NZBThread(std::move(io)));
 
     QObject::connect(thread_.get(), SIGNAL(complete()),
         this, SLOT(parse_complete()), Qt::QueuedConnection);
@@ -109,13 +109,13 @@ bool nzbfile::load(const QByteArray& bytes, const QString& desc)
     return true;
 }
 
-void nzbfile::clear()
+void NZBFile::clear()
 {
     data_.clear();
     QAbstractTableModel::reset();
 }
 
-void nzbfile::kill(QModelIndexList& list)
+void NZBFile::kill(QModelIndexList& list)
 {
     qSort(list);
 
@@ -136,9 +136,9 @@ void nzbfile::kill(QModelIndexList& list)
     }
 }
 
-void nzbfile::download(const QModelIndexList& list, quint32 account, const QString& folder, const QString& desc)
+void NZBFile::download(const QModelIndexList& list, quint32 account, const QString& folder, const QString& desc)
 {
-    std::vector<const nzbcontent*> selected;
+    std::vector<const NZBContent*> selected;
 
     for (int i=0; i<list.size(); ++i)
     {
@@ -146,11 +146,11 @@ void nzbfile::download(const QModelIndexList& list, quint32 account, const QStri
         selected.push_back(&data_[row]);
     }
 
-    g_engine->download_nzb_contents(account, folder, desc, selected);
+    g_engine->downloadNzbContents(account, folder, desc, selected);
 
 }
 
-void nzbfile::set_show_filenames_only(bool on_off)
+void NZBFile::set_show_filenames_only(bool on_off)
 {
     if (on_off == show_filename_only_)
         return;
@@ -162,23 +162,23 @@ void nzbfile::set_show_filenames_only(bool on_off)
 }
 
 
-int nzbfile::rowCount(const QModelIndex&) const
+int NZBFile::rowCount(const QModelIndex&) const
 {
     return (int)data_.size();
 }
 
-int nzbfile::columnCount(const QModelIndex&) const
+int NZBFile::columnCount(const QModelIndex&) const
 {
     return 3;
 }
 
-void nzbfile::sort(int column, Qt::SortOrder order)
+void NZBFile::sort(int column, Qt::SortOrder order)
 {
     emit layoutAboutToBeChanged();
     if (column == 0)
     {
         std::sort(std::begin(data_), std::end(data_),
-            [&](const nzbcontent& lhs, const nzbcontent& rhs) {
+            [&](const NZBContent& lhs, const NZBContent& rhs) {
                 if (order == Qt::AscendingOrder)
                     return lhs.type < rhs.type;
                 return lhs.type > rhs.type;
@@ -187,7 +187,7 @@ void nzbfile::sort(int column, Qt::SortOrder order)
     else if (column == 1)
     {
         std::sort(std::begin(data_), std::end(data_),
-            [=](const nzbcontent& lhs, const nzbcontent& rhs) {
+            [=](const NZBContent& lhs, const NZBContent& rhs) {
                 if (order == Qt::AscendingOrder)
                     return lhs.bytes < rhs.bytes;
                 return lhs.bytes > rhs.bytes;
@@ -196,7 +196,7 @@ void nzbfile::sort(int column, Qt::SortOrder order)
     else if (column == 2)
     {
         std::sort(std::begin(data_), std::end(data_),
-            [&](const nzbcontent& lhs, const nzbcontent& rhs) {
+            [&](const NZBContent& lhs, const NZBContent& rhs) {
                 if (order == Qt::AscendingOrder)
                     return lhs.subject < rhs.subject;
                 return lhs.subject > rhs.subject;
@@ -205,7 +205,7 @@ void nzbfile::sort(int column, Qt::SortOrder order)
     emit layoutChanged();
 }
 
-QVariant nzbfile::data(const QModelIndex& index, int role) const
+QVariant NZBFile::data(const QModelIndex& index, int role) const
 {
     const auto& item = data_[index.row()];                
 
@@ -236,7 +236,7 @@ QVariant nzbfile::data(const QModelIndex& index, int role) const
     return QVariant();
 }
 
-QVariant nzbfile::headerData(int section, Qt::Orientation orientation, int role) const
+QVariant NZBFile::headerData(int section, Qt::Orientation orientation, int role) const
 {
     if (role != Qt::DisplayRole)
         return QVariant();
@@ -251,7 +251,7 @@ QVariant nzbfile::headerData(int section, Qt::Orientation orientation, int role)
     return QVariant();
 }
 
-void nzbfile::parse_complete()
+void NZBFile::parse_complete()
 {
     DEBUG(str("parse_complete _1", file_));
 

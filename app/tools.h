@@ -124,10 +124,10 @@ namespace app
         };  
 
         // load tools collection.
-        void loadstate(app::settings& set);
+        void loadstate(Settings& set);
 
         // save tools collection.
-        void savestate(app::settings& set);
+        void savestate(Settings& set);
 
         // get a list of all the tools
         std::vector<const tool*> get_tools() const;

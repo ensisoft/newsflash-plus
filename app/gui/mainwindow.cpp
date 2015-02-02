@@ -67,7 +67,7 @@ namespace gui
 
 MainWindow* g_win;    
 
-MainWindow::MainWindow(app::settings& s) : QMainWindow(nullptr), current_(nullptr), settings_(s)
+MainWindow::MainWindow(app::Settings& s) : QMainWindow(nullptr), current_(nullptr), settings_(s)
 {
     ui_.setupUi(this);
 
@@ -177,8 +177,8 @@ void MainWindow::detachAllWidgets()
 void MainWindow::loadState()
 {
     // load global objects state.
-    app::g_accounts->loadstate(settings_);
-    app::g_engine->loadstate(settings_);
+    app::g_accounts->loadState(settings_);
+    app::g_engine->loadState(settings_);
     app::g_tools->loadstate(settings_);
 
     if (!settings_.contains("window", "width"))
@@ -675,12 +675,12 @@ bool MainWindow::saveState(DlgShutdown* dlg)
 
         dlg->setText(tr("Saving accounts"));
 
-        if (!app::g_accounts->savestate(settings_))
+        if (!app::g_accounts->saveState(settings_))
             return false;
 
         dlg->setText(tr("Saving settings"));
 
-        if (!app::g_engine->savestate(settings_))
+        if (!app::g_engine->saveState(settings_))
             return false;
 
         dlg->setText(tr("Saving tools"));
@@ -1004,13 +1004,13 @@ void MainWindow::timerRefresh_timeout()
     for (auto* w : widgets_)
         w->refresh();
 
-    const auto freespace        = app::g_engine->get_free_disk_space();
-    const auto downloads        = app::g_engine->get_download_path();
-    const auto netspeed         = app::g_engine->get_download_speed();
-    const auto bytes_downloaded = app::g_engine->get_bytes_downloaded();
-    const auto bytes_queued     = app::g_engine->get_bytes_queued();
-    const auto bytes_ready      = app::g_engine->get_bytes_ready();
-    const auto bytes_written    = app::g_engine->get_bytes_written();
+    const auto freespace        = app::g_engine->getFreeDiskSpace();
+    const auto downloads        = app::g_engine->getDownloadPath();
+    const auto netspeed         = app::g_engine->getDownloadSpeed();
+    const auto bytes_downloaded = app::g_engine->getBytesDownloaded();
+    const auto bytes_queued     = app::g_engine->getBytesQueued();
+    const auto bytes_ready      = app::g_engine->getBytesReady();
+    const auto bytes_written    = app::g_engine->getBytesWritten();
     const auto bytes_remaining  = bytes_queued - bytes_ready;
 
     ui_.progressBar->setMinimum(0);

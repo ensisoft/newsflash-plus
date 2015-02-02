@@ -97,7 +97,7 @@ CoreModule::CoreModule()
 CoreModule::~CoreModule()
 {}
 
-void CoreModule::loadState(app::settings& s) 
+void CoreModule::loadState(app::Settings& s) 
 {
     check_for_updates_ = s.get("settings", "check_for_software_updates", true);
     if (check_for_updates_)
@@ -109,7 +109,7 @@ void CoreModule::loadState(app::settings& s)
     }
 }
 
-bool CoreModule::saveState(app::settings& s)
+bool CoreModule::saveState(app::Settings& s)
 {
     s.set("settings", "check_for_software_updates", check_for_updates_);
     return true;
@@ -120,10 +120,10 @@ SettingsWidget* CoreModule::getSettings()
     auto* ptr = new CoreSettings;
     auto& ui = ptr->ui_;
 
-    const auto overwrite = app::g_engine->get_overwrite_existing_files();
-    const auto discard   = app::g_engine->get_discard_text_content();
-    const auto logfiles  = app::g_engine->get_logfiles_path();
-    const auto downloads = app::g_engine->get_download_path();
+    const auto overwrite = app::g_engine->getOverwriteExistingFiles();
+    const auto discard   = app::g_engine->getDiscardTextContent();
+    const auto logfiles  = app::g_engine->getLogfilesPath();
+    const auto downloads = app::g_engine->getDownloadPath();
     const auto updates   = check_for_updates_; //s.get("settings", "check_for_software_updates", true);
 
     ui.chkOverwriteExisting->setChecked(overwrite);
@@ -217,10 +217,10 @@ void CoreModule::applySettings(SettingsWidget* gui)
         }
     }
 
-    app::g_engine->set_downloads_path(download);
-    app::g_engine->set_logfiles_path(logfiles);
-    app::g_engine->set_overwrite_existing_files(overwrite);
-    app::g_engine->set_discard_text_content(discard);
+    app::g_engine->setDownloadPath(download);
+    app::g_engine->setLogfilesPath(logfiles);
+    app::g_engine->setOverwriteExistingFiles(overwrite);
+    app::g_engine->setDiscardTextContent(discard);
 
     // todo: throttle value.
 

@@ -48,8 +48,8 @@ namespace gui
 
         virtual void addActions(QMenu& menu) override;
         virtual void addActions(QToolBar& bar) override;
-        virtual void loadState(app::settings& s) override;
-        virtual bool saveState(app::settings& s) override;
+        virtual void loadState(app::Settings& s) override;
+        virtual bool saveState(app::Settings& s) override;
         virtual void refresh() override;
 
         virtual info getInformation() const override 

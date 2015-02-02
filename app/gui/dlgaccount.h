@@ -37,7 +37,7 @@ namespace gui
         Q_OBJECT
 
     public:
-        DlgAccount(QWidget* parent, app::account& acc);
+        DlgAccount(QWidget* parent, app::Account& acc);
        ~DlgAccount();
         
     private:
@@ -52,7 +52,7 @@ namespace gui
         Ui::DlgAccount ui_;
 
     private:
-        app::account& acc_;
+        app::Account& acc_;
     };
 
 } // gui

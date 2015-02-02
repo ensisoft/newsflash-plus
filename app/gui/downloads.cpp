@@ -109,17 +109,17 @@ void Downloads::addActions(QToolBar& bar)
     bar.addAction(ui_.actionTaskClear);    
 }
 
-void Downloads::loadState(app::settings& s) 
+void Downloads::loadState(app::Settings& s) 
 {
     const auto task_list_height = s.get("downloads", "task_list_height", 0);
     if (task_list_height)
          ui_.grpConns->setFixedHeight(task_list_height);
 
     //const auto enable_throttle = app::g_engine->get_
-    const auto prefer_ssl = app::g_engine->get_prefer_secure();
-    const auto connect = app::g_engine->get_connect();
-    const auto throttle = app::g_engine->get_throttle();
-    const auto group_related = s.get("downloads", "group_related", false);
+    const auto prefer_ssl      = app::g_engine->getPreferSecure();
+    const auto connect         = app::g_engine->getConnect();
+    const auto throttle        = app::g_engine->getThrottle();
+    const auto group_related   = s.get("downloads", "group_related", false);
     const auto remove_complete = s.get("downloads", "remove_complete", false);
 
     ui_.actionConnect->setChecked(connect);
@@ -130,7 +130,7 @@ void Downloads::loadState(app::settings& s)
     tasks_.set_group_similar(group_related);
 }
 
-bool Downloads::saveState(app::settings& s)
+bool Downloads::saveState(app::Settings& s)
 {
     s.set("downloads", "task_list_height", ui_.grpConns->height());
     s.set("downloads", "group_related", ui_.chkGroupSimilar->isChecked());
@@ -164,14 +164,14 @@ void Downloads::on_actionPreferSSL_triggered()
 {
     const auto on_off = ui_.actionPreferSSL->isChecked();
 
-    app::g_engine->set_prefer_secure(on_off);
+    app::g_engine->setPreferSecure(on_off);
 }
 
 void Downloads::on_actionThrottle_triggered()
 {
     const auto on_off = ui_.actionThrottle->isChecked();
 
-    app::g_engine->set_throttle(on_off);
+    app::g_engine->setThrottle(on_off);
 }
 
 void Downloads::on_actionTaskPause_triggered()
@@ -290,7 +290,7 @@ void openfile(const QString& file);
 
 void Downloads::on_actionTaskOpenLog_triggered()
 {
-    const auto& file = app::g_engine->get_engine_logfile();
+    const auto& file = app::g_engine->getEngineLogfile();
     app::openFile(file);
 }
 
@@ -328,8 +328,7 @@ void Downloads::on_actionConnOpenLog_triggered()
 
 void Downloads::on_tableTasks_customContextMenuRequested(QPoint point)
 {
-    ui_.actionTaskOpenLog->setEnabled(
-        app::g_engine->is_started());
+    ui_.actionTaskOpenLog->setEnabled(app::g_engine->isStarted());
 
     QMenu menu(this);
     menu.addAction(ui_.actionTaskPause);

@@ -159,7 +159,7 @@ void RSS::activate(QWidget*)
     }
 }
 
-bool RSS::saveState(app::settings& s)
+bool RSS::saveState(app::Settings& s)
 {
     s.set("rss", "music", ui_.chkMusic->isChecked());
     s.set("rss", "movies", ui_.chkMovies->isChecked());
@@ -194,7 +194,7 @@ void RSS::shutdown()
     model_.stop();
 }
 
-void RSS::loadState(app::settings& s)
+void RSS::loadState(app::Settings& s)
 {
     ui_.chkMusic->setChecked(s.get("rss", "music", true));
     ui_.chkMovies->setChecked(s.get("rss", "movies", true));

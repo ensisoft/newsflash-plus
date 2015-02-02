@@ -332,7 +332,7 @@ void rss::on_nzbdata_complete(const QString& folder, const QString& desc, quint3
 
     QByteArray bytes = reply.readAll();
 
-    g_engine->download_nzb_contents(acc, folder, desc, bytes);
+    g_engine->downloadNzbContents(acc, folder, desc, bytes);
 }
 
 void rss::on_nzbdata_complete_callback(const data_callback& cb, QNetworkReply& reply)

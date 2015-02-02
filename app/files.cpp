@@ -47,8 +47,8 @@ namespace app
 
 files::files() : keepSorted_(false), sortColumn_(0), sortOrder_(Qt::AscendingOrder)
 {
-    QObject::connect(g_engine, SIGNAL(fileCompleted(const app::file&)),
-        this, SLOT(fileCompleted(const app::file&)));
+    QObject::connect(g_engine, SIGNAL(fileCompleted(const app::DataFile&)),
+        this, SLOT(fileCompleted(const app::DataFile&)));
 
     DEBUG("files model created");
 }
@@ -279,7 +279,7 @@ const files::file& files::getItem(std::size_t i) const
     return files_[files_.size() - i -1];
 }
 
-void files::fileCompleted(const app::file& file)
+void files::fileCompleted(const app::DataFile& file)
 {
     files::file next;
     next.name = file.name;

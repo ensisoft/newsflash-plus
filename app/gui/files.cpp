@@ -123,7 +123,7 @@ void Files::addActions(QToolBar& bar)
     }    
 }
 
-void Files::loadState(app::settings& s) 
+void Files::loadState(app::Settings& s) 
 {
     const auto sorted  = s.get("files", "keep_sorted", false);
     const auto clear   = s.get("files", "clear_on_exit", false);
@@ -152,7 +152,7 @@ void Files::loadState(app::settings& s)
     ui_.tableFiles->sortByColumn(sortColumn, (Qt::SortOrder)sortOrder);
 }
 
-bool Files::saveState(app::settings& s)
+bool Files::saveState(app::Settings& s)
 {
     const auto sorted    = ui_.chkKeepSorted->isChecked();
     const auto clear     = ui_.chkClearOnExit->isChecked();

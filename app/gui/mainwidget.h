@@ -33,7 +33,7 @@ class QMenu;
 class QToolBar;
 
 namespace app {
-    class settings;
+    class Settings;
 } // app
 
 namespace gui
@@ -81,10 +81,10 @@ namespace gui
         virtual void closeWidget() {}
 
         // load the widget/component state on application startup
-        virtual void loadState(app::settings& s) {}
+        virtual void loadState(app::Settings& s) {}
 
         // save the widget/component state
-        virtual bool saveState(app::settings& s) { return true; }
+        virtual bool saveState(app::Settings& s) { return true; }
 
         // prepare the widget/component for shutdown
         virtual void shutdown() {}

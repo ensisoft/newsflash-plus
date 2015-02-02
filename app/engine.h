@@ -41,13 +41,13 @@ class QEvent;
 
 namespace app
 {
-    class account;
-    class settings;
-    class nzbcontent;
+    class Account;
+    class Settings;
+    class NZBContent;
 
     // file message notifies of a downloaded file that
     // is now available in the filesystem
-    struct file {
+    struct DataFile {
         // path to the file
         QString path;
 
@@ -66,7 +66,7 @@ namespace app
 
     // newsgroup message notifies of a group information
     // as part of a listing event.
-    struct newsgroup {
+    struct NewsGroup {
         // the estimated number of articles available in the group
         quint64 size;
 
@@ -82,29 +82,35 @@ namespace app
 
     // manager class around newsflash engine + engine state
     // translate between native c++ and Qt types and events.
-    class engine : public QObject
+    class Engine : public QObject
     {
         Q_OBJECT
+        
     public:
-        engine();
-       ~engine();
+        Engine();
+       ~Engine();
 
-        void set(const account& acc);
-        void del(const account& acc);
+        // set/modify account in the engine.
+        void setAccount(const Account& acc);
 
-        void set_fill_account(quint32 id);
+        // delete an account.
+        void delAccount(const Account& acc);
 
-        bool download_nzb_contents(quint32 acc, const QString& path, const QString& desc, const QByteArray& nzb);
-        bool download_nzb_contents(quint32 acc, const QString& path, const QString& desc, 
-            const std::vector<const nzbcontent*>& nzb);
+        // set the current fill account.
+        void setFillAccount(quint32 id);
 
-        void retrieve_newsgroup_listing(quint32 acc);
+        bool downloadNzbContents(quint32 acc, const QString& path, const QString& desc, const QByteArray& nzb);
+        bool downloadNzbContents(quint32 acc, const QString& path, const QString& desc, 
+            const std::vector<const NZBContent*>& nzb);
 
-        void loadstate(settings& s);
-        bool savestate(settings& s);
+        void retrieveNewsgroupListing(quint32 acc);
+
+        void loadState(Settings& s);
+        bool saveState(Settings& s);
 
         void connect(bool on_off);
 
+        // refresh the engine state such as download speed, available disk spaces etc.
         void refresh();
 
         // begin engine shutdown. returns true if complete immediately
@@ -112,12 +118,14 @@ namespace app
         // once all pending actions have been processed in the engine.
         bool shutdown();
 
-        void update_task_list(std::deque<newsflash::ui::task>& list)
+        // refresh the list of UI task states.
+        void refreshTaskList(std::deque<newsflash::ui::task>& list)
         {
             engine_->update(list);
         }
 
-        void update_conn_list(std::deque<newsflash::ui::connection>& list)
+        // refresh the list of UI connection states
+        void refreshConnList(std::deque<newsflash::ui::connection>& list)
         {
             engine_->update(list);
 
@@ -132,153 +140,161 @@ namespace app
                 totalspeed_ += ui.bps;
         }
 
-        quint64 get_free_disk_space() const
+        // get the free disk space at the default download location.
+        quint64 getFreeDiskSpace() const
         { 
             return diskspace_; 
         }
 
-        quint32 get_download_speed() const
+        // get current total download speed (of all connections)
+        quint32 getDownloadSpeed() const
         {
             return totalspeed_;
         }
 
-        quint64 get_bytes_downloaded() const
+        // get the number of bytes downloaded from all servers/accounts.
+        quint64 getBytesDownloaded() const
         {
             return engine_->get_bytes_downloaded();
         }
 
-        quint64 get_bytes_queued() const
+        // get the bytes currently queued in engine for downloading.
+        quint64 getBytesQueued() const
         {
             return engine_->get_bytes_queued();
         }
 
-        quint64 get_bytes_ready() const 
+        // get the number of bytes currently ready. 
+        // bytes ready is always a fraction of bytesQueued
+        // so if bytesQueued is zero then bytesReady is also zero.
+        quint64 getBytesReady() const 
         {
             return engine_->get_bytes_ready();
         }
 
-        quint64 get_bytes_written() const 
+        // get the number of bytes written to the disk 
+        quint64 getBytesWritten() const 
         {
             return engine_->get_bytes_written();
         }
 
-        const QString& get_logfiles_path() const
+        const QString& getLogfilesPath() const
         { 
             return logifiles_; 
         }
 
-        QString get_engine_logfile() const
+        QString getEngineLogfile() const
         {
             return from_utf8(engine_->get_logfile());
         }
 
-        void set_logfiles_path(const QString& path)
+        void setLogfilesPath(const QString& path)
         {
             logifiles_ = path;
         }
 
-        const QString& get_download_path() const 
+        const QString& getDownloadPath() const 
         { 
             return downloads_; 
         }
 
-        void set_downloads_path(const QString& path)
+        void setDownloadPath(const QString& path)
         {
             downloads_  = path;
             mountpoint_ = resolveMountPoint(downloads_);
         }
 
-        bool get_overwrite_existing_files() const
+        bool getOverwriteExistingFiles() const
         {
             return engine_->get_overwrite_existing_files();
         }
 
-        bool get_discard_text_content() const 
+        bool getDiscardTextContent() const 
         { 
             return engine_->get_discard_text_content();
         }
 
-        bool get_prefer_secure() const
+        bool getPreferSecure() const
         {
             return engine_->get_prefer_secure();
         }
 
-        bool is_started() const
+        bool isStarted() const
         {
             return engine_->is_started(); 
         }
 
-        bool get_connect() const
+        bool getConnect() const
         { 
             return connect_; 
         }
 
-        bool get_throttle() const 
+        bool getThrottle() const 
         {
             return engine_->get_throttle();
         }
 
-        void set_overwrite_existing_files(bool on_off)
+        void setOverwriteExistingFiles(bool on_off)
         {
             engine_->set_overwrite_existing_files(on_off);
         }
 
-        void set_discard_text_content(bool on_off)
+        void setDiscardTextContent(bool on_off)
         {
             engine_->set_discard_text_content(on_off);
         }
 
-        void set_prefer_secure(bool on_off)
+        void setPreferSecure(bool on_off)
         {
             engine_->set_prefer_secure(on_off);
         }
 
-        void set_group_similar(bool on_off)
+        void setGroupSimilar(bool on_off)
         {
             engine_->set_group_items(on_off);
         }
 
-        void set_throttle(bool on_off)
+        void setThrottle(bool on_off)
         {
             engine_->set_throttle(on_off);
         }
 
-        void set_throttle_value(unsigned val)
+        void setThrottleValue(unsigned val)
         {
             engine_->set_throttle_value(val);
         }
 
-        void kill_connection(std::size_t index)
+        void killConnection(std::size_t index)
         {
             engine_->kill_connection(index);
         }
 
-        void clone_connection(std::size_t index)
+        void cloneConnection(std::size_t index)
         {
             engine_->clone_connection(index);
         }
 
-        void kill_task(std::size_t index)
+        void killTask(std::size_t index)
         {
             engine_->kill_task(index);
         }
 
-        void pause_task(std::size_t index)
+        void pauseTask(std::size_t index)
         {
             engine_->pause_task(index);
         }
 
-        void resume_task(std::size_t index)
+        void resumeTask(std::size_t index)
         {
             engine_->resume_task(index);
         }
 
-        void move_task_up(std::size_t index)
+        void moveTaskUp(std::size_t index)
         {
             engine_->move_task_up(index);
         }
 
-        void move_task_down(std::size_t index)
+        void moveTaskDown(std::size_t index)
         {
             engine_->move_task_down(index);
         }
@@ -286,18 +302,19 @@ namespace app
     signals:
         void shutdownComplete();
         void newDownloadQueued(const QString& desc);
-        void fileCompleted(const app::file& file);
-        void listingCompleted(quint32 account, const QList<app::newsgroup>& list);
+        void fileCompleted(const app::DataFile& file);
+        void listingCompleted(quint32 account, const QList<app::NewsGroup>& list);
 
     private:
         virtual bool eventFilter(QObject* object, QEvent* event) override;
         virtual void timerEvent(QTimerEvent* event) override;
 
     private:
-        void on_error(const newsflash::ui::error& e);
-        void on_file_complete(const newsflash::ui::file& f);
-        void on_batch_complete(const newsflash::ui::batch& b);
-        void on_list_complete(const newsflash::ui::listing& l);
+        void onError(const newsflash::ui::error& e);
+        void onFileComplete(const newsflash::ui::file& f);
+        void onBatchComplete(const newsflash::ui::batch& b);
+        void onListComplete(const newsflash::ui::listing& l);
+
     private:
         QString logifiles_;
         QString downloads_;
@@ -305,17 +322,14 @@ namespace app
         quint64 diskspace_;
         quint32 totalspeed_;
         int ticktimer_;
-    private:
         std::unique_ptr<newsflash::engine> engine_;
-    private:
         bool connect_;
         bool shutdown_;
     };
 
-    extern engine* g_engine;
+    extern Engine* g_engine;
 
 } // app
 
-    Q_DECLARE_METATYPE(app::file);
-
-    Q_DECLARE_METATYPE(app::newsgroup);
+    Q_DECLARE_METATYPE(app::DataFile);
+    Q_DECLARE_METATYPE(app::NewsGroup);

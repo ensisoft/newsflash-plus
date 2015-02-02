@@ -38,7 +38,7 @@ class QIODevice;
 namespace app
 {
     // content data parsed from a NZB file
-    struct nzbcontent {
+    struct NZBContent {
         // filetype is here for convenience, but its not parsed
         filetype type;
 
@@ -70,6 +70,6 @@ namespace app
 
     // parse nzb content from from input and store in the list of contents.
     // returns nzberror code indicating the result of the parsing.
-    nzberror parse_nzb(QIODevice& io, std::vector<nzbcontent>& content);
+    nzberror parseNZB(QIODevice& io, std::vector<NZBContent>& content);
 
 } // app

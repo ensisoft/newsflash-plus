@@ -189,7 +189,7 @@ void tasklist::refresh(bool remove_complete)
 {
     const auto cur_size = tasks_.size();
 
-    g_engine->update_task_list(tasks_);
+    g_engine->refreshTaskList(tasks_);
 
     if (remove_complete)
     {
@@ -201,8 +201,8 @@ void tasklist::refresh(bool remove_complete)
             if (task.state == states::complete || task.state == states::error)
             {
                 beginRemoveRows(QModelIndex(), row, row);
-                g_engine->kill_task(row);
-                g_engine->update_task_list(tasks_);
+                g_engine->killTask(row);
+                g_engine->refreshTaskList(tasks_);
                 endRemoveRows();
                 ++removed;
             }
@@ -241,8 +241,8 @@ void tasklist::kill(QModelIndexList& list)
     {
         const auto row = list[i].row() - removed;
         beginRemoveRows(QModelIndex(), row, row);
-        g_engine->kill_task(row);
-        g_engine->update_task_list(tasks_);
+        g_engine->killTask(row);
+        g_engine->refreshTaskList(tasks_);
         endRemoveRows();
         ++removed;
     }
@@ -279,14 +279,14 @@ void tasklist::move_to_top(QModelIndexList& list)
             min_index = row;
 
         for (int j=0; j<distance; ++j)
-            g_engine->move_task_up(row - j);
+            g_engine->moveTaskUp(row - j);
 
         list[i] = index(row - distance, 0);
     }
     Q_ASSERT(min_index >= 0);
     Q_ASSERT(max_index < tasks_.size());
 
-    g_engine->update_task_list(tasks_);
+    g_engine->refreshTaskList(tasks_);
 
     auto first = QAbstractTableModel::index(min_index, 0);
     auto last  = QAbstractTableModel::index(max_index, (int)columns::sentinel);
@@ -310,14 +310,14 @@ void tasklist::move_to_bottom(QModelIndexList& list)
             min_index = row;
 
         for (int j=0; j<distance; ++j)
-            g_engine->move_task_down(row + j);
+            g_engine->moveTaskDown(row + j);
 
         list[i] = index(row + distance, 0);
     }
     Q_ASSERT(min_index >= 0);
     Q_ASSERT(max_index < tasks_.size());
 
-    g_engine->update_task_list(tasks_);
+    g_engine->refreshTaskList(tasks_);
 
     auto first = QAbstractTableModel::index(min_index, 0);
     auto last  = QAbstractTableModel::index(max_index, (int)columns::sentinel);
@@ -326,8 +326,8 @@ void tasklist::move_to_bottom(QModelIndexList& list)
 
 void tasklist::set_group_similar(bool on_off)
 {
-    g_engine->set_group_similar(on_off);
-    g_engine->update_task_list(tasks_);
+    g_engine->setGroupSimilar(on_off);
+    g_engine->refreshTaskList(tasks_);
     reset();
 }
 
@@ -346,22 +346,22 @@ void tasklist::manage_tasks(QModelIndexList& list, tasklist::action a)
         switch (a)
         {
             case action::pause:
-                g_engine->pause_task(row);
+                g_engine->pauseTask(row);
                 list[i] = index(row, 0);
                 break;
 
             case action::resume:
-                g_engine->resume_task(row);
+                g_engine->resumeTask(row);
                 list[i] = index(row, 0);
                 break;
 
             case action::move_up:
-                g_engine->move_task_up(row);
+                g_engine->moveTaskUp(row);
                 list[i] = index(row - 1, 0);
                 break;
 
             case action::move_down:
-                g_engine->move_task_down(row);
+                g_engine->moveTaskDown(row);
                 list[i] = index(row + 1, 0);
                 break;
         }
@@ -369,7 +369,7 @@ void tasklist::manage_tasks(QModelIndexList& list, tasklist::action a)
     Q_ASSERT(min_index >= 0);
     Q_ASSERT(max_index < tasks_.size());    
 
-    g_engine->update_task_list(tasks_);
+    g_engine->refreshTaskList(tasks_);
 
     auto first = QAbstractTableModel::index(min_index, 0);
     auto last  = QAbstractTableModel::index(max_index, (int)columns::sentinel);

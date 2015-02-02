@@ -43,15 +43,16 @@ namespace app
         Groups();
        ~Groups();
 
-        void savestate() const;
-
-        void loadstate();
-
         // QAbstractTableModel
         QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
         QVariant data(const QModelIndex& index, int role) const override;
         int rowCount(const QModelIndex&) const override;
         int columnCount(const QModelIndex&) const override;
+
+        void clear();
+
+        void loadListing(const QString& file, quint32 account);
+        void makeListing(const QString& file, quint32 account);
 
     private:
         enum class column {
@@ -64,6 +65,7 @@ namespace app
             quint64   headers;            
             quint64   articles;
             quint64   size_on_disk;
+            quint32   flags;
         };
 
     private:

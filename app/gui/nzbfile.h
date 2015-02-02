@@ -46,8 +46,8 @@ namespace gui
         virtual void addActions(QMenu& menu) override;
         virtual void addActions(QToolBar& bar) override;
         virtual void closeWidget() override;
-        virtual void loadState(app::settings& s) override;
-        virtual bool saveState(app::settings& s) override;
+        virtual void loadState(app::Settings& s) override;
+        virtual bool saveState(app::Settings& s) override;
 
         virtual info getInformation() const override
         { 
@@ -77,7 +77,7 @@ namespace gui
         Ui::NZB ui_;
 
     private:
-        app::nzbfile model_;
+        app::NZBFile model_;
     };
 
 } // gui

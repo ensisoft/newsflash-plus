@@ -31,22 +31,22 @@
 namespace app
 {
 
-nzbthread::nzbthread(std::unique_ptr<QIODevice> io) : io_(std::move(io)), error_(nzberror::none)
+NZBThread::NZBThread(std::unique_ptr<QIODevice> io) : io_(std::move(io)), error_(nzberror::none)
 {
     DEBUG("Created nzbhread");
 }
 
-nzbthread::~nzbthread()
+NZBThread::~NZBThread()
 {
     DEBUG("Destroyed nzbhread");
 }
 
-void nzbthread::run() 
+void NZBThread::run() 
 {
     DEBUG(str("nzbthread::run _1", QThread::currentThreadId()));
 
-    std::vector<nzbcontent> data;
-    const auto result = parse_nzb(*io_.get(), data);
+    std::vector<NZBContent> data;
+    const auto result = parseNZB(*io_.get(), data);
 
     std::lock_guard<std::mutex> lock(mutex_);
     data_  = std::move(data);
@@ -57,7 +57,7 @@ void nzbthread::run()
     DEBUG("nzbthread done...");
 }
 
-nzberror nzbthread::result(std::vector<nzbcontent>& data)
+nzberror NZBThread::result(std::vector<NZBContent>& data)
 {
     std::lock_guard<std::mutex> lock(mutex_);
 

@@ -39,18 +39,18 @@
 namespace app
 {
 
-settings::settings()
+Settings::Settings()
 {}
 
-settings::~settings()
+Settings::~Settings()
 {}
 
 
-void settings::load(QIODevice& io, settings::format format)
+void Settings::load(QIODevice& io, Settings::format format)
 {
     Q_ASSERT(io.isOpen());
 
-    if (format == settings::format::json)
+    if (format == Settings::format::json)
     {
         bool ok = false;
         QJson::Parser parser;
@@ -76,11 +76,11 @@ void settings::load(QIODevice& io, settings::format format)
     }
 }
 
-void settings::save(QIODevice& io, settings::format format) const
+void Settings::save(QIODevice& io, Settings::format format) const
 {
     Q_ASSERT(io.isOpen());
 
-    if (format == settings::format::json)
+    if (format == Settings::format::json)
     {
         bool ok = false;
         QJson::Serializer serializer;
@@ -95,7 +95,7 @@ void settings::save(QIODevice& io, settings::format format) const
     }
 }
 
-QFile::FileError settings::load(const QString& file, settings::format format)
+QFile::FileError Settings::load(const QString& file, Settings::format format)
 {
     QFile io(file);
     if (!io.open(QIODevice::ReadOnly))
@@ -105,7 +105,7 @@ QFile::FileError settings::load(const QString& file, settings::format format)
     return QFile::NoError;
 }
 
-QFile::FileError settings::save(const QString& file, settings::format format)
+QFile::FileError Settings::save(const QString& file, Settings::format format)
 {
     QFile io(file);
     if (!io.open(QIODevice::WriteOnly))
@@ -115,12 +115,12 @@ QFile::FileError settings::save(const QString& file, settings::format format)
     return QFile::NoError;
 }
 
-void settings::clear()
+void Settings::clear()
 {
     values_.clear();
 }
 
-bool settings::contains(const char* context, const char* name) const
+bool Settings::contains(const char* context, const char* name) const
 {
     const auto& value = get(context, name);
     if (value.isNull())
@@ -129,7 +129,7 @@ bool settings::contains(const char* context, const char* name) const
     return true;
 }
 
-QVariant settings::get(const QString& key, const QString& attr, const QVariant& defval) const
+QVariant Settings::get(const QString& key, const QString& attr, const QVariant& defval) const
 {
     const QVariantMap& map = values_[key].toMap();
     if (map.isEmpty())
@@ -139,19 +139,19 @@ QVariant settings::get(const QString& key, const QString& attr, const QVariant& 
     return value;
 }
 
-void settings::set(const QString& key, const QString& attr, const QVariant& value)
+void Settings::set(const QString& key, const QString& attr, const QVariant& value)
 {
     QVariantMap map = values_[key].toMap();
     map[attr] = value;
     values_[key] = map;
 }
 
-void settings::del(const QString& key)
+void Settings::del(const QString& key)
 {
     values_.remove(key);
 }
 
-settings* g_settings;
+Settings* g_settings;
 
 } // app
 

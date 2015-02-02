@@ -37,7 +37,7 @@
 
 namespace app
 {
-    class settings;
+    class Settings;
 
     // Accounts model stores and manages the accounts configured
     // in the application.
@@ -50,26 +50,26 @@ namespace app
        ~Accounts();
 
         // suggest a new account object
-        account suggestAccount() const;
+        Account suggestAccount() const;
 
         // get account at index
         const 
-        account& getAccount(std::size_t index) const;
-        account& getAccount(std::size_t index);
+        Account& getAccount(std::size_t index) const;
+        Account& getAccount(std::size_t index);
         
         // get the currently configured fill account.
         // if fill account is not set returns a nullptr
-        const account* getFillAccount() const;
+        const Account* getFillAccount() const;
 
         // get the current main account. 
-        const account* getMainAccount() const;
+        const Account* getMainAccount() const;
 
         // delete the account at index 
         void delAccount(std::size_t index);
 
         // insert or modify an account.
         // if account already exists it's modified otherwise it's inserted
-        void setAccount(const account& acc);
+        void setAccount(const Account& acc);
 
         // set the account identified by id to be main account.
         // main account is the primary account used for downloading
@@ -85,10 +85,10 @@ namespace app
         void setFillAccount(quint32 id);
 
         // persist accounts into datastore
-        bool savestate(settings& store) const;
+        bool saveState(Settings& store) const;
 
         // retrieve accounts from datastore
-        void loadstate(settings& store); 
+        void loadState(Settings& store); 
 
         // get the number of accounts.
         std::size_t numAccounts() const
@@ -106,7 +106,7 @@ namespace app
         void accountsUpdated();
 
     private:
-        std::vector<account> accounts_;
+        std::vector<Account> accounts_;
         quint32 main_account_;
         quint32 fill_account_;
     };

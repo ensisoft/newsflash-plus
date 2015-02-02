@@ -25,7 +25,7 @@
 namespace gui
 {
 
-DlgAccount::DlgAccount(QWidget* parent, app::account& acc) : QDialog(parent), acc_(acc)
+DlgAccount::DlgAccount(QWidget* parent, app::Account& acc) : QDialog(parent), acc_(acc)
 {
     ui_.setupUi(this);
 

@@ -134,7 +134,7 @@ MainWidget::info Accounts::getInformation() const
     return {"accounts.html", true, true};
 }
 
-void Accounts::loadState(app::settings& s)
+void Accounts::loadState(app::Settings& s)
 {
     const auto license  = s.get("accounts", "license", "");
     const bool validate = keygen::verify_code(license);
@@ -147,7 +147,7 @@ void Accounts::loadState(app::settings& s)
     }
 }
 
-bool Accounts::saveState(app::settings& s)
+bool Accounts::saveState(app::Settings& s)
 {
     return true;
 }
@@ -284,11 +284,11 @@ void Accounts::currentRowChanged()
     in_row_changed_ = false;
 
     
-    if (quota_type == app::account::quota::none)
+    if (quota_type == app::Account::quota::none)
     {
         ui_.grpQuota->setChecked(false);
     }
-    else if (quota_type == app::account::quota::monthly)
+    else if (quota_type == app::Account::quota::monthly)
     {
         ui_.btnMonthlyQuota->setChecked(true);
         ui_.btnFixedQuota->setChecked(false);
@@ -342,7 +342,7 @@ void Accounts::on_btnMonthlyQuota_toggled(bool checked)
 
     auto& account = app::g_accounts->getAccount(row);
 
-    account.quota_type = app::account::quota::monthly;
+    account.quota_type = app::Account::quota::monthly;
 
     ui_.btnFixedQuota->setChecked(false);
 }
@@ -355,7 +355,7 @@ void Accounts::on_btnFixedQuota_toggled(bool checked)
 
     auto& account = app::g_accounts->getAccount(row);
 
-    account.quota_type = app::account::quota::fixed;
+    account.quota_type = app::Account::quota::fixed;
 
     ui_.btnMonthlyQuota->setChecked(false);
 }
@@ -425,13 +425,13 @@ void Accounts::on_grpQuota_toggled(bool on)
 
     if (!on)
     {
-        account.quota_type = app::account::quota::none;
+        account.quota_type = app::Account::quota::none;
     }
     else 
     {
         if (ui_.btnFixedQuota->isChecked())
-            account.quota_type = app::account::quota::fixed;
-        else account.quota_type = app::account::quota::monthly;
+            account.quota_type = app::Account::quota::fixed;
+        else account.quota_type = app::Account::quota::monthly;
     }
 }
 

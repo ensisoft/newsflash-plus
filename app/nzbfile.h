@@ -36,15 +36,15 @@
 
 namespace app
 {
-    class nzbthread;
+    class NZBThread;
 
-    class nzbfile : public QAbstractTableModel
+    class NZBFile : public QAbstractTableModel
     {
         Q_OBJECT
 
     public:
-        nzbfile();
-       ~nzbfile();
+        NZBFile();
+       ~NZBFile();
 
         std::function<void (bool success)> on_ready;
 
@@ -80,8 +80,8 @@ namespace app
         void parse_complete();
 
     private:
-        std::unique_ptr<nzbthread> thread_;
-        std::vector<nzbcontent> data_;
+        std::unique_ptr<NZBThread> thread_;
+        std::vector<NZBContent> data_;
     private:
         QString file_;
         QByteArray buffer_;

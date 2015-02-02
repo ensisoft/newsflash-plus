@@ -129,8 +129,7 @@ int run(int argc, char* argv[])
 
     // settings is that everything depends on 
     // load settings first.
-    app::settings set;
-    app::g_settings = &set;    
+    app::Settings set;
 
     const auto file = app::homedir::file("settings.json");
     if (QFile::exists(file))
@@ -145,7 +144,7 @@ int run(int argc, char* argv[])
     app::netman net;
     app::g_net = &net;
 
-    app::engine eng;
+    app::Engine eng;
     app::g_engine = &eng;
 
     app::Accounts acc;

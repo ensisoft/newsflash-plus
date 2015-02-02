@@ -36,27 +36,27 @@ namespace app
     // values are keyed by context-name pair so that for example
     // "some-context", "value" and "other-context", "value" point
     // to different actual value objects.
-    class settings
+    class Settings
     {
     public:
         enum class format {
             json
         };
 
-        settings();
-       ~settings();
+        Settings();
+       ~Settings();
 
         // load the store from the given stream.
         // io must be already opened.
-        void load(QIODevice& io, settings::format format = format::json);
+        void load(QIODevice& io, Settings::format format = format::json);
 
         // save the store to a stream.
         // io must be already opened.
-        void save(QIODevice& io, settings::format format = format::json) const;
+        void save(QIODevice& io, Settings::format format = format::json) const;
 
-        QFile::FileError load(const QString& file, settings::format format = format::json);
+        QFile::FileError load(const QString& file, Settings::format format = format::json);
 
-        QFile::FileError save(const QString& file, settings::format format = format::json);
+        QFile::FileError save(const QString& file, Settings::format format = format::json);
 
         // clear all values
         void clear();
@@ -95,8 +95,5 @@ namespace app
     private:
         QVariantMap values_;
     };
-
-
-    extern settings* g_settings;
 
 } // app

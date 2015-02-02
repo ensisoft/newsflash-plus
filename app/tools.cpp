@@ -96,7 +96,7 @@ const QIcon& tools::tool::icon() const
     return icon_;
 }
 
-void tools::loadstate(app::settings& store)
+void tools::loadstate(Settings& store)
 {
     QStringList list = store.get("tools", "list").toStringList();
     for (const auto& key : list)
@@ -119,7 +119,7 @@ void tools::loadstate(app::settings& store)
     }
 }
 
-void tools::savestate(app::settings& store)
+void tools::savestate(Settings& store)
 {
     QStringList list;
     for (const auto& tool : tools_)

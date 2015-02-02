@@ -23,10 +23,13 @@
 #include <newsflash/config.h>
 
 #include <newsflash/warnpush.h>
+#  include <QtGui/QMessageBox>
 #  include <QtGui/QToolBar>
 #  include <QtGui/QMenu>
 #  include <QtGui/QPixmap>
 #  include <QtGui/QMovie>
+#  include <QFile>
+#  include <QFileInfo>
 #include <newsflash/warnpop.h>
 
 #include "groups.h"
@@ -45,7 +48,7 @@ Groups::Groups()
     ui_.progressBar->setVisible(false);
 
     QObject::connect(app::g_accounts, SIGNAL(accountsUpdated()),
-        this, SIGNAL(accountsUpdated()));
+        this, SLOT(accountsUpdated()));
 
     accountsUpdated();
 }
@@ -76,7 +79,7 @@ MainWidget::info Groups::getInformation() const
     return {"groups.html", true, true};
 }
 
-void Groups::loadState(app::settings& settings)
+void Groups::loadState(app::Settings& settings)
 {
     const auto subscribedOnly = settings.get("groups", "show_subscribed_only", false);
     ui_.chkSubscribedOnly->setChecked(subscribedOnly);
@@ -84,7 +87,7 @@ void Groups::loadState(app::settings& settings)
     accountsUpdated();
 }
 
-bool Groups::saveState(app::settings& settings)
+bool Groups::saveState(app::Settings& settings)
 {
     const auto subscribedOnly = ui_.chkSubscribedOnly->isChecked();
 
@@ -113,6 +116,34 @@ void Groups::on_actionClean_triggered()
 void Groups::on_actionInfo_triggered()
 {}
 
+void Groups::on_cmbAccounts_currentIndexChanged()
+{
+    model_.clear();
+
+    int index = ui_.cmbAccounts->currentIndex();
+    if (index == -1)
+        return;
+
+    //const QVariant user = ui_.cmbAccounts->userData(index);
+
+    const QString text = ui_.cmbAccounts->currentText();
+    const QString file = app::homedir::file(text + ".lst");
+
+    QFileInfo info(file);
+    if (!info.exists())
+    {
+        model_.loadListing(file, 0);
+    }
+    else
+    {
+        model_.makeListing(file, 0);
+        ui_.progressBar->setVisible(true);
+        ui_.progressBar->setMinimum(0),
+        ui_.progressBar->setMaximum(0);
+        ui_.progressBar->setValue(0);
+    }
+}
+
 void Groups::accountsUpdated()
 {
     ui_.cmbAccounts->clear();
@@ -121,7 +152,7 @@ void Groups::accountsUpdated()
     for (std::size_t i=0; i<numAccounts; ++i)
     {
         const auto& account = app::g_accounts->getAccount(i);
-        ui_.cmbAccounts->addItem(account.name);
+        ui_.cmbAccounts->addItem(account.name, account.id);
     }
 }
 

@@ -46,8 +46,8 @@ namespace gui
         virtual void addActions(QToolBar& bar) override;
         virtual info getInformation() const override;
 
-        virtual void loadState(app::settings& settings) override;
-        virtual bool saveState(app::settings& settings) override;
+        virtual void loadState(app::Settings& settings) override;
+        virtual bool saveState(app::Settings& settings) override;
 
     private slots:
         void on_actionOpen_triggered();
@@ -56,6 +56,7 @@ namespace gui
         void on_actionDelete_triggered();
         void on_actionClean_triggered();
         void on_actionInfo_triggered();
+        void on_cmbAccounts_currentIndexChanged();
         void accountsUpdated();
 
     private:

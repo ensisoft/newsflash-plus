@@ -70,7 +70,7 @@ namespace app
         const file& getItem(std::size_t i) const;
 
     private slots:
-        void fileCompleted(const app::file& file);
+        void fileCompleted(const app::DataFile& file);
 
     private:
         std::vector<file> files_;

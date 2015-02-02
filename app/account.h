@@ -32,7 +32,7 @@
 
 namespace app
 {
-    struct account
+    struct Account
     {
         // different quota types
         enum class quota {

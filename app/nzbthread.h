@@ -40,20 +40,20 @@ namespace app
     // this is a class in app scope because MOC doesn't support nested classes...
     // nzbthread provides one-shot background thread for parsing NZB content 
     // from an already opened IO object.
-    class nzbthread : public QThread
+    class NZBThread : public QThread
     {
         Q_OBJECT
 
     public:
         // create a new one-shot thread object with the 
         // given IO object. The IO should be already opened.
-        nzbthread(std::unique_ptr<QIODevice> io);
-       ~nzbthread();
+        NZBThread(std::unique_ptr<QIODevice> io);
+       ~NZBThread();
 
         // get the result of the parse operation.
         // this should be called once the complete() signal
         // has been emitted indicating completion.
-        nzberror result(std::vector<nzbcontent>& data);
+        nzberror result(std::vector<NZBContent>& data);
 
     signals:
         // complete signal is emitted once the data from the IO object
@@ -66,7 +66,7 @@ namespace app
 
     private:
         std::unique_ptr<QIODevice> io_;
-        std::vector<nzbcontent> data_;
+        std::vector<NZBContent> data_;
         std::mutex mutex_;
         nzberror error_;
     };

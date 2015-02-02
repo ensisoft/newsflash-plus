@@ -81,7 +81,7 @@ LinuxModule::LinuxModule()
 LinuxModule::~LinuxModule()
 {}
 
-void LinuxModule::loadState(app::settings& s)
+void LinuxModule::loadState(app::Settings& s)
 {
 #if defined(LINUX_OS)
     auto shutdown = app::getShutdownCommand();
@@ -97,7 +97,7 @@ void LinuxModule::loadState(app::settings& s)
 #endif
 }
 
-bool LinuxModule::saveState(app::settings& s)
+bool LinuxModule::saveState(app::Settings& s)
 {
 #if defined(LINUX_OS)
     const auto shutdown = app::getShutdownCommand();

@@ -141,10 +141,10 @@ bool NZBCore::addActions(QMenu& menu)
     return true;
 }
 
-void NZBCore::loadState(app::settings& s)
+void NZBCore::loadState(app::Settings& s)
 {}
 
-bool NZBCore::saveState(app::settings& s)
+bool NZBCore::saveState(app::Settings& s)
 {
     return true;
 }

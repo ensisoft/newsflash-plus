@@ -79,21 +79,20 @@ namespace {
 namespace app
 {
 
-engine::engine()
+Engine::Engine()
 {
     diskspace_  = 0;
     totalspeed_ = 0;
     shutdown_  = false;
 
-
     engine_.reset(new newsflash::engine);
-    engine_->set_error_callback(std::bind(&engine::on_error, this,
+    engine_->set_error_callback(std::bind(&Engine::onError, this,
         std::placeholders::_1));
-    engine_->set_file_callback(std::bind(&engine::on_file_complete, this,
+    engine_->set_file_callback(std::bind(&Engine::onFileComplete, this,
          std::placeholders::_1));
-    engine_->set_batch_callback(std::bind(&engine::on_batch_complete, this,
+    engine_->set_batch_callback(std::bind(&Engine::onBatchComplete, this,
         std::placeholders::_1));
-    engine_->set_list_callback(std::bind(&engine::on_list_complete, this,
+    engine_->set_list_callback(std::bind(&Engine::onListComplete, this,
         std::placeholders::_1));
 
     // remember that the notify callback can come from any thread
@@ -110,7 +109,7 @@ engine::engine()
     DEBUG("Engine created");
 }
 
-engine::~engine()
+Engine::~Engine()
 {
 
 
@@ -119,7 +118,7 @@ engine::~engine()
     DEBUG("Engine destroyed");
 }
 
-void engine::set(const account& acc)
+void Engine::setAccount(const Account& acc)
 {
     newsflash::account a;
     a.id                    = acc.id;
@@ -139,24 +138,24 @@ void engine::set(const account& acc)
     engine_->set_account(a);
 }
 
-void engine::del(const account& acc)
+void Engine::delAccount(const Account& acc)
 {
     // todo:
     //engine_.del(const newsflash::account &acc)
 }
 
-void engine::set_fill_account(quint32 id)
+void Engine::setFillAccount(quint32 id)
 {
     engine_->set_fill_account(id);
 }
 
-bool engine::download_nzb_contents(quint32 acc, const QString& path, const QString& desc, const QByteArray& buff)
+bool Engine::downloadNzbContents(quint32 acc, const QString& path, const QString& desc, const QByteArray& buff)
 {
     QBuffer io(const_cast<QByteArray*>(&buff));
 
-    std::vector<nzbcontent> items;
+    std::vector<NZBContent> items;
 
-    const auto err = parse_nzb(io, items);
+    const auto err = parseNZB(io, items);
     switch (err)
     {
         case nzberror::none: break;
@@ -222,8 +221,8 @@ bool engine::download_nzb_contents(quint32 acc, const QString& path, const QStri
 }
 
 
-bool engine::download_nzb_contents(quint32 acc, const QString& path, const QString& desc, 
-    const std::vector<const nzbcontent*>& nzb)
+bool Engine::downloadNzbContents(quint32 acc, const QString& path, const QString& desc, 
+    const std::vector<const NZBContent*>& nzb)
 {
     QString location = path.isEmpty() ?
         downloads_ : path;
@@ -269,13 +268,13 @@ bool engine::download_nzb_contents(quint32 acc, const QString& path, const QStri
     return true;
 }
 
-void engine::retrieve_newsgroup_listing(quint32 acc)
+void Engine::retrieveNewsgroupListing(quint32 acc)
 {
     engine_->list_newsgroups(acc);
 }
 
 
-void engine::loadstate(settings& s)
+void Engine::loadState(Settings& s)
 {
     logifiles_ = s.get("engine", "logfiles", 
         QDir::toNativeSeparators(QDir::tempPath() + "/Newsflash"));
@@ -298,7 +297,7 @@ void engine::loadstate(settings& s)
     engine_->set_prefer_secure(secure);
 }
 
-bool engine::savestate(settings& s)
+bool Engine::saveState(Settings& s)
 {
     const auto overwrite = engine_->get_overwrite_existing_files();
     const auto discard   = engine_->get_discard_text_content();
@@ -317,7 +316,7 @@ bool engine::savestate(settings& s)
     return true;
 }
 
-void engine::connect(bool on_off)
+void Engine::connect(bool on_off)
 { 
     connect_ = on_off;
     if (!connect_)
@@ -333,7 +332,7 @@ void engine::connect(bool on_off)
     }
 }
 
-void engine::refresh()
+void Engine::refresh()
 {
     // rescan the default download location volume
     // for free space. note that the location might 
@@ -343,7 +342,7 @@ void engine::refresh()
     diskspace_ = app::getFreeDiskSpace(mountpoint_);
 }
 
-bool engine::shutdown()
+bool Engine::shutdown()
 {
     killTimer(ticktimer_);    
     shutdown_  = true;
@@ -358,7 +357,7 @@ bool engine::shutdown()
     return false;
 }
 
-bool engine::eventFilter(QObject* object, QEvent* event)
+bool Engine::eventFilter(QObject* object, QEvent* event)
 {
     if (object == this && event->type() == AsyncNotifyEvent::identity())
     {
@@ -375,13 +374,13 @@ bool engine::eventFilter(QObject* object, QEvent* event)
     return QObject::eventFilter(object, event);
 }
 
-void engine::timerEvent(QTimerEvent* event)
+void Engine::timerEvent(QTimerEvent* event)
 {
     // service the engine periodically
     engine_->tick();
 }
 
-void engine::on_error(const newsflash::ui::error& e)
+void Engine::onError(const newsflash::ui::error& e)
 {
     const auto resource = from_utf8(e.resource);
     const auto code = e.code;
@@ -399,7 +398,7 @@ void engine::on_error(const newsflash::ui::error& e)
     }
 }
 
-void engine::on_file_complete(const newsflash::ui::file& f)
+void Engine::onFileComplete(const newsflash::ui::file& f)
 {
     QString path = widen(f.path);
     if (path.isEmpty())
@@ -408,7 +407,7 @@ void engine::on_file_complete(const newsflash::ui::file& f)
     path = QDir(path).absolutePath();
     path = QDir::toNativeSeparators(path);
 
-    app::file file;
+    app::DataFile file;
     file.binary  = f.binary;
     file.damaged = f.damaged;
     file.name    = widen(f.name);
@@ -431,7 +430,7 @@ void engine::on_file_complete(const newsflash::ui::file& f)
     NOTE(str("\"_1\" is ready", file.name));
 }
 
-void engine::on_batch_complete(const newsflash::ui::batch& b)
+void Engine::onBatchComplete(const newsflash::ui::batch& b)
 {
     QString path = widen(b.path);
 
@@ -443,15 +442,15 @@ void engine::on_batch_complete(const newsflash::ui::batch& b)
 
 }
 
-void engine::on_list_complete(const newsflash::ui::listing& l)
+void Engine::onListComplete(const newsflash::ui::listing& l)
 {
     DEBUG("Listing complete");
 
-    QList<newsgroup> list;
+    QList<NewsGroup> list;
 
     for (const auto& ui : l.groups)
     {
-        newsgroup group;
+        NewsGroup group;
         group.first = ui.first;
         group.last  = ui.last;
         group.size  = ui.size;
@@ -462,7 +461,7 @@ void engine::on_list_complete(const newsflash::ui::listing& l)
     emit listingCompleted(l.account, list);
 }
 
-engine* g_engine;
+Engine* g_engine;
 
 
 } // app

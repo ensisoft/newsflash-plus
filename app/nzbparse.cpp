@@ -34,10 +34,10 @@
 #include "nzbparse.h"
 
 namespace {
-class xmlhandler : public QXmlDefaultHandler
+class MyHandler : public QXmlDefaultHandler
 {
 public:
-    xmlhandler(std::vector<app::nzbcontent>& contents) : contents_(contents), nzb_error_(false), xml_error_(false)
+    MyHandler(std::vector<app::NZBContent>& contents) : contents_(contents), nzb_error_(false), xml_error_(false)
     {}
 
     virtual bool characters(const QString& ch) override
@@ -88,7 +88,7 @@ public:
             if (!curr_element_is("nzb"))
                 return false;
 
-            app::nzbcontent content {};
+            app::NZBContent content {};
             content.subject = attrs.value("subject");
             if (content.subject.isEmpty())
                 return false;            
@@ -175,7 +175,7 @@ private:
     }
 
 private:
-    std::vector<app::nzbcontent>& contents_;
+    std::vector<app::NZBContent>& contents_;
     QStack<QString> stack_;
     QString error_;    
     bool nzb_error_;
@@ -188,11 +188,11 @@ private:
 namespace app
 {
 
-nzberror parse_nzb(QIODevice& io, std::vector<nzbcontent>& content)
+nzberror parseNZB(QIODevice& io, std::vector<NZBContent>& content)
 {
-    std::vector<nzbcontent> data;
+    std::vector<NZBContent> data;
 
-    xmlhandler handler(data);
+    MyHandler handler(data);
     QXmlInputSource source(&io);
     QXmlSimpleReader reader;
     

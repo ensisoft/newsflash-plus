@@ -42,44 +42,14 @@ namespace app
 
 Groups::Groups()
 {
-    DEBUG("groups created");
+    DEBUG("Groups created");
 }
 
 Groups::~Groups()
 {
-    DEBUG("groups deleted");
+    DEBUG("Groups deleted");
 }
 
-void Groups::savestate() const
-{
-    // QStringList list;
-    // for (const auto& group : groups_)
-    // {
-    //     const auto& key = group.name;
-    //     values.set(key, "name", group.name);
-    //     values.set(key, "updated", group.updated);
-    //     values.set(key, "articles", group.articles);
-    //     list.push_back(key);
-    // }
-    // values.set("groups", "list", list);    
-}
-
-
-void Groups::loadstate()
-{
-
-    // const QStringList& list = values.get("groups", "list").toStringList();
-    // for (const auto& key : list)
-    // {
-    //     groups::group group {};
-    //     group.name     = values.get(key, "name").toString();
-    //     group.updated  = values.get(key, "updated").toDateTime();
-    //     group.headers  = 0;
-    //     group.articles = values.get(key, "articles").toULongLong();
-    //     group.size_on_disk = 0;
-
-    // }
-}
 
 QVariant Groups::headerData(int section, Qt::Orientation orietantation, int role) const 
 {
@@ -153,5 +123,17 @@ int Groups::columnCount(const QModelIndex&) const
 {
     return (int)column::last;
 }
+
+
+void Groups::clear()
+{
+
+}
+
+void Groups::loadListing(const QString& file, quint32 account)
+{}
+
+void Groups::makeListing(const QString& file, quint32 account)
+{}
 
 } // app
