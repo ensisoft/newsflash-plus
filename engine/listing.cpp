@@ -21,93 +21,57 @@
 //  THE SOFTWARE.
 
 #include <newsflash/config.h>
-#include <newsflash/warnpush.h>
-#  include <boost/lexical_cast.hpp>
-#include <newsflash/warnpop.h>
-#include <algorithm>
+#include <string>
 #include <fstream>
 #include "nntp.h"
 #include "linebuffer.h"
 #include "listing.h"
 #include "buffer.h"
-#include "platform.h"
+#include "cmdlist.h"
 
 namespace newsflash
 {
 
-listing::listing(std::string filename) : filename_(std::move(filename))
-{}
 
-//void listing::prepare()
-//{}
+std::unique_ptr<cmdlist> listing::create_commands()
+{
+    std::unique_ptr<cmdlist> cmd(new cmdlist({}, {}, cmdlist::type::list));
+    run_once_ = false;
+    return cmd;
+}
 
-//void listing::receive(buffer&& buff, std::size_t id)
-//{
-    // const buffer::payload body(buff);
-    // if (body.empty())
-    //     return;
-    
-    // const nntp::linebuffer lines(body.data(), body.size());
+void listing::complete(cmdlist& cmd, 
+    std::vector<std::unique_ptr<action>>& actions)
+{
+    auto& contents = cmd.get_buffers();
+    auto& listing  = contents.at(0);
 
-    // auto beg = lines.begin();
-    // auto end = lines.end();
-    // while (beg != end)
-    // {
-    //     const auto& line = *beg;
-    //     const auto& ret  = nntp::parse_group(line.start, line.length);
-    //     if (ret.first)
-    //     {
-    //         const auto& data = ret.second;
+    nntp::linebuffer lines(listing.content(), listing.content_length());
 
-    //         group_info group;
-    //         group.size = 0;
-    //         group.name = data.name;
-    //         const std::uint64_t first = boost::lexical_cast<std::uint64_t>(data.first);
-    //         const std::uint64_t last  = boost::lexical_cast<std::uint64_t>(data.last);
+    auto beg = lines.begin();
+    auto end = lines.end();
+    while (beg != end)
+    {
+        const auto& line = *beg;
+        const auto& ret  = nntp::parse_group(line.start, line.length);
+        if (ret.first)
+        {
+            const auto& data = ret.second;
+            group g;
+            g.last  = std::stoull(data.last);
+            g.first = std::stoull(data.first);
+            g.name  = data.name;
+            g.size  = 0;
 
-    //         // if the last field is less than the first field then
-    //         // there are no articles in the group.
-    //         if (last > first)
-    //             group.size = last - first + 1; // inclusive
+            // if the last field is less than the first field
+            // then there are no articles in the group.
+            if (g.last >= g.first)
+                g.size = g.last - g.first + 1; // inclusive
 
-    //         groups_.push_back(std::move(group));
-    //     }
-    //     ++beg;
-    // }
-//}
-
-//void listing::cancel()
-//{}
-
-//void listing::flush()
-//{}
-
-//void listing::finalize()
-//{
-//    std::sort(groups_.begin(), groups_.end(), 
-//        [](const group_info& lhs, const group_info& rhs)
-//        {
-//            return lhs.name < rhs.name;
-//        });
-
-    // std::ofstream out;
-    // open_fstream(filename_, out);
-
-    // if (!out.is_open())
-    //     throw std::system_error(std::error_code(errno, std::generic_category()), 
-    //         "failed to open " + filename_);
-
-    // out << groups_.size() << std::endl;
-
-    // for (const auto& group : groups_)
-    // {
-    //      out << group.name << "," << group.size;
-    //      out << std::endl;
-    // }
-
-    // if (out.fail())
-    //     throw std::system_error(std::error_code(errno, std::generic_category()),
-    //         "io failure on " + filename_);
-//}
+            groups_.push_back(g);
+        }
+        beg++;
+    }
+}
 
 } // newsflash

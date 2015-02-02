@@ -110,6 +110,9 @@ namespace newsflash
         // retrieve the headers in the specified range [start - end]
         void retrieve_headers(std::string range);
 
+        // retrieve newsgroup listing
+        void retrieve_list();
+
         // send next queued command.
         // returns true if next command was sent otherwise false.
         bool send_next();
@@ -164,6 +167,7 @@ namespace newsflash
         class quit;
         class xover;
         class xzver;
+        class list;
 
     private:
         std::deque<std::unique_ptr<command>> send_;

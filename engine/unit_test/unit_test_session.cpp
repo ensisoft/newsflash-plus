@@ -343,6 +343,36 @@ void unit_test_retrieve_article()
 
 }
 
+void unit_test_retrieve_listing()
+{
+    nf::session session;
+
+    std::string output;
+    session.on_send = [&](const std::string& cmd) {
+        output = cmd;
+    };
+
+    nf::buffer i(1024);
+    nf::buffer o(1024);
+
+    session.retrieve_list();
+    session.send_next();
+    BOOST_REQUIRE(output == "LIST\r\n");
+
+    set(i, "215 listing follows\r\n"
+        "alt.binaries.foo 1 0 y\r\n"
+        "alt.binaries.bar 2 1 n\r\n"
+        ".\r\n");
+    session.recv_next(i, o);
+
+    BOOST_REQUIRE(session.pending() == false);
+    BOOST_REQUIRE(o.content_status() == nf::buffer::status::success);
+    BOOST_REQUIRE(o.content_type() == nf::buffer::type::grouplist);
+    BOOST_REQUIRE(o.content_start() == strlen("215 listing follows\r\n"));
+    BOOST_REQUIRE(o.content_length() == strlen("alt.binaries.foo 1 0 y\r\n"
+        "alt.binaries.bar 2 1 n\r\n.\r\n"));
+}
+
 int test_main(int, char*[])
 {
     unit_test_init_session_success();
@@ -350,5 +380,6 @@ int test_main(int, char*[])
     unit_test_init_session_failure_authenticate();
     unit_test_change_group();
     unit_test_retrieve_article();
+    unit_test_retrieve_listing();
     return 0;
 }

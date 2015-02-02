@@ -499,6 +499,51 @@ private:
     std::string range_;
 };
 
+// the LIST command obtains a valid list of newsgroups on the server
+// and information about each group (last, first and count)
+class session::list : public session::command
+{
+public:
+    list()
+    {}
+
+    virtual bool parse(buffer& buff, buffer& out, impl& st) override
+    {
+        const auto len = nntp::find_response(buff.head(), buff.size());
+        if (len == 0)
+            return false;
+
+        // this is only valid response, but check it nevertheless
+        nntp::scan_response({215}, buff.head(), len);
+
+        const auto blen = nntp::find_body(buff.head() + len, buff.size() - len);
+        if (blen == 0)
+            return false;
+
+        const auto size = len + blen;
+        out = buff.split(size);
+        out.set_content_type(buffer::type::grouplist);
+        out.set_content_length(blen);
+        out.set_content_start(len);
+        out.set_status(buffer::status::success);
+
+        LOG_D("Read listing data ", newsflash::size{blen});
+        return true;
+    }
+    virtual bool can_pipeline() const override
+    { 
+        return false;
+    }
+    virtual session::state state() const override
+    { 
+        return session::state::transfer;
+    }
+    virtual std::string str() const override
+    {
+        return "LIST";
+    }
+private:
+};
 
 session::session() : state_(new impl)
 {
@@ -556,6 +601,11 @@ void session::retrieve_headers(std::string range)
     {
         send_.emplace_back(new xzver(std::move(range)));
     }
+}
+
+void session::retrieve_list()
+{
+    send_.emplace_back(new list);
 }
 
 bool session::send_next()

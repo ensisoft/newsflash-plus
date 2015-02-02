@@ -32,7 +32,7 @@
 
 namespace newsflash
 {
-    // cmdlist encapsulates a sequence of nntp opereations to be performed
+    // cmdlist encapsulates a sequence of nntp operations to be performed
     // for example downloading articles or header overview data.
     class cmdlist
     {
@@ -42,6 +42,10 @@ namespace newsflash
         };
 
         using list = std::vector<std::string>;
+
+        cmdlist() : cancelbit_(false), failbit_(false), account_(0), task_(0), conn_(0),
+            cmdtype_(type::list)
+        {}
 
         cmdlist(list groups, list commands, cmdlist::type type) : cancelbit_(false), failbit_(false), account_(0), task_(0), conn_(0),
             groups_(std::move(groups)), commands_(std::move(commands)), cmdtype_(type)
@@ -84,6 +88,12 @@ namespace newsflash
         // submit the data transfer commands as a single batch.
         void submit_data_commands(session& ses) 
         {
+            if (cmdtype_ == type::list)
+            {
+                ses.retrieve_list();
+                return;
+            }
+
             for (std::size_t i=0; i<commands_.size(); ++i)
             {
                 if (i < buffers_.size() &&

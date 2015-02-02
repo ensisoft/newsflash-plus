@@ -1,4 +1,4 @@
-// Copyright (c) 2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -20,54 +20,30 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-
 #pragma once
 
+#include <newsflash/config.h>
+
+#include <vector>
 #include <string>
 #include <cstdint>
-#include <vector>
-#include "task.h"
 
 namespace newsflash
 {
-    // produce a listing of available newsgroups
-    class listing : public task
+    namespace ui {
+
+    struct listing 
     {
-    public:
+        std::size_t account;
+
         struct group {
-            std::string name;            
-            std::uint64_t last;
+            std::string name;
             std::uint64_t first;
+            std::uint64_t last;
             std::uint64_t size;
         };
-
-        listing() : run_once_(true)
-        {}
-
-        virtual std::unique_ptr<cmdlist> create_commands() override;
-
-        virtual void complete(cmdlist& cmd, 
-            std::vector<std::unique_ptr<action>>& actions) override;
-
-        virtual double completion() const override
-        {
-            if (run_once_) return 100.0;
-            return 0.0;
-        }
-
-        virtual bool has_commands() const override
-        {
-            return run_once_;
-        }
-
-        const std::vector<group>& group_list() const 
-        {
-            return groups_;
-        }
-    private:
-        std::vector<group> groups_;
-    private:
-        bool run_once_;
+        std::vector<listing::group> groups;
     };
 
+    } //  ui
 } // newsflash

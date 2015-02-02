@@ -85,11 +85,6 @@ std::unique_ptr<cmdlist> download::create_commands()
     return std::move(cmd);
 }
 
-std::unique_ptr<action> download::start()
-{
-    return nullptr;
-}
-
 std::unique_ptr<action> download::kill()
 {
     // there might be pending operations on the files (writes)
@@ -99,12 +94,6 @@ std::unique_ptr<action> download::kill()
     for (auto& f : files_)
         f->discard_on_close();
 
-    return nullptr;
-}
-
-std::unique_ptr<action> download::flush()
-{
-    // not supported
     return nullptr;
 }
 

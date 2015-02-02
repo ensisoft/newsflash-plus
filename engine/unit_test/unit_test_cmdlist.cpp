@@ -218,9 +218,42 @@ void unit_test_refill()
 
 }
 
+void unit_test_listing()
+{
+    nf::cmdlist listing;
+
+    std::string command;
+    nf::session session;
+    session.on_send = [&](const std::string& cmd) {
+        command = cmd;
+    };
+
+    listing.submit_data_commands(session);
+
+    session.send_next();
+    BOOST_REQUIRE(command == "LIST\r\n");
+
+    nf::buffer i(1024);
+    nf::buffer o(1024);
+    i.append("215 listing follows\r\n"
+        "alt.binaries.foo 1 0 y\r\n"
+        "alt.binaries.bar 2 1 n\r\n"
+        ".\r\n");
+    session.recv_next(i, o);
+    BOOST_REQUIRE(o.content_status() == nf::buffer::status::success);
+
+    listing.receive_data_buffer(std::move(o));
+
+    const auto& buffers = listing.get_buffers();
+    BOOST_REQUIRE(buffers.size() == 1);
+    BOOST_REQUIRE(buffers[0].content_status() == nf::buffer::status::success);
+
+}
+
 int test_main(int, char*[])
 {
     unit_test_bodylist();
     unit_test_refill();
+    unit_test_listing();
     return 0;
 }

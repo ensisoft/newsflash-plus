@@ -27,10 +27,10 @@
 #include <functional>
 #include <memory>
 #include <vector>
+#include "action.h"
 
 namespace newsflash
 {
-    class action;
     class cmdlist;
     struct settings;
 
@@ -43,35 +43,46 @@ namespace newsflash
 
         virtual std::unique_ptr<cmdlist> create_commands() = 0;
 
-        virtual std::unique_ptr<action> start() = 0;
+        virtual std::unique_ptr<action> start() 
+        {
+            return nullptr;
+        }
 
         // kill the task. if the task is not complete then this has the effect
         // of canceling all the work that has been done, for example removing
         // any files created on the filesystem etc. if task is complete then
         // simply the non-persistent data is cleaned away. 
         // after this call returns the object can be deleted.
-        virtual std::unique_ptr<action> kill() = 0;
+        virtual std::unique_ptr<action> kill() 
+        {
+            return nullptr;
+        }
 
         // flush task intermediate state to the disk and make it permanent.
-        virtual std::unique_ptr<action> flush() = 0;
+        virtual std::unique_ptr<action> flush() 
+        {
+            return nullptr;
+        }
 
-        virtual std::unique_ptr<action> finalize() = 0;
+        virtual std::unique_ptr<action> finalize() 
+        {
+            return nullptr;
+        }
 
         // complete the action. create actions (if any) and store
         // them in the next list
         virtual void complete(action& act,
-            std::vector<std::unique_ptr<action>>& next) = 0;
+            std::vector<std::unique_ptr<action>>& next) {}
 
         // complete the cmdlist. create actions (if any) and store
         // them in the next list
         virtual void complete(cmdlist& cmd,
-            std::vector<std::unique_ptr<action>>& next) = 0;
+            std::vector<std::unique_ptr<action>>& next) {}
 
         // update task settings
-        virtual void configure(const settings& s) = 0;
+        virtual void configure(const settings& s) {}
 
         virtual double completion() const = 0;
-
 
         virtual bool has_commands() const = 0;
 
