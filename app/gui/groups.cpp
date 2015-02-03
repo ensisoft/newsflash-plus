@@ -47,6 +47,8 @@ Groups::Groups()
     ui_.tableGroups->setColumnWidth(0, 150);
     ui_.progressBar->setVisible(false);
 
+    ui_.actionRefresh->setShortcut(QKeySequence::Refresh);
+
     QObject::connect(app::g_accounts, SIGNAL(accountsUpdated()),
         this, SLOT(accountsUpdated()));
 
@@ -58,20 +60,12 @@ Groups::~Groups()
 
 void Groups::addActions(QMenu& menu)
 {
-    menu.addAction(ui_.actionAdd);
+
 }
 
 void Groups::addActions(QToolBar& bar)
 {
-    bar.addAction(ui_.actionOpen);
-    bar.addSeparator();
-    bar.addAction(ui_.actionUpdate);
-    bar.addAction(ui_.actionUpdateOptions);
-    bar.addSeparator();
-    bar.addAction(ui_.actionDelete);
-    bar.addAction(ui_.actionClean);
-    bar.addSeparator();
-    bar.addAction(ui_.actionInfo);
+    bar.addAction(ui_.actionRefresh);
 }
 
 MainWidget::info Groups::getInformation() const
@@ -96,28 +90,35 @@ bool Groups::saveState(app::Settings& settings)
     return true;
 }
 
-void Groups::on_actionOpen_triggered()
-{}
+void Groups::on_actionRefresh_triggered()
+{
+    model_.clear();
 
-void Groups::on_actionUpdate_triggered()
-{}
+    int index = ui_.cmbAccounts->currentIndex();
+    if (index == -1)
+        return;
 
-void Groups::on_actionUpdateOptions_triggered()
-{}
+    const auto name = ui_.cmbAccounts->currentText();
+    const auto file = app::homedir::file(name + ".lst");
 
+    const auto numAccounts = app::g_accounts->numAccounts();
+    for (std::size_t i=0; i<numAccounts; ++i)
+    {
+        const auto& acc = app::g_accounts->getAccount(i);
+        if (acc.name == name)
+        {
+            model_.makeListing(file, acc.id);
+            return;
+        }
+    }
+    Q_ASSERT(!"account was not found");
+}
 
-void Groups::on_actionDelete_triggered()
-{}
-
-void Groups::on_actionClean_triggered()
-{}
-
-
-void Groups::on_actionInfo_triggered()
-{}
 
 void Groups::on_cmbAccounts_currentIndexChanged()
 {
+    return; 
+
     model_.clear();
 
     int index = ui_.cmbAccounts->currentIndex();

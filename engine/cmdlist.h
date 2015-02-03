@@ -58,6 +58,11 @@ namespace newsflash
        ~cmdlist()
         {}
 
+        bool needs_to_configure() const 
+        {
+            return cmdtype_ != type::list;
+        }
+
         // try the ith step to configure the session state
         bool submit_configure_command(std::size_t i, session& ses)
         {

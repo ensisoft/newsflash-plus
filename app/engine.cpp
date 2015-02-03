@@ -202,7 +202,7 @@ bool Engine::downloadNzbContents(quint32 acc, const QString& path, const QString
             file.name = to_utf8(item.subject);
         download.files.push_back(std::move(file));
     }
-    engine_->download(std::move(download));
+    engine_->download_files(std::move(download));
     if (connect_)
     {
         QDir dir;
@@ -251,7 +251,7 @@ bool Engine::downloadNzbContents(quint32 acc, const QString& path, const QString
             file.name = to_utf8(item->subject);
         download.files.push_back(std::move(file));
     }
-    engine_->download(std::move(download));
+    engine_->download_files(std::move(download));
     if (connect_)
     {
         QDir dir;
@@ -268,9 +268,20 @@ bool Engine::downloadNzbContents(quint32 acc, const QString& path, const QString
     return true;
 }
 
-void Engine::retrieveNewsgroupListing(quint32 acc)
+quint32 Engine::retrieveNewsgroupListing(quint32 acc)
 {
-    engine_->list_newsgroups(acc);
+    const auto batchId = engine_->download_listing(acc);
+
+    if  (connect_)
+    {
+        QDir dir;
+        if (!dir.mkpath(logifiles_))
+        {
+            ERROR(str("Error creating log path _1", dir));
+        }
+        engine_->start(to_utf8(logifiles_));
+    }
+    return batchId;
 }
 
 

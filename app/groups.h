@@ -32,9 +32,12 @@
 #include <newsflash/warnpop.h>
 
 #include <vector>
+#include <map>
 
 namespace app
 {
+    struct NewsGroup;
+
     class Groups : public QAbstractTableModel
     {
         Q_OBJECT
@@ -54,6 +57,9 @@ namespace app
         void loadListing(const QString& file, quint32 account);
         void makeListing(const QString& file, quint32 account);
 
+    private slots:
+        void listingCompleted(quint32 acc, const QList<app::NewsGroup>& list);
+
     private:
         enum class column {
             name, updated, headers, articles, size, last
@@ -62,14 +68,21 @@ namespace app
         struct group {
             QString   name;
             QDateTime updated;
-            quint64   headers;            
-            quint64   articles;
-            quint64   size_on_disk;
+            quint64   numMessages;
+            quint64   sizeOnDisk;
             quint32   flags;
+        };
+
+        struct operation {
+            quint32 account;
+            quint32 taskId;
+            QString file;
         };
 
     private:
         std::vector<group> groups_;
+        std::map<quint32, operation> pending_;
+        quint32 account_;
     };
 
 } // app

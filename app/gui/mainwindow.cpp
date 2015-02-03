@@ -380,7 +380,7 @@ QString MainWindow::selectNzbSaveFile(const QString& filename)
         return "";
 
     recent_save_nzb_path_ = QFileInfo(file).absolutePath();
-    return file;
+    return QDir::toNativeSeparators(file);
 }
 
 QStringList MainWindow::getRecentPaths() const 

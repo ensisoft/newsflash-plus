@@ -60,6 +60,8 @@ namespace newsflash
         // can come from multiple threads inside the engine.
         using on_async_notify = std::function<void ()>;
 
+        using batch_id_t = std::size_t;
+
         engine();
        ~engine();
 
@@ -73,9 +75,12 @@ namespace newsflash
 
         // download the files included in the dowload.
         // all the files are grouped together into a single batch.
-        void download(ui::download spec);
+        // returns the batch id.
+        batch_id_t download_files(ui::download spec);
 
-        void list_newsgroups(std::size_t account);
+        batch_id_t download_listing(std::size_t account);
+
+        //batch_id_t download_headers(...);
 
         // process pending actions in the engine. You should call this function
         // as a response to to the async_notify.
@@ -188,11 +193,12 @@ namespace newsflash
 
         // resume the task at the given task list index.
         void resume_task(std::size_t index);
-
         
         void move_task_up(std::size_t index);
 
         void move_task_down(std::size_t index);
+
+        void kill_batch(batch_id_t id);
 
     private:
         class task;

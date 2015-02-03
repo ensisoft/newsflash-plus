@@ -67,7 +67,7 @@ namespace {
        ~MySettings()
         {}
 
-        QString get_style_name() const
+        QString getStyleName() const
         {
             // find the style that was checked
             const auto& children = ui_.grpStyle->children();
@@ -129,7 +129,7 @@ SettingsWidget* Appearance::getSettings()
 void Appearance::applySettings(SettingsWidget* gui) 
 {
     const auto mine = dynamic_cast<MySettings*>(gui);    
-    const auto name = mine->get_style_name();
+    const auto name = mine->getStyleName();
 
     current_style_name_ = name;
 

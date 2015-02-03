@@ -258,52 +258,55 @@ void connection::execute::xperform()
         return;
     }
 
-    bool configure_success = false;
-
-    for (std::size_t i=0; ; ++i)
+    if (cmdlist->needs_to_configure())
     {
-        if (!cmdlist->submit_configure_command(i, *session))
-            break;
+        bool configure_success = false;
 
-        newsflash::buffer config(KB(1));
-
-        while (session->send_next())
+        for (std::size_t i=0; ; ++i)
         {
-            do 
+            if (!cmdlist->submit_configure_command(i, *session))
+                break;
+
+            newsflash::buffer config(KB(1));
+
+            while (session->send_next())
             {
-                auto received = socket->wait(true, false);
-                auto canceled = cancel->wait();
-                if (!newsflash::wait_for(received, canceled, std::chrono::seconds(10)))
-                    throw exception(connection::error::timeout, "connection timeout");
-                else if (canceled)
-                    return;
+                do 
+                {
+                    auto received = socket->wait(true, false);
+                    auto canceled = cancel->wait();
+                    if (!newsflash::wait_for(received, canceled, std::chrono::seconds(10)))
+                        throw exception(connection::error::timeout, "connection timeout");
+                    else if (canceled)
+                        return;
 
-                const auto bytes = socket->recvsome(recvbuf.back(), recvbuf.available());
-                if (bytes == 0)
-                    throw exception(connection::error::network, "connection was closed unexpectedly");
+                    const auto bytes = socket->recvsome(recvbuf.back(), recvbuf.available());
+                    if (bytes == 0)
+                        throw exception(connection::error::network, "connection was closed unexpectedly");
 
-                recvbuf.append(bytes);
+                    recvbuf.append(bytes);
+                }
+                while (!session->recv_next(recvbuf, config));
             }
-            while (!session->recv_next(recvbuf, config));
+
+            const auto err = session->get_error();
+            if (err == session::error::authentication_rejected)
+                throw exception(connection::error::authentication_rejected, "authentication rejected");
+            else if (err == session::error::no_permission)
+                throw exception(connection::error::no_permission, "no permission");
+
+            if (cmdlist->receive_configure_buffer(i, std::move(config)))
+            {
+                configure_success = true;
+                break;
+            }
         }
-
-        const auto err = session->get_error();
-        if (err == session::error::authentication_rejected)
-            throw exception(connection::error::authentication_rejected, "authentication rejected");
-        else if (err == session::error::no_permission)
-            throw exception(connection::error::no_permission, "no permission");
-
-        if (cmdlist->receive_configure_buffer(i, std::move(config)))
+        if (!configure_success)
         {
-            configure_success = true;
-            break;
+            LOG_E("Cmdlist session configuration failed");
+            return;
         }
-    }
-    if (!configure_success)
-    {
-        LOG_E("Cmdlist session configuration failed");
-        return;
-    }
+    } // needs to configure
 
     if (cmdlist->is_canceled())
     {

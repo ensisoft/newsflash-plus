@@ -1404,7 +1404,7 @@ void engine::set_fill_account(std::size_t id)
     state_->fill_account = id;
 }
 
-void engine::download(ui::download spec)
+engine::batch_id_t engine::download_files(ui::download spec)
 {
     const auto bid = state_->oid++;
     const auto aid = spec.account;
@@ -1439,9 +1439,10 @@ void engine::download(ui::download spec)
     std::unique_ptr<batch> batch(new class batch(aid, bid, batch_size, num_tasks, spec.path, spec.desc));
     state_->batches.push_back(std::move(batch));
     state_->execute();
+    return bid;
 }
 
-void engine::list_newsgroups(std::size_t account)
+engine::batch_id_t engine::download_listing(std::size_t account)
 {
     std::unique_ptr<newsflash::listing> job(new listing);
 
@@ -1456,6 +1457,7 @@ void engine::list_newsgroups(std::size_t account)
         "Retrieve newsgroup list"));
     state_->batches.push_back(std::move(batch));
     state_->execute();
+    return bid;
 }
 
 bool engine::pump()
@@ -1971,6 +1973,20 @@ void engine::move_task_down(std::size_t index)
         assert(index < state_->tasks.size()-1);
         std::swap(state_->tasks[index], state_->tasks[index + 1]);
     }
+}
+
+void engine::kill_batch(engine::batch_id_t id)
+{
+    auto it = std::find_if(std::begin(state_->batches), std::end(state_->batches),
+        [&](const std::unique_ptr<batch>& b) {
+            return b->id() == id;
+        });
+
+    ASSERT(it != std::end(state_->batches));
+
+    (*it)->kill(*state_);
+
+    state_->batches.erase(it);
 }
 
 } // newsflash

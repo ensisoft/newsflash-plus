@@ -50,12 +50,8 @@ namespace gui
         virtual bool saveState(app::Settings& settings) override;
 
     private slots:
-        void on_actionOpen_triggered();
-        void on_actionUpdate_triggered();
-        void on_actionUpdateOptions_triggered();
-        void on_actionDelete_triggered();
-        void on_actionClean_triggered();
-        void on_actionInfo_triggered();
+        void on_actionRefresh_triggered();
+
         void on_cmbAccounts_currentIndexChanged();
         void accountsUpdated();
 

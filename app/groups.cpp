@@ -28,6 +28,8 @@
 #  include <QDir>
 #  include <QStringList>
 #  include <QFile>
+#  include <QTextStream>
+#  include <QFileInfo>
 #include <newsflash/warnpop.h>
 
 #include "settings.h"
@@ -35,7 +37,7 @@
 #include "debug.h"
 #include "groups.h"
 #include "format.h"
-
+#include "engine.h"
 
 namespace app
 {
@@ -43,6 +45,9 @@ namespace app
 Groups::Groups()
 {
     DEBUG("Groups created");
+
+    QObject::connect(g_engine, SIGNAL(listingCompleted(quint32, const QList<app::NewsGroup>&)),
+        this, SLOT(listingCompleted(quint32, const QList<app::NewsGroup>&)));
 }
 
 Groups::~Groups()
@@ -99,11 +104,12 @@ QVariant Groups::data(const QModelIndex& index, int role) const
                 return format(age{group.updated});
 
             case column::articles:
-                return group.articles;
+                //return group.articles;
+                return 0;
 
 
             case column::size:
-                return format(size{group.size_on_disk});
+                return format(size{group.sizeOnDisk});
 
             default:
                 Q_ASSERT(!"missing column case");
@@ -127,13 +133,129 @@ int Groups::columnCount(const QModelIndex&) const
 
 void Groups::clear()
 {
-
+    groups_.clear();
+    reset();
+    account_ = 0;
 }
 
 void Groups::loadListing(const QString& file, quint32 account)
-{}
+{
+    QFile io(file);
+    if (!io.open(QIODevice::ReadOnly))
+    {
+        ERROR(str("Failed to read listing file _1", io));
+        return;
+    }
+
+    QTextStream stream(&io);
+    stream.setCodec("UTF-8");
+
+    const quint32 numGroups = stream.readLine().toULong();
+          quint32 numGroup  = 0;
+    while (!stream.atEnd())
+    {
+        const auto& line = stream.readLine();
+        const auto& toks = line.split("\t");
+        group g;
+        g.name = toks[0];
+        g.updated = QDateTime::fromTime_t(toks[1].toLong());
+        g.numMessages = toks[2].toULongLong();
+        g.flags       = toks[3].toLong();
+        groups_.push_back(g);
+        ++numGroup;
+    }
+    reset();
+}
 
 void Groups::makeListing(const QString& file, quint32 account)
-{}
+{
+    auto it = pending_.find(account);
+    if (it != std::end(pending_))
+        return;
+
+    auto taskid = g_engine->retrieveNewsgroupListing(account);
+
+    operation op;
+    op.file    = file;
+    op.account = account;
+    op.taskId  = taskid;
+    pending_.insert(std::make_pair(account, op));
+}
+
+void Groups::listingCompleted(quint32 acc, const QList<app::NewsGroup>& list)
+{
+    auto it = pending_.find(acc);
+    Q_ASSERT(it != std::end(pending_));
+
+    auto op = it->second;
+
+    std::map<QString, group> map;
+
+    QFileInfo info(op.file);
+    if (info.exists())
+    {
+        QFile io(op.file);
+        if (!io.open(QIODevice::ReadOnly))
+        {
+            ERROR(str("Unable to read listing file _1", io));
+            return;
+        }
+        QTextStream stream(&io);
+        stream.setCodec("UTF-8");
+        stream.readLine();
+        while (!stream.atEnd())
+        {
+            const auto& line = stream.readLine();
+            const auto& toks = line.split("\t");
+            group g;
+            g.name        = toks[0];
+            g.updated     = QDateTime::fromTime_t(toks[1].toLong());
+            g.numMessages = toks[2].toULongLong();
+            g.flags       = toks[3].toLong();
+            map.insert(std::make_pair(g.name, g));
+        }
+    }
+
+    for (int i=0; i<list.size(); ++i)
+    {
+        const auto& group = list[i];
+        auto it = map.find(group.name);
+        if (it == std::end(map))
+        {
+            Groups::group g;
+            g.name = group.name;
+            g.numMessages = group.size;
+            g.flags = 0;
+            g.sizeOnDisk = 0;
+            map.insert(std::make_pair(g.name, g));
+        }
+        else
+        {
+            auto& g = it->second;
+            g.numMessages = group.size;
+        }
+    }
+
+
+    QFile io(op.file);
+    if (!io.open(QIODevice::WriteOnly | QIODevice::Truncate))
+    {
+        ERROR(str("Unable to write listing file _1", io));
+        return;
+    }
+
+    QTextStream stream(&io);
+    stream.setCodec("UTF-8");
+    stream << map.size() << "\n";
+
+    for (const auto& pair : map)
+    {
+        const auto& group = pair.second;
+        stream << group.name << "\t" << group.updated.toTime_t() << "\t" << group.numMessages << "\t" << group.flags;
+        stream << "\n";
+    }
+
+    pending_.erase(it);
+}
 
 } // app
