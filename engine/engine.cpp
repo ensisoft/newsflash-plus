@@ -32,6 +32,7 @@
 #include "engine.h"
 #include "connection.h"
 #include "download.h"
+#include "decode.h"
 #include "action.h"
 #include "assert.h"
 #include "filesys.h"
@@ -765,6 +766,15 @@ public:
         {
             if (act->has_exception())
                 act->rethrow();
+
+            if (auto* dec = dynamic_cast<decode*>(a))
+            {
+                const auto err = dec->get_errors();
+                if (err.test(decode::error::crc_mismatch))
+                    ui_.error.set(ui::task::errors::damaged);
+                if (err.test(decode::error::size_mismatch))
+                    ui_.error.set(ui::task::errors::damaged);
+            }
 
             std::vector<std::unique_ptr<action>> actions;
 
