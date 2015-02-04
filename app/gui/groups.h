@@ -44,22 +44,35 @@ namespace gui
 
         virtual void addActions(QMenu& menu) override;
         virtual void addActions(QToolBar& bar) override;
-        virtual info getInformation() const override;
-
+        virtual void activate(QWidget*) override;
         virtual void loadState(app::Settings& settings) override;
         virtual bool saveState(app::Settings& settings) override;
 
+        virtual info getInformation() const override;
+
     private slots:
         void on_actionRefresh_triggered();
-
+        void on_actionSubscribe_triggered();
+        void on_actionUnsubscribe_triggered();
         void on_cmbAccounts_currentIndexChanged();
+        void on_tableGroups_customContextMenuRequested(QPoint point);
+        void on_chkSubscribedOnly_clicked(bool state);
+
         void accountsUpdated();
+        void progressUpdated(quint32 acc, quint32 maxValue, quint32 curValue);
+        void loadComplete(quint32 acc);
+        void makeComplete(quint32 acc);
 
     private:
         Ui::Groups ui_;
 
     private:
+        struct ProgressState {
+
+        };
+
         app::Groups model_;
+        quint32 curAccount_;
     };
 
 } // gui

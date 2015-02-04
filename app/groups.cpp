@@ -20,7 +20,7 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.            
 
-#define LOGTAG "app"
+#define LOGTAG "news"
 
 #include <newsflash/warnpush.h>
 #  include <QtGui/QFont>
@@ -31,6 +31,7 @@
 #  include <QTextStream>
 #  include <QFileInfo>
 #include <newsflash/warnpop.h>
+#include <algorithm>
 
 #include "settings.h"
 #include "eventlog.h"
@@ -38,11 +39,14 @@
 #include "groups.h"
 #include "format.h"
 #include "engine.h"
+#include "accounts.h"
 
 namespace app
 {
 
-Groups::Groups()
+const int CurrentFileVersion = 1;
+
+Groups::Groups() : size_(0)
 {
     DEBUG("Groups created");
 
@@ -58,87 +62,116 @@ Groups::~Groups()
 
 QVariant Groups::headerData(int section, Qt::Orientation orietantation, int role) const 
 {
-    if (role != Qt::DisplayRole)
-        return QVariant();
-
     if (orietantation != Qt::Horizontal)
         return QVariant();
 
-    switch ((Groups::column)section)
+    if (role == Qt::DisplayRole)
     {
-        case column::name:
-            return "Name";
+        switch ((Groups::Columns)section)
+        {
+            case Columns::subscribed: return "";
+            case Columns::messages:   return "Messages";
+            case Columns::name:       return "Name";
+            default:
+                Q_ASSERT(!"missing column case");
+                break;
+        }
+    }
+    else if (role == Qt::DecorationRole)
+    {
+        if ((Columns)section == Columns::subscribed)
+            return QIcon(":/resource/16x16_ico_png/ico_star_gray.png");
 
-        case column::updated:
-            return "Updated";
-
-        case column::headers:
-            return "Headers";
-
-        case column::articles:
-            return "Articles";
-
-        case column::size:
-            return "Size";
-
-        default:
-            Q_ASSERT(!"missing column case");
-            break;
     }
     return QVariant();
 }
 
 QVariant Groups::data(const QModelIndex& index, int role) const
 {
+    const auto col = index.column();
+    const auto row = index.row();
     if (role == Qt::DisplayRole)
     {
-        const auto col    = index.column();
-        const auto row    = index.row();
         const auto& group = groups_[row];
-        switch ((Groups::column)col)
+        switch ((Groups::Columns)col)
         {
-            case column::name:
+            case Columns::name:
                return group.name;
 
-            case column::updated:
-                return format(age{group.updated});
-
-            case column::articles:
-                //return group.articles;
-                return 0;
-
-
-            case column::size:
-                return format(size{group.sizeOnDisk});
+            case Columns::messages:
+                return group.size;
 
             default:
                 Q_ASSERT(!"missing column case");
                 break;
         }
     }
+    else if (role == Qt::DecorationRole)
+    {
+        if (col == 0)
+            return QIcon(":/resource/16x16_ico_png/ico_news.png");
+        else if ((Columns)col == Columns::subscribed)
+        {
+            const auto& group = groups_[row];
+            if (group.flags & Flags::Subscribed)
+                return QIcon(":/resource/16x16_ico_png/ico_star.png");
+        }
+    }
 
     return QVariant();
 }
 
+void Groups::sort(int column, Qt::SortOrder order) 
+{
+    if (order == Qt::AscendingOrder)
+        DEBUG("Sort in Ascending Order");
+    else DEBUG("Sort in Descending Order");
+
+    const auto beg = std::begin(groups_);
+    const auto end = std::begin(groups_) + size_;
+
+#define SORT(x) \
+    std::sort(beg, end, \
+        [&](const group& lhs, const group& rhs) { \
+            if (order == Qt::AscendingOrder) \
+                return lhs.x < rhs.x; \
+            return lhs.x > rhs.x;  \
+        });
+
+
+    emit layoutAboutToBeChanged();
+
+    switch ((Columns)column)
+    {
+        case Columns::messages:   SORT(size); break;
+        case Columns::subscribed: SORT(flags); break;
+        case Columns::name:       SORT(name); break;
+        default:
+        Q_ASSERT("wut");
+    }
+
+    emit layoutChanged();
+}
+
 int Groups::rowCount(const QModelIndex&) const 
 {
-    return groups_.size();
+    return (int)size_;
 }
 
 int Groups::columnCount(const QModelIndex&) const
 {
-    return (int)column::last;
+    return (int)Columns::last;
 }
 
 
 void Groups::clear()
 {
     groups_.clear();
+    size_ = 0;
     reset();
-    account_ = 0;
 }
 
-void Groups::loadListing(const QString& file, quint32 account)
+void Groups::loadListing(const QString& file, quint32 accountId)
 {
     QFile io(file);
     if (!io.open(QIODevice::ReadOnly))
@@ -147,24 +180,42 @@ void Groups::loadListing(const QString& file, quint32 account)
         return;
     }
 
+    const auto& account  = g_accounts->findAccount(accountId);
+    const auto& newslist = account.subscriptions;
+
     QTextStream stream(&io);
     stream.setCodec("UTF-8");
 
-    const quint32 numGroups = stream.readLine().toULong();
-          quint32 numGroup  = 0;
+    const quint32 curVersion = stream.readLine().toUInt();
+    const quint32 numGroups  = stream.readLine().toUInt();
+
+    quint32 curGroup   = 0;
     while (!stream.atEnd())
     {
         const auto& line = stream.readLine();
         const auto& toks = line.split("\t");
         group g;
-        g.name = toks[0];
-        g.updated = QDateTime::fromTime_t(toks[1].toLong());
-        g.numMessages = toks[2].toULongLong();
-        g.flags       = toks[3].toLong();
+        g.name  = toks[0];
+        g.size  = toks[1].toULongLong();
+        g.flags = 0;
+        for (int i=0; i<newslist.size(); ++i)
+        {
+            if (newslist[i] == g.name)
+                g.flags |= Flags::Subscribed;
+        }
+
         groups_.push_back(g);
-        ++numGroup;
+        curGroup++;
+
+        if (!(curGroup % 100))
+            emit progressUpdated(accountId, numGroups, curGroup);
     }
+
+    size_ = groups_.size();
+
     reset();
+
+    emit loadComplete(accountId);
 }
 
 void Groups::makeListing(const QString& file, quint32 account)
@@ -173,13 +224,83 @@ void Groups::makeListing(const QString& file, quint32 account)
     if (it != std::end(pending_))
         return;
 
-    auto taskid = g_engine->retrieveNewsgroupListing(account);
+    auto batchid = g_engine->retrieveNewsgroupListing(account);
 
     operation op;
     op.file    = file;
     op.account = account;
-    op.taskId  = taskid;
+    op.batchId  = batchid;
     pending_.insert(std::make_pair(account, op));
+
+    emit progressUpdated(account, 0, 0);
+}
+
+void Groups::subscribe(QModelIndexList& list, quint32 accountId)
+{
+    int minIndex = std::numeric_limits<int>::max();
+    int maxIndex = std::numeric_limits<int>::min();
+
+    qSort(list);
+    for (int i=0; i<list.size(); ++i)
+    {
+        const int row = list[0].row();
+        if (row < minIndex)
+            minIndex = row;
+        if (row > maxIndex)
+            maxIndex = row;
+
+        auto& group = groups_[row];
+        group.flags |= Flags::Subscribed;
+    }
+
+    auto first = QAbstractTableModel::index(minIndex, 0);
+    auto last  = QAbstractTableModel::index(maxIndex, (int)Columns::last);
+    emit dataChanged(first, last);
+
+    setAccountSubscriptions(accountId);
+}
+
+void Groups::unsubscribe(QModelIndexList& list, quint32 accountId)
+{
+    int minIndex = std::numeric_limits<int>::max();
+    int maxIndex = std::numeric_limits<int>::min();
+
+    qSort(list);
+    for (int i=0; i<list.size(); ++i)
+    {
+        const int row = list[0].row();
+        if (row < minIndex)
+            minIndex = row;
+        if (row > maxIndex)
+            maxIndex = row;
+
+        auto& group = groups_[row];
+        group.flags &= ~Flags::Subscribed;
+    }
+
+    auto first = QAbstractTableModel::index(minIndex, 0);
+    auto last  = QAbstractTableModel::index(maxIndex, (int)Columns::last);
+    emit dataChanged(first, last);
+
+    setAccountSubscriptions(accountId);    
+}
+
+void Groups::setShowSubscribedOnly(bool on)
+{
+    if (on)
+    {
+        auto end = std::stable_partition(std::begin(groups_), std::end(groups_),
+            [=](const group& g) {
+                return g.flags & Flags::Subscribed;
+            });
+        size_ = std::distance(std::begin(groups_), end);
+    }
+    else
+    {
+        size_ = groups_.size();
+    }
+
+    reset();
 }
 
 void Groups::listingCompleted(quint32 acc, const QList<app::NewsGroup>& list)
@@ -188,54 +309,6 @@ void Groups::listingCompleted(quint32 acc, const QList<app::NewsGroup>& list)
     Q_ASSERT(it != std::end(pending_));
 
     auto op = it->second;
-
-    std::map<QString, group> map;
-
-    QFileInfo info(op.file);
-    if (info.exists())
-    {
-        QFile io(op.file);
-        if (!io.open(QIODevice::ReadOnly))
-        {
-            ERROR(str("Unable to read listing file _1", io));
-            return;
-        }
-        QTextStream stream(&io);
-        stream.setCodec("UTF-8");
-        stream.readLine();
-        while (!stream.atEnd())
-        {
-            const auto& line = stream.readLine();
-            const auto& toks = line.split("\t");
-            group g;
-            g.name        = toks[0];
-            g.updated     = QDateTime::fromTime_t(toks[1].toLong());
-            g.numMessages = toks[2].toULongLong();
-            g.flags       = toks[3].toLong();
-            map.insert(std::make_pair(g.name, g));
-        }
-    }
-
-    for (int i=0; i<list.size(); ++i)
-    {
-        const auto& group = list[i];
-        auto it = map.find(group.name);
-        if (it == std::end(map))
-        {
-            Groups::group g;
-            g.name = group.name;
-            g.numMessages = group.size;
-            g.flags = 0;
-            g.sizeOnDisk = 0;
-            map.insert(std::make_pair(g.name, g));
-        }
-        else
-        {
-            auto& g = it->second;
-            g.numMessages = group.size;
-        }
-    }
-
 
     QFile io(op.file);
     if (!io.open(QIODevice::WriteOnly | QIODevice::Truncate))
@@ -246,16 +319,35 @@ void Groups::listingCompleted(quint32 acc, const QList<app::NewsGroup>& list)
 
     QTextStream stream(&io);
     stream.setCodec("UTF-8");
-    stream << map.size() << "\n";
+    stream << CurrentFileVersion << "\n";
+    stream << list.size() << "\n";
 
-    for (const auto& pair : map)
+    for (int i=0; i<list.size(); ++i)
     {
-        const auto& group = pair.second;
-        stream << group.name << "\t" << group.updated.toTime_t() << "\t" << group.numMessages << "\t" << group.flags;
-        stream << "\n";
+        const auto& group = list[i];
+        stream << group.name << "\t" << group.size << "\n";
     }
 
+    io.flush();
+    io.close();
+
     pending_.erase(it);
+
+    emit makeComplete(acc);
+}
+
+void Groups::setAccountSubscriptions(quint32 accountId)
+{
+    QStringList list;
+    for (const auto& group : groups_)
+    {
+        if (group.flags & Flags::Subscribed)
+            list << group.name;
+    }
+
+    auto& account = g_accounts->findAccount(accountId);
+
+    account.subscriptions = list;
 }
 
 } // app

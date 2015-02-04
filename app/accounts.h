@@ -64,6 +64,14 @@ namespace app
         // get the current main account. 
         const Account* getMainAccount() const;
 
+        const 
+        Account& findAccount(quint32 accountId) const;
+        Account& findAccount(quint32 accountId);
+
+        const 
+        Account& findAccount(const QString& name) const;
+        Account& findAccount(const QString& name);
+
         // delete the account at index 
         void delAccount(std::size_t index);
 
@@ -107,8 +115,8 @@ namespace app
 
     private:
         std::vector<Account> accounts_;
-        quint32 main_account_;
-        quint32 fill_account_;
+        quint32 mainAccount_;
+        quint32 fillAccount_;
     };
 
     extern Accounts* g_accounts;

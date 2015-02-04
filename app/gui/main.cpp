@@ -165,8 +165,12 @@ int run(int argc, char* argv[])
     win.attach(&gacc);
 
     // groups widget
-    gui::Groups groups;
-    win.attach(&groups);
+    gui::Groups news;
+    win.attach(&news);
+
+    // RSS widget
+    gui::RSS rss;
+    win.attach(&rss);
 
     // downloads widget
     gui::Downloads downloads;
@@ -186,9 +190,7 @@ int run(int argc, char* argv[])
     gui::Files files;
     win.attach(&files);
 
-    // RSS widget
-    gui::RSS rss;
-    win.attach(&rss);
+
 
     // core module
     gui::CoreModule core;

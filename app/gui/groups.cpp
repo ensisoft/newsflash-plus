@@ -20,6 +20,8 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.            
 
+#define LOGTAG "news"
+
 #include <newsflash/config.h>
 
 #include <newsflash/warnpush.h>
@@ -36,23 +38,44 @@
 #include "../accounts.h"
 #include "../homedir.h"
 #include "../settings.h"
+#include "../debug.h"
+#include "../format.h"
+
+using app::str;
 
 namespace gui
 {
 
-Groups::Groups()
+Groups::Groups() : curAccount_(0)
 {
     ui_.setupUi(this);
     ui_.tableGroups->setModel(&model_);
     ui_.tableGroups->setColumnWidth(0, 150);
+    ui_.progressBar->setMaximum(0);
+    ui_.progressBar->setMinimum(0);
+    ui_.progressBar->setValue(0);
     ui_.progressBar->setVisible(false);
 
+    const auto nameWidth = ui_.tableGroups->columnWidth((int)app::Groups::Columns::name);
+    const auto subsWidth = ui_.tableGroups->columnWidth((int)app::Groups::Columns::subscribed);
+    ui_.tableGroups->setColumnWidth((int)app::Groups::Columns::name, nameWidth * 3);
+    ui_.tableGroups->setColumnWidth((int)app::Groups::Columns::subscribed, 32);
+
     ui_.actionRefresh->setShortcut(QKeySequence::Refresh);
+    ui_.actionRefresh->setEnabled(false);
+
+    ui_.actionFind->setShortcut(QKeySequence::Find);
+    ui_.actionFind->setEnabled(false);
 
     QObject::connect(app::g_accounts, SIGNAL(accountsUpdated()),
         this, SLOT(accountsUpdated()));
 
-    accountsUpdated();
+    QObject::connect(&model_, SIGNAL(progressUpdated(quint32, quint32, quint32)),
+        this, SLOT(progressUpdated(quint32, quint32, quint32)));
+    QObject::connect(&model_, SIGNAL(loadComplete(quint32)),
+        this, SLOT(loadComplete(quint32)));
+    QObject::connect(&model_, SIGNAL(makeComplete(quint32)),
+        this, SLOT(makeComplete(quint32)));
 }
 
 Groups::~Groups()
@@ -60,23 +83,54 @@ Groups::~Groups()
 
 void Groups::addActions(QMenu& menu)
 {
-
+    menu.addAction(ui_.actionRefresh);
+    menu.addSeparator();
+    menu.addAction(ui_.actionFind);
+    menu.addSeparator();
+    menu.addAction(ui_.actionSubscribe);
+    menu.addAction(ui_.actionUnsubscribe);
+    menu.addSeparator();
+    menu.addAction(ui_.actionStop);
 }
 
 void Groups::addActions(QToolBar& bar)
 {
     bar.addAction(ui_.actionRefresh);
+    bar.addSeparator();
+    bar.addAction(ui_.actionFind);
+    bar.addSeparator();
+    bar.addAction(ui_.actionSubscribe);
+    bar.addAction(ui_.actionUnsubscribe);
+    bar.addSeparator();
+    bar.addAction(ui_.actionStop);
+}
+
+void Groups::activate(QWidget*)
+{
+    on_cmbAccounts_currentIndexChanged();
 }
 
 MainWidget::info Groups::getInformation() const
 {
-    return {"groups.html", true, true};
+    return {"news.html", true, true};
 }
 
 void Groups::loadState(app::Settings& settings)
 {
-    const auto subscribedOnly = settings.get("groups", "show_subscribed_only", false);
+    const auto subscribedOnly = settings.get("news", "show_subscribed_only", false);
+    const auto sortColumn = settings.get("news", "sort_column", (int)app::Groups::Columns::name);
+    const auto sortOrder  = settings.get("news", "sort_order", (int)Qt::AscendingOrder);
+
     ui_.chkSubscribedOnly->setChecked(subscribedOnly);
+    ui_.tableGroups->sortByColumn(sortColumn, (Qt::SortOrder)sortOrder);
+
+    const auto* model = ui_.tableGroups->model();
+    for (int i=0; i<model->columnCount() - 1; ++i)
+    {
+        const auto name  = QString("table_col_%1_width").arg(i);
+        const auto width = settings.get("news", name, ui_.tableGroups->columnWidth(i));
+        ui_.tableGroups->setColumnWidth(i, width);
+    }
 
     accountsUpdated();
 }
@@ -84,8 +138,21 @@ void Groups::loadState(app::Settings& settings)
 bool Groups::saveState(app::Settings& settings)
 {
     const auto subscribedOnly = ui_.chkSubscribedOnly->isChecked();
+    const QHeaderView* header = ui_.tableGroups->horizontalHeader();
+    const auto sortColumn = header->sortIndicatorSection();
+    const auto sortOrder  = header->sortIndicatorOrder();
 
-    settings.set("groups", "show_subscribed_only", subscribedOnly);
+    settings.set("news", "show_subscribed_only", subscribedOnly);
+    settings.set("news", "sort_column", sortColumn);
+    settings.set("news", "sort_order", sortOrder);
+
+    const auto* model = ui_.tableGroups->model();
+    for (int i=0; i<model->columnCount() - 1; ++i)
+    {
+        const auto name  = QString("table_col_%1_width").arg(i);
+        const auto width = ui_.tableGroups->columnWidth(i);
+        settings.set("news", name, width);
+    }
 
     return true;
 }
@@ -94,9 +161,58 @@ void Groups::on_actionRefresh_triggered()
 {
     model_.clear();
 
-    int index = ui_.cmbAccounts->currentIndex();
-    if (index == -1)
+    Q_ASSERT(curAccount_);
+
+    const auto numAccounts = app::g_accounts->numAccounts();
+    for (std::size_t i=0; i<numAccounts; ++i)
+    {
+        const auto& acc = app::g_accounts->getAccount(i);
+        if (curAccount_ != acc.id)
+            continue;
+
+        DEBUG(str("Refresh newslist '_1' (_2)", acc.name, acc.id));
+
+        const auto file = app::homedir::file(acc.name + ".lst");
+
+        ui_.progressBar->setMaximum(0);        
+        ui_.progressBar->setVisible(true);
+        model_.makeListing(file, acc.id);        
         return;
+    }
+    Q_ASSERT(!"account was not found");
+}
+
+void Groups::on_actionSubscribe_triggered()
+{
+    auto indices = ui_.tableGroups->selectionModel()->selectedRows();
+    if (indices.isEmpty())
+        return;
+
+    Q_ASSERT(curAccount_);
+
+    model_.subscribe(indices, curAccount_);
+}
+
+void Groups::on_actionUnsubscribe_triggered()
+{
+    auto indices = ui_.tableGroups->selectionModel()->selectedRows();
+    if (indices.isEmpty())
+        return;
+
+    Q_ASSERT(curAccount_);
+
+    QMessageBox msg(this);
+    msg.setIcon(QMessageBox::Question);
+    msg.setWindowTitle(tr("Delete Group Data"));
+    msg.setText(tr("Would you like to remove the local database?"));
+
+    model_.unsubscribe(indices, curAccount_);
+}
+
+
+void Groups::on_cmbAccounts_currentIndexChanged()
+{
+    Q_ASSERT(ui_.cmbAccounts->currentIndex() != -1);
 
     const auto name = ui_.cmbAccounts->currentText();
     const auto file = app::homedir::file(name + ".lst");
@@ -105,56 +221,141 @@ void Groups::on_actionRefresh_triggered()
     for (std::size_t i=0; i<numAccounts; ++i)
     {
         const auto& acc = app::g_accounts->getAccount(i);
-        if (acc.name == name)
-        {
-            model_.makeListing(file, acc.id);
+        if (acc.name != name)
+            continue;
+        if (curAccount_ == acc.id)
             return;
+
+        curAccount_ = acc.id;
+
+        DEBUG(str("Current account changed to '_1' (_2)", acc.name, acc.id));
+
+        ui_.progressBar->setMaximum(0);
+        ui_.progressBar->setVisible(true);
+
+        QFileInfo info(file);
+        if (info.exists())
+        {
+            model_.clear();
+            model_.loadListing(file, acc.id);
         }
+        else
+        {
+            model_.clear();
+            model_.makeListing(file, acc.id);
+        }
+        return;
     }
     Q_ASSERT(!"account was not found");
 }
 
-
-void Groups::on_cmbAccounts_currentIndexChanged()
+void Groups::on_tableGroups_customContextMenuRequested(QPoint point)
 {
-    return; 
+    QMenu menu(this);
+    menu.addAction(ui_.actionRefresh);
+    menu.addSeparator();
+    menu.addAction(ui_.actionSubscribe);
+    menu.addAction(ui_.actionUnsubscribe);
+    menu.addSeparator();
+    menu.addAction(ui_.actionStop);
+    menu.exec(point);
+}
 
-    model_.clear();
+void Groups::on_chkSubscribedOnly_clicked(bool state)
+{
+    model_.setShowSubscribedOnly(state);
 
-    int index = ui_.cmbAccounts->currentIndex();
-    if (index == -1)
-        return;
-
-    //const QVariant user = ui_.cmbAccounts->userData(index);
-
-    const QString text = ui_.cmbAccounts->currentText();
-    const QString file = app::homedir::file(text + ".lst");
-
-    QFileInfo info(file);
-    if (!info.exists())
-    {
-        model_.loadListing(file, 0);
-    }
-    else
-    {
-        model_.makeListing(file, 0);
-        ui_.progressBar->setVisible(true);
-        ui_.progressBar->setMinimum(0),
-        ui_.progressBar->setMaximum(0);
-        ui_.progressBar->setValue(0);
-    }
+    const QHeaderView* header = ui_.tableGroups->horizontalHeader();
+    const auto sortColumn = header->sortIndicatorSection();
+    const auto sortOrder  = header->sortIndicatorOrder();
+    ui_.tableGroups->sortByColumn(sortColumn, sortOrder);    
 }
 
 void Groups::accountsUpdated()
 {
     ui_.cmbAccounts->clear();
+    ui_.cmbAccounts->blockSignals(true);
+
+    int currentAccountIndex = -1;
 
     const auto numAccounts = app::g_accounts->numAccounts();
     for (std::size_t i=0; i<numAccounts; ++i)
     {
         const auto& account = app::g_accounts->getAccount(i);
-        ui_.cmbAccounts->addItem(account.name, account.id);
+        if (account.id == curAccount_)
+            currentAccountIndex = (int)i;
+
+        ui_.cmbAccounts->addItem(account.name);
     }
+
+    if (currentAccountIndex == -1)
+    {
+        model_.clear();
+        curAccount_ = 0;
+    }
+    else
+    {
+        ui_.cmbAccounts->setCurrentIndex(currentAccountIndex);
+    }
+
+    ui_.cmbAccounts->blockSignals(false);    
+
+    ui_.actionRefresh->setEnabled(numAccounts != 0);
+    ui_.actionSubscribe->setEnabled(numAccounts != 0);
+    ui_.actionUnsubscribe->setEnabled(numAccounts != 0);
+}
+
+void Groups::progressUpdated(quint32 acc, quint32 maxValue, quint32 curValue)
+{
+    if (curAccount_ != acc)
+        return;
+
+    //DEBUG(str("Progress update max _1 cur _2", maxValue, curValue));
+
+    ui_.progressBar->setMaximum(maxValue);
+    ui_.progressBar->setValue(curValue);
+}
+
+void Groups::loadComplete(quint32 acc)
+{
+    DEBUG(str("Load complete _1", acc));
+
+    if (curAccount_ != acc)
+        return;
+
+    const QHeaderView* header = ui_.tableGroups->horizontalHeader();
+    const auto sortColumn = header->sortIndicatorSection();
+    const auto sortOrder  = header->sortIndicatorOrder();
+
+    model_.setShowSubscribedOnly(ui_.chkSubscribedOnly->isChecked());
+
+    ui_.tableGroups->sortByColumn(sortColumn, sortOrder);
+    ui_.progressBar->setVisible(false);
+}
+
+void Groups::makeComplete(quint32 accountId)
+{
+    DEBUG(str("Make complete _1", accountId));
+
+    if (curAccount_ != accountId)
+        return;
+
+    ui_.progressBar->setVisible(false);
+
+    const auto numAcccounts = app::g_accounts->numAccounts();
+    for (std::size_t i=0; i<numAcccounts; ++i)
+    {
+        const auto& acc = app::g_accounts->getAccount(i);
+        if (acc.id != accountId)
+            continue;
+
+        const auto& name = acc.name;
+        const auto& file = app::homedir::file(name + ".lst");
+        model_.loadListing(file, acc.id);
+        return;
+    }
+
+    Q_ASSERT(!"Account was not found");
 }
 
 } // gui

@@ -28,6 +28,7 @@
 #  include <QtGlobal>
 #  include <QString>
 #  include <QDate>
+#  include <QStringList>
 #include <newsflash/warnpop.h>
 
 namespace app
@@ -67,6 +68,7 @@ namespace app
         quota quota_type;
         int max_connections;
         QDate last_use_date;
+        QStringList subscriptions;
     };
 
 } // app

@@ -24,6 +24,8 @@
     <file>resource/16x16_ico_png/ico_folder.png</file>
     <file>resource/16x16_ico_png/ico_rss.png</file>    
     <file>resource/16x16_ico_png/ico_news.png</file>
+    <file>resource/16x16_ico_png/ico_star.png</file>
+    <file>resource/16x16_ico_png/ico_star_gray.png</file>    
 
     <!-- application/mainwindow icons -->
     <file>resource/16x16_ico_png/ico_app_minimize.png</file>
