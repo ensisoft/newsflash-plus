@@ -39,7 +39,7 @@
 
 namespace {
 
-QDateTime parse_date(const QString& str)
+QDateTime parseDate(const QString& str)
 {
     // this appears to be womble's format.. is this according to some RFC?
     // certainly not according to the format in RSS specification
@@ -81,7 +81,7 @@ bool womble::parse(QIODevice& io, std::vector<mediaitem>& rss)
         mediaitem item {};
         item.title    = elem.firstChildElement("title").text();
         item.gid      = elem.firstChildElement("link").text();
-        item.pubdate  = parse_date(elem.firstChildElement("pubDate").text());
+        item.pubdate  = parseDate(elem.firstChildElement("pubDate").text());
         item.password = false;
         item.nzblink  = item.gid;
         item.size     = 0; // not known

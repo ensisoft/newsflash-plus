@@ -65,6 +65,7 @@
 #include "../engine.h"
 #include "../settings.h"
 #include "../tools.h"
+#include "../omdb.h"
 
 using app::str;
 
@@ -157,6 +158,9 @@ int run(int argc, char* argv[])
 
     app::tools tools;
     app::g_tools = &tools;
+
+    app::MovieDatabase omdb;
+    app::g_movies = &omdb;
 
     // todo: maybe create the widgets and modules on the free store
     // instead of the stack..

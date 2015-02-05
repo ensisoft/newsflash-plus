@@ -24,6 +24,7 @@
 
 #include <newsflash/config.h>
 #include <newsflash/warnpush.h>
+#  include <QTimer>
 #  include "ui_rss.h"
 #include <newsflash/warnpop.h>
 #include <memory>
@@ -32,6 +33,7 @@
 
 #include "mainwidget.h"
 #include "settings.h"
+#include "dlgmovie.h"
 #include "../types.h"
 #include "../rss.h"
 #include "../media.h"
@@ -59,6 +61,7 @@ namespace gui
         virtual void freeSettings(SettingsWidget* s);
 
     private:
+        bool eventFilter(QObject* obj, QEvent* event);
         void downloadSelected(const QString& path);
         void refresh(bool verbose);
 
@@ -77,6 +80,7 @@ namespace gui
     private slots:
         void rowChanged();
         void downloadToPrevious();
+        void popupDetails();
 
     private:
         Ui::RSS ui_;
@@ -88,6 +92,9 @@ namespace gui
         bool enable_womble_;
         QString nzbs_userid_;
         QString nzbs_apikey_;
+        QTimer  popup_;
+    private:
+        std::unique_ptr<DlgMovie> movie_;
     };
 
 } // gui

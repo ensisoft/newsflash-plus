@@ -178,4 +178,6 @@ namespace app
     // stringify media tag name
     const char* str(media m);
 
+    QString findMovieTitle(const QString& subject);
+
 } // app

@@ -145,5 +145,6 @@
     <file>resource/flash.ico</file>
     <file>resource/nh-special.gif</file>
     <file>resource/uns-special-2.gif</file>
+    <file>resource/ajax-loader.gif</file>
   </qresource>
 </RCC>

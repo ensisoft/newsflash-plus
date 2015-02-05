@@ -103,6 +103,14 @@ RSS::RSS()
     QObject::connect(selection, SIGNAL(selectionChanged(const QItemSelection&, const QItemSelection&)),
         this, SLOT(rowChanged()));
 
+    QObject::connect(&popup_, SIGNAL(timeout()), 
+        this, SLOT(popupDetails()));
+
+    ui_.tableView->viewport()->installEventFilter(this);
+    ui_.tableView->viewport()->setMouseTracking(true);
+    ui_.tableView->setMouseTracking(true);
+
+
     // when the model has no more actions we hide the progress bar and disable
     // the stop button.
     model_.on_ready = [&]() {
@@ -348,6 +356,16 @@ void RSS::freeSettings(SettingsWidget* s)
     delete s;
 }
 
+bool RSS::eventFilter(QObject* obj, QEvent* event)
+{
+    if (event->type() == QEvent::MouseMove)
+    {
+        popup_.start(1000);
+        //if (movie_)
+        //    movie_->hide();
+    }
+    return QObject::eventFilter(obj, event);
+}
 
 void RSS::downloadSelected(const QString& folder)
 {
@@ -360,7 +378,7 @@ void RSS::downloadSelected(const QString& folder)
     for (int i=0; i<indices.size(); ++i)
     {
         const auto row = indices[i].row();
-        const auto& item = model_.get_item(row);
+        const auto& item = model_.getItem(row);
         const auto& desc = item.title;
         const auto acc = g_win->chooseAccount(desc);
         if (acc == 0)
@@ -506,7 +524,7 @@ void RSS::on_actionSave_triggered()
 
     for (int i=0; i<indices.size(); ++i)
     {
-        const auto& item = model_.get_item(indices[i].row());
+        const auto& item = model_.getItem(indices[i].row());
         const auto& nzb  = g_win->selectNzbSaveFile(item.title + ".nzb");
         if (nzb.isEmpty())
             continue;
@@ -531,7 +549,7 @@ void RSS::on_actionOpen_triggered()
     for (int i=0; i<indices.size(); ++i)
     {
         const auto  row  = indices[i].row();
-        const auto& item = model_.get_item(row);
+        const auto& item = model_.getItem(row);
         const auto& desc = item.title;
         model_.view_nzb_content(row, std::bind(callback,
             std::placeholders::_1, desc));
@@ -620,6 +638,41 @@ void RSS::downloadToPrevious()
     const auto folder = action->text();
 
     downloadSelected(folder);
+}
+void RSS::popupDetails()
+{
+    DEBUG("Popup event!");
+
+    popup_.stop();
+
+    if (!ui_.tableView->underMouse())
+        return;
+
+    const QPoint global = QCursor::pos();
+    const QPoint local  = ui_.tableView->viewport()->mapFromGlobal(global);
+
+    const auto& all = ui_.tableView->selectionModel()->selectedRows();
+    const auto& sel = ui_.tableView->indexAt(local);
+    int i=0;
+    for (; i<all.size(); ++i)
+    {
+        if (all[i].row() == sel.row())
+            break;
+    }
+    if (i == all.size())
+        return;
+
+    const auto& item  = model_.getItem(sel.row());
+    const auto& title = app::findMovieTitle(item.title);
+    if (title.isEmpty())
+        return;
+
+    if (!movie_)
+    {
+        movie_.reset(new DlgMovie(this));
+    }    
+    movie_->move(QCursor::pos());
+    movie_->lookup(title);
 }
 
 } // gui

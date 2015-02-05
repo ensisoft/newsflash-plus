@@ -74,4 +74,9 @@ const char* str(media m)
     return "???";
 }
 
+QString findMovieTitle(const QString& subject)
+{
+    return "The+Retrieval";
+}
+
 } // app

@@ -83,7 +83,7 @@ namespace app
         // stop/cancel pending network operations.
         void stop();
 
-        const mediaitem& get_item(std::size_t i) const
+        const mediaitem& getItem(std::size_t i) const
         { return items_[i]; }
 
         bool empty() const
