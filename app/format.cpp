@@ -52,6 +52,23 @@ namespace {
 namespace app
 {
 
+QString format(const app::volume& vol)
+{
+    const auto BILLION  = 1000 * 1000 * 1000.0;
+    const auto MILLION  = 1000 * 1000.0;
+    const auto THOUSAND = 1000.0;
+
+    if (vol.numItems > BILLION)
+        return QString("%1 b").arg(vol.numItems / BILLION, 0, 'f', 1, ' ');
+    if (vol.numItems > MILLION)
+        return QString("%1 m").arg(vol.numItems / MILLION, 0, 'f', 1, ' ');
+    if (vol.numItems > THOUSAND)
+        return QString("%1 k").arg(vol.numItems / THOUSAND, 0, 'f', 1, ' ');
+
+    return QString("%1").arg(vol.numItems);
+
+}
+
 QString format(const app::size& size)
 {
     if (size.bytes >= GB)

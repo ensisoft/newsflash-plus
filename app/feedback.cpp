@@ -38,7 +38,7 @@
 // in the query parameters. 
 // This mechanism helps to a) block spamming b) allows the client to 
 // remain simple, i.e. no SMTP configuration is required for the client
-//  (or external email client) to send the feedback data
+//  (or ext<ernal email client) to send the feedback data
 // and  c) allows the same data to be inserted into a database
 // and integrated with the web site.
 //
@@ -51,15 +51,15 @@
 namespace app
 {
 
-feedback::feedback()
+Feedback::Feedback()
 {
-    net_ = g_net->get_submission_context();
+    net_ = g_net->getSubmissionContext();
 }
 
-feedback::~feedback()
+Feedback::~Feedback()
 {}
 
-void feedback::send(const message& m)
+void Feedback::send(const Message& m)
 {
     QUrl url("http://www.ensisoft.com/feedback.php");
     url.addQueryItem("name", m.name);
@@ -133,7 +133,7 @@ void feedback::send(const message& m)
         if (!file.open(QIODevice::ReadOnly))
             throw std::runtime_error("failed to open attachment");
 
-        netman::attachment attachment;
+        NetworkManager::Attachment attachment;
         attachment.name = QFileInfo(m.attachment).fileName();
         attachment.data = file.readAll();
 

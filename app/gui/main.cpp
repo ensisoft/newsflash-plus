@@ -58,7 +58,6 @@
 #include "../distdir.h"
 #include "../homedir.h"
 #include "../accounts.h"
-#include "../groups.h"
 #include "../rss.h"
 #include "../nzbfile.h"
 #include "../connlist.h"
@@ -127,6 +126,12 @@ int run(int argc, char* argv[])
     QCoreApplication::addLibraryPath(app::distdir::path());
     QCoreApplication::addLibraryPath(app::distdir::path("plugins-qt"));
 
+    // set the search path for the icons so that the code doesn't explictly
+    // refer to a certain size of an icon for example (maybe this will help
+    // if icons and their sizes need to be adjusted at runtime on 4k displays
+    // for example...
+    QDir::setSearchPaths("icons", QStringList(":/resource/16x16_ico_png"));
+
     // settings is that everything depends on 
     // load settings first.
     app::Settings set;
@@ -141,7 +146,7 @@ int run(int argc, char* argv[])
 
     gui::Appearance style;
 
-    app::netman net;
+    app::NetworkManager net;
     app::g_net = &net;
 
     app::Engine eng;

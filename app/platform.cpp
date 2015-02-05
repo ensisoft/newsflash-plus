@@ -23,12 +23,14 @@
 #include <newsflash/config.h>
 #include <newsflash/warnpush.h>
 #  include <QtGui/QDesktopServices>
+#  include <QtGui/QPixmap>
+#  include <QtGui/QImage>
+#  include <QtGui/QIcon>
 #  include <QFile>
 #  include <QTextStream>
 #  include <QIODevice>
 #  include <QStringList>
 #  include <QDir>
-
 #include <newsflash/warnpop.h>
 
 #if defined(WINDOWS_OS)
@@ -43,6 +45,23 @@
 
 namespace app
 {
+
+QPixmap toGrayScale(const QPixmap& p)
+{
+    QImage img = p.toImage();
+    const int width  = img.width();
+    const int height = img.height();
+    for (int i=0; i<width; ++i)
+    {
+        for (int j=0; j<height; ++j)
+        {
+            const auto pix = img.pixel(i, j);
+            const auto val = qGray(pix);
+            img.setPixel(i, j, qRgba(val, val, val, (pix >> 24 & 0xff)));
+        }
+    }
+    return QPixmap::fromImage(img);
+}
 
 #if defined(WINDOWS_OS)
 

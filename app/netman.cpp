@@ -53,11 +53,11 @@
 namespace app
 {
 
-netman* g_net;
+NetworkManager* g_net;
 
-netman::netman()
+NetworkManager::NetworkManager()
 {
-    DEBUG("netman created");
+    DEBUG("NetworkManager created");
 
     QObject::connect(&qnam_, SIGNAL(finished(QNetworkReply*)),
         this, SLOT(finished(QNetworkReply*)));
@@ -65,14 +65,14 @@ netman::netman()
         this, SLOT(timeout()));
 }
 
-netman::~netman()
+NetworkManager::~NetworkManager()
 {
     if (!submissions_.empty())
     {
         timer_.stop();
         timer_.blockSignals(true);
 
-        DEBUG(str("netman has _1 pending submissions...", submissions_.size()));
+        DEBUG(str("NetworkManager has _1 pending submissions...", submissions_.size()));
 
         for (auto it = submissions_.begin(); it != submissions_.end(); ++it)
         {
@@ -85,13 +85,13 @@ netman::~netman()
         }
     }
 
-    DEBUG("netman destroyed");
+    DEBUG("NetworkManager destroyed");
 }
 
 
-void netman::submit(on_reply callback, context& ctx, const QUrl& url)
+void NetworkManager::submit(on_reply callback, Context& ctx, const QUrl& url)
 {
-    netman::submission get;
+    NetworkManager::submission get;
     get.id       = submissions_.size() + 1;
     get.ticks    = 0;
     get.reply    = nullptr;
@@ -105,7 +105,7 @@ void netman::submit(on_reply callback, context& ctx, const QUrl& url)
 
     if (submissions_.size() == 1)
     {
-        submit_next();
+        submitNext();
         timer_.setInterval(1000);
         timer_.start();
     }
@@ -113,11 +113,11 @@ void netman::submit(on_reply callback, context& ctx, const QUrl& url)
     DEBUG(str("New HTTP/GET submission _1", get.id));
 }
 
-void netman::submit(on_reply callback, context& ctx, const QUrl& url, const attachment& item)
+void NetworkManager::submit(on_reply callback, Context& ctx, const QUrl& url, const Attachment& item)
 {
     const auto BOUNDARY = "--abcdef123abcdef123";        
 
-    netman::submission post;
+    NetworkManager::submission post;
     post.id       = submissions_.size() + 1;
     post.ticks    = 0;
     post.reply    = nullptr;
@@ -139,7 +139,7 @@ void netman::submit(on_reply callback, context& ctx, const QUrl& url, const atta
 
     if (submissions_.size() == 1)
     {
-        submit_next();
+        submitNext();
         timer_.setInterval(1000);
         timer_.start();
     }
@@ -147,7 +147,7 @@ void netman::submit(on_reply callback, context& ctx, const QUrl& url, const atta
     DEBUG(str("New HTTP/POST submission _1", post.id));
 }
 
-void netman::cancel(context& c)
+void NetworkManager::cancel(Context& c)
 {
     for (auto it = submissions_.begin(); it != submissions_.end(); ++it)
     {
@@ -166,7 +166,7 @@ void netman::cancel(context& c)
     c.num_pending_requests_ = 0;
 }
 
-void netman::finished(QNetworkReply* reply)
+void NetworkManager::finished(QNetworkReply* reply)
 {
     auto it = std::find_if(std::begin(submissions_), std::end(submissions_),
         [=](const submission& s) {
@@ -197,16 +197,16 @@ void netman::finished(QNetworkReply* reply)
     DEBUG(str("Pending submissions _1", submissions_.size()));
 }
 
-void netman::timeout()
+void NetworkManager::timeout()
 {
-    submit_next();
-    update_ticks();
+    submitNext();
+    updateTicks();
 
     if (submissions_.empty())
         timer_.stop();
 }
 
-void netman::submit_next()
+void NetworkManager::submitNext()
 {
     auto it = std::find_if(std::begin(submissions_), std::end(submissions_),
         [](const submission& s) {
@@ -233,7 +233,7 @@ void netman::submit_next()
     }
 }
 
-void netman::update_ticks()
+void NetworkManager::updateTicks()
 {
     const auto timeout_ticks = 30;
 

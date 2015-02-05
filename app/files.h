@@ -25,6 +25,7 @@
 #include <newsflash/config.h>
 
 #include <newsflash/warnpush.h>
+#  include <QtGui/QIcon>
 #  include <QObject>
 #  include <QAbstractTableModel>
 #  include <QString>

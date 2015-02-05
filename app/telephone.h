@@ -32,15 +32,13 @@
 namespace app
 {
     // telephone class performs "callhome" to check for software updates.
-    // it requires the .php backend in the website and does a HTTP query
-    // with QNAM
-    class telephone : public QObject
+    class Telephone : public QObject
     {
         Q_OBJECT
 
     public:
-        telephone();
-       ~telephone();
+        Telephone();
+       ~Telephone();
         
         // callhome, check for software updates.
         void callhome();
@@ -51,6 +49,6 @@ namespace app
         void on_finished(QNetworkReply& reply);
 
     private:
-        netman::context net_;
+        NetworkManager::Context net_;
     };
 } // app

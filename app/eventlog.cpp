@@ -83,11 +83,11 @@ QVariant eventlog::data(const QModelIndex& index, int role) const
         case Qt::DecorationRole:
         switch (ev.type) {
             case eventlog::event::warning:
-                return QIcon(":/resource/16x16_ico_png/ico_warning.png");
+                return QIcon("icons:ico_warning.png");
             case eventlog::event::info:
-                return QIcon(":/resource/16x16_ico_png/ico_info.png");
+                return QIcon("icons:ico_info.png");
             case eventlog::event::error:
-                return QIcon(":/resource/16x16_ico_png/ico_error.png");
+                return QIcon("icons:ico_error.png");
             default:
                 Q_ASSERT("missing event type");
                 break;

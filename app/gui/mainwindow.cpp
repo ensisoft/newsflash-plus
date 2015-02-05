@@ -96,7 +96,7 @@ MainWindow::MainWindow(app::Settings& s) : QMainWindow(nullptr), current_(nullpt
         DEBUG("Setup system tray");
         ui_.actionRestore->setEnabled(false);
         ui_.actionMinimize->setEnabled(true);
-        tray_.setIcon(QIcon(":/resource/16x16_ico_png/ico_newsflash.png"));
+        tray_.setIcon(QIcon("icons:ico_newsflash.png"));
         tray_.setToolTip(NEWSFLASH_TITLE " " NEWSFLASH_VERSION);
         tray_.setVisible(true);
         QObject::connect(&tray_, SIGNAL(activated(QSystemTrayIcon::ActivationReason)),
@@ -785,6 +785,7 @@ void MainWindow::on_mainTab_tabCloseRequested(int tab)
     auto it = std::find(std::begin(widgets_), std::end(widgets_), widget);
 
     Q_ASSERT(it != std::end(widgets_));
+    Q_ASSERT(*it == widget);
 
     const auto info = widget->getInformation();
     if (info.permanent)
@@ -797,7 +798,7 @@ void MainWindow::on_mainTab_tabCloseRequested(int tab)
     }
     else
     {
-        widget->closeWidget();
+        delete widget;
         widgets_.erase(it);
     }
     buildWindowMenu();

@@ -103,7 +103,8 @@ namespace app
     private:
         std::vector<std::unique_ptr<rssfeed>> feeds_;
         std::vector<mediaitem> items_;          
-        netman::context net_;
+    private:
+        NetworkManager::Context net_;
     };
 
 } // rss

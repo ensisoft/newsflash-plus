@@ -50,7 +50,7 @@ namespace app
 
 rss::rss()
 {
-    net_ = g_net->get_submission_context();
+    net_ = g_net->getSubmissionContext();
 
     feeds_.emplace_back(new womble);
     feeds_.emplace_back(new nzbs);
@@ -101,9 +101,9 @@ QVariant rss::data(const QModelIndex& index, int role) const
     else if (role == Qt::DecorationRole)
     {
         if (col  == columns::date)
-            return QIcon(":/resource/16x16_ico_png/ico_rss.png");
+            return QIcon("icons:ico_rss.png");
         else if (col == columns::title && item.password)
-            return QIcon(":/resource/16x16_ico_png/ico_password.png");
+            return QIcon("icons:ico_password.png");
     }
     return QVariant();
 }

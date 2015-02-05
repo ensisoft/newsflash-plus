@@ -127,23 +127,23 @@ QVariant tasklist::data(const QModelIndex& index, int role) const
         switch (ui.state)
         {
             case states::queued: 
-                return QIcon(":/resource/16x16_ico_png/ico_task_queued.png");
+                return QIcon("icons:ico_task_queued.png");
             case states::waiting: 
-                return QIcon(":/resource/16x16_ico_png/ico_task_waiting.png");
+                return QIcon("icons:ico_task_waiting.png");
             case states::active: 
-                return QIcon(":/resource/16x16_ico_png/ico_task_active.png");
+                return QIcon("icons:ico_task_active.png");
             case states::paused: 
-                return QIcon(":/resource/16x16_ico_png/ico_task_paused.png");   
+                return QIcon("icons:ico_task_paused.png");   
             case states::finalize:
-                return QIcon(":/resource/16x16_ico_png/ico_task_finalize.png");                             
+                return QIcon("icons:ico_task_finalize.png");                             
             case states::complete: 
                 if (ui.error.any_bit())
-                    return QIcon(":/resource/16x16_ico_png/ico_task_damaged.png");
+                    return QIcon("icons:ico_task_damaged.png");
 
-                return QIcon(":/resource/16x16_ico_png/ico_task_complete.png");                
+                return QIcon("icons:ico_task_complete.png");                
 
             case states::error: 
-                return QIcon(":/resource/16x16_ico_png/ico_task_error.png");                
+                return QIcon("icons:ico_task_error.png");                
         }
     }
     return QVariant();

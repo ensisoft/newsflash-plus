@@ -33,41 +33,42 @@
 #include <newsflash/warnpop.h>
 #include <algorithm>
 
+#include "newslist.h"
 #include "settings.h"
 #include "eventlog.h"
 #include "debug.h"
-#include "groups.h"
 #include "format.h"
 #include "engine.h"
 #include "accounts.h"
+#include "platform.h"
 
 namespace app
 {
 
 const int CurrentFileVersion = 1;
 
-Groups::Groups() : size_(0)
+NewsList::NewsList() : size_(0)
 {
-    DEBUG("Groups created");
+    DEBUG("NewsList created");
 
     QObject::connect(g_engine, SIGNAL(listingCompleted(quint32, const QList<app::NewsGroup>&)),
         this, SLOT(listingCompleted(quint32, const QList<app::NewsGroup>&)));
 }
 
-Groups::~Groups()
+NewsList::~NewsList()
 {
-    DEBUG("Groups deleted");
+    DEBUG("NewsList deleted");
 }
 
 
-QVariant Groups::headerData(int section, Qt::Orientation orietantation, int role) const 
+QVariant NewsList::headerData(int section, Qt::Orientation orietantation, int role) const 
 {
     if (orietantation != Qt::Horizontal)
         return QVariant();
 
     if (role == Qt::DisplayRole)
     {
-        switch ((Groups::Columns)section)
+        switch ((NewsList::Columns)section)
         {
             case Columns::subscribed: return "";
             case Columns::messages:   return "Messages";
@@ -79,27 +80,29 @@ QVariant Groups::headerData(int section, Qt::Orientation orietantation, int role
     }
     else if (role == Qt::DecorationRole)
     {
+        static const QIcon gray(toGrayScale(QPixmap("icons:ico_star.png")));
+
         if ((Columns)section == Columns::subscribed)
-            return QIcon(":/resource/16x16_ico_png/ico_star_gray.png");
+            return gray;
 
     }
     return QVariant();
 }
 
-QVariant Groups::data(const QModelIndex& index, int role) const
+QVariant NewsList::data(const QModelIndex& index, int role) const
 {
     const auto col = index.column();
     const auto row = index.row();
     if (role == Qt::DisplayRole)
     {
         const auto& group = groups_[row];
-        switch ((Groups::Columns)col)
+        switch ((NewsList::Columns)col)
         {
             case Columns::name:
                return group.name;
 
             case Columns::messages:
-                return group.size;
+                return format(app::volume{group.size});
 
             default:
                 Q_ASSERT(!"missing column case");
@@ -109,19 +112,19 @@ QVariant Groups::data(const QModelIndex& index, int role) const
     else if (role == Qt::DecorationRole)
     {
         if (col == 0)
-            return QIcon(":/resource/16x16_ico_png/ico_news.png");
+            return QIcon("icons:ico_news.png");
         else if ((Columns)col == Columns::subscribed)
         {
             const auto& group = groups_[row];
             if (group.flags & Flags::Subscribed)
-                return QIcon(":/resource/16x16_ico_png/ico_star.png");
+                return QIcon("icons:ico_star.png");
         }
     }
 
     return QVariant();
 }
 
-void Groups::sort(int column, Qt::SortOrder order) 
+void NewsList::sort(int column, Qt::SortOrder order) 
 {
     if (order == Qt::AscendingOrder)
         DEBUG("Sort in Ascending Order");
@@ -153,25 +156,25 @@ void Groups::sort(int column, Qt::SortOrder order)
     emit layoutChanged();
 }
 
-int Groups::rowCount(const QModelIndex&) const 
+int NewsList::rowCount(const QModelIndex&) const 
 {
     return (int)size_;
 }
 
-int Groups::columnCount(const QModelIndex&) const
+int NewsList::columnCount(const QModelIndex&) const
 {
     return (int)Columns::last;
 }
 
 
-void Groups::clear()
+void NewsList::clear()
 {
     groups_.clear();
     size_ = 0;
     reset();
 }
 
-void Groups::loadListing(const QString& file, quint32 accountId)
+void NewsList::loadListing(const QString& file, quint32 accountId)
 {
     QFile io(file);
     if (!io.open(QIODevice::ReadOnly))
@@ -218,7 +221,7 @@ void Groups::loadListing(const QString& file, quint32 accountId)
     emit loadComplete(accountId);
 }
 
-void Groups::makeListing(const QString& file, quint32 account)
+void NewsList::makeListing(const QString& file, quint32 account)
 {
     auto it = pending_.find(account);
     if (it != std::end(pending_))
@@ -235,7 +238,7 @@ void Groups::makeListing(const QString& file, quint32 account)
     emit progressUpdated(account, 0, 0);
 }
 
-void Groups::subscribe(QModelIndexList& list, quint32 accountId)
+void NewsList::subscribe(QModelIndexList& list, quint32 accountId)
 {
     int minIndex = std::numeric_limits<int>::max();
     int maxIndex = std::numeric_limits<int>::min();
@@ -260,7 +263,7 @@ void Groups::subscribe(QModelIndexList& list, quint32 accountId)
     setAccountSubscriptions(accountId);
 }
 
-void Groups::unsubscribe(QModelIndexList& list, quint32 accountId)
+void NewsList::unsubscribe(QModelIndexList& list, quint32 accountId)
 {
     int minIndex = std::numeric_limits<int>::max();
     int maxIndex = std::numeric_limits<int>::min();
@@ -285,25 +288,60 @@ void Groups::unsubscribe(QModelIndexList& list, quint32 accountId)
     setAccountSubscriptions(accountId);    
 }
 
-void Groups::setShowSubscribedOnly(bool on)
+void NewsList::filter(const QString& str, bool subscribed)
 {
-    if (on)
+    const auto oldSize = size_;
+
+    if (str.isEmpty())
     {
-        auto end = std::stable_partition(std::begin(groups_), std::end(groups_),
-            [=](const group& g) {
-                return g.flags & Flags::Subscribed;
-            });
-        size_ = std::distance(std::begin(groups_), end);
+        if (subscribed)
+        {
+            auto end = std::stable_partition(std::begin(groups_), std::end(groups_),
+                [=](const group& g) {
+                    return g.flags & Flags::Subscribed;
+                });
+            size_ = std::distance(std::begin(groups_), end);
+        }
+        else
+        {
+            size_ = groups_.size();
+        }
     }
     else
     {
-        size_ = groups_.size();
+        if (subscribed)
+        {
+            auto end = std::stable_partition(std::begin(groups_), std::end(groups_),
+                [=](const group& g) {
+                    if (!(g.flags & Flags::Subscribed))
+                        return false;
+                    return g.name.indexOf(str) != -1;
+                });
+            size_ = std::distance(std::begin(groups_), end);
+        }
+        else
+        {
+            auto end = std::stable_partition(std::begin(groups_), std::end(groups_),
+                [=](const group& g) {
+                    return g.name.indexOf(str) != -1;
+                });
+            size_ = std::distance(std::begin(groups_), end);
+        }
     }
 
-    reset();
+    if (oldSize != size_)
+    {
+        reset();
+    }
+    else
+    {
+        auto first = QAbstractTableModel::index(0, 0);
+        auto last  = QAbstractTableModel::index(size_, (int)Columns::last);
+        emit dataChanged(first, last);
+    }
 }
 
-void Groups::listingCompleted(quint32 acc, const QList<app::NewsGroup>& list)
+void NewsList::listingCompleted(quint32 acc, const QList<app::NewsGroup>& list)
 {
     auto it = pending_.find(acc);
     Q_ASSERT(it != std::end(pending_));
@@ -336,7 +374,7 @@ void Groups::listingCompleted(quint32 acc, const QList<app::NewsGroup>& list)
     emit makeComplete(acc);
 }
 
-void Groups::setAccountSubscriptions(quint32 accountId)
+void NewsList::setAccountSubscriptions(quint32 accountId)
 {
     QStringList list;
     for (const auto& group : groups_)

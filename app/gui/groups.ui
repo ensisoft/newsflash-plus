@@ -37,9 +37,9 @@
          </widget>
         </item>
         <item>
-         <widget class="QCheckBox" name="chkSubscribedOnly">
+         <widget class="QCheckBox" name="chkFavorites">
           <property name="text">
-           <string>Show subscribed only</string>
+           <string>Show favorites only</string>
           </property>
          </widget>
         </item>
@@ -96,56 +96,78 @@
        </widget>
       </item>
       <item>
-       <layout class="QHBoxLayout" name="horizontalLayout_4">
-        <item>
-         <widget class="QPushButton" name="btnCloseFind">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>16</width>
-            <height>16</height>
-           </size>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="icon">
-           <iconset resource="../../../../svnroot/newsflash/gui/resource.qrc">
-            <normaloff>:/resource/16x16_ico_png/ico_cancel.png</normaloff>:/resource/16x16_ico_png/ico_cancel.png</iconset>
-          </property>
-          <property name="flat">
-           <bool>false</bool>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLabel" name="label_4">
-          <property name="minimumSize">
-           <size>
-            <width>0</width>
-            <height>31</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>16777215</width>
-            <height>31</height>
-           </size>
-          </property>
-          <property name="text">
-           <string>Find</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLineEdit" name="editFind"/>
-        </item>
-       </layout>
+       <widget class="QWidget" name="findContainer" native="true">
+        <layout class="QGridLayout" name="gridLayout_7">
+         <property name="margin">
+          <number>0</number>
+         </property>
+         <item row="0" column="0">
+          <layout class="QHBoxLayout" name="horizontalLayout_4">
+           <item>
+            <widget class="QPushButton" name="btnCloseFind">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16</width>
+               <height>16</height>
+              </size>
+             </property>
+             <property name="text">
+              <string/>
+             </property>
+             <property name="icon">
+              <iconset resource="resource.qrc">
+               <normaloff>:/resource/16x16_ico_png/ico_close.png</normaloff>:/resource/16x16_ico_png/ico_close.png</iconset>
+             </property>
+             <property name="flat">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="label_4">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>31</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>31</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>Find</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLineEdit" name="editFind"/>
+           </item>
+           <item>
+            <widget class="QLabel" name="lblFind">
+             <property name="font">
+              <font>
+               <weight>75</weight>
+               <bold>true</bold>
+              </font>
+             </property>
+             <property name="text">
+              <string>No matches</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+        </layout>
+       </widget>
       </item>
       <item>
        <widget class="QProgressBar" name="progressBar">
@@ -175,8 +197,8 @@
   </layout>
   <action name="actionRefresh">
    <property name="icon">
-    <iconset resource="../../../../svnroot/newsflash/gui/resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_reload.png</normaloff>:/resource/16x16_ico_png/ico_reload.png</iconset>
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_refresh.png</normaloff>:/resource/16x16_ico_png/ico_refresh.png</iconset>
    </property>
    <property name="text">
     <string>Reresh</string>
@@ -185,33 +207,21 @@
     <string>Refresh the list of newsgroups</string>
    </property>
   </action>
-  <action name="actionSubscribe">
+  <action name="actionFavorite">
    <property name="icon">
     <iconset resource="resource.qrc">
      <normaloff>:/resource/16x16_ico_png/ico_star.png</normaloff>:/resource/16x16_ico_png/ico_star.png</iconset>
    </property>
    <property name="text">
-    <string>Subscribe</string>
+    <string>Favorite</string>
    </property>
    <property name="toolTip">
-    <string>Subscribe to newsgroup</string>
-   </property>
-  </action>
-  <action name="actionUnsubscribe">
-   <property name="icon">
-    <iconset resource="resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_star_gray.png</normaloff>:/resource/16x16_ico_png/ico_star_gray.png</iconset>
-   </property>
-   <property name="text">
-    <string>Unsubscribe</string>
-   </property>
-   <property name="toolTip">
-    <string>Unsubscribe a newsgroup</string>
+    <string>Mark as favorite newsgroup</string>
    </property>
   </action>
   <action name="actionStop">
    <property name="icon">
-    <iconset resource="../../../../svnroot/newsflash/gui/resource.qrc">
+    <iconset resource="resource.qrc">
      <normaloff>:/resource/16x16_ico_png/ico_stop.png</normaloff>:/resource/16x16_ico_png/ico_stop.png</iconset>
    </property>
    <property name="text">
@@ -227,9 +237,32 @@
     <string>Find</string>
    </property>
   </action>
+  <action name="actionBrowse">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_news.png</normaloff>:/resource/16x16_ico_png/ico_news.png</iconset>
+   </property>
+   <property name="text">
+    <string>Browse</string>
+   </property>
+   <property name="toolTip">
+    <string>Browse the contents of the news group</string>
+   </property>
+  </action>
+  <action name="actionUnfavorite">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_star_gray.png</normaloff>:/resource/16x16_ico_png/ico_star_gray.png</iconset>
+   </property>
+   <property name="text">
+    <string>Unfavorite</string>
+   </property>
+   <property name="toolTip">
+    <string>Mark as nonfavorite</string>
+   </property>
+  </action>
  </widget>
  <resources>
-  <include location="../../../../svnroot/newsflash/gui/resource.qrc"/>
   <include location="resource.qrc"/>
  </resources>
  <connections/>

@@ -23,51 +23,35 @@
 #pragma once
 
 #include <newsflash/config.h>
-#include <newsflash/warnpush.h>
-#  include <QtGlobal> // for quint64
-#include <newsflash/warnpush.h>
 
-class QString;
-class QPixmap;
-class QIcon;
-
-// platform specific functions that are not provided by Qt
-// and some extra utility functions.
+#include <newsflash/warnpush.h>
+#  include <QAbstractTableModel>
+#include <newsflash/warnpop.h>
 
 namespace app
 {
+    class NewsGroup : public QAbstractTableModel
+    {
+        Q_OBJECT
 
-QPixmap toGrayScale(const QPixmap& p);
+    public:
+        enum class Columns {
+            BinaryFlag, NewFlag, DownloadFlag, BrokenFlag, BookmarkFlag,
+            Age, 
+            Size, 
+            Author, 
+            Subject, 
+            SENTINEL
+        };
 
-// extract appliation icon from a 3rd party executable specified
-// by binary. binary is expected to be the complete path to the
-// executable in question.
-QIcon extractIcon(const QString& binary);
+        NewsGroup();
+       ~NewsGroup();
 
-// return the name of the operating system that we're running on
-// for example Mint Linux, Ubuntu, Windows XP, Windows 7  etc.
-QString getPlatformName();
-
-// resolve the directory path to a mount-point / disk 
-QString resolveMountPoint(const QString& directory);
-
-// get free space available on the disk that contains
-// the object identified by filename
-quint64 getFreeDiskSpace(const QString& filename);
-
-// open a file on the local computer
-void openFile(const QString& file);
-
-void openWeb(const QString& url);
-
-// perform computer shutdown.
-void shutdownComputer();
-
-#if defined(LINUX_OS)
-  void setOpenfileCommand(const QString& cmd);
-  void setShutdownCommand(const QString& cmd);
-  QString getOpenfileCommand();
-  QString getShutdownCommand();
-#endif
-
+        // QAbstractTableModel
+        virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
+        virtual QVariant data(const QModelIndex& index, int role) const override;        
+        virtual int rowCount(const QModelIndex&) const override;
+        virtual int columnCount(const QModelIndex&) const override;
+    private:
+    };
 } // app

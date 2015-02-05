@@ -129,9 +129,9 @@ NZBCore::~NZBCore()
 
 bool NZBCore::addActions(QMenu& menu)
 {
-    auto* download = menu.addAction(QIcon(":/resource/16x16_ico_png/ico_download.png"),
+    auto* download = menu.addAction(QIcon("icons:ico_download.png"),
         tr("Download NZB"));
-    auto* display  = menu.addAction(QIcon(":/resource/16x16_ico_png/ico_open_nzb.png"),
+    auto* display  = menu.addAction(QIcon("icons:ico_open_nzb.png"),
         tr("Open NZB"));
 
     display->setShortcut(QKeySequence::Open);

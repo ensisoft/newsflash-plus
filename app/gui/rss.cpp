@@ -566,12 +566,12 @@ void RSS::on_actionBrowse_triggered()
 void RSS::on_tableView_customContextMenuRequested(QPoint point)
 {
     QMenu sub("Download to");
-    sub.setIcon(QIcon(":/resource/16x16_ico_png/ico_download.png"));
+    sub.setIcon(QIcon("icons:ico_download.png"));
 
     const auto& recents = g_win->getRecentPaths();
     for (const auto& recent : recents)
     {
-        QAction* action = sub.addAction(QIcon(":/resource/16x16_ico_png/ico_folder.png"), recent);
+        QAction* action = sub.addAction(QIcon("icons:ico_folder.png"), recent);
         QObject::connect(action, SIGNAL(triggered(bool)),
             this, SLOT(downloadToPrevious()));
     }

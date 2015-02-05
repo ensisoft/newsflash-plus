@@ -111,26 +111,26 @@ QVariant connlist::data(const QModelIndex& index, int role) const
         switch (ui.state)
         {
             case states::disconnected: 
-                return QIcon(":/resource/16x16_ico_png/ico_conn_disconnected.png");
+                return QIcon("icons:ico_conn_disconnected.png");
             case states::resolving: 
-                return QIcon(":/resource/16x16_ico_png/ico_conn_connecting.png");
+                return QIcon("icons:ico_conn_connecting.png");
             case states::connecting: 
-                return QIcon(":/resource/16x16_ico_png/ico_conn_connecting.png");
+                return QIcon("icons:ico_conn_connecting.png");
             case states::initializing: 
-                return QIcon(":/resource/16x16_ico_png/ico_conn_connecting.png");
+                return QIcon("icons:ico_conn_connecting.png");
             case states::connected:
-                return QIcon(":/resource/16x16_ico_png/ico_conn_connected.png");
+                return QIcon("icons:ico_conn_connected.png");
             case states::active: 
-                return QIcon(":/resource/16x16_ico_png/ico_conn_active.png");                                                                
+                return QIcon("icons:ico_conn_active.png");                                                                
             case states::error: 
-                return QIcon(":/resource/16x16_ico_png/ico_conn_error.png");                                                                                
+                return QIcon("icons:ico_conn_error.png");                                                                                
         }
     }
     else if (role == Qt::DecorationRole && col == (int)columns::server)
     {
        return ui.secure ? 
-            QIcon(":/resource/16x16_ico_png/ico_lock.png") :
-            QIcon(":/resource/16x16_ico_png/ico_unlock.png");
+            QIcon("icons:ico_lock.png") :
+            QIcon("icons:ico_unlock.png");
     }
     return QVariant();
 }

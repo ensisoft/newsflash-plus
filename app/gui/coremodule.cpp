@@ -102,7 +102,7 @@ void CoreModule::loadState(app::Settings& s)
     check_for_updates_ = s.get("settings", "check_for_software_updates", true);
     if (check_for_updates_)
     {
-        et_.reset(new app::telephone);
+        et_.reset(new app::Telephone);
         QObject::connect(et_.get(), SIGNAL(completed(bool, QString)), 
             this, SLOT(calledHome(bool, QString)));
         et_->callhome();

@@ -77,9 +77,6 @@ namespace gui
         // This function is invoked when this ui component is hidden in the host GUI.
         virtual void deactivate() {}
 
-        // this function is called when the widget is closed 
-        virtual void closeWidget() {}
-
         // load the widget/component state on application startup
         virtual void loadState(app::Settings& s) {}
 

@@ -106,11 +106,6 @@
       </item>
       <item row="1" column="0">
        <widget class="QTableView" name="tableView">
-        <property name="font">
-         <font>
-          <underline>false</underline>
-         </font>
-        </property>
         <property name="contextMenuPolicy">
          <enum>Qt::CustomContextMenu</enum>
         </property>
@@ -175,7 +170,7 @@
   <action name="actionRefresh">
    <property name="icon">
     <iconset resource="resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_reload.png</normaloff>:/resource/16x16_ico_png/ico_reload.png</iconset>
+     <normaloff>:/resource/16x16_ico_png/ico_refresh.png</normaloff>:/resource/16x16_ico_png/ico_refresh.png</iconset>
    </property>
    <property name="text">
     <string>Refresh</string>

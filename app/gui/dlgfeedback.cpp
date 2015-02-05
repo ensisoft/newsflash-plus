@@ -49,7 +49,7 @@ DlgFeedback::DlgFeedback(QWidget* parent, mode m) : QDialog(parent), uimode_(m)
     {
         case mode::bugreport:
             setWindowTitle("Report a Bug");
-            setWindowIcon(QIcon(":/resource/16x16_ico_png/ico_app_report_bug.png"));
+            setWindowIcon(QIcon("icons:ico_app_report_bug.png"));
             ui_.grpMessage->setTitle("Description *");
             ui_.txtMessage->setPlainText(
                 "Description of the problem:\r\n\r\n"
@@ -61,20 +61,20 @@ DlgFeedback::DlgFeedback(QWidget* parent, mode m) : QDialog(parent), uimode_(m)
 
         case mode::feedback:
             setWindowTitle("Send feedback");
-            setWindowIcon(QIcon(":/resource/16x16_ico_png/ico_app_send_feedback.png"));
+            setWindowIcon(QIcon("icons:ico_app_send_feedback.png"));
             ui_.grpMessage->setTitle("Message *");
             ui_.cmbFeelings->setVisible(true);
             break;
 
         case mode::request_feature:
             setWindowTitle("Request a Feature");
-            setWindowIcon(QIcon(":/resource/16x16_ico_png/ico_app_request_feature.png"));
+            setWindowIcon(QIcon("icons:ico_app_request_feature.png"));
             ui_.grpMessage->setTitle("Request *");
             break;
 
         case mode::request_license:
             setWindowTitle("Request Registration License");
-            setWindowIcon(QIcon(":/resource/16x16_ico_png/ico_app_request_license.png"));
+            setWindowIcon(QIcon("icons:ico_app_request_license.png"));
             ui_.grpMessage->setTitle("Request License");
             ui_.txtMessage->setPlainText(
                 QString(
@@ -90,9 +90,9 @@ DlgFeedback::~DlgFeedback()
 
 void DlgFeedback::on_btnSend_clicked()
 {
-    using feelings = app::feedback::feeling;
+    using feelings = app::Feedback::feeling;
 
-    app::feedback::message msg;
+    app::Feedback::Message msg;
     msg.type    = uimode_;
     msg.feeling = (feelings)ui_.cmbFeelings->currentIndex();
 
@@ -143,8 +143,8 @@ void DlgFeedback::on_btnSend_clicked()
 
     msg.country = ui_.editCountry->text();
 
-    feedback_.on_complete = [&](app::feedback::response r) {
-        using response = app::feedback::response;
+    feedback_.on_complete = [&](app::Feedback::response r) {
+        using response = app::Feedback::response;
 
         ui_.progress->setVisible(false);
         ui_.btnSend->setEnabled(true);

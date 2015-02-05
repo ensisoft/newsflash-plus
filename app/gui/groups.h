@@ -29,7 +29,7 @@
 #include <newsflash/warnpop.h>
 
 #include "mainwidget.h"
-#include "../groups.h"
+#include "../newslist.h"
 
 namespace gui
 {
@@ -51,12 +51,17 @@ namespace gui
         virtual info getInformation() const override;
 
     private slots:
+        void on_actionBrowse_triggered();
+        void on_actionFind_triggered();
         void on_actionRefresh_triggered();
-        void on_actionSubscribe_triggered();
-        void on_actionUnsubscribe_triggered();
+        void on_actionFavorite_triggered();
+        void on_actionUnfavorite_triggered();
+        void on_btnCloseFind_clicked();
         void on_cmbAccounts_currentIndexChanged();
         void on_tableGroups_customContextMenuRequested(QPoint point);
-        void on_chkSubscribedOnly_clicked(bool state);
+        void on_chkFavorites_clicked(bool state);
+        void on_editFind_returnPressed();
+        void on_editFind_textChanged();
 
         void accountsUpdated();
         void progressUpdated(quint32 acc, quint32 maxValue, quint32 curValue);
@@ -64,14 +69,12 @@ namespace gui
         void makeComplete(quint32 acc);
 
     private:
-        Ui::Groups ui_;
+        void resort();
 
     private:
-        struct ProgressState {
-
-        };
-
-        app::Groups model_;
+        Ui::Groups ui_;
+    private:
+        app::NewsList model_;
         quint32 curAccount_;
     };
 

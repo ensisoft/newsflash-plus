@@ -33,7 +33,7 @@
 #include "settings.h"
 
 namespace app {
-    class telephone;
+    class Telephone;
 } // app
 
 namespace gui
@@ -81,7 +81,7 @@ namespace gui
         void calledHome(bool new_version_available, QString latest);
 
     private:
-        std::unique_ptr<app::telephone> et_;
+        std::unique_ptr<app::Telephone> et_;
     private:
         bool check_for_updates_;
     };

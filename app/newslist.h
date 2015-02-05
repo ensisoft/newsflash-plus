@@ -39,7 +39,7 @@ namespace app
     struct NewsGroup;
     class Settings;
 
-    class Groups : public QAbstractTableModel
+    class NewsList : public QAbstractTableModel
     {
         Q_OBJECT
 
@@ -48,8 +48,8 @@ namespace app
             messages, subscribed, name, last
         };
 
-        Groups();
-       ~Groups();
+        NewsList();
+       ~NewsList();
 
         // QAbstractTableModel
         virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
@@ -65,7 +65,7 @@ namespace app
         void subscribe(QModelIndexList& list, quint32 account);
         void unsubscribe(QModelIndexList& list, quint32 account);
 
-        void setShowSubscribedOnly(bool on);
+        void filter(const QString& str, bool subscribed);
 
     signals:
         void progressUpdated(quint32 acc, quint32 maxValue, quint32 curValue);   

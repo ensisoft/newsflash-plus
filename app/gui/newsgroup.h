@@ -24,50 +24,36 @@
 
 #include <newsflash/config.h>
 #include <newsflash/warnpush.h>
-#  include <QtGlobal> // for quint64
-#include <newsflash/warnpush.h>
+#  include "ui_newsgroup.h"
+#include <newsflash/warnpop.h>
 
-class QString;
-class QPixmap;
-class QIcon;
+#include "mainwidget.h"
+#include "../newsgroup.h"
 
-// platform specific functions that are not provided by Qt
-// and some extra utility functions.
-
-namespace app
+namespace gui
 {
+    class NewsGroup : public MainWidget
+    {
+        Q_OBJECT
 
-QPixmap toGrayScale(const QPixmap& p);
+    public:
+        NewsGroup();
+       ~NewsGroup();
 
-// extract appliation icon from a 3rd party executable specified
-// by binary. binary is expected to be the complete path to the
-// executable in question.
-QIcon extractIcon(const QString& binary);
+        virtual void addActions(QMenu& menu) override;
+        virtual void addActions(QToolBar& bar) override;
 
-// return the name of the operating system that we're running on
-// for example Mint Linux, Ubuntu, Windows XP, Windows 7  etc.
-QString getPlatformName();
+        virtual MainWidget::info getInformation() const override
+        {
+            return {"group.html", false, false};
+        }
+    private slots:
+        void on_actionRefresh_triggered();
+        void on_actionFilter_triggered();
 
-// resolve the directory path to a mount-point / disk 
-QString resolveMountPoint(const QString& directory);
-
-// get free space available on the disk that contains
-// the object identified by filename
-quint64 getFreeDiskSpace(const QString& filename);
-
-// open a file on the local computer
-void openFile(const QString& file);
-
-void openWeb(const QString& url);
-
-// perform computer shutdown.
-void shutdownComputer();
-
-#if defined(LINUX_OS)
-  void setOpenfileCommand(const QString& cmd);
-  void setShutdownCommand(const QString& cmd);
-  QString getOpenfileCommand();
-  QString getShutdownCommand();
-#endif
-
-} // app
+    private:
+        Ui::NewsGroup ui_;
+    private:
+        app::NewsGroup model_;
+    };
+} // gui

@@ -54,6 +54,15 @@ namespace app
         quint32 value;
     };
 
+    struct volume {
+        volume() : numItems(0)
+        {}
+        volume(quint64 numItems) : numItems(numItems)
+        {}
+        quint64 numItems;
+    };
+
+
     struct gigs {
         gigs() : bytes(0)
         {}
@@ -186,6 +195,7 @@ namespace app
     QString format(const app::age& age);
     QString format(const app::runtime& rt);
     QString format(const app::etatime& eta);
+    QString format(const app::volume& vol);    
     QString format(const std::string& str);        
 
 

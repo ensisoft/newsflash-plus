@@ -41,15 +41,13 @@ class QNetworkRequest;
 
 namespace app
 {
-    class netman;
-
     // simple network manager class
-    class netman : public QObject
+    class NetworkManager : public QObject
     {
         Q_OBJECT
 
     public:
-        class context
+        class Context
         {
         public:
             // callback to be invoked (per token) when all requests
@@ -58,55 +56,57 @@ namespace app
 
             on_ready callback;
 
-            context() : num_pending_requests_(0)
+            Context() : num_pending_requests_(0)
             {}
-            context(netman& m) : num_pending_requests_(0), manager_(&m)
+            Context(NetworkManager& m) : num_pending_requests_(0), manager_(&m)
             {}
 
-           ~context()
+           ~Context()
             {
                 manager_->cancel(*this);
             }
 
         private:
-            friend class netman;
+            friend class NetworkManager;
         private:
             std::size_t num_pending_requests_;
         private:
-            netman* manager_;
+            NetworkManager* manager_;
         };
 
         // callback to be invoked when a request has completed.
         using on_reply = std::function<void(QNetworkReply&)>;
 
-        netman();
-       ~netman();
+        NetworkManager();
+       ~NetworkManager();
 
-        context get_submission_context()
-        { return context(*this); }
+        Context getSubmissionContext()
+        { 
+            return Context(*this); 
+        }
 
         // submit a new request to retrieve the content
         // at the specified URL.
-        void submit(on_reply callback, context& ctx, const QUrl& url);
+        void submit(on_reply callback, Context& ctx, const QUrl& url);
 
-        struct attachment {
+        struct Attachment {
             QString name;
             QByteArray data;
         };
 
-        void submit(on_reply callback, context& ctx, const QUrl& url,
-            const attachment& item);
+        void submit(on_reply callback, Context& ctx, const QUrl& url,
+            const Attachment& item);
 
         // cancel pending submissions. callback will not be invoked.
-        void cancel(context& c);
+        void cancel(Context& c);
 
     private slots:
         void finished(QNetworkReply* reply);
         void timeout();
 
     private:
-        void submit_next();
-        void update_ticks();
+        void submitNext();
+        void updateTicks();
 
     private:
         // network submission
@@ -116,7 +116,7 @@ namespace app
             QNetworkReply* reply;
             QNetworkRequest request;
             QByteArray attachment;
-            context* ctx;            
+            Context* ctx;            
             on_reply callback;
         };
     private:
@@ -127,6 +127,6 @@ namespace app
 
     const char* str(QNetworkReply::NetworkError err);
 
-    extern netman* g_net;
+    extern NetworkManager* g_net;
 
 } // app

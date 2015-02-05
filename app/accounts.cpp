@@ -20,6 +20,8 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.            
 
+#define LOGTAG "acc"
+
 #include <newsflash/config.h>
 
 #include <newsflash/warnpush.h>
@@ -48,12 +50,12 @@ Accounts::Accounts()
 {
     mainAccount_ = 0;
     fillAccount_ = 0;
-    DEBUG("accounts created");
+    DEBUG("Accounts created");
 }
 
 Accounts::~Accounts()
 {
-    DEBUG("accounts deleted");
+    DEBUG("Accounts deleted");
 }
 
 Account Accounts::suggestAccount() const
@@ -421,7 +423,7 @@ QVariant Accounts::data(const QModelIndex& index, int role) const
     }
     else if (role == Qt::DecorationRole)
     {
-        return QIcon(":/resource/16x16_ico_png/ico_account.png");
+        return QIcon("icons:ico_account.png");
     }
     return QVariant();
 }

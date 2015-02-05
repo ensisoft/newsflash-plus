@@ -42,17 +42,17 @@
 namespace app
 {
 
-telephone::telephone()
+Telephone::Telephone()
 {
     DEBUG(str("Current platform _1", getPlatformName()));
 
-    net_ = g_net->get_submission_context();
+    net_ = g_net->getSubmissionContext();
 }
 
-telephone::~telephone()
+Telephone::~Telephone()
 {}
 
-void telephone::callhome()
+void Telephone::callhome()
 {
     const auto& platform    = getPlatformName();
     const auto& fingerprint = keygen::generate_fingerprint();
@@ -63,13 +63,13 @@ void telephone::callhome()
     url.addQueryItem("platform", platform);    
     url.addQueryItem("fingerprint", fingerprint);
 
-    g_net->submit(std::bind(&telephone::on_finished, this, 
+    g_net->submit(std::bind(&Telephone::on_finished, this, 
         std::placeholders::_1), net_, url);
 
     DEBUG("Calling home...");
 }
 
-void telephone::on_finished(QNetworkReply& reply)
+void Telephone::on_finished(QNetworkReply& reply)
 {
     const auto err = reply.error();
     if (err != QNetworkReply::NoError)

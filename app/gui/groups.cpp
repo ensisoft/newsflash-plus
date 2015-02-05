@@ -35,6 +35,8 @@
 #include <newsflash/warnpop.h>
 
 #include "groups.h"
+#include "newsgroup.h"
+#include "mainwindow.h"
 #include "../accounts.h"
 #include "../homedir.h"
 #include "../settings.h"
@@ -56,16 +58,21 @@ Groups::Groups() : curAccount_(0)
     ui_.progressBar->setValue(0);
     ui_.progressBar->setVisible(false);
 
-    const auto nameWidth = ui_.tableGroups->columnWidth((int)app::Groups::Columns::name);
-    const auto subsWidth = ui_.tableGroups->columnWidth((int)app::Groups::Columns::subscribed);
-    ui_.tableGroups->setColumnWidth((int)app::Groups::Columns::name, nameWidth * 3);
-    ui_.tableGroups->setColumnWidth((int)app::Groups::Columns::subscribed, 32);
+    ui_.findContainer->setVisible(false);
+
+    const auto nameWidth = ui_.tableGroups->columnWidth((int)app::NewsList::Columns::name);
+    const auto subsWidth = ui_.tableGroups->columnWidth((int)app::NewsList::Columns::subscribed);
+    ui_.tableGroups->setColumnWidth((int)app::NewsList::Columns::name, nameWidth * 3);
+    ui_.tableGroups->setColumnWidth((int)app::NewsList::Columns::subscribed, 32);
 
     ui_.actionRefresh->setShortcut(QKeySequence::Refresh);
     ui_.actionRefresh->setEnabled(false);
 
     ui_.actionFind->setShortcut(QKeySequence::Find);
-    ui_.actionFind->setEnabled(false);
+
+    ui_.actionFavorite->setEnabled(false);
+
+    ui_.actionStop->setEnabled(false);
 
     QObject::connect(app::g_accounts, SIGNAL(accountsUpdated()),
         this, SLOT(accountsUpdated()));
@@ -87,8 +94,9 @@ void Groups::addActions(QMenu& menu)
     menu.addSeparator();
     menu.addAction(ui_.actionFind);
     menu.addSeparator();
-    menu.addAction(ui_.actionSubscribe);
-    menu.addAction(ui_.actionUnsubscribe);
+    menu.addAction(ui_.actionBrowse);
+    menu.addAction(ui_.actionFavorite);
+    menu.addAction(ui_.actionUnfavorite);
     menu.addSeparator();
     menu.addAction(ui_.actionStop);
 }
@@ -99,8 +107,9 @@ void Groups::addActions(QToolBar& bar)
     bar.addSeparator();
     bar.addAction(ui_.actionFind);
     bar.addSeparator();
-    bar.addAction(ui_.actionSubscribe);
-    bar.addAction(ui_.actionUnsubscribe);
+    bar.addAction(ui_.actionBrowse);
+    bar.addAction(ui_.actionFavorite);
+    bar.addAction(ui_.actionUnfavorite);
     bar.addSeparator();
     bar.addAction(ui_.actionStop);
 }
@@ -117,11 +126,11 @@ MainWidget::info Groups::getInformation() const
 
 void Groups::loadState(app::Settings& settings)
 {
-    const auto subscribedOnly = settings.get("news", "show_subscribed_only", false);
-    const auto sortColumn = settings.get("news", "sort_column", (int)app::Groups::Columns::name);
+    const auto favorites  = settings.get("news", "show_favorites_only", false);
+    const auto sortColumn = settings.get("news", "sort_column", (int)app::NewsList::Columns::name);
     const auto sortOrder  = settings.get("news", "sort_order", (int)Qt::AscendingOrder);
 
-    ui_.chkSubscribedOnly->setChecked(subscribedOnly);
+    ui_.chkFavorites->setChecked(favorites);
     ui_.tableGroups->sortByColumn(sortColumn, (Qt::SortOrder)sortOrder);
 
     const auto* model = ui_.tableGroups->model();
@@ -137,12 +146,12 @@ void Groups::loadState(app::Settings& settings)
 
 bool Groups::saveState(app::Settings& settings)
 {
-    const auto subscribedOnly = ui_.chkSubscribedOnly->isChecked();
+    const auto favorites = ui_.chkFavorites->isChecked();
     const QHeaderView* header = ui_.tableGroups->horizontalHeader();
     const auto sortColumn = header->sortIndicatorSection();
     const auto sortOrder  = header->sortIndicatorOrder();
 
-    settings.set("news", "show_subscribed_only", subscribedOnly);
+    settings.set("news", "show_favorites_only", favorites);
     settings.set("news", "sort_column", sortColumn);
     settings.set("news", "sort_order", sortOrder);
 
@@ -155,6 +164,23 @@ bool Groups::saveState(app::Settings& settings)
     }
 
     return true;
+}
+
+void Groups::on_actionBrowse_triggered()
+{
+    const auto& indices = ui_.tableGroups->selectionModel()->selectedRows();
+
+    for (int i=0; i<indices.size(); ++i)
+    {
+        auto* news = new NewsGroup();
+        g_win->attach(news, true);
+    }
+}
+
+void Groups::on_actionFind_triggered()
+{
+    ui_.findContainer->setVisible(true);
+    ui_.editFind->setFocus();
 }
 
 void Groups::on_actionRefresh_triggered()
@@ -182,7 +208,7 @@ void Groups::on_actionRefresh_triggered()
     Q_ASSERT(!"account was not found");
 }
 
-void Groups::on_actionSubscribe_triggered()
+void Groups::on_actionFavorite_triggered()
 {
     auto indices = ui_.tableGroups->selectionModel()->selectedRows();
     if (indices.isEmpty())
@@ -193,7 +219,7 @@ void Groups::on_actionSubscribe_triggered()
     model_.subscribe(indices, curAccount_);
 }
 
-void Groups::on_actionUnsubscribe_triggered()
+void Groups::on_actionUnfavorite_triggered()
 {
     auto indices = ui_.tableGroups->selectionModel()->selectedRows();
     if (indices.isEmpty())
@@ -207,8 +233,15 @@ void Groups::on_actionUnsubscribe_triggered()
     msg.setText(tr("Would you like to remove the local database?"));
 
     model_.unsubscribe(indices, curAccount_);
+
+    if (ui_.chkFavorites->isChecked())
+        resort();
 }
 
+void Groups::on_btnCloseFind_clicked()
+{
+    ui_.findContainer->setVisible(false);
+}
 
 void Groups::on_cmbAccounts_currentIndexChanged()
 {
@@ -252,23 +285,26 @@ void Groups::on_cmbAccounts_currentIndexChanged()
 void Groups::on_tableGroups_customContextMenuRequested(QPoint point)
 {
     QMenu menu(this);
-    menu.addAction(ui_.actionRefresh);
+    menu.addAction(ui_.actionBrowse);
     menu.addSeparator();
-    menu.addAction(ui_.actionSubscribe);
-    menu.addAction(ui_.actionUnsubscribe);
-    menu.addSeparator();
-    menu.addAction(ui_.actionStop);
-    menu.exec(point);
+    menu.addAction(ui_.actionFavorite);
+    menu.addAction(ui_.actionUnfavorite);
+    menu.exec(QCursor::pos());
 }
 
-void Groups::on_chkSubscribedOnly_clicked(bool state)
+void Groups::on_chkFavorites_clicked(bool state)
 {
-    model_.setShowSubscribedOnly(state);
+    resort();
+}
 
-    const QHeaderView* header = ui_.tableGroups->horizontalHeader();
-    const auto sortColumn = header->sortIndicatorSection();
-    const auto sortOrder  = header->sortIndicatorOrder();
-    ui_.tableGroups->sortByColumn(sortColumn, sortOrder);    
+void Groups::on_editFind_returnPressed()
+{
+    resort();
+}
+
+void Groups::on_editFind_textChanged()
+{
+    //resort();
 }
 
 void Groups::accountsUpdated()
@@ -301,8 +337,7 @@ void Groups::accountsUpdated()
     ui_.cmbAccounts->blockSignals(false);    
 
     ui_.actionRefresh->setEnabled(numAccounts != 0);
-    ui_.actionSubscribe->setEnabled(numAccounts != 0);
-    ui_.actionUnsubscribe->setEnabled(numAccounts != 0);
+    ui_.actionFavorite->setEnabled(numAccounts != 0);
 }
 
 void Groups::progressUpdated(quint32 acc, quint32 maxValue, quint32 curValue)
@@ -323,14 +358,9 @@ void Groups::loadComplete(quint32 acc)
     if (curAccount_ != acc)
         return;
 
-    const QHeaderView* header = ui_.tableGroups->horizontalHeader();
-    const auto sortColumn = header->sortIndicatorSection();
-    const auto sortOrder  = header->sortIndicatorOrder();
-
-    model_.setShowSubscribedOnly(ui_.chkSubscribedOnly->isChecked());
-
-    ui_.tableGroups->sortByColumn(sortColumn, sortOrder);
     ui_.progressBar->setVisible(false);
+
+    resort();
 }
 
 void Groups::makeComplete(quint32 accountId)
@@ -356,6 +386,29 @@ void Groups::makeComplete(quint32 accountId)
     }
 
     Q_ASSERT(!"Account was not found");
+}
+
+void Groups::resort()
+{
+    QString filter;
+    if (ui_.editFind->isVisible())
+        filter = ui_.editFind->text();
+
+    bool favorites = ui_.chkFavorites->isChecked();
+
+    model_.filter(filter, favorites);
+
+    const auto numRows = model_.rowCount(QModelIndex());
+    if (numRows == 0)
+        ui_.lblFind->setText(tr("No matches"));
+    else ui_.lblFind->setText(tr("%1 matches").arg(numRows));
+
+    ui_.actionFavorite->setEnabled(numRows != 0);
+
+    const QHeaderView* header = ui_.tableGroups->horizontalHeader();
+    const auto sortColumn = header->sortIndicatorSection();
+    const auto sortOrder  = header->sortIndicatorOrder();
+    ui_.tableGroups->sortByColumn(sortColumn, sortOrder);
 }
 
 } // gui

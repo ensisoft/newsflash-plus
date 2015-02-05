@@ -53,7 +53,7 @@ EventLog::EventLog()
 
         if (e.type == app::eventlog::event::error)
         {
-            setWindowIcon(QIcon(":/resource/16x16_ico_png/ico_error.png"));
+            setWindowIcon(QIcon("icons:ico_error.png"));
             g_win->update(this);
         }
         ui_.actionClearLog->setEnabled(true);
@@ -79,7 +79,7 @@ void EventLog::addActions(QToolBar& bar)
 
 void EventLog::activate(QWidget*)
 {
-    setWindowIcon(QIcon(":/resource/16x16_ico_png/ico_info.png"));
+    setWindowIcon(QIcon("icons:ico_info.png"));
     g_win->update(this);
 }
 

@@ -20,62 +20,65 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-#pragma once
+#define LOGTAG "news"
 
 #include <newsflash/config.h>
+
 #include <newsflash/warnpush.h>
-#  include <QString>
-#  include <QByteArray>
+#  include <QtGui/QMessageBox>
+#  include <QtGui/QToolBar>
+#  include <QtGui/QMenu>
+#  include <QtGui/QPixmap>
+#  include <QFile>
+#  include <QFileInfo>
 #include <newsflash/warnpop.h>
-#include <functional>
-#include "netman.h"
 
-namespace app
+#include "newsgroup.h"
+#include "../debug.h"
+#include "../format.h"
+
+using app::str;
+
+namespace gui
 {
-    class Feedback
-    {
-    public:
-        enum class type {
-            feedback,
-            bugreport,
-            request_feature,
-            request_license
-        };
-        enum class feeling {
-            positive, neutral, negative
-        };
 
-        enum class response {
-            success = 0,
-            dirty_rotten_spammer = 1,
-            database_unavailable = 2,
-            database_error = 3, 
-            email_unavailable = 4,
-            network_error = 5            
-        };
+NewsGroup::NewsGroup()
+{
+    using Cols = app::NewsGroup::Columns;
 
-        std::function<void (response r)> on_complete;
+    ui_.setupUi(this);
+    ui_.tableView->setModel(&model_);
+    ui_.tableView->setColumnWidth((int)Cols::BinaryFlag, 32);
+    ui_.tableView->setColumnWidth((int)Cols::NewFlag, 32);
+    ui_.tableView->setColumnWidth((int)Cols::DownloadFlag, 32);
+    ui_.tableView->setColumnWidth((int)Cols::BrokenFlag, 32);
+    ui_.tableView->setColumnWidth((int)Cols::BookmarkFlag, 32);
 
-        Feedback();
-       ~Feedback();
+    ui_.progressBar->setVisible(false);
+}
 
-        struct Message {
-            Feedback::type type;
-            Feedback::feeling feeling;
+NewsGroup::~NewsGroup()
+{}
 
-            QString name;
-            QString email;
-            QString country;
-            QString platform;
-            QString text;
-            QString attachment;
-            QString version;
-        };
+void NewsGroup::addActions(QToolBar& bar)
+{
+    bar.addAction(ui_.actionRefresh);
+    bar.addSeparator();
+    bar.addAction(ui_.actionFilter);
+}
 
-        void send(const Message& m);
+void NewsGroup::addActions(QMenu& menu)
+{
 
-    private:
-        NetworkManager::Context net_;
-    };
+}
 
-} // app
+void NewsGroup::on_actionRefresh_triggered()
+{
+
+}
+
+void NewsGroup::on_actionFilter_triggered()
+{}
+
+
+} // gui

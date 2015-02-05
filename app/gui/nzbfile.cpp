@@ -96,11 +96,6 @@ void NZBFile::addActions(QToolBar& bar)
     bar.addAction(ui_.actionSettings);
 }
 
-void NZBFile::closeWidget()
-{
-    delete this;
-}
-
 void NZBFile::loadState(app::Settings& s)
 {
     const bool filenames = s.get("nzb", "show_filename_only", false);
@@ -200,12 +195,12 @@ void NZBFile::on_actionSettings_triggered()
 void NZBFile::on_tableView_customContextMenuRequested(QPoint)
 {
     QMenu sub("Download to");
-    sub.setIcon(QIcon(":/resource/16x16_ico_png/ico_download.png"));
+    sub.setIcon(QIcon("icons:ico_download.png"));
 
     const auto& recents = g_win->getRecentPaths();
     for (const auto& recent : recents)
     {
-        QAction* action = sub.addAction(QIcon(":/resource/16x16_ico_png/ico_folder.png"), recent);
+        QAction* action = sub.addAction(QIcon("icons:ico_folder.png"), recent);
         QObject::connect(action, SIGNAL(triggered(bool)),
             this, SLOT(downloadToPrevious()));
     }
