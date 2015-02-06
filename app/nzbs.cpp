@@ -37,7 +37,7 @@
 namespace app
 {
 
-bool nzbs::parse(QIODevice& io, std::vector<mediaitem>& rss)
+bool Nzbs::parse(QIODevice& io, std::vector<MediaItem>& rss)
 {
     QDomDocument dom;
     QString error_string;
@@ -56,11 +56,11 @@ bool nzbs::parse(QIODevice& io, std::vector<mediaitem>& rss)
     {
         const auto& elem = items.at(i).toElement();
 
-        mediaitem item {};
+        MediaItem item {};
         item.title   = elem.firstChildElement("title").text();
         item.gid     = elem.firstChildElement("guid").text();
         item.nzblink = elem.firstChildElement("link").text();
-        item.pubdate = parse_rss_date(elem.firstChildElement("pubDate").text());
+        item.pubdate = parseRssDate(elem.firstChildElement("pubDate").text());
 
         const auto& attrs = elem.elementsByTagName("newznab:attr");
         for (int x=0; x<attrs.size(); ++x)
@@ -87,41 +87,41 @@ bool nzbs::parse(QIODevice& io, std::vector<mediaitem>& rss)
     return true;
 }
 
-void nzbs::prepare(media type, std::vector<QUrl>& urls)
+void Nzbs::prepare(Media type, std::vector<QUrl>& urls)
 {
     // mapping table
     struct feed {
-        media type;
+        Media type;
         const char* arg;
     } feeds[] = {
-        {media::console_nds, "1010"},
-        {media::console_psp, "1020"},
-        {media::console_wii, "1030"},
-        {media::console_xbox, "1040"},
-        {media::console_xbox360, "1050"},
-        {media::console_ps3, "1080"},
-        {media::console_ps2, "1090"},
-        {media::movies_int, "2060"}, // foreign
-        {media::movies_sd, "2010"}, // dvd
-        {media::movies_hd, "2040"}, // x264
-        {media::movies_hd, "2020"}, // wmv-hd
-        {media::audio_mp3, "3010"},
-        {media::audio_video, "3020"}, 
-        {media::audio_lossless, "3040"}, // flac
-        {media::apps_pc, "4010"}, // 0day
-        {media::apps_iso, "4020"},
-        {media::apps_mac, "4030"},
-        {media::apps_android, "4070"},
-        {media::apps_ios, "4060"},
-        {media::tv_int, "5080"}, // foreign
-        {media::tv_sd, "5010"}, // dvd
-        {media::tv_sd, "5070"}, // boxsd
-        {media::tv_hd, "5040"}, // hd
-        {media::tv_hd, "5090"}, // boxhd
-        {media::tv_other, "5060"},
-        {media::xxx_dvd, "6010"},
-        {media::xxx_hd, "6040"}, // x264
-        {media::xxx_sd, "6030"} // xvid
+        {Media::ConsoleNDS, "1010"},
+        {Media::ConsolePSP, "1020"},
+        {Media::ConsoleWii, "1030"},
+        {Media::ConsoleXbox, "1040"},
+        {Media::ConsoleXbox360, "1050"},
+        {Media::ConsolePS3, "1080"},
+        {Media::ConsolePS2, "1090"},
+        {Media::MoviesInt, "2060"}, // foreign
+        {Media::MoviesSD, "2010"}, // dvd
+        {Media::MoviesHD, "2040"}, // x264
+        {Media::MoviesWMV, "2020"}, // wmv-hd
+        {Media::AudioMp3, "3010"},
+        {Media::AudioVideo, "3020"}, 
+        {Media::AudioLossless, "3040"}, // flac
+        {Media::AppsPC, "4010"}, // 0day
+        {Media::AppsISO, "4020"},
+        {Media::AppsMac, "4030"},
+        {Media::AppsAndroid, "4070"},
+        {Media::AppsIos, "4060"},
+        {Media::TvInt, "5080"}, // foreign
+        {Media::TvSD, "5010"}, // dvd
+        {Media::TvSD, "5070"}, // boxsd
+        {Media::TvHD, "5040"}, // hd
+        {Media::TvHD, "5090"}, // boxhd
+        {Media::TvOther, "5060"},
+        {Media::XxxDVD, "6010"},
+        {Media::XxxHD, "6040"}, // x264
+        {Media::XxxSD, "6030"} // xvid
       //{media::other, "7010"} // other misc
     };
 

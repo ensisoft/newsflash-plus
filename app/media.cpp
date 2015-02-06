@@ -20,63 +20,64 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.            
 
-#include <cassert>
+#include <newsflash/config.h>
+#include <newsflash/warnpush.h>
+#  include <QRegExp>
+#include <newsflash/warnpop.h>
 #include "media.h"
 
 namespace app
 {
-const char* str(media m) 
+const char* str(Media m) 
 {
     switch (m)
     {
-        //case media::none: return "none";
-        case media::console_nds: return "Nintento DS";
-        case media::console_wii: return "Nintendo Wii";
-        case media::console_xbox: return "Xbox";
-        case media::console_xbox360: return "XBox 360";
-        case media::console_psp: return "Playstation Portable";
-        case media::console_ps2: return "Playstation 2";
-        case media::console_ps3: return "Playstation 3";
-        case media::console_ps4: return "Playstation 4";
-        //case media::console_playstation: return "Playstation";
-        //case media::console_nintendo: return "Nintendo";
-        //case media::console_microsoft: return "Microsoft Xbox/360";        
-        //case media::console: return "Console";
-        case media::movies_int: return "Movies Int.";
-        case media::movies_sd: return "Movies SD";
-        case media::movies_hd: return "Movies HD";
-        //case media::movies: return "Movies";
-        case media::audio_mp3: return "Mp3";
-        case media::audio_video: return "Music Videos";
-        case media::audio_audiobook: return "Audiobook";
-        case media::audio_lossless: return "Lossless Audio";
-        //case media::audio: return "Audio";
-        case media::apps_pc: return "PC";
-        case media::apps_iso: return "ISO";
-        case media::apps_mac: return "Mac";
-        case media::apps_android: return "Android";
-        case media::apps_ios: return "iOS";
-        //case media::apps: return "Apps";
-        case media::tv_int: return "TV Int.";
-        case media::tv_sd: return "TV SD";
-        case media::tv_hd: return "TV HD";
-        case media::tv_other: return "TV Other";
-        case media::tv_sport: return "TV Sports";
-        //case media::tv: return "TV";
-        case media::xxx_dvd: return "XXX DVD";
-        case media::xxx_hd: return "XXX HD";
-        case media::xxx_sd: return "XXX SD";
-        //case media::xxx: return "XXX";
-        case media::ebook: return "EBook";
-        //case media::all: return "All";
-        assert(!"unknown media");
+        case Media::ConsoleNDS:        return "Nintento DS";
+        case Media::ConsoleWii:        return "Nintendo Wii";
+        case Media::ConsoleXbox:       return "Xbox";
+        case Media::ConsoleXbox360:    return "XBox 360";
+        case Media::ConsolePSP:        return "Playstation Portable";
+        case Media::ConsolePS2:        return "Playstation 2";
+        case Media::ConsolePS3:        return "Playstation 3";
+        case Media::ConsolePS4:        return "Playstation 4";
+        case Media::MoviesInt:         return "Movies Int.";
+        case Media::MoviesSD:          return "Movies SD";
+        case Media::MoviesHD:          return "Movies HD";
+        case Media::MoviesWMV:         return "Movies WMV";
+        case Media::AudioMp3:          return "Mp3";
+        case Media::AudioVideo:        return "Music Videos";
+        case Media::AudioAudiobook:    return "Audiobook";
+        case Media::AudioLossless:     return "Lossless Audio";
+        case Media::AppsPC:            return "PC";
+        case Media::AppsISO:           return "ISO";
+        case Media::AppsMac:           return "Mac";
+        case Media::AppsAndroid:       return "Android";
+        case Media::AppsIos:           return "iOS";
+        case Media::TvInt:             return "TV Int.";
+        case Media::TvSD:              return "TV SD";
+        case Media::TvHD:              return "TV HD";
+        case Media::TvOther:           return "TV Other";
+        case Media::TvSport:           return "TV Sports";
+        case Media::XxxDVD:            return "XXX DVD";
+        case Media::XxxHD:             return "XXX HD";
+        case Media::XxxSD:             return "XXX SD";
+        case Media::Ebook:             return "EBook";
     }
-    return "???";
+    Q_ASSERT(!"WUT");
+    return "";
 }
 
 QString findMovieTitle(const QString& subject)
 {
-    return "The+Retrieval";
+    // match something like
+    // Two.Girls.And.a.Guy.1997.1080p.BluRay.x264-BARC0DE
+    const QRegExp pattern("(^\\S*)\\.(\\d{4})\\.");
+
+    if (pattern.indexIn(subject) == -1)
+        return "";
+
+    const auto title = pattern.cap(1);
+    return title;
 }
 
 } // app

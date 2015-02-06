@@ -33,13 +33,13 @@ namespace app
 {
     // womble, aka. newshost.co.za provides simple and hassle free RSS feed for usenet. 
     // also no registration or user credentials are required.
-    class womble : public rssfeed
+    class Womble : public RSSFeed
     {
     public:
-        virtual bool parse(QIODevice& io, std::vector<mediaitem>& rss) override;
+        virtual bool parse(QIODevice& io, std::vector<MediaItem>& rss) override;
 
         // user authentication is not required.
-        virtual void prepare(media m, std::vector<QUrl>& urls) override;
+        virtual void prepare(Media m, std::vector<QUrl>& urls) override;
 
         virtual QString site() const override
         { return "http://newshost.co.za"; }

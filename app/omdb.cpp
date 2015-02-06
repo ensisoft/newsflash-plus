@@ -53,9 +53,9 @@ MovieDatabase::~MovieDatabase()
 
 void MovieDatabase::beginLookup(const QString& title)
 {
-    QUrl url;
-    url.setUrl("http://www.omdbapi.com");
+    QUrl url("http://www.omdbapi.com/");
     url.addQueryItem("t", title);
+    url.addQueryItem("y", "");
     url.addQueryItem("plot", "short");
     url.addQueryItem("r", "json");
     g_net->submit(std::bind(&MovieDatabase::onLookupFinished, this,
@@ -79,15 +79,13 @@ const MovieDatabase::Movie* MovieDatabase::getMovie(const QString& title) const
 void MovieDatabase::onLookupFinished(QNetworkReply& reply, const QString& title)
 {
     const auto err = reply.error();
-    //if (err != QNetworkReply::NoError)
-    //{
-    //    ERROR(str("Failed to retrieve movie details '_1'", title));
-    //    return;
-    //}
+    if (err != QNetworkReply::NoError)
+    {
+       ERROR(str("Failed to retrieve movie details '_1'", title));
+       emit lookupError(title, "Failed to retrieve movie details (network error)");
+       return;
+    }
     QByteArray bytes = reply.readAll();
-
-    qDebug() << bytes;
-
     QBuffer io(&bytes);
 
     bool success = true;
@@ -97,21 +95,34 @@ void MovieDatabase::onLookupFinished(QNetworkReply& reply, const QString& title)
     if (!success)
     {
         ERROR(str("Incorrect JSON response from omdbapi.com"));
+        emit lookupError(title, "Incorrect JSON response from omdbapi.com");
         return;
     }
+    success = json["Response"].toBool();
+    if (!success)
+    {
+        const auto& err = json["Error"].toString();
+        emit lookupError(title, err);
+        return;
+    }
+
     Movie movie;
     movie.title = title;
     movie.genre = json["Genre"].toString();
     movie.plot  = json["Plot"].toString();
+    movie.director = json["Director"].toString();
+    movie.language = json["Language"].toString();
+    movie.country  = json["Country"].toString();
+    movie.rating   = json["imdbRating"].toFloat();
+    movie.year     = json["Year"].toInt();
+    movie.runtime  = json["Runtime"].toString();
     db_.insert(std::make_pair(title, movie));
 
     const auto& poster = json["Poster"].toString();
     DEBUG(str("Retrieving poster from _1", poster));
 
-    QUrl url;
-    url.setUrl(poster);
     g_net->submit(std::bind(&MovieDatabase::onPosterFinished, this,
-        std::placeholders::_1, title), net_, url);
+        std::placeholders::_1, title), net_, poster);
 
     emit lookupReady(title);
 
@@ -123,6 +134,7 @@ void MovieDatabase::onPosterFinished(QNetworkReply& reply, const QString& title)
     const auto err = reply.error();
     if (err != QNetworkReply::NoError)
     {
+        emit posterError(title, "Failed to retrieve the poster (network error)");
         return;
     }
 
@@ -134,10 +146,13 @@ void MovieDatabase::onPosterFinished(QNetworkReply& reply, const QString& title)
 
     if (!pixmap.loadFromData(bytes))
     {
+        emit posterError(title, "Invalid pixmap for poster");
         return;
     }
 
     emit posterReady(title);
+
+    DEBUG(str("Stored poster for '_1'", title));
 }
 
 MovieDatabase* g_movies;

@@ -34,6 +34,6 @@ namespace app
     // i.e. the date format specified in RFC 822/2822.
     // The returned QDateTime is in UTC time zone.
     // If string is not a valid date returns invalid QDateTime    
-    QDateTime parse_rss_date(const QString& str);
+    QDateTime parseRssDate(const QString& str);
 
 } // app

@@ -46,9 +46,11 @@ namespace gui
     private slots:
         void lookupReady(const QString& title);
         void posterReady(const QString& title);
-
+        void lookupError(const QString& title, const QString& errorStr);
+        void posterError(const QString& title, const QString& errorStr);
+        void reposition();
     private:
-        bool eventFilter(QObject* obj, QEvent* event);
+        void mousePressEvent(QMouseEvent* mickey);
 
     private:
         Ui::Movie ui_;

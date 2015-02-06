@@ -59,7 +59,7 @@ QDateTime parseDate(const QString& str)
 namespace app
 {
 
-bool womble::parse(QIODevice& io, std::vector<mediaitem>& rss)
+bool Womble::parse(QIODevice& io, std::vector<MediaItem>& rss)
 {
     QDomDocument dom;
     QString error_string;
@@ -78,7 +78,7 @@ bool womble::parse(QIODevice& io, std::vector<mediaitem>& rss)
     {
         const auto& elem = items.at(i).toElement();
 
-        mediaitem item {};
+        MediaItem item {};
         item.title    = elem.firstChildElement("title").text();
         item.gid      = elem.firstChildElement("link").text();
         item.pubdate  = parseDate(elem.firstChildElement("pubDate").text());
@@ -90,35 +90,35 @@ bool womble::parse(QIODevice& io, std::vector<mediaitem>& rss)
     return true;
 }
 
-void womble::prepare(media m, std::vector<QUrl>& urls)
+void Womble::prepare(Media m, std::vector<QUrl>& urls)
 {
     // our mapping table
     struct feed {
-        media type;
+        Media type;
         const char* arg;
     } feeds[] = {
-        {media::console_nds, "nds"},
-        {media::console_psp, "psp"},
-        {media::console_wii, "wii"},
-        {media::console_xbox, "xbox"},
-        {media::console_xbox360, "xbox360"},
-        {media::console_ps3, "ps3"},
-        {media::console_ps2, "ps2"},
-        {media::movies_sd, "divx"},
-        {media::movies_sd, "xvid"},
-        {media::movies_sd, "dvd-pal"},
-        {media::movies_hd, "bluray"}, // better than x264
-        {media::audio_mp3, "mp3"},
-        {media::audio_video, "mvids"}, // mvid and mv are same as mvids
-        {media::apps_pc, "0-day"},
-        {media::apps_pc, "0day"},
-        {media::apps_pc, "0day-"},
-        {media::apps_iso, "iso"},
-        {media::tv_sd, "tv-xvid"},
-        {media::tv_sd, "tv-dvdrip"},
-        {media::tv_hd, "tv-x264"},
-        {media::xxx_dvd, "xxx"},
-        {media::ebook, "ebook"}        
+        {Media::ConsoleNDS, "nds"},
+        {Media::ConsolePSP, "psp"},
+        {Media::ConsoleWii, "wii"},
+        {Media::ConsoleXbox, "xbox"},
+        {Media::ConsoleXbox360, "xbox360"},
+        {Media::ConsolePS3, "ps3"},
+        {Media::ConsolePS2, "ps2"},
+        {Media::MoviesSD, "divx"},
+        {Media::MoviesSD, "xvid"},
+        {Media::MoviesSD, "dvd-pal"},
+        {Media::MoviesHD, "bluray"}, // better than x264
+        {Media::AudioMp3, "mp3"},
+        {Media::AudioVideo, "mvids"}, // mvid and mv are same as mvids
+        {Media::AppsPC, "0-day"},
+        {Media::AppsPC, "0day"},
+        {Media::AppsPC, "0day-"},
+        {Media::AppsISO, "iso"},
+        {Media::TvSD, "tv-xvid"},
+        {Media::TvSD, "tv-dvdrip"},
+        {Media::TvHD, "tv-x264"},
+        {Media::XxxDVD, "xxx"},
+        {Media::Ebook, "ebook"}        
     };    
 
     const QString site("http://newshost.co.za/rss/?sec=%1&fr=false");

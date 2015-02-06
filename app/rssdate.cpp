@@ -30,7 +30,7 @@
 #include "rssdate.h"
 
 namespace {
-    int four_digit_year(int year)
+    int fourDigitYear(int year)
     {
         if (year < 1000)
             return 1900 + year;
@@ -42,7 +42,7 @@ namespace {
 namespace app
 {
 
-QDateTime parse_rss_date(const QString& str)
+QDateTime parseRssDate(const QString& str)
 {
     // match a RFC 822 date for example: "Fri, 26 Feb 2010 13:47:54 +0000"
     const QRegExp rfc822(
@@ -58,7 +58,7 @@ QDateTime parse_rss_date(const QString& str)
         // cap(0) returns the input matched the whole regular expression.
         // each subsequent index returns the input that matched that part 
         // of the subexpression.
-        const auto year  = four_digit_year(rfc822.cap(5).toInt());
+        const auto year  = fourDigitYear(rfc822.cap(5).toInt());
         const auto day   = rfc822.cap(3).toInt();
         const auto hour  = rfc822.cap(6).toInt();
         const auto min   = rfc822.cap(7).toInt();

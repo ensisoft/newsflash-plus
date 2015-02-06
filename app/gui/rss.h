@@ -85,9 +85,9 @@ namespace gui
     private:
         Ui::RSS ui_;
     private:
-        app::rss model_;        
+        app::RSS model_;        
     private:
-        newsflash::bitflag<app::media> streams_;
+        newsflash::bitflag<app::Media> streams_;
         bool enable_nzbs_;
         bool enable_womble_;
         QString nzbs_userid_;

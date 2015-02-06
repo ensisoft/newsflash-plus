@@ -45,9 +45,15 @@ namespace app
             QString title;
             QString genre;
             QString plot;
+            QString director;
+            QString language;
+            QString country;
+            QString runtime;
             QPixmap poster;
-            float imdbRating;
+            float rating;
+            int year;
         };
+
 
         MovieDatabase();
        ~MovieDatabase();
@@ -59,7 +65,9 @@ namespace app
 
     signals:
         void lookupReady(const QString& title);
+        void lookupError(const QString& title, const QString& error);
         void posterReady(const QString& title);
+        void posterError(const QString& title, const QString& error);
 
     private:
         void onLookupFinished(QNetworkReply& reply, const QString& title);

@@ -32,12 +32,12 @@
 namespace app
 {
     // nzbs aka. http://nzbs.org provides nice RSS feeds but requires registration.
-    class nzbs : public rssfeed
+    class Nzbs : public RSSFeed
     {
     public:
-        virtual bool parse(QIODevice& io, std::vector<mediaitem>& rss) override;
+        virtual bool parse(QIODevice& io, std::vector<MediaItem>& rss) override;
 
-        virtual void prepare(media m, std::vector<QUrl>& urls) override;
+        virtual void prepare(Media m, std::vector<QUrl>& urls) override;
 
         virtual QString site() const override
         { return "http://nzbs.org"; }
@@ -45,7 +45,7 @@ namespace app
         virtual QString name() const override
         { return "nzbs"; }
 
-        virtual void set_params(const params& p) override
+        virtual void setParams(const params& p) override
         {
             userid_ = p.user;
             apikey_ = p.key;

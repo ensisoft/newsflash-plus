@@ -49,6 +49,13 @@
              </property>
             </widget>
            </item>
+           <item>
+            <widget class="QCheckBox" name="chkMoviesWMV">
+             <property name="text">
+              <string>WMV</string>
+             </property>
+            </widget>
+           </item>
           </layout>
          </widget>
         </item>
@@ -311,6 +318,32 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>chkTvInt</tabstop>
+  <tabstop>chkTvSD</tabstop>
+  <tabstop>chkTvHD</tabstop>
+  <tabstop>chkMoviesInt</tabstop>
+  <tabstop>chkMoviesSD</tabstop>
+  <tabstop>chkMoviesHD</tabstop>
+  <tabstop>chkMoviesWMV</tabstop>
+  <tabstop>chkComputerPC</tabstop>
+  <tabstop>chkComputerISO</tabstop>
+  <tabstop>chkComputerMac</tabstop>
+  <tabstop>chkComputerAndroid</tabstop>
+  <tabstop>chkConsoleNintendo</tabstop>
+  <tabstop>chkConsolePlaystation</tabstop>
+  <tabstop>chkConsoleXbox</tabstop>
+  <tabstop>chkMusicMP3</tabstop>
+  <tabstop>chkMusicLosless</tabstop>
+  <tabstop>chkMusicVideo</tabstop>
+  <tabstop>chkXXXDVD</tabstop>
+  <tabstop>chkXXXSD</tabstop>
+  <tabstop>chkXXXHD</tabstop>
+  <tabstop>grpWomble</tabstop>
+  <tabstop>grpNZBS</tabstop>
+  <tabstop>edtNZBSUserId</tabstop>
+  <tabstop>edtNZBSApikey</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

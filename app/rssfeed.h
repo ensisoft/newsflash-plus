@@ -37,7 +37,7 @@ class QUrl;
 namespace app
 {
     // RSS feed processing interface
-    class rssfeed
+    class RSSFeed
     {
     public:
         struct params {
@@ -45,17 +45,17 @@ namespace app
             QString key;
             int feedsize;
         };
-        rssfeed() : enabled_(true)
+        RSSFeed() : enabled_(true)
         {}
 
-        virtual ~rssfeed() = default;
+        virtual ~RSSFeed() = default;
 
         // parse the RSS feed coming from the IO device and store the 
         // parsed media items into the vector.
-        virtual bool parse(QIODevice& io, std::vector<mediaitem>& rss) = 0;
+        virtual bool parse(QIODevice& io, std::vector<MediaItem>& rss) = 0;
 
         // prepare available URLs to retrieve the RSS feed for the matching media type.
-        virtual void prepare(media m, std::vector<QUrl>& urls) = 0;
+        virtual void prepare(Media m, std::vector<QUrl>& urls) = 0;
 
         // get site URL
         virtual QString site() const = 0;
@@ -63,12 +63,12 @@ namespace app
         // get site name
         virtual QString name() const = 0;
 
-        virtual void set_params(const params& p) {}
+        virtual void setParams(const params& p) {}
 
         virtual void enable(bool on_off)
         { enabled_ = on_off; }
 
-        virtual bool is_enabled() const 
+        virtual bool isEnabled() const 
         { return enabled_; }
     protected:
         bool enabled_;

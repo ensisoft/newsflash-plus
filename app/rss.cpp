@@ -48,12 +48,12 @@
 namespace app
 {
 
-rss::rss()
+RSS::RSS()
 {
     net_ = g_net->getSubmissionContext();
 
-    feeds_.emplace_back(new womble);
-    feeds_.emplace_back(new nzbs);
+    feeds_.emplace_back(new Womble);
+    feeds_.emplace_back(new Nzbs);
     INFO("RSS http://nzbs.org");
     INFO("RSS http://newshost.co.za");
 
@@ -61,15 +61,15 @@ rss::rss()
         on_ready();
     };
 
-    DEBUG("rss app created");
+    DEBUG("RSS app created");
 }
 
-rss::~rss()
+RSS::~RSS()
 {
-    DEBUG("rss app destroyed");
+    DEBUG("RSS app destroyed");
 }
 
-QVariant rss::data(const QModelIndex& index, int role) const
+QVariant RSS::data(const QModelIndex& index, int role) const
 {
     const auto row = index.row();
     const auto col = columns(index.column());        
@@ -108,7 +108,7 @@ QVariant rss::data(const QModelIndex& index, int role) const
     return QVariant();
 }
 
-QVariant rss::headerData(int section, Qt::Orientation orientation, int role) const
+QVariant RSS::headerData(int section, Qt::Orientation orientation, int role) const
 {
     if (role != Qt::DisplayRole)
         return QVariant();
@@ -126,13 +126,13 @@ QVariant rss::headerData(int section, Qt::Orientation orientation, int role) con
     return QVariant();
 }
 
-void rss::sort(int column, Qt::SortOrder order)
+void RSS::sort(int column, Qt::SortOrder order)
 {
     emit layoutAboutToBeChanged();
 
     #define SORT(x) \
         std::sort(std::begin(items_), std::end(items_), \
-            [&](const mediaitem& lhs, const mediaitem& rhs) { \
+            [&](const MediaItem& lhs, const MediaItem& rhs) { \
                 if (order == Qt::AscendingOrder) \
                     return lhs.x < rhs.x; \
                 return lhs.x > rhs.x; \
@@ -152,36 +152,36 @@ void rss::sort(int column, Qt::SortOrder order)
     emit layoutChanged();
 }
 
-int rss::rowCount(const QModelIndex&) const
+int RSS::rowCount(const QModelIndex&) const
 {
     return (int)items_.size();
 }
 
-int rss::columnCount(const QModelIndex&) const
+int RSS::columnCount(const QModelIndex&) const
 {
     return (int)columns::sentinel;
 }
 
-void rss::clear()
+void RSS::clear()
 {
     items_.clear();
     QAbstractTableModel::reset();                
 }
 
-bool rss::refresh(media type)
+bool RSS::refresh(Media type)
 {
     bool ret = false;
 
     for (auto& feed : feeds_)
     {
-        if (!feed->is_enabled())
+        if (!feed->isEnabled())
             continue;
 
         std::vector<QUrl> urls;
         feed->prepare(type, urls);
         for (const auto& url : urls)
         {
-            g_net->submit(std::bind(&rss::on_refresh_complete, this, feed.get(), type,
+            g_net->submit(std::bind(&RSS::onRefreshComplete, this, feed.get(), type,
                 std::placeholders::_1), net_, url);
             ret = true;
         }
@@ -190,7 +190,7 @@ bool rss::refresh(media type)
     return ret;
 }
 
-void rss::enable_feed(const QString& feed, bool on_off)
+void RSS::enableFeed(const QString& feed, bool on_off)
 {
     for (auto& f :feeds_)
     {
@@ -202,23 +202,23 @@ void rss::enable_feed(const QString& feed, bool on_off)
     }
 }
 
-void rss::set_credentials(const QString& feed, const QString& user, const QString& apikey)
+void RSS::setCredentials(const QString& feed, const QString& user, const QString& apikey)
 {
-    rssfeed::params p;
+    RSSFeed::params p;
     p.user = user;
     p.key  = apikey;
     for (auto& f : feeds_)
     {
         if (f->name() == feed)
         {
-            f->set_params(p);
+            f->setParams(p);
             return;
         }
     }
 }
 
 
-void rss::download_nzb_file(int row, const QString& file)
+void RSS::downloadNzbFile(int row, const QString& file)
 {
     Q_ASSERT(row >= 0);
     Q_ASSERT(row < items_.size());
@@ -226,23 +226,11 @@ void rss::download_nzb_file(int row, const QString& file)
     const auto& item = items_[row];
     const auto& link = item.nzblink;
     const auto& name = item.title;
-    g_net->submit(std::bind(&rss::on_nzbfile_complete, this, file,
+    g_net->submit(std::bind(&RSS::onNzbFileComplete, this, file,
         std::placeholders::_1), net_, link);
 }
 
-void rss::download_nzb_content(int row, quint32 account, const QString& folder)
-{
-    Q_ASSERT(row >= 0);
-    Q_ASSERT(row < items_.size());    
-
-    const auto& item = items_[row];
-    const auto& link = item.nzblink;
-    const auto& desc = item.title;
-    g_net->submit(std::bind(&rss::on_nzbdata_complete, this, folder, desc, account,
-        std::placeholders::_1), net_, link);
-}
-
-void rss::view_nzb_content(int row, data_callback cb)
+void RSS::downloadNzbFile(int row, data_callback cb)
 {
     Q_ASSERT(row >= 0);
     Q_ASSERT(row < items_.size());
@@ -250,16 +238,28 @@ void rss::view_nzb_content(int row, data_callback cb)
     const auto& item = items_[row];
     const auto& link = item.nzblink;
 
-    g_net->submit(std::bind(&rss::on_nzbdata_complete_callback, this, std::move(cb), 
+    g_net->submit(std::bind(&RSS::onNzbDataCompleteCallback, this, std::move(cb), 
         std::placeholders::_1), net_, link);
 }
 
-void rss::stop()
+void RSS::downloadNzbContent(int row, quint32 account, const QString& folder)
+{
+    Q_ASSERT(row >= 0);
+    Q_ASSERT(row < items_.size());    
+
+    const auto& item = items_[row];
+    const auto& link = item.nzblink;
+    const auto& desc = item.title;
+    g_net->submit(std::bind(&RSS::onNzbDataComplete, this, folder, desc, account,
+        std::placeholders::_1), net_, link);
+}
+
+void RSS::stop()
 {
     g_net->cancel(net_);
 }
 
-void rss::on_refresh_complete(rssfeed* feed, media type, QNetworkReply& reply)
+void RSS::onRefreshComplete(RSSFeed* feed, Media type, QNetworkReply& reply)
 {
     const auto err = reply.error();
     const auto url = reply.url();
@@ -274,7 +274,7 @@ void rss::on_refresh_complete(rssfeed* feed, media type, QNetworkReply& reply)
     //qDebug() << bytes.size();
     //qDebug() << bytes;
 
-    std::vector<mediaitem> items;
+    std::vector<MediaItem> items;
 
     if (!feed->parse(io, items))
     {
@@ -298,7 +298,7 @@ void rss::on_refresh_complete(rssfeed* feed, media type, QNetworkReply& reply)
     INFO(str("RSS feed from _1 complete", url));
 }
 
-void rss::on_nzbfile_complete(const QString& file, QNetworkReply& reply)
+void RSS::onNzbFileComplete(const QString& file, QNetworkReply& reply)
 {
     const auto err = reply.error();
     const auto url = reply.url();
@@ -320,7 +320,7 @@ void rss::on_nzbfile_complete(const QString& file, QNetworkReply& reply)
     INFO(str("Saved NZB file _1 _2", io, size { (unsigned)bytes.size() }));
 }
 
-void rss::on_nzbdata_complete(const QString& folder, const QString& desc, quint32 acc, QNetworkReply& reply)
+void RSS::onNzbDataComplete(const QString& folder, const QString& desc, quint32 acc, QNetworkReply& reply)
 {
     const auto err = reply.error();
     const auto url = reply.url();
@@ -335,7 +335,7 @@ void rss::on_nzbdata_complete(const QString& folder, const QString& desc, quint3
     g_engine->downloadNzbContents(acc, folder, desc, bytes);
 }
 
-void rss::on_nzbdata_complete_callback(const data_callback& cb, QNetworkReply& reply)
+void RSS::onNzbDataCompleteCallback(const data_callback& cb, QNetworkReply& reply)
 {
     const auto err = reply.error();
     const auto url = reply.url();

@@ -158,7 +158,7 @@ void RSS::addActions(QToolBar& bar)
 
 void RSS::activate(QWidget*)
 {
-    if (model_.empty())
+    if (model_.isEmpty())
     {
         const bool refreshing = ui_.progressBar->isVisible();
         if (refreshing)
@@ -219,9 +219,9 @@ void RSS::loadState(app::Settings& s)
 
     streams_.set_from_value(bits); // enable all bits (streams)
 
-    model_.enable_feed("womble", enable_womble_);
-    model_.enable_feed("nzbs", enable_nzbs_);
-    model_.set_credentials("nzbs", nzbs_userid_, nzbs_apikey_);
+    model_.enableFeed("womble", enable_womble_);
+    model_.enableFeed("nzbs", enable_nzbs_);
+    model_.setCredentials("nzbs", nzbs_userid_, nzbs_apikey_);
 
     const auto* model = ui_.tableView->model();
 
@@ -244,42 +244,43 @@ SettingsWidget* RSS::getSettings()
     auto* p = new MySettings;
     auto& ui = p->ui_;
 
-    using m = app::media;
-    if (streams_.test(m::tv_int)) ui.chkTvInt->setChecked(true);
-    if (streams_.test(m::tv_sd))  ui.chkTvSD->setChecked(true);
-    if (streams_.test(m::tv_hd))  ui.chkTvHD->setChecked(true);
+    using m = app::Media;
+    if (streams_.test(m::TvInt)) ui.chkTvInt->setChecked(true);
+    if (streams_.test(m::TvSD))  ui.chkTvSD->setChecked(true);
+    if (streams_.test(m::TvHD))  ui.chkTvHD->setChecked(true);
 
-    if (streams_.test(m::apps_pc)) ui.chkComputerPC->setChecked(true);
-    if (streams_.test(m::apps_iso)) ui.chkComputerISO->setChecked(true);
-    if (streams_.test(m::apps_android)) ui.chkComputerAndroid->setChecked(true);
-    if (streams_.test(m::apps_mac) || streams_.test(m::apps_ios)) 
+    if (streams_.test(m::AppsPC)) ui.chkComputerPC->setChecked(true);
+    if (streams_.test(m::AppsISO)) ui.chkComputerISO->setChecked(true);
+    if (streams_.test(m::AppsAndroid)) ui.chkComputerAndroid->setChecked(true);
+    if (streams_.test(m::AppsMac) || streams_.test(m::AppsIos)) 
         ui.chkComputerMac->setChecked(true);        
 
-    if (streams_.test(m::audio_mp3)) ui.chkMusicMP3->setChecked(true);
-    if (streams_.test(m::audio_video)) ui.chkMusicVideo->setChecked(true);
-    if (streams_.test(m::audio_lossless)) ui.chkMusicLosless->setChecked(true);
+    if (streams_.test(m::AudioMp3)) ui.chkMusicMP3->setChecked(true);
+    if (streams_.test(m::AudioVideo)) ui.chkMusicVideo->setChecked(true);
+    if (streams_.test(m::AudioLossless)) ui.chkMusicLosless->setChecked(true);
 
-    if (streams_.test(m::movies_int)) ui.chkMoviesInt->setChecked(true);
-    if (streams_.test(m::movies_sd)) ui.chkMoviesSD->setChecked(true);
-    if (streams_.test(m::movies_hd)) ui.chkMoviesHD->setChecked(true);
+    if (streams_.test(m::MoviesInt)) ui.chkMoviesInt->setChecked(true);
+    if (streams_.test(m::MoviesSD)) ui.chkMoviesSD->setChecked(true);
+    if (streams_.test(m::MoviesHD)) ui.chkMoviesHD->setChecked(true);
+    if (streams_.test(m::MoviesWMV)) ui.chkMoviesWMV->setChecked(true);
 
-    if (streams_.test(m::console_nds) ||
-        streams_.test(m::console_wii))
+    if (streams_.test(m::ConsoleNDS) ||
+        streams_.test(m::ConsoleWii))
         ui.chkConsoleNintendo->setChecked(true);
 
-    if (streams_.test(m::console_psp) ||
-        streams_.test(m::console_ps2) ||
-        streams_.test(m::console_ps3) ||
-        streams_.test(m::console_ps4))
+    if (streams_.test(m::ConsolePSP) ||
+        streams_.test(m::ConsolePS2) ||
+        streams_.test(m::ConsolePS3) ||
+        streams_.test(m::ConsolePS4))
         ui.chkConsolePlaystation->setChecked(true);
 
-    if (streams_.test(m::console_xbox) ||
-        streams_.test(m::console_xbox360))
+    if (streams_.test(m::ConsoleXbox) ||
+        streams_.test(m::ConsoleXbox360))
         ui.chkConsoleXbox->setChecked(true);
 
-    if (streams_.test(m::xxx_dvd)) ui.chkXXXDVD->setChecked(true);
-    if (streams_.test(m::xxx_sd)) ui.chkXXXSD->setChecked(true);
-    if (streams_.test(m::xxx_hd)) ui.chkXXXHD->setChecked(true);
+    if (streams_.test(m::XxxDVD)) ui.chkXXXDVD->setChecked(true);
+    if (streams_.test(m::XxxSD)) ui.chkXXXSD->setChecked(true);
+    if (streams_.test(m::XxxHD)) ui.chkXXXHD->setChecked(true);
 
     ui.grpWomble->setChecked(enable_womble_);
     ui.grpNZBS->setChecked(enable_nzbs_);
@@ -295,60 +296,61 @@ void RSS::applySettings(SettingsWidget* gui)
     auto* mine = dynamic_cast<MySettings*>(gui);
     auto& ui = mine->ui_;
 
-    using m = app::media;
+    using m = app::Media;
 
     streams_.clear();
 
-    if (ui.chkTvInt->isChecked()) streams_.set(m::tv_int);
-    if (ui.chkTvSD->isChecked()) streams_.set(m::tv_sd);
-    if (ui.chkTvHD->isChecked()) streams_.set(m::tv_hd);
+    if (ui.chkTvInt->isChecked()) streams_.set(m::TvInt);
+    if (ui.chkTvSD->isChecked()) streams_.set(m::TvSD);
+    if (ui.chkTvHD->isChecked()) streams_.set(m::TvHD);
 
-    if (ui.chkComputerPC->isChecked()) streams_.set(m::apps_pc);
-    if (ui.chkComputerISO->isChecked()) streams_.set(m::apps_iso);
-    if (ui.chkComputerAndroid->isChecked()) streams_.set(m::apps_android);
+    if (ui.chkComputerPC->isChecked()) streams_.set(m::AppsPC);
+    if (ui.chkComputerISO->isChecked()) streams_.set(m::AppsISO);
+    if (ui.chkComputerAndroid->isChecked()) streams_.set(m::AppsAndroid);
     if (ui.chkComputerMac->isChecked()) {
-        streams_.set(m::apps_mac);
-        streams_.set(m::apps_ios);
+        streams_.set(m::AppsMac);
+        streams_.set(m::AppsIos);
     }
 
-    if (ui.chkMusicMP3->isChecked()) streams_.set(m::audio_mp3);
-    if (ui.chkMusicVideo->isChecked()) streams_.set(m::audio_video);
-    if (ui.chkMusicLosless->isChecked()) streams_.set(m::audio_lossless);
+    if (ui.chkMusicMP3->isChecked()) streams_.set(m::AudioMp3);
+    if (ui.chkMusicVideo->isChecked()) streams_.set(m::AudioVideo);
+    if (ui.chkMusicLosless->isChecked()) streams_.set(m::AudioLossless);
 
-    if (ui.chkMoviesInt->isChecked()) streams_.set(m::movies_int);
-    if (ui.chkMoviesSD->isChecked()) streams_.set(m::movies_sd);
-    if (ui.chkMoviesHD->isChecked()) streams_.set(m::movies_hd);
+    if (ui.chkMoviesInt->isChecked()) streams_.set(m::MoviesInt);
+    if (ui.chkMoviesSD->isChecked()) streams_.set(m::MoviesSD);
+    if (ui.chkMoviesHD->isChecked()) streams_.set(m::MoviesHD);
+    if (ui.chkMoviesWMV->isChecked()) streams_.set(m::MoviesWMV);
 
     if (ui.chkConsoleNintendo->isChecked())
     {
-        streams_.set(m::console_nds);
-        streams_.set(m::console_wii);
+        streams_.set(m::ConsoleNDS);
+        streams_.set(m::ConsoleWii);
     }
     if (ui.chkConsolePlaystation->isChecked())
     {
-        streams_.set(m::console_psp);
-        streams_.set(m::console_ps2);
-        streams_.set(m::console_ps3);
-        streams_.set(m::console_ps4);
+        streams_.set(m::ConsolePSP);
+        streams_.set(m::ConsolePS2);
+        streams_.set(m::ConsolePS3);
+        streams_.set(m::ConsolePS4);
     }
     if (ui.chkConsoleXbox->isChecked())
     {
-        streams_.set(m::console_xbox);
-        streams_.set(m::console_xbox360);
+        streams_.set(m::ConsoleXbox);
+        streams_.set(m::ConsoleXbox360);
     }
 
-    if (ui.chkXXXDVD->isChecked()) streams_.set(m::xxx_dvd);
-    if (ui.chkXXXHD->isChecked()) streams_.set(m::xxx_hd);
-    if (ui.chkXXXSD->isChecked()) streams_.set(m::xxx_sd);
+    if (ui.chkXXXDVD->isChecked()) streams_.set(m::XxxDVD);
+    if (ui.chkXXXHD->isChecked()) streams_.set(m::XxxHD);
+    if (ui.chkXXXSD->isChecked()) streams_.set(m::XxxSD);
 
     enable_womble_    = ui.grpWomble->isChecked();
     enable_nzbs_      = ui.grpNZBS->isChecked();
     nzbs_apikey_      = ui.edtNZBSApikey->text();
     nzbs_userid_      = ui.edtNZBSUserId->text();
 
-    model_.enable_feed("womble", enable_womble_);
-    model_.enable_feed("nzbs", enable_nzbs_);
-    model_.set_credentials("nzbs", nzbs_userid_, nzbs_apikey_);    
+    model_.enableFeed("womble", enable_womble_);
+    model_.enableFeed("nzbs", enable_nzbs_);
+    model_.setCredentials("nzbs", nzbs_userid_, nzbs_apikey_);    
 }
 
 void RSS::freeSettings(SettingsWidget* s)
@@ -361,8 +363,11 @@ bool RSS::eventFilter(QObject* obj, QEvent* event)
     if (event->type() == QEvent::MouseMove)
     {
         popup_.start(1000);
-        //if (movie_)
-        //    movie_->hide();
+    }
+    else if (event->type() == QEvent::MouseButtonPress)
+    {
+        if (movie_)
+            movie_->hide();
     }
     return QObject::eventFilter(obj, event);
 }
@@ -384,7 +389,7 @@ void RSS::downloadSelected(const QString& folder)
         if (acc == 0)
             continue;
 
-        model_.download_nzb_content(row, acc, folder);
+        model_.downloadNzbContent(row, acc, folder);
         actions = true;
     }
 
@@ -410,18 +415,18 @@ void RSS::refresh(bool verbose)
         return;       
     }
 
-    using m = app::media;
-    using s = newsflash::bitflag<app::media>;
+    using m = app::Media;
+    using s = newsflash::bitflag<app::Media>;
 
 //    const auto foo = s(m::audio_mp3) | m::audio_lossless;
 
-    const auto audio   = s(m::audio_mp3) | s(m::audio_lossless) | s(m::audio_video);
-    const auto video   = s(m::movies_int) | s(m::movies_sd) | s(m::movies_hd);
-    const auto tv = s(m::tv_int) | s(m::tv_hd) | s(m::tv_sd);    
-    const auto computer = s(m::apps_pc) | s(m::apps_iso) | s(m::apps_android) | s(m::apps_ios) | s(m::apps_mac);
-    const auto xxx = s(m::xxx_dvd) | s(m::xxx_hd) | s(m::xxx_sd);
-    const auto console = s(m::console_psp) | s(m::console_ps2) | s(m::console_ps3) | s(m::console_ps4) |
-        s(m::console_xbox) | s(m::console_xbox360) | s(m::console_nds) | s(m::console_wii);
+    const auto audio   = s(m::AudioMp3) | s(m::AudioLossless) | s(m::AudioVideo);
+    const auto video   = s(m::MoviesInt) | s(m::MoviesSD) | s(m::MoviesHD) | s(m::MoviesWMV);
+    const auto tv = s(m::TvInt) | s(m::TvHD) | s(m::TvSD);    
+    const auto computer = s(m::AppsPC) | s(m::AppsISO) | s(m::AppsAndroid) | s(m::AppsIos) | s(m::AppsMac);
+    const auto xxx = s(m::XxxDVD) | s(m::XxxHD) | s(m::XxxSD);
+    const auto console = s(m::ConsolePSP) | s(m::ConsolePS2) | s(m::ConsolePS3) | s(m::ConsolePS4) |
+        s(m::ConsoleXbox) | s(m::ConsoleXbox360) | s(m::ConsoleNDS) | s(m::ConsoleWii);
 
     struct feed {
         QCheckBox* chk;
@@ -445,8 +450,8 @@ void RSS::refresh(bool verbose)
 
         // iterate all the bits (streams) and start RSS refresh operations
         // on all bits that are set.
-        auto beg = app::media_iterator::begin();
-        auto end = app::media_iterator::end();
+        auto beg = app::MediaIterator::begin();
+        auto end = app::MediaIterator::end();
         for (; beg != end; ++beg)
         {
             const auto m = *beg;
@@ -528,7 +533,7 @@ void RSS::on_actionSave_triggered()
         const auto& nzb  = g_win->selectNzbSaveFile(item.title + ".nzb");
         if (nzb.isEmpty())
             continue;
-        model_.download_nzb_file(indices[i].row(), nzb);
+        model_.downloadNzbFile(indices[i].row(), nzb);
     }
     ui_.progressBar->setVisible(true);
     ui_.actionStop->setEnabled(true);
@@ -551,7 +556,7 @@ void RSS::on_actionOpen_triggered()
         const auto  row  = indices[i].row();
         const auto& item = model_.getItem(row);
         const auto& desc = item.title;
-        model_.view_nzb_content(row, std::bind(callback,
+        model_.downloadNzbFile(row, std::bind(callback,
             std::placeholders::_1, desc));
     }
 
@@ -641,9 +646,11 @@ void RSS::downloadToPrevious()
 }
 void RSS::popupDetails()
 {
-    DEBUG("Popup event!");
+    //DEBUG("Popup event!");
 
     popup_.stop();
+    if (movie_ && movie_->isVisible())
+        return;
 
     if (!ui_.tableView->underMouse())
         return;
@@ -662,17 +669,23 @@ void RSS::popupDetails()
     if (i == all.size())
         return;
 
-    const auto& item  = model_.getItem(sel.row());
-    const auto& title = app::findMovieTitle(item.title);
-    if (title.isEmpty())
-        return;
+    using media = app::Media;
 
-    if (!movie_)
+    const auto& item  = model_.getItem(sel.row());
+    if (item.type == media::MoviesInt ||
+        item.type == media::MoviesSD ||
+        item.type == media::MoviesHD ||
+        item.type == media::MoviesWMV)
     {
-        movie_.reset(new DlgMovie(this));
-    }    
-    movie_->move(QCursor::pos());
-    movie_->lookup(title);
+        const auto& title = app::findMovieTitle(item.title);
+        if (title.isEmpty())
+            return;
+        if (!movie_)
+        {
+            movie_.reset(new DlgMovie(this));
+        }    
+        movie_->lookup(title);
+    }
 }
 
 } // gui

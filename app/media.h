@@ -39,60 +39,58 @@ namespace app
     // int = international
     // sd  = standard definition
     // hd  = high definition
-    enum class media {
+    enum class Media {
         //console,
-        console_nds,    
-        console_wii,    
-        console_xbox,   
-        console_xbox360,
-        console_psp,    
-        console_ps2,    
-        console_ps3,   
-        console_ps4,   
+        ConsoleNDS,    
+        ConsoleWii,    
+        ConsoleXbox,   
+        ConsoleXbox360,
+        ConsolePSP,    
+        ConsolePS2,    
+        ConsolePS3,   
+        ConsolePS4,   
 
         //movies,
-        movies_int,
-        movies_sd, 
-        movies_hd, 
+        MoviesInt,
+        MoviesSD, 
+        MoviesHD,
+        MoviesWMV,
         
         //audio,
-        audio_mp3,
-        audio_video,
-        audio_audiobook,
-        audio_lossless,
+        AudioMp3,
+        AudioVideo,
+        AudioAudiobook,
+        AudioLossless,
 
         //apps,
-        apps_pc,    
-        apps_iso,   
-        apps_mac,   
-        apps_android,
-        apps_ios,    
+        AppsPC,    
+        AppsISO,   
+        AppsMac,   
+        AppsAndroid,
+        AppsIos,    
 
         //tv,
-        tv_int,
-        tv_sd, 
-        tv_hd, 
-        tv_other,
-        tv_sport, 
+        TvInt,
+        TvSD, 
+        TvHD, 
+        TvOther,
+        TvSport, 
 
         //xxx,
-        xxx_dvd, 
-        xxx_hd,
-        xxx_sd,
+        XxxDVD,
+        XxxHD,
+        XxxSD,
 
         //other
-        ebook,
-
-        // needs to be last value!
-        sentinel
+        Ebook
     };
 
 
     // media item. these items are retrieved from RSS feeds/newznab etc. searches.
-    struct mediaitem {
+    struct MediaItem {
 
         // media tag flags set on this item
-        media type;
+        Media type;
 
         // human readable title
         QString title;
@@ -114,69 +112,65 @@ namespace app
     };
 
     // media iterator to iterate over media tags.
-    class media_iterator : public std::iterator<std::forward_iterator_tag, media>
+    class MediaIterator : public std::iterator<std::forward_iterator_tag, Media>
     {
     public:
-        media_iterator(media beg) : cur_(beg)
+        MediaIterator(unsigned value) : value_(value)
         {}
-        media_iterator() : cur_(media::sentinel)
+        MediaIterator() : value_((unsigned)Media::Ebook + 1)
         {}
 
         // postfix
-        media_iterator operator ++(int)
+        MediaIterator operator ++(int)
         {
-            media_iterator tmp(cur_);
-            auto value = (unsigned)cur_;
-            ++value;
-            cur_ = (media)value;
+            MediaIterator tmp(value_);
+            ++value_;
             return tmp;
         }
 
-        media_iterator& operator++()
+        MediaIterator& operator++()
         {
-            auto value = (unsigned)cur_;
-            ++value;
-            cur_ = (media)value;
+            ++value_;
             return *this;
         }
-        media operator*() const 
+        Media operator*() const 
         {
-            return cur_;
+            return (Media)value_;
         }
-        media& operator*()
+        Media& operator*()
         {
-            return cur_;
+            return (Media&)value_;
         }
         static 
-        media_iterator begin() 
+        MediaIterator begin() 
         {
-            return media_iterator(media::console_nds);
+            return MediaIterator((unsigned)Media::ConsoleNDS);
         }
         static
-        media_iterator end() 
+        MediaIterator end() 
         {
-            return media_iterator(media::sentinel);
+            return MediaIterator((unsigned)Media::Ebook + 1);
         }
 
     private:
-        friend bool operator==(const media_iterator&, const media_iterator&);
+        friend bool operator==(const MediaIterator&, const MediaIterator&);
     private:
-        media cur_;
+        unsigned value_;
     };
 
     inline
-    bool operator==(const media_iterator& lhs, const media_iterator& rhs)
+    bool operator==(const MediaIterator& lhs, const MediaIterator& rhs)
     {
-        return lhs.cur_ == rhs.cur_;
+        return lhs.value_ == rhs.value_;
     }
     inline 
-    bool operator!=(const media_iterator& lhs, const media_iterator& rhs)
+    bool operator!=(const MediaIterator& lhs, const MediaIterator& rhs)
     {
         return !(lhs == rhs);
     }
 
     // stringify media tag name
-    const char* str(media m);
+    const char* str(Media m);
 
     QString findMovieTitle(const QString& subject);
 

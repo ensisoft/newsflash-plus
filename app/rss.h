@@ -41,11 +41,13 @@
 
 namespace app
 {
-    class rss : public QAbstractTableModel
+    class RSSFeed;
+
+    class RSS : public QAbstractTableModel
     {
     public:
-        rss();
-       ~rss();
+        RSS();
+       ~RSS();
         
         std::function<void()> on_ready;
 
@@ -62,38 +64,38 @@ namespace app
         // refresh the RSS stream for media type m.
         // returns true if there are RSS feeds in this media
         // category to be refreshed. otherwise false and no network activity occurs.
-        bool refresh(media m);
+        bool refresh(Media m);
 
-        void enable_feed(const QString& feed, bool on_off);
+        void enableFeed(const QString& feed, bool on_off);
 
-        void set_credentials(const QString& feed, const QString& user, const QString& apikey);
-
-        // save NZB description of the RSS item and place the .nzb file in the given folder.
-        void download_nzb_file(int row, const QString& file);
-
-        // download the contents of the RSS item.
-        void download_nzb_content(int row, quint32 account, const QString& folder);
+        void setCredentials(const QString& feed, const QString& user, const QString& apikey);
 
         using data_callback = std::function<void (const QByteArray&)>;
 
+        // save NZB description of the RSS item and place the .nzb file in the given folder.
+        void downloadNzbFile(int row, const QString& file);
+
         // download the contents of the RSS item and upon completion
         // invoke the callback handler.
-        void view_nzb_content(int row, data_callback cb);
+        void downloadNzbFile(int row, data_callback cb);
+
+        // download the contents of the RSS item.
+        void downloadNzbContent(int row, quint32 account, const QString& folder);
 
         // stop/cancel pending network operations.
         void stop();
 
-        const mediaitem& getItem(std::size_t i) const
+        const MediaItem& getItem(std::size_t i) const
         { return items_[i]; }
 
-        bool empty() const
+        bool isEmpty() const
         { return items_.empty(); }
 
     private:
-        void on_refresh_complete(rssfeed* feed, media type, QNetworkReply& reply);
-        void on_nzbfile_complete(const QString& file, QNetworkReply& reply);
-        void on_nzbdata_complete(const QString& folder, const QString& title, quint32 acc, QNetworkReply& rely);
-        void on_nzbdata_complete_callback(const data_callback& cb, QNetworkReply& reply);
+        void onRefreshComplete(RSSFeed* feed, Media type, QNetworkReply& reply);
+        void onNzbFileComplete(const QString& file, QNetworkReply& reply);
+        void onNzbDataComplete(const QString& folder, const QString& title, quint32 acc, QNetworkReply& rely);
+        void onNzbDataCompleteCallback(const data_callback& cb, QNetworkReply& reply);
 
     private:
         enum class columns {
@@ -101,8 +103,8 @@ namespace app
         };                
 
     private:
-        std::vector<std::unique_ptr<rssfeed>> feeds_;
-        std::vector<mediaitem> items_;          
+        std::vector<std::unique_ptr<RSSFeed>> feeds_;
+        std::vector<MediaItem> items_;          
     private:
         NetworkManager::Context net_;
     };
