@@ -49,7 +49,7 @@ const char* filepattern(filetype type)
         case filetype::text:
             return ".txt | .nfo | .sfv | .log";
         case filetype::archive:
-            return ".zip | .rar | .r[0-9]{1,3} | .7z";
+            return ".zip | .rar | .7z | .r\\d{1,3} | .\\d{2}";
         case filetype::parity:
             return ".par | .par2";
         case filetype::document:

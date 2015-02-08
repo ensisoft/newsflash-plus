@@ -82,6 +82,7 @@ void DlgMovie::lookupReady(const QString& title)
     ss << "Title: " << movie->title << "<br>";
     ss << "Genre: " << movie->genre << "<br>";
     ss << "Director: " << movie->director << "<br>";
+    ss << "Actors: " << movie->actors << "<br>";
     ss << "Language: " << movie->language << "<br>";
     ss << "Country: " << movie->country << ", " << QString::number(movie->year) << "<br>";
     ss << "Runtime: " << movie->runtime << "<br>";

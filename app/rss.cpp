@@ -44,6 +44,7 @@
 #include "nzbs.h"
 #include "nzbparse.h"
 #include "engine.h"
+#include "platform.h"
 
 namespace app
 {
@@ -82,6 +83,9 @@ QVariant RSS::data(const QModelIndex& index, int role) const
             case columns::date:
                 return format(app::event {item.pubdate}); 
 
+            case columns::locked: return "";
+
+
             case columns::category:
                 return str(item.type);
 
@@ -93,37 +97,43 @@ QVariant RSS::data(const QModelIndex& index, int role) const
                     return "n/a";
                 return format(size { item.size });
 
-            default:
-                Q_ASSERT(!"unknown column");
-                break;
+            case columns::sentinel: Q_ASSERT(0);
         }
     }
     else if (role == Qt::DecorationRole)
     {
         if (col  == columns::date)
             return QIcon("icons:ico_rss.png");
-        else if (col == columns::title && item.password)
+        else if (col == columns::locked && item.password)
             return QIcon("icons:ico_password.png");
     }
-    return QVariant();
+    return {};
 }
 
 QVariant RSS::headerData(int section, Qt::Orientation orientation, int role) const
 {
-    if (role != Qt::DisplayRole)
-        return QVariant();
+    if (orientation != Qt::Horizontal)
+        return {};
 
-    switch (columns(section))
+    if (role == Qt::DisplayRole)
     {
-        case columns::date:     return "Date";
-        case columns::category: return "Category";
-        case columns::size:     return "Size";
-        case columns::title:    return "Title";
-        default:
-        Q_ASSERT(!"unknown column");
-        break;
+        switch (columns(section))
+        {
+            case columns::date:     return "Date";
+            case columns::locked:   return "";
+            case columns::category: return "Category";
+            case columns::size:     return "Size";
+            case columns::title:    return "Title";
+            case columns::sentinel: Q_ASSERT(false); break;
+        }
     }
-    return QVariant();
+    else if (role == Qt::DecorationRole)
+    {
+        static const QIcon icoLock(toGrayScale(QPixmap("icons:ico_password.png")));
+        if (columns(section) == columns::locked)
+            return icoLock;
+    }
+    return {};
 }
 
 void RSS::sort(int column, Qt::SortOrder order)
@@ -142,10 +152,9 @@ void RSS::sort(int column, Qt::SortOrder order)
             case columns::date:     SORT(pubdate); break;
             case columns::category: SORT(type);    break;
             case columns::size:     SORT(size);    break;
+            case columns::locked:   SORT(password); break;
             case columns::title:    SORT(title);   break;
-            default:
-            Q_ASSERT(!"unknown column");
-            break;
+            case columns::sentinel: Q_ASSERT(false); break;
         }
     #undef SORT
 

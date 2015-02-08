@@ -49,6 +49,7 @@ namespace app
             QString language;
             QString country;
             QString runtime;
+            QString actors;
             QPixmap poster;
             float rating;
             int year;

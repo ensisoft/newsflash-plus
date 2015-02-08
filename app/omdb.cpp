@@ -116,6 +116,7 @@ void MovieDatabase::onLookupFinished(QNetworkReply& reply, const QString& title)
     movie.rating   = json["imdbRating"].toFloat();
     movie.year     = json["Year"].toInt();
     movie.runtime  = json["Runtime"].toString();
+    movie.actors   = json["Actors"].toString();
     db_.insert(std::make_pair(title, movie));
 
     const auto& poster = json["Poster"].toString();

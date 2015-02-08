@@ -109,7 +109,7 @@ RSS::RSS()
     ui_.tableView->viewport()->installEventFilter(this);
     ui_.tableView->viewport()->setMouseTracking(true);
     ui_.tableView->setMouseTracking(true);
-
+    ui_.tableView->setColumnWidth((int)app::RSS::columns::locked, 32);
 
     // when the model has no more actions we hide the progress bar and disable
     // the stop button.

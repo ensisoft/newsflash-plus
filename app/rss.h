@@ -46,6 +46,10 @@ namespace app
     class RSS : public QAbstractTableModel
     {
     public:
+        enum class columns {
+            date, category, size, locked, title, sentinel
+        };                
+
         RSS();
        ~RSS();
         
@@ -96,11 +100,6 @@ namespace app
         void onNzbFileComplete(const QString& file, QNetworkReply& reply);
         void onNzbDataComplete(const QString& folder, const QString& title, quint32 acc, QNetworkReply& rely);
         void onNzbDataCompleteCallback(const data_callback& cb, QNetworkReply& reply);
-
-    private:
-        enum class columns {
-            date, category, size, title, sentinel
-        };                
 
     private:
         std::vector<std::unique_ptr<RSSFeed>> feeds_;
