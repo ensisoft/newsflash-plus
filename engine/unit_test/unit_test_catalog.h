@@ -1,4 +1,4 @@
-// Copyright (c) 2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -20,42 +20,28 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-#pragma once
-
 #include <newsflash/config.h>
-#include <memory>
-#include <cstdint>
-#include "task.h"
 
-namespace newsflash
+#include <boost/test/minimal.hpp>
+#include "../bigfile.h"
+#include "../filemap.h"
+#include "../catalog.h"
+#include "unit_test_common.h"
+
+void unit_test_create_new()
 {
-    class update : public task
+    delete_file("file");
+
     {
-    public:
-        update(std::string path, std::string group);
-       ~update();
+        //newsflash::catalog<newsflash::memfile> catalog;
+    }
 
-        virtual std::unique_ptr<cmdlist> create_commands() override;
+    delete_file("file");
+}
 
-        virtual void complete(cmdlist& cmd, 
-            std::vector<std::unique_ptr<action>>& next) override;
+int test_main(int, char*[])
+{
+    unit_test_create_new();
 
-        virtual void complete(action& a, 
-            std::vector<std::unique_ptr<action>>& next) override;
-
-        virtual bool has_commands() const override;
-    private:
-        class parse;
-        struct state;
-
-    private:
-        std::shared_ptr<state> state_;
-        std::uint64_t remote_last_;
-        std::uint64_t remote_first_;
-        std::uint64_t local_last_;
-        std::uint64_t local_first_;
-        std::uint64_t current_last_;
-        std::uint64_t current_first_;
-    };
-
-} // newsflash
+    return 0;
+}

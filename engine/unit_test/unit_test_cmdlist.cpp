@@ -34,8 +34,11 @@ void unit_test_bodylist()
 {
     // no such group
     {
-        nf::cmdlist list({"alt.binaries.foo", "alt.binaries.bar"}, {"123", "234", "345"}, 
-            nf::cmdlist::type::body);
+        nf::cmdlist::messages m;
+        m.groups   = {"alt.binaries.foo", "alt.binaries.bar"};
+        m.messages = {"123", "234", "345"};
+
+        nf::cmdlist list(std::move(m));
 
         std::string command;
         nf::session session;
@@ -73,8 +76,11 @@ void unit_test_bodylist()
 
     {
 
-        nf::cmdlist list({"alt.binaries.foo", "alt.binaries.bar"}, {"123", "234", "345"},
-            nf::cmdlist::type::body);
+        nf::cmdlist::messages m;
+        m.groups   = {"alt.binaries.foo", "alt.binaries.bar"};
+        m.messages = {"123", "234", "345"};
+
+        nf::cmdlist list(std::move(m));
 
         std::string command;
         nf::session session;
@@ -142,8 +148,11 @@ bool operator==(const nf::buffer& buff, const char* str)
 
 void unit_test_refill()
 {
-    nf::cmdlist list({"alt.binaries.foo"}, {"1", "2", "3", "4"},
-        nf::cmdlist::type::body);
+    nf::cmdlist::messages m;
+    m.groups   = {"alt.binaries.foo"};
+    m.messages = {"1", "2", "3", "4"};
+
+    nf::cmdlist list(std::move(m));
 
     std::string command;
     nf::session session;
@@ -220,7 +229,7 @@ void unit_test_refill()
 
 void unit_test_listing()
 {
-    nf::cmdlist listing;
+    nf::cmdlist listing(nf::cmdlist::listing{});
 
     std::string command;
     nf::session session;
@@ -250,10 +259,72 @@ void unit_test_listing()
 
 }
 
+void unit_test_groupinfo()
+{
+    // success
+    {
+        nf::cmdlist list(nf::cmdlist::groupinfo{"alt.binaries.foo"});
+
+        std::string command;
+        nf::session session;
+        session.on_send = [&](const std::string& cmd) {
+            command = cmd;
+        };
+
+        BOOST_REQUIRE(list.needs_to_configure() == false);
+
+        list.submit_data_commands(session);
+        session.send_next();
+
+        BOOST_REQUIRE(command == "GROUP alt.binaries.foo\r\n");
+
+        nf::buffer i(64);
+        nf::buffer o(64);
+        i.append("211 3 0 2 alt.binaries.foo\r\n");
+
+        session.recv_next(i, o);
+        BOOST_REQUIRE(o.content_status() == nf::buffer::status::success);
+
+        list.receive_data_buffer(std::move(o));
+
+        const auto& buffers = list.get_buffers();
+        BOOST_REQUIRE(buffers.size() == 1);
+        BOOST_REQUIRE(buffers[0].content_status() == nf::buffer::status::success);
+    }
+
+    // failure
+    {
+        nf::cmdlist list(nf::cmdlist::groupinfo{"alt.binaries.foo"});
+
+        std::string command;
+        nf::session session;
+        session.on_send = [&](const std::string& cmd) {
+            command = cmd;
+        };
+
+        list.submit_data_commands(session);
+
+        session.send_next();
+
+        nf::buffer i(64);
+        nf::buffer o(64);
+        i.append("411 no such newsgroup\r\n");
+        session.recv_next(i, o);
+
+        list.receive_data_buffer(std::move(o));
+
+        const auto& buffers = list.get_buffers();
+        BOOST_REQUIRE(buffers.size() == 1);
+        BOOST_REQUIRE(buffers[0].content_status() == nf::buffer::status::unavailable);
+
+    }
+}
+
 int test_main(int, char*[])
 {
     unit_test_bodylist();
     unit_test_refill();
     unit_test_listing();
+    unit_test_groupinfo();
     return 0;
 }

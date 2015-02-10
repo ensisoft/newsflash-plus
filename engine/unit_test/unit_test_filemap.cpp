@@ -25,7 +25,7 @@
 #include <boost/test/minimal.hpp>
 #include <vector>
 #include <algorithm>
-#include "../memfile.h"
+#include "../filemap.h"
 #include "../bigfile.h"
 #include "unit_test_common.h"
 
@@ -64,7 +64,7 @@ void test_map_whole_file()
     file.close();
 
     {
-        newsflash::memfile map;
+        newsflash::filemap map;
         BOOST_REQUIRE(map.map("file") == std::error_code());
         BOOST_REQUIRE(map.file_size() == block.size());
 
@@ -143,7 +143,7 @@ void test_map_chunk_file()
 
         for (const block& block : blocks)
         {
-            newsflash::memfile map;
+            newsflash::filemap map;
             BOOST_REQUIRE(!map.map("file", block.map_size, 1));
 
             void* ptr = map.data(block.offset, block.size);
@@ -153,7 +153,7 @@ void test_map_chunk_file()
 
     // check multiple blocks
     {
-        newsflash::memfile map;
+        newsflash::filemap map;
         BOOST_REQUIRE(!map.map("file", KB(4), 2));
 
         map.data(0, 1);

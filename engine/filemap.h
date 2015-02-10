@@ -20,57 +20,36 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
+#pragma once
+
 #include <newsflash/config.h>
-#include <string>
-#include <fstream>
-#include "nntp.h"
-#include "linebuffer.h"
-#include "listing.h"
-#include "buffer.h"
-#include "cmdlist.h"
+#include <memory>
+#include <map>
 
 namespace newsflash
 {
-
-
-std::unique_ptr<cmdlist> listing::create_commands()
-{
-    std::unique_ptr<cmdlist> cmd(new cmdlist(cmdlist::listing{}));
-    run_once_ = false;
-    return cmd;
-}
-
-void listing::complete(cmdlist& cmd, 
-    std::vector<std::unique_ptr<action>>& actions)
-{
-    auto& contents = cmd.get_buffers();
-    auto& listing  = contents.at(0);
-
-    nntp::linebuffer lines(listing.content(), listing.content_length());
-
-    auto beg = lines.begin();
-    auto end = lines.end();
-    for (; beg != end; ++beg)
+    // filemap maps the contents of a file on the disk into system ram in variable size chunks. 
+    class filemap
     {
-        const auto& line = *beg;
-        const auto& ret  = nntp::parse_group(line.start, line.length);
-        if (!ret.first)
-            continue;
+    public:
+        filemap();
+       ~filemap();
 
-        const auto& data = ret.second;
-        group g;
-        g.last  = std::stoull(data.last);
-        g.first = std::stoull(data.first);
-        g.name  = data.name;
-        g.size  = 0;
+        void open(std::string file, bool create_if_not_exists);
 
-        // if the last field is less than the first field
-        // then there are no articles in the group.
-        if (g.last >= g.first)
-            g.size = g.last - g.first + 1; // inclusive
+        // retrive pointer to the data at the specified offset.
+        void* mem_map(std::size_t offset, std::size_t size);
 
-        groups_.push_back(g);
-    }
-}
+        void  mem_unmap(void* mem, std::size_t size);
+
+    private:
+        struct impl;
+
+        std::unique_ptr<impl> pimpl_;
+        std::string filename_;
+    #ifdef NEWSFLASH_DEBUG
+        std::map<void*, std::size_t> maps_;
+    #endif
+    };
 
 } // newsflash

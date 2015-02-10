@@ -34,33 +34,60 @@ namespace newsflash
 {
     // cmdlist encapsulates a sequence of nntp operations to be performed
     // for example downloading articles or header overview data.
+    // the cmdlist operation is divided into 2 steps, session configuration
+    // and then the actual data transfer. 
+    // session configuration is performed step-by-step (without pipelining)
+    // where as the data transfer can be pipelined.     
     class cmdlist
     {
     public:
         enum class type {
-            xover, body, list
+            xover, body, listing, groupinfo
         };
 
-        using list = std::vector<std::string>;
+        struct listing {};
+        struct messages {
+            std::vector<std::string> groups;
+            std::vector<std::string> messages;
+        };
+        struct overviews {
+            std::string group;
+            std::vector<std::string> ranges;
+        };
+        struct groupinfo {
+            std::string group;
+        };
 
-        cmdlist() : cancelbit_(false), failbit_(false), account_(0), task_(0), conn_(0),
-            cmdtype_(type::list)
-        {}
-
-        cmdlist(list groups, list commands, cmdlist::type type) : cancelbit_(false), failbit_(false), account_(0), task_(0), conn_(0),
-            groups_(std::move(groups)), commands_(std::move(commands)), cmdtype_(type)
-        {}
-        // the cmdlist operation is divided into 2 steps, session configuration
-        // and then the actual data transfer. 
-        // session configuration is performed step-by-step (without pipelining)
-        // where as the data transfer can be pipelined. 
-
+        cmdlist(listing) : cmdlist()
+        {
+            cmdtype_ = type::listing;
+        }
+        cmdlist(messages m) : cmdlist()
+        {
+            groups_   = std::move(m.groups);
+            commands_ = std::move(m.messages);
+            cmdtype_  = type::body;
+        }
+        cmdlist(overviews o) : cmdlist()
+        {
+            groups_.push_back(std::move(o.group));
+            commands_  = std::move(o.ranges);
+            cmdtype_   = type::xover;
+        }
+        cmdlist(groupinfo g) : cmdlist()
+        {
+            groups_.push_back(std::move(g.group));
+            cmdtype_ = type::groupinfo;
+        }
        ~cmdlist()
         {}
 
         bool needs_to_configure() const 
         {
-            return cmdtype_ != type::list;
+            if (cmdtype_ == type::xover || cmdtype_ == type::body)
+                return true;
+
+            return false;
         }
 
         // try the ith step to configure the session state
@@ -93,25 +120,30 @@ namespace newsflash
         // submit the data transfer commands as a single batch.
         void submit_data_commands(session& ses) 
         {
-            if (cmdtype_ == type::list)
+            if (cmdtype_ == type::listing)
             {
                 ses.retrieve_list();
-                return;
             }
-
-            for (std::size_t i=0; i<commands_.size(); ++i)
+            else if (cmdtype_ == type::groupinfo)
             {
-                if (i < buffers_.size() &&
+                ses.change_group(groups_.at(0));
+            }
+            else
+            {
+                for (std::size_t i=0; i<commands_.size(); ++i)
+                {
+                    if (i < buffers_.size() &&
                         buffers_[i].content_status() == buffer::status::success)
-                    continue;
+                        continue;
 
-                if (cmdtype_ == type::body)
-                    ses.retrieve_article(commands_[i]);
-                else if (cmdtype_ == type::xover)
-                    ses.retrieve_headers(commands_[i]);
+                    if (cmdtype_ == type::body)
+                        ses.retrieve_article(commands_[i]);
+                    else if (cmdtype_ == type::xover)
+                        ses.retrieve_headers(commands_[i]);
 
-                if (i < buffers_.size())
-                    buffers_[i].clear();
+                    if (i < buffers_.size())
+                        buffers_[i].clear();
+                }
             }
         }
 
@@ -149,6 +181,9 @@ namespace newsflash
         std::size_t conn() const 
         { return conn_; }
 
+        type cmdtype() const 
+        { return cmdtype_; }
+
         void cancel()
         { cancelbit_ = true; }
         
@@ -166,20 +201,22 @@ namespace newsflash
 
         void set_conn(std::size_t cid)
         { conn_ = cid; }
+    private:
+        cmdlist() : cancelbit_(false), failbit_(false), account_(0), task_(0), conn_(0)
+        {}
 
+    private:
 
-    protected:
+        type cmdtype_;
+    private:
         std::atomic<bool> cancelbit_;
         std::atomic<bool> failbit_;
         std::size_t account_;
         std::size_t task_;
         std::size_t conn_;
         std::vector<buffer> buffers_;
-    private:
-        list groups_;
-        list commands_;
-    private:
-        type cmdtype_;
+        std::vector<std::string> groups_;
+        std::vector<std::string> commands_;
     };
 
 } // newsflash

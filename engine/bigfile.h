@@ -77,11 +77,11 @@ namespace newsflash
         void seek(big_t offset);
 
         // Try to write the given number of bytes to the file.
-        void write(const void* data, size_t bytes);
+        void write(const void* data, std::size_t bytes);
 
         // Try to read the given number of bytes from the file
         // returns the actual number of bytes read. 
-        size_t read(void* buff, size_t bytes);
+        std::size_t read(void* buff, std::size_t bytes);
 
         // flush buffered writes to the file on device.
         void flush();

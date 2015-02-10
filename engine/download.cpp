@@ -69,8 +69,6 @@ std::unique_ptr<cmdlist> download::create_commands()
     //const std::size_t num_articles_per_cmdlist = 10;
 
     const std::size_t num_articles_per_cmdlist = 10;
-
-
     const std::size_t num_articles = std::min(articles_.size(), 
         num_articles_per_cmdlist);
 
@@ -80,9 +78,13 @@ std::unique_ptr<cmdlist> download::create_commands()
 
     articles_.erase(std::begin(articles_), std::begin(articles_) + num_articles);
 
-    std::unique_ptr<cmdlist> cmd(new cmdlist(groups_, std::move(next),
-        cmdlist::type::body));
-    return std::move(cmd);
+    cmdlist::messages m;
+    m.groups   = groups_;
+    m.messages = std::move(next);
+
+    std::unique_ptr<cmdlist> cmd(new cmdlist(std::move(m)));
+
+    return cmd;
 }
 
 std::unique_ptr<action> download::kill()
