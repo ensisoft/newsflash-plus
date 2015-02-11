@@ -47,12 +47,10 @@ namespace newsflash
 
 #if defined(WINDOWS_OS)
 
-struct filemap::impl 
+class filemap::mapper
 {
-    HANDLE file;
-    HANDLE map;
-
-    impl(const std::string& filename) : file(NULL), map(NULL)
+public:
+    mapper(const std::string& filename) : file_(NULL), mmap_(NULL)
     {
         const auto str = utf8::decode(filename);
         const auto fd  = CreateFile(
@@ -67,14 +65,14 @@ struct filemap::impl
             throw std::system_error(std::error_code(GetLastError(), std::system_category()),
                 "filemap open failed: " + filename);
 
-        const auto mp = CreateFileMapping(
+        const auto map = CreateFileMapping(
             fd, 
             NULL, // default security
             PAGE_READWRITE,
             0, // high size word
             map_size, 
             NULL); 
-        if (mp == NULL)
+        if (map == NULL)
         {
             CloseHandle(fd);
             throw std::runtime_error("file mapping failed");
@@ -85,14 +83,14 @@ struct filemap::impl
         // that this process creates do not inherit the handles.
         SetHandleInformation(fd, HANDLE_FLAG_INHERIT, 0);
         SetHandleInformation(mp, HANDLE_FLAG_INHERIT, 0);
-        file = fd;
-        map  = mp;
+        file_ = fd;
+        mmap_ = map;
     }
 
-   ~impl()
+   ~mapper()
     {
-        ASSERT(CloseHandle(map) == TRUE);
-        ASSERT(CloseHandle(file) == TRUE);
+        ASSERT(CloseHandle(mmap_) == TRUE);
+        ASSERT(CloseHandle(file_) == TRUE);
     }    
 
     void* map(std::size_t offset, std::size_t size)
@@ -108,10 +106,18 @@ struct filemap::impl
         return ptr;
     }
 
-    void unmap(const chunk& c)
+    void unmap(void* base, std::size_t)
     {
-        ASSERT(UnmapViewOfFile(c.data) == TRUE);
+        ASSERT(UnmapViewOfFile(base) == TRUE);
     }
+
+    void resize(std::size_t s)
+    {
+    // todo:        
+    }
+private:
+    HANDLE file_;
+    HANDLE mmap_;    
 };
 
 
@@ -126,17 +132,10 @@ std::size_t get_page_size()
 
 #if defined(LINUX_OS)    
 
-std::size_t get_page_size()
+class filemap::mapper
 {
-    return getpagesize();
-
-}
-
-struct filemap::impl 
-{
-    int file;    
-
-    impl(const std::string& filename, bool create) : file(0)
+public:
+    mapper(const std::string& filename, bool create) : file_(0)
     {
         int mode = O_RDWR | O_LARGEFILE;
         if (create)
@@ -145,12 +144,19 @@ struct filemap::impl
         if (fd == -1)
             throw std::system_error(std::error_code(errno, std::generic_category()),
                 "filemap open failed: " + filename);
-        file = fd;
+        file_ = fd;
     }
 
-   ~impl()
+   ~mapper()
     {
-        ASSERT(close(file) == 0);
+        ASSERT(close(file_) == 0);
+    }
+
+    void resize(std::size_t s)
+    {
+        if (ftruncate(file_, s) == -1)
+            throw std::system_error(std::error_code(errno, std::generic_category()),
+                "file truncate failed");
     }
 
     void unmap(void* ptr, std::size_t size)
@@ -159,87 +165,67 @@ struct filemap::impl
     }
     void* map(std::size_t offset, std::size_t size)
     {
-        void* ptr = mmap(0, size, 
+        void* ptr = ::mmap(0, size, 
             PROT_READ | PROT_WRITE, // data can be read and written
             MAP_SHARED, /* MAP_POPULATE */ // changes are shared
-            file,
+            file_,
             offset);
         if (ptr == MAP_FAILED)
             throw std::runtime_error("map failed");
 
         return ptr;
     }
+private:
+    int file_;        
 };
 
-#endif
-
-std::size_t align(std::size_t s, std::size_t boundary)
+std::size_t get_page_size()
 {
-    return (s + boundary - 1) & ~(boundary - 1);
+    return getpagesize();
 }
 
-filemap::filemap() 
+#endif
+
+filemap::region::~region()
+{
+    if (base_) // could have been moved
+    {
+        mapper_->unmap(base_, length_);
+    }
+}
+
+filemap::filemap() : filesize_(0)
 {}
 
-
 filemap::~filemap()
-{
-    if (!pimpl_)
-        return;
-
-#ifdef NEWSFLASH_DEBUG
-    assert(maps_.size());
-#endif
-}
-
+{}
 
 void filemap::open(std::string file, bool create_if_not_exists)
 {
-    std::unique_ptr<impl> map(new impl(file, create_if_not_exists));
+    auto map = std::make_shared<mapper>(file, create_if_not_exists);
 
-#ifdef NEWSFLASH_DEBUG
-    assert(maps_.empty());
-#endif
-
-    pimpl_ = std::move(map);
+    mapper_   = map;
+    filename_ = std::move(file);
+    filesize_ = bigfile::size(filename_).second;
 }
 
 
-void* filemap::mem_map(std::size_t offset, std::size_t size)
+filemap::region filemap::mmap(std::size_t offset, std::size_t size)
 {
-    const auto pagesize = get_page_size();
-    const auto index = offset / pagesize;
-    const auto start = index * pagesize;
-    const auto bytes = align(size, pagesize);
-    const auto end   = start + bytes;
+    static const auto pagesize = get_page_size();
+    const auto beg = (offset / pagesize) * pagesize;
+    const auto len = size + (offset % pagesize);
+    const auto end = offset + size;
 
-    const auto ret = bigfile::size(filename_);
-    if (ret.first)
-        throw std::system_error(ret.first, "get filesize failed");
+    if (end > filesize_)
+    {
+        mapper_->resize(end);
+        filesize_ = end;
+    }
 
-    const auto cur_file_size = ret.second;
+    auto* p = (char*)mapper_->map(beg, len);
 
-    if (end > cur_file_size)
-        bigfile::resize(filename_, end);
-
-    void* p = pimpl_->map(start, end);
-
-#ifdef NEWSFLASH_DEBUG
-    maps_[p] = size;
-#endif
-
-    return p;
-}
-
-void filemap::mem_unmap(void* mem, std::size_t size)
-{
-#ifdef NEWSFLASH_DEBUG
-    auto it = maps_.find(mem);
-    assert(it != std::end(maps_));
-    maps_.erase(it);
-#endif
-
-    pimpl_->unmap(mem,size);
+    return {mapper_, size, (offset % pagesize), p};
 }
 
 } // newsflash

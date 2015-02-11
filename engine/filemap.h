@@ -23,33 +23,194 @@
 #pragma once
 
 #include <newsflash/config.h>
+#include <iterator>
 #include <memory>
 #include <map>
+#include "assert.h"
 
 namespace newsflash
 {
     // filemap maps the contents of a file on the disk into system ram in variable size chunks. 
     class filemap
     {
+        class mapper;
+
     public:
+        using byte = unsigned char;
+
+        class region 
+        {
+        public:
+        #ifdef NEWSFLASH_DEBUG
+           class iterator : public std::iterator<std::random_access_iterator_tag, byte>
+           {
+           public:
+                typedef byte value_type;
+
+               ~iterator()
+                {}
+
+                iterator()
+                {}
+
+                byte& operator*() 
+                {
+                    ASSERT(pos_ < len_);
+                    return base_[pos_];
+                }
+                byte operator->()
+                {
+                    ASSERT(pos_ < len_);
+                    return base_[pos_];
+                }
+
+                // todo: more ops here
+
+                // postfix
+                iterator operator++(int)
+                {
+                    iterator it(*this);
+                    ++pos_;
+                    return it;
+                }
+
+                iterator operator--(int)
+                {
+                    iterator it(*this);
+                    --pos_;
+                    return it;
+                }
+
+                iterator& operator++()
+                {
+                    ++pos_;
+                    return *this;
+                }
+                iterator& operator--()
+                {
+                    --pos_;
+                    return *this;
+                }
+
+                bool operator==(const iterator& other) const 
+                {
+                    return pos_ == other.pos_;
+                }
+                bool operator!=(const iterator& other) const
+                {
+                    return pos_ != other.pos_;
+                }
+                bool operator<(const iterator& other) const 
+                {
+                    return pos_ < other.pos_;
+                }
+                bool operator<=(const iterator& other) const 
+                {
+                    return pos_ <= other.pos_;
+                }
+                bool operator>(const iterator& other) const 
+                {
+                    return pos_ > other.pos_;
+                }
+                bool operator>=(const iterator& other) const
+                {
+                    return pos_ >= other.pos_;
+                }
+
+           private:
+                iterator(byte* p, std::size_t len, std::size_t pos) : base_(p), len_(len), pos_(pos)
+                {}
+                friend class region;
+            private:
+                byte* base_;
+            private:
+                std::size_t len_;                
+                std::size_t pos_;
+           };
+
+           iterator begin()
+           {
+               return {(byte*)base_ + offset_, length_, 0};
+           }
+           iterator end()
+           {
+               return {(byte*)base_ + offset_, length_, length_ };
+           }
+
+        #else
+           using iterator = byte*;
+
+           iterator begin() 
+           {
+                return (iterator)base_ + offset_;
+           }
+           iterator end() 
+           {
+                return (iterator)base_ + offset_ + length_;
+           }
+        #endif
+
+           region(region&& other) : mapper_(other.mapper_), length_(other.length_), offset_(other.offset_), base_(other.base_)
+           {
+               other.base_ = nullptr;
+           }
+
+           region(const region&) = delete;
+
+          ~region();
+
+           void* address()
+           {
+               return (byte*)base_ + offset_;; 
+           }
+           std::size_t length() const 
+           { 
+               return length_; 
+           }
+
+           region& operator=(const region&) = delete;
+
+           region& operator=(region&& other) 
+           {
+                region carcass(std::move(*this));
+
+                mapper_ = other.mapper_;
+                length_ = other.length_;
+                offset_ = other.offset_;
+                base_   = other.base_;
+                other.base_ = nullptr;
+                return *this;
+           }
+
+        private:
+            region(std::shared_ptr<mapper> m, std::size_t len, std::size_t off, void* b) : 
+                mapper_(m), length_(len), offset_(off), base_(b)
+            {}
+            friend class filemap;
+        private:
+            std::shared_ptr<mapper> mapper_;
+            std::size_t length_;
+            std::size_t offset_;
+        private:
+            void* base_;
+        };
+
         filemap();
        ~filemap();
 
+        // open a filemap to the given file possibly creating
+        // the file if it doesn't already exist.
         void open(std::string file, bool create_if_not_exists);
 
-        // retrive pointer to the data at the specified offset.
-        void* mem_map(std::size_t offset, std::size_t size);
-
-        void  mem_unmap(void* mem, std::size_t size);
+        // retrive a handle to a segment of the file.
+        // if the offset is past the current end of file
+        // the file is extended to that new size.
+        region mmap(std::size_t offset, std::size_t size);
 
     private:
-        struct impl;
-
-        std::unique_ptr<impl> pimpl_;
+        std::shared_ptr<mapper> mapper_;
         std::string filename_;
-    #ifdef NEWSFLASH_DEBUG
-        std::map<void*, std::size_t> maps_;
-    #endif
+        std::size_t filesize_;
     };
 
 } // newsflash
