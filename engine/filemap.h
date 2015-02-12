@@ -25,7 +25,6 @@
 #include <newsflash/config.h>
 #include <iterator>
 #include <memory>
-#include <map>
 #include "assert.h"
 
 namespace newsflash
@@ -45,8 +44,6 @@ namespace newsflash
            class iterator : public std::iterator<std::random_access_iterator_tag, byte>
            {
            public:
-                typedef byte value_type;
-
                ~iterator()
                 {}
 
@@ -146,7 +143,7 @@ namespace newsflash
            }
            iterator end() 
            {
-                return (iterator)base_ + offset_ + length_;
+                return begin() + length_;
            }
         #endif
 
@@ -198,19 +195,15 @@ namespace newsflash
         filemap();
        ~filemap();
 
-        // open a filemap to the given file possibly creating
-        // the file if it doesn't already exist.
-        void open(std::string file, bool create_if_not_exists);
+        // open a filemap to the given file.
+        void open(std::string file);
 
-        // retrive a handle to a segment of the file.
-        // if the offset is past the current end of file
-        // the file is extended to that new size.
+        // retrive a handle to a region of the file.
         region mmap(std::size_t offset, std::size_t size);
 
     private:
         std::shared_ptr<mapper> mapper_;
         std::string filename_;
-        std::size_t filesize_;
     };
 
 } // newsflash

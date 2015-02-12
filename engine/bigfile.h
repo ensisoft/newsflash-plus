@@ -37,6 +37,12 @@ namespace newsflash
     class bigfile : noncopyable
     {
     public:
+        enum open_flags {
+            o_create   = 1 << 0, // create file if it doesnt exist
+            o_truncate = 1 << 1, // truncate file contents to 0 length on open
+            o_append   = 1 << 2  // always append to the file.
+        };
+
         typedef std::int64_t big_t;
 
         bigfile();
@@ -44,21 +50,8 @@ namespace newsflash
 
         bigfile(bigfile&& other);
 
-        // Try to open an existing file. Returns 0 on success
-        // or a platform error code on error.
-        std::error_code open(const std::string& file);
-
-        // Open a file for appending. If file doesn't exist
-        // it's created, otherwise it's opened for appending.
-        // A file opened for appending will *always* append
-        // regardless of current seek position.
-        // returns 0 on success or a platform error code on error.
-        std::error_code append(const std::string& file);
-
-        // Create a new file. If the file already exists the contents
-        // are truncated to 0. 
-        // Returns 0 on success or a platform error code on error.
-        std::error_code create(const std::string& file);
+        // Open a file returns a system error on error.
+        std::error_code open(const std::string& file, unsigned flags = 0);
 
         // check if already open, returns true if open otherwise false.
         bool is_open() const;
@@ -76,6 +69,8 @@ namespace newsflash
         // Seeking always occurs from the start of the file.
         void seek(big_t offset);
 
+        //void resize(big_t size);
+
         // Try to write the given number of bytes to the file.
         void write(const void* data, std::size_t bytes);
 
@@ -87,9 +82,6 @@ namespace newsflash
         void flush();
 
         bigfile& operator=(bigfile&& other);
-
-        // get the filename
-        std::string name() const ;
 
         // get file size. 
         static std::pair<std::error_code, big_t> size(const std::string& file);

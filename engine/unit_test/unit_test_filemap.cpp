@@ -43,6 +43,9 @@ void test_create_open()
 {
     delete_file("file");
 
+    newsflash::bigfile().create("file");
+    newsflash::bigfile::resize("file", MB(3));
+
     struct block {
         std::size_t size;
         unsigned char value;
@@ -57,10 +60,9 @@ void test_create_open()
     // create
     {
         newsflash::filemap map;
-        map.open("file", true);
+        map.open("file");
 
         std::size_t offset = 0;
-
 
         for (auto b = std::begin(blocks); b != std::end(blocks); ++b)
         {
@@ -70,14 +72,12 @@ void test_create_open()
             offset += b->size;
             std::cout << "wrote: " <<  b->size << " bytes" << std::endl;
         }
-
-        int piss = 123;
     }
 
     // open existing
     {
         newsflash::filemap map;
-        map.open("file", false);
+        map.open("file");
 
         std::size_t offset = 0;
 
@@ -91,8 +91,7 @@ void test_create_open()
         }
     }
 
-
-    //delete_file("file");
+    delete_file("file");
 }
 
 int test_main(int, char*[])

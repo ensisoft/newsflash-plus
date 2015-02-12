@@ -110,11 +110,6 @@ public:
     {
         ASSERT(UnmapViewOfFile(base) == TRUE);
     }
-
-    void resize(std::size_t s)
-    {
-    // todo:        
-    }
 private:
     HANDLE file_;
     HANDLE mmap_;    
@@ -135,12 +130,9 @@ std::size_t get_page_size()
 class filemap::mapper
 {
 public:
-    mapper(const std::string& filename, bool create) : file_(0)
+    mapper(const std::string& filename) : file_(0)
     {
-        int mode = O_RDWR | O_LARGEFILE;
-        if (create)
-            mode |= O_CREAT;
-        int fd = ::open(filename.c_str(), mode);
+        int fd = ::open(filename.c_str(), O_RDWR | O_LARGEFILE);
         if (fd == -1)
             throw std::system_error(std::error_code(errno, std::generic_category()),
                 "filemap open failed: " + filename);
@@ -151,14 +143,6 @@ public:
     {
         ASSERT(close(file_) == 0);
     }
-
-    void resize(std::size_t s)
-    {
-        if (ftruncate(file_, s) == -1)
-            throw std::system_error(std::error_code(errno, std::generic_category()),
-                "file truncate failed");
-    }
-
     void unmap(void* ptr, std::size_t size)
     {
         ASSERT(munmap(ptr, size) == 0);
@@ -194,19 +178,18 @@ filemap::region::~region()
     }
 }
 
-filemap::filemap() : filesize_(0)
+filemap::filemap()
 {}
 
 filemap::~filemap()
 {}
 
-void filemap::open(std::string file, bool create_if_not_exists)
+void filemap::open(std::string file)
 {
-    auto map = std::make_shared<mapper>(file, create_if_not_exists);
+    auto map = std::make_shared<mapper>(file);
 
     mapper_   = map;
     filename_ = std::move(file);
-    filesize_ = bigfile::size(filename_).second;
 }
 
 
@@ -216,12 +199,6 @@ filemap::region filemap::mmap(std::size_t offset, std::size_t size)
     const auto beg = (offset / pagesize) * pagesize;
     const auto len = size + (offset % pagesize);
     const auto end = offset + size;
-
-    if (end > filesize_)
-    {
-        mapper_->resize(end);
-        filesize_ = end;
-    }
 
     auto* p = (char*)mapper_->map(beg, len);
 

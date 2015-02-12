@@ -50,7 +50,6 @@ namespace newsflash
 struct bigfile::impl {
     HANDLE file;
     bool append;
-    std::string filename;
 
     std::error_code open_file(const std::string& filename, unsigned flags)
     {
@@ -83,7 +82,6 @@ struct bigfile::impl {
             CHECK(CloseHandle(this->file), TRUE);
 
         this->file = file;
-        this->filename = filename;
         return std::error_code();
     }
 };
@@ -100,23 +98,17 @@ bigfile::~bigfile()
 }
 
 
-std::error_code bigfile::open(const std::string& file)
+std::error_code bigfile::open(const std::string& file, unsigned flags)
 {
-    return pimpl_->open_file(file, OPEN_EXISTING);
-}
+    unsigned f = 0;
+    if (flags & o_create)
+        f |= CREATE_ALWAYS;
+    if (flags & o_truncate)
+        f |= TRUNCATE_EXISTING;
 
-std::error_code bigfile::append(const std::string& file)
-{
-    const std::error_code ret = pimpl_->open_file(file, OPEN_ALWAYS);
-    if (!ret)
-        pimpl_->append = true;
+    pimpl_->append = flags & o_append;
 
-    return ret;
-}
-
-std::error_code bigfile::create(const std::string& file)
-{
-    return pimpl_->open_file(file, CREATE_ALWAYS);
+    return pimpl_->open_file(file, f);
 }
 
 bool bigfile::is_open() const
@@ -271,7 +263,6 @@ std::error_code bigfile::resize(const std::string& file, big_t size)
 
 struct bigfile::impl {
     int fd;
-    std::string filename;
 
     std::error_code open_file(const std::string& filename, unsigned flags, unsigned mode)
     {
@@ -285,7 +276,6 @@ struct bigfile::impl {
              CHECK(::close(this->fd), 0);
 
         this->fd = fd;
-        this->filename = filename;
         return std::error_code();
     }
 };
@@ -300,21 +290,17 @@ bigfile::~bigfile()
     close();
 }
 
-std::error_code bigfile::open(const std::string& file)
+std::error_code bigfile::open(const std::string& file, unsigned flags)
 {
-    return pimpl_->open_file(file, O_RDWR | O_LARGEFILE, 0);
-}
+    int f = O_RDWR | O_LARGEFILE;
+    if (flags & o_create)
+        f |= O_CREAT;
+    if (flags & o_truncate)
+        f |= O_TRUNC;
+    if (flags & o_append)
+        f |= O_APPEND;
 
-std::error_code bigfile::append(const std::string& file)
-{
-    return pimpl_->open_file(file, O_RDWR | O_LARGEFILE | O_CREAT | O_APPEND, 
-        S_IRWXU | S_IRGRP | S_IROTH);
-}
-
-std::error_code bigfile::create(const std::string& file)
-{
-    return pimpl_->open_file(file, O_RDWR | O_LARGEFILE | O_CREAT | O_TRUNC,
-        S_IRWXU | S_IRGRP | S_IROTH);
+    return pimpl_->open_file(file, f, S_IRWXU | S_IRGRP | S_IROTH);
 }
 
 bool bigfile::is_open() const
@@ -345,13 +331,13 @@ bigfile::big_t bigfile::position() const
 
 bigfile::big_t bigfile::size() const 
 {
-    //assert(is_open());
+    assert(is_open());
 
-    const auto ret = bigfile::size(name());
-    if (ret.first != std::error_code())
+    struct stat64 st {0};
+    if (fstat64(pimpl_->fd, &st))
         throw std::runtime_error("failed to get file size");
 
-    return ret.second;
+    return big_t{st.st_size};
 }
 
 void bigfile::seek(big_t offset)
@@ -440,9 +426,6 @@ bigfile& bigfile::operator=(bigfile&& other)
     pimpl_ = std::move(other.pimpl_);
     return *this;
 }
-
-std::string bigfile::name() const 
-{ return pimpl_->filename; }
 
 bool bigfile::exists(const std::string& file)
 {

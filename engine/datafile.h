@@ -90,7 +90,7 @@ namespace newsflash
                 if (!overwrite && bigfile::exists(file))
                     continue;
 
-                const auto error = big_.create(file);
+                const auto error = big_.open(file, bigfile::o_create);
                 if (error)
                     throw std::system_error(error, "error creating file: " + file);
                 if (size)
@@ -128,7 +128,7 @@ namespace newsflash
 
             big_.close();
             if (discard_)
-                bigfile::erase(big_.name());            
+                bigfile::erase(fs::joinpath(path_, name_));
         }
 
         void discard_on_close()
