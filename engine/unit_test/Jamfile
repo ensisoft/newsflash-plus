@@ -16,8 +16,6 @@ unit-test unit_test_session            : unit_test_session.cpp ;
 unit-test unit_test_buffer             : unit_test_buffer.cpp ;
 unit-test unit_test_threadpool         : unit_test_threadpool.cpp ;
 unit-test unit_test_event              : unit_test_event.cpp ;
-unit-test unit_test_bigfile            : unit_test_bigfile.cpp ;
-unit-test unit_test_filemap            : unit_test_filemap.cpp ;
 unit-test unit_test_connection         : unit_test_connection.cpp ;
 unit-test unit_test_tcpsocket          : unit_test_tcpsocket.cpp ;
 unit-test unit_test_sslsocket          : unit_test_sslsocket.cpp ;
@@ -30,6 +28,10 @@ unit-test unit_test_datafile           : unit_test_datafile.cpp ;
 unit-test unit_test_catalog            : unit_test_catalog.cpp ;
 unit-test unit_test_cmdlist            : unit_test_cmdlist.cpp ;
 
+
+unit-test unit_test_bigfile            : unit_test_bigfile.cpp ;
+unit-test unit_test_filemap            : unit_test_filemap.cpp ;
+unit-test unit_test_filebuf            : unit_test_filebuf.cpp ;
 
 
 #unit-test unit_test_uuencode_decoder   : unit_test_uuencode_decoder.cpp ;

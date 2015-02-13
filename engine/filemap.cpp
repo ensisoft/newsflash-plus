@@ -93,8 +93,9 @@ public:
         ASSERT(CloseHandle(file_) == TRUE);
     }    
 
-    void* map(std::size_t offset, std::size_t size)
+    void* map(std::size_t offset, std::size_t size,  unsigned flags)
     {
+        // todo: flags
         void* ptr = MapViewOfFile(map, 
             FILE_MAP_WRITE,
             0,
@@ -147,11 +148,19 @@ public:
     {
         ASSERT(munmap(ptr, size) == 0);
     }
-    void* map(std::size_t offset, std::size_t size)
+    void* map(std::size_t offset, std::size_t size, unsigned flags)
     {
+        int read_write_flags = 0;
+        if (flags & filemap::buf_read)
+            read_write_flags |= PROT_READ;
+        if (flags & filemap::buf_write)
+            read_write_flags |= PROT_WRITE;
+
+        int share_flags = MAP_SHARED;
+
         void* ptr = ::mmap(0, size, 
-            PROT_READ | PROT_WRITE, // data can be read and written
-            MAP_SHARED, /* MAP_POPULATE */ // changes are shared
+            read_write_flags,
+            share_flags,
             file_,
             offset);
         if (ptr == MAP_FAILED)
@@ -159,6 +168,14 @@ public:
 
         return ptr;
     }
+    std::size_t size() const 
+    {
+        struct stat64 st;
+        if (fstat64(file_, &st))
+            throw std::runtime_error("filestat failed");
+        return st.st_size;
+    }
+
 private:
     int file_;        
 };
@@ -170,7 +187,7 @@ std::size_t get_page_size()
 
 #endif
 
-filemap::region::~region()
+filemap::buffer::~buffer()
 {
     if (base_) // could have been moved
     {
@@ -193,16 +210,21 @@ void filemap::open(std::string file)
 }
 
 
-filemap::region filemap::mmap(std::size_t offset, std::size_t size)
+filemap::buffer filemap::load(std::size_t offset, std::size_t size, unsigned flags)
 {
     static const auto pagesize = get_page_size();
     const auto beg = (offset / pagesize) * pagesize;
     const auto len = size + (offset % pagesize);
     const auto end = offset + size;
 
-    auto* p = (char*)mapper_->map(beg, len);
+    auto* p = (char*)mapper_->map(beg, len, flags);
 
     return {mapper_, size, (offset % pagesize), p};
+}
+
+std::size_t filemap::size() const
+{
+    return mapper_->size();
 }
 
 } // newsflash

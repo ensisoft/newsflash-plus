@@ -37,7 +37,7 @@ namespace newsflash
     public:
         using byte = unsigned char;
 
-        class region 
+        class buffer 
         {
         public:
         #ifdef NEWSFLASH_DEBUG
@@ -89,6 +89,35 @@ namespace newsflash
                     return *this;
                 }
 
+                iterator& operator+=(int value)
+                {
+                    pos_ += value;
+                    return *this;
+                }
+                iterator& operator-=(int value)
+                {
+                    pos_ -= value;
+                    return *this;
+                }
+
+                iterator operator + (int n) const
+                {
+                    iterator i(*this);
+                    i.len_ += n;
+                    return i;
+                }
+                iterator operator - (int n) const
+                {
+                    iterator i(*this);
+                    i.pos_ -= n;
+                    return i;
+                }
+
+                std::size_t operator - (const iterator& other) const 
+                {
+                    return pos_ - other.pos_;
+                }
+
                 bool operator==(const iterator& other) const 
                 {
                     return pos_ == other.pos_;
@@ -117,7 +146,7 @@ namespace newsflash
            private:
                 iterator(byte* p, std::size_t len, std::size_t pos) : base_(p), len_(len), pos_(pos)
                 {}
-                friend class region;
+                friend class buffer;
             private:
                 byte* base_;
             private:
@@ -147,14 +176,17 @@ namespace newsflash
            }
         #endif
 
-           region(region&& other) : mapper_(other.mapper_), length_(other.length_), offset_(other.offset_), base_(other.base_)
+           buffer() : length_(0), offset_(0), base_(nullptr)
+           {}
+
+           buffer(buffer&& other) : mapper_(other.mapper_), length_(other.length_), offset_(other.offset_), base_(other.base_)
            {
                other.base_ = nullptr;
            }
 
-           region(const region&) = delete;
+           buffer(const buffer&) = delete;
 
-          ~region();
+          ~buffer();
 
            void* address()
            {
@@ -165,11 +197,11 @@ namespace newsflash
                return length_; 
            }
 
-           region& operator=(const region&) = delete;
+           buffer& operator=(const buffer&) = delete;
 
-           region& operator=(region&& other) 
+           buffer& operator=(buffer&& other) 
            {
-                region carcass(std::move(*this));
+                buffer carcass(std::move(*this));
 
                 mapper_ = other.mapper_;
                 length_ = other.length_;
@@ -179,8 +211,11 @@ namespace newsflash
                 return *this;
            }
 
+           void flush()
+           { /* this is a no-op */ }
+
         private:
-            region(std::shared_ptr<mapper> m, std::size_t len, std::size_t off, void* b) : 
+            buffer(std::shared_ptr<mapper> m, std::size_t len, std::size_t off, void* b) : 
                 mapper_(m), length_(len), offset_(off), base_(b)
             {}
             friend class filemap;
@@ -198,8 +233,15 @@ namespace newsflash
         // open a filemap to the given file.
         void open(std::string file);
 
-        // retrive a handle to a region of the file.
-        region mmap(std::size_t offset, std::size_t size);
+        enum buffer_flags {
+            buf_read  = 1 << 0,
+            buf_write = 1 << 1
+        };
+
+        // load a buffer of data from the file
+        buffer load(std::size_t offset, std::size_t size, unsigned flags);
+
+        std::size_t size() const;
 
     private:
         std::shared_ptr<mapper> mapper_;

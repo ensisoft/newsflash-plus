@@ -32,8 +32,8 @@
 
 namespace newsflash
 {
-    template<typename StorageT, typename CacheT>
-    class catalog : public StorageT, public CacheT
+    template<typename Storage>
+    class catalog : public Storage
     {
     public:
         enum class flags : std::uint8_t {
@@ -43,129 +43,137 @@ namespace newsflash
             is_downloaded
         };
 
+        using key_t = std::size_t;
+
         struct article {
-            bitflag<flags> flags;
+            bitflag<flags> state;
             std::uint8_t len_subject;
             std::uint8_t len_author;
             const char* ptr_subject;
             const char* ptr_author;
+
+            std::size_t length() const {
+                return 3 + len_subject + len_author;
+            }
+            key_t next() const {
+                return length();
+            }
         };
 
-        catalog() : header_(nullptr), article_(nullptr)
+        catalog()
         {}
 
-        // open existing database for reading and writing
-        void open()
+        // open existing catalog for reading and writing
+        // or create a new one if it doesn't yet exist.
+        void open(std::string file)
         {
-            header_ = (header*)StorageT::map_for_read_write(0, sizeof(header_));
-            if (header_->cookie)
-                throw std::runtime_error("missing header");
-            if (header_->version != VERSION)
-                throw std::runtime_error("incorrect version");
+            Storage::open(file);
+
+            if (Storage::size())
+            {
+                auto buff = Storage::load(0, sizeof(header_),
+                    Storage::buf_read | Storage::buf_write);
+                std::copy(buff.begin(), buff.end(), (typename Storage::byte*)&header_);
+
+                if (header_.cookie != MAGIC)
+                    throw std::runtime_error("incorrect header");
+                if (header_.version != VERSION)
+                    throw std::runtime_error("incorrect version");
+            }
+            else
+            {
+                header_.cookie       = MAGIC;
+                header_.version      = VERSION;
+                header_.offset       = sizeof(header_);
+                header_.num_articles = 0;
+                header_.last_article_number = 0;
+                header_.first_article_number = 0;
+            }
         }
 
-        // create and begin a new database for reading and writing.
-        void create()
+
+
+        // get article with the given key.
+        article lookup(key_t key)
         {
-            header_ = (header*)StorageT::map_for_read_write(0, sizeof(header_));
-            header_->cookie  = MAGIC;
-            header_->version = VERSION;
-            header_->fend    = sizeof(header);
-            header_->num_articles = 0;
-            std::memset(header_->table, 0, sizeof(header_->table));
-        }
+            const auto off = sizeof(header_) + key;
+            const auto end = header_.offset;
+            ASSERT(off < end);
 
-        // get article at the specified index.
-        article get_article(std::size_t i)
-        {
-            assert(i < TSIZE);
+            lookup_ = Storage::load(off, 1024, Storage::buf_read);
 
-            const auto offset = header_->table[i];
-
-            assert(offset);
-            article_ = StorageT::map_for_read(offset, 1024);
-
-            auto* p = (char*)article_;
-
+            auto it = lookup_.begin();
             article ret;
-
-            ret.flags.set_from_value(*p++);
-            ret.len_subject = *p++;
-            ret.ptr_subject = p;
-            p += ret.len_subject;
-            ret.len_author = *p++;
-            ret.ptr_author = p;
+            ret.state.set_from_value(*it++);
+            ret.len_subject = *it++;
+            ret.ptr_subject = (char*)&(*it);
+            it += ret.len_subject;
+            ret.len_author  = *it++;
+            ret.ptr_author  = (char*)&(*it);
+            it += ret.len_author;
             return ret;
         }
 
-        // insert article into the catalog at the specified index.
-        void insert_article(std::size_t i, const article& a)
+        // insert an article into the catalog.
+        // returns a key that can be later used to retrieve the article
+        key_t insert(const article& a)
         {
-            assert(i < TSIZE);
+            const auto length = a.length();
+            const auto offset = header_.offset;
 
-            auto offset = header_->table[i];
-            if (offset == 0)
-            {
-                const auto len = 3 + a.len_author + a.len_subject;
+            auto buff = Storage::load(offset, length, Storage::buf_write);
+            auto it = buff.begin();
+            *it++ = a.state.value();
+            *it++ = a.len_subject;
+            std::copy(a.ptr_subject, a.ptr_subject + a.len_subject, it);
+            it += a.len_subject;
+            *it++ = a.len_author;
+            std::copy(a.ptr_author, a.ptr_author + a.len_author, it);
 
-                auto b = StorageT::map_for_write(header_->fend, 1024);
-                auto p = (char*)b.ptr();
-                *p++ = a.flags.value();
-                *p++ = a.len_subject;
-                std::memcpy(p, a.ptr_subject, a.len_subject);
-                *p++ = a.len_author;
-                std::memcpy(p, a.ptr_author, a.len_author);
+            buff.flush();
 
-                header_->num_articles++;
-                header_->fend += len;
-            }
-            else 
-            {
-                auto b = StorageT::map_for_read_write(offset, 1024);
-                auto p = (char*)b.ptr();
-
-                bitflag<flags> f(*p);
-
-                if (f.test(flags::is_deleted))
-                {
-
-                }
-                else
-                {
-
-                }
-            }
+            header_.offset += length;
+            header_.num_articles++;
+            return offset - sizeof(header_);
         }
 
-        void set_article_flags(std::size_t i, bitflag<flags> f)
+        void flush()
         {
-
-        }
-
-        bool has_article(std::size_t i) const 
-        {
-            assert(i < TSIZE);
-            return header_->table[i] != 0;
+            auto buff = Storage::load(0, sizeof(header_), Storage::buf_write);
+            auto beg  = (const typename Storage::byte*)&header_;
+            auto end  = beg + sizeof(header_);
+            std::copy(beg, end, buff.begin());
+            buff.flush();
         }
 
         std::uint32_t num_articles() const 
         {
-            return header_->num_articles;
+            return header_.num_articles;
+        }
+
+        std::uint64_t last_article_number() const 
+        {
+            return header_.last_article_number;
+        }
+        std::uint64_t first_article_number() const
+        {
+            return header_.first_article_number;
         }
 
     private:
-        static const std::uint32_t MAGIC {0xdeadbabe};
-        static const std::uint32_t TSIZE {1048576}; // 2^20 items
+        static const std::uint32_t MAGIC   {0xdeadbabe};
         static const std::uint32_t VERSION {1};
 
         struct header {
             std::uint32_t cookie;
             std::uint32_t version;
+            std::uint32_t offset;
             std::uint32_t num_articles;
-            std::uint32_t fend;
-            std::uint32_t table[TSIZE];
+            std::uint64_t last_article_number;
+            std::uint64_t first_article_number;
         };
-        header* header_;
-        void* article_;
+        header header_;
+
+        typename Storage::buffer lookup_;
     };
 } // newsflash

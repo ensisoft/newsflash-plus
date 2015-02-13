@@ -1,4 +1,4 @@
-// Copyright (c) 2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -18,14 +18,14 @@
 //  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 //  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-//  THE SOFTWARE.            
+//  THE SOFTWARE.
 
 #include <newsflash/config.h>
 
 #include <boost/test/minimal.hpp>
 #include <vector>
 #include <algorithm>
-#include "../filemap.h"
+#include "../filebuf.h"
 #include "unit_test_common.h"
 
 std::size_t MB(double m)
@@ -38,50 +38,48 @@ std::size_t KB(double k)
     return k * 1024;
 }
 
-void test_create_open()
+void test_read_write()
 {
     delete_file("file");
-    generate_file("file", MB(3));
 
     struct block {
         std::size_t size;
-        unsigned char value;
+        unsigned char value;        
     } blocks [] = {
         {KB(1), 0xaa},
         {KB(2.5), 0xbb},
         {KB(5), 0xcc},
         {MB(1), 0xdd},
-        {MB(1.5), 0xee}
+        {MB(1.5), 0xee},
+        {MB(5), 0xff}
     };
 
-    // create
+    // create and write
     {
-        newsflash::filemap map;
-        map.open("file");
+        newsflash::filebuf buf;
+        buf.open("file");
 
         std::size_t offset = 0;
-
         for (auto b = std::begin(blocks); b != std::end(blocks); ++b)
         {
-            auto r = map.load(offset, b->size, newsflash::filemap::buf_write);
+            auto r = buf.load(offset, b->size, newsflash::filebuf::buf_write);
             std::fill(r.begin(), r.end(), b->value);
 
             offset += b->size;
             std::cout << "wrote: " <<  b->size << " bytes" << std::endl;
             r.flush();
-        }
+        }        
     }
 
-    // open existing
+    // open and read
     {
-        newsflash::filemap map;
-        map.open("file");
+        newsflash::filebuf buf;
+        buf.open("file");
 
         std::size_t offset = 0;
-
         for (auto b = std::begin(blocks); b != std::end(blocks); ++b)
         {
-            auto r = map.load(offset, b->size, newsflash::filemap::buf_read);
+            auto r = buf.load(offset, b->size, newsflash::filebuf::buf_read);
             BOOST_REQUIRE(std::count(r.begin(), r.end(), b->value) == b->size);
 
             offset += b->size;
@@ -94,6 +92,6 @@ void test_create_open()
 
 int test_main(int, char*[])
 {
-    test_create_open();
+    test_read_write();
     return 0;
 }
