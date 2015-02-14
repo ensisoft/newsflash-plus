@@ -31,6 +31,7 @@
 #endif
 #include <stdexcept>
 #include <cassert>
+#include "assert.h"
 #include "event.h"
 
 namespace newsflash
@@ -58,7 +59,7 @@ event::event() : pimpl_(new impl)
 
 event::~event()
 {
-    CloseHandle(pimpl_->handle);
+    ASSERT(CloseHandle(pimpl_->handle) == TRUE);
 }
 
 waithandle event::wait() const
@@ -117,7 +118,7 @@ event::event() : pimpl_(new impl)
 
 event::~event()
 {
-    close(pimpl_->fd);
+    ASSERT(close(pimpl_->fd) == 0);
 }
 
 waithandle event::wait() const

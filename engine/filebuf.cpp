@@ -47,29 +47,51 @@ public:
     fileio(const std::string& file)
     {
         const auto str = utf8::decode(file);
-        const auto fd  = CreateFile(
+        
+        file_ = CreateFile(
             str.c_str(),
             GENERIC_READ | GENERIC_WRITE,
             FILE_SHARE_READ | FILE_SHARE_WRITE,
             NULL,
-            CREATE_ALWAYS,
+            OPEN_ALWAYS,
             FILE_ATTRIBUTE_NORMAL,
             NULL);
-        if (fd == INVALID_HANDLE_VALUE)
+        if (file_ == INVALID_HANDLE_VALUE)
             throw std::system_error(std::error_code(GetLastError(), std::system_category()),
                 "filebuf open failed: " + file);
-        file_ = fd;
     }
    ~fileio()
     {
         ASSERT(CloseHandle(file_) == TRUE);
     }
 
-    void read(void* buff, std::size_t bytes, std::size_t offset)
-    {}
+    void read(void* buff, std::size_t bytes, std::uint64_t offset)
+    {
+        auto hi = static_cast<LONG>(offset >> 32L);
+        auto lo = static_cast<LONG>(offset & 0xFFFFFFFF);
+        if (SetFilePointer(file_, lo, &hi, FILE_BEGIN) == INVALID_SET_FILE_POINTER)
+        {
+            if (GetLastError() != NO_ERROR)
+                throw std::runtime_error("file seek failed");
+        }
+        DWORD out;
+        if (ReadFile(file_, buff, bytes, &out, NULL) == 0)
+            throw std::runtime_error("file read failed"); 
+    }
 
-    void write(const void* buff, std::size_t bytes, std::size_t offset)
-    {}
+    void write(const void* buff, std::size_t bytes, std::uint64_t offset)
+    {
+        auto hi = static_cast<LONG>(offset >> 32);
+        auto lo = static_cast<LONG>(offset & 0xFFFFFFFF);
+        if (SetFilePointer(file_, lo, &hi, FILE_BEGIN) == INVALID_SET_FILE_POINTER)
+        {
+            if (GetLastError() != NO_ERROR)
+                throw std::runtime_error("file seek failed");
+        }        
+        DWORD out;
+        if (WriteFile(file_, buff, bytes, &out, NULL) == 0)
+            throw std::runtime_error("file write failed");        
+    }
 
     std::size_t size() const 
     {
@@ -77,7 +99,7 @@ public:
         if (!GetFileSizeEx(file_, &size))
             throw std::runtime_error("get file size failed");
 
-        return size.QuadPart;
+        return (size_t)size.QuadPart;
     }
 
 private:
@@ -156,8 +178,8 @@ filebuf::buffer filebuf::load(std::size_t offset, std::size_t size, unsigned fla
     std::vector<byte> vec;
     vec.resize(size);
 
-    const auto read_data  = bool(flags & buf_read);
-    const auto write_data = bool(flags & buf_write);
+    const auto read_data  = ((flags & buf_read) == buf_read);
+    const auto write_data = ((flags & buf_write) == buf_write);
     if (read_data)
         fileio_->read(&vec[0], size, offset);
 

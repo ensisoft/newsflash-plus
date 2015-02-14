@@ -90,9 +90,8 @@ namespace newsflash
                 if (!overwrite && bigfile::exists(file))
                     continue;
 
-                const auto error = big_.open(file, bigfile::o_create);
-                if (error)
-                    throw std::system_error(error, "error creating file: " + file);
+                // todo: there's a race condition between the call to exists and the open below.
+                big_.open(file, bigfile::o_create);
                 if (size)
                 {
                     const auto error = bigfile::resize(file, size);

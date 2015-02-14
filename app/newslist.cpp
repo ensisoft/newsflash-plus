@@ -70,12 +70,10 @@ QVariant NewsList::headerData(int section, Qt::Orientation orietantation, int ro
     {
         switch ((NewsList::Columns)section)
         {
+            case Columns::messages:   return "Messages";            
             case Columns::subscribed: return "";
-            case Columns::messages:   return "Messages";
             case Columns::name:       return "Name";
-            default:
-                Q_ASSERT(!"missing column case");
-                break;
+            case Columns::last: break;
         }
     }
     else if (role == Qt::DecorationRole)
@@ -98,30 +96,33 @@ QVariant NewsList::data(const QModelIndex& index, int role) const
         const auto& group = groups_[row];
         switch ((NewsList::Columns)col)
         {
+            case Columns::messages:
+                return format(app::volume{group.size});
             case Columns::name:
                return group.name;
 
-            case Columns::messages:
-                return format(app::volume{group.size});
-
-            default:
-                Q_ASSERT(!"missing column case");
-                break;
+            case Columns::subscribed:  break;
+            case Columns::last: break;
         }
     }
     else if (role == Qt::DecorationRole)
     {
-        if (col == 0)
-            return QIcon("icons:ico_news.png");
-        else if ((Columns)col == Columns::subscribed)
+        const auto& group = groups_[row];        
+        switch ((NewsList::Columns)col)
         {
-            const auto& group = groups_[row];
-            if (group.flags & Flags::Subscribed)
-                return QIcon("icons:ico_star.png");
+            case Columns::messages:
+                return QIcon("icons:ico_news.png");
+            case Columns::subscribed:
+                if (group.flags & Flags::Subscribed)
+                    return QIcon("icons:ico_star.png");
+                break;
+
+            case Columns::name: break;
+            case Columns::last: break;
         }
     }
 
-    return QVariant();
+    return {};
 }
 
 void NewsList::sort(int column, Qt::SortOrder order) 

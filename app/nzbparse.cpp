@@ -42,7 +42,8 @@ public:
 
     virtual bool characters(const QString& ch) override
     {
-        Q_ASSERT(has_content());
+        if (!has_content())
+            return false;
 
         auto& content = contents_.back();
 

@@ -9,7 +9,7 @@
 		},
 
         {
-            "path": "engine/unit_test",
+            "path": "app",
             "folder_exclude_patterns" : [
                 "bin"
             ]

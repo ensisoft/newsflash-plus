@@ -35,8 +35,8 @@ void unit_test_bodylist()
     // no such group
     {
         nf::cmdlist::messages m;
-        m.groups   = {"alt.binaries.foo", "alt.binaries.bar"};
-        m.messages = {"123", "234", "345"};
+        m.groups  = {"alt.binaries.foo", "alt.binaries.bar"};
+        m.numbers = {"123", "234", "345"};
 
         nf::cmdlist list(std::move(m));
 
@@ -77,8 +77,8 @@ void unit_test_bodylist()
     {
 
         nf::cmdlist::messages m;
-        m.groups   = {"alt.binaries.foo", "alt.binaries.bar"};
-        m.messages = {"123", "234", "345"};
+        m.groups  = {"alt.binaries.foo", "alt.binaries.bar"};
+        m.numbers = {"123", "234", "345"};
 
         nf::cmdlist list(std::move(m));
 
@@ -149,8 +149,8 @@ bool operator==(const nf::buffer& buff, const char* str)
 void unit_test_refill()
 {
     nf::cmdlist::messages m;
-    m.groups   = {"alt.binaries.foo"};
-    m.messages = {"1", "2", "3", "4"};
+    m.groups  = {"alt.binaries.foo"};
+    m.numbers = {"1", "2", "3", "4"};
 
     nf::cmdlist list(std::move(m));
 

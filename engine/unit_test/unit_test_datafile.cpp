@@ -101,7 +101,7 @@ void unit_test_discard()
             threads.submit(new nf::datafile::write(0, buff, file));        
             file.reset();                                
 
-            threads.wait();            
+            threads.wait_all_actions();            
             BOOST_REQUIRE(!file_exists("datafile"));            
         }
 

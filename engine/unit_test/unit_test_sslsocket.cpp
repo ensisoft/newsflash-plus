@@ -56,8 +56,7 @@ void test_connection_failure()
         sock.begin_connect(addr, 8000);
 
         newsflash::wait(sock);
-        const auto err = sock.complete_connect();
-        BOOST_REQUIRE(err != std::error_code());
+        REQUIRE_EXCEPTION(sock.complete_connect());
     }
 }
 
@@ -208,12 +207,7 @@ void test_connection_success()
     sslsocket sock;
     sock.begin_connect(addr, 8001);
     newsflash::wait(sock);
-    const auto err = sock.complete_connect();
-
-    //std::cout << err.message() << std::endl;
-    //std::cout << err.value() << std::endl;
-
-    BOOST_REQUIRE(err == std::error_code());
+    sock.complete_connect();
 
     // transfer data
     for (auto& buff : buffers)

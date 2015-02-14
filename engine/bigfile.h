@@ -45,13 +45,17 @@ namespace newsflash
 
         typedef std::int64_t big_t;
 
+        // create an unopened bigfile object
         bigfile();
-       ~bigfile();
 
+        // construct a a bigfile object and try to open the given file
+        bigfile(const std::string& file, unsigned flags = 0);
         bigfile(bigfile&& other);
 
-        // Open a file returns a system error on error.
-        std::error_code open(const std::string& file, unsigned flags = 0);
+       ~bigfile();
+
+        // Open a file.
+        void open(const std::string& file, unsigned flags = 0);
 
         // check if already open, returns true if open otherwise false.
         bool is_open() const;
@@ -64,6 +68,8 @@ namespace newsflash
 
         // get current file size
         big_t size() const;
+
+        //void resize(big_t size);
 
         // Seek to a file location specified by offset.
         // Seeking always occurs from the start of the file.

@@ -95,9 +95,12 @@ public:
 
     void* map(std::size_t offset, std::size_t size,  unsigned flags)
     {
-        // todo: flags
+        int read_write_flags = FILE_MAP_READ;
+        if (flags & filemap::buf_write)
+            read_write_flags = FILE_MAP_WRITE;
+
         void* ptr = MapViewOfFile(mmap_, 
-            FILE_MAP_WRITE,
+            read_write_flags,
             0,
             offset,
             size);

@@ -30,8 +30,6 @@
 #include <cstdint>
 #include "utility.h"
 #include "types.h"
-#include "ui/task.h"
-#include "ui/connection.h"
 
 namespace newsflash
 {

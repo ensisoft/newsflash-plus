@@ -38,7 +38,7 @@
 class barrier 
 {
 public:
-    barrier(size_t count) : count_(count)
+    barrier(std::size_t count) : count_(count)
     {}
 
     void wait()
@@ -55,7 +55,7 @@ public:
 private:
     std::mutex mutex_;
     std::condition_variable cond_;
-    size_t count_;    
+    std::size_t count_;    
 };
 
 void unit_test_event()

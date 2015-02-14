@@ -118,6 +118,15 @@ void fill_random(char* buff, size_t bytes)
 }
 
 inline
+std::vector<char> generate_buffer(std::size_t bytes)
+{
+    std::vector<char> ret;
+    ret.resize(bytes);
+    fill_random(&ret[0], bytes);
+    return ret;
+}
+
+inline
 int strcasecmp(const char* first, const char* second, size_t n)
 {
     int i = 0;

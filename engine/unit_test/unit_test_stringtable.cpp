@@ -28,7 +28,7 @@
 void test_basic()
 {
     std::string str;
-    for (std::size_t i=0; i<corelib::stringtable::MAX_STRING_LEN; ++i)
+    for (std::size_t i=0; i<newsflash::stringtable::MAX_STRING_LEN; ++i)
     {
         const auto offset = i % ('Z' - 'A');
         str.push_back('A' + offset);
@@ -37,7 +37,7 @@ void test_basic()
     {
         struct test {
             const std::string str;
-            corelib::stringtable::key_t key;
+            newsflash::stringtable::key_t key;
         } tests[] = {
             {"x", 0},
             {"x", 0},
@@ -49,7 +49,7 @@ void test_basic()
             {str, 0}
         };
 
-        corelib::stringtable st;
+        newsflash::stringtable st;
         for (auto it = std::begin(tests); it != std::end(tests); ++it)
         {
             test& t = *it;
@@ -66,7 +66,7 @@ void test_basic()
 
     // test some collisions
     {
-        corelib::stringtable st;
+        newsflash::stringtable st;
         const auto k1 = st.add("1 foobar");
         const auto k2 = st.add("2 foobar");
         BOOST_REQUIRE(st.get(k1) == "1 foobar");
@@ -88,7 +88,7 @@ void test_compress()
 {
     struct test {
         const char* str;
-        corelib::stringtable::key_t key;
+        newsflash::stringtable::key_t key;
     } tests[] = {
         {"60.Minutes.2007.09.30.PDTV.SoS.part16.rar - [18/38] - yEnc (01/69)", 0},
         {"60.Minutes.2007.09.30.PDTV.SoS.part17.rar - [18/38] - yEnc (01/69)", 0},
@@ -112,7 +112,7 @@ void test_compress()
         {"The_Magic_Stick_DVDrip.part10.rar (12/15)", 0}
     };
 
-    corelib::stringtable st;
+    newsflash::stringtable st;
     for (auto it = std::begin(tests); it != std::end(tests); ++it)
     {
         test& t = *it;

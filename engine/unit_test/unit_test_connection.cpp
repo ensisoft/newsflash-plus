@@ -268,7 +268,11 @@ void test_execute()
     act->set_log(log);
     act->perform();
 
-    auto cmds = std::shared_ptr<nf::cmdlist>(new nf::cmdlist({"alt.binaries.foo"}, {"3"}, nf::cmdlist::type::body));
+    nf::cmdlist::messages m;
+    m.groups  = {"alt.binaries.foo"};
+    m.numbers = {"3"};
+
+    auto cmds = std::make_shared<nf::cmdlist>(m);
 
     // execute
     act = conn.execute(cmds, 123);

@@ -93,8 +93,7 @@ void test_connection_failure()
         sock.begin_connect(addr, 8000);
 
         newsflash::wait(sock);
-        const auto err = sock.complete_connect();
-        TEST_REQUIRE(err != std::error_code());
+        REQUIRE_EXCEPTION(sock.complete_connect());
     }
 }
 

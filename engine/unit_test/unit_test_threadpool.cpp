@@ -38,7 +38,7 @@
 
 void unit_test_pool()
 {
-    std::atomic_int counter(0);
+    std::atomic_int counter {0};
 
     struct action : public newsflash::action
     {
@@ -72,8 +72,8 @@ void unit_test_pool()
 
 void unit_test_private_thread()
 {
-    std::atomic_int generic_counter(0);
-    std::atomic_int private_counter(0);
+    std::atomic_int generic_counter {0};
+    std::atomic_int private_counter {0};
 
     struct generic_counter_action : public newsflash::action
     {

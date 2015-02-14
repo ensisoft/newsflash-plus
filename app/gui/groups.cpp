@@ -245,7 +245,9 @@ void Groups::on_btnCloseFind_clicked()
 
 void Groups::on_cmbAccounts_currentIndexChanged()
 {
-    Q_ASSERT(ui_.cmbAccounts->currentIndex() != -1);
+    const auto index = ui_.cmbAccounts->currentIndex();
+    if (index == -1)
+        return;
 
     const auto name = ui_.cmbAccounts->currentText();
     const auto file = app::homedir::file(name + ".lst");

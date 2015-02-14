@@ -20,6 +20,8 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.            
 
+#include <newsflash/config.h>
+
 #include <boost/test/minimal.hpp>
 #include <vector>
 #include <string>
@@ -27,6 +29,7 @@
 #include "unit_test_common.h"
 #include "../listing.h"
 #include "../buffer.h"
+#include "../cmdlist.h"
 
 std::vector<std::string> read_file(const char* file)
 {
@@ -46,57 +49,59 @@ std::vector<std::string> read_file(const char* file)
 
 void unit_test_success()
 {
-    // empty list (empty body)
-    {
-        delete_file("listing.txt");
+    const char* body = 
+        "215 group listing follows\r\n"
+        "alt.binaries.pictures.graphics.3d 900 800 y\r\n"            
+        "alt.binaries.movies.divx 321 123 y\r\n"                      
+        "alt.binaries.sounds.mp3    8523443434535555 80 n\r\n"
+        ".\r\n";                      
 
-        corelib::buffer buff;
+    newsflash::buffer i(1024);
+    newsflash::buffer o;
+    i.append(body);
 
-        auto listing = corelib::listing("listing.txt");
-        listing.receive(std::move(buff), 0);
-        listing.finalize();
+    std::string cmd;
 
-        const auto& lines = read_file("listing.txt");
-        BOOST_REQUIRE(lines.size() == 1);
-        BOOST_REQUIRE(lines[0] == "0");
+    newsflash::session session;
+    session.on_send = [&](const std::string& c) {
+        cmd = c;
+    };
 
-        delete_file("listing.txt");
-    }
+    newsflash::listing listing;
 
-    // non empty list
-    {
-        delete_file("listing.txt");        
+    auto cmds = listing.create_commands();
+    BOOST_REQUIRE(cmds->needs_to_configure() == false);
+    BOOST_REQUIRE(cmds->cmdtype() == newsflash::cmdlist::type::listing);
 
-        const char* body = 
-           "alt.binaries.pictures.graphics.3d   900 800 y\r\n"            
-           "alt.binaries.movies.divx 321 123 y\r\n"                      
-           "alt.binaries.sounds.mp3    85 80 n\r\n";                      
+    cmds->submit_data_commands(session);
+    session.send_next();
+    session.recv_next(i, o);
 
-        corelib::buffer buff(body);
+    cmds->receive_data_buffer(std::move(o));
 
-        auto listing = corelib::listing("listing.txt");
+    std::vector<std::unique_ptr<newsflash::action>> actions;
+    listing.complete(*cmds, actions);
 
-        listing.receive(std::move(buff), 0);
-        listing.finalize();
+    const auto& groups = listing.group_list();
+    BOOST_REQUIRE(groups.size() == 3);
+    BOOST_REQUIRE(groups[0].name == "alt.binaries.pictures.graphics.3d");
+    BOOST_REQUIRE(groups[0].last == 900);
+    BOOST_REQUIRE(groups[0].first == 800);    
 
-        const auto& lines = read_file("listing.txt");
-        BOOST_REQUIRE(lines.size() == 4);
-        BOOST_REQUIRE(lines[0] == "3");
-        BOOST_REQUIRE(lines[1] == "alt.binaries.movies.divx,199");
-        BOOST_REQUIRE(lines[2] == "alt.binaries.pictures.graphics.3d,101");
-        BOOST_REQUIRE(lines[3] == "alt.binaries.sounds.mp3,6");
+    BOOST_REQUIRE(groups[1].name == "alt.binaries.movies.divx");
+    BOOST_REQUIRE(groups[1].last == 321);
+    BOOST_REQUIRE(groups[1].first == 123);        
 
-        delete_file("listing.txt");
-    }
+    BOOST_REQUIRE(groups[2].name == "alt.binaries.sounds.mp3");
+    BOOST_REQUIRE(groups[2].last == std::uint64_t(8523443434535555));
+    BOOST_REQUIRE(groups[2].first == 80);            
+
 
 }
 
 void unit_test_failure()
 {
-    // filesystem failure
-    {
-
-    }
+    // todo: 
 }
 
 int test_main(int, char* [])

@@ -21,6 +21,8 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
+#pragma once
+
 #include <newsflash/config.h>
 #include <system_error>
 #include <fstream>
@@ -28,8 +30,6 @@
 #include <cerrno>
 #include "format.h"
 #include "utf8.h"
-
-#pragma once
 
 #ifdef NEWSFLASH_ENABLE_LOG
 #  define LOG_E(...) write_log(newsflash::logevent::error, __FILE__, __LINE__, ## __VA_ARGS__)

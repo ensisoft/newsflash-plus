@@ -51,13 +51,11 @@ struct bigfile::impl {
     HANDLE file;
     bool append;
 
-    std::error_code open_file(const std::string& filename, unsigned flags)
+    impl(const std::string& filename, unsigned flags)
     {
-        assert(!filename.empty());
-
         const std::wstring& wide = utf8::decode(filename);
 
-        const HANDLE file = CreateFile(
+        file = CreateFile(
             wide.c_str(),
             GENERIC_READ | GENERIC_WRITE,
             FILE_SHARE_READ | FILE_SHARE_WRITE,
@@ -66,65 +64,40 @@ struct bigfile::impl {
             FILE_ATTRIBUTE_NORMAL,
             NULL);
         if (file == INVALID_HANDLE_VALUE)
-            return std::error_code(GetLastError(), std::system_category());
+            throw std::system_error(GetLastError(), std::system_category(),
+                "open file failed: " + filename);
 
         // make the handle non-inheritable so that any child processes 
         // that get started by this process do not have these files open
         // todo: this is not really consistent behaviour with linux, should the 
         // handles be inherited?
-        if (!SetHandleInformation(file, HANDLE_FLAG_INHERIT, 0))
-        {
-            const int err = GetLastError();
-            CloseHandle(file);
-            return std::error_code(err, std::system_category());
-        }
-        if (this->file)
-            CHECK(CloseHandle(this->file), TRUE);
-
-        this->file = file;
-        return std::error_code();
+        SetHandleInformation(file, HANDLE_FLAG_INHERIT, 0);
+    }
+   ~impl()
+    {
+        ASSERT(CloseHandle(file) == TRUE);
     }
 };
 
-bigfile::bigfile() : pimpl_(new impl)
+void bigfile::open(const std::string& file, unsigned flags)
 {
-    pimpl_->file = NULL;
-    pimpl_->append = false;
-}
-
-bigfile::~bigfile()
-{
-    close();
-}
-
-
-std::error_code bigfile::open(const std::string& file, unsigned flags)
-{
-    unsigned f = 0;
+    // note that the open flags _cannot_ be combined!
+    unsigned mode = OPEN_EXISTING;
     if (flags & o_create)
-        f |= CREATE_ALWAYS;
-    if (flags & o_truncate)
-        f |= TRUNCATE_EXISTING;
+        mode = CREATE_ALWAYS;    
 
-    pimpl_->append = flags & o_append;
+    std::unique_ptr<impl> p(new impl(file, mode));
 
-    return pimpl_->open_file(file, f);
-}
+    p->append = ((flags & o_append) == o_append);
 
-bool bigfile::is_open() const
-{
-    return pimpl_->file != NULL;
-}
+    const bool truncate = ((flags & o_truncate) == o_truncate);
+    if (truncate)
+    {
+        SetFilePointer(p->file, 0, NULL, FILE_BEGIN);
+        SetEndOfFile(p->file);
+    }
 
-void bigfile::close()
-{
-    if (pimpl_->file == NULL)
-        return;
-
-    CHECK(CloseHandle(pimpl_->file), TRUE);
-
-    pimpl_->file   = NULL;
-    pimpl_->append = false;
+    pimpl_ = std::move(p);
 }
 
 bigfile::big_t bigfile::position() const
@@ -160,9 +133,9 @@ void bigfile::seek(big_t offset)
     assert(is_open());
     assert(offset >= 0);
 
-    LONG high = static_cast<LONG>(offset >> 32);
-    DWORD low = SetFilePointer(pimpl_->file, static_cast<DWORD>(offset), &high, FILE_BEGIN);
-    if (low == 0xFFFFFFFF)
+    auto hi = static_cast<LONG>(offset >> 32);
+    auto lo = static_cast<LONG>(offset & 0xFFFFFFFF);    
+    if (SetFilePointer(pimpl_->file, lo, &hi, FILE_BEGIN) == INVALID_SET_FILE_POINTER)
     {
         if (GetLastError() != NO_ERROR)
             throw std::runtime_error("file seek failed");
@@ -264,58 +237,32 @@ std::error_code bigfile::resize(const std::string& file, big_t size)
 struct bigfile::impl {
     int fd;
 
-    std::error_code open_file(const std::string& filename, unsigned flags, unsigned mode)
+    impl(const std::string& filename, unsigned flags, unsigned mode)
     {
-        assert(!filename.empty());
-
-        const int fd = ::open(filename.c_str(), flags, mode);
+        fd = ::open(filename.c_str(), flags, mode);
         if (fd == -1)
-            return std::error_code(errno, std::generic_category());
-
-        if (this->fd)
-             CHECK(::close(this->fd), 0);
-
-        this->fd = fd;
-        return std::error_code();
+            throw std::system_error(errno, std::generic_category(),
+                "file open failed: " + filename);
+    }
+   ~impl()
+    {
+        ASSERT(::close(fd) == 0);
     }
 };
 
-bigfile::bigfile() : pimpl_(new impl)
-{
-    pimpl_->fd = 0;
-}
-
-bigfile::~bigfile()
-{
-    close();
-}
-
 std::error_code bigfile::open(const std::string& file, unsigned flags)
 {
-    int f = O_RDWR | O_LARGEFILE;
+    int mode = O_RDWR | O_LARGEFILE;
     if (flags & o_create)
-        f |= O_CREAT;
+        mode |= O_CREAT;
     if (flags & o_truncate)
-        f |= O_TRUNC;
+        mode |= O_TRUNC;
     if (flags & o_append)
-        f |= O_APPEND;
+        mode |= O_APPEND;
 
-    return pimpl_->open_file(file, f, S_IRWXU | S_IRGRP | S_IROTH);
-}
+    std::unique_ptr<impl> p(new impl(file, mode, S_IRWXU | S_IRGRP | S_IROTH));
 
-bool bigfile::is_open() const
-{
-    return (pimpl_->fd != 0);
-}
-
-void bigfile::close()
-{
-    if (!pimpl_->fd)
-        return;
-
-    CHECK(::close(pimpl_->fd), 0);
-
-    pimpl_->fd = 0;
+    pimpl_ = std::move(p);
 }
 
 bigfile::big_t bigfile::position() const
@@ -415,8 +362,32 @@ std::error_code bigfile::resize(const std::string& file, big_t size)
 
 #endif
 
+// common implementation follows
+
+bigfile::bigfile()
+{}
+
+bigfile::bigfile(const std::string& file, unsigned flags)
+{
+    open(file, flags);
+}
+
 bigfile::bigfile(bigfile&& other) : pimpl_(std::move(other.pimpl_))
 {}
+
+// have to define this because of the private implementation struct definition is here
+bigfile::~bigfile()
+{}
+
+bool bigfile::is_open() const
+{
+    return !!pimpl_;
+}
+
+void bigfile::close()
+{
+    pimpl_.reset();
+}
 
 bigfile& bigfile::operator=(bigfile&& other)
 {

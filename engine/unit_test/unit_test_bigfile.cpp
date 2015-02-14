@@ -45,7 +45,7 @@ void test_file_open()
     // try opening non-existing file
     {
         newsflash::bigfile file;
-        BOOST_REQUIRE(file.open("test0.file"));
+        REQUIRE_EXCEPTION(file.open("test0.file"));
         BOOST_REQUIRE(file.is_open() == false);
     }
 
@@ -53,7 +53,7 @@ void test_file_open()
     {
         newsflash::bigfile file;
 
-        BOOST_REQUIRE(!file.open("test0.file", newsflash::bigfile::o_create));
+        file.open("test0.file", newsflash::bigfile::o_create);
         BOOST_REQUIRE(file.is_open());
         BOOST_REQUIRE(file.size() == 0);        
         file.close();
@@ -66,7 +66,7 @@ void test_file_open()
         generate_file("test0.file", 1024);
 
         newsflash::bigfile file;
-        BOOST_REQUIRE(!file.open("test0.file"));
+        file.open("test0.file");
         BOOST_REQUIRE(file.is_open());
         BOOST_REQUIRE(file.position() == 0);
         BOOST_REQUIRE(file.size() == 1024);
@@ -80,7 +80,7 @@ void test_file_open()
         generate_file("test0.file", 1024);
 
         newsflash::bigfile file;
-        BOOST_REQUIRE(!file.open("test0.file", newsflash::bigfile::o_truncate));
+        file.open("test0.file", newsflash::bigfile::o_truncate);
         BOOST_REQUIRE(file.size() == 0);
         BOOST_REQUIRE(file.is_open());
         file.close();
@@ -92,14 +92,12 @@ void test_file_open()
     {
         newsflash::bigfile file;
 
-        BOOST_REQUIRE(file.open("."));
-        BOOST_REQUIRE(!file.is_open());
+        REQUIRE_EXCEPTION(file.open("."));
+
 #if defined(LINUX_OS)
-        BOOST_REQUIRE(file.open("/dev/mem")); // no permission 
-//        REQUIRE_EXCEPTION(newsflash::bigfile::size("/dev/mem"));
-//        REQUIRE_EXCEPTION(newsflash::bigfile::resize("/dev/mem", 100));
+        REQUIRE_EXCEPTION(file.open("/dev/mem")); // no permission 
 #elif defined(WINDOWS_OS)
-        BOOST_REQUIRE(file.open("\\\foobar\file"));
+        REQUIRE_EXCEPTION(file.open("\\\foobar\file"));
 #endif
     }
 
@@ -124,9 +122,7 @@ void test_file_write_read()
 
         delete_file("test1.file");
 
-        newsflash::bigfile file;
-        BOOST_REQUIRE(!file.open("test1.file", newsflash::bigfile::o_create));
-
+        newsflash::bigfile file("test1.file", newsflash::bigfile::o_create);
         file.write(&buff1[0], buff1.size());
 
         BOOST_REQUIRE(file.position() == buff1.size());
@@ -149,8 +145,7 @@ void test_file_write_read()
         delete_file("test1.file");
         generate_file("test1.file", 512);
 
-        newsflash::bigfile file;
-        BOOST_REQUIRE(!file.open("test1.file", false));
+        newsflash::bigfile file("test1.file");
         BOOST_REQUIRE(file.read(&empty[0], 512) == 512);
 
         delete_file("test1.file");
@@ -195,17 +190,9 @@ void test_unicode_filename()
     const char utf8[] = {0xe3, 0x82, 0x8f, 0xe3, 0x81, 0x9f, 0xe3, 0x81, 0x97, 0xe3, 0x82, 0x8f, 0xe3, 0x81, 0x95, 0xe3, 0x81, 0xbf, 0};
 
     newsflash::bigfile file;
-
-    BOOST_REQUIRE(file.create(utf8) == std::error_code());
-    BOOST_REQUIRE(file.is_open());
+    file.open(utf8, newsflash::bigfile::o_create);
     file.close();
     BOOST_REQUIRE(!newsflash::bigfile::erase(utf8));
-
-    BOOST_REQUIRE(file.append(utf8) == std::error_code());
-    BOOST_REQUIRE(file.is_open());
-    file.close();
-    BOOST_REQUIRE(!newsflash::bigfile::erase(utf8));
-
 #endif
 }
 
@@ -216,26 +203,22 @@ void print_err(const std::error_code& err)
               << "Category: " << err.category().name() << std::endl;
 }
 
-void test_error_codes()
-{
-    newsflash::bigfile file;
+// void test_error_codes()
+// {
+//     newsflash::bigfile file;
 
-    // no such file
-    auto err = file.open("nosuchfile", false);
-    print_err(err);
-    BOOST_REQUIRE(err == std::errc::no_such_file_or_directory);
+//     // no such file
+//     auto err = file.open("nosuchfile");
+//     print_err(err);
+//     BOOST_REQUIRE(err == std::errc::no_such_file_or_directory);
 
-#if defined(LINUX_OS)
-
-    print_err(file.open("/dev/mem", false)); // no permission 
-
-#elif defined(WINDOWS_OS)
-
-    print_err(file.open("\\\foobar\\file"));
+// #if defined(LINUX_OS)
+//     print_err(file.open("/dev/mem")); // no permission 
+// #elif defined(WINDOWS_OS)
+//     print_err(file.open("\\\foobar\\file"));
+// #endif
     
-#endif
-    
-}
+// }
 
 void test_static_methods()
 {
@@ -247,7 +230,7 @@ int test_main(int, char* [])
     test_file_open();
     test_file_write_read();
     test_unicode_filename();
-    test_error_codes();
+    //test_error_codes();
     test_static_methods();
 
     return 0;
