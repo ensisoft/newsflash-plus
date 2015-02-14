@@ -29,6 +29,7 @@
 #  include <boost/algorithm/string/trim.hpp>
 #include <newsflash/warnpop.h>
 #include <sstream>
+#include <vector>
 #include <iomanip>
 #include <string>
 #include <limits>

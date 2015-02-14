@@ -23,10 +23,9 @@
 // $Id: uuencode.h,v 1.11 2007/12/04 23:54:45 enska Exp $
 
 #if defined(_MSC_VER)
-#  undef MIN
-#  undef MAX
-#  undef min
-#  undef max
+#  define NOMINMAX
+#  define _CRT_SECURE_NO_WARNINGS
+#  define _SCL_SECURE_NO_WARNINGS
 #endif
 
 #include <cstdint>

@@ -81,15 +81,19 @@ namespace app
 //#  error every module importing eventlog needs to define LOGTAG
 #endif
 
+#undef WARN
 #define WARN(m) \
     app::eventlog::get().write(app::eventlog::event::warning, m, LOGTAG)    
 
+#undef ERROR
 #define ERROR(m) \
     app::eventlog::get().write(app::eventlog::event::error, m, LOGTAG)    
 
+#undef INFO
 #define INFO(m) \
     app::eventlog::get().write(app::eventlog::event::info, m, LOGTAG)    
 
+#undef NOTE
 #define NOTE(m) \
     app::eventlog::get().write(app::eventlog::event::note, m, LOGTAG)
 

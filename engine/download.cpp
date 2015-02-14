@@ -79,8 +79,8 @@ std::unique_ptr<cmdlist> download::create_commands()
     articles_.erase(std::begin(articles_), std::begin(articles_) + num_articles);
 
     cmdlist::messages m;
-    m.groups   = groups_;
-    m.messages = std::move(next);
+    m.groups  = groups_;
+    m.numbers = std::move(next);
 
     std::unique_ptr<cmdlist> cmd(new cmdlist(std::move(m)));
 
@@ -115,8 +115,8 @@ void download::complete(action& act, std::vector<std::unique_ptr<action>>& next)
     if (dec == nullptr)
         return;
 
-    auto binary = std::move(*dec).get_binary_data();
-    auto text   = std::move(*dec).get_text_data();
+    auto binary = dec->get_binary_data_move(); //std::move(*dec).get_binary_data();
+    auto text   = dec->get_text_data_move(); //std::move(*dec).get_text_data();
     auto name   = dec->get_binary_name();
 
     if (!binary.empty())

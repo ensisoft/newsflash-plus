@@ -26,7 +26,7 @@ import path ;
 import qt ;
 
 # set these paths to to point to the relevant SDK locations.
-path-constant QT_PATH      : "../qt-4.8.2" ;
+path-constant QT_PATH      : "../qt-4.8.6" ;
 path-constant BOOST_PATH   : "../boost_1_51_0" ;
 path-constant OPENSSL_PATH : "../openssl_1_0_1f" ;
 
@@ -59,17 +59,17 @@ project newsflash
 
 if [ os.name ] = NT
 {
-   # define openssl libraries, they have different names on win32 vs. linux
-   lib openssl : : <name>ssleay32 <search>$(OPENSSL_PATH)/lib ;
-   lib crypto  : : <name>libeay32 <search>$(OPENSSL_PATH)/lib ;
+  # define openssl libraries, they have different names on win32 vs. linux
+  lib openssl : : <name>ssleay32 <search>$(OPENSSL_PATH)/lib ;
+  lib crypto  : : <name>libeay32 <search>$(OPENSSL_PATH)/lib ;
 }
 
 if [ os.name ] = LINUX
 {
-   # on linux openssl is just *there* (only dev-package needs to be installed)
-   # so only got to name the libraries here
-   lib openssl : : <name>ssl    <search>$(/usr/lib) ;
-   lib crypto  : : <name>crypto <search>$(/usr/lib) ; 
+  # on linux openssl is just *there* (only dev-package needs to be installed)
+  # so only got to name the libraries here
+  lib openssl : : <name>ssl    <search>$(/usr/lib) ;
+  lib crypto  : : <name>crypto <search>$(/usr/lib) ; 
 }
 
 ## prebuilt binaries
@@ -89,5 +89,14 @@ lib python : : <name>python25 <search>"python/debug" <variant>debug ;
 lib python : : <name>python25 <search>"python/release" <variant>release ;
 
 #system libs (python dependants)
-lib dl   : : <name>dl ;
-lib util : : <name>util ;
+if [ os.name ] = LINUX
+{
+  lib dl   : : <name>dl ;
+  lib util : : <name>util ;
+}
+
+if [ os.name ] = NT
+{
+  lib dl   : : <name>shell32 ;
+  lib util : : <name>user32 ;   
+}

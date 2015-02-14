@@ -47,7 +47,7 @@ namespace newsflash
             exception(std::string what) : what_(std::move(what))
             {}
 
-            const char* what() const noexcept
+            const char* what() const NOTHROW // noexcept
             { return what_.c_str(); }
 
         private:
@@ -63,19 +63,25 @@ namespace newsflash
        ~decode();
 
         // get text content buffer (if any)
-        std::vector<char>&& get_text_data() &&
+
+        // doesn't work with msvc!
+        // std::vector<char>&& get_text_data() &&
+
+        std::vector<char>&& get_text_data_move() 
         { return std::move(text_); }
 
         // get the binary content (if any)
-        std::vector<char>&& get_binary_data() &&
+        //std::vector<char>&& get_binary_data() &&
+
+        std::vector<char>&& get_binary_data_move()
         { return std::move(binary_); }
 
         const 
-        std::vector<char>& get_text_data() const &
+        std::vector<char>& get_text_data() const //&
         { return text_; }
 
         const 
-        std::vector<char>& get_binary_data() const &
+        std::vector<char>& get_binary_data() const //&
         { return binary_; }
 
 

@@ -20,6 +20,8 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
+#include <newsflash/config.h>
+#include <algorithm> // for min/max
 #include <cassert>
 #include <cctype>
 #include "stringtable.h"

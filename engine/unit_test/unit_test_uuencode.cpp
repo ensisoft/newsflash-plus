@@ -22,6 +22,12 @@
 
 // $Id: unit_test_uuencode.cpp,v 1.11 2007/12/06 10:29:40 enska Exp $
 
+#if defined(_MSC_VER)
+#  define NOMINMAX
+#  define _CRT_SECURE_NO_WARNINGS
+#  define _SCL_SECURE_NO_WARNINGS
+#endif
+
 #include <boost/test/minimal.hpp>
 #include <fstream>
 #include <iterator>

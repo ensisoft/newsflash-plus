@@ -70,7 +70,7 @@ public:
             NULL, // default security
             PAGE_READWRITE,
             0, // high size word
-            map_size, 
+            0, // low size word  (when the mapping size is 0 the current maximum size of the file mapping equals the file size)
             NULL); 
         if (map == NULL)
         {
@@ -82,7 +82,7 @@ public:
         // address space so we'll set the inherit handle off. So any processes
         // that this process creates do not inherit the handles.
         SetHandleInformation(fd, HANDLE_FLAG_INHERIT, 0);
-        SetHandleInformation(mp, HANDLE_FLAG_INHERIT, 0);
+        SetHandleInformation(map, HANDLE_FLAG_INHERIT, 0);
         file_ = fd;
         mmap_ = map;
     }
@@ -96,7 +96,7 @@ public:
     void* map(std::size_t offset, std::size_t size,  unsigned flags)
     {
         // todo: flags
-        void* ptr = MapViewOfFile(map, 
+        void* ptr = MapViewOfFile(mmap_, 
             FILE_MAP_WRITE,
             0,
             offset,
@@ -111,6 +111,14 @@ public:
     {
         ASSERT(UnmapViewOfFile(base) == TRUE);
     }
+
+    std::size_t size() const 
+    {
+        LARGE_INTEGER size;
+        if (!GetFileSizeEx(file_, &size))
+            throw std::runtime_error("get file size failed");
+        return size.QuadPart;
+    }
 private:
     HANDLE file_;
     HANDLE mmap_;    
@@ -119,7 +127,7 @@ private:
 
 std::size_t get_page_size()
 {
-    SYSTEMINFO sys {0};
+    SYSTEM_INFO sys {0};
     GetSystemInfo(&sys);
     return sys.dwAllocationGranularity;
 }

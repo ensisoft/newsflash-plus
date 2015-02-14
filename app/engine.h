@@ -43,11 +43,11 @@ namespace app
 {
     class Account;
     class Settings;
-    class NZBContent;
+    struct NZBContent;
 
     // file message notifies of a downloaded file that
     // is now available in the filesystem
-    struct DataFile {
+    struct DataFileInfo {
         // path to the file
         QString path;
 
@@ -66,7 +66,7 @@ namespace app
 
     // newsgroup message notifies of a group information
     // as part of a listing event.
-    struct NewsGroup {
+    struct NewsGroupInfo {
         // the estimated number of articles available in the group
         quint64 size;
 
@@ -304,8 +304,8 @@ namespace app
     signals:
         void shutdownComplete();
         void newDownloadQueued(const QString& desc);
-        void fileCompleted(const app::DataFile& file);
-        void listingCompleted(quint32 account, const QList<app::NewsGroup>& list);
+        void fileCompleted(const app::DataFileInfo& file);
+        void listingCompleted(quint32 account, const QList<app::NewsGroupInfo>& list);
 
     private:
         virtual bool eventFilter(QObject* object, QEvent* event) override;
@@ -333,5 +333,5 @@ namespace app
 
 } // app
 
-    Q_DECLARE_METATYPE(app::DataFile);
-    Q_DECLARE_METATYPE(app::NewsGroup);
+    Q_DECLARE_METATYPE(app::DataFileInfo);
+    Q_DECLARE_METATYPE(app::NewsGroupInfo);

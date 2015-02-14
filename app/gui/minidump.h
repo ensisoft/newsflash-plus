@@ -33,14 +33,14 @@
 
 namespace gui
 {
-   DWORD write_mini_dump(EXCEPTION_POINTERS* eptr);
+   DWORD writeMiniDump(EXCEPTION_POINTERS* eptr);
 
 } // gui
 
 #define SEH_BLOCK(x) \
     __try { \
         x \
-    } __except(gui::write_mini_dump(GetExceptionInformation())) {}
+    } __except(gui::writeMiniDump(GetExceptionInformation())) {}
 
 #else
   #define SEH_BLOCK(x) x

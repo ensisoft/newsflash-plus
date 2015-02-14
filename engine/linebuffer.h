@@ -22,8 +22,10 @@
 
 #pragma once
 
+#include <newsflash/config.h>
 #include <iterator>
 #include <string>
+#include <cstddef>
 
 namespace nntp
 {
@@ -33,7 +35,7 @@ namespace nntp
     public:
         struct line {
             const char* start;
-            size_t length; // length of the line including the \r\n (or \n)
+            std::size_t length; // length of the line including the \r\n (or \n)
         };
 
         class iterator : public

@@ -20,6 +20,9 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
+#include <newsflash/config.h>
+
+#include <cassert>
 #include "minidump.h"
 #include "config.h"
 
@@ -28,7 +31,7 @@ namespace gui
 
 #if defined(WINDOWS_OS)
 
-DWORD write_mini_dump(EXCEPTION_POINTERS* eptr)
+DWORD writeMiniDump(EXCEPTION_POINTERS* eptr)
 {
     HANDLE crash_log = CreateFileA(
         "crashdump_" NEWSFLASH_VERSION ".dmp",

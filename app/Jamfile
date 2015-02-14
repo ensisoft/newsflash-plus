@@ -7,6 +7,7 @@ project gui
 
 # build Qt Gui application
 
+
 exe newsflash
 :
   [ glob *.h   ]
@@ -27,18 +28,16 @@ exe newsflash
   /qt//QtNetwork
   /qt//QtXml
   /newsflash//qjson
-  /newsflash//python
+#  /newsflash//python
   /newsflash//dl
   /newsflash//util
-  /newsflash//python
   /engine//engine/<link>static
 
   ../keygen/keygen.cpp
+#  : <user-interface>gui  
 ;
 
-
 #build-project "unit_test" ;
-
 
 install ../dist_d : newsflash
 : 

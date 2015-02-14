@@ -39,7 +39,7 @@
 
 namespace app
 {
-    class files : public QAbstractTableModel
+    class Files : public QAbstractTableModel
     {
         Q_OBJECT
 
@@ -52,8 +52,8 @@ namespace app
             filetype  type;
         };
 
-        files();
-       ~files();
+        Files();
+       ~Files();
 
         // QAbstractTableModel implementation
         virtual QVariant data(const QModelIndex& index, int role) const override;
@@ -71,7 +71,7 @@ namespace app
         const file& getItem(std::size_t i) const;
 
     private slots:
-        void fileCompleted(const app::DataFile& file);
+        void fileCompleted(const app::DataFileInfo& file);
 
     private:
         std::vector<file> files_;

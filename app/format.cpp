@@ -248,7 +248,7 @@ QString format(const QUrl& url)
 std::string narrow(const QString& str)
 {
 #if defined(WINDOWS_OS)
-    return utf8(str);
+    return to_utf8(str);
 #elif defined(LINUX_OS)
     const char* codeset = nl_langinfo(CODESET);
     if (!std::strcmp(codeset, "UTF-8"))

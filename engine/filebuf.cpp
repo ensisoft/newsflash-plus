@@ -56,7 +56,7 @@ public:
             FILE_ATTRIBUTE_NORMAL,
             NULL);
         if (fd == INVALID_HANDLE_VALUE)
-            throw system_error(std::error_code(GetLastError(), std::system_category()),
+            throw std::system_error(std::error_code(GetLastError(), std::system_category()),
                 "filebuf open failed: " + file);
         file_ = fd;
     }
@@ -156,8 +156,8 @@ filebuf::buffer filebuf::load(std::size_t offset, std::size_t size, unsigned fla
     std::vector<byte> vec;
     vec.resize(size);
 
-    const bool read_data  = flags & buf_read;
-    const bool write_data = flags & buf_write;
+    const auto read_data  = bool(flags & buf_read);
+    const auto write_data = bool(flags & buf_write);
     if (read_data)
         fileio_->read(&vec[0], size, offset);
 

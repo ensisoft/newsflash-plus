@@ -27,7 +27,7 @@
 #if defined(WINDOWS_OS)
 #  include <windows.h>
 #  include <winsock2.h>
-#  pragme comment(lib, "ws2_32.lib")
+#  pragma comment(lib, "ws2_32.lib")
 #elif defined(LINUX_OS)
 #  include <sys/types.h>
 #  include <sys/socket.h>

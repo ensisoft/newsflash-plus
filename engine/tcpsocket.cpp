@@ -22,6 +22,7 @@
 
 #include <newsflash/config.h>
 
+#include <algorithm> // for min/max
 #include <cassert>
 #include "sockets.h"
 #include "tcpsocket.h"
@@ -106,17 +107,17 @@ int tcpsocket::sendsome(const void* buff, int len)
 
 #if defined(LINUX_OS)
     flags = MSG_NOSIGNAL;
-#endif
     
     // on linux the the packet is silently dropped if the device queue overflows (ENOBUFS)
     // so we check for the how much currently space is available 
     // in the sendbuf and then crop the len if needed.
-
+    // todo: should this be done for winsock also?
     int sendbuf = 1024;
     socklen_t optlen = sizeof(sendbuf);
     getsockopt(socket_, SOL_SOCKET, SO_SNDBUF, &sendbuf, &optlen);
 
     len = std::min(sendbuf, len);
+#endif
 
     const char* ptr = static_cast<const char*>(buff);
 

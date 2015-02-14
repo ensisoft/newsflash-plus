@@ -23,19 +23,10 @@
 #pragma once
 
 #include <newsflash/config.h>
-#if defined(WINDOWS_OS)
-#  include "windows.h"
-#elif defined(LINUX_OS)
-#  include "linux.h"
-#endif
-
 #include <cstdint>
 
 namespace newsflash
 {
-    using ipv4addr_t = std::uint32_t;
-    using ipv4port_t = std::uint16_t;
-
     struct kb {
         kb(std::uint64_t bytes) : value(bytes) 
         {}

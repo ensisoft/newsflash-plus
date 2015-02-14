@@ -28,6 +28,7 @@
 #include <stdexcept>
 #include <string>
 #include <memory>
+#include <cstdint>
 #include "action.h"
 
 namespace newsflash
@@ -53,10 +54,10 @@ namespace newsflash
                 : error_(err), what_(std::move(what))
             {}
 
-            const char* what() const noexcept
+            const char* what() const NOTHROW // noexcept
             { return what_.c_str(); }
 
-            connection::error error() const noexcept
+            connection::error error() const NOTHROW // noexcept
             { return error_; }
 
         private:
@@ -175,9 +176,9 @@ namespace newsflash
 
         const std::string& password() const;
 
-        double bps() const;
+        std::uint32_t current_speed_bps() const;
 
-        std::uint64_t bytes() const;
+        std::uint64_t num_bytes_transferred() const;
     private:
         std::shared_ptr<state> state_;
 

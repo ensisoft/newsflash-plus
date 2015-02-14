@@ -37,6 +37,7 @@
 ** $QT_END_LICENSE$
 **
 ****************************************************************************/
+#include <newsflash/config.h>
 
 #include "qtlockedfile.h"
 #include <qt_windows.h>
@@ -63,7 +64,7 @@ Qt::HANDLE QtLockedFile::getMutexHandle(int idx, bool doCreate)
 
     Qt::HANDLE mutex;
     if (doCreate) {
-        QT_WA( { mutex = CreateMutexW(NULL, FALSE, (TCHAR*)mname.utf16()); },
+        QT_WA( { mutex = CreateMutexW(NULL, FALSE, mname.utf16()); },
                { mutex = CreateMutexA(NULL, FALSE, mname.toLocal8Bit().constData()); } );
         if (!mutex) {
             qErrnoWarning("QtLockedFile::lock(): CreateMutex failed");
@@ -71,7 +72,7 @@ Qt::HANDLE QtLockedFile::getMutexHandle(int idx, bool doCreate)
         }
     }
     else {
-        QT_WA( { mutex = OpenMutexW(SYNCHRONIZE | MUTEX_MODIFY_STATE, FALSE, (TCHAR*)mname.utf16()); },
+        QT_WA( { mutex = OpenMutexW(SYNCHRONIZE | MUTEX_MODIFY_STATE, FALSE, mname.utf16()); },
                { mutex = OpenMutexA(SYNCHRONIZE | MUTEX_MODIFY_STATE, FALSE, mname.toLocal8Bit().constData()); } );
         if (!mutex) {
             if (GetLastError() != ERROR_FILE_NOT_FOUND)

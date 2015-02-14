@@ -23,6 +23,7 @@
 #include <newsflash/config.h>
 
 #include <algorithm>
+#include <numeric> // for accumulate
 #include <deque>
 #include <mutex>
 #include <fstream>
@@ -92,10 +93,10 @@ struct engine::state {
     std::deque<std::unique_ptr<engine::batch>> batches;
     std::vector<account> accounts;
     std::list<std::shared_ptr<cmdlist>> cmds;
-    std::size_t bytes_downloaded;
-    std::size_t bytes_queued;
-    std::size_t bytes_ready;
-    std::size_t bytes_written;
+    std::uint64_t bytes_downloaded;
+    std::uint64_t bytes_queued;
+    std::uint64_t bytes_ready;
+    std::uint64_t bytes_written;
     std::size_t oid; // object id for tasks/connections
     std::size_t fill_account;
     std::string logpath;
@@ -169,7 +170,7 @@ struct engine::state {
         num_pending_actions++;
     }
 
-    void submit(action* a, threadpool::thread* thread)
+    void submit(action* a, threadpool::worker* thread)
     {
         threads->submit(a, thread);
         num_pending_actions++;
@@ -361,10 +362,10 @@ public:
             // read then the bps value cannot be valid but has become
             // stale since the connection has not ready any data. (i.e. it's stalled)
             const auto bytes_before  = ui_.down;
-            const auto bytes_current = conn_.bytes();
+            const auto bytes_current = conn_.num_bytes_transferred();
             if (bytes_current != bytes_before)
             {
-                ui_.bps  = ui.bps  = conn_.bps();
+                ui_.bps  = ui.bps  = conn_.current_speed_bps();
                 ui_.down = ui.down = bytes_current;
             }
         }
@@ -517,7 +518,7 @@ private:
     ui::connection ui_;
     connection conn_;
     std::shared_ptr<logger> logger_;
-    threadpool::thread* thread_;
+    threadpool::worker* thread_;
     unsigned ticks_to_ping_;
     unsigned ticks_to_conn_;
 };
@@ -538,7 +539,8 @@ public:
         }
     };
 
-    constexpr static auto no_transition = transition{states::queued, states::queued};
+    //constexpr static auto no_transition = transition{states::queued, states::queued};
+    const static transition no_transition;
 
     task(std::size_t aid, std::size_t tid, std::size_t bid, std::uint64_t size, 
         std::string desc, std::unique_ptr<newsflash::task> task) : task_(std::move(task))
@@ -745,7 +747,7 @@ public:
                 const auto timespent = ui.runtime;
                 const auto time_per_percent = timespent / complete;
                 const auto timeremains = remaining * time_per_percent;
-                ui_.etatime = timeremains;
+                ui_.etatime = (std::uint32_t)timeremains;
             }
         }
 
@@ -956,11 +958,13 @@ private:
     std::unique_ptr<newsflash::task> task_;
     std::size_t num_active_cmdlists_;
     std::size_t num_active_actions_;
-    std::size_t num_complete_bytes_;
+    std::uint64_t num_complete_bytes_;
 private:
     bool started_;
 };
 
+// for msvc... 
+const engine::task::transition engine::task::no_transition {engine::task::states::queued, engine::task::states::queued};
 
 class engine::batch
 {
@@ -1055,7 +1059,7 @@ public:
                 const auto timespent = ui.runtime;
                 const auto time_per_percent = timespent / complete;
                 const auto time_remains = remaining * time_per_percent;
-                ui_.etatime = time_remains;
+                ui_.etatime = (std::uint32_t)time_remains;
             }
         }
     }

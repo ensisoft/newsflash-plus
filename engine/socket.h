@@ -30,7 +30,7 @@
 #include <exception>
 #include <string>
 #include <cstdint>
-#include "types.h"
+#include "socketapi.h"
 #include "waithandle.h"
 
 namespace newsflash

@@ -22,14 +22,17 @@
 
 #pragma once
 
+#include <newsflash/config.h>
 #include <system_error>
 #include <string>
 #include <cstdint>
 #include <utility> // for pair
-#include "types.h"
+#include "native_types.h"
 
 namespace newsflash
 {
+    using ipv4addr_t = std::uint32_t;
+    using ipv4port_t = std::uint16_t;
 
     // resolve the host name and return the first address in network byte order
     // or 0 if host could not be resolved. (use socket_error() to query for error)

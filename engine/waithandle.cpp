@@ -49,8 +49,8 @@ std::pair<bool, bool> check_read_write(newsflash::native_socket_t sock)
     if (select(0, &read, &write, nullptr, &tv) == newsflash::OS_SOCKET_ERROR)
         throw std::runtime_error("select");
 
-    bool can_read  = FD_ISSET(sock, &read);
-    bool can_write = FD_ISSET(sock, &write);
+    bool can_read  = FD_ISSET(sock, &read) != 0;
+    bool can_write = FD_ISSET(sock, &write) != 0;
 
     return { can_read, can_write };
 }
@@ -75,7 +75,7 @@ bool waithandle::wait_handles(const list& handles, const std::chrono::millisecon
     }
 
     const DWORD start  = GetTickCount();
-    const DWORD span   = ms ? ms->count() : 0;
+    const DWORD span   = ms ? (DWORD)ms->count() : 0;
     const DWORD nCount = static_cast<DWORD>(vec.size());
     
     DWORD now = start;

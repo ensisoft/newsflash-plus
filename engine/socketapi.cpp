@@ -63,12 +63,12 @@ std::error_code resolve_host_ipv4(const std::string& hostname,
     if (hp == nullptr)
         return get_last_socket_error();
 
-    const in_addr* addr = static_cast<const in_addr*>((void*)hp->h_addr);
-    addr = ntohl(addr->s_addr);
+    const in_addr* paddr = static_cast<const in_addr*>((void*)hp->h_addr);
+    addr = ntohl(paddr->s_addr);
     return std::error_code();
 }
 
-std::pair<native_socket_t, native_handle_t> begin_socket_connect(ipv4addr_t host, port_t port)
+std::pair<native_socket_t, native_handle_t> begin_socket_connect(ipv4addr_t host, ipv4port_t port)
 {
     auto sock = make_unique_handle(::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP), ::closesocket);
     if (sock.get() == INVALID_SOCKET)
@@ -99,19 +99,21 @@ std::pair<native_socket_t, native_handle_t> begin_socket_connect(ipv4addr_t host
     return {s, h};
 }
 
-std::error_code complete_socket_connect(native_handle_t handle, native_socket_t sock)
+void complete_socket_connect(native_handle_t handle, native_socket_t sock)
 {
     int len = sizeof(len);
-    int err = 0;
+    int connection_error = 0;
     const int ret = getsockopt(sock,
         SOL_SOCKET,
         SO_ERROR,
-        static_cast<char*>((void*)&err),
+        static_cast<char*>((void*)&connection_error),
         &len);
     if (ret == SOCKET_ERROR)
         throw std::runtime_error("getsockopt");
 
-    return std::error_code(err, std::generic_category());
+    if (connection_error)
+        throw std::system_error(connection_error, std::system_category(),
+            "complete socket connect failed");
 }
 
 std::error_code get_last_socket_error()

@@ -65,7 +65,7 @@ namespace newsflash
 
         // test a particular value.
         bool test(Enum value) const
-        { return bits_ & (1 << Bits(value)); }
+        { return bool(bits_ & (1 << Bits(value))); }
 
 
         // test for any value.

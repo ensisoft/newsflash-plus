@@ -30,7 +30,7 @@
 
 namespace newsflash
 {
-struct threadpool::thread {
+struct threadpool::worker {
     std::mutex mutex;
     std::condition_variable cond;
     std::unique_ptr<std::thread> thread;
@@ -45,7 +45,7 @@ threadpool::threadpool(std::size_t num_threads) : round_robin_(0), pool_size_(nu
 
     for (std::size_t i=0; i<num_threads; ++i)
     {
-        std::unique_ptr<threadpool::thread> thread(new threadpool::thread);
+        std::unique_ptr<threadpool::worker> thread(new threadpool::worker);
         std::lock_guard<std::mutex> lock(thread->mutex);
 
         thread->run_loop = true;
@@ -63,27 +63,27 @@ void threadpool::submit(action* act)
 {
     const auto num_threads  = pool_size_;
     const auto affinity = act->get_affinity();
-    thread* worker = nullptr;
+    worker* thread = nullptr;
 
     if (affinity == action::affinity::any_thread)
     {
-        worker = threads_[round_robin_ % num_threads].get();
+        thread = threads_[round_robin_ % num_threads].get();
         round_robin_++;
     }
     else
     {
         const auto act_id = act->get_id();        
-        worker = threads_[act_id % num_threads].get();
+        thread = threads_[act_id % num_threads].get();
     }
 
-    std::lock_guard<std::mutex> lock(worker->mutex);
-    worker->queue.push(act);
-    worker->cond.notify_one();    
+    std::lock_guard<std::mutex> lock(thread->mutex);
+    thread->queue.push(act);
+    thread->cond.notify_one();    
 
     queue_size_++;    
 }
 
-void threadpool::submit(action* act, threadpool::thread* t)
+void threadpool::submit(action* act, threadpool::worker* t)
 {
     std::lock_guard<std::mutex> lock(t->mutex);
     t->queue.push(act);
@@ -113,7 +113,7 @@ void threadpool::shutdown()
     threads_.clear();
 }
 
-threadpool::thread* threadpool::allocate()
+threadpool::worker* threadpool::allocate()
 {
     for (std::size_t i=pool_size_; i<threads_.size(); ++i)
     {
@@ -125,7 +125,7 @@ threadpool::thread* threadpool::allocate()
         }
     }
 
-    std::unique_ptr<threadpool::thread> thread(new threadpool::thread);
+    std::unique_ptr<threadpool::worker> thread(new threadpool::worker);
     std::lock_guard<std::mutex> lock(thread->mutex);
 
     auto* handle = thread.get();
@@ -139,12 +139,12 @@ threadpool::thread* threadpool::allocate()
     return handle;
 }
 
-void threadpool::detach(threadpool::thread* thread)
+void threadpool::detach(threadpool::worker* thread)
 {
     thread->in_use = false;
 }
 
-void threadpool::thread_main(threadpool::thread* self)
+void threadpool::thread_main(threadpool::worker* self)
 {
     while (true)
     {

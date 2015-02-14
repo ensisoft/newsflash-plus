@@ -20,15 +20,13 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-
 #pragma once
 
 #include <newsflash/config.h>
-
 #include <chrono>
 #include <vector>
 #include <cassert>
-#include "types.h"
+#include "native_types.h"
 
 namespace newsflash
 {

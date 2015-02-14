@@ -543,10 +543,10 @@ const std::string& connection::password() const
 { return state_->password; }
 
 
-double connection::bps() const
-{ return state_->bps; }
+std::uint32_t connection::current_speed_bps() const
+{ return (std::uint32_t)state_->bps; }
 
-std::uint64_t connection::bytes() const
+std::uint64_t connection::num_bytes_transferred() const
 { return state_->bytes; }
 
 } // newsflash

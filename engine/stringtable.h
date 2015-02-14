@@ -28,6 +28,7 @@
 #include <string>
 #include <map>
 #include <cstddef>
+#include <cstdint>
 
 namespace newsflash
 {

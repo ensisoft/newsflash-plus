@@ -23,9 +23,9 @@
 #pragma once
 
 #include <newsflash/config.h>
-
-#include <cstddef>
 #include <string>
+#include <cstddef>
+#include <cstdint>
 #include "../bitflag.h"
 
 namespace newsflash

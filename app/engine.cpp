@@ -418,7 +418,7 @@ void Engine::onFileComplete(const newsflash::ui::file& f)
     path = QDir(path).absolutePath();
     path = QDir::toNativeSeparators(path);
 
-    app::DataFile file;
+    app::DataFileInfo file;
     file.binary  = f.binary;
     file.damaged = f.damaged;
     file.name    = widen(f.name);
@@ -457,11 +457,11 @@ void Engine::onListComplete(const newsflash::ui::listing& l)
 {
     DEBUG("Listing complete");
 
-    QList<NewsGroup> list;
+    QList<NewsGroupInfo> list;
 
     for (const auto& ui : l.groups)
     {
-        NewsGroup group;
+        NewsGroupInfo group;
         group.first = ui.first;
         group.last  = ui.last;
         group.size  = ui.size;

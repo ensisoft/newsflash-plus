@@ -45,20 +45,20 @@ namespace {
 namespace app
 {
 
-files::files() : keepSorted_(false), sortColumn_(0), sortOrder_(Qt::AscendingOrder)
+Files::Files() : keepSorted_(false), sortColumn_(0), sortOrder_(Qt::AscendingOrder)
 {
-    QObject::connect(g_engine, SIGNAL(fileCompleted(const app::DataFile&)),
-        this, SLOT(fileCompleted(const app::DataFile&)));
+    QObject::connect(g_engine, SIGNAL(fileCompleted(const app::DataFileInfo&)),
+        this, SLOT(fileCompleted(const app::DataFileInfo&)));
 
-    DEBUG("files model created");
+    DEBUG("Files model created");
 }
 
-files::~files()
+Files::~Files()
 {
-    DEBUG("files model deleted");
+    DEBUG("Files model deleted");
 }
 
-QVariant files::data(const QModelIndex& index, int role) const
+QVariant Files::data(const QModelIndex& index, int role) const
 {
     // back of the vector is "top of the data"
     // so that we can just push-back instead of more expensive push_front (on deque)
@@ -87,7 +87,7 @@ QVariant files::data(const QModelIndex& index, int role) const
     return QVariant();
 }
 
-QVariant files::headerData(int section, Qt::Orientation orientation, int role) const
+QVariant Files::headerData(int section, Qt::Orientation orientation, int role) const
 {
     if (role == Qt::DisplayRole && orientation == Qt::Horizontal)
     {
@@ -103,7 +103,7 @@ QVariant files::headerData(int section, Qt::Orientation orientation, int role) c
     return QVariant();
 }
 
-void files::sort(int column, Qt::SortOrder order) 
+void Files::sort(int column, Qt::SortOrder order) 
 {
     if (order == Qt::AscendingOrder)
         DEBUG("Sort in Ascending Order");
@@ -117,7 +117,7 @@ void files::sort(int column, Qt::SortOrder order)
     // on the UI
 #define SORT(x) \
     std::sort(std::begin(files_), std::end(files_), \
-        [&](const files::file& lhs, const files::file& rhs) { \
+        [&](const Files::file& lhs, const Files::file& rhs) { \
             if (order == Qt::AscendingOrder) \
                 return lhs.x > rhs.x; \
             return lhs.x < rhs.x; \
@@ -140,17 +140,17 @@ void files::sort(int column, Qt::SortOrder order)
     sortOrder_  = order;
 }
 
-int files::rowCount(const QModelIndex&) const 
+int Files::rowCount(const QModelIndex&) const 
 { 
     return (int)files_.size();
 }
 
-int files::columnCount(const QModelIndex&) const 
+int Files::columnCount(const QModelIndex&) const 
 {
     return (int)columns::count;
 }
 
-void files::loadHistory()
+void Files::loadHistory()
 {
     const auto& file = homedir::file("file-history.txt");
 
@@ -177,7 +177,7 @@ void files::loadHistory()
 
         const auto& toks = line.split("\t");
 
-        files::file next;
+        Files::file next;
         next.type = (filetype)toks[0].toInt();
         next.time = QDateTime::fromTime_t(toks[1].toLongLong());
         next.path = toks[2];
@@ -216,7 +216,7 @@ void files::loadHistory()
     reset();
 }
 
-void files::eraseHistory()
+void Files::eraseHistory()
 {
     if (history_.isOpen())
         history_.close();
@@ -234,7 +234,7 @@ void files::eraseHistory()
     reset();
 }
 
-void files::eraseFiles(QModelIndexList& list)
+void Files::eraseFiles(QModelIndexList& list)
 {
     qSort(list);
 
@@ -267,21 +267,21 @@ void files::eraseFiles(QModelIndexList& list)
     }
 }
 
-void files::keepSorted(bool onOff)
+void Files::keepSorted(bool onOff)
 {
     keepSorted_ = onOff;
 }
 
-const files::file& files::getItem(std::size_t i) const 
+const Files::file& Files::getItem(std::size_t i) const 
 {
     // the vector is accessed in reverse manner (item at index 0 is at the end)
     // so latest item (push_back) comes at the top of the list on the GUI
     return files_[files_.size() - i -1];
 }
 
-void files::fileCompleted(const app::DataFile& file)
+void Files::fileCompleted(const app::DataFileInfo& file)
 {
-    files::file next;
+    Files::file next;
     next.name = file.name;
     next.path = file.path;
     next.type = find_filetype(file.name);

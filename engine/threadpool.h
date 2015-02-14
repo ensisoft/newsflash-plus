@@ -40,7 +40,7 @@ namespace newsflash
     {
 
     public:
-        struct thread;
+        struct worker;
 
         // callback to be invoked when an action has been completed
         std::function<void (action*)> on_complete;
@@ -55,7 +55,7 @@ namespace newsflash
         void submit(action* act);
 
         // submit work to the specific thread
-        void submit(action* act, thread* t);
+        void submit(action* act, worker* t);
 
         // wait for all actions to be completed before returning.
         void wait_all_actions();
@@ -65,23 +65,23 @@ namespace newsflash
 
         // allocate a private thread.
         // returns a handle to the private thread.
-        thread* allocate();
+        worker* allocate();
 
         // detach and return the thread to the threadpool.
         // the thread will continue to perform all the actions queued
         // in it's queue and then become eligible for using again
-        void detach(thread* t);
+        void detach(worker* t);
 
         std::size_t num_pending_actions() const
         { return queue_size_; }
 
    private:
-        void thread_main(threadpool::thread* self);
+        void thread_main(threadpool::worker* self);
 
     private:
         std::condition_variable cond_;
         std::mutex mutex_;
-        std::vector<std::unique_ptr<thread>> threads_;
+        std::vector<std::unique_ptr<worker>> threads_;
         std::size_t round_robin_;
         std::size_t pool_size_;
         std::atomic<std::size_t> queue_size_;

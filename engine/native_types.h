@@ -22,49 +22,10 @@
 
 #include <newsflash/config.h>
 
-#include <newsflash/warnpush.h>
-#  include <QIODevice>
-#include <newsflash/warnpop.h>
+#if defined(WINDOWS_OS)
+#  include "windows.h"
+#endif
 
-#include "nzbthread.h"
-#include "debug.h"
-#include "format.h"
-
-namespace app
-{
-
-NZBThread::NZBThread(std::unique_ptr<QIODevice> io) : io_(std::move(io)), error_(nzberror::none)
-{
-    DEBUG("Created nzbhread");
-}
-
-NZBThread::~NZBThread()
-{
-    DEBUG("Destroyed nzbhread");
-}
-
-void NZBThread::run() 
-{
-    //DEBUG(str("nzbthread::run _1", QThread::currentThreadId()));
-
-    std::vector<NZBContent> data;
-    const auto result = parseNZB(*io_.get(), data);
-
-    std::lock_guard<std::mutex> lock(mutex_);
-    data_  = std::move(data);
-    error_ = result;
-
-    emit complete();
-
-    DEBUG("nzbthread done...");
-}
-
-nzberror NZBThread::result(std::vector<NZBContent>& data)
-{
-    std::lock_guard<std::mutex> lock(mutex_);
-
-    data = std::move(data_);
-    return error_;
-}    
-
-} // app
+#if defined(LINUX_OS)
+#  include "linux.h"
+#endif

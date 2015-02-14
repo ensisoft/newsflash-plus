@@ -37,7 +37,7 @@ namespace {
 #if defined(WINDOWS_OS)
 bool is_illegal_filename_char(int c)
 {
-    swtich (c)
+    switch (c)
     {
         case '\\':
         case '/':
@@ -52,6 +52,10 @@ bool is_illegal_filename_char(int c)
         return true;
     }
     return false;
+}
+bool is_illegal_filepath_char(int c)
+{
+    return is_illegal_filename_char(c);
 }
 
 #elif defined(LINUX_OS)

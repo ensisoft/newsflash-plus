@@ -35,6 +35,8 @@
 #include <iostream>
 #include <exception>
 
+#include <zlib/zlib.h>
+
 #include "qtsingleapplication/qtsingleapplication.h"
 #include "mainwindow.h"
 #include "minidump.h"
@@ -82,7 +84,7 @@ void copyright()
     INFO(QString::fromUtf8(NEWSFLASH_COPYRIGHT));
     INFO(NEWSFLASH_WEBSITE);
     INFO("Compiled: " __DATE__ ", " __TIME__);    
-    INFO("Compiler: " COMPILER_NAME);
+    INFO(str("Compiler: " COMPILER_NAME ", _1", COMPILER_VERSION));
     INFO(str("Boost software library _1._2._3", boost_major, boost_minor, boost_revision));
     INFO("http://www.boost.org");
     INFO("16x16 Free Application Icons");
@@ -94,7 +96,7 @@ void copyright()
     INFO("http://www.famfamfam.com/lab/icons/silk/");
     INFO(str("Qt cross-platform application and UI framework _1", QT_VERSION_STR));
     INFO("http://qt.nokia.com");
-    INFO("Zlib compression library 1.2.5");
+    INFO("Zlib compression library " ZLIB_VERSION);
     INFO("Copyright (c) 1995-2010 Jean-Loup Gailly & Mark Adler");
     INFO("http://zlib.net");        
 }
@@ -239,14 +241,22 @@ int run(int argc, char* argv[])
 
 } // gui
 
+int seh_main(int argc, char* argv[])
+{
+    int ret = 0;
+
+    SEH_BLOCK(ret = gui::run(argc, argv);)
+
+    return ret;
+}
+
 int main(int argc, char* argv[])
 {
     DEBUG("It's alive!");
     DEBUG(NEWSFLASH_TITLE << NEWSFLASH_VERSION);
     try 
     {
-        int ret = 0;
-        SEH_BLOCK(ret = gui::run(argc, argv));
+        int ret = seh_main(argc, argv);
 
         DEBUG(str("Goodbye...(_1)", ret));
         return ret;

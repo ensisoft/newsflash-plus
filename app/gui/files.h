@@ -74,7 +74,7 @@ namespace gui
     private:
         Ui::Files ui_;
     private:
-        app::files model_;
+        app::Files model_;
 
     };
 } // gui

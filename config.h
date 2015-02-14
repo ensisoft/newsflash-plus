@@ -26,15 +26,14 @@
 // msvc for windows, (g++) or clang for linux
 
 #ifdef _MSC_VER
-
   #define WINDOWS_OS
   #define __MSVC__
   #ifdef _M_AMD64
     #define X86_64
   #endif
  
-  #define COMPILER "msvc"
-  #define COMPILER_VERSION "todo"
+  #define COMPILER_NAME    "msvc"
+  #define COMPILER_VERSION _MSC_FULL_VER
 
   // minimum supported version, windows Server 2003 and Windows XP
   #define _WIN32_WINNT 0x0501 
@@ -54,22 +53,19 @@
   // on windows use UTF8 in the engine api to pass strings
   // and then use Unicode win32 API
   #define UNICODE
+  
+  // wingdi.h defines error. so do we in logging.h
+  #undef ERROR
 
   // msvc2013 doesn't support noexcept. 
   // todo: is this smart, the semantics are not *exactly* the same...
   #define  NOTHROW throw() 
-
 #elif defined(__clang__)
-
-  #define __CLANG__
-
-  #define LINUX_OS
-
   #ifdef __LP64__
     #define X86_64
   #endif
-
-  #define NOTHROW noexcept
+  #define __CLANG__
+  #define LINUX_OS
 
   #if defined(SUBLIME_CLANG_WORKAROUNDS)
     // clang has a problem with gcc 4.9.0 stdlib and it complains
@@ -85,31 +81,23 @@
     typedef int max_align_t;
   #endif
 
-  #define COMPILER_NAME "clang"
+  #define COMPILER_NAME    "clang"
   #define COMPILER_VERSION "todo"
-
-
+  #define NOTHROW noexcept
 #elif defined(__GNUG__)
-
-  #define __GCC__
-
-  #define LINUX_OS
-
   #ifdef __LP64__
     #define X86_64
-  #endif
-
+  #endif    
+  #define __GCC__
+  #define LINUX_OS
   #define COMPILER_NAME "GCC"
   #define COMPILER_VERSION __GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__
-
   #define NOTHROW noexcept
 #endif
-
 
 #ifndef NDEBUG
 #  define NEWSFLASH_DEBUG
 #endif
-
 
 #if defined(LINUX_OS)
 #  ifndef _LARGEFILE64_SOURCE
@@ -128,7 +116,7 @@
 #endif
 
 #define NEWSFLASH_ENABLE_LOG
-#define NEWSFLASH_ENABLE_PYTHON
+//#define NEWSFLASH_ENABLE_PYTHON
 
 #ifndef NEWSFLASH_DEBUG
 //#  define QT_NO_DEBUG
@@ -139,7 +127,6 @@
 // these are macros so that they can be embedded
 // inside string literals easily for exaple L"yadi yadi" VERSION_STRING "yadi yadi"
 #define NEWSFLASH_VERSION   "3.5.0b0"
-
 #define NEWSFLASH_COPYRIGHT "Copyright (c) Sami V\303\244is\303\244nen 2005-2014"
 #define NEWSFLASH_WEBSITE   "http://www.ensisoft.com"
 

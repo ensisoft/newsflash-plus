@@ -51,8 +51,8 @@ NewsList::NewsList() : size_(0)
 {
     DEBUG("NewsList created");
 
-    QObject::connect(g_engine, SIGNAL(listingCompleted(quint32, const QList<app::NewsGroup>&)),
-        this, SLOT(listingCompleted(quint32, const QList<app::NewsGroup>&)));
+    QObject::connect(g_engine, SIGNAL(listingCompleted(quint32, const QList<app::NewsGroupInfo>&)),
+        this, SLOT(listingCompleted(quint32, const QList<app::NewsGroupInfo>&)));
 }
 
 NewsList::~NewsList()
@@ -341,7 +341,7 @@ void NewsList::filter(const QString& str, bool subscribed)
     }
 }
 
-void NewsList::listingCompleted(quint32 acc, const QList<app::NewsGroup>& list)
+void NewsList::listingCompleted(quint32 acc, const QList<app::NewsGroupInfo>& list)
 {
     auto it = pending_.find(acc);
     Q_ASSERT(it != std::end(pending_));

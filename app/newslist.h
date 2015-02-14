@@ -36,7 +36,7 @@
 
 namespace app
 {
-    struct NewsGroup;
+    struct NewsGroupInfo;
     class Settings;
 
     class NewsList : public QAbstractTableModel
@@ -73,7 +73,7 @@ namespace app
         void makeComplete(quint32 acc);
 
     private slots:
-        void listingCompleted(quint32 acc, const QList<app::NewsGroup>& list);
+        void listingCompleted(quint32 acc, const QList<app::NewsGroupInfo>& list);
 
     private:
         void setAccountSubscriptions(quint32 accountId);

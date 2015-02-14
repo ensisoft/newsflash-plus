@@ -47,8 +47,8 @@ namespace newsflash
 
         struct listing {};
         struct messages {
-            std::vector<std::string> groups;
-            std::vector<std::string> messages;
+            std::vector<std::string> groups;  // groups in which to look for the messages
+            std::vector<std::string> numbers; // either article numbers or IDs
         };
         struct overviews {
             std::string group;
@@ -65,7 +65,7 @@ namespace newsflash
         cmdlist(messages m) : cmdlist()
         {
             groups_   = std::move(m.groups);
-            commands_ = std::move(m.messages);
+            commands_ = std::move(m.numbers);
             cmdtype_  = type::body;
         }
         cmdlist(overviews o) : cmdlist()

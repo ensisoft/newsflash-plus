@@ -27,6 +27,7 @@
 #include <vector>
 #include <string>
 #include <cstddef>
+#include <cstdint>
 
 namespace newsflash
 {
