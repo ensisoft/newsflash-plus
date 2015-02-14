@@ -18,6 +18,7 @@
 ##  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 bin_PROGRAMS = par2
+man_MANS = par2.1
 
 par2_SOURCES = par2cmdline.cpp par2cmdline.h \
 	commandline.cpp commandline.h \
@@ -49,15 +50,56 @@ LDADD = -lstdc++
 AM_CXXFLAGS = -Wall
 
 EXTRA_DIST = PORTING ROADMAP par2cmdline.sln par2cmdline.vcproj \
-	testdata.tar.gz pretest test1 test2 test3 test4 test5 test6 \
-	posttest
+						 par2.1 \
+						 tests/flatdata.tar.gz \
+						 tests/flatdata-par1files.tar.gz \
+						 tests/flatdata-par2files.tar.gz \
+						 tests/subdirdata.tar.gz \
+						 tests/subdirdata-par2files-unix.tar.gz \
+						 tests/subdirdata-par2files-win.tar.gz \
+						 tests/smallsubdirdata.tar.gz \
+						 tests/smallsubdirdata-par2files.tar.gz \
+						 tests/100blocks.tar.gz \
+						 tests/readbeyondeof.tar.gz \
+						 tests/par2-0.6.8-crash.tar.gz \
+						 tests/test1 \
+						 tests/test2 \
+						 tests/test3 \
+						 tests/test4 \
+						 tests/test5 \
+						 tests/test6 \
+						 tests/test7 \
+						 tests/test8 \
+						 tests/test9 \
+						 tests/test10 \
+						 tests/test11 \
+						 tests/test12 \
+						 tests/test13 \
+						 tests/test14 \
+						 tests/test15 \
+						 tests/test16
 
-TESTS = pretest test1 test2 test3 test4 test5 test6 posttest
+TESTS = tests/test1 \
+				tests/test2 \
+				tests/test3 \
+				tests/test4 \
+				tests/test5 \
+				tests/test6 \
+				tests/test7 \
+				tests/test8 \
+				tests/test9 \
+				tests/test10 \
+				tests/test11 \
+				tests/test12 \
+				tests/test13 \
+				tests/test14 \
+				tests/test15 \
+				tests/test16
 
 install-exec-hook :
-	ln -f $(DESTDIR)$(bindir)/par2$(EXEEXT) $(DESTDIR)$(bindir)/par2create$(EXEEXT)
-	ln -f $(DESTDIR)$(bindir)/par2$(EXEEXT) $(DESTDIR)$(bindir)/par2verify$(EXEEXT)
-	ln -f $(DESTDIR)$(bindir)/par2$(EXEEXT) $(DESTDIR)$(bindir)/par2repair$(EXEEXT)
+	ln -sf $(bindir)/par2$(EXEEXT) $(DESTDIR)$(bindir)/par2create$(EXEEXT)
+	ln -sf $(bindir)/par2$(EXEEXT) $(DESTDIR)$(bindir)/par2verify$(EXEEXT)
+	ln -sf $(bindir)/par2$(EXEEXT) $(DESTDIR)$(bindir)/par2repair$(EXEEXT)
 
 uninstall-hook :
 	rm -f $(DESTDIR)$(bindir)/par2create$(EXEEXT)

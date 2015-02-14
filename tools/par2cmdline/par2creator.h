@@ -42,7 +42,7 @@ protected:
 
   // Determine how many recovery blocks to create based on the source block
   // count and the requested level of redundancy.
-  bool ComputeRecoveryBlockCount(u32 redundancy);
+  bool ComputeRecoveryBlockCount(u32 redundancy, u64 redundancysize);
 
   // Determine how much recovery data can be computed on one pass
   bool CalculateProcessBlockSize(size_t memorylimit);
@@ -52,7 +52,7 @@ protected:
 
   // Open all of the source files, compute the Hashes and CRC values, and store
   // the results in the file verification and file description packets.
-  bool OpenSourceFiles(const list<CommandLine::ExtraFile> &extrafiles);
+  bool OpenSourceFiles(const list<CommandLine::ExtraFile> &extrafiles, string basepath);
 
   // Create the main packet and determine the set_id_hash to use with all packets
   bool CreateMainPacket(void);

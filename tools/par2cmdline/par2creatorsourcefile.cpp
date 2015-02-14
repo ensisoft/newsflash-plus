@@ -50,7 +50,7 @@ Par2CreatorSourceFile::~Par2CreatorSourceFile(void)
 // 16k of the file, and then compute the FileId and store the results
 // in a file description packet and a file verification packet.
 
-bool Par2CreatorSourceFile::Open(CommandLine::NoiseLevel noiselevel, const CommandLine::ExtraFile &extrafile, u64 blocksize, bool deferhashcomputation)
+bool Par2CreatorSourceFile::Open(CommandLine::NoiseLevel noiselevel, const CommandLine::ExtraFile &extrafile, u64 blocksize, bool deferhashcomputation, string basepath)
 {
   // Get the filename and filesize
   diskfilename = extrafile.FileName();
@@ -58,18 +58,10 @@ bool Par2CreatorSourceFile::Open(CommandLine::NoiseLevel noiselevel, const Comma
 
   // Work out how many blocks the file will be sliced into
   blockcount = (u32)((filesize + blocksize-1) / blocksize);
-  
+
   // Determine what filename to record in the PAR2 files
-  string::size_type where;
-  if (string::npos != (where = diskfilename.find_last_of('\\')) ||
-      string::npos != (where = diskfilename.find_last_of('/')))
-  {
-    parfilename = diskfilename.substr(where+1);
-  }
-  else
-  {
-    parfilename = diskfilename;
-  }
+  parfilename = diskfilename;
+  parfilename.erase(0, basepath.length());
 
   // Create the Description and Verification packets
   descriptionpacket = new DescriptionPacket;
@@ -217,13 +209,14 @@ bool Par2CreatorSourceFile::Open(CommandLine::NoiseLevel noiselevel, const Comma
       {
         // Display progress
         u32 oldfraction = (u32)(1000 * offset / filesize);
-        offset += want;
-        u32 newfraction = (u32)(1000 * offset / filesize);
+        u32 newfraction = (u32)(1000 * (offset + want) / filesize);
         if (oldfraction != newfraction)
         {
           cout << newfraction/10 << '.' << newfraction%10 << "%\r" << flush;
         }
       }
+
+      offset += want;
     }
 
     // Did we finish the last block
@@ -319,7 +312,7 @@ void Par2CreatorSourceFile::UpdateHashes(u32 blocknumber, const void *buffer, si
 
 
   // Update the full file hash, but don't go beyond the end of the file
-  if (length > filesize - blocknumber * length)
+  if ((u64)length > filesize - blocknumber * (u64)length)
   {
     length = (size_t)(filesize - blocknumber * (u64)length);
   }

@@ -26,6 +26,9 @@
 /* Define to 1 if you have the <inttypes.h> header file. */
 #define HAVE_INTTYPES_H 1
 
+/* Define to 1 if you have the <limits.h> header file. */
+#define HAVE_LIMITS_H 1
+
 /* Define to 1 if you have the `memcpy' function. */
 #define HAVE_MEMCPY 1
 
@@ -86,13 +89,13 @@
 #define PACKAGE "par2cmdline"
 
 /* Define to the address where bug reports for this package should be sent. */
-#define PACKAGE_BUGREPORT "peterbclements@users.sourceforge.net"
+#define PACKAGE_BUGREPORT "ike.devolder@gmail.com"
 
 /* Define to the full name of this package. */
 #define PACKAGE_NAME "par2cmdline"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "par2cmdline 0.4"
+#define PACKAGE_STRING "par2cmdline 0.6.11"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "par2cmdline"
@@ -101,13 +104,13 @@
 #define PACKAGE_URL ""
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "0.4"
+#define PACKAGE_VERSION "0.6.11"
 
 /* Define to 1 if you have the ANSI C header files. */
 #define STDC_HEADERS 1
 
 /* Version number of package */
-#define VERSION "0.4"
+#define VERSION "0.6.11"
 
 /* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
    significant byte first (like Motorola and SPARC, unlike Intel). */

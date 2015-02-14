@@ -120,15 +120,21 @@ Download and extract Qt everywhere to a location where you want it installed for
 
 Par2cmdline
 ========================
-Par2cmdline is a tool to repair and verify par2 files. The current version is 0.4.
+Par2cmdline is a tool to repair and verify par2 files. The original version was 0.4.
 http://sourceforge.net/projects/parchive/files/par2cmdline/
+
+*update* The original version has stalled to version 0.4. ArchLinux packages par2 from
+https://github.com/BlackIkeEagle/par2cmdline which is a fork off the original par2. 
+The Newsflash par2 has been updated to version 0.6.11
+("bump 0.6.11", https://github.com/BlackIkeEagle/par2cmdline/commit/7735bb3f67f4f46b0fcb88894f9a28fb2fe451c6)
+
 
         $ ./configure
         $ make
 
 Unrar
 =========================
-Unrar is a tool to unrar .rar archives. 
+Unrar is a tool to unrar .rar archives. Current version 5.21 beta2
 http://www.rarlab.com/rar_add.htm
 
         $ make

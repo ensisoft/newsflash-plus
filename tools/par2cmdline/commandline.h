@@ -32,6 +32,8 @@ public:
   // Parse the supplied command line arguments. 
   bool Parse(int argc, char *argv[]);
 
+  static void showversion(void);
+  static void banner(void);
   // Display details of the correct format for command line parameters.
   static void usage(void);
 
@@ -95,6 +97,7 @@ public:
   u64                    GetBlockSize(void) const          {return blocksize;}
   u32                    GetBlockCount(void) const         {return blockcount;}
   u32                    GetRedundancy(void) const         {return redundancy;}
+  u64                    GetRedundancySize(void) const     {return redundancysize;}
   u32                    GetFirstRecoveryBlock(void) const {return firstblock;}
   u32                    GetRecoveryFileCount(void) const  {return recoveryfilecount;}
   u32                    GetRecoveryBlockCount(void) const {return recoveryblockcount;}
@@ -105,9 +108,13 @@ public:
   CommandLine::NoiseLevel GetNoiseLevel(void) const        {return noiselevel;}
 
   string                              GetParFilename(void) const {return parfilename;}
+  string                              GetBasePath(void) const {return basepath;}
   const list<CommandLine::ExtraFile>& GetExtraFiles(void) const  {return extrafiles;}
+  bool                                GetPurgeFiles(void) const  {return purgefiles;}
+  bool                                GetRecursive(void) const  {return recursive;}
 
 protected:
+  void                         SetParFilename(string filename);
   Operation operation;         // The operation to be carried out.
   Version version;             // What version files will be processed.
 
@@ -131,11 +138,15 @@ protected:
 
   u32 redundancy;              // What percentage of recovery data should
                                // be created.
+  u64 redundancysize;          // target filesize of recovery files
+
   bool redundancyset;          // Set if the redundancy has been specified
 
   string parfilename;          // The name of the PAR2 file to create, or
                                // the name of the first PAR2 file to read
                                // when verifying or repairing.
+
+  string basepath;             // the path par2 is run from
 
   list<ExtraFile> extrafiles;  // The list of other files specified on the
                                // command line. When creating, this will be
@@ -150,6 +161,10 @@ protected:
   size_t memorylimit;          // How much memory is permitted to be used
                                // for the output buffer when creating
                                // or repairing.
+
+  bool purgefiles;             // purge backup and par files on successfull
+                               // recovery
+  bool recursive;              // recurse into subdirectories
 };
 
 typedef list<CommandLine::ExtraFile>::const_iterator ExtraFileIterator;

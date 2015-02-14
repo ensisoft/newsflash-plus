@@ -38,6 +38,8 @@
     <file>resource/16x16_ico_png/ico_warning.png</file>    
     <file>resource/16x16_ico_png/ico_error.png</file>    
     <file>resource/16x16_ico_png/ico_password.png</file>    
+    <file>resource/16x16_ico_png/ico_disk.png</file>
+    <file>resource/16x16_ico_png/ico_disk_write.png</file>    
 
     <!-- application/mainwindow icons -->
     <file>resource/16x16_ico_png/ico_app_minimize.png</file>
@@ -110,7 +112,7 @@
     <file>resource/16x16_ico_png/ico_neutral.png</file>
     <file>resource/16x16_ico_png/ico_lock.png</file>
     <file>resource/16x16_ico_png/ico_unlock.png</file>
-    <file>resource/16x16_ico_png/ico_disk.png</file>
+
     <file>resource/16x16_ico_png/ico_shrink.png</file>
     <file>resource/16x16_ico_png/ico_repair.png</file>
     <file>resource/16x16_ico_png/ico_log.png</file>

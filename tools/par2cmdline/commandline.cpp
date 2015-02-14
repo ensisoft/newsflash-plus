@@ -66,45 +66,74 @@ CommandLine::CommandLine(void)
 , recoveryblockcount(0)
 , recoveryblockcountset(false)
 , redundancy(0)
+, redundancysize(0)
 , redundancyset(false)
 , parfilename()
 , extrafiles()
 , totalsourcesize(0)
 , largestsourcesize(0)
 , memorylimit(0)
+, purgefiles(false)
+, recursive(false)
 {
+}
+
+void CommandLine::showversion(void)
+{
+  string version = PACKAGE " version " VERSION;
+  cout << version << endl;
+}
+
+void CommandLine::banner(void)
+{
+  cout << "Copyright (C) 2003 Peter Brian Clements." << endl
+    << "Copyright (C) 2011-2012 Marcel Partap." << endl
+    << "Copyright (C) 2012-2014 Ike Devolder." << endl
+    << endl
+    << "par2cmdline comes with ABSOLUTELY NO WARRANTY." << endl
+    << endl
+    << "This is free software, and you are welcome to redistribute it and/or modify" << endl
+    << "it under the terms of the GNU General Public License as published by the" << endl
+    << "Free Software Foundation; either version 2 of the License, or (at your" << endl
+    << "option) any later version. See COPYING for details." << endl
+    << endl;
 }
 
 void CommandLine::usage(void)
 {
   cout << 
-    "\n"
     "Usage:\n"
+    "  par2 -h  : show this help\n"
+    "  par2 -V  : show version\n"
+    "  par2 -VV : show version and copyright\n"
     "\n"
     "  par2 c(reate) [options] <par2 file> [files] : Create PAR2 files\n"
     "  par2 v(erify) [options] <par2 file> [files] : Verify files using PAR2 file\n"
     "  par2 r(epair) [options] <par2 file> [files] : Repair files using PAR2 files\n"
     "\n"
-    "You may also leave out the \"c\", \"v\", and \"r\" commands by using \"parcreate\",\n"
+    "You may also leave out the \"c\", \"v\", and \"r\" commands by using \"par2create\",\n"
     "\"par2verify\", or \"par2repair\" instead.\n"
     "\n"
     "Options:\n"
     "\n"
-    "  -b<n>  : Set the Block-Count\n"
-    "  -s<n>  : Set the Block-Size (Don't use both -b and -s)\n"
-    "  -r<n>  : Level of Redundancy (%%)\n"
-    "  -c<n>  : Recovery block count (Don't use both -r and -c)\n"
-    "  -f<n>  : First Recovery-Block-Number\n"
-    "  -u     : Uniform recovery file sizes\n"
-    "  -l     : Limit size of recovery files (Don't use both -u and -l)\n"
-    "  -n<n>  : Number of recovery files (Don't use both -n and -l)\n"
-    "  -m<n>  : Memory (in MB) to use\n"
-    "  -v [-v]: Be more verbose\n"
-    "  -q [-q]: Be more quiet (-q -q gives silence)\n"
-    "  --     : Treat all remaining CommandLine as filenames\n"
-    "\n"
-    "If you wish to create par2 files for a single source file, you may leave\n"
-    "out the name of the par2 file from the command line.\n";
+    "  -a<file> : Set the main par2 archive name\n"
+    "  -b<n>    : Set the Block-Count\n"
+    "  -s<n>    : Set the Block-Size (Don't use both -b and -s)\n"
+    "  -r<n>    : Level of Redundancy (%%)\n"
+    "  -r<c><n> : Redundancy target size, <c>=g(iga),m(ega),k(ilo) bytes\n"
+    "  -c<n>    : Recovery block count (Don't use both -r and -c)\n"
+    "  -f<n>    : First Recovery-Block-Number\n"
+    "  -u       : Uniform recovery file sizes\n"
+    "  -l       : Limit size of recovery files (Don't use both -u and -l)\n"
+    "  -n<n>    : Number of recovery files (Don't use both -n and -l)\n"
+    "  -m<n>    : Memory (in MB) to use\n"
+    "  -v [-v]  : Be more verbose\n"
+    "  -q [-q]  : Be more quiet (-q -q gives silence)\n"
+    "  -p       : Purge backup files and par files on successful recovery or\n"
+    "             when no recovery is needed\n"
+    "  -R       : Recurse into subdirectories (only useful on create)\n"
+    "  --       : Treat all remaining CommandLine as filenames\n"
+    "\n";
 }
 
 bool CommandLine::Parse(int argc, char *argv[])
@@ -119,6 +148,39 @@ bool CommandLine::Parse(int argc, char *argv[])
   DiskFile::SplitFilename(argv[0], path, name);
   argc--;
   argv++;
+
+  if (argc>0)
+  {
+    if (argv[0][0] != 0 &&
+        argv[0][0] == '-')
+    {
+      if (argv[0][1] != 0)
+      {
+        switch (argv[0][1])
+        {
+        case 'h':
+          usage();
+          return true;
+        case 'V':
+          showversion();
+          if (argv[0][2] != 0 &&
+              argv[0][2] == 'V')
+          {
+            cout << endl;
+            banner();
+          }
+          return true;
+        case '-':
+          string str = argv[0];
+          if (str == "--help")
+          {
+            usage();
+            return true;
+          }
+        }
+      }
+    }
+  }
 
   // Strip ".exe" from the end
   if (name.size() > 4 && 0 == stricmp(".exe", name.substr(name.length()-4).c_str()))
@@ -164,6 +226,7 @@ bool CommandLine::Parse(int argc, char *argv[])
         operation = opRepair;
       break;
     }
+
     if (operation == opNone)
     {
       cerr << "Invalid operation specified: " << argv[0] << endl;
@@ -174,6 +237,7 @@ bool CommandLine::Parse(int argc, char *argv[])
   }
 
   bool options = true;
+  list<string> a_filenames;
 
   while (argc>0)
   {
@@ -184,8 +248,26 @@ bool CommandLine::Parse(int argc, char *argv[])
 
       if (options)
       {
-        switch (tolower(argv[0][1]))
+        switch (argv[0][1])
         {
+        case 'a':
+          {
+            if (operation == opCreate)
+            {
+              string str = argv[0];
+              if (str == "-a")
+              {
+                SetParFilename(argv[1]);
+                argc--;
+                argv++;
+              }
+              else
+              {
+                SetParFilename(str.substr(2));
+              }
+            }
+          }
+          break;
         case 'b':  // Set the block count
           {
             if (operation != opCreate)
@@ -273,21 +355,46 @@ bool CommandLine::Parse(int argc, char *argv[])
               return false;
             }
 
-            char *p = &argv[0][2];
-            while (redundancy <= 10 && *p && isdigit(*p))
+            if (argv[0][2] == 'k'
+                || argv[0][2] == 'm'
+                || argv[0][2] == 'g'
+            )
             {
-              redundancy = redundancy * 10 + (*p - '0');
-              p++;
+              char *p = &argv[0][3];
+              while (*p && isdigit(*p))
+              {
+                redundancysize = redundancysize * 10 + (*p - '0');
+                p++;
+              }
+              switch (argv[0][2])
+              {
+                case 'g':
+                  redundancysize = redundancysize * 1024;
+                case 'm':
+                  redundancysize = redundancysize * 1024;
+                case 'k':
+                  redundancysize = redundancysize * 1024;
+                  break;
+              }
             }
-            if (redundancy > 100 || *p)
+            else
             {
-              cerr << "Invalid redundancy option: " << argv[0] << endl;
-              return false;
-            }
-            if (redundancy == 0 && recoveryfilecount > 0)
-            {
-              cerr << "Cannot set redundancy to 0 and file count > 0" << endl;
-              return false;
+              char *p = &argv[0][2];
+              while (redundancy <= 10 && *p && isdigit(*p))
+              {
+                redundancy = redundancy * 10 + (*p - '0');
+                p++;
+              }
+              if (redundancy > 100 || *p)
+              {
+                cerr << "Invalid redundancy option: " << argv[0] << endl;
+                return false;
+              }
+              if (redundancy == 0 && recoveryfilecount > 0)
+              {
+                cerr << "Cannot set redundancy to 0 and file count > 0" << endl;
+                return false;
+              }
             }
             redundancyset = true;
           }
@@ -519,6 +626,37 @@ bool CommandLine::Parse(int argc, char *argv[])
           }
           break;
 
+        case 'p':
+          {
+            if (operation != opRepair && operation != opVerify)
+            {
+              cerr << "Cannot specify purge unless repairing or verifying." << endl;
+              return false;
+            }
+            purgefiles = true;
+          }
+          break;
+
+        case 'h':
+          {
+            usage();
+            return false;
+            break;
+          }
+
+        case 'R':
+          {
+            if (operation == opCreate)
+            {
+              recursive = true;
+            }
+            else
+            {
+              cerr << "Recursive has no impact except on creating." << endl;
+            }
+          }
+          break;
+
         case '-':
           {
             argc--;
@@ -534,25 +672,28 @@ bool CommandLine::Parse(int argc, char *argv[])
           }
         }
       }
+      else if (parfilename.length() == 0)
+      {
+        string filename = argv[0];
+        string::size_type where;
+        if ((where = filename.find_first_of('*')) != string::npos ||
+            (where = filename.find_first_of('?')) != string::npos)
+        {
+          cerr << "par2 file must not have a wildcard in it." << endl;
+          return false;
+        }
+
+        SetParFilename(filename);
+      }
       else
       {
         list<string> *filenames;
 
-        // If the argument includes wildcard characters, 
-        // search the disk for matching files
-        if (strchr(argv[0], '*') || strchr(argv[0], '?'))
-        {
-          string path;
-          string name;
-          DiskFile::SplitFilename(argv[0], path, name);
-
-          filenames = DiskFile::FindFiles(path, name);
-        }
-        else
-        {
-          filenames = new list<string>;
-          filenames->push_back(argv[0]);
-        }
+        string path;
+        string name;
+        DiskFile::SplitFilename(argv[0], path, name);
+        filenames = DiskFile::FindFiles(path, name, recursive);
+        string canonicalBasepath = DiskFile::GetCanonicalPathname(basepath);
 
         list<string>::iterator fn = filenames->begin();
         while (fn != filenames->end())
@@ -560,113 +701,44 @@ bool CommandLine::Parse(int argc, char *argv[])
           // Convert filename from command line into a full path + filename
           string filename = DiskFile::GetCanonicalPathname(*fn);
 
-          // If this is the first file on the command line, then it
-          // is the main PAR2 file.
-          if (parfilename.length() == 0)
+          // Originally, all specified files were supposed to exist, or the program
+          // would stop with an error message. This was not practical, for example in
+          // a directory with files appearing and disappearing (an active download directory).
+          // So the new rule is: when a specified file doesn't exist, it is silently skipped.
+          if (!DiskFile::FileExists(filename))
           {
-            // If we are verifying or repairing, the PAR2 file must
-            // already exist
-            if (operation != opCreate)
-            {
-              // Find the last '.' in the filename
-              string::size_type where = filename.find_last_of('.');
-              if (where != string::npos)
-              {
-                // Get what follows the last '.'
-                string tail = filename.substr(where+1);
-
-                if (0 == stricmp(tail.c_str(), "par2"))
-                {
-                  parfilename = filename;
-                  version = verPar2;
-                }
-                else if (0 == stricmp(tail.c_str(), "par") ||
-                         (tail.size() == 3 &&
-                         tolower(tail[0]) == 'p' &&
-                         isdigit(tail[1]) &&
-                         isdigit(tail[2])))
-                {
-                  parfilename = filename;
-                  version = verPar1;
-                }
-              }
-
-              // If we haven't figured out which version of PAR file we
-              // are using from the file extension, then presumable the
-              // files filename was actually the name of a data file.
-              if (version == verUnknown)
-              {
-                // Check for the existence of a PAR2 of PAR file.
-                if (DiskFile::FileExists(filename + ".par2"))
-                {
-                  version = verPar2;
-                  parfilename = filename + ".par2";
-                }
-                else if (DiskFile::FileExists(filename + ".PAR2"))
-                {
-                  version = verPar2;
-                  parfilename = filename + ".PAR2";
-                }
-                else if (DiskFile::FileExists(filename + ".par"))
-                {
-                  version = verPar1;
-                  parfilename = filename + ".par";
-                }
-                else if (DiskFile::FileExists(filename + ".PAR"))
-                {
-                  version = verPar1;
-                  parfilename = filename + ".PAR";
-                }
-              }
-              else
-              {
-                // Does the specified PAR or PAR2 file exist
-                if (!DiskFile::FileExists(filename))
-                {
-                  version = verUnknown;
-                }
-              }
-
-              if (version == verUnknown)
-              {
-                cerr << "The recovery file does not exist: " << filename << endl;
-                return false;
-              }
-            }
-            else
-            {
-              // We are creating a new file
-              version = verPar2;
-              parfilename = filename;
-            }
+            cout << "Ignoring non-existent source file: " << filename << endl;
+          }
+          // skip files outside basepath
+          else if (filename.find(canonicalBasepath) == string::npos)
+          {
+                cout << "Ignoring out of basepath source file: " << filename << endl;
           }
           else
           {
-            // All other files must exist
-            if (!DiskFile::FileExists(filename))
-            {
-              cerr << "The source file does not exist: " << filename << endl;
-              return false;
-            }
-
             u64 filesize = DiskFile::GetFileSize(filename);
 
             // Ignore all 0 byte files
-            if (filesize > 0)
+            if (filesize == 0)
             {
+              cout << "Skipping 0 byte file: " << filename << endl;
+            }
+            else if (a_filenames.end() != find(a_filenames.begin(), a_filenames.end(), filename))
+            {
+              cout << "Skipping duplicate filename: " << filename << endl;
+            }
+            else
+            {
+              a_filenames.push_back(filename);
               extrafiles.push_back(ExtraFile(filename, filesize));
 
               // track the total size of the source files and how
               // big the largest one is.
               totalsourcesize += filesize;
               if (largestsourcesize < filesize)
-                largestsourcesize = filesize;
+              largestsourcesize = filesize;
             }
-            else
-            {
-              cout << "Skipping 0 byte file: " << filename << endl;
-            }
-          }
+          } //end file exists
 
           ++fn;
         }
@@ -724,7 +796,7 @@ bool CommandLine::Parse(int argc, char *argv[])
         // assume that you wish to create par2 files for it.
 
         u64 filesize = 0;
-	if (DiskFile::FileExists(parfilename) &&
+        if (DiskFile::FileExists(parfilename) &&
             (filesize = DiskFile::GetFileSize(parfilename)) > 0)
         {
           extrafiles.push_back(ExtraFile(parfilename, filesize));
@@ -806,4 +878,80 @@ bool CommandLine::Parse(int argc, char *argv[])
   memorylimit *= 1048576;
 
   return true;
+}
+
+void CommandLine::SetParFilename(string filename)
+{
+  parfilename = DiskFile::GetCanonicalPathname(filename);
+
+  // If we are verifying or repairing, the PAR2 file must
+  // already exist
+  if (operation != opCreate)
+  {
+    // Find the last '.' in the filename
+    string::size_type where = filename.find_last_of('.');
+    if (where != string::npos)
+    {
+      // Get what follows the last '.'
+      string tail = filename.substr(where+1);
+
+      if (0 == stricmp(tail.c_str(), "par2"))
+      {
+        parfilename = filename;
+        version = verPar2;
+      }
+      else if (0 == stricmp(tail.c_str(), "par") ||
+               (tail.size() == 3 &&
+               tolower(tail[0]) == 'p' &&
+               isdigit(tail[1]) &&
+               isdigit(tail[2])))
+      {
+        parfilename = filename;
+        version = verPar1;
+      }
+    }
+
+    // If we haven't figured out which version of PAR file we
+    // are using from the file extension, then presumable the
+    // files filename was actually the name of a data file.
+    if (version == verUnknown)
+    {
+      // Check for the existence of a PAR2 of PAR file.
+      if (DiskFile::FileExists(filename + ".par2"))
+      {
+        version = verPar2;
+        parfilename = filename + ".par2";
+      }
+      else if (DiskFile::FileExists(filename + ".PAR2"))
+      {
+        version = verPar2;
+        parfilename = filename + ".PAR2";
+      }
+      else if (DiskFile::FileExists(filename + ".par"))
+      {
+        version = verPar1;
+        parfilename = filename + ".par";
+      }
+      else if (DiskFile::FileExists(filename + ".PAR"))
+      {
+        version = verPar1;
+        parfilename = filename + ".PAR";
+      }
+    }
+    else
+    {
+      // Does the specified PAR or PAR2 file exist
+      if (!DiskFile::FileExists(filename))
+      {
+        version = verUnknown;
+      }
+    }
+  }
+  else
+  {
+    version = verPar2;
+  }
+
+  string dummy;
+  DiskFile::SplitFilename(parfilename, basepath, dummy);
 }

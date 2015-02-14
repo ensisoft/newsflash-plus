@@ -49,9 +49,30 @@ public:
 
   ~VerificationHashEntry(void)
   {
+    // problem: may cause stack overflow due to recursion.
+    // this happens if there are a lot of nodes with the same crc & hash 
+    // possible solution: use a loop
+    
+    // I still don't like the idea of two recursions (left and right),
+    // AFAIK only one can be optimized by the compiler
+    
+    // delete all nodes with same crc and hash
+    VerificationHashEntry *nextSame = same;
+    while(0 != nextSame)
+    {
+        VerificationHashEntry *const currSame = nextSame;
+        nextSame = currSame->same;
+        
+        // prevent currSame from recursive delete
+        currSame->same = 0;
+        currSame->left = 0;
+        currSame->right = 0;
+        
+        delete currSame;
+    }
+    
     delete left;
     delete right;
-    delete same;
   }
 
   // Insert the current object is a child of the specified parent
@@ -66,11 +87,11 @@ public:
   // Comparison operators for searching
   bool operator <(const VerificationHashEntry &r) const 
   {
-    return crc < r.crc || crc == r.crc && hash < r.hash;
+    return crc < r.crc || (crc == r.crc && hash < r.hash);
   }
   bool operator >(const VerificationHashEntry &r) const 
   {
-    return crc > r.crc || crc == r.crc && hash > r.hash;
+    return crc > r.crc || (crc == r.crc && hash > r.hash);
   }
   bool operator ==(const VerificationHashEntry &r) const 
   {
@@ -183,11 +204,11 @@ inline const VerificationHashEntry* VerificationHashEntry::Search(const Verifica
 
   while (entry)
   {
-    if (entry->crc < crc || entry->crc == crc && entry->hash < hash)
+    if (entry->crc < crc || (entry->crc == crc && entry->hash < hash))
     {
       entry = entry->right;
     }
-    else if (entry->crc > crc || entry->crc == crc && entry->hash > hash)
+    else if (entry->crc > crc || (entry->crc == crc && entry->hash > hash))
     {
       entry = entry->left;
     }
@@ -290,6 +311,7 @@ inline const VerificationHashEntry* VerificationHashTable::FindMatch(const Verif
       // Is the checksum correct
       if (checksum == suggestedentry->Checksum())
       {
+        havehash = true;
         // Get a short hash from the checksummer
         hash = checksummer.ShortHash(length);
 
@@ -303,8 +325,8 @@ inline const VerificationHashEntry* VerificationHashTable::FindMatch(const Verif
     // If the suggested entry has not already been found, compare the checksum
     else if (!suggestedentry->IsSet() && suggestedentry->Checksum() == crc)
     {
-      // Get the hash value from the checksummer
       havehash = true;
+      // Get the hash value from the checksummer
       hash = checksummer.Hash();
 
       // If the hash value matches, then return it.
@@ -402,14 +424,14 @@ inline const VerificationHashEntry* VerificationHashTable::FindMatch(const Verif
     // have already been matched, or ones that are the wrong length
     while (currententry && (currententry->SourceFile() != sourcefile || 
                             currententry->IsSet() ||
-                            checksummer.ShortBlock() && checksummer.BlockLength() != currententry->GetDataBlock()->GetLength()
+                            (checksummer.ShortBlock() && checksummer.BlockLength() != currententry->GetDataBlock()->GetLength())
                            )
           )
     {
       // If we found an unused entry (which was presumably for the wrong 
       // source file) remember it (providing it is the correct length).
       if (0 == nextentry && !(currententry->IsSet() || 
-                              checksummer.ShortBlock() && checksummer.BlockLength() != currententry->GetDataBlock()->GetLength()
+                              (checksummer.ShortBlock() && checksummer.BlockLength() != currententry->GetDataBlock()->GetLength())
                              )
          )
       {
@@ -426,7 +448,7 @@ inline const VerificationHashEntry* VerificationHashTable::FindMatch(const Verif
 
   // Check for an unused entry which is the correct length
   while (nextentry && (nextentry->IsSet() ||
-                       checksummer.ShortBlock() && checksummer.BlockLength() != nextentry->GetDataBlock()->GetLength()
+                       (checksummer.ShortBlock() && checksummer.BlockLength() != nextentry->GetDataBlock()->GetLength())
                       )
         )
   {
@@ -434,10 +456,12 @@ inline const VerificationHashEntry* VerificationHashTable::FindMatch(const Verif
   }
 
   // Return what we have found
+  /*
   if (nextentry == 0)
   {
     duplicate = true;
   }
+  */
 
   return nextentry;
 }

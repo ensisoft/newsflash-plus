@@ -20,7 +20,6 @@
 #ifndef __PARCMDLINE_H__
 #define __PARCMDLINE_H__
 
-
 #ifdef WIN32
 // Windows includes
 #define WIN32_LEAN_AND_MEAN
@@ -136,6 +135,10 @@ typedef unsigned long long u64;
 #  include <sys/stat.h>
 #endif
 
+#if HAVE_LIMITS_H
+#  include <limits.h>
+#endif
+
 #if HAVE_SYS_TYPES_H
 #  include <sys/types.h>
 #endif
@@ -144,7 +147,7 @@ typedef unsigned long long u64;
 #  include <unistd.h>
 #endif
 
-#define _MAX_PATH 255
+#define _MAX_PATH 4095
 
 #if HAVE_ENDIAN_H
 #  include <endian.h>
@@ -184,7 +187,7 @@ typedef unsigned long long u64;
 
 #include <errno.h>
 
-#define _MAX_PATH 255
+#define _MAX_PATH 4095
 #define stricmp strcasecmp
 #define _stat stat
 

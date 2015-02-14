@@ -75,11 +75,13 @@ Result Par2Creator::Process(const CommandLine &commandline)
   const list<CommandLine::ExtraFile> extrafiles = commandline.GetExtraFiles();
   sourcefilecount = (u32)extrafiles.size();
   u32 redundancy = commandline.GetRedundancy();
+  u64 redundancysize = commandline.GetRedundancySize();
   recoveryblockcount = commandline.GetRecoveryBlockCount();
   recoveryfilecount = commandline.GetRecoveryFileCount();
   firstrecoveryblock = commandline.GetFirstRecoveryBlock();
   recoveryfilescheme = commandline.GetRecoveryFileScheme();
   string par2filename = commandline.GetParFilename();
+  string basepath = commandline.GetBasePath();
   size_t memorylimit = commandline.GetMemoryLimit();
   largestfilesize = commandline.GetLargestSourceSize();
 
@@ -90,7 +92,7 @@ Result Par2Creator::Process(const CommandLine &commandline)
 
   // Determine how many recovery blocks to create based on the source block
   // count and the requested level of redundancy.
-  if (redundancy > 0 && !ComputeRecoveryBlockCount(redundancy))
+  if ((redundancy > 0 || redundancysize >0) && !ComputeRecoveryBlockCount(redundancy, redundancysize))
     return eInvalidCommandLineArguments;
 
   // Determine how much recovery data can be computed on one pass
@@ -116,7 +118,7 @@ Result Par2Creator::Process(const CommandLine &commandline)
 
   // Open all of the source files, compute the Hashes and CRC values, and store
   // the results in the file verification and file description packets.
-  if (!OpenSourceFiles(extrafiles))
+  if (!OpenSourceFiles(extrafiles, basepath))
     return eFileIOError;
 
   // Create the main packet and determine the setid to use with all packets
@@ -222,9 +224,10 @@ bool Par2Creator::ComputeBlockSizeAndBlockCount(const list<CommandLine::ExtraFil
   {
     if (sourceblockcount < extrafiles.size())
     {
-      // The block count cannot be less that the number of files.
+      // The block count cannot be less than the number of files.
 
-      cerr << "Block count is too small." << endl;
+      cerr << "Block count (" << sourceblockcount <<
+              ") can not be smaller than the number of files(" << extrafiles.size() << "). " << endl;
       return false;
     }
     else if (sourceblockcount == extrafiles.size())
@@ -263,51 +266,10 @@ bool Par2Creator::ComputeBlockSizeAndBlockCount(const list<CommandLine::ExtraFil
         u64 lowerBound = totalsize / sourceblockcount;
         u64 upperBound = (totalsize + sourceblockcount - extrafiles.size() - 1) / (sourceblockcount - extrafiles.size());
 
-        u64 bestsize = lowerBound;
-        u64 bestdistance = 1000000;
-        u64 bestcount = 0;
-
-        u64 count;
+        u64 count = 0;
         u64 size;
 
-        // Work out how many blocks you get for the lower bound block size
-        {
-          size = lowerBound;
-
-          count = 0;
-          for (ExtraFileIterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
-          {
-            count += ((i->FileSize()+3)/4 + size-1) / size;
-          }
-
-          if (bestdistance > (count>sourceblockcount ? count-sourceblockcount : sourceblockcount-count))
-          {
-            bestdistance = (count>sourceblockcount ? count-sourceblockcount : sourceblockcount-count);
-            bestcount = count;
-            bestsize = size;
-          }
-        }
-
-        // Work out how many blocks you get for the upper bound block size
-        {
-          size = upperBound;
-
-          count = 0;
-          for (ExtraFileIterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
-          {
-            count += ((i->FileSize()+3)/4 + size-1) / size;
-          }
-
-          if (bestdistance > (count>sourceblockcount ? count-sourceblockcount : sourceblockcount-count))
-          {
-            bestdistance = (count>sourceblockcount ? count-sourceblockcount : sourceblockcount-count);
-            bestcount = count;
-            bestsize = size;
-          }
-        }
-
-        // Use binary search to find best block size
-        while (lowerBound+1 < upperBound)
+        do
         {
           size = (lowerBound + upperBound)/2;
 
@@ -316,34 +278,34 @@ bool Par2Creator::ComputeBlockSizeAndBlockCount(const list<CommandLine::ExtraFil
           {
             count += ((i->FileSize()+3)/4 + size-1) / size;
           }
-
-          if (bestdistance > (count>sourceblockcount ? count-sourceblockcount : sourceblockcount-count))
+          if (count > sourceblockcount)
           {
-            bestdistance = (count>sourceblockcount ? count-sourceblockcount : sourceblockcount-count);
-            bestcount = count;
-            bestsize = size;
-          }
-
-          if (count < sourceblockcount)
-          {
-            upperBound = size;
-          }
-          else if (count > sourceblockcount)
-          {
-            lowerBound = size;
+            lowerBound = size+1;
+            if (lowerBound >= upperBound)
+            {
+              size = lowerBound;
+              count = 0;
+              for (ExtraFileIterator i=extrafiles.begin(); i!=extrafiles.end(); i++)
+              {
+                count += ((i->FileSize()+3)/4 + size-1) / size;
+              }
+            }
           }
           else
           {
             upperBound = size;
           }
         }
-
-        size = bestsize;
-        count = bestcount;
+        while (lowerBound < upperBound);
 
         if (count > 32768)
         {
-          cerr << "Error calculating block size." << endl;
+          cerr << "Error calculating block size. cannot be higher than 32768." << endl;
+          return false;
+        }
+        else if (count == 0)
+        {
+          cerr << "Error calculating block size. cannot be 0." << endl;
           return false;
         }
 
@@ -359,10 +321,54 @@ bool Par2Creator::ComputeBlockSizeAndBlockCount(const list<CommandLine::ExtraFil
 
 // Determine how many recovery blocks to create based on the source block
 // count and the requested level of redundancy.
-bool Par2Creator::ComputeRecoveryBlockCount(u32 redundancy)
+bool Par2Creator::ComputeRecoveryBlockCount(u32 redundancy, u64 redundancysize)
 {
-  // Determine recoveryblockcount
-  recoveryblockcount = (sourceblockcount * redundancy + 50) / 100;
+  if (redundancy > 0)
+  {
+    // Determine recoveryblockcount
+    recoveryblockcount = (sourceblockcount * redundancy + 50) / 100;
+  }
+  else if (redundancysize > 0)
+  {
+    bool closest = false;
+
+    u64 overhead;
+    overhead = sourceblockcount * 21;
+
+    u32 estimatedFileCount;
+    u64 totalOverhead;
+
+    do
+    {
+      if (recoveryfilecount == 0)
+      {
+        estimatedFileCount = 15;
+      }
+      else
+      {
+        closest = true;
+        estimatedFileCount = recoveryfilecount + 1;
+      }
+      totalOverhead = estimatedFileCount * overhead;
+      if (totalOverhead > redundancysize)
+      {
+        recoveryblockcount = 1;
+      }
+      else
+      {
+        recoveryblockcount = (redundancysize - totalOverhead) / (blocksize + 70);
+      }
+      ComputeRecoveryFileCount();
+    }
+    while(closest == false);
+
+    recoveryfilecount = 0;
+  }
+  else
+  {
+    cerr << "Redundancy and Redundancysize not set." << endl;
+    return false;
+  }
 
   // Force valid values if necessary
   if (recoveryblockcount == 0 && redundancy > 0)
@@ -381,6 +387,7 @@ bool Par2Creator::ComputeRecoveryBlockCount(u32 redundancy)
     return false;
   }
 
+      cout << endl;
   return true;
 }
 
@@ -483,22 +490,21 @@ bool Par2Creator::ComputeRecoveryFileCount(void)
 
 // Open all of the source files, compute the Hashes and CRC values, and store
 // the results in the file verification and file description packets.
-bool Par2Creator::OpenSourceFiles(const list<CommandLine::ExtraFile> &extrafiles)
+bool Par2Creator::OpenSourceFiles(const list<CommandLine::ExtraFile> &extrafiles, string basepath)
 {
   ExtraFileIterator extrafile = extrafiles.begin();
   while (extrafile != extrafiles.end())
   {
     Par2CreatorSourceFile *sourcefile = new Par2CreatorSourceFile;
 
-    string path;
     string name;
-    DiskFile::SplitFilename(extrafile->FileName(), path, name);
+    DiskFile::SplitRelativeFilename(extrafile->FileName(), basepath, name);
 
     if (noiselevel > CommandLine::nlSilent)
       cout << "Opening: " << name << endl;
 
     // Open the source file and compute its Hashes and CRCs.
-    if (!sourcefile->Open(noiselevel, *extrafile, blocksize, deferhashcomputation))
+    if (!sourcefile->Open(noiselevel, *extrafile, blocksize, deferhashcomputation, basepath))
     {
       delete sourcefile;
       return false;

@@ -50,6 +50,7 @@ namespace app
             QString country;
             QString runtime;
             QString actors;
+            QString imdbid;
             QPixmap poster;
             float rating;
             int year;

@@ -250,7 +250,7 @@ struct bigfile::impl {
     }
 };
 
-std::error_code bigfile::open(const std::string& file, unsigned flags)
+void bigfile::open(const std::string& file, unsigned flags)
 {
     int mode = O_RDWR | O_LARGEFILE;
     if (flags & o_create)

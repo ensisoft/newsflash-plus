@@ -27,6 +27,11 @@ static char THIS_FILE[]=__FILE__;
 #endif
 #endif
 
+#if defined(__FreeBSD_kernel__)
+#include <sys/disk.h>
+#define BLKGETSIZE64 DIOCGMEDIASIZE
+#endif
+
 
 #ifdef WIN32
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -61,6 +66,17 @@ bool DiskFile::Create(string _filename, u64 _filesize)
 
   filename = _filename;
   filesize = _filesize;
+
+  // do we have a path separator in the filename ?
+  string::size_type where;
+  if (string::npos != (where = filename.find_last_of('/')) ||
+      string::npos != (where = filename.find_last_of('\\')))
+  {
+    string path, name;
+    DiskFile::SplitFilename(filename, path, name);
+
+    CreateDirectory(path.c_str(), NULL);
+  }
 
   // Create the file
   hFile = ::CreateFileA(_filename.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL, CREATE_NEW, 0, NULL);
@@ -318,8 +334,14 @@ string DiskFile::GetCanonicalPathname(string filename)
   return longname;
 }
 
-list<string>* DiskFile::FindFiles(string path, string wildcard)
+list<string>* DiskFile::FindFiles(string path, string wildcard, bool recursive)
 {
+  // check path, if not ending with path separator, add one
+  char pathend = *path.rbegin();
+  if (pathend != '\\')
+  {
+    path += '\\';
+  }
   list<string> *matches = new list<string>;
 
   wildcard = path + wildcard;
@@ -333,6 +355,18 @@ list<string>* DiskFile::FindFiles(string path, string wildcard)
       {
         matches->push_back(path + fd.cFileName);
       }
+      else if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+      {
+        if (fd.cFileName[0] == '.') {
+          continue;
+        }
+
+        list<string> *dirmatches;
+        string nwwildcard="*";
+        dirmatches = DiskFile::FindFiles(fd.cFileName, nwwildcard, true);
+
+        matches->merge(*dirmatches);
+      }
     } while (::FindNextFile(h, &fd));
     ::FindClose(h);
   }
@@ -340,8 +374,18 @@ list<string>* DiskFile::FindFiles(string path, string wildcard)
   return matches;
 }
 
-
-
+u64 DiskFile::GetFileSize(string filename)
+{
+  struct _stati64 st;
+  if ((0 == _stati64(filename.c_str(), &st)) && (0 != (st.st_mode & S_IFREG)))
+  {
+    return st.st_size;
+  }
+  else
+  {
+    return 0;
+  }
+}
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #else // !WIN32
@@ -390,6 +434,21 @@ bool DiskFile::Create(string _filename, u64 _filesize)
   filename = _filename;
   filesize = _filesize;
 
+  // do we have a path separator in the filename ?
+  string::size_type where;
+  if (string::npos != (where = filename.find_last_of('/')) ||
+      string::npos != (where = filename.find_last_of('\\')))
+  {
+    string path, name;
+    DiskFile::SplitFilename(filename, path, name);
+
+    struct stat st;
+    if (! (stat(path.c_str(), &st) == 0 && S_ISDIR(st.st_mode)))
+    {
+      mkdir(path.c_str(), S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
+    }
+  }
+
   file = fopen(_filename.c_str(), "wb");
   if (file == 0)
   {
@@ -411,7 +470,7 @@ bool DiskFile::Create(string _filename, u64 _filesize)
       fclose(file);
       file = 0;
       ::remove(filename.c_str());
-      
+
       cerr << "Could not set end of file: " << _filename << endl;
       return false;
     }
@@ -421,7 +480,7 @@ bool DiskFile::Create(string _filename, u64 _filesize)
       fclose(file);
       file = 0;
       ::remove(filename.c_str());
-      
+
       cerr << "Could not set end of file: " << _filename << endl;
       return false;
     }
@@ -562,7 +621,7 @@ string DiskFile::GetCanonicalPathname(string filename)
     return filename;
 
   // Get the current directory
-  char curdir[1000];
+  char curdir[PATH_MAX];
   if (0 == getcwd(curdir, sizeof(curdir)))
   {
     return filename;
@@ -618,8 +677,14 @@ string DiskFile::GetCanonicalPathname(string filename)
   return result;
 }
 
-list<string>* DiskFile::FindFiles(string path, string wildcard)
+list<string>* DiskFile::FindFiles(string path, string wildcard, bool recursive)
 {
+  // check path, if not ending with path separator, add one
+  char pathend = *path.rbegin();
+  if (pathend != '/')
+  {
+    path += '/';
+  }
   list<string> *matches = new list<string>;
 
   string::size_type where;
@@ -648,7 +713,25 @@ list<string>* DiskFile::FindFiles(string path, string wildcard)
               name.substr(0, where) == front &&
               name.substr(name.size()-back.size()) == back)
           {
-            matches->push_back(path + name);
+            struct stat st;
+            string fn = path + name;
+            if (stat(fn.c_str(), &st) == 0)
+            {
+              if (S_ISDIR(st.st_mode) &&
+                  recursive == true)
+              {
+
+                list<string> *dirmatches;
+                string nwwildcard="*";
+                dirmatches = DiskFile::FindFiles(fn, nwwildcard, true);
+
+                matches->merge(*dirmatches);
+              }
+              else if (S_ISREG(st.st_mode))
+              {
+                matches->push_back(path + name);
+              }
+            }
           }
         }
         else
@@ -667,7 +750,25 @@ list<string>* DiskFile::FindFiles(string path, string wildcard)
 
             if (pw == wildcard.end())
             {
-              matches->push_back(path + name);
+              struct stat st;
+              string fn = path + name;
+              if (stat(fn.c_str(), &st) == 0)
+              {
+                if (S_ISDIR(st.st_mode) &&
+                    recursive == true)
+                {
+
+                  list<string> *dirmatches;
+                  string nwwildcard="*";
+                  dirmatches = DiskFile::FindFiles(fn, nwwildcard, true);
+
+                  matches->merge(*dirmatches);
+                }
+                else if (S_ISREG(st.st_mode))
+                {
+                  matches->push_back(path + name);
+                }
+              }
             }
           }
         }
@@ -682,37 +783,40 @@ list<string>* DiskFile::FindFiles(string path, string wildcard)
     string fn = path + wildcard;
     if (stat(fn.c_str(), &st) == 0)
     {
-      matches->push_back(path + wildcard);
+      if (S_ISDIR(st.st_mode) &&
+          recursive == true)
+      {
+
+        list<string> *dirmatches;
+        string nwwildcard="*";
+        dirmatches = DiskFile::FindFiles(fn, nwwildcard, true);
+
+        matches->merge(*dirmatches);
+      }
+      else if (S_ISREG(st.st_mode))
+      {
+        matches->push_back(path + wildcard);
+      }
     }
   }
-
+  
   return matches;
 }
 
+u64 DiskFile::GetFileSize(string filename)
+{
+  struct stat st;
+  if ((0 == stat(filename.c_str(), &st)) && (0 != (st.st_mode & S_IFREG)))
+  {
+    return st.st_size;
+  }
+  else
+  {
+    return 0;
+  }
+}
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #endif
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 bool DiskFile::Open(void)
 {
@@ -725,14 +829,6 @@ bool DiskFile::Open(string _filename)
 {
   return Open(_filename, GetFileSize(_filename));
 }
-
-
-
-
-
-
-
-
 
 // Delete the file
 
@@ -755,14 +851,6 @@ bool DiskFile::Delete(void)
     return false;
   }
 }
-
-
-
-
-
-
-
-
 
 //string DiskFile::GetPathFromFilename(string filename)
 //{
@@ -796,26 +884,17 @@ void DiskFile::SplitFilename(string filename, string &path, string &name)
   }
 }
 
+void DiskFile::SplitRelativeFilename(string filename, string basepath, string &name)
+{
+  name = filename;
+  name.erase(0, basepath.length());
+}
+
 bool DiskFile::FileExists(string filename)
 {
   struct stat st;
   return ((0 == stat(filename.c_str(), &st)) && (0 != (st.st_mode & S_IFREG)));
 }
-
-u64 DiskFile::GetFileSize(string filename)
-{
-  struct stat st;
-  if ((0 == stat(filename.c_str(), &st)) && (0 != (st.st_mode & S_IFREG)))
-  {
-    return st.st_size;
-  }
-  else
-  {
-    return 0;
-  }
-}
-
-
 
 // Take a filename from a PAR2 file and replace any characters
 // which would be illegal for a file on disk
@@ -840,12 +919,10 @@ string DiskFile::TranslateFilename(string filename)
       {
       case '"':
       case '*':
-      case '/':
       case ':':
       case '<':
       case '>':
       case '?':
-      case '\\':
       case '|':
         ok = false;
       }
@@ -855,13 +932,16 @@ string DiskFile::TranslateFilename(string filename)
     {
       ok = false;
     }
-    else
-    {
-      switch (ch)
-      {
-      case '/':
-        ok = false;
-      }
+#endif
+
+    // replace unix / to windows \ or windows \ to unix /
+#ifdef WIN32
+    if (ch == '/') {
+      ch = '\\';
+    }
+#else
+    if (ch == '\\') {
+      ch = '/';
     }
 #endif
 
@@ -896,6 +976,11 @@ bool DiskFile::Rename(void)
     if (length < 0)
     {
       cerr << filename << " cannot be renamed." << endl;
+      return false;
+    }
+    else if (length > _MAX_PATH)
+    {
+      cerr << filename << " pathlength is more than " << _MAX_PATH << "." << endl;
       return false;
     }
     newname[length] = 0;

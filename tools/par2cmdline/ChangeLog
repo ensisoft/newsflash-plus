@@ -1,3 +1,152 @@
+FOR FURTHER CHANGELOG INFORMATION:
+https://github.com/BlackIkeEagle/par2cmdline/commits/master
+
+27 February 2014 Ike Devolder
+	* release: 0.6.5
+	* fix blocksize calculation
+
+25 February 2014 JCF Ploemen
+	* lintian warning spelling fix
+
+7 February 2014 Ike Devolder
+	* add manfile for par2
+
+29 January 2014 Jan van Haarst
+	* README in Markdown
+
+21 January 2014 Ike Devolder
+	* add spelling fixes to cmdline output
+
+18 January 2014 Jan van Haarst
+	* fixed some spelling
+
+6 January 2014 Ike Devolder
+	* simplify FindFiles
+
+4 January 2014 Ike Devolder
+	* release: 0.6.4
+	* when directory is removed, recreate
+	* add test to verify directory behaviour
+	* add test with valgrind
+
+16 December 2013 Ike Devolder
+	* allow verification of files even with ducplicates in parfiles
+
+15 December 2013 Ike Devolder
+	* avoid adding of duplicates
+
+14 December 2013 Ike Devolder
+	* release: 0.6.3
+	* rework original tests so parallelisation is no issue
+	* add test8 which makes sure the paths stored are relative
+	* add test9 rename wrongly named file, passed to par2
+	  result is correctly named files after repair
+
+13 Decebmer 2013 Ike Devolder
+	* move tests in separate folder, tests will be extended
+	  and otherwise eventually clutter the source too much
+
+9 December 2013 Ike Devolder
+	* rework parfilename handling + it fixes passing par
+	  filename without extension for repair
+
+7 December 2013 Ike Devolder
+	* release: 0.6.2
+	* basepath was not set correctly in restoring of 'old' way
+
+5 December 2013 Ike Devolder
+	* release: 0.6.1
+	* show usage / version / copyright on request
+	* restore 'old' way of creating make -a optional
+
+30 November 2013 Ike Devolder
+	* release: 0.6.0
+	* test8: windows generated recovery files with subdir
+	* windows recurses in . and .. which leads to deadlock
+	  so dont recurse in folders starting with . on windows
+	* when recursion happens make sure windows can recover with
+	  unix created par2 files
+	* fixed fc -> fd typo in windows part of diskfile
+	* FTBFS fix on GNU/kFreeBSD (by Cyril Brulebois)
+	* fixed non quiet output when creating par2
+	* Applied fix preventing a stack overflow (by Robert Schneider)
+
+14 October 2013 Ike Devolder
+	* Implemented recursion
+	* NOTE: only for unix like systems
+	* Windows can be done i guess but i have no access to windows machines
+
+16 June 2013 Ike Devolder
+	* Implemented initial subdir handling
+	* added subdir tests
+
+13 June 2013 Ike Devolder
+	* Fixed failing testsuite
+
+9 December 2012 Ike Devolder
+	* rework purging of par(2) files because of possible segfaults
+		and other inconsistencies
+
+4 December 2012 Ike Devolder
+	* fix purge option so it removes the par files when there is no
+		repair needed
+	* add purge option to verify so when there is no repair needed
+		the par2 files are removed when the purge option is given
+
+30 November 2012 Ike Devolder
+	* add purge option
+		remove backup files (mostly .1) and par files on request
+		**USE AT YOUR OWN RISK
+	* purge option available in par1 and par2 repair
+	* fix memory leak when using par1 repair
+
+30 January 2012 Ike Devolder
+	* add inlining performance improvement of Gerard Putter
+	* release: 0.5.4
+
+19 January 2012 Ike Devolder
+	* fix wrongly created par2 files in quiet mode
+	  this was related to the -q -qq fix
+	* release: 0.5.3
+
+17 January 2012 Ike Devolder
+	* fix deadlock condition when repairing and filepath is longer
+		than _MAX_PATH
+	* increase _MAX_PATH, 255 is no longer of these days
+	* release: 0.5.2
+
+16 January 2012 Ike Devolder
+	* fixup 0.5 version display
+	* "par2 create" dumps core with -q or -qq, but non-quiet mode works fine
+		FIXED
+	* removed automake files
+	* updated copyrights
+	* release: 0.5.1
+
+12 December 2011 Marcel Partap
+	* Reanimate par2cmdline development on new github repository
+	* Merge available distro patches since 2004 0.4 release back upstream
+	* Release: Version 0.5 ;)
+
+3 January 2005 Peter B Clements
+
+	* par2creatorsourcefile.cpp: "offset" must be updated when computing
+	  file and block hashes even if progress is not being displayed.
+
+23 June 2004 Peter B Clements
+
+	* diskfile.cpp: Changed DiskFile::GetFileSize for WIN32
+	  so that it uses _stati64() to get the size of a file.
+
+	* par2creatorsourcefile.cpp: In UpdateHashes() the test
+	  that adjusts the length of the last block of a file when
+	  before updating the file hash was incorrect.
+
+17 June 2004 Peter B Clements
+
+	* par1repairer.cpp, par2repairer.cpp: Report empty files when
+	  scanning for data.
+
 22 April 2004 Peter B Clements
 
 	* README: Updated to include new commandline options.
@@ -180,7 +329,7 @@
 	  Test files for "make check".
 
 	* Changed commandline.cpp, commandline.h: Add "version" member 
-          and set it according to whether the recovery file is a .PAR file
+		and set it according to whether the recovery file is a .PAR file
 	  or a .PAR2 file. Rename "par2filename" member to "parfilename".
 
 	* Changed creatorpacket.cpp: Made "string creator" a local variable
@@ -188,7 +337,7 @@
 	  that does nothing.
 
 	* Changed criticalpacket.h: Corrected bug in 
-          CriticalPacketEntry::operator= which failed to return *this.
+		CriticalPacketEntry::operator= which failed to return *this.
 
 	* Changed descriptionpacket.cpp: Commented out code which does
 	  nothing.
