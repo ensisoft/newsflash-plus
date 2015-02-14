@@ -23,6 +23,10 @@ exe newsflash
   gui/qtsingleapplication/qtlocalpeer.h
   gui/qtsingleapplication/qtlocalpeer.cpp
 
+  /boost//filesystem/<link>static
+  /boost//system/<link>static
+  /boost//regex/<link>static  
+
   /qt//QtCore
   /qt//QtGui
   /qt//QtNetwork

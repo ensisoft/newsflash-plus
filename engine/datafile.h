@@ -76,7 +76,7 @@ namespace newsflash
             std::shared_ptr<datafile> file_;
         };
 
-        datafile(std::string path, std::string binaryname, std::size_t size, bool bin, bool overwrite) : discard_(false), binary_(bin)
+        datafile(std::string path, std::string binaryname, std::size_t size, bool bin, bool overwrite) : discard_(false), binary_(bin), finalsize_(0)
         {
             std::string file;
             std::string name;
@@ -124,6 +124,7 @@ namespace newsflash
         #ifdef NEWSFLASH_DEBUG
             assert(num_writes_ == 0);
         #endif
+            finalsize_ = big_.size();
 
             big_.close();
             if (discard_)
@@ -134,8 +135,8 @@ namespace newsflash
         { discard_ = true; }
 
         std::uint64_t size() const 
-        { return big_.size(); }
-
+        { return finalsize_; }
+                    
         const std::string& name() const
         { return name_; }
 
@@ -163,6 +164,7 @@ namespace newsflash
     #ifdef NEWSFLASH_DEBUG
         std::atomic<std::size_t> num_writes_;
     #endif
+        std::uint64_t finalsize_;
     };
 
 } // newsflash

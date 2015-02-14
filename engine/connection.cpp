@@ -415,6 +415,8 @@ void connection::disconnect::xperform()
             auto received = socket->wait(true, false);
             if (!newsflash::wait_for(received, std::chrono::seconds(1)))
                 break;
+            if (buff.available() == 0)
+                buff.allocate(buff.size() + 64);
 
             const auto bytes = socket->recvsome(buff.back(), buff.available());
             if (bytes == 0)

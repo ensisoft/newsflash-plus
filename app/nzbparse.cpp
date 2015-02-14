@@ -43,7 +43,7 @@ public:
     virtual bool characters(const QString& ch) override
     {
         if (!has_content())
-            return false;
+            return true;
 
         auto& content = contents_.back();
 

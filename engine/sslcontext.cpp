@@ -148,6 +148,8 @@ struct openssl {
 
    ~openssl() 
     {
+        CRYPTO_set_locking_callback(nullptr);
+
         ERR_free_strings();
         EVP_cleanup();
         CRYPTO_cleanup_all_ex_data();
