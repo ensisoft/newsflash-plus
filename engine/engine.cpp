@@ -1476,6 +1476,16 @@ engine::batch_id_t engine::download_listing(std::size_t account)
 
 bool engine::pump()
 {
+#ifdef NEWSFLASH_DEBUG
+    {
+        std::lock_guard<std::mutex> lock(state_->mutex);
+        std::size_t num_actions = state_->actions.size();
+        if (num_actions == 0)
+            return state_->num_pending_actions;
+        LOG_D("Pumping all ", num_actions, " currently completed actions");
+    }
+#endif
+
     for (;;)
     {
         auto* action = state_->get_action();
@@ -1583,6 +1593,9 @@ bool engine::pump()
         state_->num_pending_actions--;
         state_->logger->flush();        
     }
+
+    LOG_D("There are ", state_->num_pending_actions, " incomplete pending future actions");
+    state_->logger->flush();
 
     return state_->num_pending_actions != 0;
 }

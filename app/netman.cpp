@@ -216,7 +216,7 @@ void NetworkManager::submitNext()
         return;
 
     auto& submit = *it;
-    const auto& req = submit.request;
+    //const auto& req = submit.request;
     const auto& url = submit.request.url();
     const auto& attachment = submit.attachment;
     if (attachment.isEmpty())

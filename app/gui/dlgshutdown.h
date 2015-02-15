@@ -26,8 +26,12 @@
 
 #include <newsflash/warnpush.h>
 #  include <QtGui/QDialog>
+#  include <QtGui/QCloseEvent>
+#  include <QtGui/QKeyEvent>
 #  include "ui_dlgshutdown.h"
 #include <newsflash/warnpop.h>
+
+#include "../debug.h"
 
 namespace gui
 {
@@ -40,6 +44,10 @@ namespace gui
             ui_.setupUi(this);
             ui_.progressBar->setValue(0);
             ui_.progressBar->setRange(0, 0);
+
+            const auto flags = windowFlags();
+
+            setWindowFlags(flags & ~Qt::WindowCloseButtonHint);
         }
        ~DlgShutdown()
         {}
@@ -47,6 +55,24 @@ namespace gui
         void setText(const QString& s)
         {
             ui_.lblAction->setText(s);
+        }
+    private:
+        void closeEvent(QCloseEvent* event)
+        {
+            DEBUG("DlgShutdown close event");
+
+            // just in case the window has a little X in the title bar
+            // we want to disallow the window to be closed by the user.
+            // this window should only be closed when the application
+            // says so.
+            event->ignore();
+        }
+        void keyPressEvent(QKeyEvent* event)
+        {
+            // we also eat Esc keys to make sure that the dialog cannot be closed on Esc.
+            if (event->key() == Qt::Key_Escape)
+                return;
+            QDialog::keyPressEvent(event);
         }
     private:
         Ui::DlgShutdown ui_;

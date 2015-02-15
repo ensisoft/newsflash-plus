@@ -234,7 +234,7 @@ void RSS::downloadNzbFile(int row, const QString& file)
 
     const auto& item = items_[row];
     const auto& link = item.nzblink;
-    const auto& name = item.title;
+    //const auto& name = item.title;
     g_net->submit(std::bind(&RSS::onNzbFileComplete, this, file,
         std::placeholders::_1), net_, link);
 }

@@ -192,9 +192,9 @@ void Accounts::updatePie()
 
     const auto& account = app::g_accounts->getAccount(row);    
 
-    const auto quota_spent = app::gigs(account.quota_spent);
-    const auto quota_total = app::gigs(account.quota_avail);
-    const auto quota_avail = app::gigs(account.quota_avail - account.quota_spent);
+    const auto quota_spent = app::gigs(account.quotaSpent);
+    const auto quota_total = app::gigs(account.quotaAvail);
+    const auto quota_avail = app::gigs(account.quotaAvail - account.quotaSpent);
     const auto slice_avail = 100 * (quota_avail.as_float() / quota_total.as_float());
     const auto slice_used  = 100 * (quota_spent.as_float() / quota_total.as_float());
 
@@ -266,12 +266,12 @@ void Accounts::currentRowChanged()
 
     const auto& account = app::g_accounts->getAccount(row);
 
-    const auto quota_type   = account.quota_type;
-    const auto quota_spent  = app::gigs(account.quota_spent);
-    const auto quota_total  = app::gigs(account.quota_avail);
+    const auto quota_type   = account.quotaType;
+    const auto quota_spent  = app::gigs(account.quotaSpent);
+    const auto quota_total  = app::gigs(account.quotaAvail);
     //const auto quota_avail  = app::gigs(account.quota_avail - account.quota_spent);
-    const auto gigs_alltime = app::gigs(account.downloads_all_time);
-    const auto gigs_month   = app::gigs(account.downloads_this_month);
+    const auto gigs_alltime = app::gigs(account.downloadsAllTime);
+    const auto gigs_month   = app::gigs(account.downloadsThisMonth);
 
     in_row_changed_ = true;
 
@@ -284,11 +284,11 @@ void Accounts::currentRowChanged()
     in_row_changed_ = false;
 
     
-    if (quota_type == app::Account::quota::none)
+    if (quota_type == app::Accounts::Quota::none)
     {
         ui_.grpQuota->setChecked(false);
     }
-    else if (quota_type == app::Account::quota::monthly)
+    else if (quota_type == app::Accounts::Quota::monthly)
     {
         ui_.btnMonthlyQuota->setChecked(true);
         ui_.btnFixedQuota->setChecked(false);
@@ -312,7 +312,7 @@ void Accounts::on_btnResetMonth_clicked()
 
     auto& account = app::g_accounts->getAccount(row);
 
-    account.downloads_this_month = 0;
+    account.downloadsThisMonth = 0;
 
     const app::gigs nada;
 
@@ -327,7 +327,7 @@ void Accounts::on_btnResetAllTime_clicked()
 
     auto& account = app::g_accounts->getAccount(row);
 
-    account.downloads_all_time = 0;
+    account.downloadsAllTime = 0;
 
     const app::gigs nada;
 
@@ -342,7 +342,7 @@ void Accounts::on_btnMonthlyQuota_toggled(bool checked)
 
     auto& account = app::g_accounts->getAccount(row);
 
-    account.quota_type = app::Account::quota::monthly;
+    account.quotaType = app::Accounts::Quota::monthly;
 
     ui_.btnFixedQuota->setChecked(false);
 }
@@ -355,7 +355,7 @@ void Accounts::on_btnFixedQuota_toggled(bool checked)
 
     auto& account = app::g_accounts->getAccount(row);
 
-    account.quota_type = app::Account::quota::fixed;
+    account.quotaType = app::Accounts::Quota::fixed;
 
     ui_.btnMonthlyQuota->setChecked(false);
 }
@@ -375,7 +375,7 @@ void Accounts::on_spinTotal_valueChanged(double value)
 
     const app::gigs gigs { value };
 
-    account.quota_avail = gigs.as_bytes();
+    account.quotaAvail = gigs.as_bytes();
 
     ui_.spinSpent->setMaximum(gigs.as_float());
 
@@ -397,7 +397,7 @@ void Accounts::on_spinSpent_valueChanged(double value)
 
     const app::gigs gigs { value };
 
-    account.quota_spent = gigs.as_bytes();
+    account.quotaSpent = gigs.as_bytes();
 
     updatePie();
 }
@@ -425,13 +425,13 @@ void Accounts::on_grpQuota_toggled(bool on)
 
     if (!on)
     {
-        account.quota_type = app::Account::quota::none;
+        account.quotaType = app::Accounts::Quota::none;
     }
     else 
     {
         if (ui_.btnFixedQuota->isChecked())
-            account.quota_type = app::Account::quota::fixed;
-        else account.quota_type = app::Account::quota::monthly;
+            account.quotaType = app::Accounts::Quota::fixed;
+        else account.quotaType = app::Accounts::Quota::monthly;
     }
 }
 

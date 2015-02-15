@@ -35,40 +35,8 @@ namespace app
 {
     struct Account
     {
-        // different quota types
-        enum class quota {
-            // quota is not being used
-            none, 
 
-            // quota is a fixed block for example 25gb 
-            // but without any time limit
-            fixed, 
 
-            // quota is per month
-            monthly
-        };
-
-        quint32 id;
-        QString name;
-        QString username;
-        QString password;
-        QString general_host;
-        quint16 general_port;        
-        QString secure_host;
-        quint16 secure_port;
-        bool enable_general_server;
-        bool enable_secure_server;
-        bool enable_compression;
-        bool enable_pipelining;
-        bool enable_login;
-        quint64 quota_spent;
-        quint64 quota_avail;
-        quint64 downloads_this_month;
-        quint64 downloads_all_time;
-        quota quota_type;
-        int max_connections;
-        QDate last_use_date;
-        QStringList subscriptions;
     };
 
 } // app

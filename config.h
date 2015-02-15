@@ -82,7 +82,7 @@
   #endif
 
   #define COMPILER_NAME    "clang"
-  #define COMPILER_VERSION "todo"
+  #define COMPILER_VERSION __clang_version__
   #define NOTHROW noexcept
 #elif defined(__GNUG__)
   #ifdef __LP64__

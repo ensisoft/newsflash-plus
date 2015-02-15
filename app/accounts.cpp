@@ -58,7 +58,7 @@ Accounts::~Accounts()
     DEBUG("Accounts deleted");
 }
 
-Account Accounts::suggestAccount() const
+Accounts::Account Accounts::suggestAccount() const
 {
     QString name;
 
@@ -77,50 +77,45 @@ Account Accounts::suggestAccount() const
     }
 
     Account next = {0};
-    next.id                   = CurrentAccountId++;
-    next.name                 = name;
-    next.general_port         = 119;
-    next.secure_port          = 563;
-    next.enable_compression   = false;
-    next.enable_secure_server = false;
-    next.enable_compression   = false;
-    next.enable_pipelining    = false;
-    next.enable_login         = false;
-    next.quota_spent          = 0;
-    next.quota_avail          = 0;
-    next.downloads_all_time   = 0;
-    next.downloads_this_month = 0;
-    next.quota_type           = Account::quota::none;
-    next.max_connections      = 5;
+    next.id                 = CurrentAccountId++;
+    next.name               = name;
+    next.generalPort        = 119;
+    next.securePort         = 563;
+    next.enableCompression  = false;
+    next.enableSecureServer = false;
+    next.enableCompression  = false;
+    next.enablePipelining   = false;
+    next.enableLogin        = false;
+    next.quotaSpent         = 0;
+    next.quotaAvail         = 0;
+    next.downloadsAllTime   = 0;
+    next.downloadsThisMonth = 0;
+    next.quotaType          = Quota::none;
+    next.maxConnections     = 5;
     return next;
 }
 
 const 
-Account& Accounts::getAccount(std::size_t index) const
+Accounts::Account& Accounts::getAccount(std::size_t index) const
 {
     return accounts_[index];
 }
 
-Account& Accounts::getAccount(std::size_t index) 
+Accounts::Account& Accounts::getAccount(std::size_t index) 
 {
     return accounts_[index];
 }
 
-const Account* Accounts::getFillAccount() const 
+const Accounts::Account* Accounts::getFillAccount() const 
 {
     if (fillAccount_ == 0)
         return nullptr;
 
-    auto it = std::find_if(std::begin(accounts_), std::end(accounts_),
-        [=](const Account& a) {
-            return a.id == fillAccount_;
-        });
-    Q_ASSERT(it != std::end(accounts_));
-
-    return &(*it);
+    auto& fill = findAccount(fillAccount_);
+    return &fill;
 }
 
-const Account* Accounts::getMainAccount() const
+const Accounts::Account* Accounts::getMainAccount() const
 {
     if (accounts_.empty())
         return nullptr;
@@ -131,16 +126,11 @@ const Account* Accounts::getMainAccount() const
     if (mainAccount_ == 0)
         return nullptr;
 
-    auto it = std::find_if(std::begin(accounts_), std::end(accounts_),
-        [=](const Account& a) {
-            return a.id == mainAccount_;
-        });
-    Q_ASSERT(it != std::end(accounts_));
-
-    return &(*it);
+    auto& main = findAccount(mainAccount_);
+    return &main;
 }
 
-Account& Accounts::findAccount(quint32 accountId)
+Accounts::Account& Accounts::findAccount(quint32 accountId)
 {
     auto it = std::find_if(std::begin(accounts_), std::end(accounts_),
         [=](const Account& a) {
@@ -151,7 +141,7 @@ Account& Accounts::findAccount(quint32 accountId)
     return *it;
 }
 
-Account& Accounts::findAccount(const QString& name)
+Accounts::Account& Accounts::findAccount(const QString& name)
 {
     auto it = std::find_if(std::begin(accounts_), std::end(accounts_),
         [=](const Account& a) { 
@@ -162,7 +152,7 @@ Account& Accounts::findAccount(const QString& name)
     return *it;
 }
 
-const Account& Accounts::findAccount(quint32 accountId) const
+const Accounts::Account& Accounts::findAccount(quint32 accountId) const
 {
     auto it = std::find_if(std::begin(accounts_), std::end(accounts_),
         [=](const Account& a) {
@@ -173,7 +163,7 @@ const Account& Accounts::findAccount(quint32 accountId) const
     return *it;
 }
 
-const Account& Accounts::findAccount(const QString& name) const
+const Accounts::Account& Accounts::findAccount(const QString& name) const
 {
     auto it = std::find_if(std::begin(accounts_), std::end(accounts_),
         [=](const Account& a) { 
@@ -305,22 +295,22 @@ bool Accounts::saveState(Settings& store) const
         QString key = acc.name;
         store.set(key, "username", acc.username);
         store.set(key, "password", acc.password);
-        store.set(key, "general_host", acc.general_host);
-        store.set(key, "general_port", acc.general_port);
-        store.set(key, "secure_host", acc.secure_host);
-        store.set(key, "secure_port", acc.secure_port);        
-        store.set(key, "enable_general_server", acc.enable_general_server);
-        store.set(key, "enable_secure_server", acc.enable_secure_server);        
-        store.set(key, "enable_pipelining", acc.enable_pipelining);
-        store.set(key, "enable_compression", acc.enable_compression);
-        store.set(key, "enable_login", acc.enable_login);
-        store.set(key, "quota_spent", acc.quota_spent);
-        store.set(key, "quota_avail", acc.quota_avail);
-        store.set(key, "downloads_this_month", acc.downloads_this_month);
-        store.set(key, "downloads_all_time", acc.downloads_all_time);
-        store.set(key, "quota_type", (int)acc.quota_type);
-        store.set(key, "max_connections", acc.max_connections);
-        store.set(key, "last_use_date", acc.last_use_date);
+        store.set(key, "general_host", acc.generalHost);
+        store.set(key, "general_port", acc.generalPort);
+        store.set(key, "secure_host", acc.secureHost);
+        store.set(key, "secure_port", acc.securePort);        
+        store.set(key, "enable_general_server", acc.enableGeneralServer);
+        store.set(key, "enable_secure_server", acc.enableSecureServer);        
+        store.set(key, "enable_pipelining", acc.enablePipelining);
+        store.set(key, "enable_compression", acc.enableCompression);
+        store.set(key, "enable_login", acc.enableLogin);
+        store.set(key, "quota_spent", acc.quotaSpent);
+        store.set(key, "quota_avail", acc.quotaAvail);
+        store.set(key, "downloads_this_month", acc.downloadsThisMonth);
+        store.set(key, "downloads_all_time", acc.downloadsAllTime);
+        store.set(key, "quota_type", (int)acc.quotaType);
+        store.set(key, "max_connections", acc.maxConnections);
+        store.set(key, "last_use_date", acc.lastUseDate);
         store.set(key, "subscriptions", acc.subscriptions);
         list.append(key);
     }
@@ -354,27 +344,27 @@ void Accounts::loadState(Settings& store)
     for (const auto& key : list)
     {
         Account acc;
-        acc.id                    = CurrentAccountId++; //(quint32)store.get(key, "id").toInt();
-        acc.name                  = key;
-        acc.username              = store.get(key, "username").toString();
-        acc.password              = store.get(key, "password").toString();
-        acc.general_host          = store.get(key, "general_host").toString();
-        acc.general_port          = store.get(key, "general_port").toInt();
-        acc.secure_host           = store.get(key, "secure_host").toString();
-        acc.secure_port           = store.get(key, "secure_port").toInt();        
-        acc.enable_general_server = store.get(key, "enable_general_server").toBool();
-        acc.enable_secure_server  = store.get(key, "enable_secure_server").toBool();
-        acc.enable_compression    = store.get(key, "enable_compression").toBool();
-        acc.enable_pipelining     = store.get(key, "enable_pipelining").toBool();
-        acc.enable_login          = store.get(key, "enable_login").toBool();
-        acc.quota_spent           = store.get(key, "quota_spent", quint64(0));
-        acc.quota_avail           = store.get(key, "quota_avail", quint64(0));        
-        acc.downloads_all_time    = store.get(key, "downloads_all_time", quint64(0));
-        acc.downloads_this_month  = store.get(key, "downloads_this_month", quint64(0));        
-        acc.quota_type            = (Account::quota)store.get(key, "quota_type").toInt();
-        acc.max_connections       = store.get(key, "max_connections").toInt();
-        acc.last_use_date         = store.get(key, "last_use_date").toDate();
-        acc.subscriptions         = store.get(key, "subscriptions").toStringList();
+        acc.id                  = CurrentAccountId++; //(quint32)store.get(key, "id").toInt();
+        acc.name                = key;
+        acc.username            = store.get(key, "username").toString();
+        acc.password            = store.get(key, "password").toString();
+        acc.generalHost         = store.get(key, "general_host").toString();
+        acc.generalPort         = store.get(key, "general_port").toInt();
+        acc.secureHost          = store.get(key, "secure_host").toString();
+        acc.securePort          = store.get(key, "secure_port").toInt();        
+        acc.enableGeneralServer = store.get(key, "enable_general_server").toBool();
+        acc.enableSecureServer  = store.get(key, "enable_secure_server").toBool();
+        acc.enableCompression   = store.get(key, "enable_compression").toBool();
+        acc.enablePipelining    = store.get(key, "enable_pipelining").toBool();
+        acc.enableLogin         = store.get(key, "enable_login").toBool();
+        acc.quotaSpent          = store.get(key, "quota_spent", quint64(0));
+        acc.quotaAvail          = store.get(key, "quota_avail", quint64(0));        
+        acc.downloadsAllTime    = store.get(key, "downloads_all_time", quint64(0));
+        acc.downloadsThisMonth  = store.get(key, "downloads_this_month", quint64(0));        
+        acc.quotaType           = (Quota)store.get(key, "quota_type").toInt();
+        acc.maxConnections      = store.get(key, "max_connections").toInt();
+        acc.lastUseDate         = store.get(key, "last_use_date").toDate();
+        acc.subscriptions       = store.get(key, "subscriptions").toStringList();
         accounts_.push_back(acc);
         DEBUG(str("Account loaded _1", acc.name));
 

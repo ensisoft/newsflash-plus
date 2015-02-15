@@ -46,6 +46,43 @@ namespace app
         Q_OBJECT
 
     public:
+        // different quota types
+        enum class Quota {
+            // quota is not being used
+            none, 
+
+            // quota is a fixed block for example 25gb 
+            // but without any time limit
+            fixed, 
+
+            // quota is per month
+            monthly
+        };
+
+        struct Account {
+            quint32 id;
+            QString name;
+            QString username;
+            QString password;
+            QString generalHost;
+            quint16 generalPort;        
+            QString secureHost;
+            quint16 securePort;
+            bool enableGeneralServer;
+            bool enableSecureServer;
+            bool enableCompression;
+            bool enablePipelining;
+            bool enableLogin;
+            quint64 quotaSpent;
+            quint64 quotaAvail;
+            quint64 downloadsThisMonth;
+            quint64 downloadsAllTime;
+            Quota quotaType;
+            int maxConnections;
+            QDate lastUseDate;
+            QStringList subscriptions;            
+        };
+
         Accounts();
        ~Accounts();
 

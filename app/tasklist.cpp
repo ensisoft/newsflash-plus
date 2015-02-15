@@ -309,7 +309,7 @@ void tasklist::move_to_bottom(QModelIndexList& list)
         if (row < min_index)
             min_index = row;
 
-        for (int j=0; j<distance; ++j)
+        for (unsigned j=0; j<distance; ++j)
             g_engine->moveTaskDown(row + j);
 
         list[i] = index(row + distance, 0);

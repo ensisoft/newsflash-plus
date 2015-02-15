@@ -540,69 +540,54 @@ void MainWindow::focus(MainWidget* ui)
 
 void MainWindow::closeEvent(QCloseEvent* event)
 {
-    DEBUG("Begin shutdown...");
-
     DEBUG("Block signals");
     refresh_timer_.stop();
     refresh_timer_.blockSignals(true);
 
-    ui_.mainTab->blockSignals(true);
-    ui_.mainToolBar->blockSignals(true);
-    ui_.menuBar->blockSignals(true);
+    // try to perform orderly engine shutdown.
+    DlgShutdown dialog(this);
+    dialog.setText(tr("Saving application data..."));
+    dialog.show();
+
+    // first try to persist all the state. this operation is allowed to fail
+    // if it does fail, then ask the user if he wants to continue quitting 
+    // nevertheless or maybe pull back and try to fix the problem.
+    if (!saveState(&dialog))
+    {
+        refresh_timer_.start();
+        refresh_timer_.blockSignals(false);
+        dialog.close();
+        return;
+    }
+
+    dialog.setText(tr("Disconnecting..."));
+
+    // these operations are not allowed to fail.
+
+    DEBUG("Begin shutdown modules...");
 
     for (auto* w : widgets_)
-    {
-        DEBUG(str("Shutting down: _1", w->windowTitle()));
         w->shutdown();
-        DEBUG("Complete!");
-    }
 
     for (auto* m : modules_)
-    {
-        const auto& info = m->getInformation();
-        DEBUG(str("Shutting down module: _1", info.name));
         m->shutdown();
-        DEBUG("Complete");
-    }
 
-    DEBUG("Begin engine shutdown");
-
-    // try to perform orderly engine shutdown.
-    DlgShutdown dlg(this);
-    dlg.setText(tr("Shutting down engine"));
-    dlg.show();    
+    DEBUG("Begin engine shutdown...");
 
     QEventLoop loop;
     QObject::connect(app::g_engine, SIGNAL(shutdownComplete()), &loop, SLOT(quit()));
     if (!app::g_engine->shutdown())
         loop.exec();
 
-    DEBUG("Begin save state");
-
-    if (!saveState(&dlg))
-    {
-        if (QMainWindow::isHidden())
-        {
-            on_actionRestore_triggered();
-        }
-
-        QMessageBox msg(this);
-        msg.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
-        msg.setIcon(QMessageBox::Critical);
-        msg.setText(tr("Failed to save application state.\r\n"
-           "No current session or settings will be saved.\r\n"
-           "Are you sure you want to quit?"));
-        if (msg.exec() == QMessageBox::No)
-        {
-            show("Logs");
-            event->ignore();
-            return;
-        }
-    }
-
-    event->accept();
+    dialog.close();
 
     ui_.mainTab->clear();
+    ui_.mainTab->blockSignals(true);
+    ui_.mainToolBar->blockSignals(true);
+    ui_.menuBar->blockSignals(true);
+
+    event->accept();
+    DEBUG("Shutdown complete!");
 }
 
 void MainWindow::dragEnterEvent(QDragEnterEvent* event)
@@ -673,19 +658,9 @@ bool MainWindow::saveState(DlgShutdown* dlg)
         // is kept in memory and then persisted cleanly into the settings object on save.
         settings_.clear();
 
-        dlg->setText(tr("Saving accounts"));
-
-        if (!app::g_accounts->saveState(settings_))
-            return false;
-
-        dlg->setText(tr("Saving settings"));
-
-        if (!app::g_engine->saveState(settings_))
-            return false;
-
-        dlg->setText(tr("Saving tools"));
+        app::g_accounts->saveState(settings_);
+        app::g_engine->saveState(settings_);
         app::g_tools->savestate(settings_);
-
 
         settings_.set("window", "width", width());
         settings_.set("window", "height", height());
@@ -709,36 +684,31 @@ bool MainWindow::saveState(DlgShutdown* dlg)
         // save widget states
         for (auto* w : widgets_)
         {
-            if (!w->saveState(settings_))
-                return false;
+            w->saveState(settings_);
         }
 
         // save module state
         for (auto* m : modules_)
         {
-            if (!m->saveState(settings_))
-                return false;
+            m->saveState(settings_);
         }
 
         const auto file = app::homedir::file("settings.json");
         const auto err  = settings_.save(file);
         if (err != QFile::NoError)
-        {
-            ERROR(str("Failed to save settings file _1, _2", file, err));
-            return false;
-        }
-
-        return true;
+            ;
     }
     catch (const std::exception& e)
     {
-        QMessageBox msg;
-        msg.setStandardButtons(QMessageBox::Ok);
+        QMessageBox msg(dlg);
+        msg.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
         msg.setIcon(QMessageBox::Critical);
-        msg.setText(tr("Critical error while saving application state:\n\r %1").arg(e.what()));
-        msg.exec();
+        msg.setText(tr("Error while trying to save application state.\r\n%1\r\n"
+                       "Do you want to continue (data might be lost)").arg(e.what()));
+        if (msg.exec() == QMessageBox::No)
+            return false;
     }
-    return false;
+    return true;
 }
 
 void MainWindow::on_mainTab_currentChanged(int index)
@@ -936,7 +906,7 @@ void MainWindow::actionWindowToggleView_triggered()
     Q_ASSERT(index < widgets_.size());
     Q_ASSERT(index < actions_.size());
 
-    auto& widget = widgets_[index];
+    //auto& widget = widgets_[index];
 
     if (visible)
     {

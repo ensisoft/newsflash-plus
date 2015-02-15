@@ -20,28 +20,30 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
+#include <newsflash/config.h>
+
 #include "dlgaccount.h"
 
 namespace gui
 {
 
-DlgAccount::DlgAccount(QWidget* parent, app::Account& acc) : QDialog(parent), acc_(acc)
+DlgAccount::DlgAccount(QWidget* parent, app::Accounts::Account& acc) : QDialog(parent), acc_(acc)
 {
     ui_.setupUi(this);
 
     ui_.edtName->setText(acc_.name);
-    ui_.edtHost->setText(acc_.general_host);
-    ui_.edtPort->setText(QString::number(acc_.general_port));
-    ui_.edtHostSecure->setText(acc_.secure_host);
-    ui_.edtPortSecure->setText(QString::number(acc_.secure_port));
+    ui_.edtHost->setText(acc_.generalHost);
+    ui_.edtPort->setText(QString::number(acc_.generalPort));
+    ui_.edtHostSecure->setText(acc_.secureHost);
+    ui_.edtPortSecure->setText(QString::number(acc_.securePort));
     ui_.edtUsername->setText(acc_.username);
     ui_.edtPassword->setText(acc_.password);
-    ui_.chkCompression->setChecked(acc_.enable_compression);
-    ui_.chkPipelining->setChecked(acc_.enable_pipelining);
-    ui_.grpSecure->setChecked(acc_.enable_secure_server);
-    ui_.grpGeneral->setChecked(acc_.enable_general_server);
-    ui_.grpLogin->setChecked(acc_.enable_login);
-    ui_.maxConnections->setValue(acc_.max_connections);
+    ui_.chkCompression->setChecked(acc_.enableCompression);
+    ui_.chkPipelining->setChecked(acc_.enablePipelining);
+    ui_.grpSecure->setChecked(acc_.enableSecureServer);
+    ui_.grpGeneral->setChecked(acc_.enableGeneralServer);
+    ui_.grpLogin->setChecked(acc_.enableLogin);
+    ui_.maxConnections->setValue(acc_.maxConnections);
 
     ui_.edtName->setFocus();    
 
@@ -68,18 +70,18 @@ void DlgAccount::changeEvent(QEvent* e)
 void DlgAccount::on_btnOK_clicked()
 {
     acc_.name                  = ui_.edtName->text();
-    acc_.enable_general_server = ui_.grpGeneral->isChecked();
-    acc_.enable_secure_server  = ui_.grpSecure->isChecked();
-    acc_.enable_login          = ui_.grpLogin->isChecked();
-    acc_.general_port          = ui_.edtPort->text().toInt();
-    acc_.general_host          = ui_.edtHost->text();
-    acc_.secure_port           = ui_.edtPortSecure->text().toInt();
-    acc_.secure_host           = ui_.edtHostSecure->text();
+    acc_.enableGeneralServer = ui_.grpGeneral->isChecked();
+    acc_.enableSecureServer  = ui_.grpSecure->isChecked();
+    acc_.enableLogin          = ui_.grpLogin->isChecked();
+    acc_.generalPort          = ui_.edtPort->text().toInt();
+    acc_.generalHost          = ui_.edtHost->text();
+    acc_.securePort           = ui_.edtPortSecure->text().toInt();
+    acc_.secureHost           = ui_.edtHostSecure->text();
     acc_.username              = ui_.edtUsername->text();
     acc_.password              = ui_.edtPassword->text();
-    acc_.max_connections       = ui_.maxConnections->value();
-    acc_.enable_compression    = ui_.chkCompression->isChecked();
-    acc_.enable_pipelining     = ui_.chkPipelining->isChecked();
+    acc_.maxConnections       = ui_.maxConnections->value();
+    acc_.enableCompression    = ui_.chkCompression->isChecked();
+    acc_.enablePipelining     = ui_.chkPipelining->isChecked();
 
     if (acc_.name.isEmpty())
     {
@@ -89,36 +91,36 @@ void DlgAccount::on_btnOK_clicked()
 
     // must have either general or secure server enabled
     // otherwise the account is unusable!
-    if (!acc_.enable_general_server && !acc_.enable_secure_server)
+    if (!acc_.enableGeneralServer && !acc_.enableSecureServer)
         return;
 
-    if (acc_.enable_general_server)
+    if (acc_.enableGeneralServer)
     {
-        if (acc_.general_port <= 0)
+        if (acc_.generalPort <= 0)
         {
             ui_.edtPort->setFocus();
             return;
         }
-        if (acc_.general_host.isEmpty())
+        if (acc_.generalHost.isEmpty())
         {
             ui_.edtHost->setFocus();
             return;
         }
     }
-    if (acc_.enable_secure_server)
+    if (acc_.enableSecureServer)
     {
-        if (acc_.secure_port <= 0)
+        if (acc_.securePort <= 0)
         {
             ui_.edtPort->setFocus();
             return;
         }
-        if (acc_.secure_host.isEmpty())
+        if (acc_.secureHost.isEmpty())
         {
             ui_.edtHost->setFocus();
             return;
         }
     }
-    if (acc_.enable_login)
+    if (acc_.enableLogin)
     {
         if (acc_.username.isEmpty())
         {
@@ -131,7 +133,7 @@ void DlgAccount::on_btnOK_clicked()
             return;
         }
     }
-    if (acc_.max_connections < 0)
+    if (acc_.maxConnections < 0)
     {
         ui_.maxConnections->setFocus();
         return;

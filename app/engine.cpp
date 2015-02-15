@@ -118,27 +118,27 @@ Engine::~Engine()
     DEBUG("Engine destroyed");
 }
 
-void Engine::setAccount(const Account& acc)
+void Engine::setAccount(const Accounts::Account& acc)
 {
     newsflash::account a;
     a.id                    = acc.id;
     a.name                  = to_utf8(acc.name);
     a.username              = to_utf8(acc.username);
     a.password              = to_utf8(acc.password);
-    a.secure_host           = to_latin(acc.secure_host);
-    a.secure_port           = acc.secure_port;    
-    a.general_host          = to_latin(acc.general_host);
-    a.general_port          = acc.general_port;    
-    a.enable_compression    = acc.enable_compression;
-    a.enable_pipelining     = acc.enable_pipelining;
-    a.enable_general_server = acc.enable_general_server;
-    a.enable_secure_server  = acc.enable_secure_server;
-    a.connections           = acc.max_connections;
+    a.secure_host           = to_latin(acc.secureHost);
+    a.secure_port           = acc.securePort;    
+    a.general_host          = to_latin(acc.generalHost);
+    a.general_port          = acc.generalPort;    
+    a.enable_compression    = acc.enableCompression;
+    a.enable_pipelining     = acc.enablePipelining;
+    a.enable_general_server = acc.enableGeneralServer;
+    a.enable_secure_server  = acc.enableSecureServer;
+    a.connections           = acc.maxConnections;
 
     engine_->set_account(a);
 }
 
-void Engine::delAccount(const Account& acc)
+void Engine::delAccount(const Accounts::Account& acc)
 {
     // todo:
     //engine_.del(const newsflash::account &acc)
@@ -324,6 +324,9 @@ bool Engine::saveState(Settings& s)
     s.set("engine", "logfiles", logifiles_);
     s.set("engine", "downloads", downloads_);
     s.set("engine", "connect", connect_);
+
+
+    // todo: save engine download state.
     return true;
 }
 
@@ -376,7 +379,11 @@ bool Engine::eventFilter(QObject* object, QEvent* event)
         {
             if (shutdown_)
             {
-                DEBUG("Engine shutdown complete");
+                DEBUG("Shutdown complete");
+                // this signal can actually happen multiple times since
+                // the pump function processes all currently queued state transitions
+                // yet we may have events queued in the application event queue:
+                // this should be completely harmless though.
                 emit shutdownComplete();
             }
         }
@@ -387,6 +394,8 @@ bool Engine::eventFilter(QObject* object, QEvent* event)
 
 void Engine::timerEvent(QTimerEvent* event)
 {
+    if (shutdown_)
+        return;
     // service the engine periodically
     engine_->tick();
 }

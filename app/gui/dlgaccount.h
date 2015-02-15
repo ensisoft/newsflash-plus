@@ -28,7 +28,7 @@
 #  include "ui_dlgaccount.h"
 #include <newsflash/warnpop.h>
 
-#include "../account.h"
+#include "../accounts.h"
 
 namespace gui
 {
@@ -37,7 +37,7 @@ namespace gui
         Q_OBJECT
 
     public:
-        DlgAccount(QWidget* parent, app::Account& acc);
+        DlgAccount(QWidget* parent, app::Accounts::Account& acc);
        ~DlgAccount();
         
     private:
@@ -52,7 +52,7 @@ namespace gui
         Ui::DlgAccount ui_;
 
     private:
-        app::Account& acc_;
+        app::Accounts::Account& acc_;
     };
 
 } // gui

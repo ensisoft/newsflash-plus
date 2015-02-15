@@ -190,7 +190,7 @@ void NewsList::loadListing(const QString& file, quint32 accountId)
     QTextStream stream(&io);
     stream.setCodec("UTF-8");
 
-    const quint32 curVersion = stream.readLine().toUInt();
+    /* const quint32 curVersion  = */ stream.readLine().toUInt();
     const quint32 numGroups  = stream.readLine().toUInt();
 
     quint32 curGroup   = 0;

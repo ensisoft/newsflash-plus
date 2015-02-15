@@ -36,12 +36,12 @@
 #include <string>
 #include "platform.h"
 #include "format.h"
+#include "accounts.h"
 
 class QEvent;
 
 namespace app
 {
-    class Account;
     class Settings;
     struct NZBContent;
 
@@ -91,10 +91,10 @@ namespace app
        ~Engine();
 
         // set/modify account in the engine.
-        void setAccount(const Account& acc);
+        void setAccount(const Accounts::Account& acc);
 
         // delete an account.
-        void delAccount(const Account& acc);
+        void delAccount(const Accounts::Account& acc);
 
         // set the current fill account.
         void setFillAccount(quint32 id);
