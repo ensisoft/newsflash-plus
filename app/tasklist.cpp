@@ -47,7 +47,6 @@ const char* str(states s)
         case states::waiting: return "Waiting";
         case states::active: return "Active";
         case states::paused: return "Paused";
-        case states::finalize: return "Finalize";
         case states::complete: return "Complete";
         case states::error: return "Error";
     }
@@ -134,8 +133,6 @@ QVariant tasklist::data(const QModelIndex& index, int role) const
                 return QIcon("icons:ico_task_active.png");
             case states::paused: 
                 return QIcon("icons:ico_task_paused.png");   
-            case states::finalize:
-                return QIcon("icons:ico_task_finalize.png");                             
             case states::complete: 
                 if (ui.error.any_bit())
                     return QIcon("icons:ico_task_damaged.png");

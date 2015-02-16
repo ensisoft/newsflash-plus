@@ -42,6 +42,7 @@ namespace newsflash
         // some binary content.
         // set to false to have the text data stored to the disk.
         bool discard_text_content;
+     
     };
     
 } // newsflash

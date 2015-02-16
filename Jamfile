@@ -81,6 +81,10 @@ lib qjson  : : <name>qjson <search>"qjson/lib/" ;
 # compression library
 lib zlib   : : <name>zlib <search>"zlib/lib" ;
 
+
+# googles protobuf 
+lib protobuf : : <name>protobuf ;
+
 # python. we want to be able to debug into python also
 # hence the debug and release versions
 # note that even though we build python with boost.build 

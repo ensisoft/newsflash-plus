@@ -61,6 +61,25 @@ void unit_test_overwrite()
     delete_file("(2) datafile");    
 }
 
+void unit_test_append()
+{
+    delete_file("datafile");
+
+    // open first file
+    {
+//        newsflash::datafile file("", "datafile", 0, false, false, false);
+//        BOOST_REQUIRE(file.name() == "datafile");
+    }
+
+    // open again for append
+    {
+//        newsflash::datafile file("", "datafile", 0, false, false, true); 
+//        BOOST_REQUIRE(file.name() == "datafile");
+    }
+
+    delete_file("datafile");
+}
+
 void unit_test_discard()
 {
     delete_file("datafile"); 
@@ -113,6 +132,7 @@ void unit_test_discard()
 int test_main(int, char*[])
 {
     unit_test_overwrite();
+    unit_test_append();
     unit_test_discard();
 
     return 0;

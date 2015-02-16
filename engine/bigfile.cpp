@@ -65,7 +65,7 @@ struct bigfile::impl {
             NULL);
         if (file == INVALID_HANDLE_VALUE)
             throw std::system_error(GetLastError(), std::system_category(),
-                "open file failed: " + filename);
+                "file open failed: " + filename);
 
         // make the handle non-inheritable so that any child processes 
         // that get started by this process do not have these files open

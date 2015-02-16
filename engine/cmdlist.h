@@ -29,6 +29,7 @@
 #include <string>
 #include "session.h"
 #include "buffer.h"
+#include "assert.h"
 
 namespace newsflash
 {
@@ -126,7 +127,8 @@ namespace newsflash
             }
             else if (cmdtype_ == type::groupinfo)
             {
-                ses.change_group(groups_.at(0));
+                ASSERT(!groups_.empty());
+                ses.change_group(groups_[0]);
             }
             else
             {
@@ -184,6 +186,8 @@ namespace newsflash
         type cmdtype() const 
         { return cmdtype_; }
 
+        // cancel the cmdlist. the cmdlist is to be discarded.
+        // i.e. the task has been cancelled.
         void cancel()
         { cancelbit_ = true; }
         
@@ -192,6 +196,9 @@ namespace newsflash
 
         bool is_good() const 
         { return !failbit_; }
+
+        bool is_empty() const 
+        { return buffers_.empty(); }
 
         void set_account(std::size_t aid)
         { account_ = aid; }

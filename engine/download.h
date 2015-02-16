@@ -42,9 +42,10 @@ namespace newsflash
             std::string path, std::string name);
        ~download();
 
-        virtual std::unique_ptr<cmdlist> create_commands() override;
-        virtual std::unique_ptr<action> kill() override;
-        virtual std::unique_ptr<action> finalize() override;
+        virtual std::shared_ptr<cmdlist> create_commands() override;
+
+        virtual void cancel() override;
+        virtual void commit() override;
 
         virtual void complete(action& act,
             std::vector<std::unique_ptr<action>>& next) override;
@@ -59,10 +60,22 @@ namespace newsflash
         virtual bool has_commands() const override
         { return !articles_.empty(); }
 
+        void add_file(std::shared_ptr<datafile> file)
+        {
+            files_.push_back(file);           
+        }
+
         const 
         std::vector<std::shared_ptr<datafile>>& files() const 
         { return files_; }
 
+        const 
+        std::vector<std::string>& groups() const 
+        { return groups_; }
+
+        const 
+        std::vector<std::string>& articles() const 
+        { return articles_; }
     private:
         std::vector<std::string> groups_;
         std::vector<std::string> articles_;
@@ -73,8 +86,8 @@ namespace newsflash
         std::size_t num_commands_total_;
         std::size_t num_bytes_done_;
     private:
-        bool enable_overwrite_;
-        bool enable_discardtext_;
+        bool overwrite_;
+        bool discardtext_;
     };
 
 } // newsflash

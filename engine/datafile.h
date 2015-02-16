@@ -76,6 +76,20 @@ namespace newsflash
             std::shared_ptr<datafile> file_;
         };
 
+        // open datafile to an existing file
+        datafile(std::string filepath, std::string filename, std::string dataname, 
+            bool bin) : filepath_(std::move(filepath)), filename_(std::move(filename)), dataname_(std::move(dataname)),
+        binary_(bin)
+        {
+            big_.open(fs::joinpath(filepath_, filename_));
+
+        #ifdef NEWSFLASH_DEBUG
+            num_writes_ = 0;
+        #endif
+        }
+
+
+        // create a new data file possibly overwriting existing files.
         datafile(std::string path, std::string binaryname, std::size_t size, bool bin, bool overwrite) : discard_(false), binary_(bin), finalsize_(0)
         {
             std::string file;
@@ -91,7 +105,8 @@ namespace newsflash
                     continue;
 
                 // todo: there's a race condition between the call to exists and the open below.
-                big_.open(file, bigfile::o_create);
+
+                big_.open(file, bigfile::o_create | bigfile::o_truncate);
                 if (size)
                 {
                     const auto error = bigfile::resize(file, size);
@@ -103,9 +118,9 @@ namespace newsflash
             if (!big_.is_open())
                 throw std::runtime_error("unable to create file at: " + path);
 
-            path_ = path;
-            name_ = name;
-            binary_name_ = binaryname;
+            filepath_ = path;
+            filename_ = name;
+            dataname_ = binaryname;
         #ifdef NEWSFLASH_DEBUG
             num_writes_ = 0;
         #endif
@@ -128,7 +143,7 @@ namespace newsflash
 
             big_.close();
             if (discard_)
-                bigfile::erase(fs::joinpath(path_, name_));
+                bigfile::erase(fs::joinpath(filepath_, filename_));
         }
 
         void discard_on_close()
@@ -137,14 +152,14 @@ namespace newsflash
         std::uint64_t size() const 
         { return finalsize_; }
                     
-        const std::string& name() const
-        { return name_; }
+        const std::string& filename() const
+        { return filename_; }
 
-        const std::string& path() const 
-        { return path_; }
+        const std::string& filepath() const 
+        { return filepath_; }
 
         const std::string& binary_name() const 
-        { return binary_name_; }
+        { return dataname_; }
 
         bool is_binary() const 
         { return binary_; }
@@ -157,9 +172,9 @@ namespace newsflash
 
         bigfile big_;
         std::atomic<bool> discard_;
-        std::string path_;
-        std::string name_;
-        std::string binary_name_;
+        std::string filepath_;
+        std::string filename_;
+        std::string dataname_;
         bool binary_;
     #ifdef NEWSFLASH_DEBUG
         std::atomic<std::size_t> num_writes_;

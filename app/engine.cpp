@@ -31,7 +31,7 @@
 #  include <QDir>
 #  include <QBuffer>
 #include <newsflash/warnpop.h>
-#include <newsflash/engine/account.h>
+#include <newsflash/engine/ui/account.h>
 #include <newsflash/engine/nntp.h>
 
 #if defined(WINDOWS_OS)
@@ -120,7 +120,7 @@ Engine::~Engine()
 
 void Engine::setAccount(const Accounts::Account& acc)
 {
-    newsflash::account a;
+    newsflash::ui::account a;
     a.id                    = acc.id;
     a.name                  = to_utf8(acc.name);
     a.username              = to_utf8(acc.username);
@@ -306,9 +306,11 @@ void Engine::loadState(Settings& s)
     engine_->set_throttle(throttle);
     engine_->set_throttle_value(throttleval);
     engine_->set_prefer_secure(secure);
+
+
 }
 
-bool Engine::saveState(Settings& s)
+void Engine::saveState(Settings& s)
 {
     const auto overwrite = engine_->get_overwrite_existing_files();
     const auto discard   = engine_->get_discard_text_content();
@@ -324,10 +326,35 @@ bool Engine::saveState(Settings& s)
     s.set("engine", "logfiles", logifiles_);
     s.set("engine", "downloads", downloads_);
     s.set("engine", "connect", connect_);
+}
 
+void Engine::loadSession()
+{
+    DEBUG("Loading engine session...");
+    try
+    {
+        const auto& file = homedir::file("session.bin");
+        if (QFileInfo(file).exists())
+        {
+            engine_->load_session(to_utf8(file));
+            if (engine_->num_tasks())
+                connect(connect_);
+        }
+        DEBUG(str("Engine session loaded. Engine has _1 tasks", engine_->num_tasks()));
+    }
+    catch (const std::exception& e)
+    {
+        ERROR(str("Failed to load previous session: '_1'", e.what()));
+    }
+}
 
-    // todo: save engine download state.
-    return true;
+void Engine::saveSession()
+{
+    const auto& file = homedir::file("session.bin");
+
+    DEBUG(str("Saving engine session in _1", file));
+
+    engine_->save_session(to_utf8(file));
 }
 
 void Engine::connect(bool on_off)
@@ -402,20 +429,9 @@ void Engine::timerEvent(QTimerEvent* event)
 
 void Engine::onError(const newsflash::ui::error& e)
 {
-    const auto resource = from_utf8(e.resource);
-    const auto code = e.code;
-
-    if (code)
-    {
-        std::stringstream ss;
-        ss << code;
-
-        ERROR(str("_1 _2", resource, ss.str()));
-    }
-    else
-    {
-        ERROR(str("_1 _2", resource, e.what));
-    }
+    //const auto resource = from_utf8(e.resource);
+    //const auto code = e.code;
+    ERROR(str("_1", e.what));
 }
 
 void Engine::onFileComplete(const newsflash::ui::file& f)

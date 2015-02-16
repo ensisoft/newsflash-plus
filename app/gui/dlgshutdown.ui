@@ -18,6 +18,16 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
+    <widget class="QLabel" name="lblBye">
+     <property name="text">
+      <string>Thank you for using %1.</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+   </item>
+   <item>
     <widget class="QLabel" name="lblAction">
      <property name="layoutDirection">
       <enum>Qt::LeftToRight</enum>

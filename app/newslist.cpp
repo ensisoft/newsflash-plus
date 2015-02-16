@@ -184,8 +184,8 @@ void NewsList::loadListing(const QString& file, quint32 accountId)
         return;
     }
 
-    const auto& account  = g_accounts->findAccount(accountId);
-    const auto& newslist = account.subscriptions;
+    const auto* account  = g_accounts->findAccount(accountId);
+    const auto& newslist = account->subscriptions;
 
     QTextStream stream(&io);
     stream.setCodec("UTF-8");
@@ -384,9 +384,10 @@ void NewsList::setAccountSubscriptions(quint32 accountId)
             list << group.name;
     }
 
-    auto& account = g_accounts->findAccount(accountId);
+    auto* account = g_accounts->findAccount(accountId);
+    Q_ASSERT(account);
 
-    account.subscriptions = list;
+    account->subscriptions = list;
 }
 
 } // app

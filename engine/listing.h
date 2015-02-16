@@ -44,7 +44,7 @@ namespace newsflash
         listing() : run_once_(true)
         {}
 
-        virtual std::unique_ptr<cmdlist> create_commands() override;
+        virtual std::shared_ptr<cmdlist> create_commands() override;
 
         virtual void complete(cmdlist& cmd, 
             std::vector<std::unique_ptr<action>>& actions) override;

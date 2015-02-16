@@ -30,6 +30,8 @@
 
 namespace newsflash
 {
+    namespace ui {
+
     // news account
     struct account 
     {
@@ -75,4 +77,5 @@ namespace newsflash
         bool enable_pipelining;
     };
 
+    } // ui
 }// engine

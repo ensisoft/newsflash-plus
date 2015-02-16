@@ -50,14 +50,14 @@ download::download(std::vector<std::string> groups, std::vector<std::string> art
     num_commands_done_  = 0;
     num_commands_total_ = articles_.size();
     num_bytes_done_     = 0;
-    enable_overwrite_   = false;
-    enable_discardtext_ = false;
+    overwrite_   = false;
+    discardtext_ = false;
 }
 
 download::~download()
 {}
 
-std::unique_ptr<cmdlist> download::create_commands()
+std::shared_ptr<cmdlist> download::create_commands()
 {
     if (articles_.empty())
         return nullptr;
@@ -82,12 +82,11 @@ std::unique_ptr<cmdlist> download::create_commands()
     m.groups  = groups_;
     m.numbers = std::move(next);
 
-    std::unique_ptr<cmdlist> cmd(new cmdlist(std::move(m)));
-
+    auto cmd = std::make_shared<cmdlist>(std::move(m));
     return cmd;
 }
 
-std::unique_ptr<action> download::kill()
+void download::cancel()
 {
     // there might be pending operations on the files (writes)
     // but if the task is being killed we simply reduce those 
@@ -96,15 +95,16 @@ std::unique_ptr<action> download::kill()
     for (auto& f : files_)
         f->discard_on_close();
 
-    return nullptr;
+    files_.clear();
 }
 
-std::unique_ptr<action> download::finalize()
+void download::commit()
 {
+    // release our file handles so that we dont keep the file objects
+    // open anymore needlessly. yet we keep the file objects around
+    // since our other data is stored there.
     for (auto& f : files_)
         f->close();
-
-    return nullptr;
 }
 
 void download::complete(action& act, std::vector<std::unique_ptr<action>>& next)
@@ -124,7 +124,7 @@ void download::complete(action& act, std::vector<std::unique_ptr<action>>& next)
         if (name.empty())
             throw std::runtime_error("binary has no name");
 
-        const auto size   = dec->get_binary_size();
+        const auto size = dec->get_binary_size();
 
         // see comment in datafile about the +1 for offset
         const auto offset = dec->get_encoding() == encoding::yenc_multi ?
@@ -138,7 +138,7 @@ void download::complete(action& act, std::vector<std::unique_ptr<action>>& next)
             });
         if (it == std::end(files_))
         {
-            file = std::make_shared<datafile>(path_, name, size, true, enable_overwrite_);
+            file = std::make_shared<datafile>(path_, name, size, true, overwrite_);
             files_.push_back(file);
         } 
         else 
@@ -151,7 +151,7 @@ void download::complete(action& act, std::vector<std::unique_ptr<action>>& next)
         next.push_back(std::move(write));
     }
 
-    if (!text.empty() && !enable_discardtext_)
+    if (!text.empty() && !discardtext_)
     {
         std::shared_ptr<datafile> file;
 
@@ -162,7 +162,7 @@ void download::complete(action& act, std::vector<std::unique_ptr<action>>& next)
 
         if (it == std::end(files_))
         {
-            file = std::make_shared<datafile>(path_, name_, 0, false, enable_overwrite_);
+            file = std::make_shared<datafile>(path_, name_, 0, false, overwrite_);
             files_.push_back(file);
         }
         else file = *it;
@@ -206,8 +206,8 @@ void download::complete(cmdlist& cmd, std::vector<std::unique_ptr<action>>& next
 
 void download::configure(const settings& s) 
 {
-    enable_overwrite_   = s.overwrite_existing_files;
-    enable_discardtext_ = s.discard_text_content;
+    overwrite_   = s.overwrite_existing_files;
+    discardtext_ = s.discard_text_content;
 }
 
 double download::completion() const 

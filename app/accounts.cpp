@@ -111,8 +111,8 @@ const Accounts::Account* Accounts::getFillAccount() const
     if (fillAccount_ == 0)
         return nullptr;
 
-    auto& fill = findAccount(fillAccount_);
-    return &fill;
+    auto* fill = findAccount(fillAccount_);
+    return fill;
 }
 
 const Accounts::Account* Accounts::getMainAccount() const
@@ -126,52 +126,57 @@ const Accounts::Account* Accounts::getMainAccount() const
     if (mainAccount_ == 0)
         return nullptr;
 
-    auto& main = findAccount(mainAccount_);
-    return &main;
+    auto* main = findAccount(mainAccount_);
+    return main;
 }
 
-Accounts::Account& Accounts::findAccount(quint32 accountId)
+Accounts::Account* Accounts::findAccount(quint32 accountId)
 {
     auto it = std::find_if(std::begin(accounts_), std::end(accounts_),
         [=](const Account& a) {
             return a.id == accountId;
         });
-    Q_ASSERT(it != std::end(accounts_));
+    if (it == std::end(accounts_))
+        return nullptr;
 
-    return *it;
+    return &(*it);
 }
 
-Accounts::Account& Accounts::findAccount(const QString& name)
+Accounts::Account* Accounts::findAccount(const QString& name)
 {
     auto it = std::find_if(std::begin(accounts_), std::end(accounts_),
         [=](const Account& a) { 
             return a.name == name; 
         });
-    Q_ASSERT(it != std::end(accounts_));
+    if (it == std::end(accounts_))
+        return nullptr;
 
-    return *it;
+    return &(*it);
 }
 
-const Accounts::Account& Accounts::findAccount(quint32 accountId) const
+const Accounts::Account* Accounts::findAccount(quint32 accountId) const
 {
     auto it = std::find_if(std::begin(accounts_), std::end(accounts_),
         [=](const Account& a) {
             return a.id == accountId;
         });
-    Q_ASSERT(it != std::end(accounts_));
+    if (it == std::end(accounts_))
+        return nullptr;
 
-    return *it;
+    return &(*it);
 }
 
-const Accounts::Account& Accounts::findAccount(const QString& name) const
+const Accounts::Account* Accounts::findAccount(const QString& name) const
 {
     auto it = std::find_if(std::begin(accounts_), std::end(accounts_),
         [=](const Account& a) { 
             return a.name == name; 
         });
-    Q_ASSERT(it != std::end(accounts_));
+    if (it == std::end(accounts_))
+        return nullptr;
 
-    return *it;
+    return &(*it);
+
 }
 
 void Accounts::delAccount(std::size_t index)
@@ -318,8 +323,9 @@ bool Accounts::saveState(Settings& store) const
 
     if (mainAccount_)
     {
-        const auto& main = findAccount(mainAccount_);
-        store.set("accounts", "main", main.name);
+        const auto* main = findAccount(mainAccount_);
+        Q_ASSERT(main);
+        store.set("accounts", "main", main->name);
     }
     else
     {
@@ -327,8 +333,9 @@ bool Accounts::saveState(Settings& store) const
     }
     if (fillAccount_)
     {
-        const auto& fill = findAccount(fillAccount_);
-        store.set("accounts", "fill", fill.name);
+        const auto* fill = findAccount(fillAccount_);
+        Q_ASSERT(fill);
+        store.set("accounts", "fill", fill->name);
     }
     else
     {
@@ -370,23 +377,28 @@ void Accounts::loadState(Settings& store)
 
         g_engine->setAccount(acc);
     }
+    mainAccount_ = 0;
+    fillAccount_ = 0;
 
     const auto& main = store.get("accounts", "main", "");
     const auto& fill = store.get("accounts", "fill", "");
     if (!main.isEmpty())
     {
-        const auto& m = findAccount(main);
-        mainAccount_ = m.id;
-        DEBUG(str("Main Account is _1", main));
+        const auto* m = findAccount(main);
+        if (m) {
+            mainAccount_ = m->id;
+            DEBUG(str("Main Account is _1", main));
+        }
     }
 
     if (!fill.isEmpty())
     {
-        const auto& m = findAccount(fill);
-        fillAccount_  = m.id;
-        g_engine->setFillAccount(fillAccount_);
-
-        DEBUG(str("Fill Account is _1", fill));
+        const auto* f = findAccount(fill);
+        if (f) {
+            fillAccount_  = f->id;
+            g_engine->setFillAccount(fillAccount_);
+            DEBUG(str("Fill Account is _1", fill));            
+        }
     }
 
     QAbstractItemModel::reset();

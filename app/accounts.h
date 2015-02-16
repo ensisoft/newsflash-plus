@@ -102,12 +102,12 @@ namespace app
         const Account* getMainAccount() const;
 
         const 
-        Account& findAccount(quint32 accountId) const;
-        Account& findAccount(quint32 accountId);
+        Account* findAccount(quint32 accountId) const;
+        Account* findAccount(quint32 accountId);
 
         const 
-        Account& findAccount(const QString& name) const;
-        Account& findAccount(const QString& name);
+        Account* findAccount(const QString& name) const;
+        Account* findAccount(const QString& name);
 
         // delete the account at index 
         void delAccount(std::size_t index);

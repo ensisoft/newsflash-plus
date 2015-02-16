@@ -44,6 +44,7 @@ namespace gui
             ui_.setupUi(this);
             ui_.progressBar->setValue(0);
             ui_.progressBar->setRange(0, 0);
+            ui_.lblBye->setText(tr("Thank you for using %1.").arg(NEWSFLASH_TITLE));
 
             const auto flags = windowFlags();
 

@@ -195,6 +195,7 @@ void unit_test_performance()
         std::cout << "Reading with filemap Time spent (ms): " << ms.count() << std::endl;        
     }
 
+    
 }
 
 int test_main(int, char*[])

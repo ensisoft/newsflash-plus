@@ -28,14 +28,15 @@
 #include "listing.h"
 #include "buffer.h"
 #include "cmdlist.h"
+#include "assert.h"
 
 namespace newsflash
 {
 
 
-std::unique_ptr<cmdlist> listing::create_commands()
+std::shared_ptr<cmdlist> listing::create_commands()
 {
-    std::unique_ptr<cmdlist> cmd(new cmdlist(cmdlist::listing{}));
+    std::shared_ptr<cmdlist> cmd(new cmdlist(cmdlist::listing{}));
     run_once_ = false;
     return cmd;
 }
@@ -43,8 +44,15 @@ std::unique_ptr<cmdlist> listing::create_commands()
 void listing::complete(cmdlist& cmd, 
     std::vector<std::unique_ptr<action>>& actions)
 {
+    if (cmd.is_canceled() || cmd.is_empty())
+    {
+        run_once_ = false;
+        return;
+    }
+
     auto& contents = cmd.get_buffers();
-    auto& listing  = contents.at(0);
+    ASSERT(!contents.empty());
+    auto& listing  = contents[0];
 
     nntp::linebuffer lines(listing.content(), listing.content_length());
 

@@ -89,7 +89,7 @@ void DlgMovie::lookupReady(const QString& title)
     ss << "IMDb Score: " << QString::number(movie->rating) << "<br>";
     ss << "<br>";
     ss << movie->plot;
-    ss << QString("<br><a href=http://www.imdb.com/%1>more ...</a>").arg(movie->imdbid);
+    ss << QString("<br><a href=http://www.imdb.com/title/%1>more ...</a>").arg(movie->imdbid);
     ui_.textEdit->setText(ss.join(""));
 }
 

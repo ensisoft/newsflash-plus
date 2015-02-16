@@ -169,6 +169,9 @@ namespace newsflash
         // execute the given cmdlist
         std::unique_ptr<action> execute(std::shared_ptr<cmdlist> cmd, std::size_t tid);
 
+        // cancel a pending operation in the connection such as connecting
+        // or executing a cmdlist. note that if the operation is excute
+        // cancelling the connection does not cancel the cmdlist!
         void cancel();
 
         // some getters

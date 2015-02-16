@@ -41,33 +41,17 @@ namespace newsflash
     public:
         virtual ~task() = default;
 
-        virtual std::unique_ptr<cmdlist> create_commands() = 0;
+        virtual std::shared_ptr<cmdlist> create_commands() = 0;
 
-        virtual std::unique_ptr<action> start() 
-        {
-            return nullptr;
-        }
-
-        // kill the task. if the task is not complete then this has the effect
+        // cancel the task. if the task is not complete then this has the effect
         // of canceling all the work that has been done, for example removing
         // any files created on the filesystem etc. if task is complete then
         // simply the non-persistent data is cleaned away. 
         // after this call returns the object can be deleted.
-        virtual std::unique_ptr<action> kill() 
-        {
-            return nullptr;
-        }
+        virtual void cancel() {}
 
-        // flush task intermediate state to the disk and make it permanent.
-        virtual std::unique_ptr<action> flush() 
-        {
-            return nullptr;
-        }
-
-        virtual std::unique_ptr<action> finalize() 
-        {
-            return nullptr;
-        }
+        // commit our completed task.
+        virtual void commit() {}
 
         // complete the action. create actions (if any) and store
         // them in the next list

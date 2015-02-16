@@ -27,6 +27,7 @@
 #include <functional>
 #include <memory>
 #include <deque>
+#include "ui/account.h"
 #include "ui/task.h"
 #include "ui/connection.h"
 #include "ui/download.h"
@@ -34,7 +35,6 @@
 #include "ui/file.h"
 #include "ui/batch.h"
 #include "ui/listing.h"
-#include "account.h"
 
 namespace newsflash
 {
@@ -66,7 +66,7 @@ namespace newsflash
        ~engine();
 
         // set or modify an account.
-        void set_account(const account& acc);
+        void set_account(const ui::account& acc);
 
         // delete the account identified by the id.
         void del_account(std::size_t id);
@@ -100,6 +100,10 @@ namespace newsflash
 
         // stop the engine. kill all connections and stop all processing.
         void stop();
+
+        void save_session(const std::string& file);
+
+        void load_session(const std::string& file);
 
         // set the error callback.
         void set_error_callback(on_error error_callback);
@@ -199,6 +203,9 @@ namespace newsflash
         void move_task_down(std::size_t index);
 
         void kill_batch(batch_id_t id);
+
+        std::size_t num_tasks() const;
+
 
     private:
         class task;

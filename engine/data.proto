@@ -1,0 +1,50 @@
+
+package newsflash.data;
+
+message Account {
+    required uint32 id = 1;
+    required string name = 2;
+    required string user = 3;
+    required string pass = 4;
+    required string secure_host = 5;
+    required uint32 secure_port = 6;    
+    required string general_host = 7;
+    required uint32 general_port = 8;    
+    required uint32 max_connections = 9;
+    required bool enable_secure_server = 10;
+    required bool enable_general_server = 11;
+    required bool enable_pipelining = 12;
+}
+
+message File {
+    required string filename = 1;
+    required string filepath = 2;
+    required string dataname = 3;
+    required bool is_binary  = 4;
+}
+
+message Download {
+    required uint32 account_id = 1;
+    required uint32 batch_id   = 2;
+    required uint32 task_id    = 3;
+    required string name       = 4;
+    required uint64 size       = 5;
+    repeated string article    = 6;
+    repeated string group      = 7;
+    repeated File file         = 8;
+}
+
+message Batch {
+    required uint32 account_id = 1;
+    required uint32 batch_id   = 2;
+    required string path       = 3;    
+    required string desc       = 4;
+    required uint64 size       = 5;
+}
+
+message TaskList {
+    required uint32 current_id = 1;
+    repeated Account account   = 2;
+    repeated Batch batch       = 3;
+    repeated Download download = 4;
+}

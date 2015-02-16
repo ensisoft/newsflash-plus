@@ -61,7 +61,6 @@ namespace newsflash
             // paused by the user
             paused,
 
-            finalize,
 
             // task is done. see damaged and error flags for details
             complete,
@@ -79,10 +78,10 @@ namespace newsflash
         states state;
 
         // unique task id.
-        std::size_t id;
+        std::size_t task_id;
 
-        // batch id
-        std::size_t bid;
+        // the batch id of the task
+        std::size_t batch_id;
 
         // account id
         std::size_t account;

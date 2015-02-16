@@ -178,8 +178,8 @@ void MainWindow::loadState()
 {
     // load global objects state.
     app::g_accounts->loadState(settings_);
+    app::g_tools->loadstate(settings_);    
     app::g_engine->loadState(settings_);
-    app::g_tools->loadstate(settings_);
 
     if (!settings_.contains("window", "width"))
     {
@@ -236,6 +236,8 @@ void MainWindow::loadState()
 
     for (auto* m : modules_)
         m->loadState(settings_);
+
+    app::g_engine->loadSession();
 }
 
 void MainWindow::showWidget(const QString& name)
@@ -546,21 +548,32 @@ void MainWindow::closeEvent(QCloseEvent* event)
 
     // try to perform orderly engine shutdown.
     DlgShutdown dialog(this);
-    dialog.setText(tr("Saving application data..."));
+    dialog.setText(tr("Disconnecting..."));
     dialog.show();
 
-    // first try to persist all the state. this operation is allowed to fail
+    // first shutdown the engine, and cease all event processing.
+    // once that is done we can take a snapshot of the current engine state
+    // and save it somewhere in order to continue from the same state on the
+    // next application run. secondly we save all the other application data.
+    DEBUG("Begin engine shutdown...");
+
+    QEventLoop loop;
+    QObject::connect(app::g_engine, SIGNAL(shutdownComplete()), &loop, SLOT(quit()));
+    if (!app::g_engine->shutdown())
+       loop.exec();
+
+    dialog.setText(tr("Saving application data..."));
+
+    // now try to persist all the state. this operation is allowed to fail.
     // if it does fail, then ask the user if he wants to continue quitting 
-    // nevertheless or maybe pull back and try to fix the problem.
     if (!saveState(&dialog))
     {
         refresh_timer_.start();
         refresh_timer_.blockSignals(false);
         dialog.close();
+        event->ignore();
         return;
     }
-
-    dialog.setText(tr("Disconnecting..."));
 
     // these operations are not allowed to fail.
 
@@ -572,12 +585,6 @@ void MainWindow::closeEvent(QCloseEvent* event)
     for (auto* m : modules_)
         m->shutdown();
 
-    DEBUG("Begin engine shutdown...");
-
-    QEventLoop loop;
-    QObject::connect(app::g_engine, SIGNAL(shutdownComplete()), &loop, SLOT(quit()));
-    if (!app::g_engine->shutdown())
-        loop.exec();
 
     dialog.close();
 
@@ -696,7 +703,9 @@ bool MainWindow::saveState(DlgShutdown* dlg)
         const auto file = app::homedir::file("settings.json");
         const auto err  = settings_.save(file);
         if (err != QFile::NoError)
-            ;
+            throw std::runtime_error("failed to save settings in settings.json");
+
+        app::g_engine->saveSession();
     }
     catch (const std::exception& e)
     {

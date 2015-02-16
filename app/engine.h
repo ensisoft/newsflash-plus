@@ -108,7 +108,10 @@ namespace app
         quint32 retrieveNewsgroupListing(quint32 acc);
 
         void loadState(Settings& s);
-        bool saveState(Settings& s);
+        void saveState(Settings& s);
+
+        void loadSession();
+        void saveSession();
 
         void connect(bool on_off);
 

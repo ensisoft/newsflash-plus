@@ -44,6 +44,7 @@
 #include "settings.h"
 #include "datafile.h"
 #include "listing.h"
+#include "data.pb.h"
 
 namespace newsflash
 {
@@ -59,7 +60,6 @@ const char* str(ui::task::states s)
         CASE(state::waiting);
         CASE(state::active);
         CASE(state::paused);
-        CASE(state::finalize);
         CASE(state::complete);
         CASE(state::error);
     }
@@ -91,7 +91,7 @@ struct engine::state {
     std::deque<std::unique_ptr<engine::task>> tasks;
     std::deque<std::unique_ptr<engine::conn>> conns;
     std::deque<std::unique_ptr<engine::batch>> batches;
-    std::vector<account> accounts;
+    std::vector<ui::account> accounts;
     std::list<std::shared_ptr<cmdlist>> cmds;
     std::uint64_t bytes_downloaded;
     std::uint64_t bytes_queued;
@@ -130,10 +130,10 @@ struct engine::state {
         set_thread_log(nullptr);
     }
 
-    const account& find_account(std::size_t id) const 
+    const ui::account& find_account(std::size_t id) const 
     {
         auto it = std::find_if(accounts.begin(), accounts.end(),
-            [=](const account& a) {
+            [=](const ui::account& a) {
                 return a.id == id;
             });
         if (it == std::end(accounts))
@@ -542,47 +542,46 @@ public:
     //constexpr static auto no_transition = transition{states::queued, states::queued};
     const static transition no_transition;
 
+
     task(std::size_t aid, std::size_t tid, std::size_t bid, std::uint64_t size, 
         std::string desc, std::unique_ptr<newsflash::task> task) : task_(std::move(task))
     {
         ui_.state      = states::queued;
-        ui_.id         = tid;
-        ui_.bid        = bid;
+        ui_.task_id    = tid;
+        ui_.batch_id   = bid;
         ui_.account    = aid;
         ui_.desc       = desc;
         ui_.size       = size;
         ui_.runtime    = 0;
         ui_.etatime    = 0;
         ui_.completion = 0.0;
-        started_       = false;
         num_active_cmdlists_ = 0;
         num_active_actions_  = 0;
         num_complete_bytes_  = size;
-
-        LOG_I("Task ", ui_.id, " (", ui_.desc, ") created");
+        LOG_I("Task ", ui_.task_id, " (", ui_.desc, ") created");
     }
 
    ~task()
     {
-        LOG_I("Task ", ui_.id, " deleted");
+        LOG_I("Task ", ui_.task_id, " deleted");
     }
 
     void kill(engine::state& state)
     {
-        LOG_D("Task ", ui_.id, " kill");
+        LOG_D("Task ", ui_.task_id, " kill");
 
         if (ui_.state != states::complete)
         {
             auto it = std::stable_partition(std::begin(state.cmds), std::end(state.cmds),
                 [&](const std::shared_ptr<cmdlist>& cmd) {
-                    return cmd->task() != ui_.id;
+                    return cmd->task() != ui_.task_id;
                 });
 
             for (auto i=it; i != std::end(state.cmds); ++i)
                 (*i)->cancel();
 
-            if (task_)
-                do_action(state, task_->kill());
+            ASSERT(task_);
+            task_->cancel();
 
             state.bytes_queued -= ui_.size;
         }
@@ -597,8 +596,7 @@ public:
     void tick(engine::state& state, const std::chrono::milliseconds& elapsed)
     {
         // todo: actually measure the time
-        if (ui_.state == states::active ||
-            ui_.state == states::finalize)
+        if (ui_.state == states::active)
             ui_.runtime++;
     }
 
@@ -617,23 +615,22 @@ public:
     {
         if (ui_.state == states::complete || 
             ui_.state == states::error ||
-            ui_.state == states::paused ||
-            ui_.state == states::finalize)
+            ui_.state == states::paused)
             return no_transition;
 
-        std::unique_ptr<cmdlist> unique(task_->create_commands());
-        std::shared_ptr<cmdlist> shared(unique.release());
-        shared->set_account(ui_.account);
-        shared->set_task(ui_.id);
-        state.enqueue(*this, shared);
-        ++num_active_cmdlists_;
+        auto cmds = task_->create_commands();
+        cmds->set_account(ui_.account);
+        cmds->set_task(ui_.task_id);
+        state.enqueue(*this, cmds);
+
+        num_active_cmdlists_++;
 
         return goto_state(state, states::active);
     }
 
     transition complete(engine::state& state, std::shared_ptr<cmdlist> cmds)
     {
-        --num_active_cmdlists_;
+        num_active_cmdlists_--;
 
         if (ui_.state == states::error)
             return no_transition;
@@ -691,7 +688,7 @@ public:
 
     transition pause(engine::state& state)
     {
-        LOG_D("Task ", ui_.id, " pause");
+        LOG_D("Task ", ui_.task_id, " pause");
 
         if (ui_.state == states::paused ||
             ui_.state == states::error ||
@@ -700,7 +697,7 @@ public:
 
         for (auto& cmd : state.cmds)
         {
-            if (cmd->task() != ui_.id)
+            if (cmd->task() != ui_.task_id)
                 continue;
             cmd->cancel();
         }
@@ -710,7 +707,7 @@ public:
 
     transition resume(engine::state& state)
     {
-        LOG_D("Task ", ui_.id, " resume");
+        LOG_D("Task ", ui_.task_id, " resume");
 
         if (ui_.state != states::paused)
             return no_transition;
@@ -726,7 +723,7 @@ public:
             return transition;
 
         // if we were started before we go to waiting state.
-        if (started_)
+        if (ui_.runtime)
             return goto_state(state, states::waiting);
 
         // go back into queued state.
@@ -798,19 +795,67 @@ public:
             err.what = e.what();
         }
 
-        LOG_E("Task ", ui_.id, " (", err.code.value(), ") ", err.code.message());
-        LOG_E("Task ", ui_.id, " ", err.what);
+        for (auto i=std::begin(state.cmds); i != std::end(state.cmds); ++i)
+            (*i)->cancel();
+
+        if (state.on_error_callback)
+        {
+            state.on_error_callback(err);
+        }
+
+        LOG_E("Task ", ui_.task_id, " Error: ", err.what);
         return goto_state(state, states::error);            
+    }
+
+    void serialize(engine::state& state, newsflash::data::TaskList& list)
+    {
+        if (ui_.state == states::error || ui_.state == states::complete)
+            return;
+
+        if (auto* ptr = dynamic_cast<download*>(task_.get()))
+        {
+            auto* my_data = list.add_download();
+            my_data->set_name(ui_.desc);
+            my_data->set_size(ui_.size);
+
+            const auto& grouplist = ptr->groups();
+            const auto& articles  = ptr->articles();
+            for (const auto& g : grouplist)
+                my_data->add_group(g);
+
+            for (const auto& a : articles)
+                my_data->add_article(a);
+
+            const auto& files = ptr->files();
+            for (const auto& f : files)
+            {
+                auto* my_file_data = my_data->add_file();
+                my_file_data->set_filename(f->filename());
+                my_file_data->set_filepath(f->filepath());
+                my_file_data->set_dataname(f->binary_name());
+                my_file_data->set_is_binary(f->is_binary());
+            }
+        }
+    }
+
+    void parse(const newsflash::data::Download& my_data)
+    {
+        if (auto* ptr = dynamic_cast<download*>(task_.get()))
+        {
+            ui_.desc = my_data.name();
+            ui_.size = my_data.size();
+
+        }
     }
 
     std::size_t account() const 
     { return ui_.account; }
 
     std::size_t tid() const
-    { return ui_.id; }
+    { return ui_.task_id; }
 
     std::size_t bid() const 
-    { return ui_.bid; }
+    { return ui_.task_id; }
 
     states state() const 
     { return ui_.state; }
@@ -853,10 +898,7 @@ private:
         }
         else
         {
-            if (ui_.state == states::finalize)
-                return goto_state(state, states::complete);
-            else if (ui_.state == states::active)
-                return goto_state(state, states::finalize);
+            return goto_state(state, states::complete);
         }
         return no_transition;
     }
@@ -865,7 +907,7 @@ private:
     {
         if (!a) return;
 
-        a->set_id(ui_.id);
+        a->set_id(ui_.task_id);
 
         state.submit(a.release());
 
@@ -878,35 +920,35 @@ private:
 
         switch (new_state)
         {
+            case states::queued: 
+                ui_.state   = new_state;
+                ui_.etatime = 0;
+                break;
+
+            case states::waiting:
+                ui_.state = new_state;
+                break;
+
             case states::active:
-                if (!started_)
-                {
-                    LOG_D("Task ", ui_.id,  " starting...");
-                    do_action(state, task_->start());
-                    started_ = true;
-                }
                 ui_.state = new_state;
                 break;
 
-            case states::error:
-                task_.release();
-                ui_.state = new_state;
-                break;
-
-            case states::finalize:
-                {
-                    auto act = task_->finalize();
-                    if (!act)
-                        return goto_state(state, states::complete);
-                    do_action(state, std::move(act));
-                    ui_.state = new_state;
-                }
+            case states::paused:
+                ui_.state   = new_state;
+                ui_.etatime = 0;
                 break;
 
             case states::complete:
+                ASSERT(task_);
+                ASSERT(num_active_cmdlists_ == 0);
+                ASSERT(num_active_actions_ == 0);
+
+                task_->commit();
+
+                ui_.state      = new_state;                
                 ui_.completion = 100.0;
                 ui_.etatime    = 0;
-                ui_.state      = new_state;
+
                 state.bytes_ready += ui_.size;
                 if (auto* ptr = dynamic_cast<class download*>(task_.get()))
                 {
@@ -915,8 +957,8 @@ private:
                     {
                         ui::file ui;
                         ui.binary  = file->is_binary();
-                        ui.name    = file->name();
-                        ui.path    = file->path();                        
+                        ui.name    = file->filename();
+                        ui.path    = file->filepath();                        
                         ui.size    = file->size();                        
                         ui.damaged = ui_.error.any_bit();
                         state.on_file_callback(ui);
@@ -941,26 +983,26 @@ private:
                 }
                 break;
 
-            default:
-                ui_.state = new_state;
+            case states::error:
+                ui_.state   = new_state;
+                ui_.etatime = 0;
                 break;
         }
 
-        LOG_D("Task ", ui_.id, " => ", str(new_state));
-        LOG_D("Task ", ui_.id, " has ", num_active_cmdlists_,  " active cmdlists");
-        LOG_D("Task ", ui_.id, " has ", num_active_actions_, " active actions");        
+        LOG_D("Task ", ui_.task_id, " => ", str(new_state));
+        LOG_D("Task ", ui_.task_id, " has ", num_active_cmdlists_,  " active cmdlists");
+        LOG_D("Task ", ui_.task_id, " has ", num_active_actions_, " active actions");        
 
         return { old_state, new_state };
     }
 
 private:
     ui::task ui_;    
+private:
     std::unique_ptr<newsflash::task> task_;
     std::size_t num_active_cmdlists_;
     std::size_t num_active_actions_;
     std::uint64_t num_complete_bytes_;
-private:
-    bool started_;
 };
 
 // for msvc... 
@@ -971,37 +1013,53 @@ class engine::batch
 public:
     using states = ui::task::states;
 
+    batch(std::size_t id) : bytes_complete_(0)
+    {
+        ui_.state      = states::queued;
+        ui_.task_id    = id;
+        ui_.batch_id   = id;
+        ui_.account    = 0;
+        ui_.size       = 0;
+        ui_.runtime    = 0;
+        ui_.etatime    = 0;
+        ui_.completion = 0;
+
+        std::memset(&statesets_, 0, sizeof(statesets_));        
+        LOG_I("Batch ", ui_.batch_id, " (", ui_.desc, ") created");        
+    }
+
     batch(std::size_t account, std::size_t id, std::uint64_t size, std::size_t num_tasks, 
         std::string path, std::string desc) : num_tasks_(num_tasks), path_(std::move(path))
     {
-        ui_.state   = states::queued;
-        ui_.id      = id;
-        ui_.bid     = id;
-        ui_.account = account;
-        ui_.desc    = std::move(desc);
-        ui_.size    = size;
-        ui_.runtime = 0;
-        ui_.etatime = 0;
+        ui_.state      = states::queued;
+        ui_.task_id    = id;
+        ui_.batch_id   = id;
+        ui_.account    = account;
+        ui_.desc       = std::move(desc);
+        ui_.size       = size;
+        ui_.runtime    = 0;
+        ui_.etatime    = 0;
         ui_.completion = 0.0;
         bytes_complete_ = 0;
 
         std::memset(&statesets_, 0, sizeof(statesets_));
         statesets_[(int)states::queued] = num_tasks;
 
-        LOG_I("Batch ", ui_.id, " (", ui_.desc, ") created");
+        LOG_I("Batch ", ui_.batch_id, " (", ui_.desc, ") created");
     }
+
    ~batch()
     {
-        LOG_I("Batch ", ui_.id, " deleted");
+        LOG_I("Batch ", ui_.batch_id, " deleted");
     }
 
     void pause(engine::state& state)
     {
-        LOG_D("Batch pause ", ui_.id);
+        LOG_D("Batch pause ", ui_.batch_id);
 
         for (auto& task : state.tasks)
         {
-            if (task->bid() != ui_.id)
+            if (task->bid() != ui_.batch_id)
                 continue;
 
             const auto transition = task->pause(state);
@@ -1016,11 +1074,11 @@ public:
 
     void resume(engine::state& state)
     {
-        LOG_D("Batch resume ", ui_.id);
+        LOG_D("Batch resume ", ui_.batch_id);
 
         for (auto& task : state.tasks)
         {
-            if (task->bid() != ui_.id)
+            if (task->bid() != ui_.batch_id)
                 continue;
 
             const auto transition = task->resume(state);
@@ -1066,13 +1124,13 @@ public:
 
     void kill(engine::state& state)
     {
-        LOG_D("Batch kill ", ui_.id);
+        LOG_D("Batch kill ", ui_.batch_id);
 
         // partition tasks so that the tasks that belong to this batch
         // are at the end of the the task list.
         auto it = std::stable_partition(std::begin(state.tasks), std::end(state.tasks),
             [&](const std::unique_ptr<task>& t) {
-                return t->bid() != ui_.id;
+                return t->bid() != ui_.batch_id;
             });
 
         for (auto i=it; i != std::end(state.tasks); ++i)
@@ -1114,8 +1172,28 @@ public:
             ui_.runtime++;
     }
 
+    void serialize(engine::state& state, newsflash::data::TaskList& list)
+    {
+        if (ui_.state == states::complete || ui_.state == states::error)
+            return;
+
+        auto* self = list.add_batch();
+        self->set_account_id(ui_.account);
+        self->set_desc(ui_.desc);
+        self->set_size(ui_.size);
+        self->set_path(path_);                
+    }
+
+    void parse(engine::state& state, const newsflash::data::Batch& self)
+    {
+        ui_.account = self.account_id();
+        ui_.desc    = self.desc();
+        ui_.size    = self.size();
+        path_       = self.path();
+    }
+
     std::size_t id() const 
-    { return ui_.id; }
+    { return ui_.batch_id; }
 
 private:
     void enter_state(const task& t, states s)
@@ -1140,7 +1218,7 @@ private:
     }
     void update(engine::state& state)
     {
-        const auto num_states = std::accumulate(std::begin(statesets_),
+        const std::size_t num_states = std::accumulate(std::begin(statesets_),
             std::end(statesets_), 0);
         assert(num_states == num_tasks_);
 
@@ -1172,7 +1250,7 @@ private:
             break;
         }
 
-        LOG_D("Batch ", ui_.id, " => ", str(new_state));
+        LOG_D("Batch ", ui_.batch_id, " => ", str(new_state));
         LOG_D("Batch has ", num_tasks_, " tasks");
         LOG_D("Batch items Queued: ", statesets_[(int)states::queued], 
                    " Waiting: ", statesets_[(int)states::waiting],
@@ -1306,10 +1384,10 @@ engine::~engine()
     state_->threads.reset();
 }
 
-void engine::set_account(const account& acc)
+void engine::set_account(const ui::account& acc)
 {
     auto it = std::find_if(std::begin(state_->accounts), std::end(state_->accounts),
-        [&](const account& a) {
+        [&](const ui::account& a) {
             return a.id == acc.id;
         });
     if (it == std::end(state_->accounts))
@@ -1405,7 +1483,7 @@ void engine::del_account(std::size_t id)
     state_->conns.erase(end, std::end(state_->conns));
 
     auto it = std::find_if(std::begin(state_->accounts), std::end(state_->accounts),
-        [&](const account& a) { 
+        [&](const ui::account& a) { 
             return a.id == id;
         });
     ASSERT(it != std::end(state_->accounts));
@@ -1476,15 +1554,15 @@ engine::batch_id_t engine::download_listing(std::size_t account)
 
 bool engine::pump()
 {
-#ifdef NEWSFLASH_DEBUG
-    {
-        std::lock_guard<std::mutex> lock(state_->mutex);
-        std::size_t num_actions = state_->actions.size();
-        if (num_actions == 0)
-            return state_->num_pending_actions;
-        LOG_D("Pumping all ", num_actions, " currently completed actions");
-    }
-#endif
+// #ifdef NEWSFLASH_DEBUG
+//     {
+//         std::lock_guard<std::mutex> lock(state_->mutex);
+//         std::size_t num_actions = state_->actions.size();
+//         if (num_actions == 0)
+//             return state_->num_pending_actions;
+//         LOG_D("Pumping all ", num_actions, " currently completed actions");
+//     }
+// #endif
 
     for (;;)
     {
@@ -1594,8 +1672,8 @@ bool engine::pump()
         state_->logger->flush();        
     }
 
-    LOG_D("There are ", state_->num_pending_actions, " incomplete pending future actions");
-    state_->logger->flush();
+    //LOG_D("There are ", state_->num_pending_actions, " incomplete pending future actions");
+    //state_->logger->flush();
 
     return state_->num_pending_actions != 0;
 }
@@ -1667,6 +1745,98 @@ void engine::stop()
     state_->started = false;
     state_->logger->flush();
 }
+
+void engine::save_session(const std::string& file)
+{
+    GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+#if defined(LINUX_OS)
+    std::ofstream out;
+    out.open(file, std::ios::out | std::ios::binary | std::ios::trunc);
+    if (!out.is_open())
+        throw std::system_error(errno, std::generic_category(),
+            "failed to create engine state in: " + file);
+#endif
+
+    newsflash::data::TaskList list;
+
+    for (const auto& acc : state_->accounts)
+    {
+        auto* pa = list.add_account();
+        pa->set_id(acc.id);
+        pa->set_name(acc.name);
+        pa->set_user(acc.username);
+        pa->set_pass(acc.password);
+        pa->set_secure_host(acc.secure_host);
+        pa->set_secure_port(acc.secure_port);
+        pa->set_general_host(acc.general_host);
+        pa->set_general_port(acc.general_port);
+        pa->set_max_connections(acc.connections);
+        pa->set_enable_secure_server(acc.enable_secure_server);
+        pa->set_enable_general_server(acc.enable_general_server);
+        pa->set_enable_pipelining(acc.enable_pipelining);
+    }
+
+    for (const auto& batch : state_->batches)
+    {
+        batch->serialize(*state_, list);
+    }
+
+    for (const auto& task : state_->tasks)
+    {
+        task->serialize(*state_, list);
+    }
+
+    if (!list.SerializeToOstream(&out))
+        throw std::runtime_error("engine serialize to stream failed");
+}
+
+void engine::load_session(const std::string& file)
+{
+    GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+#if defined(LINUX_OS)
+    std::ifstream in;
+    in.open(file, std::ios::in | std::ios::binary);
+    if (!in.is_open())
+        throw std::system_error(errno, std::generic_category(),
+            "failed to open engine state file: " + file);
+    
+#endif
+
+    newsflash::data::TaskList list;
+    if (!list.ParseFromIstream(&in))
+        throw std::runtime_error("engine parse from stream failed");
+
+    for (int i=0; i<list.account_size(); ++i)
+    {
+        const auto& p = list.account(i);
+        ui::account a;
+        a.id                    = p.id();
+        a.name                  = p.name();
+        a.username              = p.user();
+        a.password              = p.pass();
+        a.secure_host           = p.secure_host();
+        a.secure_port           = p.secure_port();
+        a.general_host          = p.general_host();
+        a.general_port          = p.general_port();
+        a.connections           = p.max_connections();
+        a.enable_secure_server  = p.enable_secure_server();
+        a.enable_general_server = p.enable_general_server();
+        a.enable_pipelining     = p.enable_pipelining();
+        a.enable_compression    = false;
+        set_account(a);
+    }
+
+    for (int i=0; i<list.batch_size(); ++i)
+    {
+    }
+
+    for (int i=0; i<list.download_size();++i)
+    {
+    }
+}
+
 
 void engine::set_error_callback(on_error error_callback)
 {
@@ -2014,6 +2184,11 @@ void engine::kill_batch(engine::batch_id_t id)
     (*it)->kill(*state_);
 
     state_->batches.erase(it);
+}
+
+std::size_t engine::num_tasks() const 
+{
+    return state_->tasks.size();
 }
 
 } // newsflash

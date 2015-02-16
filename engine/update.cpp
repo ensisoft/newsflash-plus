@@ -123,9 +123,9 @@ update::update(std::string path, std::string group) : current_last_(0), current_
 update::~update()
 {}
 
-std::unique_ptr<cmdlist> update::create_commands() 
+std::shared_ptr<cmdlist> update::create_commands() 
 {
-    std::unique_ptr<cmdlist> ret;
+    std::shared_ptr<cmdlist> ret;
 
     if (remote_last_ == 0)
     {
