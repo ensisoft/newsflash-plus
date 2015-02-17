@@ -77,9 +77,8 @@ namespace newsflash
         };
 
         // open datafile to an existing file
-        datafile(std::string filepath, std::string filename, std::string dataname, 
-            bool bin) : filepath_(std::move(filepath)), filename_(std::move(filename)), dataname_(std::move(dataname)),
-        binary_(bin)
+        datafile(std::string filepath, std::string filename, std::string dataname, bool bin) : discard_(false),
+            filepath_(std::move(filepath)), filename_(std::move(filename)), dataname_(std::move(dataname)), binary_(bin), finalsize_(0)
         {
             big_.open(fs::joinpath(filepath_, filename_));
 
@@ -90,7 +89,8 @@ namespace newsflash
 
 
         // create a new data file possibly overwriting existing files.
-        datafile(std::string path, std::string binaryname, std::size_t size, bool bin, bool overwrite) : discard_(false), binary_(bin), finalsize_(0)
+        datafile(std::string path, std::string binaryname, std::size_t size, bool bin, bool overwrite) : 
+            discard_(false), binary_(bin), finalsize_(0)
         {
             std::string file;
             std::string name;

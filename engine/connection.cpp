@@ -97,7 +97,7 @@ void connection::resolve::xperform()
     }
     state_->addr = addr;
 
-    LOG_D("Hostname resolved to ", ipv4{state_->addr});
+    LOG_I("Hostname resolved to ", ipv4{state_->addr});
 }
 
 connection::connect::connect(std::shared_ptr<state> s) : state_(s)
@@ -111,7 +111,7 @@ void connection::connect::xperform()
 {
     std::lock_guard<std::mutex> lock(state_->mutex);
 
-    LOG_D("Connecting to ", ipv4{state_->addr}, ", ", state_->port);
+    LOG_I("Connecting to ", ipv4{state_->addr}, ", ", state_->port);
 
     const auto& socket = state_->socket;
     const auto& cancel = state_->cancel;
@@ -136,7 +136,7 @@ void connection::connect::xperform()
 
     socket->complete_connect();    
 
-    LOG_D("Socket connection ready!");
+    LOG_I("Socket connection ready!");
 }
 
 connection::initialize::initialize(std::shared_ptr<state> s) : state_(s)
@@ -161,7 +161,7 @@ void connection::initialize::xperform()
 {
     std::lock_guard<std::mutex> lock(state_->mutex);
 
-    LOG_D("Initializing NNTP session");
+    LOG_I("Initializing NNTP session");
 
     auto& session = state_->session;
     auto& socket  = state_->socket;
@@ -210,7 +210,7 @@ void connection::initialize::xperform()
     else if (err == session::error::no_permission)
         throw exception(connection::error::no_permission, "no permission");
 
-    LOG_D("NNTP Session ready");
+    LOG_I("NNTP Session ready");
 }
 
 connection::execute::execute(std::shared_ptr<state> s, std::shared_ptr<cmdlist> cmd, std::size_t tid) : state_(s), cmds_(cmd), tid_(tid), bytes_(0)
@@ -312,7 +312,7 @@ void connection::execute::xperform()
         return;
     }
 
-    LOG_D("Submit data commands");
+    LOG_I("Submit data commands");
 
     cmdlist->submit_data_commands(*session);
 
@@ -378,7 +378,7 @@ void connection::execute::xperform()
         cmdlist->receive_data_buffer(std::move(content));
     }    
 
-    LOG_D("Cmdlist complete");
+    LOG_I("Cmdlist complete");
 }
 
 connection::disconnect::disconnect(std::shared_ptr<state> s) : state_(s)
@@ -392,7 +392,7 @@ void connection::disconnect::xperform()
 {
     std::lock_guard<std::mutex> lock(state_->mutex);
 
-    LOG_D("Perform disconnect");
+    LOG_I("Disconnect");
 
     auto& session = state_->session;
     auto& socket  = state_->socket;

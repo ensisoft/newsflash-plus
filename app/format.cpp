@@ -190,21 +190,17 @@ QString format(const app::runtime& rt)
 
 QString format(const app::etatime& eta)
 {
-    if (eta.value < 10)
-        return "A few seconds...";
-    if (eta.value < 60)
-        return "About a minute";
-    if (eta.value < 60 * 60)
-    {
-        const auto mins = eta.value / 60;
-        if (mins == 1)
-            return "About a minute";
-        return QString("About %1 minutes").arg(eta.value / 60);
-    }
+    const auto MINUTE = 60;
+    const auto HOUR = 60 * 60;
 
-    const auto hours = eta.value / 3600;
-    const auto mins  = (eta.value - (hours * 3600)) / 60;
-    return QString("%1 hours and %2 minutes").arg(hours).arg(mins);
+    if (eta.value < MINUTE)
+        return QString("%1 sec").arg(eta.value);
+    if (eta.value < HOUR)
+        return QString("%1 min").arg(eta.value / MINUTE);
+
+    const auto hour = eta.value / HOUR;
+    const auto min  = eta.value % MINUTE;
+    return QString("%1 hour %2 min").arg(hour).arg(min);
 }
 
 QString format(const std::string& str)

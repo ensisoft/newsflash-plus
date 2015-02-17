@@ -241,7 +241,8 @@ public:
         spec.username = acc.username;
         spec.enable_compression = acc.enable_compression;
         spec.enable_pipelining = acc.enable_pipelining;
-        if (state.prefer_secure && acc.enable_secure_server)
+        if ((state.prefer_secure && acc.enable_secure_server) ||
+            (acc.enable_general_server == false))
         {
             spec.hostname = acc.secure_host;
             spec.hostport = acc.secure_port;
@@ -374,6 +375,8 @@ public:
     void on_action(engine::state& state, action* a)
     {
         std::unique_ptr<action> act(a);
+        
+        assert(a->get_id() == ui_.id);
 
         ticks_to_ping_ = 30;
         ticks_to_conn_ = 5;
@@ -525,7 +528,8 @@ private:
 
 class engine::task 
 {
-    task(std::size_t id) : num_active_cmdlists_(0), num_active_actions_(0)
+    task(std::size_t id) : num_active_cmdlists_(0), num_active_actions_(0),
+        num_actions_ready_(0), num_actions_total_(0)
     {
         ui_.task_id = id;
     }
@@ -556,8 +560,12 @@ public:
         LOG_D("Task: download has ", spec.articles.size(), " articles");
         LOG_D("Task: download path: '", spec.path, "'");
 
-        task_.reset(new download(
-            std::move(spec.groups), std::move(spec.articles), 
+        // todo: we know here that each article generates
+        // 2 actions (decode + write). but perhaps this information
+        // should be queried from the task instead. 
+        num_actions_total_ = spec.articles.size() * 2;
+
+        task_.reset(new download(std::move(spec.groups), std::move(spec.articles), 
             std::move(spec.path), std::move(spec.name)));
 
         LOG_I("Task ", ui_.task_id, " (", ui_.desc, ") created");                
@@ -568,6 +576,8 @@ public:
         ui_.desc = spec.desc;
 
         task_.reset(new listing);
+
+        num_actions_total_ = 1;
 
         LOG_D("Task: listing");
         LOG_I("Task ", ui_.task_id, " (", ui_.desc, ") created");
@@ -587,8 +597,7 @@ public:
         for (int i=0; i<spec.article_size(); ++i)
             articles.push_back(spec.article(i));
 
-        task_.reset(new download(
-            std::move(groups), std::move(articles),
+        task_.reset(new download(std::move(groups), std::move(articles),
             spec.path(), spec.desc()));
 
         auto* ptr = static_cast<download*>(task_.get());
@@ -603,6 +612,9 @@ public:
             LOG_D("Task: Continue downloading file: '", fs::joinpath(path, name), "'");
         }
 
+        num_actions_total_ = spec.num_actions_total();
+        num_actions_ready_ = spec.num_actions_ready();
+        ui_.completion = (double)num_actions_ready_ / (double)num_actions_total_ * 100.0;
         LOG_I("Task ", ui_.task_id, "( ", ui_.desc, ") restored");
     }
 
@@ -611,10 +623,13 @@ public:
         LOG_I("Task ", ui_.task_id, " deleted");
     }
 
-    void serialize(engine::state& state, newsflash::data::TaskList& list)
+    void serialize(newsflash::data::TaskList& list)
     {
         if (ui_.state == states::error || ui_.state == states::complete)
             return;
+
+        assert(num_active_cmdlists_ == 0);
+        assert(num_active_actions_  == 0);
 
         if (auto* ptr = dynamic_cast<download*>(task_.get()))
         {
@@ -625,6 +640,8 @@ public:
             spec->set_desc(ui_.desc);
             spec->set_size(ui_.size);
             spec->set_path(ptr->path());
+            spec->set_num_actions_total(num_actions_total_);
+            spec->set_num_actions_ready(num_actions_ready_);
 
             const auto& grouplist = ptr->groups();
             const auto& articles  = ptr->articles();
@@ -711,6 +728,9 @@ public:
     transition complete(engine::state& state, std::shared_ptr<cmdlist> cmds)
     {
         assert(num_active_cmdlists_ > 0);
+        assert(cmds->task() == ui_.task_id);
+        assert(cmds->account() == ui_.account);
+
         num_active_cmdlists_--;
 
         if (ui_.state == states::error)
@@ -825,18 +845,20 @@ public:
                 const auto timespent = ui.runtime;
                 const auto time_per_percent = timespent / complete;
                 const auto timeremains = remaining * time_per_percent;
-                ui_.etatime = (std::uint32_t)timeremains;
+                ui.etatime = (std::uint32_t)timeremains;
             }
         }
-
     }
 
     transition on_action(engine::state& state, action* a)
     {
         std::unique_ptr<action> act(a);
 
+        assert(a->get_id() == ui_.task_id);
         assert(num_active_actions_ > 0);
+
         num_active_actions_--;
+        num_actions_ready_++;
 
         //LOG_D("Task ", ui_.task_id, " action complete ",typeid(*a).name());
         //LOG_D("Task ", ui_.task_id, " has ", num_active_actions_, " pending actions");
@@ -931,7 +953,11 @@ private:
         // only the task knows how many actions are to be performed per buffer.
         // i.e. we can't here reliably count 1 buffer as 1 step towards completion
         // since the completion updates only when the data is downloaded AND processed.
-        //ui_.completion = task_->completion();
+        assert(num_actions_total_);
+        //assert(num_actions_ready_ <= num_actions_total_);
+        ui_.completion = (double)num_actions_ready_ / (double)num_actions_total_ * 100.0;
+        if (ui_.completion > 100.0)
+            ui_.completion = 100.0;
 
         // if we have pending actions our state should not change
         // i.e. we're active (or possibly paused)
@@ -1061,6 +1087,8 @@ private:
     std::unique_ptr<newsflash::task> task_;
     std::size_t num_active_cmdlists_;
     std::size_t num_active_actions_;
+    std::size_t num_actions_ready_;
+    std::size_t num_actions_total_;
 };
 
 // for msvc... 
@@ -1068,7 +1096,7 @@ const engine::task::transition engine::task::no_transition {engine::task::states
 
 class engine::batch
 {
-    batch(std::size_t id) : bytes_complete_(0)
+    batch(std::size_t id)
     {
         ui_.batch_id = id;
         ui_.task_id  = id;
@@ -1125,7 +1153,7 @@ public:
         LOG_I("Batch ", ui_.batch_id, " deleted");
     }
 
-    void serialize(engine::state& state, newsflash::data::TaskList& list)
+    void serialize(newsflash::data::TaskList& list)
     {
         if (ui_.state == states::complete || ui_.state == states::error)
             return;
@@ -1181,19 +1209,6 @@ public:
     {
         ui = ui_;
         ui.etatime = 0;
-        if (ui_.size)
-        {
-            ui.completion = 100.0 * (double(bytes_complete_) / double(ui_.size));
-        }
-        else
-        {
-            const auto num_complete = 
-                statesets_[(int)states::complete] +
-                statesets_[(int)states::error];
-
-            ui.completion = 100.0 * (double(num_complete) / double(num_tasks_));
-        }
-
         if (ui_.state == states::waiting || ui_.state == states::active)
         {
             if (ui_.runtime >= 10)
@@ -1203,7 +1218,7 @@ public:
                 const auto timespent = ui.runtime;
                 const auto time_per_percent = timespent / complete;
                 const auto time_remains = remaining * time_per_percent;
-                ui_.etatime = (std::uint32_t)time_remains;
+                ui.etatime = (std::uint32_t)time_remains;
             }
         }
     }
@@ -1242,7 +1257,6 @@ public:
 
         if (s.current == states::complete || s.current == states::error)
         {
-            bytes_complete_ += t.size();
             if (ui_.state == states::complete)
             {
                 ui::batch batch;
@@ -1331,7 +1345,6 @@ private:
 private:
     std::size_t num_tasks_;
     std::size_t statesets_[6];
-    std::uint64_t bytes_complete_;
     std::string path_;
 };
 
@@ -1847,12 +1860,12 @@ void engine::save_session(const std::string& file)
 
     for (const auto& batch : state_->batches)
     {
-        batch->serialize(*state_, list);
+        batch->serialize(list);
     }
 
     for (const auto& task : state_->tasks)
     {
-        task->serialize(*state_, list);
+        task->serialize(list);
     }
 
     list.set_current_id(state_->oid);
@@ -1907,10 +1920,18 @@ void engine::load_session(const std::string& file)
         state_->batches.push_back(std::move(batch));
     }
 
+    settings s;
+    s.discard_text_content = state_->discard_text;
+    s.overwrite_existing_files = state_->overwrite_existing;
+
     for (int i=0; i<list.download_size();++i)
     {
         const auto& data = list.download(i);
         std::unique_ptr<engine::task> task(new class engine::task(data));
+        task->configure(s);
+
+        assert(task->is_valid());
+
         state_->tasks.push_back(std::move(task));
     }
 

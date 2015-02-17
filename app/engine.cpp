@@ -126,8 +126,8 @@ void Engine::setAccount(const Accounts::Account& acc)
     a.username              = to_utf8(acc.username);
     a.password              = to_utf8(acc.password);
     a.secure_host           = to_latin(acc.secureHost);
+    a.general_host          = to_latin(acc.generalHost);    
     a.secure_port           = acc.securePort;    
-    a.general_host          = to_latin(acc.generalHost);
     a.general_port          = acc.generalPort;    
     a.enable_compression    = acc.enableCompression;
     a.enable_pipelining     = acc.enablePipelining;
@@ -272,7 +272,7 @@ quint32 Engine::retrieveNewsgroupListing(quint32 acc)
 {
     newsflash::ui::listing listing;
     listing.account = acc;
-    listing.desc    = to_utf8(tr("NewsGroup Listing"));
+    listing.desc    = to_utf8(tr("Newsgroup Listing"));
 
     const auto batchId = engine_->download_listing(listing);
 

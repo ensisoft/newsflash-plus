@@ -158,7 +158,7 @@ void download::complete(action& act, std::vector<std::unique_ptr<action>>& next)
 
         if (it == std::end(files_))
         {
-            file = std::make_shared<datafile>(path_, name_, 0, false, overwrite_);
+            file = std::make_shared<datafile>(path_, name_ + ".txt", 0, false, overwrite_);
             files_.push_back(file);
         }
         else file = *it;
@@ -176,7 +176,6 @@ void download::complete(cmdlist& cmd, std::vector<std::unique_ptr<action>>& next
     for (std::size_t i=0; i<contents.size(); ++i)
     {
         auto& content = contents[i];
-        auto& message = messages[i];
         auto status   = content.content_status();
 
         // if the article content was succesfully retrieved

@@ -34,6 +34,7 @@
 #endif
 
 #include <system_error>
+#include <stdexcept>
 #include <vector>
 #include <algorithm>
 #include <cassert>
@@ -227,6 +228,8 @@ filemap::buffer filemap::load(std::size_t offset, std::size_t size, unsigned fla
     const auto beg = (offset / pagesize) * pagesize;
     const auto len = size + (offset % pagesize);
     const auto end = offset + size;
+    if (end > mapper_->size())
+        throw std::runtime_error("filemap offset past the end of file");
 
     auto* p = (char*)mapper_->map(beg, len, flags);
 
