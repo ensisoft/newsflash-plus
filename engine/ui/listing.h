@@ -36,6 +36,8 @@ namespace newsflash
     {
         std::size_t account;
 
+        std::string desc;
+
         struct group {
             std::string name;
             std::uint64_t first;

@@ -187,13 +187,13 @@ bool Engine::downloadNzbContents(quint32 acc, const QString& path, const QString
         return false;
     }
 
-    newsflash::ui::download download;
+    newsflash::ui::batch download;
     download.account = acc;
     download.path = narrow(location);
     download.desc = to_utf8(desc);
     for (auto& item : items)
     {
-        newsflash::ui::download::file file;
+        newsflash::ui::download file;
         file.articles = std::move(item.segments);
         file.groups   = std::move(item.groups);
         file.size     = item.bytes;
@@ -236,13 +236,13 @@ bool Engine::downloadNzbContents(quint32 acc, const QString& path, const QString
         return false;
     }
 
-    newsflash::ui::download download;
+    newsflash::ui::batch download;
     download.account = acc;
     download.path    = narrow(location);
     download.desc    = to_utf8(desc);
     for (auto* item : nzb)
     {
-        newsflash::ui::download::file file;
+        newsflash::ui::download file;
         file.articles = item->segments;
         file.groups   = item->groups;
         file.size     = item->bytes;
@@ -270,7 +270,11 @@ bool Engine::downloadNzbContents(quint32 acc, const QString& path, const QString
 
 quint32 Engine::retrieveNewsgroupListing(quint32 acc)
 {
-    const auto batchId = engine_->download_listing(acc);
+    newsflash::ui::listing listing;
+    listing.account = acc;
+    listing.desc    = to_utf8(tr("NewsGroup Listing"));
+
+    const auto batchId = engine_->download_listing(listing);
 
     if  (connect_)
     {

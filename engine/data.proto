@@ -27,11 +27,12 @@ message Download {
     required uint32 account_id = 1;
     required uint32 batch_id   = 2;
     required uint32 task_id    = 3;
-    required string name       = 4;
-    required uint64 size       = 5;
-    repeated string article    = 6;
-    repeated string group      = 7;
-    repeated File file         = 8;
+    required string desc       = 4;
+    required string path       = 5;
+    required uint64 size       = 6;
+    repeated string article    = 7;
+    repeated string group      = 8;
+    repeated File file         = 9;
 }
 
 message Batch {
@@ -39,12 +40,15 @@ message Batch {
     required uint32 batch_id   = 2;
     required string path       = 3;    
     required string desc       = 4;
-    required uint64 size       = 5;
+    required uint64 byte_size  = 5;
+    required uint32 num_tasks  = 6;
 }
 
 message TaskList {
-    required uint32 current_id = 1;
-    repeated Account account   = 2;
-    repeated Batch batch       = 3;
-    repeated Download download = 4;
+    required uint32 current_id   = 1;
+    required uint64 bytes_queued = 2;
+    required uint64 bytes_ready  = 3;
+    repeated Account account     = 4;
+    repeated Batch batch         = 5;
+    repeated Download download   = 6;
 }

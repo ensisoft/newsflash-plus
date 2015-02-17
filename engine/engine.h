@@ -76,9 +76,9 @@ namespace newsflash
         // download the files included in the dowload.
         // all the files are grouped together into a single batch.
         // returns the batch id.
-        batch_id_t download_files(ui::download spec);
+        batch_id_t download_files(ui::batch batch);
 
-        batch_id_t download_listing(std::size_t account);
+        batch_id_t download_listing(ui::listing list);
 
         //batch_id_t download_headers(...);
 

@@ -103,8 +103,18 @@ namespace newsflash
 
         // the current completion %  (range 0.0 - 100.0)
         double completion;
-    };
 
+        task() : 
+            state(states::queued),
+            task_id(0),
+            batch_id(0),
+            account(0),
+            size(0),
+            runtime(0),
+            etatime(0),
+            completion(0.0)
+        {}
+    };
     
 } // ui
 } // engine

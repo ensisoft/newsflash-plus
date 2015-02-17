@@ -36,32 +36,25 @@ namespace newsflash
     // a download job details for downloading content
     struct download
     {
-        std::size_t account;
+        // list of message id's or message numbers.
+        // note that message numbers are specific to a server
+        // while message-ids are portable across servers.
+        std::vector<std::string> articles;
 
-        struct file {
-            // list of message id's or message numbers.
-            // note that message numbers are specific to a server
-            // while message-ids are portable across servers.
-            std::vector<std::string> articles;
+        // the list of groups into which look for the messge ids.
+        std::vector<std::string> groups;
 
-            // the list of groups into which look for the messge ids.
-            std::vector<std::string> groups;
-
-            std::string name;
-
-            // the esimated size of the file to be downloaded in bytes. 
-            std::uint64_t size;                    
-        };
-
-        std::vector<file> files;
+        // the esimated size of the file to be downloaded in bytes. 
+        // 0 if not known.
+        std::uint64_t size;                    
 
         // the local filesystem path where the downloadded/decoded content
         // is to the be placed.
         std::string path;
 
-        // the human readable description. 
-        // this will appear in task::description.
-        std::string desc;
+        // the human readable description that will appear in task::description.
+        // usually the expected name of the file.
+        std::string name;
     };
 
 } // ui

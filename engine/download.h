@@ -32,7 +32,6 @@ namespace newsflash
 {
     class datafile;
     class decode;
-    class bodylist;
 
     // extract encoded content from the buffers
     class download : public task
@@ -55,8 +54,6 @@ namespace newsflash
 
         virtual void configure(const settings& s) override;
 
-        virtual double completion() const override;
-
         virtual bool has_commands() const override
         { return !articles_.empty(); }
 
@@ -76,15 +73,15 @@ namespace newsflash
         const 
         std::vector<std::string>& articles() const 
         { return articles_; }
+
+        const std::string& path() const 
+        { return path_; }
     private:
         std::vector<std::string> groups_;
         std::vector<std::string> articles_;
         std::vector<std::shared_ptr<datafile>> files_;
         std::string path_;
         std::string name_;
-        std::size_t num_commands_done_;
-        std::size_t num_commands_total_;
-        std::size_t num_bytes_done_;
     private:
         bool overwrite_;
         bool discardtext_;

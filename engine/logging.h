@@ -53,6 +53,12 @@ namespace newsflash
     };
 
     namespace detail {
+        inline
+        void write_log_args(std::ostream& stream, bool val)
+        {
+            stream << (val ? "True" : "False");
+        }
+
         template<typename Arg>
         void write_log_args(std::ostream& stream, const Arg& arg)
         {

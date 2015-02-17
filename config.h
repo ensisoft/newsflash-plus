@@ -60,6 +60,8 @@
   // msvc2013 doesn't support noexcept. 
   // todo: is this smart, the semantics are not *exactly* the same...
   #define  NOTHROW throw() 
+
+  #define NORETURN __declspec(noreturn)
 #elif defined(__clang__)
   #ifdef __LP64__
     #define X86_64
@@ -83,7 +85,8 @@
 
   #define COMPILER_NAME    "clang"
   #define COMPILER_VERSION __clang_version__
-  #define NOTHROW noexcept
+  #define NOTHROW  noexcept
+  #define NORETURN [[noreturn]]
 #elif defined(__GNUG__)
   #ifdef __LP64__
     #define X86_64
@@ -92,7 +95,8 @@
   #define LINUX_OS
   #define COMPILER_NAME "GCC"
   #define COMPILER_VERSION __GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__
-  #define NOTHROW noexcept
+  #define NOTHROW  noexcept
+  #define NORETURN [[noreturn]]
 #endif
 
 #ifndef NDEBUG

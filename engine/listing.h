@@ -49,12 +49,6 @@ namespace newsflash
         virtual void complete(cmdlist& cmd, 
             std::vector<std::unique_ptr<action>>& actions) override;
 
-        virtual double completion() const override
-        {
-            if (run_once_) return 100.0;
-            return 0.0;
-        }
-
         virtual bool has_commands() const override
         {
             return run_once_;

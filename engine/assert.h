@@ -31,17 +31,11 @@ namespace debug
     // check if running in debugger
     bool has_debugger();
 
-#if defined(__MSVC__)
-      __declspec(noreturn) void do_break();
-
-      __declspec(noreturn) void do_assert(const char* expression, const char* file, const char* func, int line);
-#else
-    [[noreturn]]
+    NORETURN 
     void do_assert(const char* expression, const char* file, const char* func, int line);
 
-    [[noreturn]]
+    NORETURN 
     void do_break();
-#endif
 
 } // debug
 

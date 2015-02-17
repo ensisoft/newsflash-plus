@@ -43,13 +43,9 @@ namespace newsflash
 {
 
 download::download(std::vector<std::string> groups, std::vector<std::string> articles, std::string path, std::string name) : 
-    groups_(std::move(groups)), articles_(std::move(articles)), 
-    path_(std::move(path))
+    groups_(std::move(groups)), articles_(std::move(articles)),  path_(std::move(path))
 {
     name_        = fs::remove_illegal_filename_chars(name);
-    num_commands_done_  = 0;
-    num_commands_total_ = articles_.size();
-    num_bytes_done_     = 0;
     overwrite_   = false;
     discardtext_ = false;
 }
@@ -170,8 +166,6 @@ void download::complete(action& act, std::vector<std::unique_ptr<action>>& next)
         std::unique_ptr<action> write(new datafile::write(0, std::move(text), file));
         next.push_back(std::move(write));
     }
-
-    ++num_commands_done_;
 }
 
 void download::complete(cmdlist& cmd, std::vector<std::unique_ptr<action>>& next)
@@ -194,8 +188,6 @@ void download::complete(cmdlist& cmd, std::vector<std::unique_ptr<action>>& next
             next.push_back(std::move(dec));
             continue;
         }
-
-        ++num_commands_done_;
     }
 
     // all not yet processed messages go back into pending list
@@ -208,11 +200,6 @@ void download::configure(const settings& s)
 {
     overwrite_   = s.overwrite_existing_files;
     discardtext_ = s.discard_text_content;
-}
-
-double download::completion() const 
-{ 
-    return 100.0 * double(num_commands_done_) / double(num_commands_total_);
 }
 
 } // newsflash

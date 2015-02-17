@@ -66,8 +66,6 @@ namespace newsflash
         // update task settings
         virtual void configure(const settings& s) {}
 
-        virtual double completion() const = 0;
-
         virtual bool has_commands() const = 0;
 
     protected:

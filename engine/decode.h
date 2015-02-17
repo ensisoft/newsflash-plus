@@ -112,8 +112,6 @@ namespace newsflash
 
     private:
         virtual void xperform() override;
-
-    private:
         std::size_t decode_yenc_single(const char* data, std::size_t len);
         std::size_t decode_yenc_multi(const char* data, std::size_t len);
         std::size_t decode_uuencode_single(const char* data, std::size_t len);
@@ -121,7 +119,6 @@ namespace newsflash
 
     private:
         buffer data_;
-    private:
         std::vector<char> text_;
         std::vector<char> binary_;
         std::size_t binary_offset_;

@@ -76,32 +76,37 @@ namespace newsflash
         return ss;
     }
 
-
-    template<typename T>
-    void str(std::stringstream& ss, const T& value)
+    inline
+    std::ostream& operator<<(std::ostream& ss, bool val)
     {
-        ss << value;
+        ss << (val ? "True" : "False");
+        return ss;
     }
 
-    template<typename T, typename... Rest>
-    void str(std::stringstream& ss, const T& value, const Rest&... rest)
-    {
-        ss << value;
-        str(ss, rest...);
-    }
+    namespace detail {
+        template<typename T>
+        void str(std::stringstream& ss, const T& value)
+        {
+            ss << value;
+        }
+
+        template<typename T, typename... Rest>
+        void str(std::stringstream& ss, const T& value, const Rest&... rest)
+        {
+            ss << value;
+            detail::str(ss, rest...);
+        }
+    } // detail
 
     template<typename... Args>
     std::string str(const Args&... args)
     {
         std::stringstream ss;
-        str(ss, args...);
+        detail::str(ss, args...);
         if (!ss.good())
             throw std::runtime_error("string format error");
         
         return ss.str();
     }
-
-
-
 
 } // newsflash

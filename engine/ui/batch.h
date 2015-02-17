@@ -23,16 +23,28 @@
 #pragma once
 
 #include <newsflash/config.h>
-
 #include <string>
+#include <vector>
 #include <cstddef>
+#include "download.h"
 
 namespace newsflash
 {
     namespace ui {
 
     struct batch {
+
+        // the account to be used to download the files in the batch.
+        std::size_t account;
+
+        // the path on the local file system where the files are to be placed
         std::string path;
+
+        // the human readable description for the whole batch
+        std::string desc;
+
+        // the descriptions for the files to be downloaded.
+        std::vector<download> files;
     };
 
     }

@@ -48,8 +48,6 @@ struct connection::state {
     std::string username;
     std::string password;
     std::string hostname;
-    std::string logfile;
-    std::ofstream log;
     std::uint16_t port;
     std::uint32_t addr;
     std::atomic<std::uint64_t> bytes;
