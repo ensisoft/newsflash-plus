@@ -1,4 +1,4 @@
-// Copyright (c) 2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2005-2015 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -22,24 +22,43 @@
 
 #pragma once
 
-#include <exception>
 #include <string>
+#include <sstream>
 
 namespace python
 {
-    class exception : public std::exception
-    {
-    public:
-        exception(const std::string& what) : what_(what)
-        {}
-       ~exception()
-        {}
-        virtual const char* what() const noexcept override 
-        { return what_.c_str();}
-    private:
-        std::string what_;
-    };
+    namespace detail {
+        inline const char* fmt(const char*) { return "s"; }
+        inline const char* fmt(const std::string&) { return "s"; }
+        inline const char* fmt(const std::wstring&) { return "u"; }
+        inline const char* fmt(int) { return "i"; }
+        inline const char* fmt(long) { return "l"; }
+        inline const char* fmt(unsigned int) { return "I"; }
+        inline const char* fmt(unsigned long) { return "k"; }
+        inline const char* fmt(float) { return "f"; }
+        inline const char* fmt(double) { return "d"; }
 
-    std::string get_python_error();
+        template<typename T>
+        void fmt_value(std::stringstream& ss, T value)
+        {
+            ss << fmt(value);
+        }
+
+        template<typename T, typename... Rest>
+        void fmt_value(std::stringstream& ss, T value, Rest... rest)
+        {
+            ss << fmt(value);
+            fmt_value(ss, rest...);
+        }
+
+    } // detail
+
+    template<typename... Args>
+    std::string fmt(Args... args)
+    {
+        std::stringstream ss;
+        detail::fmt_value(ss, args...);
+        return ss.str();
+    }
 
 } // python

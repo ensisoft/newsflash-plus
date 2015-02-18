@@ -26,8 +26,10 @@
 #include <algorithm> // for swap
 #include <string>
 
-namespace pylib
+namespace python
 {
+    namespace detail {
+
     class object
     {
     public:
@@ -66,6 +68,12 @@ namespace pylib
 
         explicit 
         object(int i) : obj_(PyInt_FromLong(i))
+        {
+            Py_XINCREF(obj_);
+        }
+
+        explicit 
+        object(double d) : obj_(PyFloat_FromDouble(d))
         {
             Py_XINCREF(obj_);
         }
@@ -122,4 +130,6 @@ namespace pylib
         PyObject* obj_;
     };
 
-} // pylib
+    } // detail
+
+} // python

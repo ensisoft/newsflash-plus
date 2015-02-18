@@ -24,8 +24,10 @@
 
 #include <Python.h>
 
-namespace pylib
+namespace python
 {
+    namespace detail {
+
     // python global interpreter lock. Any single thread calling
     // into python interpreter *must* hold GIL before making the call.
     class GIL
@@ -43,12 +45,12 @@ namespace pylib
             PyGILState_Release(state_);
         }
 
-
         GIL& operator=(const GIL&) = delete;
 
     private:
         PyGILState_STATE state_;
-
     };
 
-} // pylib
+    } // detail
+
+} // python

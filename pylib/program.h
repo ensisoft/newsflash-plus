@@ -1,4 +1,4 @@
-// Copyright (c) 2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2005-2015 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -25,31 +25,20 @@
 #include <Python.h>
 #include <string>
 
-namespace pylib
+namespace python
 {
-    // main python interface class. any application
-    // that wants to use python should first create an instance
-    // of this class and use it to configure the global 
-    // python state. 
-    class python
+    // any program that wants to use python should first create an instance
+    // of the program object. this will enable the program to later 
+    // call into python safely.
+    class program 
     {
     public:
-        // initialize python with the absolute path to the 
-        // running process's binary on the file system.
-        // python uses this information to look for modules
-        // (both native and python)
-        python(const std::string& binpath)
+        // initialize program/python with the path to the installation
+        // location so that it knows where to load the .dll and .py modules.
+        // unfortunately the API is based on char* which means that Unicode paths
+        // that cannot be represented in extended ASCII will not work as expected.        
+        program(std::string path, int argc, char* argv[]) : path_(std::move(path)), state_(nullptr)
         {
-            // We have to tell python the installation location
-            // so that it knows where to look for modules (both .dll and .py).
-            // unfortunately the API is based on char* which means that Unicode paths
-            // that cannot be represented in extended ASCII will not work as expected.
-
-            // initialize python
-            // Embedding Python in Multi-Threaded C/C++ applications
-            // http://www.linuxjournal.com/article/3641
-
-            // this is non-const...
             Py_SetProgramName(&path_[0]);
 
             // this acquires the global interpreter lock. we must 
@@ -57,27 +46,27 @@ namespace pylib
             PyEval_InitThreads();
 
             // suppress signal handling and create our thread state
-            Py_InitializeEx(0); 
+            Py_InitializeEx(0);             
+
+            PySys_SetArgv(argc, argv);
 
             state_ = PyThreadState_Get();
 
-            assert(state_);
-
-            // finally release the lock (see comments above)
-            // so that we're good to go
-            PyEval_ReleaseLock();            
+            // release the implicit lock
+            PyEval_ReleaseLock();
         }
+        program(const program&) = delete;
+        program& operator=(const program&) = delete;
 
-       ~python()
+       ~program()
         {
-            PyEval_AcquireLock();
-            PyThreadState_Swap(state_);
-            Py_Finalize();            
+            PyEval_AcquireLock();            
+            PyThreadState_Swap(state_);            
+            Py_Finalize();
         }
     private:
         std::string path_;
-
+    private:
         PyThreadState* state_;
     };
-
-} // pylib
+} // python

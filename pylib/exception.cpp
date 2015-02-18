@@ -26,7 +26,7 @@
 #include "exception.h"
 #include "object.h"
 
-namespace pylib
+namespace python
 {
 
 std::string get_python_error()
@@ -50,35 +50,34 @@ std::string get_python_error()
     PyErr_Fetch(&type, &value, &trace);
     PyErr_Clear(); // clear the exception before calling python again
 
-    object ref_type(type);
-    object ref_value(value);
-    object ref_trace(trace);
+    detail::object ref_type(type);
+    detail::object ref_value(value);
+    detail::object ref_trace(trace);
 
     std::string str = "no error information available";
 
-    object name("pylib");
-    object module = PyImport_Import(name.get());
+    detail::object name("pylib");
+    detail::object module = PyImport_Import(name.get());
     if (!module)
     {
         PyErr_Clear();
         return str;
     }
 
-    object func = PyObject_GetAttrString(module.get(), "format_error");
+    detail::object func = PyObject_GetAttrString(module.get(), "format_error");
     if (!func || !PyCallable_Check(func.get()))
     {
         PyErr_Clear();
         return str;
     }
 
-    object ret = PyObject_CallFunctionObjArgs(func.get(), 
+    detail::object ret = PyObject_CallFunctionObjArgs(func.get(), 
         type, value, trace, nullptr);
     if (ret && PyString_Check(ret.get()))
         ret.value(str);
 
     PyErr_Clear();
     return str;
-
 }
 
-}
+} // python

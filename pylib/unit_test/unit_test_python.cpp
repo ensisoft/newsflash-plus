@@ -21,36 +21,31 @@
 //  THE SOFTWARE.            
 
 #include <boost/test/minimal.hpp>
-
-#include "../python.h"
+#include <thread>
+#include "../program.h"
 #include "../script.h"
+#include "../module.h"
 
 void unit_test_script()
 {
-    // set a path to the our working folder from which
-    // the modules are expected to be found.
-    pylib::python python("/home/enska/coding/newsflash/pylib/unit_test/python");
-    
     // try loading a broken script, we should get an exception
     {
         try
         {
-            pylib::script script("broken");
+            python::script script("broken");
 
             BOOST_REQUIRE(!"exception was excepted");
         }
-        catch (const pylib::exception& e)
+        catch (const python::exception& e)
         {
             std::cout << e.what();
-            std::cout << "\n";
-            std::cout << e.pyerr();
             std::cout << std::endl;
         }
     }
 
     // try loading a correct script.
     {
-        pylib::script script("correct");
+        python::script script("correct");
 
         BOOST_REQUIRE(script.module() == "correct");
         BOOST_REQUIRE(script.docstring() == "this is the docstring.");
@@ -64,7 +59,7 @@ void unit_test_script()
 
     // call a function
     {
-        pylib::script script("funcs");
+        python::script script("funcs");
 
         BOOST_REQUIRE(script.has_attribute("nonfunction"));
         BOOST_REQUIRE(script.has_function("nonfunction") == false);
@@ -80,11 +75,9 @@ void unit_test_script()
             script.call("raise_exception");
             BOOST_REQUIRE(!"exception was expected");
         }
-        catch (const pylib::exception& e)
+        catch (const python::exception& e)
         {
             std::cout << e.what();
-            std::cout << "\n";
-            std::cout << e.pyerr();
             std::cout << std::endl;            
         }
 
@@ -93,11 +86,9 @@ void unit_test_script()
             script.call("broken_function");
             BOOST_REQUIRE(!"exception was expected");
         }
-        catch (const pylib::exception& e)
+        catch (const python::exception& e)
         {
             std::cout << e.what();
-            std::cout << "\n";
-            std::cout << e.pyerr();
             std::cout << std::endl;            
         }
     }
@@ -107,22 +98,63 @@ void unit_test_script()
 
 void unit_test_module()
 {
+    using m = python::module<1>;
+
+    bool void_method_visited = false;
+    m::method<0>("test_method_void", [&]() 
+    {
+        void_method_visited = true;
+    });
+
+    bool int_method_visited = false;
+    m::method<1, int>("test_method_int", [&](int value) 
+    {
+       int_method_visited = true;
+       BOOST_REQUIRE(value == 123);
+    });
+
+    m::install("unit_test");
+
+    python::script script("callback");
+
+    script.call("call_void");
+    BOOST_REQUIRE(void_method_visited);
+
+    script.call("call_int");
+    BOOST_REQUIRE(int_method_visited);
+
+}
+
+void thread_main(int identity)
+{
+    python::script script("funcs");
+
+    for (int i=0; i<10000; ++i)
+    {
+        script.call("test_thread_identity", identity);
+    }
 }
 
 // spawn multiple threads and see what happens in the python
 // our python binding (and python lib) should be thread safe
 void unit_test_threads()
 {
+    std::thread t1(std::bind(thread_main, 1));
+    std::thread t2(std::bind(thread_main, 2));
 
+    t1.join();
+    t2.join();
 }
 
 int test_main(int argc, char* argv[])
 {
-
+    // set a path to the our working folder from which
+    // the modules are expected to be found.
+    python::program python("/home/enska/coding/newsflash/pylib/unit_test/python",
+        argc, argv);
 
     unit_test_script();
     unit_test_module();
-    unit_test_threads();
-
+    //unit_test_threads();
     return 0;
 }
