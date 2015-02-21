@@ -32,21 +32,20 @@
 namespace app
 {
 
-void distdir::init()
-{
-    pathstr = QCoreApplication::applicationDirPath();
-}
-
 QString distdir::path()
 {
-    return pathstr;
+    return QCoreApplication::applicationDirPath();
 }
 
 QString distdir::path(const QString& path)
 {
-    return QDir::toNativeSeparators(pathstr + "/" + path);
+    static const auto base = QCoreApplication::applicationDirPath();
+    return QDir::toNativeSeparators(base + "/" + path);
 }
 
-QString distdir::pathstr;
+QString distdir::executable() 
+{
+    return QCoreApplication::applicationFilePath();
+}
 
 } // app

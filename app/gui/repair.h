@@ -1,4 +1,4 @@
-// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2014 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -20,32 +20,40 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
+#pragma once
+
 #include <newsflash/config.h>
+#include <newsflash/warnpush.h>
+#  include "ui_repair.h"
+#include <newsflash/warnpop.h>
+#include "mainwidget.h"
 
-#include "script.h"
-
-#if defined(NEWSFLASH_ENABLE_PYTHON)
-
-namespace app
+namespace gui
 {
+    class Repair : public MainWidget
+    {
+        Q_OBJECT
+        
+    public:
+        Repair();
+       ~Repair();
 
-script::script(const QString& module) : module_(module)
-{}
+        virtual void addActions(QToolBar& bar) override;
+        virtual void addActions(QMenu& menu) override;
+        virtual void loadState(app::Settings& settings) override;
+        virtual void saveState(app::Settings& settings) override;
 
-script::~script()
-{}
+        virtual info getInformation() const override
+        { return {"repair.html", true, true }; }
 
-bool script::load()
-{
-    return false;
-}
+    private slots:
+        void on_tableView_customContextMenuRequested(QPoint);
+        void on_actionRun_triggered();
+        void on_actionStop_triggered();
 
-int script::priority() const
-{
-    return 0;
-}
+    private:
+        Ui::Repair ui_;
+    private:
+    };
+} // gui
 
-
-} // app
-
-#endif // ENABLE_NEWSFLASH_PYTHON

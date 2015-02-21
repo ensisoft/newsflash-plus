@@ -167,7 +167,7 @@ void RSS::activate(QWidget*)
     }
 }
 
-bool RSS::saveState(app::Settings& s)
+void RSS::saveState(app::Settings& s)
 {
     s.set("rss", "music", ui_.chkMusic->isChecked());
     s.set("rss", "movies", ui_.chkMovies->isChecked());
@@ -192,8 +192,6 @@ bool RSS::saveState(app::Settings& s)
         const auto name  = QString("table_col_%1_width").arg(i);
         s.set("rss", name, width);
     }
-
-    return true;
 }
 
 void RSS::shutdown()

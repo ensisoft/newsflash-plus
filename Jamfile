@@ -42,6 +42,7 @@ project newsflash
   requirements
     <include>../
     <include>.  
+    <include>app/gui/ 
     <include>qjson/include/
     <include>python/Include/
     <include>$(OPENSSL_PATH)/include    
@@ -72,7 +73,7 @@ if [ os.name ] = LINUX
   lib crypto  : : <name>crypto <search>$(/usr/lib) ; 
 }
 
-## prebuilt binaries
+## prebuilt libraries
 
 # this library is LGPL license, so must use as a .so
 # instead of statically link it.
@@ -85,22 +86,37 @@ lib zlib   : : <name>zlib <search>"zlib/lib" ;
 # googles protobuf 
 lib protobuf : : <name>protobuf ;
 
-# python. we want to be able to debug into python also
-# hence the debug and release versions
-# note that even though we build python with boost.build 
-# it's still considered a kind of "pre-built" binary
-lib python : : <name>python25 <search>"python/debug" <variant>debug ;
-lib python : : <name>python25 <search>"python/release" <variant>release ;
 
-#system libs (python dependants)
-if [ os.name ] = LINUX
-{
-  lib dl   : : <name>dl ;
-  lib util : : <name>util ;
-}
+exe newsflash :
+  [ glob app/*.h       ]
+  [ glob app/*.cpp     ]
+  [ glob app/gui/*.ui  ]
+  [ glob app/gui/*.h   ]
+  [ glob app/gui/*.cpp ]
 
-if [ os.name ] = NT
-{
-  lib dl   : : <name>shell32 ;
-  lib util : : <name>user32 ;   
-}
+  app/gui/resource.qrc
+  app/gui/resource.qrc
+  app/gui/qtsingleapplication/qtsingleapplication.h
+  app/gui/qtsingleapplication/qtsingleapplication.cpp
+  app/gui/qtsingleapplication/qtlocalpeer.h
+  app/gui/qtsingleapplication/qtlocalpeer.cpp
+
+
+  keygen/keygen.cpp
+
+  /boost//filesystem/<link>static
+  /boost//system/<link>static
+  /boost//regex/<link>static
+
+  /qt//QtCore
+  /qt//QtGui
+  /qt//QtNetwork
+  /qt//QtXml
+
+  qjson
+  engine/<link>static
+;
+
+
+install dist_d : newsflash 
+: <variant>release:<location>dist ;

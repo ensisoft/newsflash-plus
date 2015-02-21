@@ -29,7 +29,7 @@
             "-std=c++11",
             "-DSUBLIME_CLANG_WORKAROUNDS",
             "-I${home}/coding",
-            "-I${home}/coding/newsflash",
+            "-I${home}/coding/newsflash/",
             "-I${home}/coding/newsflash/app/",            
             "-I${home}/coding/newsflash/app/gui",                        
             "-I${home}/coding/newsflash/python/Include",
@@ -39,8 +39,7 @@
             "-I${home}/coding/qt-4.8.2/include/QtCore",
 
             // for MOC and UIC generated headers
-            "-I${home}/coding/newsflash/app/bin/gcc-4.9.2/debug/threading-multi/",        
-            "-I${home}/coding/newsflash/app/gui/bin/gcc-4.9.2/debug/threading-multi/"
+            "-I${home}/coding/newsflash/bin/gcc-4.9.2/debug/threading-multi/"
         ]
     }
 }

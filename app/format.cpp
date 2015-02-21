@@ -241,6 +241,11 @@ QString format(const QUrl& url)
     return QString("'%1'").arg(url.toString());
 }
 
+QString format(const QStringList& list)
+{
+    return list.join(", ");
+}
+
 std::string narrow(const QString& str)
 {
 #if defined(WINDOWS_OS)
@@ -248,7 +253,7 @@ std::string narrow(const QString& str)
 #elif defined(LINUX_OS)
     const char* codeset = nl_langinfo(CODESET);
     if (!std::strcmp(codeset, "UTF-8"))
-        return to_utf8(str);
+        return toUtf8(str);
 
     const auto& bytes = str.toLocal8Bit();
     return std::string(bytes.data(),
@@ -264,7 +269,7 @@ QString widen(const std::string& s)
 #elif defined(LINUX_OS)
     const char* codeset = nl_langinfo(CODESET);
     if (!std::strcmp(codeset, "UTF-8"))
-        return from_utf8(s);
+        return fromUtf8(s);
 
     return QString::fromLocal8Bit(s.c_str());
 #endif

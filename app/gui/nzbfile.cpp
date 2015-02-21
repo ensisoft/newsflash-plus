@@ -105,11 +105,11 @@ void NZBFile::loadState(app::Settings& s)
     model_.set_show_filenames_only(filenames);
 }
 
-bool NZBFile::saveState(app::Settings& s)
+void NZBFile::saveState(app::Settings& s)
 {
     s.set("nzb", "show_filename_only", 
         ui_.chkFilenamesOnly->isChecked());
-    return true;
+    
 }
 
 void NZBFile::open(const QString& nzbfile)

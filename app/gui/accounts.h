@@ -44,7 +44,7 @@ namespace gui
         virtual void addActions(QToolBar& bar) override;
         virtual info getInformation() const override;
         virtual void loadState(app::Settings& s) override;
-        virtual bool saveState(app::Settings& s) override;
+        virtual void saveState(app::Settings& s) override;
         virtual void firstLaunch(bool add_account) override;
 
     private:

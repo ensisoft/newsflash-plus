@@ -91,7 +91,7 @@ QVariant connlist::data(const QModelIndex& index, int role) const
                 return str(ui.state);
 
             case columns::server:
-                return from_utf8(ui.host);
+                return fromLatin(ui.host);
 
             case columns::data:
                 return format(size{ui.down});
@@ -100,7 +100,7 @@ QVariant connlist::data(const QModelIndex& index, int role) const
                 return format(speed{ui.bps});
 
             case columns::desc:
-                return from_utf8(ui.desc);
+                return fromUtf8(ui.desc);
 
             case columns::sentinel:
                 Q_ASSERT(false);

@@ -237,7 +237,6 @@ void connection::execute::xperform()
     auto& cmdlist = cmds_;
 
     LOG_D("Execute cmdlist");
-
     LOG_D("Cmdlist has ", cmdlist->num_data_commands(), " data commands");
 
     newsflash::buffer recvbuf(MB(4));

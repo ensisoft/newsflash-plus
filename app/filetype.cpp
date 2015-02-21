@@ -86,7 +86,7 @@ const char* str(filetype type)
     return "";
 }
 
-filetype find_filetype(const QString& filename)
+filetype findFileType(const QString& filename)
 {
     struct map {
         filetype type;
@@ -116,7 +116,7 @@ filetype find_filetype(const QString& filename)
     return filetype::other;
 }
 
-QIcon find_fileicon(filetype type)
+QIcon findFileIcon(filetype type)
 {
     switch (type)
     {

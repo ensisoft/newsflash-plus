@@ -66,6 +66,15 @@ QPixmap toGrayScale(const QPixmap& p)
     return QPixmap::fromImage(img);
 }
 
+QPixmap toGrayScale(const QString& pixmap)
+{
+    QPixmap pix(pixmap);
+    if (pix.isNull())
+        return {};
+
+    return toGrayScale(pix);
+}
+
 #if defined(WINDOWS_OS)
 
 // Icon extraction code is nicked from qt\src\gui\image\qtpixmap_win.cpp

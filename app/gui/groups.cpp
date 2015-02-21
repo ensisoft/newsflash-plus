@@ -144,7 +144,7 @@ void Groups::loadState(app::Settings& settings)
     accountsUpdated();
 }
 
-bool Groups::saveState(app::Settings& settings)
+void Groups::saveState(app::Settings& settings)
 {
     const auto favorites = ui_.chkFavorites->isChecked();
     const QHeaderView* header = ui_.tableGroups->horizontalHeader();
@@ -162,8 +162,6 @@ bool Groups::saveState(app::Settings& settings)
         const auto width = ui_.tableGroups->columnWidth(i);
         settings.set("news", name, width);
     }
-
-    return true;
 }
 
 void Groups::on_actionBrowse_triggered()

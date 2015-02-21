@@ -42,7 +42,7 @@ namespace nntp
            std::iterator<std::forward_iterator_tag, line>
         {
         public:
-            iterator(const linebuffer& buff, line current) : buffer_(&buff), current_(std::move(current))
+            iterator(const linebuffer& buff, line current) : buffer_(&buff), current_(current)
             {
                 pos_ = current_.length;
             }
@@ -84,6 +84,9 @@ namespace nntp
             {
                 return std::string { current_.start, current_.length };
             }
+
+            std::size_t pos() const 
+            { return pos_; }
 
         private:
             void forward()

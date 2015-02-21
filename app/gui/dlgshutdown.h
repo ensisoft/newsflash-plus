@@ -60,7 +60,7 @@ namespace gui
     private:
         void closeEvent(QCloseEvent* event)
         {
-            DEBUG("DlgShutdown close event");
+            //DEBUG("DlgShutdown close event");
 
             // just in case the window has a little X in the title bar
             // we want to disallow the window to be closed by the user.

@@ -39,6 +39,8 @@ namespace app
 
 QPixmap toGrayScale(const QPixmap& p);
 
+QPixmap toGrayScale(const QString& pixmap);
+
 // extract appliation icon from a 3rd party executable specified
 // by binary. binary is expected to be the complete path to the
 // executable in question.

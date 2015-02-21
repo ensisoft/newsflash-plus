@@ -11,11 +11,11 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Tool settings</string>
+   <string>Application Settings</string>
   </property>
   <property name="windowIcon">
    <iconset resource="resource.qrc">
-    <normaloff>:/resource/16x16_ico_png/ico_tool.png</normaloff>:/resource/16x16_ico_png/ico_tool.png</iconset>
+    <normaloff>:/resource/16x16_ico_png/ico_application.png</normaloff>:/resource/16x16_ico_png/ico_application.png</iconset>
   </property>
   <property name="sizeGripEnabled">
    <bool>true</bool>

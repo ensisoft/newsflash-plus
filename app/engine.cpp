@@ -122,11 +122,11 @@ void Engine::setAccount(const Accounts::Account& acc)
 {
     newsflash::ui::account a;
     a.id                    = acc.id;
-    a.name                  = to_utf8(acc.name);
-    a.username              = to_utf8(acc.username);
-    a.password              = to_utf8(acc.password);
-    a.secure_host           = to_latin(acc.secureHost);
-    a.general_host          = to_latin(acc.generalHost);    
+    a.name                  = toUtf8(acc.name);
+    a.username              = toUtf8(acc.username);
+    a.password              = toUtf8(acc.password);
+    a.secure_host           = toLatin(acc.secureHost);
+    a.general_host          = toLatin(acc.generalHost);    
     a.secure_port           = acc.securePort;    
     a.general_port          = acc.generalPort;    
     a.enable_compression    = acc.enableCompression;
@@ -190,16 +190,16 @@ bool Engine::downloadNzbContents(quint32 acc, const QString& path, const QString
     newsflash::ui::batch download;
     download.account = acc;
     download.path = narrow(location);
-    download.desc = to_utf8(desc);
+    download.desc = toUtf8(desc);
     for (auto& item : items)
     {
         newsflash::ui::download file;
         file.articles = std::move(item.segments);
         file.groups   = std::move(item.groups);
         file.size     = item.bytes;
-        file.name     = nntp::find_filename(to_utf8(item.subject));
+        file.name     = nntp::find_filename(toUtf8(item.subject));
         if (file.name.size() < 5)
-            file.name = to_utf8(item.subject);
+            file.name = toUtf8(item.subject);
         download.files.push_back(std::move(file));
     }
     engine_->download_files(std::move(download));
@@ -210,7 +210,7 @@ bool Engine::downloadNzbContents(quint32 acc, const QString& path, const QString
         {
             ERROR(str("Error creating log path _1", dir));
         }
-        engine_->start(to_utf8(logifiles_));
+        engine_->start(toUtf8(logifiles_));
     }
     INFO(str("Downloading \"_1\"", desc));
     NOTE(str("Downloading \"_1\"", desc));
@@ -239,16 +239,16 @@ bool Engine::downloadNzbContents(quint32 acc, const QString& path, const QString
     newsflash::ui::batch download;
     download.account = acc;
     download.path    = narrow(location);
-    download.desc    = to_utf8(desc);
+    download.desc    = toUtf8(desc);
     for (auto* item : nzb)
     {
         newsflash::ui::download file;
         file.articles = item->segments;
         file.groups   = item->groups;
         file.size     = item->bytes;
-        file.name     = nntp::find_filename(to_utf8(item->subject));
+        file.name     = nntp::find_filename(toUtf8(item->subject));
         if (file.name.size() < 5)
-            file.name = to_utf8(item->subject);
+            file.name = toUtf8(item->subject);
         download.files.push_back(std::move(file));
     }
     engine_->download_files(std::move(download));
@@ -259,7 +259,7 @@ bool Engine::downloadNzbContents(quint32 acc, const QString& path, const QString
         {
             ERROR(str("Error creating log path _1", dir));
         }
-        engine_->start(to_utf8(logifiles_));
+        engine_->start(toUtf8(logifiles_));
     }
     INFO(str("Downloading \"_1\"", desc));
     NOTE(str("Downloading \"_1\"", desc));
@@ -272,7 +272,7 @@ quint32 Engine::retrieveNewsgroupListing(quint32 acc)
 {
     newsflash::ui::listing listing;
     listing.account = acc;
-    listing.desc    = to_utf8(tr("Newsgroup Listing"));
+    listing.desc    = toUtf8(tr("Newsgroup Listing"));
 
     const auto batchId = engine_->download_listing(listing);
 
@@ -283,7 +283,7 @@ quint32 Engine::retrieveNewsgroupListing(quint32 acc)
         {
             ERROR(str("Error creating log path _1", dir));
         }
-        engine_->start(to_utf8(logifiles_));
+        engine_->start(toUtf8(logifiles_));
     }
     return batchId;
 }
@@ -340,7 +340,7 @@ void Engine::loadSession()
         const auto& file = homedir::file("session.bin");
         if (QFileInfo(file).exists())
         {
-            engine_->load_session(to_utf8(file));
+            engine_->load_session(toUtf8(file));
             if (engine_->num_tasks())
                 connect(connect_);
         }
@@ -358,7 +358,7 @@ void Engine::saveSession()
 
     DEBUG(str("Saving engine session in _1", file));
 
-    engine_->save_session(to_utf8(file));
+    engine_->save_session(toUtf8(file));
 }
 
 void Engine::connect(bool on_off)
@@ -373,7 +373,7 @@ void Engine::connect(bool on_off)
         {
             ERROR(str("Error creating log path _1", dir));
         }
-        engine_->start(to_utf8(logifiles_));
+        engine_->start(toUtf8(logifiles_));
     }
 }
 
@@ -494,7 +494,7 @@ void Engine::onListComplete(const newsflash::ui::listing& l)
         group.first = ui.first;
         group.last  = ui.last;
         group.size  = ui.size;
-        group.name  = from_utf8(ui.name);
+        group.name  = fromUtf8(ui.name);
         list.append(group);
     }
 

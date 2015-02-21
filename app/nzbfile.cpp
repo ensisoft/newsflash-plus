@@ -219,10 +219,10 @@ QVariant NZBFile::data(const QModelIndex& index, int role) const
         {
             if (show_filename_only_)
             {
-                const auto& utf8 = to_utf8(item.subject);
+                const auto& utf8 = toUtf8(item.subject);
                 const auto& name = nntp::find_filename(utf8);
                 if (name.size() > 5)
-                    return from_utf8(name);
+                    return fromUtf8(name);
             }
             return item.subject;
         }
@@ -281,14 +281,14 @@ void NZBFile::parse_complete()
 
     for (auto& item : data_)
     {
-        const auto utf8 = app::to_utf8(item.subject);
+        const auto utf8 = app::toUtf8(item.subject);
         auto name = nntp::find_filename(utf8);
         if (name.size() < 5)
             name = utf8;
         if (!name.empty())
         {
-            item.type = find_filetype(app::from_utf8(name));
-            item.icon = find_fileicon(item.type);
+            item.type = findFileType(app::fromUtf8(name));
+            item.icon = findFileIcon(item.type);
         }
     }
 

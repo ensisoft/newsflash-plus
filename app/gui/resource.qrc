@@ -33,13 +33,24 @@
     <file>resource/16x16_ico_png/ico_news.png</file>
     <file>resource/16x16_ico_png/ico_star.png</file>
     <file>resource/16x16_ico_png/ico_star_gray.png</file>    
-    <file>resource/16x16_ico_png/ico_tool.png</file>    
+    <file>resource/16x16_ico_png/ico_throttle.png</file>    
+    <file>resource/16x16_ico_png/ico_repair.png</file>    
+    <file>resource/16x16_ico_png/ico_extract.png</file>
     <file>resource/16x16_ico_png/ico_info.png</file>
     <file>resource/16x16_ico_png/ico_warning.png</file>    
     <file>resource/16x16_ico_png/ico_error.png</file>    
     <file>resource/16x16_ico_png/ico_password.png</file>    
     <file>resource/16x16_ico_png/ico_disk.png</file>
     <file>resource/16x16_ico_png/ico_disk_write.png</file>    
+    <file>resource/16x16_ico_png/ico_bullet_green.png</file>
+    <file>resource/16x16_ico_png/ico_bullet_red.png</file>
+
+    <!-- application icons -->
+    <file>resource/16x16_ico_png/ico_application.png</file>    
+    <file>resource/16x16_ico_png/ico_application_add.png</file>
+    <file>resource/16x16_ico_png/ico_application_del.png</file>    
+    <file>resource/16x16_ico_png/ico_application_edit.png</file>    
+
 
     <!-- application/mainwindow icons -->
     <file>resource/16x16_ico_png/ico_app_minimize.png</file>
@@ -114,14 +125,13 @@
     <file>resource/16x16_ico_png/ico_unlock.png</file>
 
     <file>resource/16x16_ico_png/ico_shrink.png</file>
-    <file>resource/16x16_ico_png/ico_repair.png</file>
+
     <file>resource/16x16_ico_png/ico_log.png</file>
     <file>resource/16x16_ico_png/ico_update.png</file>
     <file>resource/16x16_ico_png/ico_erase_content.png</file>
     <file>resource/16x16_ico_png/ico_purge.png</file>
     <file>resource/16x16_ico_png/ico_properties.png</file>
     <file>resource/16x16_ico_png/ico_sorting.png</file>
-    <file>resource/16x16_ico_png/ico_python.png</file>
     <file>resource/16x16_ico_png/ico_next_bookmark.png</file>
     <file>resource/16x16_ico_png/ico_previous_bookmark.png</file>
     <file>resource/16x16_ico_png/ico_touch.png</file>
@@ -132,10 +142,7 @@
     <file>resource/16x16_ico_png/ico_pin.png</file>
     <file>resource/16x16_ico_png/ico_run.png</file>
     <file>resource/16x16_ico_png/ico_waiting.png</file>
-    <file>resource/16x16_ico_png/ico_script_enable.png</file>
-    <file>resource/16x16_ico_png/ico_script_disable.png</file>
-    <file>resource/16x16_ico_png/ico_script_edit.png</file>
-    <file>resource/16x16_ico_png/ico_throttle.png</file>
+
     <file>resource/16x16_ico_png/ico_not_active.png</file>
     <file>resource/16x16_ico_png/ico_skipped.png</file>
 

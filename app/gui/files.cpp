@@ -1,24 +1,22 @@
-// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-//  of this software and associated documentation files (the "Software"), to deal
-//  in the Software without restriction, including without limitation the rights
-//  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-//  copies of the Software, and to permit persons to whom the Software is
-//  furnished to do so, subject to the following conditions:
+// 
+// This software is copyrighted software. Unauthorized hacking, cracking, distribution
+// and general assing around is prohibited.
+// Redistribution and use in source and binary forms, with or without modification,
+// without permission are prohibited.
 //
 // The above copyright notice and this permission notice shall be included in
-//  all copies or substantial portions of the Software.
+// all copies or substantial portions of the Software.
 //
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-//  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-//  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-//  THE SOFTWARE.
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
 
 #define LOGTAG "files"
 
@@ -152,7 +150,7 @@ void Files::loadState(app::Settings& s)
     ui_.tableFiles->sortByColumn(sortColumn, (Qt::SortOrder)sortOrder);
 }
 
-bool Files::saveState(app::Settings& s)
+void Files::saveState(app::Settings& s)
 {
     const auto sorted    = ui_.chkKeepSorted->isChecked();
     const auto clear     = ui_.chkClearOnExit->isChecked();
@@ -179,8 +177,6 @@ bool Files::saveState(app::Settings& s)
         const auto name  = QString("table_col_%1_width").arg(i);
         s.set("files", name, width);
     }    
-
-    return true;
 }
 
 void Files::shutdown() 
@@ -226,7 +222,7 @@ void Files::on_actionOpenFileWith_triggered()
         const auto row = indices[i].row();
         const auto& item = model_.getItem(row);
         const auto& file = QString("\"%1/%2\"").arg(item.path).arg(item.name);
-        const auto type = app::find_filetype(item.name);
+        const auto type = app::findFileType(item.name);
         types.set(type);
 
         if (!QProcess::startDetached(QString("\"%1\" %2").arg(exe).arg(file)))
@@ -313,7 +309,7 @@ void Files::on_tableFiles_customContextMenuRequested(QPoint point)
     {
         const auto row = indices[i].row();
         const auto& item = model_.getItem(row);
-        const auto type = app::find_filetype(item.name);
+        const auto type = app::findFileType(item.name);
         types.set(type);
     }
 
@@ -350,14 +346,14 @@ void Files::on_tableFiles_customContextMenuRequested(QPoint point)
 
     menu.addMenu(&sub);
     menu.addSeparator();
-    menu.addAction(ui_.actionFind);
-    menu.addAction(ui_.actionFindPrev);
-    menu.addAction(ui_.actionFindNext);
-    menu.addSeparator();
+    //menu.addAction(ui_.actionFind);
+    //menu.addAction(ui_.actionFindPrev);
+    //menu.addAction(ui_.actionFindNext);
+    //menu.addSeparator();
     menu.addAction(ui_.actionOpenFolder);
     menu.addSeparator();
-    menu.addAction(ui_.actionClear);
-    menu.addSeparator();
+    //menu.addAction(ui_.actionClear);
+    //menu.addSeparator();
     menu.addAction(ui_.actionDelete);
     menu.exec(QCursor::pos());
 }

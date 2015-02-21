@@ -106,6 +106,29 @@ void test_linebuffer()
         ++beg;
         BOOST_REQUIRE(beg.to_str() == "keke\n");
     }
+
+    // check pos
+    {
+        const char* str = 
+           "jeesus\r\n"
+           "ajaa\r\n"
+           "mopolla";
+
+        nntp::linebuffer buffer(str, std::strlen(str));
+
+        auto beg = buffer.begin();
+        auto end = buffer.end();
+        BOOST_REQUIRE(beg.to_str() == "jeesus\r\n");
+        BOOST_REQUIRE(beg.pos() == std::strlen("jeesus\r\n"));
+
+        ++beg;
+        BOOST_REQUIRE(beg.to_str() == "ajaa\r\n");
+        BOOST_REQUIRE(beg.pos() == std::strlen("jeesus\r\najaa\r\n"));
+
+        ++beg;
+        BOOST_REQUIRE(beg == end);
+        BOOST_REQUIRE(beg.pos() == std::strlen("jeesus\r\najaa\r\n"));
+    }
 }
 
 int test_main(int, char*[])

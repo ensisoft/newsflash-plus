@@ -46,7 +46,7 @@ namespace gui
         virtual void addActions(QToolBar& bar) override;
         virtual void activate(QWidget*) override;
         virtual void loadState(app::Settings& settings) override;
-        virtual bool saveState(app::Settings& settings) override;
+        virtual void saveState(app::Settings& settings) override;
 
         virtual info getInformation() const override;
 

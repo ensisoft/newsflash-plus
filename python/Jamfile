@@ -27,7 +27,7 @@ project python
     <include>Python/
 
     # define this only if building static
-    #<define>Py_BUILD_CORE     
+    <define>Py_BUILD_CORE     
 
     <define>XML_DTD
     <define>XML_NS
@@ -151,11 +151,19 @@ if [ os.name ] = LINUX
         Python/dynload_shlib.c
         getpath.c        
 
-        util
-        dl
+        #util
+        #dl
     ;
 
-    exe python : Modules/python.c python25 : <linkflags>-Xlinker <linkflags>-export-dynamic ;
+    lib dl   : : <name>dl ;
+    lib util : : <name>util ;
+
+    exe python : 
+      Modules/python.c 
+      python25/<link>static 
+      dl
+      util
+      : <linkflags>-Xlinker <linkflags>-export-dynamic ;
     
 }
 

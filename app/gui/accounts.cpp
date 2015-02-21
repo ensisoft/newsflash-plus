@@ -147,9 +147,8 @@ void Accounts::loadState(app::Settings& s)
     }
 }
 
-bool Accounts::saveState(app::Settings& s)
+void Accounts::saveState(app::Settings& s)
 {
-    return true;
 }
 
 void Accounts::firstLaunch(bool add_account)

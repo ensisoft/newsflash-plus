@@ -180,6 +180,7 @@ void MainWindow::loadState()
     app::g_accounts->loadState(settings_);
     app::g_tools->loadstate(settings_);    
     app::g_engine->loadState(settings_);
+    //app::g_postProcess->loadState(settings_);
 
     if (!settings_.contains("window", "width"))
     {
@@ -586,6 +587,12 @@ void MainWindow::closeEvent(QCloseEvent* event)
         m->shutdown();
 
 
+    //dialog.setText(tr("Stopping script engine..."));
+    //QObject::connect(app::g_python, SIGNAL(shutdownComplete()), &loop, SLOT(quit()));
+    //if (!app::g_python->shutdown())
+        //loop.exec();
+
+
     dialog.close();
 
     ui_.mainTab->clear();
@@ -668,6 +675,7 @@ bool MainWindow::saveState(DlgShutdown* dlg)
         app::g_accounts->saveState(settings_);
         app::g_engine->saveState(settings_);
         app::g_tools->savestate(settings_);
+        //app::g_postProcess->saveState(settings_);
 
         settings_.set("window", "width", width());
         settings_.set("window", "height", height());

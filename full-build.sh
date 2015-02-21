@@ -126,7 +126,7 @@ copy "README.txt" "$PYTHON"
 copy "DLLs" "$PYTHON"
 copy "Lib" "$PYTHON"
 copy "$VARIANT/python" "$PYTHON"
-copy "$VARIANT/libpython25.so" ""
+#copy "$VARIANT/libpython25.so" ""
 cd ..
 
 cd "tools/launcher"

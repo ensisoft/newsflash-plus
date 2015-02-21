@@ -45,7 +45,7 @@ tools::tool::tool() : types_(0)
 {
     // generate a unique id
     static quint32 guid = 1;
-    guid_ = ++guid;
+    guid_ = guid++;
 
     arguments_ = "${file}";
 }
@@ -88,7 +88,7 @@ const QIcon& tools::tool::icon() const
         {
             if (types_.test(*beg))
             {
-                icon_ = find_fileicon(*beg);
+                icon_ = findFileIcon(*beg);
                 break;
             }
         }

@@ -26,6 +26,7 @@
 
 #include <newsflash/warnpush.h>
 #  include <QtGlobal>
+#  include <QStringList>
 #  include <QString>
 #  include <QDateTime>
 #  include <QUrl>
@@ -187,6 +188,7 @@ namespace app
     QString format(const QDir& dir);
     QString format(const QLibrary& lib);
     QString format(const QUrl& url);
+    QString format(const QStringList& list);
     QString format(const app::size& size);
     QString format(const app::speed& speed);
     QString format(const app::gigs& gigs);
@@ -254,27 +256,27 @@ namespace app
     }
 
     inline
-    std::string to_utf8(const QString& str)
+    std::string toUtf8(const QString& str)
     {
         const auto& bytes = str.toUtf8();
         return std::string(bytes.data(), bytes.size());
     }
 
     inline
-    std::string to_latin(const QString& str)
+    std::string toLatin(const QString& str)
     {
         const auto& bytes = str.toLatin1();
         return std::string(bytes.data(), bytes.size());
     }
 
     inline
-    QString from_utf8(const std::string& s)
+    QString fromUtf8(const std::string& s)
     {
         return QString::fromUtf8(s.c_str());
     }
 
     inline 
-    QString from_latin(const std::string& s)
+    QString fromLatin(const std::string& s)
     {
         return QString::fromLatin1(s.c_str());
     }

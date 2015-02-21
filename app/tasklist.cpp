@@ -113,7 +113,7 @@ QVariant tasklist::data(const QModelIndex& index, int role) const
                 return format(size{ui.size});
 
             case columns::desc:
-                return from_utf8(ui.desc);
+                return fromUtf8(ui.desc);
 
             case columns::sentinel: break;
         }

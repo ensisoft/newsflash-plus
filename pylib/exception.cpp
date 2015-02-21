@@ -56,7 +56,7 @@ std::string get_python_error()
 
     std::string str = "no error information available";
 
-    detail::object name("pylib");
+    detail::object name("scripts.pylib");
     detail::object module = PyImport_Import(name.get());
     if (!module)
     {

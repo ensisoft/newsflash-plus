@@ -88,7 +88,7 @@ void Telephone::on_finished(QNetworkReply& reply)
     latest.remove(QRegExp("\\n"));
     latest.remove(QRegExp("\\r"));
 
-    const bool have_new_version = check_version_update(NEWSFLASH_VERSION, latest);
+    const bool have_new_version = checkVersionUpdate(NEWSFLASH_VERSION, latest);
     DEBUG(str("Latest available version _1", latest));
     DEBUG(str("Have new version? _1", have_new_version));
 

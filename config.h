@@ -120,7 +120,7 @@
 #endif
 
 #define NEWSFLASH_ENABLE_LOG
-//#define NEWSFLASH_ENABLE_PYTHON
+#define NEWSFLASH_ENABLE_PYTHON
 
 #ifndef NEWSFLASH_DEBUG
 //#  define QT_NO_DEBUG
@@ -139,3 +139,4 @@
 #else 
 #  define NEWSFLASH_TITLE "Newsflash Plus DEBUG"
 #endif  
+

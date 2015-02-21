@@ -64,6 +64,14 @@ namespace app
         bool binary;
     };
 
+    struct FileBatchInfo {
+        // path to the batch of files (folder)
+        QString path;
+
+        QString desc;
+
+    };
+
     // newsgroup message notifies of a group information
     // as part of a listing event.
     struct NewsGroupInfo {
@@ -190,7 +198,7 @@ namespace app
 
         QString getEngineLogfile() const
         {
-            return from_utf8(engine_->get_logfile());
+            return fromUtf8(engine_->get_logfile());
         }
 
         void setLogfilesPath(const QString& path)
@@ -308,6 +316,7 @@ namespace app
         void shutdownComplete();
         void newDownloadQueued(const QString& desc);
         void fileCompleted(const app::DataFileInfo& file);
+        void batchCompleted(const app::FileBatchInfo& batch);
         void listingCompleted(quint32 account, const QList<app::NewsGroupInfo>& list);
 
     private:
@@ -338,3 +347,4 @@ namespace app
 
     Q_DECLARE_METATYPE(app::DataFileInfo);
     Q_DECLARE_METATYPE(app::NewsGroupInfo);
+    Q_DECLARE_METATYPE(app::FileBatchInfo);

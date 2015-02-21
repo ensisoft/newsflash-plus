@@ -35,22 +35,17 @@ namespace app
     class distdir
     {
     public:
-        static
-        void init();
-
         // get absolute path to the installation base folder
-        static
-        QString path();
+        static QString path();
 
         // get absolute path to the path relative to the installation foldern
-        static
-        QString path(const QString& path);
+        static QString path(const QString& path);
 
-        static
-        QString help(const QString& page);
+        static QString help(const QString& page);
+
+        static QString executable();
 
     private:
-        static QString pathstr;
     };
 
 } // app

@@ -80,8 +80,9 @@ namespace gui
         // load the widget/component state on application startup
         virtual void loadState(app::Settings& s) {}
 
-        // save the widget/component state
-        virtual bool saveState(app::Settings& s) { return true; }
+        // save the widget/component state.
+        // can throw an exception.
+        virtual void saveState(app::Settings& s) {};
 
         // prepare the widget/component for shutdown
         virtual void shutdown() {}
