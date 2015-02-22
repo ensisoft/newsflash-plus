@@ -229,7 +229,7 @@ Result Par2Repairer::Process(const CommandLine &commandline, bool dorepair)
         }
 
         if (noiselevel > CommandLine::nlSilent)
-          cout << endl << "Verifying repaired files:" << endl << endl;
+          cout << endl << "Verifying source files:" << endl << endl;
 
         // Verify that all of the reconstructed target files are now correct
         if (!VerifyTargetFiles(basepath))
@@ -243,7 +243,7 @@ Result Par2Repairer::Process(const CommandLine &commandline, bool dorepair)
       // Are all of the target files now complete?
       if (completefilecount<mainpacket->RecoverableFileCount())
       {
-        cerr << "Repair Failed." << endl;
+        cerr << "Repair failed." << endl;
         return eRepairFailed;
       }
       else
@@ -292,7 +292,7 @@ bool Par2Repairer::LoadPacketsFromFile(string filename)
     string path;
     string name;
     DiskFile::SplitFilename(filename, path, name);
-    cout << "Loading \"" << name << "\"." << endl;
+    cout << "Loading: \"" << name << "\"." << endl;
   }
 
   // How many useable packets have we found
@@ -318,6 +318,10 @@ bool Par2Repairer::LoadPacketsFromFile(string filename)
     // Start at the beginning of the file
     u64 offset = 0;
 
+    string path;
+    string name;
+    DiskFile::SplitFilename(filename, path, name);
+
     // Continue as long as there is at least enough for the packet header
     while (offset + sizeof(PACKET_HEADER) <= filesize)
     {
@@ -328,7 +332,7 @@ bool Par2Repairer::LoadPacketsFromFile(string filename)
         u32 newfraction = (u32)(1000 * offset / filesize);
         if (oldfraction != newfraction)
         {
-          cout << "Loading: " << newfraction/10 << '.' << newfraction%10 << "%\r" << flush;
+          cout << "Loading: \"" << name << "\": " << newfraction/10 << '.' << newfraction%10 << "%\r" << flush;
           progress = offset;
         }
       }
@@ -1446,14 +1450,14 @@ bool Par2Repairer::ScanDataFile(DiskFile                *diskfile,    // [in]
   }
 
   string shortname;
-  if (name.size() > 56)
-  {
-    shortname = name.substr(0, 28) + "..." + name.substr(name.size()-28);
-  }
-  else
-  {
+  //if (name.size() > 56)
+  //{
+  //  shortname = name.substr(0, 28) + "..." + name.substr(name.size()-28);
+  //}
+  //else
+  //{
     shortname = name;
-  }
+  //}
 
   // Create the checksummer for the file and start reading from it
   FileCheckSummer filechecksummer(diskfile, blocksize, windowtable, windowmask);
@@ -1878,9 +1882,10 @@ bool Par2Repairer::CheckVerificationResults(void)
     {
       if (noiselevel > CommandLine::nlSilent)
       {
-        cout << "Repair is not possible." << endl;
-        cout << "You need " << missingblockcount - recoverypacketmap.size()
-             << " more recovery blocks to be able to repair." << endl;
+        cout << "Repair is not possible. \"" <<
+                 "You need " << missingblockcount - recoverypacketmap.size() <<
+                 " more recovery blocks to be able to repair." << 
+                 "\"" << endl;
       }
 
       return false;
@@ -1889,7 +1894,7 @@ bool Par2Repairer::CheckVerificationResults(void)
   else
   {
     if (noiselevel > CommandLine::nlSilent)
-      cout << "All files are correct, repair is not required." << endl;
+      cout << "Repair is not required." << endl;
 
     return true;
   }

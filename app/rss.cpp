@@ -304,7 +304,7 @@ void RSS::onRefreshComplete(RSSFeed* feed, Media type, QNetworkReply& reply)
         std::back_inserter(items_));
     endInsertRows();
 
-    INFO(str("RSS feed from _1 complete", url));
+    //INFO(str("RSS feed from _1 complete", url));
 }
 
 void RSS::onNzbFileComplete(const QString& file, QNetworkReply& reply)

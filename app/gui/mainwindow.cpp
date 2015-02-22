@@ -367,7 +367,7 @@ QString MainWindow::selectSaveNzbFolder()
 QString MainWindow::selectNzbOpenFile()
 {
     const auto& file = QFileDialog::getOpenFileName(this,
-        tr("Select NZB file"), recent_load_nzb_path_, "*.nzb");
+        tr("Select NZB file"), recent_load_nzb_path_, "Newzbin Files (*.nzb)");
     if (file.isEmpty())
         return "";
 
@@ -378,7 +378,7 @@ QString MainWindow::selectNzbOpenFile()
 QString MainWindow::selectNzbSaveFile(const QString& filename)
 {
     const auto& file = QFileDialog::getSaveFileName(this,
-        tr("Save NZB file"), recent_save_nzb_path_ + "/" + filename, "*.nzb");
+        tr("Save NZB file"), recent_save_nzb_path_ + "/" + filename, "Newzbin files (*.nzb)");
     if (file.isEmpty())
         return "";
 

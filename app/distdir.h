@@ -38,8 +38,11 @@ namespace app
         // get absolute path to the installation base folder
         static QString path();
 
-        // get absolute path to the path relative to the installation foldern
+        // get absolute path to the path relative to the installation folder.
+        // the path is terminated with /
         static QString path(const QString& path);
+
+        static QString file(const QString& file);
 
         static QString help(const QString& page);
 

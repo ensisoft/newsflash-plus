@@ -101,6 +101,7 @@
 
 #ifndef NDEBUG
 #  define NEWSFLASH_DEBUG
+#  undef QT_NO_DEBUG
 #endif
 
 #if defined(LINUX_OS)

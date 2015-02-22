@@ -39,8 +39,16 @@ QString distdir::path()
 
 QString distdir::path(const QString& path)
 {
-    static const auto base = QCoreApplication::applicationDirPath();
-    return QDir::toNativeSeparators(base + "/" + path);
+    const auto base = QCoreApplication::applicationDirPath();
+    const auto native = QDir::toNativeSeparators(base + "/" + path + "/");
+    return QDir::cleanPath(native);
+}
+
+QString distdir::file(const QString& file)
+{
+    const auto base   = QCoreApplication::applicationDirPath();
+    const auto native = QDir::toNativeSeparators(base + "/" + file);
+    return QDir::cleanPath(native);
 }
 
 QString distdir::executable() 

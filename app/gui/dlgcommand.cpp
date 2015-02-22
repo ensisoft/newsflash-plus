@@ -53,7 +53,7 @@ void DlgCommand::on_btnBrowseExec_clicked()
 {
     QString filter;
     #if defined(WINDOWS_OS)
-        filter = "*.exe";
+        filter = "Executables (*.exe)";
     #endif
 
     auto exec = QFileDialog::getOpenFileName(this,
@@ -68,7 +68,7 @@ void DlgCommand::on_btnBrowseExec_clicked()
 void DlgCommand::on_btnBrowseFile_clicked()
 {
     auto file = QFileDialog::getOpenFileName(this,
-        tr("Select Script File"));
+        tr("Select "));
     if (file.isEmpty())
         return;
 

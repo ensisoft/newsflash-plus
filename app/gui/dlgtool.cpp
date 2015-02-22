@@ -69,7 +69,7 @@ void DlgTool::on_btnBrowse_clicked()
     QString filter;
 
     #if defined(WINDOWS_OS)
-        filter = "*.exe";
+        filter = "Executables (*.exe)";
     #endif
 
     QString executable = QFileDialog::getOpenFileName(this,

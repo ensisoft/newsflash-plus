@@ -1115,6 +1115,7 @@ public:
                 return val + next.size;
             });
         num_tasks_ = spec.files.size();
+        path_      = spec.path;
 
         LOG_I("Batch ", ui_.batch_id, " (", ui_.desc, ") created");     
         LOG_D("Batch has ", num_tasks_, " tasks");                   

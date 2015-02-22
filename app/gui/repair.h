@@ -27,13 +27,14 @@
 #  include "ui_repair.h"
 #include <newsflash/warnpop.h>
 #include "mainwidget.h"
+#include "../repair.h"
 
 namespace gui
 {
     class Repair : public MainWidget
     {
         Q_OBJECT
-        
+
     public:
         Repair();
        ~Repair();
@@ -48,8 +49,14 @@ namespace gui
 
     private slots:
         void on_tableView_customContextMenuRequested(QPoint);
-        void on_actionRun_triggered();
+        void on_actionRecover_triggered();
         void on_actionStop_triggered();
+        void on_actionAdd_triggered();
+        void on_actionDel_triggered();
+        void recoveryStart(const app::Recovery& rec);
+        void recoveryReady(const app::Recovery& rec);
+        void scanProgress(const QString& file, int val);
+        void repairProgress(const QString& step, int done);
 
     private:
         Ui::Repair ui_;

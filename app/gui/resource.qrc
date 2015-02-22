@@ -34,7 +34,7 @@
     <file>resource/16x16_ico_png/ico_star.png</file>
     <file>resource/16x16_ico_png/ico_star_gray.png</file>    
     <file>resource/16x16_ico_png/ico_throttle.png</file>    
-    <file>resource/16x16_ico_png/ico_repair.png</file>    
+
     <file>resource/16x16_ico_png/ico_extract.png</file>
     <file>resource/16x16_ico_png/ico_info.png</file>
     <file>resource/16x16_ico_png/ico_warning.png</file>    
@@ -44,6 +44,10 @@
     <file>resource/16x16_ico_png/ico_disk_write.png</file>    
     <file>resource/16x16_ico_png/ico_bullet_green.png</file>
     <file>resource/16x16_ico_png/ico_bullet_red.png</file>
+    <file>resource/16x16_ico_png/ico_bullet_blue.png</file>    
+    <file>resource/16x16_ico_png/ico_bullet_grey.png</file>    
+    <file>resource/16x16_ico_png/ico_bullet_yellow.png</file>    
+
 
     <!-- application icons -->
     <file>resource/16x16_ico_png/ico_application.png</file>    
@@ -85,6 +89,16 @@
 
     <!-- file module icons -->
     <file>resource/16x16_ico_png/ico_files.png</file>
+
+    <!-- recovery icons -->
+    <file>resource/16x16_ico_png/ico_recovery.png</file>    
+    <file>resource/16x16_ico_png/ico_recovery_add.png</file>        
+    <file>resource/16x16_ico_png/ico_recovery_del.png</file>    
+    <file>resource/16x16_ico_png/ico_recovery_queued.png</file>
+    <file>resource/16x16_ico_png/ico_recovery_active.png</file>
+    <file>resource/16x16_ico_png/ico_recovery_success.png</file>
+    <file>resource/16x16_ico_png/ico_recovery_error.png</file>
+    <file>resource/16x16_ico_png/ico_recovery_failed.png</file>
 
 
     <!-- task state icons -->

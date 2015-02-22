@@ -479,7 +479,11 @@ void Engine::onBatchComplete(const newsflash::ui::batch& b)
     path = QDir(path).absolutePath();
     path = QDir::toNativeSeparators(path);
 
+    FileBatchInfo batch;
+    batch.desc = fromUtf8(b.desc);
+    batch.path = path;
 
+    emit batchCompleted(batch);
 }
 
 void Engine::onListComplete(const newsflash::ui::listing& l)

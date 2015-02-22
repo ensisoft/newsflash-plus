@@ -56,6 +56,12 @@ EventLog::EventLog()
             setWindowIcon(QIcon("icons:ico_error.png"));
             g_win->update(this);
         }
+        else if (e.type == app::eventlog::event::warning)
+        {
+            setWindowIcon(QIcon("icons:ico_warning.png"));
+            g_win->update(this);
+        }
+
         ui_.actionClearLog->setEnabled(true);
         return true;
     };

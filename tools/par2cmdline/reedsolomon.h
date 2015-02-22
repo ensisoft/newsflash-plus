@@ -263,7 +263,7 @@ inline bool ReedSolomon<g>::Compute(CommandLine::NoiseLevel noiselevel)
     if (noiselevel > CommandLine::nlQuiet)
     {
       int progress = row * 1000 / (datamissing+parmissing);
-      cout << "Constructing: " << progress/10 << '.' << progress%10 << "%\r" << flush;
+      cout << "Constructing Reed Solomon Matrix: " << progress/10 << '.' << progress%10 << "%\r" << flush;
     }
 #endif
 
@@ -310,7 +310,7 @@ inline bool ReedSolomon<g>::Compute(CommandLine::NoiseLevel noiselevel)
     if (noiselevel > CommandLine::nlQuiet)
     {
       int progress = (row+datamissing) * 1000 / (datamissing+parmissing);
-      cout << "Constructing: " << progress/10 << '.' << progress%10 << "%\r" << flush;
+      cout << "Constructing Reed Solomon Matrix: " << progress/10 << '.' << progress%10 << "%\r" << flush;
     }
 #endif
 
@@ -349,7 +349,7 @@ inline bool ReedSolomon<g>::Compute(CommandLine::NoiseLevel noiselevel)
     outputrow++;
   }
   if (noiselevel > CommandLine::nlQuiet)
-    cout << "Constructing: done." << endl;
+    cout << "Constructing Reed Solomon Matrix: 100.0%\r" << endl;
 
   // Solve the matrices only if recovering data
   if (datamissing > 0)
@@ -450,7 +450,7 @@ inline bool ReedSolomon<g>::GaussElim(CommandLine::NoiseLevel noiselevel, unsign
         if (progress != newprogress)
         {
           progress = newprogress;
-          cout << "Solving: " << progress/10 << '.' << progress%10 << "%\r" << flush;
+          cout << "Solving Reed Solomon Matrix: " << progress/10 << '.' << progress%10 << "%\r" << flush;
         }
       }
 #endif
@@ -502,7 +502,7 @@ inline bool ReedSolomon<g>::GaussElim(CommandLine::NoiseLevel noiselevel, unsign
     }
   }
   if (noiselevel > CommandLine::nlQuiet)
-    cout << "Solving: done." << endl;
+    cout << "Solving Reed Solomon Matrix: 100.0%" << endl;
   if (noiselevel == CommandLine::nlDebug)
   {
     for (unsigned int row=0; row<rows; row++)
