@@ -30,7 +30,6 @@
 #  include <QRegExp>
 #include <newsflash/warnpop.h>
 #include <newsflash/keygen/keygen.h>
-
 #include "telephone.h"
 #include "debug.h"
 #include "eventlog.h"
@@ -44,7 +43,7 @@ namespace app
 
 Telephone::Telephone()
 {
-    DEBUG(str("Current platform _1", getPlatformName()));
+    DEBUG("Current platform %1", getPlatformName());
 
     net_ = g_net->getSubmissionContext();
 }
@@ -54,6 +53,8 @@ Telephone::~Telephone()
 
 void Telephone::callhome()
 {
+    DEBUG("Calling home...");
+    
     const auto& platform    = getPlatformName();
     const auto& fingerprint = keygen::generate_fingerprint();
 
@@ -65,8 +66,6 @@ void Telephone::callhome()
 
     g_net->submit(std::bind(&Telephone::on_finished, this, 
         std::placeholders::_1), net_, url);
-
-    DEBUG("Calling home...");
 }
 
 void Telephone::on_finished(QNetworkReply& reply)
@@ -88,11 +87,11 @@ void Telephone::on_finished(QNetworkReply& reply)
     latest.remove(QRegExp("\\n"));
     latest.remove(QRegExp("\\r"));
 
-    const bool have_new_version = checkVersionUpdate(NEWSFLASH_VERSION, latest);
-    DEBUG(str("Latest available version _1", latest));
-    DEBUG(str("Have new version? _1", have_new_version));
+    const bool newVersion = checkVersionUpdate(NEWSFLASH_VERSION, latest);
+    DEBUG("Latest available version %1", latest);
+    DEBUG("Have new version? %1", newVersion);
 
-    emit completed(have_new_version, latest);
+    emit completed(newVersion, latest);
 }
 
 } // app

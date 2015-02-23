@@ -31,6 +31,7 @@
 #  include <QIODevice>
 #  include <QStringList>
 #  include <QDir>
+#  include <QUrl>
 #include <newsflash/warnpop.h>
 
 #if defined(WINDOWS_OS)

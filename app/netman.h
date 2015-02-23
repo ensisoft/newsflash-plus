@@ -56,20 +56,24 @@ namespace app
 
             on_ready callback;
 
-            Context() : num_pending_requests_(0)
+            Context() : numPending_(0)
             {}
-            Context(NetworkManager& m) : num_pending_requests_(0), manager_(&m)
+            Context(NetworkManager& m) : numPending_(0), manager_(&m)
             {}
 
            ~Context()
             {
                 manager_->cancel(*this);
             }
+            std::size_t numPending() const 
+            { return numPending_;}
+
+            bool hasPending() const 
+            { return numPending_ != 0; }
 
         private:
             friend class NetworkManager;
-        private:
-            std::size_t num_pending_requests_;
+            std::size_t numPending_;
         private:
             NetworkManager* manager_;
         };
@@ -119,13 +123,12 @@ namespace app
             Context* ctx;            
             on_reply callback;
         };
-    private:
         std::list<submission> submissions_;
+        
+    private:
         QNetworkAccessManager qnam_;
         QTimer timer_;
     };
-
-    const char* str(QNetworkReply::NetworkError err);
 
     extern NetworkManager* g_net;
 

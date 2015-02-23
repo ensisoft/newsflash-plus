@@ -77,7 +77,7 @@ namespace app
         virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const override;                
 
     private slots:
-        void parse_complete();
+        void parseComplete();
 
     private:
         std::unique_ptr<NZBThread> thread_;

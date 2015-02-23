@@ -62,12 +62,12 @@ Files::Files()
 
     ui_.findContainer->setVisible(false);
 
-    DEBUG("Files gui created");
+    DEBUG("Files UI created");
 }
 
 Files::~Files()
 {
-    DEBUG("Files gui deleted");
+    DEBUG("Files UI deleted");
 }
 
 void Files::addActions(QMenu& menu)

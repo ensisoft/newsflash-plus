@@ -23,7 +23,6 @@
 #define LOGTAG "style"
 
 #include <newsflash/config.h>
-
 #include <newsflash/warnpush.h>
 #  include <QtGui/QStyleFactory>
 #  include <QFile>
@@ -31,8 +30,8 @@
 #  include <QString>
 #  include "ui_appearance.h"
 #include <newsflash/warnpop.h>
-
 #include "appearance.h"
+#include "../format.h"
 #include "../settings.h"
 #include "../homedir.h"
 #include "../debug.h"
@@ -106,13 +105,13 @@ void Appearance::loadState(app::Settings& s)
     QStyle* style = QApplication::setStyle(current_style_name_);
     if (!style)
     {
-        ERROR(str("No such style _1", current_style_name_));
+        WARN(str("No such style _1", current_style_name_));
         current_style_name_ = "Default";
         return;
     }
     QApplication::setPalette(style->standardPalette());
 
-    DEBUG(str("Qt style _1", current_style_name_));
+    DEBUG("Qt style %1", current_style_name_);
 }
 
 bool Appearance::saveState(app::Settings& s)

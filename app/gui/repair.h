@@ -45,7 +45,7 @@ namespace gui
         virtual void saveState(app::Settings& settings) override;
 
         virtual info getInformation() const override
-        { return {"repair.html", true, true }; }
+        { return {"repairs.html", true, true }; }
 
     private slots:
         void on_tableView_customContextMenuRequested(QPoint);

@@ -45,8 +45,6 @@ NZBThread::~NZBThread()
 
 void NZBThread::run() 
 {
-    //DEBUG(str("nzbthread::run _1", QThread::currentThreadId()));
-
     std::vector<NZBContent> data;
     const auto result = parseNZB(*io_.get(), data);
 

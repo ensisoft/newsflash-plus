@@ -29,13 +29,10 @@
 #  include <QtGui/QMovie>
 #  include <QtGui/QStandardItemModel>
 #include <newsflash/warnpop.h>
-
 #include <newsflash/keygen/keygen.h>
 #include <ctime>
-
 #include "dlgaccount.h"
 #include "accounts.h"
-
 #include "../accounts.h"
 #include "../settings.h"
 #include "../debug.h"
@@ -87,7 +84,7 @@ Accounts::Accounts()
         resource = ":/resource/nh-special.gif";
         campaing = "http://www.newshosting.com/en/index.php?&amp;a_aid=foobar1234&amp;a_bid=2b57ce3a";
     }    
-    DEBUG(str("Usenet campaing '_1' '_2'", resource, campaing));    
+    DEBUG("Usenet campaing '%1' '%2'", resource, campaing);    
 
     // NOTE: if the movie doesn't show up the problem might have
     // to do with Qt image plugins!    
@@ -197,7 +194,7 @@ void Accounts::updatePie()
     const auto slice_avail = 100 * (quota_avail.as_float() / quota_total.as_float());
     const auto slice_used  = 100 * (quota_spent.as_float() / quota_total.as_float());
 
-    DEBUG(str("quota avail _1, used _2", slice_avail, slice_used));
+    DEBUG("Quota avail %1, used %2", slice_avail, slice_used);
 
     pie->insertRows(0, 1, QModelIndex());
     pie->insertRows(1, 1, QModelIndex());
@@ -370,7 +367,7 @@ void Accounts::on_spinTotal_valueChanged(double value)
 
     auto& account = app::g_accounts->getAccount(row);
 
-    DEBUG(str("Quota available value _1", value));
+    DEBUG("Quota available %1", value);
 
     const app::gigs gigs { value };
 
@@ -390,7 +387,7 @@ void Accounts::on_spinSpent_valueChanged(double value)
     if (row == -1)
         return;
 
-    DEBUG(str("Quota spent value _1", value));
+    DEBUG("Quota spent value %1", value);
 
     auto& account = app::g_accounts->getAccount(row);    
 

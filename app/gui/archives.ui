@@ -1,42 +1,49 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>Repair</class>
- <widget class="QWidget" name="Repair">
+ <class>Archives</class>
+ <widget class="QWidget" name="Archives">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1012</width>
-    <height>872</height>
+    <width>851</width>
+    <height>604</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Repairs</string>
+   <string>Archives</string>
   </property>
   <property name="windowIcon">
    <iconset resource="resource.qrc">
-    <normaloff>:/resource/16x16_ico_png/ico_recovery.png</normaloff>:/resource/16x16_ico_png/ico_recovery.png</iconset>
+    <normaloff>:/resource/16x16_ico_png/ico_filetype_archive.png</normaloff>:/resource/16x16_ico_png/ico_filetype_archive.png</iconset>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout_3">
+  <layout class="QVBoxLayout" name="verticalLayout_2">
    <item>
     <widget class="QGroupBox" name="groupBox">
      <property name="title">
-      <string>Repairs</string>
+      <string>Archives</string>
      </property>
-     <layout class="QVBoxLayout" name="verticalLayout_4">
+     <layout class="QVBoxLayout" name="verticalLayout">
       <item>
        <layout class="QHBoxLayout" name="horizontalLayout">
         <item>
-         <widget class="QCheckBox" name="chkWriteLog">
+         <widget class="QCheckBox" name="checkBox">
           <property name="text">
-           <string>Write log file</string>
+           <string>Keep broken</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QCheckBox" name="checkBox">
+         <widget class="QCheckBox" name="checkBox_3">
           <property name="text">
-           <string>Purge recovery files on success</string>
+           <string>Overwrite existing files</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="checkBox_2">
+          <property name="text">
+           <string>Purge archive files on success</string>
           </property>
          </widget>
         </item>
@@ -81,14 +88,14 @@
     </widget>
    </item>
    <item>
-    <widget class="QGroupBox" name="grpOutput">
+    <widget class="QGroupBox" name="grpData">
      <property name="title">
-      <string>Info</string>
+      <string>Archive Data</string>
      </property>
      <property name="flat">
       <bool>false</bool>
      </property>
-     <layout class="QVBoxLayout" name="verticalLayout">
+     <layout class="QVBoxLayout" name="verticalLayout_3">
       <item>
        <widget class="QTableView" name="tableData">
         <property name="sizePolicy">
@@ -155,32 +162,32 @@
     </widget>
    </item>
    <item>
-    <widget class="QProgressBar" name="progressList">
+    <widget class="QProgressBar" name="progressBar">
      <property name="value">
       <number>24</number>
      </property>
      <property name="textVisible">
       <bool>false</bool>
      </property>
-     <property name="format">
-      <string/>
-     </property>
     </widget>
    </item>
   </layout>
-  <action name="actionAutoRepair">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
+  <action name="actionAutoExtract">
    <property name="icon">
     <iconset resource="resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_recovery.png</normaloff>:/resource/16x16_ico_png/ico_recovery.png</iconset>
+     <normaloff>:/resource/16x16_ico_png/ico_extract.png</normaloff>:/resource/16x16_ico_png/ico_extract.png</iconset>
    </property>
    <property name="text">
-    <string>Auto Repair</string>
+    <string>Auto Extract</string>
    </property>
-   <property name="toolTip">
-    <string>Recover files</string>
+  </action>
+  <action name="actionUnpack">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_extract.png</normaloff>:/resource/16x16_ico_png/ico_extract.png</iconset>
+   </property>
+   <property name="text">
+    <string>Unpack</string>
    </property>
   </action>
   <action name="actionStop">
@@ -190,33 +197,6 @@
    </property>
    <property name="text">
     <string>Stop</string>
-   </property>
-   <property name="toolTip">
-    <string>Stop current recovery process</string>
-   </property>
-  </action>
-  <action name="actionAdd">
-   <property name="icon">
-    <iconset resource="resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_recovery_add.png</normaloff>:/resource/16x16_ico_png/ico_recovery_add.png</iconset>
-   </property>
-   <property name="text">
-    <string>Add ...</string>
-   </property>
-   <property name="toolTip">
-    <string>Add a new recovery</string>
-   </property>
-  </action>
-  <action name="actionDel">
-   <property name="icon">
-    <iconset resource="resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_recovery_del.png</normaloff>:/resource/16x16_ico_png/ico_recovery_del.png</iconset>
-   </property>
-   <property name="text">
-    <string>Delete</string>
-   </property>
-   <property name="toolTip">
-    <string>Remove a recovery</string>
    </property>
   </action>
  </widget>

@@ -48,12 +48,12 @@ Files::Files() : keepSorted_(false), sortColumn_(0), sortOrder_(Qt::AscendingOrd
     QObject::connect(g_engine, SIGNAL(fileCompleted(const app::DataFileInfo&)),
         this, SLOT(fileCompleted(const app::DataFileInfo&)));
 
-    DEBUG("Files model created");
+    DEBUG("Files created");
 }
 
 Files::~Files()
 {
-    DEBUG("Files model deleted");
+    DEBUG("Files deleted");
 }
 
 QVariant Files::data(const QModelIndex& index, int role) const
@@ -163,7 +163,7 @@ void Files::loadHistory()
         return;
     }
 
-    DEBUG(str("Opened history file _1", history));
+    DEBUG("Opened history file %1", file);
 
     QTextStream load(&history);
     load.setCodec("UTF-8");
@@ -225,8 +225,6 @@ void Files::eraseHistory()
 
     QFile::remove(file);
 
-    DEBUG(str("Erased file history _1", history_));
-
     files_.clear();
 
     reset();
@@ -246,14 +244,14 @@ void Files::eraseFiles(QModelIndexList& list)
         const auto data = getItem(row);
         const auto file = QString("%1/%2").arg(data.path).arg(data.name);
         QFile::remove(file);
-        DEBUG(str("Deleted file _1", file));
+        DEBUG("Deleted file %1", file);
         
         QDir dir(data.path);
         QFileInfoList entries = dir.entryInfoList(QDir::NoDotAndDotDot);
         if (entries.isEmpty())
         {
             dir.rmdir(data.path);
-            DEBUG(str("Deleted directory _1", data.path));
+            DEBUG("Deleted directory %1", data.path);
         }
 
         beginRemoveRows(QModelIndex(), row, row);

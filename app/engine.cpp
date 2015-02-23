@@ -33,13 +33,6 @@
 #include <newsflash/warnpop.h>
 #include <newsflash/engine/ui/account.h>
 #include <newsflash/engine/nntp.h>
-
-#if defined(WINDOWS_OS)
-#  include <windows.h>
-#elif defined(LINUX_OS)
-#  include <sys/vfs.h>
-#endif
-
 #include "engine.h"
 #include "debug.h"
 #include "homedir.h"
@@ -344,7 +337,7 @@ void Engine::loadSession()
             if (engine_->num_tasks())
                 connect(connect_);
         }
-        DEBUG(str("Engine session loaded. Engine has _1 tasks", engine_->num_tasks()));
+        DEBUG("Engine session loaded. Engine has %1 tasks", engine_->num_tasks());
     }
     catch (const std::exception& e)
     {
@@ -356,7 +349,7 @@ void Engine::saveSession()
 {
     const auto& file = homedir::file("session.bin");
 
-    DEBUG(str("Saving engine session in _1", file));
+    DEBUG("Saving engine session in %1", file);
 
     engine_->save_session(toUtf8(file));
 }
@@ -440,21 +433,22 @@ void Engine::onError(const newsflash::ui::error& e)
 
 void Engine::onFileComplete(const newsflash::ui::file& f)
 {
+    QString name = widen(f.name);
     QString path = widen(f.path);
     if (path.isEmpty())
         path = QDir::currentPath();
 
     path = QDir(path).absolutePath();
     path = QDir::toNativeSeparators(path);
+    DEBUG("File complete \"%1/%2\" damaged: %1 binary: %2", 
+        path, name, f.damaged, f.binary);
 
     app::DataFileInfo file;
     file.binary  = f.binary;
     file.damaged = f.damaged;
-    file.name    = widen(f.name);
+    file.name    = name;
     file.path    = path;
     file.size    = f.size;
-
-    DEBUG(str("Downloaded \"_1/_2\"", path, file.name));
 
     if (f.damaged)
     {
@@ -474,7 +468,7 @@ void Engine::onBatchComplete(const newsflash::ui::batch& b)
 {
     QString path = widen(b.path);
 
-    DEBUG(str("Batch complete \"_1\"", path));
+    DEBUG("Batch complete \"%1\"", path);
 
     path = QDir(path).absolutePath();
     path = QDir::toNativeSeparators(path);

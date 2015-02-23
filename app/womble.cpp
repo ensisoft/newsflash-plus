@@ -67,8 +67,7 @@ bool Womble::parse(QIODevice& io, std::vector<MediaItem>& rss)
     int error_column;
     if (!dom.setContent(&io, false, &error_string, &error_line, &error_column))
     {
-        DEBUG(str("XML parse error _1", error_string));
-        DEBUG(str("Line: _1", error_line));        
+        DEBUG("XML parse error '%1' on line %2", error_string, error_line);
         return false;
     }
 

@@ -216,7 +216,7 @@
 #define   MExtrNoFiles       L"\nNo files to extract"
 #define   MExtrAllOk         L"\nAll OK"
 #define   MExtrTotalErr      L"\nTotal errors: %ld"
-#define   MAskReplace        L"\n\nWould you like to replace the existing file %s\n%6s bytes, modified on %s\nwith a new one\n%6s bytes, modified on %s\n"
+#define   MAskReplace        L"\n\nWould you like to replace the existing file %s %6s bytes, modified on %s with a new one %6s bytes, modified on %s ?\n"
 #define   MAskOverwrite      L"\nOverwrite %s ?"
 #define   MAskNewName        L"\nEnter new name: "
 #define   MHeaderBroken      L"\nCorrupt header is found"

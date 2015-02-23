@@ -34,8 +34,6 @@
 #include <iostream>
 #include <exception>
 
-#include <pylib/program.h>
-
 #include "qtsingleapplication/qtsingleapplication.h"
 #include "mainwindow.h"
 #include "minidump.h"
@@ -52,7 +50,7 @@
 #include "linuxmodule.h"
 #include "appearance.h"
 #include "repair.h"
-#include "extract.h"
+#include "archives.h"
 #include "files.h"
 #include "commands.h"
 #include "../debug.h"
@@ -71,7 +69,7 @@
 #include "../version.h"
 #include "../eventlog.h"
 #include "../repair.h"
-#include "../extract.h"
+#include "../unpacker.h"
 
 using app::str;
 
@@ -142,6 +140,8 @@ int run(int argc, char* argv[])
     app::RepairEngine repairEngine;
     app::g_repair = &repairEngine;
 
+    app::Unpacker unpacker;
+    app::g_unpacker = &unpacker;
 
     // todo: maybe create the widgets and modules on the free store
     // instead of the stack..
@@ -174,9 +174,9 @@ int run(int argc, char* argv[])
     gui::Repair repair;
     win.attach(&repair);
 
-    // UI for extraction engine
-    gui::Extract extract;
-    win.attach(&extract);
+    // UI for archives
+    gui::Archives archives;
+    win.attach(&archives);
 
     // eventlog widget
     gui::EventLog log;
@@ -236,12 +236,12 @@ int seh_main(int argc, char* argv[])
 int main(int argc, char* argv[])
 {
     DEBUG("It's alive!");
-    DEBUG(NEWSFLASH_TITLE << NEWSFLASH_VERSION);
+    DEBUG("%1 %2", NEWSFLASH_TITLE, NEWSFLASH_VERSION);
     try 
     {
         int ret = seh_main(argc, argv);
 
-        DEBUG(str("Goodbye...(_1)", ret));
+        DEBUG("Goodbye...(exitcode: %1)", ret);
         return ret;
     }
     catch (const std::exception& e)

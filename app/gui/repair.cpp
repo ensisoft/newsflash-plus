@@ -59,12 +59,12 @@ Repair::Repair()
     QObject::connect(app::g_repair, SIGNAL(repairProgress(const QString&, int)),
         this, SLOT(repairProgress(const QString&, int)));
 
-    DEBUG("Repair GUI created");
+    DEBUG("Repair UI created");
 }
 
 Repair::~Repair()
 {
-    DEBUG("Repair GUI deleted");
+    DEBUG("Repair UI deleted");
 }
 
 void Repair::addActions(QToolBar& bar)

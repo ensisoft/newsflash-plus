@@ -23,9 +23,9 @@
 #include <newsflash/config.h>
 
 #include <newsflash/warnpush.h>
+#  include <QtNetwork/QNetworkReply>
 #  include <QFile>
 #  include <QDir>
-#  include <QLibrary>
 #  include <QUrl>
 #include <newsflash/warnpop.h>
 
@@ -220,6 +220,11 @@ QString format(bool val)
     return QString((val ? "True" : "False"));
 }
 
+QString format(const QNetworkReply& reply)
+{
+    return reply.errorString();
+}
+
 QString format(const QFile& file)
 {
     return QString("'%1'").arg(file.fileName());
@@ -230,11 +235,6 @@ QString format(const QDir& dir)
     return QString("'%1'").arg(
         QDir::toNativeSeparators(dir.absolutePath()));
 }    
-
-QString format(const QLibrary& lib)
-{
-    return QString("'%1'").arg(lib.fileName());
-}
 
 QString format(const QUrl& url)
 {

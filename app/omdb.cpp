@@ -61,7 +61,7 @@ void MovieDatabase::beginLookup(const QString& title)
     g_net->submit(std::bind(&MovieDatabase::onLookupFinished, this,
         std::placeholders::_1, title), net_, url);
 
-    DEBUG(str("Lookup movie '_1'", title));
+    DEBUG("Lookup movie '%1'", title);
 }
 
 void MovieDatabase::abortLookup(const QString& title)
@@ -121,14 +121,14 @@ void MovieDatabase::onLookupFinished(QNetworkReply& reply, const QString& title)
     db_.insert(std::make_pair(title, movie));
 
     const auto& poster = json["Poster"].toString();
-    DEBUG(str("Retrieving poster from _1", poster));
+    DEBUG("Retrieving poster from %1", poster);
 
     g_net->submit(std::bind(&MovieDatabase::onPosterFinished, this,
         std::placeholders::_1, title), net_, poster);
 
     emit lookupReady(title);
 
-    DEBUG(str("Movie lookup finished. Stored details for '_1'", title));
+    DEBUG("Movie lookup finished. Stored details for '%1'", title);
 }
 
 void MovieDatabase::onPosterFinished(QNetworkReply& reply, const QString& title)
@@ -154,7 +154,7 @@ void MovieDatabase::onPosterFinished(QNetworkReply& reply, const QString& title)
 
     emit posterReady(title);
 
-    DEBUG(str("Stored poster for '_1'", title));
+    DEBUG("Stored poster for '%1'", title);
 }
 
 MovieDatabase* g_movies;

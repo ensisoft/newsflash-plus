@@ -62,7 +62,7 @@ namespace app
         { download_folder_ = f; }
 
     private slots:
-        void perform_scan();
+        void performScan();
 
     private:
         QStringList watched_folders_;

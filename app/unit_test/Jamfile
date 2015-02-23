@@ -8,5 +8,19 @@ project test
   <library>/newsflash//qjson
 ;
 
+unit-test unit_test_unrar 
+  : unit_test_unrar.cpp 
+  ../unrar.cpp 
+  ../unrar.h 
+  ../archiver.h 
+  ../debug.cpp 
+  ../distdir.cpp 
+  ../format.cpp ;
+
+unit-test unit_test_debug 
+  : unit_test_debug.cpp
+  ../debug.cpp ;
+
+
 unit-test unit_test_parstate : unit_test_parstate.cpp ../parstate.cpp ;
 

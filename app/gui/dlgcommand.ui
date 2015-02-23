@@ -158,7 +158,7 @@
              <item>
               <widget class="QRadioButton" name="radioButton">
                <property name="text">
-                <string>A file is downloaded</string>
+                <string>A file download is complete</string>
                </property>
                <property name="autoExclusive">
                 <bool>true</bool>
@@ -188,7 +188,7 @@
              <item>
               <widget class="QRadioButton" name="radioButton_4">
                <property name="text">
-                <string>Extraction completes</string>
+                <string>Archive unpacking completes</string>
                </property>
                <property name="autoExclusive">
                 <bool>true</bool>

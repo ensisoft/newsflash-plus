@@ -92,8 +92,8 @@ void LinuxModule::loadState(app::Settings& s)
     app::setOpenfileCommand(openfile);
     app::setShutdownCommand(shutdown);
 
-    DEBUG(str("Openfile command set to _1", openfile));
-    DEBUG(str("Shutdown command set to _1", shutdown));
+    DEBUG("Openfile command set to %1", openfile);
+    DEBUG("Shutdown command set to %1", shutdown);
 #endif
 }
 

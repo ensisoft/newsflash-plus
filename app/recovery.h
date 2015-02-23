@@ -18,37 +18,51 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#pragma once
-
 #include <newsflash/config.h>
 #include <newsflash/warnpush.h>
-#  include "ui_extract.h"
+#  include <QString>
+#  include <QMetaType>
 #include <newsflash/warnpop.h>
-#include "mainwidget.h"
 
-namespace gui
+namespace app
 {
-    class Extract : public MainWidget
-    {
-        Q_OBJECT
-        
-    public:
-        Extract();
-       ~Extract();
+    struct Recovery {
+        enum class Status {
+            // recovery is currently queued and will execute
+            // at some later time.
+            Queued,  
 
-        virtual void addActions(QToolBar& bar) override;
-        virtual void addActions(QMenu& menu) override;
-        virtual void loadState(app::Settings& settings) override;
-        virtual void saveState(app::Settings& settings) override;
+            // recovery is currently being performed.
+            // recovery data will show the data
+            // inside these parity files.
+            Active, 
 
-        virtual info getInformation() const override
-        { return {"repair.html", true, true }; }
+            // recovery was succesfully performed.
+            Success, 
 
+            // recovery failed
+            Failed,
 
+            // error running the recovery operation
+            Error
+        };
 
-    private:
-        Ui::Extract ui_;
-    private:
+        // current recovery status.
+        Status  state;
+
+        // path to the recovery folder (where the par2 and data files are)
+        QString path;
+
+        // the main par2 file
+        QString file; 
+
+        // human readable description
+        QString desc;
+
+        // error/information message
+        QString message;
     };
 
-} // gui
+} // app
+
+    Q_DECLARE_METATYPE(app::Recovery);

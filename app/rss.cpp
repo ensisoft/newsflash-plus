@@ -62,12 +62,12 @@ RSS::RSS()
         on_ready();
     };
 
-    DEBUG("RSS app created");
+    DEBUG("RSS created");
 }
 
 RSS::~RSS()
 {
-    DEBUG("RSS app destroyed");
+    DEBUG("RSS destroyed");
 }
 
 QVariant RSS::data(const QModelIndex& index, int role) const
@@ -80,27 +80,19 @@ QVariant RSS::data(const QModelIndex& index, int role) const
     {
         switch (col)
         {
-            case columns::date:
-                return format(app::event {item.pubdate}); 
-
-            case columns::locked: return "";
-
-
-            case columns::category:
-                return str(item.type);
-
-            case columns::title:
-                return item.title;
-
+            case columns::date:     return format(app::event {item.pubdate}); 
+            case columns::locked:   return "";
+            case columns::category: return str(item.type);
+            case columns::title:    return item.title;
             case columns::size:
-                if (item.size == 0)
+            if (item.size == 0)
                     return "n/a";
                 return format(size { item.size });
 
             case columns::sentinel: Q_ASSERT(0);
         }
     }
-    else if (role == Qt::DecorationRole)
+    if (role == Qt::DecorationRole)
     {
         if (col  == columns::date)
             return QIcon("icons:ico_rss.png");
@@ -127,9 +119,9 @@ QVariant RSS::headerData(int section, Qt::Orientation orientation, int role) con
             case columns::sentinel: Q_ASSERT(false); break;
         }
     }
-    else if (role == Qt::DecorationRole)
+    if (role == Qt::DecorationRole)
     {
-        static const QIcon icoLock(toGrayScale(QPixmap("icons:ico_password.png")));
+        static const auto icoLock(toGrayScale("icons:ico_password.png"));
         if (columns(section) == columns::locked)
             return icoLock;
     }
@@ -331,6 +323,8 @@ void RSS::onNzbFileComplete(const QString& file, QNetworkReply& reply)
 
 void RSS::onNzbDataComplete(const QString& folder, const QString& desc, quint32 acc, QNetworkReply& reply)
 {
+    DEBUG("Get nzb data reply %1", reply);
+
     const auto err = reply.error();
     const auto url = reply.url();
     if (err != QNetworkReply::NoError)
@@ -346,6 +340,8 @@ void RSS::onNzbDataComplete(const QString& folder, const QString& desc, quint32 
 
 void RSS::onNzbDataCompleteCallback(const data_callback& cb, QNetworkReply& reply)
 {
+    DEBUG("Get nzb data reply %1", reply);
+
     const auto err = reply.error();
     const auto url = reply.url();
     if (err != QNetworkReply::NoError)
@@ -354,11 +350,9 @@ void RSS::onNzbDataCompleteCallback(const data_callback& cb, QNetworkReply& repl
         return;
     }
     const auto buff = reply.readAll();
+    DEBUG("NZB buffer %1 bytes", buff.size());
 
     cb(buff);
-
-    DEBUG(str("NZB buffer _1 bytes", buff.size()));
-
 }
 
 

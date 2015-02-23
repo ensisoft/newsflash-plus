@@ -23,11 +23,9 @@
 #define LOGTAG "nzb"
 
 #include <newsflash/config.h>
-
 #include "nzbcore.h"
 #include "debug.h"
 #include "eventlog.h"
-#include "format.h"
 
 namespace app
 {
@@ -35,7 +33,7 @@ namespace app
 nzbcore::nzbcore()
 {
     QObject::connect(&watch_timer_, SIGNAL(timeout()),
-        this, SLOT(perform_scan()));
+        this, SLOT(performScan()));
 
     ppa_ = post_processing_action::mark_processed;
 
@@ -49,16 +47,16 @@ nzbcore::~nzbcore()
 
 void nzbcore::watch(bool on_off)
 {
+    DEBUG("Scanning timer is on %1", on_off);
+
     if (!on_off)
         watch_timer_.stop();
     else watch_timer_.start();
 
-    DEBUG(str("Watch timer ", on_off));
-
     watch_timer_.setInterval(10 * 1000);
 }
 
-void nzbcore::perform_scan()
+void nzbcore::performScan()
 {
     for (int i=0; i<watched_folders_.size(); ++i)
     {

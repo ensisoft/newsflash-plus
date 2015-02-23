@@ -28,11 +28,8 @@
 #  include <QtNetwork/QNetworkReply>
 #  include <QtNetwork/QNetworkRequest>
 #include <newsflash/warnpop.h>
-
 #include <stdexcept>
-
 #include "netman.h"
-#include "format.h"
 #include "debug.h"
 #include "eventlog.h"
 
@@ -72,7 +69,7 @@ NetworkManager::~NetworkManager()
         timer_.stop();
         timer_.blockSignals(true);
 
-        DEBUG(str("NetworkManager has _1 pending submissions...", submissions_.size()));
+        DEBUG("NetworkManager has %1 pending submissions...", submissions_.size());
 
         for (auto it = submissions_.begin(); it != submissions_.end(); ++it)
         {
@@ -85,12 +82,12 @@ NetworkManager::~NetworkManager()
         }
     }
 
-    DEBUG("NetworkManager destroyed");
+    DEBUG("NetworkManager deleted");
 }
 
 
 void NetworkManager::submit(on_reply callback, Context& ctx, const QUrl& url)
-{
+{    
     NetworkManager::submission get;
     get.id       = submissions_.size() + 1;
     get.ticks    = 0;
@@ -101,7 +98,10 @@ void NetworkManager::submit(on_reply callback, Context& ctx, const QUrl& url)
     get.request.setRawHeader("User-Agent", "NewsflashPlus");    
 
     submissions_.push_back(get);
-    ctx.num_pending_requests_++;
+    ctx.numPending_++;
+
+    DEBUG("Enqueue new HTTP/Get with id %1. Context has %2 submissions.",
+        get.id, ctx.numPending_);
 
     if (submissions_.size() == 1)
     {
@@ -109,8 +109,6 @@ void NetworkManager::submit(on_reply callback, Context& ctx, const QUrl& url)
         timer_.setInterval(1000);
         timer_.start();
     }
-
-    DEBUG(str("New HTTP/GET submission _1", get.id));
 }
 
 void NetworkManager::submit(on_reply callback, Context& ctx, const QUrl& url, const Attachment& item)
@@ -134,8 +132,10 @@ void NetworkManager::submit(on_reply callback, Context& ctx, const QUrl& url, co
     post.request.setRawHeader("Content-Length", QString::number(post.attachment.size()).toAscii());
 
     submissions_.push_back(post);
-
-    ctx.num_pending_requests_++;
+    ctx.numPending_++;
+    
+    DEBUG("Enqueue new HTTP/Post with id %1. Context has %2 submissions.",
+        post.id, ctx.numPending_);
 
     if (submissions_.size() == 1)
     {
@@ -144,26 +144,30 @@ void NetworkManager::submit(on_reply callback, Context& ctx, const QUrl& url, co
         timer_.start();
     }
 
-    DEBUG(str("New HTTP/POST submission _1", post.id));
+    DEBUG("Submission %1", post.id);
 }
 
 void NetworkManager::cancel(Context& c)
 {
-    for (auto it = submissions_.begin(); it != submissions_.end(); ++it)
+    for (auto it = submissions_.begin(); it != submissions_.end(); )
     {
         auto& submission = *it;
         if (submission.ctx != &c)
+        {
+            ++it;
             continue;
+        }
 
         if (submission.reply)
         {
             submission.reply->blockSignals(true);
             submission.reply->abort();
         }
-        DEBUG(str("Canceled submission _1", submission.id));
+        auto& context = submission.ctx;
+        DEBUG("Canceled submission %1.", submission.id);
         it = submissions_.erase(it);        
     }
-    c.num_pending_requests_ = 0;
+    c.numPending_ = 0;
 }
 
 void NetworkManager::finished(QNetworkReply* reply)
@@ -174,27 +178,21 @@ void NetworkManager::finished(QNetworkReply* reply)
         });
     Q_ASSERT(it != std::end(submissions_));
 
-    auto& submit   = *it;
-    const auto err = reply->error();
-    const auto url = reply->url();
-
-    DEBUG(str("Got network reply for submission _1, _2", submit.id, str(err)));
-
-    submit.callback(*reply);
-    
-    auto* ctx = submit.ctx;
-
-    DEBUG(str("Context has _1 pending submissions", ctx->num_pending_requests_));
-
-    if (--ctx->num_pending_requests_ == 0)
+    auto& submit  = *it;
+    auto* context = submit.ctx;    
+    if (context->numPending_)
     {
-        if (ctx->callback)
-            ctx->callback();
+        submit.callback(*reply);
+        if (--context->numPending_ == 0)
+        {
+            if (context->callback)
+                context->callback();
+        }
+        DEBUG("Submission %1 finished with %2. %3 pending submissions.", 
+            submit.id, reply->error(), context->numPending_);        
     }
     submissions_.erase(it);
     reply->deleteLater();
-
-    DEBUG(str("Pending submissions _1", submissions_.size()));
 }
 
 void NetworkManager::timeout()
@@ -229,70 +227,47 @@ void NetworkManager::submitNext()
     }
     else
     {
-        DEBUG(str("Submit HTTP request to _1", url));
+        DEBUG("Submitted HTTP request %1. %2", submit.id, url);
     }
 }
 
 void NetworkManager::updateTicks()
 {
-    const auto timeout_ticks = 30;
+    const auto TimeOutTicks = 30;
 
-    for (auto it = submissions_.begin(); it != submissions_.end(); ++it)
+    for (auto it = submissions_.begin(); it != submissions_.end(); )
     {
         auto& submission = *it;
         if (!submission.reply)
-            continue;
-
-        if (++submission.ticks == timeout_ticks)
         {
-            DEBUG(str("Timedout submission _1", submission.id));            
-            submission.reply->blockSignals(true);
-            submission.reply->abort();
-            submission.callback(*submission.reply);
+            ++it;
+            continue;
+        }
 
-            auto* ctx = submission.ctx;
-            if (--ctx->num_pending_requests_ == 0)
+        if (++submission.ticks < TimeOutTicks)
+        {
+            ++it;
+            continue;
+        }
+        auto* ctx = submission.ctx;
+
+        DEBUG("Submission %1 timed out. %2 pending submissions.",
+            submission.id, ctx->numPending_);
+
+        submission.reply->blockSignals(true);
+        submission.reply->abort();
+
+        if (ctx->numPending_)
+        {
+            submission.callback(*submission.reply);
+            if (--ctx->numPending_ == 0)
             {
-                if ( ctx->callback)
+                if (ctx->callback)
                     ctx->callback();
             }
-
-            it = submissions_.erase(it);            
         }
+        it = submissions_.erase(it);            
     }
-}
-
-const char* str(QNetworkReply::NetworkError err)
-{
-    switch (err)
-    {
-        case QNetworkReply::ConnectionRefusedError: return "connection refused";
-        case QNetworkReply::RemoteHostClosedError: return "remote host closed";
-        case QNetworkReply::HostNotFoundError: return "host not found";
-        case QNetworkReply::TimeoutError: return "timeout";
-        case QNetworkReply::OperationCanceledError: return "operation canceled";
-        case QNetworkReply::SslHandshakeFailedError: return "SSL handshake failed";
-        case QNetworkReply::TemporaryNetworkFailureError: return "temporary network failure";
-        case QNetworkReply::ProxyConnectionRefusedError: return "proxy connection refused";
-        case QNetworkReply::ProxyConnectionClosedError: return "proxy connection closed";
-        case QNetworkReply::ProxyNotFoundError: return "proxy not found";
-        case QNetworkReply::ProxyAuthenticationRequiredError: return "proxy authentication required";
-        case QNetworkReply::ProxyTimeoutError: return "proxy timeout";
-        case QNetworkReply::ContentOperationNotPermittedError: return "content operation not permitted";
-        case QNetworkReply::ContentNotFoundError: return "content not found";
-        case QNetworkReply::ContentReSendError: return "content re-send";
-        case QNetworkReply::AuthenticationRequiredError: return "authentication required";
-        case QNetworkReply::ProtocolUnknownError: return "unknown protocol";
-        case QNetworkReply::ProtocolInvalidOperationError: return "invalid protocol operation";
-        case QNetworkReply::UnknownNetworkError: return "unknown network";
-        case QNetworkReply::UnknownProxyError: return "unknown proxy";
-        case QNetworkReply::UnknownContentError: return "unknown content";
-        case QNetworkReply::ContentAccessDenied: return "access denied";
-        case QNetworkReply::ProtocolFailure: return "protocol failure";
-        case QNetworkReply::NoError: return "success";
-    }
-    Q_ASSERT(!"wat");
-    return nullptr;
 }
 
 } // namespace

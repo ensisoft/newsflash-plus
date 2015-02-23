@@ -39,36 +39,6 @@
 namespace app
 {
 
-#define CASE(x) case x: return #x;
-
-const char* stringify(QProcess::ExitStatus status)
-{
-    switch (status)
-    {
-        CASE(QProcess::CrashExit);
-        CASE(QProcess::NormalExit);
-    }
-    Q_ASSERT(0);
-    return "";
-}
-
-const char* stringify(QProcess::ProcessError err)
-{
-    switch (err)
-    {
-        CASE(QProcess::FailedToStart);
-        CASE(QProcess::Crashed);
-        CASE(QProcess::Timedout);
-        CASE(QProcess::WriteError);
-        CASE(QProcess::ReadError);
-        CASE(QProcess::UnknownError);
-    }
-    Q_ASSERT(0);
-    return "";    
-}
-
-#undef CASE
-
 QString string(Recovery::Status status)
 {
     using s = Recovery::Status;
@@ -337,14 +307,6 @@ public:
     ParState::ExecState execState() const 
     { return state_.getState(); }
 
-    QString currentFileName() const 
-    {
-        if (files_.empty())
-            return {};
-
-        return files_.back().file;
-    }
-
 private:
     enum class Columns {
         Status, /* Done */ File, LAST
@@ -414,10 +376,9 @@ void RepairEngine::processStdOut()
 
     std::string line;
 
-    int chop;
-    for (chop = 0; chop<stdout_.size(); ++chop)
+    for (int i=0; i<stdout_.size(); ++i)
     {
-        const auto byte = stdout_.at(chop);
+        const auto byte = stdout_.at(i);
         if (byte == '\r' || byte == '\n')
         {
             const auto wide = widen(line);
@@ -440,7 +401,9 @@ void RepairEngine::processStdOut()
             line.clear();
         } else line.push_back(byte);
     }
-    stdout_.chop(chop);
+    const auto leftOvers = (int)line.size();
+
+    stdout_ = stdout_.right(leftOvers);
 }
 
 void RepairEngine::processStdErr()
@@ -460,8 +423,8 @@ void RepairEngine::processFinished(int exitCode, QProcess::ExitStatus status)
 
     auto& active = list_->getRecovery(index);
 
-    DEBUG(str("Recovery '_1' finished. ExitCode _2, ExitStatus _3",
-        active.desc, exitCode, stringify(status)));
+    DEBUG("Recovery '%1' finished. ExitCode %2, ExitStatus %3",
+        active.desc, exitCode, status);
 
     if (status == QProcess::CrashExit)
     {
@@ -500,7 +463,7 @@ void RepairEngine::processFinished(int exitCode, QProcess::ExitStatus status)
 
 void RepairEngine::processError(QProcess::ProcessError error)
 {
-    DEBUG(str("ProcessError _1", stringify(error)));
+    DEBUG("ProcessError %1", error);
 
     const auto index = list_->findActive();
     if (index == RecoveryList::NoSuchRecovery)
@@ -509,7 +472,7 @@ void RepairEngine::processError(QProcess::ProcessError error)
     auto& active = list_->getRecovery(index);
 
     active.state   = Recovery::Status::Error;
-    active.message = stringify(error);
+    active.message = "TODO";
     ERROR(str("Repair '_1' error _2", active.desc, active.message));
 
     list_->refresh(index);
@@ -526,7 +489,7 @@ void RepairEngine::fileCompleted(const app::DataFileInfo& info)
 
 void RepairEngine::batchCompleted(const app::FileBatchInfo& info)
 {
-    DEBUG(str("Repair a batch _1", info.path));
+    DEBUG("Repair a batch %1", info.path);
 
     QDir dir;
     dir.setPath(info.path);
@@ -547,7 +510,7 @@ void RepairEngine::batchCompleted(const app::FileBatchInfo& info)
         rec.file  = file.fileName();
         addRecovery(rec);
 
-        DEBUG(str("Added a new recovery for _1 in _2", name, dir));
+        DEBUG("Added a new recovery for %1 in %2", name, dir);
     }
     startNextRecovery();
 }
@@ -582,7 +545,7 @@ void RepairEngine::startNextRecovery()
     process_.setWorkingDirectory(recovery.path);
     process_.setProcessChannelMode(QProcess::MergedChannels);
     process_.start(par2, args);
-    DEBUG(str("Starting  recovery for _1", recovery.desc));
+    DEBUG("Starting recovery for %1", recovery.desc);
 
     recovery.state = Recovery::Status::Active;
     list_->refresh(index);

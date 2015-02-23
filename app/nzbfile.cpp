@@ -23,16 +23,13 @@
 #define LOGTAG "nzb"
 
 #include <newsflash/config.h>
-
 #include <newsflash/warnpush.h>
 #  include <QtGui/QIcon>
 #  include <QFile>
 #  include <QBuffer>
 #  include <QAbstractListModel>
 #include <newsflash/warnpop.h>
-
 #include <newsflash/engine/nntp.h>
-
 #include "nzbfile.h"
 #include "nzbthread.h"
 #include "debug.h"
@@ -80,7 +77,7 @@ bool NZBFile::load(const QString& file)
     thread_.reset(new NZBThread(std::move(io)));
 
     QObject::connect(thread_.get(), SIGNAL(complete()),
-        this, SLOT(parse_complete()), Qt::QueuedConnection);
+        this, SLOT(parseComplete()), Qt::QueuedConnection);
 
     thread_->start();
     return true;
@@ -251,9 +248,9 @@ QVariant NZBFile::headerData(int section, Qt::Orientation orientation, int role)
     return QVariant();
 }
 
-void NZBFile::parse_complete()
+void NZBFile::parseComplete()
 {
-    DEBUG(str("parse_complete _1", file_));
+    DEBUG("Parse_complete %1", file_);
 
     const auto result = thread_->result(data_);
 

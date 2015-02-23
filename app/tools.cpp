@@ -23,18 +23,16 @@
 #define LOGTAG "tools"
 
 #include <newsflash/config.h>
-
 #include <newsflash/warnpush.h>
 #  include <QProcess>
 #  include <QFileInfo>
 #include <newsflash/warnpop.h>
-
 #include "settings.h"
 #include "platform.h"
-#include "format.h"
 #include "debug.h"
 #include "tools.h"
 #include "eventlog.h"
+#include "format.h"
 
 namespace app
 {
@@ -115,7 +113,7 @@ void tools::loadstate(Settings& store)
         tool.setTypes(types);
         tools_.push_back(std::move(tool));
 
-        DEBUG(str("Loaded tool _1", name));
+        DEBUG("Loaded tool %1", name);
     }
 }
 
@@ -184,6 +182,8 @@ void tools::add_tool(tools::tool tool)
 
 void tools::del_tool(std::size_t i)
 {
+    BOUNDSCHECK(tools_, i);
+
     auto it = tools_.begin();
     std::advance(it, i);
     tools_.erase(it);

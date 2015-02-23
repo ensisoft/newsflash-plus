@@ -37,34 +37,6 @@
 #include "engine.h"
 #include "distdir.h"
 
-namespace {
-    const char* stringify(QProcess::ExitStatus status)
-    {
-        switch (status)
-        {
-            case QProcess::NormalExit: return "NormalExit";
-            case QProcess::CrashExit:  return "CrashExit";
-        }
-        Q_ASSERT(0);
-        return "";
-    }
-
-    const char* stringify(QProcess::ProcessError error)
-    {
-        switch (error)
-        {
-            case QProcess::FailedToStart: return "FailedToStart";
-            case QProcess::Crashed: return "Crashed";
-            case QProcess::Timedout: return "Timedout";
-            case QProcess::WriteError: return "WriteError";
-            case QProcess::ReadError: return "ReadError";
-            case QProcess::UnknownError: return "UnknownError";
-        }
-        Q_ASSERT(0);
-        return "";
-    }    
-} // namespace
-
 namespace app
 {
 
@@ -146,7 +118,7 @@ void Commands::loadState(Settings& settings)
         Command command(name, exec, file, args);
         command.setEnabled(onoff);
         commands_.push_back(command);
-        DEBUG(str("Loaded command _1", name));
+        DEBUG("Loaded command %1", name);
     }
 }
 

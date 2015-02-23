@@ -31,46 +31,10 @@
 #include <newsflash/warnpop.h>
 #include <memory>
 #include "engine.h"
+#include "recovery.h"
 
 namespace app
 {
-    struct Recovery {
-        enum class Status {
-            // recovery is currently queued and will execute
-            // at some later time.
-            Queued,  
-
-            // recovery is currently being performed.
-            // recovery data will show the data
-            // inside these parity files.
-            Active, 
-
-            // recovery was succesfully performed.
-            Success, 
-
-            // recovery failed
-            Failed,
-
-            // error running the recovery operation
-            Error
-        };
-
-        // current recovery status.
-        Status  state;
-
-        // path to the recovery folder (where the par2 and data files are)
-        QString path;
-
-        // the main par2 file
-        QString file; 
-
-        // human readable description
-        QString desc;
-
-        QString message;
-    };
-
-
     // perform recovery operation on a batch of files based on
     // the par2 recovery files. Listens for engine signals
     // and creates new recovery operations when applicable 
@@ -94,7 +58,7 @@ namespace app
         // the recovery will be in queued state after this.
         void addRecovery(const Recovery& rec);
 
-
+        // stop current recovery operation.
         void stopRecovery();
 
     signals:
@@ -132,4 +96,3 @@ namespace app
 
 } // app
 
-    Q_DECLARE_METATYPE(app::Recovery);

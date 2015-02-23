@@ -30,7 +30,6 @@
 #include <newsflash/warnpop.h>
 #include <stdexcept>
 #include "feedback.h"
-#include "format.h"
 #include "debug.h"
 
 // all the data input by the user is sent over HTTP POST/GET query
@@ -119,8 +118,7 @@ void Feedback::send(const Message& m)
         // and this maps to the values in the response enum
         const auto data = reply.readAll();
         const auto code = QString::fromUtf8(data.constData(), data.size()).toInt();
-
-        DEBUG(str("Got feedback response code _1", code));
+        DEBUG("Got feedback response code %1", code);
 
         Q_ASSERT(code >= 0);
         Q_ASSERT(code <= 4);

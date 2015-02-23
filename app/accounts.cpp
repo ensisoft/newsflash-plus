@@ -213,7 +213,7 @@ void Accounts::setAccount(const Account& acc)
 
     if (it == std::end(accounts_))
     {
-        DEBUG(str("Insert account '_1' (_2) ", acc.name, acc.id));        
+        DEBUG("Insert account '%1' (%2) ", acc.name, acc.id);
 
         beginInsertRows(QModelIndex(), accounts_.size(), accounts_.size());
         accounts_.push_back(acc);
@@ -225,7 +225,7 @@ void Accounts::setAccount(const Account& acc)
     }
     else
     {
-        DEBUG(str("Set account '_1' (_2) ", acc.name, acc.id));
+        DEBUG("Set account '%1' (%2) ", acc.name, acc.id);
 
         const auto old_key = it->name;
         const auto new_key = acc.name;
@@ -265,7 +265,7 @@ void Accounts::setMainAccount(quint32 id)
 
     mainAccount_ = id;
 
-    DEBUG(str("Main account set to _1", it->name));
+    DEBUG("Main account set to %1", it->name);
 }
 
 void Accounts::setFillAccount(quint32 id)
@@ -288,7 +288,7 @@ void Accounts::setFillAccount(quint32 id)
     fillAccount_ = id;
     g_engine->setFillAccount(id);
 
-    DEBUG(str("Fill account set to _1", it->name));
+    DEBUG("Fill account set to %1", it->name);
 }
 
 bool Accounts::saveState(Settings& store) const
@@ -373,7 +373,7 @@ void Accounts::loadState(Settings& store)
         acc.lastUseDate         = store.get(key, "last_use_date").toDate();
         acc.subscriptions       = store.get(key, "subscriptions").toStringList();
         accounts_.push_back(acc);
-        DEBUG(str("Account loaded _1", acc.name));
+        DEBUG("Account loaded %1", acc.name);
 
         g_engine->setAccount(acc);
     }
@@ -387,7 +387,7 @@ void Accounts::loadState(Settings& store)
         const auto* m = findAccount(main);
         if (m) {
             mainAccount_ = m->id;
-            DEBUG(str("Main Account is _1", main));
+            DEBUG("Main Account is %1", main);
         }
     }
 
@@ -397,7 +397,7 @@ void Accounts::loadState(Settings& store)
         if (f) {
             fillAccount_  = f->id;
             g_engine->setFillAccount(fillAccount_);
-            DEBUG(str("Fill Account is _1", fill));            
+            DEBUG("Fill Account is %1", fill);            
         }
     }
 

@@ -23,7 +23,6 @@
 #define LOGTAG "mainwindow"
 
 #include <newsflash/config.h>
-
 #include <newsflash/warnpush.h>
 #  include <boost/version.hpp>
 #  include <QtGui/QCloseEvent>
@@ -93,7 +92,7 @@ MainWindow::MainWindow(app::Settings& s) : QMainWindow(nullptr), current_(nullpt
 
     if (QSystemTrayIcon::isSystemTrayAvailable())
     {
-        DEBUG("Setup system tray");
+        DEBUG("Setup system tray icon");
         ui_.actionRestore->setEnabled(false);
         ui_.actionMinimize->setEnabled(true);
         tray_.setIcon(QIcon("icons:ico_newsflash.png"));
@@ -193,7 +192,7 @@ void MainWindow::loadState()
     const auto height = settings_.get("window", "height", 0);
     if (width && height)
     {
-        DEBUG(str("MainWindow dimensions _1 x _2", width, height));        
+        DEBUG("MainWindow dimensions %1 x %2", width, height);        
         resize(width, height);
     }
 
@@ -204,7 +203,7 @@ void MainWindow::loadState()
     auto screen = desktop.availableGeometry(desktop.primaryScreen());
     if (x < screen.width() - 50 && y < screen.height() - 50)
     {
-        DEBUG(str("MainWindow position _1, _2", x, y));
+        DEBUG("MainWindow position %1, %2", x, y);
         move(x, y);
     }
 
@@ -581,24 +580,25 @@ void MainWindow::closeEvent(QCloseEvent* event)
     DEBUG("Begin shutdown modules...");
 
     for (auto* w : widgets_)
+    {
+        DEBUG("Shutdown %1", w->windowTitle());
         w->shutdown();
+    }
 
     for (auto* m : modules_)
+    {
+        DEBUG("Shutdown %1", m->getInformation().name);
         m->shutdown();
-
-
-    //dialog.setText(tr("Stopping script engine..."));
-    //QObject::connect(app::g_python, SIGNAL(shutdownComplete()), &loop, SLOT(quit()));
-    //if (!app::g_python->shutdown())
-        //loop.exec();
-
+    }
 
     dialog.close();
 
-    ui_.mainTab->clear();
+    // important. block signals, we're shutting down and don't want to
+    // run the normal widget activation/deactivation code anymore.
     ui_.mainTab->blockSignals(true);
     ui_.mainToolBar->blockSignals(true);
     ui_.menuBar->blockSignals(true);
+    ui_.mainTab->clear();    
 
     event->accept();
     DEBUG("Shutdown complete!");
@@ -627,7 +627,7 @@ void MainWindow::dropEvent(QDropEvent* event)
         if (!info.isFile() || !info.exists())
             continue;
 
-        DEBUG(str("processing _1 file", name));
+        DEBUG("processing %1 file", name);
         for (auto* w : widgets_)
             w->dropFile(name);
 
@@ -667,6 +667,7 @@ bool MainWindow::saveState(DlgShutdown* dlg)
 {
     try
     {
+        DEBUG("Saving application state...");
         // we clear the settings here completely. this makes it easy to purge all stale
         // data from the settings. for example if tools are modified and removed the state
         // is kept in memory and then persisted cleanly into the settings object on save.
@@ -699,12 +700,14 @@ bool MainWindow::saveState(DlgShutdown* dlg)
         // save widget states
         for (auto* w : widgets_)
         {
+            DEBUG("Saving widget %1", w->windowTitle());
             w->saveState(settings_);
         }
 
         // save module state
         for (auto* m : modules_)
         {
+            DEBUG("Saving module %1", m->getInformation().name);
             m->saveState(settings_);
         }
 
@@ -730,8 +733,6 @@ bool MainWindow::saveState(DlgShutdown* dlg)
 
 void MainWindow::on_mainTab_currentChanged(int index)
 {
-    //DEBUG(str("Current tab _1", index));
-
     if (current_)
         current_->deactivate();
 

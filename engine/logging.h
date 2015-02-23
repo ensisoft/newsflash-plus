@@ -35,11 +35,15 @@
 #  define LOG_E(...) write_log(newsflash::logevent::error, __FILE__, __LINE__, ## __VA_ARGS__)
 #  define LOG_W(...) write_log(newsflash::logevent::warning, __FILE__, __LINE__, ## __VA_ARGS__)
 #  define LOG_I(...) write_log(newsflash::logevent::info,  __FILE__, __LINE__, ## __VA_ARGS__)
-#  define LOG_D(...) write_log(newsflash::logevent::debug, __FILE__, __LINE__, ## __VA_ARGS__)
 #else
 #  define LOG_E(...)
 #  define LOG_W(...)
 #  define LOG_I(...)
+#endif
+
+#ifdef NEWSFLASH_DEBUG
+#  define LOG_D(...) write_log(newsflash::logevent::debug, __FILE__, __LINE__, ## __VA_ARGS__)
+#else
 #  define LOG_D(...)
 #endif
 

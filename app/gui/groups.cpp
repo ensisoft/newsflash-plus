@@ -23,7 +23,6 @@
 #define LOGTAG "news"
 
 #include <newsflash/config.h>
-
 #include <newsflash/warnpush.h>
 #  include <QtGui/QMessageBox>
 #  include <QtGui/QToolBar>
@@ -33,7 +32,6 @@
 #  include <QFile>
 #  include <QFileInfo>
 #include <newsflash/warnpop.h>
-
 #include "groups.h"
 #include "newsgroup.h"
 #include "mainwindow.h"
@@ -194,7 +192,7 @@ void Groups::on_actionRefresh_triggered()
         if (curAccount_ != acc.id)
             continue;
 
-        DEBUG(str("Refresh newslist '_1' (_2)", acc.name, acc.id));
+        DEBUG("Refresh newslist '%1' (%2)", acc.name, acc.id);
 
         const auto file = app::homedir::file(acc.name + ".lst");
 
@@ -261,7 +259,7 @@ void Groups::on_cmbAccounts_currentIndexChanged()
 
         curAccount_ = acc.id;
 
-        DEBUG(str("Current account changed to '_1' (_2)", acc.name, acc.id));
+        DEBUG("Current account changed to '%1' (%2)", acc.name, acc.id);
 
         ui_.progressBar->setMaximum(0);
         ui_.progressBar->setVisible(true);
@@ -345,15 +343,13 @@ void Groups::progressUpdated(quint32 acc, quint32 maxValue, quint32 curValue)
     if (curAccount_ != acc)
         return;
 
-    //DEBUG(str("Progress update max _1 cur _2", maxValue, curValue));
-
     ui_.progressBar->setMaximum(maxValue);
     ui_.progressBar->setValue(curValue);
 }
 
 void Groups::loadComplete(quint32 acc)
 {
-    DEBUG(str("Load complete _1", acc));
+    DEBUG("Load complete %1", acc);
 
     if (curAccount_ != acc)
         return;
@@ -365,7 +361,7 @@ void Groups::loadComplete(quint32 acc)
 
 void Groups::makeComplete(quint32 accountId)
 {
-    DEBUG(str("Make complete _1", accountId));
+    DEBUG("Make complete %1", accountId);
 
     if (curAccount_ != accountId)
         return;
