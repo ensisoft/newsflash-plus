@@ -38,8 +38,6 @@
 #include "../format.h"
 #include "../eventlog.h"
 
-using app::str;
-
 namespace {
 
     // default style means that no specific style is set in the application
@@ -105,7 +103,8 @@ void Appearance::loadState(app::Settings& s)
     QStyle* style = QApplication::setStyle(current_style_name_);
     if (!style)
     {
-        WARN(str("No such style _1", current_style_name_));
+        WARN("No such style %1", current_style_name_);
+        WARN("Style set to Default");
         current_style_name_ = "Default";
         return;
     }

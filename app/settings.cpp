@@ -60,8 +60,7 @@ void Settings::load(QIODevice& io, Settings::format format)
             const auto& line = parser.errorLine();
             const auto& what = parser.errorString();
             throw std::runtime_error(
-                str_a("json parse failed error '_1' at line _2", 
-                    what, line));
+                narrow(toString("JSON parse failed %1 at line %2", what, line)));
         }
 
         QVariantMap db;
@@ -90,7 +89,7 @@ void Settings::save(QIODevice& io, Settings::format format) const
         {
             const auto& msg = serializer.errorMessage();
             throw std::runtime_error(
-                str_a("json serialize failed '_1'", msg));
+                narrow(toString("JSON serialize failed %1", msg)));
         }
     }
 }

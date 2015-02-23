@@ -88,7 +88,7 @@ namespace gui
         virtual void shutdown() {}
 
         // refresh the widget contents
-        virtual void refresh() {}
+        virtual void refresh(bool isActive) {}
 
         // perform first launch activities.
         virtual void firstLaunch(bool add_account) {}

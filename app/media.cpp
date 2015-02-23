@@ -28,44 +28,6 @@
 
 namespace app
 {
-const char* str(Media m) 
-{
-    switch (m)
-    {
-        case Media::ConsoleNDS:        return "Nintento DS";
-        case Media::ConsoleWii:        return "Nintendo Wii";
-        case Media::ConsoleXbox:       return "Xbox";
-        case Media::ConsoleXbox360:    return "XBox 360";
-        case Media::ConsolePSP:        return "Playstation Portable";
-        case Media::ConsolePS2:        return "Playstation 2";
-        case Media::ConsolePS3:        return "Playstation 3";
-        case Media::ConsolePS4:        return "Playstation 4";
-        case Media::MoviesInt:         return "Movies Int.";
-        case Media::MoviesSD:          return "Movies SD";
-        case Media::MoviesHD:          return "Movies HD";
-        case Media::MoviesWMV:         return "Movies WMV";
-        case Media::AudioMp3:          return "Mp3";
-        case Media::AudioVideo:        return "Music Videos";
-        case Media::AudioAudiobook:    return "Audiobook";
-        case Media::AudioLossless:     return "Lossless Audio";
-        case Media::AppsPC:            return "PC";
-        case Media::AppsISO:           return "ISO";
-        case Media::AppsMac:           return "Mac";
-        case Media::AppsAndroid:       return "Android";
-        case Media::AppsIos:           return "iOS";
-        case Media::TvInt:             return "TV Int.";
-        case Media::TvSD:              return "TV SD";
-        case Media::TvHD:              return "TV HD";
-        case Media::TvOther:           return "TV Other";
-        case Media::TvSport:           return "TV Sports";
-        case Media::XxxDVD:            return "XXX DVD";
-        case Media::XxxHD:             return "XXX HD";
-        case Media::XxxSD:             return "XXX SD";
-        case Media::Ebook:             return "EBook";
-    }
-    Q_ASSERT(!"WUT");
-    return "";
-}
 
 QString findMovieTitle(const QString& subject)
 {

@@ -65,7 +65,7 @@ Accounts::Account Accounts::suggestAccount() const
     int index = 1;
     for (;;)
     {
-        name = str("My Usenet _1", index);
+        name = toString("My Usenet %1", index);
 
         const auto& it = std::find_if(std::begin(accounts_), std::end(accounts_),
             [&](const Account& acc) {

@@ -40,8 +40,6 @@
 #include "../format.h"
 #include "../telephone.h"
 
-using app::str;
-
 namespace gui
 {
 

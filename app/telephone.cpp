@@ -73,7 +73,7 @@ void Telephone::on_finished(QNetworkReply& reply)
     const auto err = reply.error();
     if (err != QNetworkReply::NoError)
     {
-        ERROR(str("Checking for new version failed _1", str(err)));
+        WARN("Checking for new version failed %1", err);
         emit completed(false, "");
         return;
     }

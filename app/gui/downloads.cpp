@@ -40,7 +40,7 @@
 namespace gui
 {
 
-Downloads::Downloads() : panels_y_pos_(0)
+Downloads::Downloads() : panels_y_pos_(0), numDownloads_(0)
 {
     ui_.setupUi(this);
     ui_.tableConns->setModel(&conns_);
@@ -135,9 +135,8 @@ void Downloads::saveState(app::Settings& s)
     s.set("downloads", "remove_complete", ui_.chkRemoveComplete->isChecked());
 }
 
-void Downloads::refresh()
+void Downloads::refresh(bool isActive)
 {
-    //DEBUG("Refresh");
     const auto remove_complete = ui_.chkRemoveComplete->isChecked();
     //const auto group_similar   = ui_.chkGroupSimilar->isChecked();
     tasks_.refresh(remove_complete);
@@ -145,9 +144,26 @@ void Downloads::refresh()
 
     const auto num_conns = conns_.rowCount(QModelIndex());
     const auto num_tasks = tasks_.rowCount(QModelIndex());
-
     ui_.grpTasks->setTitle(tr("Downloads (%1)").arg(num_tasks));
     ui_.grpConns->setTitle(tr("Connections (%1)").arg(num_conns));
+
+    if (isActive)
+        return;
+
+    // only modify the title if we're not visible
+    if (num_tasks > numDownloads_)
+    {
+        const auto newTasks = num_tasks - numDownloads_;
+        setWindowTitle(QString("Downloads (%1)").arg(newTasks));
+    }
+}
+
+void Downloads::activate(QWidget*)
+{
+    const auto numTasks = tasks_.rowCount(QModelIndex());
+
+    numDownloads_ = numTasks;
+    setWindowTitle("Downloads");
 }
 
 void Downloads::on_actionConnect_triggered()

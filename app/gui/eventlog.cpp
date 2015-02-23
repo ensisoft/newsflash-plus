@@ -1,76 +1,54 @@
-    // Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-//  of this software and associated documentation files (the "Software"), to deal
-//  in the Software without restriction, including without limitation the rights
-//  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-//  copies of the Software, and to permit persons to whom the Software is
-//  furnished to do so, subject to the following conditions:
+// 
+// This software is copyrighted software. Unauthorized hacking, cracking, distribution
+// and general assing around is prohibited.
+// Redistribution and use in source and binary forms, with or without modification,
+// without permission are prohibited.
 //
 // The above copyright notice and this permission notice shall be included in
-//  all copies or substantial portions of the Software.
+// all copies or substantial portions of the Software.
 //
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-//  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-//  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-//  THE SOFTWARE.
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
+#define LOGTAG "eventlog"
 
 #include <newsflash/config.h>
-
 #include <newsflash/warnpush.h>
 #  include <QtGui/QMenu>
 #  include <QtGui/QToolBar>
-#  include <QAbstractListModel>
 #include <newsflash/warnpop.h>
-
 #include "eventlog.h"
-#include "mainwindow.h"
 #include "../eventlog.h"
+#include "../debug.h"
 
 namespace gui
 {
 
-EventLog::EventLog()
+EventLog::EventLog() : numEvents_(0)
 {
-    auto& model = app::eventlog::get();
+    auto& model = app::EventLog::get();
 
     ui_.setupUi(this);
     ui_.listLog->setModel(&model);
     ui_.actionClearLog->setEnabled(false);
 
-    model.on_event = [&](const app::eventlog::event_t& e) 
-    {
-        if (e.type == app::eventlog::event::note)
-        {
-            g_win->showMessage(e.message);
-            return false;
-        }
+    QObject::connect(&model, SIGNAL(newEvent(const app::Event&)),
+        this, SLOT(newEvent(const app::Event&)));
 
-        if (e.type == app::eventlog::event::error)
-        {
-            setWindowIcon(QIcon("icons:ico_error.png"));
-            g_win->update(this);
-        }
-        else if (e.type == app::eventlog::event::warning)
-        {
-            setWindowIcon(QIcon("icons:ico_warning.png"));
-            g_win->update(this);
-        }
-
-        ui_.actionClearLog->setEnabled(true);
-        return true;
-    };
+    DEBUG("EventLog UI created");
 }
 
 EventLog::~EventLog()
 {
-    auto& model = app::eventlog::get();
-    model.on_event = [](const app::eventlog::event_t&) { return false; };
+    DEBUG("EventLog UI deleted");
 }
 
 void EventLog::addActions(QMenu& menu)
@@ -85,8 +63,9 @@ void EventLog::addActions(QToolBar& bar)
 
 void EventLog::activate(QWidget*)
 {
+    numEvents_ = 0;
     setWindowIcon(QIcon("icons:ico_info.png"));
-    g_win->update(this);
+    setWindowTitle("Log");
 }
 
 MainWidget::info EventLog::getInformation() const 
@@ -96,7 +75,7 @@ MainWidget::info EventLog::getInformation() const
 
 void EventLog::on_actionClearLog_triggered()
 {
-    auto& model = app::eventlog::get();
+    auto& model = app::EventLog::get();
 
     ui_.actionClearLog->setEnabled(false);
     
@@ -108,6 +87,27 @@ void EventLog::on_listLog_customContextMenuRequested(QPoint pos)
     QMenu menu(this);
     menu.addAction(ui_.actionClearLog);
     menu.exec(QCursor::pos());
+}
+
+void EventLog::newEvent(const app::Event& event)
+{
+    if (event.type == app::Event::Type::Note)
+        return;
+
+    numEvents_++;
+    if (event.type == app::Event::Type::Error)
+    {
+        setWindowIcon(QIcon("icons:ico_error.png"));
+        setWindowTitle(QString("Log (%1)").arg(numEvents_));
+    }
+    if (event.type == app::Event::Type::Warning)
+    {
+        setWindowIcon(QIcon("icons:ico_warning.png"));
+        setWindowTitle(QString("Log (%1)").arg(numEvents_));
+    }
+
+    ui_.actionClearLog->setEnabled(true);
+
 }
 
 } // gui

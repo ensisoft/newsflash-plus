@@ -42,12 +42,10 @@
 #include "../tools.h"
 #include "../eventlog.h"
 
-using app::str;
-
 namespace gui
 {
 
-Files::Files()
+Files::Files() : numFiles_(0)
 {
     ui_.setupUi(this);
     ui_.tableFiles->setModel(&model_);
@@ -148,6 +146,8 @@ void Files::loadState(app::Settings& s)
     model_.keepSorted(sorted);
 
     ui_.tableFiles->sortByColumn(sortColumn, (Qt::SortOrder)sortOrder);
+
+    numFiles_ = model_.numFiles();
 }
 
 void Files::saveState(app::Settings& s)
@@ -188,6 +188,22 @@ void Files::shutdown()
     }
 }
 
+void Files::refresh(bool isActive)
+{
+    if (isActive)
+        return;
+
+    const auto numFiles = model_.numFiles();
+    if (numFiles > numFiles_)
+        setWindowTitle(QString("Files (%1)").arg(numFiles - numFiles_));
+}
+
+void Files::activate(QWidget*)
+{
+    numFiles_ = model_.numFiles();
+    setWindowTitle("Files");
+}
+
 void Files::on_actionOpenFile_triggered()
 {
     const auto& indices = ui_.tableFiles->selectionModel()->selectedRows();
@@ -204,7 +220,7 @@ void Files::on_actionOpenFileWith_triggered()
 {
     QString filter;
 #if defined(WINDOWS_OS)
-    filter = "*.exe";
+    filter = "(Executables) *.exe";
 #endif
 
     const auto app = QFileDialog::getOpenFileName(this,
@@ -227,7 +243,11 @@ void Files::on_actionOpenFileWith_triggered()
 
         if (!QProcess::startDetached(QString("\"%1\" %2").arg(exe).arg(file)))
         {
-            ERROR(str("Failed to execute command _1 _2", exe, file));
+            QFileInfo info(exe);
+            const auto name = info.completeBaseName();
+            QMessageBox::critical(this, name, 
+                tr("The application could not be started.\n%1").arg(exe));
+            return;
         }
     }
 
@@ -395,7 +415,11 @@ void Files::invokeTool()
         const auto& item = model_.getItem(row);
         const auto& file = QString("%1/%2").arg(item.path).arg(item.name);
 
-        tool->startNewInstance(file);
+        if (!tool->startNewInstance(file))
+        {
+            QMessageBox::critical(this, tool->name(),
+                tr("The application could not be started.\n%1").arg(tool->binary()));
+        }
     }
 }
 

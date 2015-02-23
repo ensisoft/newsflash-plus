@@ -163,7 +163,7 @@ void RSS::activate(QWidget*)
         const bool refreshing = ui_.progressBar->isVisible();
         if (refreshing)
             return;
-        refresh(false);
+        refreshStreams(false);
     }
 }
 
@@ -398,7 +398,7 @@ void RSS::downloadSelected(const QString& folder)
     }
 }
 
-void RSS::refresh(bool verbose)
+void RSS::refreshStreams(bool verbose)
 {
     if (!enable_nzbs_ && !enable_womble_)
     {

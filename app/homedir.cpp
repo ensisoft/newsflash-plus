@@ -39,8 +39,9 @@ void homedir::init(const QString& folder)
     const auto& mine = home + "/" + folder;
 
     QDir dir;
-    if (!dir.mkpath(home + "/" + folder))
-        throw std::runtime_error(str_a("failed to create _1", mine));
+    if (!dir.mkpath(mine))
+        throw std::runtime_error(
+            narrow(toString("failed to create %1", mine)));
 
     pathstr = mine;
 }

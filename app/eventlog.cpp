@@ -20,96 +20,89 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //  THE SOFTWARE.
 
-#include <newsflash/config.h>
+#define LOGTAG "eventlog"
 
+#include <newsflash/config.h>
 #include <newsflash/warnpush.h>
 #  include <QtGui/QIcon>
 #include <newsflash/warnpop.h>
-
-#define LOGTAG
-
 #include "eventlog.h"
 #include "debug.h"
 
 namespace app
 {
 
-eventlog::eventlog() : events_(200)
+EventLog::EventLog() : events_(200)
 {}
 
-eventlog::~eventlog()
+EventLog::~EventLog()
 {}
 
-void eventlog::write(event type, const QString& msg, const QString& tag)
+void EventLog::write(Event::Type type, const QString& msg, const QString& tag)
 {
-    const auto time = QTime::currentTime();
-    const event_t e {type, msg, tag, time };
-
-    if (on_event && !on_event(e))
+    const auto time  = QTime::currentTime();
+    const auto event = Event {type, msg, tag, time };
+    
+    emit newEvent(event);    
+    if (type == Event::Type::Note)
         return;
 
     if (events_.full())
     {
         const auto first = index(0, 0);
         const auto last  = index((int)events_.size(), 1);
-        events_.push_front(e);
+        events_.push_front(event);
         emit dataChanged(first, last);
     }
     else
     {
         beginInsertRows(QModelIndex(), 0, 0);
-        events_.push_front(e);
+        events_.push_front(event);
         endInsertRows();
     }    
 }
 
-void eventlog::clear()
+void EventLog::clear()
 {
     beginRemoveRows(QModelIndex(), 0, events_.size());
     events_.clear();
     endRemoveRows();
 }
 
-int eventlog::rowCount(const QModelIndex&) const
+int EventLog::rowCount(const QModelIndex&) const
 {
     return static_cast<int>(events_.size());
 }
 
-QVariant eventlog::data(const QModelIndex& index, int role) const
+QVariant EventLog::data(const QModelIndex& index, int role) const
 {
-    const auto& ev = events_[index.row()];
-    switch (role)
-    {
-        case Qt::DecorationRole:
-        switch (ev.type) {
-            case eventlog::event::warning:
-                return QIcon("icons:ico_warning.png");
-            case eventlog::event::info:
-                return QIcon("icons:ico_info.png");
-            case eventlog::event::error:
-                return QIcon("icons:ico_error.png");
-            default:
-                Q_ASSERT("missing event type");
-                break;
-            }
-            break;
+    const auto row = index.row();
+    const auto& ev = events_[row];
 
-            case Qt::DisplayRole:
-                return QString("[%1] [%2] %3")
-                     .arg(ev.time.toString("hh:mm:ss:zzz"))
-                     .arg(ev.logtag)
-                     .arg(ev.message);                
-                //return QString("[%1] %2")
-                //    .arg(ev.time.toString("hh:mm:ss:zzz"))
-                //    .arg(ev.message);                                    
-                    break;
+    if (role == Qt::DecorationRole)
+    {
+        using type = Event::Type;
+        switch (ev.type)
+        {
+            case type::Warning: return QIcon("icons:ico_warning.png");
+            case type::Info:    return QIcon("icons:ico_info.png");
+            case type::Error:   return QIcon("icons:ico_error.png");
+            case type::Note:    return QIcon("icons:ico_note.png");
+        }
     }
-    return QVariant();    
+    if (role == Qt::DisplayRole)
+    {
+        return QString("[%1] [%2] %3")
+            .arg(ev.time.toString("hh:mm:ss:zzz"))
+            .arg(ev.logtag)
+            .arg(ev.message);                        
+    }
+    return {};
 }
 
-eventlog& eventlog::get()
+EventLog& EventLog::get()
 {
-    static eventlog log;
+    static EventLog log;
     return log;
 }
 

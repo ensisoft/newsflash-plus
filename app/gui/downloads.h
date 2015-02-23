@@ -50,7 +50,8 @@ namespace gui
         virtual void addActions(QToolBar& bar) override;
         virtual void loadState(app::Settings& s) override;
         virtual void saveState(app::Settings& s) override;
-        virtual void refresh() override;
+        virtual void refresh(bool isActive) override;
+        virtual void activate(QWidget*) override;
 
         virtual info getInformation() const override 
         { return {"downloads.html", true, true}; }
@@ -89,6 +90,9 @@ namespace gui
         app::tasklist tasks_;
         app::connlist conns_;
         int panels_y_pos_;
+
+    private:
+        std::size_t numDownloads_;
     };
 
 } // gui

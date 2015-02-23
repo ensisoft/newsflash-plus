@@ -51,7 +51,7 @@ tools::tool::tool() : types_(0)
 tools::tool::~tool()
 {}
 
-void tools::tool::startNewInstance(const QString& file) const 
+bool tools::tool::startNewInstance(const QString& file) const 
 {
     QString args = arguments_;
     args.replace("${file}", QString("\"%1\"").arg(file));
@@ -63,9 +63,10 @@ void tools::tool::startNewInstance(const QString& file) const
     // single arguments to the child process.
     if (!QProcess::startDetached(QString("\"%1\" %2").arg(binary_).arg(args)))
     {
-        ERROR(str("Failed to execute command _1 _2", binary_, args));
-        return;
+        //ERROR("Failed to execute command %1", binary_);
+        return false;
     }
+    return true;
 }
 
 const QIcon& tools::tool::icon() const 

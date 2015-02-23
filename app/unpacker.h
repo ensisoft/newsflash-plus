@@ -27,46 +27,13 @@
 #  include <QByteArray>
 #  include <QObject>
 #  include <QProcess>
-#  include <QMetaType>
 #include <newsflash/warnpop.h>
 #include <memory>
 #include <deque>
 
 namespace app
 {
-    struct Archive {
-        enum class Status {
-            // archive is queued and will execute at some later time.
-            Queued,
-
-            // archive is currently being unpacked.
-            Active,
-
-            // archive was succesfully unpacked.
-            Success, 
-
-            // archive failed to unpack
-            Failed,
-
-            // error running the unpack operation.
-            Error
-        };
-
-        // current unpack state of the archive.
-        Status state;
-
-        // path to the unpack source folder (where the .rar files are)
-        QString path;
-
-        // the main .rar file
-        QString file;
-
-        // human readable description.
-        QString desc;
-
-        // error/information message
-        QString message;
-    };
+    struct Archive;
 
     // unpacker unpacks archive files such as .rar. 
     class Unpacker : public QObject 
@@ -118,4 +85,3 @@ namespace app
 
 } // app
 
-    Q_DECLARE_METATYPE(app::Archive);

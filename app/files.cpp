@@ -33,6 +33,7 @@
 #include "files.h"
 #include "homedir.h"
 #include "format.h"
+#include "types.h"
 
 namespace {
     enum class columns {
@@ -70,8 +71,8 @@ QVariant Files::data(const QModelIndex& index, int role) const
     {
         switch (col)
         {
-            case columns::type: return str(file.type);
-            case columns::time: return format(app::event { file.time });
+            case columns::type: return toString(file.type);
+            case columns::time: return toString(app::event { file.time });
             case columns::path: return file.path;
             case columns::name: return file.name;
             case columns::count: Q_ASSERT(0);
@@ -159,7 +160,8 @@ void Files::loadHistory()
         if (!QFileInfo(file).exists())
             return;
 
-        ERROR(str("Unable to read file history _1", history));
+        WARN("Unable to read file history %1, %2", file, 
+            history.error());
         return;
     }
 
@@ -196,7 +198,8 @@ void Files::loadHistory()
     history_.setFileName(file);
     if (!history_.open(QIODevice::ReadWrite | QIODevice::Truncate))
     {
-        ERROR(str("Unable to write file history data _1", history_));
+        WARN("Unable to write file history data %1, %2", file, 
+            history_.error());
         return;
     }
 
@@ -290,7 +293,8 @@ void Files::fileCompleted(const app::DataFileInfo& file)
         history_.setFileName(file);
         if (!history_.open(QIODevice::WriteOnly | QIODevice::Append))
         {
-            ERROR(str("Unable to write file history data _1", history_));
+            ERROR("Unable to write file history data %1, %2", file,
+                history_.error());
         }
     }
 

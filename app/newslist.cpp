@@ -41,6 +41,7 @@
 #include "engine.h"
 #include "accounts.h"
 #include "platform.h"
+#include "types.h"
 
 namespace app
 {
@@ -96,13 +97,10 @@ QVariant NewsList::data(const QModelIndex& index, int role) const
         const auto& group = groups_[row];
         switch ((NewsList::Columns)col)
         {
-            case Columns::messages:
-                return format(app::volume{group.size});
-            case Columns::name:
-               return group.name;
-
+            case Columns::messages:    return toString(app::count{group.size});
+            case Columns::name:        return group.name;
             case Columns::subscribed:  break;
-            case Columns::last: break;
+            case Columns::last:        Q_ASSERT(0);
         }
     }
     else if (role == Qt::DecorationRole)
@@ -180,7 +178,7 @@ void NewsList::loadListing(const QString& file, quint32 accountId)
     QFile io(file);
     if (!io.open(QIODevice::ReadOnly))
     {
-        ERROR(str("Failed to read listing file _1", io));
+        ERROR("Failed to read listing file %1", file, io.error());
         return;
     }
 
@@ -352,7 +350,7 @@ void NewsList::listingCompleted(quint32 acc, const QList<app::NewsGroupInfo>& li
     QFile io(op.file);
     if (!io.open(QIODevice::WriteOnly | QIODevice::Truncate))
     {
-        ERROR(str("Unable to write listing file _1", io));
+        ERROR("Unable to write listing file %1", op.file, io.error());
         return;
     }
 

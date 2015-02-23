@@ -37,6 +37,7 @@
 #include "eventlog.h"
 #include "filetype.h"
 #include "engine.h"
+#include "types.h"
 
 namespace app
 {
@@ -63,7 +64,7 @@ bool NZBFile::load(const QString& file)
     std::unique_ptr<QFile> io(new QFile(file));
     if (!io->open(QIODevice::ReadOnly))
     {
-        ERROR(str("Failed to open file _1", *io.get()));
+        ERROR("Failed to open file %1, %2", file, io->error());
         return false;
     }
 
@@ -209,9 +210,9 @@ QVariant NZBFile::data(const QModelIndex& index, int role) const
     if (role == Qt::DisplayRole)
     {
         if (index.column() == 0)
-            return str(item.type);
+            return toString(item.type);
         else if (index.column() == 1)
-            return str(app::size { item.bytes });
+            return toString(app::size { item.bytes });
         else if (index.column() == 2)
         {
             if (show_filename_only_)
@@ -260,19 +261,19 @@ void NZBFile::parseComplete()
             DEBUG("NZB parse succesful!");
             break;
         case nzberror::xml:
-            ERROR(str("XML error while parsing NZB file _1", file_));;
+            ERROR("XML error while parsing NZB file %1", file_);
             break;
 
         case nzberror::nzb:
-            ERROR(str("Error in NZB file content _1", file_));
+            ERROR("Error in NZB file content %1", file_);
             break;
 
         case nzberror::io:
-            ERROR(str("I/O error while parsing NZB file _1",file_));
+            ERROR("I/O error while parsing NZB file %1",file_);
             break;
 
         case nzberror::other:
-            ERROR(str("Unknown error while parsing NZB file _1", file_));
+            ERROR("Unknown error while parsing NZB file %1", file_);
             break;
     }
 

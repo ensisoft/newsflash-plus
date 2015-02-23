@@ -58,8 +58,7 @@
 #include "../platform.h"
 #include "../tools.h"
 #include "../distdir.h"
-
-using app::str;
+#include "../types.h"
 
 namespace gui
 {
@@ -104,8 +103,12 @@ MainWindow::MainWindow(app::Settings& s) : QMainWindow(nullptr), current_(nullpt
 
     QObject::connect(&refresh_timer_, SIGNAL(timeout()),
         this, SLOT(timerRefresh_timeout()));
-    refresh_timer_.setInterval(1000);
+    refresh_timer_.setInterval(500);
     refresh_timer_.start();
+
+    auto& eventLog = app::EventLog::get();
+    QObject::connect(&eventLog, SIGNAL(newEvent(const app::Event&)),
+        this, SLOT(displayNote(const app::Event&)));
 
     setWindowTitle(NEWSFLASH_TITLE);
     setAcceptDrops(true);    
@@ -991,7 +994,24 @@ void MainWindow::timerRefresh_timeout()
     app::g_engine->refresh();
 
     for (auto* w : widgets_)
-        w->refresh();
+    {
+        const auto isActive = (w == current_);
+        w->refresh(isActive);
+    }
+
+    // this is the easiest way to allow tabs to indicate new status.
+    // by letting them change their window title/icon and then we periodidcally
+    // update the main tab window.
+    const auto numVisibleTabs = ui_.mainTab->count();
+    for (int i=0; i<numVisibleTabs; ++i)
+    {
+        const auto* widget = static_cast<MainWidget*>(ui_.mainTab->widget(i));
+        const auto& icon = widget->windowIcon();
+        const auto& text = widget->windowTitle();
+        ui_.mainTab->setTabText(i, text);
+        ui_.mainTab->setTabIcon(i, icon);
+    }
+
 
     const auto freespace        = app::g_engine->getFreeDiskSpace();
     const auto downloads        = app::g_engine->getDownloadPath();
@@ -1012,12 +1032,18 @@ void MainWindow::timerRefresh_timeout()
     }
     ui_.progressBar->setTextVisible(bytes_remaining != 0);
 
-    ui_.lblDiskFree->setText(str("_1 _2", downloads, app::size{freespace}));
-    ui_.lblNetIO->setText(str("_1 _2",  app::speed { netspeed }, app::size {bytes_downloaded}));     
-    ui_.lblDiskIO->setText(str("_1", app::size { bytes_written }));
-    ui_.lblQueue->setText(str("_1", app::size { bytes_remaining }));
+    ui_.lblDiskFree->setText(toString("%1 %2", downloads, app::size{freespace}));
+    ui_.lblNetIO->setText(toString("%1 %2",  app::speed { netspeed }, app::size {bytes_downloaded}));     
+    ui_.lblDiskIO->setText(toString("%1", app::size { bytes_written }));
+    ui_.lblQueue->setText(toString("%1", app::size { bytes_remaining }));
 
     ui_.netGraph->addSample(netspeed);
+}
+
+void MainWindow::displayNote(const app::Event& event)
+{
+    if (event.type == app::Event::Type::Note)
+        showMessage(event.message);
 }
 
 } // gui

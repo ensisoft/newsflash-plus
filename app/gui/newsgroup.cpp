@@ -37,8 +37,6 @@
 #include "../debug.h"
 #include "../format.h"
 
-using app::str;
-
 namespace gui
 {
 

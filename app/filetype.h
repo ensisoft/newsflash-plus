@@ -120,8 +120,6 @@ namespace app
     // get the default hardcoded filepattern string for the given filetype
     const char* filepattern(filetype type);
 
-    const char* str(filetype type);
-
     // try to identify file's type.
     filetype findFileType(const QString& filename);
 

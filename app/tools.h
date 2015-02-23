@@ -111,7 +111,7 @@ namespace app
             bool isValid() const 
             { return !binary_.isEmpty(); }
 
-            void startNewInstance(const QString& file) const;
+            bool startNewInstance(const QString& file) const;
 
         private:
             quint32 guid_;

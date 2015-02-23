@@ -60,31 +60,6 @@ const char* filepattern(filetype type)
     return "";
 }
 
-const char* str(filetype type)
-{
-    switch (type)
-    {
-        case filetype::none:
-            return "none";
-        case filetype::audio:
-            return "Audio";
-        case filetype::video:
-            return "Video";
-        case filetype::image:
-            return "Image";
-        case filetype::text:
-            return "Text";
-        case filetype::archive:
-            return "Archive";
-        case filetype::parity:
-            return "Parity";
-        case filetype::document:
-            return "Document";
-        case filetype::other:
-            return "Other";
-    }
-    return "";
-}
 
 filetype findFileType(const QString& filename)
 {

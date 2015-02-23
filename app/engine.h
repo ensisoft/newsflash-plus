@@ -324,6 +324,9 @@ namespace app
         virtual void timerEvent(QTimerEvent* event) override;
 
     private:
+        void start();
+
+    private:
         void onError(const newsflash::ui::error& e);
         void onFileComplete(const newsflash::ui::file& f);
         void onBatchComplete(const newsflash::ui::batch& b);

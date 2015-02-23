@@ -63,7 +63,7 @@ namespace gui
     private:
         bool eventFilter(QObject* obj, QEvent* event);
         void downloadSelected(const QString& path);
-        void refresh(bool verbose);
+        void refreshStreams(bool verbose);
 
     private slots:
         void on_actionRefresh_triggered();

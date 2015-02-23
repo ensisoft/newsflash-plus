@@ -1,24 +1,22 @@
-// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-//  of this software and associated documentation files (the "Software"), to deal
-//  in the Software without restriction, including without limitation the rights
-//  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-//  copies of the Software, and to permit persons to whom the Software is
-//  furnished to do so, subject to the following conditions:
+// 
+// This software is copyrighted software. Unauthorized hacking, cracking, distribution
+// and general assing around is prohibited.
+// Redistribution and use in source and binary forms, with or without modification,
+// without permission are prohibited.
 //
 // The above copyright notice and this permission notice shall be included in
-//  all copies or substantial portions of the Software.
+// all copies or substantial portions of the Software.
 //
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-//  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-//  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-//  THE SOFTWARE.
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
 
 #pragma once
 
@@ -31,29 +29,25 @@
 #  include <QTime>
 #  include <QString>
 #include <newsflash/warnpop.h>
-
-#include <functional>
+#include "format.h"
+#include "event.h"
 
 namespace app
 {
-    class eventlog : public QAbstractListModel
+    // Application event log. events that occur on the background
+    // are logged in here for later inspection.
+    class EventLog : public QAbstractListModel
     {
+        Q_OBJECT
+
+        EventLog();
+       ~EventLog();
+
     public:
-        enum class event {
-            warning, info, note, error
-        };
-
-        struct event_t {
-            event   type;
-            QString message;
-            QString logtag;
-            QTime   time;
-        };
-
-        std::function<bool (const event_t&)> on_event;
+        static EventLog& get();
 
         // record a new event in the log
-        void write(event type, const QString& msg, const QString& tag);
+        void write(Event::Type type, const QString& msg, const QString& tag);
 
         // clear the event log
         void clear();
@@ -64,37 +58,38 @@ namespace app
         // abstractlistmodel data accessor
         virtual QVariant data(const QModelIndex& index, int role) const override;
 
-        static
-        eventlog& get();
+        std::size_t numEvents() const
+        { return events_.size(); }
+    signals:
+        void newEvent(const app::Event& event);
 
     private:
-        eventlog();
-       ~eventlog();
-
-    private:
-        boost::circular_buffer<event_t> events_;
+        boost::circular_buffer<Event> events_;
     };
 
+// we want every log event to be tracable back to where it came from
+// so thus every module should define it's own LOGTAG 
 #ifndef LOGTAG
-    // we want every log event to be tracable back to where it came from
-    // so thus every module should define it's own LOGTAG 
-//#  error every module importing eventlog needs to define LOGTAG
+#  if !defined(Q_MOC_OUTPUT_REVISION)
+#    warning every module importing eventlog needs to define LOGTAG
+#  endif
 #endif
 
 #undef WARN
-#define WARN(m) \
-    app::eventlog::get().write(app::eventlog::event::warning, m, LOGTAG)    
+#define WARN(msg, ...) \
+    app::EventLog::get().write(app::Event::Type::Warning, app::toString(msg, ## __VA_ARGS__), LOGTAG)
 
 #undef ERROR
-#define ERROR(m) \
-    app::eventlog::get().write(app::eventlog::event::error, m, LOGTAG)    
+#define ERROR(msg, ...) \
+    app::EventLog::get().write(app::Event::Type::Error, app::toString(msg, ## __VA_ARGS__), LOGTAG)    
 
 #undef INFO
-#define INFO(m) \
-    app::eventlog::get().write(app::eventlog::event::info, m, LOGTAG)    
+#define INFO(msg, ...) \
+    app::EventLog::get().write(app::Event::Type::Info, app::toString(msg, ## __VA_ARGS__), LOGTAG)    
 
 #undef NOTE
-#define NOTE(m) \
-    app::eventlog::get().write(app::eventlog::event::note, m, LOGTAG)
+#define NOTE(msg, ...) \
+    app::EventLog::get().write(app::Event::Type::Note, app::toString(msg, ## __VA_ARGS__), LOGTAG)    
 
 } // app
+

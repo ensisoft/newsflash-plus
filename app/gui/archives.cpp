@@ -29,8 +29,8 @@
 #include "archives.h"
 #include "../debug.h"
 #include "../settings.h"
-
-using app::str;
+#include "../archive.h"
+#include "../unpacker.h"
 
 namespace gui 
 {

@@ -213,8 +213,8 @@ namespace newsflash
         {}
 
     private:
-
         type cmdtype_;
+        
     private:
         std::atomic<bool> cancelbit_;
         std::atomic<bool> failbit_;

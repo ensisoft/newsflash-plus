@@ -38,8 +38,7 @@
 #include "../debug.h"
 #include "../format.h"
 #include "../platform.h"
-
-using app::str;
+#include "../types.h"
 
 namespace gui
 {
@@ -271,8 +270,8 @@ void Accounts::currentRowChanged()
 
     in_row_changed_ = true;
 
-    ui_.edtMonth->setText(str(gigs_month));
-    ui_.edtAllTime->setText(str(gigs_alltime));
+    ui_.edtMonth->setText(toString(gigs_month));
+    ui_.edtAllTime->setText(toString(gigs_alltime));
     ui_.spinTotal->setValue(quota_total.as_float());
     ui_.spinSpent->setValue(quota_spent.as_float());
     ui_.spinSpent->setMaximum(quota_total.as_float());    
@@ -312,7 +311,7 @@ void Accounts::on_btnResetMonth_clicked()
 
     const app::gigs nada;
 
-    ui_.edtMonth->setText(str(nada));
+    ui_.edtMonth->setText(toString(nada));
 }
 
 void Accounts::on_btnResetAllTime_clicked()
@@ -327,7 +326,7 @@ void Accounts::on_btnResetAllTime_clicked()
 
     const app::gigs nada;
 
-    ui_.edtAllTime->setText(str(nada));
+    ui_.edtAllTime->setText(toString(nada));
 }
 
 void Accounts::on_btnMonthlyQuota_toggled(bool checked)

@@ -33,8 +33,6 @@
 #include "../settings.h"
 #include "../repair.h"
 
-using app::str;
-
 namespace gui 
 {
 
@@ -173,7 +171,7 @@ void Repair::recoveryReady(const app::Recovery& rec)
 void Repair::scanProgress(const QString& file, int done)
 {
     ui_.progressList->setValue(done);
-    ui_.lblStatus->setText(str("Scanning ... _1", file));
+    ui_.lblStatus->setText(QString("Scanning ... %1").arg(file));
     ui_.tableData->scrollToBottom();
 }
 

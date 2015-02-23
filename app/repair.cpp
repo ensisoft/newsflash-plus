@@ -430,7 +430,7 @@ void RepairEngine::processFinished(int exitCode, QProcess::ExitStatus status)
     {
         active.state   = Recovery::Status::Error;
         active.message = "Crash exit";
-        ERROR(str("Repair '_1' error _2", active.desc, active.message));
+        ERROR("Repair '%1' error %2", active.desc, active.message);
     }
     else
     {
@@ -444,13 +444,13 @@ void RepairEngine::processFinished(int exitCode, QProcess::ExitStatus status)
         if (success)
         {
             active.state = Recovery::Status::Success;
-            INFO(str("Repair '_1' complete!", active.desc));
-            NOTE(str("Repair '_1' complete!", active.desc));
+            INFO("Repair '%1' complete!", active.desc);
+            NOTE("Repair '%1' complete!", active.desc);
         }
         else 
         {
             active.state = Recovery::Status::Failed;
-            WARN(str("Repair '_1' failed. _2", active.desc, active.message));
+            WARN("Repair '%1' failed. %2", active.desc, active.message);
         }
     }
     list_->refresh(index);
@@ -472,8 +472,8 @@ void RepairEngine::processError(QProcess::ProcessError error)
     auto& active = list_->getRecovery(index);
 
     active.state   = Recovery::Status::Error;
-    active.message = "TODO";
-    ERROR(str("Repair '_1' error _2", active.desc, active.message));
+    active.message = toString(error);
+    ERROR("Repair '%1' error %2", active.desc, active.message);
 
     list_->refresh(index);
 

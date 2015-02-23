@@ -34,6 +34,7 @@
 #include "engine.h"
 #include "distdir.h"
 #include "parstate.h"
+#include "archive.h"
 
 namespace app
 {
@@ -368,7 +369,7 @@ void Unpacker::processFinished(int exitCode, QProcess::ExitStatus status)
     {
         active.state   = Archive::Status::Error;
         active.message = "Crash exit";
-        ERROR(str("Unpack '_1' error _2", active.desc, active.message));
+        ERROR("Unpack '%1' error %2", active.desc, active.message);
     }
     else
     {
@@ -393,7 +394,7 @@ void Unpacker::processError(QProcess::ProcessError error)
 
     active.state   = Archive::Status::Error;
     active.message = "Process error";
-    ERROR(str("Unpack '_1' error _2", active.desc, active.message));
+    ERROR("Unpack '%1' error %2", active.desc, active.message);
 
     list_->refresh(index);
 

@@ -154,15 +154,15 @@ bool Engine::downloadNzbContents(quint32 acc, const QString& path, const QString
         case nzberror::none: break;
 
         case nzberror::xml:
-            ERROR(str("NZB XML parse error (_1)", desc));
+            ERROR("NZB XML parse error.");
             break;
 
         case nzberror::nzb:
-            ERROR(str("NZB content error (_1)", desc));
+            ERROR("NZB content error.");
             break;
 
         default:
-            ERROR(str("Error reading NZB (_1)", desc));
+            ERROR("Error reading NZB.");
             break;
     }
     if (err != nzberror::none)
@@ -176,7 +176,7 @@ bool Engine::downloadNzbContents(quint32 acc, const QString& path, const QString
     QDir dir(location);
     if (!dir.mkpath(location))
     {
-        ERROR(str("Error creating path _1", dir));
+        ERROR("Error creating path %1", location);
         return false;
     }
 
@@ -196,20 +196,13 @@ bool Engine::downloadNzbContents(quint32 acc, const QString& path, const QString
         download.files.push_back(std::move(file));
     }
     engine_->download_files(std::move(download));
-    if (connect_)
-    {
-        QDir dir;
-        if (!dir.mkpath(logifiles_))
-        {
-            ERROR(str("Error creating log path _1", dir));
-        }
-        engine_->start(toUtf8(logifiles_));
-    }
-    INFO(str("Downloading \"_1\"", desc));
-    NOTE(str("Downloading \"_1\"", desc));
+
+    start();
+
+    INFO("Downloading \"%1\"", desc);
+    NOTE("Downloading \"%1\"", desc);
 
     emit newDownloadQueued(desc);
-
     return true;
 }
 
@@ -225,7 +218,7 @@ bool Engine::downloadNzbContents(quint32 acc, const QString& path, const QString
     QDir dir(location);
     if (!dir.mkpath(location))
     {
-        ERROR(str("Error creating path _1", dir));
+        ERROR("Error creating path %1", location);
         return false;
     }
 
@@ -245,17 +238,11 @@ bool Engine::downloadNzbContents(quint32 acc, const QString& path, const QString
         download.files.push_back(std::move(file));
     }
     engine_->download_files(std::move(download));
-    if (connect_)
-    {
-        QDir dir;
-        if (!dir.mkpath(logifiles_))
-        {
-            ERROR(str("Error creating log path _1", dir));
-        }
-        engine_->start(toUtf8(logifiles_));
-    }
-    INFO(str("Downloading \"_1\"", desc));
-    NOTE(str("Downloading \"_1\"", desc));
+
+    start();
+
+    INFO("Downloading \"%1\"", desc);
+    NOTE("Downloading \"%1\"", desc);
 
     emit newDownloadQueued(desc);
     return true;
@@ -269,15 +256,8 @@ quint32 Engine::retrieveNewsgroupListing(quint32 acc)
 
     const auto batchId = engine_->download_listing(listing);
 
-    if  (connect_)
-    {
-        QDir dir;
-        if (!dir.mkpath(logifiles_))
-        {
-            ERROR(str("Error creating log path _1", dir));
-        }
-        engine_->start(toUtf8(logifiles_));
-    }
+    start();
+
     return batchId;
 }
 
@@ -304,7 +284,6 @@ void Engine::loadState(Settings& s)
     engine_->set_throttle_value(throttleval);
     engine_->set_prefer_secure(secure);
 
-
 }
 
 void Engine::saveState(Settings& s)
@@ -327,12 +306,13 @@ void Engine::saveState(Settings& s)
 
 void Engine::loadSession()
 {
-    DEBUG("Loading engine session...");
+    const auto& file = homedir::file("session.bin");
     try
     {
-        const auto& file = homedir::file("session.bin");
         if (QFileInfo(file).exists())
         {
+            DEBUG("Loading engine session %1 ...", file);
+            
             engine_->load_session(toUtf8(file));
             if (engine_->num_tasks())
                 connect(connect_);
@@ -341,7 +321,7 @@ void Engine::loadSession()
     }
     catch (const std::exception& e)
     {
-        ERROR(str("Failed to load previous session: '_1'", e.what()));
+        WARN("Failed to load previous session: '%1'", e.what());
     }
 }
 
@@ -358,15 +338,12 @@ void Engine::connect(bool on_off)
 { 
     connect_ = on_off;
     if (!connect_)
+    {
         engine_->stop();
+    }
     else
     {
-        QDir dir;
-        if (!dir.mkpath(logifiles_))
-        {
-            ERROR(str("Error creating log path _1", dir));
-        }
-        engine_->start(toUtf8(logifiles_));
+        start();
     }
 }
 
@@ -424,11 +401,25 @@ void Engine::timerEvent(QTimerEvent* event)
     engine_->tick();
 }
 
+void Engine::start()
+{
+    if  (connect_)
+    {
+        QDir dir;
+        if (!dir.mkpath(logifiles_))
+        {
+            WARN("Error creating log path %1", logifiles_);
+            WARN("Engine log files will not be available.");
+        }
+        engine_->start(toUtf8(logifiles_));
+    }
+}
+
 void Engine::onError(const newsflash::ui::error& e)
 {
     //const auto resource = from_utf8(e.resource);
     //const auto code = e.code;
-    ERROR(str("_1", e.what));
+    ERROR(fromUtf8(e.what));
 }
 
 void Engine::onFileComplete(const newsflash::ui::file& f)
@@ -440,7 +431,7 @@ void Engine::onFileComplete(const newsflash::ui::file& f)
 
     path = QDir(path).absolutePath();
     path = QDir::toNativeSeparators(path);
-    DEBUG("File complete \"%1/%2\" damaged: %1 binary: %2", 
+    DEBUG("File complete \"%1/%2\" damaged: %3 binary: %4", 
         path, name, f.damaged, f.binary);
 
     app::DataFileInfo file;
@@ -452,16 +443,16 @@ void Engine::onFileComplete(const newsflash::ui::file& f)
 
     if (f.damaged)
     {
-        WARN(str("Completed \"_1\"", file.name));
+        WARN("Completed \"%1\"", file.name);
     }
     else
     {
-        INFO(str("Completed \"_1\"", file.name));
+        INFO("Completed \"%1\"", file.name);
     }
 
     emit fileCompleted(file);
 
-    NOTE(str("\"_1\" is ready", file.name));
+    NOTE("\"%1\" is ready", file.name);
 }
 
 void Engine::onBatchComplete(const newsflash::ui::batch& b)

@@ -41,6 +41,7 @@ class QCoreApplication;
 
 namespace app {
     class Settings;
+    struct Event;
 } // app
 
 namespace gui
@@ -149,6 +150,7 @@ namespace gui
         void actionTray_activated(QSystemTrayIcon::ActivationReason);
         void timerWelcome_timeout();
         void timerRefresh_timeout();
+        void displayNote(const app::Event& event);
 
     private:
         Ui::MainWindow ui_;

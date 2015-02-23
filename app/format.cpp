@@ -38,6 +38,7 @@
 #include <sstream>
 #include <cstring>
 #include "format.h"
+#include "types.h"
 
 namespace {
 
@@ -52,24 +53,98 @@ namespace {
 namespace app
 {
 
-QString format(const app::volume& vol)
+QString toString(Media m) 
+{
+    switch (m)
+    {
+        case Media::ConsoleNDS:        return "Nintento DS";
+        case Media::ConsoleWii:        return "Nintendo Wii";
+        case Media::ConsoleXbox:       return "Xbox";
+        case Media::ConsoleXbox360:    return "XBox 360";
+        case Media::ConsolePSP:        return "Playstation Portable";
+        case Media::ConsolePS2:        return "Playstation 2";
+        case Media::ConsolePS3:        return "Playstation 3";
+        case Media::ConsolePS4:        return "Playstation 4";
+        case Media::MoviesInt:         return "Movies Int.";
+        case Media::MoviesSD:          return "Movies SD";
+        case Media::MoviesHD:          return "Movies HD";
+        case Media::MoviesWMV:         return "Movies WMV";
+        case Media::AudioMp3:          return "Mp3";
+        case Media::AudioVideo:        return "Music Videos";
+        case Media::AudioAudiobook:    return "Audiobook";
+        case Media::AudioLossless:     return "Lossless Audio";
+        case Media::AppsPC:            return "PC";
+        case Media::AppsISO:           return "ISO";
+        case Media::AppsMac:           return "Mac";
+        case Media::AppsAndroid:       return "Android";
+        case Media::AppsIos:           return "iOS";
+        case Media::TvInt:             return "TV Int.";
+        case Media::TvSD:              return "TV SD";
+        case Media::TvHD:              return "TV HD";
+        case Media::TvOther:           return "TV Other";
+        case Media::TvSport:           return "TV Sports";
+        case Media::XxxDVD:            return "XXX DVD";
+        case Media::XxxHD:             return "XXX HD";
+        case Media::XxxSD:             return "XXX SD";
+        case Media::Ebook:             return "EBook";
+    }
+    Q_ASSERT(false);
+    return "";
+}
+
+QString toString(filetype type)
+{
+    switch (type)
+    {
+        case filetype::none:     Q_ASSERT(0);
+        case filetype::audio:    return "Audio";
+        case filetype::video:    return "Video";
+        case filetype::image:    return "Image";
+        case filetype::text:     return "Text";
+        case filetype::archive:  return "Archive";
+        case filetype::parity:   return "Parity";
+        case filetype::document: return "Document";
+        case filetype::other:    return "Other";
+    }
+    Q_ASSERT(false);
+    return "";
+}
+
+
+
+QString toString(QFile::FileError error)
+{
+    return "todo";
+}
+
+QString toString(QNetworkReply::NetworkError error)
+{
+    return "todo";
+}
+
+QString toString(QProcess::ProcessError error)
+{
+    return "todo";
+}
+
+QString toString(const app::count& count)
 {
     const auto BILLION  = 1000 * 1000 * 1000.0;
     const auto MILLION  = 1000 * 1000.0;
     const auto THOUSAND = 1000.0;
 
-    if (vol.numItems > BILLION)
-        return QString("%1 b").arg(vol.numItems / BILLION, 0, 'f', 1, ' ');
-    if (vol.numItems > MILLION)
-        return QString("%1 m").arg(vol.numItems / MILLION, 0, 'f', 1, ' ');
-    if (vol.numItems > THOUSAND)
-        return QString("%1 k").arg(vol.numItems / THOUSAND, 0, 'f', 1, ' ');
+    if (count.numItems > BILLION)
+        return QString("%1 b").arg(count.numItems / BILLION, 0, 'f', 1, ' ');
+    if (count.numItems > MILLION)
+        return QString("%1 m").arg(count.numItems / MILLION, 0, 'f', 1, ' ');
+    if (count.numItems > THOUSAND)
+        return QString("%1 k").arg(count.numItems / THOUSAND, 0, 'f', 1, ' ');
 
-    return QString("%1").arg(vol.numItems);
+    return QString("%1").arg(count.numItems);
 
 }
 
-QString format(const app::size& size)
+QString toString(const app::size& size)
 {
     if (size.bytes >= GB)
         return QString("%1 Gb").arg(size.bytes / GB, 0, 'f', 1, ' ');
@@ -79,7 +154,7 @@ QString format(const app::size& size)
     return QString("%1 Kb").arg(size.bytes / KB, 0, 'f', 1, ' ');
 }
 
-QString format(const app::speed& speed)
+QString toString(const app::speed& speed)
 {
     if (speed.bps >= GB)
         return QString("%1 Gb/s").arg(speed.bps / GB, 0, 'f', 1);
@@ -89,17 +164,17 @@ QString format(const app::speed& speed)
     return QString("%1 Kb/s").arg(speed.bps / KB, 0, 'f', 1);
 }
 
-QString format(const app::gigs& gigs)
+QString toString(const app::gigs& gigs)
 {
     return QString("%1 Gb").arg(gigs.as_float(), 0, 'f', 1, ' ');
 }
 
-QString format(const app::megs& megs)
+QString toString(const app::megs& megs)
 {
     return QString("%1 Mb").arg(megs.as_float(), 0, 'f', 1, ' ');
 }
 
-QString format(const app::event& event)
+QString toString(const app::event& event)
 {
     if (!event.valid())
         return "???";
@@ -166,12 +241,12 @@ QString format(const app::event& event)
     return str;
 }
 
-QString format(const app::age& age)
+QString toString(const app::age& age)
 {
     return QString("%1 days").arg(age.days());
 }
 
-QString format(const app::runtime& rt)
+QString toString(const app::runtime& rt)
 {
     const auto hours = rt.value / 3600;
     const auto mins  = (rt.value - hours * 3600) / 60;
@@ -188,7 +263,7 @@ QString format(const app::runtime& rt)
         .arg(secs, 2, 10, QChar('0'));
 }
 
-QString format(const app::etatime& eta)
+QString toString(const app::etatime& eta)
 {
     const auto MINUTE = 60;
     const auto HOUR = 60 * 60;
@@ -203,48 +278,6 @@ QString format(const app::etatime& eta)
     return QString("%1 hour %2 min").arg(hour).arg(min);
 }
 
-QString format(const std::string& str)
-{
-    return QString(str.c_str());
-}
-
-QString format(const void* ptr)
-{
-    std::stringstream ss;
-    ss << ptr; 
-    return QString::fromStdString(ss.str());
-}
-
-QString format(bool val)
-{
-    return QString((val ? "True" : "False"));
-}
-
-QString format(const QNetworkReply& reply)
-{
-    return reply.errorString();
-}
-
-QString format(const QFile& file)
-{
-    return QString("'%1'").arg(file.fileName());
-}
-
-QString format(const QDir& dir)
-{
-    return QString("'%1'").arg(
-        QDir::toNativeSeparators(dir.absolutePath()));
-}    
-
-QString format(const QUrl& url)
-{
-    return QString("'%1'").arg(url.toString());
-}
-
-QString format(const QStringList& list)
-{
-    return list.join(", ");
-}
 
 std::string narrow(const QString& str)
 {

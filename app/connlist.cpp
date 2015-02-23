@@ -31,6 +31,7 @@
 #include "engine.h"
 #include "debug.h"
 #include "format.h"
+#include "types.h"
 
 namespace app
 {
@@ -94,10 +95,10 @@ QVariant connlist::data(const QModelIndex& index, int role) const
                 return fromLatin(ui.host);
 
             case columns::data:
-                return format(size{ui.down});
+                return toString(size{ui.down});
 
             case columns::kbs:
-                return format(speed{ui.bps});
+                return toString(speed{ui.bps});
 
             case columns::desc:
                 return fromUtf8(ui.desc);

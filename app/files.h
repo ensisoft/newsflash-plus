@@ -70,6 +70,9 @@ namespace app
 
         const file& getItem(std::size_t i) const;
 
+        std::size_t numFiles() const 
+        { return files_.size(); }
+
     private slots:
         void fileCompleted(const app::DataFileInfo& file);
 

@@ -92,7 +92,5 @@ namespace app
 
     extern RepairEngine* g_repair;
 
-
-
 } // app
 

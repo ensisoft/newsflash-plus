@@ -46,10 +46,10 @@ namespace app
         quint32 value;
     };
 
-    struct volume {
-        volume() : numItems(0)
+    struct count {
+        count() : numItems(0)
         {}
-        volume(quint64 numItems) : numItems(numItems)
+        count(quint64 numItems) : numItems(numItems)
         {}
         quint64 numItems;
     };

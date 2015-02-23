@@ -46,6 +46,8 @@ namespace gui
         virtual void loadState(app::Settings& s) override;
         virtual void saveState(app::Settings& s) override;
         virtual void shutdown() override;
+        virtual void refresh(bool isActive) override;        
+        virtual void activate(QWidget*) override;
 
         virtual info getInformation() const override
         {
@@ -75,6 +77,7 @@ namespace gui
         Ui::Files ui_;
     private:
         app::Files model_;
-
+    private:
+        std::size_t numFiles_;
     };
 } // gui

@@ -71,8 +71,6 @@
 #include "../repair.h"
 #include "../unpacker.h"
 
-using app::str;
-
 namespace gui
 {
 
@@ -117,7 +115,7 @@ int run(int argc, char* argv[])
     {
         const auto err = set.load(file);
         if (err != QFile::NoError)
-            ERROR(str("Failed to read settings _1, _2", file, err));
+            ERROR("Failed to read settings %1, %2", file, err);
     }
 
     gui::Appearance style;

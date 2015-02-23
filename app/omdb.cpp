@@ -81,8 +81,8 @@ void MovieDatabase::onLookupFinished(QNetworkReply& reply, const QString& title)
     const auto err = reply.error();
     if (err != QNetworkReply::NoError)
     {
-       ERROR(str("Failed to retrieve movie details '_1'", title));
-       emit lookupError(title, "Failed to retrieve movie details (network error)");
+       ERROR("Failed to retrieve movie details '%1', %2", title, err);
+       emit lookupError(title, toString("Failed to retrieve movie details (%1)", err));
        return;
     }
     QByteArray bytes = reply.readAll();
@@ -94,7 +94,7 @@ void MovieDatabase::onLookupFinished(QNetworkReply& reply, const QString& title)
     QVariantMap json = parser.parse(&io, &success).toMap();
     if (!success)
     {
-        ERROR(str("Incorrect JSON response from omdbapi.com"));
+        ERROR("Incorrect JSON response from omdbapi.com");
         emit lookupError(title, "Incorrect JSON response from omdbapi.com");
         return;
     }
@@ -102,6 +102,7 @@ void MovieDatabase::onLookupFinished(QNetworkReply& reply, const QString& title)
     if (!success)
     {
         const auto& err = json["Error"].toString();
+        ERROR("Error response from omdbapi.com. %1", err);
         emit lookupError(title, err);
         return;
     }

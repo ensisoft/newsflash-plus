@@ -27,9 +27,7 @@
 #  include <QString>
 #  include <QDateTime>
 #include <newsflash/warnpop.h>
-
 #include <newsflash/engine/bitflag.h>
-
 #include <iterator>
 
 namespace app
@@ -169,8 +167,6 @@ namespace app
         return !(lhs == rhs);
     }
 
-    // stringify media tag name
-    const char* str(Media m);
 
     QString findMovieTitle(const QString& subject);
 

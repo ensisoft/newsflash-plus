@@ -30,8 +30,6 @@
 #  include <QRegExp>
 #include <newsflash/warnpop.h>
 #include <zlib/zlib.h>
-
-//#include <Python.h>
 #include "eventlog.h"
 #include "format.h"
 
@@ -112,8 +110,8 @@ void logCopyright()
     INFO(QString::fromUtf8(NEWSFLASH_COPYRIGHT));
     INFO(NEWSFLASH_WEBSITE);
     INFO("Compiled: " __DATE__ ", " __TIME__);    
-    INFO(str("Compiler: " COMPILER_NAME ", _1", COMPILER_VERSION));
-    INFO(str("Boost software library _1._2._3", boost_major, boost_minor, boost_revision));
+    INFO("Compiler: %1 %2", COMPILER_NAME , COMPILER_VERSION);
+    INFO("Boost software library %1.%2.%3", boost_major, boost_minor, boost_revision);
     INFO("http://www.boost.org");
     INFO("16x16 Free Application Icons");
     INFO("Copyright (c) 2009 Aha-Soft");
@@ -122,23 +120,11 @@ void logCopyright()
     INFO("Silk Icon Set 1.3");
     INFO("Copyright (c) Mark James");
     INFO("http://www.famfamfam.com/lab/icons/silk/");
-    INFO(str("Qt cross-platform application and UI framework _1", QT_VERSION_STR));
+    INFO("Qt cross-platform application and UI framework %1", QT_VERSION_STR);
     INFO("http://qt.nokia.com");
     INFO("Zlib compression library " ZLIB_VERSION);
     INFO("Copyright (c) 1995-2010 Jean-Loup Gailly & Mark Adler");
     INFO("http://zlib.net");        
-
-// #ifdef NEWSFLASH_ENABLE_PYTHON
-//     const auto pyVersion   = QString(Py_GetVersion()).replace("\n", " ");
-//     INFO(str("Python _1", pyVersion));
-
-//     const auto pyCopyright = QString(Py_GetCopyright()).split("\n", QString::SkipEmptyParts);
-//     for (int i=0; i<pyCopyright.size(); ++i)
-//     {
-//         INFO(pyCopyright[i]);
-//     }
-//     INFO("http://www.python.org");
-// #endif
 }
 
 } // app

@@ -24,100 +24,72 @@
 
 #include <newsflash/config.h>
 #include <newsflash/warnpush.h>
+#  include <QtNetwork/QNetworkReply>
+#  include <QProcess>
 #  include <QString>
+#  include <QFile>
+#  include <QUrl>
 #include <newsflash/warnpop.h>
+#include <newsflash/engine/ui/task.h>
 #include <string>
-#include "types.h"
-
-class QNetworkReply;
-class QFile;
-class QDir;
-class QUrl;
+#include "filetype.h"
+#include "media.h"
 
 namespace app
 {
     // formatting is related to what the user sees.
     // so the data that comes out here is usable at the UI layer.
+    // if localization is to be done this is the place where
+    // object information is to be localized. The formatting strings
+    // need to be done elsewhere though. (currently dont exist)
 
+    struct size;
+    struct speed;
+    struct runtime;
+    struct etatime;
+    struct count;
+    struct gigs;
+    struct megs;
+    struct event;
+    struct age;
+
+    QString toString(Media media);
+    QString toString(filetype type);
+
+    QString toString(QFile::FileError error);
+    QString toString(QNetworkReply::NetworkError error);
+    QString toString(QProcess::ProcessError error);
+
+    QString toString(const app::size& size);
+    QString toString(const app::speed& speed);
+    QString toString(const app::gigs& gigs);
+    QString toString(const app::megs& megs);
+    QString toString(const app::event& event);
+    QString toString(const app::age& age);
+    QString toString(const app::runtime& rt);
+    QString toString(const app::etatime& eta);
+    QString toString(const app::count& vol);    
+
+    inline QString toString(const char* str)
+    { return str; }
+
+    inline QString toString(const QString& str)
+    { return str; }
+
+    inline QString toString(const QUrl& url)
+    { return url.toString(); }
 
     // generic format method, supports whatever Qt QString::arg supports
     template<typename T>
-    QString format(const T& t)
+    QString toString(const T& value)
     {
-        return QString("%1").arg(t);
+        return QString("%1").arg(value);
     }
-
-    QString format(const void* ptr);
-    QString format(bool val);
-    QString format(const QFile& file);
-    QString format(const QDir& dir);
-    QString format(const QUrl& url);
-    QString format(const QNetworkReply& reply);
-    QString format(const QStringList& list);
-    QString format(const app::size& size);
-    QString format(const app::speed& speed);
-    QString format(const app::gigs& gigs);
-    QString format(const app::megs& megs);
-    QString format(const app::event& event);
-    QString format(const app::age& age);
-    QString format(const app::runtime& rt);
-    QString format(const app::etatime& eta);
-    QString format(const app::volume& vol);    
-    QString format(const std::string& str);        
-
-
-    namespace detail {
-        inline
-        QString key(int index)
-        {
-            return QString("_%1").arg(index);
-        }
-
-        template<typename T>
-        void format_arg(QString& s, int index, const T& t)
-        {
-            const auto& str = app::format(t);
-            s = s.replace(key(index), str);
-        }
-
-        template<typename T, typename... Rest>
-        void format_arg(QString& s, int index, const T& t, const Rest&... rest)
-        {
-            const auto& str = app::format(t);
-            s = s.replace(key(index), str);
-            format_arg(s, index + 1, rest...);
-        }
-    } // detail
-
-    // a wrapper around QString::arg() with more convenient syntax
-    // and overloads for supporting more types for formatting.
-    template<typename... Args>
-    QString str(const char* fmt, const Args&... args)
+    template<typename T, typename... Args>
+    QString toString(QString fmt, const T& value, const Args&... args)
     {
-        QString s(fmt);
-        detail::format_arg(s, 1, args...);
-        return s;
-    }
-
-    template<typename T>
-    QString str(const T& arg)
-    {
-        return str("_1", arg);
-    }
-
-    inline
-    QString str(const char* str) 
-    {
-        return QString { str };
-    }
-
-    template<typename... Args>
-    std::string str_a(const char* fmt, const Args&... args)
-    {
-        const auto& string = str(fmt, args...);
-        const auto& bytes  = string.toAscii();
-        return std::string(
-            bytes.data(), bytes.size());
+        fmt = fmt.arg(toString(value));
+        return toString(fmt, args...);
     }
 
     inline
@@ -146,19 +118,10 @@ namespace app
         return QString::fromLatin1(s.c_str());
     }
 
-
     // get a string in systems native narrow character encoding.
     std::string narrow(const QString& str);
 
     QString widen(const std::string& s);
 
-    // get a Qstring from a native system string.
-    // the string is expected to be in the systems 
-    // native narrow character encoding (whatever that is)
-    //QString widen(const char* str);
-    //QString widen(const wchar_t* str);
-
-
-
-} // sdk
+} // app
 

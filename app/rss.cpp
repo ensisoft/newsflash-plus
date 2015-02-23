@@ -45,6 +45,7 @@
 #include "nzbparse.h"
 #include "engine.h"
 #include "platform.h"
+#include "types.h"
 
 namespace app
 {
@@ -80,14 +81,14 @@ QVariant RSS::data(const QModelIndex& index, int role) const
     {
         switch (col)
         {
-            case columns::date:     return format(app::event {item.pubdate}); 
+            case columns::date:     return toString(app::event {item.pubdate}); 
+            case columns::category: return toString(item.type);            
             case columns::locked:   return "";
-            case columns::category: return str(item.type);
             case columns::title:    return item.title;
             case columns::size:
             if (item.size == 0)
                     return "n/a";
-                return format(size { item.size });
+                return toString(size { item.size });
 
             case columns::sentinel: Q_ASSERT(0);
         }
@@ -262,11 +263,13 @@ void RSS::stop()
 
 void RSS::onRefreshComplete(RSSFeed* feed, Media type, QNetworkReply& reply)
 {
+    DEBUG("RSS stream reply %1", reply);
+
     const auto err = reply.error();
     const auto url = reply.url();
     if (err != QNetworkReply::NoError)
     {
-        ERROR(str("RSS refresh failed (_1), _2)", url, str(err)));
+        ERROR("RSS refresh failed (%1), %2", url, err);
         return;
     }
     QByteArray bytes = reply.readAll();
@@ -279,7 +282,7 @@ void RSS::onRefreshComplete(RSSFeed* feed, Media type, QNetworkReply& reply)
 
     if (!feed->parse(io, items))
     {
-        ERROR(str("RSS XML parse failed (_1)", url));
+        ERROR("RSS XML parse failed (%1)", url);
         return;
     }
 
@@ -295,30 +298,30 @@ void RSS::onRefreshComplete(RSSFeed* feed, Media type, QNetworkReply& reply)
     std::copy(std::begin(items), std::end(items),
         std::back_inserter(items_));
     endInsertRows();
-
-    //INFO(str("RSS feed from _1 complete", url));
 }
 
 void RSS::onNzbFileComplete(const QString& file, QNetworkReply& reply)
 {
+    DEBUG("Get nzb data reply %1", reply);
+
     const auto err = reply.error();
     const auto url = reply.url();
     if (err != QNetworkReply::NoError)
     {
-        ERROR(str("Failed to retrieve NZB file (_1), _2", url, str(err)));
+        ERROR("Failed to retrieve NZB file (%1), %2", url, err);
         return;
     }
     QFile io(file);
     if (!io.open(QIODevice::WriteOnly | QIODevice::Truncate))
     {
-        ERROR(str("Failed to open file _1 for writing", io));
+        ERROR("Failed to open file %1 for writing, %2", file, io.error());
         return;
     }
 
     QByteArray bytes = reply.readAll();
     io.write(bytes);
     io.close();
-    INFO(str("Saved NZB file _1 _2", io, size { (unsigned)bytes.size() }));
+    INFO("Saved NZB file %1 %2", file, size {(unsigned)bytes.size()});
 }
 
 void RSS::onNzbDataComplete(const QString& folder, const QString& desc, quint32 acc, QNetworkReply& reply)
@@ -329,7 +332,7 @@ void RSS::onNzbDataComplete(const QString& folder, const QString& desc, quint32 
     const auto url = reply.url();
     if (err != QNetworkReply::NoError)
     {
-        ERROR(str("Failed to retrieve NZB content (_1), _2", url, str(err)));
+        ERROR("Failed to retrieve NZB content (%1), %2", url, err);
         return;
     }
 
@@ -346,7 +349,7 @@ void RSS::onNzbDataCompleteCallback(const data_callback& cb, QNetworkReply& repl
     const auto url = reply.url();
     if (err != QNetworkReply::NoError)
     {
-        ERROR(str("Failed to retrieve NZB content (_1), _2", url, str(err)));
+        ERROR("Failed to retrieve NZB content (%1), %2", url, err);
         return;
     }
     const auto buff = reply.readAll();
