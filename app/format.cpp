@@ -114,17 +114,74 @@ QString toString(filetype type)
 
 QString toString(QFile::FileError error)
 {
-    return "todo";
+    using e = QFile::FileError;
+    switch (error)
+    {
+        case e::NoError:          return "No error occrred.";
+        case e::ReadError:        return "An error occurred when reading from the file.";
+        case e::WriteError:       return "An error occurred when writing to the file.";
+        case e::FatalError:       return "A fatal error occurred.";
+        case e::ResourceError:    return "A resource error occurred.";
+        case e::OpenError:        return "The file could not be opened.";
+        case e::AbortError:       return "The operation was aborted.";
+        case e::TimeOutError:     return "A timeout occurred.";
+        case e::UnspecifiedError: return "An unspecified error occurred.";
+        case e::RemoveError:      return "The file could not be removed.";
+        case e::RenameError:      return "The file coult not be renamed.";
+        case e::PositionError:    return "The position in file could not be changed.";
+        case e::ResizeError:      return "The file could not be resized.";
+        case e::PermissionsError: return "The file could not be accessed (no permission).";
+        case e::CopyError:        return "The file could not be copied.";
+    }
+    Q_ASSERT(false);
+    return "";
 }
+
 
 QString toString(QNetworkReply::NetworkError error)
 {
-    return "todo";
+    using e = QNetworkReply::NetworkError;
+    switch (error)
+    {
+        case e::NoError:                            return "No error occurred.";
+        case e::ConnectionRefusedError:             return "The remote server refused the connection.";
+        case e::RemoteHostClosedError:              return "The remote server closed the connection prematurely.";
+        case e::HostNotFoundError:                  return "The remote host name was not foud.";
+        case e::TimeoutError:                       return "The connection timed out.";
+        case e::OperationCanceledError:             return "Operation was canceled.";
+        case e::SslHandshakeFailedError:            return "SSL handshake failed.";
+        case e::TemporaryNetworkFailureError:       return "Network connection was temporarily lost.";
+        case e::UnknownNetworkError:                return "Unknown network error.";
+        case e::ProxyConnectionRefusedError:        return "Proxy server refused connection.";
+        case e::ProxyConnectionClosedError:         return "Proxy server closed the connection prematurely.";
+        case e::ProxyNotFoundError:                 return "The proxy host name was not found.";
+        case e::ProxyTimeoutError:                  return "The connection to the proxy timed out.";
+        case e::ProxyAuthenticationRequiredError:   return "The proxy requires authentication.";        
+        case e::ContentAccessDenied:                return "Access to the remote content was denied.";
+        case e::ContentNotFoundError:               return "Content was not found.";
+        case e::AuthenticationRequiredError:        return "Authentication required.";
+        default: return "Unknown error.";
+    }
+    Q_ASSERT(false);
+    return "";
 }
 
 QString toString(QProcess::ProcessError error)
 {
-    return "todo";
+    using e = QProcess::ProcessError;
+    switch (error)
+    {
+        case e::FailedToStart: return 
+           "The process failed start. Either the program is missing, "
+           "or you have insufficient permissions.";
+        case e::Crashed:      return "The process crashed.";
+        case e::Timedout:     return "The process is not responding.";
+        case e::WriteError:   return "Process write error.";
+        case e::ReadError:    return "Process read error.";
+        case e::UnknownError: return "Unknown error";
+    }
+    Q_ASSERT(false);
+    return "";
 }
 
 QString toString(const app::count& count)

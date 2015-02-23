@@ -44,49 +44,9 @@ namespace app
 {
     class Settings;
     struct NZBContent;
-
-    // file message notifies of a downloaded file that
-    // is now available in the filesystem
-    struct DataFileInfo {
-        // path to the file
-        QString path;
-
-        // name of the file at the path
-        QString name;
-
-        // size of the file
-        quint64 size;
-
-        // true if apparently damaged.
-        bool damaged;
-
-        // true if data is binary.
-        bool binary;
-    };
-
-    struct FileBatchInfo {
-        // path to the batch of files (folder)
-        QString path;
-
-        QString desc;
-
-    };
-
-    // newsgroup message notifies of a group information
-    // as part of a listing event.
-    struct NewsGroupInfo {
-        // the estimated number of articles available in the group
-        quint64 size;
-
-        // the first article number
-        quint64 first;
-
-        // the last article number
-        quint64 last;
-
-        // group name
-        QString name;
-    };
+    struct DataFileInfo;
+    struct FileBatchInfo;
+    struct NewsGroupInfo;
 
     // manager class around newsflash engine + engine state
     // translate between native c++ and Qt types and events.
@@ -347,7 +307,3 @@ namespace app
     extern Engine* g_engine;
 
 } // app
-
-    Q_DECLARE_METATYPE(app::DataFileInfo);
-    Q_DECLARE_METATYPE(app::NewsGroupInfo);
-    Q_DECLARE_METATYPE(app::FileBatchInfo);

@@ -36,6 +36,7 @@
 #include "eventlog.h"
 #include "engine.h"
 #include "distdir.h"
+#include "datainfo.h"
 
 namespace app
 {

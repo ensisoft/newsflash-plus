@@ -70,6 +70,7 @@
 #include "../eventlog.h"
 #include "../repair.h"
 #include "../unpacker.h"
+#include "../files.h"
 
 namespace gui
 {
@@ -123,8 +124,8 @@ int run(int argc, char* argv[])
     app::NetworkManager net;
     app::g_net = &net;
 
-    app::Engine eng;
-    app::g_engine = &eng;
+    app::Engine engine;
+    app::g_engine = &engine;
 
     app::Accounts acc;
     app::g_accounts = &acc;
@@ -164,9 +165,14 @@ int run(int argc, char* argv[])
     gui::Downloads downloads;
     win.attach(&downloads);
 
-    // files widget
-    gui::Files files;
-    win.attach(&files);
+    // files component
+    app::Files files;    
+    gui::Files filesUI(files);
+    win.attach(&filesUI);
+    // connect to the engine
+    QObject::connect(&engine, SIGNAL(fileCompleted(const app::DataFileInfo&)),
+        &files, SLOT(fileCompleted(const app::DataFileInfo&)));
+
 
     // UI for repair engine
     gui::Repair repair;
@@ -176,7 +182,8 @@ int run(int argc, char* argv[])
     gui::Archives archives;
     win.attach(&archives);
 
-    // eventlog widget
+    // eventlog module. this is a bit special
+    // because it is used literally from everywhere.
     gui::EventLog log;
     win.attach(&log);    
 

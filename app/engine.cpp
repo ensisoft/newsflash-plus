@@ -41,6 +41,7 @@
 #include "account.h"
 #include "settings.h"
 #include "nzbparse.h"
+#include "datainfo.h"
 
 namespace nf = newsflash;
 namespace ui = newsflash::ui;
@@ -104,8 +105,6 @@ Engine::Engine()
 
 Engine::~Engine()
 {
-
-
     engine_.reset();
 
     DEBUG("Engine destroyed");

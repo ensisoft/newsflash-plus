@@ -35,6 +35,7 @@
 #include "engine.h"
 #include "distdir.h"
 #include "parstate.h"
+#include "datainfo.h"
 
 namespace app
 {
@@ -500,7 +501,7 @@ void RepairEngine::batchCompleted(const app::FileBatchInfo& info)
     {
         QFileInfo file(files[i]);
         QString   name = file.completeBaseName();
-        if (name.contains(".vol."))
+        if (name.contains(".vol"))
             continue;
 
         Recovery rec;

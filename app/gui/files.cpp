@@ -41,11 +41,12 @@
 #include "../platform.h"
 #include "../tools.h"
 #include "../eventlog.h"
+#include "../files.h"
 
 namespace gui
 {
 
-Files::Files() : numFiles_(0)
+Files::Files(app::Files& files) : model_(files), numFiles_(0)
 {
     ui_.setupUi(this);
     ui_.tableFiles->setModel(&model_);
@@ -57,7 +58,6 @@ Files::Files() : numFiles_(0)
     ui_.actionFind->setShortcut(QKeySequence::Find);
     ui_.actionFindNext->setShortcut(QKeySequence::FindNext);
     ui_.actionFindPrev->setShortcut(QKeySequence::FindPrevious);
-
     ui_.findContainer->setVisible(false);
 
     DEBUG("Files UI created");
@@ -386,6 +386,16 @@ void Files::on_tableFiles_doubleClicked()
 void Files::on_btnCloseFind_clicked()
 {
     ui_.findContainer->setVisible(false);
+}
+
+void Files::on_btnFindNext_clicked()
+{
+    findNext(true);
+}
+
+void Files::on_btnFindPrev_clicked()
+{
+    findNext(false);
 }
 
 void Files::on_editFind_returnPressed()

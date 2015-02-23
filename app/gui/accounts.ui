@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1090</width>
-    <height>659</height>
+    <width>992</width>
+    <height>376</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -276,8 +276,8 @@
             </property>
             <property name="minimumSize">
              <size>
-              <width>400</width>
-              <height>400</height>
+              <width>0</width>
+              <height>0</height>
              </size>
             </property>
             <property name="maximumSize">
@@ -330,7 +330,7 @@
       </sizepolicy>
      </property>
      <property name="title">
-      <string>Usenet Server</string>
+      <string>Advert</string>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout">
       <item>

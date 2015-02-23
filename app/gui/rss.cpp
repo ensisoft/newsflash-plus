@@ -502,7 +502,7 @@ void RSS::refreshStreams(bool verbose)
 
 void RSS::on_actionRefresh_triggered()
 {
-    refresh(true);
+    refreshStreams(true);
 }
 
 void RSS::on_actionDownload_triggered()

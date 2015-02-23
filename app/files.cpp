@@ -29,11 +29,12 @@
 
 #include "eventlog.h"
 #include "debug.h"
-#include "engine.h"
+//#include "engine.h"
 #include "files.h"
 #include "homedir.h"
 #include "format.h"
 #include "types.h"
+#include "datainfo.h"
 
 namespace {
     enum class columns {
@@ -46,9 +47,6 @@ namespace app
 
 Files::Files() : keepSorted_(false), sortColumn_(0), sortOrder_(Qt::AscendingOrder)
 {
-    QObject::connect(g_engine, SIGNAL(fileCompleted(const app::DataFileInfo&)),
-        this, SLOT(fileCompleted(const app::DataFileInfo&)));
-
     DEBUG("Files created");
 }
 

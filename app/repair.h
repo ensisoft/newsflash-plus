@@ -61,6 +61,10 @@ namespace app
         // stop current recovery operation.
         void stopRecovery();
 
+    public slots:
+        void fileCompleted(const app::DataFileInfo& info);
+        void batchCompleted(const app::FileBatchInfo& info);    
+
     signals:
         void allDone();
         void recoveryStart(const app::Recovery& rec);
@@ -74,8 +78,7 @@ namespace app
         void processStdErr();
         void processFinished(int exitCode, QProcess::ExitStatus status);
         void processError(QProcess::ProcessError error);
-        void fileCompleted(const app::DataFileInfo& info);
-        void batchCompleted(const app::FileBatchInfo& info);
+
     private:
         void startNextRecovery();
 

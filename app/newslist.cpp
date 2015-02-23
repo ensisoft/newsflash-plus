@@ -42,6 +42,7 @@
 #include "accounts.h"
 #include "platform.h"
 #include "types.h"
+#include "datainfo.h"
 
 namespace app
 {

@@ -26,9 +26,11 @@
 #include <newsflash/warnpush.h>
 #  include "ui_files.h"
 #include <newsflash/warnpop.h>
-
 #include "mainwidget.h"
-#include "../files.h"
+
+namespace app {
+    class Files;
+} // app
 
 namespace gui
 {
@@ -38,7 +40,7 @@ namespace gui
         Q_OBJECT
 
     public:
-        Files();
+        Files(app::Files& files);
        ~Files();
 
         virtual void addActions(QMenu& menu) override;
@@ -65,6 +67,8 @@ namespace gui
         void on_tableFiles_customContextMenuRequested(QPoint point);
         void on_tableFiles_doubleClicked();
         void on_btnCloseFind_clicked();
+        void on_btnFindNext_clicked();
+        void on_btnFindPrev_clicked();
         void on_editFind_returnPressed();
         void on_chkKeepSorted_clicked();
         void invokeTool();
@@ -76,7 +80,7 @@ namespace gui
     private:
         Ui::Files ui_;
     private:
-        app::Files model_;
+        app::Files& model_;
     private:
         std::size_t numFiles_;
     };

@@ -34,11 +34,12 @@
 #include <newsflash/warnpop.h>
 
 #include <vector>
-#include "engine.h"
 #include "filetype.h"
 
 namespace app
 {
+    struct DataFileInfo;
+
     class Files : public QAbstractTableModel
     {
         Q_OBJECT
@@ -73,7 +74,7 @@ namespace app
         std::size_t numFiles() const 
         { return files_.size(); }
 
-    private slots:
+    public slots:
         void fileCompleted(const app::DataFileInfo& file);
 
     private:
