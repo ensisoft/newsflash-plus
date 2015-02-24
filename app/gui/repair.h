@@ -27,7 +27,11 @@
 #  include "ui_repair.h"
 #include <newsflash/warnpop.h>
 #include "mainwidget.h"
-#include "../repair.h"
+
+namespace app {
+    class Repairer;
+    struct Archive;
+} // app
 
 namespace gui
 {
@@ -36,11 +40,14 @@ namespace gui
         Q_OBJECT
 
     public:
-        Repair();
+        Repair(app::Repairer& repairer);
        ~Repair();
 
         virtual void addActions(QToolBar& bar) override;
         virtual void addActions(QMenu& menu) override;
+        virtual void activate(QWidget*) override;        
+        virtual void deactivate() override;
+        virtual void refresh(bool isActive) override;
         virtual void loadState(app::Settings& settings) override;
         virtual void saveState(app::Settings& settings) override;
 
@@ -53,14 +60,17 @@ namespace gui
         void on_actionStop_triggered();
         void on_actionAdd_triggered();
         void on_actionDel_triggered();
-        void recoveryStart(const app::Recovery& rec);
-        void recoveryReady(const app::Recovery& rec);
+        void recoveryStart(const app::Archive& arc);
+        void recoveryReady(const app::Archive& arc);
         void scanProgress(const QString& file, int val);
         void repairProgress(const QString& step, int done);
 
     private:
         Ui::Repair ui_;
     private:
+        app::Repairer& model_;
+    private:
+        std::size_t numRepairs_;
     };
 } // gui
 

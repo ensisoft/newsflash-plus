@@ -31,30 +31,31 @@
 #include "repair.h"
 #include "../debug.h"
 #include "../settings.h"
-#include "../repair.h"
+#include "../repairer.h"
+#include "../archive.h"
 
 namespace gui 
 {
 
-Repair::Repair()
+Repair::Repair(app::Repairer& repairer) : model_(repairer), numRepairs_(0)
 {
     ui_.setupUi(this);
-    ui_.tableList->setModel(app::g_repair->getRecoveryList());
-    ui_.tableData->setModel(app::g_repair->getRecoveryData());
+    ui_.tableList->setModel(model_.getRecoveryList());
+    ui_.tableData->setModel(model_.getRecoveryData());
     ui_.progressList->setVisible(false);
     ui_.progressList->setMinimum(0);
     ui_.progressList->setMaximum(100);    
     ui_.actionStop->setEnabled(false);
     ui_.lblStatus->clear();    
 
-    QObject::connect(app::g_repair, SIGNAL(recoveryStart(const app::Recovery&)),
-        this, SLOT(recoveryStart(const app::Recovery&)));
-    QObject::connect(app::g_repair, SIGNAL(recoveryReady(const app::Recovery&)),
-        this, SLOT(recoveryReady(const app::Recovery&)));
+    QObject::connect(&model_, SIGNAL(recoveryStart(const app::Archive&)),
+        this, SLOT(recoveryStart(const app::Archive&)));
+    QObject::connect(&model_, SIGNAL(recoveryReady(const app::Archive&)),
+        this, SLOT(recoveryReady(const app::Archive&)));
 
-    QObject::connect(app::g_repair, SIGNAL(scanProgress(const QString&, int)),
+    QObject::connect(&model_, SIGNAL(scanProgress(const QString&, int)),
         this, SLOT(scanProgress(const QString&, int)));
-    QObject::connect(app::g_repair, SIGNAL(repairProgress(const QString&, int)),
+    QObject::connect(&model_, SIGNAL(repairProgress(const QString&, int)),
         this, SLOT(repairProgress(const QString&, int)));
 
     DEBUG("Repair UI created");
@@ -80,6 +81,24 @@ void Repair::addActions(QMenu& menu)
     menu.addAction(ui_.actionAutoRepair);
     menu.addSeparator();
     menu.addAction(ui_.actionStop);
+}
+
+void Repair::activate(QWidget*)
+{
+    numRepairs_ = 0;
+    setWindowTitle("Repairs");
+}
+
+void Repair::deactivate()
+{
+    numRepairs_ = 0;
+    setWindowTitle("Repairs");
+}
+
+void Repair::refresh(bool isActive)
+{
+    if (!isActive && numRepairs_)
+        setWindowTitle(QString("Repairs (%1)").arg(numRepairs_));    
 }
 
 void Repair::loadState(app::Settings& settings)
@@ -126,7 +145,7 @@ void Repair::on_actionRecover_triggered()
 
 void Repair::on_actionStop_triggered()
 {
-    app::g_repair->stopRecovery();
+    model_.stopRecovery();
 }
 
 void Repair::on_actionAdd_triggered()
@@ -141,12 +160,12 @@ void Repair::on_actionAdd_triggered()
     auto name = info.fileName();
     auto path = info.filePath().remove(name);
 
-    app::Recovery rec;
-    rec.state = app::Recovery::Status::Queued;
-    rec.desc  = name;
-    rec.file  = name;
-    rec.path  = path;
-    app::g_repair->addRecovery(rec);
+    app::Archive arc;
+    arc.state = app::Archive::Status::Queued;
+    arc.desc  = name;
+    arc.file  = name;
+    arc.path  = path;
+    model_.addRecovery(arc);
 }
 
 void Repair::on_actionDel_triggered()
@@ -154,14 +173,16 @@ void Repair::on_actionDel_triggered()
 
 }
 
-void Repair::recoveryStart(const app::Recovery& rec)
+void Repair::recoveryStart(const app::Archive& rec)
 {
     ui_.progressList->setVisible(true);
     ui_.lblStatus->setVisible(true);
     ui_.actionStop->setEnabled(true);
+
+    numRepairs_++;
 }
 
-void Repair::recoveryReady(const app::Recovery& rec)
+void Repair::recoveryReady(const app::Archive& rec)
 {
     ui_.progressList->setVisible(false);
     ui_.lblStatus->setVisible(false);

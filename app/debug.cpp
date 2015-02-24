@@ -42,9 +42,22 @@ QString toString(QProcess::ExitStatus status)
     return "";
 }
 
-QString toString(QProcess::ProcessError err)
+QString toString(QProcess::ProcessState state)
 {
-    switch (err)
+    switch (state)
+    {
+        CASE(QProcess::NotRunning);
+        CASE(QProcess::Starting);
+        CASE(QProcess::Running);
+    }
+    Q_ASSERT(0);
+    return {};
+}
+
+
+QString toString(QProcess::ProcessError error)
+{
+    switch (error)
     {
         CASE(QProcess::FailedToStart);
         CASE(QProcess::Crashed);

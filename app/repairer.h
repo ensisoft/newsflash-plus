@@ -30,22 +30,25 @@
 #  include <QMetaType>
 #include <newsflash/warnpop.h>
 #include <memory>
-#include "engine.h"
-#include "recovery.h"
 
 namespace app
 {
+    class ParityChecker;
+    struct Archive;
+    struct DataFileInfo;
+    struct FileBatchInfo;
+
     // perform recovery operation on a batch of files based on
     // the par2 recovery files. Listens for engine signals
     // and creates new recovery operations when applicable 
     // automatically.
-    class RepairEngine : public QObject 
+    class Repairer : public QObject 
     {
         Q_OBJECT
 
     public:
-        RepairEngine();
-       ~RepairEngine();
+        Repairer(std::unique_ptr<ParityChecker> engine);
+       ~Repairer();
 
         // get a table model for the detail file
         // par2 file data for the current recovery process.
@@ -56,10 +59,12 @@ namespace app
 
         // add a new recovery to be performed.
         // the recovery will be in queued state after this.
-        void addRecovery(const Recovery& rec);
+        void addRecovery(const Archive& arc);
 
         // stop current recovery operation.
         void stopRecovery();
+
+        std::size_t numRepairs() const;
 
     public slots:
         void fileCompleted(const app::DataFileInfo& info);
@@ -67,33 +72,21 @@ namespace app
 
     signals:
         void allDone();
-        void recoveryStart(const app::Recovery& rec);
-        void recoveryReady(const app::Recovery& rec);
-
+        void recoveryStart(const app::Archive& rec);
+        void recoveryReady(const app::Archive& rec);
         void scanProgress(const QString& file, int val);
         void repairProgress(const QString& step, int val);                
-
-    private slots:
-        void processStdOut();
-        void processStdErr();
-        void processFinished(int exitCode, QProcess::ExitStatus status);
-        void processError(QProcess::ProcessError error);
 
     private:
         void startNextRecovery();
 
     private:
-        QProcess process_;
-        QByteArray stdout_;
-        QByteArray stderr_;
-    private:
         class RecoveryData;
         class RecoveryList;        
         std::unique_ptr<RecoveryData> data_;
         std::unique_ptr<RecoveryList> list_;
+        std::unique_ptr<ParityChecker> engine_;
     };
-
-    extern RepairEngine* g_repair;
 
 } // app
 

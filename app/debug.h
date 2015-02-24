@@ -59,6 +59,7 @@ namespace debug
     std::mutex& getLock(); 
 
 
+    QString toString(QProcess::ProcessState state);
     QString toString(QProcess::ProcessError error);
     QString toString(QProcess::ExitStatus status);
     QString toString(QNetworkReply::NetworkError error);

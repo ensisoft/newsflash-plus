@@ -18,10 +18,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+#pragma once
+
 #include <newsflash/config.h>
 #include <newsflash/warnpush.h>
-#  include <QString>
 #  include <QProcess>
+#  include <QByteArray>
 #include <newsflash/warnpop.h>
 #include "archive.h"
 #include "archiver.h"

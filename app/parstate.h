@@ -25,8 +25,7 @@
 #  include <QString>
 #include <newsflash/warnpop.h>
 #include <memory>
-#include <vector>
-#include <functional>
+#include "paritychecker.h"
 
 namespace app
 {
@@ -38,55 +37,29 @@ namespace app
             Scan, Repair, Finish
         };
 
-        // current file status
-        enum class FileState {
-            // for par2 files 
-            Loading, 
-
-            Loaded,
-
-            // for data files
-            // Scanning the contents of the file
-            Scanning, 
-
-            // the file is missing.
-            Missing,
-
-            Found,
-
-            Empty,
-
-            //NoDataFound,
-
-            // the file is damaged
-            Damaged,
-
-            // file is complete
-            Complete
-        };
-
-        struct File  {
-            FileState  state;
-            QString    file;
-        };
-
-        std::function<void(void)> onInsert;
-
-        ParState(std::vector<File>& state);
+        ParState();
        ~ParState();
 
+        // clear existing state.
         void clear();
 
-        void update(const QString& line);
+        // update state from a line of input.
+        // returns true if there's new state. the new state
+        // will be stored in the file object.
+        bool update(const QString& line, ParityChecker::File& file);
 
+        // get final success/failure value. 
+        // only valid once ExecState reaches Finish.
         bool getSuccess() const;
 
+        // get current message (if any)
         QString getMessage() const;
 
+        // get current execution state.
         ExecState getState() const;
  
         static 
-        bool parseFileProgress(const QString& line, QString& file, float& done);
+        bool parseScanProgress(const QString& line, QString& file, float& done);
 
         static 
         bool parseRepairProgress(const QString& line, QString& step, float& done);
@@ -101,8 +74,6 @@ namespace app
         std::unique_ptr<State> state_;
 
     private:
-        std::vector<File>& files_;
-
     };
 
 } // app

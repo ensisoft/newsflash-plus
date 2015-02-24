@@ -18,56 +18,42 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#pragma once
-
 #include <newsflash/config.h>
 #include <newsflash/warnpush.h>
-#  include <QtGui/QIcon>
-#  include <QString>
-#  include <QMetaType>
 #include <newsflash/warnpop.h>
+#include "archive.h"
 
 namespace app
 {
-    // File archive such as .zip, .rar etc.
-    struct Archive {
-        enum class Status {
-            // archive is queued and will execute at some later time.
-            Queued,
 
-            // archive is currently being unpacked.
-            Active,
+QString toString(Archive::Status status)
+{
+    using s = Archive::Status;
+    switch (status)
+    {
+        case s::Queued:  return "Queued";
+        case s::Active:  return "Active";
+        case s::Success: return "Success";
+        case s::Error:   return "Error";
+        case s::Failed:  return "Failed";
+    }
+    Q_ASSERT(0);
+    return {};
+}
 
-            // archive was succesfully unpacked.
-            Success, 
-
-            // archive failed to unpack
-            Failed,
-
-            // error running the unpack operation.
-            Error
-        };
-
-        // current unpack state of the archive.
-        Status state;
-
-        // path to the unpack source folder (where the .rar files are)
-        QString path;
-
-        // the main .rar file
-        QString file;
-
-        // human readable description.
-        QString desc;
-
-        // error/information message
-        QString message;
-    };
-
-    QString toString(Archive::Status status);
-
-    QIcon toIcon(Archive::Status status);
+QIcon toIcon(Archive::Status status)
+{
+    using s = Archive::Status;
+    switch (status)
+    {
+        case s::Queued:  return QIcon("icons:ico_recovery_queued.png");
+        case s::Active:  return QIcon("icons:ico_recovery_active.png");
+        case s::Success: return QIcon("icons:ico_recovery_success.png");
+        case s::Error:   return QIcon("icons:ico_recovery_error.png");
+        case s::Failed:  return QIcon("icons:ico_recovery_failed.png");
+    }    
+    Q_ASSERT(0);
+    return {};
+}
 
 } // app
-
-    Q_DECLARE_METATYPE(app::Archive);

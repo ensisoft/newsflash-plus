@@ -18,27 +18,48 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+#pragma once
+
 #include <newsflash/config.h>
 #include <newsflash/warnpush.h>
 #  include <QObject>
 #include <newsflash/warnpop.h>
+#include <functional>
 
 namespace app
 {
-    struct Recovery;
+    struct Archive;
 
-    class ParityChecker : public QObject
+    // paritychecker performs checking on a pack of files.
+    // paritychecker can errors in the target files being checked
+    // given a sufficient amount of parity (.par2) files.
+    class ParityChecker
     {
-        Q_OBJECT
-
     public:
-        struct Settings {
-            bool writeLogFile;
-            bool purgeOnSuccess;
-        };
-
         enum class FileState {
+            // parity file is being loaded.
+            Loading, 
 
+            // parity file is loaded.
+            Loaded,
+
+            // target file is being scanned.
+            Scanning, 
+
+            // Target file is missing.
+            Missing,
+
+            // Target file is found.
+            Found,
+
+            // Target file is empty.
+            Empty,
+
+            // Target file is damaged
+            Damaged,
+
+            // Target file is complete.
+            Complete
         };
 
         enum class FileType {
@@ -49,28 +70,36 @@ namespace app
         // parity checking process. could be either a target file
         // or a checksum/data file
         struct File {
-            FileState file;
+            FileState state;
             FileType  type;
             QString   name;
         };
 
-       ~ParityChecker() = default;
+        struct Settings {
+            bool writeLogFile;
+            bool purgeOnSuccess;
+        };
 
-        virtual void recover(const Recovery& rec) = 0;
+        // list a new file in the parity process.
+        // this signal is emitted when the file is first encountered
+        // and when if the state of an existing file changes.
+        std::function<void (const app::Archive& arc, File file)> onUpdateFile;
 
+        std::function<void (const app::Archive& arc, QString file, int done)> onScanProgress;
+
+        std::function<void (const app::Archive& arc, QString step, int done)> onRepairProgress;
+
+        std::function<void (const app::Archive& arc)> onReady;
+
+        virtual ~ParityChecker() = default;
+
+        // start a new recovery.
+        virtual void recover(const Archive& arc, const Settings& s) = 0;
+
+        // stop the current recovery process.
         virtual void stop() = 0;
 
-        virtual void configure(const Settings& settings) = 0;
-
-    signals:
-        // list a new file in the parity process.
-        void listFile(const app::Recovery& rec, const File& file);
-
-        void scanProgress(const app::Recovery& rec, const File& file, float done);
-
-        void repairProgress(const QString& step, float done);
-
-        void ready(const app::Recovery& rec);  
+        virtual bool isRunning() const = 0;
     protected:
     private:      
     };

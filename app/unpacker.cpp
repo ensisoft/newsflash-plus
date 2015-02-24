@@ -33,26 +33,10 @@
 #include "eventlog.h"
 #include "engine.h"
 #include "distdir.h"
-#include "parstate.h"
 #include "archive.h"
 
 namespace app
 {
-
-QString string(Archive::Status status)
-{
-    using s = Archive::Status;
-    switch (status)
-    {
-        case s::Queued:  return "Queued";
-        case s::Active:  return "Active";
-        case s::Success: return "Success";
-        case s::Error:   return "Error";
-        case s::Failed:  return "Failed";
-    }
-    Q_ASSERT(0);
-    return {};
-}
 
 class Unpacker::UnpackList : public QAbstractTableModel
 {
@@ -87,7 +71,7 @@ public:
         {
             switch ((Columns)col)
             {
-                case Columns::Status: return string(rec.state);
+                case Columns::Status: return toString(rec.state);
                 case Columns::Error:  return rec.message;
                 case Columns::Desc:   return rec.desc;
                 case Columns::Path:   return rec.path;

@@ -26,7 +26,6 @@
 #include <newsflash/warnpop.h>
 #include "mainwidget.h"
 #include "../unpacker.h"
-#include "../repair.h"
 
 namespace gui
 {

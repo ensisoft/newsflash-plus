@@ -68,9 +68,10 @@
 #include "../omdb.h"
 #include "../version.h"
 #include "../eventlog.h"
-#include "../repair.h"
+#include "../repairer.h"
 #include "../unpacker.h"
 #include "../files.h"
+#include "../par2.h"
 
 namespace gui
 {
@@ -119,8 +120,7 @@ int run(int argc, char* argv[])
             ERROR("Failed to read settings %1, %2", file, err);
     }
 
-    gui::Appearance style;
-
+    // initialize global pointers.
     app::NetworkManager net;
     app::g_net = &net;
 
@@ -135,9 +135,6 @@ int run(int argc, char* argv[])
 
     app::MovieDatabase omdb;
     app::g_movies = &omdb;
-
-    app::RepairEngine repairEngine;
-    app::g_repair = &repairEngine;
 
     app::Unpacker unpacker;
     app::g_unpacker = &unpacker;
@@ -174,9 +171,16 @@ int run(int argc, char* argv[])
         &files, SLOT(fileCompleted(const app::DataFileInfo&)));
 
 
-    // UI for repair engine
-    gui::Repair repair;
-    win.attach(&repair);
+    // repair component
+    std::unique_ptr<app::ParityChecker> parityEngine(new app::Par2(
+        app::distdir::file("par2")));
+
+    app::Repairer repairer(std::move(parityEngine));
+    gui::Repair repairGui(repairer);
+    win.attach(&repairGui);
+    QObject::connect(&engine, SIGNAL(batchCompleted(const app::FileBatchInfo&)),
+        &repairer, SLOT(batchCompleted(const app::FileBatchInfo&)));
+
 
     // UI for archives
     gui::Archives archives;
@@ -208,6 +212,7 @@ int run(int argc, char* argv[])
     win.attach(&linux);
 #endif
 
+    gui::Appearance style;
     win.attach(&style);
 
     win.loadState();

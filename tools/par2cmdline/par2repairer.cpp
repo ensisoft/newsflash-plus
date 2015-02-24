@@ -287,11 +287,15 @@ bool Par2Repairer::LoadPacketsFromFile(string filename)
     return true;
   }
 
+  string path;
+  string name;
+  DiskFile::SplitFilename(filename, path, name);
+
   if (noiselevel > CommandLine::nlSilent)
   {
-    string path;
-    string name;
-    DiskFile::SplitFilename(filename, path, name);
+    //string path;
+    //string name;
+    //DiskFile::SplitFilename(filename, path, name);
     cout << "Loading: \"" << name << "\"." << endl;
   }
 
@@ -300,6 +304,8 @@ bool Par2Repairer::LoadPacketsFromFile(string filename)
 
   // How many recovery packets were there
   u32 recoverypackets = 0;
+
+
 
   // How big is the file
   u64 filesize = diskfile->FileSize();
@@ -318,9 +324,7 @@ bool Par2Repairer::LoadPacketsFromFile(string filename)
     // Start at the beginning of the file
     u64 offset = 0;
 
-    string path;
-    string name;
-    DiskFile::SplitFilename(filename, path, name);
+
 
     // Continue as long as there is at least enough for the packet header
     while (offset + sizeof(PACKET_HEADER) <= filesize)
@@ -496,7 +500,7 @@ bool Par2Repairer::LoadPacketsFromFile(string filename)
   {
     if (noiselevel > CommandLine::nlQuiet)
     {
-      cout << "Loaded " << packets << " new packets";
+      cout << "Loaded: \"" << name << "\" Loaded " << packets << " new packets";
       if (recoverypackets > 0) cout << " including " << recoverypackets << " recovery blocks";
       cout << endl;
     }
@@ -508,7 +512,7 @@ bool Par2Repairer::LoadPacketsFromFile(string filename)
   else
   {
     if (noiselevel > CommandLine::nlQuiet)
-      cout << "No new packets found" << endl;
+      cout << "Loaded: \"" << name << "\" No new packets found." << endl;
     delete diskfile;
   }
   

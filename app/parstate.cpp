@@ -53,31 +53,6 @@ bool isMatch(const QString& line, const QString& test, QStringList& captures, in
     return true;
 }
 
-app::ParState::File& findLast(std::vector<app::ParState::File>& files)
-{
-    Q_ASSERT(files.empty() == false);
-
-    return files.back();
-}
-
-app::ParState::File& makeFile(const QString& file, app::ParState::FileState status, 
-    std::vector<app::ParState::File>& files)
-{
-    auto it = std::find_if(files.rbegin(), files.rend(),
-        [&](const app::ParState::File& f) {
-            return f.file == file;
-        });
-    if (it == files.rend())
-    {
-        app::ParState::File data;
-        data.state     = status;
-        data.file      = file;
-        files.push_back(data);
-        return files.back();
-    }
-    return *it;
-}
-
 } // namespace
 
 namespace app
@@ -88,7 +63,8 @@ class ParState::State
 public:
     virtual ~State() = default;
 
-    virtual void update(const QString& line, std::vector<File>& files) = 0;
+    // returns true if there was a state update.
+    virtual bool update(const QString& line, ParityChecker::File& out) = 0;
 
     virtual ExecState getState() const 
     { return ExecState::Scan; }
@@ -106,24 +82,24 @@ private:
 class ParState::LoadingState : public State
 {
 public:
-    virtual void update(const QString& line, std::vector<File>& files) override
+    virtual bool update(const QString& line, ParityChecker::File& file) override
     {
         QStringList captures;
         if (isMatch(line, "^Loading: \"(.+\\.par2)\"", captures, 1))
         {
-            makeFile(captures[0], FileState::Loading, files);
+            file.name  = captures[0];
+            file.type  = ParityChecker::FileType::Parity;
+            file.state = ParityChecker::FileState::Loading;
         }
-        else if (isMatch(line, "^Loaded \\d+ new packets", captures, 0))
+        else if (isMatch(line, "^Loaded: \"(.+\\.par2)\"", captures, 1))
         {
-            auto& par = findLast(files);
-            par.state = FileState::Loaded;
+            file.name  = captures[0];
+            file.state = ParityChecker::FileState::Loaded;
+            file.type  = ParityChecker::FileType::Parity;
         }
-        else if (isMatch(line, "^No new packets found", captures, 0))
-        {
-            auto& par = findLast(files);
-            par.state = FileState::Loaded;
+        else return false;
 
-        } 
+        return true;
     }
 private:
 };
@@ -132,25 +108,32 @@ private:
 class ParState::VerifyingState : public State
 {
 public:
-    virtual void update(const QString& line, std::vector<File>& files)
+    virtual bool update(const QString& line, ParityChecker::File& file)
     {
         QStringList captures;
         if (isMatch(line, "^Scanning: \"(.+)\"", captures, 1))
         {
-            makeFile(captures[0], FileState::Scanning, files);
+            file.name  = captures[0];
+            file.state = ParityChecker::FileState::Scanning;
+            file.type  = ParityChecker::FileType::Target;
         }        
         else if (isMatch(line, "^Target: \"(.+)\" - (\\w+)\\.", captures, 2))
         {
-            auto& data = makeFile(captures[0], FileState::Scanning, files);
+            file.name  = captures[0];
+            file.type  = ParityChecker::FileType::Target;
+            file.state = ParityChecker::FileState::Scanning;
             if (captures[1] == "damaged")
-                data.state = FileState::Damaged;       
+                file.state = ParityChecker::FileState::Damaged;       
             else if (captures[1] == "found")     
-                data.state = FileState::Complete;
+                file.state = ParityChecker::FileState::Complete;
             else if (captures[1] == "missing")
-                data.state = FileState::Missing;
+                file.state = ParityChecker::FileState::Missing;
             else if (captures[1] == "empty")
-                data.state = FileState::Empty;
-        }    
+                file.state = ParityChecker::FileState::Empty;
+        } 
+        else return false;
+
+        return true;
     }
 private:
 };
@@ -159,21 +142,17 @@ private:
 class ParState::ScanningState : public State
 {
 public:
-    virtual void update(const QString& line, std::vector<File>& files)
+    virtual bool update(const QString& line, ParityChecker::File& file)
     {
         QStringList captures;
         if (isMatch(line, "^File: \"(.+)\" - is a match for \"(.+)\"", captures, 2))
         {
-            auto it = std::find_if(std::begin(files), std::end(files),
-                [&](const File& f) {
-                    return f.file == captures[1];
-                });
-            if (it != std::end(files))
-            {
-                auto& data = *it;
-                data.state = FileState::Found;
-            }
+            file.name  = captures[1];
+            file.state = ParityChecker::FileState::Found;
+            return true;
         }    
+
+        return false;
     }
 private:
 };
@@ -181,8 +160,8 @@ private:
 class ParState::RepairState : public State
 {
 public:
-    virtual void update(const QString& line, std::vector<File>& files) override
-    {}
+    virtual bool update(const QString& line, ParityChecker::File&) override
+    { return false; }
 
     virtual ExecState getState() const override
     { return ExecState::Repair; }
@@ -194,8 +173,10 @@ class ParState::TerminalState : public State
 public:
     TerminalState(const QString& message, bool success) : message_(message), success_(success)
     {}
-    virtual void update(const QString& line, std::vector<File>& files) override
-    {}
+
+    virtual bool update(const QString& line, ParityChecker::File&) override
+    { return false; }
+
     virtual ExecState getState() const override
     { return ExecState::Finish; }
 
@@ -209,10 +190,10 @@ private:
     bool success_;
 };
 
-ParState::ParState(std::vector<File>& state) : files_(state)
-{
-    clear();
-}
+// have to define ctor and dtor here because of the
+// private implementation.
+ParState::ParState() : state_(new LoadingState)
+{}
 
 ParState::~ParState()
 {}
@@ -222,10 +203,10 @@ void ParState::clear()
     state_.reset(new LoadingState);
 }
 
-void ParState::update(const QString& line)
+bool ParState::update(const QString& line, ParityChecker::File& file)
 {
     if (line.isEmpty())
-        return;
+        return false;
 
     QStringList captures;
     if (isMatch(line, "^Verifying source files:", captures, 0))
@@ -256,18 +237,8 @@ void ParState::update(const QString& line)
     {
         state_.reset(new TerminalState(line, true));
     }
-    else
-    {
-        const auto numFiles = files_.size();
-    
-        state_->update(line, files_);
 
-        if (numFiles != files_.size())
-        {
-            if (onInsert)
-                onInsert();
-        }
-    }
+    return state_->update(line, file);
 }
 
 bool ParState::getSuccess() const
@@ -285,7 +256,7 @@ ParState::ExecState ParState::getState() const
     return state_->getState();
 }
 
-bool ParState::parseFileProgress(const QString& line, QString& file, float& done)
+bool ParState::parseScanProgress(const QString& line, QString& file, float& done)
 {
     QStringList captures;
     if (isMatch(line, "^(Loading:|Scanning:) \"(.+)\": (\\d{2}\\.\\d)%", captures, 3))
