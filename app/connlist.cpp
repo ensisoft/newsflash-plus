@@ -1,24 +1,22 @@
-// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-//  of this software and associated documentation files (the "Software"), to deal
-//  in the Software without restriction, including without limitation the rights
-//  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-//  copies of the Software, and to permit persons to whom the Software is
-//  furnished to do so, subject to the following conditions:
+// 
+// This software is copyrighted software. Unauthorized hacking, cracking, distribution
+// and general assing around is prohibited.
+// Redistribution and use in source and binary forms, with or without modification,
+// without permission are prohibited.
 //
 // The above copyright notice and this permission notice shall be included in
-//  all copies or substantial portions of the Software.
+// all copies or substantial portions of the Software.
 //
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-//  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-//  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-//  THE SOFTWARE.
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.        
 
 #define LOGTAG "conns"
 
@@ -33,50 +31,57 @@
 #include "format.h"
 #include "types.h"
 
+namespace {
+    using states = newsflash::ui::connection::states;
+    using errors = newsflash::ui::connection::errors;
+
+    enum class Columns { 
+        Status, Server, Data, Kbs, Desc, LAST
+    };
+
+    const char* str(states s)
+    {
+        switch (s)
+        {
+            case states::disconnected: return "Disconnected";
+            case states::resolving:    return "Resolving";
+            case states::connecting:   return "Connecting";
+            case states::initializing: return "Authenticating";
+            case states::connected:    return "Connected";
+            case states::active:       return "Active";
+            case states::error:        return "Error";
+        }
+        return "???";
+    }
+
+    const char* str(errors e)
+    {
+        switch (e)
+        {
+            case errors::none:                    return "None";
+            case errors::resolve:                 return "Resolve";
+            case errors::refused:                 return "Refused";
+            case errors::authentication_rejected: return "Authentication Rejected";
+            case errors::no_permission:           return "No Permission";
+            case errors::network:                 return "Network Error";
+            case errors::timeout:                 return "Timeout";
+            case errors::other:                   return "Error";
+        }
+        return "???";
+    }    
+} // namespace
+
 namespace app
 {
 
-using states = newsflash::ui::connection::states;
-using errors = newsflash::ui::connection::errors;
 
-const char* str(states s)
-{
-    switch (s)
-    {
-        case states::disconnected: return "Disconnected";
-        case states::resolving: return "Resolving";
-        case states::connecting: return "Connecting";
-        case states::initializing: return "Authenticating";
-        case states::connected: return "Connected";
-        case states::active: return "Active";
-        case states::error: return "Error";
-    }
-    return "???";
-}
-
-const char* str(errors e)
-{
-    switch (e)
-    {
-        case errors::none: return "None";
-        case errors::resolve: return "Resolve";
-        case errors::refused: return "Refused";
-        case errors::authentication_rejected: return "Authentication Rejected";
-        case errors::no_permission: return "No Permission";
-        case errors::network: return "Network Error";
-        case errors::timeout: return "Timeout";
-        case errors::other: return "Error";
-    }
-    return "???";
-}
-
-connlist::connlist()
+ConnList::ConnList()
 {}
 
-connlist::~connlist()
+ConnList::~ConnList()
 {}
 
-QVariant connlist::data(const QModelIndex& index, int role) const
+QVariant ConnList::data(const QModelIndex& index, int role) const
 {
     const auto col = index.column();
     const auto row = index.row();
@@ -84,50 +89,34 @@ QVariant connlist::data(const QModelIndex& index, int role) const
 
     if (role == Qt::DisplayRole)
     {
-        switch ((columns)col)
+        switch ((Columns)col)
         {
-            case columns::status:
+            case Columns::Status:
                 if (ui.state == states::error)
                     return str(ui.error);
                 return str(ui.state);
 
-            case columns::server:
-                return fromLatin(ui.host);
-
-            case columns::data:
-                return toString(size{ui.down});
-
-            case columns::kbs:
-                return toString(speed{ui.bps});
-
-            case columns::desc:
-                return fromUtf8(ui.desc);
-
-            case columns::sentinel:
-                Q_ASSERT(false);
+            case Columns::Server: return fromLatin(ui.host);
+            case Columns::Data:   return toString(size{ui.down});
+            case Columns::Kbs:    return toString(speed{ui.bps});
+            case Columns::Desc:   return fromUtf8(ui.desc);
+            case Columns::LAST:  Q_ASSERT(false);
         }
     }
-    else if (role == Qt::DecorationRole && col == (int)columns::status)
+    else if (role == Qt::DecorationRole && col == (int)Columns::Status)
     {
         switch (ui.state)
         {
-            case states::disconnected: 
-                return QIcon("icons:ico_conn_disconnected.png");
-            case states::resolving: 
-                return QIcon("icons:ico_conn_connecting.png");
-            case states::connecting: 
-                return QIcon("icons:ico_conn_connecting.png");
-            case states::initializing: 
-                return QIcon("icons:ico_conn_connecting.png");
-            case states::connected:
-                return QIcon("icons:ico_conn_connected.png");
-            case states::active: 
-                return QIcon("icons:ico_conn_active.png");                                                                
-            case states::error: 
-                return QIcon("icons:ico_conn_error.png");                                                                                
+            case states::disconnected:  return QIcon("icons:ico_conn_disconnected.png");
+            case states::resolving:     return QIcon("icons:ico_conn_connecting.png");
+            case states::connecting:    return QIcon("icons:ico_conn_connecting.png");
+            case states::initializing:  return QIcon("icons:ico_conn_connecting.png");
+            case states::connected:     return QIcon("icons:ico_conn_connected.png");
+            case states::active:        return QIcon("icons:ico_conn_active.png");                                                                
+            case states::error:         return QIcon("icons:ico_conn_error.png");                                                                                
         }
     }
-    else if (role == Qt::DecorationRole && col == (int)columns::server)
+    else if (role == Qt::DecorationRole && col == (int)Columns::Server)
     {
        return ui.secure ? 
             QIcon("icons:ico_lock.png") :
@@ -136,41 +125,34 @@ QVariant connlist::data(const QModelIndex& index, int role) const
     return QVariant();
 }
 
-QVariant connlist::headerData(int section, Qt::Orientation, int role) const
+QVariant ConnList::headerData(int section, Qt::Orientation, int role) const
 {
     if (role != Qt::DisplayRole)
-        return QVariant();
+        return {};
 
-    switch (columns(section))
+    switch (Columns(section))
     {
-        case columns::status:
-            return "Status";
-        case columns::server:
-            return "Server";
-        case columns::data:
-            return "Data";
-        case columns::kbs:
-            return "Speed";
-        case columns::desc:
-            return "Description";
-        default:
-            Q_ASSERT(!"incorrect column");
-            break;
+        case Columns::Status: return "Status";
+        case Columns::Server: return "Server";
+        case Columns::Data:   return "Data";
+        case Columns::Kbs:    return "Speed";
+        case Columns::Desc:   return "Description";
+        case Columns::LAST:   Q_ASSERT(false);
     }
-    return QVariant();
+    return {};
 }
 
-int connlist::rowCount(const QModelIndex&) const
+int ConnList::rowCount(const QModelIndex&) const
 {
     return  (int)conns_.size();
 }
 
-int connlist::columnCount(const QModelIndex&) const
+int ConnList::columnCount(const QModelIndex&) const
 {
-    return (int)columns::sentinel;
+    return (int)Columns::LAST;
 }
 
-void connlist::refresh()
+void ConnList::refresh()
 {
     //DEBUG("refresh");
 
@@ -185,13 +167,13 @@ void connlist::refresh()
     else
     {
         auto first = QAbstractTableModel::index(0, 0);
-        auto last  = QAbstractTableModel::index(conns_.size(), (int)columns::sentinel);
+        auto last  = QAbstractTableModel::index(conns_.size(), (int)Columns::LAST);
         emit dataChanged(first, last);
     }
 
 }
 
-void connlist::kill(QModelIndexList& list)
+void ConnList::kill(QModelIndexList& list)
 {
     qSort(list);
 
@@ -208,7 +190,7 @@ void connlist::kill(QModelIndexList& list)
     }
 }
 
-void connlist::clone(QModelIndexList& list)
+void ConnList::clone(QModelIndexList& list)
 {
     for (int i=0; i<list.size(); ++i)
     {

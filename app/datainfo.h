@@ -23,6 +23,7 @@
 #  include <QString>
 #  include <QMetaType>
 #include <newsflash/warnpop.h>
+#include "filetype.h"
 
 namespace app
 {
@@ -43,6 +44,8 @@ namespace app
 
         // true if data is binary.
         bool binary;
+
+        FileType type;
     };
 
     // new batch of files is available in the filesystem

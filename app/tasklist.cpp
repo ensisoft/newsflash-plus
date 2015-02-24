@@ -31,12 +31,13 @@
 #include "format.h"
 #include "types.h"
 
-namespace app
-{
+namespace {
 
 using states  = newsflash::ui::task::states;
 using flags   = newsflash::ui::task::errors;
 using bitflag = newsflash::bitflag<newsflash::ui::task::errors>;
+
+enum class columns { status, done, time, eta, size, desc, sentinel };    
 
 const char* str(states s)
 {
@@ -64,14 +65,18 @@ const char* str(bitflag f)
     return "Complete";
 }
 
+} // namespace
 
-tasklist::tasklist()
+namespace app
+{
+
+TaskList::TaskList()
 {}
 
-tasklist::~tasklist()
+TaskList::~TaskList()
 {}
 
-QVariant tasklist::data(const QModelIndex& index, int role) const 
+QVariant TaskList::data(const QModelIndex& index, int role) const 
 {
     const auto col = index.column();
     const auto row = index.row();
@@ -145,7 +150,7 @@ QVariant tasklist::data(const QModelIndex& index, int role) const
     return QVariant();
 }
 
-QVariant tasklist::headerData(int section, Qt::Orientation orientation, int role) const
+QVariant TaskList::headerData(int section, Qt::Orientation orientation, int role) const
 {
     if (role != Qt::DisplayRole)
         return QVariant();
@@ -163,17 +168,17 @@ QVariant tasklist::headerData(int section, Qt::Orientation orientation, int role
     return QVariant();
 }
 
-int tasklist::rowCount(const QModelIndex&) const 
+int TaskList::rowCount(const QModelIndex&) const 
 {
     return (int)tasks_.size();
 }
 
-int tasklist::columnCount(const QModelIndex&) const
+int TaskList::columnCount(const QModelIndex&) const
 {
     return (int)columns::sentinel;
 }
 
-void tasklist::refresh(bool remove_complete)
+void TaskList::refresh(bool remove_complete)
 {
     const auto cur_size = tasks_.size();
 
@@ -209,17 +214,17 @@ void tasklist::refresh(bool remove_complete)
     }
 }
 
-void tasklist::pause(QModelIndexList& list)
+void TaskList::pause(QModelIndexList& list)
 {
-    manage_tasks(list, action::pause);
+    manageTasks(list, Action::Pause);
 }
 
-void tasklist::resume(QModelIndexList& list)
+void TaskList::resume(QModelIndexList& list)
 {
-    manage_tasks(list, action::resume);
+    manageTasks(list, Action::Resume);
 }
 
-void tasklist::kill(QModelIndexList& list)
+void TaskList::kill(QModelIndexList& list)
 {
     qSort(list);
 
@@ -236,21 +241,21 @@ void tasklist::kill(QModelIndexList& list)
     }
 }
 
-void tasklist::move_up(QModelIndexList& list)
+void TaskList::moveUp(QModelIndexList& list)
 {
     qSort(list.begin(), list.end(), qLess<QModelIndex>());
 
-    manage_tasks(list, action::move_up);
+    manageTasks(list, Action::MoveUp);
 }
 
-void tasklist::move_down(QModelIndexList& list)
+void TaskList::moveDown(QModelIndexList& list)
 {
     qSort(list.begin(), list.end(), qGreater<QModelIndex>());
 
-    manage_tasks(list, action::move_down);
+    manageTasks(list, Action::MoveDown);
 }
 
-void tasklist::move_to_top(QModelIndexList& list)
+void TaskList::moveToTop(QModelIndexList& list)
 {
     qSort(list.begin(), list.end(), qLess<QModelIndex>());
 
@@ -281,7 +286,7 @@ void tasklist::move_to_top(QModelIndexList& list)
     emit dataChanged(first, last);
 }
 
-void tasklist::move_to_bottom(QModelIndexList& list)
+void TaskList::moveToBottom(QModelIndexList& list)
 {
     qSort(list.begin(), list.end(), qGreater<QModelIndex>());
 
@@ -312,14 +317,14 @@ void tasklist::move_to_bottom(QModelIndexList& list)
     emit dataChanged(first, last);
 }
 
-void tasklist::set_group_similar(bool on_off)
+void TaskList::setGroupSimilar(bool on_off)
 {
     g_engine->setGroupSimilar(on_off);
     g_engine->refreshTaskList(tasks_);
     reset();
 }
 
-void tasklist::manage_tasks(QModelIndexList& list, tasklist::action a)
+void TaskList::manageTasks(QModelIndexList& list, TaskList::Action a)
 {
     int min_index = std::numeric_limits<int>::max();
     int max_index = std::numeric_limits<int>::min();    
@@ -333,22 +338,22 @@ void tasklist::manage_tasks(QModelIndexList& list, tasklist::action a)
 
         switch (a)
         {
-            case action::pause:
+            case Action::Pause:
                 g_engine->pauseTask(row);
                 list[i] = index(row, 0);
                 break;
 
-            case action::resume:
+            case Action::Resume:
                 g_engine->resumeTask(row);
                 list[i] = index(row, 0);
                 break;
 
-            case action::move_up:
+            case Action::MoveUp:
                 g_engine->moveTaskUp(row);
                 list[i] = index(row - 1, 0);
                 break;
 
-            case action::move_down:
+            case Action::MoveDown:
                 g_engine->moveTaskDown(row);
                 list[i] = index(row + 1, 0);
                 break;

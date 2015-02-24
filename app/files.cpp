@@ -114,7 +114,7 @@ void Files::sort(int column, Qt::SortOrder order)
     // on the UI
 #define SORT(x) \
     std::sort(std::begin(files_), std::end(files_), \
-        [&](const Files::file& lhs, const Files::file& rhs) { \
+        [&](const Files::File& lhs, const Files::File& rhs) { \
             if (order == Qt::AscendingOrder) \
                 return lhs.x > rhs.x; \
             return lhs.x < rhs.x; \
@@ -175,8 +175,8 @@ void Files::loadHistory()
 
         const auto& toks = line.split("\t");
 
-        Files::file next;
-        next.type = (filetype)toks[0].toInt();
+        Files::File next;
+        next.type = (FileType)toks[0].toInt();
         next.time = QDateTime::fromTime_t(toks[1].toLongLong());
         next.path = toks[2];
         next.name = toks[3];
@@ -269,7 +269,7 @@ void Files::keepSorted(bool onOff)
     keepSorted_ = onOff;
 }
 
-const Files::file& Files::getItem(std::size_t i) const 
+const Files::File& Files::getItem(std::size_t i) const 
 {
     // the vector is accessed in reverse manner (item at index 0 is at the end)
     // so latest item (push_back) comes at the top of the list on the GUI
@@ -278,10 +278,10 @@ const Files::file& Files::getItem(std::size_t i) const
 
 void Files::fileCompleted(const app::DataFileInfo& file)
 {
-    Files::file next;
+    Files::File next;
     next.name = file.name;
     next.path = file.path;
-    next.type = findFileType(file.name);
+    next.type = file.type;
     next.icon = findFileIcon(next.type);
     next.time = QDateTime::currentDateTime();
 

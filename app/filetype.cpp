@@ -1,24 +1,22 @@
-// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-//  of this software and associated documentation files (the "Software"), to deal
-//  in the Software without restriction, including without limitation the rights
-//  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-//  copies of the Software, and to permit persons to whom the Software is
-//  furnished to do so, subject to the following conditions:
+// 
+// This software is copyrighted software. Unauthorized hacking, cracking, distribution
+// and general assing around is prohibited.
+// Redistribution and use in source and binary forms, with or without modification,
+// without permission are prohibited.
 //
 // The above copyright notice and this permission notice shall be included in
-//  all copies or substantial portions of the Software.
+// all copies or substantial portions of the Software.
 //
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-//  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-//  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-//  THE SOFTWARE.
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
 
 #include <newsflash/config.h>
 
@@ -33,47 +31,65 @@
 namespace app
 {
 
-const char* filepattern(filetype type)
+QString filepattern(FileType type)
 {
     switch (type)
     {
-        case filetype::none:
+        case FileType::None:
             Q_ASSERT(!"none is not a valid filetype");
             break;
-        case filetype::audio:
+        case FileType::Audio:
             return ".mp3 | .mp2 | .wav | .ogg | .xm | .flac | .m3u | .mpa";
-        case filetype::video:
+        case FileType::Video:
             return ".avi | .mkv | .ogm | .wmv | .wma | .wma | .mpe?g | .rm | .mov | .flv | .asf | .mp3 | .3gp | .3g2";
-        case filetype::image:
+        case FileType::Image:
             return ".jpe?g | .bmp | .png | .gif";
-        case filetype::text:
+        case FileType::Text:
             return ".txt | .nfo | .sfv | .log";
-        case filetype::archive:
+        case FileType::Archive:
             return ".zip | .rar | .7z | .r\\d{1,3} | .\\d{2}";
-        case filetype::parity:
+        case FileType::Parity:
             return ".par | .par2";
-        case filetype::document:
+        case FileType::Document:
             return ".doc | .chm | .pdf";
-        case filetype::other:
+        case FileType::Other:
             return ".*";
     }
-    return "";
+    return {};
+}
+
+QString toString(FileType type)
+{
+    switch (type)
+    {
+        case FileType::None:     Q_ASSERT(0);
+        case FileType::Audio:    return "Audio";
+        case FileType::Video:    return "Video";
+        case FileType::Image:    return "Image";
+        case FileType::Text:     return "Text";
+        case FileType::Archive:  return "Archive";
+        case FileType::Parity:   return "Parity";
+        case FileType::Document: return "Document";
+        case FileType::Other:    return "Other";
+    }
+    Q_ASSERT(false);
+    return {};
 }
 
 
-filetype findFileType(const QString& filename)
+FileType findFileType(const QString& filename)
 {
     struct map {
-        filetype type;
+        FileType type;
         QString pattern;
     } patterns[] = {
-        {filetype::audio, filepattern(filetype::audio)},
-        {filetype::video, filepattern(filetype::video)},
-        {filetype::image, filepattern(filetype::image)},
-        {filetype::text,  filepattern(filetype::text)},
-        {filetype::archive, filepattern(filetype::archive)},
-        {filetype::parity, filepattern(filetype::parity)},
-        {filetype::document, filepattern(filetype::document)}
+        {FileType::Audio, filepattern(FileType::Audio)},
+        {FileType::Video, filepattern(FileType::Video)},
+        {FileType::Image, filepattern(FileType::Image)},
+        {FileType::Text,  filepattern(FileType::Text)},
+        {FileType::Archive, filepattern(FileType::Archive)},
+        {FileType::Parity, filepattern(FileType::Parity)},
+        {FileType::Document, filepattern(FileType::Document)}
     };
 
     for (auto it = std::begin(patterns); it != std::end(patterns); ++it)
@@ -88,36 +104,36 @@ filetype findFileType(const QString& filename)
                 return it->type;
         }
     }
-    return filetype::other;
+    return FileType::Other;
 }
 
-QIcon findFileIcon(filetype type)
+QIcon findFileIcon(FileType type)
 {
     switch (type)
     {
-        case filetype::none:
+        case FileType::None:
             Q_ASSERT(!"none is not a valid filetype");
-        case filetype::audio:
+        case FileType::Audio:
             return QIcon("icons:ico_filetype_audio.png");
-        case filetype::video:
+        case FileType::Video:
             return QIcon("icons:ico_filetype_video.png");
-        case filetype::image:
+        case FileType::Image:
             return QIcon("icons:ico_filetype_image.png");
-        case filetype::text:
+        case FileType::Text:
             return QIcon("icons:ico_filetype_text.png");
-        case filetype::archive:
+        case FileType::Archive:
             return QIcon("icons:ico_filetype_archive.png");
-        case filetype::parity:
+        case FileType::Parity:
             return QIcon("icons:ico_filetype_parity.png");
-        case filetype::document:
+        case FileType::Document:
             return QIcon("icons:ico_filetype_document.png");
-        case filetype::other:
+        case FileType::Other:
             return QIcon("icons:ico_filetype_other.png");
     }
 
     Q_ASSERT(!"wat");
 
-    return QIcon();
+    return {};
 }
 
 } // app

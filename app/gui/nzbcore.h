@@ -81,6 +81,6 @@ namespace gui
         void displayTriggered();
 
     private:
-        app::nzbcore module_;
+        app::NZBCore module_;
     };
 } // gui

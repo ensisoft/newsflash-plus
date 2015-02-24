@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#define LOGTAG "gui"
+#define LOGTAG "downloads"
 
 #include <newsflash/config.h>
 
@@ -125,7 +125,7 @@ void Downloads::loadState(app::Settings& s)
     ui_.actionPreferSSL->setChecked(prefer_ssl);
     ui_.chkGroupSimilar->setChecked(group_related);
     ui_.chkRemoveComplete->setChecked(remove_complete);
-    tasks_.set_group_similar(group_related);
+    tasks_.setGroupSimilar(group_related);
 }
 
 void Downloads::saveState(app::Settings& s)
@@ -215,7 +215,7 @@ void Downloads::on_actionTaskMoveUp_triggered()
     if (indices.isEmpty())
         return;
 
-    tasks_.move_up(indices);
+    tasks_.moveUp(indices);
 
     QItemSelection selection;
     for (int i=0; i<indices.size(); ++i)
@@ -234,7 +234,7 @@ void Downloads::on_actionTaskMoveDown_triggered()
     if (indices.isEmpty())
         return;
 
-    tasks_.move_down(indices);
+    tasks_.moveDown(indices);
 
     QItemSelection selection;
     for (int i=0; i<indices.size(); ++i)
@@ -253,7 +253,7 @@ void Downloads::on_actionTaskMoveTop_triggered()
     if (indices.isEmpty())
         return;
 
-    tasks_.move_to_top(indices);
+    tasks_.moveToTop(indices);
 
     QItemSelection selection;
     for (int i=0; i<indices.size(); ++i)
@@ -272,7 +272,7 @@ void Downloads::on_actionTaskMoveBottom_triggered()
     if (indices.isEmpty())
         return;
 
-    tasks_.move_to_bottom(indices);
+    tasks_.moveToBottom(indices);
 
     QItemSelection selection;
     for (int i=0; i<indices.size(); ++i)
@@ -382,7 +382,7 @@ void Downloads::on_tableConns_doubleClicked(const QModelIndex&)
 
 void Downloads::on_chkGroupSimilar_clicked(bool checked)
 {
-    tasks_.set_group_similar(checked);
+    tasks_.setGroupSimilar(checked);
 }
 
 void Downloads::tableTasks_selectionChanged()

@@ -242,7 +242,7 @@ SettingsWidget* RSS::getSettings()
     auto* p = new MySettings;
     auto& ui = p->ui_;
 
-    using m = app::Media;
+    using m = app::MediaType;
     if (streams_.test(m::TvInt)) ui.chkTvInt->setChecked(true);
     if (streams_.test(m::TvSD))  ui.chkTvSD->setChecked(true);
     if (streams_.test(m::TvHD))  ui.chkTvHD->setChecked(true);
@@ -294,7 +294,7 @@ void RSS::applySettings(SettingsWidget* gui)
     auto* mine = dynamic_cast<MySettings*>(gui);
     auto& ui = mine->ui_;
 
-    using m = app::Media;
+    using m = app::MediaType;
 
     streams_.clear();
 
@@ -413,8 +413,8 @@ void RSS::refreshStreams(bool verbose)
         return;       
     }
 
-    using m = app::Media;
-    using s = newsflash::bitflag<app::Media>;
+    using m = app::MediaType;
+    using s = newsflash::bitflag<app::MediaType>;
 
 //    const auto foo = s(m::audio_mp3) | m::audio_lossless;
 
@@ -667,7 +667,7 @@ void RSS::popupDetails()
     if (i == all.size())
         return;
 
-    using media = app::Media;
+    using media = app::MediaType;
 
     const auto& item  = model_.getItem(sel.row());
     if (item.type == media::MoviesInt ||

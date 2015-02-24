@@ -1,24 +1,22 @@
-// Copyright (c) 2010-2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-//  of this software and associated documentation files (the "Software"), to deal
-//  in the Software without restriction, including without limitation the rights
-//  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-//  copies of the Software, and to permit persons to whom the Software is
-//  furnished to do so, subject to the following conditions:
+// 
+// This software is copyrighted software. Unauthorized hacking, cracking, distribution
+// and general assing around is prohibited.
+// Redistribution and use in source and binary forms, with or without modification,
+// without permission are prohibited.
 //
 // The above copyright notice and this permission notice shall be included in
-//  all copies or substantial portions of the Software.
+// all copies or substantial portions of the Software.
 //
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-//  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-//  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-//  THE SOFTWARE.
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.        
 
 #pragma once
 
@@ -27,17 +25,16 @@
 #include <newsflash/warnpush.h>
 #  include <QAbstractTableModel>
 #include <newsflash/warnpop.h>
-
 #include <newsflash/engine/ui/task.h>
 #include <deque>
 
 namespace app
 {
-    class tasklist : public QAbstractTableModel
+    class TaskList : public QAbstractTableModel
     {
     public:
-        tasklist();
-       ~tasklist();
+        TaskList();
+       ~TaskList();
 
         // QAbstractTableModel
         virtual QVariant data(const QModelIndex& index, int role) const override;
@@ -53,29 +50,25 @@ namespace app
 
         void kill(QModelIndexList& list);
 
-        void move_up(QModelIndexList& list);
+        void moveUp(QModelIndexList& list);
 
-        void move_down(QModelIndexList& list);
+        void moveDown(QModelIndexList& list);
 
-        void move_to_top(QModelIndexList& list);
+        void moveToTop(QModelIndexList& list);
 
-        void move_to_bottom(QModelIndexList& list);
+        void moveToBottom(QModelIndexList& list);
 
-        void set_group_similar(bool on_off);
+        void setGroupSimilar(bool on_off);
 
         const 
         newsflash::ui::task& getItem(std::size_t i) const 
         { return tasks_[i]; }
 
     private:
-        enum class action {
-            pause, resume, move_up, move_down
+        enum class Action {
+            Pause, Resume, MoveUp, MoveDown
         };
-
-        void manage_tasks(QModelIndexList& list, action a);
-
-    private:
-        enum class columns { status, done, time, eta, size, desc, sentinel };
+        void manageTasks(QModelIndexList& list, Action a);
 
     private:
         std::deque<newsflash::ui::task> tasks_;

@@ -230,7 +230,7 @@ void Files::on_actionOpenFileWith_triggered()
 
     const auto exe = QDir::toNativeSeparators(app);
 
-    newsflash::bitflag<app::filetype> types;
+    newsflash::bitflag<app::FileType> types;
 
     const auto& indices = ui_.tableFiles->selectionModel()->selectedRows();
     for (int i=0; i<indices.size(); ++i)
@@ -322,7 +322,7 @@ void Files::on_actionDelete_triggered()
 
 void Files::on_tableFiles_customContextMenuRequested(QPoint point)
 {
-    newsflash::bitflag<app::filetype> types;
+    newsflash::bitflag<app::FileType> types;
 
     const auto& indices = ui_.tableFiles->selectionModel()->selectedRows();
     for (int i=0; i<indices.size(); ++i)

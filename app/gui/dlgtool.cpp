@@ -47,17 +47,17 @@ DlgTool::DlgTool(QWidget* parent, app::tools::tool& tool) : QDialog(parent), too
         ui_.editShortcut->setText(tool.shortcut());
         ui_.editShortcut->setCursorPosition(0);
 
-        using type = app::filetype;
+        using type = app::FileType;
 
         const auto bits = tool.types();
-        ui_.btnAudio->setChecked(bits.test(type::audio));
-        ui_.btnVideo->setChecked(bits.test(type::video));
-        ui_.btnImage->setChecked(bits.test(type::image));
-        ui_.btnText->setChecked(bits.test(type::text));
-        ui_.btnArchive->setChecked(bits.test(type::archive));
-        ui_.btnParity->setChecked(bits.test(type::parity));
-        ui_.btnDocument->setChecked(bits.test(type::document));
-        ui_.btnOther->setChecked(bits.test(type::other));
+        ui_.btnAudio->setChecked(bits.test(type::Audio));
+        ui_.btnVideo->setChecked(bits.test(type::Video));
+        ui_.btnImage->setChecked(bits.test(type::Image));
+        ui_.btnText->setChecked(bits.test(type::Text));
+        ui_.btnArchive->setChecked(bits.test(type::Archive));
+        ui_.btnParity->setChecked(bits.test(type::Parity));
+        ui_.btnDocument->setChecked(bits.test(type::Document));
+        ui_.btnOther->setChecked(bits.test(type::Other));
     }
 }
 
@@ -112,25 +112,25 @@ void DlgTool::on_btnAccept_clicked()
 
     const QString& shortcut = ui_.editShortcut->text();
 
-    using type = app::filetype;
+    using type = app::FileType;
 
     app::tools::bitflag bits;
     if (ui_.btnAudio->isChecked())
-        bits.set(type::audio);
+        bits.set(type::Audio);
     if (ui_.btnVideo->isChecked())
-        bits.set(type::video);
+        bits.set(type::Video);
     if (ui_.btnImage->isChecked())
-        bits.set(type::image);
+        bits.set(type::Image);
     if (ui_.btnText->isChecked())
-        bits.set(type::text);
+        bits.set(type::Text);
     if (ui_.btnArchive->isChecked())
-        bits.set(type::archive);
+        bits.set(type::Archive);
     if (ui_.btnParity->isChecked())
-        bits.set(type::parity);
+        bits.set(type::Parity);
     if (ui_.btnOther->isChecked())
-        bits.set(type::other);
+        bits.set(type::Other);
     if (ui_.btnDocument->isChecked())
-        bits.set(type::document);
+        bits.set(type::Document);
 
     tool_.setBinary(binary);
     tool_.setName(name);

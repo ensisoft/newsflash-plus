@@ -33,97 +33,99 @@ namespace app
 {
     // filetypes categorizes files into broad categories
     // of possible types.
-    enum class filetype {
-        none, 
+    enum class FileType {
+        None, 
 
         // audio and music files such as .mp3, .ogg, .flac
-        audio, 
+        Audio, 
 
         // videos and movies such as .mkv, .wmv, .avi
-        video,
+        Video,
 
         // images and pictures such as .jpg, .png
-        image, 
+        Image, 
 
         // textual contents such as .txt and .nfo
-        text, 
+        Text, 
 
         // data archive files such as .zip and .rar
-        archive, 
+        Archive, 
 
         // parity i.e. par2 files. 
-        parity, 
+        Parity, 
 
         // document files such as .pdf, .doc, .xml
-        document, 
+        Document, 
 
         // unknown filetype
-        other,
+        Other,
     };
 
-    class filetype_iterator : public std::iterator<std::forward_iterator_tag, filetype>
+    class FileTypeIterator : public std::iterator<std::forward_iterator_tag, FileType>
     {
     public:
-        filetype_iterator(filetype beg) : value_(unsigned(beg))
+        FileTypeIterator(FileType beg) : value_(unsigned(beg))
         {}
-        filetype_iterator() : value_(unsigned(filetype::other) + 1)
+        FileTypeIterator() : value_(unsigned(FileType::Other) + 1)
         {}
 
         // postfix
-        filetype_iterator operator++(int)
+        FileTypeIterator operator++(int)
         {
-            filetype_iterator tmp(value_);
+            FileTypeIterator tmp(value_);
             ++value_;
             return tmp;
         }
 
         // prefix
-        filetype_iterator& operator++()
+        FileTypeIterator& operator++()
         {
             ++value_;
             return *this;
         }
 
-        filetype operator*() const 
-        { return (filetype)value_; }
+        FileType operator*() const 
+        { return (FileType)value_; }
 
         static
-        filetype_iterator begin()
-        { return filetype_iterator(filetype::audio); }
+        FileTypeIterator begin()
+        { return FileTypeIterator(FileType::Audio); }
 
         static
-        filetype_iterator end() 
-        { return filetype_iterator(); }
+        FileTypeIterator end() 
+        { return FileTypeIterator(); }
 
     private:
-        filetype_iterator(unsigned value) : value_(value)
+        FileTypeIterator(unsigned value) : value_(value)
         {}
 
     private:
-        friend bool operator==(const filetype_iterator&, const filetype_iterator&);
+        friend bool operator==(const FileTypeIterator&, const FileTypeIterator&);
     private:
         unsigned value_;
     };
 
     inline
-    bool operator==(const filetype_iterator& lhs, const filetype_iterator& rhs)
+    bool operator==(const FileTypeIterator& lhs, const FileTypeIterator& rhs)
     {
         return lhs.value_ == rhs.value_;
     }
 
     inline
-    bool operator!=(const filetype_iterator& lhs, const filetype_iterator& rhs)
+    bool operator!=(const FileTypeIterator& lhs, const FileTypeIterator& rhs)
     {
         return !(lhs == rhs);
     }
 
     // get the default hardcoded filepattern string for the given filetype
-    const char* filepattern(filetype type);
+    QString filePattern(FileType type);
+
+    QString toString(FileType type);
 
     // try to identify file's type.
-    filetype findFileType(const QString& filename);
+    FileType findFileType(const QString& filename);
 
-    QIcon findFileIcon(filetype type);
+    QIcon findFileIcon(FileType type);
 
 
 
