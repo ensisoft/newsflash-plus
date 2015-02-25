@@ -38,7 +38,7 @@ Par2::Par2(const QString& executable) : par2_(executable)
     QObject::connect(&process_, SIGNAL(error(QProcess::ProcessError)),
         this, SLOT(processError(QProcess::ProcessError)));
 
-    QObject::connect(&process_, SIGNAL(stateChanegd(QProcess::ProcessState)),
+    QObject::connect(&process_, SIGNAL(stateChanged(QProcess::ProcessState)),
         this, SLOT(processState(QProcess::ProcessState)));
 
     QObject::connect(&process_, SIGNAL(readyReadStandardOutput()),
@@ -161,7 +161,8 @@ void Par2::processFinished(int exitCode, QProcess::ExitStatus status)
         const auto state   = state_.getState();
         const auto message = state_.getMessage();
         const auto success = state_.getSuccess();
-        Q_ASSERT(state == ParState::ExecState::Finish);
+
+        //Q_ASSERT(state == ParState::ExecState::Finish);
 
         DEBUG("par2 result %1 message %2", success, message);
 

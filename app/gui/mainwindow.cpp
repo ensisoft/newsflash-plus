@@ -335,7 +335,7 @@ QString MainWindow::selectDownloadFolder()
     dlg.setWindowTitle(tr("Select download folder"));
     dlg.setDirectory(latest);
     if (dlg.exec() == QDialog::Rejected)
-        return QString();
+        return {};
 
     auto dir = dlg.selectedFiles().first();
     dir = QDir(dir).absolutePath();
@@ -379,12 +379,19 @@ QString MainWindow::selectNzbOpenFile()
 
 QString MainWindow::selectNzbSaveFile(const QString& filename)
 {
-    const auto& file = QFileDialog::getSaveFileName(this,
-        tr("Save NZB file"), recent_save_nzb_path_ + "/" + filename, "Newzbin files (*.nzb)");
-    if (file.isEmpty())
-        return "";
+    QFileDialog dlg(this);
+    dlg.setFileMode(QFileDialog::AnyFile);
+    dlg.setWindowTitle(tr("Save Newzbin File As ..."));
+    dlg.setDirectory(recent_save_nzb_path_);
+    dlg.selectFile(filename);
+    if (dlg.exec() == QDialog::Rejected)
+        return {};
 
-    recent_save_nzb_path_ = QFileInfo(file).absolutePath();
+    const auto& files = dlg.selectedFiles();
+    const auto& file  = files.first();
+
+    QFileInfo info(file);
+    recent_save_nzb_path_ = info.absolutePath();
     return QDir::toNativeSeparators(file);
 }
 

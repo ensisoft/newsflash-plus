@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1012</width>
-    <height>872</height>
+    <width>823</width>
+    <height>575</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -27,14 +27,14 @@
       <item>
        <layout class="QHBoxLayout" name="horizontalLayout">
         <item>
-         <widget class="QCheckBox" name="chkWriteLog">
+         <widget class="QCheckBox" name="chkWriteLogs">
           <property name="text">
            <string>Write log file</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QCheckBox" name="checkBox">
+         <widget class="QCheckBox" name="chkPurgePars">
           <property name="text">
            <string>Purge recovery files on success</string>
           </property>
@@ -57,6 +57,9 @@
       </item>
       <item>
        <widget class="QTableView" name="tableList">
+        <property name="contextMenuPolicy">
+         <enum>Qt::CustomContextMenu</enum>
+        </property>
         <property name="selectionMode">
          <enum>QAbstractItemView::SingleSelection</enum>
         </property>
@@ -183,28 +186,16 @@
     <string>Recover files</string>
    </property>
   </action>
-  <action name="actionStop">
-   <property name="icon">
-    <iconset resource="resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_stop.png</normaloff>:/resource/16x16_ico_png/ico_stop.png</iconset>
-   </property>
-   <property name="text">
-    <string>Stop</string>
-   </property>
-   <property name="toolTip">
-    <string>Stop current recovery process</string>
-   </property>
-  </action>
   <action name="actionAdd">
    <property name="icon">
     <iconset resource="resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_recovery_add.png</normaloff>:/resource/16x16_ico_png/ico_recovery_add.png</iconset>
+     <normaloff>:/resource/16x16_ico_png/ico_recovery.png</normaloff>:/resource/16x16_ico_png/ico_recovery.png</iconset>
    </property>
    <property name="text">
-    <string>Add ...</string>
+    <string>Repair ...</string>
    </property>
    <property name="toolTip">
-    <string>Add a new recovery</string>
+    <string>Repair an archive</string>
    </property>
   </action>
   <action name="actionDel">
@@ -217,6 +208,57 @@
    </property>
    <property name="toolTip">
     <string>Remove a recovery</string>
+   </property>
+  </action>
+  <action name="actionTop">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_task_movetop.png</normaloff>:/resource/16x16_ico_png/ico_task_movetop.png</iconset>
+   </property>
+   <property name="text">
+    <string>Top</string>
+   </property>
+   <property name="toolTip">
+    <string>Move to top</string>
+   </property>
+  </action>
+  <action name="actionMoveUp">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_move_up.png</normaloff>:/resource/16x16_ico_png/ico_move_up.png</iconset>
+   </property>
+   <property name="text">
+    <string>Move up</string>
+   </property>
+  </action>
+  <action name="actionMoveDown">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_move_down.png</normaloff>:/resource/16x16_ico_png/ico_move_down.png</iconset>
+   </property>
+   <property name="text">
+    <string>Move down</string>
+   </property>
+  </action>
+  <action name="actionBottom">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_task_movebottom.png</normaloff>:/resource/16x16_ico_png/ico_task_movebottom.png</iconset>
+   </property>
+   <property name="text">
+    <string>Bottom</string>
+   </property>
+  </action>
+  <action name="actionClear">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_clear.png</normaloff>:/resource/16x16_ico_png/ico_clear.png</iconset>
+   </property>
+   <property name="text">
+    <string>Clear</string>
+   </property>
+   <property name="toolTip">
+    <string>Remove complete items</string>
    </property>
   </action>
  </widget>

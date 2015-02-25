@@ -200,13 +200,10 @@
      <normaloff>:/resource/16x16_ico_png/ico_save_nzb.png</normaloff>:/resource/16x16_ico_png/ico_save_nzb.png</iconset>
    </property>
    <property name="text">
-    <string>Save ...</string>
+    <string>Save item as ...</string>
    </property>
    <property name="toolTip">
     <string>Save selected items to disk</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+S</string>
    </property>
   </action>
   <action name="actionDownloadTo">
@@ -254,13 +251,10 @@
      <normaloff>:/resource/16x16_ico_png/ico_open_nzb.png</normaloff>:/resource/16x16_ico_png/ico_open_nzb.png</iconset>
    </property>
    <property name="text">
-    <string>Open ...</string>
+    <string>Open item ...</string>
    </property>
    <property name="toolTip">
     <string>Open selected items</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+O</string>
    </property>
   </action>
  </widget>

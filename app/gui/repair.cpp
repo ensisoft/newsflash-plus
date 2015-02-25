@@ -45,7 +45,6 @@ Repair::Repair(app::Repairer& repairer) : model_(repairer), numRepairs_(0)
     ui_.progressList->setVisible(false);
     ui_.progressList->setMinimum(0);
     ui_.progressList->setMaximum(100);    
-    ui_.actionStop->setEnabled(false);
     ui_.lblStatus->clear();    
 
     QObject::connect(&model_, SIGNAL(recoveryStart(const app::Archive&)),
@@ -57,6 +56,12 @@ Repair::Repair(app::Repairer& repairer) : model_(repairer), numRepairs_(0)
         this, SLOT(scanProgress(const QString&, int)));
     QObject::connect(&model_, SIGNAL(repairProgress(const QString&, int)),
         this, SLOT(repairProgress(const QString&, int)));
+
+    QObject::connect(ui_.tableList->selectionModel(),
+        SIGNAL(selectionChanged(const QItemSelection&, const QItemSelection&)),
+        this, SLOT(tableList_selectionChanged()));
+
+    tableList_selectionChanged();
 
     DEBUG("Repair UI created");
 }
@@ -71,16 +76,23 @@ void Repair::addActions(QToolBar& bar)
     bar.addAction(ui_.actionAutoRepair);
     bar.addSeparator();
     bar.addAction(ui_.actionAdd);
-    bar.addAction(ui_.actionDel);
+
     bar.addSeparator();        
-    bar.addAction(ui_.actionStop);
+    bar.addAction(ui_.actionTop);
+    bar.addAction(ui_.actionMoveUp);
+    bar.addAction(ui_.actionMoveDown);
+    bar.addAction(ui_.actionBottom);
+    bar.addSeparator();                
+    bar.addAction(ui_.actionDel);    
+    bar.addSeparator();
+    bar.addAction(ui_.actionClear);
+
 }
 
 void Repair::addActions(QMenu& menu)
 {
     menu.addAction(ui_.actionAutoRepair);
     menu.addSeparator();
-    menu.addAction(ui_.actionStop);
 }
 
 void Repair::activate(QWidget*)
@@ -112,10 +124,10 @@ void Repair::loadState(app::Settings& settings)
         ui_.tableList->setColumnWidth(i, width);
     }    
 
-    // const auto writeLog  = settings.get("scripts", "write_log_files", true);
-    // const auto followOut = settings.get("scripts", "follow_output", false);
-    // ui_.chkWriteLog->setChecked(writeLog);
-    // ui_.chkFollow->setChecked(followOut);
+    const auto writeLogs = settings.get("repair", "write_log_files", true);
+    const auto purgePars = settings.get("repair", "purge_recovery_files_on_success", false);
+    ui_.chkWriteLogs->setChecked(writeLogs);
+    ui_.chkPurgePars->setChecked(purgePars);
 }
 
 void Repair::saveState(app::Settings& settings)
@@ -125,27 +137,24 @@ void Repair::saveState(app::Settings& settings)
     {
         const auto width = ui_.tableList->columnWidth(i);
         const auto name  = QString("queue_col_%1").arg(i);
-        settings.set("scripts", name, width);
+        settings.set("repair", name, width);
     }    
 
-    // const auto writeLog  = ui_.chkWriteLog->isChecked();
-    // const auto followOut = ui_.chkFollow->isChecked();
-    // settings.set("scripts", "write_log_files", writeLog);
-    // settings.set("scripts", "follow_output", followOut);
+    const auto writeLogs = ui_.chkWriteLogs->isChecked();
+    const auto purgePars = ui_.chkPurgePars->isChecked();
+    settings.set("repair", "write_log_files", writeLogs);
+    settings.set("repair", "purge_recovery_files_on_success", purgePars);
 }
 
 
-void Repair::on_tableView_customContextMenuRequested(QPoint)
+void Repair::on_tableList_customContextMenuRequested(QPoint)
 {
-
-}
-
-void Repair::on_actionRecover_triggered()
-{}
-
-void Repair::on_actionStop_triggered()
-{
-    model_.stopRecovery();
+    QMenu menu(this);
+    menu.addAction(ui_.actionTop);
+    menu.addAction(ui_.actionMoveUp);
+    menu.addAction(ui_.actionMoveDown);
+    menu.addAction(ui_.actionBottom);
+    menu.exec(QCursor::pos());
 }
 
 void Repair::on_actionAdd_triggered()
@@ -173,11 +182,35 @@ void Repair::on_actionDel_triggered()
 
 }
 
+void Repair::tableList_selectionChanged()
+{
+    const auto& indices = ui_.tableList->selectionModel()->selectedRows();
+    const auto enable  = !indices.isEmpty();
+
+    ui_.actionTop->setEnabled(enable);
+    ui_.actionMoveUp->setEnabled(enable);
+    ui_.actionMoveDown->setEnabled(enable);
+    ui_.actionBottom->setEnabled(enable);
+    ui_.actionDel->setEnabled(enable);
+    ui_.actionClear->setEnabled(enable);
+
+    const auto numRows = (int)model_.numRepairs();
+
+    for (int i=0; i<indices.size(); ++i)
+    {
+        const auto row = indices[i].row();
+
+        ui_.actionTop->setEnabled(row > 0);
+        ui_.actionMoveUp->setEnabled(row > 0);
+        ui_.actionBottom->setEnabled(row < numRows);
+        ui_.actionMoveDown->setEnabled(row < numRows);
+    }
+}
+
 void Repair::recoveryStart(const app::Archive& rec)
 {
     ui_.progressList->setVisible(true);
     ui_.lblStatus->setVisible(true);
-    ui_.actionStop->setEnabled(true);
 
     numRepairs_++;
 }
@@ -186,7 +219,7 @@ void Repair::recoveryReady(const app::Archive& rec)
 {
     ui_.progressList->setVisible(false);
     ui_.lblStatus->setVisible(false);
-    ui_.actionStop->setEnabled(false);
+    ui_.actionClear->setEnabled(true);
 }
 
 void Repair::scanProgress(const QString& file, int done)

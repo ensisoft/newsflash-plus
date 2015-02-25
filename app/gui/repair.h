@@ -55,11 +55,10 @@ namespace gui
         { return {"repairs.html", true, true }; }
 
     private slots:
-        void on_tableView_customContextMenuRequested(QPoint);
-        void on_actionRecover_triggered();
-        void on_actionStop_triggered();
+        void on_tableList_customContextMenuRequested(QPoint);
         void on_actionAdd_triggered();
         void on_actionDel_triggered();
+        void tableList_selectionChanged();        
         void recoveryStart(const app::Archive& arc);
         void recoveryReady(const app::Archive& arc);
         void scanProgress(const QString& file, int val);

@@ -146,10 +146,10 @@ void RSS::addActions(QToolBar& bar)
     bar.addAction(ui_.actionRefresh);
     bar.addSeparator();
     bar.addAction(ui_.actionDownload);
-    bar.addSeparator();    
-    bar.addAction(ui_.actionSave);
-    bar.addSeparator(); 
-    bar.addAction(ui_.actionOpen);
+    //bar.addSeparator();    
+    //bar.addAction(ui_.actionSave);
+    //bar.addSeparator(); 
+    //bar.addAction(ui_.actionOpen);
     bar.addSeparator();   
     bar.addAction(ui_.actionSettings);
     bar.addSeparator();    
@@ -532,9 +532,9 @@ void RSS::on_actionSave_triggered()
         if (nzb.isEmpty())
             continue;
         model_.downloadNzbFile(indices[i].row(), nzb);
+        ui_.progressBar->setVisible(true);
+        ui_.actionStop->setEnabled(true);
     }
-    ui_.progressBar->setVisible(true);
-    ui_.actionStop->setEnabled(true);
 }
 
 void RSS::on_actionOpen_triggered()
