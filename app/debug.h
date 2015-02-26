@@ -91,6 +91,13 @@ namespace debug
         return toString(fmt, args...);
     }
 
+    template<typename RandomAccessContainer, typename Index>
+    void checkBounds(const RandomAccessContainer& container, Index i)
+    {
+        Q_ASSERT(i >= 0);
+        Q_ASSERT(i < (Index)container.size());
+    }
+
 } // debug
 
 #if defined(NEWSFLASH_DEBUG)
@@ -103,4 +110,5 @@ namespace debug
 #  define DEBUG(msg, ...)
 #endif
 
-#define BOUNDSCHECK(container, index) Q_ASSERT(index < container.size())
+
+#define BOUNDSCHECK(container, index) debug::checkBounds(container, index);

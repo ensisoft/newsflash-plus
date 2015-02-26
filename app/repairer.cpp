@@ -27,6 +27,7 @@
 #  include <QFileInfo>
 #  include <QRegExp>
 #include <newsflash/warnpop.h>
+#include <algorithm>
 #include <limits>
 #include <deque>
 #include "repairer.h"
@@ -35,6 +36,8 @@
 #include "eventlog.h"
 #include "datainfo.h"
 #include "paritychecker.h"
+#include "utility.h"
+#include "platform.h"
 
 namespace app
 {
@@ -198,6 +201,69 @@ public:
         return list_[index];
     }
 
+    void moveItems(QModelIndexList& list, int direction, int distance)
+    {
+        auto minIndex = std::numeric_limits<int>::max();
+        auto maxIndex = std::numeric_limits<int>::min();
+
+        for (int i=0; i<list.size(); ++i)
+        {
+            const auto rowBase = list[i].row();
+            for (int i=0; i<distance; ++i)
+            {
+                const auto row = rowBase + i * direction;
+
+                BOUNDSCHECK(list_, row);
+                BOUNDSCHECK(list_, row + direction);
+
+                std::swap(list_[row], list_[row + direction]);
+                minIndex = std::min(minIndex, row + direction);
+                maxIndex = std::max(maxIndex, row + direction);                
+            }
+            list[i] = QAbstractTableModel::index(rowBase + direction * distance, 0);
+        }
+        auto first = QAbstractTableModel::index(minIndex, 0);
+        auto last  = QAbstractTableModel::index(maxIndex, (int)Columns::LAST);
+        emit dataChanged(first, last);
+    }
+
+    void killItems(QModelIndexList& killList)
+    {
+        std::deque<Archive> survivors;
+        std::size_t killIndex = 0;
+
+        sortAscending(killList);
+
+        for (std::size_t i=0; i<list_.size(); ++i)
+        {
+            if (killIndex < killList.size())
+            {
+                if (killList[killIndex].row() == (int)i)
+                {
+                    ++killIndex;
+                    continue;
+                }
+            }
+            survivors.push_back(list_[i]);
+        }
+
+        list_ = std::move(survivors);
+
+        QAbstractTableModel::reset();
+    }
+
+    void killComplete()
+    {
+        auto it = std::remove_if(std::begin(list_), std::end(list_),
+            [](const Archive& a) {
+                return (a.state == Archive::Status::Success) ||
+                       (a.state == Archive::Status::Error);
+            });
+        list_.erase(it, std::end(list_));
+        
+        QAbstractTableModel::reset();
+    }
+
 private:
     enum class Columns {
         Status, Error, Desc, Path, LAST
@@ -338,6 +404,8 @@ Repairer::Repairer(std::unique_ptr<ParityChecker> engine) : engine_(std::move(en
         startNextRecovery();
     };
 
+    writeLogs_ = true;
+    purgePars_ = false;
 }
 
 Repairer::~Repairer()
@@ -363,6 +431,80 @@ void Repairer::stopRecovery()
 {
     engine_->stop();
 }
+
+void Repairer::moveUp(QModelIndexList& list)
+{
+    sortAscending(list);
+
+    list_->moveItems(list, -1, 1);
+}
+
+void Repairer::moveDown(QModelIndexList& list)
+{
+    sortDescending(list);
+
+    list_->moveItems(list, 1, 1);
+}
+
+void Repairer::moveToTop(QModelIndexList& list)
+{
+    sortAscending(list);
+
+    const auto dist = list.front().row();
+
+    list_->moveItems(list, -1, dist);
+}
+
+void Repairer::moveToBottom(QModelIndexList& list)
+{
+    sortDescending(list);    
+
+    const auto numRows = (int)list_->numRepairs();
+    const auto lastRow = list.first().row();
+    const auto dist = numRows - lastRow - 1;
+
+    list_->moveItems(list, 1, dist);
+}
+
+void Repairer::kill(QModelIndexList& list)
+{
+    auto index = list_->findActive();
+    if (index != RecoveryList::NoSuchRecovery)
+    {
+        auto it = std::find_if(std::begin(list), std::end(list),
+            [=](const QModelIndex& i) {
+                return i.row() == index;
+            });
+        if (it != std::end(list))
+            engine_->stop();
+    }
+    list_->killItems(list);
+}
+
+void Repairer::killComplete()
+{
+    list_->killComplete();
+}
+
+void Repairer::openLog(QModelIndexList& list)
+{
+    for (int i=0; i<list.size(); ++i)
+    {
+        const auto row  = list[i].row();
+        const auto& arc = list_->getRecovery(row);
+        if (arc.state == Archive::Status::Queued)
+            continue;
+        QFileInfo info(arc.path + "/repair.log");
+        if (info.exists())
+            app::openFile(info.absoluteFilePath());
+    }
+}
+
+void Repairer::setWriteLogs(bool onOff)
+{ writeLogs_ = onOff; }
+
+void Repairer::setPurgePars(bool onOff)
+{ purgePars_ = onOff; }
 
 std::size_t Repairer::numRepairs() const 
 {
@@ -414,8 +556,9 @@ void Repairer::startNextRecovery()
         return;
     }
 
-    // todo:
     ParityChecker::Settings settings;
+    settings.purgeOnSuccess = purgePars_;
+    settings.writeLogFile   = writeLogs_;
 
     auto& recovery = list_->getRecovery(index);
     recovery.state = Archive::Status::Active;

@@ -58,6 +58,14 @@ namespace gui
         void on_tableList_customContextMenuRequested(QPoint);
         void on_actionAdd_triggered();
         void on_actionDel_triggered();
+        void on_actionMoveUp_triggered();
+        void on_actionMoveDown_triggered();
+        void on_actionTop_triggered();
+        void on_actionBottom_triggered();
+        void on_actionClear_triggered();
+        void on_actionOpenLog_triggered();
+        void on_chkWriteLogs_stateChanged(int);
+        void on_chkPurgePars_stateChanged(int);
         void tableList_selectionChanged();        
         void recoveryStart(const app::Archive& arc);
         void recoveryReady(const app::Archive& arc);
@@ -65,11 +73,19 @@ namespace gui
         void repairProgress(const QString& step, int done);
 
     private:
+        enum class TaskDirection {
+            Up, Down, Top, Bottom    
+        };
+        void moveTasks(TaskDirection dir);
+
+    private:
         Ui::Repair ui_;
     private:
         app::Repairer& model_;
     private:
         std::size_t numRepairs_;
+
+
     };
 } // gui
 

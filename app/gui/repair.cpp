@@ -33,6 +33,7 @@
 #include "../settings.h"
 #include "../repairer.h"
 #include "../archive.h"
+#include "../utility.h"
 
 namespace gui 
 {
@@ -115,30 +116,22 @@ void Repair::refresh(bool isActive)
 
 void Repair::loadState(app::Settings& settings)
 {
-    const auto* queue = ui_.tableList->model();
-    for (int i=0; i<queue->columnCount()-1; ++i)
-    {
-        const auto name  = QString("queue_col_%1").arg(i);
-        const auto width = settings.get("scripts", name, 
-            ui_.tableList->columnWidth(i));
-        ui_.tableList->setColumnWidth(i, width);
-    }    
+    app::loadTableLayout("repair", ui_.tableList, settings);
+    app::loadTableLayout("repair", ui_.tableData, settings);
 
     const auto writeLogs = settings.get("repair", "write_log_files", true);
     const auto purgePars = settings.get("repair", "purge_recovery_files_on_success", false);
     ui_.chkWriteLogs->setChecked(writeLogs);
     ui_.chkPurgePars->setChecked(purgePars);
+
+    model_.setPurgePars(purgePars);
+    model_.setWriteLogs(writeLogs);
 }
 
 void Repair::saveState(app::Settings& settings)
 {
-    const auto* queue = ui_.tableList->model();
-    for (int i=0; i<queue->columnCount()-1; ++i)
-    {
-        const auto width = ui_.tableList->columnWidth(i);
-        const auto name  = QString("queue_col_%1").arg(i);
-        settings.set("repair", name, width);
-    }    
+    app::saveTableLayout("repair", ui_.tableList, settings);
+    app::saveTableLayout("repair", ui_.tableData, settings);
 
     const auto writeLogs = ui_.chkWriteLogs->isChecked();
     const auto purgePars = ui_.chkPurgePars->isChecked();
@@ -154,6 +147,8 @@ void Repair::on_tableList_customContextMenuRequested(QPoint)
     menu.addAction(ui_.actionMoveUp);
     menu.addAction(ui_.actionMoveDown);
     menu.addAction(ui_.actionBottom);
+    menu.addSeparator();
+    menu.addAction(ui_.actionOpenLog);
     menu.exec(QCursor::pos());
 }
 
@@ -179,38 +174,90 @@ void Repair::on_actionAdd_triggered()
 
 void Repair::on_actionDel_triggered()
 {
+    auto indices = ui_.tableList->selectionModel()->selectedRows();
 
+    model_.kill(indices);
+}
+
+void Repair::on_actionMoveUp_triggered()
+{
+    moveTasks(TaskDirection::Up);
+}
+
+void Repair::on_actionMoveDown_triggered()
+{
+    moveTasks(TaskDirection::Down);
+}
+
+void Repair::on_actionTop_triggered()
+{
+    moveTasks(TaskDirection::Top);
+}
+
+void Repair::on_actionBottom_triggered()
+{
+    moveTasks(TaskDirection::Bottom);
+}
+
+void Repair::on_actionClear_triggered()
+{
+    model_.killComplete();
+}
+
+void Repair::on_actionOpenLog_triggered()
+{
+    auto indices = ui_.tableList->selectionModel()->selectedRows();
+
+    model_.openLog(indices);
+}
+
+void Repair::on_chkWriteLogs_stateChanged(int)
+{
+    const auto value = ui_.chkWriteLogs->isChecked();
+
+    model_.setWriteLogs(value);
+}
+
+void Repair::on_chkPurgePars_stateChanged(int)
+{
+    const auto value = ui_.chkPurgePars->isChecked();
+
+    model_.setPurgePars(value);
 }
 
 void Repair::tableList_selectionChanged()
 {
-    const auto& indices = ui_.tableList->selectionModel()->selectedRows();
-    const auto enable  = !indices.isEmpty();
+    auto indices = ui_.tableList->selectionModel()->selectedRows();
 
-    ui_.actionTop->setEnabled(enable);
-    ui_.actionMoveUp->setEnabled(enable);
-    ui_.actionMoveDown->setEnabled(enable);
-    ui_.actionBottom->setEnabled(enable);
-    ui_.actionDel->setEnabled(enable);
-    ui_.actionClear->setEnabled(enable);
+    ui_.actionTop->setEnabled(false);
+    ui_.actionMoveUp->setEnabled(false);
+    ui_.actionMoveDown->setEnabled(false);
+    ui_.actionBottom->setEnabled(false);
+    ui_.actionDel->setEnabled(false);
+    ui_.actionClear->setEnabled(false);
+    ui_.actionOpenLog->setEnabled(false);
+    if (indices.isEmpty())
+        return;
 
-    const auto numRows = (int)model_.numRepairs();
+    qSort(indices);
+    const auto first = indices.first().row();
+    const auto last  = indices.last().row();
+    const auto numRows = (int)model_.numRepairs();    
 
-    for (int i=0; i<indices.size(); ++i)
-    {
-        const auto row = indices[i].row();
-
-        ui_.actionTop->setEnabled(row > 0);
-        ui_.actionMoveUp->setEnabled(row > 0);
-        ui_.actionBottom->setEnabled(row < numRows);
-        ui_.actionMoveDown->setEnabled(row < numRows);
-    }
+    ui_.actionTop->setEnabled(first > 0);
+    ui_.actionMoveUp->setEnabled(first > 0);
+    ui_.actionMoveDown->setEnabled(last < numRows - 1);
+    ui_.actionBottom->setEnabled(last < numRows - 1);
+    ui_.actionDel->setEnabled(true);
+    ui_.actionOpenLog->setEnabled(true);
 }
 
 void Repair::recoveryStart(const app::Archive& rec)
 {
     ui_.progressList->setVisible(true);
     ui_.lblStatus->setVisible(true);
+    if (ui_.chkWriteLogs->isChecked())
+        ui_.actionOpenLog->setChecked(true);
 
     numRepairs_++;
 }
@@ -233,6 +280,38 @@ void Repair::repairProgress(const QString& step, int done)
 {
     ui_.progressList->setValue(done);
     ui_.lblStatus->setText(step);
+}
+
+void Repair::moveTasks(TaskDirection dir)
+{
+    auto indices = ui_.tableList->selectionModel()->selectedRows();
+
+    switch (dir)
+    {
+        case TaskDirection::Up:
+            model_.moveUp(indices);
+            break;
+        case TaskDirection::Down:
+            model_.moveDown(indices);
+            break;
+        case TaskDirection::Top:
+            model_.moveToTop(indices);
+            break;
+        case TaskDirection::Bottom:
+            model_.moveToBottom(indices);
+            break;
+    }
+
+
+    QItemSelection selection;
+    for (int i=0; i<indices.size(); ++i)
+        selection.select(indices[i], indices[i]);
+
+    auto* model = ui_.tableList->selectionModel();
+    model->setCurrentIndex(selection.indexes().first(),
+        QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+    model->select(selection,
+        QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
 }
 
 } // gui

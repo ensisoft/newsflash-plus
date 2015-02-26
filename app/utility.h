@@ -22,46 +22,31 @@
 
 #include <newsflash/config.h>
 #include <newsflash/warnpush.h>
-#  include <QObject>
-#  include <QProcess>
-#  include <QByteArray>
-#  include <QFile>
+#  include <QtAlgorithms>
+#  include <QModelIndex>
 #include <newsflash/warnpop.h>
-#include "paritychecker.h"
-#include "parstate.h"
-#include "archive.h"
+
+class QAbstractTableModel;
+class QTableView;
 
 namespace app
 {
-    // implementation of parity checking using par2 command line utiliy.
-    class Par2 : public QObject, public ParityChecker
-    {
-        Q_OBJECT
 
-    public:
-        Par2(const QString& executable);
-       ~Par2();
+class Settings;
 
-        virtual void recover(const Archive& arc, const Settings& s);
-        virtual void stop();
-        virtual bool isRunning() const;
+inline
+void sortAscending(QModelIndexList& list)
+{
+    qSort(list.begin(), list.end(), qLess<QModelIndex>());
+}
 
-    private slots:
-        void processStdOut();
-        void processStdErr();
-        void processFinished(int exitCode, QProcess::ExitStatus status);
-        void processError(QProcess::ProcessError error);
-        void processState(QProcess::ProcessState state);
+inline
+void sortDescending(QModelIndexList& list)
+{
+    qSort(list.begin(), list.end(), qGreater<QModelIndex>());
+}
 
-    private:
-        QString par2_;
-        QProcess process_;
-        QByteArray stdout_;
-        QByteArray stderr_;
-        QFile logFile_;
-    private:
-        Archive current_;
-    private:
-        ParState state_;
-    };
+void saveTableLayout(const QString& key, const QTableView* view, Settings& settings);
+void loadTableLayout(const QString& key, QTableView* view, const Settings& settings);
+
 } // app

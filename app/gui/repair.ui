@@ -61,7 +61,7 @@
          <enum>Qt::CustomContextMenu</enum>
         </property>
         <property name="selectionMode">
-         <enum>QAbstractItemView::SingleSelection</enum>
+         <enum>QAbstractItemView::ExtendedSelection</enum>
         </property>
         <property name="selectionBehavior">
          <enum>QAbstractItemView::SelectRows</enum>
@@ -259,6 +259,15 @@
    </property>
    <property name="toolTip">
     <string>Remove complete items</string>
+   </property>
+  </action>
+  <action name="actionOpenLog">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_log.png</normaloff>:/resource/16x16_ico_png/ico_log.png</iconset>
+   </property>
+   <property name="text">
+    <string>Open log</string>
    </property>
   </action>
  </widget>

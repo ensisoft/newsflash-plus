@@ -64,6 +64,24 @@ namespace app
         // stop current recovery operation.
         void stopRecovery();
 
+        void moveUp(QModelIndexList& list);
+
+        void moveDown(QModelIndexList& list);
+
+        void moveToTop(QModelIndexList& list);
+
+        void moveToBottom(QModelIndexList& list);
+
+        void kill(QModelIndexList& list);
+
+        void killComplete();
+
+        void openLog(QModelIndexList& list);
+
+        void setWriteLogs(bool onOff);
+
+        void setPurgePars(bool onOff);
+
         std::size_t numRepairs() const;
 
     public slots:
@@ -86,6 +104,9 @@ namespace app
         std::unique_ptr<RecoveryData> data_;
         std::unique_ptr<RecoveryList> list_;
         std::unique_ptr<ParityChecker> engine_;
+    private:
+        bool writeLogs_;
+        bool purgePars_;
     };
 
 } // app

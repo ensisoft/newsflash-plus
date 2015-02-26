@@ -18,11 +18,14 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+#define LOGTAG "par2"
+
 #include <newsflash/config.h>
 #include <newsflash/warnpush.h>
 #  include <QStringList>
 #include <newsflash/warnpop.h>
 #include <string>
+#include "eventlog.h"
 #include "format.h"
 #include "debug.h"
 #include "par2.h"
@@ -61,10 +64,23 @@ void Par2::recover(const Archive& arc, const Settings& s)
     stderr_.clear();
     state_.clear();
 
-    // todo: settings
+    if (s.writeLogFile)
+    {
+        const auto path = arc.path;
+        const auto file = path + "/repair.log";
+        logFile_.setFileName(file);
+        logFile_.open(QIODevice::Append | QIODevice::WriteOnly);
+        if (!logFile_.isOpen())
+        {
+            WARN("Unable to write par2 log file %1, %2", file, logFile_.error());
+        }
+    }
 
     QStringList args;
     args << "r";
+    if (s.purgeOnSuccess)
+        args << "-p";
+
     args << arc.file;
     args << "./*"; // scan extra files
     process_.setWorkingDirectory(arc.path);
@@ -85,6 +101,10 @@ void Par2::stop()
     // this will ask the process to terminate nicely
     // QProcess::kill will just terminate it right away.
     process_.terminate();
+
+    logFile_.write(stdout_);
+    logFile_.write("*** Terminated by user. ***");
+    logFile_.close();        
 }
 
 bool Par2::isRunning() const 
@@ -115,6 +135,11 @@ void Par2::processStdOut()
             if (state_.update(line, file))
             {
                 onUpdateFile(current_, std::move(file));
+                if (byte == '\n')
+                {
+                    logFile_.write(temp.data());
+                    logFile_.write("\n");
+                }
             }
             if (exec == ParState::ExecState::Scan)
             {
@@ -152,6 +177,8 @@ void Par2::processFinished(int exitCode, QProcess::ExitStatus status)
     {
         current_.message = toString(status);
         current_.state   = Archive::Status::Error;
+
+        logFile_.write("*** Crash Exit ***");
     }
     else
     {
@@ -169,7 +196,14 @@ void Par2::processFinished(int exitCode, QProcess::ExitStatus status)
         current_.message = message;
         current_.state   = success ? Archive::Status::Success : 
             Archive::Status::Failed;
+
+        const auto msg = toLatin(message);
+        logFile_.write(msg.data());
+        logFile_.write("\n");
     }
+
+    logFile_.flush();
+    logFile_.close();
 
     onReady(current_);
 }
@@ -180,6 +214,12 @@ void Par2::processError(QProcess::ProcessError error)
 
     current_.message = toString(error);
     current_.state   = Archive::Status::Error;
+
+    logFile_.write(stdout_);
+    logFile_.write("*** Process Error ***");
+    logFile_.flush();
+    logFile_.close();
+
     onReady(current_);
 }
 
