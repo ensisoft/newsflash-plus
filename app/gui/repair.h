@@ -50,12 +50,16 @@ namespace gui
         virtual void refresh(bool isActive) override;
         virtual void loadState(app::Settings& settings) override;
         virtual void saveState(app::Settings& settings) override;
+        virtual void shutdown() override;
 
         virtual info getInformation() const override
         { return {"repairs.html", true, true }; }
 
+        void setRepairEnabled(bool onOff);
+
     private slots:
-        void on_tableList_customContextMenuRequested(QPoint);
+        void on_repairList_customContextMenuRequested(QPoint);
+        void repairList_selectionChanged();                
         void on_actionAdd_triggered();
         void on_actionDel_triggered();
         void on_actionMoveUp_triggered();
@@ -64,13 +68,15 @@ namespace gui
         void on_actionBottom_triggered();
         void on_actionClear_triggered();
         void on_actionOpenLog_triggered();
+        void on_actionStop_triggered();
+        void on_actionOpenFolder_triggered();
+        void on_actionDetails_triggered();
         void on_chkWriteLogs_stateChanged(int);
         void on_chkPurgePars_stateChanged(int);
-        void tableList_selectionChanged();        
-        void recoveryStart(const app::Archive& arc);
-        void recoveryReady(const app::Archive& arc);
+        void repairStart(const app::Archive& arc);
+        void repairReady(const app::Archive& arc);
+        void repairProgress(const QString& step, int done);        
         void scanProgress(const QString& file, int val);
-        void repairProgress(const QString& step, int done);
 
     private:
         enum class TaskDirection {

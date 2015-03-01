@@ -21,52 +21,25 @@
 #pragma once
 
 #include <newsflash/config.h>
+
 #include <newsflash/warnpush.h>
-#  include "ui_archives.h"
+#  include <QtGui/QDialog>
+#  include "ui_archive.h"
 #include <newsflash/warnpop.h>
-#include "mainwidget.h"
-#include "../unpacker.h"
+
+class QAbstractItemModel;
 
 namespace gui
 {
-    class Unpack;
-    class Repair;
-
-    class Archives : public MainWidget
+    class DlgArchive : public QDialog
     {
-        Q_OBJECT
-        
     public:
-        Archives(Unpack& unpack, Repair& repair);
-       ~Archives();
-
-        virtual void addActions(QToolBar& bar) override;
-        virtual void addActions(QMenu& menu) override;
-        virtual void activate(QWidget*) override;
-        virtual void deactivate() override;
-        virtual void loadState(app::Settings& settings) override;
-        virtual void saveState(app::Settings& settings) override;
-        virtual void shutdown() override;
-        virtual void refresh(bool isActive) override;
-
-        virtual info getInformation() const override
-        { return {"archives.html", true, true }; }
-
-    private slots:
-        void on_actionRepair_triggered();
-        void on_actionUnpack_triggered();
-        void on_tabWidget_currentChanged(int index);
-
+        DlgArchive(QWidget* parent, QAbstractItemModel* contents) : QDialog(parent)
+        {
+            ui_.setupUi(this);
+            ui_.tableView->setModel(contents);
+        }
     private:
-        MainWidget* getCurrent();
-
-    private:
-        Ui::Archives ui_;
-
-    private:
-        Unpack& unpack_;
-        Repair& repair_;
-        MainWidget* current_;
+        Ui::Archive ui_;
     };
-
 } // gui

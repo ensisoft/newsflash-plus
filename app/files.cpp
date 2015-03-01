@@ -29,12 +29,11 @@
 
 #include "eventlog.h"
 #include "debug.h"
-//#include "engine.h"
 #include "files.h"
 #include "homedir.h"
 #include "format.h"
 #include "types.h"
-#include "datainfo.h"
+#include "fileinfo.h"
 
 namespace {
     enum class columns {
@@ -276,7 +275,7 @@ const Files::File& Files::getItem(std::size_t i) const
     return files_[files_.size() - i -1];
 }
 
-void Files::fileCompleted(const app::DataFileInfo& file)
+void Files::fileCompleted(const app::FileInfo& file)
 {
     Files::File next;
     next.name = file.name;
@@ -318,5 +317,8 @@ void Files::fileCompleted(const app::DataFileInfo& file)
         sort(sortColumn_, (Qt::SortOrder)sortOrder_);
     }
 }
+
+void Files::packCompleted(const app::FilePackInfo& pack)
+{}
 
 } // app

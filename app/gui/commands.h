@@ -79,10 +79,9 @@ namespace gui
             commands_.loadState(settings);
         }
 
-        virtual bool saveState(app::Settings& settings) override
+        virtual void saveState(app::Settings& settings) override
         { 
             commands_.saveState(settings);
-            return true;
         }
         virtual void firstLaunch() 
         {

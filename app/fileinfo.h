@@ -29,7 +29,7 @@ namespace app
 {
     // DataFileInfo describes a new data /media file
     // available in the filesystem.
-    struct DataFileInfo {
+    struct FileInfo {
         // path to the file
         QString path;
 
@@ -48,8 +48,9 @@ namespace app
         FileType type;
     };
 
-    // new batch of files is available in the filesystem
-    struct FileBatchInfo {
+    // FilePackInfo describes a group (a pack) of new files
+    // available in the filesystem.
+    struct FilePackInfo {
         // path to the batch of files (folder)
         QString path;
 
@@ -58,24 +59,9 @@ namespace app
 
     };
 
-    // newsgroup message notifies of a group information
-    // as part of a listing event.
-    struct NewsGroupInfo {
-        // the estimated number of articles available in the group
-        quint64 size;
-
-        // the first article number
-        quint64 first;
-
-        // the last article number
-        quint64 last;
-
-        // group name
-        QString name;
-    };    
-
 } // app
 
-    Q_DECLARE_METATYPE(app::DataFileInfo);
-    Q_DECLARE_METATYPE(app::NewsGroupInfo);
-    Q_DECLARE_METATYPE(app::FileBatchInfo);
+    Q_DECLARE_METATYPE(app::FileInfo);
+    Q_DECLARE_METATYPE(app::FilePackInfo);    
+
+

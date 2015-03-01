@@ -66,7 +66,7 @@ namespace gui
 
         virtual bool addActions(QMenu& menu) override;
         virtual void loadState(app::Settings& s) override;
-        virtual bool saveState(app::Settings& s) override;
+        virtual void saveState(app::Settings& s) override;
         virtual SettingsWidget* getSettings() override;
         virtual void applySettings(SettingsWidget* gui) override;
         virtual void freeSettings(SettingsWidget* s) override;

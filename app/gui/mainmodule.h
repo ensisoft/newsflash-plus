@@ -58,7 +58,7 @@ namespace gui
         virtual void loadState(app::Settings& s) {};
 
         // save the module state
-        virtual bool saveState(app::Settings& s) { return true; };
+        virtual void saveState(app::Settings& s) {};
 
         // prepare the module for shutdown.
         virtual void shutdown() {};

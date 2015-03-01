@@ -27,6 +27,7 @@
 #include <newsflash/warnpush.h>
 #  include <QtGui/QStyle>
 #  include <QtGui/QMessageBox>
+#  include <QtGui/QSystemTrayIcon>
 #  include <QDir>
 #  include <QFile>
 #  include <QUrl>
@@ -53,6 +54,8 @@
 #include "archives.h"
 #include "files.h"
 #include "commands.h"
+#include "unpack.h"
+#include "notify.h"
 #include "../debug.h"
 #include "../format.h"
 #include "../distdir.h"
@@ -72,6 +75,8 @@
 #include "../unpacker.h"
 #include "../files.h"
 #include "../par2.h"
+#include "../unrar.h"
+#include "../arcman.h"
 
 namespace gui
 {
@@ -136,9 +141,6 @@ int run(int argc, char* argv[])
     app::MovieDatabase omdb;
     app::g_movies = &omdb;
 
-    app::Unpacker unpacker;
-    app::g_unpacker = &unpacker;
-
     // todo: maybe create the widgets and modules on the free store
     // instead of the stack..
 
@@ -167,24 +169,35 @@ int run(int argc, char* argv[])
     gui::Files filesUI(files);
     win.attach(&filesUI);
     // connect to the engine
-    QObject::connect(&engine, SIGNAL(fileCompleted(const app::DataFileInfo&)),
-        &files, SLOT(fileCompleted(const app::DataFileInfo&)));
-
+    QObject::connect(&engine, SIGNAL(fileCompleted(const app::FileInfo&)),
+        &files, SLOT(fileCompleted(const app::FileInfo&)));
+    QObject::connect(&engine, SIGNAL(packCompleted(const app::FilePackInfo&)),
+        &files, SLOT(packCompleted(const app::FilePackInfo&)));
 
     // repair component
     std::unique_ptr<app::ParityChecker> parityEngine(new app::Par2(
         app::distdir::file("par2")));
-
     app::Repairer repairer(std::move(parityEngine));
-    gui::Repair repairGui(repairer);
-    win.attach(&repairGui);
-    QObject::connect(&engine, SIGNAL(batchCompleted(const app::FileBatchInfo&)),
-        &repairer, SLOT(batchCompleted(const app::FileBatchInfo&)));
+    // connect to the repair GUI
+    gui::Repair repairGui(repairer);    
 
+    //  unpack
+    std::unique_ptr<app::Archiver> extractEngine(new app::Unrar(
+        app::distdir::file("unrar")));
+    app::Unpacker unpacker(std::move(extractEngine));
+    gui::Unpack unpackGui(unpacker);
 
-    // UI for archives
-    gui::Archives archives;
+    // compose repair + unpack together into a single GUI element
+    gui::Archives archives(unpackGui, repairGui);
     win.attach(&archives);
+
+    // archive manager runs the show regarding repair/unpack order.
+    app::ArchiveManager arcMan(repairer, unpacker);
+    QObject::connect(&engine, SIGNAL(packCompleted(const app::FilePackInfo&)),
+        &arcMan, SLOT(packCompleted(const app::FilePackInfo&)));
+    QObject::connect(&engine, SIGNAL(fileCompleted(const app::FileInfo&)),
+        &arcMan, SLOT(fileCompleted(const app::FileInfo&)));
+
 
     // eventlog module. this is a bit special
     // because it is used literally from everywhere.
@@ -214,6 +227,33 @@ int run(int argc, char* argv[])
 
     gui::Appearance style;
     win.attach(&style);
+
+    gui::Notify notify;
+    if (QSystemTrayIcon::isSystemTrayAvailable())
+    {
+        auto& eventLog = app::EventLog::get();
+
+        win.attach(&notify);
+        QObject::connect(&engine, SIGNAL(packCompleted(const app::FilePackInfo&)),
+            &notify, SLOT(packCompleted(const app::FilePackInfo&)));
+        QObject::connect(&engine, SIGNAL(fileCompleted(const app::FileInfo&)),
+            &notify, SLOT(fileCompleted(const app::FileInfo&)));
+        QObject::connect(&eventLog, SIGNAL(newEvent(const app::Event&)),
+            &notify, SLOT(newEvent(const app::Event&)));
+        QObject::connect(&repairer, SIGNAL(repairReady(const app::Archive&)),
+            &notify, SLOT(repairReady(const app::Archive&)));
+        QObject::connect(&unpacker, SIGNAL(unpackReady(const app::Archive&)),
+            &notify, SLOT(unpackReady(const app::Archive&)));
+
+        QObject::connect(&notify, SIGNAL(exit()), &win, SLOT(close()));
+        QObject::connect(&notify, SIGNAL(minimize()), &win, SLOT(hide()));
+        QObject::connect(&notify, SIGNAL(restore()), &win, SLOT(show()));
+        DEBUG("Connected notify module.");
+    }
+    else
+    {
+        WARN("System tray is not available. Notifications are disabled.");
+    }
 
     win.loadState();
     win.prepareFileMenu();

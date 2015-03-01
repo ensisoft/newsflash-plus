@@ -18,47 +18,31 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#pragma once
-
 #include <newsflash/config.h>
 #include <newsflash/warnpush.h>
-#  include <QObject>
+#  include <QString>
+#  include <QtGlobal>
+#  include <QMetaType>
 #include <newsflash/warnpop.h>
-#include <functional>
 
 namespace app
 {
-    struct Archive;
+    // newsgroup message notifies of a group information
+    // as part of a listing event.
+    struct NewsGroupInfo {
+        // the estimated number of articles available in the group
+        quint64 size;
 
-    // extract content files from an Archive such as .rar or .zip archive.
-    class Archiver
-    {
-    public:
-        struct Settings {
-            bool keepBroken;
-            bool overWriteExisting;
-            bool purgeOnSuccess;
-        };
+        // the first article number
+        quint64 first;
 
+        // the last article number
+        quint64 last;
 
-        virtual ~Archiver() = default;
-
-        // begin extraction of the archive
-        virtual void extract(const Archive& arc, const Settings& settings) = 0;
-
-        // stop the current extraction.
-        virtual void stop() = 0;
-
-        std::function<void (const app::Archive& arc, const QString& file)> onExtract;
-
-        std::function<void (const app::Archive& arc, const QString& target, int done)> onProgress;
-
-        std::function<void (const app::Archive& arc)> onReady;
-
-        virtual bool isRunning() const = 0;
-
-    protected:
-    private:
-    };
-
+        // group name
+        QString name;
+    };    
+    
 } // app
+
+    Q_DECLARE_METATYPE(app::NewsGroupInfo);

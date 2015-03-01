@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>851</width>
-    <height>604</height>
+    <width>696</width>
+    <height>714</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -25,178 +25,47 @@
      </property>
      <layout class="QVBoxLayout" name="verticalLayout">
       <item>
-       <layout class="QHBoxLayout" name="horizontalLayout">
-        <item>
-         <widget class="QCheckBox" name="checkBox">
-          <property name="text">
-           <string>Keep broken</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QCheckBox" name="checkBox_3">
-          <property name="text">
-           <string>Overwrite existing files</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QCheckBox" name="checkBox_2">
-          <property name="text">
-           <string>Purge archive files on success</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <spacer name="horizontalSpacer">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>40</width>
-            <height>20</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-       </layout>
-      </item>
-      <item>
-       <widget class="QTableView" name="tableList">
-        <property name="selectionMode">
-         <enum>QAbstractItemView::SingleSelection</enum>
-        </property>
-        <property name="selectionBehavior">
-         <enum>QAbstractItemView::SelectRows</enum>
-        </property>
-        <property name="showGrid">
+       <widget class="QTabWidget" name="tabWidget">
+        <property name="tabsClosable">
          <bool>false</bool>
         </property>
-        <attribute name="horizontalHeaderStretchLastSection">
+        <property name="movable">
          <bool>true</bool>
-        </attribute>
-        <attribute name="verticalHeaderVisible">
-         <bool>false</bool>
-        </attribute>
-        <attribute name="verticalHeaderDefaultSectionSize">
-         <number>16</number>
-        </attribute>
+        </property>
        </widget>
       </item>
      </layout>
-    </widget>
-   </item>
-   <item>
-    <widget class="QGroupBox" name="grpData">
-     <property name="title">
-      <string>Archive Data</string>
-     </property>
-     <property name="flat">
-      <bool>false</bool>
-     </property>
-     <layout class="QVBoxLayout" name="verticalLayout_3">
-      <item>
-       <widget class="QTableView" name="tableData">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="contextMenuPolicy">
-         <enum>Qt::CustomContextMenu</enum>
-        </property>
-        <property name="styleSheet">
-         <string/>
-        </property>
-        <property name="selectionMode">
-         <enum>QAbstractItemView::SingleSelection</enum>
-        </property>
-        <property name="selectionBehavior">
-         <enum>QAbstractItemView::SelectRows</enum>
-        </property>
-        <property name="textElideMode">
-         <enum>Qt::ElideLeft</enum>
-        </property>
-        <property name="showGrid">
-         <bool>false</bool>
-        </property>
-        <property name="gridStyle">
-         <enum>Qt::SolidLine</enum>
-        </property>
-        <attribute name="horizontalHeaderMinimumSectionSize">
-         <number>16</number>
-        </attribute>
-        <attribute name="horizontalHeaderStretchLastSection">
-         <bool>true</bool>
-        </attribute>
-        <attribute name="verticalHeaderVisible">
-         <bool>false</bool>
-        </attribute>
-        <attribute name="verticalHeaderDefaultSectionSize">
-         <number>16</number>
-        </attribute>
-        <attribute name="verticalHeaderMinimumSectionSize">
-         <number>16</number>
-        </attribute>
-       </widget>
-      </item>
-     </layout>
-    </widget>
-   </item>
-   <item>
-    <widget class="QLabel" name="lblStatus">
-     <property name="font">
-      <font>
-       <weight>75</weight>
-       <bold>true</bold>
-      </font>
-     </property>
-     <property name="text">
-      <string>TextLabel</string>
-     </property>
-     <property name="alignment">
-      <set>Qt::AlignCenter</set>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QProgressBar" name="progressBar">
-     <property name="value">
-      <number>24</number>
-     </property>
-     <property name="textVisible">
-      <bool>false</bool>
-     </property>
     </widget>
    </item>
   </layout>
-  <action name="actionAutoExtract">
+  <action name="actionRepair">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="icon">
     <iconset resource="resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_extract.png</normaloff>:/resource/16x16_ico_png/ico_extract.png</iconset>
+     <normaloff>:/resource/16x16_ico_png/ico_recovery.png</normaloff>:/resource/16x16_ico_png/ico_recovery.png</iconset>
    </property>
    <property name="text">
-    <string>Auto Extract</string>
+    <string>Repair</string>
+   </property>
+   <property name="toolTip">
+    <string>Repair archives automatically</string>
    </property>
   </action>
   <action name="actionUnpack">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="icon">
     <iconset resource="resource.qrc">
      <normaloff>:/resource/16x16_ico_png/ico_extract.png</normaloff>:/resource/16x16_ico_png/ico_extract.png</iconset>
    </property>
    <property name="text">
-    <string>Unpack</string>
+    <string>Extract </string>
    </property>
-  </action>
-  <action name="actionStop">
-   <property name="icon">
-    <iconset resource="resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_stop.png</normaloff>:/resource/16x16_ico_png/ico_stop.png</iconset>
-   </property>
-   <property name="text">
-    <string>Stop</string>
+   <property name="toolTip">
+    <string>Extract archives automatically</string>
    </property>
   </action>
  </widget>

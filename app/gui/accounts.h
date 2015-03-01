@@ -45,7 +45,6 @@ namespace gui
         virtual info getInformation() const override;
         virtual void loadState(app::Settings& s) override;
         virtual void saveState(app::Settings& s) override;
-        virtual void firstLaunch(bool add_account) override;
 
     private:
         bool eventFilter(QObject* object, QEvent* event);

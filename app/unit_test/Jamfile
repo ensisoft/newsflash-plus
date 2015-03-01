@@ -5,6 +5,7 @@ project test
   <library>/qt//QtCore
   <library>/qt//QtGui
   <library>/qt//QtXml
+  <library>/qt//QtNetwork
   <library>/newsflash//qjson
 ;
 

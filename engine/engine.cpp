@@ -606,7 +606,7 @@ public:
             const auto& data = spec.file(i);
             const auto& path = data.filepath();
             const auto& name = data.filename();
-            auto file = std::make_shared<datafile>(data.filepath(), data.filename(), 
+            auto file = std::make_shared<datafile>(path, name, 
                 data.dataname(), data.is_binary());
             ptr->add_file(file);
             LOG_D("Task: Continue downloading file: '", fs::joinpath(path, name), "'");
@@ -838,7 +838,7 @@ public:
 
         if (ui_.state == states::active || ui_.state == states::waiting)
         {
-            if (ui_.runtime >= 10)
+            if (ui_.runtime >= 10 && ui_.completion > 0.0)
             {
                 const auto complete  = ui.completion;
                 const auto remaining = 100.0 - complete;
@@ -1262,6 +1262,7 @@ public:
             {
                 ui::batch batch;
                 batch.path = path_;
+                batch.desc = ui_.desc;
                 state.on_batch_callback(batch);
             }
         }

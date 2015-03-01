@@ -35,7 +35,8 @@
 
 namespace app
 {
-    struct DataFileInfo;
+    struct FileInfo;
+    struct FilePackInfo;
 
     class Files : public QAbstractTableModel
     {
@@ -72,7 +73,8 @@ namespace app
         { return files_.size(); }
 
     public slots:
-        void fileCompleted(const app::DataFileInfo& file);
+        void fileCompleted(const app::FileInfo& file);
+        void packCompleted(const app::FilePackInfo& pack);
 
     private:
         std::vector<File> files_;

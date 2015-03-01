@@ -37,22 +37,23 @@ Par2::Par2(const QString& executable) : par2_(executable)
 {
     QObject::connect(&process_, SIGNAL(finished(int, QProcess::ExitStatus)), 
         this, SLOT(processFinished(int, QProcess::ExitStatus)));
-
     QObject::connect(&process_, SIGNAL(error(QProcess::ProcessError)),
         this, SLOT(processError(QProcess::ProcessError)));
-
     QObject::connect(&process_, SIGNAL(stateChanged(QProcess::ProcessState)),
         this, SLOT(processState(QProcess::ProcessState)));
-
     QObject::connect(&process_, SIGNAL(readyReadStandardOutput()),
         this, SLOT(processStdOut()));
-    
     QObject::connect(&process_, SIGNAL(readyReadStandardError()),
         this, SLOT(processStdErr()));        
 }
 
 Par2::~Par2()
-{}
+{
+    const auto state = process_.state();
+    Q_ASSERT(state == QProcess::NotRunning && 
+        "Current archive is still being processed."
+        "We should either wait for its completion or stop it.");
+}
 
 void Par2::recover(const Archive& arc, const Settings& s)
 {
@@ -87,7 +88,7 @@ void Par2::recover(const Archive& arc, const Settings& s)
     process_.setProcessChannelMode(QProcess::MergedChannels);
     process_.start(par2_, args);
     current_ = arc;
-    DEBUG("Started par2 %1", par2_);
+    DEBUG("Started par2 %1, %2", par2_, arc.file);
 }
 
 void Par2::stop()
@@ -96,7 +97,9 @@ void Par2::stop()
     if (state == QProcess::NotRunning)
         return;
 
-    DEBUG("Killing par2 %1, pid %2", process_.pid());
+    DEBUG("Killing par2 %1, pid %2", par2_, process_.pid());
+
+    current_.state = Archive::Status::Stop;
 
     // this will ask the process to terminate nicely
     // QProcess::kill will just terminate it right away.
@@ -173,40 +176,38 @@ void Par2::processFinished(int exitCode, QProcess::ExitStatus status)
     DEBUG("par2 %1 finished. Exitcode %2, ExitStatus %3", 
         par2_, exitCode, status);
 
-    if (status == QProcess::CrashExit)
+    if (current_.state != Archive::Status::Stop)
     {
-        current_.message = toString(status);
-        current_.state   = Archive::Status::Error;
-
-        logFile_.write("*** Crash Exit ***");
-    }
-    else
-    {
-        // deal with any remaining output 
-        processStdOut();
+        if (status == QProcess::CrashExit)
+        {
+            current_.message = toString(status);
+            current_.state   = Archive::Status::Error;
+            logFile_.write("*** Crash Exit ***");
+        }
+        else
+        {
+            // deal with any remaining output 
+            processStdOut();
         
-        const auto state   = state_.getState();
-        const auto message = state_.getMessage();
-        const auto success = state_.getSuccess();
+            const auto state   = state_.getState();
+            const auto message = state_.getMessage();
+            const auto success = state_.getSuccess();
+            DEBUG("par2 result %1 message %2", success, message);
 
-        //Q_ASSERT(state == ParState::ExecState::Finish);
+            current_.message = message;
+            current_.state   = success ? Archive::Status::Success : 
+                Archive::Status::Failed;
 
-        DEBUG("par2 result %1 message %2", success, message);
-
-        current_.message = message;
-        current_.state   = success ? Archive::Status::Success : 
-            Archive::Status::Failed;
-
-        const auto msg = toLatin(message);
-        logFile_.write(msg.data());
-        logFile_.write("\n");
+                const auto msg = toLatin(message);
+                logFile_.write(msg.data());
+                logFile_.write("\n");
+        }
     }
-
     logFile_.flush();
     logFile_.close();
-
     onReady(current_);
 }
+
 
 void Par2::processError(QProcess::ProcessError error)
 {

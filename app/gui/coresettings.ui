@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>406</width>
-    <height>566</height>
+    <width>444</width>
+    <height>536</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -96,7 +96,7 @@
    <item>
     <widget class="QGroupBox" name="groupBox_8">
      <property name="title">
-      <string>Downloading options</string>
+      <string>Downloading</string>
      </property>
      <layout class="QGridLayout" name="gridLayout_4">
       <item row="0" column="0">

@@ -98,6 +98,12 @@ namespace debug
         Q_ASSERT(i < (Index)container.size());
     }
 
+    template<typename Container, typename Iterator>
+    void checkNotEnd(const Container& c, const Iterator& i)
+    {
+        Q_ASSERT(i != c.end());
+    }
+
 } // debug
 
 #if defined(NEWSFLASH_DEBUG)
@@ -112,3 +118,5 @@ namespace debug
 
 
 #define BOUNDSCHECK(container, index) debug::checkBounds(container, index);
+
+#define ENDCHECK(container, it) debug::checkNotEnd(container, it);

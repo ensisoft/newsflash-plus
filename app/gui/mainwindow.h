@@ -26,7 +26,6 @@
 
 #include <newsflash/warnpush.h>
 #  include <QtGui/QMainWindow>
-#  include <QtGui/QSystemTrayIcon>
 #  include <QTimer>
 #  include <QList>
 #  include "ui_mainwindow.h"
@@ -76,9 +75,8 @@ namespace gui
         void attach(MainModule* module, bool loadstate = false);
 
         // update the widget's display state
-        void update(MainWidget* widget);
+        //void update(MainWidget* widget);
     
-        void reactivate(MainWidget* widget);
 
         // detach all widgets
         void detachAllWidgets();
@@ -136,8 +134,6 @@ namespace gui
         void on_actionWindowNext_triggered();
         void on_actionWindowPrev_triggered();
         void on_actionHelp_triggered();
-        void on_actionMinimize_triggered();
-        void on_actionRestore_triggered();        
         void on_actionExit_triggered();
         void on_actionSettings_triggered();
         void on_actionAbout_triggered();
@@ -147,10 +143,10 @@ namespace gui
         void on_actionRequestLicense_triggered();
         void actionWindowToggleView_triggered();
         void actionWindowFocus_triggered();
-        void actionTray_activated(QSystemTrayIcon::ActivationReason);
         void timerWelcome_timeout();
         void timerRefresh_timeout();
         void displayNote(const app::Event& event);
+        void updateMenu(MainWidget* widget);
 
     private:
         Ui::MainWindow ui_;
@@ -161,7 +157,6 @@ namespace gui
         std::vector<QAction*> actions_;
         MainWidget* current_;                
     private:
-        QSystemTrayIcon tray_;
         QStringList recents_;
         QString recent_save_nzb_path_;
         QString recent_load_nzb_path_;

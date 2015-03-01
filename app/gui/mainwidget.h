@@ -27,6 +27,7 @@
 #include <newsflash/warnpush.h>
 #  include <QtGui/QWidget>
 #  include <QString>
+#  include <QObject>
 #include <newsflash/warnpop.h>
 
 class QMenu;
@@ -47,6 +48,8 @@ namespace gui
     // a user visible GUI
     class MainWidget : public QWidget
     {
+        Q_OBJECT
+
     public:
         struct info {
             // this is the URL to the help (file). If it specifies a filename
@@ -91,7 +94,7 @@ namespace gui
         virtual void refresh(bool isActive) {}
 
         // perform first launch activities.
-        virtual void firstLaunch(bool add_account) {}
+        virtual void firstLaunch() {}
 
         // get information about the widget/component.
         virtual info getInformation() const { return {"", false, false}; }
@@ -106,6 +109,9 @@ namespace gui
         virtual void freeSettings(SettingsWidget* s) {}
 
         virtual void dropFile(const QString& file) {};
+
+    signals:
+        void updateMenu(MainWidget* self);
 
     private:
     };

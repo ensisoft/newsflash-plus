@@ -20,64 +20,42 @@
 
 #pragma once
 
-#include <newsflash/config.h>
-
 #include <newsflash/warnpush.h>
-#  include <QAbstractTableModel>
-#  include <QByteArray>
 #  include <QObject>
-#  include <QProcess>
 #include <newsflash/warnpop.h>
 #include <memory>
-#include "archiver.h"
+#include <vector>
+#include "archive.h"
 
 namespace app
 {
-    struct Archive;
-    class Archiver;
+    struct FileInfo;
+    struct FilePackInfo;
+    class Repairer;
+    class Unpacker;
 
-    // unpacker unpacks archive files such as .rar. 
-    class Unpacker : public QObject
+    // translates file events into archives (when necessary)
+    // and manages a list of currently pending archives. 
+    // finally executes the list of tools on the archive.
+    class ArchiveManager : public QObject
     {
         Q_OBJECT
 
     public:
-        Unpacker(std::unique_ptr<Archiver> archiver);
-       ~Unpacker();
+        ArchiveManager(Repairer& repairer, Unpacker& unpacker);
+       ~ArchiveManager();
 
-        // get unpack list data model
-        QAbstractTableModel* getUnpackList();
+    public slots:
+        void fileCompleted(const app::FileInfo& file);
+        void packCompleted(const app::FilePackInfo& pack);
 
-        QAbstractTableModel* getUnpackData();
-
-        // add a new unpack operation to be performed. 
-        void addUnpack(const Archive& arc);
-
-        // stop current unpack operation.
-        void stopUnpack();
-
-        void setEnabled(bool onOff)
-        { enabled_ = onOff; }
-
-        bool isEnabled() const 
-        { return enabled_; }
-
-    signals:
-        void unpackStart(const app::Archive& arc);
+    private slots:
+        void repairReady(const app::Archive& arc);
         void unpackReady(const app::Archive& arc);
-        void unpackProgress(const QString& file, int done);
 
     private:
-        void startNextUnpack();
-
-    private:
-        class UnpackList;
-        class UnpackData;
-        std::unique_ptr<UnpackList> list_;
-        std::unique_ptr<UnpackData> data_;
-        std::unique_ptr<Archiver> engine_;
-        bool enabled_;
+        Repairer& repairer_;
+        Unpacker& unpacker_;
     };
 
 } // app
-

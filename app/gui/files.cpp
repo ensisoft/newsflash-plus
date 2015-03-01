@@ -435,7 +435,7 @@ void Files::invokeTool()
 
 void Files::toolsUpdated()
 {
-    g_win->reactivate(this);
+    emit updateMenu(this);
 }
 
 void Files::findNext(bool forward)

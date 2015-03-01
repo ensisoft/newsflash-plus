@@ -106,7 +106,7 @@ QVariant TaskList::data(const QModelIndex& index, int role) const
                     return QString("  %1  ").arg(infinity);
                 else if (ui.state == states::complete)
                     return "";
-                else if (ui.runtime < 10)
+                else if (ui.runtime < 10 || !(ui.completion > 0))
                     return " hmm...";
 
                 return toString(etatime{ui.etatime});

@@ -144,9 +144,8 @@ bool NZBCore::addActions(QMenu& menu)
 void NZBCore::loadState(app::Settings& s)
 {}
 
-bool NZBCore::saveState(app::Settings& s)
+void NZBCore::saveState(app::Settings& s)
 {
-    return true;
 }
 
 SettingsWidget* NZBCore::getSettings()

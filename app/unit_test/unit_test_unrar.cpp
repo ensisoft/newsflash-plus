@@ -30,12 +30,27 @@ int test_main(int, char* argv[])
             "Extracting from sonido-hawking-1080p.r00", name));
         BOOST_REQUIRE(name == "sonido-hawking-1080p.r00");
 
+        BOOST_REQUIRE(app::Unrar::parseVolume(
+            "Extracting from Cold.in.July.2014.1080p.BluRay.DTS.x264-CyTSuNee.part02.rar", name));
+        BOOST_REQUIRE(name == "Cold.in.July.2014.1080p.BluRay.DTS.x264-CyTSuNee.part02.rar");
+
         int done;
         BOOST_REQUIRE(app::Unrar::parseProgress(
              "...         sonido-hawking-1080p.mkv                                    ....  4....  5",
              name, done));
         BOOST_REQUIRE(name == "sonido-hawking-1080p.mkv");
         BOOST_REQUIRE(done == 4);
+        
+    }
+
+
+    {
+        QString message;
+        bool success = false;
+        BOOST_REQUIRE(app::Unrar::parseTermination(
+            "ERROR: Bad archive Cold.in.July.2014.1080p.BluRay.DTS.x264-CyTSuNee.part02.rar", message, success));
+        BOOST_REQUIRE(message == "ERROR: Bad archive Cold.in.July.2014.1080p.BluRay.DTS.x264-CyTSuNee.part02.rar");
+        BOOST_REQUIRE(success == false);
 
     }
 

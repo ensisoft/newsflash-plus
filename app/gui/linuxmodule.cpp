@@ -91,7 +91,7 @@ void LinuxModule::loadState(app::Settings& s)
 #endif
 }
 
-bool LinuxModule::saveState(app::Settings& s)
+void LinuxModule::saveState(app::Settings& s)
 {
 #if defined(LINUX_OS)
     const auto shutdown = app::getShutdownCommand();
@@ -100,7 +100,6 @@ bool LinuxModule::saveState(app::Settings& s)
     s.set("linux", "shutdown_command", shutdown);
     s.set("linux", "openfile_command", openfile);
 #endif
-    return true;
 }
 
 SettingsWidget* LinuxModule::getSettings() 

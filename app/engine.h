@@ -42,8 +42,8 @@ namespace app
 {
     class Settings;
     struct NZBContent;
-    struct DataFileInfo;
-    struct FileBatchInfo;
+    struct FileInfo;
+    struct FilePackInfo;
     struct NewsGroupInfo;
 
     // manager class around newsflash engine + engine state
@@ -273,8 +273,8 @@ namespace app
     signals:
         void shutdownComplete();
         void newDownloadQueued(const QString& desc);
-        void fileCompleted(const app::DataFileInfo& file);
-        void batchCompleted(const app::FileBatchInfo& batch);
+        void fileCompleted(const app::FileInfo& file);
+        void packCompleted(const app::FilePackInfo& pack);
         void listingCompleted(quint32 account, const QList<app::NewsGroupInfo>& list);
 
     private:

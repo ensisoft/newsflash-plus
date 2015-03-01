@@ -27,31 +27,35 @@
 #  include <QtGui/QFileDialog>
 #include <newsflash/warnpop.h>
 #include "archives.h"
+#include "repair.h"
+#include "unpack.h"
 #include "../debug.h"
 #include "../settings.h"
-#include "../archive.h"
-#include "../unpacker.h"
 
 namespace gui 
 {
 
-Archives::Archives()
+Archives::Archives(Unpack& unpack, Repair& repair) : unpack_(unpack), repair_(repair)
 {
     ui_.setupUi(this);
-    ui_.tableList->setModel(app::g_unpacker->getUnpackList());
-    ui_.tableData->setModel(app::g_unpacker->getUnpackData());
-    ui_.progressBar->setVisible(false);
-    ui_.progressBar->setMinimum(0);
-    ui_.progressBar->setMaximum(100);
-    ui_.lblStatus->clear();
 
-    QObject::connect(app::g_unpacker, SIGNAL(unpackStart(const app::Archive&)),
-        this, SLOT(unpackStart(const app::Archive&)));
-    QObject::connect(app::g_unpacker, SIGNAL(unpackReady(const app::Archive&)),
-        this, SLOT(unpackReady(const app::Archive&)));
+    ui_.tabWidget->blockSignals(true);
+    {
+        const auto text = repair.windowTitle();
+        const auto icon = repair.windowIcon();        
+        ui_.tabWidget->addTab(&repair, icon, text);
+        current_ = &repair_;
+    }
+    {
+        const auto text = unpack.windowTitle();
+        const auto icon = unpack.windowIcon();     
+        ui_.tabWidget->addTab(&unpack, icon, text);
+    }
 
-    QObject::connect(app::g_unpacker, SIGNAL(unpackProgress(int)),
-        this, SLOT(unpackProgress(int)));        
+    ui_.tabWidget->setCurrentIndex(0);
+    ui_.tabWidget->blockSignals(false);
+    ui_.actionRepair->setChecked(true);
+    ui_.actionUnpack->setChecked(true);
 
     DEBUG("Archives UI created");
 }
@@ -63,96 +67,105 @@ Archives::~Archives()
 
 void Archives::addActions(QToolBar& bar)
 {
+    bar.addAction(ui_.actionRepair);
     bar.addAction(ui_.actionUnpack);
-    bar.addSeparator();    
-    bar.addAction(ui_.actionStop);
+    bar.addSeparator();
+
+    auto* w = getCurrent();
+    w->addActions(bar);
 }
 
 void Archives::addActions(QMenu& menu)
 {
-    // menu.addAction(ui_.actionRun);
-    // menu.addSeparator();
-    // menu.addAction(ui_.actionStop);
+    menu.addAction(ui_.actionRepair);
+    menu.addAction(ui_.actionUnpack);
+    menu.addSeparator();
+
+    auto* w = getCurrent();
+    w->addActions(menu);
 }
+
+void Archives::activate(QWidget* parent)
+{}
+
+void Archives::deactivate()
+{}
 
 void Archives::loadState(app::Settings& settings)
 {
-    // const auto* queue = ui_.tableView->model();
-    // for (int i=0; i<queue->columnCount()-1; ++i)
-    // {
-    //     const auto name  = QString("queue_col_%1").arg(i);
-    //     const auto width = settings.get("scripts", name, 
-    //         ui_.tableView->columnWidth(i));
-    //     ui_.tableView->setColumnWidth(i, width);
-    // }    
+    unpack_.loadState(settings);
+    repair_.loadState(settings);
 
-    // const auto writeLog  = settings.get("scripts", "write_log_files", true);
-    // const auto followOut = settings.get("scripts", "follow_output", false);
-    // ui_.chkWriteLog->setChecked(writeLog);
-    // ui_.chkFollow->setChecked(followOut);
+    bool unpack = ui_.actionUnpack->isChecked();
+    bool repair = ui_.actionRepair->isChecked();
+    unpack = settings.get("archives", "unpack", unpack);
+    repair = settings.get("archives", "repair", repair);
+    ui_.actionUnpack->setChecked(unpack);
+    ui_.actionRepair->setChecked(repair);
+
+    unpack_.setUnpackEnabled(unpack);
+    repair_.setRepairEnabled(repair);
 }
 
 void Archives::saveState(app::Settings& settings)
 {
-    // const auto* queue = ui_.tableView->model();
-    // for (int i=0; i<queue->columnCount()-1; ++i)
-    // {
-    //     const auto width = ui_.tableView->columnWidth(i);
-    //     const auto name  = QString("queue_col_%1").arg(i);
-    //     settings.set("scripts", name, width);
-    // }    
+    unpack_.saveState(settings);
+    repair_.saveState(settings);
 
+    const auto unpack = ui_.actionUnpack->isChecked();
+    const auto repair = ui_.actionRepair->isChecked();
+    settings.set("archives", "unpack", unpack);
+    settings.set("archives", "repair", repair);
+}
 
-    // const auto writeLog  = ui_.chkWriteLog->isChecked();
-    // const auto followOut = ui_.chkFollow->isChecked();
-    // settings.set("scripts", "write_log_files", writeLog);
-    // settings.set("scripts", "follow_output", followOut);
+void Archives::shutdown()
+{
+    ui_.tabWidget->blockSignals(true);
+    ui_.tabWidget->clear();
+    unpack_.shutdown();
+    repair_.shutdown();
+
+    repair_.setParent(nullptr);
+    unpack_.setParent(nullptr);
+}
+
+void Archives::refresh(bool isActive)
+{
+    unpack_.refresh(current_ == &unpack_);
+    repair_.refresh(current_ == &repair_);
+}
+
+void Archives::on_tabWidget_currentChanged(int index)
+{
+    Q_ASSERT(current_);
+
+    auto* w = ui_.tabWidget->currentWidget();
+    auto* m = static_cast<MainWidget*>(w);
+
+    current_->deactivate();
+    current_ = m;
+    current_->activate(this);
+
+    emit updateMenu(this);
+}
+
+void Archives::on_actionRepair_triggered()
+{
+    const auto onOff = ui_.actionRepair->isChecked();
+    repair_.setRepairEnabled(onOff);
 }
 
 void Archives::on_actionUnpack_triggered()
 {
-    const auto& file = QFileDialog::getOpenFileName(this,
-        tr("Select Archive File"), QString(), "(Archive FIles ) *.rar");
-    if (file.isEmpty())
-        return;
-
-    QFileInfo info(file);
-    auto base = info.completeBaseName();
-    auto name = info.fileName();
-    auto path = info.filePath().remove(name);
-
-    app::Archive arc;
-    arc.state = app::Archive::Status::Queued;
-    arc.desc  = name;
-    arc.file  = name;
-    arc.path  = path;
-    app::g_unpacker->addUnpack(arc);
+    const auto onOff = ui_.actionUnpack->isChecked();
+    unpack_.setUnpackEnabled(onOff);
 }
 
-void Archives::on_actionStop_triggered()
+MainWidget* Archives::getCurrent()
 {
-    app::g_unpacker->stopUnpack();
+    auto* p = ui_.tabWidget->currentWidget();
+    return static_cast<MainWidget*>(p);
 }
 
-void Archives::unpackStart(const app::Archive& arc)
-{
-    ui_.progressBar->setVisible(true);
-    ui_.actionStop->setEnabled(true);
-    ui_.lblStatus->setVisible(true);
-}
-
-void Archives::unpackReady(const app::Archive& arc)
-{
-    ui_.progressBar->setVisible(false);
-    ui_.actionStop->setEnabled(false);
-    ui_.lblStatus->setVisible(false);
-}
-
-void Archives::unpackProgress(int done)
-{
-    ui_.progressBar->setValue(done);    
-    //ui_.lblStatus->setText(file);
-    ui_.tableData->scrollToBottom();
-}
 
 } // gui

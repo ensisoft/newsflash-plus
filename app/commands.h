@@ -35,6 +35,9 @@
 namespace app
 {
     class Settings;
+    struct FileInfo;
+    struct FilePackInfo;
+    struct Archive;
 
     class Commands
     {
@@ -87,8 +90,8 @@ namespace app
             quint32 guid() const
             { return guid_; }
 
-            void startNewInstance(const app::DataFileInfo& info);
-            void startNewInstance(const app::FileBatchInfo& info);
+            void startNewInstance(const app::FileInfo& info);
+            void startNewInstance(const app::FilePackInfo& info);
 
         private:
             QString name_;
@@ -118,8 +121,8 @@ namespace app
         { commands_ = commands; }
 
     private: 
-        void fileCompleted(const app::DataFileInfo& info);
-        void batchCompleted(const app::FileBatchInfo& info);
+        void fileCompleted(const app::FileInfo& info);
+        void packCompleted(const app::FilePackInfo& info);
 
     private:
         CmdList commands_;

@@ -260,6 +260,42 @@ asap, investiage and then fix the application.
 
 
 
+Signals and Slots or std::function<> ?
+=======================================
+
+Signals & Slots is the Qt mechanism for connecting events from senders to receivers. 
+It is not based on standard c++ facilities and requires tool support (MOC) in order to work.
+    
+Pros of Signals and Slots.
+    + Support in the Qt designer 
+    + Built in threading support for queued signals when necessary.
+    + Built in support for multiple receivers
+
+Cons of Signals and Slots.
+    - Requires separate tool to work (MOC)
+    - Requires that types supporting (either emitting or receiving) derive from QObject 
+    - Runtime connection mechanism which results in runtime errors rather than compile time errors. (error prone)
+    - Requires Q_DECLARE_METATYPE for custom types
 
 
+std::function is the standard (c++11) facility for defining generic function objects.
 
+Pros of std::function
+    + Standard facility. Only requirement is c++11 enabled compiler.
+    + Type safe
+    + Compile time errors
+    + Generic implementation can bind to lambdas and std::bind function objects
+
+Cons of std::function
+    - Only single receiver
+
+
+Current design guideline is to use Qt's signals slots in obvious cases that are required by the toolkit,
+such as when handling widget events or other Qt types events. (such QProcess, QThread, etc).
+Also when there's a need to send/receive "broadcast" type signals such as file completion from the engine
+or new system event. These are best handled leveraging the Qt's signals and slots.
+
+However when we have a case where some lower level component who's scope is very limited wants to communicate
+information upwards only to a single listener this is easily accomplished through the use of std::function.
+Example is ParityChecker objects communicating state changes upwards (to Repairer object). This communication
+is only limited to inside Repairer and happens between ParityChecker and Repairer only. 

@@ -47,6 +47,7 @@
 #include "dlgshutdown.h"
 #include "dlgabout.h"
 #include "dlgfeedback.h"
+#include "dlgaccount.h"
 #include "config.h"
 #include "../eventlog.h"
 #include "../debug.h"
@@ -88,18 +89,6 @@ MainWindow::MainWindow(app::Settings& s) : QMainWindow(nullptr), current_(nullpt
     ui_.actionViewToolbar->setChecked(true);
     ui_.actionViewStatusbar->setChecked(true);
     ui_.progressBar->setTextVisible(false);
-
-    if (QSystemTrayIcon::isSystemTrayAvailable())
-    {
-        DEBUG("Setup system tray icon");
-        ui_.actionRestore->setEnabled(false);
-        ui_.actionMinimize->setEnabled(true);
-        tray_.setIcon(QIcon("icons:ico_newsflash.png"));
-        tray_.setToolTip(NEWSFLASH_TITLE " " NEWSFLASH_VERSION);
-        tray_.setVisible(true);
-        QObject::connect(&tray_, SIGNAL(activated(QSystemTrayIcon::ActivationReason)),
-            this, SLOT(actionTray_activated(QSystemTrayIcon::ActivationReason)));
-    }
 
     QObject::connect(&refresh_timer_, SIGNAL(timeout()),
         this, SLOT(timerRefresh_timeout()));
@@ -159,6 +148,9 @@ void MainWindow::attach(MainWidget* widget, bool loadstate)
         widget->loadState(settings_);
 
     buildWindowMenu();
+
+    QObject::connect(widget, SIGNAL(updateMenu(MainWidget*)),
+        this, SLOT(updateMenu(MainWidget*)));
 }
 
 void MainWindow::attach(MainModule* module, bool loadstate)
@@ -182,7 +174,6 @@ void MainWindow::loadState()
     app::g_accounts->loadState(settings_);
     app::g_tools->loadstate(settings_);    
     app::g_engine->loadState(settings_);
-    //app::g_postProcess->loadState(settings_);
 
     if (!settings_.contains("window", "width"))
     {
@@ -305,12 +296,6 @@ void MainWindow::showSetting(const QString& name)
 
 void MainWindow::prepareFileMenu()
 {
-    if (QSystemTrayIcon::isSystemTrayAvailable())
-    {
-        ui_.menuFile->addAction(ui_.actionMinimize);
-        ui_.menuFile->addSeparator();
-    }
-
     for (auto* m : modules_)
         if (m->addActions(*ui_.menuFile))
             ui_.menuFile->addSeparator();
@@ -384,6 +369,7 @@ QString MainWindow::selectNzbSaveFile(const QString& filename)
     dlg.setWindowTitle(tr("Save Newzbin File As ..."));
     dlg.setDirectory(recent_save_nzb_path_);
     dlg.selectFile(filename);
+    dlg.setAcceptMode(QFileDialog::AcceptSave);
     if (dlg.exec() == QDialog::Rejected)
         return {};
 
@@ -445,17 +431,17 @@ quint32 MainWindow::chooseAccount(const QString& description)
     return acc.id;
 }
 
-void MainWindow::update(MainWidget* widget)
-{
-    const auto index = ui_.mainTab->indexOf(widget);
-    if (index == -1)
-        return;
+// void MainWindow::update(MainWidget* widget)
+// {
+//     const auto index = ui_.mainTab->indexOf(widget);
+//     if (index == -1)
+//         return;
 
-    ui_.mainTab->setTabText(index, widget->windowTitle());
-    ui_.mainTab->setTabIcon(index, widget->windowIcon());
-}
+//     ui_.mainTab->setTabText(index, widget->windowTitle());
+//     ui_.mainTab->setTabIcon(index, widget->windowIcon());
+// }
 
-void MainWindow::reactivate(MainWidget* widget)
+void MainWindow::updateMenu(MainWidget* widget)
 {
     if (widget != current_)
         return;
@@ -463,8 +449,6 @@ void MainWindow::reactivate(MainWidget* widget)
     ui_.mainToolBar->clear();
     ui_.menuEdit->clear();
 
-    widget->deactivate();
-    widget->activate(ui_.mainTab);
     widget->addActions(*ui_.mainToolBar);
     widget->addActions(*ui_.menuEdit);
 
@@ -843,26 +827,6 @@ void MainWindow::on_actionHelp_triggered()
     app::openFile(help);
 }
 
-void MainWindow::on_actionMinimize_triggered()
-{
-    DEBUG("Minimize to tray!");
-
-    QMainWindow::hide();
-
-    ui_.actionRestore->setEnabled(true);
-    ui_.actionMinimize->setEnabled(false);
-}
-
-void MainWindow::on_actionRestore_triggered()
-{
-    DEBUG("Restore from tray");
-
-    QMainWindow::show();
-
-    ui_.actionRestore->setEnabled(false);
-    ui_.actionMinimize->setEnabled(true);
-}
-
 void MainWindow::on_actionContextHelp_triggered()
 {
     const auto* widget = static_cast<MainWidget*>(ui_.mainTab->currentWidget());
@@ -962,34 +926,30 @@ void MainWindow::actionWindowFocus_triggered()
     ui_.mainTab->setCurrentIndex(tab_index);
 }
 
-void MainWindow::actionTray_activated(QSystemTrayIcon::ActivationReason reason)
-{
-    if (reason != QSystemTrayIcon::Context)
-        return;
-
-    QMenu menu;
-    menu.addAction(ui_.actionRestore);
-    menu.addSeparator();
-    menu.addAction(ui_.actionExit);
-    menu.exec(QCursor::pos());
-}
-
 void MainWindow::timerWelcome_timeout()
 {
     DlgWelcome dlg(this);
     dlg.exec();
 
-    const auto add_account = dlg.add_account();
-    const auto show_help   = dlg.open_guide();
+    const auto addAccount = dlg.add_account();
+    const auto showHelp   = dlg.open_guide();
 
-    if (show_help)
+    if (showHelp)
     {
         const auto& help = app::distdir::path("help/quick.html");
         app::openFile(help);
     }
 
+    if (addAccount)
+    {
+        auto account = app::g_accounts->suggestAccount();
+        DlgAccount dlg(this, account);
+        if (dlg.exec() == QDialog::Accepted)
+            app::g_accounts->setAccount(account);
+    }
+
     for (auto* w : widgets_)
-        w->firstLaunch(add_account);
+        w->firstLaunch();
 
     for (auto* m : modules_)
         m->firstLaunch();

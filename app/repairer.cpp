@@ -34,7 +34,6 @@
 #include "archive.h"
 #include "debug.h"
 #include "eventlog.h"
-#include "datainfo.h"
 #include "paritychecker.h"
 #include "utility.h"
 #include "platform.h"
@@ -90,6 +89,7 @@ QIcon icon(ParityChecker::FileState state)
     return {};
 }
 
+
 // list of the current and past recovery operations
 class Repairer::RecoveryList : public QAbstractTableModel
 {
@@ -105,7 +105,7 @@ public:
         switch ((Columns)section)
         {
             case Columns::Status: return "Status";
-            case Columns::Desc:   return "Desc";
+            case Columns::Name:   return "Name";
             case Columns::Error:  return "Message";
             case Columns::Path:   return "Location";
             case Columns::LAST:   Q_ASSERT(0); 
@@ -126,7 +126,7 @@ public:
             {
                 case Columns::Status: return toString(arc.state);
                 case Columns::Error:  return arc.message;
-                case Columns::Desc:   return arc.desc;
+                case Columns::Name:   return arc.file;
                 case Columns::Path:   return arc.path;
                 case Columns::LAST:   Q_ASSERT(0);
             }
@@ -166,23 +166,11 @@ public:
 
     static const std::size_t NoSuchRecovery = std::numeric_limits<std::size_t>::max();
 
-    std::size_t findNextPending() const 
+    std::size_t findArchive(Archive::Status status) const 
     {
         auto it = std::find_if(std::begin(list_), std::end(list_),
-            [](const Archive& arc) {
-                return arc.state == Archive::Status::Queued;
-            });
-        if (it == std::end(list_))
-            return NoSuchRecovery;
-
-        return std::distance(std::begin(list_), it);
-    }
-
-    std::size_t findActive() const 
-    {
-        auto it = std::find_if(std::begin(list_), std::end(list_),
-            [](const Archive& arc) {
-                return arc.state == Archive::Status::Active;
+            [=](const Archive& arc) {
+                return arc.state == status;
             });
         if (it == std::end(list_))
             return NoSuchRecovery;
@@ -255,9 +243,9 @@ public:
     void killComplete()
     {
         auto it = std::remove_if(std::begin(list_), std::end(list_),
-            [](const Archive& a) {
-                return (a.state == Archive::Status::Success) ||
-                       (a.state == Archive::Status::Error);
+            [](const Archive& arc) {
+                return (arc.state == Archive::Status::Success) ||
+                       (arc.state == Archive::Status::Error);
             });
         list_.erase(it, std::end(list_));
         
@@ -266,7 +254,7 @@ public:
 
 private:
     enum class Columns {
-        Status, Error, Desc, Path, LAST
+        Status, Error, Path, Name, LAST
     };
 private:
     std::deque<Archive> list_;
@@ -328,32 +316,33 @@ public:
         return (int)Columns::LAST;
     }    
 
-    void update(const app::Archive&, ParityChecker::File file)
+    void update(const app::Archive& arc, ParityChecker::File file)
     {
-        Q_ASSERT(file.name.isEmpty() == false);
-
         //DEBUG("Update file %1, type %2 state %3", file.name, toString(file.type), toString(file.state));
 
-        auto it = std::find_if(std::begin(files_), std::end(files_),
+        auto& files = files_;
+
+        auto it = std::find_if(std::begin(files), std::end(files),
             [&](const ParityChecker::File& f) {
                 return f.name == file.name;
             });
-        if (it == std::end(files_))
-        {
-            const auto curSize = (int)files_.size();
-            beginInsertRows(QModelIndex(), curSize, curSize);
-            files_.push_back(std::move(file));
-            endInsertRows();
-            return;
-        }
-        *it = file;
 
-        //reset();
-        const auto index = (int)std::distance(std::begin(files_), it);
-        Q_ASSERT(index < files_.size());
-        const auto first = QAbstractTableModel::index(index, 0);
-        const auto last  = QAbstractTableModel::index(index, (int)Columns::LAST);
-        emit dataChanged(first, last);
+        if (it == std::end(files))
+        {
+            const auto curSize = (int)files.size();
+            QAbstractTableModel::beginInsertRows(QModelIndex(), curSize, curSize);
+            files.push_back(std::move(file));
+            QAbstractTableModel::endInsertRows();
+        }
+        else
+        {
+            *it = file;
+
+            const auto index = (int)std::distance(std::begin(files), it);
+            const auto first = QAbstractTableModel::index(index, 0);
+            const auto last  = QAbstractTableModel::index(index, (int)Columns::LAST);
+            emit dataChanged(first, last);
+        }
     }
 
     void clear()
@@ -362,6 +351,13 @@ public:
         reset();
     }
 
+    void setContent(quint32 guid, std::vector<ParityChecker::File> files)
+    {
+        files_ = std::move(files);
+        guid_  = guid;
+    }
+    quint32 getContentGuid() const 
+    { return guid_; }
 private:
     enum class Columns {
         Status, /* Done */ File, LAST
@@ -369,6 +365,7 @@ private:
 
 private:
     std::vector<ParityChecker::File> files_;
+    quint32 guid_;
 };
 
 Repairer::Repairer(std::unique_ptr<ParityChecker> engine) : engine_(std::move(engine))
@@ -378,8 +375,29 @@ Repairer::Repairer(std::unique_ptr<ParityChecker> engine) : engine_(std::move(en
     list_.reset(new RecoveryList);
     data_.reset(new RecoveryData);
 
-    engine_->onUpdateFile = std::bind(&RecoveryData::update, data_.get(),
-        std::placeholders::_1, std::placeholders::_2);
+    engine_->onUpdateFile = [=](const Archive& arc, const ParityChecker::File& file) {
+        data_->update(arc, file);
+        if (info_)
+        {
+            if (arc.guid == info_->getContentGuid())
+                info_->update(arc, file);
+        }
+
+        auto ait = std::find_if(std::begin(history_), std::end(history_), 
+            [&](const RecoveryFiles& files) {
+                return files.archiveID == arc.guid;
+            });
+        ENDCHECK(history_, ait);
+        auto& files = (*ait).files;
+
+        auto it = std::find_if(std::begin(files), std::end(files),
+            [&](const ParityChecker::File& f) {
+                return f.name == file.name;
+            });
+        if (it == std::end(files))
+            files.push_back(file);
+        else *it = file;
+    };
 
     engine_->onScanProgress = [=](const Archive& arc, QString file, int done) {
         emit scanProgress(file, done);
@@ -390,10 +408,24 @@ Repairer::Repairer(std::unique_ptr<ParityChecker> engine) : engine_(std::move(en
 
     engine_->onReady= [=](const Archive& arc) {
 
-        DEBUG("Archive %1 ready with status %2", arc.file, toString(arc.state));        
-        emit recoveryReady(arc);
+        DEBUG("Archive %1 repair ready with status %2", arc.file, toString(arc.state));     
+        if (arc.state == Archive::Status::Success)
+        {
+            NOTE("Archive %1 succesfully repaired.", arc.desc);
+            INFO("Archive %1 succesfully repaired.", arc.desc);
+        }
+        else if (arc.state == Archive::Status::Failed)
+        {
+            WARN("Archive %1 repair failed.%2", arc.desc, arc.message);
+        }
+        else if (arc.state == Archive::Status::Error)
+        {
+            ERROR("Archive %1 repair error. %2", arc.desc, arc.message);
+        }
 
-        const auto index = list_->findActive();
+        emit repairReady(arc);
+
+        const auto index = list_->findArchive(Archive::Status::Active);
         if (index != RecoveryList::NoSuchRecovery)
         {
             auto& active = list_->getRecovery(index);
@@ -406,6 +438,7 @@ Repairer::Repairer(std::unique_ptr<ParityChecker> engine) : engine_(std::move(en
 
     writeLogs_ = true;
     purgePars_ = false;
+    enabled_   = true;
 }
 
 Repairer::~Repairer()
@@ -416,6 +449,26 @@ Repairer::~Repairer()
 QAbstractTableModel* Repairer::getRecoveryData()
 { return data_.get(); }
 
+QAbstractTableModel* Repairer::getRecoveryData(const QModelIndex& index)
+{
+    if (!info_)
+        info_.reset(new RecoveryData);
+
+    const auto row  = index.row();
+    const auto& arc = list_->getRecovery(row);
+    const auto guid = arc.guid;
+
+    const auto it = std::find_if(std::begin(history_), std::end(history_),
+        [&](const RecoveryFiles& files) {
+            return files.archiveID == guid;
+        });
+    ENDCHECK(history_, it);
+
+    auto files = (*it).files;
+    info_->setContent(guid, std::move(files));
+    return info_.get();
+}
+
 QAbstractTableModel* Repairer::getRecoveryList()
 { return list_.get(); }
 
@@ -423,6 +476,10 @@ QAbstractTableModel* Repairer::getRecoveryList()
 void Repairer::addRecovery(const Archive& arc)
 {
     list_->addRecovery(arc);
+
+    RecoveryFiles files;
+    files.archiveID = arc.guid;
+    history_.push_back(files);
 
     startNextRecovery();
 }
@@ -468,21 +525,44 @@ void Repairer::moveToBottom(QModelIndexList& list)
 
 void Repairer::kill(QModelIndexList& list)
 {
-    auto index = list_->findActive();
-    if (index != RecoveryList::NoSuchRecovery)
+    for (const auto& index : list)
     {
-        auto it = std::find_if(std::begin(list), std::end(list),
-            [=](const QModelIndex& i) {
-                return i.row() == index;
-            });
-        if (it != std::end(list))
+        const auto row  = index.row();
+        const auto& arc = list_->getRecovery(row);
+        if (arc.state == Archive::Status::Active)
+        {
             engine_->stop();
+            data_->clear();
+        }
+
+        auto it = std::find_if(std::begin(history_), std::end(history_),
+            [=](const RecoveryFiles& files) {
+                return files.archiveID == arc.guid;
+            });
+        ENDCHECK(history_, it);
+        history_.erase(it);
     }
     list_->killItems(list);
 }
 
 void Repairer::killComplete()
 {
+    const auto numRows = list_->numRepairs();
+    for (std::size_t i=0; i<numRows; ++i)
+    {
+        const auto& arc = list_->getRecovery(i);
+        if (arc.state == Archive::Status::Error || 
+            arc.state == Archive::Status::Success)
+        {
+            auto it = std::find_if(std::begin(history_), std::end(history_),
+                [=](const RecoveryFiles& files) {
+                    return files.archiveID == arc.guid;
+                });
+            ENDCHECK(history_, it);
+            history_.erase(it);
+        }
+    }
+
     list_->killComplete();
 }
 
@@ -491,7 +571,7 @@ void Repairer::openLog(QModelIndexList& list)
     for (int i=0; i<list.size(); ++i)
     {
         const auto row  = list[i].row();
-        const auto& arc = list_->getRecovery(row);
+        const auto& arc = list_->getRecovery(i);
         if (arc.state == Archive::Status::Queued)
             continue;
         QFileInfo info(arc.path + "/repair.log");
@@ -511,48 +591,22 @@ std::size_t Repairer::numRepairs() const
     return list_->numRepairs();
 }
 
-void Repairer::fileCompleted(const app::DataFileInfo& info)
-{}
-
-
-void Repairer::batchCompleted(const app::FileBatchInfo& info)
+const Archive& Repairer::getRecovery(const QModelIndex& i) const 
 {
-    DEBUG("Repair a batch %1", info.path);
-
-    QDir dir;
-    dir.setPath(info.path);
-    dir.setNameFilters(QStringList("*.par2"));
-
-    QStringList files = dir.entryList();
-    for (int i=0; i<files.size(); ++i)
-    {
-        QFileInfo file(files[i]);
-        QString   name = file.completeBaseName();
-        if (name.contains(".vol"))
-            continue;
-
-        Archive arc;
-        arc.path  = info.path;
-        arc.desc  = file.fileName();
-        arc.state = Archive::Status::Queued;
-        arc.file  = file.fileName();
-        addRecovery(arc);
-
-        DEBUG("Added a new recovery for %1 in %2", name, dir);
-    }
-    startNextRecovery();
+    return list_->getRecovery(i.row());
 }
 
 void Repairer::startNextRecovery()
 {
     if (engine_->isRunning())
         return;
+    if (!enabled_)
+        return;
 
-    const auto index = list_->findNextPending();
+    const auto index = list_->findArchive(Archive::Status::Queued);
     if (index == RecoveryList::NoSuchRecovery)
     {
-        DEBUG("All Done!");
-        emit allDone();
+        DEBUG("Repairer all done");
         return;
     }
 
@@ -560,15 +614,15 @@ void Repairer::startNextRecovery()
     settings.purgeOnSuccess = purgePars_;
     settings.writeLogFile   = writeLogs_;
 
-    auto& recovery = list_->getRecovery(index);
-    recovery.state = Archive::Status::Active;
-    engine_->recover(recovery, settings);
+    auto& arc = list_->getRecovery(index);
+    arc.state  = Archive::Status::Active;
+    engine_->recover(arc, settings);
 
-    data_->clear();    
+    data_->clear();
     list_->refresh(index);
 
-    emit recoveryStart(recovery);
-    DEBUG("Started recovery for %1", recovery.desc);    
+    emit repairStart(arc);
+    DEBUG("Started recovery for %1", arc.file);    
 }
 
 

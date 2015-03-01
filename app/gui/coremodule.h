@@ -69,7 +69,7 @@ namespace gui
        ~CoreModule();
 
         virtual void loadState(app::Settings& s) override;       
-        virtual bool saveState(app::Settings& s) override;
+        virtual void saveState(app::Settings& s) override;
         virtual SettingsWidget* getSettings() override;
         virtual void applySettings(SettingsWidget* gui) override;
         virtual void freeSettings(SettingsWidget* gui) override;

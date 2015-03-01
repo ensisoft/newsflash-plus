@@ -21,63 +21,49 @@
 #pragma once
 
 #include <newsflash/config.h>
-
 #include <newsflash/warnpush.h>
-#  include <QAbstractTableModel>
-#  include <QByteArray>
-#  include <QObject>
-#  include <QProcess>
+#  include "ui_unpack.h"
 #include <newsflash/warnpop.h>
-#include <memory>
-#include "archiver.h"
+#include "mainwidget.h"
 
-namespace app
-{
+namespace app {
+    class Unpacker;
     struct Archive;
-    class Archiver;
+}
 
-    // unpacker unpacks archive files such as .rar. 
-    class Unpacker : public QObject
+namespace gui
+{
+    class Unpack : public MainWidget
     {
         Q_OBJECT
-
+        
     public:
-        Unpacker(std::unique_ptr<Archiver> archiver);
-       ~Unpacker();
+        Unpack(app::Unpacker& unpacker);
+       ~Unpack();
 
-        // get unpack list data model
-        QAbstractTableModel* getUnpackList();
+        virtual void addActions(QToolBar& bar) override;
+        virtual void addActions(QMenu& menu) override;
+        virtual void loadState(app::Settings& settings) override;
+        virtual void saveState(app::Settings& settings) override;
+        virtual void shutdown() override;
 
-        QAbstractTableModel* getUnpackData();
+        virtual info getInformation() const override
+        { return {"archives.html", true, true }; }
 
-        // add a new unpack operation to be performed. 
-        void addUnpack(const Archive& arc);
-
-        // stop current unpack operation.
-        void stopUnpack();
-
-        void setEnabled(bool onOff)
-        { enabled_ = onOff; }
-
-        bool isEnabled() const 
-        { return enabled_; }
-
-    signals:
+        void setUnpackEnabled(bool onOff);
+        
+    private slots:
+        void on_actionUnpack_triggered();    
+        void on_actionStop_triggered();
         void unpackStart(const app::Archive& arc);
         void unpackReady(const app::Archive& arc);
-        void unpackProgress(const QString& file, int done);
+        void unpackProgress(const QString& target, int done);
 
     private:
-        void startNextUnpack();
+        Ui::Unpack ui_;
 
     private:
-        class UnpackList;
-        class UnpackData;
-        std::unique_ptr<UnpackList> list_;
-        std::unique_ptr<UnpackData> data_;
-        std::unique_ptr<Archiver> engine_;
-        bool enabled_;
+        app::Unpacker& model_;
     };
 
-} // app
-
+} // gui

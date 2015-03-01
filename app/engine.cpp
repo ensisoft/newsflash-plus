@@ -39,7 +39,8 @@
 #include "account.h"
 #include "settings.h"
 #include "nzbparse.h"
-#include "datainfo.h"
+#include "fileinfo.h"
+#include "newsinfo.h"
 
 namespace nf = newsflash;
 namespace ui = newsflash::ui;
@@ -431,7 +432,7 @@ void Engine::onFileComplete(const newsflash::ui::file& f)
     DEBUG("File complete \"%1/%2\" damaged: %3 binary: %4", 
         path, name, f.damaged, f.binary);
 
-    app::DataFileInfo file;
+    app::FileInfo file;
     file.binary  = f.binary;
     file.damaged = f.damaged;
     file.name    = name;
@@ -462,11 +463,11 @@ void Engine::onBatchComplete(const newsflash::ui::batch& b)
     path = QDir(path).absolutePath();
     path = QDir::toNativeSeparators(path);
 
-    FileBatchInfo batch;
-    batch.desc = fromUtf8(b.desc);
-    batch.path = path;
+    FilePackInfo pack;
+    pack.desc = fromUtf8(b.desc);
+    pack.path = path;
 
-    emit batchCompleted(batch);
+    emit packCompleted(pack);
 }
 
 void Engine::onListComplete(const newsflash::ui::listing& l)

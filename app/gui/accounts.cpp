@@ -83,7 +83,7 @@ Accounts::Accounts()
         resource = ":/resource/nh-special.gif";
         campaing = "http://www.newshosting.com/en/index.php?&amp;a_aid=foobar1234&amp;a_bid=2b57ce3a";
     }    
-    DEBUG("Usenet campaing '%1' '%2'", resource, campaing);    
+    //DEBUG("Usenet campaing '%1' '%2'", resource, campaing);    
 
     // NOTE: if the movie doesn't show up the problem might have
     // to do with Qt image plugins!    
@@ -147,17 +147,6 @@ void Accounts::saveState(app::Settings& s)
 {
 }
 
-void Accounts::firstLaunch(bool add_account)
-{
-    if (!add_account)
-        return;
-
-    auto account = app::g_accounts->suggestAccount();
-
-    DlgAccount dlg(this, account);
-    if (dlg.exec() == QDialog::Accepted)
-        app::g_accounts->setAccount(account);
-}
 
 bool Accounts::eventFilter(QObject* object, QEvent* event)
 {

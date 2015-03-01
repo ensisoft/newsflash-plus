@@ -113,10 +113,9 @@ void Appearance::loadState(app::Settings& s)
     DEBUG("Qt style %1", current_style_name_);
 }
 
-bool Appearance::saveState(app::Settings& s)
+void Appearance::saveState(app::Settings& s)
 {
     s.set("theme", "name", current_style_name_);
-    return true;
 }
 
 SettingsWidget* Appearance::getSettings()

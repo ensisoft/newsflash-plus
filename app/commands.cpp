@@ -36,7 +36,7 @@
 #include "eventlog.h"
 #include "engine.h"
 #include "distdir.h"
-#include "datainfo.h"
+#include "fileinfo.h"
 
 namespace app
 {
@@ -88,10 +88,10 @@ QIcon Commands::Command::icon() const
 //     return ret;
 // }
 
-void Commands::Command::startNewInstance(const app::DataFileInfo& info)
+void Commands::Command::startNewInstance(const app::FileInfo& info)
 {}
 
-void Commands::Command::startNewInstance(const app::FileBatchInfo& info)
+void Commands::Command::startNewInstance(const app::FilePackInfo& info)
 {}
 
 
@@ -132,7 +132,7 @@ void Commands::saveState(Settings& settings)
     }
 }
 
-void Commands::fileCompleted(const app::DataFileInfo& info)
+void Commands::fileCompleted(const app::FileInfo& info)
 {
     const auto filename = QDir::toNativeSeparators(info.path + "/" + info.name);
 
@@ -143,7 +143,7 @@ void Commands::fileCompleted(const app::DataFileInfo& info)
     //startNextCommand();
 }
 
-void Commands::batchCompleted(const app::FileBatchInfo& info)
+void Commands::packCompleted(const app::FilePackInfo& info)
 {
     const auto folder = info.path;
 

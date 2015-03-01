@@ -107,10 +107,9 @@ void CoreModule::loadState(app::Settings& s)
     }
 }
 
-bool CoreModule::saveState(app::Settings& s)
+void CoreModule::saveState(app::Settings& s)
 {
     s.set("settings", "check_for_software_updates", check_for_updates_);
-    return true;
 }
 
 SettingsWidget* CoreModule::getSettings()

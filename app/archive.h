@@ -45,7 +45,10 @@ namespace app
             Failed,
 
             // error running the unpack operation.
-            Error
+            Error,
+
+            // stopped/canceled by the user.
+            Stop
         };
 
         // current unpack state of the archive.
@@ -62,6 +65,18 @@ namespace app
 
         // error/information message
         QString message;
+
+        quint32 guid;
+
+        Archive() : guid(Archive::makeGuid())
+        {}
+
+    private:
+        static quint32 makeGuid() 
+        {
+            static quint32 id = 1;
+            return id++;
+        }
     };
 
     QString toString(Archive::Status status);

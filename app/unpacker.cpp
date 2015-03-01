@@ -31,9 +31,8 @@
 #include "unpacker.h"
 #include "debug.h"
 #include "eventlog.h"
-#include "engine.h"
-#include "distdir.h"
 #include "archive.h"
+#include "archiver.h"
 
 namespace app
 {
@@ -66,23 +65,23 @@ public:
         const auto row = index.row();
         const auto col = index.column();
 
-        const auto& rec = list_[row];
+        const auto& arc = list_[row];
         if (role == Qt::DisplayRole)
         {
             switch ((Columns)col)
             {
-                case Columns::Status: return toString(rec.state);
-                case Columns::Error:  return rec.message;
-                case Columns::Desc:   return rec.desc;
-                case Columns::Path:   return rec.path;
+                case Columns::Status: return toString(arc.state);
+                case Columns::Error:  return arc.message;
+                case Columns::Desc:   return arc.desc;
+                case Columns::Path:   return arc.path;
                 case Columns::LAST:   Q_ASSERT(0);
             }
         }
 
         if (role == Qt::DecorationRole)
         {
-            // if ((Columns)col == Columns::Status)
-            //     return icon(rec.state);
+            if ((Columns)col == Columns::Status)
+                return toIcon(arc.state);
         }
         return {};
     }
@@ -140,7 +139,7 @@ public:
 
     Archive& getArchive(std::size_t index) 
     { 
-        Q_ASSERT(index < list_.size());
+        BOUNDSCHECK(list_, index);
         return list_[index];
     }
 
@@ -183,14 +182,14 @@ public:
         {
             switch ((Columns)col)
             {
-                case Columns::File:   return data.name;
+                case Columns::File:   return data;
                 case Columns::LAST:   Q_ASSERT(0);
             }
         }
         if (role == Qt::DecorationRole)
         {
-            //if ((Columns)col == Columns::Status)
-            //    return icon(data.state);
+            const static QIcon ico("icons:ico_bullet_green.png");
+            return ico;
         }
         return {};
     }
@@ -205,21 +204,15 @@ public:
         return (int)Columns::LAST;
     }    
 
-    bool update(const QString& line)
+    void update(const app::Archive& arc, const QString& file)
     {
-        static const QRegExp regex("Extracting from (.*)");
-        if (regex.indexIn(line) != -1)
-        {
-            File file;
-            file.name = regex.cap(1);
+        Q_ASSERT(file.isEmpty() == false);
 
-            const auto numRows = (int)files_.size();
-            beginInsertRows(QModelIndex(), numRows, numRows);
-            files_.push_back(file);
-            endInsertRows(); 
-            return true;
-        }
-        return false;
+        const auto curSize = (int)files_.size();
+
+        QAbstractTableModel::beginInsertRows(QModelIndex(), curSize, curSize);
+        files_.push_back(file);
+        QAbstractTableModel::endInsertRows();
     }
 
     void clear()
@@ -233,36 +226,55 @@ private:
         File, LAST
     };
 
-    struct File {
-        QString name;
-    };
-
 private:
     friend class Unpacker;
-    std::vector<File> files_;
+    std::vector<QString> files_;
 };
 
 
-Unpacker::Unpacker()
+Unpacker::Unpacker(std::unique_ptr<Archiver> archiver) : engine_(std::move(archiver))
 {
     DEBUG("Unpacker created");
 
-    QObject::connect(&process_, SIGNAL(finished(int, QProcess::ExitStatus)), 
-        this, SLOT(processFinished(int, QProcess::ExitStatus)));
-    QObject::connect(&process_, SIGNAL(error(QProcess::ProcessError)),
-        this, SLOT(processError(QProcess::ProcessError)));
-    QObject::connect(&process_, SIGNAL(readyReadStandardOutput()),
-        this, SLOT(processStdOut()));
-    QObject::connect(&process_, SIGNAL(readyReadStandardError()),
-        this, SLOT(processStdErr()));        
-
-    QObject::connect(g_engine, SIGNAL(fileCompleted(const app::DataFileInfo&)),
-        this, SLOT(fileCompleted(const app::DataFileInfo&)));
-    QObject::connect(g_engine, SIGNAL(batchCompleted(const app::FileBatchInfo&)),
-        this, SLOT(batchCompleted(const app::FileBatchInfo&)));    
-
     list_.reset(new UnpackList);    
     data_.reset(new UnpackData);
+
+    engine_->onExtract = std::bind(&UnpackData::update, data_.get(),
+        std::placeholders::_1, std::placeholders::_2);
+
+    engine_->onProgress = [=](const app::Archive& arc, const QString& target, int done) {
+        emit unpackProgress(target, done);
+    };
+
+    engine_->onReady = [=](const app::Archive& arc) {
+        DEBUG("Archive %1 unpack ready with status %2", arc.file, toString(arc.state));
+
+        if (arc.state == Archive::Status::Success)
+        {
+            NOTE("Archive %1 succesfully unpacked.", arc.desc);
+            INFO("Archive %1 succesfully unpacked.", arc.desc);
+        }
+        else if (arc.state == Archive::Status::Failed)
+        {
+            WARN("Archive %1 unpack failed. %2", arc.desc, arc.message);
+        }
+        else if (arc.state == Archive::Status::Error)
+        {
+            ERROR("Archive %1 unpack error. %2", arc.desc, arc.message);
+        }
+
+        emit unpackReady(arc);
+
+        const auto index = list_->findActive();
+        if (index != UnpackList::NoSuchUnpack)
+        {
+            auto& active = list_->getArchive(index);
+            active = arc;
+            list_->refresh(index);
+        }
+
+        startNextUnpack();
+    };
 }
 
 Unpacker::~Unpacker()
@@ -285,144 +297,35 @@ void Unpacker::addUnpack(const Archive& arc)
 
 void Unpacker::stopUnpack()
 {
-    const auto state = process_.state();
-    if (state == QProcess::NotRunning)
-        return;
-
-    process_.terminate();
-}
-
-void Unpacker::processStdOut()
-{
-    const auto buff = process_.readAllStandardOutput();
-    const auto size = buff.size();
-    stdout_.append(buff);
-
-    std::string line;
-
-    int chop;
-    for (chop = 0; chop<stdout_.size(); ++chop)
-    {
-        const auto byte = stdout_.at(chop);
-        if (byte == '\n' || byte =='\r')
-        {
-            const auto wide = widen(line);
-            if (wide.isEmpty())
-                continue;
-
-            data_->update(widen(line));
-
-//            DEBUG(wide);
-
-            static const QRegExp regex("^\\.\\.\\.\\s+(\\w+)\\s+(\\d{1,3})");
-            if (regex.indexIn(wide) != -1)
-            {
-                const auto done = regex.cap(2).toFloat();
-                emit unpackProgress(done);
-                DEBUG("emit signal!");
-            }
-            line.clear();
-        }
-        else if (byte == '\b')
-            line.push_back('.');
-        else line.push_back(byte);;
-    }
-    stdout_.chop(chop - line.size());
-}
-
-
-void Unpacker::processStdErr()
-{
-    Q_ASSERT(!"We should be using merged IO channels for stdout and stderr."
-        "See the code in startNextRecovery()");
-}
-
-void Unpacker::processFinished(int exitCode, QProcess::ExitStatus status)
-{
-    const auto index = list_->findActive();
-    if (index == UnpackList::NoSuchUnpack)
-        return;
-
-    processStdOut();
-
-    auto& active = list_->getArchive(index);
-    DEBUG("Unpack %1 finished. ExitCode %2, ExitStatus %3",
-        active.desc, exitCode, status);
-
-    if (status == QProcess::CrashExit)
-    {
-        active.state   = Archive::Status::Error;
-        active.message = "Crash exit";
-        ERROR("Unpack '%1' error %2", active.desc, active.message);
-    }
-    else
-    {
-
-    }
-    list_->refresh(index);
-
-    emit unpackReady(active);
-
-    startNextUnpack();
-}
-
-void Unpacker::processError(QProcess::ProcessError error)
-{
-    DEBUG("ProcessError %1", error);
-
-    const auto index = list_->findActive();
-    if (index == UnpackList::NoSuchUnpack)
-        return;
-
-    auto& active = list_->getArchive(index);
-
-    active.state   = Archive::Status::Error;
-    active.message = "Process error";
-    ERROR("Unpack '%1' error %2", active.desc, active.message);
-
-    list_->refresh(index);
-
-    unpackReady(active);
-
-    startNextUnpack();
-
+    engine_->stop();
 }
 
 void Unpacker::startNextUnpack()
 {
-    const auto state = process_.state();
-    if (state != QProcess::NotRunning)
+    if (engine_->isRunning())
         return;
 
     const auto index = list_->findNextPending();
     if (index == UnpackList::NoSuchUnpack)
     {
-        DEBUG("All done!");
-        emit allDone();
+        DEBUG("Unpacking all done!");
         return;
     }
-    stdout_.clear();
-    stderr_.clear();
 
-    auto& arc = list_->getArchive(index);
+    // todo:
+    Archiver::Settings settings;
 
-    const auto& unrar = distdir::path("unrar");
-    const auto& file  = arc.path + "/" + arc.file;
+    auto& unpack = list_->getArchive(index);
+    unpack.state = Archive::Status::Active;
+    engine_->extract(unpack, settings);
 
-    QStringList args;
-    args << "e";
-    args << arc.file;
-    process_.setWorkingDirectory(arc.path);
-    process_.setProcessChannelMode(QProcess::MergedChannels);
-    process_.start(unrar, args);
-    DEBUG("Starting unpack for %1", arc.desc);
-
-    arc.state = Archive::Status::Active;
+    data_->clear();
     list_->refresh(index);
 
-    emit unpackStart(arc);
-}
+    emit unpackStart(unpack);
 
-Unpacker* g_unpacker;
+    DEBUG("Start unpack for %1", unpack.file);
+
+}
 
 } // app

@@ -22,6 +22,7 @@
 
 #include <newsflash/config.h>
 #include <newsflash/warnpush.h>
+#  include <QObject>
 #  include <QProcess>
 #  include <QByteArray>
 #include <newsflash/warnpop.h>
@@ -31,19 +32,19 @@
 namespace app
 {
     // implement extraction of .rar archives using unrar command line utility.
-    class Unrar : public Archiver
+    class Unrar : public QObject, public Archiver
     {
         Q_OBJECT
 
     public:
-        Unrar();
+        Unrar(const QString& executable);
        ~Unrar();
 
-        virtual void extract(const Archive& arc) override;
+        virtual void extract(const Archive& arc, const Settings& settings) override;
 
         virtual void stop() override;
 
-        virtual void configure(const Settings& settings);
+        virtual bool isRunning() const override;
 
         static 
         bool parseVolume(const QString& line, QString& volume);
@@ -51,25 +52,27 @@ namespace app
         static 
         bool parseProgress(const QString& line, QString& file, int& done);
 
+        static 
+        bool parseTermination(const QString& line, QString& message, bool& success);
 
     private slots:
         void processStdOut();
         void processStdErr();
         void processFinished(int exitCode, QProcess::ExitStatus status);
         void processError(QProcess::ProcessError error);
+        void processState(QProcess::ProcessState state);
 
     private:
-        void updateState(const QString& line);
-
-    private:
+        QString unrar_;
         QProcess process_;
         QByteArray stdout_;
         QByteArray stderr_;
-
     private:
         Archive archive_;
-
     private:
+        bool success_;
+        bool finished_;
+        QString message_;
     };
 
 } // ap
