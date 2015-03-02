@@ -58,7 +58,11 @@ namespace app
         void stopUnpack();
 
         void setEnabled(bool onOff)
-        { enabled_ = onOff; }
+        { 
+            enabled_ = onOff; 
+            if (enabled_)
+                startNextUnpack();
+        }
 
         void setPurgeOnSuccess(bool onOff)
         { cleanup_ = onOff; }

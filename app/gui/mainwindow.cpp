@@ -214,7 +214,8 @@ void MainWindow::loadState()
 
     for (std::size_t i=0; i<widgets_.size(); ++i)
     {
-        const auto text = widgets_[i]->windowTitle();
+        const auto text = widgets_[i]->objectName();
+        Q_ASSERT(!text.isEmpty());
         const auto icon = widgets_[i]->windowIcon();
         const auto info = widgets_[i]->getInformation();
         const auto show = settings_.get("window_visible_tabs", text, info.visible_by_default);
@@ -686,7 +687,8 @@ bool MainWindow::saveState(DlgShutdown* dlg)
         // but only for permanent widgets, i.e. those that have actions.
         for (std::size_t i=0; i<actions_.size(); ++i)
         {
-            const auto& text = widgets_[i]->windowTitle();
+            const auto& text = widgets_[i]->objectName();
+            Q_ASSERT(!text.isEmpty());
             const auto show  = actions_[i]->isChecked();
             settings_.set("window_visible_tabs", text, show);
         }

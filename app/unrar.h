@@ -61,7 +61,7 @@ namespace app
         bool parseProgress(const QString& line, QString& file, int& done);
 
         static 
-        bool parseTermination(const QString& line, QString& message);
+        bool parseTermination(const QString& line);
 
         static
         QStringList findVolumes(const QStringList& files);

@@ -195,12 +195,12 @@ void Notify::repairReady(const app::Archive& arc)
         arc.state == app::Archive::Status::Failed)
     {
         tray_.showMessage(tr("Repair failed"), 
-            tr("%1 %2").arg(arc.desc).arg(arc.message));
+            tr("%1\n%2").arg(arc.desc).arg(arc.message));
     }
     else
     {
         tray_.showMessage(tr("Repair ready"),
-            tr("%1 %2").arg(arc.desc).arg(arc.message));        
+            tr("%1\n%2").arg(arc.desc).arg(arc.message));        
     }
 
 }
@@ -217,12 +217,12 @@ void Notify::unpackReady(const app::Archive& arc)
         arc.state == app::Archive::Status::Failed)
     {
         tray_.showMessage(tr("Unpacking failed"),
-            tr("%1 %2").arg(arc.desc).arg(arc.message));
+            tr("%1\n%2").arg(arc.desc).arg(arc.message));
     }
     else
     {
         tray_.showMessage(tr("Unpacking ready"),
-            tr("%1 %2").arg(arc.desc).arg(arc.message));        
+            tr("%1\n%2").arg(arc.desc).arg(arc.message));        
     }
 }
 

@@ -92,8 +92,9 @@ void Unrar::extract(const Archive& arc, const Settings& settings)
     stdout_.clear();
     stderr_.clear();
     message_.clear();
+    errors_.clear();        
     files_.clear();
-    success_  = false;
+    success_  = true;
     cleanup_  = settings.purgeOnSuccess;
 
     QStringList args;
@@ -148,7 +149,12 @@ QStringList Unrar::findArchives(const QStringList& fileNames) const
 bool Unrar::parseMessage(const QString& line, QString& msg)
 {
     QStringList captures;
-    if (isMatch(line, " : (.+ error .+)", captures, 1))
+    if (isMatch(line, "(All OK)", captures, 1))
+    {
+        msg = captures[0];
+        return true;
+    }
+    else if (isMatch(line, "(.* is not RAR archive)", captures, 1))
     {
         msg = captures[0];
         return true;
@@ -179,14 +185,14 @@ bool Unrar::parseProgress(const QString& line, QString& file, int& done)
     return false;
 }
 
-bool Unrar::parseTermination(const QString& line, QString& message)
+bool Unrar::parseTermination(const QString& line)
 {
     QStringList captures;
     if (isMatch(line, "(All OK)", captures, 1))
     {
-        message = captures[0];
         return true;
     }
+
     return false;
 }
 
@@ -260,10 +266,10 @@ QStringList Unrar::findVolumes(const QStringList& files)
 void Unrar::processStdOut()
 {
     const auto buff = process_.readAllStandardOutput();
-    const auto size = buff.size();
-    //DEBUG("Unrar read %1 bytes", size);
-
+    //const auto size = buff.size();
     stdout_.append(buff);
+    if (stdout_.isEmpty())
+        return;
 
     std::string temp;
     for (int i=0; i<stdout_.size(); ++i)
@@ -288,9 +294,9 @@ void Unrar::processStdOut()
             {
                 onProgress(archive_, str, done);
             }
-            else if (parseTermination(line, str))
+            else if (parseMessage(line, str))
             {
-                message_ = str;                
+                message_ += str;
             }
 
             temp.clear();
@@ -308,8 +314,12 @@ void Unrar::processStdOut()
 void Unrar::processStdErr()
 {
     const auto buff = process_.readAllStandardError();
-    const auto size = buff.size();
+    //const auto size = buff.size();
     stderr_.append(buff);
+    if (stderr_.isEmpty())
+        return;
+
+    DEBUG("stderr");
 
     std::string temp;
     for (int i=0; i<stderr_.size(); ++i)
@@ -321,10 +331,13 @@ void Unrar::processStdErr()
             if (line.isEmpty())
                 continue;
 
+            DEBUG(line);
+
             errors_.append(line);
 
             temp.clear();
         }
+        else temp.push_back(byte);
     }
     const auto leftOvers = (int)temp.size();
     stderr_  = stderr_.right(leftOvers);
@@ -350,11 +363,10 @@ void Unrar::processFinished(int exitCode, QProcess::ExitStatus status)
         return;
     }
 
-    processStdOut();
-    processStdErr();
-
     if (success_)
     {
+        processStdOut();
+
         DEBUG("unrar success, %1", message_);
         archive_.message = message_;
         archive_.state   = Archive::Status::Success;
@@ -371,6 +383,12 @@ void Unrar::processFinished(int exitCode, QProcess::ExitStatus status)
     }
     else
     {
+        const auto buff = process_.readAllStandardError();
+        stderr_.append(buff);
+        std::string temp(stderr_.constData(),
+            stderr_.size());
+        errors_.append(widen(temp));
+
         DEBUG("unrar failed, errors %1", errors_);
         archive_.message = errors_;
         archive_.state   = Archive::Status::Failed;

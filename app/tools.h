@@ -35,6 +35,10 @@
 
 namespace app
 {
+    struct FileInfo;
+    struct FilePackInfo;
+    struct Archive;
+
     // tools is a collection of 3rd party application's that are configured
     // in newsflash and associated with particular file types for quick launch.
     // for example the user can associate "eog" as an image viewer application

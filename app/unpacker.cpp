@@ -309,6 +309,8 @@ void Unpacker::startNextUnpack()
 {
     if (engine_->isRunning())
         return;
+    if (!enabled_)
+        return;
 
     const auto index = list_->findNextPending();
     if (index == UnpackList::NoSuchUnpack)
