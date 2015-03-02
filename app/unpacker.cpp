@@ -275,6 +275,11 @@ Unpacker::Unpacker(std::unique_ptr<Archiver> archiver) : engine_(std::move(archi
 
         startNextUnpack();
     };
+
+    enabled_    = true;
+    cleanup_    = false;
+    overwrite_  = false;
+    keepBroken_ = true;
 }
 
 Unpacker::~Unpacker()
@@ -312,8 +317,10 @@ void Unpacker::startNextUnpack()
         return;
     }
 
-    // todo:
     Archiver::Settings settings;
+    settings.keepBroken        = keepBroken_;
+    settings.purgeOnSuccess    = cleanup_;
+    settings.overWriteExisting = overwrite_;
 
     auto& unpack = list_->getArchive(index);
     unpack.state = Archive::Status::Active;
@@ -326,6 +333,11 @@ void Unpacker::startNextUnpack()
 
     DEBUG("Start unpack for %1", unpack.file);
 
+}
+
+QStringList Unpacker::findUnpackVolumes(const QStringList& fileEntries)
+{
+    return engine_->findArchives(fileEntries);
 }
 
 } // app

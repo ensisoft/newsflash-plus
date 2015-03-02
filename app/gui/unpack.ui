@@ -27,7 +27,7 @@
       <item>
        <layout class="QHBoxLayout" name="horizontalLayout">
         <item>
-         <widget class="QCheckBox" name="checkBox">
+         <widget class="QCheckBox" name="chkWriteLog">
           <property name="text">
            <string>Write log file</string>
           </property>

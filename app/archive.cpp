@@ -36,6 +36,7 @@ QString toString(Archive::Status status)
         case s::Success: return "Success";
         case s::Error:   return "Error";
         case s::Failed:  return "Failed";
+        case s::Stopped: return "Stopped";
     }
     Q_ASSERT(0);
     return {};
@@ -51,6 +52,7 @@ QIcon toIcon(Archive::Status status)
         case s::Success: return QIcon("icons:ico_recovery_success.png");
         case s::Error:   return QIcon("icons:ico_recovery_error.png");
         case s::Failed:  return QIcon("icons:ico_recovery_failed.png");
+        case s::Stopped: return QIcon("icons:ico_stop.png");
     }    
     Q_ASSERT(0);
     return {};

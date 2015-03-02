@@ -48,7 +48,7 @@ namespace app
             Error,
 
             // stopped/canceled by the user.
-            Stop
+            Stopped
         };
 
         // current unpack state of the archive.

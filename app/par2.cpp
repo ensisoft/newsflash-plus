@@ -99,7 +99,7 @@ void Par2::stop()
 
     DEBUG("Killing par2 %1, pid %2", par2_, process_.pid());
 
-    current_.state = Archive::Status::Stop;
+    current_.state = Archive::Status::Stopped;
 
     // this will ask the process to terminate nicely
     // QProcess::kill will just terminate it right away.
@@ -176,7 +176,7 @@ void Par2::processFinished(int exitCode, QProcess::ExitStatus status)
     DEBUG("par2 %1 finished. Exitcode %2, ExitStatus %3", 
         par2_, exitCode, status);
 
-    if (current_.state != Archive::Status::Stop)
+    if (current_.state != Archive::Status::Stopped)
     {
         if (status == QProcess::CrashExit)
         {

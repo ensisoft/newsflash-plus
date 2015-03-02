@@ -22,9 +22,11 @@
 
 #include <newsflash/warnpush.h>
 #  include <QObject>
+#  include <QString>
 #include <newsflash/warnpop.h>
 #include <memory>
 #include <vector>
+#include <set>
 #include "archive.h"
 
 namespace app
@@ -56,6 +58,8 @@ namespace app
     private:
         Repairer& repairer_;
         Unpacker& unpacker_;
+    private:
+        std::set<QString> unpacks_;
     };
 
 } // app

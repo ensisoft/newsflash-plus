@@ -54,5 +54,41 @@ int test_main(int, char* argv[])
 
     }
 
+    {
+        QString message;
+        BOOST_REQUIRE(app::Unrar::parseMessage(
+            "Chugginton.S04E10.DVDRip.x264-KiDDoS.mkv : packed data checksum error in volume chugginton.s04e10.dvdrip.x264-kiddos.r00",
+            message));
+        BOOST_REQUIRE(message == "packed data checksum error in volume chugginton.s04e10.dvdrip.x264-kiddos.r00");
+    }
+
+    {
+        QStringList files;
+        files << "sonido-hawking-1080p.part02.rar";        
+        files << "sonido-hawking-1080p.part03.rar";                
+        files << "sonido-hawking-1080p.part02.rar";        
+        files << "sonido-hawking-1080p.part01.rar";        
+
+        QStringList ret = app::Unrar::findVolumes(files);
+        BOOST_REQUIRE(ret.size() == 1);        
+        BOOST_REQUIRE(ret[0] == "sonido-hawking-1080p.part01.rar");
+
+        files << "terminator2.720p.r00";
+        files << "terminator2.720p.r01";
+        files << "terminator2.720p.r03";
+        files << "terminator2.720p.r02";                        
+        ret = app::Unrar::findVolumes(files);
+        BOOST_REQUIRE(ret.size() == 2);
+        BOOST_REQUIRE(ret[0] == "sonido-hawking-1080p.part01.rar");        
+        BOOST_REQUIRE(ret[1] == "terminator2.720p.r00");
+
+        files << "terminator2.720p.rar";
+        ret = app::Unrar::findVolumes(files);
+        BOOST_REQUIRE(ret.size() == 2);
+        BOOST_REQUIRE(ret[0] == "sonido-hawking-1080p.part01.rar");        
+        BOOST_REQUIRE(ret[1] == "terminator2.720p.rar");        
+    }
+
+
     return 0;
 }

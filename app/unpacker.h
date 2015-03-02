@@ -27,6 +27,7 @@
 #  include <QByteArray>
 #  include <QObject>
 #  include <QProcess>
+#  include <QStringList>
 #include <newsflash/warnpop.h>
 #include <memory>
 #include "archiver.h"
@@ -59,8 +60,22 @@ namespace app
         void setEnabled(bool onOff)
         { enabled_ = onOff; }
 
+        void setPurgeOnSuccess(bool onOff)
+        { cleanup_ = onOff; }
+
+        void setKeepBroken(bool onOff)
+        { keepBroken_ = onOff; }
+
+        void setOverwriteExisting(bool onOff)
+        { overwrite_ = onOff; }
+
+        void setWriteLog(bool onOff)
+        { writeLog_ = onOff; }
+
         bool isEnabled() const 
         { return enabled_; }
+
+        QStringList findUnpackVolumes(const QStringList& fileEntries);
 
     signals:
         void unpackStart(const app::Archive& arc);
@@ -76,7 +91,12 @@ namespace app
         std::unique_ptr<UnpackList> list_;
         std::unique_ptr<UnpackData> data_;
         std::unique_ptr<Archiver> engine_;
+    private:
         bool enabled_;
+        bool cleanup_;
+        bool overwrite_;
+        bool keepBroken_;
+        bool writeLog_;
     };
 
 } // app

@@ -57,6 +57,8 @@ namespace app
 
         virtual bool isRunning() const = 0;
 
+        virtual QStringList findArchives(const QStringList& fileNames) const = 0;
+
     protected:
     private:
     };

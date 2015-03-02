@@ -55,6 +55,10 @@ namespace gui
     private slots:
         void on_actionUnpack_triggered();    
         void on_actionStop_triggered();
+        void on_chkWriteLog_stateChanged(int);
+        void on_chkOverwriteExisting_stateChanged(int);
+        void on_chkPurge_stateChanged(int);
+        void on_chkKeepBroken_stateChanged(int);
         void unpackStart(const app::Archive& arc);
         void unpackReady(const app::Archive& arc);
         void unpackProgress(const QString& target, int done);

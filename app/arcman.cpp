@@ -34,6 +34,7 @@
 #include "repairer.h"
 #include "unpacker.h"
 
+
 namespace app
 {
 
@@ -87,37 +88,43 @@ void ArchiveManager::packCompleted(const app::FilePackInfo& pack)
 
 void ArchiveManager::repairReady(const app::Archive& arc)
 {
-    static const char* attempts[] = {
-        "*.part01.rar",
-        "*.part001.rar",
-        "*.rar"
-    };
-
-    QStringList files;
     QDir dir;
     dir.setPath(arc.path);
-    for (const auto& attempt : attempts)
+    const auto& entries = dir.entryList();
+    const auto& volumes = unpacker_.findUnpackVolumes(entries);
+    for (const auto& vol : volumes)
     {
-        dir.setNameFilters(QStringList(attempt));
-        files = dir.entryList();
-        for (int i=0; i<files.size(); ++i)
-        {
-            QFileInfo file(files[i]);
+        if (unpacks_.find(arc.path + "/" + vol) != std::end(unpacks_))
+            continue;
 
-            Archive unrar;
-            unrar.path  = arc.path;
-            unrar.file  = file.fileName();
-            unrar.desc  = file.fileName();
-            unrar.state = Archive::Status::Queued;
-            unpacker_.addUnpack(unrar);
-        }
+        Archive unrar;
+        unrar.path  = arc.path;
+        unrar.file  = vol;
+        unrar.desc  = vol;
+        unrar.state = Archive::Status::Queued;
+        unpacker_.addUnpack(unrar);
+        unpacks_.insert(arc.path + "/" + vol);
     }
 }
 
 void ArchiveManager::unpackReady(const app::Archive& arc)
 {
-    // todo: handle a case where we extracted a .rar from a .rar
-    // and extract that as well.
+    QDir dir;
+    dir.setPath(arc.path);
+    const auto& entries = dir.entryList();
+    const auto& volumes = unpacker_.findUnpackVolumes(entries);
+    for (const auto& vol : volumes)
+    {
+        if (unpacks_.find(arc.path + "/" + vol) != std::end(unpacks_))
+            continue;
+
+        Archive unrar;
+        unrar.path = arc.path;
+        unrar.file = vol;
+        unrar.desc = vol;
+        unrar.state = Archive::Status::Queued;
+        unpacks_.insert(arc.path + "/" + vol);
+    }
 }
 
 } // app

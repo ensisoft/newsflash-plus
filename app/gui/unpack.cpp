@@ -82,10 +82,16 @@ void Unpack::loadState(app::Settings& settings)
     const auto keepBroken = settings.get("unpack", "keep_broken", true);
     const auto overwrite  = settings.get("unpack", "overwrite_existing_files", false);
     const auto purge      = settings.get("unpack", "purge_on_success", true);
+    const auto writeLog   = settings.get("unpack", "write_log", false);
 
     ui_.chkKeepBroken->setChecked(keepBroken);
     ui_.chkOverwriteExisting->setChecked(keepBroken);
     ui_.chkPurge->setChecked(purge);    
+    ui_.chkWriteLog->setChecked(writeLog);
+
+    model_.setPurgeOnSuccess(purge);
+    model_.setKeepBroken(keepBroken);
+    model_.setOverwriteExisting(overwrite);
 }
 
 void Unpack::saveState(app::Settings& settings)
@@ -96,10 +102,11 @@ void Unpack::saveState(app::Settings& settings)
     const auto keepBroken = ui_.chkKeepBroken->isChecked();
     const auto overwrite  = ui_.chkOverwriteExisting->isChecked();
     const auto purge      = ui_.chkPurge->isChecked();
+    const auto writeLog   = ui_.chkWriteLog->isChecked();
     settings.set("unpack", "keep_broken", keepBroken);
     settings.set("unpack", "overwrite_existing_files", overwrite);
     settings.set("unpack", "purge_on_success", purge);
-
+    settings.set("unpack", "write_log", writeLog);
 }
 
 void Unpack::shutdown()
@@ -137,6 +144,25 @@ void Unpack::on_actionStop_triggered()
     model_.stopUnpack();
 }
 
+void Unpack::on_chkWriteLog_stateChanged(int)
+{
+    model_.setWriteLog(ui_.chkWriteLog->isChecked());
+}
+void Unpack::on_chkOverwriteExisting_stateChanged(int)
+{
+    model_.setOverwriteExisting(ui_.chkOverwriteExisting->isChecked());
+}
+
+void Unpack::on_chkPurge_stateChanged(int)
+{
+    model_.setPurgeOnSuccess(ui_.chkPurge->isChecked());
+}
+
+void Unpack::on_chkKeepBroken_stateChanged(int)
+{
+    model_.setKeepBroken(ui_.chkKeepBroken->isChecked());
+}
+
 void Unpack::unpackStart(const app::Archive& arc)
 {
     ui_.progressBar->setVisible(true);
@@ -146,8 +172,6 @@ void Unpack::unpackStart(const app::Archive& arc)
 
 void Unpack::unpackReady(const app::Archive& arc)
 {
-    DEBUG("unpackReady");
-
     ui_.progressBar->setVisible(false);
     ui_.actionStop->setEnabled(false);
     ui_.lblStatus->setVisible(false);
@@ -155,8 +179,6 @@ void Unpack::unpackReady(const app::Archive& arc)
 
 void Unpack::unpackProgress(const QString& target, int done)
 {
-    DEBUG("unpackProgress %1", done);
-
     ui_.progressBar->setValue(done);    
     ui_.lblStatus->setText(target);
     ui_.unpackData->scrollToBottom();

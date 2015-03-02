@@ -25,7 +25,10 @@
 #  include <QObject>
 #  include <QProcess>
 #  include <QByteArray>
+#  include <QStringList>
+#  include <QString>
 #include <newsflash/warnpop.h>
+#include <set>
 #include "archive.h"
 #include "archiver.h"
 
@@ -46,6 +49,11 @@ namespace app
 
         virtual bool isRunning() const override;
 
+        virtual QStringList findArchives(const QStringList& fileNames) const override;
+
+        static
+        bool parseMessage(const QString& line, QString& msg);
+
         static 
         bool parseVolume(const QString& line, QString& volume);
 
@@ -53,7 +61,10 @@ namespace app
         bool parseProgress(const QString& line, QString& file, int& done);
 
         static 
-        bool parseTermination(const QString& line, QString& message, bool& success);
+        bool parseTermination(const QString& line, QString& message);
+
+        static
+        QStringList findVolumes(const QStringList& files);
 
     private slots:
         void processStdOut();
@@ -63,6 +74,7 @@ namespace app
         void processState(QProcess::ProcessState state);
 
     private:
+        std::set<QString> files_;
         QString unrar_;
         QProcess process_;
         QByteArray stdout_;
@@ -71,8 +83,9 @@ namespace app
         Archive archive_;
     private:
         bool success_;
-        bool finished_;
+        bool cleanup_;
         QString message_;
+        QString errors_;
     };
 
 } // ap

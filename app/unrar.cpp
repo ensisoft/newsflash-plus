@@ -24,6 +24,8 @@
 #  include <QtDebug>
 #include <newsflash/warnpop.h>
 #include <string>
+#include <cstring>
+#include <map>
 #include "unrar.h"
 #include "debug.h"
 #include "format.h"
@@ -90,15 +92,22 @@ void Unrar::extract(const Archive& arc, const Settings& settings)
     stdout_.clear();
     stderr_.clear();
     message_.clear();
+    files_.clear();
     success_  = false;
-    finished_ = false;
+    cleanup_  = settings.purgeOnSuccess;
 
     QStringList args;
     args << "e"; // for extract
-    args << "-o+";
+
+    if (settings.keepBroken)
+        args << "-kb"; // keep broken
+    if (settings.overWriteExisting)
+        args << "-o+"; // enable overwrite.
+    else args << "-or"; // rename automatically
+
     args << arc.file;
     process_.setWorkingDirectory(arc.path);
-    process_.setProcessChannelMode(QProcess::MergedChannels);
+    //process_.setProcessChannelMode(QProcess::MergedChannels);
     process_.start(unrar_, args);
     archive_ = arc;
     DEBUG("Started unrar for %1", arc.file);
@@ -112,7 +121,7 @@ void Unrar::stop()
 
     DEBUG("Killing unrar %1, pid %2", unrar_, process_.pid());
 
-    archive_.state = Archive::Status::Stop;
+    archive_.state = Archive::Status::Stopped;
 
     // terminate will ask the process nicely to exit
     // QProcess::kill will just kill it forcefully.
@@ -129,6 +138,22 @@ bool Unrar::isRunning() const
         return false;
 
     return true;
+}
+
+QStringList Unrar::findArchives(const QStringList& fileNames) const 
+{
+    return Unrar::findVolumes(fileNames);
+}
+
+bool Unrar::parseMessage(const QString& line, QString& msg)
+{
+    QStringList captures;
+    if (isMatch(line, " : (.+ error .+)", captures, 1))
+    {
+        msg = captures[0];
+        return true;
+    }
+    return false;
 }
 
 bool Unrar::parseVolume(const QString& line, QString& volume)
@@ -154,28 +179,86 @@ bool Unrar::parseProgress(const QString& line, QString& file, int& done)
     return false;
 }
 
-bool Unrar::parseTermination(const QString& line, QString& message, bool& success)
+bool Unrar::parseTermination(const QString& line, QString& message)
 {
     QStringList captures;
     if (isMatch(line, "(All OK)", captures, 1))
     {
         message = captures[0];
-        success = true;
-        return true;
-    }
-    else if (isMatch(line, "(ERROR: .+)", captures, 1))
-    {
-        message = captures[0];
-        success = false;
         return true;
     }
     return false;
 }
 
+QStringList Unrar::findVolumes(const QStringList& files)
+{
+    static const char* patterns[] = {
+        ".part01.rar",
+        ".part001.rar",
+        ".r00",
+    };
+
+    std::map<QString, QString> s;
+
+    for (const auto& pattern : patterns)
+    {
+        for (auto it = std::begin(files); it != std::end(files); )
+        {
+            it = std::find_if(it, std::end(files),
+                [&](const QString& f) {
+                    return f.endsWith(pattern);
+                });
+            if (it == std::end(files))
+                continue;
+
+            auto volume = *it;
+            volume.chop(std::strlen(pattern));
+
+            if (s.find(volume) == std::end(s))
+            {
+                s.insert({volume, *it});
+            }
+            ++it;
+        }
+    }
+
+    for (auto it = std::begin(files); it != std::end(files);)
+    {
+        it = std::find_if(it, std::end(files), 
+            [](QString f) {
+                if (!f.endsWith(".rar"))
+                    return false;
+
+                f.chop(4);
+
+                const QRegExp reg("\\.part\\d+$");
+                if (reg.indexIn(f) != -1)
+                    return false;
+
+                return true;
+            });
+        if (it == std::end(files))
+            continue;
+
+        auto volume = *it;
+        volume.chop(4);
+
+        // potentially overwrite a previous .part01 or .r00 selection.
+        s[volume] = *it;
+
+        ++it;
+    }
+
+    // flatten
+    QStringList ret;
+    for (const auto& p : s)
+        ret << p.second;
+
+    return ret;
+}
+
 void Unrar::processStdOut()
 {
-    if (finished_) return;
-
     const auto buff = process_.readAllStandardOutput();
     const auto size = buff.size();
     //DEBUG("Unrar read %1 bytes", size);
@@ -192,21 +275,22 @@ void Unrar::processStdOut()
             if (line.isEmpty())
                 continue;
 
+            DEBUG(line);
+
             QString str;
             int done;
             if (parseVolume(line, str))
             {
                 onExtract(archive_, str);
+                files_.insert(str);                
             }
             else if (parseProgress(line, str, done))
             {
                 onProgress(archive_, str, done);
             }
-            else if (parseTermination(line, message_, success_))
+            else if (parseTermination(line, str))
             {
-                DEBUG("unrar terminated. %1", message_);
-                finished_ = true;
-                return;
+                message_ = str;                
             }
 
             temp.clear();
@@ -223,32 +307,73 @@ void Unrar::processStdOut()
 
 void Unrar::processStdErr()
 {
-    Q_ASSERT(!"We should be using merged IO channels for stdout and stderr."
-        "See the code in startNextRecovery()");
-}
+    const auto buff = process_.readAllStandardError();
+    const auto size = buff.size();
+    stderr_.append(buff);
 
+    std::string temp;
+    for (int i=0; i<stderr_.size(); ++i)
+    {
+        const auto byte = stderr_.at(i);
+        if (byte == '\n')
+        {
+            const auto line = widen(temp);
+            if (line.isEmpty())
+                continue;
+
+            errors_.append(line);
+
+            temp.clear();
+        }
+    }
+    const auto leftOvers = (int)temp.size();
+    stderr_  = stderr_.right(leftOvers);
+    success_ = false;
+}
 
 void Unrar::processFinished(int exitCode, QProcess::ExitStatus status)
 {
     DEBUG("unrar %1 finished. ExitCode %2, ExitStatus %3", 
         unrar_, exitCode, status);
 
-    if (archive_.state != Archive::Status::Stop)
+    if (archive_.state == Archive::Status::Stopped)
     {
-        if (status == QProcess::CrashExit)
-        {
-            archive_.message = toString(status);
-            archive_.state   = Archive::Status::Error;
-        }
-        else
-        {
-            processStdOut();
+        onReady(archive_);
+        return;
+    }
 
-            DEBUG("unrar result %1 message %2", success_, message_);
-            archive_.message = message_;
-            archive_.state   = success_ ? Archive::Status::Success :
-                Archive::Status::Failed;
+    if (status == QProcess::CrashExit)
+    {
+        archive_.message = toString(status);
+        archive_.state   = Archive::Status::Error;
+        onReady(archive_);
+        return;
+    }
+
+    processStdOut();
+    processStdErr();
+
+    if (success_)
+    {
+        DEBUG("unrar success, %1", message_);
+        archive_.message = message_;
+        archive_.state   = Archive::Status::Success;
+        if (cleanup_)
+        {
+            DEBUG("Cleaning up rars %1", archive_.path);
+            for (const auto& f : files_)
+            {
+                QFile file(archive_.path + "/" + f);
+                file.remove();
+                DEBUG("Removed %1", f);
+            }
         }
+    }
+    else
+    {
+        DEBUG("unrar failed, errors %1", errors_);
+        archive_.message = errors_;
+        archive_.state   = Archive::Status::Failed;
     }
     onReady(archive_);
 }
