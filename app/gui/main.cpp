@@ -55,7 +55,7 @@
 #include "files.h"
 #include "commands.h"
 #include "unpack.h"
-//#include "notify.h"
+#include "notify.h"
 #include "../debug.h"
 #include "../format.h"
 #include "../distdir.h"
@@ -228,33 +228,32 @@ int run(int argc, char* argv[])
     gui::Appearance style;
     win.attach(&style);
 
+    gui::Notify notify;
+    if (QSystemTrayIcon::isSystemTrayAvailable())
+    {
+        auto& eventLog = app::EventLog::get();
 
-    // gui::Notify notify;
-    // if (QSystemTrayIcon::isSystemTrayAvailable())
-    // {
-    //     auto& eventLog = app::EventLog::get();
+        win.attach(&notify);
+        QObject::connect(&engine, SIGNAL(packCompleted(const app::FilePackInfo&)),
+            &notify, SLOT(packCompleted(const app::FilePackInfo&)));
+        QObject::connect(&engine, SIGNAL(fileCompleted(const app::FileInfo&)),
+            &notify, SLOT(fileCompleted(const app::FileInfo&)));
+        QObject::connect(&eventLog, SIGNAL(newEvent(const app::Event&)),
+            &notify, SLOT(newEvent(const app::Event&)));
+        QObject::connect(&repairer, SIGNAL(repairReady(const app::Archive&)),
+            &notify, SLOT(repairReady(const app::Archive&)));
+        QObject::connect(&unpacker, SIGNAL(unpackReady(const app::Archive&)),
+            &notify, SLOT(unpackReady(const app::Archive&)));
 
-    //     win.attach(&notify);
-    //     QObject::connect(&engine, SIGNAL(packCompleted(const app::FilePackInfo&)),
-    //         &notify, SLOT(packCompleted(const app::FilePackInfo&)));
-    //     QObject::connect(&engine, SIGNAL(fileCompleted(const app::FileInfo&)),
-    //         &notify, SLOT(fileCompleted(const app::FileInfo&)));
-    //     QObject::connect(&eventLog, SIGNAL(newEvent(const app::Event&)),
-    //         &notify, SLOT(newEvent(const app::Event&)));
-    //     QObject::connect(&repairer, SIGNAL(repairReady(const app::Archive&)),
-    //         &notify, SLOT(repairReady(const app::Archive&)));
-    //     QObject::connect(&unpacker, SIGNAL(unpackReady(const app::Archive&)),
-    //         &notify, SLOT(unpackReady(const app::Archive&)));
-
-    //     QObject::connect(&notify, SIGNAL(exit()), &win, SLOT(close()));
-    //     QObject::connect(&notify, SIGNAL(minimize()), &win, SLOT(hide()));
-    //     QObject::connect(&notify, SIGNAL(restore()), &win, SLOT(show()));
-    //     DEBUG("Connected notify module.");
-    // }
-    // else
-    // {
-    //     WARN("System tray is not available. Notifications are disabled.");
-    // }
+        QObject::connect(&notify, SIGNAL(exit()), &win, SLOT(close()));
+        QObject::connect(&notify, SIGNAL(minimize()), &win, SLOT(hide()));
+        QObject::connect(&notify, SIGNAL(restore()), &win, SLOT(show()));
+        DEBUG("Connected notify module.");
+    }
+    else
+    {
+        WARN("System tray is not available. Notifications are disabled.");
+    }
 
     win.loadState();
     win.prepareFileMenu();
