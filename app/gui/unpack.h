@@ -53,8 +53,18 @@ namespace gui
         void setUnpackEnabled(bool onOff);
         
     private slots:
+        void on_unpackList_customContextMenuRequested(QPoint);
+        void unpackList_selectionChanged();
         void on_actionUnpack_triggered();    
         void on_actionStop_triggered();
+        void on_actionOpenFolder_triggered();
+        void on_actionTop_triggered();
+        void on_actionMoveUp_triggered();
+        void on_actionMoveDown_triggered();
+        void on_actionBottom_triggered();
+        void on_actionOpenLog_triggered();
+        void on_actionClear_triggered();
+        void on_actionDelete_triggered();
         void on_chkWriteLog_stateChanged(int);
         void on_chkOverwriteExisting_stateChanged(int);
         void on_chkPurge_stateChanged(int);
@@ -63,6 +73,12 @@ namespace gui
         void unpackReady(const app::Archive& arc);
         void unpackProgress(const QString& target, int done);
 
+    private:
+        enum class MoveDirection {
+            Top, Up, Down, Bottom
+        };
+
+        void moveTasks(MoveDirection dir);
     private:
         Ui::Unpack ui_;
 

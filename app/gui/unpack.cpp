@@ -32,6 +32,7 @@
 #include "../archive.h"
 #include "../unpacker.h"
 #include "../utility.h"
+#include "../platform.h"
 
 namespace gui 
 {
@@ -44,6 +45,8 @@ Unpack::Unpack(app::Unpacker& unpacker) : model_(unpacker)
     ui_.progressBar->setVisible(false);
     ui_.progressBar->setMinimum(0);
     ui_.progressBar->setMaximum(100);
+    ui_.actionClear->setEnabled(false);
+    ui_.actionStop->setEnabled(false);
     ui_.lblStatus->clear();
 
     QObject::connect(&model_, SIGNAL(unpackStart(const app::Archive&)),
@@ -52,6 +55,12 @@ Unpack::Unpack(app::Unpacker& unpacker) : model_(unpacker)
         this, SLOT(unpackReady(const app::Archive&)));
     QObject::connect(&model_, SIGNAL(unpackProgress(const QString&, int)),
         this, SLOT(unpackProgress(const QString&, int)));
+
+    QObject::connect(ui_.unpackList->selectionModel(),
+        SIGNAL(selectionChanged(const QItemSelection&, const QItemSelection&)),
+        this, SLOT(unpackList_selectionChanged()));
+
+    unpackList_selectionChanged();
 
     DEBUG("Unpack UI created");
 }
@@ -65,6 +74,16 @@ void Unpack::addActions(QToolBar& bar)
 {
     bar.addAction(ui_.actionUnpack);
     bar.addSeparator();    
+    bar.addAction(ui_.actionOpenFolder);
+    bar.addSeparator();
+    bar.addAction(ui_.actionTop);
+    bar.addAction(ui_.actionMoveUp);
+    bar.addAction(ui_.actionMoveDown);
+    bar.addAction(ui_.actionBottom);
+    bar.addSeparator();
+    bar.addAction(ui_.actionDelete);
+    bar.addAction(ui_.actionClear);
+    bar.addSeparator();
     bar.addAction(ui_.actionStop);
 }
 
@@ -119,6 +138,69 @@ void Unpack::setUnpackEnabled(bool onOff)
     model_.setEnabled(onOff);
 }
 
+void Unpack::on_unpackList_customContextMenuRequested(QPoint)
+{
+    QMenu menu(this);
+    menu.addAction(ui_.actionUnpack);
+    menu.addSeparator();
+    menu.addAction(ui_.actionOpenFolder);
+    menu.addSeparator();
+    menu.addAction(ui_.actionTop);
+    menu.addAction(ui_.actionMoveUp);
+    menu.addAction(ui_.actionMoveDown);
+    menu.addAction(ui_.actionBottom);
+    menu.addSeparator();
+    menu.addAction(ui_.actionDelete);
+    menu.addSeparator();
+    menu.addAction(ui_.actionStop);
+    menu.addSeparator();
+    menu.addAction(ui_.actionOpenLog);
+    //menu.addAction(ui_.actionDetails);
+    menu.exec(QCursor::pos());
+}
+
+void Unpack::unpackList_selectionChanged()
+{
+    auto indices = ui_.unpackList->selectionModel()->selectedRows();
+
+    ui_.actionOpenFolder->setEnabled(false);
+    ui_.actionOpenLog->setEnabled(false);    
+    ui_.actionTop->setEnabled(false);
+    ui_.actionMoveUp->setEnabled(false);
+    ui_.actionMoveDown->setEnabled(false);
+    ui_.actionBottom->setEnabled(false);
+    ui_.actionDelete->setEnabled(false);
+    ui_.actionStop->setEnabled(false);
+    if (indices.isEmpty())
+        return;
+
+    qSort(indices);
+    const auto first = indices.first();
+    const auto last  = indices.last();
+    const auto firstRow = first.row();
+    const auto lastRow  = last.row();
+    const auto numRows  = (int)model_.numUnpacks();
+
+    ui_.actionTop->setEnabled(firstRow > 0);
+    ui_.actionMoveUp->setEnabled(firstRow > 0);
+    ui_.actionMoveDown->setEnabled(lastRow < numRows - 1);
+    ui_.actionBottom->setEnabled(lastRow < numRows - 1);
+    ui_.actionDelete->setEnabled(true);
+    ui_.actionOpenLog->setEnabled(true);
+    ui_.actionOpenFolder->setEnabled(true);
+
+    ui_.actionStop->setEnabled(true);
+    for (const auto i : indices)
+    {
+        const auto& item = model_.getUnpack(i);
+        if (item.state != app::Archive::Status::Active)
+        {
+            ui_.actionStop->setEnabled(false);
+            break;
+        }
+    }
+}
+
 void Unpack::on_actionUnpack_triggered()
 {
     const auto& file = QFileDialog::getOpenFileName(this,
@@ -142,6 +224,61 @@ void Unpack::on_actionUnpack_triggered()
 void Unpack::on_actionStop_triggered()
 {
     model_.stopUnpack();
+}
+
+void Unpack::on_actionOpenFolder_triggered()
+{
+    const auto& indices = ui_.unpackList->selectionModel()->selectedRows();
+    for (const auto& i : indices)
+    {
+        const auto& item = model_.getUnpack(i);
+        app::openFile(item.path);
+    }
+}
+
+void Unpack::on_actionTop_triggered()
+{
+    moveTasks(MoveDirection::Top);
+}
+
+void Unpack::on_actionMoveUp_triggered()
+{
+    moveTasks(MoveDirection::Up);
+}
+
+void Unpack::on_actionMoveDown_triggered()
+{
+    moveTasks(MoveDirection::Down);
+}
+
+void Unpack::on_actionBottom_triggered()
+{
+    moveTasks(MoveDirection::Bottom);
+}
+
+void Unpack::on_actionClear_triggered()
+{
+    model_.killComplete();
+
+    unpackList_selectionChanged();
+
+    ui_.actionClear->setEnabled(false);
+}
+
+void Unpack::on_actionDelete_triggered()
+{
+    auto indices = ui_.unpackList->selectionModel()->selectedRows();
+
+    model_.kill(indices);
+
+    unpackList_selectionChanged();
+}
+
+void Unpack::on_actionOpenLog_triggered()
+{
+    auto indices =  ui_.unpackList->selectionModel()->selectedRows();
+
+    model_.openLog(indices);
 }
 
 void Unpack::on_chkWriteLog_stateChanged(int)
@@ -174,6 +311,7 @@ void Unpack::unpackReady(const app::Archive& arc)
 {
     ui_.progressBar->setVisible(false);
     ui_.actionStop->setEnabled(false);
+    ui_.actionClear->setEnabled(true);
     ui_.lblStatus->setVisible(false);
 }
 
@@ -182,6 +320,38 @@ void Unpack::unpackProgress(const QString& target, int done)
     ui_.progressBar->setValue(done);    
     ui_.lblStatus->setText(target);
     ui_.unpackData->scrollToBottom();
+}
+
+void Unpack::moveTasks(MoveDirection direction)
+{
+    auto* model = ui_.unpackList->selectionModel();
+
+    auto indices = model->selectedRows();
+
+    switch (direction)
+    {
+        case MoveDirection::Up:
+            model_.moveUp(indices);
+            break;
+        case MoveDirection::Down:
+            model_.moveDown(indices);
+            break;
+        case MoveDirection::Top:
+            model_.moveToTop(indices);
+            break;
+        case MoveDirection::Bottom:
+            model_.moveToBottom(indices);
+            break;
+    }
+
+    QItemSelection selection;
+    for (int i=0; i<indices.size(); ++i)
+        selection.select(indices[i], indices[i]);
+
+    model->setCurrentIndex(selection.indexes().first(),
+        QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+    model->select(selection,
+        QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
 }
 
 } // gui

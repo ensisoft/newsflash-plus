@@ -38,6 +38,7 @@ namespace app
             bool keepBroken;
             bool overWriteExisting;
             bool purgeOnSuccess;
+            bool writeLog;
         };
 
 

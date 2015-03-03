@@ -107,7 +107,7 @@
          <string/>
         </property>
         <property name="selectionMode">
-         <enum>QAbstractItemView::SingleSelection</enum>
+         <enum>QAbstractItemView::NoSelection</enum>
         </property>
         <property name="selectionBehavior">
          <enum>QAbstractItemView::SelectRows</enum>
@@ -171,7 +171,7 @@
     </widget>
    </item>
   </layout>
-  <action name="actionAdd">
+  <action name="actionRepair">
    <property name="icon">
     <iconset resource="resource.qrc">
      <normaloff>:/resource/16x16_ico_png/ico_recovery.png</normaloff>:/resource/16x16_ico_png/ico_recovery.png</iconset>
@@ -183,7 +183,7 @@
     <string>Repair an archive</string>
    </property>
   </action>
-  <action name="actionDel">
+  <action name="actionDelete">
    <property name="icon">
     <iconset resource="resource.qrc">
      <normaloff>:/resource/16x16_ico_png/ico_recovery_del.png</normaloff>:/resource/16x16_ico_png/ico_recovery_del.png</iconset>

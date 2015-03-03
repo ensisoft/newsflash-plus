@@ -224,7 +224,7 @@ public:
 
         for (std::size_t i=0; i<list_.size(); ++i)
         {
-            if (killIndex < killList.size())
+            if (killIndex < (std::size_t)killList.size())
             {
                 if (killList[killIndex].row() == (int)i)
                 {
@@ -245,7 +245,8 @@ public:
         auto it = std::remove_if(std::begin(list_), std::end(list_),
             [](const Archive& arc) {
                 return (arc.state == Archive::Status::Success) ||
-                       (arc.state == Archive::Status::Error);
+                       (arc.state == Archive::Status::Error) ||
+                       (arc.state == Archive::Status::Failed);
             });
         list_.erase(it, std::end(list_));
         
@@ -552,7 +553,8 @@ void Repairer::killComplete()
     {
         const auto& arc = list_->getRecovery(i);
         if (arc.state == Archive::Status::Error || 
-            arc.state == Archive::Status::Success)
+            arc.state == Archive::Status::Success ||
+            arc.state == Archive::Status::Failed)
         {
             auto it = std::find_if(std::begin(history_), std::end(history_),
                 [=](const RecoveryFiles& files) {
@@ -564,6 +566,9 @@ void Repairer::killComplete()
     }
 
     list_->killComplete();
+
+    if (!engine_->isRunning())
+        data_->clear();
 }
 
 void Repairer::openLog(QModelIndexList& list)
@@ -571,7 +576,7 @@ void Repairer::openLog(QModelIndexList& list)
     for (int i=0; i<list.size(); ++i)
     {
         const auto row  = list[i].row();
-        const auto& arc = list_->getRecovery(i);
+        const auto& arc = list_->getRecovery(row);
         if (arc.state == Archive::Status::Queued)
             continue;
         QFileInfo info(arc.path + "/repair.log");

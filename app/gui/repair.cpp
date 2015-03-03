@@ -49,6 +49,7 @@ Repair::Repair(app::Repairer& repairer) : model_(repairer), numRepairs_(0)
     ui_.progressList->setMinimum(0);
     ui_.progressList->setMaximum(100);    
     ui_.actionStop->setEnabled(false);
+    ui_.actionClear->setEnabled(false);
     ui_.lblStatus->clear();    
 
     QObject::connect(&model_, SIGNAL(repairStart(const app::Archive&)),
@@ -77,7 +78,7 @@ Repair::~Repair()
 
 void Repair::addActions(QToolBar& bar)
 {
-    bar.addAction(ui_.actionAdd);
+    bar.addAction(ui_.actionRepair);
     bar.addSeparator();    
     bar.addAction(ui_.actionOpenFolder);
     bar.addSeparator();
@@ -86,7 +87,7 @@ void Repair::addActions(QToolBar& bar)
     bar.addAction(ui_.actionMoveDown);
     bar.addAction(ui_.actionBottom);
     bar.addSeparator();                
-    bar.addAction(ui_.actionDel);    
+    bar.addAction(ui_.actionDelete);    
     bar.addAction(ui_.actionClear);    
     bar.addSeparator();
     bar.addAction(ui_.actionStop);
@@ -154,7 +155,7 @@ void Repair::setRepairEnabled(bool onOff)
 void Repair::on_repairList_customContextMenuRequested(QPoint)
 {
     QMenu menu(this);
-    menu.addAction(ui_.actionAdd);
+    menu.addAction(ui_.actionRepair);
     menu.addSeparator();
     menu.addAction(ui_.actionOpenFolder);
     menu.addSeparator();
@@ -163,7 +164,7 @@ void Repair::on_repairList_customContextMenuRequested(QPoint)
     menu.addAction(ui_.actionMoveDown);
     menu.addAction(ui_.actionBottom);
     menu.addSeparator();    
-    menu.addAction(ui_.actionDel);    
+    menu.addAction(ui_.actionDelete);    
     menu.addSeparator();
     menu.addAction(ui_.actionStop);
     menu.addSeparator();
@@ -172,7 +173,7 @@ void Repair::on_repairList_customContextMenuRequested(QPoint)
     menu.exec(QCursor::pos());
 }
 
-void Repair::on_actionAdd_triggered()
+void Repair::on_actionRepair_triggered()
 {
     const auto& file = QFileDialog::getOpenFileName(this,
         tr("Select Recovery File"), QString(), "(Recovery Files) *.par2");
@@ -192,7 +193,7 @@ void Repair::on_actionAdd_triggered()
     model_.addRecovery(arc);
 }
 
-void Repair::on_actionDel_triggered()
+void Repair::on_actionDelete_triggered()
 {
     auto indices = ui_.repairList->selectionModel()->selectedRows();
 
@@ -226,6 +227,8 @@ void Repair::on_actionClear_triggered()
     model_.killComplete();
 
     repairList_selectionChanged();
+
+    ui_.actionClear->setEnabled(false);
 }
 
 void Repair::on_actionOpenLog_triggered()
@@ -286,8 +289,7 @@ void Repair::repairList_selectionChanged()
     ui_.actionMoveUp->setEnabled(false);
     ui_.actionMoveDown->setEnabled(false);
     ui_.actionBottom->setEnabled(false);
-    ui_.actionDel->setEnabled(false);
-    ui_.actionClear->setEnabled(false);
+    ui_.actionDelete->setEnabled(false);
     ui_.actionOpenLog->setEnabled(false);
     ui_.actionDetails->setEnabled(false);
     if (indices.isEmpty())
@@ -304,7 +306,7 @@ void Repair::repairList_selectionChanged()
     ui_.actionMoveUp->setEnabled(firstRow > 0);
     ui_.actionMoveDown->setEnabled(lastRow < numRows - 1);
     ui_.actionBottom->setEnabled(lastRow < numRows - 1);
-    ui_.actionDel->setEnabled(true);
+    ui_.actionDelete->setEnabled(true);
     ui_.actionOpenLog->setEnabled(true);
     ui_.actionOpenFolder->setEnabled(true);
     ui_.actionDetails->setEnabled(true);

@@ -140,8 +140,11 @@ void Par2::processStdOut()
                 onUpdateFile(current_, std::move(file));
                 if (byte == '\n')
                 {
-                    logFile_.write(temp.data());
-                    logFile_.write("\n");
+                    if (logFile_.isOpen())
+                    {
+                        logFile_.write(temp.data());
+                        logFile_.write("\n");
+                    }
                 }
             }
             if (exec == ParState::ExecState::Scan)
@@ -182,7 +185,12 @@ void Par2::processFinished(int exitCode, QProcess::ExitStatus status)
         {
             current_.message = toString(status);
             current_.state   = Archive::Status::Error;
-            logFile_.write("*** Crash Exit ***");
+            if(logFile_.isOpen())
+            {
+                logFile_.write("*** Crash Exit ***");
+                logFile_.flush();
+                logFile_.close();
+            }
         }
         else
         {
@@ -198,13 +206,19 @@ void Par2::processFinished(int exitCode, QProcess::ExitStatus status)
             current_.state   = success ? Archive::Status::Success : 
                 Archive::Status::Failed;
 
+            if (logFile_.isOpen())
+            {
                 const auto msg = toLatin(message);
                 logFile_.write(msg.data());
                 logFile_.write("\n");
+            }
         }
     }
-    logFile_.flush();
-    logFile_.close();
+    if (logFile_.isOpen())
+    {
+        logFile_.flush();
+        logFile_.close();
+    }
     onReady(current_);
 }
 
@@ -216,10 +230,13 @@ void Par2::processError(QProcess::ProcessError error)
     current_.message = toString(error);
     current_.state   = Archive::Status::Error;
 
-    logFile_.write(stdout_);
-    logFile_.write("*** Process Error ***");
-    logFile_.flush();
-    logFile_.close();
+    if  (logFile_.isOpen())
+    {
+        logFile_.write(stdout_);
+        logFile_.write("*** Process Error ***");
+        logFile_.flush();
+        logFile_.close();
+    }
 
     onReady(current_);
 }

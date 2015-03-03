@@ -18,6 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+#define LOGTAG "unrar"
+
 #include <newsflash/config.h>
 #include <newsflash/warnpush.h>
 #  include <QRegExp>
@@ -29,6 +31,7 @@
 #include "unrar.h"
 #include "debug.h"
 #include "format.h"
+#include "eventlog.h"
 
 namespace {
 
@@ -97,6 +100,19 @@ void Unrar::extract(const Archive& arc, const Settings& settings)
     success_  = true;
     cleanup_  = settings.purgeOnSuccess;
 
+    if (settings.writeLog)
+    {
+        const auto path = arc.path;
+        const auto file = path + "/extract.log";
+        logFile_.close();
+        logFile_.setFileName(file);
+        logFile_.open(QIODevice::Append | QIODevice::WriteOnly);
+        if (!logFile_.isOpen())
+        {
+            WARN("Unable to write unrar log file %1 %2", file, logFile_.error());
+        }
+    }
+
     QStringList args;
     args << "e"; // for extract
 
@@ -130,6 +146,14 @@ void Unrar::stop()
     // however this means that process's return state is normal exit. 
     // whereas unrar just dies.
     process_.kill();
+
+    if (logFile_.isOpen())
+    {
+        logFile_.write(stdout_);
+        logFile_.write(stderr_);
+        logFile_.write("*** Terminated by user. ***");
+        logFile_.close();
+    }
 }
 
 bool Unrar::isRunning() const 
@@ -299,6 +323,12 @@ void Unrar::processStdOut()
                 message_ += str;
             }
 
+            if (logFile_.isOpen())
+            {
+                logFile_.write(temp.data());
+                logFile_.write("\n");
+            }
+
             temp.clear();
         }
         else if (byte == '\b')
@@ -319,8 +349,6 @@ void Unrar::processStdErr()
     if (stderr_.isEmpty())
         return;
 
-    DEBUG("stderr");
-
     std::string temp;
     for (int i=0; i<stderr_.size(); ++i)
     {
@@ -332,6 +360,11 @@ void Unrar::processStdErr()
                 continue;
 
             DEBUG(line);
+            if (logFile_.isOpen())
+            {
+                logFile_.write(temp.data());
+                logFile_.write("\n");
+            }
 
             errors_.append(line);
 
@@ -349,50 +382,72 @@ void Unrar::processFinished(int exitCode, QProcess::ExitStatus status)
     DEBUG("unrar %1 finished. ExitCode %2, ExitStatus %3", 
         unrar_, exitCode, status);
 
-    if (archive_.state == Archive::Status::Stopped)
+    if (archive_.state != Archive::Status::Stopped)
     {
-        onReady(archive_);
-        return;
-    }
-
-    if (status == QProcess::CrashExit)
-    {
-        archive_.message = toString(status);
-        archive_.state   = Archive::Status::Error;
-        onReady(archive_);
-        return;
-    }
-
-    if (success_)
-    {
-        processStdOut();
-
-        DEBUG("unrar success, %1", message_);
-        archive_.message = message_;
-        archive_.state   = Archive::Status::Success;
-        if (cleanup_)
+        if (status == QProcess::CrashExit)
         {
-            DEBUG("Cleaning up rars %1", archive_.path);
-            for (const auto& f : files_)
+            if (logFile_.isOpen())
             {
-                QFile file(archive_.path + "/" + f);
-                file.remove();
-                DEBUG("Removed %1", f);
+                logFile_.write("*** Crash Exit ***");
+                logFile_.close();
+            }
+            archive_.message = toString(status);
+            archive_.state   = Archive::Status::Error;
+
+        }
+        else if (success_)
+        {
+            const auto buff = process_.readAllStandardOutput();
+            stdout_.append(buff);
+            std::string temp(stdout_.constData(),
+                stdout_.size());
+            message_.append(widen(temp));
+            if (logFile_.isOpen())
+            {
+                logFile_.write(temp.data());
+                logFile_.write("\n");
+            }
+
+            DEBUG("unrar success, %1", message_);
+
+            archive_.message = message_;
+            archive_.state   = Archive::Status::Success;
+            if (cleanup_)
+            {
+                DEBUG("Cleaning up rars %1", archive_.path);
+
+                for (const auto& f : files_)
+                {
+                    QFile file(archive_.path + "/" + f);
+                    file.remove();
+                    DEBUG("Removed %1", f);
+                }
             }
         }
-    }
-    else
-    {
-        const auto buff = process_.readAllStandardError();
-        stderr_.append(buff);
-        std::string temp(stderr_.constData(),
-            stderr_.size());
-        errors_.append(widen(temp));
+        else
+        {
+            const auto buff = process_.readAllStandardError();
+            stderr_.append(buff);
+            std::string temp(stderr_.constData(),
+                stderr_.size());
+            errors_.append(widen(temp));
+            if (logFile_.isOpen())
+            {
+                logFile_.write(temp.data());
+                logFile_.write("\n");
+            }
 
-        DEBUG("unrar failed, errors %1", errors_);
-        archive_.message = errors_;
-        archive_.state   = Archive::Status::Failed;
+            DEBUG("unrar failed, errors %1", errors_);
+            archive_.message = errors_;
+            archive_.state   = Archive::Status::Failed;
+        }
     }
+    if (logFile_.isOpen())
+    {
+        logFile_.flush();
+        logFile_.close();
+    }
+
     onReady(archive_);
 }
 
@@ -402,6 +457,17 @@ void Unrar::processError(QProcess::ProcessError error)
 
     archive_.message = toString(error);
     archive_.state   = Archive::Status::Error;
+
+    if (logFile_.isOpen())
+    {
+        logFile_.write(stdout_);
+        logFile_.write("\n");
+        logFile_.write(stderr_);
+        logFile_.write("\n");
+        logFile_.write("*** Process Error ***");
+        logFile_.flush();
+        logFile_.close();
+    }
 
     onReady(archive_);
 }

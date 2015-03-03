@@ -28,11 +28,14 @@
 #  include <QRegExp>
 #include <newsflash/warnpop.h>
 #include <limits>
+#include <algorithm>
 #include "unpacker.h"
 #include "debug.h"
 #include "eventlog.h"
 #include "archive.h"
 #include "archiver.h"
+#include "utility.h"
+#include "platform.h"
 
 namespace app
 {
@@ -51,7 +54,7 @@ public:
         switch ((Columns)section)
         {
             case Columns::Status: return "Status";
-            case Columns::Desc:   return "Desc";
+            case Columns::Name:   return "Name";
             case Columns::Error:  return "Message";
             case Columns::Path:   return "Location";
             case Columns::LAST:   Q_ASSERT(0); 
@@ -72,7 +75,7 @@ public:
             {
                 case Columns::Status: return toString(arc.state);
                 case Columns::Error:  return arc.message;
-                case Columns::Desc:   return arc.desc;
+                case Columns::Name:   return arc.file;
                 case Columns::Path:   return arc.path;
                 case Columns::LAST:   Q_ASSERT(0);
             }
@@ -143,9 +146,75 @@ public:
         return list_[index];
     }
 
+    void moveItems(QModelIndexList& list, int direction, int distance)
+    {
+        auto minIndex = std::numeric_limits<int>::max();
+        auto maxIndex = std::numeric_limits<int>::min();
+
+        for (int i=0; i<list.size(); ++i)
+        {
+            const auto rowBase = list[i].row();
+            for (int i=0; i<distance; ++i)
+            {
+                const auto row = rowBase + i * direction;
+
+                BOUNDSCHECK(list_, row);
+                BOUNDSCHECK(list_, row + direction);
+
+                std::swap(list_[row], list_[row + direction]);
+                minIndex = std::min(minIndex, row + direction);
+                maxIndex = std::max(maxIndex, row + direction);
+            }
+            list[i] = QAbstractTableModel::index(rowBase + direction * distance, 0);
+        }
+        auto first = QAbstractTableModel::index(minIndex, 0);
+        auto last  = QAbstractTableModel::index(maxIndex, (int)Columns::LAST);
+        emit dataChanged(first, last);
+    }
+
+    void killItems(QModelIndexList& killList)
+    {
+        std::deque<Archive> survivors;
+        std::size_t killIndex = 0;
+
+        sortAscending(killList);
+
+        for (std::size_t i=0; i<list_.size(); ++i)
+        {
+            if (killIndex < killList.size())
+            {
+                if (killList[killIndex].row() == (int)i)
+                {
+                    ++killIndex;
+                    continue;
+                }
+            }
+            survivors.push_back(list_[i]);
+        }
+        list_ = std::move(survivors);
+
+        QAbstractTableModel::reset();
+    }
+
+    void killComplete()
+    {
+        auto it = std::remove_if(std::begin(list_), std::end(list_),
+            [](const Archive& arc) {
+                return (arc.state == Archive::Status::Success) ||
+                       (arc.state == Archive::Status::Error) ||
+                       (arc.state == Archive::Status::Failed);
+            });
+        list_.erase(it, std::end(list_));
+
+        QAbstractTableModel::reset();
+    }
+
+    std::size_t numUnpacks() const 
+    { return list_.size(); }
+
 private:
     enum class Columns {
-        Status, Error, Desc, Path, LAST
+        Status, Error, Path, Name, LAST
     };
 private:
     friend class RepairEngine;
@@ -305,6 +374,73 @@ void Unpacker::stopUnpack()
     engine_->stop();
 }
 
+void Unpacker::moveUp(QModelIndexList& list)
+{
+    sortAscending(list);
+
+    list_->moveItems(list, -1, 1);
+}
+
+void Unpacker::moveDown(QModelIndexList& list)
+{
+    sortDescending(list);
+
+    list_->moveItems(list, 1, 1);
+}
+
+void Unpacker::moveToTop(QModelIndexList& list)
+{
+    sortAscending(list);
+
+    const auto dist = list.front().row();
+
+    list_->moveItems(list, -1, dist);
+}
+
+void Unpacker::moveToBottom(QModelIndexList& list)
+{
+    sortDescending(list);
+
+    const auto numRows = (int)list_->numUnpacks();
+    const auto lastRow = list.first().row();
+    const auto dist    = numRows - lastRow - 1;
+
+    list_->moveItems(list, 1, dist);
+}
+
+void Unpacker::kill(QModelIndexList& list)
+{
+    for (const auto& index : list)
+    {
+        const auto row  = index.row();
+        const auto& arc = list_->getArchive(row);
+        if (arc.state == Archive::Status::Active)
+        {
+            engine_->stop();
+            data_->clear();
+        }
+    }
+    list_->killItems(list);
+}
+
+void Unpacker::killComplete()
+{
+    list_->killComplete();
+}
+
+void Unpacker::openLog(QModelIndexList& list)
+{
+    for (const auto& i : list)
+    {
+        const auto& arc = list_->getArchive(i.row());
+        if (arc.state == Archive::Status::Queued)
+            continue;
+        QFileInfo info(arc.path + "/extract.log");
+        if (info.exists())
+            app::openFile(info.absoluteFilePath());
+    }
+}
+
 void Unpacker::startNextUnpack()
 {
     if (engine_->isRunning())
@@ -323,6 +459,7 @@ void Unpacker::startNextUnpack()
     settings.keepBroken        = keepBroken_;
     settings.purgeOnSuccess    = cleanup_;
     settings.overWriteExisting = overwrite_;
+    settings.writeLog          = writeLog_;
 
     auto& unpack = list_->getArchive(index);
     unpack.state = Archive::Status::Active;
@@ -340,6 +477,16 @@ void Unpacker::startNextUnpack()
 QStringList Unpacker::findUnpackVolumes(const QStringList& fileEntries)
 {
     return engine_->findArchives(fileEntries);
+}
+
+const Archive& Unpacker::getUnpack(const QModelIndex& index) const 
+{
+    return list_->getArchive(index.row());
+}
+
+std::size_t Unpacker::numUnpacks() const 
+{
+    return list_->numUnpacks();
 }
 
 } // app

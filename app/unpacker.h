@@ -57,6 +57,20 @@ namespace app
         // stop current unpack operation.
         void stopUnpack();
 
+        void moveUp(QModelIndexList& list);
+
+        void moveDown(QModelIndexList& list);
+
+        void moveToTop(QModelIndexList& list);
+
+        void moveToBottom(QModelIndexList& list);
+
+        void kill(QModelIndexList& list);
+
+        void killComplete();
+
+        void openLog(QModelIndexList& list);
+
         void setEnabled(bool onOff)
         { 
             enabled_ = onOff; 
@@ -80,6 +94,10 @@ namespace app
         { return enabled_; }
 
         QStringList findUnpackVolumes(const QStringList& fileEntries);
+
+        const Archive& getUnpack(const QModelIndex& index) const;
+
+        std::size_t numUnpacks() const ;
 
     signals:
         void unpackStart(const app::Archive& arc);

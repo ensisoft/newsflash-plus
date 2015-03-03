@@ -27,6 +27,7 @@
 #  include <QByteArray>
 #  include <QStringList>
 #  include <QString>
+#  include <QFile>
 #include <newsflash/warnpop.h>
 #include <set>
 #include "archive.h"
@@ -79,6 +80,7 @@ namespace app
         QProcess process_;
         QByteArray stdout_;
         QByteArray stderr_;
+        QFile logFile_;
     private:
         Archive archive_;
     private:

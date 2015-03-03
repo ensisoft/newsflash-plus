@@ -60,8 +60,8 @@ namespace gui
     private slots:
         void on_repairList_customContextMenuRequested(QPoint);
         void repairList_selectionChanged();                
-        void on_actionAdd_triggered();
-        void on_actionDel_triggered();
+        void on_actionRepair_triggered();
+        void on_actionDelete_triggered();
         void on_actionMoveUp_triggered();
         void on_actionMoveDown_triggered();
         void on_actionTop_triggered();
