@@ -29,7 +29,9 @@
 #  include <QObject>
 #  include <QProcess>
 #include <newsflash/warnpop.h>
+#include <newsflash/engine/bitflag.h>
 #include <memory>
+#include <vector>
 #include "engine.h"
 
 namespace app
@@ -39,24 +41,56 @@ namespace app
     struct FilePackInfo;
     struct Archive;
 
-    class Commands
+    class Commands : public QObject
     {
+        Q_OBJECT
+
     public:
+        class Condition 
+        {
+        public:
+            Condition(const QString& lhs, const QString& op, const QString& rhs) :
+                lhs_(lhs), op_(op), rhs_(rhs)
+            {}
+            Condition() 
+            {}
+
+            virtual bool evaluate(const app::FileInfo& info) const;
+            virtual bool evaluate(const app::FilePackInfo& pack) const;
+            virtual bool evaluate(const app::Archive& arc) const;
+
+            QString getLHS() const 
+            { return lhs_; }
+
+            QString getRHS() const 
+            { return rhs_; }
+
+            QString getOp() const 
+            { return op_; }
+
+        private:
+            QString lhs_;
+            QString op_;
+            QString rhs_;
+        };
+
         class Command
         {
         public:
-            Command(const QString& name, const QString& exec, const QString& file, const QString& args);
+            enum class When {
+                OnFileDownload,
+                OnPackDownload,
+                OnArchiveRepair,
+                OnArchiveUnpack
+            };
 
+            using WhenFlags = newsflash::bitflag<When>;
+
+            Command(const QString& exec, const QString& args);
             Command();
-
-            QString name() const 
-            { return name_; }
 
             QString exec() const 
             { return exec_; }
-
-            QString file() const 
-            { return file_; }
 
             QString args() const 
             { return args_; }
@@ -66,44 +100,60 @@ namespace app
 
             QIcon icon() const;
 
+            WhenFlags when() const 
+            { return when_; }
+
             void setComment(const QString& comment)
             { comment_ = comment; }
 
-            void setEnabled(bool onOff)
-            { enabled_ = onOff; }
+            void setEnableCommand(bool onOff)
+            { enableCommand_ = onOff; }
+
+            void setEnableCondition(bool onOff)
+            { enableCond_ = onOff; }
 
             void setExec(const QString& exec)
             { exec_ = exec; }
 
-            void setName(const QString& name)
-            { name_ = name; }
-
             void setArgs(const QString& args)
             { args_ = args; }
 
-            void setFile(const QString& file)
-            { file_ = file; }
+            void setWhen(WhenFlags w)
+            { when_ = w; }
 
             bool isEnabled() const
-            { return enabled_; }
+            { return enableCommand_; }
+
+            bool isCondEnabled() const 
+            { return enableCond_; }
 
             quint32 guid() const
             { return guid_; }
 
-            void startNewInstance(const app::FileInfo& info);
-            void startNewInstance(const app::FilePackInfo& info);
+            void onFile(const app::FileInfo& info);
+            void onFilePack(const app::FilePackInfo& info);
+            void onUnpack(const app::Archive& arc);
+            void onRepair(const app::Archive& arc);
+
+            Condition condition() const 
+            { return cond_; }
+
+            void setCondition(Condition c)
+            { cond_ = c; }
 
         private:
-            QString name_;
+            quint32 guid_;            
             QString exec_;
-            QString file_;
             QString args_;
-            mutable QString comment_;
+            QString comment_;
             mutable QIcon icon_;
         private:
-            quint32 guid_;
+            bool enableCommand_;
+            bool enableCond_;
         private:
-            bool enabled_;
+            WhenFlags when_;
+        private:
+            Condition cond_;
         };
 
         Commands();
@@ -120,9 +170,11 @@ namespace app
         void setCommandsCopy(CmdList commands)
         { commands_ = commands; }
 
-    private: 
+    public slots:
         void fileCompleted(const app::FileInfo& info);
         void packCompleted(const app::FilePackInfo& info);
+        void repairFinished(const app::Archive& arc);
+        void unpackFinished(const app::Archive& arc);
 
     private:
         CmdList commands_;

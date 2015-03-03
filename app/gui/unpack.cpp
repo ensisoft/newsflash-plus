@@ -37,7 +37,7 @@
 namespace gui 
 {
 
-Unpack::Unpack(app::Unpacker& unpacker) : model_(unpacker)
+Unpack::Unpack(app::Unpacker& unpacker) : model_(unpacker), numUnpacks_(0)
 {
     ui_.setupUi(this);
     ui_.unpackList->setModel(unpacker.getUnpackList());
@@ -90,6 +90,24 @@ void Unpack::addActions(QToolBar& bar)
 void Unpack::addActions(QMenu& menu)
 {
     // no menu actions.
+}
+
+void Unpack::activate(QWidget*) 
+{
+    numUnpacks_ = 0;
+    setWindowTitle("Extract");
+}
+
+void Unpack::deactivate()
+{
+    numUnpacks_ = 0;
+    setWindowTitle("Extract");
+}
+
+void Unpack::refresh(bool isActive)
+{
+    if (!isActive && numUnpacks_)
+        setWindowTitle(QString("Extract (%1)").arg(numUnpacks_));
 }
 
 void Unpack::loadState(app::Settings& settings)
@@ -305,6 +323,8 @@ void Unpack::unpackStart(const app::Archive& arc)
     ui_.progressBar->setVisible(true);
     ui_.actionStop->setEnabled(true);
     ui_.lblStatus->setVisible(true);
+
+    numUnpacks_++;
 }
 
 void Unpack::unpackReady(const app::Archive& arc)

@@ -331,8 +331,6 @@ void Repair::repairStart(const app::Archive& rec)
         ui_.actionOpenLog->setChecked(true);
 
     numRepairs_++;
-
-
 }
 
 void Repair::repairReady(const app::Archive& rec)

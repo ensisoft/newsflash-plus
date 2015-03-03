@@ -25,6 +25,7 @@
 #include <newsflash/warnpop.h>
 #include "commands.h"
 #include "dlgcommand.h"
+#include "../utility.h"
 
 namespace gui
 {
@@ -44,7 +45,6 @@ public:
         {
             switch ((Columns)section)
             {
-                case Columns::Name:    return "Name";
                 case Columns::Enabled: return "";
                 case Columns::Exec:    return "Executable";
                 case Columns::Comment: return "Comment";                
@@ -74,7 +74,6 @@ public:
         {
             switch ((Columns)col)
             {
-                case Columns::Name:    return script.name();
                 case Columns::Enabled: return "";
                 case Columns::Exec:    return script.exec();
                 case Columns::Comment: return script.comment();
@@ -83,7 +82,7 @@ public:
         }
         if (role == Qt::DecorationRole)
         {
-            if ((Columns)col == Columns::Name)
+            if ((Columns)col == Columns::Exec)
                 return script.icon();
             if ((Columns)col == Columns::Enabled)
             {
@@ -134,9 +133,7 @@ public:
 
     void moveUp(QModelIndexList& indices)
     {
-        qSort(indices);
-        if (indices[0].row() == 0)
-            return;
+        app::sortAscending(indices);
 
         for (int i=0; i<indices.size(); ++i)
         {
@@ -147,12 +144,10 @@ public:
     }
     void moveDown(QModelIndexList& indices)
     {
-        qSort(indices);
+        app::sortDescending(indices);
 
         const int numRows = commands_.size();
         const int last    = indices[indices.size()-1].row();
-        if (last >= numRows -1)
-            return;
 
         for (int i=0; i<indices.size(); ++i)
         {
@@ -170,9 +165,10 @@ public:
     }
 private:
     enum class Columns {
-        Name, Enabled, Comment, Exec, /* Args, */ LAST
+        Exec, Enabled, Comment, /* Args, */ LAST
     };
 private:
+    friend class CmdSettings;
     app::Commands::CmdList commands_;
 };    
 
@@ -190,6 +186,9 @@ CmdSettings::CmdSettings(app::Commands::CmdList cmds) : model_(new Model(cmds))
 CmdSettings::~CmdSettings()
 {}
 
+
+app::Commands::CmdList CmdSettings::getCommandsCopy() 
+{ return model_->commands_; }
 
 void CmdSettings::on_btnAdd_clicked()
 {

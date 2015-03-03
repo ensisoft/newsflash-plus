@@ -43,6 +43,9 @@ namespace gui
 
         virtual void addActions(QToolBar& bar) override;
         virtual void addActions(QMenu& menu) override;
+        virtual void activate(QWidget*) override;
+        virtual void deactivate() override;
+        virtual void refresh(bool isActive) override;
         virtual void loadState(app::Settings& settings) override;
         virtual void saveState(app::Settings& settings) override;
         virtual void shutdown() override;
@@ -52,6 +55,9 @@ namespace gui
 
         void setUnpackEnabled(bool onOff);
         
+        std::size_t numNewUnpacks() const 
+        { return numUnpacks_; }
+
     private slots:
         void on_unpackList_customContextMenuRequested(QPoint);
         void unpackList_selectionChanged();
@@ -79,11 +85,13 @@ namespace gui
         };
 
         void moveTasks(MoveDirection dir);
-    private:
-        Ui::Unpack ui_;
 
     private:
+        Ui::Unpack ui_;
+    private:
         app::Unpacker& model_;
+    private:
+        std::size_t numUnpacks_;
     };
 
 } // gui

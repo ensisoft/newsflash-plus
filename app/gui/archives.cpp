@@ -86,10 +86,18 @@ void Archives::addActions(QMenu& menu)
 }
 
 void Archives::activate(QWidget* parent)
-{}
+{
+    setWindowTitle("Archives");
+    repair_.activate(parent);
+    unpack_.activate(parent);
+}
 
 void Archives::deactivate()
-{}
+{
+    setWindowTitle("Archives");
+    repair_.deactivate();
+    unpack_.deactivate();
+}
 
 void Archives::loadState(app::Settings& settings)
 {
@@ -133,6 +141,24 @@ void Archives::refresh(bool isActive)
 {
     unpack_.refresh(current_ == &unpack_);
     repair_.refresh(current_ == &repair_);
+
+    const auto numTabs = ui_.tabWidget->count();
+    for (int i=0; i<numTabs; ++i)
+    {
+        const auto* widget = static_cast<MainWidget*>(ui_.tabWidget->widget(i));
+        const auto icon    = widget->windowIcon();
+        const auto text    = widget->windowTitle();
+        ui_.tabWidget->setTabText(i, text);
+        ui_.tabWidget->setTabIcon(i, icon);
+    }
+
+    if (!isActive)
+    {
+        const auto numEvents = repair_.numNewRepairs() +
+            unpack_.numNewUnpacks();
+        if (numEvents)
+            setWindowTitle(QString("Archives (%1)").arg(numEvents));
+    }
 }
 
 void Archives::on_tabWidget_currentChanged(int index)

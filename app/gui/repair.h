@@ -57,6 +57,9 @@ namespace gui
 
         void setRepairEnabled(bool onOff);
 
+        std::size_t numNewRepairs() const 
+        { return numRepairs_; }
+
     private slots:
         void on_repairList_customContextMenuRequested(QPoint);
         void repairList_selectionChanged();                

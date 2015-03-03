@@ -72,6 +72,9 @@ namespace app
     inline QString toString(const QUrl& url)
     { return url.toString(); }
 
+    inline QString toString(bool value)
+    { return (value ? "True" : "False"); }
+
     // generic format method, supports whatever Qt QString::arg supports
     template<typename T>
     QString toString(const T& value)

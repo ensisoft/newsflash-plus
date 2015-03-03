@@ -40,7 +40,6 @@ namespace gui
 
     private slots:
         void on_btnBrowseExec_clicked();
-        void on_btnBrowseFile_clicked();
         void on_btnCancel_clicked();
         void on_btnAccept_clicked();
         void on_btnDefault_clicked();

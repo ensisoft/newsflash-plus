@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>598</width>
-    <height>439</height>
+    <width>566</width>
+    <height>425</height>
    </rect>
   </property>
   <property name="acceptDrops">
@@ -35,7 +35,7 @@
       </attribute>
       <layout class="QVBoxLayout" name="verticalLayout_6">
        <item>
-        <widget class="QGroupBox" name="grpEnable">
+        <widget class="QGroupBox" name="grpEnableCommand">
          <property name="title">
           <string>Enable Command</string>
          </property>
@@ -54,34 +54,17 @@
             <layout class="QGridLayout" name="gridLayout_5">
              <item row="0" column="0">
               <layout class="QGridLayout" name="gridLayout_2">
-               <item row="4" column="0">
+               <item row="2" column="0">
                 <widget class="QLabel" name="label_5">
                  <property name="text">
                   <string>Comment</string>
                  </property>
                 </widget>
                </item>
-               <item row="1" column="1">
-                <widget class="QLineEdit" name="editFile"/>
-               </item>
                <item row="1" column="0">
-                <widget class="QLabel" name="label_6">
-                 <property name="text">
-                  <string>Script</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="3" column="0">
                 <widget class="QLabel" name="label_11">
                  <property name="text">
                   <string>Arguments</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="2" column="0">
-                <widget class="QLabel" name="label_4">
-                 <property name="text">
-                  <string>Name</string>
                  </property>
                 </widget>
                </item>
@@ -92,17 +75,10 @@
                  </property>
                 </widget>
                </item>
-               <item row="3" column="2">
+               <item row="1" column="2">
                 <widget class="QPushButton" name="btnDefault">
                  <property name="text">
                   <string>Default</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="1" column="2">
-                <widget class="QPushButton" name="btnBrowseFile">
-                 <property name="text">
-                  <string>Browse...</string>
                  </property>
                 </widget>
                </item>
@@ -113,24 +89,17 @@
                  </property>
                 </widget>
                </item>
-               <item row="2" column="1">
-                <widget class="QLineEdit" name="editName">
-                 <property name="toolTip">
-                  <string>The name for this tool</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="3" column="1">
+               <item row="1" column="1">
                 <widget class="QLineEdit" name="editArgs">
                  <property name="toolTip">
                   <string>Arguments to be passed to the application when invoked. Pseudo argument ${file} will be expanded to the full file path at runtime</string>
                  </property>
                  <property name="text">
-                  <string>${file}</string>
+                  <string>${file.name}</string>
                  </property>
                 </widget>
                </item>
-               <item row="4" column="1">
+               <item row="2" column="1">
                 <widget class="QLineEdit" name="editComment">
                  <property name="toolTip">
                   <string>Keyboard shortcut</string>
@@ -156,42 +125,42 @@
             </property>
             <layout class="QVBoxLayout" name="verticalLayout_2">
              <item>
-              <widget class="QRadioButton" name="radioButton">
+              <widget class="QCheckBox" name="chkOnFile">
                <property name="text">
-                <string>A file download is complete</string>
+                <string>A file download completes</string>
                </property>
                <property name="autoExclusive">
-                <bool>true</bool>
+                <bool>false</bool>
                </property>
               </widget>
              </item>
              <item>
-              <widget class="QRadioButton" name="radioButton_2">
+              <widget class="QCheckBox" name="chkOnPack">
                <property name="text">
-                <string>A multiple file group download completes</string>
+                <string>A file group download completes</string>
                </property>
                <property name="autoExclusive">
-                <bool>true</bool>
+                <bool>false</bool>
                </property>
               </widget>
              </item>
              <item>
-              <widget class="QRadioButton" name="radioButton_3">
+              <widget class="QCheckBox" name="chkOnRepair">
                <property name="text">
-                <string>Repair completes</string>
+                <string>Archive repair completes</string>
                </property>
                <property name="autoExclusive">
-                <bool>true</bool>
+                <bool>false</bool>
                </property>
               </widget>
              </item>
              <item>
-              <widget class="QRadioButton" name="radioButton_4">
+              <widget class="QCheckBox" name="chkOnUnpack">
                <property name="text">
-                <string>Archive unpacking completes</string>
+                <string>Archive extract completes</string>
                </property>
                <property name="autoExclusive">
-                <bool>true</bool>
+                <bool>false</bool>
                </property>
               </widget>
              </item>
@@ -240,9 +209,9 @@
       </attribute>
       <layout class="QVBoxLayout" name="verticalLayout_4">
        <item>
-        <widget class="QGroupBox" name="groupBox_2">
+        <widget class="QGroupBox" name="grpEnableCondition">
          <property name="title">
-          <string>Enable condition</string>
+          <string>Enable Condition</string>
          </property>
          <property name="checkable">
           <bool>true</bool>
@@ -251,7 +220,7 @@
           <item>
            <layout class="QHBoxLayout" name="horizontalLayout_3">
             <item>
-             <widget class="QComboBox" name="comboBox">
+             <widget class="QComboBox" name="cmbLHS">
               <property name="sizePolicy">
                <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
                 <horstretch>0</horstretch>
@@ -260,23 +229,48 @@
               </property>
               <item>
                <property name="text">
-                <string>filename</string>
+                <string>file.file</string>
                </property>
               </item>
               <item>
                <property name="text">
-                <string>filetype</string>
+                <string>file.name</string>
                </property>
               </item>
               <item>
                <property name="text">
-                <string>path</string>
+                <string>file.path</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>file.type</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>filegroup.path</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>archive.path</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>archive.file</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>archive.success</string>
                </property>
               </item>
              </widget>
             </item>
             <item>
-             <widget class="QComboBox" name="comboBox_2">
+             <widget class="QComboBox" name="cmbOperator">
               <item>
                <property name="text">
                 <string>equals</string>
@@ -300,7 +294,17 @@
              </widget>
             </item>
             <item>
-             <widget class="QLineEdit" name="lineEdit"/>
+             <widget class="QComboBox" name="cmbRHS">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="editable">
+               <bool>true</bool>
+              </property>
+             </widget>
             </item>
            </layout>
           </item>

@@ -217,8 +217,18 @@ int run(int argc, char* argv[])
     win.attach(&toolsgui);
 
     // commands module
-    gui::Commands commands;
-    win.attach(&commands);
+    app::Commands cmds;
+    QObject::connect(&engine, SIGNAL(packCompleted(const app::FilePackInfo&)),
+        &cmds, SLOT(packCompleted(const app::FilePackInfo&)));
+    QObject::connect(&engine, SIGNAL(fileCompleted(const app::FileInfo&)),
+        &cmds, SLOT(fileCompleted(const app::FileInfo&)));
+    QObject::connect(&repairer, SIGNAL(repairReady(const app::Archive&)),
+        &cmds, SLOT(repairFinished(const app::Archive&)));
+    QObject::connect(&unpacker, SIGNAL(unpackReady(const app::Archive&)),
+        &cmds, SLOT(unpackFinished(const app::Archive&)));
+
+    gui::Commands cmdsGui(cmds);
+    win.attach(&cmdsGui);
 
 #if defined(LINUX_OS)
     gui::LinuxModule linux;

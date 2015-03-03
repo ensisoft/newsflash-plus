@@ -28,6 +28,7 @@
 #  include <QFile>
 #  include <QDir>
 #  include <QIODevice>
+#  include <QProcess>
 #include <newsflash/warnpop.h>
 #include <newsflash/engine/linebuffer.h>
 #include "commands.h"
@@ -37,25 +38,73 @@
 #include "engine.h"
 #include "distdir.h"
 #include "fileinfo.h"
+#include "archive.h"
 
 namespace app
 {
 
-Commands::Command::Command() : enabled_(true)
+bool evaluateOp(const QString& lhs, const QString& op, const QString& rhs)
+{
+    if (op == "equals")
+        return lhs == rhs;
+    else if (op == "not equals")
+        return lhs != rhs;
+    else if (op == "contains")
+        return lhs.contains(rhs) != -1;
+    else if (op == "not contains")
+        return lhs.contains(rhs) == -1;
+
+    return false;
+}
+
+bool Commands::Condition::evaluate(const app::FileInfo& info) const 
+{
+    QString lhs;
+    if (lhs_ == "file.type")
+        lhs = toString(info.type);
+    else if (lhs_ == "file.file")
+        lhs = QDir::toNativeSeparators(info.path + "/" + info.name);
+    else if (lhs_ == "file.name")
+        lhs = info.name;
+    else if (lhs_ == "file.path")
+        lhs = info.path;
+
+    return evaluateOp(lhs, op_, rhs_);
+}
+
+bool Commands::Condition::evaluate(const app::FilePackInfo& info) const 
+{
+    QString lhs;
+    if (lhs_ == "filegroup.path")
+        lhs = info.path;
+
+    return evaluateOp(lhs, op_, rhs_);
+}
+
+bool Commands::Condition::evaluate(const app::Archive& arc) const 
+{
+    QString lhs;
+    if (lhs_ == "archive.path")
+        lhs = arc.path;
+    else if (lhs_ == "archive.file")
+        lhs = arc.file;
+    else if (lhs_ == "archive.success")
+        lhs = toString(arc.state == Archive::Status::Success);
+
+    return evaluateOp(lhs, op_, rhs_);
+}
+
+Commands::Command::Command() : enableCommand_(true), enableCond_(false)
 {
     static quint32 id = 1;
     guid_ = id++;    
+    args_ = "${file.file}";
 }
 
-Commands::Command::Command(const QString& name, const QString& exec, const QString& file, 
-    const QString& args) : Command()
+Commands::Command::Command(const QString& exec, const QString& args) : Command()
 {
-    name_ = name;
     exec_ = exec;
-    file_ = file;
     args_ = args;
-    if (args_.isEmpty())
-        args_ = "${target}";
 }
 
 QIcon Commands::Command::icon() const
@@ -71,28 +120,96 @@ QIcon Commands::Command::icon() const
     return icon_;    
 }
 
-// QStringList Commands::Command::prepareArgList(const QString& target) const
-// {
-//     QStringList args = args_.split(" ", QString::SkipEmptyParts);    
-//     QStringList ret;
-//     ret << file_;
-//     for (const auto& arg : args)
-//     {
-//         if (arg == "${bindir}")
-//             ret << distdir::path();
-//         else if (arg == "${cwd}")
-//             args << QDir::currentPath();
-//         else if (arg == "${target}")
-//              args << target;
-//     }    
-//     return ret;
-// }
+void Commands::Command::onFile(const app::FileInfo& file)
+{
+    if (!enableCommand_)
+        return;
 
-void Commands::Command::startNewInstance(const app::FileInfo& info)
-{}
+    if (enableCond_)
+    {
+        if (!cond_.evaluate(file))
+            return;
+    }
 
-void Commands::Command::startNewInstance(const app::FilePackInfo& info)
-{}
+    QStringList args;
+    QStringList list = args_.split(" ", QString::SkipEmptyParts);
+    for (const auto& item : list)
+    {
+        if (item == "${file.name}")
+            args << file.name;
+        else if (item == "${file.path}")
+            args << file.path;
+        else if (item == "${file.file}")
+            args << QDir::toNativeSeparators(file.path + "/" + file.name);
+    }
+    if (!QProcess::startDetached(exec_, args))
+    {
+        ERROR("Failed to execute command %1", exec_);
+    }
+}
+
+void Commands::Command::onFilePack(const app::FilePackInfo& pack)
+{
+    if (!enableCommand_)
+        return;
+
+    if (enableCond_)
+    {
+        if (!cond_.evaluate(pack))
+            return;
+    }
+
+    QStringList args;
+    QStringList list = args_.split(" ", QString::SkipEmptyParts);
+    for (const auto& item : list)
+    {
+        if (item == "${filegroup.path}")
+            args << pack.path;
+    }
+    if (!QProcess::startDetached(exec_, args))
+    {
+        ERROR("Failed to execute command %1", exec_);
+    }
+}
+
+void Commands::Command::onUnpack(const app::Archive& arc)
+{
+    if (!enableCommand_)
+        return;
+
+    if (enableCond_)
+    {
+        if (!cond_.evaluate(arc))
+            return;
+    }
+
+    QStringList args;
+    QStringList list = args_.split(" ", QString::SkipEmptyParts);
+    for (const auto& item : list)
+    {
+        if (item == "${archive.path}")
+            args << arc.path;
+        else if (item == "${archive.file}")
+            args << arc.file;
+    }
+    if (!QProcess::startDetached(exec_, args))
+    {
+        ERROR("Failed to execute command %1", exec_);
+    }
+
+}
+
+void Commands::Command::onRepair(const app::Archive& arc)
+{
+    if (!enableCommand_)
+        return;
+
+    if (enableCond_)
+    {
+        if (!cond_.evaluate(arc))
+            return;
+    }
+}
 
 
 Commands::Commands() 
@@ -107,53 +224,81 @@ Commands::~Commands()
 
 void Commands::loadState(Settings& settings)
 {
+    Command::WhenFlags defaultFlags;
+
     const auto scripts = settings.get("commands", "list").toStringList();
     for (const auto& key : scripts)
     {
-        const auto& name = settings.get(key, "name").toString();
-        const auto& exec = settings.get(key, "exec").toString();
-        const auto& args = settings.get(key, "args").toString();
-        const auto& file = settings.get(key, "file").toString();
-        const auto onoff = settings.get(key, "enabled", true);
+        const auto exec  = settings.get(key, "exec").toString();
+        const auto args  = settings.get(key, "args").toString();
+        const auto com   = settings.get(key, "comment").toString();
+        const auto cmd   = settings.get(key, "enable_command", true);
+        const auto cond  = settings.get(key, "enable_condition", false);
+        const auto flags = settings.get(key, "flags", defaultFlags.value());
+        Command::WhenFlags when;
+        when.set_from_value(flags);
 
-        Command command(name, exec, file, args);
-        command.setEnabled(onoff);
+        Command command(exec, args);
+        command.setEnableCommand(cmd);
+        command.setEnableCondition(cond);
+        command.setWhen(when);
+        command.setComment(com);
+
         commands_.push_back(command);
-        DEBUG("Loaded command %1", name);
+        DEBUG("Loaded command %1", exec);
     }
 }
 
 void Commands::saveState(Settings& settings)
 {
+    QStringList commands;
+
     for (const auto& command : commands_)
     {
-        const auto& key = "command/" + command.name();
+        const auto& key = "command/cmd" + QString::number(command.guid());
+        settings.set(key, "exec", command.exec());
+        settings.set(key, "args", command.args());
+        settings.set(key, "comment", command.comment());
+        settings.set(key, "enable_command", command.isEnabled());
+        settings.set(key, "enable_condition", command.isCondEnabled());
+        settings.set(key, "flags", command.when().value());
 
+        DEBUG("Saved command %1", command.exec());
+        commands << key;
     }
+    settings.set("commands", "list", commands);
 }
 
 void Commands::fileCompleted(const app::FileInfo& info)
 {
-    const auto filename = QDir::toNativeSeparators(info.path + "/" + info.name);
-
-    for (const auto& command : commands_)
+    for (auto& command : commands_)
     {
-
+        command.onFile(info);
     }
-    //startNextCommand();
 }
 
-void Commands::packCompleted(const app::FilePackInfo& info)
+void Commands::packCompleted(const app::FilePackInfo& pack)
 {
-    const auto folder = info.path;
-
-    for (const auto& command : commands_)
+    for (auto& command : commands_)
     {
-        if (!command.isEnabled())
-            continue;
-        //enqueueCommand(command, folder);
+        command.onFilePack(pack);
     }
-    //startNextCommand();
+}
+
+void Commands::repairFinished(const app::Archive& arc)
+{
+    for (auto& command : commands_)
+    {
+        command.onRepair(arc);
+    }
+}
+
+void Commands::unpackFinished(const app::Archive& arc)
+{
+    for (auto& command : commands_)
+    {
+        command.onUnpack(arc);
+    }
 }
 
 } // app

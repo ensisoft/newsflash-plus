@@ -43,6 +43,8 @@ namespace gui
         virtual bool validate() const override
         { return true; }
 
+        app::Commands::CmdList getCommandsCopy();
+
     private slots:
         void on_btnAdd_clicked();
         void on_btnDel_clicked();
@@ -64,6 +66,9 @@ namespace gui
     class Commands : public MainModule
     {
     public:
+        Commands(app::Commands& module) : commands_(module)
+        {}
+
         virtual SettingsWidget* getSettings() override
         {
             auto cmds = commands_.getCommandsCopy();
@@ -71,7 +76,8 @@ namespace gui
         }
         virtual void applySettings(SettingsWidget* gui) override
         {
-
+            auto* p = static_cast<CmdSettings*>(gui);
+            commands_.setCommandsCopy(p->getCommandsCopy());
         }
 
         virtual void loadState(app::Settings& settings) override
@@ -92,7 +98,7 @@ namespace gui
         { delete gui; }
     private:
 
-        app::Commands commands_;
+        app::Commands& commands_;
 
     };
 } // gui

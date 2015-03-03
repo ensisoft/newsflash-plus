@@ -25,6 +25,7 @@
 #  include <QFileInfo>
 #include <newsflash/warnpop.h>
 #include "dlgcommand.h"
+#include "../filetype.h"
 
 namespace gui
 {
@@ -34,16 +35,41 @@ DlgCommand::DlgCommand(QWidget* parent, app::Commands::Command& command) : QDial
     ui_.setupUi(this);
     ui_.editExec->setText(command.exec());
     ui_.editExec->setCursorPosition(0);
-    ui_.editFile->setText(command.file());
-    ui_.editFile->setCursorPosition(0);
-    ui_.editName->setText(command.name());
-    ui_.editName->setCursorPosition(0);
     ui_.editArgs->setText(command.args());
     ui_.editArgs->setCursorPosition(0);
     ui_.editComment->setText(command.comment());
     ui_.editComment->setCursorPosition(0);
 
-    ui_.grpEnable->setChecked(command.isEnabled());
+    using w = app::Commands::Command::When;
+
+    const auto when = command.when();
+    ui_.chkOnFile->setChecked(when.test(w::OnFileDownload));
+    ui_.chkOnPack->setChecked(when.test(w::OnPackDownload));
+    ui_.chkOnRepair->setChecked(when.test(w::OnArchiveRepair));
+    ui_.chkOnUnpack->setChecked(when.test(w::OnArchiveUnpack));
+
+    ui_.grpEnableCommand->setChecked(command.isEnabled());
+    ui_.grpEnableCondition->setChecked(command.isCondEnabled());
+
+    auto beg = app::FileTypeIterator::begin();
+    auto end = app::FileTypeIterator::end();
+    for (; beg != end; ++beg)
+    {
+        ui_.cmbRHS->addItem(toString(*beg));
+    }
+    ui_.cmbRHS->addItem(app::toString(true));
+    ui_.cmbRHS->addItem(app::toString(false));
+
+    const auto& cond = command.condition();
+    ui_.cmbLHS->setCurrentIndex(
+        ui_.cmbLHS->findText(cond.getLHS()));
+
+    ui_.cmbRHS->setCurrentIndex(
+        ui_.cmbRHS->findText(cond.getRHS()));
+
+    ui_.cmbOperator->setCurrentIndex(
+        ui_.cmbOperator->findText(cond.getOp()));
+
 }
 
 DlgCommand::~DlgCommand()
@@ -65,20 +91,6 @@ void DlgCommand::on_btnBrowseExec_clicked()
     ui_.editExec->setCursorPosition(0);
 }
 
-void DlgCommand::on_btnBrowseFile_clicked()
-{
-    auto file = QFileDialog::getOpenFileName(this,
-        tr("Select "));
-    if (file.isEmpty())
-        return;
-
-    QFileInfo info(file);
-    ui_.editFile->setText(QDir::toNativeSeparators(file));
-    ui_.editFile->setCursorPosition(0);    
-    ui_.editName->setText(info.completeBaseName());
-    ui_.editName->setCursorPosition(0);    
-}
-
 void DlgCommand::on_btnCancel_clicked()
 {
     reject();
@@ -92,18 +104,33 @@ void DlgCommand::on_btnAccept_clicked()
         ui_.editExec->setFocus();
         return;
     }
-    auto file = ui_.editFile->text();
-    auto name = ui_.editName->text();
+
     auto args = ui_.editArgs->text();
     auto comment = ui_.editComment->text();
-    bool enabled = ui_.grpEnable->isChecked();
+    bool cmdEnabled = ui_.grpEnableCommand->isChecked();
+    bool condEnabled = ui_.grpEnableCondition->isChecked();
 
     command_.setExec(exec);
-    command_.setName(name);
     command_.setArgs(args);
-    command_.setFile(file);
     command_.setComment(comment);
-    command_.setEnabled(enabled);
+    command_.setEnableCommand(cmdEnabled);
+    command_.setEnableCondition(condEnabled);
+
+    using w = app::Commands::Command::When;
+
+    app::Commands::Command::WhenFlags flags;
+    flags.set(w::OnFileDownload, ui_.chkOnFile->isChecked());
+    flags.set(w::OnPackDownload, ui_.chkOnPack->isChecked());
+    flags.set(w::OnArchiveRepair, ui_.chkOnRepair->isChecked());
+    flags.set(w::OnArchiveUnpack, ui_.chkOnUnpack->isChecked());
+    command_.setWhen(flags);
+
+    const auto lhs = ui_.cmbLHS->currentText();
+    const auto rhs = ui_.cmbRHS->currentText();
+    const auto op  = ui_.cmbOperator->currentText();
+
+    app::Commands::Condition cond(lhs, op, rhs);
+    command_.setCondition(cond);
 
     accept();
 }
