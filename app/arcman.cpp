@@ -94,8 +94,8 @@ void ArchiveManager::repairReady(const app::Archive& arc)
     const auto& volumes = unpacker_.findUnpackVolumes(entries);
     for (const auto& vol : volumes)
     {
-        //if (unpacks_.find(arc.path + "/" + vol) != std::end(unpacks_))
-        //    continue;
+        if (unpacks_.find(arc.path + "/" + vol) != std::end(unpacks_))
+            continue;
 
         Archive unrar;
         unrar.path  = arc.path;
