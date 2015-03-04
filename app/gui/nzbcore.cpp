@@ -57,15 +57,6 @@ bool NZBSettings::validate() const
             return false;
         }
     }
-    if (ui_.grpCustomDownloadFolder->isChecked())
-    {
-        const auto& dir = ui_.editCustomDownloadFolder->text();
-        if (dir.isEmpty())
-        {
-            ui_.editCustomDownloadFolder->setFocus();
-            return false;
-        }
-    }
     return true;
 }
 
@@ -118,7 +109,6 @@ void NZBSettings::on_btnSelectDownloadFolder_clicked()
 
     dir = QDir(dir).absolutePath();
     dir = QDir::toNativeSeparators(dir);
-    ui_.editCustomDownloadFolder->setText(dir);
 }
 
 NZBCore::NZBCore()
@@ -127,23 +117,10 @@ NZBCore::NZBCore()
 NZBCore::~NZBCore()
 {}
 
-bool NZBCore::addActions(QMenu& menu)
-{
-    auto* download = menu.addAction(QIcon("icons:ico_download.png"),
-        tr("Download NZB"));
-    auto* display  = menu.addAction(QIcon("icons:ico_open_nzb.png"),
-        tr("Open NZB"));
-
-    display->setShortcut(QKeySequence::Open);
-
-    QObject::connect(download, SIGNAL(triggered()), this, SLOT(downloadTriggered()));
-    QObject::connect(display,  SIGNAL(triggered()), this, SLOT(displayTriggered()));
-    return true;
-}
 
 void NZBCore::loadState(app::Settings& s)
 {}
-
+    
 void NZBCore::saveState(app::Settings& s)
 {
 }
@@ -187,14 +164,7 @@ void NZBCore::applySettings(SettingsWidget* gui)
 
     const auto enable_watch = ui.grpAutoDownload->isChecked();
     const auto nzb_dump_folder = ui.editDumpFolder->text();
-    const auto download_folder = ui.editCustomDownloadFolder->text();
-    const auto enable_dowload_folder = ui.grpCustomDownloadFolder->isChecked();
 
-    // backend.set("nzb", "watched_folders", list);
-    // backend.set("nzb", "enable_watching", enable_watch);
-    // backend.set("nzb", "nzb_dump_folder", nzb_dump_folder);
-    // backend.set("nzb", "download_folder", download_folder);
-    // backend.set("nzb", "enable_custom_download_folder", enable_dowload_folder);
 
     module_.set_watch_folders(list);
     module_.watch(enable_watch);
@@ -206,41 +176,28 @@ void NZBCore::freeSettings(SettingsWidget* s)
     delete s;
 }
 
-void NZBCore::dropFile(const QString& file)
+MainWidget* NZBCore::dropFile(const QString& file)
 {
     QFileInfo info(file);
-    if (!info.exists())
-        return;
+    if (info.suffix() != "nzb")
+        return nullptr;
 
-    if (info.suffix() != ".nzb")
-        return;
+    auto* widget = new NZBFile;
+    widget->open(file);
 
-    
+    return widget;
 }
 
-
-void NZBCore::downloadTriggered()
+MainWidget* NZBCore::openFile(const QString& file)
 {
-    const auto nzb = g_win->selectNzbOpenFile();
-    if (nzb.isEmpty())
-        return;
+    QFileInfo info(file);
+    if (info.suffix() != "nzb")
+        return nullptr;
 
-    DEBUG("download");
+    auto* widget = new NZBFile;
+    widget->open(file);
+
+    return widget;
 }
-
-void NZBCore::displayTriggered()
-{
-    const auto nzb = g_win->selectNzbOpenFile();
-    if (nzb.isEmpty())
-        return;
-
-    auto* file = new NZBFile();
-    g_win->attach(file, true);
-
-    file->open(nzb);
-}
-
-
-
 
 } // gui

@@ -99,37 +99,10 @@ bool NZBFile::load(const QByteArray& bytes, const QString& desc)
     thread_.reset(new NZBThread(std::move(io)));
 
     QObject::connect(thread_.get(), SIGNAL(complete()),
-        this, SLOT(parse_complete()), Qt::QueuedConnection);
+        this, SLOT(parseComplete()), Qt::QueuedConnection);
 
     thread_->start();
     return true;
-}
-
-void NZBFile::clear()
-{
-    data_.clear();
-    QAbstractTableModel::reset();
-}
-
-void NZBFile::kill(QModelIndexList& list)
-{
-    qSort(list);
-
-    int removed = 0;
-
-    for (int i=0; i<list.size(); ++i)
-    {
-        const auto row = list[i].row() - removed;
-        beginRemoveRows(QModelIndex(), row, row);
-
-        auto it = data_.begin();
-        it += row;
-        data_.erase(it);
-
-        endRemoveRows();
-
-        ++removed;
-    }
 }
 
 void NZBFile::download(const QModelIndexList& list, quint32 account, const QString& folder, const QString& desc)
@@ -143,7 +116,6 @@ void NZBFile::download(const QModelIndexList& list, quint32 account, const QStri
     }
 
     g_engine->downloadNzbContents(account, folder, desc, selected);
-
 }
 
 void NZBFile::set_show_filenames_only(bool on_off)
@@ -165,13 +137,13 @@ int NZBFile::rowCount(const QModelIndex&) const
 
 int NZBFile::columnCount(const QModelIndex&) const
 {
-    return 3;
+    return (int)Columns::LAST;
 }
 
 void NZBFile::sort(int column, Qt::SortOrder order)
 {
     emit layoutAboutToBeChanged();
-    if (column == 0)
+    if (column == (int)Columns::Type)
     {
         std::sort(std::begin(data_), std::end(data_),
             [&](const NZBContent& lhs, const NZBContent& rhs) {
@@ -180,7 +152,7 @@ void NZBFile::sort(int column, Qt::SortOrder order)
                 return lhs.type > rhs.type;
             });
     }
-    else if (column == 1)
+    else if (column == (int)Columns::Size)
     {
         std::sort(std::begin(data_), std::end(data_),
             [=](const NZBContent& lhs, const NZBContent& rhs) {
@@ -189,7 +161,7 @@ void NZBFile::sort(int column, Qt::SortOrder order)
                 return lhs.bytes > rhs.bytes;
             });
     }
-    else if (column == 2)
+    else if (column == (int)Columns::File)
     {
         std::sort(std::begin(data_), std::end(data_),
             [&](const NZBContent& lhs, const NZBContent& rhs) {
@@ -203,31 +175,32 @@ void NZBFile::sort(int column, Qt::SortOrder order)
 
 QVariant NZBFile::data(const QModelIndex& index, int role) const
 {
-    const auto& item = data_[index.row()];                
+    const auto row = index.row();
+    const auto col = index.column();
+    const auto& item = data_[row];
 
     if (role == Qt::DisplayRole)
     {
-        if (index.column() == 0)
-            return toString(item.type);
-        else if (index.column() == 1)
-            return toString(app::size { item.bytes });
-        else if (index.column() == 2)
+        switch ((Columns)col)
         {
-            if (show_filename_only_)
-            {
-                const auto& utf8 = toUtf8(item.subject);
-                const auto& name = nntp::find_filename(utf8);
-                if (name.size() > 5)
-                    return fromUtf8(name);
-            }
-            return item.subject;
+            case Columns::Type: return toString(item.type);
+            case Columns::Size: return toString(app::size{item.bytes});
+            case Columns::File:
+                if (show_filename_only_)
+                {
+                    const auto& utf8 = toUtf8(item.subject);
+                    const auto& name = nntp::find_filename(utf8);
+                    if (name.size() > 5)
+                        return fromUtf8(name);
+                }
+                return item.subject;
+            case Columns::LAST: Q_ASSERT(0);
         }
     }
     else if (role == Qt::DecorationRole)
     {
-        if (index.column() == 0)
+        if ((Columns)col == Columns::Type)
             return item.icon;
-
     }
     return QVariant();
 }
@@ -237,14 +210,14 @@ QVariant NZBFile::headerData(int section, Qt::Orientation orientation, int role)
     if (role != Qt::DisplayRole)
         return QVariant();
 
-    if (section == 0)
-        return "Type";
-    else if (section == 1)
-        return "Size";
-    else if (section == 2)
-        return "File";
-
-    return QVariant();
+    switch ((Columns)section)
+    {
+        case Columns::Type: return "Type";
+        case Columns::Size: return "Size";
+        case Columns::File: return "File";
+        case Columns::LAST: Q_ASSERT(0);
+    }
+    return {};
 }
 
 void NZBFile::parseComplete()

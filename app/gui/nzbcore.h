@@ -57,28 +57,23 @@ namespace gui
     };
 
     // nzbcore UI functionality
-    class NZBCore : public QObject, public MainModule
+    class NZBCore : public MainModule
     {
-        Q_OBJECT
     public:
         NZBCore();
        ~NZBCore();
 
-        virtual bool addActions(QMenu& menu) override;
         virtual void loadState(app::Settings& s) override;
         virtual void saveState(app::Settings& s) override;
         virtual SettingsWidget* getSettings() override;
         virtual void applySettings(SettingsWidget* gui) override;
         virtual void freeSettings(SettingsWidget* s) override;
 
-        virtual void dropFile(const QString& file) override;
+        virtual MainWidget* dropFile(const QString& file) override;
+        virtual MainWidget* openFile(const QString& file) override;
 
         virtual info getInformation() const override
         { return {"nzbcore", "nzb.html"}; }        
-
-    private slots:
-        void downloadTriggered();
-        void displayTriggered();
 
     private:
         app::NZBCore module_;

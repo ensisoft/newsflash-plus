@@ -66,105 +66,52 @@
         </layout>
        </widget>
       </item>
-     </layout>
-    </widget>
-   </item>
-   <item row="3" column="0">
-    <widget class="QGroupBox" name="grpCustomDownloadFolder">
-     <property name="title">
-      <string>Use custom download folder</string>
-     </property>
-     <property name="checkable">
-      <bool>true</bool>
-     </property>
-     <layout class="QGridLayout" name="gridLayout_2">
-      <item row="0" column="0">
-       <layout class="QHBoxLayout" name="horizontalLayout_2">
-        <item>
-         <widget class="QLineEdit" name="editCustomDownloadFolder"/>
-        </item>
-        <item>
-         <widget class="QPushButton" name="btnSelectDownloadFolder">
-          <property name="text">
-           <string>Browse...</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </item>
-     </layout>
-    </widget>
-   </item>
-   <item row="1" column="0">
-    <widget class="QGroupBox" name="groupBox_3">
-     <property name="title">
-      <string>Action on NZB file Drop &amp;&amp; Drop</string>
-     </property>
-     <layout class="QGridLayout" name="gridLayout_3">
-      <item row="0" column="0">
-       <layout class="QVBoxLayout" name="verticalLayout">
-        <item>
-         <widget class="QRadioButton" name="rdbDropActionDownload">
-          <property name="text">
-           <string>Download content</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QRadioButton" name="rdbDropActionOpen">
-          <property name="text">
-           <string>Open NZB file</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </item>
-     </layout>
-    </widget>
-   </item>
-   <item row="2" column="0">
-    <widget class="QGroupBox" name="groupBox_4">
-     <property name="title">
-      <string>NZB file post processing</string>
-     </property>
-     <property name="checkable">
-      <bool>false</bool>
-     </property>
-     <layout class="QVBoxLayout" name="verticalLayout_2">
-      <item>
-       <widget class="QRadioButton" name="rdbMarkProcessed">
-        <property name="text">
-         <string>Mark processed (prepends &quot;remove_&quot; in the file name)</string>
+      <item row="1" column="0">
+       <widget class="QGroupBox" name="groupBox_4">
+        <property name="title">
+         <string>NZB file post processing</string>
         </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QRadioButton" name="rdbDeleteProcessed">
-        <property name="text">
-         <string>Delete file</string>
+        <property name="checkable">
+         <bool>false</bool>
         </property>
+        <layout class="QVBoxLayout" name="verticalLayout_2">
+         <item>
+          <widget class="QRadioButton" name="rdbMarkProcessed">
+           <property name="text">
+            <string>Rename file</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QRadioButton" name="rdbDeleteProcessed">
+           <property name="text">
+            <string>Delete file</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QRadioButton" name="rdbMoveProcessed">
+           <property name="text">
+            <string>Move file to ...</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_3">
+           <item>
+            <widget class="QLineEdit" name="editDumpFolder"/>
+           </item>
+           <item>
+            <widget class="QPushButton" name="btnSelectDumpFolder">
+             <property name="text">
+              <string>Browse...</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+        </layout>
        </widget>
-      </item>
-      <item>
-       <widget class="QRadioButton" name="rdbMoveProcessed">
-        <property name="text">
-         <string>Move to another location</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <layout class="QHBoxLayout" name="horizontalLayout_3">
-        <item>
-         <widget class="QLineEdit" name="editDumpFolder"/>
-        </item>
-        <item>
-         <widget class="QPushButton" name="btnSelectDumpFolder">
-          <property name="text">
-           <string>Browse...</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
       </item>
      </layout>
     </widget>
@@ -176,51 +123,14 @@
   <tabstop>watchList</tabstop>
   <tabstop>btnAddWatchFolder</tabstop>
   <tabstop>btnDelWatchFolder</tabstop>
-  <tabstop>rdbDropActionDownload</tabstop>
-  <tabstop>rdbDropActionOpen</tabstop>
   <tabstop>rdbMarkProcessed</tabstop>
   <tabstop>rdbDeleteProcessed</tabstop>
   <tabstop>rdbMoveProcessed</tabstop>
   <tabstop>editDumpFolder</tabstop>
   <tabstop>btnSelectDumpFolder</tabstop>
-  <tabstop>grpCustomDownloadFolder</tabstop>
-  <tabstop>editCustomDownloadFolder</tabstop>
-  <tabstop>btnSelectDownloadFolder</tabstop>
  </tabstops>
  <resources/>
  <connections>
-  <connection>
-   <sender>grpCustomDownloadFolder</sender>
-   <signal>clicked(bool)</signal>
-   <receiver>editCustomDownloadFolder</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>220</x>
-     <y>469</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>177</x>
-     <y>477</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>grpCustomDownloadFolder</sender>
-   <signal>clicked(bool)</signal>
-   <receiver>btnSelectDownloadFolder</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>220</x>
-     <y>469</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>382</x>
-     <y>477</y>
-    </hint>
-   </hints>
-  </connection>
   <connection>
    <sender>rdbMarkProcessed</sender>
    <signal>clicked(bool)</signal>

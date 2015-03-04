@@ -37,6 +37,7 @@ class QMenu;
 namespace gui
 {
     class SettingsWidget;
+    class MainWidget;
 
     // mainmodule extends the application functionality
     // in a headless fashion, i.e. without providing any user visible GUI.
@@ -76,7 +77,9 @@ namespace gui
 
         virtual void freeSettings(SettingsWidget* gui) {}
 
-        virtual void dropFile(const QString& name) {}
+        virtual MainWidget* dropFile(const QString& name) { return nullptr; }
+
+        virtual MainWidget* openFile(const QString& name) { return nullptr; }
     protected:
     private:
     };

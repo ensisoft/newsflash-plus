@@ -60,12 +60,8 @@ namespace gui
         void open(const QByteArray& nzb, const QString& desc);
 
     private slots:
-        void on_actionOpen_triggered();
         void on_actionDownload_triggered();
         void on_actionBrowse_triggered();
-        void on_actionClear_triggered();
-        void on_actionDelete_triggered();
-        void on_actionSettings_triggered();
         void on_tableView_customContextMenuRequested(QPoint);
         void on_chkFilenamesOnly_clicked();
         void downloadToPrevious();

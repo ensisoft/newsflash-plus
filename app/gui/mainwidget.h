@@ -108,8 +108,6 @@ namespace gui
         // notify that application settings have changed. 
         virtual void freeSettings(SettingsWidget* s) {}
 
-        virtual void dropFile(const QString& file) {};
-
     signals:
         void updateMenu(MainWidget* self);
 

@@ -133,6 +133,7 @@ namespace gui
         void on_actionWindowClose_triggered();
         void on_actionWindowNext_triggered();
         void on_actionWindowPrev_triggered();
+        void on_actionOpen_triggered();
         void on_actionHelp_triggered();
         void on_actionExit_triggered();
         void on_actionSettings_triggered();

@@ -90,6 +90,12 @@ MainWindow::MainWindow(app::Settings& s) : QMainWindow(nullptr), current_(nullpt
     ui_.actionViewStatusbar->setChecked(true);
     ui_.progressBar->setTextVisible(false);
 
+    ui_.actionOpen->setShortcut(QKeySequence::Open);
+    ui_.actionExit->setShortcut(QKeySequence::Quit);
+    ui_.actionWindowClose->setShortcut(QKeySequence::Close);
+    ui_.actionWindowNext->setShortcut(QKeySequence::Forward);
+    ui_.actionWindowPrev->setShortcut(QKeySequence::Back);
+
     QObject::connect(&refresh_timer_, SIGNAL(timeout()),
         this, SLOT(timerRefresh_timeout()));
     refresh_timer_.setInterval(500);
@@ -297,6 +303,9 @@ void MainWindow::showSetting(const QString& name)
 
 void MainWindow::prepareFileMenu()
 {
+    ui_.menuFile->addAction(ui_.actionOpen);
+    ui_.menuFile->addSeparator();
+
     for (auto* m : modules_)
         if (m->addActions(*ui_.menuFile))
             ui_.menuFile->addSeparator();
@@ -355,7 +364,7 @@ QString MainWindow::selectSaveNzbFolder()
 QString MainWindow::selectNzbOpenFile()
 {
     const auto& file = QFileDialog::getOpenFileName(this,
-        tr("Select NZB file"), recent_load_nzb_path_, "Newzbin Files (*.nzb)");
+        tr("Select Newzbin file"), recent_load_nzb_path_, "Newzbin Files (*.nzb)");
     if (file.isEmpty())
         return "";
 
@@ -623,11 +632,13 @@ void MainWindow::dropEvent(QDropEvent* event)
             continue;
 
         DEBUG("processing %1 file", name);
-        for (auto* w : widgets_)
-            w->dropFile(name);
 
         for (auto* m : modules_)
-            m->dropFile(name);
+        {
+            MainWidget* widget = m->dropFile(name);
+            if (widget)
+                attach(widget);
+        }
     }
 }
 
@@ -821,6 +832,23 @@ void MainWindow::on_actionWindowPrev_triggered()
     const auto size = ui_.mainTab->count();
     const auto prev = (cur == 0) ? size - 1 : cur - 1;
     ui_.mainTab->setCurrentIndex(prev);
+}
+
+void MainWindow::on_actionOpen_triggered()
+{
+    const auto& file = QFileDialog::getOpenFileName(this,
+        tr("Select Newzbin file"), recent_load_nzb_path_, "Newzbin Files (*.nzb)");
+    if (file.isEmpty())
+        return;
+
+    recent_load_nzb_path_ = QFileInfo(file).absolutePath();
+
+    for (auto* m : modules_)
+    {
+        MainWidget* widget = m->openFile(file);
+        if (widget)
+            attach(widget);
+    }
 }
 
 void MainWindow::on_actionHelp_triggered()

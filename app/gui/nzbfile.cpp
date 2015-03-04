@@ -48,77 +48,47 @@ NZBFile::NZBFile()
     ui_.progressBar->setValue(0);
     ui_.progressBar->setRange(0, 0);
     ui_.tableView->setModel(&model_);
-
     ui_.actionDownload->setEnabled(false);
     ui_.actionBrowse->setEnabled(false);
-    ui_.actionClear->setEnabled(false);
-    ui_.actionDelete->setEnabled(false);
 
-    model_.on_ready = [&](bool success) 
-    {
-        ui_.progressBar->setVisible(false);
-        ui_.actionDownload->setEnabled(success);
-        ui_.actionClear->setEnabled(success);
-        ui_.actionDelete->setEnabled(success);
-        ui_.actionBrowse->setEnabled(success);        
-    };
-    DEBUG("NZBFile created");
+    DEBUG("NZBFile UI created");
 }
 
 NZBFile::~NZBFile()
 {
-    DEBUG("NZBFile deleted");
+    DEBUG("NZBFile UI deleted");
 }
 
 void NZBFile::addActions(QMenu& menu)
 {
-    menu.addAction(ui_.actionOpen);
-    menu.addSeparator();
     menu.addAction(ui_.actionDownload);
-    menu.addSeparator();
-    menu.addAction(ui_.actionClear);
-    menu.addSeparator();
-    menu.addAction(ui_.actionDelete);
-    menu.addSeparator();
-    menu.addAction(ui_.actionSettings);
 }
 
 void NZBFile::addActions(QToolBar& bar)
 {
-    bar.addAction(ui_.actionOpen);
-    bar.addSeparator();
     bar.addAction(ui_.actionDownload);
-    bar.addSeparator();
-    bar.addAction(ui_.actionClear);
-    bar.addSeparator();
-    bar.addAction(ui_.actionDelete);
-    bar.addSeparator();
-    bar.addAction(ui_.actionSettings);
 }
 
-void NZBFile::loadState(app::Settings& s)
-{
-    const bool filenames = s.get("nzb", "show_filename_only", false);
+void NZBFile::loadState(app::Settings& settings)
+{}
 
-    ui_.chkFilenamesOnly->setChecked(filenames);
-
-    model_.set_show_filenames_only(filenames);
-}
-
-void NZBFile::saveState(app::Settings& s)
-{
-    s.set("nzb", "show_filename_only", 
-        ui_.chkFilenamesOnly->isChecked());
-    
-}
+void NZBFile::saveState(app::Settings& settings)
+{}
 
 void NZBFile::open(const QString& nzbfile)
 {
-    Q_ASSERT(!nzbfile.isEmpty());
-
-    const bool filenames = ui_.chkFilenamesOnly->isChecked();
-
-    model_.set_show_filenames_only(filenames);
+    model_.on_ready = [&](bool success) 
+    {
+        ui_.progressBar->setVisible(false);
+        ui_.actionDownload->setEnabled(success);
+        ui_.actionBrowse->setEnabled(success);     
+        ui_.tableView->sortByColumn((int)app::NZBFile::Columns::File);
+        if (!success)
+        {
+            QMessageBox::critical(this, "An Error Occurred",
+                "The Newzbin file could not be loaded.");
+        }           
+    };
 
     if (model_.load(nzbfile))
     {
@@ -129,30 +99,18 @@ void NZBFile::open(const QString& nzbfile)
 
 void NZBFile::open(const QByteArray& bytes, const QString& desc)
 {
-    Q_ASSERT(!bytes.isEmpty());
-    Q_ASSERT(!desc.isEmpty());
-
-    const bool filenames = ui_.chkFilenamesOnly->isChecked();
-
-    model_.set_show_filenames_only(filenames);
+    model_.on_ready = [&](bool success) 
+    {
+        ui_.progressBar->setVisible(false);
+        ui_.actionDownload->setEnabled(success);
+        ui_.actionBrowse->setEnabled(success);        
+        ui_.tableView->sortByColumn((int)app::NZBFile::Columns::File);
+    };
 
     if (model_.load(bytes, desc))
     {
         ui_.progressBar->setVisible(true);
         ui_.grpBox->setTitle(desc);
-    }
-}
-
-void NZBFile::on_actionOpen_triggered()
-{
-    const auto& file = g_win->selectNzbOpenFile();
-    if (file.isEmpty())
-        return;
-
-    if (model_.load(file))
-    {
-        ui_.progressBar->setVisible(true);
-        ui_.grpBox->setTitle(file);
     }
 }
 
@@ -168,28 +126,6 @@ void NZBFile::on_actionBrowse_triggered()
         return;
 
     downloadSelected(folder);
-}
-
-void NZBFile::on_actionClear_triggered()
-{
-    model_.clear();
-    ui_.grpBox->setTitle(tr("NZB File"));
-    ui_.actionDownload->setEnabled(false);
-    ui_.actionDelete->setEnabled(false);
-}
-
-void NZBFile::on_actionDelete_triggered()
-{
-    auto indices = ui_.tableView->selectionModel()->selectedRows();
-    if (indices.isEmpty())
-        return;
-
-    model_.kill(indices);
-}
-
-void NZBFile::on_actionSettings_triggered()
-{
-    g_win->showSetting("NZB");
 }
 
 void NZBFile::on_tableView_customContextMenuRequested(QPoint)
@@ -209,16 +145,8 @@ void NZBFile::on_tableView_customContextMenuRequested(QPoint)
     sub.setEnabled(ui_.actionDownload->isEnabled());
 
     QMenu menu;
-    menu.addAction(ui_.actionOpen);
-    menu.addSeparator();
     menu.addAction(ui_.actionDownload);
     menu.addMenu(&sub);
-    menu.addSeparator();
-    menu.addAction(ui_.actionClear);
-    menu.addSeparator();
-    menu.addAction(ui_.actionDelete);
-    menu.addSeparator();
-    menu.addAction(ui_.actionSettings);
     menu.exec(QCursor::pos());
 }
 

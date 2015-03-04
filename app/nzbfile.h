@@ -41,6 +41,10 @@ namespace app
         Q_OBJECT
 
     public:
+        enum class Columns {
+            Type, Size, File, LAST
+        };
+
         NZBFile();
        ~NZBFile();
 
@@ -55,15 +59,8 @@ namespace app
         // load NZB contents from a byte array. 
         bool load(const QByteArray& array, const QString& desc);
 
-        // clear the contents of the model
-        void clear();
-
-        // kill the items specified by the index list from the data list.
-        void kill(QModelIndexList& list);
-
         // download the items specified by the index list 
         void download(const QModelIndexList& list, quint32 account, const QString& folder, const QString& desc);
-
 
         void set_show_filenames_only(bool on_off);
 
