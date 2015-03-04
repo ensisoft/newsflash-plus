@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>CmdCond</class>
+ <widget class="QWidget" name="CmdCond">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>463</width>
+    <height>45</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Command Condition</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout_3">
+     <item>
+      <widget class="QComboBox" name="cmbLHS">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <item>
+        <property name="text">
+         <string>file.file</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>file.name</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>file.path</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>file.type</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>filegroup.path</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>archive.path</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>archive.file</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>archive.success</string>
+        </property>
+       </item>
+      </widget>
+     </item>
+     <item>
+      <widget class="QComboBox" name="cmbOperator">
+       <item>
+        <property name="text">
+         <string>equals</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>not equals</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>contains</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>not contains</string>
+        </property>
+       </item>
+      </widget>
+     </item>
+     <item>
+      <widget class="QComboBox" name="cmbRHS">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="editable">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btnClose">
+       <property name="text">
+        <string>Close</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>btnClose</sender>
+   <signal>clicked()</signal>
+   <receiver>CmdCond</receiver>
+   <slot>close()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>466</x>
+     <y>22</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>258</x>
+     <y>22</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>

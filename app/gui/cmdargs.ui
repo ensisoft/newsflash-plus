@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>CmdArgs</class>
+ <widget class="QWidget" name="CmdArgs">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>696</width>
+    <height>45</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Command Arguments</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <widget class="QComboBox" name="arg0">
+       <property name="editable">
+        <bool>true</bool>
+       </property>
+       <item>
+        <property name="text">
+         <string/>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>${file.file}</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>${file.name}</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>${file.path}</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>${filegroup.path}</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>${archive.file}</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>${archive.path}</string>
+        </property>
+       </item>
+      </widget>
+     </item>
+     <item>
+      <widget class="QComboBox" name="arg1">
+       <property name="editable">
+        <bool>true</bool>
+       </property>
+       <item>
+        <property name="text">
+         <string/>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>${file.file}</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>${file.name}</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>${file.path}</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>${filegroup.path}</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>${archive.file}</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>${archive.path}</string>
+        </property>
+       </item>
+      </widget>
+     </item>
+     <item>
+      <widget class="QComboBox" name="arg2">
+       <property name="editable">
+        <bool>true</bool>
+       </property>
+       <item>
+        <property name="text">
+         <string/>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>${file.file}</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>${file.name}</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>${file.path}</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>${filegroup.path}</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>${archive.file}</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>${archive.path}</string>
+        </property>
+       </item>
+      </widget>
+     </item>
+     <item>
+      <widget class="QComboBox" name="arg3">
+       <property name="editable">
+        <bool>true</bool>
+       </property>
+       <item>
+        <property name="text">
+         <string/>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>${file.file}</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>${file.name}</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>${file.path}</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>${filegroup.path}</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>${archive.file}</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>${archive.path}</string>
+        </property>
+       </item>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btnClose">
+       <property name="text">
+        <string>Close</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <tabstops>
+  <tabstop>arg0</tabstop>
+  <tabstop>arg1</tabstop>
+  <tabstop>arg2</tabstop>
+  <tabstop>arg3</tabstop>
+  <tabstop>btnClose</tabstop>
+ </tabstops>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>btnClose</sender>
+   <signal>clicked()</signal>
+   <receiver>CmdArgs</receiver>
+   <slot>close()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>645</x>
+     <y>22</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>347</x>
+     <y>22</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>

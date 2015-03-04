@@ -101,10 +101,21 @@ Commands::Command::Command() : enableCommand_(true), enableCond_(false)
     args_ = "${file.file}";
 }
 
-Commands::Command::Command(const QString& exec, const QString& args) : Command()
+Commands::Command::Command(QString exec, QString args) : Command()
 {
     exec_ = exec;
     args_ = args;
+}
+
+Commands::Command::Command(QString exec, QString args, QString comment) : Command(exec, args)
+{
+    comment_ = comment;
+}
+
+Commands::Command::Command(QString exec, QString args, QString comment, Condition cond) : Command(exec, args, comment)
+{
+    conds_.push_back(std::move(cond));
+    enableCond_ = true;
 }
 
 QIcon Commands::Command::icon() const
@@ -124,11 +135,16 @@ void Commands::Command::onFile(const app::FileInfo& file)
 {
     if (!enableCommand_)
         return;
+    if (!when_.test(When::OnFileDownload))
+        return;
 
     if (enableCond_)
     {
-        if (!cond_.evaluate(file))
-            return;
+        for (const auto& cond : conds_)
+        {
+            if (!cond.evaluate(file))
+                return;
+        }        
     }
 
     QStringList args;
@@ -141,6 +157,7 @@ void Commands::Command::onFile(const app::FileInfo& file)
             args << file.path;
         else if (item == "${file.file}")
             args << QDir::toNativeSeparators(file.path + "/" + file.name);
+        else args << item;
     }
     if (!QProcess::startDetached(exec_, args))
     {
@@ -152,11 +169,16 @@ void Commands::Command::onFilePack(const app::FilePackInfo& pack)
 {
     if (!enableCommand_)
         return;
+    if (!when_.test(When::OnPackDownload))
+        return;
 
     if (enableCond_)
     {
-        if (!cond_.evaluate(pack))
-            return;
+        for (const auto& cond : conds_)
+        {
+            if (!cond.evaluate(pack))
+                return;
+        }
     }
 
     QStringList args;
@@ -165,6 +187,7 @@ void Commands::Command::onFilePack(const app::FilePackInfo& pack)
     {
         if (item == "${filegroup.path}")
             args << pack.path;
+        else args << item;
     }
     if (!QProcess::startDetached(exec_, args))
     {
@@ -176,11 +199,16 @@ void Commands::Command::onUnpack(const app::Archive& arc)
 {
     if (!enableCommand_)
         return;
+    if (!when_.test(When::OnArchiveUnpack))
+        return;
 
     if (enableCond_)
     {
-        if (!cond_.evaluate(arc))
-            return;
+        for (const auto& cond : conds_)
+        {
+            if (!cond.evaluate(arc))
+                return;
+        }
     }
 
     QStringList args;
@@ -191,6 +219,7 @@ void Commands::Command::onUnpack(const app::Archive& arc)
             args << arc.path;
         else if (item == "${archive.file}")
             args << arc.file;
+        else args << item;
     }
     if (!QProcess::startDetached(exec_, args))
     {
@@ -203,11 +232,31 @@ void Commands::Command::onRepair(const app::Archive& arc)
 {
     if (!enableCommand_)
         return;
+    if (!when_.test(When::OnArchiveRepair))
+        return;
 
     if (enableCond_)
     {
-        if (!cond_.evaluate(arc))
-            return;
+        for (const auto& cond : conds_)
+        {
+            if (!cond.evaluate(arc))
+                return;
+        }
+    }
+
+    QStringList args;
+    QStringList list = args_.split(" ", QString::SkipEmptyParts);
+    for (const auto& item : list)
+    {
+        if (item == "${archive.path}")
+            args << arc.path;
+        else if (item == "${archive.file}")
+            args << arc.file;
+        else args << item;
+    }
+    if (!QProcess::startDetached(exec_, args))
+    {
+        ERROR("Failed to execute command %1", exec_);
     }
 }
 
@@ -235,16 +284,27 @@ void Commands::loadState(Settings& settings)
         const auto cmd   = settings.get(key, "enable_command", true);
         const auto cond  = settings.get(key, "enable_condition", false);
         const auto flags = settings.get(key, "flags", defaultFlags.value());
-        Command::WhenFlags when;
-        when.set_from_value(flags);
+
+        std::vector<Condition> cv;
+
+        const auto conds = settings.get(key, "conditions").toStringList();
+        for (const auto& c : conds)
+        {
+            const auto toks = c.split("|");
+            if (toks.size() != 3)
+                throw std::runtime_error("command condition parse error");
+
+            cv.emplace_back(toks[0], toks[1], toks[2]);
+        }
 
         Command command(exec, args);
         command.setEnableCommand(cmd);
         command.setEnableCondition(cond);
-        command.setWhen(when);
+        command.setWhen(flags);
         command.setComment(com);
-
+        command.setConditionsCopy(std::move(cv));
         commands_.push_back(command);
+
         DEBUG("Loaded command %1", exec);
     }
 }
@@ -263,10 +323,48 @@ void Commands::saveState(Settings& settings)
         settings.set(key, "enable_condition", command.isCondEnabled());
         settings.set(key, "flags", command.when().value());
 
+        QStringList conds;
+        const auto& conditions = command.getConditions();
+        for (const auto& condition : conditions)
+        {
+            QString str;
+            str.append(condition.getLHS());
+            str.append("|");
+            str.append(condition.getOp());
+            str.append("|");
+            str.append(condition.getRHS());
+            conds << str;
+        }
+        settings.set(key, "conditions", conds);
+
         DEBUG("Saved command %1", command.exec());
         commands << key;
     }
     settings.set("commands", "list", commands);
+}
+
+void Commands::firstLaunch()
+{
+#if defined(LINUX_OS)
+    Command vlc("/usr/bin/vlc", "${file.file}", "Play video files in a video player.",
+        Condition("file.type", "equals", toString(FileType::Video)));
+    vlc.setWhen(Command::When::OnFileDownload);
+
+    Command eog("/usr/bin/eog", "${file.file}", "Open images in an image viewer.",
+        Condition("file.type", "equals", toString(FileType::Image)));
+    eog.setWhen(Command::When::OnFileDownload);
+
+    Command audacious("/usr/bin/audacious", "--enqueue ${file.file}", "Enqueue music files in an audio player.",
+        Condition("file.type", "equals", toString(FileType::Audio)));
+    audacious.setWhen(Command::When::OnFileDownload);
+
+    commands_.push_back(vlc);
+    commands_.push_back(eog);
+    commands_.push_back(audacious);
+
+#elif defined(WINDOWS_OS)
+
+#endif    
 }
 
 void Commands::fileCompleted(const app::FileInfo& info)

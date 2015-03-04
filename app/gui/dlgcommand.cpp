@@ -23,9 +23,106 @@
 #  include <QtGui/QFileDialog>
 #  include <QDir>
 #  include <QFileInfo>
+#  include "ui_cmdargs.h"
+#  include "ui_cmdcond.h"
 #include <newsflash/warnpop.h>
 #include "dlgcommand.h"
 #include "../filetype.h"
+
+namespace {
+
+    class DlgCmdArgs : public QDialog
+    {
+    public:
+        DlgCmdArgs(QString argString, QWidget* parent) : QDialog(parent)
+        { 
+            ui_.setupUi(this); 
+
+            QComboBox* combos[] = {
+                ui_.arg0,
+                ui_.arg1,
+                ui_.arg2,
+                ui_.arg3
+            };
+
+            const auto& list = argString.split(" ", QString::SkipEmptyParts);
+            for  (int i=0; i<list.size(); ++i)
+            {
+                if (i > 3) break;
+
+                auto arg = list[i];
+
+                auto* combo = combos[i];
+                combo->setCurrentIndex(combo->findText(arg));
+            }
+        }
+        QString cmdString() const 
+        {
+            QComboBox* combos[] = {
+                ui_.arg0,
+                ui_.arg1,
+                ui_.arg2,
+                ui_.arg3
+            };            
+
+            QString cmd;
+
+            for (int i=0; i<4; ++i)
+            {
+                const auto text = combos[i]->currentText();
+                if (text.isEmpty()) 
+                    continue;
+                cmd.append(text);
+                cmd.append(" ");
+            }
+            return cmd;
+        }
+    private:
+        Ui::CmdArgs ui_;
+    };
+
+    class DlgCmdCond : public QDialog
+    {
+    public:
+        DlgCmdCond(QWidget* parent) : QDialog(parent)
+        {
+            ui_.setupUi(this);
+
+            auto beg = app::FileTypeIterator::begin();
+            auto end = app::FileTypeIterator::end();
+            for (; beg != end; ++beg)
+            {
+                ui_.cmbRHS->addItem(toString(*beg));
+            }            
+            ui_.cmbRHS->addItem(app::toString(true));
+            ui_.cmbRHS->addItem(app::toString(false));            
+        }
+
+        DlgCmdCond(QWidget* parent, const app::Commands::Condition& cond) : DlgCmdCond(parent)
+        {
+            ui_.cmbLHS->setCurrentIndex(
+                ui_.cmbLHS->findText(cond.getLHS()));
+            ui_.cmbRHS->setCurrentIndex(
+                ui_.cmbRHS->findText(cond.getRHS()));
+            ui_.cmbOperator->setCurrentIndex(
+                ui_.cmbOperator->findText(cond.getOp()));
+        }
+
+        QString getRHS() const 
+        { return ui_.cmbRHS->currentText(); }
+
+        QString getLHS() const 
+        { return ui_.cmbLHS->currentText(); }
+
+        QString getOp() const 
+        { return ui_.cmbOperator->currentText(); }
+
+    private:
+        Ui::CmdCond ui_;
+    };
+
+} //  namespace
+
 
 namespace gui
 {
@@ -51,25 +148,16 @@ DlgCommand::DlgCommand(QWidget* parent, app::Commands::Command& command) : QDial
     ui_.grpEnableCommand->setChecked(command.isEnabled());
     ui_.grpEnableCondition->setChecked(command.isCondEnabled());
 
-    auto beg = app::FileTypeIterator::begin();
-    auto end = app::FileTypeIterator::end();
-    for (; beg != end; ++beg)
+    const auto& conds = command.getConditions();
+    for (const auto& c : conds)
     {
-        ui_.cmbRHS->addItem(toString(*beg));
+        const auto lhs = c.getLHS();
+        const auto rhs = c.getRHS();
+        const auto op  = c.getOp();
+        QStringList str;
+        str << lhs << op << rhs;
+        ui_.listConditions->addItem(str.join(" "));
     }
-    ui_.cmbRHS->addItem(app::toString(true));
-    ui_.cmbRHS->addItem(app::toString(false));
-
-    const auto& cond = command.condition();
-    ui_.cmbLHS->setCurrentIndex(
-        ui_.cmbLHS->findText(cond.getLHS()));
-
-    ui_.cmbRHS->setCurrentIndex(
-        ui_.cmbRHS->findText(cond.getRHS()));
-
-    ui_.cmbOperator->setCurrentIndex(
-        ui_.cmbOperator->findText(cond.getOp()));
-
 }
 
 DlgCommand::~DlgCommand()
@@ -125,17 +213,48 @@ void DlgCommand::on_btnAccept_clicked()
     flags.set(w::OnArchiveUnpack, ui_.chkOnUnpack->isChecked());
     command_.setWhen(flags);
 
-    const auto lhs = ui_.cmbLHS->currentText();
-    const auto rhs = ui_.cmbRHS->currentText();
-    const auto op  = ui_.cmbOperator->currentText();
-
-    app::Commands::Condition cond(lhs, op, rhs);
-    command_.setCondition(cond);
-
     accept();
 }
 
-void DlgCommand::on_btnDefault_clicked()
-{}
+void DlgCommand::on_btnEdit_clicked()
+{
+    auto cmdString = ui_.editArgs->text();
+
+    DlgCmdArgs dlg(cmdString, this);
+    dlg.exec();
+
+    cmdString = dlg.cmdString();
+
+    ui_.editArgs->setText(cmdString);
+}
+
+void DlgCommand::on_btnNewCond_clicked()
+{
+    DlgCmdCond dlg(this);
+    dlg.exec();
+
+    const auto rhs = dlg.getRHS();
+    const auto lhs = dlg.getLHS();
+    const auto op  = dlg.getOp();
+    app::Commands::Condition cond(lhs, op, rhs);
+
+    command_.appendCondition(std::move(cond));
+
+    QStringList str;
+    str << lhs << op << rhs;
+    ui_.listConditions->addItem(str.join(" "));
+}
+
+void DlgCommand::on_btnDelCond_clicked()
+{
+    const auto row = ui_.listConditions->currentRow();
+    if (row == -1)
+        return;
+
+    const auto item = ui_.listConditions->takeItem(row);
+    delete item;
+
+    command_.removeCondition(row);
+}
 
 } // gui

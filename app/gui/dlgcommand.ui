@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>566</width>
-    <height>425</height>
+    <width>472</width>
+    <height>395</height>
    </rect>
   </property>
   <property name="acceptDrops">
@@ -54,6 +54,13 @@
             <layout class="QGridLayout" name="gridLayout_5">
              <item row="0" column="0">
               <layout class="QGridLayout" name="gridLayout_2">
+               <item row="1" column="2">
+                <widget class="QPushButton" name="btnEdit">
+                 <property name="text">
+                  <string>Edit ...</string>
+                 </property>
+                </widget>
+               </item>
                <item row="2" column="0">
                 <widget class="QLabel" name="label_5">
                  <property name="text">
@@ -71,14 +78,7 @@
                <item row="0" column="1">
                 <widget class="QLineEdit" name="editExec">
                  <property name="toolTip">
-                  <string>Application binary may include the full path</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="1" column="2">
-                <widget class="QPushButton" name="btnDefault">
-                 <property name="text">
-                  <string>Default</string>
+                  <string>Executable binary</string>
                  </property>
                 </widget>
                </item>
@@ -89,20 +89,10 @@
                  </property>
                 </widget>
                </item>
-               <item row="1" column="1">
-                <widget class="QLineEdit" name="editArgs">
-                 <property name="toolTip">
-                  <string>Arguments to be passed to the application when invoked. Pseudo argument ${file} will be expanded to the full file path at runtime</string>
-                 </property>
-                 <property name="text">
-                  <string>${file.name}</string>
-                 </property>
-                </widget>
-               </item>
                <item row="2" column="1">
                 <widget class="QLineEdit" name="editComment">
                  <property name="toolTip">
-                  <string>Keyboard shortcut</string>
+                  <string>Comment</string>
                  </property>
                 </widget>
                </item>
@@ -110,6 +100,16 @@
                 <widget class="QLabel" name="label_8">
                  <property name="text">
                   <string>Executable</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="1">
+                <widget class="QLineEdit" name="editArgs">
+                 <property name="toolTip">
+                  <string>The arguments to be passed to the executable</string>
+                 </property>
+                 <property name="text">
+                  <string>${file.name}</string>
                  </property>
                 </widget>
                </item>
@@ -170,37 +170,6 @@
          </layout>
         </widget>
        </item>
-       <item>
-        <layout class="QHBoxLayout" name="horizontalLayout">
-         <item>
-          <spacer name="horizontalSpacer">
-           <property name="orientation">
-            <enum>Qt::Horizontal</enum>
-           </property>
-           <property name="sizeHint" stdset="0">
-            <size>
-             <width>40</width>
-             <height>20</height>
-            </size>
-           </property>
-          </spacer>
-         </item>
-         <item>
-          <widget class="QPushButton" name="btnAccept">
-           <property name="text">
-            <string>OK</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="btnCancel">
-           <property name="text">
-            <string>Cancel</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </item>
       </layout>
      </widget>
      <widget class="QWidget" name="tabCondition">
@@ -218,108 +187,38 @@
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_3">
           <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_3">
+           <widget class="QListWidget" name="listConditions"/>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_2">
             <item>
-             <widget class="QComboBox" name="cmbLHS">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
+             <spacer name="horizontalSpacer_2">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
               </property>
-              <item>
-               <property name="text">
-                <string>file.file</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>file.name</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>file.path</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>file.type</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>filegroup.path</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>archive.path</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>archive.file</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>archive.success</string>
-               </property>
-              </item>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item>
+             <widget class="QPushButton" name="btnNewCond">
+              <property name="text">
+               <string>New ...</string>
+              </property>
              </widget>
             </item>
             <item>
-             <widget class="QComboBox" name="cmbOperator">
-              <item>
-               <property name="text">
-                <string>equals</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>not equals</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>contains</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>not contains</string>
-               </property>
-              </item>
-             </widget>
-            </item>
-            <item>
-             <widget class="QComboBox" name="cmbRHS">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="editable">
-               <bool>true</bool>
+             <widget class="QPushButton" name="btnDelCond">
+              <property name="text">
+               <string>Delete</string>
               </property>
              </widget>
             </item>
            </layout>
-          </item>
-          <item>
-           <spacer name="verticalSpacer">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>40</height>
-             </size>
-            </property>
-           </spacer>
           </item>
          </layout>
         </widget>
@@ -328,8 +227,55 @@
      </widget>
     </widget>
    </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btnAccept">
+       <property name="text">
+        <string>OK</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btnCancel">
+       <property name="text">
+        <string>Cancel</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>tabWidget</tabstop>
+  <tabstop>grpEnableCommand</tabstop>
+  <tabstop>editExec</tabstop>
+  <tabstop>btnBrowseExec</tabstop>
+  <tabstop>editArgs</tabstop>
+  <tabstop>btnEdit</tabstop>
+  <tabstop>editComment</tabstop>
+  <tabstop>chkOnFile</tabstop>
+  <tabstop>chkOnPack</tabstop>
+  <tabstop>chkOnRepair</tabstop>
+  <tabstop>chkOnUnpack</tabstop>
+  <tabstop>btnAccept</tabstop>
+  <tabstop>btnCancel</tabstop>
+  <tabstop>grpEnableCondition</tabstop>
+ </tabstops>
  <resources>
   <include location="resource.qrc"/>
  </resources>

@@ -23,9 +23,11 @@
 #  include <QtGui/QMenu>
 #  include <QAbstractTableModel>
 #include <newsflash/warnpop.h>
+#include <algorithm>
 #include "commands.h"
 #include "dlgcommand.h"
 #include "../utility.h"
+#include "../debug.h"
 
 namespace gui
 {
@@ -113,12 +115,21 @@ public:
     { return commands_; }
 
     void delCommand(std::size_t index)
-    {}
+    {
+        BOUNDSCHECK(commands_, index);
+        auto it = std::begin(commands_);
+        std::advance(it, index);
+        commands_.erase(it);
+
+        refresh();
+    }
 
     void setCommand(std::size_t index, const app::Commands::Command& cmd)
     {
-        Q_ASSERT(index < commands_.size());
-        commands_[index] = cmd;
+        BOUNDSCHECK(commands_, index);
+        auto it = std::begin(commands_);
+        std::advance(it, index);
+        *it = cmd;
 
         refresh();
     }
@@ -135,10 +146,15 @@ public:
     {
         app::sortAscending(indices);
 
+        const auto first = indices.first();
+        if (first.row() == 0)
+            return;
+
         for (int i=0; i<indices.size(); ++i)
         {
-            std::size_t index = indices[i].row();
+            const auto index = indices[i].row();
             std::swap(commands_[index], commands_[index-1]);
+            indices[i] = QAbstractTableModel::index(index -1, 0);
         }
         refresh();
     }
@@ -146,16 +162,31 @@ public:
     {
         app::sortDescending(indices);
 
-        const int numRows = commands_.size();
-        const int last    = indices[indices.size()-1].row();
+        const auto numRows = commands_.size();
+        const auto last    = indices.last();
+        if (last.row() >= numRows - 1)
+            return;
 
         for (int i=0; i<indices.size(); ++i)
         {
-            std::size_t index = indices[i].row();
+            const auto index = indices[i].row();
             std::swap(commands_[index], commands_[index+1]);
+            indices[i] = QAbstractTableModel::index(index + 1, 0);
         }
         refresh();
     }
+
+    void setEnableDisable(const QModelIndexList& list, bool onOff)
+    {
+        for (const auto& i : list)
+        {
+            auto& cmd = commands_[i.row()];
+            cmd.setEnableCommand(onOff);
+        }
+
+        refresh();
+    }
+
 
     void refresh()
     {
@@ -208,6 +239,8 @@ void CmdSettings::on_btnDel_clicked()
         return;
 
     model_->delCommand(indices[0].row());
+
+    tableCmds_selectionChanged();
 }
 
 void CmdSettings::on_btnEdit_clicked()
@@ -233,7 +266,15 @@ void CmdSettings::on_btnMoveUp_clicked()
 
     model_->moveUp(indices);
 
-    //ui_.tableScripts->selectionModel()->select(const QItemSelection &selection, QItemSelectionModel::SelectionFlags command)
+    QItemSelection selection;
+    for (auto& i : indices)
+        selection.select(i, i);
+
+    auto* model = ui_.tableCmds->selectionModel();
+    model->setCurrentIndex(selection.indexes().first(),
+        QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+    model->select(selection, 
+        QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
 }
 
 void CmdSettings::on_btnMoveDown_clicked()
@@ -241,6 +282,16 @@ void CmdSettings::on_btnMoveDown_clicked()
     auto indices = ui_.tableCmds->selectionModel()->selectedRows();
 
     model_->moveDown(indices);
+
+    QItemSelection selection;
+    for (auto& i : indices)
+        selection.select(i, i);
+
+    auto* model = ui_.tableCmds->selectionModel();
+    model->setCurrentIndex(selection.indexes().first(),
+        QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+    model->select(selection, 
+        QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);    
 }
 
 void CmdSettings::on_actionAdd_triggered()
@@ -258,6 +309,28 @@ void CmdSettings::on_actionEdit_triggered()
     on_btnEdit_clicked();
 }
 
+void CmdSettings::on_actionEnable_triggered()
+{
+    const auto& indices = ui_.tableCmds->selectionModel()->selectedRows();
+
+    model_->setEnableDisable(indices, true);
+
+    ui_.actionDisable->setEnabled(true);
+    ui_.actionEnable->setEnabled(false);
+
+}
+
+void CmdSettings::on_actionDisable_triggered()
+{
+    const auto& indices = ui_.tableCmds->selectionModel()->selectedRows();
+
+    model_->setEnableDisable(indices, false);
+
+    ui_.actionDisable->setEnabled(false);
+    ui_.actionEnable->setEnabled(true);    
+}
+
+
 void CmdSettings::on_tableCmds_customContextMenuRequested(QPoint point)
 {
     QMenu menu(ui_.tableCmds);
@@ -269,6 +342,11 @@ void CmdSettings::on_tableCmds_customContextMenuRequested(QPoint point)
     menu.addSeparator();    
     menu.addAction(ui_.actionDel);
     menu.exec(QCursor::pos());
+}
+
+void CmdSettings::on_tableCmds_doubleClicked(const QModelIndex& index)
+{
+    on_btnEdit_clicked();
 }
 
 void CmdSettings::tableCmds_selectionChanged()

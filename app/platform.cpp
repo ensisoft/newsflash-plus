@@ -451,7 +451,10 @@ void setShutdownCommand(const QString& cmd)
 
 void openFile(const QString& file)
 {
-    QDesktopServices::openUrl("file:///" + file);
+    //QDesktopServices::openUrl("file:///" + file);
+    QStringList args;
+    args << file;
+    QProcess::startDetached(openfile_command, args);
 }
 
 void openWeb(const QString& url)

@@ -42,7 +42,9 @@ namespace gui
         void on_btnBrowseExec_clicked();
         void on_btnCancel_clicked();
         void on_btnAccept_clicked();
-        void on_btnDefault_clicked();
+        void on_btnEdit_clicked();
+        void on_btnNewCond_clicked();
+        void on_btnDelCond_clicked();
 
     private:
         Ui::DlgCommand ui_;

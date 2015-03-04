@@ -21,6 +21,7 @@
 #pragma once
 
 #include <newsflash/warnpush.h>
+#  include <QtGui/QDialog>
 #  include <QObject>
 #  include "ui_commands.h"
 #include <newsflash/warnpop.h>
@@ -54,8 +55,12 @@ namespace gui
         void on_actionAdd_triggered();
         void on_actionDel_triggered();
         void on_actionEdit_triggered();
+        void on_actionEnable_triggered();
+        void on_actionDisable_triggered();
         void on_tableCmds_customContextMenuRequested(QPoint);
+        void on_tableCmds_doubleClicked(const QModelIndex&);
         void tableCmds_selectionChanged();
+
     private:
         Ui::Commands ui_;
     private:
@@ -91,7 +96,7 @@ namespace gui
         }
         virtual void firstLaunch() 
         {
-            // todo:
+            commands_.firstLaunch();
         }
 
         virtual void freeSettings(SettingsWidget* gui) override

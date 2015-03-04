@@ -86,7 +86,11 @@ namespace app
 
             using WhenFlags = newsflash::bitflag<When>;
 
-            Command(const QString& exec, const QString& args);
+            Command(QString exec, QString args);
+            Command(QString exec, QString args, QString comment);
+            Command(QString exec, QString args, QString comment, Condition cond);
+
+
             Command();
 
             QString exec() const 
@@ -135,11 +139,25 @@ namespace app
             void onUnpack(const app::Archive& arc);
             void onRepair(const app::Archive& arc);
 
-            Condition condition() const 
-            { return cond_; }
+            std::vector<Condition> getConditionsCopy() const 
+            { return conds_; }
 
-            void setCondition(Condition c)
-            { cond_ = c; }
+            void setConditionsCopy(std::vector<Condition> cond)
+            { conds_ = std::move(cond); }
+
+            const
+            std::vector<Condition>& getConditions() const 
+            { return conds_; }
+
+            void appendCondition(Condition c) 
+            { conds_.push_back(std::move(c)); }
+
+            void removeCondition(std::size_t i)
+            { 
+                auto it = std::begin(conds_);
+                it += i;
+                conds_.erase(it);
+            }
 
         private:
             quint32 guid_;            
@@ -153,7 +171,7 @@ namespace app
         private:
             WhenFlags when_;
         private:
-            Condition cond_;
+            std::vector<Condition> conds_;
         };
 
         Commands();
@@ -161,6 +179,8 @@ namespace app
 
         void loadState(Settings& settings);
         void saveState(Settings& settings);
+
+        void firstLaunch();
 
         using CmdList = std::vector<Command>;
 
