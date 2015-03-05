@@ -427,9 +427,6 @@ p, li { white-space: pre-wrap; }
    <property name="toolTip">
     <string>Add new account</string>
    </property>
-   <property name="shortcut">
-    <string>Ctrl+N</string>
-   </property>
   </action>
   <action name="actionDel">
    <property name="icon">

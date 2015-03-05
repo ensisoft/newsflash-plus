@@ -54,14 +54,15 @@ namespace app
 
             on_ready callback;
 
-            Context() : numPending_(0)
+            Context() : numPending_(0), manager_(nullptr)
             {}
             Context(NetworkManager& m) : numPending_(0), manager_(&m)
             {}
 
            ~Context()
             {
-                manager_->cancel(*this);
+                if (manager_)
+                    manager_->cancel(*this);
             }
             std::size_t numPending() const 
             { return numPending_;}

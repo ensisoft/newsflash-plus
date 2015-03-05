@@ -27,6 +27,7 @@
 #  include "ui_files.h"
 #include <newsflash/warnpop.h>
 #include "mainwidget.h"
+#include "finder.h"
 
 namespace app {
     class Files;
@@ -35,7 +36,7 @@ namespace app {
 namespace gui
 {
     // downloaded files GUI
-    class Files : public MainWidget
+    class Files : public MainWidget, public Finder
     {
         Q_OBJECT
 
@@ -43,6 +44,7 @@ namespace gui
         Files(app::Files& files);
        ~Files();
 
+        // MainWidget implementation
         virtual void addActions(QMenu& menu) override;
         virtual void addActions(QToolBar& bar) override;
         virtual void loadState(app::Settings& s) override;
@@ -50,32 +52,27 @@ namespace gui
         virtual void shutdown() override;
         virtual void refresh(bool isActive) override;        
         virtual void activate(QWidget*) override;
+        virtual info getInformation() const override;
+        virtual Finder* getFinder() override;
 
-        virtual info getInformation() const override
-        {
-            return {"files.html", true, true};
-        }
+        // Finder implementation
+        virtual bool isMatch(const QString& str, std::size_t index, bool caseSensitive) override;
+        virtual bool isMatch(const QRegExp& regex, std::size_t index) override;
+        virtual std::size_t numItems() const override;
+        virtual std::size_t curItem() const override;
+        virtual void setFound(std::size_t index) override;
+
     private slots:
         void on_actionOpenFile_triggered();
         void on_actionOpenFileWith_triggered();
         void on_actionClear_triggered();
         void on_actionOpenFolder_triggered();        
-        void on_actionFind_triggered();
-        void on_actionFindNext_triggered();
-        void on_actionFindPrev_triggered();
         void on_actionDelete_triggered();
         void on_tableFiles_customContextMenuRequested(QPoint point);
         void on_tableFiles_doubleClicked();
-        void on_btnCloseFind_clicked();
-        void on_btnFindNext_clicked();
-        void on_btnFindPrev_clicked();
-        void on_editFind_returnPressed();
         void on_chkKeepSorted_clicked();
         void invokeTool();
         void toolsUpdated();
-
-    private:
-        void findNext(bool forward);
 
     private:
         Ui::Files ui_;

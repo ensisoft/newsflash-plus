@@ -127,7 +127,7 @@ void Accounts::addActions(QToolBar& bar)
 
 MainWidget::info Accounts::getInformation() const
 {
-    return {"accounts.html", true, true};
+    return {"accounts.html", true};
 }
 
 void Accounts::loadState(app::Settings& s)

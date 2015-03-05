@@ -53,7 +53,7 @@ namespace gui
         virtual void shutdown() override;
 
         virtual info getInformation() const override
-        { return {"repairs.html", true, true }; }
+        { return {"repairs.html", true}; }
 
         void setRepairEnabled(bool onOff);
 

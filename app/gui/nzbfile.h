@@ -50,7 +50,7 @@ namespace gui
 
         virtual info getInformation() const override
         { 
-            return {"nzb.html", false, false}; 
+            return {"nzb.html", false}; 
         }
 
         // open and display the contents of the given NZB file.

@@ -42,6 +42,7 @@
 #include "../tools.h"
 #include "../eventlog.h"
 #include "../files.h"
+#include "../utility.h"
 
 namespace gui
 {
@@ -50,15 +51,10 @@ Files::Files(app::Files& files) : model_(files), numFiles_(0)
 {
     ui_.setupUi(this);
     ui_.tableFiles->setModel(&model_);
+    ui_.actionOpenFile->setShortcut(QKeySequence::Open);
 
     QObject::connect(app::g_tools, SIGNAL(toolsUpdated()),
         this, SLOT(toolsUpdated()));
-
-    ui_.actionOpenFile->setShortcut(QKeySequence::Open);
-    ui_.actionFind->setShortcut(QKeySequence::Find);
-    ui_.actionFindNext->setShortcut(QKeySequence::FindNext);
-    ui_.actionFindPrev->setShortcut(QKeySequence::FindPrevious);
-    ui_.findContainer->setVisible(false);
 
     DEBUG("Files UI created");
 }
@@ -74,10 +70,6 @@ void Files::addActions(QMenu& menu)
     menu.addSeparator();
     menu.addAction(ui_.actionOpenFolder);
     menu.addSeparator();
-    menu.addAction(ui_.actionFind);
-    menu.addAction(ui_.actionFindPrev);
-    menu.addAction(ui_.actionFindNext);
-    menu.addSeparator();
     menu.addAction(ui_.actionClear);
     menu.addSeparator();
     menu.addAction(ui_.actionDelete);
@@ -89,10 +81,6 @@ void Files::addActions(QToolBar& bar)
     bar.addAction(ui_.actionOpenFile);
     bar.addSeparator();
     bar.addAction(ui_.actionOpenFolder);
-    bar.addSeparator();
-    bar.addAction(ui_.actionFind);
-    bar.addAction(ui_.actionFindPrev);
-    bar.addAction(ui_.actionFindNext);
     bar.addSeparator();
     bar.addAction(ui_.actionClear);
     bar.addSeparator();
@@ -119,64 +107,43 @@ void Files::addActions(QToolBar& bar)
     }    
 }
 
-void Files::loadState(app::Settings& s) 
+void Files::loadState(app::Settings& settings) 
 {
-    const auto sorted  = s.get("files", "keep_sorted", false);
-    const auto clear   = s.get("files", "clear_on_exit", false);
-    const auto confirm = s.get("files", "confirm_file_delete", true);
-    const auto matchcase = s.get("files", "match_case", true);
-
-    const auto sortColumn = s.get("files", "sort_column", 0);
-    const auto sortOrder  = s.get("files", "sort_order", (int)Qt::AscendingOrder);
+    const auto sorted     = settings.get("files", "keep_sorted", false);
+    const auto clear      = settings.get("files", "clear_on_exit", false);
+    const auto confirm    = settings.get("files", "confirm_file_delete", true);
+    const auto sortColumn = settings.get("files", "sort_column", 0);
+    const auto sortOrder  = settings.get("files", "sort_order", (int)Qt::AscendingOrder);
 
     ui_.chkKeepSorted->setChecked(sorted);
     ui_.chkClearOnExit->setChecked(clear);
     ui_.chkConfirmDelete->setChecked(confirm);
-    ui_.chkMatchCase->setChecked(matchcase);
+    ui_.tableFiles->sortByColumn(sortColumn, (Qt::SortOrder)sortOrder);    
 
-    const auto* model = ui_.tableFiles->model();
-    for (int i=0; i<model->columnCount()-1; ++i)
-    {
-        const auto name  = QString("table_col_%1_width").arg(i);
-        const auto width = s.get("files", name, ui_.tableFiles->columnWidth(i));
-        ui_.tableFiles->setColumnWidth(i, width);
-    }
+    app::loadTableLayout("files", ui_.tableFiles, settings);
 
     model_.loadHistory();
     model_.keepSorted(sorted);
-
-    ui_.tableFiles->sortByColumn(sortColumn, (Qt::SortOrder)sortOrder);
-
     numFiles_ = model_.numFiles();
 }
 
-void Files::saveState(app::Settings& s)
+void Files::saveState(app::Settings& settings)
 {
     const auto sorted    = ui_.chkKeepSorted->isChecked();
     const auto clear     = ui_.chkClearOnExit->isChecked();
     const auto confirm   = ui_.chkConfirmDelete->isChecked();
-    const auto matchcase = ui_.chkMatchCase->isChecked();
 
     const QHeaderView* header = ui_.tableFiles->horizontalHeader();
     const auto sortColumn = header->sortIndicatorSection();
     const auto sortOrder  = header->sortIndicatorOrder();
 
-    s.set("files", "keep_sorted", sorted);
-    s.set("files", "clear_on_exit", clear);
-    s.set("files", "confirm_file_delete", confirm);
-    s.set("files", "match_case", matchcase);
-    s.set("files", "sort_column", sortColumn);
-    s.set("files", "sort_order", sortOrder);
+    settings.set("files", "keep_sorted", sorted);
+    settings.set("files", "clear_on_exit", clear);
+    settings.set("files", "confirm_file_delete", confirm);
+    settings.set("files", "sort_column", sortColumn);
+    settings.set("files", "sort_order", sortOrder);
 
-    const auto* model = ui_.tableFiles->model();
-    // the last column has auto-stretch flag set so it's width
-    // is implied. and in fact setting the width will cause rendering bugs
-    for (int i=0; i<model->columnCount()-1; ++i)
-    {
-        const auto width = ui_.tableFiles->columnWidth(i);
-        const auto name  = QString("table_col_%1_width").arg(i);
-        s.set("files", name, width);
-    }    
+    app::saveTableLayout("files", ui_.tableFiles, settings);
 }
 
 void Files::shutdown() 
@@ -202,6 +169,62 @@ void Files::activate(QWidget*)
 {
     numFiles_ = model_.numFiles();
     setWindowTitle("Files");
+}
+
+MainWidget::info Files::getInformation() const
+{
+    return {"files.html", true};    
+}
+
+Finder* Files::getFinder() 
+{
+    return this;
+}
+
+bool Files::isMatch(const QString& str, std::size_t index, bool caseSensitive)
+{
+    const auto& item = model_.getItem(index);
+    if (!caseSensitive)
+    {
+        auto upper = item.name.toUpper();
+        if (upper.indexOf(str) != -1)
+            return true;
+    }
+    else
+    {
+        if (item.name.indexOf(str) != -1)
+            return true;
+    }
+    return false;
+}
+
+bool Files::isMatch(const QRegExp& regex, std::size_t index)
+{
+    const auto& item = model_.getItem(index);
+    if (regex.indexIn(item.name) != -1)
+        return true;
+    return false;
+}
+
+std::size_t Files::numItems() const 
+{ return model_.numFiles(); }
+
+std::size_t Files::curItem() const 
+{
+    const auto& indices = ui_.tableFiles->selectionModel()->selectedRows();
+    if (indices.isEmpty())
+        return 0;
+
+    const auto& first = indices.first();
+    return first.row();
+}
+
+void Files::setFound(std::size_t index)
+{
+    auto* model = ui_.tableFiles->model();
+    auto i = model->index(index, 0);
+    ui_.tableFiles->setCurrentIndex(i);
+    ui_.tableFiles->scrollTo(i);
 }
 
 void Files::on_actionOpenFile_triggered()
@@ -284,22 +307,6 @@ void Files::on_actionOpenFolder_triggered()
     }
 }
 
-void Files::on_actionFind_triggered()
-{
-    ui_.findContainer->setVisible(true);
-    ui_.editFind->setFocus();
-}
-
-void Files::on_actionFindNext_triggered()
-{
-    findNext(true);
-}
-
-void Files::on_actionFindPrev_triggered()
-{
-    findNext(false);
-}
-
 void Files::on_actionDelete_triggered()
 {
     auto indices = ui_.tableFiles->selectionModel()->selectedRows();
@@ -363,17 +370,10 @@ void Files::on_tableFiles_customContextMenuRequested(QPoint point)
 
     sub.addSeparator();
     sub.addAction(ui_.actionOpenFileWith);
-
     menu.addMenu(&sub);
     menu.addSeparator();
-    //menu.addAction(ui_.actionFind);
-    //menu.addAction(ui_.actionFindPrev);
-    //menu.addAction(ui_.actionFindNext);
-    //menu.addSeparator();
     menu.addAction(ui_.actionOpenFolder);
     menu.addSeparator();
-    //menu.addAction(ui_.actionClear);
-    //menu.addSeparator();
     menu.addAction(ui_.actionDelete);
     menu.exec(QCursor::pos());
 }
@@ -381,26 +381,6 @@ void Files::on_tableFiles_customContextMenuRequested(QPoint point)
 void Files::on_tableFiles_doubleClicked()
 {
     on_actionOpenFile_triggered();
-}
-
-void Files::on_btnCloseFind_clicked()
-{
-    ui_.findContainer->setVisible(false);
-}
-
-void Files::on_btnFindNext_clicked()
-{
-    findNext(true);
-}
-
-void Files::on_btnFindPrev_clicked()
-{
-    findNext(false);
-}
-
-void Files::on_editFind_returnPressed()
-{
-    findNext(true);
 }
 
 void Files::on_chkKeepSorted_clicked()
@@ -437,52 +417,5 @@ void Files::toolsUpdated()
 {
     emit updateMenu(this);
 }
-
-void Files::findNext(bool forward)
-{
-    QRegExp regex(ui_.editFind->text());
-    if (!regex.isValid())
-    {
-        ui_.label->setText("Incorrectly formed search pattern");
-        return;
-    }
-    ui_.label->clear();
-
-    if (ui_.chkMatchCase->isChecked())
-        regex.setCaseSensitivity(Qt::CaseSensitive);
-    else regex.setCaseSensitivity(Qt::CaseInsensitive);
-
-    int start = 0;
-
-    const auto& indices = ui_.tableFiles->selectionModel()->selectedRows();
-    if (!indices.isEmpty())
-        start = indices.last().row();
-
-    int num_rows = model_.rowCount(QModelIndex());
-
-    for (int i=0; i<num_rows; ++i)
-    {
-        if (forward)
-            start = (start + 1) % num_rows;
-        else if (--start < 0)
-            start = num_rows - 1;
-
-        Q_ASSERT(start >= 0);
-        Q_ASSERT(start < num_rows);
-
-        const auto& item = model_.getItem(start);
-        if (regex.indexIn(item.name) != -1 ||
-            regex.indexIn(item.path) != -1)
-        {
-            QModelIndex index = ui_.tableFiles->model()->index(start, 0);
-            ui_.tableFiles->selectionModel()->setCurrentIndex(index, 
-                QItemSelectionModel::SelectCurrent | QItemSelectionModel::Rows);
-            ui_.tableFiles->scrollTo(index);
-            return;
-        }
-    }    
-    ui_.label->setText("No matches");
-}
-
 
 } // gui

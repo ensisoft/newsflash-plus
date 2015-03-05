@@ -49,6 +49,7 @@
 #include "dlgfeedback.h"
 #include "dlgaccount.h"
 #include "config.h"
+#include "findwidget.h"
 #include "../eventlog.h"
 #include "../debug.h"
 #include "../format.h"
@@ -92,9 +93,14 @@ MainWindow::MainWindow(app::Settings& s) : QMainWindow(nullptr), current_(nullpt
 
     ui_.actionOpen->setShortcut(QKeySequence::Open);
     ui_.actionExit->setShortcut(QKeySequence::Quit);
+    ui_.actionSearch->setShortcut(QKeySequence::New);
     ui_.actionWindowClose->setShortcut(QKeySequence::Close);
     ui_.actionWindowNext->setShortcut(QKeySequence::Forward);
     ui_.actionWindowPrev->setShortcut(QKeySequence::Back);
+
+    ui_.actionFind->setShortcut(QKeySequence::Find);
+    ui_.actionFindNext->setShortcut(QKeySequence::FindNext);
+    ui_.actionFindPrev->setShortcut(QKeySequence::FindPrevious);
 
     QObject::connect(&refresh_timer_, SIGNAL(timeout()),
         this, SLOT(timerRefresh_timeout()));
@@ -117,7 +123,7 @@ MainWindow::~MainWindow()
     DEBUG("MainWindow deleted");
 }
 
-void MainWindow::attach(MainWidget* widget, bool loadstate)
+void MainWindow::attach(MainWidget* widget, bool permanent, bool loadstate)
 {
     Q_ASSERT(!widget->parent());
 
@@ -132,7 +138,7 @@ void MainWindow::attach(MainWidget* widget, bool loadstate)
     // only permanent widgets get a view action.
     // permant widgets are those that instead of being closed
     // are just hidden and toggled in the View menu. 
-    if (info.permanent)
+    if (permanent)
     {
         QAction* action = ui_.menuView->addAction(text);
         action->setCheckable(true);
@@ -142,12 +148,14 @@ void MainWindow::attach(MainWidget* widget, bool loadstate)
             SLOT(actionWindowToggleView_triggered()));
 
         actions_.push_back(action);
+        widget->setProperty("permanent", true);
     }
     else
     {
         const auto count = ui_.mainTab->count();
         ui_.mainTab->addTab(widget, icon, text);
         ui_.mainTab->setCurrentIndex(count);
+        widget->setProperty("permanent", false);
     }
 
     if (loadstate)
@@ -305,6 +313,8 @@ void MainWindow::prepareFileMenu()
 {
     ui_.menuFile->addAction(ui_.actionOpen);
     ui_.menuFile->addSeparator();
+    ui_.menuFile->addAction(ui_.actionSearch);
+    ui_.menuFile->addSeparator();
 
     for (auto* m : modules_)
         if (m->addActions(*ui_.menuFile))
@@ -457,10 +467,10 @@ void MainWindow::updateMenu(MainWidget* widget)
         return;
 
     ui_.mainToolBar->clear();
-    ui_.menuEdit->clear();
+    ui_.menuTemp->clear();
 
     widget->addActions(*ui_.mainToolBar);
-    widget->addActions(*ui_.menuEdit);
+    widget->addActions(*ui_.menuTemp);
 
     ui_.mainToolBar->addSeparator();
     ui_.mainToolBar->addAction(ui_.actionContextHelp);
@@ -637,10 +647,40 @@ void MainWindow::dropEvent(QDropEvent* event)
         {
             MainWidget* widget = m->dropFile(name);
             if (widget)
-                attach(widget);
+                attach(widget, false);
         }
     }
 }
+
+FindWidget* MainWindow::getFindWidget()
+{
+    auto* main = static_cast<MainWidget*>(ui_.mainTab->currentWidget());
+    if (main == nullptr)
+        return nullptr;
+
+    Finder* finder = main->getFinder();
+    if (finder == nullptr)
+        return nullptr;
+
+    FindWidget* findWidget = nullptr;
+
+    QList<QWidget*> kids = main->findChildren<QWidget*>("findWidget");
+    if (kids.isEmpty())
+    {
+        auto* layout = main->layout();
+        Q_ASSERT(layout && 
+            "The MainWidget doesn't have appropriate layout object.");
+        findWidget = new FindWidget(main, *finder);
+        findWidget->setObjectName("findWidget");
+        layout->addWidget(findWidget);
+    }
+    else
+    {
+        findWidget = static_cast<FindWidget*>(kids[0]);
+    }
+    return findWidget;
+}
+
 
 void MainWindow::buildWindowMenu()
 {
@@ -744,7 +784,7 @@ void MainWindow::on_mainTab_currentChanged(int index)
         current_->deactivate();
 
     ui_.mainToolBar->clear();
-    ui_.menuEdit->clear();
+    ui_.menuTemp->clear();
 
     if (index != -1)
     {
@@ -752,14 +792,14 @@ void MainWindow::on_mainTab_currentChanged(int index)
 
         widget->activate(ui_.mainTab);
         widget->addActions(*ui_.mainToolBar);
-        widget->addActions(*ui_.menuEdit);
+        widget->addActions(*ui_.menuTemp);
 
         auto title = widget->windowTitle();
         auto space = title.indexOf(" ");
         if (space != -1)
             title.resize(space);
 
-        ui_.menuEdit->setTitle(title);
+        ui_.menuTemp->setTitle(title);
         current_ = widget;
     }
 
@@ -782,11 +822,12 @@ void MainWindow::on_mainTab_tabCloseRequested(int tab)
     Q_ASSERT(it != std::end(widgets_));
     Q_ASSERT(*it == widget);
 
-    const auto info = widget->getInformation();
-    if (info.permanent)
+    auto permanent = widget->property("permanent").toBool();
+
+    if (permanent)
     {
         const auto index = std::distance(std::begin(widgets_), it);
-        Q_ASSERT(index < actions_.size());
+        BOUNDSCHECK(actions_, index);
 
         auto* action = actions_[index];
         action->setChecked(false);
@@ -847,7 +888,7 @@ void MainWindow::on_actionOpen_triggered()
     {
         MainWidget* widget = m->openFile(file);
         if (widget)
-            attach(widget);
+            attach(widget, false);
     }
 }
 
@@ -875,6 +916,39 @@ void MainWindow::on_actionExit_triggered()
     // will invoke the normal shutdown sequence.
     QMainWindow::close();
 }
+
+void MainWindow::on_actionFind_triggered()
+{
+    auto* finder = getFindWidget();
+    if (!finder) return;
+    finder->show();
+    finder->find();
+}
+
+void MainWindow::on_actionFindNext_triggered()
+{
+    auto* finder = getFindWidget();
+    if (!finder) return;    
+    finder->findNext();
+}
+
+void MainWindow::on_actionFindPrev_triggered()
+{
+    auto* finder = getFindWidget();
+    if (!finder) return;    
+    finder->findPrev();
+}
+
+void MainWindow::on_actionSearch_triggered()
+{
+    for (auto* m : modules_)
+    {
+        MainWidget* widget = m->openSearch();
+        if (widget)
+            attach(widget, false);
+    }
+}
+
 
 void MainWindow::on_actionSettings_triggered()
 {

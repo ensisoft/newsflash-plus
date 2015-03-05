@@ -36,6 +36,10 @@ namespace gui
         Search();
        ~Search();
 
+        virtual void addActions(QMenu& menu) override;
+        virtual void addActions(QToolBar& bar) override;
+
     private:
+        Ui::Search ui_;
     };
 } // gui

@@ -21,14 +21,12 @@
 #pragma once
 
 #include <newsflash/config.h>
-
 #include <newsflash/warnpush.h>
 #  include <QString>
 #  include <QObject>
 #  include <QAbstractTableModel>
 #  include <QDateTime>
 #include <newsflash/warnpop.h>
-
 #include <memory>
 #include <vector>
 #include <map>
@@ -41,15 +39,16 @@ namespace app
 {
     class RSSFeed;
 
-    class RSS : public QAbstractTableModel
+    // RSSReader aggregates several RSS feeds into one single RSS feed.
+    class RSSReader : public QAbstractTableModel
     {
     public:
         enum class columns {
             date, category, size, locked, title, sentinel
         };                
 
-        RSS();
-       ~RSS();
+        RSSReader();
+       ~RSSReader();
         
         std::function<void()> on_ready;
 

@@ -110,7 +110,7 @@ void Groups::activate(QWidget*)
 
 MainWidget::info Groups::getInformation() const
 {
-    return {"news.html", true, true};
+    return {"news.html", true};
 }
 
 void Groups::loadState(app::Settings& settings)
@@ -160,7 +160,7 @@ void Groups::on_actionBrowse_triggered()
     for (int i=0; i<indices.size(); ++i)
     {
         auto* news = new NewsGroup();
-        g_win->attach(news, true);
+        g_win->attach(news, false, true);
     }
 }
 

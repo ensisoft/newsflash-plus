@@ -45,6 +45,7 @@ namespace app {
 
 namespace gui
 {
+    class FindWidget;
     class MainWidget;
     class MainModule;
     class DlgShutdown;
@@ -68,15 +69,14 @@ namespace gui
        
         // attach a new widget to the mainwindow and display it.
         // ownership of the object remains with the caller.
-        void attach(MainWidget* widget, bool loadstate = false);
+        // if permanent is true the widget will appear in the View Menu
+        // and upon closure is just hidden and can be reopened through the View menu.
+        // non permanent widgets on the other hand are deleted.
+        void attach(MainWidget* widget, bool permanent = true, bool loadstate = false);
 
         // attach a new module to the mainwindow.
         // ownership of the module remains with the caller.
         void attach(MainModule* module, bool loadstate = false);
-
-        // update the widget's display state
-        //void update(MainWidget* widget);
-    
 
         // detach all widgets
         void detachAllWidgets();
@@ -125,6 +125,7 @@ namespace gui
         void closeEvent(QCloseEvent* event);        
         void dragEnterEvent(QDragEnterEvent* event);
         void dropEvent(QDropEvent* event);
+        FindWidget* getFindWidget();
         
     private slots:
         void on_mainTab_currentChanged(int index);
@@ -136,6 +137,10 @@ namespace gui
         void on_actionOpen_triggered();
         void on_actionHelp_triggered();
         void on_actionExit_triggered();
+        void on_actionFind_triggered();
+        void on_actionFindNext_triggered();
+        void on_actionFindPrev_triggered();
+        void on_actionSearch_triggered();
         void on_actionSettings_triggered();
         void on_actionAbout_triggered();
         void on_actionReportBug_triggered();

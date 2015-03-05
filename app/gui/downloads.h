@@ -51,7 +51,7 @@ namespace gui
         virtual void activate(QWidget*) override;
 
         virtual info getInformation() const override 
-        { return {"downloads.html", true, true}; }
+        { return {"downloads.html", true}; }
 
     private slots:
         void on_actionConnect_triggered();

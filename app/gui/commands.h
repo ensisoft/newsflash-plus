@@ -20,6 +20,7 @@
 
 #pragma once
 
+#include <newsflash/config.h>
 #include <newsflash/warnpush.h>
 #  include <QtGui/QDialog>
 #  include <QObject>

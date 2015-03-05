@@ -40,6 +40,7 @@ namespace app {
 namespace gui
 {
     class SettingsWidget;
+    class Finder;
 
     // mainwidget objects sit in the mainwindow's main tab 
     // and provides GUI and features to the application.
@@ -59,10 +60,6 @@ namespace gui
 
             // Whether the component should be visible by default (on first launch).
             bool visible_by_default;            
-
-            // permant widgets are only hidden when closed.
-            // non-permanent widgets are deleted when closed.
-            bool permanent;
         };
 
         virtual ~MainWidget() = default;
@@ -97,7 +94,7 @@ namespace gui
         virtual void firstLaunch() {}
 
         // get information about the widget/component.
-        virtual info getInformation() const { return {"", false, false}; }
+        virtual info getInformation() const { return {"", false}; }
 
         // get a settings widget if any. the object ownership is 
         // transferred to the caller.
@@ -107,6 +104,8 @@ namespace gui
 
         // notify that application settings have changed. 
         virtual void freeSettings(SettingsWidget* s) {}
+
+        virtual Finder* getFinder() { return nullptr; }
 
     signals:
         void updateMenu(MainWidget* self);

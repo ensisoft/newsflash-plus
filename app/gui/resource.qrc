@@ -46,7 +46,8 @@
     <file>resource/16x16_ico_png/ico_bullet_red.png</file>
     <file>resource/16x16_ico_png/ico_bullet_blue.png</file>    
     <file>resource/16x16_ico_png/ico_bullet_grey.png</file>    
-    <file>resource/16x16_ico_png/ico_bullet_yellow.png</file>    
+    <file>resource/16x16_ico_png/ico_bullet_yellow.png</file> 
+    <file>resource/16x16_ico_png/ico_search.png</file>    
 
 
     <!-- application icons -->
@@ -149,7 +150,7 @@
     <file>resource/16x16_ico_png/ico_next_bookmark.png</file>
     <file>resource/16x16_ico_png/ico_previous_bookmark.png</file>
     <file>resource/16x16_ico_png/ico_touch.png</file>
-    <file>resource/16x16_ico_png/ico_search.png</file>
+
     <file>resource/16x16_ico_png/ico_link.png</file>
     <file>resource/16x16_ico_png/ico_start.png</file>
     <file>resource/16x16_ico_png/ico_empty.png</file>

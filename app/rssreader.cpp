@@ -32,7 +32,7 @@
 #  include <QBuffer>
 #  include <QDir>
 #include <newsflash/warnpop.h>
-#include "rss.h"
+#include "rssreader.h"
 #include "eventlog.h"
 #include "debug.h"
 #include "format.h"
@@ -47,7 +47,7 @@
 namespace app
 {
 
-RSS::RSS()
+RSSReader::RSSReader()
 {
     net_ = g_net->getSubmissionContext();
 
@@ -60,15 +60,15 @@ RSS::RSS()
         on_ready();
     };
 
-    DEBUG("RSS created");
+    DEBUG("RSSReader created");
 }
 
-RSS::~RSS()
+RSSReader::~RSSReader()
 {
-    DEBUG("RSS destroyed");
+    DEBUG("RSSReader destroyed");
 }
 
-QVariant RSS::data(const QModelIndex& index, int role) const
+QVariant RSSReader::data(const QModelIndex& index, int role) const
 {
     const auto row = index.row();
     const auto col = columns(index.column());        
@@ -100,7 +100,7 @@ QVariant RSS::data(const QModelIndex& index, int role) const
     return {};
 }
 
-QVariant RSS::headerData(int section, Qt::Orientation orientation, int role) const
+QVariant RSSReader::headerData(int section, Qt::Orientation orientation, int role) const
 {
     if (orientation != Qt::Horizontal)
         return {};
@@ -126,7 +126,7 @@ QVariant RSS::headerData(int section, Qt::Orientation orientation, int role) con
     return {};
 }
 
-void RSS::sort(int column, Qt::SortOrder order)
+void RSSReader::sort(int column, Qt::SortOrder order)
 {
     emit layoutAboutToBeChanged();
 
@@ -151,23 +151,23 @@ void RSS::sort(int column, Qt::SortOrder order)
     emit layoutChanged();
 }
 
-int RSS::rowCount(const QModelIndex&) const
+int RSSReader::rowCount(const QModelIndex&) const
 {
     return (int)items_.size();
 }
 
-int RSS::columnCount(const QModelIndex&) const
+int RSSReader::columnCount(const QModelIndex&) const
 {
     return (int)columns::sentinel;
 }
 
-void RSS::clear()
+void RSSReader::clear()
 {
     items_.clear();
     QAbstractTableModel::reset();                
 }
 
-bool RSS::refresh(MediaType type)
+bool RSSReader::refresh(MediaType type)
 {
     bool ret = false;
 
@@ -180,7 +180,7 @@ bool RSS::refresh(MediaType type)
         feed->prepare(type, urls);
         for (const auto& url : urls)
         {
-            g_net->submit(std::bind(&RSS::onRefreshComplete, this, feed.get(), type,
+            g_net->submit(std::bind(&RSSReader::onRefreshComplete, this, feed.get(), type,
                 std::placeholders::_1), net_, url);
             ret = true;
         }
@@ -189,7 +189,7 @@ bool RSS::refresh(MediaType type)
     return ret;
 }
 
-void RSS::enableFeed(const QString& feed, bool on_off)
+void RSSReader::enableFeed(const QString& feed, bool on_off)
 {
     for (auto& f :feeds_)
     {
@@ -201,7 +201,7 @@ void RSS::enableFeed(const QString& feed, bool on_off)
     }
 }
 
-void RSS::setCredentials(const QString& feed, const QString& user, const QString& apikey)
+void RSSReader::setCredentials(const QString& feed, const QString& user, const QString& apikey)
 {
     RSSFeed::params p;
     p.user = user;
@@ -217,7 +217,7 @@ void RSS::setCredentials(const QString& feed, const QString& user, const QString
 }
 
 
-void RSS::downloadNzbFile(int row, const QString& file)
+void RSSReader::downloadNzbFile(int row, const QString& file)
 {
     Q_ASSERT(row >= 0);
     Q_ASSERT(row < items_.size());
@@ -225,11 +225,11 @@ void RSS::downloadNzbFile(int row, const QString& file)
     const auto& item = items_[row];
     const auto& link = item.nzblink;
     //const auto& name = item.title;
-    g_net->submit(std::bind(&RSS::onNzbFileComplete, this, file,
+    g_net->submit(std::bind(&RSSReader::onNzbFileComplete, this, file,
         std::placeholders::_1), net_, link);
 }
 
-void RSS::downloadNzbFile(int row, data_callback cb)
+void RSSReader::downloadNzbFile(int row, data_callback cb)
 {
     Q_ASSERT(row >= 0);
     Q_ASSERT(row < items_.size());
@@ -237,11 +237,11 @@ void RSS::downloadNzbFile(int row, data_callback cb)
     const auto& item = items_[row];
     const auto& link = item.nzblink;
 
-    g_net->submit(std::bind(&RSS::onNzbDataCompleteCallback, this, std::move(cb), 
+    g_net->submit(std::bind(&RSSReader::onNzbDataCompleteCallback, this, std::move(cb), 
         std::placeholders::_1), net_, link);
 }
 
-void RSS::downloadNzbContent(int row, quint32 account, const QString& folder)
+void RSSReader::downloadNzbContent(int row, quint32 account, const QString& folder)
 {
     Q_ASSERT(row >= 0);
     Q_ASSERT(row < items_.size());    
@@ -249,16 +249,16 @@ void RSS::downloadNzbContent(int row, quint32 account, const QString& folder)
     const auto& item = items_[row];
     const auto& link = item.nzblink;
     const auto& desc = item.title;
-    g_net->submit(std::bind(&RSS::onNzbDataComplete, this, folder, desc, account,
+    g_net->submit(std::bind(&RSSReader::onNzbDataComplete, this, folder, desc, account,
         std::placeholders::_1), net_, link);
 }
 
-void RSS::stop()
+void RSSReader::stop()
 {
     g_net->cancel(net_);
 }
 
-void RSS::onRefreshComplete(RSSFeed* feed, MediaType type, QNetworkReply& reply)
+void RSSReader::onRefreshComplete(RSSFeed* feed, MediaType type, QNetworkReply& reply)
 {
     DEBUG("RSS stream reply %1", reply);
 
@@ -297,7 +297,7 @@ void RSS::onRefreshComplete(RSSFeed* feed, MediaType type, QNetworkReply& reply)
     endInsertRows();
 }
 
-void RSS::onNzbFileComplete(const QString& file, QNetworkReply& reply)
+void RSSReader::onNzbFileComplete(const QString& file, QNetworkReply& reply)
 {
     DEBUG("Get nzb data reply %1", reply);
 
@@ -321,7 +321,7 @@ void RSS::onNzbFileComplete(const QString& file, QNetworkReply& reply)
     INFO("Saved NZB file %1 %2", file, size {(unsigned)bytes.size()});
 }
 
-void RSS::onNzbDataComplete(const QString& folder, const QString& desc, quint32 acc, QNetworkReply& reply)
+void RSSReader::onNzbDataComplete(const QString& folder, const QString& desc, quint32 acc, QNetworkReply& reply)
 {
     DEBUG("Get nzb data reply %1", reply);
 
@@ -338,7 +338,7 @@ void RSS::onNzbDataComplete(const QString& folder, const QString& desc, quint32 
     g_engine->downloadNzbContents(acc, folder, desc, bytes);
 }
 
-void RSS::onNzbDataCompleteCallback(const data_callback& cb, QNetworkReply& reply)
+void RSSReader::onNzbDataCompleteCallback(const data_callback& cb, QNetworkReply& reply)
 {
     DEBUG("Get nzb data reply %1", reply);
 

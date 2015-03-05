@@ -80,6 +80,8 @@ namespace gui
         virtual MainWidget* dropFile(const QString& name) { return nullptr; }
 
         virtual MainWidget* openFile(const QString& name) { return nullptr; }
+
+        virtual MainWidget* openSearch() { return nullptr; }
     protected:
     private:
     };

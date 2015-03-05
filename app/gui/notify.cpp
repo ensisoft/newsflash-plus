@@ -88,12 +88,12 @@ Notify::Notify()
     QObject::connect(&tray_, SIGNAL(activated(QSystemTrayIcon::ActivationReason)),
         this, SLOT(trayActivated(QSystemTrayIcon::ActivationReason)));
 
-    DEBUG("Notify GUI created");
+    DEBUG("Notify UI created");
 }
 
 Notify::~Notify()
 {
-    DEBUG("Notify GUI deleted.");
+    DEBUG("Notify UI deleted.");
 }
 
 bool Notify::addActions(QMenu& menu)

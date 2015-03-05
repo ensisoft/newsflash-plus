@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>875</width>
+    <width>896</width>
     <height>594</height>
    </rect>
   </property>
@@ -14,8 +14,8 @@
    <string>Search</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="../../../../svnroot/newsflash/gui/extensions/search/search.qrc">
-    <normaloff>:/ico/ico_search.png</normaloff>:/ico/ico_search.png</iconset>
+   <iconset resource="resource.qrc">
+    <normaloff>:/resource/16x16_ico_png/ico_search.png</normaloff>:/resource/16x16_ico_png/ico_search.png</iconset>
   </property>
   <layout class="QGridLayout" name="gridLayout_2">
    <item row="0" column="0">
@@ -43,7 +43,7 @@
              <number>0</number>
             </property>
             <item>
-             <widget class="QPushButton" name="btnSearchBasic">
+             <widget class="QPushButton" name="btnBasic">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                 <horstretch>0</horstretch>
@@ -65,10 +65,13 @@
               <property name="checked">
                <bool>false</bool>
               </property>
+              <property name="autoExclusive">
+               <bool>true</bool>
+              </property>
              </widget>
             </item>
             <item>
-             <widget class="QPushButton" name="btnSearchAdvanced">
+             <widget class="QPushButton" name="btnAdvanced">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                 <horstretch>0</horstretch>
@@ -96,13 +99,16 @@
               <property name="checked">
                <bool>false</bool>
               </property>
+              <property name="autoExclusive">
+               <bool>true</bool>
+              </property>
               <property name="flat">
                <bool>false</bool>
               </property>
              </widget>
             </item>
             <item>
-             <widget class="QPushButton" name="btnSearchTV">
+             <widget class="QPushButton" name="btnTelevision">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                 <horstretch>0</horstretch>
@@ -127,13 +133,16 @@
               <property name="checkable">
                <bool>true</bool>
               </property>
+              <property name="autoExclusive">
+               <bool>true</bool>
+              </property>
               <property name="flat">
                <bool>false</bool>
               </property>
              </widget>
             </item>
             <item>
-             <widget class="QPushButton" name="btnSearchMusic">
+             <widget class="QPushButton" name="btnMusic">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                 <horstretch>0</horstretch>
@@ -156,6 +165,9 @@
                <string>Music</string>
               </property>
               <property name="checkable">
+               <bool>true</bool>
+              </property>
+              <property name="autoExclusive">
                <bool>true</bool>
               </property>
               <property name="flat">
@@ -324,6 +336,19 @@
                </property>
               </widget>
              </item>
+             <item>
+              <spacer name="horizontalSpacer_5">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>40</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
             </layout>
            </widget>
           </item>
@@ -470,7 +495,7 @@
            <string/>
           </property>
           <property name="icon">
-           <iconset resource="../../../../svnroot/newsflash/gui/extensions/search/search.qrc">
+           <iconset>
             <normaloff>:/powered.png</normaloff>:/powered.png</iconset>
           </property>
           <property name="iconSize">
@@ -532,7 +557,7 @@ p, li { white-space: pre-wrap; }
            <string/>
           </property>
           <property name="icon">
-           <iconset resource="../../../../svnroot/newsflash/gui/extensions/search/search.qrc">
+           <iconset>
             <normaloff>:/ico/ico_prev.png</normaloff>:/ico/ico_prev.png</iconset>
           </property>
           <property name="flat">
@@ -546,7 +571,7 @@ p, li { white-space: pre-wrap; }
            <string/>
           </property>
           <property name="icon">
-           <iconset resource="../../../../svnroot/newsflash/gui/extensions/search/search.qrc">
+           <iconset>
             <normaloff>:/ico/ico_next.png</normaloff>:/ico/ico_next.png</iconset>
           </property>
           <property name="flat">
@@ -611,7 +636,7 @@ p, li { white-space: pre-wrap; }
         <property name="maximumSize">
          <size>
           <width>16777215</width>
-          <height>16</height>
+          <height>16777215</height>
          </size>
         </property>
         <property name="value">
@@ -626,19 +651,19 @@ p, li { white-space: pre-wrap; }
     </widget>
    </item>
   </layout>
-  <action name="actionSaveNZB">
+  <action name="actionRefresh">
    <property name="icon">
-    <iconset resource="../../../../svnroot/newsflash/gui/extensions/search/search.qrc">
-     <normaloff>:/ico/ico_save.png</normaloff>:/ico/ico_save.png</iconset>
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_refresh.png</normaloff>:/resource/16x16_ico_png/ico_refresh.png</iconset>
    </property>
    <property name="text">
-    <string>Save NZB</string>
+    <string>Refresh</string>
    </property>
   </action>
   <action name="actionDownload">
    <property name="icon">
-    <iconset resource="../../../../svnroot/newsflash/gui/extensions/search/search.qrc">
-     <normaloff>:/ico/ico_download.png</normaloff>:/ico/ico_download.png</iconset>
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_download.png</normaloff>:/resource/16x16_ico_png/ico_download.png</iconset>
    </property>
    <property name="text">
     <string>Download</string>
@@ -646,72 +671,28 @@ p, li { white-space: pre-wrap; }
   </action>
   <action name="actionSettings">
    <property name="icon">
-    <iconset resource="../../../../svnroot/newsflash/gui/extensions/search/search.qrc">
-     <normaloff>:/ico/ico_settings.png</normaloff>:/ico/ico_settings.png</iconset>
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_app_settings.png</normaloff>:/resource/16x16_ico_png/ico_app_settings.png</iconset>
    </property>
    <property name="text">
     <string>Settings</string>
    </property>
-   <property name="toolTip">
-    <string>Open search settings</string>
-   </property>
   </action>
   <action name="actionStop">
-   <property name="enabled">
-    <bool>false</bool>
-   </property>
    <property name="icon">
-    <iconset resource="../../../../svnroot/newsflash/gui/extensions/search/search.qrc">
-     <normaloff>:/ico/ico_stop.png</normaloff>:/ico/ico_stop.png</iconset>
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_stop.png</normaloff>:/resource/16x16_ico_png/ico_stop.png</iconset>
    </property>
    <property name="text">
     <string>Stop</string>
    </property>
   </action>
-  <action name="actionSearch">
-   <property name="icon">
-    <iconset resource="../../../../svnroot/newsflash/gui/extensions/search/search.qrc">
-     <normaloff>:/ico/ico_search.png</normaloff>:/ico/ico_search.png</iconset>
-   </property>
-   <property name="text">
-    <string>Search</string>
-   </property>
-  </action>
-  <action name="actionBrowse">
-   <property name="icon">
-    <iconset resource="../../../../svnroot/newsflash/gui/extensions/search/search.qrc">
-     <normaloff>:/ico/ico_folder.png</normaloff>:/ico/ico_folder.png</iconset>
-   </property>
-   <property name="text">
-    <string>Browse...</string>
-   </property>
-  </action>
-  <action name="actionFocus">
-   <property name="text">
-    <string>Focus search</string>
-   </property>
-   <property name="shortcut">
-    <string>Alt+D</string>
-   </property>
-  </action>
-  <action name="actionInformation">
-   <property name="icon">
-    <iconset resource="../../../../svnroot/newsflash/gui/extensions/search/search.qrc">
-     <normaloff>:/ico/ico_information.png</normaloff>:/ico/ico_information.png</iconset>
-   </property>
-   <property name="text">
-    <string>Information</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+I</string>
-   </property>
-  </action>
  </widget>
  <tabstops>
-  <tabstop>btnSearchBasic</tabstop>
-  <tabstop>btnSearchAdvanced</tabstop>
-  <tabstop>btnSearchTV</tabstop>
-  <tabstop>btnSearchMusic</tabstop>
+  <tabstop>btnBasic</tabstop>
+  <tabstop>btnAdvanced</tabstop>
+  <tabstop>btnTelevision</tabstop>
+  <tabstop>btnMusic</tabstop>
   <tabstop>editAlbum</tabstop>
   <tabstop>editTrack</tabstop>
   <tabstop>cmbYear</tabstop>
@@ -732,7 +713,7 @@ p, li { white-space: pre-wrap; }
   <tabstop>tableView</tabstop>
  </tabstops>
  <resources>
-  <include location="../../../../svnroot/newsflash/gui/extensions/search/search.qrc"/>
+  <include location="resource.qrc"/>
  </resources>
  <connections>
   <connection>

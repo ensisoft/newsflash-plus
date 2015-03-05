@@ -51,7 +51,7 @@ namespace gui
         virtual void shutdown() override;
 
         virtual info getInformation() const override
-        { return {"archives.html", true, true }; }
+        { return {"archives.html", true}; }
 
         void setUnpackEnabled(bool onOff);
         

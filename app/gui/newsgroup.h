@@ -45,7 +45,7 @@ namespace gui
 
         virtual MainWidget::info getInformation() const override
         {
-            return {"group.html", false, false};
+            return {"group.html", false};
         }
     private slots:
         void on_actionRefresh_triggered();

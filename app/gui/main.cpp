@@ -56,12 +56,12 @@
 #include "commands.h"
 #include "unpack.h"
 #include "notify.h"
+#include "searchengine.h"
 #include "../debug.h"
 #include "../format.h"
 #include "../distdir.h"
 #include "../homedir.h"
 #include "../accounts.h"
-#include "../rss.h"
 #include "../nzbfile.h"
 #include "../connlist.h"
 #include "../tasklist.h"
@@ -215,6 +215,10 @@ int run(int argc, char* argv[])
     // tool module
     gui::ToolModule toolsgui;
     win.attach(&toolsgui);
+
+    // search engine
+    gui::SearchEngine search;
+    win.attach(&search);
 
     // commands module
     app::Commands cmds;

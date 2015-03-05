@@ -23,14 +23,12 @@
 #define LOGTAG "rss"
 
 #include <newsflash/config.h>
-
 #include <newsflash/warnpush.h>
 #  include <QtGui/QMenu>
 #  include <QtGui/QToolBar>
 #  include <QtGui/QMessageBox>
 #  include "ui_rss_settings.h"
 #include <newsflash/warnpop.h>
-
 #include "rss.h"
 #include "mainwindow.h"
 #include "nzbfile.h"
@@ -38,6 +36,7 @@
 #include "../format.h"
 #include "../eventlog.h"
 #include "../settings.h"
+#include "../utility.h"
 
 namespace {
 
@@ -109,7 +108,7 @@ RSS::RSS()
     ui_.tableView->viewport()->installEventFilter(this);
     ui_.tableView->viewport()->setMouseTracking(true);
     ui_.tableView->setMouseTracking(true);
-    ui_.tableView->setColumnWidth((int)app::RSS::columns::locked, 32);
+    ui_.tableView->setColumnWidth((int)app::RSSReader::columns::locked, 32);
 
     // when the model has no more actions we hide the progress bar and disable
     // the stop button.
@@ -146,10 +145,6 @@ void RSS::addActions(QToolBar& bar)
     bar.addAction(ui_.actionRefresh);
     bar.addSeparator();
     bar.addAction(ui_.actionDownload);
-    //bar.addSeparator();    
-    //bar.addAction(ui_.actionSave);
-    //bar.addSeparator(); 
-    //bar.addAction(ui_.actionOpen);
     bar.addSeparator();   
     bar.addAction(ui_.actionSettings);
     bar.addSeparator();    
@@ -167,31 +162,21 @@ void RSS::activate(QWidget*)
     }
 }
 
-void RSS::saveState(app::Settings& s)
+void RSS::saveState(app::Settings& settings)
 {
-    s.set("rss", "music", ui_.chkMusic->isChecked());
-    s.set("rss", "movies", ui_.chkMovies->isChecked());
-    s.set("rss", "tv", ui_.chkTV->isChecked());
-    s.set("rss", "console", ui_.chkConsole->isChecked());
-    s.set("rss", "computer", ui_.chkComputer->isChecked());
-    s.set("rss", "xxx", ui_.chkXXX->isChecked());
+    settings.set("rss", "music", ui_.chkMusic->isChecked());
+    settings.set("rss", "movies", ui_.chkMovies->isChecked());
+    settings.set("rss", "tv", ui_.chkTV->isChecked());
+    settings.set("rss", "console", ui_.chkConsole->isChecked());
+    settings.set("rss", "computer", ui_.chkComputer->isChecked());
+    settings.set("rss", "xxx", ui_.chkXXX->isChecked());
+    settings.set("rss", "enable_nzbs", enable_nzbs_);
+    settings.set("rss", "enable_womble", enable_womble_);
+    settings.set("rss", "nzbs_apikey", nzbs_apikey_);
+    settings.set("rss", "nzbs_userid", nzbs_userid_);
+    settings.set("rss", "streams", quint32(streams_.value()));
 
-    s.set("rss", "enable_nzbs", enable_nzbs_);
-    s.set("rss", "enable_womble", enable_womble_);
-    s.set("rss", "nzbs_apikey", nzbs_apikey_);
-    s.set("rss", "nzbs_userid", nzbs_userid_);
-    s.set("rss", "streams", quint32(streams_.value()));
-
-    const auto* model = ui_.tableView->model();
-
-    // the last column has auto-stretch flag set so it's width
-    // is implied. and in fact setting the width will cause rendering bugs
-    for (int i=0; i<model->columnCount()-1; ++i)
-    {
-        const auto width = ui_.tableView->columnWidth(i);
-        const auto name  = QString("table_col_%1_width").arg(i);
-        s.set("rss", name, width);
-    }
+    app::saveTableLayout("rss", ui_.tableView, settings);
 }
 
 void RSS::shutdown()
@@ -200,20 +185,20 @@ void RSS::shutdown()
     model_.stop();
 }
 
-void RSS::loadState(app::Settings& s)
+void RSS::loadState(app::Settings& settings)
 {
-    ui_.chkMusic->setChecked(s.get("rss", "music", true));
-    ui_.chkMovies->setChecked(s.get("rss", "movies", true));
-    ui_.chkTV->setChecked(s.get("rss", "tv", true));
-    ui_.chkConsole->setChecked(s.get("rss", "console", true));
-    ui_.chkComputer->setChecked(s.get("rss", "computer", true));
-    ui_.chkXXX->setChecked(s.get("rss", "xxx", true));
+    ui_.chkMusic->setChecked(settings.get("rss", "music", true));
+    ui_.chkMovies->setChecked(settings.get("rss", "movies", true));
+    ui_.chkTV->setChecked(settings.get("rss", "tv", true));
+    ui_.chkConsole->setChecked(settings.get("rss", "console", true));
+    ui_.chkComputer->setChecked(settings.get("rss", "computer", true));
+    ui_.chkXXX->setChecked(settings.get("rss", "xxx", true));
 
-    enable_nzbs_    = s.get("rss", "enable_nzbs", false);
-    enable_womble_  = s.get("rss", "enable_womble", true);
-    nzbs_apikey_    = s.get("rss", "nzbs_apikey", "");
-    nzbs_userid_    = s.get("rss", "nzbs_userid", "");    
-    const auto bits = s.get("rss", "streams", quint32(~0));
+    enable_nzbs_    = settings.get("rss", "enable_nzbs", false);
+    enable_womble_  = settings.get("rss", "enable_womble", true);
+    nzbs_apikey_    = settings.get("rss", "nzbs_apikey", "");
+    nzbs_userid_    = settings.get("rss", "nzbs_userid", "");    
+    const auto bits = settings.get("rss", "streams", quint32(~0));
 
     streams_.set_from_value(bits); // enable all bits (streams)
 
@@ -221,20 +206,12 @@ void RSS::loadState(app::Settings& s)
     model_.enableFeed("nzbs", enable_nzbs_);
     model_.setCredentials("nzbs", nzbs_userid_, nzbs_apikey_);
 
-    const auto* model = ui_.tableView->model();
-
-    // see the comments about the columnCount in save()
-    for (int i=0; i<model->columnCount()-1; ++i)
-    {
-        const auto name  = QString("table_col_%1_width").arg(i);
-        const auto width = s.get("rss", name, ui_.tableView->columnWidth(i));
-        ui_.tableView->setColumnWidth(i, width);
-    }
+    app::loadTableLayout("rss", ui_.tableView, settings);
 }
 
 MainWidget::info RSS::getInformation() const
 {
-    return {"rss.html", true, true};
+    return {"rss.html", true};
 }
 
 SettingsWidget* RSS::getSettings()
@@ -354,6 +331,58 @@ void RSS::applySettings(SettingsWidget* gui)
 void RSS::freeSettings(SettingsWidget* s)
 {
     delete s;
+}
+
+Finder* RSS::getFinder() 
+{
+    return this;
+}
+
+bool RSS::isMatch(const QString& str, std::size_t index, bool caseSensitive)
+{
+    const auto& item = model_.getItem(index);
+    if (!caseSensitive)
+    {
+        auto upper = item.title.toUpper();
+        if (upper.indexOf(str) != -1)
+            return true;
+    }
+    else
+    {
+        if (item.title.indexOf(str) != -1)
+            return true;
+    }
+    return false;
+}
+
+bool RSS::isMatch(const QRegExp& regex, std::size_t index)
+{
+    const auto& item = model_.getItem(index);
+    if (regex.indexIn(item.title) != -1)
+        return true;
+    return false;
+}
+
+std::size_t RSS::numItems() const 
+{
+    return model_.rowCount(QModelIndex());
+}
+
+std::size_t RSS::curItem() const 
+{
+    const auto& indices = ui_.tableView->selectionModel()->selectedRows();
+    if (indices.isEmpty())
+        return 0;
+    const auto& first = indices.first();
+    return first.row();
+}
+
+void RSS::setFound(std::size_t index)
+{
+    auto* model = ui_.tableView->model();
+    auto i = model->index(index, 0);
+    ui_.tableView->setCurrentIndex(i);
+    ui_.tableView->scrollTo(i);
 }
 
 bool RSS::eventFilter(QObject* obj, QEvent* event)

@@ -369,9 +369,9 @@
     </property>
     <addaction name="separator"/>
    </widget>
-   <widget class="QMenu" name="menuEdit">
+   <widget class="QMenu" name="menuTemp">
     <property name="title">
-     <string>&amp;Edit</string>
+     <string>Temp</string>
     </property>
    </widget>
    <widget class="QMenu" name="menuView">
@@ -414,7 +414,7 @@
    </widget>
    <widget class="QMenu" name="menuFeedback">
     <property name="title">
-     <string>Feedback</string>
+     <string>Fee&amp;dback</string>
     </property>
     <addaction name="separator"/>
     <addaction name="separator"/>
@@ -426,7 +426,18 @@
     <addaction name="separator"/>
     <addaction name="actionRequestLicense"/>
    </widget>
+   <widget class="QMenu" name="menuEdit">
+    <property name="title">
+     <string>&amp;Edit</string>
+    </property>
+    <addaction name="actionFind"/>
+    <addaction name="separator"/>
+    <addaction name="actionFindNext"/>
+    <addaction name="actionFindPrev"/>
+    <addaction name="separator"/>
+   </widget>
    <addaction name="menuFile"/>
+   <addaction name="menuTemp"/>
    <addaction name="menuEdit"/>
    <addaction name="menuView"/>
    <addaction name="menuTools"/>
@@ -649,10 +660,46 @@
      <normaloff>:/resource/16x16_ico_png/ico_open_file.png</normaloff>:/resource/16x16_ico_png/ico_open_file.png</iconset>
    </property>
    <property name="text">
-    <string>Open ...</string>
+    <string>Open File ...</string>
    </property>
    <property name="toolTip">
     <string>Open files</string>
+   </property>
+  </action>
+  <action name="actionFind">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_find.png</normaloff>:/resource/16x16_ico_png/ico_find.png</iconset>
+   </property>
+   <property name="text">
+    <string>Find</string>
+   </property>
+  </action>
+  <action name="actionFindNext">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_find_next.png</normaloff>:/resource/16x16_ico_png/ico_find_next.png</iconset>
+   </property>
+   <property name="text">
+    <string>Find Next</string>
+   </property>
+  </action>
+  <action name="actionFindPrev">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_find_prev.png</normaloff>:/resource/16x16_ico_png/ico_find_prev.png</iconset>
+   </property>
+   <property name="text">
+    <string>Find Previous</string>
+   </property>
+  </action>
+  <action name="actionSearch">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_search.png</normaloff>:/resource/16x16_ico_png/ico_search.png</iconset>
+   </property>
+   <property name="text">
+    <string>New Search ...</string>
    </property>
   </action>
  </widget>

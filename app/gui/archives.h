@@ -50,7 +50,7 @@ namespace gui
         virtual void refresh(bool isActive) override;
 
         virtual info getInformation() const override
-        { return {"archives.html", true, true }; }
+        { return {"archives.html", true}; }
 
     private slots:
         void on_actionRepair_triggered();

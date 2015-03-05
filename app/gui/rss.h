@@ -28,20 +28,19 @@
 #  include "ui_rss.h"
 #include <newsflash/warnpop.h>
 #include <memory>
-
 #include <newsflash/engine/bitflag.h>
-
 #include "mainwidget.h"
 #include "settings.h"
 #include "dlgmovie.h"
+#include "finder.h"
 #include "../types.h"
-#include "../rss.h"
+#include "../rssreader.h"
 #include "../media.h"
 
 namespace gui
 {
     // RSS feeds GUI
-    class RSS : public MainWidget
+    class RSS : public MainWidget, public Finder
     {
         Q_OBJECT
 
@@ -49,6 +48,7 @@ namespace gui
         RSS();
        ~RSS();
 
+        // MainWidget implementation
         virtual void addActions(QMenu& menu) override;
         virtual void addActions(QToolBar& bar) override;
         virtual void activate(QWidget*) override;
@@ -59,6 +59,14 @@ namespace gui
         virtual SettingsWidget* getSettings() override;
         virtual void applySettings(SettingsWidget* gui) override;
         virtual void freeSettings(SettingsWidget* s);
+        virtual Finder* getFinder() override;
+
+        // Finder implementation
+        virtual bool isMatch(const QString& str, std::size_t index, bool caseSensitive) override;
+        virtual bool isMatch(const QRegExp& regex, std::size_t index) override;
+        virtual std::size_t numItems() const override;
+        virtual std::size_t curItem() const override;
+        virtual void setFound(std::size_t index) override;
 
     private:
         bool eventFilter(QObject* obj, QEvent* event);
@@ -85,7 +93,7 @@ namespace gui
     private:
         Ui::RSS ui_;
     private:
-        app::RSS model_;        
+        app::RSSReader model_;        
     private:
         newsflash::bitflag<app::MediaType> streams_;
         bool enable_nzbs_;
