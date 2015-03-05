@@ -37,6 +37,26 @@ namespace app
     class RSSFeed
     {
     public:
+        enum class Error {
+            // operation completed succesfully.
+            None,
+
+            // there was an error in the content data.
+            ContentXml,
+
+            // no such item 
+            NoSuchItem,
+
+            // the provided credentials were not correct.
+            IncorrectCredentials,
+
+            // account is suspended.
+            AccountSuspended,
+
+            // the account doesnt have permission to access this content.
+            NoPermission
+        };
+
         struct params {
             QString user;
             QString key;

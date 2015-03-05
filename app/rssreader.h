@@ -74,14 +74,14 @@ namespace app
         using data_callback = std::function<void (const QByteArray&)>;
 
         // save NZB description of the RSS item and place the .nzb file in the given folder.
-        void downloadNzbFile(int row, const QString& file);
+        void downloadNzbFile(std::size_t index, const QString& file);
 
         // download the contents of the RSS item and upon completion
         // invoke the callback handler.
-        void downloadNzbFile(int row, data_callback cb);
+        void downloadNzbFile(std::size_t index, data_callback cb);
 
         // download the contents of the RSS item.
-        void downloadNzbContent(int row, quint32 account, const QString& folder);
+        void downloadNzbContent(std::size_t row, quint32 account, const QString& folder);
 
         // stop/cancel pending network operations.
         void stop();

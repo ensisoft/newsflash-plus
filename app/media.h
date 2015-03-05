@@ -78,7 +78,9 @@ namespace app
         XxxSD,
 
         //other
-        Ebook
+        Ebook,
+
+        Other
     };
 
 
@@ -92,7 +94,7 @@ namespace app
         QString title;
 
         // globally unique item id
-        QString gid;
+        QString guid;
 
         // link to the NZB file content
         QString nzblink;

@@ -25,6 +25,7 @@
 #  include <QString>
 #  include <QUrl>
 #include <newsflash/warnpop.h>
+#include <vector>
 #include "media.h"
 
 class QIODevice;
@@ -38,6 +39,27 @@ namespace app
     class Indexer
     {
     public:
+        enum class Error {
+            None,
+
+            // there was an error parsing the content response from the server.
+            Content,
+
+            // No such item 
+            NoSuchItem,
+
+            // the given credentials were wrong.
+            IncorrectCredentials,
+
+            // the account is suspended
+            AccountSuspended,
+
+            // the account is not authorized to access the content.
+            NoPermission,
+
+            Unknown
+        };
+
         struct BasicQuery {
             QString keywords;
         };
@@ -48,13 +70,16 @@ namespace app
 
         virtual ~Indexer() = default;
 
-        // parse the response data.
-        virtual bool parse(QIODevice& io, std::vector<MediaItem>& results) = 0;
+        // parse the response data from the given IO device.
+        // media items parsed from the content are placed into the result vector.
+        // finally function returns one of the error values indicating
+        // error or success.
+        virtual Error parse(QIODevice& io, std::vector<MediaItem>& results) = 0;
 
         // prepare a search URL
         virtual bool prepare(const BasicQuery& query, QUrl& url) = 0;
 
-        virtual bool prepare(const AdvancedQuery& query, QUrl& url) = 0;
+        //virtual bool prepare(const AdvancedQuery& query, QUrl& url) = 0;
 
     protected:
     private:

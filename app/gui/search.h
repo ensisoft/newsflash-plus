@@ -26,6 +26,10 @@
 #include <newsflash/warnpop.h>
 #include "mainwidget.h"
 
+namespace app {
+    class SearchEngine;
+} // app
+
 namespace gui
 {
     class Search : public MainWidget
@@ -33,13 +37,19 @@ namespace gui
         Q_OBJECT
 
     public:
-        Search();
+        Search(app::SearchEngine& engine);
        ~Search();
 
         virtual void addActions(QMenu& menu) override;
         virtual void addActions(QToolBar& bar) override;
 
+    private slots:
+        void on_btnSearch_clicked();
+        
+
     private:
         Ui::Search ui_;
+    private:
+        app::SearchEngine& engine_;
     };
 } // gui

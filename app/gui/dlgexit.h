@@ -23,23 +23,21 @@
 #pragma once
 
 #include <newsflash/config.h>
-
 #include <newsflash/warnpush.h>
 #  include <QtGui/QDialog>
 #  include <QtGui/QCloseEvent>
 #  include <QtGui/QKeyEvent>
-#  include "ui_dlgshutdown.h"
+#  include "ui_dlgexit.h"
 #include <newsflash/warnpop.h>
-
 #include "../debug.h"
 
 namespace gui
 {
-    class DlgShutdown : public QDialog
+    class DlgExit : public QDialog
     {
         Q_OBJECT
     public:
-        DlgShutdown(QWidget* parent) : QDialog(parent)
+        DlgExit(QWidget* parent) : QDialog(parent)
         {
             ui_.setupUi(this);
             ui_.progressBar->setValue(0);
@@ -50,7 +48,7 @@ namespace gui
 
             setWindowFlags(flags & ~Qt::WindowCloseButtonHint);
         }
-       ~DlgShutdown()
+       ~DlgExit()
         {}
 
         void setText(const QString& s)
@@ -60,7 +58,7 @@ namespace gui
     private:
         void closeEvent(QCloseEvent* event)
         {
-            //DEBUG("DlgShutdown close event");
+            //DEBUG("DlgExit close event");
 
             // just in case the window has a little X in the title bar
             // we want to disallow the window to be closed by the user.
@@ -76,6 +74,6 @@ namespace gui
             QDialog::keyPressEvent(event);
         }
     private:
-        Ui::DlgShutdown ui_;
+        Ui::Exit ui_;
     };
 } // gui

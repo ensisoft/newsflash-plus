@@ -25,6 +25,7 @@
 #  include <QString>
 #include <newsflash/warnpop.h>
 #include <memory>
+#include <vector>
 #include "netman.h"
 
 namespace app
@@ -56,13 +57,19 @@ namespace app
             QString keywords;
         };
 
-        Search search(const Basic& args);
-        Search search(const Advanced& args);
+        SearchEngine();
+       ~SearchEngine();
+
+        Search beginSearch(const Basic& query);
+        Search beginSearch(const Advanced& query);
+
+        void addEngine(std::unique_ptr<Indexer> engine);
+
 
     private:
         NetworkManager::Context net_;
     private:
-
+        std::vector<std::unique_ptr<Indexer>> engines_;
     };
 
 } // app

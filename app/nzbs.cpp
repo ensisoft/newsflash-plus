@@ -54,7 +54,7 @@ bool Nzbs::parse(QIODevice& io, std::vector<MediaItem>& rss)
 
         MediaItem item {};
         item.title   = elem.firstChildElement("title").text();
-        item.gid     = elem.firstChildElement("guid").text();
+        item.guid    = elem.firstChildElement("guid").text();
         item.nzblink = elem.firstChildElement("link").text();
         item.pubdate = parseRssDate(elem.firstChildElement("pubDate").text());
 

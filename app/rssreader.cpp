@@ -217,36 +217,33 @@ void RSSReader::setCredentials(const QString& feed, const QString& user, const Q
 }
 
 
-void RSSReader::downloadNzbFile(int row, const QString& file)
+void RSSReader::downloadNzbFile(std::size_t index, const QString& file)
 {
-    Q_ASSERT(row >= 0);
-    Q_ASSERT(row < items_.size());
+    BOUNDSCHECK(items_, index);
 
-    const auto& item = items_[row];
+    const auto& item = items_[index];
     const auto& link = item.nzblink;
-    //const auto& name = item.title;
+
     g_net->submit(std::bind(&RSSReader::onNzbFileComplete, this, file,
         std::placeholders::_1), net_, link);
 }
 
-void RSSReader::downloadNzbFile(int row, data_callback cb)
+void RSSReader::downloadNzbFile(std::size_t index, data_callback cb)
 {
-    Q_ASSERT(row >= 0);
-    Q_ASSERT(row < items_.size());
+    BOUNDSCHECK(items_, index);
 
-    const auto& item = items_[row];
+    const auto& item = items_[index];
     const auto& link = item.nzblink;
 
     g_net->submit(std::bind(&RSSReader::onNzbDataCompleteCallback, this, std::move(cb), 
         std::placeholders::_1), net_, link);
 }
 
-void RSSReader::downloadNzbContent(int row, quint32 account, const QString& folder)
+void RSSReader::downloadNzbContent(std::size_t index, quint32 account, const QString& folder)
 {
-    Q_ASSERT(row >= 0);
-    Q_ASSERT(row < items_.size());    
+    BOUNDSCHECK(items_, index);
 
-    const auto& item = items_[row];
+    const auto& item = items_[index];
     const auto& link = item.nzblink;
     const auto& desc = item.title;
     g_net->submit(std::bind(&RSSReader::onNzbDataComplete, this, folder, desc, account,

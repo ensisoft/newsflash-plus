@@ -27,11 +27,13 @@
 #include <newsflash/warnpop.h>
 #include "search.h"
 #include "../debug.h"
+#include "../search.h"
+#include "../searchengine.h"
 
 namespace gui
 {
 
-Search::Search()
+Search::Search(app::SearchEngine& engine) : engine_(engine)
 {
     ui_.setupUi(this);
     ui_.btnBasic->setChecked(true);
@@ -96,6 +98,11 @@ void Search::addActions(QToolBar& bar)
     bar.addAction(ui_.actionSettings);
     bar.addSeparator();
     bar.addAction(ui_.actionStop);
+}
+
+void Search::on_btnSearch_clicked()
+{
+    
 }
 
 } // gui

@@ -44,7 +44,7 @@
 #include "dlgsettings.h"
 #include "dlgaccount.h"
 #include "dlgchoose.h"
-#include "dlgshutdown.h"
+#include "dlgexit.h"
 #include "dlgabout.h"
 #include "dlgfeedback.h"
 #include "dlgaccount.h"
@@ -561,7 +561,7 @@ void MainWindow::closeEvent(QCloseEvent* event)
     refresh_timer_.blockSignals(true);
 
     // try to perform orderly engine shutdown.
-    DlgShutdown dialog(this);
+    DlgExit dialog(this);
     dialog.setText(tr("Disconnecting..."));
     dialog.show();
 
@@ -709,7 +709,7 @@ void MainWindow::buildWindowMenu()
     ui_.menuWindow->addAction(ui_.actionWindowPrev);    
 }
 
-bool MainWindow::saveState(DlgShutdown* dlg)
+bool MainWindow::saveState(DlgExit* dlg)
 {
     try
     {

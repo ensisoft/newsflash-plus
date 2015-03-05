@@ -75,10 +75,10 @@ bool Womble::parse(QIODevice& io, std::vector<MediaItem>& rss)
 
         MediaItem item {};
         item.title    = elem.firstChildElement("title").text();
-        item.gid      = elem.firstChildElement("link").text();
+        item.guid     = elem.firstChildElement("link").text();
         item.pubdate  = parseDate(elem.firstChildElement("pubDate").text());
         item.password = false;
-        item.nzblink  = item.gid;
+        item.nzblink  = item.guid;
         item.size     = 0; // not known
         rss.push_back(std::move(item));
     }

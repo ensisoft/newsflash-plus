@@ -32,13 +32,17 @@ namespace app
     public:
         struct Params {
             QString apiurl;
-            QString userkey;
+            QString apikey;
         };
 
-        virtual bool parse(QIODevice& io, std::vector<MediaItem>& results) override;
+        virtual Error parse(QIODevice& io, std::vector<MediaItem>& results) override;
 
-        virtual bool prepare(const BasicQuery& query, QUrl& url) = 0;
+        virtual bool prepare(const BasicQuery& query, QUrl& url) override;
 
+        void setParams(const Params& params);
     private:
+        QString apikey_;
+        QString apiurl_;
     };
+
 } // app

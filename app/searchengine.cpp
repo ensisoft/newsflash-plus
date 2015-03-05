@@ -22,46 +22,39 @@
 
 #include <newsflash/config.h>
 #include <newsflash/warnpush.h>
+#  include <QIODevice>
+#  include <QByteArray>
+#  include <QUrl>
 #include <newsflash/warnpop.h>
 #include "searchengine.h"
+#include "indexer.h"
+#include "debug.h"
+#include "eventlog.h"
 #include "search.h"
-#include "../settings.h"
-#include "../debug.h"
-#include "../newznab.h"
 
-namespace gui
+namespace app
 {
 
 SearchEngine::SearchEngine()
 {
-    DEBUG("SearchEngine UI created");
+    net_ = g_net->getSubmissionContext();
+
+    DEBUG("SearchEngine created");
 }
 
 SearchEngine::~SearchEngine()
 {
-    DEBUG("SearchEngine UI deleted");
+    DEBUG("SearchEngine deleted");
 }
 
-void SearchEngine::saveState(app::Settings& settings)
+Search SearchEngine::beginSearch(const Basic& query)
 {
-
+    
 }
 
-void SearchEngine::loadState(app::Settings& settings)
+void SearchEngine::addEngine(std::unique_ptr<Indexer> engine)
 {
-    std::unique_ptr<app::Newznab> newznab(new app::Newznab);
-    app::Newznab::Params p;
-    p.apiurl = "http://nzbs.org/api/";
-    p.apiurl = "debb752d0452ebf5174500aa19844f8e";
-    newznab->setParams(p);
-
-    engine_.addEngine(std::move(newznab));
+    engines_.push_back(std::move(engine));
 }
 
-MainWidget* SearchEngine::openSearch()
-{
-    Search* s = new Search(engine_);
-    return s;
-}
-
-} // gui
+} // app
