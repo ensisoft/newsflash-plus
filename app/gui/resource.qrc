@@ -32,7 +32,6 @@
     <file>resource/16x16_ico_png/ico_rss.png</file>    
     <file>resource/16x16_ico_png/ico_news.png</file>
     <file>resource/16x16_ico_png/ico_star.png</file>
-    <file>resource/16x16_ico_png/ico_star_gray.png</file>    
     <file>resource/16x16_ico_png/ico_throttle.png</file>    
     <file>resource/16x16_ico_png/ico_details.png</file>
     <file>resource/16x16_ico_png/ico_extract.png</file>
@@ -82,13 +81,22 @@
     <file>resource/16x16_ico_png/ico_filetype_other.png</file>    
     <file>resource/16x16_ico_png/ico_filetype_text.png</file>    
 
+    <!-- media icons -->
+    <file>resource/16x16_ico_png/ico_media_tv.png</file>
+    <file>resource/16x16_ico_png/ico_media_xxx.png</file>
+    <file>resource/16x16_ico_png/ico_media_other.png</file>    
+    <file>resource/16x16_ico_png/ico_media_audio.png</file>        
+    <file>resource/16x16_ico_png/ico_media_movie.png</file>            
+    <file>resource/16x16_ico_png/ico_media_console.png</file>                
+    <file>resource/16x16_ico_png/ico_media_apps.png</file>
+
     <!-- account module icons -->
     <file>resource/16x16_ico_png/ico_accounts.png</file>
     <file>resource/16x16_ico_png/ico_account_add.png</file>
     <file>resource/16x16_ico_png/ico_account_del.png</file>
     <file>resource/16x16_ico_png/ico_account_edit.png</file>
 
-    <!-- file module icons -->
+    <!-- file module icons -->t
     <file>resource/16x16_ico_png/ico_files.png</file>
 
     <!-- recovery icons -->
@@ -139,7 +147,6 @@
     <file>resource/16x16_ico_png/ico_lock.png</file>
     <file>resource/16x16_ico_png/ico_unlock.png</file>
 
-    <file>resource/16x16_ico_png/ico_shrink.png</file>
 
     <file>resource/16x16_ico_png/ico_log.png</file>
     <file>resource/16x16_ico_png/ico_update.png</file>
@@ -149,7 +156,7 @@
     <file>resource/16x16_ico_png/ico_sorting.png</file>
     <file>resource/16x16_ico_png/ico_next_bookmark.png</file>
     <file>resource/16x16_ico_png/ico_previous_bookmark.png</file>
-    <file>resource/16x16_ico_png/ico_touch.png</file>
+
 
     <file>resource/16x16_ico_png/ico_link.png</file>
     <file>resource/16x16_ico_png/ico_start.png</file>
@@ -158,8 +165,7 @@
     <file>resource/16x16_ico_png/ico_run.png</file>
     <file>resource/16x16_ico_png/ico_waiting.png</file>
 
-    <file>resource/16x16_ico_png/ico_not_active.png</file>
-    <file>resource/16x16_ico_png/ico_skipped.png</file>
+
 
     <file>resource/png/logo_black.png</file>
     <file>resource/png/python-logo.png</file>

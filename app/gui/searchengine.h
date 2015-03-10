@@ -24,7 +24,6 @@
 #include <newsflash/warnpush.h>
 #include <newsflash/warnpop.h>
 #include "mainmodule.h"
-#include "../searchengine.h"
 
 namespace gui
 {
@@ -40,7 +39,6 @@ namespace gui
         virtual MainWidget* openSearch() override;
 
     private:
-        app::SearchEngine engine_;
     };
 
 } // gui

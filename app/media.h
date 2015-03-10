@@ -22,6 +22,7 @@
 
 #include <newsflash/config.h>
 #include <newsflash/warnpush.h>
+#  include <QtGui/QIcon>
 #  include <QString>
 #  include <QDateTime>
 #include <newsflash/warnpop.h>
@@ -171,5 +172,7 @@ namespace app
     QString findMovieTitle(const QString& subject);
 
     QString toString(MediaType media);
+
+    QIcon toIcon(MediaType media);
 
 } // app

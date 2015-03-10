@@ -25,6 +25,7 @@
 #  include <QtAlgorithms>
 #  include <QModelIndex>
 #include <newsflash/warnpop.h>
+#include <algorithm>
 
 class QAbstractTableModel;
 class QTableView;
@@ -48,5 +49,55 @@ void sortDescending(QModelIndexList& list)
 
 void saveTableLayout(const QString& key, const QTableView* view, Settings& settings);
 void loadTableLayout(const QString& key, QTableView* view, const Settings& settings);
+
+template<typename Class, typename Member>
+struct CompareLess {
+    typedef Member (Class::*MemPtr);
+
+    CompareLess(MemPtr p) : ptr_(p)
+    {}
+
+    bool operator()(const Class& lhs, const Class& rhs) const 
+    {
+        return lhs.*ptr_ < rhs.*ptr_;
+    }
+private:
+    MemPtr ptr_;
+}; 
+
+template<typename Class, typename Member>
+struct CompareGreater {
+    typedef Member (Class::*MemPtr);
+
+    CompareGreater(MemPtr p) : ptr_(p)
+    {}
+
+    bool operator()(const Class& lhs, const Class& rhs) const 
+    {
+        return lhs.*ptr_ > rhs.*ptr_;
+    }
+private:
+    MemPtr ptr_;
+};
+
+template<typename Class, typename Member>
+CompareLess<Class, Member> less(Member Class::*p)
+{
+    return CompareLess<Class, Member>(p);
+}
+
+template<typename Class, typename Member>
+CompareGreater<Class, Member> greater(Member Class::*p)
+{
+    return CompareGreater<Class, Member>(p);
+}
+
+template<typename Container, typename MemPtr>
+void sort(Container& container, Qt::SortOrder order, MemPtr p)
+{
+    if (order == Qt::AscendingOrder)
+        std::sort(std::begin(container), std::end(container), less(p));
+    else std::sort(std::begin(container), std::end(container), greater(p));
+}
 
 } // app

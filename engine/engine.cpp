@@ -136,8 +136,7 @@ struct engine::state {
             [=](const ui::account& a) {
                 return a.id == id;
             });
-        if (it == std::end(accounts))
-            throw std::runtime_error("no such account");
+        ASSERT(it != std::end(accounts));
 
         return *it;
     }

@@ -25,6 +25,7 @@
 #  include <QString>
 #  include <QUrl>
 #include <newsflash/warnpop.h>
+#include <newsflash/engine/bitflag.h>
 #include <vector>
 #include "media.h"
 
@@ -60,11 +61,36 @@ namespace app
             Unknown
         };
 
+        enum class Category {
+            Music,
+            Movies, 
+            Television,
+            Console, 
+            Apps,
+            Porno,
+            Other
+        };
+        using Categories = newsflash::bitflag<Category>;
+
         struct BasicQuery {
             QString keywords;
         };
 
         struct AdvancedQuery {
+            QString keywords;
+            Categories categories;
+        };
+
+        struct MusicQuery {
+            QString album;
+            QString track;
+            QString year;
+            QString artist;
+        };
+
+        struct TelevisionQuery {
+            QString season;
+            QString episode;
             QString keywords;
         };
 
@@ -77,10 +103,13 @@ namespace app
         virtual Error parse(QIODevice& io, std::vector<MediaItem>& results) = 0;
 
         // prepare a search URL
-        virtual bool prepare(const BasicQuery& query, QUrl& url) = 0;
+        virtual void prepare(const BasicQuery& query, QUrl& url) = 0;
+        virtual void prepare(const AdvancedQuery& query, QUrl& url) = 0;
+        virtual void prepare(const MusicQuery& query, QUrl& url) = 0;
+        virtual void prepare(const TelevisionQuery& query, QUrl& url) = 0;
 
-        //virtual bool prepare(const AdvancedQuery& query, QUrl& url) = 0;
-
+        // get the human readable name for the indexing site.
+        virtual QString name() const = 0;
     protected:
     private:
     };

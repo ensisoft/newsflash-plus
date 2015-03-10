@@ -34,6 +34,10 @@ namespace newsflash
     public:
         using Bits = typename std::underlying_type<Enum>::type;
 
+        enum {
+            BitCount = sizeof(Bits) * 8
+        };
+
         bitflag() : bits_(0)
         {}
         bitflag(Enum initial) : bits_(0)
@@ -73,6 +77,13 @@ namespace newsflash
         // test for any value.
         bool test(bitflag values) const 
         { return bits_ & values.bits_; }
+
+        // test of the nth bith.
+        bool test(unsigned index) const 
+        {
+            const auto b = 1 << index;
+            return (bits_ & b);
+        }
 
         void clear() 
         { bits_ = 0x0; }

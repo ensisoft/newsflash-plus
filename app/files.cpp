@@ -26,7 +26,6 @@
 #  include <QFile>
 #  include <QTextStream>
 #include <newsflash/warnpop.h>
-
 #include "eventlog.h"
 #include "debug.h"
 #include "files.h"
@@ -34,6 +33,7 @@
 #include "format.h"
 #include "types.h"
 #include "fileinfo.h"
+#include "utility.h"
 
 namespace {
     enum class columns {

@@ -24,7 +24,6 @@
 #  include <QtNetwork/QNetworkRequest>
 #  include <QtNetwork/QNetworkReply>
 #  include <QtGui/QIcon>
-#  include <QtXml/QDomDocument>
 #  include <QIODevice>
 #  include <QDateTime>
 #  include <QUrl>
@@ -47,14 +46,12 @@
 namespace app
 {
 
-RSSReader::RSSReader()
+RSSReader::RSSReader() : model_(new ModelType)
 {
     net_ = g_net->getSubmissionContext();
 
     feeds_.emplace_back(new Womble);
     feeds_.emplace_back(new Nzbs);
-    INFO("RSS http://nzbs.org");
-    INFO("RSS http://newshost.co.za");
 
     net_.callback = [=] {
         on_ready();
@@ -68,104 +65,6 @@ RSSReader::~RSSReader()
     DEBUG("RSSReader destroyed");
 }
 
-QVariant RSSReader::data(const QModelIndex& index, int role) const
-{
-    const auto row = index.row();
-    const auto col = columns(index.column());        
-    const auto& item = items_[row];
-
-    if (role == Qt::DisplayRole)
-    {
-        switch (col)
-        {
-            case columns::date:     return toString(app::event {item.pubdate}); 
-            case columns::category: return toString(item.type);            
-            case columns::locked:   return "";
-            case columns::title:    return item.title;
-            case columns::size:
-            if (item.size == 0)
-                    return "n/a";
-                return toString(size { item.size });
-
-            case columns::sentinel: Q_ASSERT(0);
-        }
-    }
-    if (role == Qt::DecorationRole)
-    {
-        if (col  == columns::date)
-            return QIcon("icons:ico_rss.png");
-        else if (col == columns::locked && item.password)
-            return QIcon("icons:ico_password.png");
-    }
-    return {};
-}
-
-QVariant RSSReader::headerData(int section, Qt::Orientation orientation, int role) const
-{
-    if (orientation != Qt::Horizontal)
-        return {};
-
-    if (role == Qt::DisplayRole)
-    {
-        switch (columns(section))
-        {
-            case columns::date:     return "Date";
-            case columns::locked:   return "";
-            case columns::category: return "Category";
-            case columns::size:     return "Size";
-            case columns::title:    return "Title";
-            case columns::sentinel: Q_ASSERT(false); break;
-        }
-    }
-    if (role == Qt::DecorationRole)
-    {
-        static const auto icoLock(toGrayScale("icons:ico_password.png"));
-        if (columns(section) == columns::locked)
-            return icoLock;
-    }
-    return {};
-}
-
-void RSSReader::sort(int column, Qt::SortOrder order)
-{
-    emit layoutAboutToBeChanged();
-
-    #define SORT(x) \
-        std::sort(std::begin(items_), std::end(items_), \
-            [&](const MediaItem& lhs, const MediaItem& rhs) { \
-                if (order == Qt::AscendingOrder) \
-                    return lhs.x < rhs.x; \
-                return lhs.x > rhs.x; \
-            });
-        switch (columns(column))
-        {
-            case columns::date:     SORT(pubdate); break;
-            case columns::category: SORT(type);    break;
-            case columns::size:     SORT(size);    break;
-            case columns::locked:   SORT(password); break;
-            case columns::title:    SORT(title);   break;
-            case columns::sentinel: Q_ASSERT(false); break;
-        }
-    #undef SORT
-
-    emit layoutChanged();
-}
-
-int RSSReader::rowCount(const QModelIndex&) const
-{
-    return (int)items_.size();
-}
-
-int RSSReader::columnCount(const QModelIndex&) const
-{
-    return (int)columns::sentinel;
-}
-
-void RSSReader::clear()
-{
-    items_.clear();
-    QAbstractTableModel::reset();                
-}
 
 bool RSSReader::refresh(MediaType type)
 {
@@ -187,6 +86,11 @@ bool RSSReader::refresh(MediaType type)
     }
 
     return ret;
+}
+
+QAbstractTableModel* RSSReader::getModel()
+{
+    return model_.get();
 }
 
 void RSSReader::enableFeed(const QString& feed, bool on_off)
@@ -219,9 +123,7 @@ void RSSReader::setCredentials(const QString& feed, const QString& user, const Q
 
 void RSSReader::downloadNzbFile(std::size_t index, const QString& file)
 {
-    BOUNDSCHECK(items_, index);
-
-    const auto& item = items_[index];
+    const auto& item = model_->getItem(index);
     const auto& link = item.nzblink;
 
     g_net->submit(std::bind(&RSSReader::onNzbFileComplete, this, file,
@@ -230,9 +132,7 @@ void RSSReader::downloadNzbFile(std::size_t index, const QString& file)
 
 void RSSReader::downloadNzbFile(std::size_t index, data_callback cb)
 {
-    BOUNDSCHECK(items_, index);
-
-    const auto& item = items_[index];
+    const auto& item = model_->getItem(index);
     const auto& link = item.nzblink;
 
     g_net->submit(std::bind(&RSSReader::onNzbDataCompleteCallback, this, std::move(cb), 
@@ -241,9 +141,7 @@ void RSSReader::downloadNzbFile(std::size_t index, data_callback cb)
 
 void RSSReader::downloadNzbContent(std::size_t index, quint32 account, const QString& folder)
 {
-    BOUNDSCHECK(items_, index);
-
-    const auto& item = items_[index];
+    const auto& item = model_->getItem(index);
     const auto& link = item.nzblink;
     const auto& desc = item.title;
     g_net->submit(std::bind(&RSSReader::onNzbDataComplete, this, folder, desc, account,
@@ -253,6 +151,21 @@ void RSSReader::downloadNzbContent(std::size_t index, quint32 account, const QSt
 void RSSReader::stop()
 {
     g_net->cancel(net_);
+}
+
+const MediaItem& RSSReader::getItem(std::size_t i) const
+{
+    return model_->getItem(i);
+}
+
+bool RSSReader::isEmpty() const 
+{
+    return model_->isEmpty();
+}
+
+std::size_t RSSReader::numItems() const 
+{
+    return model_->numItems();
 }
 
 void RSSReader::onRefreshComplete(RSSFeed* feed, MediaType type, QNetworkReply& reply)
@@ -269,9 +182,6 @@ void RSSReader::onRefreshComplete(RSSFeed* feed, MediaType type, QNetworkReply& 
     QByteArray bytes = reply.readAll();
     QBuffer io(&bytes);
 
-    //qDebug() << bytes.size();
-    //qDebug() << bytes;
-
     std::vector<MediaItem> items;
 
     if (!feed->parse(io, items))
@@ -286,12 +196,7 @@ void RSSReader::onRefreshComplete(RSSFeed* feed, MediaType type, QNetworkReply& 
         i.pubdate = i.pubdate.toLocalTime();
     }
 
-    const auto count = items.size();
-
-    beginInsertRows(QModelIndex(), items_.size(), items_.size() + count);
-    std::copy(std::begin(items), std::end(items),
-        std::back_inserter(items_));
-    endInsertRows();
+    model_->append(std::move(items));
 }
 
 void RSSReader::onNzbFileComplete(const QString& file, QNetworkReply& reply)

@@ -32,21 +32,49 @@
 namespace {
 
 using Type = app::MediaType;
+using Cat  = app::Indexer::Category;
 using Code = unsigned;
 
 struct Mapping {
     Type type;
     Code code;
+    Cat  cat;
 } map[] = {
-    {Type::ConsoleNDS, 1010},
-    {Type::ConsoleWii, 1030},
-    {Type::ConsoleXbox, 1040},
-    {Type::ConsoleXbox360, 1050},
-    {Type::ConsolePSP, 1020},
+    {Type::ConsoleNDS, 1010, Cat::Console},
+    {Type::ConsoleWii, 1030, Cat::Console},
+    {Type::ConsoleXbox, 1040, Cat::Console},
+    {Type::ConsoleXbox360, 1050, Cat::Console},
+    {Type::ConsolePSP, 1020, Cat::Console},
+    {Type::ConsolePS2, 1080, Cat::Console},    
+    {Type::ConsolePS3, 1090, Cat::Console},    
+    //{Type::ConsolePS4, ??},        
 
-    {Type::MoviesInt, 2010},
-    {Type::MoviesSD, 2030},
-    {Type::MoviesHD, 2040}
+    {Type::MoviesInt, 2060, Cat::Movies},
+    {Type::MoviesSD, 2010, Cat::Movies},
+    {Type::MoviesHD, 2040, Cat::Movies},
+
+    {Type::AudioMp3, 3010, Cat::Music},
+    {Type::AudioVideo, 3020, Cat::Music},
+    {Type::AudioAudiobook, 3030, Cat::Music},
+    {Type::AudioLossless, 3040, Cat::Music},
+
+    {Type::AppsPC, 4000, Cat::Apps},
+    {Type::AppsISO, 4020, Cat::Apps},
+    {Type::AppsMac, 4030, Cat::Apps},
+    {Type::AppsAndroid, 4070, Cat::Apps},
+    {Type::AppsIos, 4060, Cat::Apps},
+
+    {Type::TvInt, 5020, Cat::Television},
+    {Type::TvSD, 5030, Cat::Television},
+    {Type::TvHD, 5040, Cat::Television},
+    {Type::TvOther, 5050, Cat::Television},
+    {Type::TvSport, 5060, Cat::Television},
+
+    {Type::XxxDVD, 6010, Cat::Porno},
+    {Type::XxxHD, 6040, Cat::Porno},
+    {Type::XxxSD, 6030, Cat::Porno},
+
+    {Type::Ebook, 7020, Cat::Other}
 };
 
 app::MediaType mapType(unsigned code)
@@ -60,7 +88,30 @@ app::MediaType mapType(unsigned code)
     return (*it).type;
 }
 
+void collect(QStringList& str, Cat c)
+{
+    for (auto beg = std::begin(map); beg != std::end(map); ++beg)
+    {
+        const auto& item =*beg;
+        if (item.cat != c)
+            continue;
+        str << QString::number(item.code);
+    }
+}
 
+QString collect(newsflash::bitflag<app::Indexer::Category> bits)
+{
+    QStringList str;
+    for (unsigned i=0; i<bits.BitCount; ++i)
+    {
+        if (!bits.test(i))
+            continue;
+
+        const auto cat = static_cast<Cat>(i);
+        collect(str, cat);
+    }
+    return str.join(",");
+}
 
 } // namespace 
 
@@ -152,14 +203,60 @@ Indexer::Error Newznab::parse(QIODevice& io, std::vector<MediaItem>& results)
     return Error::None;
 }
 
-bool Newznab::prepare(const BasicQuery& query, QUrl& url)
+void Newznab::prepare(const BasicQuery& query, QUrl& url)
 {
-    url.setHost(apiurl_);
+    url.setUrl(apiurl_);
     url.addQueryItem("apikey", apikey_);
     url.addQueryItem("extended", "1");
     url.addQueryItem("t", "search");
-    url.addQueryItem("q", query.keywords);
-    return true;
+    if (!query.keywords.isEmpty())
+        url.addQueryItem("q", query.keywords);
+}
+
+void Newznab::prepare(const AdvancedQuery& query, QUrl& url)
+{
+    url.setUrl(apiurl_);
+    url.addQueryItem("apikey", apikey_);
+    url.addQueryItem("extended", "1");
+    url.addQueryItem("t", "search");
+    url.addQueryItem("cat", collect(query.categories));
+    if (!query.keywords.isEmpty())
+        url.addQueryItem("q", query.keywords);
+}
+
+void Newznab::prepare(const MusicQuery& query, QUrl& url)
+{
+    url.setUrl(apiurl_);
+    url.addQueryItem("apikey", apikey_);
+    url.addQueryItem("extended", "1");
+    url.addQueryItem("t", "music");
+    if (!query.artist.isEmpty())
+        url.addQueryItem("artist", query.artist);
+    if (!query.album.isEmpty())
+        url.addQueryItem("album", query.album);
+    if (!query.track.isEmpty())
+        url.addQueryItem("track", query.track);
+    if (!query.year.isEmpty())
+        url.addQueryItem("year", query.year);
+}
+
+void Newznab::prepare(const TelevisionQuery& query, QUrl& url)
+{
+    url.setUrl(apiurl_);
+    url.addQueryItem("apikey", apikey_);
+    url.addQueryItem("extended", "1");
+    url.addQueryItem("t", "tvsearch");
+    if (!query.keywords.isEmpty())
+        url.addQueryItem("q", query.keywords);
+    if (!query.episode.isEmpty())
+        url.addQueryItem("ep", query.episode);
+    if (!query.season.isEmpty())
+        url.addQueryItem("season", query.season);
+}
+
+QString Newznab::name() const
+{
+    return apiurl_;
 }
 
 void Newznab::setParams(const Params& params)

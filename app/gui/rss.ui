@@ -200,7 +200,7 @@
      <normaloff>:/resource/16x16_ico_png/ico_save_nzb.png</normaloff>:/resource/16x16_ico_png/ico_save_nzb.png</iconset>
    </property>
    <property name="text">
-    <string>Save item as ...</string>
+    <string>Save item(s) as ...</string>
    </property>
    <property name="toolTip">
     <string>Save selected items to disk</string>
@@ -251,7 +251,7 @@
      <normaloff>:/resource/16x16_ico_png/ico_open_nzb.png</normaloff>:/resource/16x16_ico_png/ico_open_nzb.png</iconset>
    </property>
    <property name="text">
-    <string>Open item ...</string>
+    <string>Open item(s) ...</string>
    </property>
    <property name="toolTip">
     <string>Open selected items</string>

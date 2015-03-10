@@ -36,8 +36,11 @@ namespace app
         };
 
         virtual Error parse(QIODevice& io, std::vector<MediaItem>& results) override;
-
-        virtual bool prepare(const BasicQuery& query, QUrl& url) override;
+        virtual void prepare(const BasicQuery& query, QUrl& url) override;
+        virtual void prepare(const AdvancedQuery& query, QUrl& url) override;
+        virtual void prepare(const MusicQuery& query, QUrl& url) override;
+        virtual void prepare(const TelevisionQuery& query, QUrl& url) override;
+        virtual QString name() const override;
 
         void setParams(const Params& params);
     private:

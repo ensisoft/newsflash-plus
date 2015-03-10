@@ -22,18 +22,89 @@
 
 #include <newsflash/config.h>
 #include <newsflash/warnpush.h>
+#  include <QtNetwork/QNetworkReply>
 #  include <QString>
 #include <newsflash/warnpop.h>
+#include <functional>
+#include <memory>
+#include "media.h"
+#include "searchmodel.h"
+#include "tablemodel.h"
+#include "netman.h"
+
+class QAbstractTableModel;
 
 namespace app
 {
+    class Indexer;
+
     class Search
     {
     public:
+        struct Basic {
+            QString keywords;
+        };
 
+        struct Advanced {
+            QString keywords;
+            bool music;
+            bool movies;
+            bool television;
+            bool console;
+            bool computer;
+            bool porno;
 
-    protected:
+        };
+
+        struct Music {
+            QString album;
+            QString track;
+            QString year;
+            QString keywords;
+        };
+
+        struct Television {
+            QString season;
+            QString episode;
+            QString keywords;
+        };
+
+        Search();
+       ~Search();
+
+        using OnReady = std::function<void ()>;
+        using OnData  = std::function<void (const QByteArray& bytes, const QString& desc)>;
+
+        OnReady OnReadyCallback;
+
+        QAbstractTableModel* getModel();
+
+        // begin searching with the given criteria.
+        bool beginSearch(const Basic& query, std::unique_ptr<Indexer> index);
+        bool beginSearch(const Advanced& query, std::unique_ptr<Indexer> index);
+        bool beginSearch(const Music& query, std::unique_ptr<Indexer> index);
+        bool beginSearch(const Television& query, std::unique_ptr<Indexer> index);
+
+        // stop current actions.
+        void stop();
+
+        // get the item contents of the selected items and invoke
+        // the callback for the content buffer.
+        void loadItem(const QModelIndex& index, OnData cb);
+
+        // get the item contents and save them to the specified file.
+        void saveItem(const QModelIndex& index, const QString& file);
+
+        const MediaItem& getItem(const QModelIndex& index) const;
     private:
+        void onSearchReady(QNetworkReply& reply);
+
+    private:
+        using ModelType = TableModel<SearchModel, MediaItem>;
+
+        std::unique_ptr<ModelType> model_;
+        std::unique_ptr<Indexer> indexer_;
+        NetworkManager::Context net_;
     };
 
 } // app

@@ -34,33 +34,23 @@
 #include "media.h"
 #include "netman.h"
 #include "rssfeed.h"
+#include "rssmodel.h"
+#include "tablemodel.h"
 
 namespace app
 {
     class RSSFeed;
 
     // RSSReader aggregates several RSS feeds into one single RSS feed.
-    class RSSReader : public QAbstractTableModel
+    class RSSReader
     {
     public:
-        enum class columns {
-            date, category, size, locked, title, sentinel
-        };                
-
         RSSReader();
        ~RSSReader();
         
         std::function<void()> on_ready;
 
-        // QAbstractTableModel
-        virtual QVariant data(const QModelIndex& index, int role) const override;
-        virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
-        virtual void sort(int column, Qt::SortOrder order) override;
-        virtual int rowCount(const QModelIndex&) const  override;
-        virtual int columnCount(const QModelIndex&) const override;
-
-        // clear the data model and remove all RSS feed items.
-        void clear();
+        QAbstractTableModel* getModel();
 
         // refresh the RSS stream for media type m.
         // returns true if there are RSS feeds in this media
@@ -86,11 +76,11 @@ namespace app
         // stop/cancel pending network operations.
         void stop();
 
-        const MediaItem& getItem(std::size_t i) const
-        { return items_[i]; }
+        const MediaItem& getItem(std::size_t i) const;
 
-        bool isEmpty() const
-        { return items_.empty(); }
+        bool isEmpty() const;
+
+        std::size_t numItems() const;
 
     private:
         void onRefreshComplete(RSSFeed* feed, MediaType type, QNetworkReply& reply);
@@ -99,9 +89,10 @@ namespace app
         void onNzbDataCompleteCallback(const data_callback& cb, QNetworkReply& reply);
 
     private:
+        using ModelType = TableModel<RSSModel, MediaItem>;
+
         std::vector<std::unique_ptr<RSSFeed>> feeds_;
-        std::vector<MediaItem> items_;          
-    private:
+        std::unique_ptr<ModelType> model_;
         NetworkManager::Context net_;
     };
 

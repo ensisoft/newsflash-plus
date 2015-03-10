@@ -88,7 +88,7 @@ namespace gui
 RSS::RSS()
 {
     ui_.setupUi(this);
-    ui_.tableView->setModel(&model_);
+    ui_.tableView->setModel(model_.getModel());
     ui_.actionDownload->setEnabled(false);
     ui_.actionDownloadTo->setEnabled(false);
     ui_.actionSave->setEnabled(false);
@@ -108,7 +108,7 @@ RSS::RSS()
     ui_.tableView->viewport()->installEventFilter(this);
     ui_.tableView->viewport()->setMouseTracking(true);
     ui_.tableView->setMouseTracking(true);
-    ui_.tableView->setColumnWidth((int)app::RSSReader::columns::locked, 32);
+    //ui_.tableView->setColumnWidth((int)app::RSSReader::columns::locked, 32);
 
     // when the model has no more actions we hide the progress bar and disable
     // the stop button.
@@ -365,7 +365,7 @@ bool RSS::isMatch(const QRegExp& regex, std::size_t index)
 
 std::size_t RSS::numItems() const 
 {
-    return model_.rowCount(QModelIndex());
+    return model_.numItems();
 }
 
 std::size_t RSS::curItem() const 
@@ -520,11 +520,11 @@ void RSS::refreshStreams(bool verbose)
         return;
     }
 
-    model_.clear();
-
     ui_.progressBar->setVisible(true);
     ui_.actionDownload->setEnabled(false);
     ui_.actionDownloadTo->setEnabled(false);
+    ui_.actionSave->setEnabled(false);
+    ui_.actionOpen->setEnabled(false);
     ui_.actionStop->setEnabled(true);    
     ui_.actionRefresh->setEnabled(false);
 }
@@ -574,7 +574,7 @@ void RSS::on_actionOpen_triggered()
 
     static auto callback = [](const QByteArray& bytes, const QString& desc) {
         auto* view = new NZBFile();
-        g_win->attach(view, true);
+        g_win->attach(view, false);
         view->open(bytes, desc);
     };
 

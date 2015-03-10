@@ -75,9 +75,64 @@ QString toString(MediaType m)
         case Media::XxxHD:             return "XXX HD";
         case Media::XxxSD:             return "XXX SD";
         case Media::Ebook:             return "EBook";
+        case Media::Other:             return "Other";
     }
     Q_ASSERT(false);
-    return "";
+    return {};
+}
+
+QIcon toIcon(MediaType type)
+{
+    using m = MediaType;
+    switch (type)
+    {
+        case m::ConsoleNDS:
+        case m::ConsoleWii:
+        case m::ConsoleXbox:
+        case m::ConsoleXbox360:
+        case m::ConsolePSP:
+        case m::ConsolePS2:
+        case m::ConsolePS3:
+        case m::ConsolePS4:
+            return QIcon("icons:ico_media_console.png");
+
+        case m::MoviesInt:
+        case m::MoviesSD:
+        case m::MoviesHD:
+        case m::MoviesWMV:
+            return QIcon("icons:ico_media_movie.png");
+
+        case m::AudioMp3:
+        case m::AudioVideo:
+        case m::AudioAudiobook:
+        case m::AudioLossless:
+            return QIcon("icons:ico_media_audio.png");
+
+        case m::AppsPC:
+        case m::AppsISO:
+        case m::AppsMac:
+        case m::AppsAndroid:
+        case m::AppsIos:
+            return QIcon("icons:ico_media_apps.png");
+
+        case m::TvInt:
+        case m::TvSD:
+        case m::TvHD:
+        case m::TvOther:
+        case m::TvSport:
+            return QIcon("icons:ico_media_tv.png");
+
+        case m::XxxDVD:
+        case m::XxxHD:
+        case m::XxxSD:
+            return QIcon("icons:ico_media_xxx.png");
+
+        case m::Ebook:
+        case m::Other:
+            return QIcon("icons:ico_media_other.png");
+    }
+    Q_ASSERT(false);
+    return {};
 }
 
 

@@ -25,10 +25,7 @@
 #  include "ui_search.h"
 #include <newsflash/warnpop.h>
 #include "mainwidget.h"
-
-namespace app {
-    class SearchEngine;
-} // app
+#include "../search.h"
 
 namespace gui
 {
@@ -37,19 +34,30 @@ namespace gui
         Q_OBJECT
 
     public:
-        Search(app::SearchEngine& engine);
+        Search();
        ~Search();
 
         virtual void addActions(QMenu& menu) override;
         virtual void addActions(QToolBar& bar) override;
+        virtual void loadState(app::Settings& settings) override;
+        virtual void saveState(app::Settings& settings) override;
 
     private slots:
+        void on_actionRefresh_triggered();
+        void on_actionStop_triggered();
+        void on_actionSettings_triggered();
+        void on_actionOpen_triggered();
+        void on_actionSave_triggered();
         void on_btnSearch_clicked();
-        
+        void on_tableView_customContextMenuRequested(QPoint point);
+        void tableview_selectionChanged();
+        void downloadToPrevious();
+    private:
+        void downloadSelected(const QString& folder);
 
     private:
         Ui::Search ui_;
     private:
-        app::SearchEngine& engine_;
+        app::Search model_;
     };
 } // gui

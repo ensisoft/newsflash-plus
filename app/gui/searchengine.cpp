@@ -51,16 +51,15 @@ void SearchEngine::loadState(app::Settings& settings)
 {
     std::unique_ptr<app::Newznab> newznab(new app::Newznab);
     app::Newznab::Params p;
-    p.apiurl = "http://nzbs.org/api/";
-    p.apiurl = "debb752d0452ebf5174500aa19844f8e";
+
     newznab->setParams(p);
 
-    engine_.addEngine(std::move(newznab));
+    //engine_.addEngine(std::move(newznab));
 }
 
 MainWidget* SearchEngine::openSearch()
 {
-    Search* s = new Search(engine_);
+    Search* s = new Search;
     return s;
 }
 

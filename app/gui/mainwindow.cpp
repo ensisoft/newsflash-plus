@@ -647,7 +647,7 @@ void MainWindow::dropEvent(QDropEvent* event)
         {
             MainWidget* widget = m->dropFile(name);
             if (widget)
-                attach(widget, false);
+                attach(widget, false, true);
         }
     }
 }
@@ -888,7 +888,7 @@ void MainWindow::on_actionOpen_triggered()
     {
         MainWidget* widget = m->openFile(file);
         if (widget)
-            attach(widget, false);
+            attach(widget, false, true);
     }
 }
 
@@ -945,7 +945,7 @@ void MainWindow::on_actionSearch_triggered()
     {
         MainWidget* widget = m->openSearch();
         if (widget)
-            attach(widget, false);
+            attach(widget, false, true);
     }
 }
 

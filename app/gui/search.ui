@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>896</width>
+    <width>1057</width>
     <height>594</height>
    </rect>
   </property>
@@ -217,9 +217,15 @@
              </item>
              <item>
               <widget class="QLineEdit" name="editAlbum">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
                <property name="minimumSize">
                 <size>
-                 <width>200</width>
+                 <width>0</width>
                  <height>0</height>
                 </size>
                </property>
@@ -234,9 +240,15 @@
              </item>
              <item>
               <widget class="QLineEdit" name="editTrack">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
                <property name="minimumSize">
                 <size>
-                 <width>200</width>
+                 <width>0</width>
                  <height>0</height>
                 </size>
                </property>
@@ -256,6 +268,9 @@
               <spacer name="horizontalSpacer_4">
                <property name="orientation">
                 <enum>Qt::Horizontal</enum>
+               </property>
+               <property name="sizeType">
+                <enum>QSizePolicy::Expanding</enum>
                </property>
                <property name="sizeHint" stdset="0">
                 <size>
@@ -371,12 +386,12 @@
               <number>0</number>
              </property>
              <item>
-              <widget class="QCheckBox" name="chkTV">
+              <widget class="QCheckBox" name="chkMusic">
                <property name="contextMenuPolicy">
                 <enum>Qt::CustomContextMenu</enum>
                </property>
                <property name="text">
-                <string>TV</string>
+                <string>Music</string>
                </property>
                <property name="checked">
                 <bool>true</bool>
@@ -397,12 +412,12 @@
               </widget>
              </item>
              <item>
-              <widget class="QCheckBox" name="chkComputer">
+              <widget class="QCheckBox" name="chkTV">
                <property name="contextMenuPolicy">
                 <enum>Qt::CustomContextMenu</enum>
                </property>
                <property name="text">
-                <string>Computer</string>
+                <string>TV</string>
                </property>
                <property name="checked">
                 <bool>true</bool>
@@ -423,12 +438,12 @@
               </widget>
              </item>
              <item>
-              <widget class="QCheckBox" name="chkMusic">
+              <widget class="QCheckBox" name="chkComputer">
                <property name="contextMenuPolicy">
                 <enum>Qt::CustomContextMenu</enum>
                </property>
                <property name="text">
-                <string>Music</string>
+                <string>Computer</string>
                </property>
                <property name="checked">
                 <bool>true</bool>
@@ -445,26 +460,6 @@
                </property>
                <property name="checked">
                 <bool>true</bool>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QCheckBox" name="chkOther">
-               <property name="contextMenuPolicy">
-                <enum>Qt::CustomContextMenu</enum>
-               </property>
-               <property name="text">
-                <string>Other</string>
-               </property>
-               <property name="checked">
-                <bool>true</bool>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QLabel" name="label_3">
-               <property name="text">
-                <string>(Right click on fields for more options) </string>
                </property>
               </widget>
              </item>
@@ -687,6 +682,39 @@ p, li { white-space: pre-wrap; }
     <string>Stop</string>
    </property>
   </action>
+  <action name="actionSave">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_save_nzb.png</normaloff>:/resource/16x16_ico_png/ico_save_nzb.png</iconset>
+   </property>
+   <property name="text">
+    <string>Save item(s) as ...</string>
+   </property>
+   <property name="toolTip">
+    <string>Save selected items to disk</string>
+   </property>
+  </action>
+  <action name="actionOpen">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_open_nzb.png</normaloff>:/resource/16x16_ico_png/ico_open_nzb.png</iconset>
+   </property>
+   <property name="text">
+    <string>Open item(s) ...</string>
+   </property>
+   <property name="toolTip">
+    <string>Open selected items</string>
+   </property>
+  </action>
+  <action name="actionBrowse">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_browse.png</normaloff>:/resource/16x16_ico_png/ico_browse.png</iconset>
+   </property>
+   <property name="text">
+    <string>Browse ...</string>
+   </property>
+  </action>
  </widget>
  <tabstops>
   <tabstop>btnBasic</tabstop>
@@ -700,12 +728,8 @@ p, li { white-space: pre-wrap; }
   <tabstop>editSeason</tabstop>
   <tabstop>editEpisode</tabstop>
   <tabstop>chkTV</tabstop>
-  <tabstop>chkMovies</tabstop>
   <tabstop>chkComputer</tabstop>
-  <tabstop>chkConsole</tabstop>
-  <tabstop>chkMusic</tabstop>
   <tabstop>chkXXX</tabstop>
-  <tabstop>chkOther</tabstop>
   <tabstop>editSearch</tabstop>
   <tabstop>btnSearch</tabstop>
   <tabstop>btnPrev</tabstop>
