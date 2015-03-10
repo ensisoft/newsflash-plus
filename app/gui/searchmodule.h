@@ -22,29 +22,52 @@
 
 #include <newsflash/config.h>
 #include <newsflash/warnpush.h>
-#  include <QtNetwork/QNetworkAccessManager>
-#  include <QObject>
+#  include "ui_searchsettings.h"
 #include <newsflash/warnpop.h>
+#include "mainmodule.h"
+#include "settings.h"
 
-namespace app
+namespace gui
 {
-    // telephone class performs "callhome" to check for software updates.
-    class Telephone : public QObject
+    class SearchSettings : public SettingsWidget
     {
         Q_OBJECT
 
     public:
-        Telephone();
-       ~Telephone();
-        
-        // callhome, check for software updates.
-        void callhome();
+        SearchSettings();
+       ~SearchSettings();
 
-    signals:
-        void completed(bool new_version_available, QString latest);
-        
+        virtual bool validate() const override;
+
+    private slots:
+        void on_btnImport_clicked();
+        void on_btnAdd_clicked();
+        void on_btnDel_clicked();
+        void on_btnEdit_clicked();
+
     private:
-        void onFinished(QNetworkReply& reply);
+        Ui::SearchSettings ui_;
+    private:
+        friend class SearchModule;
 
     };
-} // app
+
+
+    class SearchModule : public MainModule
+    {
+    public:
+        SearchModule();
+       ~SearchModule();
+
+        virtual void saveState(app::Settings& settings) override;
+        virtual void loadState(app::Settings& settings) override;
+
+        virtual MainWidget* openSearch() override;
+
+        virtual SettingsWidget* getSettings() override;
+        virtual void applySettings(SettingsWidget* gui) override;
+        virtual void freeSettings(SettingsWidget* gui) override;
+    private:
+    };
+
+} // gui

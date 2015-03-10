@@ -18,49 +18,22 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#define LOGTAG "search"
-
 #include <newsflash/config.h>
 #include <newsflash/warnpush.h>
+
 #include <newsflash/warnpop.h>
-#include "searchengine.h"
-#include "search.h"
-#include "../settings.h"
-#include "../debug.h"
-#include "../newznab.h"
+#include "dlgnewznab.h"
 
 namespace gui
 {
 
-SearchEngine::SearchEngine()
+DlgNewznab::DlgNewznab(QWidget* parent, app::Newznab::Account& acc) : QDialog(parent), acc_(acc)
 {
-    DEBUG("SearchEngine UI created");
+    ui_.setupUi(this);
 }
 
-SearchEngine::~SearchEngine()
-{
-    DEBUG("SearchEngine UI deleted");
-}
+DlgNewznab::~DlgNewznab()
+{}
 
-void SearchEngine::saveState(app::Settings& settings)
-{
-
-}
-
-void SearchEngine::loadState(app::Settings& settings)
-{
-    std::unique_ptr<app::Newznab> newznab(new app::Newznab);
-    app::Newznab::Params p;
-
-    newznab->setParams(p);
-
-    //engine_.addEngine(std::move(newznab));
-}
-
-MainWidget* SearchEngine::openSearch()
-{
-    Search* s = new Search;
-    return s;
-}
 
 } // gui

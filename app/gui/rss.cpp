@@ -118,6 +118,7 @@ RSS::RSS()
         ui_.actionRefresh->setEnabled(true);
     };
 
+
     DEBUG("RSS gui created");
 }
 
@@ -713,6 +714,11 @@ void RSS::popupDetails()
         }    
         movie_->lookup(title);
     }
+}
+
+void RSS::testSlot()
+{
+    DEBUG("PASKAA!!!");
 }
 
 } // gui

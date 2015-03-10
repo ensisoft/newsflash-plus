@@ -41,21 +41,20 @@
 #include "nzbparse.h"
 #include "engine.h"
 #include "platform.h"
-#include "types.h"
+#include "webquery.h"
+#include "webengine.h"
 
 namespace app
 {
 
 RSSReader::RSSReader() : model_(new ModelType)
 {
-    net_ = g_net->getSubmissionContext();
-
     feeds_.emplace_back(new Womble);
     feeds_.emplace_back(new Nzbs);
 
-    net_.callback = [=] {
-        on_ready();
-    };
+    // net_.callback = [=] {
+    //     on_ready();
+    // };
 
     DEBUG("RSSReader created");
 }
@@ -79,12 +78,15 @@ bool RSSReader::refresh(MediaType type)
         feed->prepare(type, urls);
         for (const auto& url : urls)
         {
-            g_net->submit(std::bind(&RSSReader::onRefreshComplete, this, feed.get(), type,
-                std::placeholders::_1), net_, url);
+            WebQuery query(url);
+            query.OnReply = std::bind(&RSSReader::onRefreshComplete, this, 
+                feed.get(), type, std::placeholders::_1);
+            auto* p = g_web->submit(query);
+            queries_.push_back(p);
             ret = true;
         }
     }
-
+    model_->clear();
     return ret;
 }
 
@@ -126,8 +128,11 @@ void RSSReader::downloadNzbFile(std::size_t index, const QString& file)
     const auto& item = model_->getItem(index);
     const auto& link = item.nzblink;
 
-    g_net->submit(std::bind(&RSSReader::onNzbFileComplete, this, file,
-        std::placeholders::_1), net_, link);
+    WebQuery query(link);
+    query.OnReply = std::bind(&RSSReader::onNzbFileComplete, this, file,
+        std::placeholders::_1);
+    auto* ret = g_web->submit(query);
+    queries_.push_back(ret);
 }
 
 void RSSReader::downloadNzbFile(std::size_t index, data_callback cb)
@@ -135,8 +140,11 @@ void RSSReader::downloadNzbFile(std::size_t index, data_callback cb)
     const auto& item = model_->getItem(index);
     const auto& link = item.nzblink;
 
-    g_net->submit(std::bind(&RSSReader::onNzbDataCompleteCallback, this, std::move(cb), 
-        std::placeholders::_1), net_, link);
+    WebQuery query(link);
+    query.OnReply = std::bind(&RSSReader::onNzbDataCompleteCallback, this, std::move(cb), 
+        std::placeholders::_1);
+    auto* ret = g_web->submit(query);
+    queries_.push_back(ret);
 }
 
 void RSSReader::downloadNzbContent(std::size_t index, quint32 account, const QString& folder)
@@ -144,13 +152,20 @@ void RSSReader::downloadNzbContent(std::size_t index, quint32 account, const QSt
     const auto& item = model_->getItem(index);
     const auto& link = item.nzblink;
     const auto& desc = item.title;
-    g_net->submit(std::bind(&RSSReader::onNzbDataComplete, this, folder, desc, account,
-        std::placeholders::_1), net_, link);
+
+    WebQuery query(link);
+    query.OnReply = std::bind(&RSSReader::onNzbDataComplete, this, folder, desc, account,
+        std::placeholders::_1);
+    auto* ret = g_web->submit(query);
+    queries_.push_back(ret);
 }
 
 void RSSReader::stop()
 {
-    g_net->cancel(net_);
+    for (auto* query : queries_)
+        query->abort();
+
+    queries_.clear();
 }
 
 const MediaItem& RSSReader::getItem(std::size_t i) const
@@ -171,6 +186,15 @@ std::size_t RSSReader::numItems() const
 void RSSReader::onRefreshComplete(RSSFeed* feed, MediaType type, QNetworkReply& reply)
 {
     DEBUG("RSS stream reply %1", reply);
+
+    const auto it = std::find_if(std::begin(queries_), std::end(queries_),
+        [&](const WebQuery* q ){
+            return q->isOwner(reply);
+        });
+    ENDCHECK(queries_, it);
+    queries_.erase(it);
+    if (queries_.empty())
+        on_ready();
 
     const auto err = reply.error();
     const auto url = reply.url();
@@ -203,6 +227,15 @@ void RSSReader::onNzbFileComplete(const QString& file, QNetworkReply& reply)
 {
     DEBUG("Get nzb data reply %1", reply);
 
+    const auto it = std::find_if(std::begin(queries_), std::end(queries_),
+        [&](const WebQuery* q ){
+            return q->isOwner(reply);
+        });
+    ENDCHECK(queries_, it);
+    queries_.erase(it);
+    if (queries_.empty())
+        on_ready();
+
     const auto err = reply.error();
     const auto url = reply.url();
     if (err != QNetworkReply::NoError)
@@ -227,6 +260,15 @@ void RSSReader::onNzbDataComplete(const QString& folder, const QString& desc, qu
 {
     DEBUG("Get nzb data reply %1", reply);
 
+    const auto it = std::find_if(std::begin(queries_), std::end(queries_),
+        [&](const WebQuery* q ){
+            return q->isOwner(reply);
+        });
+    ENDCHECK(queries_, it);
+    queries_.erase(it);
+    if (queries_.empty())
+        on_ready();
+
     const auto err = reply.error();
     const auto url = reply.url();
     if (err != QNetworkReply::NoError)
@@ -235,7 +277,7 @@ void RSSReader::onNzbDataComplete(const QString& folder, const QString& desc, qu
         return;
     }
 
-    QByteArray bytes = reply.readAll();
+    const auto bytes = reply.readAll();
 
     g_engine->downloadNzbContents(acc, folder, desc, bytes);
 }
@@ -243,6 +285,15 @@ void RSSReader::onNzbDataComplete(const QString& folder, const QString& desc, qu
 void RSSReader::onNzbDataCompleteCallback(const data_callback& cb, QNetworkReply& reply)
 {
     DEBUG("Get nzb data reply %1", reply);
+
+    const auto it = std::find_if(std::begin(queries_), std::end(queries_),
+        [&](const WebQuery* q ){
+            return q->isOwner(reply);
+        });
+    ENDCHECK(queries_, it);
+    queries_.erase(it);
+    if (queries_.empty())
+        on_ready();
 
     const auto err = reply.error();
     const auto url = reply.url();

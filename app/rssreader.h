@@ -30,9 +30,9 @@
 #include <memory>
 #include <vector>
 #include <map>
+#include <list>
 #include <functional>
 #include "media.h"
-#include "netman.h"
 #include "rssfeed.h"
 #include "rssmodel.h"
 #include "tablemodel.h"
@@ -40,6 +40,7 @@
 namespace app
 {
     class RSSFeed;
+    class WebQuery;
 
     // RSSReader aggregates several RSS feeds into one single RSS feed.
     class RSSReader
@@ -90,10 +91,9 @@ namespace app
 
     private:
         using ModelType = TableModel<RSSModel, MediaItem>;
-
         std::vector<std::unique_ptr<RSSFeed>> feeds_;
         std::unique_ptr<ModelType> model_;
-        NetworkManager::Context net_;
+        std::list<WebQuery*> queries_;
     };
 
 } // rss

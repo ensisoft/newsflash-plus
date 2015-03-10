@@ -27,24 +27,29 @@
 #include <newsflash/warnpop.h>
 #include <functional>
 #include <memory>
+#include <list>
 #include "media.h"
 #include "searchmodel.h"
 #include "tablemodel.h"
-#include "netman.h"
 
 class QAbstractTableModel;
 
 namespace app
 {
     class Indexer;
+    class WebQuery;
 
+    // Search class can perform queries against a Usenet indexer.
     class Search
     {
     public:
+        // basic search
         struct Basic {
             QString keywords;
         };
 
+        // advanced search allows us to limit the scope
+        // of the search to some specific media streams.
         struct Advanced {
             QString keywords;
             bool music;
@@ -56,6 +61,8 @@ namespace app
 
         };
 
+        // music search optionally searching for specific
+        // track/album/year
         struct Music {
             QString album;
             QString track;
@@ -63,6 +70,8 @@ namespace app
             QString keywords;
         };
 
+        // television search optionally searching
+        // for specific episode/season.
         struct Television {
             QString season;
             QString episode;
@@ -97,14 +106,14 @@ namespace app
 
         const MediaItem& getItem(const QModelIndex& index) const;
     private:
+        void doSearch(QUrl url);
         void onSearchReady(QNetworkReply& reply);
 
     private:
         using ModelType = TableModel<SearchModel, MediaItem>;
-
         std::unique_ptr<ModelType> model_;
         std::unique_ptr<Indexer> indexer_;
-        NetworkManager::Context net_;
+        std::list<WebQuery*> queries_;
     };
 
 } // app

@@ -22,23 +22,45 @@
 
 #include <newsflash/config.h>
 #include <newsflash/warnpush.h>
+#  include <QtNetwork/QNetworkAccessManager>
+#  include <QtNetwork/QNetworkRequest>
+#  include <QtNetwork/QNetworkReply>
+#  include <QObject>
+#  include <QString>
+#  include <QTimer>
+#  include <QUrl>
 #include <newsflash/warnpop.h>
-#include "mainmodule.h"
+#include <functional>
+#include <list>
 
-namespace gui
+namespace app
 {
-    class SearchEngine : public MainModule
+    class WebQuery;
+
+    // WebEngine provides a simple interface to perform WebQueries.
+    class WebEngine : public QObject
     {
+        Q_OBJECT
+
     public:
-        SearchEngine();
-       ~SearchEngine();
+        WebEngine();
+       ~WebEngine();
 
-        virtual void saveState(app::Settings& settings) override;
-        virtual void loadState(app::Settings& settings) override;
+        // Submit a new query. Returns a pointer to the query
+        // object stored in the engine. the pointer will be valid
+        // untill the query completes.
+        WebQuery* submit(WebQuery query);
 
-        virtual MainWidget* openSearch() override;
+    private slots:
+        void finished(QNetworkReply* reply);
+        void heartbeat();
 
     private:
+        QNetworkAccessManager qnam_;
+        QTimer timer_;
+        std::list<WebQuery> queries_;
     };
 
-} // gui
+    extern WebEngine* g_web;
+
+} // app

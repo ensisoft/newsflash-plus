@@ -22,17 +22,23 @@
 
 #include <newsflash/config.h>
 #include <newsflash/warnpush.h>
+#  include <QObject>
 #include <newsflash/warnpop.h>
 #include "indexer.h"
 
 namespace app
 {
-    class Newznab : public Indexer
+    class Newznab : public QObject, public Indexer
     {
+        Q_OBJECT
+
     public:
-        struct Params {
+        struct Account {
             QString apiurl;
             QString apikey;
+            QString username;
+            QString password;
+            QString email;
         };
 
         virtual Error parse(QIODevice& io, std::vector<MediaItem>& results) override;
@@ -42,7 +48,11 @@ namespace app
         virtual void prepare(const TelevisionQuery& query, QUrl& url) override;
         virtual QString name() const override;
 
-        void setParams(const Params& params);
+        void setAccount(const Account& acc);
+
+        void apiTest(const Account& acc);
+
+        void tryRegister(QString host, QString email);
     private:
         QString apikey_;
         QString apiurl_;

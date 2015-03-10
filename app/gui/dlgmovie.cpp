@@ -21,7 +21,9 @@
 //  THE SOFTWARE.            
 
 #include <newsflash/config.h>
-
+#include <newsflash/warnpush.h>
+#  include <QTimer>
+#include <newsflash/warnpop.h>
 #include "dlgmovie.h"
 #include "../omdb.h"
 

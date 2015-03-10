@@ -38,7 +38,7 @@ namespace gui
         Q_OBJECT
 
     public:
-        using mode = app::Feedback::type;
+        using mode = app::Feedback::Type;
 
         DlgFeedback(QWidget* parent, mode m);
        ~DlgFeedback();

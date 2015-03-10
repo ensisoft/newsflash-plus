@@ -38,8 +38,8 @@ DlgFeedback::DlgFeedback(QWidget* parent, mode m) : QDialog(parent), uimode_(m)
     const auto& platform = app::getPlatformName();    
 
     ui_.setupUi(this);
-    ui_.editVersion->setText(NEWSFLASH_VERSION);
-    ui_.editPlatform->setText(platform);
+    ui_.editVersion->setText(feedback_.version());
+    ui_.editPlatform->setText(feedback_.platform());
     ui_.progress->setVisible(false);
     ui_.progress->setRange(0, 0);
     ui_.progress->setValue(0);
@@ -47,7 +47,7 @@ DlgFeedback::DlgFeedback(QWidget* parent, mode m) : QDialog(parent), uimode_(m)
 
     switch (m)
     {
-        case mode::bugreport:
+        case mode::BugReport:
             setWindowTitle("Report a Bug");
             setWindowIcon(QIcon("icons:ico_app_report_bug.png"));
             ui_.grpMessage->setTitle("Description *");
@@ -59,20 +59,20 @@ DlgFeedback::DlgFeedback(QWidget* parent, mode m) : QDialog(parent), uimode_(m)
                 "3.\r\n");
             break;
 
-        case mode::feedback:
+        case mode::Feedback:
             setWindowTitle("Send feedback");
             setWindowIcon(QIcon("icons:ico_app_send_feedback.png"));
             ui_.grpMessage->setTitle("Message *");
             ui_.cmbFeelings->setVisible(true);
             break;
 
-        case mode::request_feature:
+        case mode::FeatureRequest:
             setWindowTitle("Request a Feature");
             setWindowIcon(QIcon("icons:ico_app_request_feature.png"));
             ui_.grpMessage->setTitle("Request *");
             break;
 
-        case mode::request_license:
+        case mode::LicenseRequest:
             setWindowTitle("Request Registration License");
             setWindowIcon(QIcon("icons:ico_app_request_license.png"));
             ui_.grpMessage->setTitle("Request License");
@@ -90,89 +90,64 @@ DlgFeedback::~DlgFeedback()
 
 void DlgFeedback::on_btnSend_clicked()
 {
-    using feelings = app::Feedback::feeling;
+    using Feelings = app::Feedback::Feeling;
+    using Response = app::Feedback::Response;    
 
-    app::Feedback::Message msg;
-    msg.type    = uimode_;
-    msg.feeling = (feelings)ui_.cmbFeelings->currentIndex();
-
-    msg.name = ui_.editName->text();
-    if (msg.name.isEmpty())
-    {
-        ui_.editName->setFocus();
-        return;
+#define MUST_HAVE(x) \
+    if (x->text().isEmpty()) {\
+        x->setFocus(); \
+        return; \
     }
 
-    msg.email = ui_.editEmail->text();
-    if (msg.email.isEmpty())
-    {
-        ui_.editEmail->setFocus();
-        return;
-    }
+    MUST_HAVE(ui_.editName);
+    MUST_HAVE(ui_.editEmail);
+    MUST_HAVE(ui_.editPlatform);
+    MUST_HAVE(ui_.editVersion);
 
-    msg.platform = ui_.editPlatform->text();
-    if (msg.platform.isEmpty())
-    {
-        ui_.editPlatform->setFocus();
-        return;
-    }
-
-    msg.version = ui_.editVersion->text();
-    if (msg.version.isEmpty())
-    {
-        ui_.editVersion->setFocus();
-        return;
-    }
-
-    msg.text = ui_.txtMessage->toPlainText();
-    if (msg.text.isEmpty())
-    {
-        ui_.txtMessage->setFocus();
-        return;
-    }
+    feedback_.setType(uimode_);
+    feedback_.setFeeling((Feelings)ui_.cmbFeelings->currentIndex());
+    feedback_.setName(ui_.editName->text());
+    feedback_.setEmail(ui_.editEmail->text());
+    feedback_.setPlatform(ui_.editPlatform->text());
+    feedback_.setVersion(ui_.editVersion->text());
+    feedback_.setMessage(ui_.txtMessage->toPlainText());
 
     if (ui_.grpAttachment->isChecked())
     {
-        msg.attachment = ui_.editAttachment->text();
-        if (msg.attachment.isEmpty())
-        {
-            ui_.editAttachment->setFocus();
-            return;
-        }
+        MUST_HAVE(ui_.editAttachment);
+        feedback_.setAttachment(ui_.editAttachment->text());
     }
 
-    msg.country = ui_.editCountry->text();
+    feedback_.setCountry(ui_.editCountry->text());
 
-    feedback_.on_complete = [&](app::Feedback::response r) {
-        using response = app::Feedback::response;
-
+    feedback_.onComplete = [&](app::Feedback::Response r) {
         ui_.progress->setVisible(false);
         ui_.btnSend->setEnabled(true);
         switch (r)
         {
-            case response::success:
+            case Response::Success:
                 QMessageBox::information(this, windowTitle(),
                     "Thank you. Your message has been sent.");
                 break;
-            case response::dirty_rotten_spammer:
+            case Response::DirtyRottenSpammer:
                 QMessageBox::critical(this, windowTitle(),
                     "You're submitting data too fast. Please hold off for a moment!");
                 break;
 
-            case response::database_unavailable:
-            case response::database_error:
-            case response::email_unavailable:
+            case Response::DatabaseUnavailable:
+            case Response::DatabaseError:
+            case Response::EmailUnavailable:
                 QMessageBox::critical(this, windowTitle(),
                     "A database error occurred. Your message was not recorded. Please try again later.");
                 break;
 
-            case response::network_error:
+            case Response::NetworkError:
                 QMessageBox::critical(this, windowTitle(),
                     "A network error occurred. Your message was not delivered. Please try again later.");
                 break;
         }
     };
-    feedback_.send(msg);
+    feedback_.send();
 
     ui_.progress->setVisible(true);
     ui_.btnSend->setEnabled(false);

@@ -29,8 +29,9 @@
 #include "search.h"
 #include "debug.h"
 #include "indexer.h"
-#include "netman.h"
 #include "eventlog.h"
+#include "webquery.h"
+#include "webengine.h"
 
 namespace app
 { 
@@ -38,9 +39,6 @@ namespace app
 Search::Search() : model_(new ModelType)
 {
     DEBUG("Search created");
-
-    net_ = g_net->getSubmissionContext();
-    net_.callback = [=] { OnReadyCallback(); };
 }
 
 Search::~Search()
@@ -53,8 +51,7 @@ QAbstractTableModel* Search::getModel()
 
 bool Search::beginSearch(const Basic& query, std::unique_ptr<Indexer> index)
 {
-    if (net_.hasPending())
-        g_net->cancel(net_);
+    stop();
 
     Indexer::BasicQuery q;
     q.keywords = query.keywords;
@@ -62,8 +59,8 @@ bool Search::beginSearch(const Basic& query, std::unique_ptr<Indexer> index)
     QUrl url;
     indexer_ = std::move(index);        
     indexer_->prepare(q, url);
-    g_net->submit(std::bind(&Search::onSearchReady, this, 
-        std::placeholders::_1), net_, url);
+
+    doSearch(url);
 
     model_->clear();
     return true;
@@ -71,8 +68,7 @@ bool Search::beginSearch(const Basic& query, std::unique_ptr<Indexer> index)
 
 bool Search::beginSearch(const Advanced& query, std::unique_ptr<Indexer> index)
 {
-    if (net_.hasPending())
-        g_net->cancel(net_);
+    stop();
 
     using c = Indexer::Category;
     using v = Indexer::Categories;
@@ -92,8 +88,7 @@ bool Search::beginSearch(const Advanced& query, std::unique_ptr<Indexer> index)
     indexer_ = std::move(index);
     indexer_->prepare(q, url);
 
-    g_net->submit(std::bind(&Search::onSearchReady, this,
-        std::placeholders::_1), net_, url);
+    doSearch(url);
 
     model_->clear();
     return true;
@@ -101,8 +96,7 @@ bool Search::beginSearch(const Advanced& query, std::unique_ptr<Indexer> index)
 
 bool Search::beginSearch(const Music& query, std::unique_ptr<Indexer> index)
 {
-    if (net_.hasPending())
-        g_net->cancel(net_);
+    stop();
 
     Indexer::MusicQuery q;
     q.artist = query.keywords;
@@ -114,8 +108,7 @@ bool Search::beginSearch(const Music& query, std::unique_ptr<Indexer> index)
     indexer_ = std::move(index);
     indexer_->prepare(q, url);
 
-    g_net->submit(std::bind(&Search::onSearchReady, this,
-        std::placeholders::_1), net_, url);
+    doSearch(url);
 
     model_->clear();
     return true;
@@ -123,8 +116,7 @@ bool Search::beginSearch(const Music& query, std::unique_ptr<Indexer> index)
 
 bool Search::beginSearch(const Television& query, std::unique_ptr<Indexer> index)
 {
-    if (net_.hasPending())
-        g_net->cancel(net_);
+    stop();
 
     Indexer::TelevisionQuery q;
     q.episode  = query.episode;
@@ -135,8 +127,7 @@ bool Search::beginSearch(const Television& query, std::unique_ptr<Indexer> index
     indexer_ = std::move(index);
     indexer_->prepare(q, url);
 
-    g_net->submit(std::bind(&Search::onSearchReady, this,
-        std::placeholders::_1), net_, url);
+    doSearch(url);
 
     model_->clear();
     return true;
@@ -144,8 +135,10 @@ bool Search::beginSearch(const Television& query, std::unique_ptr<Indexer> index
 
 void Search::stop()
 {
-    if (net_.hasPending())
-        g_net->cancel(net_);
+    for (auto* query : queries_)
+        query->abort();
+
+    queries_.clear();
 }
 
 void Search::loadItem(const QModelIndex& index, OnData cb)
@@ -153,8 +146,19 @@ void Search::loadItem(const QModelIndex& index, OnData cb)
     const auto& item = model_->getItem(index);
     const auto& link = item.nzblink;
     const auto& desc = item.title;
-    g_net->submit([=](QNetworkReply& reply) 
+
+    WebQuery query(link);
+    query.OnReply = [&](QNetworkReply& reply) 
     {
+        const auto it = std::find_if(std::begin(queries_), std::end(queries_),
+            [&](const WebQuery* q ){
+                return q->isOwner(reply);
+            });
+        ENDCHECK(queries_, it);
+        queries_.erase(it);
+        if (queries_.empty())
+            OnReadyCallback();        
+
         const auto err = reply.error();
         const auto url = reply.url();
         if (err != QNetworkReply::NoError)
@@ -162,18 +166,32 @@ void Search::loadItem(const QModelIndex& index, OnData cb)
             ERROR("Failed to retrieve NZB content (%1), %2", url, err);
             return;
         }
-        QByteArray buff = reply.readAll();
+        auto buff = reply.readAll();
 
         cb(buff, desc);
-
-    }, net_, link);
+        if (queries_.empty())
+            OnReadyCallback();
+    };
+    auto* ret = g_web->submit(query);
+    queries_.push_back(ret);
 }
 
 void Search::saveItem(const QModelIndex& index, const QString& file) 
 {
     const auto& item = getItem(index);
     const auto& link = item.nzblink;
-    g_net->submit([=](QNetworkReply& reply) {
+
+    WebQuery query(link);
+    query.OnReply = [=](QNetworkReply& reply) 
+    {
+        const auto it = std::find_if(std::begin(queries_), std::end(queries_),
+            [&](const WebQuery* q ){
+                return q->isOwner(reply);
+            });
+        ENDCHECK(queries_, it);
+        queries_.erase(it);
+        if (queries_.empty())
+            OnReadyCallback();        
 
         const auto err = reply.error();
         const auto url = reply.url();
@@ -188,12 +206,14 @@ void Search::saveItem(const QModelIndex& index, const QString& file)
             ERROR("Failed to open file %1 for writing %2", file, io.error());
             return;
         }
-        QByteArray buff = reply.readAll();
+        auto buff = reply.readAll();
         io.write(buff);
         io.close();
         INFO("Saved NZB file %1 %2", file, size {(unsigned)buff.size()});
 
-    }, net_, link);
+    };
+    auto* ret = g_web->submit(query);
+    queries_.push_back(ret);
 }
 
 
@@ -202,8 +222,26 @@ const MediaItem& Search::getItem(const QModelIndex& index) const
     return model_->getItem(index);
 }
 
+void Search::doSearch(QUrl url)
+{
+    WebQuery web(url);
+    web.OnReply = std::bind(&Search::onSearchReady, this,
+        std::placeholders::_1);
+    WebQuery* ret = g_web->submit(web);
+    queries_.push_back(ret);
+}
+
 void Search::onSearchReady(QNetworkReply& reply)
 {
+    const auto it = std::find_if(std::begin(queries_), std::end(queries_),
+        [&](const WebQuery* q ){
+            return q->isOwner(reply);
+        });
+    ENDCHECK(queries_, it);
+    queries_.erase(it);
+    if (queries_.empty())
+        OnReadyCallback();    
+
     const auto err = reply.error();
     const auto url = reply.url();
     if (err != QNetworkReply::NoError)
@@ -212,7 +250,7 @@ void Search::onSearchReady(QNetworkReply& reply)
         return;
     }
 
-    QByteArray buff = reply.readAll();
+    auto buff = reply.readAll();
     QBuffer io(&buff);
 
     std::vector<MediaItem> items;
@@ -243,7 +281,6 @@ void Search::onSearchReady(QNetworkReply& reply)
             ERROR("%1 Unknown error.", name);
             break;
     }
-
     model_->setItems(std::move(items));
 }
 

@@ -28,9 +28,8 @@
 #  include <QString>
 #include <newsflash/warnpop.h>
 #include <map>
-#include "netman.h"
 
-class QString;
+class QNetworkReply;
 
 namespace app
 {
@@ -74,8 +73,6 @@ namespace app
         void onPosterFinished(QNetworkReply& reply, const QString& title);
         
     private:
-        NetworkManager::Context net_;
-
         std::map<QString, Movie> db_;
     };
 

@@ -135,6 +135,9 @@
         </item>
         <item row="6" column="2">
          <widget class="QLineEdit" name="editVersion">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <property name="toolTip">
            <string>The current software version</string>
           </property>
@@ -142,6 +145,9 @@
         </item>
         <item row="7" column="2">
          <widget class="QLineEdit" name="editPlatform">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <property name="toolTip">
            <string>The platform, e.g. Windows XP, Windows 7, Ubuntu 9.10</string>
           </property>

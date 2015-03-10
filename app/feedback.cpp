@@ -29,6 +29,9 @@
 #include <stdexcept>
 #include "feedback.h"
 #include "debug.h"
+#include "platform.h"
+#include "webquery.h"
+#include "webengine.h"
 
 // all the data input by the user is sent over HTTP POST/GET query
 // to www.ensisoft.com/someapi.php. The UI data is passed 
@@ -48,23 +51,24 @@
 namespace app
 {
 
-Feedback::Feedback()
+Feedback::Feedback() : type_(Type::Feedback), feeling_(Feeling::Positive)
 {
-    net_ = g_net->getSubmissionContext();
+    platform_ = getPlatformName();
+    version_  = NEWSFLASH_VERSION;
 }
 
 Feedback::~Feedback()
 {}
 
-void Feedback::send(const Message& m)
+void Feedback::send()
 {
     QUrl url("http://www.ensisoft.com/feedback.php");
-    url.addQueryItem("name", m.name);
-    url.addQueryItem("email", m.email);
-    url.addQueryItem("country", m.country);
-    url.addQueryItem("version", m.version);
-    url.addQueryItem("platform", m.platform);
-    url.addQueryItem("text", m.text);
+    url.addQueryItem("name", name_);
+    url.addQueryItem("email", email_);
+    url.addQueryItem("country", country_);
+    url.addQueryItem("version", version_);
+    url.addQueryItem("platform", platform_);
+    url.addQueryItem("text", text_);
 
     // these are the legacy values.
     const char* TYPE_NEGATIVE_FEEDBACK = "1";
@@ -74,32 +78,32 @@ void Feedback::send(const Message& m)
     const char* TYPE_FEATURE_REQUEST   = "5";
     const char* TYPE_LICENSE_REQUEST   = "6";    
 
-    switch (m.type)
+    switch (type_)
     {
-        case type::feedback:
-            switch (m.feeling)
+        case Type::Feedback:
+            switch (feeling_)
             {
-                case feeling::positive:
+                case Feeling::Positive:
                     url.addQueryItem("type", TYPE_POSITIVE_FEEDBACK);
                     break;
-                case feeling::neutral:
+                case Feeling::Neutral:
                     url.addQueryItem("type", TYPE_NEUTRAL_FEEDBACK);
                     break;
-                case feeling::negative:
+                case Feeling::Negative:
                     url.addQueryItem("type", TYPE_NEGATIVE_FEEDBACK);
                     break;
             }
             break;
 
-        case type::bugreport:
+        case Type::BugReport:
             url.addQueryItem("type", TYPE_BUG_REPORT);
             break;
 
-        case type::request_feature:
+        case Type::FeatureRequest:
             url.addQueryItem("type", TYPE_FEATURE_REQUEST);
             break;
 
-        case type::request_license:
+        case Type::LicenseRequest:
             url.addQueryItem("type", TYPE_LICENSE_REQUEST);
             break;
     }
@@ -109,7 +113,7 @@ void Feedback::send(const Message& m)
         const auto err = reply.error();
         if (err != QNetworkReply::NoError)
         {
-            on_complete(response::network_error);
+            onComplete(Response::NetworkError);
             return;
         }
         // we get a single integer back as the response code
@@ -120,24 +124,27 @@ void Feedback::send(const Message& m)
 
         Q_ASSERT(code >= 0);
         Q_ASSERT(code <= 4);
-        on_complete((response)code);
+        onComplete((Response)code);
     };
 
-    if (!m.attachment.isEmpty())
+    if (!attachment_.isEmpty())
     {
-        QFile file(m.attachment);
+        QFile file(attachment_);
         if (!file.open(QIODevice::ReadOnly))
             throw std::runtime_error("failed to open attachment");
 
-        NetworkManager::Attachment attachment;
-        attachment.name = QFileInfo(m.attachment).fileName();
-        attachment.data = file.readAll();
+        auto data = file.readAll();
+        auto name = QFileInfo(attachment_).fileName();
 
-        g_net->submit(std::move(completion_routine), net_, url, attachment);
+        WebQuery query(url, name, data);
+        query.OnReply = completion_routine;
+        g_web->submit(query);
     }
     else
     {
-        g_net->submit(std::move(completion_routine), net_, url);
+        WebQuery query(url);
+        query.OnReply = completion_routine;
+        g_web->submit(query);
     }
 }
 

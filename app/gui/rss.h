@@ -89,6 +89,7 @@ namespace gui
         void rowChanged();
         void downloadToPrevious();
         void popupDetails();
+        void testSlot();
 
     private:
         Ui::RSS ui_;

@@ -22,29 +22,27 @@
 
 #include <newsflash/config.h>
 #include <newsflash/warnpush.h>
-#  include <QtNetwork/QNetworkAccessManager>
+#  include <QtGui/QDialog>
 #  include <QObject>
+#  include "ui_newznab.h"
 #include <newsflash/warnpop.h>
+#include "../newznab.h"
 
-namespace app
+namespace gui
 {
-    // telephone class performs "callhome" to check for software updates.
-    class Telephone : public QObject
+    class DlgNewznab : public QDialog
     {
         Q_OBJECT
 
     public:
-        Telephone();
-       ~Telephone();
-        
-        // callhome, check for software updates.
-        void callhome();
+        DlgNewznab(QWidget* parent, app::Newznab::Account& acc);
+       ~DlgNewznab();
 
-    signals:
-        void completed(bool new_version_available, QString latest);
-        
+    private slots:
+
     private:
-        void onFinished(QNetworkReply& reply);
-
+        Ui::Newznab ui_;
+    private:
+        app::Newznab::Account& acc_;
     };
-} // app
+} // gui

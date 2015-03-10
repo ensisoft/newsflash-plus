@@ -32,6 +32,8 @@
 #include "debug.h"
 #include "eventlog.h"
 #include "format.h"
+#include "webquery.h"
+#include "webengine.h"
 
 namespace app
 {
@@ -39,8 +41,6 @@ namespace app
 MovieDatabase::MovieDatabase()
 {
     DEBUG("MovieDatabase created");
-
-    net_ = g_net->getSubmissionContext();
 }
 
 MovieDatabase::~MovieDatabase()
@@ -55,9 +55,12 @@ void MovieDatabase::beginLookup(const QString& title)
     url.addQueryItem("y", "");
     url.addQueryItem("plot", "short");
     url.addQueryItem("r", "json");
-    g_net->submit(std::bind(&MovieDatabase::onLookupFinished, this,
-        std::placeholders::_1, title), net_, url);
 
+    WebQuery query(url);
+    query.OnReply = std::bind(&MovieDatabase::onLookupFinished, this,
+        std::placeholders::_1, title);
+    g_web->submit(query);
+    
     DEBUG("Lookup movie '%1'", title);
 }
 
@@ -121,11 +124,12 @@ void MovieDatabase::onLookupFinished(QNetworkReply& reply, const QString& title)
     const auto& poster = json["Poster"].toString();
     DEBUG("Retrieving poster from %1", poster);
 
-    g_net->submit(std::bind(&MovieDatabase::onPosterFinished, this,
-        std::placeholders::_1, title), net_, poster);
+    WebQuery query(poster);
+    query.OnReply = std::bind(&MovieDatabase::onPosterFinished, this,
+        std::placeholders::_1, title);
+    g_web->submit(query);
 
     emit lookupReady(title);
-
     DEBUG("Movie lookup finished. Stored details for '%1'", title);
 }
 

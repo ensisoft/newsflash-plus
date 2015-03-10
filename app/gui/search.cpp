@@ -197,10 +197,10 @@ void Search::on_actionSave_triggered()
 void Search::on_btnSearch_clicked()
 {
     std::unique_ptr<app::Newznab> nab(new app::Newznab);
-    app::Newznab::Params p;
-    p.apiurl = "http://nzbs.org/api/";
-    p.apikey = "debb752d0452ebf5174500aa19844f8e";    
-    nab->setParams(p);
+    app::Newznab::Account a;
+    a.apiurl = "http://nzbs.org/api/";
+    a.apikey = "debb752d0452ebf5174500aa19844f8e";    
+    nab->setAccount(a);
 
     if (ui_.btnBasic->isChecked())
     {

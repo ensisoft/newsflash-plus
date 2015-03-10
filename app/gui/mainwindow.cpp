@@ -968,25 +968,25 @@ void MainWindow::on_actionAbout_triggered()
 
 void MainWindow::on_actionReportBug_triggered()
 {
-    DlgFeedback dlg(this, DlgFeedback::mode::bugreport);
+    DlgFeedback dlg(this, DlgFeedback::mode::BugReport);
     dlg.exec();
 }
 
 void MainWindow::on_actionSendFeedback_triggered()
 {
-    DlgFeedback dlg(this, DlgFeedback::mode::feedback);
+    DlgFeedback dlg(this, DlgFeedback::mode::Feedback);
     dlg.exec();
 }
 
 void MainWindow::on_actionRequestFeature_triggered()
 {
-    DlgFeedback dlg(this, DlgFeedback::mode::request_feature);
+    DlgFeedback dlg(this, DlgFeedback::mode::FeatureRequest);
     dlg.exec();
 }
 
 void MainWindow::on_actionRequestLicense_triggered()
 {
-    DlgFeedback dlg(this, DlgFeedback::mode::request_license);
+    DlgFeedback dlg(this, DlgFeedback::mode::LicenseRequest);
     dlg.exec();
 }
 

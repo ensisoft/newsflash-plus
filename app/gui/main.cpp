@@ -56,7 +56,7 @@
 #include "commands.h"
 #include "unpack.h"
 #include "notify.h"
-#include "searchengine.h"
+#include "searchmodule.h"
 #include "../debug.h"
 #include "../format.h"
 #include "../distdir.h"
@@ -77,6 +77,7 @@
 #include "../par2.h"
 #include "../unrar.h"
 #include "../arcman.h"
+#include "../webengine.h"
 
 namespace gui
 {
@@ -126,8 +127,8 @@ int run(int argc, char* argv[])
     }
 
     // initialize global pointers.
-    app::NetworkManager net;
-    app::g_net = &net;
+    app::WebEngine web;
+    app::g_web = &web;
 
     app::Engine engine;
     app::g_engine = &engine;
@@ -217,7 +218,7 @@ int run(int argc, char* argv[])
     win.attach(&toolsgui);
 
     // search engine
-    gui::SearchEngine search;
+    gui::SearchModule search;
     win.attach(&search);
 
     // commands module

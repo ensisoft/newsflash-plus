@@ -33,8 +33,9 @@
 #include "eventlog.h"
 #include "platform.h"
 #include "format.h"
-#include "netman.h"
 #include "version.h"
+#include "webengine.h"
+#include "webquery.h"
 
 namespace app
 {
@@ -42,8 +43,6 @@ namespace app
 Telephone::Telephone()
 {
     DEBUG("Current platform %1", getPlatformName());
-
-    net_ = g_net->getSubmissionContext();
 }
 
 Telephone::~Telephone()
@@ -62,11 +61,13 @@ void Telephone::callhome()
     url.addQueryItem("platform", platform);    
     url.addQueryItem("fingerprint", fingerprint);
 
-    g_net->submit(std::bind(&Telephone::on_finished, this, 
-        std::placeholders::_1), net_, url);
+    WebQuery query(url);
+    query.OnReply = std::bind(&Telephone::onFinished, this,
+        std::placeholders::_1);
+    g_web->submit(query);
 }
 
-void Telephone::on_finished(QNetworkReply& reply)
+void Telephone::onFinished(QNetworkReply& reply)
 {
     const auto err = reply.error();
     if (err != QNetworkReply::NoError)

@@ -23,57 +23,84 @@
 #include <newsflash/config.h>
 #include <newsflash/warnpush.h>
 #  include <QString>
-#  include <QByteArray>
 #include <newsflash/warnpop.h>
 #include <functional>
-#include "netman.h"
 
 namespace app
 {
     class Feedback
     {
     public:
-        enum class type {
-            feedback,
-            bugreport,
-            request_feature,
-            request_license
+        enum class Type {
+            Feedback,
+            BugReport,
+            FeatureRequest,
+            LicenseRequest
         };
-        enum class feeling {
-            positive, neutral, negative
-        };
-
-        enum class response {
-            success = 0,
-            dirty_rotten_spammer = 1,
-            database_unavailable = 2,
-            database_error = 3, 
-            email_unavailable = 4,
-            network_error = 5            
+        enum class Feeling {
+            Positive, Neutral, Negative
         };
 
-        std::function<void (response r)> on_complete;
+        enum class Response {
+            Success = 0,
+            DirtyRottenSpammer = 1,
+            DatabaseUnavailable = 2,
+            DatabaseError = 3, 
+            EmailUnavailable = 4,
+            NetworkError = 5            
+        };
+
+        std::function<void (Response r)> onComplete;
 
         Feedback();
        ~Feedback();
 
-        struct Message {
-            Feedback::type type;
-            Feedback::feeling feeling;
+        void setType(Type type) 
+        { type_ = type; }
 
-            QString name;
-            QString email;
-            QString country;
-            QString platform;
-            QString text;
-            QString attachment;
-            QString version;
-        };
+        void setFeeling(Feeling feeling)
+        { feeling_ = feeling; }
 
-        void send(const Message& m);
+        void setName(QString name)
+        { name_ = name; }
+
+        void setEmail(QString email)
+        { email_ = email; }
+
+        void setCountry(QString country)
+        { country_ = country; }
+
+        void setPlatform(QString platform)
+        { platform_ = platform; }
+
+        void setVersion(QString version)
+        { version_ = version; }
+
+        void setMessage(QString text)
+        { text_ = text; }
+
+        void setAttachment(QString attachment)
+        { attachment_ = attachment; }
+
+        QString version() const 
+        { return version_; }
+
+        QString platform() const 
+        { return platform_; }
+
+        void send();
 
     private:
-        NetworkManager::Context net_;
+       Type type_;
+       Feeling feeling_;    
+    private:
+       QString name_;
+       QString email_;
+       QString country_;
+       QString platform_;
+       QString text_;
+       QString attachment_;
+       QString version_;
     };
 
 } // app

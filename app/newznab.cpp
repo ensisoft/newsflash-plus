@@ -259,10 +259,10 @@ QString Newznab::name() const
     return apiurl_;
 }
 
-void Newznab::setParams(const Params& params)
+void Newznab::setAccount(const Account& acc)
 {
-    apikey_ = params.apikey;
-    apiurl_ = params.apiurl;
+    apikey_ = acc.apikey;
+    apiurl_ = acc.apiurl;
 }
 
 } // app
