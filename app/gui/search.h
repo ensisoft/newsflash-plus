@@ -22,6 +22,7 @@
 
 #include <newsflash/config.h>
 #include <newsflash/warnpush.h>
+#  include <QStringList>
 #  include "ui_search.h"
 #include <newsflash/warnpop.h>
 #include "mainwidget.h"
@@ -29,12 +30,14 @@
 
 namespace gui
 {
+    class SearchModule;
+
     class Search : public MainWidget
     {
         Q_OBJECT
 
     public:
-        Search();
+        Search(SearchModule& module);
        ~Search();
 
         virtual void addActions(QMenu& menu) override;
@@ -42,12 +45,18 @@ namespace gui
         virtual void loadState(app::Settings& settings) override;
         virtual void saveState(app::Settings& settings) override;
 
+    public slots:
+        void updateBackendList(const QStringList& names);
+
     private slots:
         void on_actionRefresh_triggered();
         void on_actionStop_triggered();
         void on_actionSettings_triggered();
         void on_actionOpen_triggered();
         void on_actionSave_triggered();
+        void on_actionDownload_triggered();
+        void on_actionDownloadTo_triggered();
+        void on_actionBrowse_triggered();
         void on_btnSearch_clicked();
         void on_tableView_customContextMenuRequested(QPoint point);
         void tableview_selectionChanged();
@@ -59,5 +68,6 @@ namespace gui
         Ui::Search ui_;
     private:
         app::Search model_;
+        SearchModule& module_;
     };
 } // gui

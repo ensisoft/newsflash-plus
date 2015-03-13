@@ -149,6 +149,8 @@ void MainWindow::attach(MainWidget* widget, bool permanent, bool loadstate)
 
         actions_.push_back(action);
         widget->setProperty("permanent", true);
+        if (loadstate)
+            widget->loadState(settings_);
     }
     else
     {
@@ -156,10 +158,12 @@ void MainWindow::attach(MainWidget* widget, bool permanent, bool loadstate)
         ui_.mainTab->addTab(widget, icon, text);
         ui_.mainTab->setCurrentIndex(count);
         widget->setProperty("permanent", false);
+        if (loadstate)
+        {
+            widget->loadState(settings_);
+            widget->loadState(transient_);
+        }
     }
-
-    if (loadstate)
-        widget->loadState(settings_);
 
     buildWindowMenu();
 
@@ -718,11 +722,12 @@ bool MainWindow::saveState(DlgExit* dlg)
         // data from the settings. for example if tools are modified and removed the state
         // is kept in memory and then persisted cleanly into the settings object on save.
         settings_.clear();
+        settings_ = transient_;
 
         app::g_accounts->saveState(settings_);
         app::g_engine->saveState(settings_);
         app::g_tools->savestate(settings_);
-        //app::g_postProcess->saveState(settings_);
+
 
         settings_.set("window", "width", width());
         settings_.set("window", "height", height());
@@ -834,6 +839,8 @@ void MainWindow::on_mainTab_tabCloseRequested(int tab)
     }
     else
     {
+        widget->saveState(transient_);
+
         delete widget;
         widgets_.erase(it);
     }
@@ -999,15 +1006,12 @@ void MainWindow::actionWindowToggleView_triggered()
     const auto index   = action->property("index").toInt();
     const bool visible = action->isChecked();
 
-    Q_ASSERT(index < widgets_.size());
-    Q_ASSERT(index < actions_.size());
-
-    //auto& widget = widgets_[index];
+    BOUNDSCHECK(widgets_, index);
+    BOUNDSCHECK(actions_, index);
 
     if (visible)
     {
         show(index);
-//        focus(index);
     }
     else 
     {

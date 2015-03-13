@@ -148,7 +148,7 @@ void Search::loadItem(const QModelIndex& index, OnData cb)
     const auto& desc = item.title;
 
     WebQuery query(link);
-    query.OnReply = [&](QNetworkReply& reply) 
+    query.OnReply = [=](QNetworkReply& reply) 
     {
         const auto it = std::find_if(std::begin(queries_), std::end(queries_),
             [&](const WebQuery* q ){
@@ -169,8 +169,6 @@ void Search::loadItem(const QModelIndex& index, OnData cb)
         auto buff = reply.readAll();
 
         cb(buff, desc);
-        if (queries_.empty())
-            OnReadyCallback();
     };
     auto* ret = g_web->submit(query);
     queries_.push_back(ret);

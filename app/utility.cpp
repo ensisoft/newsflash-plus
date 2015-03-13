@@ -21,6 +21,9 @@
 #include <newsflash/config.h>
 #include <newsflash/warnpush.h>
 #  include <QtGui/QTableView>
+#  include <QtGui/QCheckBox>
+#  include <QtGui/QLineEdit>
+#  include <QtGui/QComboBox>
 #  include <QAbstractTableModel>
 #include <newsflash/warnpop.h>
 #include "utility.h"
@@ -59,6 +62,45 @@ void loadTableLayout(const QString& key, QTableView* view, const Settings& setti
             view->columnWidth(i));
         view->setColumnWidth(i, width);
     }
+}
+
+void loadState(const QString& key, QCheckBox* chk, Settings& settings)
+{
+    const auto check = settings.get(key, chk->objectName(), 
+        chk->isChecked());
+    chk->setChecked(check);
+}
+
+void loadState(const QString& key, QLineEdit* edt, Settings& settings)
+{
+    const auto text = settings.get(key, edt->objectName(),
+        edt->text());
+    edt->setText(text);
+    edt->setCursorPosition(0);
+}
+
+void loadState(const QString& key, QComboBox* cmb, Settings& settings)
+{
+    const auto text = settings.get(key, cmb->objectName(), 
+        cmb->currentText());
+    const auto index = cmb->findText(text);
+    if (index != -1)
+        cmb->setCurrentIndex(index);
+}
+
+void saveState(const QString& key, const QCheckBox* chk, Settings& settings)
+{
+    settings.set(key, chk->objectName(), chk->isChecked());
+}
+
+void saveState(const QString& key, const QLineEdit* edt, Settings& settings)
+{
+    settings.set(key, edt->objectName(), edt->text());
+}
+
+void saveState(const QString& key, const QComboBox* cmb, Settings& settings)
+{
+    settings.set(key, cmb->objectName(), cmb->currentText());
 }
 
 } // app

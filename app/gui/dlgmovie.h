@@ -57,5 +57,6 @@ namespace gui
     private:
         QMovie  loader_;
         QPixmap poster_;
+        QString title_;
     };
 }

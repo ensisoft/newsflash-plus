@@ -51,11 +51,6 @@ RSSReader::RSSReader() : model_(new ModelType)
 {
     feeds_.emplace_back(new Womble);
     feeds_.emplace_back(new Nzbs);
-
-    // net_.callback = [=] {
-    //     on_ready();
-    // };
-
     DEBUG("RSSReader created");
 }
 

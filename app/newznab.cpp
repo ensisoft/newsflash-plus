@@ -23,11 +23,15 @@
 #  include <QtXml/QDomDocument>
 #  include <QIODevice>
 #  include <QUrl>
+#  include <QBuffer>
 #include <newsflash/warnpop.h>
 #include <algorithm>
 #include "newznab.h"
 #include "debug.h"
 #include "rssdate.h"
+#include "webquery.h"
+#include "webengine.h"
+#include "format.h"
 
 namespace {
 
@@ -111,6 +115,59 @@ QString collect(newsflash::bitflag<app::Indexer::Category> bits)
         collect(str, cat);
     }
     return str.join(",");
+}
+
+bool parseResponse(QNetworkReply& reply, app::Newznab::HostInfo& info, QDomDocument& dom)
+{
+    const auto err = reply.error();
+    if (err != QNetworkReply::NoError)
+    {
+        info.error   = app::toString(err);
+        info.success = false;
+        return false;
+    }
+
+    auto buff = reply.readAll();
+    QBuffer io(&buff);
+
+    QString errorString;
+    int errorRow;
+    int errorCol;
+    if (!dom.setContent(&io, false, &errorString, &errorRow, &errorCol))
+    {
+        info.error = "There was an error reading the response data.\n"
+            "Perhaps this host is not a Newznab provider?";
+        info.success = false;
+        return false;
+    }
+    QDomElement error = dom.firstChildElement("error");
+    if (!error.isNull())
+    {
+        const auto code = error.attribute("code");
+        const auto desc = error.attribute("description");
+        switch (code.toInt())
+        {
+            case 100: info.error = "Incorrect Credentials"; break;
+            case 101: info.error = "Account suspended"; break;
+            case 102: info.error = "No permission"; break;
+            default:  info.error = desc;
+        }
+        info.success = false;
+        return false;
+    }
+    return true;
+}
+
+QString makeApiUrl(QString host)
+{
+    QUrl url(host);
+    const auto path = url.path();
+    if (path.isEmpty())
+        host += "/api/";
+    else if (path == "/")
+        host += "api/";
+
+    return host;
 }
 
 } // namespace 
@@ -205,7 +262,7 @@ Indexer::Error Newznab::parse(QIODevice& io, std::vector<MediaItem>& results)
 
 void Newznab::prepare(const BasicQuery& query, QUrl& url)
 {
-    url.setUrl(apiurl_);
+    url.setUrl(makeApiUrl(apiurl_));
     url.addQueryItem("apikey", apikey_);
     url.addQueryItem("extended", "1");
     url.addQueryItem("t", "search");
@@ -215,7 +272,7 @@ void Newznab::prepare(const BasicQuery& query, QUrl& url)
 
 void Newznab::prepare(const AdvancedQuery& query, QUrl& url)
 {
-    url.setUrl(apiurl_);
+    url.setUrl(makeApiUrl(apiurl_));
     url.addQueryItem("apikey", apikey_);
     url.addQueryItem("extended", "1");
     url.addQueryItem("t", "search");
@@ -226,7 +283,7 @@ void Newznab::prepare(const AdvancedQuery& query, QUrl& url)
 
 void Newznab::prepare(const MusicQuery& query, QUrl& url)
 {
-    url.setUrl(apiurl_);
+    url.setUrl(makeApiUrl(apiurl_));
     url.addQueryItem("apikey", apikey_);
     url.addQueryItem("extended", "1");
     url.addQueryItem("t", "music");
@@ -242,7 +299,7 @@ void Newznab::prepare(const MusicQuery& query, QUrl& url)
 
 void Newznab::prepare(const TelevisionQuery& query, QUrl& url)
 {
-    url.setUrl(apiurl_);
+    url.setUrl(makeApiUrl(apiurl_));
     url.addQueryItem("apikey", apikey_);
     url.addQueryItem("extended", "1");
     url.addQueryItem("t", "tvsearch");
@@ -263,6 +320,89 @@ void Newznab::setAccount(const Account& acc)
 {
     apikey_ = acc.apikey;
     apiurl_ = acc.apiurl;
+}
+
+WebQuery* Newznab::apiTest(const Account& acc, HostCallback cb)
+{
+    QUrl url(makeApiUrl(acc.apiurl));
+    url.addQueryItem("apikey", acc.apikey);
+    url.addQueryItem("t", "caps");
+
+    WebQuery query(url);
+    query.OnReply = [=](QNetworkReply& reply) {
+        HostInfo info;            
+        QDomDocument dom;
+        if (parseResponse(reply, info, dom))
+        {
+            const auto& root   = dom.firstChildElement();
+            const auto& server = root.firstChildElement("server");
+            info.strapline = server.attribute("strapline");
+            info.email     = server.attribute("email");
+            info.version   = server.attribute("version");
+            info.success   = true;
+        }
+        cb(info);
+    };
+    return g_web->submit(std::move(query));
+}
+
+WebQuery* Newznab::apiRegisterUser(const Account& acc, HostCallback cb)
+{
+    QUrl url(makeApiUrl(acc.apiurl));
+    url.addQueryItem("apikey", acc.apikey);
+    url.addQueryItem("t", "register");
+    url.addQueryItem("email", acc.email);
+
+    WebQuery query(url);
+    query.OnReply = [=](QNetworkReply& reply) {
+        HostInfo info;
+        QDomDocument dom;
+        if (parseResponse(reply, info, dom))
+        {
+            const auto& root = dom.firstChildElement();
+            const auto& reg  = root.firstChildElement("register");
+            info.username    = reg.attribute("username");
+            info.password    = reg.attribute("password");
+            info.apikey      = reg.attribute("apikey");
+            info.success = true;
+        }
+        cb(info);
+    };
+    return g_web->submit(std::move(query));
+}
+
+WebQuery* Newznab::importList(ImportCallback cb)
+{
+    WebQuery query(QUrl("http://www.ensisoft.com/import.php"));
+    query.OnReply = [=](QNetworkReply& reply) {
+        ImportList list;
+
+        const auto err = reply.error();
+        if (err != QNetworkReply::NoError)
+        {
+            list.success = false;
+            list.error   = toString(err);
+            cb(list);
+            return;
+        }
+        const auto& buff   = reply.readAll();
+        const auto& string = QString::fromUtf8(buff.constData(),
+            buff.size());
+        const auto& lines = string.split("\n", QString::SkipEmptyParts);
+
+        for (const auto& line : lines)
+        {
+            const auto& fields = line.split("\t", QString::SkipEmptyParts);
+            if (fields.isEmpty())
+                continue;
+            const auto& host = fields[0];
+            if (host.startsWith("http://"))
+                list.hosts.push_back(host);
+        }
+        list.success = true;
+        cb(list);
+    };
+    return g_web->submit(std::move(query));
 }
 
 } // app

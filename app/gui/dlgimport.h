@@ -18,36 +18,38 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#pragma once
-
 #include <newsflash/config.h>
 #include <newsflash/warnpush.h>
 #  include <QtGui/QDialog>
 #  include <QObject>
-#  include "ui_newznab.h"
+#  include "ui_import.h"
 #include <newsflash/warnpop.h>
+#include <vector>
 #include "../newznab.h"
 #include "../webquery.h"
 
 namespace gui
 {
-    class DlgNewznab : public QDialog
+    class DlgImport : public QDialog
     {
         Q_OBJECT
 
     public:
-        DlgNewznab(QWidget* parent, app::Newznab::Account& acc);
-       ~DlgNewznab();
+        DlgImport(QWidget* parent, std::vector<app::Newznab::Account>& accs);
+       ~DlgImport();
 
     private slots:
-        void on_btnAccept_clicked();
-        void on_btnCancel_clicked();
-        void on_btnTest_clicked();
+        void on_btnStart_clicked();
+        void on_btnClose_clicked();
+    private:
+        void registerNext(QString email);
 
     private:
-        Ui::Newznab ui_;
+        Ui::Import ui_;
     private:
-        app::Newznab::Account& acc_;
+        std::vector<app::Newznab::Account>& accs_;
+    private:
         app::WebQuery* query_;
     };
+
 } // gui

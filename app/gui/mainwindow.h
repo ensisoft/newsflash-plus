@@ -32,6 +32,7 @@
 #include <newsflash/warnpop.h>
 #include <vector>
 #include <memory>
+#include "../settings.h"
 
 class QIcon;
 class QAction;
@@ -170,6 +171,7 @@ namespace gui
         QTimer  refresh_timer_;
     private:
         app::Settings& settings_;
+        app::Settings  transient_;
     };
     
     extern MainWindow* g_win;

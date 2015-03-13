@@ -24,10 +24,12 @@
 #include <newsflash/warnpush.h>
 #  include <QtGui/QToolBar>
 #  include <QtGui/QMenu>
+#  include <QtGui/QMessageBox>
 #  include <QDate>
 #include <newsflash/warnpop.h>
 #include "mainwindow.h"
 #include "search.h"
+#include "searchmodule.h"
 #include "nzbfile.h"
 #include "../debug.h"
 #include "../search.h"
@@ -40,7 +42,7 @@
 namespace gui
 {
 
-Search::Search() 
+Search::Search(SearchModule& module) : module_(module) 
 {
     ui_.setupUi(this);
     ui_.btnBasic->setChecked(true);
@@ -57,7 +59,8 @@ Search::Search()
     ui_.actionSave->setEnabled(false);
     ui_.actionOpen->setEnabled(false);
     ui_.editSearch->setFocus();
-    
+
+    ui_.cmbYear->addItem("");
     const auto thisYear = QDate::currentDate().year();
     for (int year=thisYear; year>=1900; --year)
         ui_.cmbYear->addItem(QString::number(year));
@@ -131,12 +134,43 @@ void Search::addActions(QToolBar& bar)
 
 void Search::loadState(app::Settings& settings)
 {
+    app::loadState("search", ui_.chkMusic, settings);
+    app::loadState("search", ui_.chkMovies, settings);
+    app::loadState("search", ui_.chkTV, settings);
+    app::loadState("search", ui_.chkConsole, settings);
+    app::loadState("search", ui_.chkComputer, settings);
+    app::loadState("search", ui_.chkXXX, settings);
+    app::loadState("search", ui_.editAlbum, settings);
+    app::loadState("search", ui_.editTrack, settings);
+    app::loadState("search", ui_.editSeason, settings);
+    app::loadState("search", ui_.editEpisode, settings);
+    app::loadState("search", ui_.editSearch, settings);
+    app::loadState("search", ui_.cmbYear, settings);
     app::loadTableLayout("search", ui_.tableView, settings);
 }
 
 void Search::saveState(app::Settings& settings)
 {
     app::saveTableLayout("search", ui_.tableView, settings);    
+    app::saveState("search", ui_.chkMusic, settings);
+    app::saveState("search", ui_.chkMovies, settings);
+    app::saveState("search", ui_.chkTV, settings);
+    app::saveState("search", ui_.chkConsole, settings);
+    app::saveState("search", ui_.chkComputer, settings);
+    app::saveState("search", ui_.chkXXX, settings);
+    app::saveState("search", ui_.editAlbum, settings);
+    app::saveState("search", ui_.editTrack, settings);
+    app::saveState("search", ui_.editSeason, settings);
+    app::saveState("search", ui_.editEpisode, settings);
+    app::saveState("search", ui_.editSearch, settings);    
+    app::saveState("search", ui_.cmbYear, settings);
+}
+
+void Search::updateBackendList(const QStringList& names)
+{
+    ui_.cmbIndexer->clear();
+    for (const auto& name : names)
+        ui_.cmbIndexer->addItem(name);
 }
 
 void Search::on_actionRefresh_triggered()
@@ -153,7 +187,7 @@ void Search::on_actionStop_triggered()
 
 void Search::on_actionSettings_triggered()
 {
-
+    g_win->showSetting("Search");
 }
 
 void Search::on_actionOpen_triggered()
@@ -194,13 +228,50 @@ void Search::on_actionSave_triggered()
     ui_.actionStop->setEnabled(true);    
 }
 
+void Search::on_actionDownload_triggered()
+{
+    downloadSelected("");
+}
+
+void Search::on_actionDownloadTo_triggered()
+{
+    const auto& folder = g_win->selectDownloadFolder();
+    if (folder.isEmpty())
+        return;
+
+    downloadSelected(folder);
+}
+
+void Search::on_actionBrowse_triggered()
+{
+    const auto& folder = g_win->selectDownloadFolder();
+    if (folder.isEmpty())
+        return;
+
+    downloadSelected(folder);
+}
+
 void Search::on_btnSearch_clicked()
 {
+    const auto index = ui_.cmbIndexer->currentIndex();
+    if (index == -1)
+    {
+        QMessageBox msg(this);
+        msg.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+        msg.setIcon(QMessageBox::Information);
+        msg.setText(tr("It looks like you don't have any Usenet search engines configured.\n"
+            "Would you like to configure sites now?"));
+        if (msg.exec() == QMessageBox::No)
+            return;
+
+        g_win->showSetting("Search");
+        return;
+    }
+    const auto& name    = ui_.cmbIndexer->currentText();
+    const auto& account = module_.getAccount(name);
+
     std::unique_ptr<app::Newznab> nab(new app::Newznab);
-    app::Newznab::Account a;
-    a.apiurl = "http://nzbs.org/api/";
-    a.apikey = "debb752d0452ebf5174500aa19844f8e";    
-    nab->setAccount(a);
+    nab->setAccount(account);
 
     if (ui_.btnBasic->isChecked())
     {

@@ -136,10 +136,7 @@ namespace app
         {
             return (MediaType)value_;
         }
-        MediaType& operator*()
-        {
-            return (MediaType&)value_;
-        }
+
         static 
         MediaIterator begin() 
         {

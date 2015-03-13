@@ -29,6 +29,9 @@
 
 class QAbstractTableModel;
 class QTableView;
+class QCheckBox;
+class QLineEdit;
+class QComboBox;
 
 namespace app
 {
@@ -49,6 +52,13 @@ void sortDescending(QModelIndexList& list)
 
 void saveTableLayout(const QString& key, const QTableView* view, Settings& settings);
 void loadTableLayout(const QString& key, QTableView* view, const Settings& settings);
+
+void loadState(const QString& key, QCheckBox* chk, Settings& settings);
+void loadState(const QString& key, QLineEdit* edt, Settings& settings);
+void loadState(const QString& key, QComboBox* cmb, Settings& settings);
+void saveState(const QString& key, const QCheckBox* chk, Settings& settings);
+void saveState(const QString& key, const QLineEdit* edt, Settings& settings);
+void saveState(const QString& key, const QComboBox* cmb, Settings& settings);
 
 template<typename Class, typename Member>
 struct CompareLess {

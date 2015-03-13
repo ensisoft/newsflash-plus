@@ -173,13 +173,13 @@ void Notify::newEvent(const app::Event& event)
     {
         if (!when_.test(NotifyWhen::OnError))
             return;
-        tray_.showMessage(tr("Error occurred"), event.message);
+        tray_.showMessage(tr("Error"), event.message);
     }
     else if (event.type == app::Event::Type::Warning)
     {
         if (!when_.test(NotifyWhen::OnWarning))
             return;
-        tray_.showMessage(tr("Warning occurred"), event.message);            
+        tray_.showMessage(tr("Warning"), event.message);            
     }
 }
 

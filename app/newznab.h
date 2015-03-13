@@ -24,10 +24,14 @@
 #include <newsflash/warnpush.h>
 #  include <QObject>
 #include <newsflash/warnpop.h>
+#include <functional>
+#include <vector>
 #include "indexer.h"
 
 namespace app
 {
+    class WebQuery;
+
     class Newznab : public QObject, public Indexer
     {
         Q_OBJECT
@@ -50,9 +54,33 @@ namespace app
 
         void setAccount(const Account& acc);
 
-        void apiTest(const Account& acc);
+        struct HostInfo {
+            QString strapline;
+            QString email;
+            QString version;
+            QString error;
+            QString username;
+            QString password;
+            QString apikey;
+            bool success;
+        };
+        struct ImportList {
+            bool success;
+            QString error;
+            std::vector<QString> hosts;
+        };
 
-        void tryRegister(QString host, QString email);
+        using HostCallback = std::function<void(const HostInfo&)>;
+        using ImportCallback = std::function<void(const ImportList&)>;
+
+        static 
+        WebQuery* apiTest(const Account& acc, HostCallback cb);
+
+        static
+        WebQuery* apiRegisterUser(const Account& acc, HostCallback cb);
+
+        static
+        WebQuery* importList(ImportCallback cb);
     private:
         QString apikey_;
         QString apiurl_;

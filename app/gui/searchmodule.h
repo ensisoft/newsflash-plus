@@ -22,10 +22,13 @@
 
 #include <newsflash/config.h>
 #include <newsflash/warnpush.h>
+#  include <QObject>
 #  include "ui_searchsettings.h"
 #include <newsflash/warnpop.h>
+#include <vector>
 #include "mainmodule.h"
 #include "settings.h"
+#include "../newznab.h"
 
 namespace gui
 {
@@ -34,7 +37,7 @@ namespace gui
         Q_OBJECT
 
     public:
-        SearchSettings();
+        SearchSettings(std::vector<app::Newznab::Account> newznab);
        ~SearchSettings();
 
         virtual bool validate() const override;
@@ -44,17 +47,20 @@ namespace gui
         void on_btnAdd_clicked();
         void on_btnDel_clicked();
         void on_btnEdit_clicked();
+        void on_listServers_currentRowChanged(int currentRow);
 
     private:
         Ui::SearchSettings ui_;
     private:
         friend class SearchModule;
-
+        std::vector<app::Newznab::Account> newznab_;
     };
 
 
-    class SearchModule : public MainModule
+    class SearchModule : public QObject, public MainModule
     {
+        Q_OBJECT
+
     public:
         SearchModule();
        ~SearchModule();
@@ -67,7 +73,13 @@ namespace gui
         virtual SettingsWidget* getSettings() override;
         virtual void applySettings(SettingsWidget* gui) override;
         virtual void freeSettings(SettingsWidget* gui) override;
+
+        const app::Newznab::Account& getAccount(const QString& apiurl) const;
+    Q_SIGNALS:
+        void listUpdated(const QStringList&);
+
     private:
+        std::vector<app::Newznab::Account> newznab_;
     };
 
 } // gui

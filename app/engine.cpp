@@ -442,11 +442,11 @@ void Engine::onFileComplete(const newsflash::ui::file& f)
 
     if (f.damaged)
     {
-        WARN("Completed \"%1\"", file.name);
+        WARN("\"%1\" is damaged.", file.name);
     }
     else
     {
-        INFO("Completed \"%1\"", file.name);
+        INFO("Completed \"%1\".", file.name);
     }
 
     emit fileCompleted(file);

@@ -55,6 +55,8 @@ DlgMovie::~DlgMovie()
 
 void DlgMovie::lookup(const QString& movieTitle)
 {
+    title_ = movieTitle;
+    
     const auto* movie = app::g_movies->getMovie(movieTitle);
     if (!movie)
     {
@@ -78,6 +80,9 @@ void DlgMovie::lookup(const QString& movieTitle)
 
 void DlgMovie::lookupReady(const QString& title)
 {
+    if (title != title_)
+        return;
+
     const auto* movie = app::g_movies->getMovie(title);
 
     QStringList ss;
@@ -97,6 +102,9 @@ void DlgMovie::lookupReady(const QString& title)
 
 void DlgMovie::posterReady(const QString& title)
 {
+    if (title_ != title)
+        return;
+
     const auto* movie = app::g_movies->getMovie(title);
 
     QPixmap pix = movie->poster;
