@@ -51,10 +51,10 @@ QAbstractTableModel* Search::getModel()
 
 bool Search::beginSearch(const Basic& query, std::unique_ptr<Indexer> index)
 {
-    stop();
-
     Indexer::BasicQuery q;
-    q.keywords = query.keywords;
+    q.keywords  = query.keywords;
+    q.offset    = query.qoffset;
+    q.size      = query.qsize;
 
     QUrl url;
     indexer_ = std::move(index);        
@@ -62,14 +62,11 @@ bool Search::beginSearch(const Basic& query, std::unique_ptr<Indexer> index)
 
     doSearch(url);
 
-    model_->clear();
     return true;
 }
 
 bool Search::beginSearch(const Advanced& query, std::unique_ptr<Indexer> index)
 {
-    stop();
-
     using c = Indexer::Category;
     using v = Indexer::Categories;
     v bits;
@@ -83,6 +80,8 @@ bool Search::beginSearch(const Advanced& query, std::unique_ptr<Indexer> index)
     Indexer::AdvancedQuery q;
     q.categories = bits;
     q.keywords   = query.keywords;
+    q.offset     = query.qoffset;
+    q.size       = query.qsize;
 
     QUrl url;
     indexer_ = std::move(index);
@@ -90,19 +89,18 @@ bool Search::beginSearch(const Advanced& query, std::unique_ptr<Indexer> index)
 
     doSearch(url);
 
-    model_->clear();
     return true;
 }
 
 bool Search::beginSearch(const Music& query, std::unique_ptr<Indexer> index)
 {
-    stop();
-
     Indexer::MusicQuery q;
     q.artist = query.keywords;
     q.album  = query.album;
     q.track  = query.track;
     q.year   = query.year;
+    q.offset = query.qoffset;
+    q.size   = query.qsize;
 
     QUrl url;
     indexer_ = std::move(index);
@@ -110,18 +108,17 @@ bool Search::beginSearch(const Music& query, std::unique_ptr<Indexer> index)
 
     doSearch(url);
 
-    model_->clear();
     return true;
 }
 
 bool Search::beginSearch(const Television& query, std::unique_ptr<Indexer> index)
 {
-    stop();
-
     Indexer::TelevisionQuery q;
     q.episode  = query.episode;
     q.season   = query.season;
     q.keywords = query.keywords;
+    q.offset   = query.qoffset;
+    q.size     = query.qsize;
 
     QUrl url;
     indexer_ = std::move(index);
@@ -129,7 +126,6 @@ bool Search::beginSearch(const Television& query, std::unique_ptr<Indexer> index
 
     doSearch(url);
 
-    model_->clear();
     return true;
 }
 
@@ -139,6 +135,11 @@ void Search::stop()
         query->abort();
 
     queries_.clear();
+}
+
+void Search::clear()
+{
+    model_->clear();
 }
 
 void Search::loadItem(const QModelIndex& index, OnData cb)
@@ -279,7 +280,12 @@ void Search::onSearchReady(QNetworkReply& reply)
             ERROR("%1 Unknown error.", name);
             break;
     }
-    model_->setItems(std::move(items));
+
+    const auto emptyResult = items.empty();
+
+    model_->append(std::move(items));
+
+    OnSearchCallback(emptyResult);
 }
 
 } // app

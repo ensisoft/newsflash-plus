@@ -700,10 +700,7 @@ void RSS::popupDetails()
     using media = app::MediaType;
 
     const auto& item  = model_.getItem(sel.row());
-    if (item.type == media::MoviesInt ||
-        item.type == media::MoviesSD ||
-        item.type == media::MoviesHD ||
-        item.type == media::MoviesWMV)
+    if (isMovie(item.type))
     {
         const auto& title = app::findMovieTitle(item.title);
         if (title.isEmpty())

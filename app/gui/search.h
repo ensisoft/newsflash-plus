@@ -23,14 +23,17 @@
 #include <newsflash/config.h>
 #include <newsflash/warnpush.h>
 #  include <QStringList>
+#  include <QTimer>
 #  include "ui_search.h"
 #include <newsflash/warnpop.h>
+#include <memory>
 #include "mainwidget.h"
 #include "../search.h"
 
 namespace gui
 {
     class SearchModule;
+    class DlgMovie;
 
     class Search : public MainWidget
     {
@@ -58,16 +61,25 @@ namespace gui
         void on_actionDownloadTo_triggered();
         void on_actionBrowse_triggered();
         void on_btnSearch_clicked();
+        void on_btnSearchMore_clicked();
         void on_tableView_customContextMenuRequested(QPoint point);
+        void on_editSearch_returnPressed();
         void tableview_selectionChanged();
         void downloadToPrevious();
+        void popupDetails();
     private:
+        virtual bool eventFilter(QObject* obj, QEvent* event) override;
         void downloadSelected(const QString& folder);
+        void beginSearch(quint32 queryOffset, quint32 querySize);
 
     private:
         Ui::Search ui_;
     private:
         app::Search model_;
         SearchModule& module_;
+        std::unique_ptr<DlgMovie> movie_;
+    private:
+        QTimer popup_;
+        quint32 offset_;
     };
 } // gui

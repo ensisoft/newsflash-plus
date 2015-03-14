@@ -266,6 +266,7 @@ void Newznab::prepare(const BasicQuery& query, QUrl& url)
     url.addQueryItem("apikey", apikey_);
     url.addQueryItem("extended", "1");
     url.addQueryItem("t", "search");
+    url.addQueryItem("offset", QString::number(query.offset));
     if (!query.keywords.isEmpty())
         url.addQueryItem("q", query.keywords);
 }
@@ -276,6 +277,7 @@ void Newznab::prepare(const AdvancedQuery& query, QUrl& url)
     url.addQueryItem("apikey", apikey_);
     url.addQueryItem("extended", "1");
     url.addQueryItem("t", "search");
+    url.addQueryItem("offset", QString::number(query.offset));    
     url.addQueryItem("cat", collect(query.categories));
     if (!query.keywords.isEmpty())
         url.addQueryItem("q", query.keywords);
@@ -287,6 +289,7 @@ void Newznab::prepare(const MusicQuery& query, QUrl& url)
     url.addQueryItem("apikey", apikey_);
     url.addQueryItem("extended", "1");
     url.addQueryItem("t", "music");
+    url.addQueryItem("offset", QString::number(query.offset));    
     if (!query.artist.isEmpty())
         url.addQueryItem("artist", query.artist);
     if (!query.album.isEmpty())
@@ -303,6 +306,7 @@ void Newznab::prepare(const TelevisionQuery& query, QUrl& url)
     url.addQueryItem("apikey", apikey_);
     url.addQueryItem("extended", "1");
     url.addQueryItem("t", "tvsearch");
+    url.addQueryItem("offset", QString::number(query.offset));    
     if (!query.keywords.isEmpty())
         url.addQueryItem("q", query.keywords);
     if (!query.episode.isEmpty())

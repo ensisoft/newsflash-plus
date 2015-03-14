@@ -74,10 +74,14 @@ namespace app
 
         struct BasicQuery {
             QString keywords;
+            quint32 offset;
+            quint32 size;
         };
 
         struct AdvancedQuery {
             QString keywords;
+            quint32 offset;            
+            quint32 size;
             Categories categories;
         };
 
@@ -86,12 +90,16 @@ namespace app
             QString track;
             QString year;
             QString artist;
+            quint32 offset;            
+            quint32 size;
         };
 
         struct TelevisionQuery {
             QString season;
             QString episode;
             QString keywords;
+            quint32 offset;            
+            quint32 size;
         };
 
         virtual ~Indexer() = default;

@@ -84,6 +84,16 @@ namespace app
         Other
     };
 
+    inline
+    bool isMovie(MediaType type) 
+    {
+        return type == MediaType::MoviesInt ||
+            type == MediaType::MoviesSD ||
+            type == MediaType::MoviesHD ||
+            type == MediaType::MoviesWMV;
+    }
+    
+
 
     // media item. these items are retrieved from RSS feeds/newznab etc. searches.
     struct MediaItem {

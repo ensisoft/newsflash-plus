@@ -46,6 +46,8 @@ namespace app
         // basic search
         struct Basic {
             QString keywords;
+            quint32 qoffset;
+            quint32 qsize;
         };
 
         // advanced search allows us to limit the scope
@@ -58,7 +60,8 @@ namespace app
             bool console;
             bool computer;
             bool porno;
-
+            quint32 qoffset;
+            quint32 qsize;
         };
 
         // music search optionally searching for specific
@@ -68,6 +71,8 @@ namespace app
             QString track;
             QString year;
             QString keywords;
+            quint32 qoffset;
+            quint32 qsize;
         };
 
         // television search optionally searching
@@ -76,15 +81,19 @@ namespace app
             QString season;
             QString episode;
             QString keywords;
+            quint32 qoffset;
+            quint32 qsize;
         };
 
         Search();
        ~Search();
 
-        using OnReady = std::function<void ()>;
-        using OnData  = std::function<void (const QByteArray& bytes, const QString& desc)>;
+        using OnReady  = std::function<void ()>;
+        using OnData   = std::function<void (const QByteArray& bytes, const QString& desc)>;
+        using OnSearch = std::function<void (bool empty)>;
 
-        OnReady OnReadyCallback;
+        OnReady  OnReadyCallback;
+        OnSearch OnSearchCallback;
 
         QAbstractTableModel* getModel();
 
@@ -97,6 +106,8 @@ namespace app
         // stop current actions.
         void stop();
 
+        void clear();
+
         // get the item contents of the selected items and invoke
         // the callback for the content buffer.
         void loadItem(const QModelIndex& index, OnData cb);
@@ -105,6 +116,7 @@ namespace app
         void saveItem(const QModelIndex& index, const QString& file);
 
         const MediaItem& getItem(const QModelIndex& index) const;
+
     private:
         void doSearch(QUrl url);
         void onSearchReady(QNetworkReply& reply);

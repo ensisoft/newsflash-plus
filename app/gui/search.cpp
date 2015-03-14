@@ -31,16 +31,17 @@
 #include "search.h"
 #include "searchmodule.h"
 #include "nzbfile.h"
+#include "dlgmovie.h"
 #include "../debug.h"
 #include "../search.h"
 #include "../settings.h"
 #include "../utility.h"
 #include "../engine.h"
 
-#include "../newznab.h"
-
 namespace gui
 {
+
+const auto QuerySize = 100;
 
 Search::Search(SearchModule& module) : module_(module) 
 {
@@ -59,6 +60,7 @@ Search::Search(SearchModule& module) : module_(module)
     ui_.actionSave->setEnabled(false);
     ui_.actionOpen->setEnabled(false);
     ui_.editSearch->setFocus();
+    ui_.btnSearchMore->setEnabled(false);
 
     ui_.cmbYear->addItem("");
     const auto thisYear = QDate::currentDate().year();
@@ -68,6 +70,17 @@ Search::Search(SearchModule& module) : module_(module)
     model_.OnReadyCallback = [=]() {
         ui_.progress->setVisible(false);
         ui_.actionStop->setEnabled(false);
+    };
+
+    model_.OnSearchCallback = [=](bool emptyResult) {
+        if (emptyResult)
+            ui_.btnSearchMore->setText("No more results");
+        else ui_.btnSearch->setText("Load more results ...");
+        ui_.btnSearchMore->setEnabled(!emptyResult);
+        const QHeaderView* header = ui_.tableView->horizontalHeader();
+        const auto sortColumn = header->sortIndicatorSection();
+        const auto sortOrder  = header->sortIndicatorOrder();
+        ui_.tableView->sortByColumn(sortColumn, sortOrder);
     };
 
     QObject::connect(ui_.btnBasic, SIGNAL(clicked()), 
@@ -110,6 +123,13 @@ Search::Search(SearchModule& module) : module_(module)
     QObject::connect(model, SIGNAL(selectionChanged(const QItemSelection&, const QItemSelection&)),
         this, SLOT(tableview_selectionChanged()));
 
+    auto* viewport = ui_.tableView->viewport();
+    viewport->installEventFilter(this);
+    viewport->setMouseTracking(true);
+
+    QObject::connect(&popup_, SIGNAL(timeout()),
+        this, SLOT(popupDetails()));
+
     DEBUG("Search UI created");
 }
 
@@ -119,7 +139,16 @@ Search::~Search()
 }
 
 void Search::addActions(QMenu& menu)
-{}
+{
+    menu.addAction(ui_.actionRefresh);
+    menu.addSeparator();
+    menu.addAction(ui_.actionDownload);
+    menu.addSeparator();
+    menu.addAction(ui_.actionSave);
+    menu.addAction(ui_.actionOpen);
+    menu.addSeparator();
+    menu.addAction(ui_.actionStop); 
+}
 
 void Search::addActions(QToolBar& bar)
 {
@@ -175,7 +204,7 @@ void Search::updateBackendList(const QStringList& names)
 
 void Search::on_actionRefresh_triggered()
 {
-    on_btnSearch_clicked();
+    beginSearch(0, QuerySize);
 }
 
 void Search::on_actionStop_triggered()
@@ -222,10 +251,9 @@ void Search::on_actionSave_triggered()
         if (file.isEmpty())
             continue;
         model_.saveItem(index, file);
-
+        ui_.progress->setVisible(true);
+        ui_.actionStop->setEnabled(true);    
     }
-    ui_.progress->setVisible(true);
-    ui_.actionStop->setEnabled(true);    
 }
 
 void Search::on_actionDownload_triggered()
@@ -253,69 +281,15 @@ void Search::on_actionBrowse_triggered()
 
 void Search::on_btnSearch_clicked()
 {
-    const auto index = ui_.cmbIndexer->currentIndex();
-    if (index == -1)
-    {
-        QMessageBox msg(this);
-        msg.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
-        msg.setIcon(QMessageBox::Information);
-        msg.setText(tr("It looks like you don't have any Usenet search engines configured.\n"
-            "Would you like to configure sites now?"));
-        if (msg.exec() == QMessageBox::No)
-            return;
-
-        g_win->showSetting("Search");
-        return;
-    }
-    const auto& name    = ui_.cmbIndexer->currentText();
-    const auto& account = module_.getAccount(name);
-
-    std::unique_ptr<app::Newznab> nab(new app::Newznab);
-    nab->setAccount(account);
-
-    if (ui_.btnBasic->isChecked())
-    {
-        app::Search::Basic query;
-        query.keywords = ui_.editSearch->text();
-        model_.beginSearch(query, std::move(nab));
-    }
-    else if (ui_.btnAdvanced->isChecked())
-    {
-        app::Search::Advanced query;
-        query.music      = ui_.chkMusic->isChecked();
-        query.movies     = ui_.chkMovies->isChecked();
-        query.television = ui_.chkTV->isChecked();
-        query.console    = ui_.chkConsole->isChecked();
-        query.computer   = ui_.chkComputer->isChecked();
-        query.porno      = ui_.chkXXX->isChecked();
-        query.keywords   = ui_.editSearch->text();
-        model_.beginSearch(query, std::move(nab));
-    }
-    else if (ui_.btnMusic->isChecked())
-    {
-        app::Search::Music music;
-        music.keywords = ui_.editSearch->text();        
-        music.album    = ui_.editAlbum->text();
-        music.track    = ui_.editTrack->text();
-        music.year     = ui_.cmbYear->currentText();
-        model_.beginSearch(music, std::move(nab));
-
-    }
-    else if (ui_.btnTelevision->isChecked())
-    {
-        app::Search::Television tv;
-        tv.episode  = ui_.editEpisode->text();
-        tv.season   = ui_.editSeason->text();
-        tv.keywords = ui_.editSearch->text();
-        model_.beginSearch(tv, std::move(nab));
-    }
-
-    ui_.progress->setVisible(true);
-    ui_.actionStop->setEnabled(true);
-    ui_.actionDownload->setEnabled(false);
-    ui_.actionOpen->setEnabled(false);
-    ui_.actionSave->setEnabled(false);
+    beginSearch(0, QuerySize);
 }
+
+void Search::on_btnSearchMore_clicked()
+{
+    // grab the next queryfull of entries.
+    beginSearch(offset_ + QuerySize, QuerySize);
+}
+
 
 void Search::on_tableView_customContextMenuRequested(QPoint point)
 {
@@ -349,6 +323,11 @@ void Search::on_tableView_customContextMenuRequested(QPoint point)
     menu.exec(QCursor::pos());
 }
 
+void Search::on_editSearch_returnPressed()
+{
+    beginSearch(0, QuerySize);
+}
+
 void Search::tableview_selectionChanged()
 {
     const auto indices = ui_.tableView->selectionModel()->selectedRows();
@@ -368,7 +347,58 @@ void Search::downloadToPrevious()
 
     downloadSelected(folder);
 }
+void Search::popupDetails()
+{
+    popup_.stop();
+    if (movie_ && movie_->isVisible())
+        return;
 
+    if (!ui_.tableView->underMouse())
+        return;
+
+    const auto global = QCursor::pos();
+    const auto local  = ui_.tableView->viewport()->mapFromGlobal(global);
+
+    // see if the current item under the mouse pointer is also
+    // currently selected. 
+    const auto& all = ui_.tableView->selectionModel()->selectedRows();
+    const auto& sel = ui_.tableView->indexAt(local);
+    int i=0; 
+    for (; i<all.size(); ++i)
+    {
+        if (all[i].row() == sel.row())
+            break;
+    }
+    if (i == all.size())
+        return;
+
+    using media = app::MediaType;
+
+    const auto& item = model_.getItem(sel);
+    if (isMovie(item.type))
+    {
+        const auto& title = app::findMovieTitle(item.title);
+        if (title.isEmpty())
+            return;
+        if (!movie_)
+            movie_.reset(new DlgMovie(this));
+        movie_->lookup(title);
+    }
+}
+
+bool Search::eventFilter(QObject* object, QEvent* event)
+{
+    if (event->type() == QEvent::MouseMove)
+    {
+        popup_.start(1000);
+    }
+    else if (event->type() == QEvent::MouseButtonPress)
+    {
+        if (movie_)
+            movie_->hide();
+    }
+    return QObject::eventFilter(object, event);
+}
 
 void Search::downloadSelected(const QString& folder)
 {
@@ -396,6 +426,86 @@ void Search::downloadSelected(const QString& folder)
     ui_.progress->setVisible(true);
     ui_.actionStop->setEnabled(true);
 }
+
+void Search::beginSearch(quint32 queryOffset, quint32 querySize)
+{
+    const auto index = ui_.cmbIndexer->currentIndex();
+    if (index == -1)
+    {
+        QMessageBox msg(this);
+        msg.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+        msg.setIcon(QMessageBox::Information);
+        msg.setText(tr("It looks like you don't have any Usenet search engines configured.\n"
+            "Would you like to configure sites now?"));
+        if (msg.exec() == QMessageBox::No)
+            return;
+
+        g_win->showSetting("Search");
+        return;
+    }
+    const auto& name    = ui_.cmbIndexer->currentText();
+    const auto& account = module_.getAccount(name);
+
+    if (queryOffset == 0)
+        model_.clear();
+
+    offset_ = queryOffset;
+
+    std::unique_ptr<app::Newznab> nab(new app::Newznab);
+    nab->setAccount(account);
+
+    if (ui_.btnBasic->isChecked())
+    {
+        app::Search::Basic query;
+        query.keywords = ui_.editSearch->text();
+        query.qoffset  = queryOffset;
+        query.qsize    = querySize;
+        model_.beginSearch(query, std::move(nab));
+    }
+    else if (ui_.btnAdvanced->isChecked())
+    {
+        app::Search::Advanced query;
+        query.music      = ui_.chkMusic->isChecked();
+        query.movies     = ui_.chkMovies->isChecked();
+        query.television = ui_.chkTV->isChecked();
+        query.console    = ui_.chkConsole->isChecked();
+        query.computer   = ui_.chkComputer->isChecked();
+        query.porno      = ui_.chkXXX->isChecked();
+        query.keywords   = ui_.editSearch->text();
+        query.qoffset    = queryOffset;        
+        query.qsize      = querySize;
+        model_.beginSearch(query, std::move(nab));
+    }
+    else if (ui_.btnMusic->isChecked())
+    {
+        app::Search::Music music;
+        music.keywords = ui_.editSearch->text();        
+        music.album    = ui_.editAlbum->text();
+        music.track    = ui_.editTrack->text();
+        music.year     = ui_.cmbYear->currentText();
+        music.qoffset  = queryOffset;        
+        music.qsize    = querySize;
+        model_.beginSearch(music, std::move(nab));
+
+    }
+    else if (ui_.btnTelevision->isChecked())
+    {
+        app::Search::Television tv;
+        tv.episode  = ui_.editEpisode->text();
+        tv.season   = ui_.editSeason->text();
+        tv.keywords = ui_.editSearch->text();
+        tv.qoffset  = queryOffset;        
+        tv.qsize    = querySize;
+        model_.beginSearch(tv, std::move(nab));
+    }
+
+    ui_.progress->setVisible(true);
+    ui_.actionStop->setEnabled(true);
+    ui_.actionDownload->setEnabled(false);
+    ui_.actionOpen->setEnabled(false);
+    ui_.actionSave->setEnabled(false);    
+}
+
 
 
 } // gui
