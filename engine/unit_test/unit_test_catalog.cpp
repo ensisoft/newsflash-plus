@@ -61,30 +61,33 @@ void unit_test_create_new()
         catalog db;
         db.open("file");
 
-        BOOST_REQUIRE(db.first_article_number() == 0);
-        BOOST_REQUIRE(db.last_article_number() == 0);
-        BOOST_REQUIRE(db.num_articles() == 0);
+        BOOST_REQUIRE(db.article_count() == 0);
+        BOOST_REQUIRE(db.article_start() == 0);
 
         catalog::article a;
         a.ptr_author  = "John Doe";
         a.len_author  = std::strlen(a.ptr_author);
         a.ptr_subject = "[#scnzb@efnet][529762] Automata.2014.BRrip.x264.Ac3-MiLLENiUM [1/4] - \"Automata.2014.BRrip.x264.Ac3-MiLLENiUM.mkv\" yEnc (1/1513)";
         a.len_subject = std::strlen(a.ptr_subject);
-        a.state.set(catalog::flags::is_broken);
-        a.state.set(catalog::flags::is_binary);
-        db.insert(a);
+        a.bytes       = 1024;
+        a.number      = 666;
+        a.bits.set(catalog::flags::broken);
+        a.bits.set(catalog::flags::binary);
+        db.append(a);
 
-        BOOST_REQUIRE(db.num_articles() == 1);
+        BOOST_REQUIRE(db.article_count() == 1);
 
         a.ptr_author  = "Mickey mouse";
         a.len_author  = std::strlen(a.ptr_author);
         a.ptr_subject = "Mickey and Goofy in Disneyland";
         a.len_subject = std::strlen(a.ptr_subject);
-        a.state.clear();
-        a.state.set(catalog::flags::is_downloaded);
-        db.insert(a);
+        a.bytes       = 456;
+        a.number      = 500;
+        a.bits.clear();
+        a.bits.set(catalog::flags::downloaded);
+        db.append(a);
 
-        BOOST_REQUIRE(db.num_articles() == 2);
+        BOOST_REQUIRE(db.article_count() == 2);
 
         db.flush();
     }
@@ -94,22 +97,26 @@ void unit_test_create_new()
         catalog db;
         db.open("file");
 
-        BOOST_REQUIRE(db.num_articles() == 2);        
+        BOOST_REQUIRE(db.article_count() == 2);        
 
-        auto a = db.lookup(0);
-        BOOST_REQUIRE(a.state.test(catalog::flags::is_broken));
-        BOOST_REQUIRE(a.state.test(catalog::flags::is_binary));
+        auto a = db.lookup(catalog::offset_t(0));
+        BOOST_REQUIRE(a.bits.test(catalog::flags::broken));
+        BOOST_REQUIRE(a.bits.test(catalog::flags::binary));
         BOOST_REQUIRE(a.ptr_author == S("John Doe"));
         BOOST_REQUIRE(a.len_author == L("John Doe"));
         BOOST_REQUIRE(a.ptr_subject == S("[#scnzb@efnet][529762] Automata.2014.BRrip.x264.Ac3-MiLLENiUM [1/4] - \"Automata.2014.BRrip.x264.Ac3-MiLLENiUM.mkv\" yEnc (1/1513)"));
         BOOST_REQUIRE(a.len_subject == L("[#scnzb@efnet][529762] Automata.2014.BRrip.x264.Ac3-MiLLENiUM [1/4] - \"Automata.2014.BRrip.x264.Ac3-MiLLENiUM.mkv\" yEnc (1/1513)"));
+        BOOST_REQUIRE(a.bytes == 1024);
+        BOOST_REQUIRE(a.number == 666);
 
         a = db.lookup(a.next());
-        BOOST_REQUIRE(a.state.test(catalog::flags::is_downloaded));
+        BOOST_REQUIRE(a.bits.test(catalog::flags::downloaded));
         BOOST_REQUIRE(a.ptr_author == S("Mickey mouse"));
         BOOST_REQUIRE(a.len_author == L("Mickey mouse"));
         BOOST_REQUIRE(a.ptr_subject == S("Mickey and Goofy in Disneyland"));
         BOOST_REQUIRE(a.len_subject == L("Mickey and Goofy in Disneyland"));
+        BOOST_REQUIRE(a.bytes == 456);
+        BOOST_REQUIRE(a.number == 500);
     }
 
     delete_file("file");
@@ -136,7 +143,7 @@ void unit_test_performance()
 
         for (std::size_t i=0; i<1000000; ++i)
         {
-            db.insert(a);
+            db.append(a);
         }
 
         db.flush();
@@ -159,7 +166,7 @@ void unit_test_performance()
         const auto beg = std::chrono::steady_clock::now();
 
         catalog::article a;
-        catalog::key_t key = 0;
+        catalog::offset_t key = 0;
         for (std::size_t i=0; i<1000000; ++i)
         {
             a = db.lookup(key);
@@ -182,7 +189,7 @@ void unit_test_performance()
         const auto beg = std::chrono::steady_clock::now();
 
         catalog::article a;
-        catalog::key_t key = 0;
+        catalog::offset_t key = 0;
         for (std::size_t i=0; i<1000000; ++i)
         {
             a = db.lookup(key);
@@ -200,9 +207,9 @@ void unit_test_performance()
 
 int test_main(int, char*[])
 {
-    //unit_test_create_new();
+    unit_test_create_new();
 
-    unit_test_performance();
+    //unit_test_performance();
 
     return 0;
 }
