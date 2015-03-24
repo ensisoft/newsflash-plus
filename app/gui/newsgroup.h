@@ -26,7 +26,6 @@
 #include <newsflash/warnpush.h>
 #  include "ui_newsgroup.h"
 #include <newsflash/warnpop.h>
-
 #include "mainwidget.h"
 #include "../newsgroup.h"
 
@@ -37,7 +36,7 @@ namespace gui
         Q_OBJECT
 
     public:
-        NewsGroup();
+        NewsGroup(quint32 account, QString path, QString group);
        ~NewsGroup();
 
         virtual void addActions(QMenu& menu) override;
@@ -47,6 +46,9 @@ namespace gui
         {
             return {"group.html", false};
         }
+
+        void load();
+
     private slots:
         void on_actionRefresh_triggered();
         void on_actionFilter_triggered();
@@ -55,5 +57,9 @@ namespace gui
         Ui::NewsGroup ui_;
     private:
         app::NewsGroup model_;
+    private:
+        quint32 account_;
+        QString path_;
+        QString name_;
     };
 } // gui

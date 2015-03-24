@@ -61,7 +61,7 @@ void listing::complete(cmdlist& cmd,
     for (; beg != end; ++beg)
     {
         const auto& line = *beg;
-        const auto& ret  = nntp::parse_group(line.start, line.length);
+        const auto& ret  = nntp::parse_group_list_item(line.start, line.length);
         if (!ret.first)
             continue;
 

@@ -40,6 +40,7 @@
 #include "platform.h"
 #include "types.h"
 #include "newsinfo.h"
+#include "utility.h"
 
 namespace app
 {
@@ -123,31 +124,14 @@ QVariant NewsList::data(const QModelIndex& index, int role) const
 
 void NewsList::sort(int column, Qt::SortOrder order) 
 {
-    if (order == Qt::AscendingOrder)
-        DEBUG("Sort in Ascending Order");
-    else DEBUG("Sort in Descending Order");
-
-    const auto beg = std::begin(groups_);
-    const auto end = std::begin(groups_) + size_;
-
-#define SORT(x) \
-    std::sort(beg, end, \
-        [&](const group& lhs, const group& rhs) { \
-            if (order == Qt::AscendingOrder) \
-                return lhs.x < rhs.x; \
-            return lhs.x > rhs.x;  \
-        });
-
-
     emit layoutAboutToBeChanged();
-
+    
     switch ((Columns)column)
     {
-        case Columns::messages:   SORT(size); break;
-        case Columns::subscribed: SORT(flags); break;
-        case Columns::name:       SORT(name); break;
-        default:
-        Q_ASSERT("wut");
+        case Columns::messages:   app::sort(groups_, order, &group::size); break;
+        case Columns::subscribed: app::sort(groups_, order, &group::flags); break;
+        case Columns::name:       app::sort(groups_, order, &group::name); break;
+        default: Q_ASSERT("wut"); break;
     }
 
     emit layoutChanged();
@@ -336,6 +320,12 @@ void NewsList::filter(const QString& str, bool subscribed)
         auto last  = QAbstractTableModel::index(size_, (int)Columns::last);
         emit dataChanged(first, last);
     }
+}
+
+QString NewsList::getName(const QModelIndex& index) const 
+{
+    const auto& item = groups_[index.row()];
+    return item.name;
 }
 
 void NewsList::listingCompleted(quint32 acc, const QList<app::NewsGroupInfo>& list)

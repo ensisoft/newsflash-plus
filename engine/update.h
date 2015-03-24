@@ -37,6 +37,9 @@ namespace newsflash
 
         virtual std::shared_ptr<cmdlist> create_commands() override;
 
+        virtual void cancel() override;
+        virtual void commit() override;
+
         virtual void complete(cmdlist& cmd, 
             std::vector<std::unique_ptr<action>>& next) override;
 
@@ -46,6 +49,7 @@ namespace newsflash
         virtual bool has_commands() const override;
     private:
         class parse;
+        class store;
         struct state;
 
     private:
@@ -54,8 +58,8 @@ namespace newsflash
         std::uint64_t remote_first_;
         std::uint64_t local_last_;
         std::uint64_t local_first_;
-        std::uint64_t current_last_;
-        std::uint64_t current_first_;
+        std::uint64_t xover_last_;
+        std::uint64_t xover_first_;
     };
 
 } // newsflash

@@ -27,6 +27,7 @@
         "sublimeclang_options":
         [
             "-std=c++11",
+            "-Wno-inconsistent-missing-override",
             "-DSUBLIME_CLANG_WORKAROUNDS",
             "-I${home}/coding",
             "-I${home}/coding/newsflash/",

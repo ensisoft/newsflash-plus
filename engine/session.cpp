@@ -595,11 +595,11 @@ void session::retrieve_headers(std::string range)
 {
     if (state_->enable_compression)
     {
-        send_.emplace_back(new xover(std::move(range)));
+        send_.emplace_back(new xzver(std::move(range)));
     }
     else
     {
-        send_.emplace_back(new xzver(std::move(range)));
+        send_.emplace_back(new xover(std::move(range)));
     }
 }
 

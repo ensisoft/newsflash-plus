@@ -1,24 +1,22 @@
-// Copyright (c) 2013,2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-//  of this software and associated documentation files (the "Software"), to deal
-//  in the Software without restriction, including without limitation the rights
-//  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-//  copies of the Software, and to permit persons to whom the Software is
-//  furnished to do so, subject to the following conditions:
+// 
+// This software is copyrighted software. Unauthorized hacking, cracking, distribution
+// and general assing around is prohibited.
+// Redistribution and use in source and binary forms, with or without modification,
+// without permission are prohibited.
 //
 // The above copyright notice and this permission notice shall be included in
-//  all copies or substantial portions of the Software.
+// all copies or substantial portions of the Software.
 //
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-//  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-//  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-//  THE SOFTWARE.
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
 
 #include <newsflash/config.h>
 
@@ -165,10 +163,63 @@ private:
     const char* ptr_;
 };
 
+const char* find_part_count(const char* subjectline, std::size_t len, std::size_t& i)
+{
+    // NOTE: the regex is in reverse because the search is from the tail
+    // this matches "metallica - enter sandman.mp3 (01/50)"
+     const static boost::regex ex("\\)[0-9]*/[0-9]*\\(");
+    
+     reverse_c_str_iterator itbeg(subjectline + len - 1);
+     reverse_c_str_iterator itend(subjectline-1);
+
+     boost::match_results<reverse_c_str_iterator> res;
+
+     if (!regex_search(itbeg, itend, res, ex))
+         return NULL;
+    
+     if (res[0].second == itend)
+         return NULL;
+
+     const char* end   = res[0].first.as_ptr();  // at the last matched character
+     const char* start = res[0].second.as_ptr(); // at one before the start of the match
+     
+     ++start;
+     ++end;
+     // some people use this gay notation of prefixing their stuff with (xx/yy) notation
+     // to indicate all the articles of their posting "batch". This has nothing to do with 
+     // with the yEnc part count hack. So if the search returned a match at the beginning, ignore this.
+     if (start == subjectline)
+         return NULL;
+
+     i = end - start;
+     return start;
+}
+
+std::string make_string(const nntp::overview::field& f)
+{
+    if (!f.start) return "";
+    if (!f.len)  return {f.start, std::strlen(f.start)};
+    return {f.start, f.len};
+}
+
 } // namespace
 
 namespace nntp
 {
+
+std::string make_overview(const overview& ov)
+{
+    std::stringstream ss;
+    ss << make_string(ov.number)     << "\t";    
+    ss << make_string(ov.subject)    << "\t";    
+    ss << make_string(ov.author)     << "\t";
+    ss << make_string(ov.date)       << "\t";
+    ss << make_string(ov.messageid)  << "\t";
+    ss << make_string(ov.references) << "\t";
+    ss << make_string(ov.bytecount)  << "\t";
+    ss << make_string(ov.linecount)  << "\t\r\n";
+    return ss.str();
+}
 
 bool is_binary_post(const char* str, size_t len)
 {
@@ -260,6 +311,36 @@ bool is_binary_post(const char* str, size_t len)
     return false;    
 }
 
+bool strcmp(const char* first,  std::size_t firstLen,
+                const char* second, std::size_t secondLen)
+{
+
+    if (firstLen != secondLen)
+        return false;
+
+    const auto len = firstLen;
+    bool beginPart = false;
+
+    for (size_t i=0; i<len; ++i)
+    {
+        if (first[i] != second[i])
+        {
+            if (beginPart)
+            {
+                if (!std::isdigit(first[i]))
+                    return false;
+            }
+            return false;
+        }
+
+        beginPart = first[i] == '(';
+    }
+
+    return true;
+    
+} 
+
+
 std::time_t timevalue(const nntp::date& date)
 {
     enum { USE_SYSTEM_DAYLIGHT_SAVING_INFO = -1 };
@@ -336,7 +417,7 @@ std::pair<bool, overview> parse_overview(const char* str, size_t len)
     return {ret, ov};
 }
 
-std::pair<bool, group> parse_group(const char* str, size_t len)
+std::pair<bool, group> parse_group_list_item(const char* str, size_t len)
 {
     strip_leading_space(str, len);
 
@@ -351,6 +432,15 @@ std::pair<bool, group> parse_group(const char* str, size_t len)
     bool success = !ss.fail();
 
     return { success, grp};
+}
+
+std::pair<bool, group> parse_group(const char* str, size_t len)
+{
+    std::string estimate;
+
+    group grp;
+    nntp::scan_response({211}, str, len, estimate, grp.first, grp.last, grp.name);
+    return {true, grp};
 }
 
 std::pair<bool, date> parse_date(const char* str, size_t len)
@@ -411,6 +501,10 @@ std::pair<bool, date> parse_date(const char* str, size_t len)
 std::pair<bool, part> parse_part(const char* str, size_t len)
 {
     nntp::part part {0};
+
+    str = find_part_count(str, len, len);
+    if (!str) 
+        return {false, part};
 
     using namespace boost::spirit::classic;
 

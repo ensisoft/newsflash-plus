@@ -38,6 +38,7 @@
 #include "../settings.h"
 #include "../debug.h"
 #include "../format.h"
+#include "../utility.h"
 
 namespace gui
 {
@@ -51,8 +52,6 @@ Groups::Groups() : curAccount_(0)
     ui_.progressBar->setMinimum(0);
     ui_.progressBar->setValue(0);
     ui_.progressBar->setVisible(false);
-    ui_.findContainer->setVisible(false);
-    ui_.actionFind->setShortcut(QKeySequence::Find);    
     ui_.actionRefresh->setShortcut(QKeySequence::Refresh);
     ui_.actionRefresh->setEnabled(false);    
     ui_.actionFavorite->setEnabled(false);
@@ -81,8 +80,6 @@ void Groups::addActions(QMenu& menu)
 {
     menu.addAction(ui_.actionRefresh);
     menu.addSeparator();
-    menu.addAction(ui_.actionFind);
-    menu.addSeparator();
     menu.addAction(ui_.actionBrowse);
     menu.addAction(ui_.actionFavorite);
     menu.addAction(ui_.actionUnfavorite);
@@ -93,8 +90,6 @@ void Groups::addActions(QMenu& menu)
 void Groups::addActions(QToolBar& bar)
 {
     bar.addAction(ui_.actionRefresh);
-    bar.addSeparator();
-    bar.addAction(ui_.actionFind);
     bar.addSeparator();
     bar.addAction(ui_.actionBrowse);
     bar.addAction(ui_.actionFavorite);
@@ -115,84 +110,52 @@ MainWidget::info Groups::getInformation() const
 
 void Groups::loadState(app::Settings& settings)
 {
-    const auto favorites  = settings.get("news", "show_favorites_only", false);
-    const auto sortColumn = settings.get("news", "sort_column", (int)app::NewsList::Columns::name);
-    const auto sortOrder  = settings.get("news", "sort_order", (int)Qt::AscendingOrder);
-
-    ui_.chkFavorites->setChecked(favorites);
-    ui_.tableGroups->sortByColumn(sortColumn, (Qt::SortOrder)sortOrder);
-
-    const auto* model = ui_.tableGroups->model();
-    for (int i=0; i<model->columnCount() - 1; ++i)
-    {
-        const auto name  = QString("table_col_%1_width").arg(i);
-        const auto width = settings.get("news", name, ui_.tableGroups->columnWidth(i));
-        ui_.tableGroups->setColumnWidth(i, width);
-    }
+    app::loadState("news", ui_.chkFavorites, settings);
+    app::loadTableLayout("news", ui_.tableGroups, settings);
 
     accountsUpdated();
 }
 
 void Groups::saveState(app::Settings& settings)
 {
-    const auto favorites = ui_.chkFavorites->isChecked();
-    const QHeaderView* header = ui_.tableGroups->horizontalHeader();
-    const auto sortColumn = header->sortIndicatorSection();
-    const auto sortOrder  = header->sortIndicatorOrder();
-
-    settings.set("news", "show_favorites_only", favorites);
-    settings.set("news", "sort_column", sortColumn);
-    settings.set("news", "sort_order", sortOrder);
-
-    const auto* model = ui_.tableGroups->model();
-    for (int i=0; i<model->columnCount() - 1; ++i)
-    {
-        const auto name  = QString("table_col_%1_width").arg(i);
-        const auto width = ui_.tableGroups->columnWidth(i);
-        settings.set("news", name, width);
-    }
+    app::saveState("news", ui_.chkFavorites, settings);
+    app::saveTableLayout("news", ui_.tableGroups, settings);
 }
 
 void Groups::on_actionBrowse_triggered()
 {
-    const auto& indices = ui_.tableGroups->selectionModel()->selectedRows();
+    const auto* account = app::g_accounts->findAccount(curAccount_);
+    Q_ASSERT(account);
 
-    for (int i=0; i<indices.size(); ++i)
+    const auto& indices = ui_.tableGroups->selectionModel()->selectedRows();
+    for (const auto& i : indices)
     {
-        auto* news = new NewsGroup();
+        const auto& datapath = account->datapath;
+        const auto& group    = model_.getName(i);
+        const auto account   = curAccount_;
+
+        auto* news = new NewsGroup(account, datapath, group);
+        news->load();
         g_win->attach(news, false, true);
     }
 }
 
-void Groups::on_actionFind_triggered()
-{
-    ui_.findContainer->setVisible(true);
-    ui_.editFind->setFocus();
-}
 
 void Groups::on_actionRefresh_triggered()
 {
     model_.clear();
 
-    Q_ASSERT(curAccount_);
+    const auto* account = app::g_accounts->findAccount(curAccount_);
+    Q_ASSERT(account);
 
-    const auto numAccounts = app::g_accounts->numAccounts();
-    for (std::size_t i=0; i<numAccounts; ++i)
-    {
-        const auto& acc = app::g_accounts->getAccount(i);
-        if (curAccount_ != acc.id)
-            continue;
+    DEBUG("Refresh newslist '%1' (%2)", account->name, account->id);
 
-        DEBUG("Refresh newslist '%1' (%2)", acc.name, acc.id);
+    const auto file = app::homedir::file(account->name + ".lst");
 
-        const auto file = app::homedir::file(acc.name + ".lst");
+    ui_.progressBar->setMaximum(0);        
+    ui_.progressBar->setVisible(true);
+    model_.makeListing(file, account->id);        
 
-        ui_.progressBar->setMaximum(0);        
-        ui_.progressBar->setVisible(true);
-        model_.makeListing(file, acc.id);        
-        return;
-    }
-    Q_ASSERT(!"account was not found");
 }
 
 void Groups::on_actionFavorite_triggered()
@@ -225,10 +188,6 @@ void Groups::on_actionUnfavorite_triggered()
         resort();
 }
 
-void Groups::on_btnCloseFind_clicked()
-{
-    ui_.findContainer->setVisible(false);
-}
 
 void Groups::on_cmbAccounts_currentIndexChanged()
 {
@@ -286,15 +245,6 @@ void Groups::on_chkFavorites_clicked(bool state)
     resort();
 }
 
-void Groups::on_editFind_returnPressed()
-{
-    resort();
-}
-
-void Groups::on_editFind_textChanged()
-{
-    //resort();
-}
 
 void Groups::accountsUpdated()
 {
@@ -377,25 +327,25 @@ void Groups::makeComplete(quint32 accountId)
 
 void Groups::resort()
 {
-    QString filter;
-    if (ui_.editFind->isVisible())
-        filter = ui_.editFind->text();
+    // QString filter;
+    // if (ui_.editFind->isVisible())
+    //     filter = ui_.editFind->text();
 
-    bool favorites = ui_.chkFavorites->isChecked();
+    // bool favorites = ui_.chkFavorites->isChecked();
 
-    model_.filter(filter, favorites);
+    // model_.filter(filter, favorites);
 
-    const auto numRows = model_.rowCount(QModelIndex());
-    if (numRows == 0)
-        ui_.lblFind->setText(tr("No matches"));
-    else ui_.lblFind->setText(tr("%1 matches").arg(numRows));
+    // const auto numRows = model_.rowCount(QModelIndex());
+    // if (numRows == 0)
+    //     ui_.lblFind->setText(tr("No matches"));
+    // else ui_.lblFind->setText(tr("%1 matches").arg(numRows));
 
-    ui_.actionFavorite->setEnabled(numRows != 0);
+    // ui_.actionFavorite->setEnabled(numRows != 0);
 
-    const QHeaderView* header = ui_.tableGroups->horizontalHeader();
-    const auto sortColumn = header->sortIndicatorSection();
-    const auto sortOrder  = header->sortIndicatorOrder();
-    ui_.tableGroups->sortByColumn(sortColumn, sortOrder);
+    // const QHeaderView* header = ui_.tableGroups->horizontalHeader();
+    // const auto sortColumn = header->sortIndicatorSection();
+    // const auto sortOrder  = header->sortIndicatorOrder();
+    // ui_.tableGroups->sortByColumn(sortColumn, sortOrder);
 }
 
 } // gui

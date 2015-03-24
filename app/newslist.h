@@ -27,7 +27,7 @@
 #  include <QDateTime>
 #  include <QString>
 #  include <QList>
-#include <newsflash/warnpop.h>
+//#include <newsflash/warnpop.h>
 #include <vector>
 #include <map>
 
@@ -63,6 +63,8 @@ namespace app
         void unsubscribe(QModelIndexList& list, quint32 account);
 
         void filter(const QString& str, bool subscribed);
+
+        QString getName(const QModelIndex& index) const;
 
     signals:
         void progressUpdated(quint32 acc, quint32 maxValue, quint32 curValue);   

@@ -79,6 +79,7 @@ namespace app
             int maxConnections;
             QDate lastUseDate;
             QStringList subscriptions;            
+            QString datapath;
         };
 
         Accounts();

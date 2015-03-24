@@ -24,6 +24,7 @@
 #  include <QtGui/QCheckBox>
 #  include <QtGui/QLineEdit>
 #  include <QtGui/QComboBox>
+#  include <QtGui/QHeaderView>
 #  include <QAbstractTableModel>
 #include <newsflash/warnpop.h>
 #include "utility.h"
@@ -47,6 +48,15 @@ void saveTableLayout(const QString& key, const QTableView* view, Settings& setti
         const auto width = view->columnWidth(i);
         settings.set(key, name, width);
     }
+
+    if (view->isSortingEnabled())
+    {
+        const QHeaderView* header = view->horizontalHeader();
+        const auto sortColumn = header->sortIndicatorSection();
+        const auto sortOrder  = header->sortIndicatorOrder();
+        settings.set(key, "sort_column", sortColumn);
+        settings.set(key, "sort_order", sortOrder);
+    }    
 }
 
 void loadTableLayout(const QString& key, QTableView* view, const Settings& settings)
@@ -62,6 +72,18 @@ void loadTableLayout(const QString& key, QTableView* view, const Settings& setti
             view->columnWidth(i));
         view->setColumnWidth(i, width);
     }
+
+    if (view->isSortingEnabled())
+    {
+        const QHeaderView* header = view->horizontalHeader();
+        const auto column = settings.get(key, "sort_column",
+            (int)header->sortIndicatorSection());
+        const auto order = settings.get(key, "sort_order",
+            (int)header->sortIndicatorOrder());
+
+        view->sortByColumn(column,(Qt::SortOrder)order);
+    }
+
 }
 
 void loadState(const QString& key, QCheckBox* chk, Settings& settings)

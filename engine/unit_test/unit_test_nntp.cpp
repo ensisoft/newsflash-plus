@@ -561,6 +561,76 @@ void test_scan_response()
 }
 
 
+void test_to_int()
+{
+    using namespace nntp;
+
+    bool overflow = false;
+
+    BOOST_REQUIRE(to_int<int>("1234",  4) == 1234);
+    BOOST_REQUIRE(to_int<int>("50000", 5) == 50000);
+    BOOST_REQUIRE(to_int<int>("0", 1)     == 0);
+    BOOST_REQUIRE(to_int<int>("1", 1)     == 1);
+    BOOST_REQUIRE(to_int<int>("0003", 4)  == 3);
+    BOOST_REQUIRE(to_int<int>("0", 1, overflow) == 0);    
+    BOOST_REQUIRE(overflow == false);
+    BOOST_REQUIRE(to_int<int>("1234", 4, overflow) == 1234);
+    BOOST_REQUIRE(overflow == false);
+    BOOST_REQUIRE(to_int<int>("50000", 5, overflow) == 50000);
+    BOOST_REQUIRE(overflow == false);
+    BOOST_REQUIRE(to_int<int>("637131", 6, overflow) == 637131);
+    BOOST_REQUIRE(overflow == false);
+    BOOST_REQUIRE(to_int<int>("7342352", 7, overflow) == 7342352);
+    BOOST_REQUIRE(overflow == false);
+    BOOST_REQUIRE(to_int<int>("87811234", 8, overflow) == 87811234);
+    BOOST_REQUIRE(overflow == false);
+    BOOST_REQUIRE(to_int<int>("534235256", 9, overflow) == 534235256);
+    BOOST_REQUIRE(overflow == false);
+
+    BOOST_REQUIRE(to_int<int>("2875543543", 10, overflow) == 0);
+    BOOST_REQUIRE(overflow == true);
+    BOOST_REQUIRE(to_int<short>("81023", 5, overflow) == 0);
+    BOOST_REQUIRE(overflow == true);
+    BOOST_REQUIRE(to_int<int>("9147483648", 10, overflow) == 0);
+    BOOST_REQUIRE(overflow == true);
+    BOOST_REQUIRE(to_int<int>("000123", 6, overflow) == 123);
+    BOOST_REQUIRE(overflow == false);
+    BOOST_REQUIRE(to_int<std::uint32_t>("116812835", 9, overflow) == 116812835);
+    BOOST_REQUIRE(overflow == false);
+
+}
+
+namespace test {
+    bool strcmp(const char* first, const char* second)
+    {
+        return nntp::strcmp(first, std::strlen(first),
+            second, std::strlen(second));
+    }
+}
+
+void test_strcmp()
+{
+    const char* str1 = "a subject line";
+    const char* str2 = "a subJECT line";
+    const char* str3 = "foobar keke gu";
+    const char* str4 = "Metallica - 02 - Enter sandman (1/15).mp3";
+    const char* str5 = "Metallica - 02 - Enter sandman (2/15).mp3";
+    const char* str6 = "[foobar]";
+    const char* str7 = "[doodar]";
+    const char* str8 = "some weird letters ˆˆˆ‰‰‰,,,<|^^≈≈";
+    const char* str9 = "foobar keke (01/50)";
+    const char* strA = "foobar keke (01/xy)";
+
+    BOOST_REQUIRE(test::strcmp(str1, str1) == true);
+    BOOST_REQUIRE(test::strcmp(str1, str2) == false); // IGNORE CASE
+    BOOST_REQUIRE(test::strcmp(str1, str3) == false);
+    BOOST_REQUIRE(test::strcmp(str4, str4) == true);
+    BOOST_REQUIRE(test::strcmp(str4, str4) == true);    
+    BOOST_REQUIRE(test::strcmp(str6, str6) == true);
+    BOOST_REQUIRE(test::strcmp(str8, str8) == true);
+}
+
+
 int test_main(int, char* [])
 {
     test_parse_overview();
@@ -572,6 +642,8 @@ int test_main(int, char* [])
     test_find_response();
     test_find_body();
     test_scan_response();
+    test_to_int();
+    test_strcmp();
 
     return 0;
 }

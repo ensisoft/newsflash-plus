@@ -24,11 +24,13 @@
 #  include <QtGui/QIcon>
 #  include <QFile>
 #  include <QFileInfo>
+#  include <QDir>
 #include <newsflash/warnpop.h>
 #include "newsgroup.h"
 #include "eventlog.h"
 #include "debug.h"
 #include "platform.h"
+#include "engine.h"
 
 namespace app
 {
@@ -65,7 +67,7 @@ QVariant NewsGroup::headerData(int section, Qt::Orientation orientation, int rol
             case Columns::Size:    return "Size";
             case Columns::Author:  return "Author";
             case Columns::Subject: return "Subject";
-             case Columns::SENTINEL: break;
+             case Columns::LAST:   break;
         }
     }
     else if (role == Qt::DecorationRole)
@@ -99,7 +101,7 @@ QVariant NewsGroup::headerData(int section, Qt::Orientation orientation, int rol
             case Columns::Size:         return "Sort by size";
             case Columns::Author:       return "Sort by author";
             case Columns::Subject:      return "Sort by subject";
-            case Columns::SENTINEL: break;
+            case Columns::LAST: break;
         }
     }
     return QVariant();
@@ -117,7 +119,23 @@ int NewsGroup::rowCount(const QModelIndex&) const
 
 int NewsGroup::columnCount(const QModelIndex&) const 
 {
-    return (int)Columns::SENTINEL;
+    return (int)Columns::LAST;
+}
+
+bool NewsGroup::open(const QString& path)
+{
+    // data is in .vol files
+    QDir dir;
+    dir.setPath(path);
+    dir.setNameFilters(QStringList("vol*.dat"));
+    QStringList files = dir.entryList();
+    if (files.isEmpty())
+    {
+        //g_engine->retrieveNewsgroupListing(quint32 acc)
+        return false;
+    }
+
+    return true;
 }
 
 } // app

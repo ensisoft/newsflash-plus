@@ -52,16 +52,12 @@ namespace gui
 
     private slots:
         void on_actionBrowse_triggered();
-        void on_actionFind_triggered();
         void on_actionRefresh_triggered();
         void on_actionFavorite_triggered();
         void on_actionUnfavorite_triggered();
-        void on_btnCloseFind_clicked();
         void on_cmbAccounts_currentIndexChanged();
         void on_tableGroups_customContextMenuRequested(QPoint point);
         void on_chkFavorites_clicked(bool state);
-        void on_editFind_returnPressed();
-        void on_editFind_textChanged();
 
         void accountsUpdated();
         void progressUpdated(quint32 acc, quint32 maxValue, quint32 curValue);

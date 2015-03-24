@@ -1,24 +1,22 @@
-// Copyright (c) 2013,2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-//  of this software and associated documentation files (the "Software"), to deal
-//  in the Software without restriction, including without limitation the rights
-//  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-//  copies of the Software, and to permit persons to whom the Software is
-//  furnished to do so, subject to the following conditions:
+// 
+// This software is copyrighted software. Unauthorized hacking, cracking, distribution
+// and general assing around is prohibited.
+// Redistribution and use in source and binary forms, with or without modification,
+// without permission are prohibited.
 //
 // The above copyright notice and this permission notice shall be included in
-//  all copies or substantial portions of the Software.
+// all copies or substantial portions of the Software.
 //
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-//  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-//  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-//  THE SOFTWARE
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
 
 // $Id: nntp.h,v 1.53 2010/07/04 18:33:53 svaisane Exp $
 
@@ -40,6 +38,8 @@
 
 namespace nntp
 {
+
+    
     // broken down Usenet article overview fields.
     struct overview {
         struct field {
@@ -81,9 +81,18 @@ namespace nntp
         std::size_t denominator; // 34
     };
 
+    std::string make_overview(const overview& ov);
+
     // inspect the subject line and try to figure out whether
     // it indicates that post contains binary data.
     bool is_binary_post(const char* str, size_t len);
+
+    // Compare two subject lines for equality ignoring
+    // the NNTP part hack for subject line identity. I.e.
+    // 
+    // "foobar (1/50).mp3" equals "foobar (2/50).mp3" and function returns true
+    bool strcmp(const char* first,  std::size_t firstLen,
+        const char* second, std::size_t secondLen);
 
     // convert a broken down date object into a single scalar integral value.
     // the returned values are all universally comparable since they're all
@@ -97,6 +106,8 @@ namespace nntp
 
     // parse group information. returns (true, group) if succesful,
     // otherwise (false, overview) and the contents of group are undefined.
+    std::pair<bool, group> parse_group_list_item(const char* str, size_t len);
+
     std::pair<bool, group> parse_group(const char* str, size_t len);
 
     // parse nntp date. returns (true, date) if succesful,
@@ -230,6 +241,66 @@ namespace nntp
             throw nntp::exception("incorrect response code: " + str, code);
 
         return code;
+    }
+
+    template<typename Integral>
+    Integral to_int(const char* digits, std::size_t num_digits)
+    {
+        Integral ret = 0;
+        for (std::size_t i=0; i<num_digits; ++i)
+        {
+            const auto exponent = num_digits-i-1;
+            const auto base     = digits[i] - 0x30;
+            ret += base;
+            if (exponent)
+                ret *= 10;
+        }
+        return ret;          
+    }
+
+
+    template<typename Integral> 
+    Integral to_int(const char* digit_string, int digits, bool& overflow)
+    {
+        // remove leading zeroes
+        while (*digit_string == '0')
+        {
+            ++digit_string;
+            --digits;
+        }
+        if (digits < std::numeric_limits<Integral>::digits10)
+        {
+            overflow = false;
+            return to_int<Integral>(digit_string, digits);
+        }
+
+        Integral ret = 0;
+        Integral max = std::numeric_limits<Integral>::max() / 10 * 10;
+        int      mod = (int)(std::numeric_limits<Integral>::max() % 10);
+        Integral foo = std::numeric_limits<Integral>::max() / 10;
+        for (int i=0; i<digits; ++i)
+        {
+            int exponent = digits-i-1;
+            int base     = digit_string[i] - 0x30;
+        
+            if (ret > max || (ret == max && (base > mod)))
+            {
+                overflow = true;
+                return 0;
+            }
+            ret += base;
+            if (exponent)
+            {
+                if (ret > foo)
+                {
+                    overflow = true;
+                    return 0;
+                }
+                ret *= 10;
+            }
+        }
+        overflow = false;
+        return ret;
     }
 
 

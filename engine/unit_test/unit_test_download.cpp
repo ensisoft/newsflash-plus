@@ -98,7 +98,7 @@ void unit_test_decode_binary()
         actions2 = std::vector<std::unique_ptr<nf::action>>();
     }
 
-    download.finalize();
+    download.commit();
 
     const auto& jpg = read_file_contents("1489406.jpg");
     const auto& ref = read_file_contents("test_data/1489406.jpg");

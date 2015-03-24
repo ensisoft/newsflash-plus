@@ -1,24 +1,22 @@
-// Copyright (c) 2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-//  of this software and associated documentation files (the "Software"), to deal
-//  in the Software without restriction, including without limitation the rights
-//  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-//  copies of the Software, and to permit persons to whom the Software is
-//  furnished to do so, subject to the following conditions:
+// 
+// This software is copyrighted software. Unauthorized hacking, cracking, distribution
+// and general assing around is prohibited.
+// Redistribution and use in source and binary forms, with or without modification,
+// without permission are prohibited.
 //
 // The above copyright notice and this permission notice shall be included in
-//  all copies or substantial portions of the Software.
+// all copies or substantial portions of the Software.
 //
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-//  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-//  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-//  THE SOFTWARE.
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
 
 #pragma once
 
@@ -65,6 +63,14 @@ namespace newsflash
             content_type_   = other.content_type_;
             content_status_ = other.content_status_;
         }
+        buffer(const buffer& other) : buffer_(other.buffer_)
+        {
+            size_ = other.size_;
+            content_start_  = other.content_start_;
+            content_length_ = other.content_length_;
+            content_type_   = other.content_type_;
+            content_status_ = other.content_status_;
+        }
 
         // return content pointer to the start of the body/payload data
         const u8* content() const
@@ -88,9 +94,14 @@ namespace newsflash
 
         void append(const char* str)
         {
-            assert(std::strlen(str) + size_ <= buffer_.size());
+            assert(std::strlen(str) + size_ + 1 <= buffer_.size());
             std::strcpy(back(), str);
             size_ += std::strlen(str);
+        }
+
+        void append(const std::string& s)
+        {
+            append(s.c_str());
         }
 
         void allocate(std::size_t capacity)
@@ -187,6 +198,20 @@ namespace newsflash
             
             buffer_         = std::move(other.buffer_);
             size_           = other.size_;
+            content_start_  = other.content_start_;
+            content_length_ = other.content_length_;
+            content_type_   = other.content_type_;
+            content_status_ = other.content_status_;
+            return *this;
+        }
+
+        buffer& operator=(const buffer& other)
+        {
+            if (this == &other)
+                return *this;
+
+            buffer_ = other.buffer_;
+            size_   = other.size_;
             content_start_  = other.content_start_;
             content_length_ = other.content_length_;
             content_type_   = other.content_type_;

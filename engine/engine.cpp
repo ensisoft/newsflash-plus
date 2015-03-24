@@ -44,6 +44,7 @@
 #include "settings.h"
 #include "datafile.h"
 #include "listing.h"
+#include "update.h"
 #include "data.pb.h"
 
 namespace newsflash
@@ -1048,7 +1049,7 @@ private:
                         state.on_file_callback(ui);
                     }
                 }
-                else if (auto* ptr = dynamic_cast<listing*>(task_.get()))
+                else if (auto* ptr = dynamic_cast<class listing*>(task_.get()))
                 {
                     ui::listing listing;
                     listing.account = ui_.account;
@@ -1064,6 +1065,10 @@ private:
                         listing.groups.push_back(ui);
                     }
                     state.on_list_callback(listing);
+                }
+                else if (auto* ptr = dynamic_cast<class update*>(task_.get()))
+                {
+
                 }
                 break;
 

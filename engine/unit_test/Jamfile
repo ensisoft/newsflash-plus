@@ -21,6 +21,7 @@ unit-test unit_test_tcpsocket          : unit_test_tcpsocket.cpp ;
 unit-test unit_test_sslsocket          : unit_test_sslsocket.cpp ;
 unit-test unit_test_listing            : unit_test_listing.cpp ;
 unit-test unit_test_download           : unit_test_download.cpp ;
+unit-test unit_test_update             : unit_test_update.cpp ;
 unit-test unit_test_stringtable        : unit_test_stringtable.cpp ;
 unit-test unit_test_datafile           : unit_test_datafile.cpp ;
 unit-test unit_test_catalog            : unit_test_catalog.cpp ;

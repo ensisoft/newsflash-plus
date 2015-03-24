@@ -24,6 +24,7 @@
 
 #include <newsflash/warnpush.h>
 #  include <QAbstractTableModel>
+#  include <QObject>
 #include <newsflash/warnpop.h>
 
 namespace app
@@ -33,15 +34,6 @@ namespace app
         Q_OBJECT
 
     public:
-        enum class Columns {
-            BinaryFlag, NewFlag, DownloadFlag, BrokenFlag, BookmarkFlag,
-            Age, 
-            Size, 
-            Author, 
-            Subject, 
-            SENTINEL
-        };
-
         NewsGroup();
        ~NewsGroup();
 
@@ -50,6 +42,13 @@ namespace app
         virtual QVariant data(const QModelIndex& index, int role) const override;        
         virtual int rowCount(const QModelIndex&) const override;
         virtual int columnCount(const QModelIndex&) const override;
+
+        bool open(const QString& path);
+
     private:
+        enum class Columns {
+            BinaryFlag, NewFlag, DownloadFlag, BrokenFlag, BookmarkFlag,
+            Age, Size,  Author,  Subject, LAST
+        };
     };
 } // app

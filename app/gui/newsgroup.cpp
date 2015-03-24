@@ -31,6 +31,7 @@
 #  include <QtGui/QPixmap>
 #  include <QFile>
 #  include <QFileInfo>
+#  include <QDir>
 #include <newsflash/warnpop.h>
 
 #include "newsgroup.h"
@@ -40,17 +41,19 @@
 namespace gui
 {
 
-NewsGroup::NewsGroup()
+NewsGroup::NewsGroup(quint32 acc, QString path, QString name) 
+    : account_(acc), path_(path), name_(name)
 {
-    using Cols = app::NewsGroup::Columns;
+    //using Cols = app::NewsGroup::Columns;
 
     ui_.setupUi(this);
     ui_.tableView->setModel(&model_);
-    ui_.tableView->setColumnWidth((int)Cols::BinaryFlag, 32);
-    ui_.tableView->setColumnWidth((int)Cols::NewFlag, 32);
-    ui_.tableView->setColumnWidth((int)Cols::DownloadFlag, 32);
-    ui_.tableView->setColumnWidth((int)Cols::BrokenFlag, 32);
-    ui_.tableView->setColumnWidth((int)Cols::BookmarkFlag, 32);
+    ui_.grpView->setTitle(name);
+    // ui_.tableView->setColumnWidth((int)Cols::BinaryFlag, 32);
+    // ui_.tableView->setColumnWidth((int)Cols::NewFlag, 32);
+    // ui_.tableView->setColumnWidth((int)Cols::DownloadFlag, 32);
+    // ui_.tableView->setColumnWidth((int)Cols::BrokenFlag, 32);
+    // ui_.tableView->setColumnWidth((int)Cols::BookmarkFlag, 32);
 
     ui_.progressBar->setVisible(false);
 }
@@ -68,6 +71,14 @@ void NewsGroup::addActions(QToolBar& bar)
 void NewsGroup::addActions(QMenu& menu)
 {
 
+}
+
+void NewsGroup::load()
+{
+    //if (!model_.open(account_, path_, name_))
+    {
+
+    }
 }
 
 void NewsGroup::on_actionRefresh_triggered()

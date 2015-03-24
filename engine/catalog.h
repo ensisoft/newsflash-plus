@@ -23,11 +23,13 @@
 #pragma once
 
 #include <newsflash/config.h>
+#include <algorithm>
 #include <stdexcept>
 #include <string>
 #include <cstdint>
 #include <cassert>
 #include <cstring>
+#include <ctime>
 #include "assert.h"
 #include "bitflag.h"
 
@@ -43,7 +45,7 @@ namespace newsflash
     {
     public:
         enum class flags : std::uint8_t {
-            broken, binary, recent,
+            broken, binary, 
             deleted,
             downloaded,
             bookmarked
@@ -64,9 +66,11 @@ namespace newsflash
 
         struct article {
             bitflag<flags> bits;
+            std::uint32_t offset;            
             std::uint64_t number;
             std::uint32_t bytes;
-            std::uint8_t  parts;
+            std::time_t   pubdate;
+            std::uint8_t  partno;
             std::uint8_t  partmax;
             std::uint8_t  len_subject;
             std::uint8_t  len_author;                
@@ -74,10 +78,16 @@ namespace newsflash
             const char* ptr_author;
 
             std::size_t length() const {
-                return 13 + len_subject + len_author;
+                return 13 + sizeof(std::time_t) + len_subject + len_author;
             }
             offset_t next() const {
-                return length();
+                return offset + length();
+            }
+            std::string subject() const {
+                return {ptr_subject, len_subject};
+            }
+            std::string author() const {
+                return {ptr_author, len_author};
             }
         };
 
@@ -97,7 +107,14 @@ namespace newsflash
         {
             Storage::open(file);
             if (Storage::size() == 0)
+            {
+                auto buff = Storage::load(0, sizeof(header_),
+                    Storage::buf_write);
+                const auto* beg = (const typename Storage::byte*)(&header_);
+                const auto* end = beg + sizeof(header_);
+                std::copy(beg, end, buff.begin());
                 return;
+            }
 
             auto buff = Storage::load(0, sizeof(header_),
                 Storage::buf_read | Storage::buf_write);
@@ -112,33 +129,15 @@ namespace newsflash
         // get article with the given key.
         article lookup(offset_t offset)
         {
-            const auto off = sizeof(header_) + offset.value;
-            const auto end = header_.offset;
-            ASSERT(off < end);
-
-            lookup_ = Storage::load(off, 1024, Storage::buf_read);
-
-            auto it = lookup_.begin();
-
-            std::int32_t number = 0;
-
-            article ret;
-            read(it, ret.bits);
-            read(it, number);
-            read(it, ret.bytes);
-            read(it, ret.parts);
-            read(it, ret.partmax);
-            read(it, ret.ptr_subject, ret.len_subject);
-            read(it, ret.ptr_author, ret.len_author);
-            ret.number = header_.article_start + number;            
-            return ret;
+            const auto off = offset.value + sizeof(header_);
+            return lookup(off);
         }
 
         article lookup(index_t index)
         {
             ASSERT(index.value < CATALOG_SIZE);
             const auto off = header_.table[index.value];
-            return lookup(offset_t{off});
+            return lookup(off);
         }
 
         // append an article into the catalog.
@@ -156,11 +155,6 @@ namespace newsflash
             insert(i.value, a);
         }
 
-        void update(const article& a, index_t i)
-        {
-            ASSERT(i.value < CATALOG_SIZE);
-            
-        }
 
         void flush()
         {
@@ -184,7 +178,7 @@ namespace newsflash
         bool is_empty(index_t i) const 
         {
             ASSERT(i.value < CATALOG_SIZE);
-            return header_.table[i.value] != 0;
+            return header_.table[i.value] == 0;
         }
 
     private:
@@ -230,7 +224,8 @@ namespace newsflash
         void insert(std::size_t index, const article& a)
         {
             const auto length = a.length();
-            const auto offset = header_.offset;
+            const auto empty  = header_.table[index] == 0;            
+            const auto offset = empty ? header_.offset : header_.table[index];
 
             auto buff = Storage::load(offset, length, Storage::buf_write);
             auto it = buff.begin();
@@ -245,16 +240,45 @@ namespace newsflash
 
             write(it, a.bits);
             write(it, number);
+            write(it, a.pubdate);
             write(it, a.bytes);
-            write(it, a.parts);
+            write(it, a.partno);
             write(it, a.partmax);
             write(it, a.ptr_subject, a.len_subject);
             write(it, a.ptr_author, a.len_author);
             buff.flush();
 
-            header_.table[index] = offset;
-            header_.offset += length;
-            header_.article_count++;
+            if (empty)
+            {
+                header_.table[index] = offset; //((length & 0xff) << 24) | offset;
+                header_.offset += length;                
+                header_.article_count++;
+            }
+        }
+        article lookup(std::uint32_t offset) 
+        {
+            ASSERT(offset >= sizeof(header_));
+            ASSERT(offset < header_.offset);
+            const auto size = Storage::size();
+            const auto min  = std::min(std::uint32_t(size - offset), std::uint32_t(1024));
+            lookup_ = Storage::load(offset, min, Storage::buf_read);
+
+            auto it = lookup_.begin();
+
+            std::int32_t number = 0;
+
+            article ret;
+            read(it, ret.bits);
+            read(it, number);
+            read(it, ret.pubdate);
+            read(it, ret.bytes);
+            read(it, ret.partno);
+            read(it, ret.partmax);
+            read(it, ret.ptr_subject, ret.len_subject);
+            read(it, ret.ptr_author, ret.len_author);
+            ret.number = header_.article_start + number;       
+            ret.offset = offset - sizeof(header_);     
+            return ret;            
         }
 
     private:
@@ -267,7 +291,7 @@ namespace newsflash
             std::uint32_t offset;
             std::uint32_t article_count;
             std::uint64_t article_start;
-            std::uint32_t table[2];
+            std::uint32_t table[CATALOG_SIZE];
         };
         header header_;
         buffer lookup_;
