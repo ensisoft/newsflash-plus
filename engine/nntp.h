@@ -94,6 +94,12 @@ namespace nntp
     bool strcmp(const char* first,  std::size_t firstLen,
         const char* second, std::size_t secondLen);
 
+    inline bool strcmp(const std::string& first, const std::string& second)
+    {
+        return strcmp(first.c_str(), first.size(),
+            second.c_str(), second.size());
+    }
+
     // convert a broken down date object into a single scalar integral value.
     // the returned values are all universally comparable since they're all
     // converted to GMT times. They are also usable with C time functions

@@ -28,16 +28,16 @@
 #  include <QDir>
 #  include <QStringList>
 #include <newsflash/warnpop.h>
-
-#include <ctime>
 #include <algorithm>
-
+#include <ctime>
 #include "accounts.h"
 #include "format.h"
 #include "eventlog.h"
 #include "debug.h"
 #include "settings.h"
 #include "engine.h"
+#include "distdir.h"
+#include "homedir.h"
 
 namespace app
 {
@@ -90,6 +90,7 @@ Accounts::Account Accounts::suggestAccount() const
     next.downloadsThisMonth = 0;
     next.quotaType          = Quota::none;
     next.maxConnections     = 5;
+    next.datapath           = homedir::path(name);
     return next;
 }
 
@@ -315,6 +316,7 @@ bool Accounts::saveState(Settings& store) const
         store.set(key, "max_connections", acc.maxConnections);
         store.set(key, "last_use_date", acc.lastUseDate);
         store.set(key, "subscriptions", acc.subscriptions);
+        store.set(key, "datapath", acc.datapath);
         list.append(key);
     }
     store.set("accounts", "list", list);
@@ -370,6 +372,7 @@ void Accounts::loadState(Settings& store)
         acc.maxConnections      = store.get(key, "max_connections").toInt();
         acc.lastUseDate         = store.get(key, "last_use_date").toDate();
         acc.subscriptions       = store.get(key, "subscriptions").toStringList();
+        acc.datapath            = store.get(key, "datapath", homedir::path(acc.name));
         accounts_.push_back(acc);
         DEBUG("Account loaded %1", acc.name);
 

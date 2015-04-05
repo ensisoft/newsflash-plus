@@ -68,8 +68,9 @@ void unit_test_success()
     };
 
     newsflash::listing listing;
-
+    BOOST_REQUIRE(listing.has_commands());
     auto cmds = listing.create_commands();
+    BOOST_REQUIRE(listing.has_commands() == false);
     BOOST_REQUIRE(cmds->needs_to_configure() == false);
     BOOST_REQUIRE(cmds->cmdtype() == newsflash::cmdlist::type::listing);
 
@@ -81,6 +82,8 @@ void unit_test_success()
 
     std::vector<std::unique_ptr<newsflash::action>> actions;
     listing.complete(*cmds, actions);
+
+    BOOST_REQUIRE(listing.is_ready());
 
     const auto& groups = listing.group_list();
     BOOST_REQUIRE(groups.size() == 3);

@@ -68,6 +68,8 @@ namespace newsflash
 
         virtual bool has_commands() const = 0;
 
+        virtual std::size_t max_num_actions() const = 0;
+
     protected:
     private:
     };

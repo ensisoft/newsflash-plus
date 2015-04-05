@@ -37,8 +37,7 @@ void homedir::init(const QString& folder)
 
     QDir dir;
     if (!dir.mkpath(mine))
-        throw std::runtime_error(
-            narrow(toString("failed to create %1", mine)));
+        throw std::runtime_error(narrow(toString("failed to create %1", mine)));
 
     pathstr = mine;
 }
@@ -53,6 +52,13 @@ QString homedir::file(const QString& name)
     // pathstr is an absolute path so then this is also
     // an absolute path.
     return QDir::toNativeSeparators(QDir::cleanPath(pathstr + "/" + name));
+}
+
+QString homedir::path(const QString& name)
+{
+    const auto base = pathstr;
+    const auto native = QDir::toNativeSeparators(base + "/" + name + "/");
+    return native;
 }
 
 } // app

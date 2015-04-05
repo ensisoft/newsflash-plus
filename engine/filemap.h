@@ -25,6 +25,7 @@
 #include <newsflash/config.h>
 #include <iterator>
 #include <memory>
+#include <string>
 #include "assert.h"
 
 namespace newsflash
@@ -242,6 +243,8 @@ namespace newsflash
         buffer load(std::size_t offset, std::size_t size, unsigned flags);
 
         std::size_t size() const;
+
+        std::string filename() const;
 
     private:
         std::shared_ptr<mapper> mapper_;

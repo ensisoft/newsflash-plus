@@ -347,7 +347,7 @@ public:
         out.set_content_start(len);
         out.set_status(buffer::status::success);
 
-        LOG_D("Read content data ", newsflash::size{blen});
+        LOG_D("Read body data ", newsflash::size{blen});
         return true;
     }
 
@@ -402,7 +402,21 @@ public:
         if (len == 0)
             return false;
 
-        return false;
+        nntp::scan_response({224}, buff.head(), len);
+
+        const auto blen = nntp::find_body(buff.head() + len, buff.size() - len);
+        if (blen == 0)
+            return false;
+
+        const auto size = len + blen;
+        out = buff.split(size);
+        out.set_content_type(buffer::type::overview);
+        out.set_content_length(blen);
+        out.set_content_start(len);
+        out.set_status(buffer::status::success);
+        
+        LOG_D("Read xover data ", newsflash::size{blen});
+        return true;
     }
 
     virtual bool can_pipeline() const override

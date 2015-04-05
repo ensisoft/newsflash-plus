@@ -23,7 +23,6 @@
 #pragma once
 
 #include <newsflash/config.h>
-
 #include <vector>
 #include <string>
 #include <cstdint>

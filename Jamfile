@@ -56,6 +56,12 @@ project newsflash
     
     # if this is not defined linking problems ensue on msvc
     <define>BOOST_ALL_NO_LIB
+
+
+    # we need -rdynamic for backtrace and backtrace_symbols
+    # in order to dump a stacktrace from the assert
+    # todo: whats the flag for clang??
+    <toolset>gcc:<linkflags>-rdynamic    
 ;
 
 if [ os.name ] = NT

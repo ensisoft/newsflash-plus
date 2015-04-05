@@ -191,4 +191,9 @@ std::size_t filebuf::size() const
     return fileio_->size();
 }
 
+std::string filebuf::filename() const 
+{
+    return filename_;
+}
+
 } // newsflash

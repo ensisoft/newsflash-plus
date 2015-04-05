@@ -31,6 +31,9 @@
 #include "debug.h"
 #include "platform.h"
 #include "engine.h"
+#include "utility.h"
+#include "format.h"
+#include "types.h"
 
 namespace app
 {
@@ -38,6 +41,9 @@ namespace app
 NewsGroup::NewsGroup()
 {
     DEBUG("NewsGroup created");
+
+    QObject::connect(g_engine, SIGNAL(newHeadersAvailable(const QString&)),
+        this, SLOT(newHeadersAvailable(const QString&)));
 }
 
 NewsGroup::~NewsGroup()
@@ -57,9 +63,9 @@ QVariant NewsGroup::headerData(int section, Qt::Orientation orientation, int rol
         {
             // fallthrough intentional for these cases.
             case Columns::BinaryFlag:
-            case Columns::NewFlag:
+            case Columns::RecentFlag:
+            case Columns::BrokenFlag:          
             case Columns::DownloadFlag:
-            case Columns::BrokenFlag:
             case Columns::BookmarkFlag:
                 return ""; 
 
@@ -67,23 +73,23 @@ QVariant NewsGroup::headerData(int section, Qt::Orientation orientation, int rol
             case Columns::Size:    return "Size";
             case Columns::Author:  return "Author";
             case Columns::Subject: return "Subject";
-             case Columns::LAST:   break;
+            case Columns::LAST:    break;
         }
     }
     else if (role == Qt::DecorationRole)
     {
-        static const QIcon icoBinary(toGrayScale(QPixmap("icons:ico_flag_binary.png")));
-        static const QIcon icoNew(toGrayScale(QPixmap("icons:ico_flag_new.png")));
-        static const QIcon icoDownload(toGrayScale(QPixmap("icons:ico_flag_download.png")));
-        static const QIcon icoBroken(toGrayScale(QPixmap("icons:ico_flag_broken.png")));
-        static const QIcon icoBookmark(toGrayScale(QPixmap("icons:ico_flag_bookmark.png")));
+        static const QIcon icoBinary(toGrayScale("icons:ico_flag_binary.png"));
+        static const QIcon icoNew(toGrayScale("icons:ico_flag_new.png"));
+        static const QIcon icoDownload(toGrayScale("icons:ico_flag_download.png"));
+        static const QIcon icoBroken(toGrayScale("icons:ico_flag_broken.png"));
+        static const QIcon icoBookmark(toGrayScale("icons:ico_flag_bookmark.png"));
 
         switch ((Columns)section)
         {
             case Columns::BinaryFlag:   return icoBinary;
-            case Columns::NewFlag:      return icoNew;
+            case Columns::RecentFlag:   return icoNew;
+            case Columns::BrokenFlag:   return icoBroken;            
             case Columns::DownloadFlag: return icoDownload;
-            case Columns::BrokenFlag:   return icoBroken;
             case Columns::BookmarkFlag: return icoBookmark;
             default: break;
         }
@@ -93,9 +99,9 @@ QVariant NewsGroup::headerData(int section, Qt::Orientation orientation, int rol
         switch ((Columns)section)
         {
             case Columns::BinaryFlag:   return "Sort by binary status";
-            case Columns::NewFlag:      return "Sort by new status";
+            case Columns::RecentFlag:   return "Sort by new status";
+            case Columns::BrokenFlag:   return "Sort by broken status";            
             case Columns::DownloadFlag: return "Sort by download status";
-            case Columns::BrokenFlag:   return "Sort by broken status";
             case Columns::BookmarkFlag: return "Sort by bookmark status";
             case Columns::Age:          return "Sort by age";
             case Columns::Size:         return "Sort by size";
@@ -109,12 +115,37 @@ QVariant NewsGroup::headerData(int section, Qt::Orientation orientation, int rol
 
 QVariant NewsGroup::data(const QModelIndex& index, int role) const
 {
-    return QVariant();
+    const auto row   = (std::size_t)index.row();
+    const auto col   = (Columns)index.column();
+    const auto& item = index_[row];    
+
+    if (role == Qt::DisplayRole)
+    {
+        switch (col)
+        {
+            // fall-through intended.            
+            case Columns::BinaryFlag:
+            case Columns::RecentFlag:
+            case Columns::BrokenFlag:
+            case Columns::DownloadFlag:
+            case Columns::BookmarkFlag:
+                return {}; 
+
+            case Columns::Age:     return toString(age { QDateTime::fromTime_t(item.pubdate) });
+            case Columns::Size:    return toString(size { item.bytes });
+            case Columns::Author:  return QString::fromStdString(item.author);
+            case Columns::Subject: return QString::fromStdString(item.subject);
+            case Columns::LAST:    Q_ASSERT(false);
+        }
+    }
+    if (role == Qt::DecorationRole)
+    {}
+    return {};
 }
 
 int NewsGroup::rowCount(const QModelIndex&) const 
 {
-    return 0;
+    return (int)index_.size();
 }
 
 int NewsGroup::columnCount(const QModelIndex&) const 
@@ -122,20 +153,81 @@ int NewsGroup::columnCount(const QModelIndex&) const
     return (int)Columns::LAST;
 }
 
-bool NewsGroup::open(const QString& path)
+bool NewsGroup::load(quint32 account, QString path, QString name)
 {
     // data is in .vol files
     QDir dir;
-    dir.setPath(path);
+    dir.setPath(path + "/" + name);
+    dir.setSorting(QDir::Name | QDir::Reversed);
     dir.setNameFilters(QStringList("vol*.dat"));
     QStringList files = dir.entryList();
     if (files.isEmpty())
     {
-        //g_engine->retrieveNewsgroupListing(quint32 acc)
+        g_engine->retrieveHeaders(account, path, name);
         return false;
+    }
+    else
+    {
+        const auto p = joinPath(path, name);
+        const auto f = joinPath(p, files[0]);
+        DEBUG("Loading headers from %1", f);
+        newHeadersAvailable(f);
     }
 
     return true;
+}
+
+void NewsGroup::newHeadersAvailable(const QString& file)
+{
+    const auto& n = narrow(file);
+
+    if (!index_.on_load)
+    {
+        index_.on_load = [this] (std::size_t key, std::size_t idx) {
+            return filedbs_[key].lookup(filedb::index_t{idx});
+        };
+    }
+
+    auto it = std::find_if(std::begin(filedbs_), std::end(filedbs_),
+        [&](const filedb& db) {
+            return db.filename() == n;
+        });
+
+    std::size_t index  = 0;
+    std::size_t offset = 0;
+
+    if (it == std::end(filedbs_))
+    {
+        index = filedbs_.size();
+        filedbs_.emplace_back();
+        offsets_.emplace_back();
+        it = --filedbs_.end();
+    }
+    else
+    {
+        const auto dist = std::distance(std::begin(filedbs_), it);
+        index  = dist;
+        offset = offsets_[dist];
+    }
+
+    filedb& db = *it;
+    db.open(n);
+
+    // load all the articles, starting at the latest offset that we know off.
+    auto beg = db.begin();
+    auto end = db.end();
+    for (; beg != end; ++beg)
+    {
+        const auto& article = *beg;
+        index_.insert(article, index, article.index);
+    }
+    // save the database and the current offset
+    // when new data is added to the same database
+    // we reload the db and then use the current latest
+    // index to start loading the objects.
+    offsets_[index] = beg.offset();
+
+    QAbstractTableModel::reset();    
 }
 
 } // app

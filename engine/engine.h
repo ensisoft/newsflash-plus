@@ -33,6 +33,7 @@
 #include "ui/file.h"
 #include "ui/batch.h"
 #include "ui/listing.h"
+#include "ui/update.h"
 
 namespace newsflash
 {
@@ -47,9 +48,17 @@ namespace newsflash
         // this callback is invoked when a new file has been completed.
         using on_file = std::function<void (const ui::file& file)>;
 
+        // this callback is invoked when a batch is complete
         using on_batch = std::function<void (const ui::batch& batch)>;
 
+        // this callback is invoked when a listing is complete.
         using on_list  = std::function<void (const ui::listing& listing)>;
+
+        // this callback is invoked when a update is complete
+        using on_update = std::function<void(const ui::update& update)>;
+
+        // 
+        using on_headers = std::function<void(const std::string& file)>;
 
         // this callback is invoked when there are pending events inside the engine
         // the handler function should organize for a call into engine::pump() 
@@ -78,7 +87,7 @@ namespace newsflash
 
         batch_id_t download_listing(ui::listing list);
 
-        //batch_id_t download_headers(...);
+        batch_id_t download_headers(ui::update update);
 
         // process pending actions in the engine. You should call this function
         // as a response to to the async_notify.
@@ -115,6 +124,8 @@ namespace newsflash
 
         // set the notify callback. this 
         void set_notify_callback(on_async_notify notify_callback);
+
+        void set_headers_callback(on_headers callback);
 
         // if set to true engine will overwrite files that already exist in the filesystem.
         // otherwise file name collisions are resolved by some naming scheme

@@ -38,7 +38,7 @@ namespace newsflash
             std::uint64_t size;
         };
 
-        listing() : run_once_(true)
+        listing() : ready_(false)
         {}
 
         virtual std::shared_ptr<cmdlist> create_commands() override;
@@ -47,18 +47,17 @@ namespace newsflash
             std::vector<std::unique_ptr<action>>& actions) override;
 
         virtual bool has_commands() const override
-        {
-            return run_once_;
-        }
+        { return !ready_;}
+
+        virtual std::size_t max_num_actions() const override
+        { return 1; }
 
         const std::vector<group>& group_list() const 
-        {
-            return groups_;
-        }
+        { return groups_; }
+
     private:
         std::vector<group> groups_;
-    private:
-        bool run_once_;
+        bool ready_;
     };
 
 } // newsflash

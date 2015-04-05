@@ -21,37 +21,28 @@
 #pragma once
 
 #include <newsflash/config.h>
+#include <string>
+#include <cstdint>
 
-#include <newsflash/warnpush.h>
-#  include <QString>
-#include <newsflash/warnpop.h>
-
-namespace app
+namespace newsflash
 {
-    // applications home directory in user home
-    class homedir
+    namespace ui {
+
+    // details for newsgroup update task
+    struct update 
     {
-    public:
-        // initialize once. 
-        // folder is name for our application specific folder
-        // in the user's real home. for example /home/roger/ on 
-        // a linux system and "c:\Documents and Settings\roger\"
-        // on a windows system, so we get 
-        // "home/roger/folder" and "c:\documents and settings\roger\folder".
-        static 
-        void init(const QString& folder);
+        std::size_t account;
 
-        // get absolute path to the applications home directory
-        static QString path();
+        // path in the filesystem where to place the data files.
+        std::string path;
 
-        // get the path to a file in the home directory 
-        // in system specific path notation.
-        static QString file(const QString& name);
+        // name of the newsgroup to update.
+        std::string name;
 
-        static QString path(const QString& name);
-
-    private:
-        static QString pathstr;
+        // human readable descripton for the task list.
+        std::string desc;
     };
 
-} // app
+    } // ui
+
+} // newsflash

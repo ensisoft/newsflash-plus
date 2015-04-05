@@ -23,7 +23,6 @@
 #define LOGTAG "news"
 
 #include <newsflash/config.h>
-
 #include <newsflash/warnpush.h>
 #  include <QtGui/QMessageBox>
 #  include <QtGui/QToolBar>
@@ -33,10 +32,10 @@
 #  include <QFileInfo>
 #  include <QDir>
 #include <newsflash/warnpop.h>
-
 #include "newsgroup.h"
 #include "../debug.h"
 #include "../format.h"
+#include "../utility.h"
 
 namespace gui
 {
@@ -73,11 +72,23 @@ void NewsGroup::addActions(QMenu& menu)
 
 }
 
+void NewsGroup::loadState(app::Settings& settings)
+{
+    app::loadTableLayout("newsgroup", ui_.tableView, settings);
+}
+
+void NewsGroup::saveState(app::Settings& settings)
+{
+    app::saveTableLayout("newsgroup", ui_.tableView, settings);
+}
+
 void NewsGroup::load()
 {
-    //if (!model_.open(account_, path_, name_))
+    if (!model_.load(account_, path_, name_))
     {
-
+        ui_.progressBar->setVisible(true);
+        ui_.progressBar->setMaximum(0),
+        ui_.progressBar->setMinimum(0);
     }
 }
 

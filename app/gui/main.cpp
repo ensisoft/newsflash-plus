@@ -40,7 +40,7 @@
 #include "minidump.h"
 #include "config.h"
 #include "accounts.h"
-#include "groups.h"
+#include "newslist.h"
 #include "eventlog.h"
 #include "rss.h"
 #include "nzbfile.h"
@@ -154,7 +154,7 @@ int run(int argc, char* argv[])
     win.attach(&gacc);
 
     // groups widget
-    gui::Groups news;
+    gui::NewsList news;
     win.attach(&news);
 
     // RSS widget

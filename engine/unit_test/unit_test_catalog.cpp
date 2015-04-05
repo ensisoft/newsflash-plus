@@ -64,27 +64,23 @@ void unit_test_create_new()
         BOOST_REQUIRE(db.article_count() == 0);
         BOOST_REQUIRE(db.article_start() == 0);
 
-        catalog::article a;
-        a.ptr_author  = "John Doe";
-        a.len_author  = std::strlen(a.ptr_author);
-        a.ptr_subject = "[#scnzb@efnet][529762] Automata.2014.BRrip.x264.Ac3-MiLLENiUM [1/4] - \"Automata.2014.BRrip.x264.Ac3-MiLLENiUM.mkv\" yEnc (1/1513)";
-        a.len_subject = std::strlen(a.ptr_subject);
-        a.bytes       = 1024;
-        a.number      = 666;
-        a.bits.set(catalog::flags::broken);
-        a.bits.set(catalog::flags::binary);
+        newsflash::article a {};
+        a.author  = "John Doe";
+        a.subject = "[#scnzb@efnet][529762] Automata.2014.BRrip.x264.Ac3-MiLLENiUM [1/4] - \"Automata.2014.BRrip.x264.Ac3-MiLLENiUM.mkv\" yEnc (1/1513)";
+        a.bytes   = 1024;
+        a.number  = 666;
+        a.bits.set(newsflash::article::flags::broken);
+        a.bits.set(newsflash::article::flags::binary);
         db.append(a);
 
         BOOST_REQUIRE(db.article_count() == 1);
 
-        a.ptr_author  = "Mickey mouse";
-        a.len_author  = std::strlen(a.ptr_author);
-        a.ptr_subject = "Mickey and Goofy in Disneyland";
-        a.len_subject = std::strlen(a.ptr_subject);
-        a.bytes       = 456;
-        a.number      = 500;
+        a.author  = "Mickey mouse";
+        a.subject = "Mickey and Goofy in Disneyland";
+        a.bytes   = 456;
+        a.number  = 500;
         a.bits.clear();
-        a.bits.set(catalog::flags::downloaded);
+        a.bits.set(newsflash::article::flags::downloaded);
         db.append(a);
 
         BOOST_REQUIRE(db.article_count() == 2);
@@ -96,27 +92,38 @@ void unit_test_create_new()
     {
         catalog db;
         db.open("file");
+        BOOST_REQUIRE(db.article_count() == 2);                
 
-        BOOST_REQUIRE(db.article_count() == 2);        
+        // iterators
+        auto beg = db.begin();
+        auto end = db.end();
+        BOOST_REQUIRE(beg != end);
+
 
         auto a = db.lookup(catalog::offset_t(0));
-        BOOST_REQUIRE(a.bits.test(catalog::flags::broken));
-        BOOST_REQUIRE(a.bits.test(catalog::flags::binary));
-        BOOST_REQUIRE(a.ptr_author == S("John Doe"));
-        BOOST_REQUIRE(a.len_author == L("John Doe"));
-        BOOST_REQUIRE(a.ptr_subject == S("[#scnzb@efnet][529762] Automata.2014.BRrip.x264.Ac3-MiLLENiUM [1/4] - \"Automata.2014.BRrip.x264.Ac3-MiLLENiUM.mkv\" yEnc (1/1513)"));
-        BOOST_REQUIRE(a.len_subject == L("[#scnzb@efnet][529762] Automata.2014.BRrip.x264.Ac3-MiLLENiUM [1/4] - \"Automata.2014.BRrip.x264.Ac3-MiLLENiUM.mkv\" yEnc (1/1513)"));
-        BOOST_REQUIRE(a.bytes == 1024);
-        BOOST_REQUIRE(a.number == 666);
+        BOOST_REQUIRE(a.bits.test(newsflash::article::flags::broken));
+        BOOST_REQUIRE(a.bits.test(newsflash::article::flags::binary));
+        BOOST_REQUIRE(a.author  == "John Doe");
+        BOOST_REQUIRE(a.subject == "[#scnzb@efnet][529762] Automata.2014.BRrip.x264.Ac3-MiLLENiUM [1/4] - \"Automata.2014.BRrip.x264.Ac3-MiLLENiUM.mkv\" yEnc (1/1513)");
+        BOOST_REQUIRE(a.bytes   == 1024);
+        BOOST_REQUIRE(a.number  == 666);
 
-        a = db.lookup(a.next());
-        BOOST_REQUIRE(a.bits.test(catalog::flags::downloaded));
-        BOOST_REQUIRE(a.ptr_author == S("Mickey mouse"));
-        BOOST_REQUIRE(a.len_author == L("Mickey mouse"));
-        BOOST_REQUIRE(a.ptr_subject == S("Mickey and Goofy in Disneyland"));
-        BOOST_REQUIRE(a.len_subject == L("Mickey and Goofy in Disneyland"));
+        auto b = *beg;
+        BOOST_REQUIRE(a == b);
+        BOOST_REQUIRE(beg->author == "John Doe");
+        BOOST_REQUIRE(beg->bytes  == 1024);
+
+
+        a = db.lookup(catalog::offset_t{a.next()});
+        BOOST_REQUIRE(a.bits.test(newsflash::article::flags::downloaded));
+        BOOST_REQUIRE(a.author  == "Mickey mouse");
+        BOOST_REQUIRE(a.subject == "Mickey and Goofy in Disneyland");
         BOOST_REQUIRE(a.bytes == 456);
         BOOST_REQUIRE(a.number == 500);
+
+        ++beg;
+        b = *beg;
+        BOOST_REQUIRE(a == b);
     }
 
     delete_file("file");
@@ -135,11 +142,9 @@ void unit_test_performance()
 
         const auto beg = std::chrono::steady_clock::now();
 
-        catalog::article a;
-        a.ptr_author = "John Doe";
-        a.len_author = std::strlen(a.ptr_author);
-        a.ptr_subject = "[#scnzb@efnet][529762] Automata.2014.BRrip.x264.Ac3-MiLLENiUM [1/4] - \"Automata.2014.BRrip.x264.Ac3-MiLLENiUM.mkv\" yEnc (1/1513)";
-        a.len_subject = std::strlen(a.ptr_subject);
+        newsflash::article a;
+        a.author = "John Doe";
+        a.subject = "[#scnzb@efnet][529762] Automata.2014.BRrip.x264.Ac3-MiLLENiUM [1/4] - \"Automata.2014.BRrip.x264.Ac3-MiLLENiUM.mkv\" yEnc (1/1513)";
 
         for (std::size_t i=0; i<1000000; ++i)
         {
@@ -165,7 +170,7 @@ void unit_test_performance()
 
         const auto beg = std::chrono::steady_clock::now();
 
-        catalog::article a;
+        newsflash::article a;
         catalog::offset_t key = 0;
         for (std::size_t i=0; i<1000000; ++i)
         {
@@ -188,7 +193,7 @@ void unit_test_performance()
 
         const auto beg = std::chrono::steady_clock::now();
 
-        catalog::article a;
+        newsflash::article a;
         catalog::offset_t key = 0;
         for (std::size_t i=0; i<1000000; ++i)
         {
@@ -201,13 +206,30 @@ void unit_test_performance()
         const auto ms  = std::chrono::duration_cast<std::chrono::milliseconds>(diff);
         std::cout << "Reading with filemap Time spent (ms): " << ms.count() << std::endl;        
     }
-
     
+}
+
+void check_file()
+{
+    using catalog = newsflash::catalog<newsflash::filebuf>;
+
+    catalog db;
+    db.open("vol33417.dat");
+
+    auto beg = db.begin();
+    auto end = db.end();
+    for (; beg != end; ++beg)
+    {
+        auto article = *beg;
+        std::cout << article.subject << std::endl;
+    }
+
 }
 
 int test_main(int, char*[])
 {
     unit_test_create_new();
+    //check_file();
 
     //unit_test_performance();
 

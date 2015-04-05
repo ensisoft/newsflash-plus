@@ -48,32 +48,6 @@
 namespace app
 {
 
-QPixmap toGrayScale(const QPixmap& p)
-{
-    QImage img = p.toImage();
-    const int width  = img.width();
-    const int height = img.height();
-    for (int i=0; i<width; ++i)
-    {
-        for (int j=0; j<height; ++j)
-        {
-            const auto pix = img.pixel(i, j);
-            const auto val = qGray(pix);
-            img.setPixel(i, j, qRgba(val, val, val, (pix >> 24 & 0xff)));
-        }
-    }
-    return QPixmap::fromImage(img);
-}
-
-QPixmap toGrayScale(const QString& pixmap)
-{
-    QPixmap pix(pixmap);
-    if (pix.isNull())
-        return {};
-
-    return toGrayScale(pix);
-}
-
 #if defined(WINDOWS_OS)
 
 // Icon extraction code is nicked from qt\src\gui\image\qtpixmap_win.cpp

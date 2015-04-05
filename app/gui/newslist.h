@@ -23,24 +23,22 @@
 #pragma once
 
 #include <newsflash/config.h>
-
 #include <newsflash/warnpush.h>
-#  include "ui_groups.h"
+#  include "ui_newslist.h"
 #include <newsflash/warnpop.h>
-
 #include "mainwidget.h"
 #include "../newslist.h"
 
 namespace gui
 {
     // news group list GUI
-    class Groups : public MainWidget
+    class NewsList : public MainWidget
     {
         Q_OBJECT
 
     public:
-        Groups();
-       ~Groups();
+        NewsList();
+       ~NewsList();
 
         virtual void addActions(QMenu& menu) override;
         virtual void addActions(QToolBar& bar) override;
@@ -68,7 +66,7 @@ namespace gui
         void resort();
 
     private:
-        Ui::Groups ui_;
+        Ui::NewsList ui_;
     private:
         app::NewsList model_;
         quint32 curAccount_;

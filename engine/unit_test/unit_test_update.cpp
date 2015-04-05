@@ -243,28 +243,28 @@ void unit_test_data()
         BOOST_REQUIRE(db.article_count() == 3);
 
         auto article = db.lookup(filedb::offset_t(0));
-        BOOST_REQUIRE(article.subject() == "Metallica - Enter Sandman yEnc (01/10).mp3");
-        BOOST_REQUIRE(article.author() == "ensi@gmail.com");
-        BOOST_REQUIRE(article.bits.test(filedb::flags::binary));
-        BOOST_REQUIRE(article.bits.test(filedb::flags::broken));
+        BOOST_REQUIRE(article.subject == "Metallica - Enter Sandman yEnc (01/10).mp3");
+        BOOST_REQUIRE(article.author == "ensi@gmail.com");
+        BOOST_REQUIRE(article.bits.test(newsflash::article::flags::binary));
+        BOOST_REQUIRE(article.bits.test(newsflash::article::flags::broken));
         BOOST_REQUIRE(article.bytes == 1024 + 568);
         BOOST_REQUIRE(article.partmax == 10);
         BOOST_REQUIRE(article.partno == 2);
 
-        article = db.lookup(article.next());
-        BOOST_REQUIRE(article.subject() == ".net and COM interoperability");
-        BOOST_REQUIRE(article.author() == "foo@gmail.com");
-        BOOST_REQUIRE(article.bits.test(filedb::flags::binary) == false);
-        BOOST_REQUIRE(article.bits.test(filedb::flags::broken) == false);
+        article = db.lookup(filedb::offset_t{article.next()});
+        BOOST_REQUIRE(article.subject == ".net and COM interoperability");
+        BOOST_REQUIRE(article.author == "foo@gmail.com");
+        BOOST_REQUIRE(article.bits.test(newsflash::article::flags::binary) == false);
+        BOOST_REQUIRE(article.bits.test(newsflash::article::flags::broken) == false);
         BOOST_REQUIRE(article.bytes == 512);
         BOOST_REQUIRE(article.partmax == 1);
         BOOST_REQUIRE(article.partno == 1);
 
-        article = db.lookup(article.next());
-        BOOST_REQUIRE(article.subject() == "#A.B.MM @  EFNet Presents: REQ 40092 - Seinfeld.S09.DVDRip.XviD-SiNK - 482/520 - sink-seinfeld.s09e21e22.r23 (1/3)");
-        BOOST_REQUIRE(article.author() == "ano@anonymous.yy (knetje)");
-        BOOST_REQUIRE(article.bits.test(filedb::flags::binary));
-        BOOST_REQUIRE(article.bits.test(filedb::flags::broken) == false);
+        article = db.lookup(filedb::offset_t{article.next()});
+        BOOST_REQUIRE(article.subject == "#A.B.MM @  EFNet Presents: REQ 40092 - Seinfeld.S09.DVDRip.XviD-SiNK - 482/520 - sink-seinfeld.s09e21e22.r23 (1/3)");
+        BOOST_REQUIRE(article.author == "ano@anonymous.yy (knetje)");
+        BOOST_REQUIRE(article.bits.test(newsflash::article::flags::binary));
+        BOOST_REQUIRE(article.bits.test(newsflash::article::flags::broken) == false);
         BOOST_REQUIRE(article.partmax == 3);
         BOOST_REQUIRE(article.partno == 3);
     }

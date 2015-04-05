@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>Groups</class>
- <widget class="QWidget" name="Groups">
+ <class>NewsList</class>
+ <widget class="QWidget" name="NewsList">
   <property name="geometry">
    <rect>
     <x>0</x>

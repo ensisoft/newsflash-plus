@@ -329,11 +329,16 @@ bool strcmp(const char* first,  std::size_t firstLen,
             {
                 if (!std::isdigit(first[i]))
                     return false;
+                continue;
             }
             return false;
         }
-
-        beginPart = first[i] == '(';
+        if (beginPart) 
+        {
+            if (first[i] == ')') 
+                beginPart = false;
+        } 
+        else beginPart = first[i] == '(';
     }
 
     return true;
@@ -436,10 +441,16 @@ std::pair<bool, group> parse_group_list_item(const char* str, size_t len)
 
 std::pair<bool, group> parse_group(const char* str, size_t len)
 {
-    std::string estimate;
-
-    group grp;
-    nntp::scan_response({211}, str, len, estimate, grp.first, grp.last, grp.name);
+    group grp;    
+    try 
+    {
+        std::string estimate;
+        nntp::scan_response({211}, str, len, estimate, grp.first, grp.last, grp.name);
+    }
+    catch (const std::exception& e)
+    { 
+        return {false, grp };
+    }
     return {true, grp};
 }
 
@@ -658,7 +669,9 @@ std::size_t find_body(const void* buff, std::size_t size)
     // thus for non-empty cases one must look for CRLF . CRLF.
     // note that you can't simply look for . CRLF cause for example
     // human readable text body often ends with a . CRLF. so for the
-    // non-empty case we must look for CRLF . CRLF
+    // non-empty case we *must* look for CRLF . CRLF. Dot doubling
+    // in user text makes sure that a single dot will never begin
+    // a line of body text.
     //
     //     response-line CRLF
     //     line CRLF

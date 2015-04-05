@@ -86,6 +86,9 @@ namespace newsflash
 
         std::size_t size() const;
 
+        std::string filename() const;
+
+
     private:
         std::shared_ptr<fileio> fileio_;
         std::string filename_;

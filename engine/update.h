@@ -23,7 +23,9 @@
 #pragma once
 
 #include <newsflash/config.h>
+#include <functional>
 #include <memory>
+#include <string>
 #include <cstdint>
 #include "task.h"
 
@@ -32,6 +34,8 @@ namespace newsflash
     class update : public task
     {
     public:
+        std::function<void(std::string)> on_write;
+
         update(std::string path, std::string group);
        ~update();
 
@@ -47,6 +51,8 @@ namespace newsflash
             std::vector<std::unique_ptr<action>>& next) override;
 
         virtual bool has_commands() const override;
+
+        virtual std::size_t max_num_actions() const override;
     private:
         class parse;
         class store;

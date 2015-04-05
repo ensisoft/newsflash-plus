@@ -24,6 +24,7 @@
 
 #include <fstream>
 #include <map>
+#include <set>
 #include <mutex>
 #include "filesys.h"
 #include "linebuffer.h"
@@ -47,7 +48,7 @@ struct update::state {
     std::string folder;
     std::string group;
 
-    std::mutex m;
+    //std::mutex m;
     std::map<std::uint32_t, std::unique_ptr<filedb>> files;
     std::map<std::uint32_t, std::uint32_t> hashmap;
 
@@ -80,6 +81,9 @@ public:
             if (!pair.first)
                 continue;
             const auto& xover  = pair.second;
+            if (xover.subject.len == 0)
+                continue;
+
             const auto& part   = nntp::parse_part(xover.subject.start, xover.subject.len);
             const auto& date   = nntp::parse_date(xover.date.start, xover.date.len);
             const auto hash    = nntp::hashvalue(xover.subject.start, xover.subject.len);            
@@ -88,19 +92,21 @@ public:
             const auto bytes   = nntp::to_int<std::uint32_t>(xover.bytecount.start, xover.bytecount.len);
             const auto pubdate = nntp::timevalue(date.second);
 
-            filedb::article a;
-            a.ptr_subject = xover.subject.start;
-            a.len_subject = xover.subject.len;
-            a.ptr_author  = xover.author.start;
-            a.len_author  = xover.author.len;
-            a.number      = number;
-            a.bytes       = bytes;
-            a.pubdate     = pubdate;
-            a.bits.set(filedb::flags::binary, binary);
+            article a;
+            a.subject = std::string(xover.subject.start, xover.subject.len);
+            a.author  = std::string(xover.author.start, xover.author.len);
+            a.number  = number;
+            a.bytes   = bytes;
+            a.pubdate = pubdate;
+            a.bits.set(article::flags::binary, binary);
             if (part.first)
             {
                 a.partno  = part.second.numerator;
                 a.partmax = part.second.denominator;
+                if (binary) {
+                    const auto broken = a.partno != a.partmax;
+                    a.bits.set(article::flags::broken, broken);
+                }
             }
             else
             {
@@ -115,7 +121,7 @@ public:
 private:
     friend class update;
     std::shared_ptr<state> state_;
-    std::vector<filedb::article> articles_;
+    std::vector<article> articles_;
     std::vector<std::uint32_t> hashes_;
 private:
     buffer buffer_;
@@ -139,7 +145,7 @@ public:
             last_  = std::max(last_, article.number);
             first_ = std::min(first_, article.number);
 
-            std::lock_guard<std::mutex> lock(state_->m);        
+            //std::lock_guard<std::mutex> lock(state_->m);        
             auto& files = state_->files;
             auto& hmap  = state_->hashmap;
 
@@ -160,41 +166,48 @@ public:
                 it = files.insert(std::make_pair(file_index, std::move(db))).first;
             }
             auto& db = it->second;
-            if (db->is_empty(file_bucket))
-            {
-                bool bin = article.bits.test(filedb::flags::binary);
-                if (bin)
-                {
-                    article.bits.set(filedb::flags::broken);
-                }
 
-                db->insert(article, filedb::index_t(file_bucket));
+            std::size_t slot;
+            for (slot=0; slot<CATALOG_SIZE; ++slot)
+            {
+                const auto index = filedb::index_t((slot * 3 + file_bucket) % CATALOG_SIZE);
+
+                if (!db->is_empty(index))
+                {
+                    auto a = db->lookup(index);
+                    if (!nntp::strcmp(a.subject, article.subject))
+                        continue;
+                    if (a.bits.test(article::flags::binary))
+                    {
+                        a.bytes  += article.bytes;
+                        a.partno += 1;
+                        const auto broken = a.partno != a.partmax;
+                        a.bits.set(article::flags::broken, broken);
+                    }
+                    db->insert(a, index);
+                    break;
+                }
+                else
+                {
+                    db->insert(article, index);                    
+                    break;
+                }
             }
-            else
-            {
-                auto a = db->lookup(filedb::index_t(file_bucket));
-                if (!nntp::strcmp(a.ptr_subject, a.len_subject, article.ptr_subject, article.len_subject))
-                {
-                    // todo:
-                }
-                a.bytes  += article.bytes;
-                a.partno += 1;
-                if (a.partno == a.partmax)
-                    a.bits.set(filedb::flags::broken, false);
+            if (slot == CATALOG_SIZE)
+                throw std::runtime_error("unresolved hash collision");
 
-                db->insert(a, filedb::index_t(file_bucket));
-            }                            
+            updates_.insert(db.get());
         }
     }
 private:
     friend class update;
     std::shared_ptr<state> state_;
-    std::vector<filedb::article> articles_;
+    std::vector<article> articles_;
     std::vector<std::uint32_t> hashes_;
+    std::set<filedb*> updates_;
     std::uint64_t first_;
     std::uint64_t last_;    
-private:
-    buffer buffer_;    
+private: 
 };
 
 update::update(std::string path, std::string group) : local_last_(0), local_first_(0)
@@ -293,7 +306,12 @@ std::shared_ptr<cmdlist> update::create_commands()
 }
 
 void update::cancel()
-{}
+{
+    // the update is a little bit special.
+    // we always want to retain the headers that've we grabbed
+    // instead of having to wait untill the end of data before committing.
+    commit();
+}
 
 void update::commit()
 {
@@ -368,8 +386,8 @@ void update::complete(action& a, std::vector<std::unique_ptr<action>>& next)
         std::unique_ptr<store> s(new store(state_));
         s->articles_ = std::move(p->articles_);
         s->hashes_   = std::move(p->hashes_);
-        s->buffer_   = std::move(p->buffer_);
-        s->set_affinity(action::affinity::any_thread);
+
+        s->set_affinity(action::affinity::single_thread);
         next.push_back(std::move(s));
     }
     if (auto* p = dynamic_cast<store*>(&a))
@@ -378,14 +396,31 @@ void update::complete(action& a, std::vector<std::unique_ptr<action>>& next)
         const auto last  = p->last_;
         local_first_ = std::min(local_first_, first);
         local_last_  = std::max(local_last_, last);
+
+        if (on_write)
+        {
+            for (auto* file : p->updates_)
+            {
+                file->flush();
+                on_write(file->filename());
+            }
+        }
     }
 }
 
 bool update::has_commands() const 
 {
+    if (remote_first_ == 0 && remote_last_  == 0)
+        return true;
     return (remote_last_ != xover_last_) || (remote_first_ != xover_first_);
 }
 
-
+std::size_t update::max_num_actions() const 
+{
+    const auto remote_articles = remote_last_ - remote_first_ + 1;
+    const auto local_articles = local_last_ - local_first_ + 1;
+    const auto actions = (remote_articles - local_articles) / 1000;
+    return actions * 2;
+}
 
 } // newsflash

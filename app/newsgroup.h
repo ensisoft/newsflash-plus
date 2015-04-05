@@ -26,6 +26,12 @@
 #  include <QAbstractTableModel>
 #  include <QObject>
 #include <newsflash/warnpop.h>
+#include <newsflash/engine/filebuf.h>
+#include <newsflash/engine/filemap.h>
+#include <newsflash/engine/catalog.h>
+#include <newsflash/engine/index.h>
+#include <vector>
+#include <deque>
 
 namespace app
 {
@@ -43,12 +49,25 @@ namespace app
         virtual int rowCount(const QModelIndex&) const override;
         virtual int columnCount(const QModelIndex&) const override;
 
-        bool open(const QString& path);
+        bool load(quint32 account, QString pat, QString name);
+
+    public slots:
+        void newHeadersAvailable(const QString& file);
 
     private:
         enum class Columns {
-            BinaryFlag, NewFlag, DownloadFlag, BrokenFlag, BookmarkFlag,
+            BinaryFlag, 
+            RecentFlag, 
+            BrokenFlag,
+            DownloadFlag, 
+            BookmarkFlag,
             Age, Size,  Author,  Subject, LAST
         };
+        using filedb = newsflash::catalog<newsflash::filemap>;
+        using index  = newsflash::index;
+
+        std::vector<filedb> filedbs_;
+        std::vector<std::size_t> offsets_;
+        index index_;
     };
 } // app

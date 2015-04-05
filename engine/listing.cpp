@@ -37,18 +37,14 @@ namespace newsflash
 std::shared_ptr<cmdlist> listing::create_commands()
 {
     std::shared_ptr<cmdlist> cmd(new cmdlist(cmdlist::listing{}));
-    run_once_ = false;
+    ready_ = true;
     return cmd;
 }
 
-void listing::complete(cmdlist& cmd, 
-    std::vector<std::unique_ptr<action>>& actions)
+void listing::complete(cmdlist& cmd, std::vector<std::unique_ptr<action>>& actions)
 {
     if (cmd.is_canceled() || cmd.is_empty())
-    {
-        run_once_ = false;
         return;
-    }
 
     auto& contents = cmd.get_buffers();
     ASSERT(!contents.empty());

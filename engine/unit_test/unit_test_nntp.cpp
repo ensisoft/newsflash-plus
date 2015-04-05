@@ -245,13 +245,13 @@ void test_parse_group()
     {
         const char* str = "asgljasgajsas";
 
-        BOOST_REQUIRE(nntp::parse_group(str, std::strlen(str)).first == false);
+        BOOST_REQUIRE(nntp::parse_group_list_item(str, std::strlen(str)).first == false);
     }
 
     {
         const char* str = "alt.binaries.foo.bar 4244 13222 y";
 
-        const auto ret = nntp::parse_group(str, std::strlen(str));
+        const auto ret = nntp::parse_group_list_item(str, std::strlen(str));
         BOOST_REQUIRE(ret.first);
         BOOST_REQUIRE(ret.second.name == "alt.binaries.foo.bar");
         BOOST_REQUIRE(ret.second.last == "4244");
@@ -261,7 +261,7 @@ void test_parse_group()
 
     {
         const char* str = "    asdgasgas.foobar      1222 111 y";
-        const auto ret = nntp::parse_group(str, std::strlen(str));
+        const auto ret = nntp::parse_group_list_item(str, std::strlen(str));
         BOOST_REQUIRE(ret.first);
         BOOST_REQUIRE(ret.second.name == "asdgasgas.foobar");
         BOOST_REQUIRE(ret.second.last == "1222");
@@ -600,34 +600,34 @@ void test_to_int()
 
 }
 
-namespace test {
-    bool strcmp(const char* first, const char* second)
-    {
-        return nntp::strcmp(first, std::strlen(first),
-            second, std::strlen(second));
-    }
-}
-
 void test_strcmp()
 {
-    const char* str1 = "a subject line";
-    const char* str2 = "a subJECT line";
-    const char* str3 = "foobar keke gu";
-    const char* str4 = "Metallica - 02 - Enter sandman (1/15).mp3";
-    const char* str5 = "Metallica - 02 - Enter sandman (2/15).mp3";
-    const char* str6 = "[foobar]";
-    const char* str7 = "[doodar]";
-    const char* str8 = "some weird letters ˆˆˆ‰‰‰,,,<|^^≈≈";
-    const char* str9 = "foobar keke (01/50)";
-    const char* strA = "foobar keke (01/xy)";
+    std::string str1 = "a subject line";
+    std::string str2 = "a subJECT line";
+    std::string str3 = "foobar keke gu";
+    std::string str4 = "Metallica - 02 - Enter sandman (1/15).mp3";
+    std::string str5 = "Metallica - 02 - Enter sandman (2/15).mp3";
+    std::string str6 = "[foobar]";
+    std::string str7 = "[doodar]";
+    std::string str8 = "some weird letters ˆˆˆ‰‰‰,,,<|^^≈≈";
+    std::string str9 = "foobar keke (01/50)";
+    std::string strA = "foobar keke (01/xy)";
 
-    BOOST_REQUIRE(test::strcmp(str1, str1) == true);
-    BOOST_REQUIRE(test::strcmp(str1, str2) == false); // IGNORE CASE
-    BOOST_REQUIRE(test::strcmp(str1, str3) == false);
-    BOOST_REQUIRE(test::strcmp(str4, str4) == true);
-    BOOST_REQUIRE(test::strcmp(str4, str4) == true);    
-    BOOST_REQUIRE(test::strcmp(str6, str6) == true);
-    BOOST_REQUIRE(test::strcmp(str8, str8) == true);
+    BOOST_REQUIRE(nntp::strcmp(str1, str1) == true);
+    BOOST_REQUIRE(nntp::strcmp(str1, str2) == false); // IGNORE CASE
+    BOOST_REQUIRE(nntp::strcmp(str1, str3) == false);
+    BOOST_REQUIRE(nntp::strcmp(str4, str4) == true);
+    BOOST_REQUIRE(nntp::strcmp(str4, str4) == true);    
+    BOOST_REQUIRE(nntp::strcmp(str6, str6) == true);
+    BOOST_REQUIRE(nntp::strcmp(str8, str8) == true);
+
+    BOOST_REQUIRE(nntp::strcmp(
+        "[ TOWN ]-[ www.town.ag ]-[ partner of www.ssl-news.info ] [15/32] - \"6nf3wQL3uc.part14.rar\" - 2,56 GB yEnc (71/273)",
+        "[ TOWN ]-[ www.town.ag ]-[ partner of www.ssl-news.info ] [15/32] - \"6nf3wQL3uc.part14.rar\" - 2,56 GB yEnc (42/273)"));
+
+    BOOST_REQUIRE(nntp::strcmp(
+        "Metallica - Enter Sandman yEnc (01/10).mp3",
+        "Metallica - Enter Sandman yEnc (02/10).mp3"));
 }
 
 

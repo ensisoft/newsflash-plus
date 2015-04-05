@@ -25,13 +25,49 @@
 #  include <QtGui/QLineEdit>
 #  include <QtGui/QComboBox>
 #  include <QtGui/QHeaderView>
+#  include <QtGui/QPixmap>
+#  include <QtGui/QImage>
+#  include <QtGui/QIcon>
 #  include <QAbstractTableModel>
+#  include <QDir>
 #include <newsflash/warnpop.h>
 #include "utility.h"
 #include "settings.h"
 
 namespace app
 {
+
+QString joinPath(const QString& lhs, const QString& rhs)
+{
+    const auto p = lhs + "/" + rhs;
+    return QDir::toNativeSeparators(QDir::cleanPath(p));
+}
+
+QPixmap toGrayScale(const QPixmap& p)
+{
+    QImage img = p.toImage();
+    const int width  = img.width();
+    const int height = img.height();
+    for (int i=0; i<width; ++i)
+    {
+        for (int j=0; j<height; ++j)
+        {
+            const auto pix = img.pixel(i, j);
+            const auto val = qGray(pix);
+            img.setPixel(i, j, qRgba(val, val, val, (pix >> 24 & 0xff)));
+        }
+    }
+    return QPixmap::fromImage(img);
+}
+
+QPixmap toGrayScale(const QString& pixmap)
+{
+    QPixmap pix(pixmap);
+    if (pix.isNull())
+        return {};
+
+    return toGrayScale(pix);
+}
 
 void saveTableLayout(const QString& key, const QTableView* view, Settings& settings)
 {

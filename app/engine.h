@@ -73,6 +73,8 @@ namespace app
         // returns a task id that can be used to manage the task.
         quint32 retrieveNewsgroupListing(quint32 acc);
 
+        quint32 retrieveHeaders(quint32 acc, const QString& path, const QString& name);
+
         void loadState(Settings& s);
         void saveState(Settings& s);
 
@@ -273,9 +275,10 @@ namespace app
     signals:
         void shutdownComplete();
         void newDownloadQueued(const QString& desc);
+        void newHeadersAvailable(const QString& file);
         void fileCompleted(const app::FileInfo& file);
         void packCompleted(const app::FilePackInfo& pack);
-        void listingCompleted(quint32 account, const QList<app::NewsGroupInfo>& list);
+        void listCompleted(quint32 account, const QList<app::NewsGroupInfo>& list);
 
     private:
         virtual bool eventFilter(QObject* object, QEvent* event) override;
@@ -289,6 +292,7 @@ namespace app
         void onFileComplete(const newsflash::ui::file& f);
         void onBatchComplete(const newsflash::ui::batch& b);
         void onListComplete(const newsflash::ui::listing& l);
+        void onHeadersAvailable(const std::string& file);
 
     private:
         QString logifiles_;

@@ -32,9 +32,17 @@ class QTableView;
 class QCheckBox;
 class QLineEdit;
 class QComboBox;
+class QPixmap;
+class QIcon;
 
 namespace app
 {
+
+QString joinPath(const QString& lhs, const QString& rhs);
+
+QPixmap toGrayScale(const QPixmap& p);
+
+QPixmap toGrayScale(const QString& pixmap);
 
 class Settings;
 

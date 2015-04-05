@@ -455,16 +455,6 @@ quint32 MainWindow::chooseAccount(const QString& description)
     return acc.id;
 }
 
-// void MainWindow::update(MainWidget* widget)
-// {
-//     const auto index = ui_.mainTab->indexOf(widget);
-//     if (index == -1)
-//         return;
-
-//     ui_.mainTab->setTabText(index, widget->windowTitle());
-//     ui_.mainTab->setTabIcon(index, widget->windowIcon());
-// }
-
 void MainWindow::updateMenu(MainWidget* widget)
 {
     if (widget != current_)

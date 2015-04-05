@@ -30,7 +30,7 @@
 #  include <QFile>
 #  include <QFileInfo>
 #include <newsflash/warnpop.h>
-#include "groups.h"
+#include "newslist.h"
 #include "newsgroup.h"
 #include "mainwindow.h"
 #include "../accounts.h"
@@ -43,7 +43,7 @@
 namespace gui
 {
 
-Groups::Groups() : curAccount_(0)
+NewsList::NewsList() : curAccount_(0)
 {
     ui_.setupUi(this);
     ui_.tableGroups->setModel(&model_);
@@ -73,10 +73,10 @@ Groups::Groups() : curAccount_(0)
         this, SLOT(makeComplete(quint32)));
 }
 
-Groups::~Groups()
+NewsList::~NewsList()
 {}
 
-void Groups::addActions(QMenu& menu)
+void NewsList::addActions(QMenu& menu)
 {
     menu.addAction(ui_.actionRefresh);
     menu.addSeparator();
@@ -87,7 +87,7 @@ void Groups::addActions(QMenu& menu)
     menu.addAction(ui_.actionStop);
 }
 
-void Groups::addActions(QToolBar& bar)
+void NewsList::addActions(QToolBar& bar)
 {
     bar.addAction(ui_.actionRefresh);
     bar.addSeparator();
@@ -98,31 +98,31 @@ void Groups::addActions(QToolBar& bar)
     bar.addAction(ui_.actionStop);
 }
 
-void Groups::activate(QWidget*)
+void NewsList::activate(QWidget*)
 {
     on_cmbAccounts_currentIndexChanged();
 }
 
-MainWidget::info Groups::getInformation() const
+MainWidget::info NewsList::getInformation() const
 {
     return {"news.html", true};
 }
 
-void Groups::loadState(app::Settings& settings)
+void NewsList::loadState(app::Settings& settings)
 {
-    app::loadState("news", ui_.chkFavorites, settings);
-    app::loadTableLayout("news", ui_.tableGroups, settings);
+    app::loadState("newslist", ui_.chkFavorites, settings);
+    app::loadTableLayout("newslist", ui_.tableGroups, settings);
 
     accountsUpdated();
 }
 
-void Groups::saveState(app::Settings& settings)
+void NewsList::saveState(app::Settings& settings)
 {
-    app::saveState("news", ui_.chkFavorites, settings);
-    app::saveTableLayout("news", ui_.tableGroups, settings);
+    app::saveState("newslist", ui_.chkFavorites, settings);
+    app::saveTableLayout("newslist", ui_.tableGroups, settings);
 }
 
-void Groups::on_actionBrowse_triggered()
+void NewsList::on_actionBrowse_triggered()
 {
     const auto* account = app::g_accounts->findAccount(curAccount_);
     Q_ASSERT(account);
@@ -141,7 +141,7 @@ void Groups::on_actionBrowse_triggered()
 }
 
 
-void Groups::on_actionRefresh_triggered()
+void NewsList::on_actionRefresh_triggered()
 {
     model_.clear();
 
@@ -158,7 +158,7 @@ void Groups::on_actionRefresh_triggered()
 
 }
 
-void Groups::on_actionFavorite_triggered()
+void NewsList::on_actionFavorite_triggered()
 {
     auto indices = ui_.tableGroups->selectionModel()->selectedRows();
     if (indices.isEmpty())
@@ -169,7 +169,7 @@ void Groups::on_actionFavorite_triggered()
     model_.subscribe(indices, curAccount_);
 }
 
-void Groups::on_actionUnfavorite_triggered()
+void NewsList::on_actionUnfavorite_triggered()
 {
     auto indices = ui_.tableGroups->selectionModel()->selectedRows();
     if (indices.isEmpty())
@@ -189,7 +189,7 @@ void Groups::on_actionUnfavorite_triggered()
 }
 
 
-void Groups::on_cmbAccounts_currentIndexChanged()
+void NewsList::on_cmbAccounts_currentIndexChanged()
 {
     const auto index = ui_.cmbAccounts->currentIndex();
     if (index == -1)
@@ -230,7 +230,7 @@ void Groups::on_cmbAccounts_currentIndexChanged()
     Q_ASSERT(!"account was not found");
 }
 
-void Groups::on_tableGroups_customContextMenuRequested(QPoint point)
+void NewsList::on_tableGroups_customContextMenuRequested(QPoint point)
 {
     QMenu menu(this);
     menu.addAction(ui_.actionBrowse);
@@ -240,13 +240,13 @@ void Groups::on_tableGroups_customContextMenuRequested(QPoint point)
     menu.exec(QCursor::pos());
 }
 
-void Groups::on_chkFavorites_clicked(bool state)
+void NewsList::on_chkFavorites_clicked(bool state)
 {
     resort();
 }
 
 
-void Groups::accountsUpdated()
+void NewsList::accountsUpdated()
 {
     ui_.cmbAccounts->clear();
     ui_.cmbAccounts->blockSignals(true);
@@ -279,7 +279,7 @@ void Groups::accountsUpdated()
     ui_.actionFavorite->setEnabled(numAccounts != 0);
 }
 
-void Groups::progressUpdated(quint32 acc, quint32 maxValue, quint32 curValue)
+void NewsList::progressUpdated(quint32 acc, quint32 maxValue, quint32 curValue)
 {
     if (curAccount_ != acc)
         return;
@@ -288,7 +288,7 @@ void Groups::progressUpdated(quint32 acc, quint32 maxValue, quint32 curValue)
     ui_.progressBar->setValue(curValue);
 }
 
-void Groups::loadComplete(quint32 acc)
+void NewsList::loadComplete(quint32 acc)
 {
     DEBUG("Load complete %1", acc);
 
@@ -300,7 +300,7 @@ void Groups::loadComplete(quint32 acc)
     resort();
 }
 
-void Groups::makeComplete(quint32 accountId)
+void NewsList::makeComplete(quint32 accountId)
 {
     DEBUG("Make complete %1", accountId);
 
@@ -325,27 +325,12 @@ void Groups::makeComplete(quint32 accountId)
     Q_ASSERT(!"Account was not found");
 }
 
-void Groups::resort()
+void NewsList::resort()
 {
-    // QString filter;
-    // if (ui_.editFind->isVisible())
-    //     filter = ui_.editFind->text();
-
-    // bool favorites = ui_.chkFavorites->isChecked();
-
-    // model_.filter(filter, favorites);
-
-    // const auto numRows = model_.rowCount(QModelIndex());
-    // if (numRows == 0)
-    //     ui_.lblFind->setText(tr("No matches"));
-    // else ui_.lblFind->setText(tr("%1 matches").arg(numRows));
-
-    // ui_.actionFavorite->setEnabled(numRows != 0);
-
-    // const QHeaderView* header = ui_.tableGroups->horizontalHeader();
-    // const auto sortColumn = header->sortIndicatorSection();
-    // const auto sortOrder  = header->sortIndicatorOrder();
-    // ui_.tableGroups->sortByColumn(sortColumn, sortOrder);
+    const QHeaderView* header = ui_.tableGroups->horizontalHeader();
+    const auto sortColumn = header->sortIndicatorSection();
+    const auto sortOrder  = header->sortIndicatorOrder();
+    ui_.tableGroups->sortByColumn(sortColumn, sortOrder);
 }
 
 } // gui

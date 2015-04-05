@@ -45,17 +45,14 @@ namespace newsflash
 
         virtual void cancel() override;
         virtual void commit() override;
-
         virtual void complete(action& act,
             std::vector<std::unique_ptr<action>>& next) override;
-
         virtual void complete(cmdlist& cmd,
             std::vector<std::unique_ptr<action>>& next) override;
-
         virtual void configure(const settings& s) override;
-
-        virtual bool has_commands() const override
-        { return !articles_.empty(); }
+        virtual bool has_commands() const override;
+        //virtual bool is_ready() const override;
+        virtual std::size_t max_num_actions() const override;
 
         void add_file(std::shared_ptr<datafile> file)
         {

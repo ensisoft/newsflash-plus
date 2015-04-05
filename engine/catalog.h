@@ -24,14 +24,16 @@
 
 #include <newsflash/config.h>
 #include <algorithm>
+#include <iterator>
 #include <stdexcept>
 #include <string>
 #include <cstdint>
 #include <cassert>
 #include <cstring>
 #include <ctime>
+#include "nntp.h"
 #include "assert.h"
-#include "bitflag.h"
+#include "article.h"
 
 namespace newsflash
 {
@@ -44,16 +46,13 @@ namespace newsflash
     class catalog : public Storage
     {
     public:
-        enum class flags : std::uint8_t {
-            broken, binary, 
-            deleted,
-            downloaded,
-            bookmarked
-        };
-
         struct offset_t {
             offset_t(std::size_t off) : value(off)
             {}
+            void operator+= (std::size_t val)
+            {
+                value += val;
+            }
 
             std::size_t value;
         };
@@ -63,34 +62,71 @@ namespace newsflash
             {}
             std::size_t value;
         };
+        using size_t = std::uint32_t;
 
-        struct article {
-            bitflag<flags> bits;
-            std::uint32_t offset;            
-            std::uint64_t number;
-            std::uint32_t bytes;
-            std::time_t   pubdate;
-            std::uint8_t  partno;
-            std::uint8_t  partmax;
-            std::uint8_t  len_subject;
-            std::uint8_t  len_author;                
-            const char* ptr_subject;
-            const char* ptr_author;
+        class iterator : public 
+            std::iterator<std::input_iterator_tag, article>
+        {
+        public:
+            iterator() : offset_(0), length_(0)
+            {}
 
-            std::size_t length() const {
-                return 13 + sizeof(std::time_t) + len_subject + len_author;
+            const article& operator*() 
+            {
+                if (length_ == 0) {
+                    article_ = catalog_->lookup(offset_t{offset_});
+                    length_  = article_.length();
+                }
+                return article_;
             }
-            offset_t next() const {
-                return offset + length();
+            const article* operator->() 
+            {
+                if (length_ == 0) {
+                    article_ = catalog_->lookup(offset_t{offset_});
+                    length_  = article_.length();
+                }
+                return &article_;
             }
-            std::string subject() const {
-                return {ptr_subject, len_subject};
+            bool operator!=(const iterator& other) const 
+            {
+                return offset_ != other.offset_;
             }
-            std::string author() const {
-                return {ptr_author, len_author};
+            bool operator==(const iterator& other) const 
+            {
+                return offset_ == other.offset_;
             }
+            iterator& operator++()
+            {
+                if (length_ == 0)
+                {
+                    article_ = catalog_->lookup(offset_t{offset_});
+                    length_ = article_.length();
+                }
+                offset_ += length_;
+                length_  = 0;
+                return *this;
+            }
+            iterator operator++(int)
+            {
+                iterator i(*this);
+                ++(*this);
+                return i;
+            }
+            std::size_t offset() const 
+            { return offset_; }
+        private:
+            friend class catalog;
+            iterator(std::size_t offset, catalog* catalog) 
+               : offset_(offset), length_(0), catalog_(catalog)
+            {}
+
+        private:
+            std::size_t offset_;
+            std::size_t length_;
+            catalog* catalog_;
+            article  article_;
         };
-
+ 
         catalog()
         {
             header_.cookie        = MAGIC;
@@ -121,18 +157,30 @@ namespace newsflash
             std::copy(buff.begin(), buff.end(), (typename Storage::byte*)&header_);
 
             if (header_.cookie != MAGIC)
-                throw std::runtime_error("incorrect header");
+                throw std::runtime_error("incorrect catalog header");
             if (header_.version != VERSION)
-                throw std::runtime_error("incorrect version");
+                throw std::runtime_error("incorrect catalog version");
         }
 
-        // get article with the given key.
+        iterator begin()
+        {
+            return {0, this};
+        }
+        iterator end()
+        {
+            return {header_.offset - sizeof(header_), this};
+        }
+
+        // get article at the specific offset in the file.
+        // the first article is at offset 0. 
+        // In general article N+1 is at N.offset + N.length
         article lookup(offset_t offset)
         {
             const auto off = offset.value + sizeof(header_);
             return lookup(off);
         }
 
+        // get the article at the specific index.
         article lookup(index_t index)
         {
             ASSERT(index.value < CATALOG_SIZE);
@@ -140,8 +188,7 @@ namespace newsflash
             return lookup(off);
         }
 
-        // append an article into the catalog.
-        // returns a key that can be later used to retrieve the article by offset
+        // append an article into the catalog.      
         void append(const article& a)
         {
             const auto index = header_.article_count;
@@ -149,6 +196,7 @@ namespace newsflash
             insert(index, a);
         }
 
+        // insert article at the specified index.
         void insert(const article& a, index_t i)
         {
             ASSERT(i.value < CATALOG_SIZE);
@@ -183,45 +231,60 @@ namespace newsflash
 
     private:
         typedef typename Storage::buffer buffer;
-        typedef typename Storage::buffer::iterator iterator;
+        typedef typename Storage::buffer::iterator buffer_iterator;
 
         template<typename Value>
-        void read(iterator& it, Value& val) const 
+        void read(buffer_iterator& it, Value& val) const 
         {
             char* p = (char*)&val;
             for (std::size_t i=0; i<sizeof(val); ++i)
                 p[i] = *it++; 
         }
         template<typename Value>
-        void write(iterator& it, const Value& val) const 
+        void write(buffer_iterator& it, const Value& val) const 
         {
             const char* p = (const char*)&val;
             for (std::size_t i=0; i<sizeof(val); ++i)
                 *it++ = p[i];
         }
 
-        void read(iterator& it, bitflag<flags>& flags) const 
+        void read(buffer_iterator& it, std::string& str) const 
+        {
+            const auto len = *it++;
+            const auto ptr = (char*)&(*it);
+            it += len;
+            str = std::string(ptr, len);
+        }
+        void write(buffer_iterator& it, const std::string& str) const 
+        {
+            *it++ = str.size();
+            std::copy(std::begin(str), std::end(str), it);
+            it += str.size();
+        }
+
+
+        void read(buffer_iterator& it, bitflag<article::flags>& flags) const 
         {
             flags.set_from_value(*it++);
         }
-        void write(iterator& it, const bitflag<flags>& flags) const 
+        void write(buffer_iterator& it, const bitflag<article::flags>& flags) const 
         {
             *it++ = flags.value();
         }
-        void read(iterator& it, const char*& ptr, std::uint8_t& len) const
+        void read(buffer_iterator& it, const char*& ptr, std::uint8_t& len) const
         {
             len = *it++;
             ptr = (char*)&(*it);
             it += len;
         }
-        void write(iterator& it, const char* ptr, std::uint8_t len) const 
+        void write(buffer_iterator& it, const char* ptr, std::uint8_t len) const 
         {
             *it++ = len;
             std::copy(ptr, ptr + len, it);
             it += len;
         }
 
-        void insert(std::size_t index, const article& a)
+        void insert(std::uint32_t index, const article& a)
         {
             const auto length = a.length();
             const auto empty  = header_.table[index] == 0;            
@@ -238,14 +301,18 @@ namespace newsflash
                  number = -(header_.article_start - a.number);
             else number = (header_.article_start - a.number);
 
+            std::uint32_t magic = 0xc0febabe;
+
             write(it, a.bits);
             write(it, number);
+            write(it, index);
             write(it, a.pubdate);
             write(it, a.bytes);
             write(it, a.partno);
             write(it, a.partmax);
-            write(it, a.ptr_subject, a.len_subject);
-            write(it, a.ptr_author, a.len_author);
+            write(it, a.subject);
+            write(it, a.author);
+            write(it, magic);
             buff.flush();
 
             if (empty)
@@ -266,16 +333,20 @@ namespace newsflash
             auto it = lookup_.begin();
 
             std::int32_t number = 0;
+            std::uint32_t magic  = 0;
 
             article ret;
             read(it, ret.bits);
             read(it, number);
+            read(it, ret.index);
             read(it, ret.pubdate);
             read(it, ret.bytes);
             read(it, ret.partno);
             read(it, ret.partmax);
-            read(it, ret.ptr_subject, ret.len_subject);
-            read(it, ret.ptr_author, ret.len_author);
+            read(it, ret.subject);
+            read(it, ret.author);
+            read(it, magic);
+            ASSERT(magic == 0xc0febabe);
             ret.number = header_.article_start + number;       
             ret.offset = offset - sizeof(header_);     
             return ret;            

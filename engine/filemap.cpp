@@ -51,10 +51,10 @@ namespace newsflash
 class filemap::mapper
 {
 public:
-    mapper(const std::string& filename) : file_(NULL), mmap_(NULL)
+    mapper(const std::string& filename)
     {
         const auto str = utf8::decode(filename);
-        const auto fd  = CreateFile(
+        file_ = CreateFile(
             str.c_str(),
             GENERIC_READ | GENERIC_WRITE,
             FILE_SHARE_READ | FILE_SHARE_WRITE,
@@ -62,70 +62,100 @@ public:
             OPEN_EXISTING,
             FILE_ATTRIBUTE_NORMAL,
             NULL);
-        if (fd == INVALID_HANDLE_VALUE)
+        if (file_ == INVALID_HANDLE_VALUE)
             throw std::system_error(std::error_code(GetLastError(), std::system_category()),
                 "filemap open failed: " + filename);
 
-        const auto map = CreateFileMapping(
-            fd, 
+        mmap_ = CreateFileMapping(
+            file_, 
             NULL, // default security
             PAGE_READWRITE,
             0, // high size word
             0, // low size word  (when the mapping size is 0 the current maximum size of the file mapping equals the file size)
             NULL); 
-        if (map == NULL)
+        if (mmap_ == NULL)
         {
-            CloseHandle(fd);
+            CloseHandle(file_);
             throw std::runtime_error("file mapping failed");
         }
 
         // we're possibly mapping large amounts of data into the process's
         // address space so we'll set the inherit handle off. So any processes
         // that this process creates do not inherit the handles.
-        SetHandleInformation(fd, HANDLE_FLAG_INHERIT, 0);
-        SetHandleInformation(map, HANDLE_FLAG_INHERIT, 0);
-        file_ = fd;
-        mmap_ = map;
+        SetHandleInformation(file_, HANDLE_FLAG_INHERIT, 0);
+        SetHandleInformation(mmap_, HANDLE_FLAG_INHERIT, 0);
+
+
+        LARGE_INTEGER size;
+        if (!GetFileSizeEx(file_, &size)) {
+            CloseHandle(file_);
+            throw std::runtime_error("get file size failed");
+        }
+        size_ = size.QuadPart;        
+
+        base_ = MapViewOfFile(mmap_,
+            FILE_MAP_READ | FILE_MAP_WRITE,
+            0, 0, size_);
+        if (base_ == NULL)
+        {
+            CloseHandle(file_);
+            throw std::runtime_error("MapViewOfFile failed");
+        }
+    #ifdef NEWSFLASH_DEBUG
+        mapcount_ = 0;
+    #endif
     }
 
    ~mapper()
     {
+    #ifdef NEWSFLASH_DEBUG
+        assert(mapcount_ == 0);
+    #endif
+        ASSERT(UnmapViewOfFile(base_) == TRUE);        
         ASSERT(CloseHandle(mmap_) == TRUE);
         ASSERT(CloseHandle(file_) == TRUE);
     }    
 
     void* map(std::size_t offset, std::size_t size,  unsigned flags)
     {
-        int read_write_flags = FILE_MAP_READ;
-        if (flags & filemap::buf_write)
-            read_write_flags = FILE_MAP_WRITE;
+    #ifdef NEWSFLASH_DEBUG
+        mapcount_++;
+    #endif
+        return (char*)base_ + offset;
 
-        void* ptr = MapViewOfFile(mmap_, 
-            read_write_flags,
-            0,
-            offset,
-            size);
-        if (ptr == NULL)
-            throw std::runtime_error("map failed");
-
-        return ptr;
+        // int read_write_flags = FILE_MAP_READ;
+        // if (flags & filemap::buf_write)
+        //     read_write_flags = FILE_MAP_WRITE;
+        //        
+        // void* ptr = MapViewOfFile(mmap_, 
+        //     read_write_flags,
+        //     0,
+        //     offset,
+        //     size);
+        // if (ptr == NULL)
+        //     throw std::runtime_error("map failed");
+        // return ptr;
     }
 
     void unmap(void* base, std::size_t)
     {
-        ASSERT(UnmapViewOfFile(base) == TRUE);
+    #ifdef NEWSFLASH_DEBUG
+        mapcount_--;
+    #endif
     }
 
     std::size_t size() const 
     {
-        LARGE_INTEGER size;
-        if (!GetFileSizeEx(file_, &size))
-            throw std::runtime_error("get file size failed");
-        return size.QuadPart;
+        return size_;
     }
 private:
     HANDLE file_;
     HANDLE mmap_;    
+    void* base_;
+    std::size_t size_;
+#ifdef NEWSFLASH_DEBUG
+    std::size_t mapcount_;
+#endif NEWSFLASH_DEBUG
 };
 
 
@@ -145,51 +175,79 @@ class filemap::mapper
 public:
     mapper(const std::string& filename) : file_(0)
     {
-        int fd = ::open(filename.c_str(), O_RDWR | O_LARGEFILE);
-        if (fd == -1)
+        file_ = ::open(filename.c_str(), O_RDWR | O_LARGEFILE);
+        if (file_ == -1)
             throw std::system_error(std::error_code(errno, std::generic_category()),
                 "filemap open failed: " + filename);
-        file_ = fd;
+
+        struct stat64 st;
+        if (fstat64(file_, &st)) {
+            ::close(file_);
+            throw std::runtime_error("filestat failed");
+        }
+        size_ = st.st_size;
+        base_ = ::mmap(0, size_, PROT_READ | PROT_WRITE, MAP_SHARED, file_, 0);
+        if (base_ == MAP_FAILED) {
+            ::close(file_);
+            throw std::runtime_error("mmap failed");
+        }
+    #ifdef NEWSFLASH_DEBUG
+        mapcount_ = 0;
+    #endif
     }
 
    ~mapper()
     {
+    #ifdef NEWSFLASH_DEBUG
+        assert(mapcount_ == 0);
+    #endif
+        ASSERT(munmap(base_, size_) == 0);        
         ASSERT(close(file_) == 0);
     }
     void unmap(void* ptr, std::size_t size)
     {
-        ASSERT(munmap(ptr, size) == 0);
+    #ifdef NEWSFLASH_DEBUG
+        mapcount_--;
+    #endif
     }
     void* map(std::size_t offset, std::size_t size, unsigned flags)
     {
-        int read_write_flags = 0;
-        if (flags & filemap::buf_read)
-            read_write_flags |= PROT_READ;
-        if (flags & filemap::buf_write)
-            read_write_flags |= PROT_WRITE;
+    #ifdef NEWSFLASH_DEBUG
+        mapcount_++;
+    #endif
+        return (char*)base_ + offset;
 
-        int share_flags = MAP_SHARED;
+        // int read_write_flags = 0;
+        // if (flags & filemap::buf_read)
+        //     read_write_flags |= PROT_READ;
+        // if (flags & filemap::buf_write)
+        //     read_write_flags |= PROT_WRITE;
+        //
+        // int share_flags = MAP_SHARED;
+        //
+        // void* ptr = ::mmap(0, size, 
+        //     read_write_flags,
+        //     share_flags,
+        //     file_,
+        //     offset);
+        // if (ptr == MAP_FAILED)
+        //     throw std::runtime_error("map failed");
 
-        void* ptr = ::mmap(0, size, 
-            read_write_flags,
-            share_flags,
-            file_,
-            offset);
-        if (ptr == MAP_FAILED)
-            throw std::runtime_error("map failed");
+        // return ptr;
 
-        return ptr;
     }
     std::size_t size() const 
     {
-        struct stat64 st;
-        if (fstat64(file_, &st))
-            throw std::runtime_error("filestat failed");
-        return st.st_size;
+        return size_;
     }
 
 private:
     int file_;        
+    void* base_;    
+    std::size_t size_;
+#ifdef NEWSFLASH_DEBUG
+    std::size_t mapcount_;
+#endif
 };
 
 std::size_t get_page_size()
@@ -239,6 +297,11 @@ filemap::buffer filemap::load(std::size_t offset, std::size_t size, unsigned fla
 std::size_t filemap::size() const
 {
     return mapper_->size();
+}
+
+std::string filemap::filename() const 
+{
+    return filename_;
 }
 
 } // newsflash

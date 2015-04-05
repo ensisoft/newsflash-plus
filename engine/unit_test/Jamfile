@@ -25,6 +25,7 @@ unit-test unit_test_update             : unit_test_update.cpp ;
 unit-test unit_test_stringtable        : unit_test_stringtable.cpp ;
 unit-test unit_test_datafile           : unit_test_datafile.cpp ;
 unit-test unit_test_catalog            : unit_test_catalog.cpp ;
+unit-test unit_test_index              : unit_test_index.cpp ;
 unit-test unit_test_cmdlist            : unit_test_cmdlist.cpp ;
 unit-test unit_test_nntp               : unit_test_nntp.cpp ;
 unit-test unit_test_linebuffer         : unit_test_linebuffer.cpp ;

@@ -87,6 +87,8 @@ Engine::Engine()
         std::placeholders::_1));
     engine_->set_list_callback(std::bind(&Engine::onListComplete, this,
         std::placeholders::_1));
+    engine_->set_headers_callback(std::bind(&Engine::onHeadersAvailable, this,
+        std::placeholders::_1));
 
     // remember that the notify callback can come from any thread
     // within the engine and it has to be thread safe.
@@ -257,6 +259,33 @@ quint32 Engine::retrieveNewsgroupListing(quint32 acc)
     start();
 
     return batchId;
+}
+
+quint32 Engine::retrieveHeaders(quint32 acc, const QString& path, const QString& name)
+{
+    DEBUG("Header files for %1/%2", path, name);
+
+    QDir dir(path);
+    if (!dir.mkpath(path + "/" + name))
+    {
+        ERROR("Error creating path %1", path);
+        return 0;
+    }
+
+    newsflash::ui::update update;
+    update.account = acc;
+    update.desc = toUtf8(tr("Get headers for %1").arg(name));
+    update.path = narrow(path);
+    update.name = toUtf8(name);
+
+    const auto batchid = engine_->download_headers(update);
+
+    start();
+
+    INFO("Updating \"%1\"", name);
+    NOTE("Updating \"%1\"", name);
+
+    return batchid;
 }
 
 
@@ -486,7 +515,12 @@ void Engine::onListComplete(const newsflash::ui::listing& l)
         list.append(group);
     }
 
-    emit listingCompleted(l.account, list);
+    emit listCompleted(l.account, list);
+}
+
+void Engine::onHeadersAvailable(const std::string& file)
+{
+    emit newHeadersAvailable(widen(file));
 }
 
 Engine* g_engine;

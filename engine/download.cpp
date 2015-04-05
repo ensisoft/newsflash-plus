@@ -201,5 +201,16 @@ void download::configure(const settings& s)
     discardtext_ = s.discard_text_content;
 }
 
+bool download::has_commands() const
+{
+    return !articles_.empty(); 
+}
+
+std::size_t download::max_num_actions() const 
+{
+    // 2 actions per each article. decode and write.
+    return articles_.size() * 2;
+}
+
 } // newsflash
 

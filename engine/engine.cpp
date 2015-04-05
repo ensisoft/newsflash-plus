@@ -105,7 +105,7 @@ struct engine::state {
     std::unique_ptr<class logger> logger;
 
     std::mutex  mutex;
-    std::queue<action*> actions;
+    std::queue<std::unique_ptr<action>> actions;
     std::unique_ptr<threadpool> threads;
     std::size_t num_pending_actions;
 
@@ -121,6 +121,7 @@ struct engine::state {
     engine::on_file  on_file_callback;
     engine::on_batch on_batch_callback;
     engine::on_list  on_list_callback;
+    engine::on_headers on_headers_callback;    
     engine::on_async_notify on_notify_callback;
 
    ~state()
@@ -176,14 +177,14 @@ struct engine::state {
         num_pending_actions++;
     }
 
-    action* get_action() 
+    std::unique_ptr<action> get_action() 
     {
         std::lock_guard<std::mutex> lock(mutex);
         if (actions.empty())
             return nullptr;
-        action* act = actions.front(); actions.pop();
-        return act;
-
+        std::unique_ptr<action> act = std::move(actions.front()); 
+        actions.pop();
+        return std::move(act);
     }
 
     engine::batch& find_batch(std::size_t id);
@@ -372,11 +373,9 @@ public:
         }
     }
 
-    void on_action(engine::state& state, action* a)
+    void on_action(engine::state& state, std::unique_ptr<action> act)
     {
-        std::unique_ptr<action> act(a);
-        
-        assert(a->get_id() == ui_.id);
+        assert(act->get_id() == ui_.id);
 
         ticks_to_ping_ = 30;
         ticks_to_conn_ = 5;
@@ -528,10 +527,10 @@ private:
 
 class engine::task 
 {
-    task(std::size_t id) : num_active_cmdlists_(0), num_active_actions_(0),
-        num_actions_ready_(0), num_actions_total_(0)
+    task(std::size_t id) : num_active_cmdlists_(0), num_active_actions_(0), num_actions_ready_(0)
     {
         ui_.task_id = id;
+        ui_.size    = 0;
     }
 
 public:
@@ -560,14 +559,15 @@ public:
         LOG_D("Task: download has ", spec.articles.size(), " articles");
         LOG_D("Task: download path: '", spec.path, "'");
 
-        // todo: we know here that each article generates
-        // 2 actions (decode + write). but perhaps this information
-        // should be queried from the task instead. 
-        num_actions_total_ = spec.articles.size() * 2;
-
         task_.reset(new download(std::move(spec.groups), std::move(spec.articles), 
             std::move(spec.path), std::move(spec.name)));
 
+        // todo: we know here that each article generates
+        // 2 actions (decode + write). but perhaps this information
+        // should be queried from the task instead. 
+        //num_actions_total_ = task_->total_num_actions();
+
+        LOG_D("Task: download");
         LOG_I("Task ", ui_.task_id, " (", ui_.desc, ") created");                
     }
 
@@ -577,10 +577,24 @@ public:
 
         task_.reset(new listing);
 
-        num_actions_total_ = 1;
+        //num_actions_total_ = task_->total_num_actions();
 
         LOG_D("Task: listing");
         LOG_I("Task ", ui_.task_id, " (", ui_.desc, ") created");
+    }
+
+    task(engine::state& s, std::size_t id, const ui::update& spec) : task(id)
+    {
+        ui_.desc = spec.desc;
+
+        std::unique_ptr<newsflash::update> task(new newsflash::update(spec.path,
+            spec.name));
+        task->on_write = s.on_headers_callback;
+        task_ = std::move(task);
+
+        //num_actions_total_ = task_->total_num_actions();
+        LOG_D("Task: update");
+        LOG_I("Task ", ui_.task_id, "( ", ui_.desc, ") created");
     }
 
     task(const newsflash::data::Download& spec) : task(spec.task_id())
@@ -612,9 +626,9 @@ public:
             LOG_D("Task: Continue downloading file: '", fs::joinpath(path, name), "'");
         }
 
-        num_actions_total_ = spec.num_actions_total();
+        const auto max_actions = spec.num_actions_total();
         num_actions_ready_ = spec.num_actions_ready();
-        ui_.completion = (double)num_actions_ready_ / (double)num_actions_total_ * 100.0;
+        ui_.completion = (double)num_actions_ready_ / (double)max_actions * 100.0;
         LOG_I("Task ", ui_.task_id, "( ", ui_.desc, ") restored");
     }
 
@@ -640,7 +654,7 @@ public:
             spec->set_desc(ui_.desc);
             spec->set_size(ui_.size);
             spec->set_path(ptr->path());
-            spec->set_num_actions_total(num_actions_total_);
+            spec->set_num_actions_total(ptr->max_num_actions());
             spec->set_num_actions_ready(num_actions_ready_);
 
             const auto& grouplist = ptr->groups();
@@ -738,8 +752,7 @@ public:
 
         if (!cmds->is_good())
         {
-            if (state.fill_account && 
-                state.fill_account != cmds->account())
+            if (state.fill_account && (state.fill_account != cmds->account()))
             {
                 cmds->set_account(state.fill_account);
                 state.enqueue(*this, cmds);
@@ -761,8 +774,7 @@ public:
                 if (status == buffer::status::success)
                     continue;
 
-                if (state.fill_account && 
-                    state.fill_account != cmds->account())
+                if (state.fill_account && state.fill_account != cmds->account())
                 {
                     cmds->set_account(state.fill_account);
                     state.enqueue(*this, cmds);
@@ -850,11 +862,9 @@ public:
         }
     }
 
-    transition on_action(engine::state& state, action* a)
+    transition on_action(engine::state& state, std::unique_ptr<action> act)
     {
-        std::unique_ptr<action> act(a);
-
-        assert(a->get_id() == ui_.task_id);
+        assert(act->get_id() == ui_.task_id);
         assert(num_active_actions_ > 0);
 
         num_active_actions_--;
@@ -874,7 +884,7 @@ public:
             if (act->has_exception())
                 act->rethrow();
 
-            if (auto* dec = dynamic_cast<decode*>(a))
+            if (auto* dec = dynamic_cast<decode*>(act.get()))
             {
                 const auto err = dec->get_errors();
                 if (err.test(decode::error::crc_mismatch))
@@ -953,9 +963,10 @@ private:
         // only the task knows how many actions are to be performed per buffer.
         // i.e. we can't here reliably count 1 buffer as 1 step towards completion
         // since the completion updates only when the data is downloaded AND processed.
-        assert(num_actions_total_);
+        //assert(num_actions_total_);
+        const auto max_actions = task_->max_num_actions();
         //assert(num_actions_ready_ <= num_actions_total_);
-        ui_.completion = (double)num_actions_ready_ / (double)num_actions_total_ * 100.0;
+        ui_.completion = (double)num_actions_ready_ / (double)max_actions * 100.0;
         if (ui_.completion > 100.0)
             ui_.completion = 100.0;
 
@@ -1025,6 +1036,7 @@ private:
 
             case states::complete:
                 ASSERT(task_);
+                ASSERT(task_->has_commands() == false);                
                 ASSERT(num_active_cmdlists_ == 0);
                 ASSERT(num_active_actions_ == 0);
 
@@ -1092,7 +1104,7 @@ private:
     std::size_t num_active_cmdlists_;
     std::size_t num_active_actions_;
     std::size_t num_actions_ready_;
-    std::size_t num_actions_total_;
+    //std::size_t num_actions_total_;
 };
 
 // for msvc... 
@@ -1138,6 +1150,17 @@ public:
         LOG_D("Batch has 1 task");
 
         statesets_[(int)states::queued] = num_tasks_;        
+    }
+
+    batch(std::size_t id, const ui::update& update) : batch(id)
+    {
+        ui_.account = update.account;
+        ui_.desc    = update.desc;
+        num_tasks_  = 1;
+
+        LOG_I("Batch ", ui_.batch_id, " (", ui_.desc, ") created");
+        LOG_D("Batch has 1 tasks");
+        statesets_[(int)states::queued] = num_tasks_;
     }
 
     batch(const newsflash::data::Batch& data) : batch(0)
@@ -1453,20 +1476,22 @@ engine::engine() : state_(new state)
     state_->threads->on_complete = [&](action* a) 
     {
         std::lock_guard<std::mutex> lock(state_->mutex);
-        state_->actions.push(a);
+        state_->actions.emplace(a);
         state_->on_notify_callback();
     };
 
-    state_->oid                 = 1;
-    state_->bytes_downloaded    = 0;
-    state_->bytes_queued        = 0;
-    state_->bytes_ready         = 0;
-    state_->bytes_written       = 0;
-    state_->num_pending_actions = 0;
-    state_->prefer_secure       = true;
-    state_->started             = false;
-    state_->group_items         = false;
+    state_->oid                   = 1;
+    state_->fill_account          = 0;
+    state_->bytes_downloaded      = 0;
+    state_->bytes_queued          = 0;
+    state_->bytes_ready           = 0;
+    state_->bytes_written         = 0;
+    state_->num_pending_actions   = 0;
+    state_->prefer_secure         = true;
+    state_->started               = false;
+    state_->group_items           = false;
     state_->repartition_task_list = false;
+
 }
 
 engine::~engine()
@@ -1639,6 +1664,24 @@ engine::batch_id_t engine::download_listing(ui::listing list)
     return batchid;
 }
 
+engine::batch_id_t engine::download_headers(ui::update update)
+{
+    const auto batchid = state_->oid++;
+    std::unique_ptr<engine::batch> batch(new class engine::batch(batchid, update));
+
+    const auto taskid = state_->oid++;
+    std::unique_ptr<engine::task> task(new class engine::task(*state_, taskid, update));
+    task->set_account(update.account);
+    task->set_batch(batchid);
+
+    assert(task->is_valid());
+
+    state_->tasks.push_back(std::move(task));
+    state_->batches.push_back(std::move(batch));
+    state_->execute();
+    return batchid;
+}
+
 bool engine::pump()
 {
 // #ifdef NEWSFLASH_DEBUG
@@ -1653,15 +1696,25 @@ bool engine::pump()
 
     for (;;)
     {
-        auto* action = state_->get_action();
+        std::unique_ptr<action> action = state_->get_action();
         if (!action)
             break;
 
-        if (auto* e = dynamic_cast<class connection::execute*>(action))
+        if (auto* e = dynamic_cast<class connection::execute*>(action.get()))
         {
             auto cmds  = e->get_cmdlist();
             auto tid   = e->get_tid();
             auto bytes = e->get_bytes_transferred();
+
+            #if 1
+            std::ofstream out;
+            out.open("/tmp/nntp.txt", std::ios::binary | std::ios::app);
+            const auto& buffers = cmds->get_buffers();
+            for (const auto& buff : buffers)
+            {
+                out.write(buff.content(), buff.content_length());
+            }
+            #endif
 
             state_->cmds.erase(std::find(std::begin(state_->cmds), std::end(state_->cmds), cmds));
 
@@ -1682,7 +1735,7 @@ bool engine::pump()
 
             state_->bytes_downloaded += bytes;
         }
-        else if (auto* w = dynamic_cast<class datafile::write*>(action))
+        else if (auto* w = dynamic_cast<class datafile::write*>(action.get()))
         {
             auto bytes = w->get_write_size();
             if (!w->has_exception())
@@ -1697,7 +1750,7 @@ bool engine::pump()
         if (it != std::end(state_->conns))
         {
             auto& conn = *it;
-            conn->on_action(*state_, action);
+            conn->on_action(*state_, std::move(action));
             if (conn->is_ready())
             {
                 auto it = std::find_if(std::begin(state_->cmds), std::end(state_->cmds),
@@ -1746,7 +1799,7 @@ bool engine::pump()
                 if (task->tid() != id)
                     continue;
 
-                const auto transition = task->on_action(*state_, action);
+                const auto transition = task->on_action(*state_, std::move(action));
                 if (transition)
                 {
                     auto& batch = state_->find_batch(task->bid());
@@ -1960,6 +2013,11 @@ void engine::set_file_callback(on_file file_callback)
 void engine::set_notify_callback(on_async_notify notify_callback)
 {
     state_->on_notify_callback = std::move(notify_callback);
+}
+
+void engine::set_headers_callback(on_headers callback)
+{
+    state_->on_headers_callback = std::move(callback);
 }
 
 void engine::set_batch_callback(on_batch batch_callback)
