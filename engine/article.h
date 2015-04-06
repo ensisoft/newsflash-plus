@@ -77,7 +77,7 @@ namespace newsflash
         std::string author;
 
         std::size_t length() const {
-           return 21 + sizeof(std::time_t) + subject.size() + author.size();
+           return 23 + sizeof(std::time_t) + subject.size() + author.size();
         }
         std::uint32_t next() const {
            return offset + length();

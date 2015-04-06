@@ -43,17 +43,16 @@ namespace gui
 NewsGroup::NewsGroup(quint32 acc, QString path, QString name) 
     : account_(acc), path_(path), name_(name)
 {
-    //using Cols = app::NewsGroup::Columns;
+    using Cols = app::NewsGroup::Columns;
 
     ui_.setupUi(this);
     ui_.tableView->setModel(&model_);
     ui_.grpView->setTitle(name);
-    // ui_.tableView->setColumnWidth((int)Cols::BinaryFlag, 32);
-    // ui_.tableView->setColumnWidth((int)Cols::NewFlag, 32);
-    // ui_.tableView->setColumnWidth((int)Cols::DownloadFlag, 32);
-    // ui_.tableView->setColumnWidth((int)Cols::BrokenFlag, 32);
-    // ui_.tableView->setColumnWidth((int)Cols::BookmarkFlag, 32);
-
+    ui_.tableView->setColumnWidth((int)Cols::BinaryFlag, 32);
+    ui_.tableView->setColumnWidth((int)Cols::RecentFlag, 32);
+    ui_.tableView->setColumnWidth((int)Cols::DownloadFlag, 32);
+    ui_.tableView->setColumnWidth((int)Cols::BrokenFlag, 32);
+    ui_.tableView->setColumnWidth((int)Cols::BookmarkFlag, 32);
     ui_.progressBar->setVisible(false);
 }
 

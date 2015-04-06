@@ -29,6 +29,7 @@
 #include "../filesys.h"
 #include "../filemap.h"
 #include "../catalog.h"
+#include "../index.h"
 #include "unit_test_common.h"
 
 void unit_test_ranges()
@@ -147,6 +148,7 @@ void unit_test_data()
 
     fs::createpath("alt.binaries.test");
     delete_file("alt.binaries.test/vol0.dat");
+    delete_file("alt.binaries.test/alt.binaries.test.nfo");    
 
     {
 
@@ -270,10 +272,109 @@ void unit_test_data()
     }
 }
 
+void unit_test_index()
+{
+    std::vector<std::unique_ptr<newsflash::action>> actions;
+
+    fs::createpath("alt.binaries.test");
+    delete_file("alt.binaries.test/vol33653.dat");
+    delete_file("alt.binaries.test/vol33654.dat");
+    delete_file("alt.binaries.test.nfo");
+
+    // create data
+    {
+        newsflash::update u("", "alt.binaries.test");
+
+        auto cmd = u.create_commands();
+        newsflash::buffer buff(1024);
+        buff.append("211 10 1 5 alt.binaries.test group selected\r\n");
+        buff.set_content_type(newsflash::buffer::type::groupinfo);
+        buff.set_content_start(0),
+        buff.set_content_length(std::strlen("211 10 1 5 alt.binaries.test group selected\r\n"));
+        cmd->receive_data_buffer(buff);
+
+        u.complete(*cmd, actions);
+
+        cmd = u.create_commands();
+
+        auto data = read_file_buffer("test_data/xover.nntp.txt");
+        data.set_content_type(newsflash::buffer::type::overview);
+        cmd->receive_data_buffer(data);
+
+        u.complete(*cmd, actions);
+
+        auto a = std::move(actions[0]);
+        a->perform();
+        BOOST_REQUIRE(!a->has_exception());
+        actions.clear();
+
+        u.complete(*a, actions);
+
+        a = std::move(actions[0]);
+        a->perform();
+        BOOST_REQUIRE(!a->has_exception());
+        actions.clear();
+        u.complete(*a, actions);
+        u.commit();
+    }
+
+    // load the data
+    {
+        using filedb = newsflash::catalog<newsflash::filemap>;
+
+        filedb dbs[2];
+        dbs[0].open("alt.binaries.test/vol33654.dat");
+        dbs[1].open("alt.binaries.test/vol33653.dat");
+
+        newsflash::index index;
+        index.on_load = [&](std::size_t key, std::size_t idx) {
+            return dbs[key].lookup(filedb::index_t{idx});
+        };
+
+        {
+            auto& db = dbs[0];
+            auto beg = db.begin();
+            auto end = db.end();
+            for (; beg != end; ++beg)
+            {
+                const auto& article = *beg;
+                index.insert(article, 0, article.index);
+            }
+        }
+
+        {
+            auto& db = dbs[1];
+            auto beg = db.begin();
+            auto end = db.end();
+            for (; beg != end; ++beg)
+            {
+                const auto& article = *beg;
+                index.insert(article, 1, article.index);
+            }
+        }
+
+        {
+            index.sort(newsflash::index::sorting::sort_by_subject,
+                newsflash::index::order::ascending);
+
+            for (std::size_t i=0; i<index.size(); ++i)
+            {
+                const auto& a = index[i];
+                std::cout << a.subject << std::endl;
+            }
+        }
+    }
+
+    //delete_file("alt.binaries.test/vol33653.dat");
+    //delete_file("alt.binaries.test/vol33654.dat");    
+    //delete_file("alt.binaries.test.nfo");    
+}
+
 int test_main(int, char* [])
 {
     unit_test_ranges();
     unit_test_data();
+    unit_test_index();
 
     return 0;
 }

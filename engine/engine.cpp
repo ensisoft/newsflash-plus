@@ -743,7 +743,8 @@ public:
     {
         assert(num_active_cmdlists_ > 0);
         assert(cmds->task() == ui_.task_id);
-        assert(cmds->account() == ui_.account);
+        // could be fill account... 
+        //assert(cmds->account() == ui_.account);
 
         num_active_cmdlists_--;
 
@@ -1707,13 +1708,14 @@ bool engine::pump()
             auto bytes = e->get_bytes_transferred();
 
             #if 1
-            std::ofstream out;
-            out.open("/tmp/nntp.txt", std::ios::binary | std::ios::app);
-            const auto& buffers = cmds->get_buffers();
-            for (const auto& buff : buffers)
-            {
-                out.write(buff.content(), buff.content_length());
-            }
+                std::ofstream out;
+                out.open("/tmp/nntp.txt", std::ios::binary | std::ios::app);
+                const auto& buffers = cmds->get_buffers();
+                for (const auto& buff : buffers)
+                {
+                    out.write(buff.content(), buff.content_length());
+                }
+                out.flush();
             #endif
 
             state_->cmds.erase(std::find(std::begin(state_->cmds), std::end(state_->cmds), cmds));

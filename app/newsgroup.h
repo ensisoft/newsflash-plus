@@ -40,6 +40,15 @@ namespace app
         Q_OBJECT
 
     public:
+        enum class Columns {
+            BinaryFlag, 
+            RecentFlag, 
+            BrokenFlag,
+            DownloadFlag, 
+            BookmarkFlag,
+            Age, Size,  Author,  Subject, LAST
+        };
+        
         NewsGroup();
        ~NewsGroup();
 
@@ -55,14 +64,7 @@ namespace app
         void newHeadersAvailable(const QString& file);
 
     private:
-        enum class Columns {
-            BinaryFlag, 
-            RecentFlag, 
-            BrokenFlag,
-            DownloadFlag, 
-            BookmarkFlag,
-            Age, Size,  Author,  Subject, LAST
-        };
+
         using filedb = newsflash::catalog<newsflash::filemap>;
         using index  = newsflash::index;
 

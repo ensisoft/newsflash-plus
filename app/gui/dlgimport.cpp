@@ -63,15 +63,16 @@ DlgImport::DlgImport(QWidget* parent, std::vector<app::Newznab::Account>& accs) 
     // begin importing the list from our host.
     query_ = app::Newznab::importList(std::move(callback));
 
-    app::Newznab::Account acc;
-    acc.apiurl = "https://www.nzbsooti.sx/api";
-    acc.email  = "ensiferum_@hotmail.com";    
-    accs_.push_back(acc);
+    // testing stuff here.
+    // app::Newznab::Account acc;
+    // acc.apiurl = "https://www.nzbsooti.sx/api";
+    // acc.email  = "ensiferum_@hotmail.com";    
+    // accs_.push_back(acc);
 
-    QListWidgetItem* item = new QListWidgetItem();
-    item->setText(acc.apiurl);
-    item->setIcon(QIcon("icons:ico_bullet_grey.png"));
-    ui_.listWidget->addItem(item);
+    // QListWidgetItem* item = new QListWidgetItem();
+    // item->setText(acc.apiurl);
+    // item->setIcon(QIcon("icons:ico_bullet_grey.png"));
+    // ui_.listWidget->addItem(item);
 }
 
 DlgImport::~DlgImport()

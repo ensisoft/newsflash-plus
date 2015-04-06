@@ -194,7 +194,7 @@ public:
                 }
             }
             if (slot == CATALOG_SIZE)
-                throw std::runtime_error("unresolved hash collision");
+                throw std::runtime_error("hashmap overflow collision");
 
             updates_.insert(db.get());
         }
@@ -233,11 +233,19 @@ update::update(std::string path, std::string group) : local_last_(0), local_firs
         std::getline(in, last);
         local_first_ = std::stoull(first);
         local_last_  = std::stoull(last);
+        xover_last_  = local_last_;
+        xover_first_ = local_first_;
+    }
+    else
+    {
+        local_last_  = 0;
+        local_first_ = std::numeric_limits<decltype(local_first_)>::max();
+        xover_first_ = 0;
+        xover_last_  = 0;
     }
     remote_first_ = 0;
     remote_last_  = 0;
-    xover_last_   = local_last_;
-    xover_first_  = local_first_;
+
 }
 
 update::~update()

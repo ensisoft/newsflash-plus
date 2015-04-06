@@ -69,12 +69,14 @@ void SearchSettings::on_btnImport_clicked()
     DlgImport dlg(this, accounts);
     dlg.exec();
 
-    std::copy(std::begin(accounts), std::end(accounts),
-        std::back_inserter(newznab_));
-
     ui_.listServers->blockSignals(true);
     for (const auto& acc : accounts)
     {
+        if (acc.apikey.isEmpty())
+            continue;
+        
+        newznab_.push_back(acc);
+
         auto* item = new QListWidgetItem();
         item->setIcon(QIcon("icons:ico_accounts.png"));
         item->setText(acc.apiurl);

@@ -250,14 +250,18 @@ namespace newsflash
 
         void read(buffer_iterator& it, std::string& str) const 
         {
-            const auto len = *it++;
+            //const auto len = *it++;
+            std::uint16_t len;
+            read(it, len);
             const auto ptr = (char*)&(*it);
             it += len;
             str = std::string(ptr, len);
         }
         void write(buffer_iterator& it, const std::string& str) const 
         {
-            *it++ = str.size();
+            const std::uint16_t len = str.size();
+            //*it++ = str.size();
+            write(it, len);
             std::copy(std::begin(str), std::end(str), it);
             it += str.size();
         }
@@ -271,24 +275,19 @@ namespace newsflash
         {
             *it++ = flags.value();
         }
-        void read(buffer_iterator& it, const char*& ptr, std::uint8_t& len) const
-        {
-            len = *it++;
-            ptr = (char*)&(*it);
-            it += len;
-        }
-        void write(buffer_iterator& it, const char* ptr, std::uint8_t len) const 
-        {
-            *it++ = len;
-            std::copy(ptr, ptr + len, it);
-            it += len;
-        }
 
         void insert(std::uint32_t index, const article& a)
         {
             const auto length = a.length();
             const auto empty  = header_.table[index] == 0;            
             const auto offset = empty ? header_.offset : header_.table[index];
+
+        #ifdef NEWSFLASH_DEBUG
+            if (!empty) {
+                const auto& current = lookup(offset);
+                assert(current.length() == a.length());
+            }
+        #endif
 
             auto buff = Storage::load(offset, length, Storage::buf_write);
             auto it = buff.begin();
