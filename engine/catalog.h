@@ -162,6 +162,11 @@ namespace newsflash
                 throw std::runtime_error("incorrect catalog version");
         }
 
+        iterator begin(offset_t offset) 
+        {
+            return {offset.value, this};
+        }
+
         iterator begin()
         {
             return {0, this};

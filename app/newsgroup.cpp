@@ -139,7 +139,37 @@ QVariant NewsGroup::data(const QModelIndex& index, int role) const
         }
     }
     if (role == Qt::DecorationRole)
-    {}
+    {
+        using f = newsflash::article::flags;
+        switch (col)
+        {
+            case Columns::BinaryFlag:
+                if (item.bits.test(f::binary)) 
+                    return QIcon("icons:ico_flag_binary.png");
+                else return QIcon("icons:ico_flag_text.png");
+            case Columns::RecentFlag:
+                break; // todo:
+
+            case Columns::BrokenFlag:
+                if (item.bits.test(f::broken))
+                    return QIcon("icons:ico_flag_broken.png");
+
+            case Columns::DownloadFlag:
+                if (item.bits.test(f::downloaded))
+                    return QIcon("icons:ico_flag_downloaded.png");
+
+            case Columns::BookmarkFlag:
+                if (item.bits.test(f::bookmarked))
+                    return QIcon("icons:ico_flag_bookmark.png");
+
+            case Columns::Age:
+            case Columns::Size:
+            case Columns::Author:
+            case Columns::Subject:
+                break;
+            case Columns::LAST: Q_ASSERT(0);
+        }
+    }
     return {};
 }
 
@@ -179,6 +209,8 @@ bool NewsGroup::load(quint32 account, QString path, QString name)
 
 void NewsGroup::newHeadersAvailable(const QString& file)
 {
+    DEBUG("New headers available in %1", file);
+
     const auto& n = narrow(file);
 
     if (!index_.on_load)
@@ -210,22 +242,31 @@ void NewsGroup::newHeadersAvailable(const QString& file)
         offset = offsets_[dist];
     }
 
+    DEBUG("%1 is at offset %2", file, offset);    
+    DEBUG("Index has %1 articles. Loading more...", index_.size());
+
     filedb& db = *it;
     db.open(n);
 
     // load all the articles, starting at the latest offset that we know off.
-    auto beg = db.begin();
+    auto beg = db.begin(offset);
     auto end = db.end();
     for (; beg != end; ++beg)
     {
         const auto& article = *beg;
         index_.insert(article, index, article.index);
     }
+
+    DEBUG("Load done. Index now has %1 articles", index_.size());
+
     // save the database and the current offset
     // when new data is added to the same database
     // we reload the db and then use the current latest
     // index to start loading the objects.
-    offsets_[index] = beg.offset();
+    offset = beg.offset();
+    offsets_[index] = offset;
+
+    DEBUG("%1 is at new offst %2", file, offset);
 
     QAbstractTableModel::reset();    
 }

@@ -183,9 +183,8 @@ void NewsList::on_actionUnfavorite_triggered()
     msg.setText(tr("Would you like to remove the local database?"));
 
     model_.unsubscribe(indices, curAccount_);
-
     if (ui_.chkFavorites->isChecked())
-        resort();
+        model_.filter(true);
 }
 
 
@@ -242,7 +241,7 @@ void NewsList::on_tableGroups_customContextMenuRequested(QPoint point)
 
 void NewsList::on_chkFavorites_clicked(bool state)
 {
-    resort();
+    model_.filter(state);
 }
 
 

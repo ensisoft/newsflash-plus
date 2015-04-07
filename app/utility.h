@@ -118,4 +118,12 @@ void sort(Container& container, Qt::SortOrder order, MemPtr p)
     else std::sort(std::begin(container), std::end(container), greater(p));
 }
 
+template<typename Iterator, typename MemPtr>
+void sort(Iterator beg, Iterator end, Qt::SortOrder order, MemPtr p)
+{
+    if (order == Qt::AscendingOrder)
+        std::sort(beg, end, less(p));
+    else std::sort(beg, end, greater(p));
+}
+
 } // app

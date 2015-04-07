@@ -22,6 +22,7 @@
 
     <!-- data flag icons -->
     <file>resource/16x16_ico_png/ico_flag_binary.png</file>
+    <file>resource/16x16_ico_png/ico_flag_text.png</file>
     <file>resource/16x16_ico_png/ico_flag_new.png</file>    
     <file>resource/16x16_ico_png/ico_flag_download.png</file>
     <file>resource/16x16_ico_png/ico_flag_broken.png</file>

@@ -198,6 +198,8 @@ public:
 
             updates_.insert(db.get());
         }
+        for (auto* db : updates_)
+            db->flush();
     }
 private:
     friend class update;
@@ -407,9 +409,10 @@ void update::complete(action& a, std::vector<std::unique_ptr<action>>& next)
 
         if (on_write)
         {
+            // remember that db might be accessed at the same time through
+            // another thread via another store task
             for (auto* file : p->updates_)
             {
-                file->flush();
                 on_write(file->filename());
             }
         }

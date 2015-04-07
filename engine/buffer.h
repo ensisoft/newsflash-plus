@@ -1,4 +1,3 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
 //
 // http://www.ensisoft.com
 // 

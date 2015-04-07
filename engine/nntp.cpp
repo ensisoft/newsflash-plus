@@ -77,14 +77,22 @@ namespace {
 
     bool strip_leading_crap(overview_parser& parser)
     {
-        const unsigned char* start = static_cast<const unsigned char*>((void*)&parser.str[parser.pos]);
-        while (*start < 0x22 && *start != '\t')
+        for (; parser.pos < parser.len; ++parser.pos)
         {
-            if (++parser.pos == parser.len)
-                return false;
-            ++start;        
+            const auto c = (unsigned)parser.str[parser.pos];
+            if (c >= 0x22 || c == '\t')
+                return true;
         }
-        return true;
+        return false;
+
+        //const unsigned char* start = static_cast<const unsigned char*>((void*)&parser.str[parser.pos]);
+        // while (*start < 0x22 && *start != '\t')
+        // {
+        //     if (++parser.pos == parser.len)
+        //         return false;
+        //     ++start;        
+        // }
+        // return true;
     }
 
     // http://www.fileinfo.com/common.php
@@ -408,6 +416,7 @@ std::pair<bool, overview> parse_overview(const char* str, size_t len)
 
     bool ret = true;
     ret = ret & parse_overview_field(parser, ov.number);
+
 
     strip_leading_crap(parser);
 

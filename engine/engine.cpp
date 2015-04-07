@@ -1008,7 +1008,7 @@ private:
         //LOG_D("Task ", ui_.task_id, " has ", num_active_actions_, " active actions");
         //state.logger->flush();
 
-        state.submit(a.release());        
+        state.submit(a.release());
     }
 
     transition goto_state(engine::state& state, states new_state)
@@ -1707,7 +1707,7 @@ bool engine::pump()
             auto tid   = e->get_tid();
             auto bytes = e->get_bytes_transferred();
 
-            #if 1
+            #if 0
                 std::ofstream out;
                 out.open("/tmp/nntp.txt", std::ios::binary | std::ios::app);
                 const auto& buffers = cmds->get_buffers();

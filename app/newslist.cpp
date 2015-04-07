@@ -126,6 +126,7 @@ void NewsList::sort(int column, Qt::SortOrder order)
 {
     emit layoutAboutToBeChanged();
     
+
     switch ((Columns)column)
     {
         case Columns::messages:   app::sort(groups_, order, &group::size); break;
@@ -269,45 +270,21 @@ void NewsList::unsubscribe(QModelIndexList& list, quint32 accountId)
     setAccountSubscriptions(accountId);    
 }
 
-void NewsList::filter(const QString& str, bool subscribed)
+void NewsList::filter(bool subscribed)
 {
     const auto oldSize = size_;
 
-    if (str.isEmpty())
+    if (subscribed)
     {
-        if (subscribed)
-        {
-            auto end = std::stable_partition(std::begin(groups_), std::end(groups_),
-                [=](const group& g) {
-                    return g.flags & Flags::Subscribed;
-                });
-            size_ = std::distance(std::begin(groups_), end);
-        }
-        else
-        {
-            size_ = groups_.size();
-        }
+        auto end = std::stable_partition(std::begin(groups_), std::end(groups_),
+            [=](const group& g) {
+                return g.flags & Flags::Subscribed;
+            });
+        size_ = std::distance(std::begin(groups_), end);
     }
     else
     {
-        if (subscribed)
-        {
-            auto end = std::stable_partition(std::begin(groups_), std::end(groups_),
-                [=](const group& g) {
-                    if (!(g.flags & Flags::Subscribed))
-                        return false;
-                    return g.name.indexOf(str) != -1;
-                });
-            size_ = std::distance(std::begin(groups_), end);
-        }
-        else
-        {
-            auto end = std::stable_partition(std::begin(groups_), std::end(groups_),
-                [=](const group& g) {
-                    return g.name.indexOf(str) != -1;
-                });
-            size_ = std::distance(std::begin(groups_), end);
-        }
+        size_ = groups_.size();
     }
 
     if (oldSize != size_)

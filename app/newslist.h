@@ -62,7 +62,7 @@ namespace app
         void subscribe(QModelIndexList& list, quint32 account);
         void unsubscribe(QModelIndexList& list, quint32 account);
 
-        void filter(const QString& str, bool subscribed);
+        void filter(bool subscribed);
 
         QString getName(const QModelIndex& index) const;
 
