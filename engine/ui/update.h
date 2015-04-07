@@ -41,6 +41,10 @@ namespace newsflash
 
         // human readable descripton for the task list.
         std::string desc;
+
+        std::uint64_t num_local_articles;
+
+        std::uint64_t num_remote_articles;
     };
 
     } // ui

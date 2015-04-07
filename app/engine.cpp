@@ -85,10 +85,14 @@ Engine::Engine()
          std::placeholders::_1));
     engine_->set_batch_callback(std::bind(&Engine::onBatchComplete, this,
         std::placeholders::_1));
+    engine_->set_update_callback(std::bind(&Engine::onUpdateComplete, this,
+        std::placeholders::_1));
     engine_->set_list_callback(std::bind(&Engine::onListComplete, this,
         std::placeholders::_1));
-    engine_->set_headers_callback(std::bind(&Engine::onHeadersAvailable, this,
+    engine_->set_header_data_callback(std::bind(&Engine::onHeaderDataAvailable, this,
         std::placeholders::_1));
+    engine_->set_header_info_callback(std::bind(&Engine::onHeaderInfoAvailable, this,
+        std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 
     // remember that the notify callback can come from any thread
     // within the engine and it has to be thread safe.
@@ -518,9 +522,31 @@ void Engine::onListComplete(const newsflash::ui::listing& l)
     emit listCompleted(l.account, list);
 }
 
-void Engine::onHeadersAvailable(const std::string& file)
+void Engine::onUpdateComplete(const newsflash::ui::update& u)
 {
-    emit newHeadersAvailable(widen(file));
+    HeaderInfo info;
+    info.groupName = fromUtf8(u.name);
+    info.groupPath = fromUtf8(u.path);
+    info.numLocalArticles = u.num_local_articles;
+    info.numRemoteArticles = u.num_remote_articles;
+    DEBUG("%1 Update complete at %2", info.groupName, info.groupPath);
+
+    INFO("%1 updated with %2 articles of %3 available", info.groupName, 
+        info.numLocalArticles, info.numRemoteArticles);
+    NOTE("Updated %1", info.groupName);
+
+    emit updateCompleted(info);
+}
+
+void Engine::onHeaderDataAvailable(const std::string& file)
+{
+    emit newHeaderDataAvailable(widen(file));
+}
+
+void Engine::onHeaderInfoAvailable(const std::string& group,
+    std::uint64_t numLocal, std::uint64_t numRemote)
+{
+    emit newHeaderInfoAvailable(fromUtf8(group), numLocal, numRemote);
 }
 
 Engine* g_engine;

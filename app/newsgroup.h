@@ -35,6 +35,8 @@
 
 namespace app
 {
+    struct HeaderInfo;
+
     class NewsGroup : public QAbstractTableModel
     {
         Q_OBJECT
@@ -48,7 +50,7 @@ namespace app
             BookmarkFlag,
             Age, Size,  Author,  Subject, LAST
         };
-        
+
         NewsGroup();
        ~NewsGroup();
 
@@ -58,18 +60,28 @@ namespace app
         virtual int rowCount(const QModelIndex&) const override;
         virtual int columnCount(const QModelIndex&) const override;
 
-        bool load(quint32 account, QString pat, QString name);
+        bool load(quint32 blockIndex, QString path, QString name);
+        void refresh(quint32 account, QString path, QString name);
+        void stop();
+
+        std::size_t numItems() const;
 
     public slots:
-        void newHeadersAvailable(const QString& file);
+        void newHeaderDataAvailable(const QString& file);
+        void newHeaderInfoAvailable(const QString& group, quint64 numLocal, quint64 numRemote);
+        void updateCompleted(const app::HeaderInfo& info);
 
     private:
-
         using filedb = newsflash::catalog<newsflash::filemap>;
         using index  = newsflash::index;
-
         std::vector<filedb> filedbs_;
         std::vector<std::size_t> offsets_;
         index index_;
+
+    private:
+        quint32 task_;        
+        QString path_;
+        QString name_;
+
     };
 } // app

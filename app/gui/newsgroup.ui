@@ -33,6 +33,13 @@
       <property name="bottomMargin">
        <number>5</number>
       </property>
+      <item row="2" column="0">
+       <widget class="QPushButton" name="btnLoadMore">
+        <property name="text">
+         <string>Load older headers ...</string>
+        </property>
+       </widget>
+      </item>
       <item row="0" column="0">
        <widget class="QTableView" name="tableView">
         <property name="contextMenuPolicy">
@@ -82,14 +89,20 @@
         </attribute>
        </widget>
       </item>
+      <item row="1" column="0">
+       <widget class="QProgressBar" name="progressBar">
+        <property name="maximum">
+         <number>99</number>
+        </property>
+        <property name="value">
+         <number>24</number>
+        </property>
+        <property name="textVisible">
+         <bool>false</bool>
+        </property>
+       </widget>
+      </item>
      </layout>
-    </widget>
-   </item>
-   <item row="1" column="0">
-    <widget class="QProgressBar" name="progressBar">
-     <property name="value">
-      <number>24</number>
-     </property>
     </widget>
    </item>
   </layout>
@@ -112,6 +125,15 @@
    </property>
    <property name="text">
     <string>Filter</string>
+   </property>
+  </action>
+  <action name="actionStop">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_stop.png</normaloff>:/resource/16x16_ico_png/ico_stop.png</iconset>
+   </property>
+   <property name="text">
+    <string>Stop</string>
    </property>
   </action>
  </widget>

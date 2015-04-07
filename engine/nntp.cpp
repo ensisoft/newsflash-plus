@@ -358,6 +358,8 @@ std::time_t timevalue(const nntp::date& date)
 {
     enum { USE_SYSTEM_DAYLIGHT_SAVING_INFO = -1 };
 
+    if (date.year == 0) return 0;
+
     time_t ret  = 0;
     struct tm t = {};
     t.tm_sec    = date.seconds;
@@ -465,7 +467,7 @@ std::pair<bool, group> parse_group(const char* str, size_t len)
 
 std::pair<bool, date> parse_date(const char* str, size_t len)
 {
-    nntp::date date {0};
+    nntp::date date {};
 
     using namespace boost::spirit::classic;
 

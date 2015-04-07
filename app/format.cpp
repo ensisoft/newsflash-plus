@@ -249,10 +249,12 @@ QString toString(const app::runtime& rt)
     const auto secs  = (rt.value - hours * 3600 - mins * 60);
 
     if (hours)
+    {
         return QString("%1:%2:%3")
           .arg(hours, 2, 10, QChar('0'))
           .arg(mins, 2, 10, QChar('0'))
           .arg(secs, 2, 10, QChar('0'));
+    }
 
     return QString("%1:%2")
         .arg(mins, 2, 10, QChar('0'))
@@ -270,7 +272,10 @@ QString toString(const app::etatime& eta)
         return QString("%1 min").arg(eta.value / MINUTE);
 
     const auto hour = eta.value / HOUR;
-    const auto min  = eta.value % MINUTE;
+    const auto min  = eta.value % MINUTE;    
+    if (hour >= 24)
+        return QString("%1 days").arg(hour / 24);
+
     return QString("%1 hour %2 min").arg(hour).arg(min);
 }
 

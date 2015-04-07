@@ -35,6 +35,8 @@ namespace newsflash
     {
     public:
         std::function<void(std::string)> on_write;
+        std::function<void(const std::string& group,
+            std::uint64_t local, std::uint64_t remote)> on_info;
 
         update(std::string path, std::string group);
        ~update();
@@ -53,6 +55,14 @@ namespace newsflash
         virtual bool has_commands() const override;
 
         virtual std::size_t max_num_actions() const override;
+
+        std::string group() const;
+
+        std::string path() const;
+
+        std::uint64_t num_local_articles() const;
+
+        std::uint64_t num_remote_articles() const;
     private:
         class parse;
         class store;

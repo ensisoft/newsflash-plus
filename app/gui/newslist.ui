@@ -17,7 +17,7 @@
    <iconset resource="resource.qrc">
     <normaloff>:/resource/16x16_ico_png/ico_news.png</normaloff>:/resource/16x16_ico_png/ico_news.png</iconset>
   </property>
-  <layout class="QHBoxLayout" name="horizontalLayout">
+  <layout class="QVBoxLayout" name="verticalLayout_2">
    <item>
     <widget class="QGroupBox" name="groupBox">
      <property name="title">
@@ -33,13 +33,6 @@
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QCheckBox" name="chkFavorites">
-          <property name="text">
-           <string>Show favorites only</string>
           </property>
          </widget>
         </item>
@@ -136,7 +129,7 @@
   <action name="actionFavorite">
    <property name="icon">
     <iconset resource="resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_star.png</normaloff>:/resource/16x16_ico_png/ico_star.png</iconset>
+     <normaloff>:/resource/16x16_ico_png/ico_favourite.png</normaloff>:/resource/16x16_ico_png/ico_favourite.png</iconset>
    </property>
    <property name="text">
     <string>Favorite</string>
@@ -168,8 +161,8 @@
   </action>
   <action name="actionUnfavorite">
    <property name="icon">
-    <iconset>
-     <normaloff>:/resource/16x16_ico_png/ico_star_gray.png</normaloff>:/resource/16x16_ico_png/ico_star_gray.png</iconset>
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_unfavourite.png</normaloff>:/resource/16x16_ico_png/ico_unfavourite.png</iconset>
    </property>
    <property name="text">
     <string>Unfavorite</string>

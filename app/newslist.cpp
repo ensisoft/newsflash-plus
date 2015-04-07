@@ -47,7 +47,7 @@ namespace app
 
 const int CurrentFileVersion = 1;
 
-NewsList::NewsList() : size_(0)
+NewsList::NewsList()
 {
     DEBUG("NewsList created");
 
@@ -78,7 +78,7 @@ QVariant NewsList::headerData(int section, Qt::Orientation orietantation, int ro
     }
     else if (role == Qt::DecorationRole)
     {
-        static const QIcon gray(toGrayScale(QPixmap("icons:ico_star.png")));
+        static const QIcon gray(toGrayScale(QPixmap("icons:ico_favourite.png")));
 
         if ((Columns)section == Columns::subscribed)
             return gray;
@@ -111,7 +111,7 @@ QVariant NewsList::data(const QModelIndex& index, int role) const
                 return QIcon("icons:ico_news.png");
             case Columns::subscribed:
                 if (group.flags & Flags::Subscribed)
-                    return QIcon("icons:ico_star.png");
+                    return QIcon("icons:ico_favourite.png");
                 break;
 
             case Columns::name: break;
@@ -125,7 +125,6 @@ QVariant NewsList::data(const QModelIndex& index, int role) const
 void NewsList::sort(int column, Qt::SortOrder order) 
 {
     emit layoutAboutToBeChanged();
-    
 
     switch ((Columns)column)
     {
@@ -140,7 +139,7 @@ void NewsList::sort(int column, Qt::SortOrder order)
 
 int NewsList::rowCount(const QModelIndex&) const 
 {
-    return (int)size_;
+    return (int)groups_.size();
 }
 
 int NewsList::columnCount(const QModelIndex&) const
@@ -152,7 +151,6 @@ int NewsList::columnCount(const QModelIndex&) const
 void NewsList::clear()
 {
     groups_.clear();
-    size_ = 0;
     reset();
 }
 
@@ -195,8 +193,6 @@ void NewsList::loadListing(const QString& file, quint32 accountId)
         if (!(curGroup % 100))
             emit progressUpdated(accountId, numGroups, curGroup);
     }
-
-    size_ = groups_.size();
 
     reset();
 
@@ -270,39 +266,19 @@ void NewsList::unsubscribe(QModelIndexList& list, quint32 accountId)
     setAccountSubscriptions(accountId);    
 }
 
-void NewsList::filter(bool subscribed)
-{
-    const auto oldSize = size_;
-
-    if (subscribed)
-    {
-        auto end = std::stable_partition(std::begin(groups_), std::end(groups_),
-            [=](const group& g) {
-                return g.flags & Flags::Subscribed;
-            });
-        size_ = std::distance(std::begin(groups_), end);
-    }
-    else
-    {
-        size_ = groups_.size();
-    }
-
-    if (oldSize != size_)
-    {
-        reset();
-    }
-    else
-    {
-        auto first = QAbstractTableModel::index(0, 0);
-        auto last  = QAbstractTableModel::index(size_, (int)Columns::last);
-        emit dataChanged(first, last);
-    }
-}
-
 QString NewsList::getName(const QModelIndex& index) const 
 {
-    const auto& item = groups_[index.row()];
-    return item.name;
+    return groups_[index.row()].name;
+}
+
+QString NewsList::getName(std::size_t index) const 
+{
+    return groups_[index].name;
+}
+
+std::size_t NewsList::numItems() const 
+{
+    return groups_.size();
 }
 
 void NewsList::listCompleted(quint32 acc, const QList<app::NewsGroupInfo>& list)

@@ -27,12 +27,13 @@
 #  include "ui_newslist.h"
 #include <newsflash/warnpop.h>
 #include "mainwidget.h"
+#include "finder.h"
 #include "../newslist.h"
 
 namespace gui
 {
     // news group list GUI
-    class NewsList : public MainWidget
+    class NewsList : public MainWidget, public Finder
     {
         Q_OBJECT
 
@@ -45,8 +46,15 @@ namespace gui
         virtual void activate(QWidget*) override;
         virtual void loadState(app::Settings& settings) override;
         virtual void saveState(app::Settings& settings) override;
-
         virtual info getInformation() const override;
+        virtual Finder* getFinder();
+
+        // finder implementation
+        virtual bool isMatch(const QString& str, std::size_t index, bool caseSensitive) override;
+        virtual bool isMatch(const QRegExp& regex, std::size_t index) override;
+        virtual std::size_t numItems() const override;
+        virtual std::size_t curItem() const override;
+        virtual void setFound(std::size_t index) override;
 
     private slots:
         void on_actionBrowse_triggered();
@@ -55,7 +63,7 @@ namespace gui
         void on_actionUnfavorite_triggered();
         void on_cmbAccounts_currentIndexChanged();
         void on_tableGroups_customContextMenuRequested(QPoint point);
-        void on_chkFavorites_clicked(bool state);
+        void on_tableGroups_doubleClicked(const QModelIndex& index);
 
         void accountsUpdated();
         void progressUpdated(quint32 acc, quint32 maxValue, quint32 curValue);

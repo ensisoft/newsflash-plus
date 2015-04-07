@@ -329,6 +329,9 @@ void update::commit()
     const auto& group = state_->group;
     const auto file = fs::joinpath(path, group + ".nfo");
 
+    if (local_first_ == 0 || local_last_ == 0)
+        return;
+
 #if defined(LINUX_OS)
     std::ofstream out(file, std::ios::out);
 #elif defined(WINDOWS_OS)
@@ -407,6 +410,13 @@ void update::complete(action& a, std::vector<std::unique_ptr<action>>& next)
         local_first_ = std::min(local_first_, first);
         local_last_  = std::max(local_last_, last);
 
+        if (on_info)
+        {
+            const auto num_remote = remote_last_ - remote_first_ + 1;
+            const auto num_local  = local_last_ - local_first_ + 1;
+            on_info(state_->group, num_local, num_remote);
+        }
+
         if (on_write)
         {
             // remember that db might be accessed at the same time through
@@ -432,6 +442,28 @@ std::size_t update::max_num_actions() const
     const auto local_articles = local_last_ - local_first_ + 1;
     const auto actions = (remote_articles - local_articles) / 1000;
     return actions * 2;
+}
+
+std::string update::group() const 
+{
+    return state_->group;
+}
+
+std::string update::path() const 
+{
+    return state_->folder;
+}
+
+std::uint64_t update::num_local_articles() const
+{
+    const auto num_local = local_last_ - local_first_ + 1;
+    return num_local;    
+}
+
+std::uint64_t update::num_remote_articles() const
+{
+    const auto num_remote = remote_last_ - remote_first_ + 1;
+    return num_remote;
 }
 
 } // newsflash

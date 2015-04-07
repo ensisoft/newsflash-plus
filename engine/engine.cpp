@@ -121,7 +121,9 @@ struct engine::state {
     engine::on_file  on_file_callback;
     engine::on_batch on_batch_callback;
     engine::on_list  on_list_callback;
-    engine::on_headers on_headers_callback;    
+    engine::on_update on_update_callback;
+    engine::on_header_data on_header_data_callback;    
+    engine::on_header_info on_header_info_callback;
     engine::on_async_notify on_notify_callback;
 
    ~state()
@@ -527,7 +529,7 @@ private:
 
 class engine::task 
 {
-    task(std::size_t id) : num_active_cmdlists_(0), num_active_actions_(0), num_actions_ready_(0)
+    task(std::size_t id) : num_active_cmdlists_(0), num_active_actions_(0), num_actions_ready_(0), num_actions_total_(0)
     {
         ui_.task_id = id;
         ui_.size    = 0;
@@ -562,10 +564,7 @@ public:
         task_.reset(new download(std::move(spec.groups), std::move(spec.articles), 
             std::move(spec.path), std::move(spec.name)));
 
-        // todo: we know here that each article generates
-        // 2 actions (decode + write). but perhaps this information
-        // should be queried from the task instead. 
-        //num_actions_total_ = task_->total_num_actions();
+        num_actions_total_ = task_->max_num_actions();
 
         LOG_D("Task: download");
         LOG_I("Task ", ui_.task_id, " (", ui_.desc, ") created");                
@@ -577,7 +576,7 @@ public:
 
         task_.reset(new listing);
 
-        //num_actions_total_ = task_->total_num_actions();
+        num_actions_total_ = task_->max_num_actions();
 
         LOG_D("Task: listing");
         LOG_I("Task ", ui_.task_id, " (", ui_.desc, ") created");
@@ -589,10 +588,11 @@ public:
 
         std::unique_ptr<newsflash::update> task(new newsflash::update(spec.path,
             spec.name));
-        task->on_write = s.on_headers_callback;
+        task->on_write = s.on_header_data_callback;
+        task->on_info  = s.on_header_info_callback;
         task_ = std::move(task);
 
-        //num_actions_total_ = task_->total_num_actions();
+        num_actions_total_ = task_->max_num_actions();
         LOG_D("Task: update");
         LOG_I("Task ", ui_.task_id, "( ", ui_.desc, ") created");
     }
@@ -626,9 +626,9 @@ public:
             LOG_D("Task: Continue downloading file: '", fs::joinpath(path, name), "'");
         }
 
-        const auto max_actions = spec.num_actions_total();
+        num_actions_total_ = spec.num_actions_total();
         num_actions_ready_ = spec.num_actions_ready();
-        ui_.completion = (double)num_actions_ready_ / (double)max_actions * 100.0;
+        ui_.completion = (double)num_actions_ready_ / (double)num_actions_total_ * 100.0;
         LOG_I("Task ", ui_.task_id, "( ", ui_.desc, ") restored");
     }
 
@@ -654,7 +654,7 @@ public:
             spec->set_desc(ui_.desc);
             spec->set_size(ui_.size);
             spec->set_path(ptr->path());
-            spec->set_num_actions_total(ptr->max_num_actions());
+            spec->set_num_actions_total(num_actions_total_);
             spec->set_num_actions_ready(num_actions_ready_);
 
             const auto& grouplist = ptr->groups();
@@ -965,9 +965,8 @@ private:
         // i.e. we can't here reliably count 1 buffer as 1 step towards completion
         // since the completion updates only when the data is downloaded AND processed.
         //assert(num_actions_total_);
-        const auto max_actions = task_->max_num_actions();
         //assert(num_actions_ready_ <= num_actions_total_);
-        ui_.completion = (double)num_actions_ready_ / (double)max_actions * 100.0;
+        ui_.completion = (double)num_actions_ready_ / (double)num_actions_total_ * 100.0;
         if (ui_.completion > 100.0)
             ui_.completion = 100.0;
 
@@ -1081,7 +1080,14 @@ private:
                 }
                 else if (auto* ptr = dynamic_cast<class update*>(task_.get()))
                 {
-
+                    ui::update update;
+                    update.account = ui_.account;
+                    update.desc    = ui_.desc;
+                    update.name    = ptr->group();
+                    update.path    = ptr->path();
+                    update.num_local_articles  = ptr->num_local_articles();
+                    update.num_remote_articles = ptr->num_remote_articles();
+                    state.on_update_callback(update);
                 }
                 break;
 
@@ -1105,7 +1111,7 @@ private:
     std::size_t num_active_cmdlists_;
     std::size_t num_active_actions_;
     std::size_t num_actions_ready_;
-    //std::size_t num_actions_total_;
+    std::size_t num_actions_total_;
 };
 
 // for msvc... 
@@ -1118,6 +1124,7 @@ class engine::batch
         ui_.batch_id = id;
         ui_.task_id  = id;
         std::fill(std::begin(statesets_), std::end(statesets_), 0);        
+        filebatch_  = false;
     }
 
 public:
@@ -1133,6 +1140,7 @@ public:
             });
         num_tasks_ = spec.files.size();
         path_      = spec.path;
+        filebatch_ = true;
 
         LOG_I("Batch ", ui_.batch_id, " (", ui_.desc, ") created");     
         LOG_D("Batch has ", num_tasks_, " tasks");                   
@@ -1173,6 +1181,7 @@ public:
         ui_.size     = data.byte_size();
         num_tasks_   = data.num_tasks();
         path_        = data.path();
+        filebatch_   = true;
 
         statesets_[(int)states::queued] = num_tasks_;                
     }
@@ -1284,6 +1293,9 @@ public:
         enter_state(t, s.current);
         update(state);
 
+        if (!filebatch_)
+            return;
+
         if (s.current == states::complete || s.current == states::error)
         {
             if (ui_.state == states::complete)
@@ -1376,6 +1388,7 @@ private:
     std::size_t num_tasks_;
     std::size_t statesets_[6];
     std::string path_;
+    bool filebatch_;
 };
 
 engine::batch& engine::state::find_batch(std::size_t id)
@@ -1617,7 +1630,7 @@ void engine::set_fill_account(std::size_t id)
     state_->fill_account = id;
 }
 
-engine::batch_id_t engine::download_files(ui::batch batch)
+engine::action_id_t engine::download_files(ui::batch batch)
 {
     const auto batchid = state_->oid++;
     std::unique_ptr<engine::batch> b(new class engine::batch(batchid, batch));
@@ -1647,7 +1660,7 @@ engine::batch_id_t engine::download_files(ui::batch batch)
     return batchid;
 }
 
-engine::batch_id_t engine::download_listing(ui::listing list)
+engine::action_id_t engine::download_listing(ui::listing list)
 {
     const auto batchid = state_->oid++;
     std::unique_ptr<engine::batch> batch(new class engine::batch(batchid, list));
@@ -1665,7 +1678,7 @@ engine::batch_id_t engine::download_listing(ui::listing list)
     return batchid;
 }
 
-engine::batch_id_t engine::download_headers(ui::update update)
+engine::action_id_t engine::download_headers(ui::update update)
 {
     const auto batchid = state_->oid++;
     std::unique_ptr<engine::batch> batch(new class engine::batch(batchid, update));
@@ -2017,9 +2030,14 @@ void engine::set_notify_callback(on_async_notify notify_callback)
     state_->on_notify_callback = std::move(notify_callback);
 }
 
-void engine::set_headers_callback(on_headers callback)
+void engine::set_header_data_callback(on_header_data callback)
 {
-    state_->on_headers_callback = std::move(callback);
+    state_->on_header_data_callback = std::move(callback);
+}
+
+void engine::set_header_info_callback(on_header_info callback)
+{
+    state_->on_header_info_callback = std::move(callback);
 }
 
 void engine::set_batch_callback(on_batch batch_callback)
@@ -2030,6 +2048,11 @@ void engine::set_batch_callback(on_batch batch_callback)
 void engine::set_list_callback(on_list list_callback)
 {
     state_->on_list_callback = std::move(list_callback);
+}
+
+void engine::set_update_callback(on_update update_callback)
+{
+    state_->on_update_callback = std::move(update_callback);
 }
 
 void engine::set_overwrite_existing_files(bool on_off)
@@ -2341,7 +2364,7 @@ void engine::move_task_down(std::size_t index)
     }
 }
 
-void engine::kill_batch(engine::batch_id_t id)
+void engine::kill_action(engine::action_id_t id)
 {
     auto it = std::find_if(std::begin(state_->batches), std::end(state_->batches),
         [&](const std::unique_ptr<batch>& b) {

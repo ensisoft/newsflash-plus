@@ -32,7 +32,8 @@
     <file>resource/16x16_ico_png/ico_folder.png</file>
     <file>resource/16x16_ico_png/ico_rss.png</file>    
     <file>resource/16x16_ico_png/ico_news.png</file>
-    <file>resource/16x16_ico_png/ico_star.png</file>
+    <file>resource/16x16_ico_png/ico_favourite.png</file>
+    <file>resource/16x16_ico_png/ico_unfavourite.png</file>
     <file>resource/16x16_ico_png/ico_throttle.png</file>    
     <file>resource/16x16_ico_png/ico_details.png</file>
     <file>resource/16x16_ico_png/ico_extract.png</file>

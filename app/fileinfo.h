@@ -59,9 +59,20 @@ namespace app
 
     };
 
+    struct HeaderInfo {
+        QString groupName;
+
+        QString groupPath;
+
+        quint64 numLocalArticles;
+
+        quint64 numRemoteArticles;
+    };
+
 } // app
 
     Q_DECLARE_METATYPE(app::FileInfo);
     Q_DECLARE_METATYPE(app::FilePackInfo);    
+    Q_DECLARE_METATYPE(app::HeaderInfo);
 
 

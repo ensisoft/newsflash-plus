@@ -108,9 +108,60 @@ MainWidget::info NewsList::getInformation() const
     return {"news.html", true};
 }
 
+Finder* NewsList::getFinder() 
+{
+    return this;
+}
+
+bool NewsList::isMatch(const QString& str, std::size_t index, bool caseSensitive)
+{
+    const auto& name = model_.getName(index);
+    if (!caseSensitive)
+    {
+        auto upper = name.toUpper();
+        if (upper.indexOf(str) != -1)
+            return true;
+    }
+    else
+    {
+        if (name.indexOf(str) != -1)
+            return true;
+    }
+    return false;
+}
+
+bool NewsList::isMatch(const QRegExp& regex, std::size_t index)
+{
+    const auto& name = model_.getName(index);
+    if (regex.indexIn(name) != -1)
+        return true;
+    return false;
+}
+
+std::size_t NewsList::numItems() const
+{
+    return model_.numItems();
+}
+
+std::size_t NewsList::curItem() const 
+{
+    const auto& indices = ui_.tableGroups->selectionModel()->selectedRows();
+    if (indices.isEmpty())
+        return 0;
+    const auto& first = indices.first();
+    return first.row();    
+}
+
+void NewsList::setFound(std::size_t index)
+{
+    auto* model = ui_.tableGroups->model();
+    auto i = model->index(index, 0);
+    ui_.tableGroups->setCurrentIndex(i);
+    ui_.tableGroups->scrollTo(i);
+}
+
 void NewsList::loadState(app::Settings& settings)
 {
-    app::loadState("newslist", ui_.chkFavorites, settings);
     app::loadTableLayout("newslist", ui_.tableGroups, settings);
 
     accountsUpdated();
@@ -118,7 +169,6 @@ void NewsList::loadState(app::Settings& settings)
 
 void NewsList::saveState(app::Settings& settings)
 {
-    app::saveState("newslist", ui_.chkFavorites, settings);
     app::saveTableLayout("newslist", ui_.tableGroups, settings);
 }
 
@@ -183,8 +233,6 @@ void NewsList::on_actionUnfavorite_triggered()
     msg.setText(tr("Would you like to remove the local database?"));
 
     model_.unsubscribe(indices, curAccount_);
-    if (ui_.chkFavorites->isChecked())
-        model_.filter(true);
 }
 
 
@@ -239,9 +287,9 @@ void NewsList::on_tableGroups_customContextMenuRequested(QPoint point)
     menu.exec(QCursor::pos());
 }
 
-void NewsList::on_chkFavorites_clicked(bool state)
+void NewsList::on_tableGroups_doubleClicked(const QModelIndex& index)
 {
-    model_.filter(state);
+    on_actionBrowse_triggered();    
 }
 
 

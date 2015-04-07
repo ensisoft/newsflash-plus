@@ -34,16 +34,21 @@
 #include "utility.h"
 #include "format.h"
 #include "types.h"
+#include "fileinfo.h"
 
 namespace app
 {
 
-NewsGroup::NewsGroup()
+NewsGroup::NewsGroup() : task_(0)
 {
     DEBUG("NewsGroup created");
 
-    QObject::connect(g_engine, SIGNAL(newHeadersAvailable(const QString&)),
-        this, SLOT(newHeadersAvailable(const QString&)));
+    QObject::connect(g_engine, SIGNAL(newHeaderDataAvailable(const QString&)),
+        this, SLOT(newHeaderDataAvailable(const QString&)));
+    QObject::connect(g_engine, SIGNAL(newHeaderInfoAvailable(const QString&, quint64, quint64)),
+        this, SLOT(newHeaderInfoAvailable(const QString&, quint64, quint64)));
+    QObject::connect(g_engine, SIGNAL(updateCompleted(const app::HeaderInfo&)),
+        this, SLOT(updateCompleted(const app::HeaderInfo&)));
 }
 
 NewsGroup::~NewsGroup()
@@ -131,7 +136,11 @@ QVariant NewsGroup::data(const QModelIndex& index, int role) const
             case Columns::BookmarkFlag:
                 return {}; 
 
-            case Columns::Age:     return toString(age { QDateTime::fromTime_t(item.pubdate) });
+            case Columns::Age:    
+                if (item.pubdate == 0) 
+                    return "???";
+                return toString(age { QDateTime::fromTime_t(item.pubdate) });
+
             case Columns::Size:    return toString(size { item.bytes });
             case Columns::Author:  return QString::fromStdString(item.author);
             case Columns::Subject: return QString::fromStdString(item.subject);
@@ -183,33 +192,63 @@ int NewsGroup::columnCount(const QModelIndex&) const
     return (int)Columns::LAST;
 }
 
-bool NewsGroup::load(quint32 account, QString path, QString name)
+bool NewsGroup::load(quint32 blockIndex, QString path, QString name)
 {
-    // data is in .vol files
+    DEBUG("Load data for %1 from %2", name, path);
+
+    // data is in .vol files with the file number indicating data ordering.
+    // i.e. the bigger the index in the datafile name the newer the data.
     QDir dir;
     dir.setPath(path + "/" + name);
     dir.setSorting(QDir::Name | QDir::Reversed);
     dir.setNameFilters(QStringList("vol*.dat"));
     QStringList files = dir.entryList();
     if (files.isEmpty())
-    {
-        g_engine->retrieveHeaders(account, path, name);
         return false;
-    }
-    else
-    {
-        const auto p = joinPath(path, name);
-        const auto f = joinPath(p, files[0]);
-        DEBUG("Loading headers from %1", f);
-        newHeadersAvailable(f);
-    }
 
+    if (blockIndex >= files.size())
+        return false;
+
+    const auto p = joinPath(path, name);
+    const auto f = joinPath(p, files[blockIndex]);
+    DEBUG("Loading headers from %1", f);
+    newHeaderDataAvailable(f);
     return true;
 }
 
-void NewsGroup::newHeadersAvailable(const QString& file)
+void NewsGroup::refresh(quint32 account, QString path, QString name)
+{
+    Q_ASSERT(task_ == 0);        
+
+    DEBUG("Refresh data for %1 from %2", name, path);
+    path_ = path;
+    name_ = name;
+    task_ = g_engine->retrieveHeaders(account, path, name);
+}
+
+void NewsGroup::stop()
+{
+    Q_ASSERT(task_ != 0);
+
+    g_engine->killAction(task_);
+
+    task_ = 0;
+}
+
+std::size_t NewsGroup::numItems() const 
+{
+    return index_.size();
+}
+
+void NewsGroup::newHeaderDataAvailable(const QString& file)
 {
     DEBUG("New headers available in %1", file);
+
+    // see if this data file is of interest to us. if it isn't just ignore the signal
+    if (file.indexOf(path_) != 0)
+        return;
+
+    QAbstractTableModel::beginResetModel();
 
     const auto& n = narrow(file);
 
@@ -265,10 +304,23 @@ void NewsGroup::newHeadersAvailable(const QString& file)
     // index to start loading the objects.
     offset = beg.offset();
     offsets_[index] = offset;
-
     DEBUG("%1 is at new offst %2", file, offset);
 
     QAbstractTableModel::reset();    
+    QAbstractTableModel::endResetModel();
+}
+
+void NewsGroup::newHeaderInfoAvailable(const QString& group, quint64 numLocal, quint64 numRemote)
+{
+
+}
+
+void NewsGroup::updateCompleted(const app::HeaderInfo& info)
+{
+    if (info.groupName != name_ || info.groupPath != path_)
+        return;
+
+    task_ = 0;
 }
 
 } // app

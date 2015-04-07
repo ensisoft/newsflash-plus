@@ -45,6 +45,7 @@ namespace app
     struct FileInfo;
     struct FilePackInfo;
     struct NewsGroupInfo;
+    struct HeaderInfo;
 
     // manager class around newsflash engine + engine state
     // translate between native c++ and Qt types and events.
@@ -247,6 +248,11 @@ namespace app
             engine_->clone_connection(index);
         }
 
+        void killAction(quint32 id)
+        {
+            engine_->kill_action(id);
+        }
+
         void killTask(std::size_t index)
         {
             engine_->kill_task(index);
@@ -275,10 +281,12 @@ namespace app
     signals:
         void shutdownComplete();
         void newDownloadQueued(const QString& desc);
-        void newHeadersAvailable(const QString& file);
+        void newHeaderDataAvailable(const QString& file);
+        void newHeaderInfoAvailable(const QString& group, quint64 numLocal, quint64 numRemote);
         void fileCompleted(const app::FileInfo& file);
         void packCompleted(const app::FilePackInfo& pack);
         void listCompleted(quint32 account, const QList<app::NewsGroupInfo>& list);
+        void updateCompleted(const app::HeaderInfo& headers);
 
     private:
         virtual bool eventFilter(QObject* object, QEvent* event) override;
@@ -292,7 +300,10 @@ namespace app
         void onFileComplete(const newsflash::ui::file& f);
         void onBatchComplete(const newsflash::ui::batch& b);
         void onListComplete(const newsflash::ui::listing& l);
-        void onHeadersAvailable(const std::string& file);
+        void onUpdateComplete(const newsflash::ui::update& u);
+        void onHeaderDataAvailable(const std::string& file);
+        void onHeaderInfoAvailable(const std::string& group,
+            std::uint64_t numLocal, std::uint64_t numRemote);
 
     private:
         QString logifiles_;

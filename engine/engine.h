@@ -58,7 +58,10 @@ namespace newsflash
         using on_update = std::function<void(const ui::update& update)>;
 
         // 
-        using on_headers = std::function<void(const std::string& file)>;
+        using on_header_data = std::function<void(const std::string& file)>;
+
+        using on_header_info = std::function<void(const std::string& group,
+            std::uint64_t num_articles_local, std::uint64_t num_articles_remote)>;
 
         // this callback is invoked when there are pending events inside the engine
         // the handler function should organize for a call into engine::pump() 
@@ -67,7 +70,7 @@ namespace newsflash
         // can come from multiple threads inside the engine.
         using on_async_notify = std::function<void ()>;
 
-        using batch_id_t = std::size_t;
+        using action_id_t = std::size_t;
 
         engine();
        ~engine();
@@ -82,12 +85,11 @@ namespace newsflash
 
         // download the files included in the dowload.
         // all the files are grouped together into a single batch.
-        // returns the batch id.
-        batch_id_t download_files(ui::batch batch);
+        action_id_t download_files(ui::batch batch);
 
-        batch_id_t download_listing(ui::listing list);
+        action_id_t download_listing(ui::listing list);
 
-        batch_id_t download_headers(ui::update update);
+        action_id_t download_headers(ui::update update);
 
         // process pending actions in the engine. You should call this function
         // as a response to to the async_notify.
@@ -122,10 +124,13 @@ namespace newsflash
 
         void set_list_callback(on_list list_callback);
 
+        void set_update_callback(on_update update_callback);
+
         // set the notify callback. this 
         void set_notify_callback(on_async_notify notify_callback);
 
-        void set_headers_callback(on_headers callback);
+        void set_header_data_callback(on_header_data callback);
+        void set_header_info_callback(on_header_info callback);
 
         // if set to true engine will overwrite files that already exist in the filesystem.
         // otherwise file name collisions are resolved by some naming scheme
@@ -211,10 +216,9 @@ namespace newsflash
 
         void move_task_down(std::size_t index);
 
-        void kill_batch(batch_id_t id);
+        void kill_action(action_id_t id);
 
         std::size_t num_tasks() const;
-
 
     private:
         class task;

@@ -62,9 +62,10 @@ namespace app
         void subscribe(QModelIndexList& list, quint32 account);
         void unsubscribe(QModelIndexList& list, quint32 account);
 
-        void filter(bool subscribed);
-
         QString getName(const QModelIndex& index) const;
+        QString getName(std::size_t index) const;
+
+        std::size_t numItems() const;
 
     signals:
         void progressUpdated(quint32 acc, quint32 maxValue, quint32 curValue);   
@@ -94,7 +95,6 @@ namespace app
 
     private:
         std::vector<group> groups_;
-        std::size_t size_;
         std::map<quint32, operation> pending_;
     };
 

@@ -29,6 +29,10 @@
 #include "mainwidget.h"
 #include "../newsgroup.h"
 
+namespace app {
+    struct HeaderInfo;
+} // app
+
 namespace gui
 {
     class NewsGroup : public MainWidget
@@ -54,6 +58,11 @@ namespace gui
     private slots:
         void on_actionRefresh_triggered();
         void on_actionFilter_triggered();
+        void on_actionStop_triggered();
+        void on_btnLoadMore_clicked();
+        void modelReset();
+        void newHeaderInfoAvailable(const QString& group, quint64 numLocal, quint64 numRemote);
+        void updateCompleted(const app::HeaderInfo& info);
 
     private:
         Ui::NewsGroup ui_;
@@ -63,5 +72,7 @@ namespace gui
         quint32 account_;
         QString path_;
         QString name_;
+        quint32 blockIndex_;
+
     };
 } // gui
