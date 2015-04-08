@@ -34,6 +34,7 @@ int test_main(int, char*[])
     BOOST_REQUIRE(n::find_filetype("foobar.r00") == t::archive);
     BOOST_REQUIRE(n::find_filetype("foobar.r59") == t::archive);    
     BOOST_REQUIRE(n::find_filetype("foobar.rar") == t::archive);        
+    BOOST_REQUIRE(n::find_filetype("foobar.mpeg") == t::video);
 
 
 

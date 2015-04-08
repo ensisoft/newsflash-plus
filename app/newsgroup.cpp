@@ -286,7 +286,7 @@ void NewsGroup::refresh(quint32 account, QString path, QString name)
 {
     Q_ASSERT(task_ == 0);        
 
-    DEBUG("Refresh data for %1 from %2", name, path);
+    DEBUG("Refresh data for %1 in %2", name, path);
     path_ = path;
     name_ = name;
     task_ = g_engine->retrieveHeaders(account, path, name);
@@ -311,7 +311,7 @@ void NewsGroup::newHeaderDataAvailable(const QString& file)
     DEBUG("New headers available in %1", file);
 
     // see if this data file is of interest to us. if it isn't just ignore the signal
-    if (file.indexOf(path_) != 0)
+    if (file.indexOf(path_ + name_) != 0)
         return;
 
     QAbstractTableModel::beginResetModel();

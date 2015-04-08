@@ -37,6 +37,8 @@ namespace newsflash
     {
     public:
         enum class affinity {
+            gui_thread,
+
             // dispatch the action to any available thread
             // this means that multiple actions from the same originating
             // object may complete in any order.

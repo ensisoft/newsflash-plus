@@ -169,8 +169,18 @@ struct engine::state {
 
     void submit(action* a)
     {
-        threads->submit(a);
-        num_pending_actions++;
+        if (a->get_affinity() == action::affinity::gui_thread)
+        {
+            a->perform();
+            std::lock_guard<std::mutex> lock(mutex);
+            actions.emplace(a);
+            on_notify_callback();
+        }
+        else
+        {
+            threads->submit(a);
+        }
+        num_pending_actions++;                            
     }
 
     void submit(action* a, threadpool::worker* thread)

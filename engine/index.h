@@ -76,22 +76,22 @@ namespace newsflash
                 auto end = std::begin(items_);
                 std::advance(end, size_);
                 std::reverse(beg, end);
-            } 
-            else
-            {
-                switch (column)
-                {
-                    case sorting::sort_by_broken:     sort(up_down, article::flags::broken); break;
-                    case sorting::sort_by_binary:     sort(up_down, article::flags::binary); break;
-                    case sorting::sort_by_downloaded: sort(up_down, article::flags::downloaded); break;
-                    case sorting::sort_by_bookmarked: sort(up_down, article::flags::bookmarked); break;
+                sort_  = column;
+                order_ = up_down;
+                return;
+            }
 
-                    case sorting::sort_by_age:     sort(up_down, &article::pubdate); break;
-                    case sorting::sort_by_type:    sort(up_down, &article::type); break;
-                    case sorting::sort_by_size:    sort(up_down, &article::bytes); break;
-                    case sorting::sort_by_author:  sort(up_down, &article::author); break;
-                    case sorting::sort_by_subject: sort(up_down, &article::subject); break;
-                }
+            switch (column)
+            {
+                case sorting::sort_by_broken:     sort(up_down, article::flags::broken); break;
+                case sorting::sort_by_binary:     sort(up_down, article::flags::binary); break;
+                case sorting::sort_by_downloaded: sort(up_down, article::flags::downloaded); break;
+                case sorting::sort_by_bookmarked: sort(up_down, article::flags::bookmarked); break;
+                case sorting::sort_by_age:        sort(up_down, &article::pubdate); break;
+                case sorting::sort_by_type:       sort(up_down, &article::type); break;
+                case sorting::sort_by_size:       sort(up_down, &article::bytes); break;
+                case sorting::sort_by_author:     sort(up_down, &article::author); break;
+                case sorting::sort_by_subject:    sort(up_down, &article::subject); break;
             }
             sort_  = column;
             order_ = up_down;            

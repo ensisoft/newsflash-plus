@@ -490,7 +490,11 @@ std::pair<bool, date> parse_date(const char* str, size_t len)
          !(!ch_p('(') >> (*alpha_p)[assign(date.tz)] >> !ch_p(')'))
          ), ch_p(' '));
     if (ret.full)
+    {
+        if (date.year < 100)
+            date.year += 2000;
         return {true, date};
+    }
 
     // 29 Jul 2007 11:25:26 GMT
     ret = parse(str, str+len,
@@ -505,7 +509,12 @@ std::pair<bool, date> parse_date(const char* str, size_t len)
          !((*alpha_p)[assign(date.tz)])
         ), ch_p(' '));
     if (ret.full) 
-        return {true, date};
+    {
+        if (date.year < 100)
+            date.year += 2000;
+        return {true, date};        
+    }
+
 
     // Wednesday, 24 Oct 2008 11:58:50 -0800
     ret = parse(str, str+len,
@@ -521,8 +530,13 @@ std::pair<bool, date> parse_date(const char* str, size_t len)
          !((*alpha_p)[assign(date.tz)])
          ), ch_p(' '));
 
-    return {ret.full, date};
-
+    if (ret.full)
+    {
+        if (date.year < 100)
+            date.year += 2000;
+        return {true, date};
+    }
+    return {false, date};
 }
 
 std::pair<bool, part> parse_part(const char* str, size_t len)

@@ -42,21 +42,22 @@ namespace newsflash
         {
         public:
         #ifdef NEWSFLASH_DEBUG
-           class iterator : public std::iterator<std::random_access_iterator_tag, byte>
+           template<typename T> 
+           class iterator_t : public std::iterator<std::random_access_iterator_tag, T>
            {
            public:
-               ~iterator()
+               ~iterator_t()
                 {}
 
-                iterator()
+                iterator_t()
                 {}
 
-                byte& operator*() 
+                T& operator*() 
                 {
                     ASSERT(pos_ < len_);
                     return base_[pos_];
                 }
-                byte operator->()
+                T operator->()
                 {
                     ASSERT(pos_ < len_);
                     return base_[pos_];
@@ -65,87 +66,87 @@ namespace newsflash
                 // todo: more ops here
 
                 // postfix
-                iterator operator++(int)
+                iterator_t operator++(int)
                 {
-                    iterator it(*this);
+                    iterator_t it(*this);
                     ++pos_;
                     return it;
                 }
 
-                iterator operator--(int)
+                iterator_t operator--(int)
                 {
-                    iterator it(*this);
+                    iterator_t it(*this);
                     --pos_;
                     return it;
                 }
 
-                iterator& operator++()
+                iterator_t& operator++()
                 {
                     ++pos_;
                     return *this;
                 }
-                iterator& operator--()
+                iterator_t& operator--()
                 {
                     --pos_;
                     return *this;
                 }
 
-                iterator& operator+=(int value)
+                iterator_t& operator+=(int value)
                 {
                     pos_ += value;
                     return *this;
                 }
-                iterator& operator-=(int value)
+                iterator_t& operator-=(int value)
                 {
                     pos_ -= value;
                     return *this;
                 }
 
-                iterator operator + (int n) const
+                iterator_t operator + (int n) const
                 {
-                    iterator i(*this);
+                    iterator_t i(*this);
                     i.len_ += n;
                     return i;
                 }
-                iterator operator - (int n) const
+                iterator_t operator - (int n) const
                 {
-                    iterator i(*this);
+                    iterator_t i(*this);
                     i.pos_ -= n;
                     return i;
                 }
 
-                std::size_t operator - (const iterator& other) const 
+                std::size_t operator - (const iterator_t& other) const 
                 {
                     return pos_ - other.pos_;
                 }
 
-                bool operator==(const iterator& other) const 
+                bool operator==(const iterator_t& other) const 
                 {
                     return pos_ == other.pos_;
                 }
-                bool operator!=(const iterator& other) const
+                bool operator!=(const iterator_t& other) const
                 {
                     return pos_ != other.pos_;
                 }
-                bool operator<(const iterator& other) const 
+                bool operator<(const iterator_t& other) const 
                 {
                     return pos_ < other.pos_;
                 }
-                bool operator<=(const iterator& other) const 
+                bool operator<=(const iterator_t& other) const 
                 {
                     return pos_ <= other.pos_;
                 }
-                bool operator>(const iterator& other) const 
+                bool operator>(const iterator_t& other) const 
                 {
                     return pos_ > other.pos_;
                 }
-                bool operator>=(const iterator& other) const
+                bool operator>=(const iterator_t& other) const
                 {
                     return pos_ >= other.pos_;
                 }
 
            private:
-                iterator(byte* p, std::size_t len, std::size_t pos) : base_(p), len_(len), pos_(pos)
+                iterator_t(byte* p, std::size_t len, std::size_t pos) : base_(p), len_(len), pos_(pos)
                 {}
                 friend class buffer;
             private:
@@ -154,6 +155,9 @@ namespace newsflash
                 std::size_t len_;                
                 std::size_t pos_;
            };
+
+           using iterator = iterator_t<byte>;
+           using const_iterator = iterator_t<const byte>;
 
            iterator begin()
            {
@@ -164,14 +168,33 @@ namespace newsflash
                return {(byte*)base_ + offset_, length_, length_ };
            }
 
+           const_iterator begin() const 
+           {
+               return {(byte*)base_ + offset_, length_, 0};
+           }
+           const_iterator end() const 
+           {
+               return {(byte*)base_ + offset_, length_, length_};
+           }
+
         #else
            using iterator = byte*;
+           using const_iterator = const byte*;
 
            iterator begin() 
            {
                 return (iterator)base_ + offset_;
            }
            iterator end() 
+           {
+                return begin() + length_;
+           }
+
+           const_iterator begin() const
+           {
+                return (const_iterator)base_ + offset_;
+           }
+           const_iterator end() const
            {
                 return begin() + length_;
            }

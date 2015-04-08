@@ -39,6 +39,7 @@ namespace newsflash
         {
         public:
             using iterator = std::vector<byte>::iterator;
+            using const_iterator = std::vector<byte>::const_iterator;
 
             buffer()
             {}
@@ -48,10 +49,20 @@ namespace newsflash
                 return data_.begin();
             }
 
+            const_iterator begin() const 
+            {
+                return data_.begin();
+            }
+
             iterator end()
             {
                 return data_.end();
             }
+            const_iterator end() const 
+            {
+                return data_.end();
+            }
+
             void* address() 
             {
                 return data_.data();

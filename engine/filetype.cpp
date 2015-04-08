@@ -65,7 +65,7 @@ filetype find_filetype(const std::string& subject)
         const auto type = (*it).type;
         for (auto it = std::begin(pat); it != std::end(pat); ++it)
         {
-            boost::regex r(*it, boost::regbase::icase | boost::regbase::perl);
+            boost::regex r(*it, boost::regbase::icase /* | boost::regbase::perl */);
             if (boost::regex_search(subject.begin(), subject.end(), r))
                 return type;
         }

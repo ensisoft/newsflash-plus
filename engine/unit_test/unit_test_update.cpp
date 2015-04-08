@@ -68,9 +68,14 @@ void unit_test_ranges()
 
     }
 
-    std::ofstream out("alt.binaries.test.nfo", std::ios::out);
-    out << "1045" << std::endl;
-    out << "2048" << std::endl;
+    std::ofstream out("alt.binaries.test.nfo", std::ios::out | std::ios::binary | std::ios::trunc);
+    //out << "1045" << std::endl;
+    //out << "2048" << std::endl;
+    std::uint64_t val;
+    val = 1045;
+    out.write((const char*)&val, sizeof(val));
+    val = 2048;
+    out.write((const char*)&val, sizeof(val));
     out.close();
 
     // newer items
@@ -195,7 +200,7 @@ void unit_test_data()
         str += nntp::make_overview(ov);
 
         ov.author.start    = "ano@anonymous.yy (knetje)";
-        ov.subject.start   = "#A.B.MM @  EFNet Presents: REQ 40092 - Seinfeld.S09.DVDRip.XviD-SiNK - 482/520 - sink-seinfeld.s09e21e22.r23 (1/3)";
+        ov.subject.start   = "#A.B.MM @  EFNet Presents: REQ 40092 - Seinfeld.S09.DVDRip.XviD-SiNK - 482/520 - sink-seinfeld.s09e21e22.r23 (1/4)";
         ov.bytecount.start = "2048";
         ov.date.start      = "Tue, 13 Jun 2008 00:00:00";
         ov.number.start    = "3";
@@ -203,7 +208,7 @@ void unit_test_data()
         str += nntp::make_overview(ov);
 
         ov.author.start    = "ano@anonymous.yy (knetje)";
-        ov.subject.start   = "#A.B.MM @  EFNet Presents: REQ 40092 - Seinfeld.S09.DVDRip.XviD-SiNK - 482/520 - sink-seinfeld.s09e21e22.r23 (2/3)";
+        ov.subject.start   = "#A.B.MM @  EFNet Presents: REQ 40092 - Seinfeld.S09.DVDRip.XviD-SiNK - 482/520 - sink-seinfeld.s09e21e22.r23 (2/4)";
         ov.bytecount.start = "2048";
         ov.date.start      = "Tue, 13 Jun 2008 00:00:00";
         ov.number.start    = "4";
@@ -211,7 +216,7 @@ void unit_test_data()
         str += nntp::make_overview(ov);        
 
         ov.author.start    = "ano@anonymous.yy (knetje)";
-        ov.subject.start   = "#A.B.MM @  EFNet Presents: REQ 40092 - Seinfeld.S09.DVDRip.XviD-SiNK - 482/520 - sink-seinfeld.s09e21e22.r23 (3/3)";
+        ov.subject.start   = "#A.B.MM @  EFNet Presents: REQ 40092 - Seinfeld.S09.DVDRip.XviD-SiNK - 482/520 - sink-seinfeld.s09e21e22.r23 (3/4)";
         ov.bytecount.start = "2048";
         ov.date.start      = "Tue, 13 Jun 2008 00:00:00";
         ov.number.start    = "5";
@@ -263,12 +268,96 @@ void unit_test_data()
         BOOST_REQUIRE(article.partno == 1);
 
         article = db.lookup(filedb::offset_t{article.next()});
-        BOOST_REQUIRE(article.subject == "#A.B.MM @  EFNet Presents: REQ 40092 - Seinfeld.S09.DVDRip.XviD-SiNK - 482/520 - sink-seinfeld.s09e21e22.r23 (1/3)");
+        BOOST_REQUIRE(article.subject == "#A.B.MM @  EFNet Presents: REQ 40092 - Seinfeld.S09.DVDRip.XviD-SiNK - 482/520 - sink-seinfeld.s09e21e22.r23 (1/4)");
+        BOOST_REQUIRE(article.author == "ano@anonymous.yy (knetje)");
+        BOOST_REQUIRE(article.bits.test(newsflash::article::flags::binary));
+        BOOST_REQUIRE(article.bits.test(newsflash::article::flags::broken) == true);
+        BOOST_REQUIRE(article.partmax == 4);
+        BOOST_REQUIRE(article.partno == 3);
+        BOOST_REQUIRE(article.bytes == 3 * 2048);
+
+    }
+
+    {
+        newsflash::update u("", "alt.binaries.test");
+
+        auto cmd = u.create_commands();
+
+        newsflash::buffer buff(1024);
+        buff.append("211 10 1 5 alt.binaries.test group selected\r\n");
+        buff.set_content_length(std::strlen("211 10 1 5 alt.binaries.test group selected\r\n"));
+        buff.set_content_start(0);
+        buff.set_content_type(newsflash::buffer::type::groupinfo);
+        cmd->receive_data_buffer(buff);
+
+        u.complete(*cmd, actions);
+
+        cmd = u.create_commands();
+
+        std::string str;
+        nntp::overview ov  = {};
+        ov.author.start    = "ano@anonymous.yy (knetje)";
+        ov.subject.start   = "#A.B.MM @  EFNet Presents: REQ 40092 - Seinfeld.S09.DVDRip.XviD-SiNK - 482/520 - sink-seinfeld.s09e21e22.r23 (4/4)";
+        ov.bytecount.start = "100";
+        ov.date.start      = "tue, 14 Jun 2008 00:00:00";
+        ov.number.start    = "235242";
+        ov.messageid.start = "<6>";
+        str += nntp::make_overview(ov);
+
+        buff.clear();
+        buff.append(str);
+        buff.set_content_length(str.size());
+        buff.set_content_start(0);
+        buff.set_content_type(newsflash::buffer::type::overview);
+        buff.set_status(newsflash::buffer::status::success);
+        cmd->receive_data_buffer(buff);
+
+        u.complete(*cmd, actions);
+        auto a = std::move(actions[0]);
+        a->perform();
+        BOOST_REQUIRE(!a->has_exception());
+
+        actions.clear();
+
+        u.complete(*a, actions);
+        a = std::move(actions[0]);
+        a->perform();
+        BOOST_REQUIRE(!a->has_exception());
+        actions.clear();
+        u.complete(*a, actions);
+        u.commit();
+
+        using filedb = newsflash::catalog<newsflash::filemap>;
+        filedb db;
+        db.open("alt.binaries.test/vol0.dat");
+        BOOST_REQUIRE(db.article_count() == 3);
+
+        auto article = db.lookup(filedb::offset_t(0));
+        BOOST_REQUIRE(article.subject == "Metallica - Enter Sandman yEnc (01/10).mp3");
+        BOOST_REQUIRE(article.author == "ensi@gmail.com");
+        BOOST_REQUIRE(article.bits.test(newsflash::article::flags::binary));
+        BOOST_REQUIRE(article.bits.test(newsflash::article::flags::broken));
+        BOOST_REQUIRE(article.bytes == 1024 + 568);
+        BOOST_REQUIRE(article.partmax == 10);
+        BOOST_REQUIRE(article.partno == 2);
+
+        article = db.lookup(filedb::offset_t{article.next()});
+        BOOST_REQUIRE(article.subject == ".net and COM interoperability");
+        BOOST_REQUIRE(article.author == "foo@gmail.com");
+        BOOST_REQUIRE(article.bits.test(newsflash::article::flags::binary) == false);
+        BOOST_REQUIRE(article.bits.test(newsflash::article::flags::broken) == false);
+        BOOST_REQUIRE(article.bytes == 512);
+        BOOST_REQUIRE(article.partmax == 1);
+        BOOST_REQUIRE(article.partno == 1);
+
+        article = db.lookup(filedb::offset_t{article.next()});
+        BOOST_REQUIRE(article.subject == "#A.B.MM @  EFNet Presents: REQ 40092 - Seinfeld.S09.DVDRip.XviD-SiNK - 482/520 - sink-seinfeld.s09e21e22.r23 (1/4)");
         BOOST_REQUIRE(article.author == "ano@anonymous.yy (knetje)");
         BOOST_REQUIRE(article.bits.test(newsflash::article::flags::binary));
         BOOST_REQUIRE(article.bits.test(newsflash::article::flags::broken) == false);
-        BOOST_REQUIRE(article.partmax == 3);
-        BOOST_REQUIRE(article.partno == 3);
+        BOOST_REQUIRE(article.partmax == 4);
+        BOOST_REQUIRE(article.partno == 4);        
+        BOOST_REQUIRE(article.bytes == 3 * 2048 + 100);
     }
 }
 

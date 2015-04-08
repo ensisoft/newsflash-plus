@@ -100,6 +100,13 @@ public:
             a.bytes   = bytes;
             a.pubdate = pubdate;
             a.bits.set(article::flags::binary, binary);
+            if (binary)
+            {
+                const auto& filename = nntp::find_filename(a.subject);
+                if (!filename.empty())
+                    a.type = find_filetype(filename);
+            }
+
             if (part.first)
             {
                 a.partno  = part.second.numerator;
@@ -190,12 +197,6 @@ public:
                 }
                 else
                 {
-                    const auto& filename = nntp::find_filename(article.subject);
-                    if (!filename.empty())
-                    {
-                        article.type = find_filetype(filename);
-                    }
-
                     db->insert(article, index);                    
                     break;
                 }
@@ -228,22 +229,40 @@ update::update(std::string path, std::string group) : local_last_(0), local_firs
     state_->group  = std::move(group);
 
 #if defined(LINUX_OS)
-    std::ifstream in(file, std::ios::in);
-    using string_t = std::string;
+    std::ifstream in(file, std::ios::in | std::ios::binary);
 #elif defined(WINDOWS_OS)
     std::wifstream in(utf8::decode(file), std::ios::in);
-    using string_t = std::wstring;
 #endif
     if (in.is_open())
     {
-        string_t first;
-        string_t last;
-        std::getline(in, first);
-        std::getline(in, last);
-        local_first_ = std::stoull(first);
-        local_last_  = std::stoull(last);
+        in.seekg(0, std::ios::end);
+        const unsigned long size = in.tellg();
+        in.seekg(0, std::ios::beg);
+
+        in.read((char*)&local_first_, sizeof(local_first_));
+        in.read((char*)&local_last_, sizeof(local_last_));
+
+        const auto num_items = (size - (sizeof(local_first_) + sizeof(local_last_))) / sizeof(uint32_t);
+        std::vector<std::uint32_t> vec;
+        vec.resize(num_items);
+        in.read((char*)&vec[0], vec.size() * sizeof(std::uint32_t));
+        for (std::size_t i=0; i<vec.size(); i+=2)
+        {
+            const auto key = vec[i];
+            const auto val = vec[i+1];
+            state_->hashmap.insert(std::make_pair(key, val));
+        }
+
+        //string_t first;
+        //string_t last;
+        //std::getline(in, first);
+        //std::getline(in, last);
+        // local_first_ = std::stoull(first);
+        // local_last_  = std::stoull(last);
         xover_last_  = local_last_;
         xover_first_ = local_first_;
+
+
     }
     else
     {
@@ -340,24 +359,36 @@ void update::commit()
         return;
 
 #if defined(LINUX_OS)
-    std::ofstream out(file, std::ios::out);
+    std::ofstream out(file, std::ios::out | std::ios::binary | std::ios::trunc);
 #elif defined(WINDOWS_OS)
-    std::wofstream out(file, std::ios::out);
+    std::wofstream out(file, std::ios::out | std::ios::binary | std::ios::trunc);
 #endif
 
     if (!out.is_open())
         throw std::runtime_error("unable to open: " + file);
 
-    out << local_first_ << std::endl;
-    out << local_last_  << std::endl;
+    //out << local_first_ << std::endl;
+    //out << local_last_  << std::endl;
+    out.write((const char*)&local_first_, sizeof(local_first_));
+    out.write((const char*)&local_last_, sizeof(local_last_));
 
     auto& files = state_->files;
-
     for (auto& p : files)
     {
         auto& db = p.second;
         db->flush();
     }
+
+    std::vector<std::uint32_t> vec;
+    const auto& hashmap = state_->hashmap;
+    vec.reserve(hashmap.size() * 2);
+    for (const auto& pair : hashmap)
+    {
+        vec.push_back(pair.first);
+        vec.push_back(pair.second);
+    }
+    out.write((const char*)&vec[0], vec.size() * sizeof(std::uint32_t));
+    out.close();
 }
 
 void update::complete(cmdlist& cmd, std::vector<std::unique_ptr<action>>& next)
@@ -407,7 +438,8 @@ void update::complete(action& a, std::vector<std::unique_ptr<action>>& next)
         s->articles_ = std::move(p->articles_);
         s->hashes_   = std::move(p->hashes_);
 
-        s->set_affinity(action::affinity::single_thread);
+        //s->set_affinity(action::affinity::single_thread);
+        s->set_affinity(action::affinity::gui_thread);
         next.push_back(std::move(s));
     }
     if (auto* p = dynamic_cast<store*>(&a))

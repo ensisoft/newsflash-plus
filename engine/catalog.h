@@ -237,9 +237,10 @@ namespace newsflash
     private:
         typedef typename Storage::buffer buffer;
         typedef typename Storage::buffer::iterator buffer_iterator;
+        typedef typename Storage::buffer::const_iterator buffer_const_iterator;
 
         template<typename Value>
-        void read(buffer_iterator& it, Value& val) const 
+        void read(buffer_const_iterator& it, Value& val) const 
         {
             char* p = (char*)&val;
             for (std::size_t i=0; i<sizeof(val); ++i)
@@ -253,7 +254,7 @@ namespace newsflash
                 *it++ = p[i];
         }
 
-        void read(buffer_iterator& it, std::string& str) const 
+        void read(buffer_const_iterator& it, std::string& str) const 
         {
             //const auto len = *it++;
             std::uint16_t len;
@@ -272,7 +273,7 @@ namespace newsflash
         }
 
 
-        void read(buffer_iterator& it, bitflag<article::flags>& flags) const 
+        void read(buffer_const_iterator& it, bitflag<article::flags>& flags) const 
         {
             flags.set_from_value(*it++);
         }
@@ -333,12 +334,12 @@ namespace newsflash
             ASSERT(offset < header_.offset);
             const auto size = Storage::size();
             const auto min  = std::min(std::uint32_t(size - offset), std::uint32_t(1024));
-            lookup_ = Storage::load(offset, min, Storage::buf_read);
+            const auto buff = Storage::load(offset, min, Storage::buf_read);
 
-            auto it = lookup_.begin();
+            auto it = buff.begin();
 
             std::int32_t number = 0;
-            std::uint32_t magic  = 0;
+            std::uint32_t magic = 0;
 
             article ret;
             read(it, ret.bits);
@@ -371,6 +372,5 @@ namespace newsflash
             std::uint32_t table[CATALOG_SIZE];
         };
         header header_;
-        buffer lookup_;
     };
 } // newsflash
