@@ -50,8 +50,6 @@ NewsGroup::NewsGroup(quint32 acc, QString path, QString name) : account_(acc), p
     ui_.setupUi(this);
     ui_.tableView->setModel(&model_);
     ui_.grpView->setTitle(name + " (0)");
-    ui_.tableView->setColumnWidth((int)Cols::BinaryFlag, 32);
-    ui_.tableView->setColumnWidth((int)Cols::RecentFlag, 32);
     ui_.tableView->setColumnWidth((int)Cols::DownloadFlag, 32);
     ui_.tableView->setColumnWidth((int)Cols::BrokenFlag, 32);
     ui_.tableView->setColumnWidth((int)Cols::BookmarkFlag, 32);
@@ -63,7 +61,7 @@ NewsGroup::NewsGroup(quint32 acc, QString path, QString name) : account_(acc), p
     QObject::connect(app::g_engine, SIGNAL(updateCompleted(const app::HeaderInfo&)),
         this, SLOT(updateCompleted(const app::HeaderInfo&)));    
 
-    QObject:connect(&model_, SIGNAL(modelReset()), this, SLOT(modelReset()));
+    QObject::connect(&model_, SIGNAL(modelReset()), this, SLOT(modelReset()));
 
     setWindowTitle(name);
 }
@@ -87,7 +85,13 @@ void NewsGroup::addActions(QMenu& menu)
 
 void NewsGroup::loadState(app::Settings& settings)
 {
+    ui_.tableView->setSortingEnabled(false);
+
     app::loadTableLayout("newsgroup", ui_.tableView, settings);
+
+    ui_.tableView->setSortingEnabled(true);
+    ui_.tableView->sortByColumn((int)app::NewsGroup::Columns::Age, 
+        Qt::DescendingOrder);
 }
 
 void NewsGroup::saveState(app::Settings& settings)

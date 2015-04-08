@@ -22,10 +22,13 @@
 
 #include <newsflash/warnpush.h>
 #  include <QtGui/QIcon>
+#  include <QtGui/QFont>
+#  include <QtGui/QBrush>
 #  include <QFile>
 #  include <QFileInfo>
 #  include <QDir>
 #include <newsflash/warnpop.h>
+#include <newsflash/engine/nntp.h>
 #include "newsgroup.h"
 #include "eventlog.h"
 #include "debug.h"
@@ -35,6 +38,7 @@
 #include "format.h"
 #include "types.h"
 #include "fileinfo.h"
+#include "filetype.h"
 
 namespace app
 {
@@ -67,16 +71,14 @@ QVariant NewsGroup::headerData(int section, Qt::Orientation orientation, int rol
         switch ((Columns)section)
         {
             // fallthrough intentional for these cases.
-            case Columns::BinaryFlag:
-            case Columns::RecentFlag:
             case Columns::BrokenFlag:          
             case Columns::DownloadFlag:
             case Columns::BookmarkFlag:
                 return ""; 
 
+            case Columns::Type:    return "File";
             case Columns::Age:     return "Age";
             case Columns::Size:    return "Size";
-            case Columns::Author:  return "Author";
             case Columns::Subject: return "Subject";
             case Columns::LAST:    break;
         }
@@ -84,15 +86,12 @@ QVariant NewsGroup::headerData(int section, Qt::Orientation orientation, int rol
     else if (role == Qt::DecorationRole)
     {
         static const QIcon icoBinary(toGrayScale("icons:ico_flag_binary.png"));
-        static const QIcon icoNew(toGrayScale("icons:ico_flag_new.png"));
         static const QIcon icoDownload(toGrayScale("icons:ico_flag_download.png"));
         static const QIcon icoBroken(toGrayScale("icons:ico_flag_broken.png"));
         static const QIcon icoBookmark(toGrayScale("icons:ico_flag_bookmark.png"));
 
         switch ((Columns)section)
         {
-            case Columns::BinaryFlag:   return icoBinary;
-            case Columns::RecentFlag:   return icoNew;
             case Columns::BrokenFlag:   return icoBroken;            
             case Columns::DownloadFlag: return icoDownload;
             case Columns::BookmarkFlag: return icoBookmark;
@@ -103,14 +102,12 @@ QVariant NewsGroup::headerData(int section, Qt::Orientation orientation, int rol
     {
         switch ((Columns)section)
         {
-            case Columns::BinaryFlag:   return "Sort by binary status";
-            case Columns::RecentFlag:   return "Sort by new status";
+            case Columns::Type:         return "Sort by file type";
             case Columns::BrokenFlag:   return "Sort by broken status";            
             case Columns::DownloadFlag: return "Sort by download status";
             case Columns::BookmarkFlag: return "Sort by bookmark status";
             case Columns::Age:          return "Sort by age";
             case Columns::Size:         return "Sort by size";
-            case Columns::Author:       return "Sort by author";
             case Columns::Subject:      return "Sort by subject";
             case Columns::LAST: break;
         }
@@ -124,17 +121,33 @@ QVariant NewsGroup::data(const QModelIndex& index, int role) const
     const auto col   = (Columns)index.column();
     const auto& item = index_[row];    
 
+    using flags = newsflash::article::flags;
+    using type  = newsflash::filetype;
+
     if (role == Qt::DisplayRole)
     {
         switch (col)
         {
             // fall-through intended.            
-            case Columns::BinaryFlag:
-            case Columns::RecentFlag:
             case Columns::BrokenFlag:
             case Columns::DownloadFlag:
             case Columns::BookmarkFlag:
                 return {}; 
+
+            case Columns::Type:
+                switch (item.type) 
+                {
+                    case type::none:     return "n/a";
+                    case type::audio:    return toString(FileType::Audio);
+                    case type::video:    return toString(FileType::Video);
+                    case type::image:    return toString(FileType::Image);
+                    case type::text:     return toString(FileType::Text);                                                            
+                    case type::archive:  return toString(FileType::Archive);
+                    case type::parity:   return toString(FileType::Parity);
+                    case type::document: return toString(FileType::Document);
+                    case type::other:    return toString(FileType::Other);
+                }
+                break;
 
             case Columns::Age:    
                 if (item.pubdate == 0) 
@@ -142,38 +155,47 @@ QVariant NewsGroup::data(const QModelIndex& index, int role) const
                 return toString(age { QDateTime::fromTime_t(item.pubdate) });
 
             case Columns::Size:    return toString(size { item.bytes });
-            case Columns::Author:  return QString::fromStdString(item.author);
             case Columns::Subject: return QString::fromStdString(item.subject);
             case Columns::LAST:    Q_ASSERT(false);
         }
     }
-    if (role == Qt::DecorationRole)
+    else if (role == Qt::DecorationRole)
     {
-        using f = newsflash::article::flags;
         switch (col)
         {
-            case Columns::BinaryFlag:
-                if (item.bits.test(f::binary)) 
-                    return QIcon("icons:ico_flag_binary.png");
-                else return QIcon("icons:ico_flag_text.png");
-            case Columns::RecentFlag:
-                break; // todo:
-
             case Columns::BrokenFlag:
-                if (item.bits.test(f::broken))
+                if (item.bits.test(flags::broken))
                     return QIcon("icons:ico_flag_broken.png");
+                break;
 
             case Columns::DownloadFlag:
-                if (item.bits.test(f::downloaded))
+                if (item.bits.test(flags::downloaded))
                     return QIcon("icons:ico_flag_downloaded.png");
+                break;
 
             case Columns::BookmarkFlag:
-                if (item.bits.test(f::bookmarked))
+                if (item.bits.test(flags::bookmarked))
                     return QIcon("icons:ico_flag_bookmark.png");
+                break;
+
+            case Columns::Type:
+                switch (item.type)
+                {
+                    case type::none:     return findFileIcon(FileType::Text);
+                    case type::audio:    return findFileIcon(FileType::Audio);
+                    case type::video:    return findFileIcon(FileType::Video);
+                    case type::image:    return findFileIcon(FileType::Image);
+                    case type::text:     return findFileIcon(FileType::Text);                                                            
+                    case type::archive:  return findFileIcon(FileType::Archive);
+                    case type::parity:   return findFileIcon(FileType::Parity);
+                    case type::document: return findFileIcon(FileType::Document);
+                    case type::other:    return findFileIcon(FileType::Other);                    
+                }
+                break;
+
 
             case Columns::Age:
             case Columns::Size:
-            case Columns::Author:
             case Columns::Subject:
                 break;
             case Columns::LAST: Q_ASSERT(0);
@@ -190,6 +212,50 @@ int NewsGroup::rowCount(const QModelIndex&) const
 int NewsGroup::columnCount(const QModelIndex&) const 
 {
     return (int)Columns::LAST;
+}
+
+void NewsGroup::sort(int column, Qt::SortOrder order)
+{
+    emit layoutAboutToBeChanged();
+
+    const auto o = (order == Qt::AscendingOrder) ? 
+        newsflash::index::order::ascending :
+        newsflash::index::order::descending;
+
+    switch ((Columns)column)
+    {
+        case Columns::Type: 
+            index_.sort(newsflash::index::sorting::sort_by_type, o);
+            break;
+
+        case Columns::BrokenFlag: 
+            index_.sort(newsflash::index::sorting::sort_by_broken, o);
+            break;        
+
+        case Columns::DownloadFlag: 
+            index_.sort(newsflash::index::sorting::sort_by_downloaded, o);
+            break;
+
+        case Columns::BookmarkFlag: 
+            index_.sort(newsflash::index::sorting::sort_by_bookmarked, o);
+            break;
+
+        case Columns::Age: 
+            index_.sort(newsflash::index::sorting::sort_by_age, o);
+            break;
+
+        case Columns::Subject:
+            index_.sort(newsflash::index::sorting::sort_by_subject, o);
+            break;
+
+        case Columns::Size:
+            index_.sort(newsflash::index::sorting::sort_by_size, o);
+            break;
+
+        case Columns::LAST: Q_ASSERT(0); break;
+    }
+
+    emit layoutChanged();
 }
 
 bool NewsGroup::load(quint32 blockIndex, QString path, QString name)
@@ -292,7 +358,7 @@ void NewsGroup::newHeaderDataAvailable(const QString& file)
     auto end = db.end();
     for (; beg != end; ++beg)
     {
-        const auto& article = *beg;
+        const auto& article  = *beg;
         index_.insert(article, index, article.index);
     }
 

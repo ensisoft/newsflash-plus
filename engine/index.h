@@ -40,10 +40,15 @@ namespace newsflash
         struct item;
     public:
         enum class sorting {
+            sort_by_broken,
+            sort_by_binary,
+            sort_by_downloaded,
+            sort_by_bookmarked,
             sort_by_age, 
+            sort_by_type,
             sort_by_size,
             sort_by_author,
-            sort_by_subject
+            sort_by_subject,
         };
         enum class filter {
 
@@ -76,9 +81,15 @@ namespace newsflash
             {
                 switch (column)
                 {
-                    case sorting::sort_by_age:  sort(up_down, &article::pubdate); break;
-                    case sorting::sort_by_size: sort(up_down, &article::bytes); break;
-                    case sorting::sort_by_author: sort(up_down, &article::author); break;
+                    case sorting::sort_by_broken:     sort(up_down, article::flags::broken); break;
+                    case sorting::sort_by_binary:     sort(up_down, article::flags::binary); break;
+                    case sorting::sort_by_downloaded: sort(up_down, article::flags::downloaded); break;
+                    case sorting::sort_by_bookmarked: sort(up_down, article::flags::bookmarked); break;
+
+                    case sorting::sort_by_age:     sort(up_down, &article::pubdate); break;
+                    case sorting::sort_by_type:    sort(up_down, &article::type); break;
+                    case sorting::sort_by_size:    sort(up_down, &article::bytes); break;
+                    case sorting::sort_by_author:  sort(up_down, &article::author); break;
                     case sorting::sort_by_subject: sort(up_down, &article::subject); break;
                 }
             }
@@ -93,8 +104,24 @@ namespace newsflash
             std::deque<item>::iterator it;
             switch (sort_)
             {
+                case sorting::sort_by_broken:
+                    it = lower_bound(a, article::flags::broken); 
+                    break;
+                case sorting::sort_by_binary:
+                    it = lower_bound(a, article::flags::binary);
+                    break;
+                case sorting::sort_by_downloaded:
+                    it = lower_bound(a, article::flags::downloaded);
+                    break;
+                case sorting::sort_by_bookmarked:
+                    it = lower_bound(a, article::flags::bookmarked);
+                    break;
+
                 case sorting::sort_by_age: 
                     it = lower_bound(a, &article::pubdate);
+                    break;
+                case sorting::sort_by_type: 
+                    it = lower_bound(a, &article::type);
                     break;
                 case sorting::sort_by_size:                    
                     it = lower_bound(a, &article::bytes); 
@@ -123,6 +150,7 @@ namespace newsflash
             const auto& item = items_[index];
             return on_load(item.key, item.index);
         }
+
         sorting get_sorting() const 
         { return sort_; }
 
@@ -198,6 +226,29 @@ namespace newsflash
                  std::sort(beg, end, less(p));
             else std::sort(beg, end, greater(p));
         }
+        void sort(order up_down, article::flags mask)
+        {
+            auto beg = std::begin(items_);
+            auto end = std::begin(items_);
+            std::advance(end, size_);
+            if (up_down == order::ascending)
+            {
+                std::sort(beg, end, [=](const item& lhs, const item& rhs) {
+                    const auto& a = on_load(lhs.key, lhs.index);
+                    const auto& b = on_load(rhs.key, rhs.index);
+                    return (a.bits & mask).value()  < (b.bits & mask).value();
+                });
+            }
+            else
+            {
+                std::sort(beg, end, [=](const item& lhs, const item& rhs) {
+                    const auto& a = on_load(lhs.key, lhs.index);
+                    const auto& b = on_load(rhs.key, rhs.index);
+                    return (a.bits & mask).value() > (b.bits & mask).value();
+                });
+            }
+        }
+
         template<typename MemPtr>
         std::deque<item>::iterator lower_bound(const article& a, MemPtr p)
         {
@@ -207,6 +258,28 @@ namespace newsflash
             if (order_ == order::ascending)
                 return std::lower_bound(beg, end, a, less(p));
             else return std::lower_bound(beg, end, a, greater(p));
+        }
+
+        std::deque<item>::iterator lower_bound(const article& a, article::flags mask)
+        {
+            auto beg = std::begin(items_);
+            auto end = std::begin(items_);
+            std::advance(end, size_);
+            if (order_ == order::ascending) {
+                return std::lower_bound(beg, end, a, [=](const item& lhs, const article& rhs) {
+                    const auto& a = on_load(lhs.key, lhs.index);
+                    const auto& b = rhs;
+                    return (a.bits & mask).value() < (b.bits & mask).value();
+                });
+            }
+            else
+            {
+                return std::lower_bound(beg, end, a, [=](const item& lhs, const article& rhs) {
+                    const auto& a = on_load(lhs.key, lhs.index);
+                    const auto& b = rhs;
+                    return (a.bits & mask).value() > (b.bits & mask).value();
+                });
+            }
         }
 
         std::deque<item>::iterator end() 

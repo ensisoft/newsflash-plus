@@ -38,8 +38,6 @@
 
 namespace nntp
 {
-
-    
     // broken down Usenet article overview fields.
     struct overview {
         struct field {

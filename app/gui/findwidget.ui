@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>779</width>
-    <height>67</height>
+    <width>806</width>
+    <height>56</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -26,8 +26,17 @@
       <string>Find</string>
      </property>
      <layout class="QHBoxLayout" name="horizontalLayout">
+      <property name="spacing">
+       <number>6</number>
+      </property>
+      <property name="leftMargin">
+       <number>9</number>
+      </property>
+      <property name="topMargin">
+       <number>0</number>
+      </property>
       <property name="bottomMargin">
-       <number>7</number>
+       <number>5</number>
       </property>
       <item>
        <widget class="QPushButton" name="btnQuit">

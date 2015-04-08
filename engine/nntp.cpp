@@ -114,7 +114,8 @@ namespace {
         R"(pmb\.|vfs\.|[0-9][0-9]r\.|ofn\.|euc\.|u3m\.|alf\.|bzn\.|mgo\.|)" \
         R"([0-9]{3}\.|xvid\.|exe\.|mr\.|a4m\.|bov\.|vkm\.|akm\.|eca\.|mar\.|calf\.|)" \
         R"([0-9]{1,3}z\.|fdm\.|tad\.|z7\.|caa\.|grn\.|cpm\.|fit\.)"\
-        R"([0-9]{1,3}s\.|ffai\.|fws\.|sdn\.|st\.|3ca\.|rrs\.)";
+        R"([0-9]{1,3}s\.|ffai\.|fws\.|sdn\.|st\.|3ca\.|rrs\.)" \
+        R"(v4m\.|vlf\.|mhc\.)";
 
 class reverse_c_str_iterator :
   public std::iterator<std::bidirectional_iterator_tag, const char>
@@ -358,8 +359,6 @@ std::time_t timevalue(const nntp::date& date)
 {
     enum { USE_SYSTEM_DAYLIGHT_SAVING_INFO = -1 };
 
-    if (date.year == 0) return 0;
-
     time_t ret  = 0;
     struct tm t = {};
     t.tm_sec    = date.seconds;
@@ -391,6 +390,7 @@ std::time_t timevalue(const nntp::date& date)
         }
 #endif
     }
+
     ret = mktime(&t);
     if (date.tzoffset)
     {
@@ -403,6 +403,11 @@ std::time_t timevalue(const nntp::date& date)
     {
         // todo: translate the TZ name into a delta to GMT
     }
+    // if the timestamp is in the future, we'll crop it.
+    const auto now = std::time(nullptr);
+    if (ret > now)
+        return now;
+
     return ret;
 }
 

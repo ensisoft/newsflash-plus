@@ -32,6 +32,7 @@
 #include <newsflash/engine/index.h>
 #include <vector>
 #include <deque>
+#include "filetype.h"
 
 namespace app
 {
@@ -43,12 +44,14 @@ namespace app
 
     public:
         enum class Columns {
-            BinaryFlag, 
-            RecentFlag, 
-            BrokenFlag,
+            Type,
+            Age, 
+            BrokenFlag,            
+            Size,  
+            //Author,  
             DownloadFlag, 
-            BookmarkFlag,
-            Age, Size,  Author,  Subject, LAST
+            BookmarkFlag,            
+            Subject, LAST
         };
 
         NewsGroup();
@@ -59,6 +62,7 @@ namespace app
         virtual QVariant data(const QModelIndex& index, int role) const override;        
         virtual int rowCount(const QModelIndex&) const override;
         virtual int columnCount(const QModelIndex&) const override;
+        virtual void sort(int column, Qt::SortOrder order) override;
 
         bool load(quint32 blockIndex, QString path, QString name);
         void refresh(quint32 account, QString path, QString name);

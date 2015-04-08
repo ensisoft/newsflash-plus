@@ -90,9 +90,10 @@ public:
             const auto binary  = nntp::is_binary_post(xover.subject.start, xover.subject.len);
             const auto number  = nntp::to_int<std::uint64_t>(xover.number.start, xover.number.len);
             const auto bytes   = nntp::to_int<std::uint32_t>(xover.bytecount.start, xover.bytecount.len);
-            const auto pubdate = nntp::timevalue(date.second);
+            const auto pubdate = date.first ? nntp::timevalue(date.second) : 0;
 
             article a;
+            a.type    = filetype::none;
             a.subject = std::string(xover.subject.start, xover.subject.len);
             a.author  = std::string(xover.author.start, xover.author.len);
             a.number  = number;
@@ -189,6 +190,12 @@ public:
                 }
                 else
                 {
+                    const auto& filename = nntp::find_filename(article.subject);
+                    if (!filename.empty())
+                    {
+                        article.type = find_filetype(filename);
+                    }
+
                     db->insert(article, index);                    
                     break;
                 }

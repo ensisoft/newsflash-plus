@@ -39,9 +39,9 @@ QString filepattern(FileType type)
             Q_ASSERT(!"none is not a valid filetype");
             break;
         case FileType::Audio:
-            return ".mp4 | .mp3 | .mp2 | .wav | .ogg | .xm | .flac | .m3u | .mpa";
+            return ".mp3 | .mp2 | .wav | .ogg | .xm | .flac | .m3u | .mpa";
         case FileType::Video:
-            return ".avi | .mkv | .ogm | .wmv | .wma | .wma | .mpe?g | .rm | .mov | .flv | .asf | .mp3 | .3gp | .3g2";
+            return ".avi | .mkv | .ogm | .wmv | .wma | .mpe?g | .rm | .mov | .flv | .asf | .mp4 | .3gp | .3g2 | .m4v";
         case FileType::Image:
             return ".jpe?g | .bmp | .png | .gif";
         case FileType::Text:

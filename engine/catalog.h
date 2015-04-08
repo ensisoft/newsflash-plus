@@ -308,6 +308,7 @@ namespace newsflash
             std::uint32_t magic = 0xc0febabe;
 
             write(it, a.bits);
+            write(it, a.type);
             write(it, number);
             write(it, index);
             write(it, a.pubdate);
@@ -341,6 +342,7 @@ namespace newsflash
 
             article ret;
             read(it, ret.bits);
+            read(it, ret.type);
             read(it, number);
             read(it, ret.index);
             read(it, ret.pubdate);

@@ -110,9 +110,21 @@ namespace newsflash
     }
 
     template<typename Enum>
+    auto operator | (bitflag<Enum> lhs, Enum e) -> decltype(lhs)
+    {
+        return lhs | bitflag<Enum>(e);
+    }
+
+    template<typename Enum>
     auto operator & (bitflag<Enum> lhs, bitflag<Enum> rhs) -> decltype(lhs)
     {
-        return { lhs.value() & rhs.value() };
+        return bitflag<Enum>(lhs.value() & rhs.value());
+    }
+
+    template<typename Enum>
+    auto operator & (bitflag<Enum> lhs, Enum e) -> decltype(lhs)
+    {
+        return lhs & bitflag<Enum>(e);
     }
 
 } // newsflash

@@ -2012,6 +2012,8 @@ void engine::load_session(const std::string& file)
     state_->oid = list.current_id();
     state_->bytes_queued = list.bytes_queued();
     state_->bytes_ready  = list.bytes_ready();
+    if (list.download_size() == 0)
+        state_->oid = 1;
 }
 
 

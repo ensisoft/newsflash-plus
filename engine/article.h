@@ -25,6 +25,7 @@
 #include <ctime>
 #include <string>
 #include "bitflag.h"
+#include "filetype.h"
 
 namespace newsflash
 {
@@ -50,6 +51,9 @@ namespace newsflash
 
         // set flags bits.
         bitflag<flags> bits;
+
+        // filetype of the file if any.
+        filetype type;
 
         // offset in the catalog.
         std::uint32_t offset;    
@@ -77,7 +81,7 @@ namespace newsflash
         std::string author;
 
         std::size_t length() const {
-           return 23 + sizeof(std::time_t) + subject.size() + author.size();
+           return 24 + sizeof(std::time_t) + subject.size() + author.size();
         }
         std::uint32_t next() const {
            return offset + length();
