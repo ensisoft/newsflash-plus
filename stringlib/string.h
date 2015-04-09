@@ -390,6 +390,8 @@ namespace stringlib
         return find_match(haystack, strlen(haystack), needle, strlen(needle));
     }
     
+    std::string find_longest_common_substring(std::vector<std::string> vec, bool case_sensitive = true);    
+    
     // try to find the longest common substring in strings a and b
     std::string find_longest_common_substring(const std::string& a, const std::string& b, bool case_sensitive = true);
 

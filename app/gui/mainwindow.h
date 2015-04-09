@@ -86,8 +86,7 @@ namespace gui
         // load previously stored application/gui state.
         void loadState();
 
-        // change application focus to the widget with the matching name      
-        void showWidget(const QString& name);
+        void focusWidget(const MainWidget* widget);
 
         // open and show the application settings and select the
         // matching settings page.
@@ -114,6 +113,10 @@ namespace gui
         QStringList getRecentPaths() const;
 
         quint32 chooseAccount(const QString& description);
+
+        std::size_t numWidgets() const;
+
+        MainWidget* getWidget(std::size_t i);
 
    private:
         void show(const QString& name);

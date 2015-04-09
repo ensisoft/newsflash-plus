@@ -67,6 +67,11 @@ namespace newsflash
             {
                 return data_.data();
             }
+            const void* address() const 
+            {
+                return data_.data();
+            }
+
             std::size_t length() const 
             {
                 return data_.size();
@@ -99,7 +104,7 @@ namespace newsflash
 
         std::string filename() const;
 
-
+        bool is_open() const;
     private:
         std::shared_ptr<fileio> fileio_;
         std::string filename_;

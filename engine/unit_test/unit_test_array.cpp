@@ -20,24 +20,50 @@
 
 #include <newsflash/config.h>
 #include <boost/test/minimal.hpp>
-#include "../filetype.h"
+#include "../array.h"
+#include "../filebuf.h"
+#include "../filemap.h"
+#include "unit_test_common.h"
+
 
 int test_main(int, char*[])
 {
-    using t = newsflash::filetype;
     namespace n = newsflash;
 
-    BOOST_REQUIRE(n::find_filetype("agajlasg.asd") == t::other);
-    BOOST_REQUIRE(n::find_filetype("foobar.png") == t::image);
-    BOOST_REQUIRE(n::find_filetype("foobar.PNG") == t::image);
-    BOOST_REQUIRE(n::find_filetype("foobar.mp4") == t::video);    
-    BOOST_REQUIRE(n::find_filetype("foobar.r00") == t::archive);
-    BOOST_REQUIRE(n::find_filetype("foobar.r59") == t::archive);    
-    BOOST_REQUIRE(n::find_filetype("foobar.rar") == t::archive);        
-    BOOST_REQUIRE(n::find_filetype("foobar.mpeg") == t::video);
-    BOOST_REQUIRE(n::find_filetype("foobar.part001.rar") == t::archive);
+    delete_file("array.dat");
 
+    {
+        using array = n::array<int, n::filebuf>;
 
+        array arr;
+        arr.open("array.dat");
+        arr.resize(100);
+
+        arr[0]  = 123;
+        arr[99] = 99;
+
+        BOOST_REQUIRE(arr[0] == 123);
+        BOOST_REQUIRE(arr[99] == 99);
+
+        arr.resize(150);
+        BOOST_REQUIRE(arr[0] == 123);
+        BOOST_REQUIRE(arr[99] == 99);
+
+        arr[149] = 149;
+        BOOST_REQUIRE(arr[149] == 149);        
+
+    }
+
+    {
+        using array = n::array<int, n::filebuf>;
+
+        array arr;
+        arr.open("array.dat");
+        BOOST_REQUIRE(arr.size() == 150);
+        BOOST_REQUIRE(arr[0] == 123);
+        BOOST_REQUIRE(arr[99] == 99);
+        BOOST_REQUIRE(arr[149] == 149);
+    }
 
     return 0;
 }

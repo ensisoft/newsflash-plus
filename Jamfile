@@ -108,8 +108,8 @@ exe newsflash :
   app/gui/qtsingleapplication/qtlocalpeer.h
   app/gui/qtsingleapplication/qtlocalpeer.cpp
 
-
   keygen/keygen.cpp
+  stringlib/string.cpp
 
   /boost//filesystem/<link>static
   /boost//system/<link>static

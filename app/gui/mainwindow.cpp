@@ -253,9 +253,9 @@ void MainWindow::loadState()
     app::g_engine->loadSession();
 }
 
-void MainWindow::showWidget(const QString& name)
+void MainWindow::focusWidget(const MainWidget* widget)
 {
-    show(name);
+    focus(const_cast<MainWidget*>(widget));
 }
 
 void MainWindow::showSetting(const QString& name)
@@ -453,6 +453,17 @@ quint32 MainWindow::chooseAccount(const QString& description)
         app::g_accounts->setMainAccount(acc.id);
 
     return acc.id;
+}
+
+std::size_t MainWindow::numWidgets() const 
+{
+    return widgets_.size();
+}
+
+MainWidget* MainWindow::getWidget(std::size_t i)
+{
+    BOUNDSCHECK(widgets_, i);
+    return widgets_[i];
 }
 
 void MainWindow::updateMenu(MainWidget* widget)

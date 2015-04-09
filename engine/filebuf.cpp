@@ -196,4 +196,9 @@ std::string filebuf::filename() const
     return filename_;
 }
 
+bool filebuf::is_open() const 
+{
+    return !!fileio_;
+}
+
 } // newsflash

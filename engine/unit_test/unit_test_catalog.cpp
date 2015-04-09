@@ -29,26 +29,6 @@
 #include "../catalog.h"
 #include "unit_test_common.h"
 
-struct string {
-    std::string s;
-
-    string(const char* p) : s(p)
-    {}
-};
-
-bool operator==(const char* p, const string& s)
-{
-    return std::strncmp(p, s.s.c_str(), s.s.size()) == 0;
-}
-
-std::size_t length(const string& s)
-{
-    return s.s.size();
-}
-
-
-#define S(x) string(x)
-#define L(x) length(string(x))
 
 void unit_test_create_new()
 {
@@ -72,7 +52,6 @@ void unit_test_create_new()
         a.bits.set(newsflash::article::flags::broken);
         a.bits.set(newsflash::article::flags::binary);
         db.append(a);
-
         BOOST_REQUIRE(db.article_count() == 1);
 
         a.author  = "Mickey mouse";
@@ -82,8 +61,15 @@ void unit_test_create_new()
         a.bits.clear();
         a.bits.set(newsflash::article::flags::downloaded);
         db.append(a);
-
         BOOST_REQUIRE(db.article_count() == 2);
+
+        a.author  = "foo@acme.com";
+        a.subject = "Leiah - Kings and Queens \"Foobar.mp3\" (01/10)";
+        a.bytes   = 1024;
+        a.number  = 45;
+        a.bits.clear();
+        db.append(a);
+        BOOST_REQUIRE(db.article_count() == 3);
 
         db.flush();
     }
@@ -92,7 +78,7 @@ void unit_test_create_new()
     {
         catalog db;
         db.open("file");
-        BOOST_REQUIRE(db.article_count() == 2);                
+        BOOST_REQUIRE(db.article_count() == 3);                
 
         // iterators
         auto beg = db.begin();
@@ -108,11 +94,9 @@ void unit_test_create_new()
         BOOST_REQUIRE(a.bytes   == 1024);
         BOOST_REQUIRE(a.number  == 666);
 
-        auto b = *beg;
-        BOOST_REQUIRE(a == b);
+        BOOST_REQUIRE(a == *beg);
         BOOST_REQUIRE(beg->author == "John Doe");
         BOOST_REQUIRE(beg->bytes  == 1024);
-
 
         a = db.lookup(catalog::offset_t{a.next()});
         BOOST_REQUIRE(a.bits.test(newsflash::article::flags::downloaded));
@@ -121,9 +105,21 @@ void unit_test_create_new()
         BOOST_REQUIRE(a.bytes == 456);
         BOOST_REQUIRE(a.number == 500);
 
-        ++beg;
-        b = *beg;
-        BOOST_REQUIRE(a == b);
+        beg++;
+        BOOST_REQUIRE(a == *beg);
+        BOOST_REQUIRE(beg->author == "Mickey mouse");
+        BOOST_REQUIRE(beg->bytes == 456);
+
+        a = db.lookup(catalog::offset_t{a.next()});
+        BOOST_REQUIRE(a.author == "foo@acme.com");
+        BOOST_REQUIRE(a.number == 45);
+
+        beg++;
+        BOOST_REQUIRE(a == *beg);
+        BOOST_REQUIRE(beg->author == "foo@acme.com");
+
+        beg++;
+        BOOST_REQUIRE(beg == end);
     }
 
     delete_file("file");

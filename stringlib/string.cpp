@@ -49,6 +49,25 @@ struct finder {
 namespace stringlib
 {
 
+std::string find_longest_common_substring(std::vector<std::string> vec, bool case_sensitive)
+{
+    if (vec.empty())
+        return "";
+    if (vec.size() == 1)
+        return vec[0];
+
+    std::sort(vec.begin(), vec.end(), [](const std::string& lhs, const std::string& rhs) {
+        return lhs.size() < rhs.size();
+    });
+
+    std::string substring = vec[0];
+    for (std::vector<std::string>::size_type i(0); i<vec.size(); ++i)
+    {
+        substring = find_longest_common_substring(vec[i], substring, case_sensitive);
+    }
+    return substring;
+}    
+
 std::string find_longest_common_substring(const std::string& master, const std::string& slave, bool case_sensitive)
 {
     std::string str;

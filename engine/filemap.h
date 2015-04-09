@@ -216,6 +216,12 @@ namespace newsflash
            {
                return (byte*)base_ + offset_;; 
            }
+
+           const void* address() const 
+           {
+               return (const byte*)base_ + offset_;
+           }
+
            std::size_t length() const 
            { 
                return length_; 

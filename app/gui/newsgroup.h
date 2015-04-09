@@ -60,6 +60,7 @@ namespace gui
         void on_actionFilter_triggered();
         void on_actionStop_triggered();
         void on_btnLoadMore_clicked();
+        void on_tableView_customContextMenuRequested(QPoint p);
         void modelReset();
         void newHeaderInfoAvailable(const QString& group, quint64 numLocal, quint64 numRemote);
         void updateCompleted(const app::HeaderInfo& info);

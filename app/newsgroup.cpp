@@ -57,6 +57,11 @@ NewsGroup::NewsGroup() : task_(0)
 
 NewsGroup::~NewsGroup()
 {
+    if (task_)
+    {
+        g_engine->killAction(task_);
+    }
+
     DEBUG("Newsgroup deleted");
 }
 
@@ -311,7 +316,7 @@ void NewsGroup::newHeaderDataAvailable(const QString& file)
     DEBUG("New headers available in %1", file);
 
     // see if this data file is of interest to us. if it isn't just ignore the signal
-    if (file.indexOf(path_ + name_) != 0)
+    if (file.indexOf(joinPath(path_, name_)) != 0)
         return;
 
     QAbstractTableModel::beginResetModel();

@@ -183,8 +183,26 @@ void NewsList::on_actionBrowse_triggered()
         const auto& datapath = account->datapath;
         const auto& group    = model_.getName(i);
         const auto account   = curAccount_;
+        const auto& guid     = QString("%1/%2").arg(account).arg(group);
+
+        bool exists = false;
+
+        for (std::size_t i=0; i<g_win->numWidgets(); ++i)
+        {
+            const auto* w = g_win->getWidget(i);
+            const auto& p = w->property("newsgroup-guid");
+            if (p.isNull()) continue;
+            if (p.toString() == guid)
+            {
+                g_win->focusWidget(w);
+                exists = true;
+                break;
+            }
+        }
+        if (exists) continue;
 
         auto* news = new NewsGroup(account, datapath, group);
+        news->setProperty("newsgroup-guid", guid);
         news->load();
         g_win->attach(news, false, true);
     }

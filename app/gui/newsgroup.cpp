@@ -110,6 +110,7 @@ void NewsGroup::load()
         ui_.progressBar->setMaximum(0),
         ui_.progressBar->setMinimum(0);
         ui_.actionStop->setEnabled(true);
+        ui_.actionRefresh->setEnabled(false);
         ui_.btnLoadMore->setVisible(false);
     } 
     else
@@ -122,6 +123,10 @@ void NewsGroup::on_actionRefresh_triggered()
 {
     model_.refresh(account_, path_, name_);
     ui_.actionRefresh->setEnabled(false);
+    ui_.actionStop->setEnabled(true);
+    ui_.progressBar->setMaximum(0);
+    ui_.progressBar->setMinimum(0);
+    ui_.progressBar->setVisible(true);
 }
 
 void NewsGroup::on_actionFilter_triggered()
@@ -142,6 +147,17 @@ void NewsGroup::on_btnLoadMore_clicked()
         ui_.btnLoadMore->setEnabled(false);
     }
     ++blockIndex_;
+}
+
+void NewsGroup::on_tableView_customContextMenuRequested(QPoint p)
+{
+    QMenu menu(this);
+    menu.addAction(ui_.actionRefresh);
+    menu.addSeparator();
+    menu.addAction(ui_.actionFilter);
+    menu.addSeparator();
+    menu.addAction(ui_.actionStop);
+    menu.exec(QCursor::pos());
 }
 
 void NewsGroup::modelReset()

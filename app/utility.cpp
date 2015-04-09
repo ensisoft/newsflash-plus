@@ -20,6 +20,8 @@
 
 #include <newsflash/config.h>
 #include <newsflash/warnpush.h>
+#  include <boost/algorithm/string/regex.hpp>
+#  include <boost/regex.hpp>
 #  include <QtGui/QTableView>
 #  include <QtGui/QCheckBox>
 #  include <QtGui/QLineEdit>
@@ -31,11 +33,81 @@
 #  include <QAbstractTableModel>
 #  include <QDir>
 #include <newsflash/warnpop.h>
+#include <newsflash/engine/nntp.h>
+#include <newsflash/stringlib/string.h>
+#include <map>
 #include "utility.h"
 #include "settings.h"
 
 namespace app
 {
+
+std::string suggestName(const std::vector<std::string>& subjectLines)
+{
+    const auto flags = boost::regbase::icase | boost::regbase::perl;
+
+    boost::regex mov1("[\\[ \"<(]?[[:alnum:]\\.\\-]*\\.(DIVX|XVID|NTSC|PAL|DVDR?|720p?|1080p?|BluRay)\\.[[:alnum:]\\.]*\\-[[:alnum:]]+[)>\" \\].]??", flags);
+    boost::regex mov2("[\\[ \"<(]?[[:alnum:]\\.]*(DVD(RIP|SRC)?|XVID|DIVX|NTSC|PAL)\\-[[:alnum:]]+[)>\" \\].]??", flags);    
+    std::map<std::string, int> rank;   
+
+    for (const auto& s : subjectLines)
+    {
+        boost::match_results<std::string::const_iterator> res;
+        if (boost::regex_search(s, res, mov1))
+        {
+            rank[res[0]]++;
+        }
+        else if (boost::regex_search(s, res, mov2))
+        {
+            rank[res[0]]++;
+        }
+        else
+        {
+            std::string name = nntp::find_filename(s);
+            if (!name.empty())
+            {
+                boost::algorithm::erase_regex(name,  boost::regex("\\.[a-Z]{2,4}$", flags));
+                // another hack here, par2 files have "terminator2.vol000-010.par" notation
+                // we want to get rid of the volxxx crap as well
+                boost::algorithm::erase_regex(name, boost::regex("(\\.vol\\d*\\+\\d*|\\.part\\d*|\\.)$", flags));                
+                rank[name]++;
+            }
+        }
+    }
+    std::string s;
+    int r = 0;
+    // find the string with highest rank
+    for (const auto& p : rank)
+    {
+        if (p.second > r)
+        {
+            s = p.first;
+            r = p.second;
+        }
+    }
+    if (s.empty() || (r == 1 && subjectLines.size() != 1))
+    {
+        s = stringlib::find_longest_common_substring(subjectLines, false);
+    }
+
+    // trim useless characters from the start and end
+    const char punct[] = {
+        ' ', '"', '\'', '*', '[', '-', '#', ']', '.', ':', '(',')', '!',
+        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
+    };
+    
+    // start of the string.
+    while (!s.empty() &&
+        std::find(std::begin(punct), std::end(punct), s.front()) != std::end(punct))
+        s.erase(s.begin());
+
+    // end of the string.
+    while (!s.empty() && 
+        std::find(std::begin(punct), std::end(punct), s.back()) != std::end(punct))
+        s.pop_back();
+
+    return s;
+}
 
 QString joinPath(const QString& lhs, const QString& rhs)
 {

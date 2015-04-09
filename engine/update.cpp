@@ -38,11 +38,13 @@
 #include "logging.h"
 #include "cmdlist.h"
 #include "catalog.h"
+#include "array.h"
 
 namespace newsflash
 {
 
 using filedb = catalog<filebuf>;
+using arrdb  = array<std::int16_t, filebuf>;
 
 struct update::state {
     std::string folder;
@@ -51,6 +53,9 @@ struct update::state {
     //std::mutex m;
     std::map<std::uint32_t, std::unique_ptr<filedb>> files;
     std::map<std::uint32_t, std::uint32_t> hashmap;
+
+    // message id db
+    arrdb idb;
 
     std::string file_volume_name(std::size_t index)
     {
@@ -81,16 +86,22 @@ public:
             if (!pair.first)
                 continue;
             const auto& xover  = pair.second;
-            if (xover.subject.len == 0)
+            if (xover.subject.len == 0 || xover.author.len == 0)
                 continue;
 
-            const auto& part   = nntp::parse_part(xover.subject.start, xover.subject.len);
-            const auto& date   = nntp::parse_date(xover.date.start, xover.date.len);
+            const auto& part = nntp::parse_part(xover.subject.start, xover.subject.len);
+            if (part.first)
+            {
+                if (part.second.numerator > part.second.denominator)
+                    continue;
+            }
+
+            const auto date    = nntp::parse_date(xover.date.start, xover.date.len);
+            const auto pubdate = date.first ? nntp::timevalue(date.second) : 0;            
             const auto hash    = nntp::hashvalue(xover.subject.start, xover.subject.len);            
             const auto binary  = nntp::is_binary_post(xover.subject.start, xover.subject.len);
             const auto number  = nntp::to_int<std::uint64_t>(xover.number.start, xover.number.len);
             const auto bytes   = nntp::to_int<std::uint32_t>(xover.bytecount.start, xover.bytecount.len);
-            const auto pubdate = date.first ? nntp::timevalue(date.second) : 0;
 
             article a;
             a.type    = filetype::none;
@@ -99,14 +110,17 @@ public:
             a.number  = number;
             a.bytes   = bytes;
             a.pubdate = pubdate;
+            a.partmax = 0;
+            a.partno  = 0;            
+            a.idb     = 0;
             a.bits.set(article::flags::binary, binary);
+
             if (binary)
             {
                 const auto& filename = nntp::find_filename(a.subject);
                 if (!filename.empty())
                     a.type = find_filetype(filename);
             }
-
             if (part.first)
             {
                 a.partno  = part.second.numerator;
@@ -115,11 +129,6 @@ public:
                     const auto broken = a.partno != a.partmax;
                     a.bits.set(article::flags::broken, broken);
                 }
-            }
-            else
-            {
-                a.partno  = 1;
-                a.partmax = 1;
             }
             articles_.push_back(a);
             hashes_.push_back(hash);
@@ -145,6 +154,10 @@ public:
     {
         first_ = std::numeric_limits<decltype(first_)>::max();
 
+        auto& files = state_->files;
+        auto& hmap  = state_->hashmap;
+        auto& idb   = state_->idb;
+
         for (std::size_t i=0; i<articles_.size(); ++i)
         {
             auto& article  = articles_[i];
@@ -152,10 +165,6 @@ public:
 
             last_  = std::max(last_, article.number);
             first_ = std::min(first_, article.number);
-
-            //std::lock_guard<std::mutex> lock(state_->m);        
-            auto& files = state_->files;
-            auto& hmap  = state_->hashmap;
 
             auto hit = hmap.find(hashvalue);
             if (hit == std::end(hmap))
@@ -193,16 +202,37 @@ public:
                         a.bits.set(article::flags::broken, broken);
                     }
                     db->insert(a, index);
+                    if (a.partmax)
+                    {
+                        const auto base = a.number;
+                        const auto num  = article.number;
+                        std::int16_t diff = 0;
+                        if (base > num)
+                            diff = -(base - num);
+                        else diff = num - base;
+                        idb[a.idb + article.partno] = diff;
+                    }
                     break;
                 }
                 else
                 {
+                    // we store one complete 64bit article number for the whole pack
+                    // and then for the additional parts we store a 16 bit delta value.
+                    // note that while yenc generally uses 1 based part indexing some 
+                    // posters use 0 based instead. Hence we just add + 1 to cater for 
+                    // both cases safely.
+                    if (article.partmax)
+                    {
+                        article.idb = idb.size();
+                        idb.resize(idb.size() + article.partmax + 1);
+                        idb[article.idb + article.partno] = 0; // 0 difference to the message id stored with the article.
+                    }
                     db->insert(article, index);                    
                     break;
                 }
             }
             if (slot == CATALOG_SIZE)
-                throw std::runtime_error("hashmap overflow collision");
+                throw std::runtime_error("hashmap overflow");
 
             updates_.insert(db.get());
         }
@@ -222,16 +252,17 @@ private:
 
 update::update(std::string path, std::string group) : local_last_(0), local_first_(0)
 {
-    const auto file = fs::joinpath(path, group + ".nfo");
+    const auto nfo = fs::joinpath(path, group + ".nfo");
+    const auto idb = fs::joinpath(path, group + ".idb");
     
     state_ = std::make_shared<state>();
     state_->folder = std::move(path);
     state_->group  = std::move(group);
 
 #if defined(LINUX_OS)
-    std::ifstream in(file, std::ios::in | std::ios::binary);
+    std::ifstream in(nfo, std::ios::in | std::ios::binary);
 #elif defined(WINDOWS_OS)
-    std::wifstream in(utf8::decode(file), std::ios::in);
+    std::wifstream in(utf8::decode(nfo), std::ios::in);
 #endif
     if (in.is_open())
     {
@@ -252,17 +283,8 @@ update::update(std::string path, std::string group) : local_last_(0), local_firs
             const auto val = vec[i+1];
             state_->hashmap.insert(std::make_pair(key, val));
         }
-
-        //string_t first;
-        //string_t last;
-        //std::getline(in, first);
-        //std::getline(in, last);
-        // local_first_ = std::stoull(first);
-        // local_last_  = std::stoull(last);
         xover_last_  = local_last_;
         xover_first_ = local_first_;
-
-
     }
     else
     {
@@ -274,6 +296,7 @@ update::update(std::string path, std::string group) : local_last_(0), local_firs
     remote_first_ = 0;
     remote_last_  = 0;
 
+    state_->idb.open(idb);
 }
 
 update::~update()

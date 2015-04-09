@@ -70,18 +70,20 @@ namespace newsflash
         // publication data in ctime
         std::time_t   pubdate;
 
+        std::uint32_t idb;
+
         // number of parts known.
-        std::uint8_t  partno;
+        std::uint16_t  partno;
 
         // expected number of parts.
-        std::uint8_t  partmax;
+        std::uint16_t  partmax;
 
         std::string subject;
 
         std::string author;
 
         std::size_t length() const {
-           return 24 + sizeof(std::time_t) + subject.size() + author.size();
+           return 30 + sizeof(std::time_t) + subject.size() + author.size();
         }
         std::uint32_t next() const {
            return offset + length();

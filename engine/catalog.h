@@ -142,24 +142,16 @@ namespace newsflash
         void open(std::string file)
         {
             Storage::open(file);
-            if (Storage::size() == 0)
+            if (Storage::size())
             {
-                auto buff = Storage::load(0, sizeof(header_),
-                    Storage::buf_write);
-                const auto* beg = (const typename Storage::byte*)(&header_);
-                const auto* end = beg + sizeof(header_);
-                std::copy(beg, end, buff.begin());
-                return;
+                const auto buff = Storage::load(0, sizeof(header_),Storage::buf_read);
+                std::copy(buff.begin(), buff.end(), (typename Storage::byte*)&header_);
+
+                if (header_.cookie != MAGIC)
+                    throw std::runtime_error("incorrect catalog header");
+                if (header_.version != VERSION)
+                    throw std::runtime_error("incorrect catalog version");
             }
-
-            auto buff = Storage::load(0, sizeof(header_),
-                Storage::buf_read | Storage::buf_write);
-            std::copy(buff.begin(), buff.end(), (typename Storage::byte*)&header_);
-
-            if (header_.cookie != MAGIC)
-                throw std::runtime_error("incorrect catalog header");
-            if (header_.version != VERSION)
-                throw std::runtime_error("incorrect catalog version");
         }
 
         iterator begin(offset_t offset) 
@@ -304,7 +296,7 @@ namespace newsflash
             std::int32_t number = 0;
             if (header_.article_start > a.number)
                  number = -(header_.article_start - a.number);
-            else number = (header_.article_start - a.number);
+            else number = (a.number - header_.article_start);
 
             std::uint32_t magic = 0xc0febabe;
 
@@ -313,6 +305,7 @@ namespace newsflash
             write(it, number);
             write(it, index);
             write(it, a.pubdate);
+            write(it, a.idb);
             write(it, a.bytes);
             write(it, a.partno);
             write(it, a.partmax);
@@ -347,6 +340,7 @@ namespace newsflash
             read(it, number);
             read(it, ret.index);
             read(it, ret.pubdate);
+            read(it, ret.idb);
             read(it, ret.bytes);
             read(it, ret.partno);
             read(it, ret.partmax);

@@ -1205,6 +1205,8 @@ public:
     {
         if (ui_.state == states::complete || ui_.state == states::error)
             return;
+        if (!filebatch_)
+            return;
 
         auto* data = list.add_batch();
         data->set_batch_id(ui_.batch_id);

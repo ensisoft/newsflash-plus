@@ -24,8 +24,12 @@
 #include <newsflash/warnpush.h>
 #  include <QtAlgorithms>
 #  include <QModelIndex>
+#  include <QString>
+#  include <QStringList>
 #include <newsflash/warnpop.h>
 #include <algorithm>
+#include <string>
+#include <vector>
 
 class QAbstractTableModel;
 class QTableView;
@@ -35,8 +39,11 @@ class QComboBox;
 class QPixmap;
 class QIcon;
 
+
 namespace app
 {
+
+std::string suggestName(const std::vector<std::string> subjectLines);
 
 QString joinPath(const QString& lhs, const QString& rhs);
 
