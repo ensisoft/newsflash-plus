@@ -125,6 +125,10 @@ namespace nntp
     // this function ensures that "foobar.mp3 (1/10)" and "foobar.mp3 (2/10)" hash to the same value.
     std::uint32_t hashvalue(const char* subjectline, size_t len);
 
+    inline
+    std::uint32_t hashvalue(const std::string& s)
+    { return hashvalue(s.c_str(), s.size()); }
+
     // find a filename in the given subjectline. if no filename was found
     // then returns (nullptr, 0), otherwise a pointer to the start of the filename
     // and the length of the name. 

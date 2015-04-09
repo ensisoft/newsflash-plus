@@ -27,6 +27,7 @@
 #  include <QFile>
 #  include <QFileInfo>
 #  include <QDir>
+#  include <QCoreApplication>
 #include <newsflash/warnpop.h>
 #include <newsflash/engine/nntp.h>
 #include "newsgroup.h"
@@ -364,7 +365,13 @@ void NewsGroup::newHeaderDataAvailable(const QString& file)
     for (; beg != end; ++beg)
     {
         const auto& article  = *beg;
+        const auto pos = index_.probe(article);
+        //QAbstractTableModel::beginInsertRows(QModelIndex(), pos, pos);
+
         index_.insert(article, index, article.index);
+
+        //QAbstractTableModel::endInsertRows();
+        //QCoreApplication::processEvents();
     }
 
     DEBUG("Load done. Index now has %1 articles", index_.size());

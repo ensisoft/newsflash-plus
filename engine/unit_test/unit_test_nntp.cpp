@@ -626,10 +626,38 @@ void test_strcmp()
         "[ TOWN ]-[ www.town.ag ]-[ partner of www.ssl-news.info ] [15/32] - \"6nf3wQL3uc.part14.rar\" - 2,56 GB yEnc (42/273)"));
 
     BOOST_REQUIRE(nntp::strcmp(
+        "[ TOWN ]-[ www.town.ag ]-[ partner of www.ssl-news.info ] [15/32] - \"6nf3wQL3uc.part14.rar\" - 2,56 GB yEnc (71/273)",
+        "[ TOWN ]-[ www.town.ag ]-[ partner of www.ssl-news.info ] [16/32] - \"6nf3wQL3uc.part14.rar\" - 2,56 GB yEnc (71/273)") == false);    
+
+    BOOST_REQUIRE(nntp::strcmp(
+        "girls flirting with is neat   GiBBA files  Soft I Love you to BF-Vol3 (102).jpg (1/4)",
+        "girls flirting with is neat   GiBBA files  Soft I Love you to BF-Vol3 (102).jpg (2/4)"));
+
+    BOOST_REQUIRE(nntp::strcmp(
+        "girls flirting with is neat   GiBBA files  Soft I Love you to BF-Vol3 (102).jpg (1/4)",
+        "girls flirting with is neat   GiBBA files  Soft I Love you to BF-Vol3 (103).jpg (2/4)") == false);        
+
+    BOOST_REQUIRE(nntp::strcmp(
         "Metallica - Enter Sandman yEnc (01/10).mp3",
         "Metallica - Enter Sandman yEnc (02/10).mp3"));
 }
 
+void test_hash()
+{
+    BOOST_REQUIRE(nntp::hashvalue("foobar") == nntp::hashvalue("foobar"));
+    BOOST_REQUIRE(nntp::hashvalue("foo") != nntp::hashvalue("bar"));
+    BOOST_REQUIRE(nntp::hashvalue("[408390]-[FULL]-[#a.b.erotica@EFNet]-[ nvg.15.04.04.corrine ]-[42/55] - \"nvg.15.04.04.corrine.r32\" yEnc (62/66)") ==
+        nntp::hashvalue("[408390]-[FULL]-[#a.b.erotica@EFNet]-[ nvg.15.04.04.corrine ]-[42/55] - \"nvg.15.04.04.corrine.r32\" yEnc (63/66)"));
+
+    BOOST_REQUIRE(nntp::hashvalue("[408390]-[FULL]-[#a.b.erotica@EFNet]-[ nvg.15.04.04.corrine ]-[43/55] - \"nvg.15.04.04.corrine.r32\" yEnc (63/66)") !=
+        nntp::hashvalue("[408390]-[FULL]-[#a.b.erotica@EFNet]-[ nvg.15.04.04.corrine ]-[44/55] - \"nvg.15.04.04.corrine.r32\" yEnc (63/66)"));    
+
+    BOOST_REQUIRE(nntp::hashvalue("girls flirting with is neat   GiBBA files  Soft I Love you to BF-Vol3 (102).jpg (1/1)") !=
+        nntp::hashvalue("girls flirting with is neat   GiBBA files  Soft I Love you to BF-Vol3 (103).jpg (1/1)"));
+
+   BOOST_REQUIRE(nntp::hashvalue("girls flirting with is neat   GiBBA files  Soft I Love you to BF-Vol3 (102).jpg (1/4)") ==
+        nntp::hashvalue("girls flirting with is neat   GiBBA files  Soft I Love you to BF-Vol3 (102).jpg (2/4)"));
+}
 
 int test_main(int, char* [])
 {
@@ -644,6 +672,7 @@ int test_main(int, char* [])
     test_scan_response();
     test_to_int();
     test_strcmp();
+    test_hash();
 
     return 0;
 }

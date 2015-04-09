@@ -395,6 +395,7 @@ void unit_test_index()
     delete_file("alt.binaries.test/vol33653.dat");
     delete_file("alt.binaries.test/vol33654.dat");
     delete_file("alt.binaries.test.nfo");
+    delete_file("alt.binaries.test.idb");
 
     // create data
     {
@@ -489,7 +490,7 @@ int test_main(int, char* [])
 {
     unit_test_ranges();
     unit_test_data();
-    //unit_test_index();
+    unit_test_index();
 
     return 0;
 }

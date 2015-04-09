@@ -96,10 +96,8 @@ namespace newsflash
             sort_  = column;
             order_ = up_down;            
         }
-        // insert the new item into the index in the right position.
-        // returns the position which is given to the inserted item.
-        // this will maintain current sorting.
-        std::size_t insert(const article& a, std::size_t key, std::size_t index)
+
+        std::size_t probe(const article& a)
         {
             std::deque<item>::iterator it;
             switch (sort_)
@@ -133,10 +131,31 @@ namespace newsflash
                     it = lower_bound(a, &article::subject);
                     break;
             }
+            return std::distance(std::begin(items_), it);
+        }
+
+        std::size_t insert(const article& a, std::size_t pos, std::size_t key, std::size_t index)
+        {
+            auto it = std::begin(items_);
+            std::advance(it, pos);
+            items_.insert(it, {key, index});
+            
+            ++size_;
+            return pos;
+        }
+
+        // insert the new item into the index in the right position.
+        // returns the position which is given to the inserted item.
+        // this will maintain current sorting.
+        std::size_t insert(const article& a, std::size_t key, std::size_t index)
+        {
+            auto pos = probe(a);
+            auto it  = std::begin(items_);
+            std::advance(it, pos);
             items_.insert(it, {key, index});
 
             ++size_;
-            return std::distance(std::begin(items_), it);
+            return pos;
         }
 
         std::size_t size() const 

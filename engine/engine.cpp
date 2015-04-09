@@ -1355,6 +1355,7 @@ private:
         const std::size_t num_states = std::accumulate(std::begin(statesets_),
             std::end(statesets_), 0);
         assert(num_states == num_tasks_);
+        (void)num_states;
 
         if (!is_empty_set(states::active))
             goto_state(state, states::active);
@@ -1732,7 +1733,7 @@ bool engine::pump()
             auto tid   = e->get_tid();
             auto bytes = e->get_bytes_transferred();
 
-            #if 0
+            #if 1
                 std::ofstream out;
                 out.open("/tmp/nntp.txt", std::ios::binary | std::ios::app);
                 const auto& buffers = cmds->get_buffers();

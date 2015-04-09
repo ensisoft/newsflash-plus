@@ -320,34 +320,34 @@ bool is_binary_post(const char* str, size_t len)
     return false;    
 }
 
-bool strcmp(const char* first,  std::size_t firstLen,
-                const char* second, std::size_t secondLen)
+bool strcmp(const char* first,  std::size_t firstLen, const char* second, std::size_t secondLen)
 {
-
     if (firstLen != secondLen)
         return false;
 
-    const auto len = firstLen;
-    bool beginPart = false;
-
-    for (size_t i=0; i<len; ++i)
+    std::size_t skip = 0;
+    const auto* p = find_part_count(first, firstLen, skip);
+    if (!p)
     {
-        if (first[i] != second[i])
-        {
-            if (beginPart)
-            {
-                if (!std::isdigit(first[i]))
-                    return false;
-                continue;
-            }
+        for (std::size_t i=0; i<firstLen; ++i)
+            if (first[i] != second[i]) return false;
+    }
+    else
+    {
+        const auto* p2 = find_part_count(second, secondLen, skip);
+        if (!p2) 
             return false;
-        }
-        if (beginPart) 
-        {
-            if (first[i] == ')') 
-                beginPart = false;
-        } 
-        else beginPart = first[i] == '(';
+
+        if ((p - first) != (p2 - second))
+            return false;
+
+        const auto num = p - first;
+        std::size_t i;
+        for (i=0; i<num; ++i)
+            if (first[i] != second[i]) return false;
+        i += skip;
+        for (; i<firstLen; ++i)
+            if (first[i] != second[i]) return false;
     }
 
     return true;
@@ -561,29 +561,24 @@ std::pair<bool, part> parse_part(const char* str, size_t len)
 std::uint32_t hashvalue(const char* subjectline, size_t len)
 {
     std::size_t seed = 0;
-
-    bool escape = false;
-
-    for (size_t i=0; i<len; ++i)
+    std::size_t skip = 0;
+    const auto* p = find_part_count(subjectline, len, skip);
+    if (!p)
     {
-        const unsigned char val = subjectline[i];
-        if (val == '(')
-            escape = true;
-        else if (val == ')')
-            escape = false;
-        else
-        {
-            if (escape)
-            {
-                if (!std::isdigit(val))
-                    boost::hash_combine(seed, val);
-            }
-            else
-            {
-                boost::hash_combine(seed, val);
-            }
-        }
+        for (std::size_t i=0; i<len; ++i)
+            boost::hash_combine(seed, subjectline[i]);
     }
+    else
+    {
+        const auto num = p - subjectline;
+        std::size_t i;
+        for (i=0; i<num; ++i)
+            boost::hash_combine(seed, subjectline[i]);
+        i += skip;
+        for (; i<len; ++i)
+            boost::hash_combine(seed, subjectline[i]);
+    }
+
     return std::uint32_t(seed);
 }
 
