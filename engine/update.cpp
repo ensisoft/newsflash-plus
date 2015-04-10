@@ -85,8 +85,10 @@ public:
             const auto& pair = nntp::parse_overview(line.start, line.length);
             if (!pair.first)
                 continue;
-            const auto& xover  = pair.second;
+            auto& xover  = pair.second;
             if (xover.subject.len == 0 || xover.author.len == 0)
+                continue;
+            if (xover.subject.len > article::max_subject_length())
                 continue;
 
             const auto& part = nntp::parse_part(xover.subject.start, xover.subject.len);
@@ -106,7 +108,7 @@ public:
             article a;
             a.type    = filetype::none;
             a.subject = std::string(xover.subject.start, xover.subject.len);
-            a.author  = std::string(xover.author.start, xover.author.len);
+            a.author  = std::string(xover.author.start, std::min(xover.author.len, article::max_author_length()));
             a.number  = number;
             a.bytes   = bytes;
             a.pubdate = pubdate;

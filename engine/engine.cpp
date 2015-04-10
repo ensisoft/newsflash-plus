@@ -1739,7 +1739,7 @@ bool engine::pump()
                 const auto& buffers = cmds->get_buffers();
                 for (const auto& buff : buffers)
                 {
-                    out.write(buff.content(), buff.content_length());
+                    out.write(buff.content(), buff.content_length()-3);
                 }
                 out.flush();
             #endif

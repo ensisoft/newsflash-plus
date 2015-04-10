@@ -91,6 +91,22 @@ namespace newsflash
         bool empty() const {
            return subject.empty();
         }
+
+        static
+        std::size_t max_subject_length() {
+            article a;
+            return max_length() - a.length() - max_author_length();
+        }
+
+        static
+        std::size_t max_author_length() {
+            return 64;
+        }
+
+        static 
+        std::size_t max_length() {
+            return 1024;
+        }
     };
 
     inline 

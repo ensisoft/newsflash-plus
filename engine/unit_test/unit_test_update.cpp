@@ -163,7 +163,7 @@ void unit_test_data()
 
         auto cmd = u.create_commands();
 
-        newsflash::buffer buff(1024);
+        newsflash::buffer buff(1024 * 10);
         buff.append("211 49999 1 500000 alt.binaries.test group selected\r\n");
         buff.set_content_length(std::strlen("211 49999 1 500000 alt.binaries.test group selected\r\n"));
         buff.set_content_start(0);
@@ -231,7 +231,82 @@ void unit_test_data()
         ov.date.start      = "Tue, 13 Jun 2008 00:00:00";
         ov.number.start    = "50";
         ov.messageid.start = "<50>";    
-        str += nntp::make_overview(ov);                    
+        str += nntp::make_overview(ov);              
+
+        ov.author.start    = "foo@acme.com";
+        ov.subject.start   = "girls flirting with is neat GiBBA files Soft I love you to BF-Vol3 (102).jpg (1/1)";
+        ov.bytecount.start = "768";
+        ov.date.start      = "Tue, 13 Jun 2008 00:00:00";
+        ov.number.start    = "100";
+        ov.messageid.start = "<100>";
+        str += nntp::make_overview(ov);
+
+        ov.author.start    = "foo@acme.com";
+        ov.subject.start   = "girls flirting with is neat GiBBA files Soft I love you to BF-Vol3 (103).jpg (1/1)";
+        ov.bytecount.start = "100";
+        ov.date.start      = "Tue, 13 Jun 2008 00:00:00";
+        ov.number.start    = "101";
+        ov.messageid.start = "<101>";
+        str += nntp::make_overview(ov);
+
+        ov.author.start    = "foo@acme.com";
+        ov.subject.start   = "girls flirting with is neat GiBBA files Soft I love you to BF-Vol3 (104).jpg (1/4)";
+        ov.bytecount.start = "100";
+        ov.date.start      = "Tue, 13 Jun 2008 00:00:00";
+        ov.number.start    = "102";
+        ov.messageid.start = "<102>";
+        str += nntp::make_overview(ov);        
+
+        // these items are not valid and should be discarded.
+        ov.author.start    = "foo@acme.com";
+        ov.subject.start   = "girls flirting with is neat GiBBA files Soft I love you to BF-Vol3 (104).jpg (7/4)";
+        ov.bytecount.start = "100";
+        ov.date.start      = "Tue, 13 Jun 2008 00:00:00";
+        ov.number.start    = "103";
+        ov.messageid.start = "<103>";
+        str += nntp::make_overview(ov);
+
+        ov.author.start = "test@test.com";
+        ov.subject.start = "ange___________________________________________________________________________________________"
+        "__________________________________________________________________________________________________________________"
+        "__________________________________________________________________________________________________________________"
+        "__________________________________________________________________________________________________________________"
+        "__________________________________________________________________________________________________________________"
+        "__________________________________________________________________________________________________________________"
+        "__________________________________________________________________________________________________________________"
+        "__________________________________________________________________________________________________________________"
+        "__________________________________________________________________________________________________________________"
+        "__________________________________________________________________________________________________________________"
+        "__________________________________________________________________________________________________________________"
+        "__________________________________________________________________________________________________________________"
+        "__________________________________________________________________________________________________________________"
+        "__________________________________________________________________________________________________________________"
+        "__________________________________________________________________________________________________________________"
+        "____________________________________________________________________________________________________LSYFFpdxSeKdmx"
+        "tRcCtjijKHDrPbPOIXfnYRHhQqEPDdQpMTyWUUXNxgBbkISHItSHsOfomcUOKbwyCJufvUuyohTmsfFFjFEHLzlWgYpIySvkyXyEaIqxbAlVTPUujH"
+        "RBkCMMVUAtBmCtSfbfpOOcapFPJSNIPRXjaxZyyRnRWqFxaIVewChNLkOApXtJVOmrOdBlmpIGwEDYRjmJxwpzWNluGhqelHwuqNcSIVdRSVsAxkXZ"
+        "lGzOEHYikdpLvTCTCejvQtUkiuboauCRBXMgHAGwzcavCNawOozLpuLDrTFdOxZaBOUrTmUBYwGKZDMweYNfaySRrFMWhkWvHKPzfXDuTmhIMqHLZC"
+        "CijxhZvklmSYvtgZEKbUdjvPYOcaJMhjfYnZgDcJTJsYAJFTHRqijURxJcxfDbIxWqIHlltfMwSjSjZajIIwvBsgxomkrKtcTTGCLPuMeAHbvPApJi"
+        "fjhMPQWJhBJTAhjxlVATlJOwTBmdaGuAWFqwCwfEhkCmNwUNuhDBJskxPTOcNLnLDYtWpjpyuIxGMdCUamnlevbOrPPtriJjlpIBTkYYrvmHpYxoIk"
+        "VyOuGeXJDKDZtjCOshItyiSHoeRpmcNcgDhgpmTTjHresOqxFygMKFgjKdEYeeAzzoyrxpjqNiIZeUbFfSPsBfkKYVEtzlnkUvtYATzLeTyKKHgFob"
+        "nHAMaFCmJkWaFpuKVZkHiYDcghyGdfXSjmkfXvTMTLnNZpNBYsdgpHTIyjuzPogJAdIRfYOTmAVSKuZHHlFdemcrmgUiMiCvtOpxtaAMwORCLhCRdy"
+        "QDJqoJxmfpwPZPGkEhXmhLuSvwulWhgzVgbxjngoiVczKGLmcAIWEFvEHAoPCVQDsrHsvpAhiKanjTVkNJaXfgbHyHsrvSPmKJJXsIrYdShVojBvcE"
+        "MZkjjkSyyvaRBopNGjdFfgveYkFPUxYwsBinTcbZqzufJehNmhqyICbRLLrYowIMtksMLKHgpvPNwvlUmRwtHXrGTLuAiPzDZcQQvbJdfwwnDqjzCD"
+        "ACEVmHRnfYxmXWKJgXugPPeKNCfGtrjDaSnCFDAbhmtXzCJuvpZqRMzfuyxZGGlgFQwtRYOadkfecdpdWixpGfodgwUJEVKldlXAvycbGcYYuVHErG"
+        "XVVagjqcCPvtxEzcjAMWgrYZrvRxKygoEHfMpRfpJJvSTOsrYqBUjZSuoivdfSEjbSAOhnUvbUqwaLKbQtyfrHPYNcHdZEIoZpsWnfnXkxhrLVemXf"
+        "zlpflePfVxeibNbHGzAEfmznTehqznzLsdOVrXWVZVtcBpJgtxBEMQkrnbJrtxxHcdWNjEUPcMPrnBxWDMGoWWmeDGnWBxHQJAGoFWVaiOAjqfYSem"
+        "ttTOWISxprUSfKFOxDuJrosRIhVjDhdRaZBNWeWShcIaUDGHcjMMCjepAmEZAIRMtnbHWAFjvqbjajWPushIEcSgaPCSuDJmaBzrtZJRxtoYxlWHLD"
+        "YORebvqZLGdzpwYtkmIdYHKEMRCYLvOuEplGJVTLXmRCfXSgWbDColmEaNFQXmoOLHjuyjzFrhMbsfvKkewcjGhPJspoGwFQTwpsPSriKXHNlRXRrF"
+        "kumflcMIpcZisrkvWmwQlIfRFtgIkdJWSvcDzpUINBTQxxQYFMJoEwmoWBzBTOnkqUtpbMclpiUXiDEoXVafcmJPqaFsOFmxXbZvroMsJreGyLrlhW"
+        "BGLNDtYvwcBUgDVkbcLUuTRuHQgmroeDWgZTvNZjkyawQIVvRiuPAJBMGGgBjBnyYduvnulRqUbTxJgjSaeliZYLToTGUlMbjRfXdTXFtoLMYOKzfm"
+        "hltNlYXYIFbnDZwkVRWdyVnblERSCILAhViByvZsOjzoJuHEpInOBVbcLbBFjLflcabLBWsbfLnrxlsMgGLjIIVlzfVvOkpADzQczfxPpgzUlQpDiB"
+        "MfYDHgPNdgEVpLRzYJLJweJvlQuvwVLtVDiNhUAeKsLwvlmHCKozPFqlWoRVQlPwjdHrMlTcZkyvNIxJzpmSzkJaqROjQBFHWAusCBnfdvnSBcjgGr";
+        ov.bytecount.start = "3455";
+        ov.date.start = "Tue, 13 Jun 2008 00:00:00";
+        ov.number.start = "200";
+        ov.messageid.start = "<200>";
+        str += nntp::make_overview(ov);
+
 
         buff.clear();
         buff.append(str);
@@ -263,7 +338,7 @@ void unit_test_data()
         arraydb idb;
         idb.open("alt.binaries.test.idb");
 
-        BOOST_REQUIRE(db.article_count() == 3);
+        BOOST_REQUIRE(db.article_count() == 6);
 
         auto article = db.lookup(catalog::offset_t(0));
         BOOST_REQUIRE(article.subject == "Metallica - Enter Sandman yEnc (01/10).mp3");
@@ -301,9 +376,24 @@ void unit_test_data()
         BOOST_REQUIRE(idb[article.idb + 2] + article.number == 40);        
         BOOST_REQUIRE(idb[article.idb + 3] + article.number == 50);                
 
+        article = db.lookup(catalog::offset_t{article.next()});
+        BOOST_REQUIRE(article.subject == "girls flirting with is neat GiBBA files Soft I love you to BF-Vol3 (102).jpg (1/1)");
+        BOOST_REQUIRE(article.author  == "foo@acme.com");
+        BOOST_REQUIRE(idb[article.idb + 1] + article.number == 100);
+
+        article = db.lookup(catalog::offset_t{article.next()});
+        BOOST_REQUIRE(article.subject == "girls flirting with is neat GiBBA files Soft I love you to BF-Vol3 (103).jpg (1/1)");
+        BOOST_REQUIRE(article.author  == "foo@acme.com");
+        BOOST_REQUIRE(idb[article.idb + 1] + article.number == 101);        
+
+        article = db.lookup(catalog::offset_t{article.next()});
+        BOOST_REQUIRE(article.subject == "girls flirting with is neat GiBBA files Soft I love you to BF-Vol3 (104).jpg (1/4)");
+        BOOST_REQUIRE(article.author  == "foo@acme.com");
+        BOOST_REQUIRE(idb[article.idb + 1] + article.number == 102);                
 
     }
 
+    // update and then verify the contents.
     {
         newsflash::update u("", "alt.binaries.test");
 
@@ -353,12 +443,12 @@ void unit_test_data()
         u.complete(*a, actions);
         u.commit();
 
-        using filedb = newsflash::catalog<newsflash::filemap>;
-        filedb db;
+        using catalog = newsflash::catalog<newsflash::filemap>;
+        catalog db;
         db.open("alt.binaries.test/vol0.dat");
-        BOOST_REQUIRE(db.article_count() == 3);
+        BOOST_REQUIRE(db.article_count() == 6);
 
-        auto article = db.lookup(filedb::offset_t(0));
+        auto article = db.lookup(catalog::offset_t(0));
         BOOST_REQUIRE(article.subject == "Metallica - Enter Sandman yEnc (01/10).mp3");
         BOOST_REQUIRE(article.author == "ensi@gmail.com");
         BOOST_REQUIRE(article.bits.test(newsflash::article::flags::binary));
@@ -367,7 +457,7 @@ void unit_test_data()
         BOOST_REQUIRE(article.partmax == 10);
         BOOST_REQUIRE(article.partno == 3);
 
-        article = db.lookup(filedb::offset_t{article.next()});
+        article = db.lookup(catalog::offset_t{article.next()});
         BOOST_REQUIRE(article.subject == ".net and COM interoperability");
         BOOST_REQUIRE(article.author == "foo@gmail.com");
         BOOST_REQUIRE(article.bits.test(newsflash::article::flags::binary) == false);
@@ -376,7 +466,7 @@ void unit_test_data()
         BOOST_REQUIRE(article.partmax == 0);
         BOOST_REQUIRE(article.partno == 0);
 
-        article = db.lookup(filedb::offset_t{article.next()});
+        article = db.lookup(catalog::offset_t{article.next()});
         BOOST_REQUIRE(article.subject == "#A.B.MM @  EFNet Presents: REQ 40092 - Seinfeld.S09.DVDRip.XviD-SiNK - 482/520 - sink-seinfeld.s09e21e22.r23 (1/4)");
         BOOST_REQUIRE(article.author == "ano@anonymous.yy (knetje)");
         BOOST_REQUIRE(article.bits.test(newsflash::article::flags::binary));
@@ -384,8 +474,25 @@ void unit_test_data()
         BOOST_REQUIRE(article.partmax == 4);
         BOOST_REQUIRE(article.partno == 4);        
         BOOST_REQUIRE(article.bytes == 3 * 2048 + 100);
+
+        article = db.lookup(catalog::offset_t{article.next()});
+        BOOST_REQUIRE(article.subject == "girls flirting with is neat GiBBA files Soft I love you to BF-Vol3 (102).jpg (1/1)");
+        BOOST_REQUIRE(article.author  == "foo@acme.com");
+        //BOOST_REQUIRE(idb[article.idb + 1] + article.number == 100);
+
+        article = db.lookup(catalog::offset_t{article.next()});
+        BOOST_REQUIRE(article.subject == "girls flirting with is neat GiBBA files Soft I love you to BF-Vol3 (103).jpg (1/1)");
+        BOOST_REQUIRE(article.author  == "foo@acme.com");
+        //BOOST_REQUIRE(idb[article.idb + 1] + article.number == 101);        
+
+        article = db.lookup(catalog::offset_t{article.next()});
+        BOOST_REQUIRE(article.subject == "girls flirting with is neat GiBBA files Soft I love you to BF-Vol3 (104).jpg (1/4)");
+        BOOST_REQUIRE(article.author  == "foo@acme.com");
+        //BOOST_REQUIRE(idb[article.idb + 1] + article.number == 102);                
+
     }
 }
+
 
 void unit_test_index()
 {
@@ -413,7 +520,8 @@ void unit_test_index()
 
         cmd = u.create_commands();
 
-        auto data = read_file_buffer("test_data/xover.nntp.txt");
+        //auto data = read_file_buffer("test_data/xover.nntp.txt");
+        auto data = read_file_buffer("/tmp/nntp.txt");
         data.set_content_type(newsflash::buffer::type::overview);
         cmd->receive_data_buffer(data);
 
@@ -436,15 +544,15 @@ void unit_test_index()
 
     // load the data
     {
-        using filedb = newsflash::catalog<newsflash::filemap>;
+        using catalog = newsflash::catalog<newsflash::filemap>;
 
-        filedb dbs[2];
+        catalog dbs[2];
         dbs[0].open("alt.binaries.test/vol33654.dat");
         dbs[1].open("alt.binaries.test/vol33653.dat");
 
         newsflash::index index;
         index.on_load = [&](std::size_t key, std::size_t idx) {
-            return dbs[key].lookup(filedb::index_t{idx});
+            return dbs[key].lookup(catalog::index_t{idx});
         };
 
         {

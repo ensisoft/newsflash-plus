@@ -326,7 +326,7 @@ namespace newsflash
             ASSERT(offset >= sizeof(header_));
             ASSERT(offset < header_.offset);
             const auto size = Storage::size();
-            const auto min  = std::min(std::uint32_t(size - offset), std::uint32_t(1024));
+            const auto min  = std::min(std::uint32_t(size - offset), std::uint32_t(article::max_length()));
             const auto buff = Storage::load(offset, min, Storage::buf_read);
 
             auto it = buff.begin();
