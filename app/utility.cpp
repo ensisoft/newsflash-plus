@@ -87,7 +87,7 @@ std::string suggestName(const std::vector<std::string>& subjectLines)
     }
     if (s.empty() || (r == 1 && subjectLines.size() != 1))
     {
-        s = stringlib::find_longest_common_substring(subjectLines, false);
+        s = str::find_longest_common_substring(subjectLines, false);
     }
 
     // trim useless characters from the start and end

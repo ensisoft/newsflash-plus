@@ -35,6 +35,7 @@
 namespace newsflash
 {
     // index for ordered article access.
+    template<typename Storage>
     class index
     {
         struct item;
@@ -60,6 +61,8 @@ namespace newsflash
 
         index() : size_(0), sort_(sorting::sort_by_age), order_(order::ascending)
         {}
+
+        //using article = typename newsflash::article<Storage>;
 
         // callback to invoke to load an article.
         using loader = std::function<article (std::size_t key, std::size_t index)>;

@@ -62,28 +62,27 @@ namespace newsflash
             {}
             std::size_t value;
         };
-        using size_t = std::uint32_t;
 
         class iterator : public 
-            std::iterator<std::input_iterator_tag, article>
+            std::iterator<std::input_iterator_tag, article<Storage>>
         {
         public:
             iterator() : offset_(0), length_(0)
             {}
 
-            const article& operator*() 
+            const article<Storage>& operator*() 
             {
                 if (length_ == 0) {
-                    article_ = catalog_->lookup(offset_t{offset_});
-                    length_  = article_.length();
+                    article_ = catalog_->load(offset_t{offset_});
+                    length_  = article_.size_on_disk();
                 }
                 return article_;
             }
-            const article* operator->() 
+            const article<Storage>* operator->() 
             {
                 if (length_ == 0) {
-                    article_ = catalog_->lookup(offset_t{offset_});
-                    length_  = article_.length();
+                    article_ = catalog_->load(offset_t{offset_});
+                    length_  = article_.size_on_disk();
                 }
                 return &article_;
             }
@@ -99,8 +98,8 @@ namespace newsflash
             {
                 if (length_ == 0)
                 {
-                    article_ = catalog_->lookup(offset_t{offset_});
-                    length_ = article_.length();
+                    article_ = catalog_->load(offset_t{offset_});
+                    length_ = article_.size_on_disk();
                 }
                 offset_ += length_;
                 length_  = 0;
@@ -124,7 +123,7 @@ namespace newsflash
             std::size_t offset_;
             std::size_t length_;
             catalog* catalog_;
-            article  article_;
+            article<Storage> article_;
         };
  
         catalog()
@@ -171,35 +170,63 @@ namespace newsflash
         // get article at the specific offset in the file.
         // the first article is at offset 0. 
         // In general article N+1 is at N.offset + N.length
-        article lookup(offset_t offset)
+        article<Storage> load(offset_t offset)
         {
+            ASSERT(offset.value < header_.offset);
+
             const auto off = offset.value + sizeof(header_);
-            return lookup(off);
+
+            article<Storage> a;
+            a.load(off, *this);
+            return a;
         }
 
         // get the article at the specific index.
-        article lookup(index_t index)
+        article<Storage> load(index_t index)
         {
             ASSERT(index.value < CATALOG_SIZE);
+
             const auto off = header_.table[index.value];
-            return lookup(off);
+
+            article<Storage> a;
+            a.load(off, *this);
+            return a;
         }
 
         // append an article into the catalog.      
-        void append(const article& a)
-        {
-            const auto index = header_.article_count;
-            ASSERT(index < CATALOG_SIZE);
-            insert(index, a);
+        void append(const article<Storage>& a)
+        {            
+            ASSERT(header_.article_count < CATALOG_SIZE);
+
+            const auto off = header_.offset;
+            const auto idx = header_.article_count;
+
+            a.save(off, *this);
+
+            header_.table[idx] = off;
+            header_.article_count++;
+            header_.offset += a.size_on_disk();
         }
 
         // insert article at the specified index.
-        void insert(const article& a, index_t i)
+        void insert(const article<Storage>& a, index_t i)
         {
             ASSERT(i.value < CATALOG_SIZE);
-            insert(i.value, a);
-        }
 
+            const auto offset = header_.table[i.value];
+            const auto empty  = (offset == 0);
+            if (empty)
+            {
+                a.save(header_.offset, *this);
+                header_.table[i.value] = offset;
+                header_.offset += a.size_on_disk();
+                header_.article_count++;
+            }
+            else
+            {
+                a.save(offset, *this);            
+            }
+        }
 
         void flush()
         {
@@ -224,133 +251,6 @@ namespace newsflash
         {
             ASSERT(i.value < CATALOG_SIZE);
             return header_.table[i.value] == 0;
-        }
-
-    private:
-        typedef typename Storage::buffer buffer;
-        typedef typename Storage::buffer::iterator buffer_iterator;
-        typedef typename Storage::buffer::const_iterator buffer_const_iterator;
-
-        template<typename Value>
-        void read(buffer_const_iterator& it, Value& val) const 
-        {
-            char* p = (char*)&val;
-            for (std::size_t i=0; i<sizeof(val); ++i)
-                p[i] = *it++; 
-        }
-        template<typename Value>
-        void write(buffer_iterator& it, const Value& val) const 
-        {
-            const char* p = (const char*)&val;
-            for (std::size_t i=0; i<sizeof(val); ++i)
-                *it++ = p[i];
-        }
-
-        void read(buffer_const_iterator& it, std::string& str) const 
-        {
-            //const auto len = *it++;
-            std::uint16_t len;
-            read(it, len);
-            const auto ptr = (char*)&(*it);
-            it += len;
-            str = std::string(ptr, len);
-        }
-        void write(buffer_iterator& it, const std::string& str) const 
-        {
-            const std::uint16_t len = str.size();
-            //*it++ = str.size();
-            write(it, len);
-            std::copy(std::begin(str), std::end(str), it);
-            it += str.size();
-        }
-
-
-        void read(buffer_const_iterator& it, bitflag<article::flags>& flags) const 
-        {
-            flags.set_from_value(*it++);
-        }
-        void write(buffer_iterator& it, const bitflag<article::flags>& flags) const 
-        {
-            *it++ = flags.value();
-        }
-
-        void insert(std::uint32_t index, const article& a)
-        {
-            const auto length = a.length();
-            const auto empty  = header_.table[index] == 0;            
-            const auto offset = empty ? header_.offset : header_.table[index];
-
-        #ifdef NEWSFLASH_DEBUG
-            if (!empty) {
-                const auto& current = lookup(offset);
-                assert(current.length() == a.length());
-            }
-        #endif
-
-            auto buff = Storage::load(offset, length, Storage::buf_write);
-            auto it = buff.begin();
-
-            if (header_.article_start == 0)
-                header_.article_start = a.number;
-
-            std::int32_t number = 0;
-            if (header_.article_start > a.number)
-                 number = -(header_.article_start - a.number);
-            else number = (a.number - header_.article_start);
-
-            std::uint32_t magic = 0xc0febabe;
-
-            write(it, a.bits);
-            write(it, a.type);
-            write(it, number);
-            write(it, index);
-            write(it, a.pubdate);
-            write(it, a.idb);
-            write(it, a.bytes);
-            write(it, a.partno);
-            write(it, a.partmax);
-            write(it, a.subject);
-            write(it, a.author);
-            write(it, magic);
-            buff.flush();
-
-            if (empty)
-            {
-                header_.table[index] = offset; //((length & 0xff) << 24) | offset;
-                header_.offset += length;                
-                header_.article_count++;
-            }
-        }
-        article lookup(std::uint32_t offset) 
-        {
-            ASSERT(offset >= sizeof(header_));
-            ASSERT(offset < header_.offset);
-            const auto size = Storage::size();
-            const auto min  = std::min(std::uint32_t(size - offset), std::uint32_t(article::max_length()));
-            const auto buff = Storage::load(offset, min, Storage::buf_read);
-
-            auto it = buff.begin();
-
-            std::int32_t number = 0;
-            std::uint32_t magic = 0;
-
-            article ret;
-            read(it, ret.bits);
-            read(it, ret.type);
-            read(it, number);
-            read(it, ret.index);
-            read(it, ret.pubdate);
-            read(it, ret.idb);
-            read(it, ret.bytes);
-            read(it, ret.partno);
-            read(it, ret.partmax);
-            read(it, ret.subject);
-            read(it, ret.author);
-            read(it, magic);
-            ASSERT(magic == 0xc0febabe);
-            ret.number = header_.article_start + number;       
-            ret.offset = offset - sizeof(header_);     
-            return ret;            
         }
 
     private:

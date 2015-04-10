@@ -33,6 +33,7 @@
 void unit_test_create_new()
 {
     using catalog = newsflash::catalog<newsflash::filebuf>;
+    using article = newsflash::article<newsflash::filebuf>;
 
     delete_file("file");
 
@@ -44,30 +45,28 @@ void unit_test_create_new()
         BOOST_REQUIRE(db.article_count() == 0);
         BOOST_REQUIRE(db.article_start() == 0);
 
-        newsflash::article a {};
-        a.author  = "John Doe";
-        a.subject = "[#scnzb@efnet][529762] Automata.2014.BRrip.x264.Ac3-MiLLENiUM [1/4] - \"Automata.2014.BRrip.x264.Ac3-MiLLENiUM.mkv\" yEnc (1/1513)";
-        a.bytes   = 1024;
-        a.number  = 666;
-        a.bits.set(newsflash::article::flags::broken);
-        a.bits.set(newsflash::article::flags::binary);
+        article a;
+        a.set_author("John Doe");
+        a.set_subject("[#scnzb@efnet][529762] Automata.2014.BRrip.x264.Ac3-MiLLENiUM [1/4] - \"Automata.2014.BRrip.x264.Ac3-MiLLENiUM.mkv\" yEnc (1/1513)");
+        a.set_bytes(1024);
+        a.set_number(666);
+        a.set_bits(article::flags::broken, true);
         db.append(a);
-        BOOST_REQUIRE(db.article_count() == 1);
+        BOOST_REQUIRE(db.article_count() == 1); 
 
-        a.author  = "Mickey mouse";
-        a.subject = "Mickey and Goofy in Disneyland";
-        a.bytes   = 456;
-        a.number  = 500;
-        a.bits.clear();
-        a.bits.set(newsflash::article::flags::downloaded);
+        a.clear();
+        a.set_author("Mickey Mouse");
+        a.set_subject("Mickey and Goofy in Disneyland");
+        a.set_bits(article::flags::downloaded, true);
+        a.set_bytes(456);
+        a.set_number(500);
         db.append(a);
-        BOOST_REQUIRE(db.article_count() == 2);
+        BOOST_REQUIRE(db.article_count() == 2);         
 
-        a.author  = "foo@acme.com";
-        a.subject = "Leiah - Kings and Queens \"Foobar.mp3\" (01/10)";
-        a.bytes   = 1024;
-        a.number  = 45;
-        a.bits.clear();
+        a.clear();
+        a.set_subject("Leiah - Kings and Queens \"Foobar.mp3\" (01/10)");
+        a.set_author("foo@acme.com");
+        a.set_number(45);
         db.append(a);
         BOOST_REQUIRE(db.article_count() == 3);
 
@@ -85,38 +84,39 @@ void unit_test_create_new()
         auto end = db.end();
         BOOST_REQUIRE(beg != end);
 
+        catalog::offset_t offset(0);
 
-        auto a = db.lookup(catalog::offset_t(0));
-        BOOST_REQUIRE(a.bits.test(newsflash::article::flags::broken));
-        BOOST_REQUIRE(a.bits.test(newsflash::article::flags::binary));
-        BOOST_REQUIRE(a.author  == "John Doe");
-        BOOST_REQUIRE(a.subject == "[#scnzb@efnet][529762] Automata.2014.BRrip.x264.Ac3-MiLLENiUM [1/4] - \"Automata.2014.BRrip.x264.Ac3-MiLLENiUM.mkv\" yEnc (1/1513)");
-        BOOST_REQUIRE(a.bytes   == 1024);
-        BOOST_REQUIRE(a.number  == 666);
+        auto a = db.load(offset);
+        BOOST_REQUIRE(a.test(article::flags::broken));
+        BOOST_REQUIRE(a.author()  == "John Doe");
+        BOOST_REQUIRE(a.subject() == "[#scnzb@efnet][529762] Automata.2014.BRrip.x264.Ac3-MiLLENiUM [1/4] - \"Automata.2014.BRrip.x264.Ac3-MiLLENiUM.mkv\" yEnc (1/1513)");
+        BOOST_REQUIRE(a.bytes()   == 1024);
+        BOOST_REQUIRE(a.number()  == 666);
 
-        BOOST_REQUIRE(a == *beg);
-        BOOST_REQUIRE(beg->author == "John Doe");
-        BOOST_REQUIRE(beg->bytes  == 1024);
+        BOOST_REQUIRE(beg->author() == "John Doe");
+        BOOST_REQUIRE(beg->bytes()  == 1024);
 
-        a = db.lookup(catalog::offset_t{a.next()});
-        BOOST_REQUIRE(a.bits.test(newsflash::article::flags::downloaded));
-        BOOST_REQUIRE(a.author  == "Mickey mouse");
-        BOOST_REQUIRE(a.subject == "Mickey and Goofy in Disneyland");
-        BOOST_REQUIRE(a.bytes == 456);
-        BOOST_REQUIRE(a.number == 500);
-
-        beg++;
-        BOOST_REQUIRE(a == *beg);
-        BOOST_REQUIRE(beg->author == "Mickey mouse");
-        BOOST_REQUIRE(beg->bytes == 456);
-
-        a = db.lookup(catalog::offset_t{a.next()});
-        BOOST_REQUIRE(a.author == "foo@acme.com");
-        BOOST_REQUIRE(a.number == 45);
+        offset += a.size_on_disk();
+        a = db.load(offset);
+        BOOST_REQUIRE(a.test(article::flags::downloaded));
+        BOOST_REQUIRE(a.author()  == "Mickey Mouse");
+        BOOST_REQUIRE(a.subject() == "Mickey and Goofy in Disneyland");
+        BOOST_REQUIRE(a.bytes() == 456);
+        BOOST_REQUIRE(a.number() == 500);
 
         beg++;
-        BOOST_REQUIRE(a == *beg);
-        BOOST_REQUIRE(beg->author == "foo@acme.com");
+        BOOST_REQUIRE(beg->author() == "Mickey Mouse");
+        BOOST_REQUIRE(beg->bytes() == 456);
+
+        offset += a.size_on_disk();
+        a = db.load(offset);
+        BOOST_REQUIRE(a.author() == "foo@acme.com");
+        BOOST_REQUIRE(a.subject() == "Leiah - Kings and Queens \"Foobar.mp3\" (01/10)");
+        BOOST_REQUIRE(a.number() == 45);
+
+        beg++;
+        BOOST_REQUIRE(beg->author() == "foo@acme.com");
+        BOOST_REQUIRE(beg->subject() == "Leiah - Kings and Queens \"Foobar.mp3\" (01/10)");
 
         beg++;
         BOOST_REQUIRE(beg == end);
@@ -127,98 +127,98 @@ void unit_test_create_new()
 
 void unit_test_performance()
 {
-    delete_file("file");
+    // delete_file("file");
 
-    // write
-    {
-        using catalog = newsflash::catalog<newsflash::filebuf>;
+    // // write
+    // {
+    //     using catalog = newsflash::catalog<newsflash::filebuf>;
 
-        catalog db;
-        db.open("file");
+    //     catalog db;
+    //     db.open("file");
 
-        const auto beg = std::chrono::steady_clock::now();
+    //     const auto beg = std::chrono::steady_clock::now();
 
-        newsflash::article a;
-        a.author = "John Doe";
-        a.subject = "[#scnzb@efnet][529762] Automata.2014.BRrip.x264.Ac3-MiLLENiUM [1/4] - \"Automata.2014.BRrip.x264.Ac3-MiLLENiUM.mkv\" yEnc (1/1513)";
+    //     newsflash::article a;
+    //     a.author = "John Doe";
+    //     a.subject = "[#scnzb@efnet][529762] Automata.2014.BRrip.x264.Ac3-MiLLENiUM [1/4] - \"Automata.2014.BRrip.x264.Ac3-MiLLENiUM.mkv\" yEnc (1/1513)";
 
-        for (std::size_t i=0; i<1000000; ++i)
-        {
-            db.append(a);
-        }
+    //     for (std::size_t i=0; i<1000000; ++i)
+    //     {
+    //         db.append(a);
+    //     }
 
-        db.flush();
+    //     db.flush();
 
-        const auto end = std::chrono::steady_clock::now();
-        const auto diff = end - beg;
-        const auto ms  = std::chrono::duration_cast<std::chrono::milliseconds>(diff);
-        std::cout << "Writing time spent (ms): " << ms.count() << std::endl;
+    //     const auto end = std::chrono::steady_clock::now();
+    //     const auto diff = end - beg;
+    //     const auto ms  = std::chrono::duration_cast<std::chrono::milliseconds>(diff);
+    //     std::cout << "Writing time spent (ms): " << ms.count() << std::endl;
 
 
-    }
+    // }
 
-    // read with filebuf
-    {
-        using catalog = newsflash::catalog<newsflash::filebuf>;
+    // // read with filebuf
+    // {
+    //     using catalog = newsflash::catalog<newsflash::filebuf>;
 
-        catalog db;
-        db.open("file");
+    //     catalog db;
+    //     db.open("file");
 
-        const auto beg = std::chrono::steady_clock::now();
+    //     const auto beg = std::chrono::steady_clock::now();
 
-        newsflash::article a;
-        catalog::offset_t key = 0;
-        for (std::size_t i=0; i<1000000; ++i)
-        {
-            a = db.lookup(key);
-            key = a.next();
-        }
+    //     newsflash::article a;
+    //     catalog::offset_t key = 0;
+    //     for (std::size_t i=0; i<1000000; ++i)
+    //     {
+    //         a = db.lookup(key);
+    //         key = a.next();
+    //     }
 
-        const auto end = std::chrono::steady_clock::now();
-        const auto diff = end - beg;
-        const auto ms  = std::chrono::duration_cast<std::chrono::milliseconds>(diff);
-        std::cout << "Reading with filebuf Time spent (ms): " << ms.count() << std::endl;
-    }
+    //     const auto end = std::chrono::steady_clock::now();
+    //     const auto diff = end - beg;
+    //     const auto ms  = std::chrono::duration_cast<std::chrono::milliseconds>(diff);
+    //     std::cout << "Reading with filebuf Time spent (ms): " << ms.count() << std::endl;
+    // }
 
-    // read with filemap
-    {
-        using catalog = newsflash::catalog<newsflash::filemap>;
+    // // read with filemap
+    // {
+    //     using catalog = newsflash::catalog<newsflash::filemap>;
 
-        catalog db;
-        db.open("file");
+    //     catalog db;
+    //     db.open("file");
 
-        const auto beg = std::chrono::steady_clock::now();
+    //     const auto beg = std::chrono::steady_clock::now();
 
-        newsflash::article a;
-        catalog::offset_t key = 0;
-        for (std::size_t i=0; i<1000000; ++i)
-        {
-            a = db.lookup(key);
-            key = a.next();
-        }
+    //     newsflash::article a;
+    //     catalog::offset_t key = 0;
+    //     for (std::size_t i=0; i<1000000; ++i)
+    //     {
+    //         a = db.lookup(key);
+    //         key = a.next();
+    //     }
 
-        const auto end = std::chrono::steady_clock::now();
-        const auto diff = end - beg;
-        const auto ms  = std::chrono::duration_cast<std::chrono::milliseconds>(diff);
-        std::cout << "Reading with filemap Time spent (ms): " << ms.count() << std::endl;        
-    }
+    //     const auto end = std::chrono::steady_clock::now();
+    //     const auto diff = end - beg;
+    //     const auto ms  = std::chrono::duration_cast<std::chrono::milliseconds>(diff);
+    //     std::cout << "Reading with filemap Time spent (ms): " << ms.count() << std::endl;        
+    // }
     
 }
 
 void check_file()
 {
-    using catalog = newsflash::catalog<newsflash::filebuf>;
+    // using catalog = newsflash::catalog<newsflash::filebuf>;
 
-    catalog db;
-    db.open("vol33417.dat");
+    // catalog db;
+    // db.open("vol33417.dat");
 
-    auto beg = db.begin();
-    auto end = db.end();
-    for (; beg != end; ++beg)
-    {
-        auto article = *beg;
-        std::cout << article.subject << std::endl;
-    }
+    // auto beg = db.begin();
+    // auto end = db.end();
+    // for (; beg != end; ++beg)
+    // {
+    //     auto article = *beg;
+    //     std::cout << article.subject << std::endl;
+    // }
 
 }
 

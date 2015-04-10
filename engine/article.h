@@ -21,17 +21,24 @@
 #pragma once
 
 #include <newsflash/config.h>
+#include <newsflash/stringlib/string_view.h>
 #include <cstdint>
+#include <cstring>
 #include <ctime>
 #include <string>
+#include <algorithm>
+#include <type_traits>
 #include "bitflag.h"
 #include "filetype.h"
+#include "assert.h"
+#include "nntp.h"
 
 namespace newsflash
 {
-    // catalog article. 
-    struct article 
+    template<typename Storage>
+    class article
     {
+    public:
         enum class flags : std::uint8_t {
             // the article is broken. i.e. not all parts are known.
             broken, 
@@ -45,74 +52,276 @@ namespace newsflash
             // the article is downloaded.
             downloaded,
 
-            // 
+            // the article is bookmarked
             bookmarked
         };
-
-        // set flags bits.
-        bitflag<flags> bits;
-
-        // filetype of the file if any.
-        filetype type;
-
-        // offset in the catalog.
-        std::uint32_t offset;    
-
-        // index in the catalog.
-        std::uint32_t index;
-
-        //         
-        std::uint64_t number;
-
-        // the size of the article in bytes.
-        std::uint32_t bytes;
-
-        // publication data in ctime
-        std::time_t   pubdate;
-
-        std::uint32_t idb;
-
-        // number of parts known.
-        std::uint16_t  partno;
-
-        // expected number of parts.
-        std::uint16_t  partmax;
-
-        std::string subject;
-
-        std::string author;
-
-        std::size_t length() const {
-           return 30 + sizeof(std::time_t) + subject.size() + author.size();
-        }
-        std::uint32_t next() const {
-           return offset + length();
-        }
-        bool empty() const {
-           return subject.empty();
+        article() 
+        {
+            clear();
         }
 
-        static
-        std::size_t max_subject_length() {
-            article a;
-            return max_length() - a.length() - max_author_length();
+        bool parse(const char* overview, std::size_t len)
+        {
+            const auto& pair = nntp::parse_overview(overview, len);
+            if (!pair.first)
+                return false;
+
+            const auto& data = pair.second;
+            if (data.subject.len == 0 || data.subject.len > 512)
+                return false;
+            if (data.author.len == 0)
+                return false;
+
+            const auto& part = nntp::parse_part(data.subject.start, data.subject.len);
+            if (part.first)
+            {
+                if (part.second.numerator > part.second.denominator)
+                    return false;
+                m_partno = part.second.numerator;
+                m_parts  = part.second.denominator;
+                m_bits.set(flags::broken, (m_partno != m_parts));
+            }
+
+            const auto date = nntp::parse_date(data.date.start, data.date.len);
+            if (!date.first)
+                return false;
+
+            m_pubdate = nntp::timevalue(date.second);
+
+            const auto binary = nntp::is_binary_post(data.subject.start, data.subject.len);
+            if (binary)
+            {
+                const auto& filename = nntp::find_filename(data.subject.start, data.subject.len);
+                if (!filename.empty())
+                    m_type = find_filetype(filename);
+            }
+            m_subject = str::string_view{data.subject.start, data.subject.len};
+            m_author  = str::string_view{data.author.start, data.author.len};
+            m_number  = nntp::to_int<std::uint64_t>(data.number.start, data.number.len);
+            m_bytes   = nntp::to_int<std::uint32_t>(data.bytecount.start, data.bytecount.len);
+            m_hash    = nntp::hashvalue(m_subject.c_str(), m_subject.size());
+            m_author.set_max_len(64);            
+            return true;
         }
 
-        static
-        std::size_t max_author_length() {
-            return 64;
+        void load(std::size_t offset, Storage& storage)
+        {
+            const auto size  = storage.size();
+            const auto avail = size - offset;
+            const auto min   = std::min<std::size_t>(avail, 1024);
+            assert(offset < size);            
+
+            // have to keep hold of the buffer so that data remains valid.
+            m_buffer = storage.load(offset, min, Storage::buf_read);
+
+            auto in = m_buffer.begin();
+            m_bits    = read(in, m_bits);
+            m_type    = read(in, m_type);
+            m_subject = read(in, m_subject);
+            m_author  = read(in, m_author);
+            m_index   = read(in, m_index);
+            m_bytes   = read(in, m_bytes);
+            m_idbkey  = read(in, m_idbkey);
+            m_parts   = read(in, m_parts);
+            m_partno  = read(in, m_partno);
+            m_number  = read(in, m_number);
+            m_pubdate = read(in, m_pubdate);
+            ASSERT(read(in, MAGIC) == MAGIC);
         }
 
-        static 
-        std::size_t max_length() {
-            return 1024;
+        void save(std::size_t offset, Storage& storage) const
+        {
+            auto buf = storage.load(offset, size_on_disk(), Storage::buf_write);
+            auto out = buf.begin();
+
+            write(out, m_bits);
+            write(out, m_type);
+            write(out, m_subject);
+            write(out, m_author);
+            write(out, m_index);
+            write(out, m_bytes);
+            write(out, m_idbkey);
+            write(out, m_parts);
+            write(out, m_partno);
+            write(out, m_number);
+            write(out, m_pubdate);
+            write(out, MAGIC);
+
+            buf.flush();
         }
+
+        std::size_t size_on_disk() const 
+        {
+            return sizeof(m_bits) + 
+                sizeof(m_type) + 
+                sizeof(m_index) + 
+                sizeof(m_bytes) + 
+                sizeof(m_idbkey) + 
+                sizeof(m_parts) + 
+                sizeof(m_partno) + 
+                sizeof(m_number) + 
+                sizeof(m_pubdate) +
+                2 + m_subject.size() +
+                2 + m_author.size() +
+                sizeof(MAGIC);
+        }
+
+        void clear()
+        {
+            m_bits.clear();
+            m_index   = 0;
+            m_bytes   = 0;
+            m_idbkey  = 0;
+            m_parts   = 0;
+            m_partno  = 0;
+            m_number  = 0;
+            m_pubdate = 0;
+            m_subject.clear();
+            m_author.clear();
+
+            m_hash = 0;
+        }
+
+        bitflag<flags>& bits()
+        { return m_bits; }
+
+        std::uint32_t index() const 
+        { return m_index; }
+
+        std::uint32_t bytes() const 
+        { return m_bytes; }
+
+        std::uint32_t idbkey() const 
+        { return m_idbkey; }
+
+        std::uint16_t parts() const 
+        { return m_parts; }
+
+        std::uint16_t partno() const 
+        { return m_partno; }
+
+        std::uint64_t number() const 
+        { return m_number; }
+
+        std::time_t pubdate() const 
+        { return m_pubdate; }
+
+        const str::string_view& subject() const 
+        { return m_subject; }
+
+        const str::string_view& author() const 
+        { return m_author; }
+
+        const std::uint32_t hash() const 
+        {
+            if (!m_hash)
+                m_hash = nntp::hashvalue(m_subject.c_str(), m_subject.size());
+            return m_hash;
+        }
+
+        bool test(flags flag) const
+        {
+            return m_bits.test(flag);
+        }
+
+        void set_author(const char* str)
+        {
+            m_author = str::string_view{str, std::strlen(str)};
+        }
+        void set_author(const char* str, std::size_t len)
+        {
+            m_author = str::string_view{str, len};
+        }
+
+        void set_subject(const char* str)
+        {
+            m_subject = str::string_view{str, std::strlen(str)};
+        }
+        void set_subject(const char* str, std::size_t len)
+        {
+            m_subject = str::string_view{str, len};
+        }
+
+        void set_bytes(std::uint32_t bytes)
+        {
+            m_bytes = bytes;
+        }
+        void set_number(std::uint64_t number)
+        {
+            m_number = number;
+        }
+        void set_bits(flags flag, bool on_off)
+        {
+            m_bits.set(flag, on_off);
+        }
+
+    private:
+        typedef typename Storage::buffer buffer;
+        typedef typename Storage::buffer::iterator iterator;
+        typedef typename Storage::buffer::const_iterator const_iterator;
+
+        template<typename Value>
+        Value read(iterator& it, Value val = 0) const 
+        {
+            static_assert(std::is_standard_layout<Value>(), "");
+
+            auto* p = (char*)&val;
+            for (std::size_t i=0; i<sizeof(val); ++i)
+                p[i] = *it++;
+
+            return val;
+        }
+
+        str::string_view read(iterator& it, str::string_view s = str::string_view()) const 
+        {
+            const auto len = read<std::uint16_t>(it);
+            const auto ptr = (const char*)&(*it);
+            it += len;
+            return {ptr, len};
+        }
+
+        template<typename Value>
+        void write(iterator& it, const Value& val) const 
+        {
+            static_assert(std::is_standard_layout<Value>(), "");
+
+            const auto* p = (const char*)&val;
+            for (std::size_t i=0; i<sizeof(val); ++i)
+                *it++ = p[i];
+        }
+
+        void write(iterator& it, const str::string_view& str) const 
+        {
+            const std::uint16_t len = str.size();
+            write(it, len);
+            std::copy(str.begin(), str.end(), it);
+            it += len;
+        }
+    private:
+        static const std::uint32_t MAGIC;
+
+    private:
+        bitflag<flags> m_bits;
+        filetype m_type;        
+        str::string_view m_subject;
+        str::string_view m_author;
+        std::uint32_t m_index;
+        std::uint32_t m_bytes;
+        std::uint32_t m_idbkey;
+        std::uint16_t m_parts;
+        std::uint16_t m_partno;
+        std::uint64_t m_number;
+        std::time_t   m_pubdate;
+
+        // non persistent
+    private:
+        mutable std::uint32_t m_hash;
+
+    private:
+        buffer m_buffer;
     };
 
-    inline 
-    bool operator==(const article& lhs, const article& rhs)
-    {
-        return lhs.offset == rhs.offset;
-    }
+    template<typename T>
+    const std::uint32_t article<T>::MAGIC = 0xc0febabe;
 
 } // newsflash

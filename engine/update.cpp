@@ -43,19 +43,20 @@
 namespace newsflash
 {
 
-using filedb = catalog<filebuf>;
-using arrdb  = array<std::int16_t, filebuf>;
+using catalog_t   = catalog<filebuf>;
+using article_t   = article<filebuf>;
+using messagedb_t = array<std::int16_t, filebuf>;
 
 struct update::state {
     std::string folder;
     std::string group;
 
     //std::mutex m;
-    std::map<std::uint32_t, std::unique_ptr<filedb>> files;
+    std::map<std::uint32_t, std::unique_ptr<catalog_t>> files;
     std::map<std::uint32_t, std::uint32_t> hashmap;
 
     // message id db
-    arrdb idb;
+    messagedb_t idb;
 
     std::string file_volume_name(std::size_t index)
     {
@@ -82,66 +83,19 @@ public:
         for (; beg != end; ++beg)
         {
             const auto& line = *beg;
-            const auto& pair = nntp::parse_overview(line.start, line.length);
-            if (!pair.first)
-                continue;
-            auto& xover  = pair.second;
-            if (xover.subject.len == 0 || xover.author.len == 0)
-                continue;
-            if (xover.subject.len > article::max_subject_length())
+
+            article_t article;
+            if (!article.parse(line.start, line.length))
                 continue;
 
-            const auto& part = nntp::parse_part(xover.subject.start, xover.subject.len);
-            if (part.first)
-            {
-                if (part.second.numerator > part.second.denominator)
-                    continue;
-            }
-
-            const auto date    = nntp::parse_date(xover.date.start, xover.date.len);
-            const auto pubdate = date.first ? nntp::timevalue(date.second) : 0;            
-            const auto hash    = nntp::hashvalue(xover.subject.start, xover.subject.len);            
-            const auto binary  = nntp::is_binary_post(xover.subject.start, xover.subject.len);
-            const auto number  = nntp::to_int<std::uint64_t>(xover.number.start, xover.number.len);
-            const auto bytes   = nntp::to_int<std::uint32_t>(xover.bytecount.start, xover.bytecount.len);
-
-            article a;
-            a.type    = filetype::none;
-            a.subject = std::string(xover.subject.start, xover.subject.len);
-            a.author  = std::string(xover.author.start, std::min(xover.author.len, article::max_author_length()));
-            a.number  = number;
-            a.bytes   = bytes;
-            a.pubdate = pubdate;
-            a.partmax = 0;
-            a.partno  = 0;            
-            a.idb     = 0;
-            a.bits.set(article::flags::binary, binary);
-
-            if (binary)
-            {
-                const auto& filename = nntp::find_filename(a.subject);
-                if (!filename.empty())
-                    a.type = find_filetype(filename);
-            }
-            if (part.first)
-            {
-                a.partno  = part.second.numerator;
-                a.partmax = part.second.denominator;
-                if (binary) {
-                    const auto broken = a.partno != a.partmax;
-                    a.bits.set(article::flags::broken, broken);
-                }
-            }
-            articles_.push_back(a);
-            hashes_.push_back(hash);
+            articles_.push_back(article);
         }
     }
 
 private:
     friend class update;
     std::shared_ptr<state> state_;
-    std::vector<article> articles_;
-    std::vector<std::uint32_t> hashes_;
+    std::vector<article_t> articles_;
 private:
     buffer buffer_;
 };
@@ -165,13 +119,13 @@ public:
             auto& article  = articles_[i];
             auto hashvalue = hashes_[i];
 
-            last_  = std::max(last_, article.number);
-            first_ = std::min(first_, article.number);
+            last_  = std::max(last_, article.number());
+            first_ = std::min(first_, article.number());
 
             auto hit = hmap.find(hashvalue);
             if (hit == std::end(hmap))
             {
-                const auto index = article.number / CATALOG_SIZE;
+                const auto index = article.number() / CATALOG_SIZE;
                 hit = hmap.insert(std::make_pair(hashvalue, index)).first;
             }
 
@@ -180,7 +134,7 @@ public:
             auto it = files.find(file_index);
             if (it == std::end(files))
             {
-                std::unique_ptr<filedb> db(new filedb);
+                std::unique_ptr<catalog_t> db(new catalog_t);
                 db->open(state_->file_volume_name(file_index));
                 it = files.insert(std::make_pair(file_index, std::move(db))).first;
             }
@@ -189,31 +143,31 @@ public:
             std::size_t slot;
             for (slot=0; slot<CATALOG_SIZE; ++slot)
             {
-                const auto index = filedb::index_t((slot * 3 + file_bucket) % CATALOG_SIZE);
+                const auto index = catalog_t::index_t((slot * 3 + file_bucket) % CATALOG_SIZE);
 
                 if (!db->is_empty(index))
                 {
-                    auto a = db->lookup(index);
-                    if (!nntp::strcmp(a.subject, article.subject))
-                        continue;
-                    if (a.bits.test(article::flags::binary))
+                    auto a = db->load(index);
+                    //if (!nntp::strcmp(a.subject, article.subject))
+                    //    continue;
+                    if (a.test(article_t::flags::binary))
                     {
-                        a.bytes  += article.bytes;
-                        a.partno += 1;
-                        const auto broken = a.partno != a.partmax;
-                        a.bits.set(article::flags::broken, broken);
+                        // a.bytes  += article.bytes;
+                        // a.partno += 1;
+                        // const auto broken = a.partno != a.partmax;
+                        // a.bits.set(article::flags::broken, broken);
                     }
                     db->insert(a, index);
-                    if (a.partmax)
-                    {
-                        const auto base = a.number;
-                        const auto num  = article.number;
-                        std::int16_t diff = 0;
-                        if (base > num)
-                            diff = -(base - num);
-                        else diff = num - base;
-                        idb[a.idb + article.partno] = diff;
-                    }
+                    // if (a.partmax)
+                    // {
+                    //     const auto base = a.number;
+                    //     const auto num  = article.number;
+                    //     std::int16_t diff = 0;
+                    //     if (base > num)
+                    //         diff = -(base - num);
+                    //     else diff = num - base;
+                    //     idb[a.idb + article.partno] = diff;
+                    // }
                     break;
                 }
                 else
@@ -223,12 +177,12 @@ public:
                     // note that while yenc generally uses 1 based part indexing some 
                     // posters use 0 based instead. Hence we just add + 1 to cater for 
                     // both cases safely.
-                    if (article.partmax)
-                    {
-                        article.idb = idb.size();
-                        idb.resize(idb.size() + article.partmax + 1);
-                        idb[article.idb + article.partno] = 0; // 0 difference to the message id stored with the article.
-                    }
+                    // if (article.partmax)
+                    // {
+                    //     article.idb = idb.size();
+                    //     idb.resize(idb.size() + article.partmax + 1);
+                    //     idb[article.idb + article.partno] = 0; // 0 difference to the message id stored with the article.
+                    // }
                     db->insert(article, index);                    
                     break;
                 }
@@ -244,9 +198,9 @@ public:
 private:
     friend class update;
     std::shared_ptr<state> state_;
-    std::vector<article> articles_;
+    std::vector<article_t> articles_;
     std::vector<std::uint32_t> hashes_;
-    std::set<filedb*> updates_;
+    std::set<catalog_t*> updates_;
     std::uint64_t first_;
     std::uint64_t last_;    
 private: 
@@ -460,8 +414,8 @@ void update::complete(action& a, std::vector<std::unique_ptr<action>>& next)
     if (auto* p = dynamic_cast<parse*>(&a))
     {
         std::unique_ptr<store> s(new store(state_));
-        s->articles_ = std::move(p->articles_);
-        s->hashes_   = std::move(p->hashes_);
+        //s->articles_ = std::move(p->articles_);
+        //s->hashes_   = std::move(p->hashes_);
 
         //s->set_affinity(action::affinity::single_thread);
         s->set_affinity(action::affinity::gui_thread);
