@@ -72,6 +72,9 @@ namespace app
         void refresh(quint32 account, QString path, QString name);
         void stop();
 
+        void scanSelected(QModelIndexList& list);
+        void select(const QModelIndexList& list, bool val);
+
         std::size_t numItems() const;
 
     public slots:
@@ -96,6 +99,7 @@ namespace app
         index index_;
 
     private:
+        quint32 numSelected_;        
         quint32 task_;        
         QString path_;
         QString name_;

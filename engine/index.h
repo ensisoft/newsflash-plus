@@ -31,6 +31,7 @@
 #include <cassert>
 #include "article.h"
 #include "assert.h"
+#include "bitflag.h"
 
 namespace newsflash
 {
@@ -57,6 +58,10 @@ namespace newsflash
 
         enum class order {
             ascending, descending
+        };
+
+        enum class flags {
+            selected
         };
 
         index() : size_(0), sort_(sorting::sort_by_age), order_(order::ascending)
@@ -191,6 +196,21 @@ namespace newsflash
 
         order get_order() const 
         { return order_; }
+
+        void select(std::size_t index, bool val) 
+        {
+            assert(index < size_);
+            auto& item = items_[index];
+            item.bits.set(flags::selected, val);
+        }
+
+        bool is_selected(std::size_t index) const 
+        {
+            assert(index < size_);
+            const auto& item = items_[index];
+            return item.bits.test(flags::selected);
+        }
+
 
     private:
         template<typename Class, typename Member>
@@ -328,6 +348,7 @@ namespace newsflash
         struct item {
             std::size_t key;
             std::size_t index;
+            bitflag<flags> bits;
         };
         std::deque<item> items_;
         std::size_t size_;

@@ -58,7 +58,9 @@ namespace gui
         void on_actionStop_triggered();
         void on_btnLoadMore_clicked();
         void on_tableView_customContextMenuRequested(QPoint p);
-        void modelReset();
+        void selectionChanged(const QItemSelection& sel, const QItemSelection& deSel);
+        void modelBegReset();        
+        void modelEndReset();
         void newHeaderInfoAvailable(const QString& group, quint64 numLocal, quint64 numRemote);
         void updateCompleted(const app::HeaderInfo& info);
 

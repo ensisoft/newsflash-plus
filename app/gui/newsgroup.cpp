@@ -62,7 +62,14 @@ NewsGroup::NewsGroup(quint32 acc, QString path, QString name) : account_(acc), p
     QObject::connect(app::g_engine, SIGNAL(updateCompleted(const app::HeaderInfo&)),
         this, SLOT(updateCompleted(const app::HeaderInfo&)));    
 
-    QObject::connect(&model_, SIGNAL(modelReset()), this, SLOT(modelReset()));
+    QObject::connect(&model_, SIGNAL(modelAboutToBeReset()), 
+        this, SLOT(modelBegReset()));
+    QObject::connect(&model_, SIGNAL(modelReset()), 
+        this, SLOT(modelEndReset()));
+
+    QObject::connect(ui_.tableView->selectionModel(),
+        SIGNAL(selectionChanged(const QItemSelection&, const QItemSelection&)),
+        this, SLOT(selectionChanged(const QItemSelection&, const QItemSelection&)));
 
     setWindowTitle(name);
 
@@ -213,8 +220,36 @@ void NewsGroup::on_tableView_customContextMenuRequested(QPoint p)
     menu.exec(QCursor::pos());
 }
 
-void NewsGroup::modelReset()
+void NewsGroup::selectionChanged(const QItemSelection& next, const QItemSelection& prev)
 {
+    // store the currently selected list of items
+    // so we can restore it later.
+    model_.select(next.indexes(), true);
+    model_.select(prev.indexes(), false);
+}
+
+void NewsGroup::modelBegReset()
+{}
+
+void NewsGroup::modelEndReset()
+{
+
+    QModelIndexList list;
+    model_.scanSelected(list);
+
+    if (!list.empty())
+    {
+        QItemSelection sel;
+        for (const auto& i : list)
+            sel.select(i, i);
+
+        auto* model = ui_.tableView->selectionModel();
+        model->setCurrentIndex(list[0], 
+            QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+        model->select(sel, 
+            QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+    }
+
     const auto numItems = model_.numItems();
     ui_.grpView->setTitle(QString("%1 (%2)").arg(name_).arg(numItems));
 }

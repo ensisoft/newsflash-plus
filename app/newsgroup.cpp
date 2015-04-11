@@ -66,6 +66,7 @@ NewsGroup::NewsGroup() : task_(0)
         return catalog.db.load(catalog::index_t{idx});
     };
 
+    numSelected_ = 0;
 }
 
 NewsGroup::~NewsGroup()
@@ -332,6 +333,32 @@ void NewsGroup::stop()
     task_ = 0;
 }
 
+void NewsGroup::scanSelected(QModelIndexList& list)
+{
+    const auto numArticles = index_.size();
+
+    for (std::size_t i=0; i<numArticles; ++i)
+    {
+        if (index_.is_selected(i))
+        {
+            list.append(QAbstractTableModel::index(i, 0));
+            if (list.size() == numSelected_)
+                break;
+        }
+    }
+}
+
+void NewsGroup::select(const QModelIndexList& list, bool val)
+{
+    numSelected_ = 0;
+
+    for (const auto& i : list)
+        index_.select(i.row(), val);
+
+    if (val) 
+        numSelected_ = list.size();
+}
+
 std::size_t NewsGroup::numItems() const 
 {
     return index_.size();
@@ -363,6 +390,20 @@ void NewsGroup::updateCompleted(const app::HeaderInfo& info)
 
 void NewsGroup::loadMoreData(const std::string& file, bool guiLoad)
 {
+    // resetting the model will make it forget the current selection.
+    // however using beginInsertRows and endInsertRows would need to be 
+    // done for each row because the insertions into the index are not 
+    // necessarily consecutive. This was tried and turns out that it's 
+    // much slower than just resetting the model.
+    // however this means that we must maintain stuff like the current
+    // selection manually. this is easily accomplished by having a
+    // selection bit for each item in the index. When the GUI makes
+    // a new selection we store the information per each selected
+    // item in the selected bit. When model is reset we can then
+    // scan the index for the items that were selected before. 
+    // and create a new Selection list for the GUI.
+    // see scanSelected and select and the GUI code for modelReset
+
     QAbstractTableModel::beginResetModel();
 
     auto it = std::find_if(std::begin(catalogs_), std::end(catalogs_),
