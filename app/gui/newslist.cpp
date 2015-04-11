@@ -202,9 +202,9 @@ void NewsList::on_actionBrowse_triggered()
         if (exists) continue;
 
         auto* news = new NewsGroup(account, datapath, group);
-        news->setProperty("newsgroup-guid", guid);
-        news->load();
         g_win->attach(news, false, true);
+        news->setProperty("newsgroup-guid", guid);        
+        news->load();        
     }
 }
 

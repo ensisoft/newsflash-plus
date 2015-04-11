@@ -30,6 +30,7 @@
 #  include <QProcess>
 #  include <QFile>
 #include <newsflash/warnpop.h>
+#include <string>
 #include <mutex>
 
 namespace debug
@@ -65,12 +66,16 @@ namespace debug
     QString toString(QNetworkReply::NetworkError error);
     QString toString(QFile::FileError error);
     QString toString(const QNetworkReply& reply);
+    QString toString(Qt::SortOrder sort);
 
     inline QString toString(bool value)
     { return (value ? "True" : "False"); }
 
     inline QString toString(const char* str)
     { return str; }
+
+    inline QString toString(const std::string& s)
+    { return QString::fromStdString(s); }
 
     inline QString toString(const QString& str)
     { return str; }

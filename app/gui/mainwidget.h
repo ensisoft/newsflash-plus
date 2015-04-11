@@ -107,6 +107,8 @@ namespace gui
 
         virtual Finder* getFinder() { return nullptr; }
 
+        virtual bool canClose() const { return true; }
+
     signals:
         void updateMenu(MainWidget* self);
 

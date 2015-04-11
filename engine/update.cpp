@@ -21,7 +21,7 @@
 //  THE SOFTWARE.
 
 #include <newsflash/config.h>
-
+#include <limits>
 #include <fstream>
 #include <map>
 #include <set>
@@ -60,8 +60,16 @@ struct update::state {
 
     std::string file_volume_name(std::size_t index)
     {
+        const auto max_index = std::numeric_limits<std::uint64_t>::max() / std::uint64_t(CATALOG_SIZE);
+
+        std::string s;
+        {
+            std::stringstream ss;
+            ss << max_index;
+            ss >> s;
+        }
         std::stringstream ss;
-        ss << "vol" << index << ".dat";
+        ss << "vol" << std::setfill('0') << std::setw(s.size()) << index << ".dat";
         const auto base = fs::joinpath(folder, group);
         const auto file = fs::joinpath(base, ss.str());
         return file;
@@ -84,11 +92,11 @@ public:
         {
             const auto& line = *beg;
 
-            article_t article;
-            if (!article.parse(line.start, line.length))
+            article_t a;
+            if (!a.parse(line.start, line.length))
                 continue;
 
-            articles_.push_back(article);
+            articles_.push_back(a);
         }
     }
 
@@ -116,21 +124,20 @@ public:
 
         for (std::size_t i=0; i<articles_.size(); ++i)
         {
-            auto& article  = articles_[i];
-            auto hashvalue = hashes_[i];
+            auto& article = articles_[i];
 
             last_  = std::max(last_, article.number());
             first_ = std::min(first_, article.number());
 
-            auto hit = hmap.find(hashvalue);
+            auto hit = hmap.find(article.hash());
             if (hit == std::end(hmap))
             {
                 const auto index = article.number() / CATALOG_SIZE;
-                hit = hmap.insert(std::make_pair(hashvalue, index)).first;
+                hit = hmap.insert(std::make_pair(article.hash(), index)).first;
             }
 
             const auto file_index  = hit->second;
-            const auto file_bucket = hashvalue % CATALOG_SIZE;            
+            const auto file_bucket = article.hash() % CATALOG_SIZE;            
             auto it = files.find(file_index);
             if (it == std::end(files))
             {
@@ -148,41 +155,39 @@ public:
                 if (!db->is_empty(index))
                 {
                     auto a = db->load(index);
-                    //if (!nntp::strcmp(a.subject, article.subject))
-                    //    continue;
-                    if (a.test(article_t::flags::binary))
+                    if (!a.is_match(article))
+                        continue;
+
+                    a.combine(article);
+                    a.save();
+                    if (a.has_parts())
                     {
-                        // a.bytes  += article.bytes;
-                        // a.partno += 1;
-                        // const auto broken = a.partno != a.partmax;
-                        // a.bits.set(article::flags::broken, broken);
+                        const auto base = a.number();
+                        const auto num  = article.number();
+                        std::int16_t diff = 0;
+                        if (base > num)
+                            diff = -(base - num);
+                        else diff = num - base;
+                        idb[a.idbkey() + article.partno()] = diff;
                     }
-                    db->insert(a, index);
-                    // if (a.partmax)
-                    // {
-                    //     const auto base = a.number;
-                    //     const auto num  = article.number;
-                    //     std::int16_t diff = 0;
-                    //     if (base > num)
-                    //         diff = -(base - num);
-                    //     else diff = num - base;
-                    //     idb[a.idb + article.partno] = diff;
-                    // }
                     break;
                 }
                 else
                 {
+                    article.set_index(index.value);
                     // we store one complete 64bit article number for the whole pack
                     // and then for the additional parts we store a 16 bit delta value.
                     // note that while yenc generally uses 1 based part indexing some 
                     // posters use 0 based instead. Hence we just add + 1 to cater for 
                     // both cases safely.
-                    // if (article.partmax)
-                    // {
-                    //     article.idb = idb.size();
-                    //     idb.resize(idb.size() + article.partmax + 1);
-                    //     idb[article.idb + article.partno] = 0; // 0 difference to the message id stored with the article.
-                    // }
+                    if (article.has_parts())
+                    {
+                        const auto key = idb.size();
+
+                        article.set_idbkey(key);
+                        idb.resize(idb.size() + article.parts() + 1);
+                        idb[key + article.partno()] = 0; // 0 difference to the message id stored with the article.
+                    }
                     db->insert(article, index);                    
                     break;
                 }
@@ -199,11 +204,11 @@ private:
     friend class update;
     std::shared_ptr<state> state_;
     std::vector<article_t> articles_;
-    std::vector<std::uint32_t> hashes_;
     std::set<catalog_t*> updates_;
     std::uint64_t first_;
     std::uint64_t last_;    
 private: 
+    buffer buffer_;
 };
 
 update::update(std::string path, std::string group) : local_last_(0), local_first_(0)
@@ -414,8 +419,8 @@ void update::complete(action& a, std::vector<std::unique_ptr<action>>& next)
     if (auto* p = dynamic_cast<parse*>(&a))
     {
         std::unique_ptr<store> s(new store(state_));
-        //s->articles_ = std::move(p->articles_);
-        //s->hashes_   = std::move(p->hashes_);
+        s->articles_ = std::move(p->articles_);
+        s->buffer_ = std::move(p->buffer_);
 
         //s->set_affinity(action::affinity::single_thread);
         s->set_affinity(action::affinity::gui_thread);

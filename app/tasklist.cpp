@@ -276,8 +276,9 @@ void TaskList::moveToTop(QModelIndexList& list)
 
         list[i] = index(row - distance, 0);
     }
-    Q_ASSERT(min_index >= 0);
-    Q_ASSERT(max_index < tasks_.size());
+
+    BOUNDSCHECK(tasks_, max_index);
+    BOUNDSCHECK(tasks_, min_index);
 
     g_engine->refreshTaskList(tasks_);
 
@@ -307,8 +308,8 @@ void TaskList::moveToBottom(QModelIndexList& list)
 
         list[i] = index(row + distance, 0);
     }
-    Q_ASSERT(min_index >= 0);
-    Q_ASSERT(max_index < tasks_.size());
+    BOUNDSCHECK(tasks_, min_index);
+    BOUNDSCHECK(tasks_, max_index);
 
     g_engine->refreshTaskList(tasks_);
 
@@ -359,8 +360,8 @@ void TaskList::manageTasks(QModelIndexList& list, TaskList::Action a)
                 break;
         }
     }
-    Q_ASSERT(min_index >= 0);
-    Q_ASSERT(max_index < tasks_.size());    
+    BOUNDSCHECK(tasks_, min_index);
+    BOUNDSCHECK(tasks_, max_index);
 
     g_engine->refreshTaskList(tasks_);
 

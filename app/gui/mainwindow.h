@@ -166,6 +166,7 @@ namespace gui
         std::vector<MainModule*> modules_;
         std::vector<MainWidget*> widgets_;
         std::vector<QAction*> actions_;
+
         MainWidget* current_;                
     private:
         QStringList recents_;
@@ -174,7 +175,7 @@ namespace gui
         QTimer  refresh_timer_;
     private:
         app::Settings& settings_;
-        app::Settings  transient_;
+        std::vector<app::Settings> transient_;
     };
     
     extern MainWindow* g_win;

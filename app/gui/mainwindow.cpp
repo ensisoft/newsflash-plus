@@ -160,8 +160,16 @@ void MainWindow::attach(MainWidget* widget, bool permanent, bool loadstate)
         widget->setProperty("permanent", false);
         if (loadstate)
         {
-            widget->loadState(settings_);
-            widget->loadState(transient_);
+            auto it = std::find_if(std::begin(transient_), std::end(transient_),
+                [=](const app::Settings& s) {
+                    return s.name() == widget->objectName();
+                });
+            if (it == std::end(transient_))
+                widget->loadState(settings_);
+            else {
+                auto& settings = *it;
+                widget->loadState(settings);
+            }
         }
     }
 
@@ -723,7 +731,8 @@ bool MainWindow::saveState(DlgExit* dlg)
         // data from the settings. for example if tools are modified and removed the state
         // is kept in memory and then persisted cleanly into the settings object on save.
         settings_.clear();
-        settings_ = transient_;
+        for (const auto& a : transient_)
+            settings_.merge(a);
 
         app::g_accounts->saveState(settings_);
         app::g_engine->saveState(settings_);
@@ -819,6 +828,8 @@ void MainWindow::on_mainTab_currentChanged(int index)
 void MainWindow::on_mainTab_tabCloseRequested(int tab)
 {
     auto* widget = static_cast<MainWidget*>(ui_.mainTab->widget(tab));
+    if (!widget->canClose())
+        return;
 
     ui_.mainTab->removeTab(tab);
 
@@ -840,7 +851,36 @@ void MainWindow::on_mainTab_tabCloseRequested(int tab)
     }
     else
     {
-        widget->saveState(transient_);
+        // we have transient and permanent settings. the reason being
+        // that we want to clear the settings saved on the disk from
+        // stale data. I.e. if there's an object such as an account
+        // that was deleted we want this data to be gone from the settings.json.
+        // the easiest way to do this is just to clear the settings object
+        // and then have all the modules persist their *current* state
+        // into the settings and then write this out to the disk. 
+        // however this does not work for temporary widgets that are deleted
+        // during program run because and which are not around anymore at the time
+        // when the settings are saved. 
+
+        // so in order to maintain clean set of settings we have a separate
+        // settings object for each type of transient widgets
+        // which we then combine with the permanent settings to create the 
+        // final settings object saved to the file
+
+        auto sit = std::find_if(std::begin(transient_), std::end(transient_),
+            [=](const app::Settings& s) {
+                return s.name() == widget->objectName();
+            });
+        if (sit == std::end(transient_))
+        {
+            app::Settings s;
+            s.setName(widget->objectName());
+            sit = transient_.insert(transient_.end(), s);
+        }
+        auto& settings = *sit;
+        settings.clear();
+
+        widget->saveState(settings);
 
         delete widget;
         widgets_.erase(it);

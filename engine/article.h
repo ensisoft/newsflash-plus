@@ -35,13 +35,17 @@
 
 namespace newsflash
 {
+    // forward declaration for the template. otherwise gcc conflics with index from strings.h
+    // for the friend declaration.
+    template<typename T>
+    class index;
+
     template<typename Storage>
     class article
     {
     public:
         enum class flags : std::uint8_t {
-            // the article is broken. i.e. not all parts are known.
-            broken, 
+            broken,
 
             // the article appears to contain binary content.
             binary, 
@@ -94,6 +98,7 @@ namespace newsflash
                 const auto& filename = nntp::find_filename(data.subject.start, data.subject.len);
                 if (!filename.empty())
                     m_type = find_filetype(filename);
+                m_bits.set(flags::binary);
             }
             m_subject = str::string_view{data.subject.start, data.subject.len};
             m_author  = str::string_view{data.author.start, data.author.len};
@@ -112,7 +117,7 @@ namespace newsflash
             assert(offset < size);            
 
             // have to keep hold of the buffer so that data remains valid.
-            m_buffer = storage.load(offset, min, Storage::buf_read);
+            m_buffer = storage.load(offset, min, Storage::buf_read | Storage::buf_write);
 
             auto in = m_buffer.begin();
             m_bits    = read(in, m_bits);
@@ -131,9 +136,13 @@ namespace newsflash
 
         void save(std::size_t offset, Storage& storage) const
         {
-            auto buf = storage.load(offset, size_on_disk(), Storage::buf_write);
-            auto out = buf.begin();
+            m_buffer = storage.load(offset, size_on_disk(), Storage::buf_write);
+            save();
+        }
 
+        void save() const 
+        {
+            auto out = m_buffer.begin();            
             write(out, m_bits);
             write(out, m_type);
             write(out, m_subject);
@@ -146,8 +155,17 @@ namespace newsflash
             write(out, m_number);
             write(out, m_pubdate);
             write(out, MAGIC);
+            m_buffer.flush();
+        }
 
-            buf.flush();
+        void combine(const article& other)
+        {
+            if (m_parts)
+            {
+                m_partno += 1;
+                m_bits.set(flags::broken, (m_partno != m_parts));
+            }
+            m_bytes += other.m_bytes;            
         }
 
         std::size_t size_on_disk() const 
@@ -169,6 +187,7 @@ namespace newsflash
         void clear()
         {
             m_bits.clear();
+            m_type    = filetype::none;
             m_index   = 0;
             m_bytes   = 0;
             m_idbkey  = 0;
@@ -178,7 +197,6 @@ namespace newsflash
             m_pubdate = 0;
             m_subject.clear();
             m_author.clear();
-
             m_hash = 0;
         }
 
@@ -211,6 +229,9 @@ namespace newsflash
 
         const str::string_view& author() const 
         { return m_author; }
+
+        filetype type() const 
+        { return m_type; }
 
         const std::uint32_t hash() const 
         {
@@ -253,6 +274,30 @@ namespace newsflash
         void set_bits(flags flag, bool on_off)
         {
             m_bits.set(flag, on_off);
+        }
+        void set_idbkey(std::uint32_t key)
+        {
+            m_idbkey = key;
+        }
+        void set_pubdate(std::time_t pub)
+        {
+            m_pubdate = pub;
+        }
+
+        void set_index(std::uint32_t index)
+        {
+            m_index = index;
+        }
+
+        bool is_match(const article& other) const 
+        {
+            return nntp::strcmp(m_subject.c_str(), m_subject.size(),
+                other.m_subject.c_str(), other.m_subject.size());
+        }
+
+        bool has_parts() const 
+        {
+            return m_parts != 0;
         }
 
     private:
@@ -301,6 +346,8 @@ namespace newsflash
         static const std::uint32_t MAGIC;
 
     private:
+        template<typename> friend class index;
+
         bitflag<flags> m_bits;
         filetype m_type;        
         str::string_view m_subject;
@@ -316,9 +363,7 @@ namespace newsflash
         // non persistent
     private:
         mutable std::uint32_t m_hash;
-
-    private:
-        buffer m_buffer;
+        mutable buffer m_buffer;
     };
 
     template<typename T>

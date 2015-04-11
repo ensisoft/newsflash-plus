@@ -90,8 +90,17 @@ namespace app
         // delete the whole section under the key
         void del(const QString& key);
 
+        void merge(const Settings& other);
+
+        QString name() const 
+        { return m_name; }
+
+        void setName(QString name) 
+        { m_name = name; }
+
     private:
-        QVariantMap values_;
+        QVariantMap m_values;
+        QString m_name;
     };
 
 } // app

@@ -212,20 +212,13 @@ namespace newsflash
         void insert(const article<Storage>& a, index_t i)
         {
             ASSERT(i.value < CATALOG_SIZE);
+            ASSERT(header_.table[i.value] == 0);
 
-            const auto offset = header_.table[i.value];
-            const auto empty  = (offset == 0);
-            if (empty)
-            {
-                a.save(header_.offset, *this);
-                header_.table[i.value] = offset;
-                header_.offset += a.size_on_disk();
-                header_.article_count++;
-            }
-            else
-            {
-                a.save(offset, *this);            
-            }
+            a.save(header_.offset, *this);
+            
+            header_.table[i.value] = header_.offset;
+            header_.offset += a.size_on_disk();
+            header_.article_count++;
         }
 
         void flush()

@@ -24,46 +24,59 @@
 #include "../index.h"
 #include "../article.h"
 
-using namespace newsflash;
+struct storage 
+{
+    struct buffer {
+        using iterator = char*;
+        using const_iterator = const char*;
+    };
+};
+
+using article = newsflash::article<storage>;
+
+bool operator==(const article& lhs, const article& rhs)
+{
+    return lhs.pubdate() == rhs.pubdate();
+}
 
 int test_main(int, char*[])
 {
+
     article catalog[2][3];
 
-    catalog[0][0].author  = "John dow john@gmail.com";
-    catalog[0][0].subject = "Metallica - Enter Sandman yEnc (0/3).mp3";
-    catalog[0][0].bytes   = 100;
-    catalog[0][0].pubdate = 600;
-    catalog[0][0].offset  = 0;
+    catalog[0][0].set_author("John dow john@gmail.com");
+    catalog[0][0].set_subject("Metallica - Enter Sandman yEnc (0/3).mp3");
+    catalog[0][0].set_bytes(100);
+    catalog[0][0].set_pubdate(600);
 
-    catalog[0][1].author  = "foo@gmail.com";
-    catalog[0][1].subject = "Red Dwarf Season 8.vol001+02.PAR2";
-    catalog[0][1].bytes   = 150;
-    catalog[0][1].pubdate = 650;
-    catalog[0][1].offset  = 1;
+    catalog[0][1].set_author("foo@gmail.com");
+    catalog[0][1].set_subject("Red Dwarf Season 8.vol001+02.PAR2");
+    catalog[0][1].set_bytes(150);
+    catalog[0][1].set_pubdate(650);
+    //catalog[0][1].offset  = 1;
 
-    catalog[0][2].author  = "ano@anonymous (knetje)";
-    catalog[0][2].subject = "#A.B.MM @  EFNet Presents: REQ 40092 - Seinfeld.S09.DVDRip.XviD-SiNK - 482/520 - sink-seinfeld.s09e21e22.r23 (1/3)";
-    catalog[0][2].bytes   = 50;
-    catalog[0][2].pubdate = 630;
-    catalog[0][2].offset  = 2;
+    catalog[0][2].set_author("ano@anonymous (knetje)");
+    catalog[0][2].set_subject("#A.B.MM @  EFNet Presents: REQ 40092 - Seinfeld.S09.DVDRip.XviD-SiNK - 482/520 - sink-seinfeld.s09e21e22.r23 (1/3)");
+    catalog[0][2].set_bytes(50);
+    catalog[0][2].set_pubdate(630);
+    //catalog[0][2].set_offset(2);
 
-    catalog[1][0].author  = "foo@foobar.com";
-    catalog[1][0].subject = ".net question";
-    catalog[1][0].bytes   = 58;
-    catalog[1][0].pubdate = 800;
-    catalog[1][0].offset  = 3;
+    catalog[1][0].set_author("foo@foobar.com");
+    catalog[1][0].set_subject(".net question");
+    catalog[1][0].set_bytes(58);
+    catalog[1][0].set_pubdate(800);
+    //catalog[1][0].set_offset(3);
 
-    catalog[1][1].author  = "ano@anonymous";
-    catalog[1][1].subject = "Terminator.2.Judgement.Day.h264.720p-FOO (001/100).par";
-    catalog[1][1].bytes   = 1024 * 1024;
-    catalog[1][1].pubdate = 1;
-    catalog[1][1].offset  = 4;
+    catalog[1][1].set_author("ano@anonymous");
+    catalog[1][1].set_subject("Terminator.2.Judgement.Day.h264.720p-FOO (001/100).par");
+    catalog[1][1].set_bytes(1024 * 1024);
+    catalog[1][1].set_pubdate(1);
+    //catalog[1][1].set_offset  = 4;
 
 
     {
-
-        newsflash::index i;
+        using index = newsflash::index<storage>;
+        index i;
         i.on_load = [&](std::size_t key, std::size_t index) {
             BOOST_REQUIRE(key < 2);
             BOOST_REQUIRE(index < 3);

@@ -32,6 +32,7 @@
 #include <newsflash/engine/index.h>
 #include <vector>
 #include <deque>
+#include <functional>
 #include "filetype.h"
 
 namespace app
@@ -57,6 +58,9 @@ namespace app
         NewsGroup();
        ~NewsGroup();
 
+        std::function<void ()> onLoadComplete;
+        std::function<void (std::size_t curItem, std::size_t numMItems)> onLoadProgress;
+
         // QAbstractTableModel
         virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
         virtual QVariant data(const QModelIndex& index, int role) const override;        
@@ -64,7 +68,7 @@ namespace app
         virtual int columnCount(const QModelIndex&) const override;
         virtual void sort(int column, Qt::SortOrder order) override;
 
-        bool load(quint32 blockIndex, QString path, QString name);
+        bool load(quint32 blockIndex, QString path, QString name, quint32& numBlocks);
         void refresh(quint32 account, QString path, QString name);
         void stop();
 
@@ -76,10 +80,19 @@ namespace app
         void updateCompleted(const app::HeaderInfo& info);
 
     private:
-        using filedb = newsflash::catalog<newsflash::filemap>;
-        using index  = newsflash::index;
-        std::vector<filedb> filedbs_;
-        std::vector<std::size_t> offsets_;
+        void loadMoreData(const std::string& file, bool guiLoad);
+
+        using catalog = newsflash::catalog<newsflash::filemap>;
+        using article = newsflash::article<newsflash::filemap>;
+        using index   = newsflash::index<newsflash::filemap>;
+
+        struct Catalog {
+            catalog db;
+            std::size_t prevSize;
+            std::size_t prevOffset;
+        };
+
+        std::vector<Catalog> catalogs_;
         index index_;
 
     private:

@@ -134,6 +134,17 @@ QString toString(const QNetworkReply& reply)
     return QString("[url: %1 %2]").arg(toString(u)).arg(toString(e));
 }
 
+QString toString(Qt::SortOrder order)
+{
+    switch (order)
+    {
+        CASE(Qt::AscendingOrder);
+        CASE(Qt::DescendingOrder);
+    }
+    Q_ASSERT(0);
+    return "";
+}
+
 #undef CASE
 
 

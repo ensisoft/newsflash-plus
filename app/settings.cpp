@@ -73,7 +73,7 @@ void Settings::load(QIODevice& io, Settings::format format)
             const auto& values  = it.value().toMap();
             db[context] = values;
         }
-        values_ = db;
+        m_values = db;
     }
 }
 
@@ -86,7 +86,7 @@ void Settings::save(QIODevice& io, Settings::format format) const
         bool ok = false;
         QJson::Serializer serializer;
         serializer.setIndentMode(QJson::IndentFull);
-        serializer.serialize(values_, &io, &ok);
+        serializer.serialize(m_values, &io, &ok);
         if (!ok)
         {
             const auto& msg = serializer.errorMessage();
@@ -118,7 +118,7 @@ QFile::FileError Settings::save(const QString& file, Settings::format format)
 
 void Settings::clear()
 {
-    values_.clear();
+    m_values.clear();
 }
 
 bool Settings::contains(const char* context, const char* name) const
@@ -132,7 +132,7 @@ bool Settings::contains(const char* context, const char* name) const
 
 QVariant Settings::get(const QString& key, const QString& attr, const QVariant& defval) const
 {
-    const QVariantMap& map = values_[key].toMap();
+    const QVariantMap& map = m_values[key].toMap();
     if (map.isEmpty())
         return defval;
 
@@ -142,14 +142,39 @@ QVariant Settings::get(const QString& key, const QString& attr, const QVariant& 
 
 void Settings::set(const QString& key, const QString& attr, const QVariant& value)
 {
-    QVariantMap map = values_[key].toMap();
+    QVariantMap map = m_values[key].toMap();
     map[attr] = value;
-    values_[key] = map;
+    m_values[key] = map;
 }
 
 void Settings::del(const QString& key)
 {
-    values_.remove(key);
+    m_values.remove(key);
+}
+
+void Settings::merge(const Settings& other)
+{
+    const auto& values = other.m_values;
+    for (auto it = values.begin(); it != values.end(); ++it)
+    {
+        const QString&  key = it.key();
+        const QVariant& tmp = it.value();
+
+        QVariantMap merged  = m_values[key].toMap();
+
+        const QVariantMap& map = tmp.toMap();
+        for (auto it = map.begin(); it != map.end(); ++it)
+        {
+            const QString&  attr = it.key();
+            const QVariant& val  = it.value();
+            if (merged.contains(attr)) {
+                throw std::runtime_error(narrow(
+                    toString("trying to merge a duplicate value (%1/%2)", key, attr)));
+            }
+            merged[attr] = val;
+        }
+        m_values[key] = merged;
+    }
 }
 
 } // app

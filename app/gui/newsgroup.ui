@@ -33,7 +33,7 @@
       <property name="bottomMargin">
        <number>5</number>
       </property>
-      <item row="2" column="0">
+      <item row="3" column="0">
        <widget class="QPushButton" name="btnLoadMore">
         <property name="text">
          <string>Load older headers ...</string>
@@ -89,11 +89,21 @@
         </attribute>
        </widget>
       </item>
-      <item row="1" column="0">
+      <item row="2" column="0">
        <widget class="QProgressBar" name="progressBar">
         <property name="maximum">
          <number>99</number>
         </property>
+        <property name="value">
+         <number>24</number>
+        </property>
+        <property name="textVisible">
+         <bool>false</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QProgressBar" name="loader">
         <property name="value">
          <number>24</number>
         </property>

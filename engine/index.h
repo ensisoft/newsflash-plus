@@ -62,17 +62,15 @@ namespace newsflash
         index() : size_(0), sort_(sorting::sort_by_age), order_(order::ascending)
         {}
 
-        //using article = typename newsflash::article<Storage>;
+        using article_t = typename newsflash::article<Storage>;
 
         // callback to invoke to load an article.
-        using loader = std::function<article (std::size_t key, std::size_t index)>;
+        using loader = std::function<article_t (std::size_t key, std::size_t index)>;
 
         loader on_load;
 
         void sort(sorting column, order up_down)
         {
-            if ((column == sort_ ) && (up_down == order_))
-                return;
             if (column == sort_)
             {
                 auto beg = std::begin(items_);
@@ -83,82 +81,97 @@ namespace newsflash
                 order_ = up_down;
                 return;
             }
-
-            switch (column)
-            {
-                case sorting::sort_by_broken:     sort(up_down, article::flags::broken); break;
-                case sorting::sort_by_binary:     sort(up_down, article::flags::binary); break;
-                case sorting::sort_by_downloaded: sort(up_down, article::flags::downloaded); break;
-                case sorting::sort_by_bookmarked: sort(up_down, article::flags::bookmarked); break;
-                case sorting::sort_by_age:        sort(up_down, &article::pubdate); break;
-                case sorting::sort_by_type:       sort(up_down, &article::type); break;
-                case sorting::sort_by_size:       sort(up_down, &article::bytes); break;
-                case sorting::sort_by_author:     sort(up_down, &article::author); break;
-                case sorting::sort_by_subject:    sort(up_down, &article::subject); break;
-            }
             sort_  = column;
             order_ = up_down;            
+            resort();
         }
-
-        std::size_t probe(const article& a)
+        void resort()
         {
-            std::deque<item>::iterator it;
             switch (sort_)
             {
-                case sorting::sort_by_broken:
-                    it = lower_bound(a, article::flags::broken); 
+                case sorting::sort_by_broken:     
+                    sort(order_, article_t::flags::broken); 
                     break;
-                case sorting::sort_by_binary:
-                    it = lower_bound(a, article::flags::binary);
+                case sorting::sort_by_binary:     
+                    sort(order_, article_t::flags::binary); 
                     break;
-                case sorting::sort_by_downloaded:
-                    it = lower_bound(a, article::flags::downloaded);
+                case sorting::sort_by_downloaded: 
+                    sort(order_, article_t::flags::downloaded); 
                     break;
-                case sorting::sort_by_bookmarked:
-                    it = lower_bound(a, article::flags::bookmarked);
+                case sorting::sort_by_bookmarked: 
+                    sort(order_, article_t::flags::bookmarked); 
                     break;
-
-                case sorting::sort_by_age: 
-                    it = lower_bound(a, &article::pubdate);
+                case sorting::sort_by_age:        
+                    sort(order_, &article_t::m_pubdate); 
                     break;
-                case sorting::sort_by_type: 
-                    it = lower_bound(a, &article::type);
+                case sorting::sort_by_type:       
+                    sort(order_, &article_t::m_type); 
                     break;
-                case sorting::sort_by_size:                    
-                    it = lower_bound(a, &article::bytes); 
+                case sorting::sort_by_size:       
+                    sort(order_, &article_t::m_bytes); 
                     break;
-                case sorting::sort_by_author:
-                    it = lower_bound(a, &article::author);
+                case sorting::sort_by_author:     
+                    sort(order_, &article_t::m_author); 
                     break;
-                case sorting::sort_by_subject:
-                    it = lower_bound(a, &article::subject);
+                case sorting::sort_by_subject:    
+                    sort(order_, &article_t::m_subject); 
                     break;
-            }
-            return std::distance(std::begin(items_), it);
-        }
-
-        std::size_t insert(const article& a, std::size_t pos, std::size_t key, std::size_t index)
-        {
-            auto it = std::begin(items_);
-            std::advance(it, pos);
-            items_.insert(it, {key, index});
-            
-            ++size_;
-            return pos;
+            }            
         }
 
         // insert the new item into the index in the right position.
         // returns the position which is given to the inserted item.
         // this will maintain current sorting.
-        std::size_t insert(const article& a, std::size_t key, std::size_t index)
+        std::size_t insert(const article_t& a, std::size_t key, std::size_t index)
         {
-            auto pos = probe(a);
-            auto it  = std::begin(items_);
-            std::advance(it, pos);
-            items_.insert(it, {key, index});
+            typename std::deque<item>::iterator it;
+            switch (sort_)
+            {
+                case sorting::sort_by_broken:
+                    it = lower_bound(a, article_t::flags::broken); 
+                    break;
+                case sorting::sort_by_binary:
+                    it = lower_bound(a, article_t::flags::binary);
+                    break;
+                case sorting::sort_by_downloaded:
+                    it = lower_bound(a, article_t::flags::downloaded);
+                    break;
+                case sorting::sort_by_bookmarked:
+                    it = lower_bound(a, article_t::flags::bookmarked);
+                    break;
 
+                case sorting::sort_by_age: 
+                    it = lower_bound(a, &article_t::m_pubdate);
+                    break;
+                case sorting::sort_by_type: 
+                    it = lower_bound(a, &article_t::m_type);
+                    break;
+                case sorting::sort_by_size:                    
+                    it = lower_bound(a, &article_t::m_bytes); 
+                    break;
+                case sorting::sort_by_author:
+                    it = lower_bound(a, &article_t::m_author);
+                    break;
+                case sorting::sort_by_subject:
+                    it = lower_bound(a, &article_t::m_subject);
+                    break;
+            }
+            items_.insert(it, {key, index});
+            
             ++size_;
-            return pos;
+            return std::distance(std::begin(items_), it);            
+        }
+
+        void expand(std::size_t num_items)
+        {
+            const auto cur_size = items_.size();
+            items_.reserve(cur_size + num_items);
+        }
+
+        void append(const article_t& a, std::size_t key, std::size_t index)
+        {
+            items_.push_back({key, index});
+            ++size_;
         }
 
         std::size_t size() const 
@@ -166,7 +179,7 @@ namespace newsflash
             return size_;
         }
 
-        article operator[](std::size_t index) const
+        article_t operator[](std::size_t index) const
         {
             assert(index < size_);
             const auto& item = items_[index];
@@ -193,7 +206,7 @@ namespace newsflash
                 const auto& b = load_(rhs.key, rhs.index);
                 return a.*ptr_ > b.*ptr_;
             }
-            bool operator()(const item& lhs, const article& rhs) const 
+            bool operator()(const item& lhs, const article_t& rhs) const 
             {
                 const auto& a = load_(lhs.key, lhs.index);
                 const auto& b = rhs;
@@ -216,7 +229,7 @@ namespace newsflash
                 const auto& b = load_(rhs.key, rhs.index);
                 return a.*ptr_ < b.*ptr_;
             }
-            bool operator()(const item& lhs, const article& rhs) const 
+            bool operator()(const item& lhs, const article_t& rhs) const 
             {
                 const auto& a = load_(lhs.key, lhs.index);
                 const auto& b = rhs;
@@ -248,7 +261,7 @@ namespace newsflash
                  std::sort(beg, end, less(p));
             else std::sort(beg, end, greater(p));
         }
-        void sort(order up_down, article::flags mask)
+        void sort(order up_down, typename article_t::flags mask)
         {
             auto beg = std::begin(items_);
             auto end = std::begin(items_);
@@ -258,7 +271,7 @@ namespace newsflash
                 std::sort(beg, end, [=](const item& lhs, const item& rhs) {
                     const auto& a = on_load(lhs.key, lhs.index);
                     const auto& b = on_load(rhs.key, rhs.index);
-                    return (a.bits & mask).value()  < (b.bits & mask).value();
+                    return (a.m_bits & mask).value()  < (b.m_bits & mask).value();
                 });
             }
             else
@@ -266,13 +279,13 @@ namespace newsflash
                 std::sort(beg, end, [=](const item& lhs, const item& rhs) {
                     const auto& a = on_load(lhs.key, lhs.index);
                     const auto& b = on_load(rhs.key, rhs.index);
-                    return (a.bits & mask).value() > (b.bits & mask).value();
+                    return (a.m_bits & mask).value() > (b.m_bits & mask).value();
                 });
             }
         }
 
         template<typename MemPtr>
-        std::deque<item>::iterator lower_bound(const article& a, MemPtr p)
+        typename std::deque<item>::iterator lower_bound(const article_t& a, MemPtr p)
         {
             auto beg = std::begin(items_);
             auto end = std::begin(items_);
@@ -282,29 +295,29 @@ namespace newsflash
             else return std::lower_bound(beg, end, a, greater(p));
         }
 
-        std::deque<item>::iterator lower_bound(const article& a, article::flags mask)
+        typename std::deque<item>::iterator lower_bound(const article_t& a, typename article_t::flags mask)
         {
             auto beg = std::begin(items_);
             auto end = std::begin(items_);
             std::advance(end, size_);
             if (order_ == order::ascending) {
-                return std::lower_bound(beg, end, a, [=](const item& lhs, const article& rhs) {
+                return std::lower_bound(beg, end, a, [=](const item& lhs, const article_t& rhs) {
                     const auto& a = on_load(lhs.key, lhs.index);
                     const auto& b = rhs;
-                    return (a.bits & mask).value() < (b.bits & mask).value();
+                    return (a.m_bits & mask).value() < (b.m_bits & mask).value();
                 });
             }
             else
             {
-                return std::lower_bound(beg, end, a, [=](const item& lhs, const article& rhs) {
+                return std::lower_bound(beg, end, a, [=](const item& lhs, const article_t& rhs) {
                     const auto& a = on_load(lhs.key, lhs.index);
                     const auto& b = rhs;
-                    return (a.bits & mask).value() > (b.bits & mask).value();
+                    return (a.m_bits & mask).value() > (b.m_bits & mask).value();
                 });
             }
         }
 
-        std::deque<item>::iterator end() 
+        typename std::deque<item>::iterator end() 
         { 
             auto it = std::begin(items_);
             std::advance(it, size_);

@@ -153,7 +153,7 @@ void unit_test_data()
     std::vector<std::unique_ptr<newsflash::action>> actions;
 
     fs::createpath("alt.binaries.test");
-    delete_file("alt.binaries.test/vol0.dat");
+    delete_file("alt.binaries.test/vol000000000000000.dat");
     delete_file("alt.binaries.test.nfo");    
     delete_file("alt.binaries.test.idb");
 
@@ -317,79 +317,84 @@ void unit_test_data()
         cmd->receive_data_buffer(buff);
 
         u.complete(*cmd, actions);
-        auto a = std::move(actions[0]);
-        a->perform();
-        BOOST_REQUIRE(!a->has_exception());
+        auto act = std::move(actions[0]);
+        act->perform();
+        BOOST_REQUIRE(!act->has_exception());
         actions.clear();
-        u.complete(*a, actions);
-        a = std::move(actions[0]);
-        a->perform();
-        BOOST_REQUIRE(!a->has_exception());
+        u.complete(*act, actions);
+        act = std::move(actions[0]);
+        act->perform();
+        BOOST_REQUIRE(!act->has_exception());
         actions.clear();
-        u.complete(*a, actions);
+        u.complete(*act, actions);
         u.commit();
 
         using catalog = newsflash::catalog<newsflash::filemap>;
+        using article = newsflash::article<newsflash::filemap>;
         using arraydb = newsflash::array<std::int16_t, newsflash::filemap>;
 
         catalog db;
-        db.open("alt.binaries.test/vol0.dat");
+        db.open("alt.binaries.test/vol000000000000000.dat");
 
         arraydb idb;
         idb.open("alt.binaries.test.idb");
 
         BOOST_REQUIRE(db.article_count() == 6);
 
-        auto article = db.lookup(catalog::offset_t(0));
-        BOOST_REQUIRE(article.subject == "Metallica - Enter Sandman yEnc (01/10).mp3");
-        BOOST_REQUIRE(article.author == "ensi@gmail.com");
-        BOOST_REQUIRE(article.bits.test(newsflash::article::flags::binary));
-        BOOST_REQUIRE(article.bits.test(newsflash::article::flags::broken));
-        BOOST_REQUIRE(article.bytes == 1024 + 568 + 100);
-        BOOST_REQUIRE(article.partmax == 10);
-        BOOST_REQUIRE(article.partno == 3);
+        catalog::offset_t off(0);
 
-        BOOST_REQUIRE(idb[article.idb + 1] + article.number == 5);
-        BOOST_REQUIRE(idb[article.idb + 2] + article.number == 2);
-        BOOST_REQUIRE(idb[article.idb + 3] + article.number == 7);
+        article a = db.load(off);
+        BOOST_REQUIRE(a.subject() == "Metallica - Enter Sandman yEnc (01/10).mp3");
+        BOOST_REQUIRE(a.author() == "ensi@gmail.com");
+        BOOST_REQUIRE(a.test(article::flags::binary));
+        BOOST_REQUIRE(a.test(article::flags::broken));
+        BOOST_REQUIRE(a.bytes() == 1024 + 568 + 100);
+        BOOST_REQUIRE(a.parts() == 10);
+        BOOST_REQUIRE(a.partno() == 3);
+        BOOST_REQUIRE(idb[a.idbkey() + 1] + a.number() == 5);
+        BOOST_REQUIRE(idb[a.idbkey() + 2] + a.number() == 2);
+        BOOST_REQUIRE(idb[a.idbkey() + 3] + a.number() == 7);
 
-        article = db.lookup(catalog::offset_t{article.next()});
-        BOOST_REQUIRE(article.subject == ".net and COM interoperability");
-        BOOST_REQUIRE(article.author == "foo@gmail.com");
-        BOOST_REQUIRE(article.bits.test(newsflash::article::flags::binary) == false);
-        BOOST_REQUIRE(article.bits.test(newsflash::article::flags::broken) == false);
-        BOOST_REQUIRE(article.bytes == 512);
-        BOOST_REQUIRE(article.partmax == 0);
-        BOOST_REQUIRE(article.partno == 0);
+        off += a.size_on_disk();
+        a = db.load(off);
+        BOOST_REQUIRE(a.subject() == ".net and COM interoperability");
+        BOOST_REQUIRE(a.author() == "foo@gmail.com");
+        BOOST_REQUIRE(a.test(article::flags::binary) == false);
+        BOOST_REQUIRE(a.test(article::flags::broken) == false);
+        BOOST_REQUIRE(a.bytes() == 512);
+        BOOST_REQUIRE(a.parts() == 0);
+        BOOST_REQUIRE(a.partno() == 0);
 
+        off += a.size_on_disk();
+        a = db.load(off);
+        BOOST_REQUIRE(a.subject() == "#A.B.MM @  EFNet Presents: REQ 40092 - Seinfeld.S09.DVDRip.XviD-SiNK - 482/520 - sink-seinfeld.s09e21e22.r23 (1/4)");
+        BOOST_REQUIRE(a.author() == "ano@anonymous.yy (knetje)");
+        BOOST_REQUIRE(a.test(article::flags::binary));
+        BOOST_REQUIRE(a.test(article::flags::broken) == true);
+        BOOST_REQUIRE(a.parts() == 4);
+        BOOST_REQUIRE(a.partno() == 3);
+        BOOST_REQUIRE(a.bytes() == 3 * 2048);
+        BOOST_REQUIRE(idb[a.idbkey() + 1] + a.number() == 30);
+        BOOST_REQUIRE(idb[a.idbkey() + 2] + a.number() == 40);        
+        BOOST_REQUIRE(idb[a.idbkey() + 3] + a.number() == 50);                
 
-        article = db.lookup(catalog::offset_t{article.next()});
-        BOOST_REQUIRE(article.subject == "#A.B.MM @  EFNet Presents: REQ 40092 - Seinfeld.S09.DVDRip.XviD-SiNK - 482/520 - sink-seinfeld.s09e21e22.r23 (1/4)");
-        BOOST_REQUIRE(article.author == "ano@anonymous.yy (knetje)");
-        BOOST_REQUIRE(article.bits.test(newsflash::article::flags::binary));
-        BOOST_REQUIRE(article.bits.test(newsflash::article::flags::broken) == true);
-        BOOST_REQUIRE(article.partmax == 4);
-        BOOST_REQUIRE(article.partno == 3);
-        BOOST_REQUIRE(article.bytes == 3 * 2048);
+        off += a.size_on_disk();
+        a = db.load(off);
+        BOOST_REQUIRE(a.subject() == "girls flirting with is neat GiBBA files Soft I love you to BF-Vol3 (102).jpg (1/1)");
+        BOOST_REQUIRE(a.author()  == "foo@acme.com");
+        BOOST_REQUIRE(idb[a.idbkey() + 1] + a.number() == 100);
 
-        BOOST_REQUIRE(idb[article.idb + 1] + article.number == 30);
-        BOOST_REQUIRE(idb[article.idb + 2] + article.number == 40);        
-        BOOST_REQUIRE(idb[article.idb + 3] + article.number == 50);                
+        off += a.size_on_disk();
+        a = db.load(off);
+        BOOST_REQUIRE(a.subject() == "girls flirting with is neat GiBBA files Soft I love you to BF-Vol3 (103).jpg (1/1)");
+        BOOST_REQUIRE(a.author()  == "foo@acme.com");
+        BOOST_REQUIRE(idb[a.idbkey() + 1] + a.number() == 101);        
 
-        article = db.lookup(catalog::offset_t{article.next()});
-        BOOST_REQUIRE(article.subject == "girls flirting with is neat GiBBA files Soft I love you to BF-Vol3 (102).jpg (1/1)");
-        BOOST_REQUIRE(article.author  == "foo@acme.com");
-        BOOST_REQUIRE(idb[article.idb + 1] + article.number == 100);
-
-        article = db.lookup(catalog::offset_t{article.next()});
-        BOOST_REQUIRE(article.subject == "girls flirting with is neat GiBBA files Soft I love you to BF-Vol3 (103).jpg (1/1)");
-        BOOST_REQUIRE(article.author  == "foo@acme.com");
-        BOOST_REQUIRE(idb[article.idb + 1] + article.number == 101);        
-
-        article = db.lookup(catalog::offset_t{article.next()});
-        BOOST_REQUIRE(article.subject == "girls flirting with is neat GiBBA files Soft I love you to BF-Vol3 (104).jpg (1/4)");
-        BOOST_REQUIRE(article.author  == "foo@acme.com");
-        BOOST_REQUIRE(idb[article.idb + 1] + article.number == 102);                
+        off += a.size_on_disk();
+        a = db.load(off);
+        BOOST_REQUIRE(a.subject() == "girls flirting with is neat GiBBA files Soft I love you to BF-Vol3 (104).jpg (1/4)");
+        BOOST_REQUIRE(a.author()  == "foo@acme.com");
+        BOOST_REQUIRE(idb[a.idbkey() + 1] + a.number() == 102);                
 
     }
 
@@ -429,65 +434,73 @@ void unit_test_data()
         cmd->receive_data_buffer(buff);
 
         u.complete(*cmd, actions);
-        auto a = std::move(actions[0]);
-        a->perform();
-        BOOST_REQUIRE(!a->has_exception());
+        auto act = std::move(actions[0]);
+        act->perform();
+        BOOST_REQUIRE(!act->has_exception());
 
         actions.clear();
 
-        u.complete(*a, actions);
-        a = std::move(actions[0]);
-        a->perform();
-        BOOST_REQUIRE(!a->has_exception());
+        u.complete(*act, actions);
+        act = std::move(actions[0]);
+        act->perform();
+        BOOST_REQUIRE(!act->has_exception());
         actions.clear();
-        u.complete(*a, actions);
+        u.complete(*act, actions);
         u.commit();
 
         using catalog = newsflash::catalog<newsflash::filemap>;
+        using article = newsflash::article<newsflash::filemap>;
+
         catalog db;
-        db.open("alt.binaries.test/vol0.dat");
+        db.open("alt.binaries.test/vol000000000000000.dat");
         BOOST_REQUIRE(db.article_count() == 6);
 
-        auto article = db.lookup(catalog::offset_t(0));
-        BOOST_REQUIRE(article.subject == "Metallica - Enter Sandman yEnc (01/10).mp3");
-        BOOST_REQUIRE(article.author == "ensi@gmail.com");
-        BOOST_REQUIRE(article.bits.test(newsflash::article::flags::binary));
-        BOOST_REQUIRE(article.bits.test(newsflash::article::flags::broken));
-        BOOST_REQUIRE(article.bytes == 1024 + 568 + 100);
-        BOOST_REQUIRE(article.partmax == 10);
-        BOOST_REQUIRE(article.partno == 3);
+        catalog::offset_t off(0);
+        article a = db.load(off);
+        BOOST_REQUIRE(a.subject() == "Metallica - Enter Sandman yEnc (01/10).mp3");
+        BOOST_REQUIRE(a.author() == "ensi@gmail.com");
+        BOOST_REQUIRE(a.test(article::flags::binary));
+        BOOST_REQUIRE(a.test(article::flags::broken));
+        BOOST_REQUIRE(a.bytes() == 1024 + 568 + 100);
+        BOOST_REQUIRE(a.parts() == 10);
+        BOOST_REQUIRE(a.partno() == 3);
 
-        article = db.lookup(catalog::offset_t{article.next()});
-        BOOST_REQUIRE(article.subject == ".net and COM interoperability");
-        BOOST_REQUIRE(article.author == "foo@gmail.com");
-        BOOST_REQUIRE(article.bits.test(newsflash::article::flags::binary) == false);
-        BOOST_REQUIRE(article.bits.test(newsflash::article::flags::broken) == false);
-        BOOST_REQUIRE(article.bytes == 512);
-        BOOST_REQUIRE(article.partmax == 0);
-        BOOST_REQUIRE(article.partno == 0);
+        off += a.size_on_disk();
+        a = db.load(off);
+        BOOST_REQUIRE(a.subject() == ".net and COM interoperability");
+        BOOST_REQUIRE(a.author() == "foo@gmail.com");
+        BOOST_REQUIRE(a.test(article::flags::binary) == false);
+        BOOST_REQUIRE(a.test(article::flags::broken) == false);
+        BOOST_REQUIRE(a.bytes() == 512);
+        BOOST_REQUIRE(a.parts() == 0);
+        BOOST_REQUIRE(a.partno() == 0);
 
-        article = db.lookup(catalog::offset_t{article.next()});
-        BOOST_REQUIRE(article.subject == "#A.B.MM @  EFNet Presents: REQ 40092 - Seinfeld.S09.DVDRip.XviD-SiNK - 482/520 - sink-seinfeld.s09e21e22.r23 (1/4)");
-        BOOST_REQUIRE(article.author == "ano@anonymous.yy (knetje)");
-        BOOST_REQUIRE(article.bits.test(newsflash::article::flags::binary));
-        BOOST_REQUIRE(article.bits.test(newsflash::article::flags::broken) == false);
-        BOOST_REQUIRE(article.partmax == 4);
-        BOOST_REQUIRE(article.partno == 4);        
-        BOOST_REQUIRE(article.bytes == 3 * 2048 + 100);
+        off += a.size_on_disk();
+        a = db.load(off);
+        BOOST_REQUIRE(a.subject() == "#A.B.MM @  EFNet Presents: REQ 40092 - Seinfeld.S09.DVDRip.XviD-SiNK - 482/520 - sink-seinfeld.s09e21e22.r23 (1/4)");
+        BOOST_REQUIRE(a.author() == "ano@anonymous.yy (knetje)");
+        BOOST_REQUIRE(a.test(article::flags::binary));
+        BOOST_REQUIRE(a.test(article::flags::broken) == false);
+        BOOST_REQUIRE(a.parts() == 4);
+        BOOST_REQUIRE(a.partno() == 4);        
+        BOOST_REQUIRE(a.bytes() == 3 * 2048 + 100);
 
-        article = db.lookup(catalog::offset_t{article.next()});
-        BOOST_REQUIRE(article.subject == "girls flirting with is neat GiBBA files Soft I love you to BF-Vol3 (102).jpg (1/1)");
-        BOOST_REQUIRE(article.author  == "foo@acme.com");
+        off += a.size_on_disk();
+        a = db.load(off);
+        BOOST_REQUIRE(a.subject() == "girls flirting with is neat GiBBA files Soft I love you to BF-Vol3 (102).jpg (1/1)");
+        BOOST_REQUIRE(a.author()  == "foo@acme.com");
         //BOOST_REQUIRE(idb[article.idb + 1] + article.number == 100);
 
-        article = db.lookup(catalog::offset_t{article.next()});
-        BOOST_REQUIRE(article.subject == "girls flirting with is neat GiBBA files Soft I love you to BF-Vol3 (103).jpg (1/1)");
-        BOOST_REQUIRE(article.author  == "foo@acme.com");
+        off += a.size_on_disk();
+        a = db.load(off);
+        BOOST_REQUIRE(a.subject() == "girls flirting with is neat GiBBA files Soft I love you to BF-Vol3 (103).jpg (1/1)");
+        BOOST_REQUIRE(a.author()  == "foo@acme.com");
         //BOOST_REQUIRE(idb[article.idb + 1] + article.number == 101);        
 
-        article = db.lookup(catalog::offset_t{article.next()});
-        BOOST_REQUIRE(article.subject == "girls flirting with is neat GiBBA files Soft I love you to BF-Vol3 (104).jpg (1/4)");
-        BOOST_REQUIRE(article.author  == "foo@acme.com");
+        off += a.size_on_disk();
+        a = db.load(off);
+        BOOST_REQUIRE(a.subject() == "girls flirting with is neat GiBBA files Soft I love you to BF-Vol3 (104).jpg (1/4)");
+        BOOST_REQUIRE(a.author()  == "foo@acme.com");
         //BOOST_REQUIRE(idb[article.idb + 1] + article.number == 102);                
 
     }
@@ -499,8 +512,8 @@ void unit_test_index()
     std::vector<std::unique_ptr<newsflash::action>> actions;
 
     fs::createpath("alt.binaries.test");
-    delete_file("alt.binaries.test/vol33653.dat");
-    delete_file("alt.binaries.test/vol33654.dat");
+    delete_file("alt.binaries.test/vol000000000033653.dat");
+    delete_file("alt.binaries.test/vol000000000033654.dat");
     delete_file("alt.binaries.test.nfo");
     delete_file("alt.binaries.test.idb");
 
@@ -520,8 +533,8 @@ void unit_test_index()
 
         cmd = u.create_commands();
 
-        //auto data = read_file_buffer("test_data/xover.nntp.txt");
-        auto data = read_file_buffer("/tmp/nntp.txt");
+        auto data = read_file_buffer("test_data/xover.nntp.txt");
+        //auto data = read_file_buffer("/tmp/nntp.txt");
         data.set_content_type(newsflash::buffer::type::overview);
         cmd->receive_data_buffer(data);
 
@@ -545,14 +558,15 @@ void unit_test_index()
     // load the data
     {
         using catalog = newsflash::catalog<newsflash::filemap>;
+        using index   = newsflash::index<newsflash::filemap>;
 
         catalog dbs[2];
-        dbs[0].open("alt.binaries.test/vol33654.dat");
-        dbs[1].open("alt.binaries.test/vol33653.dat");
+        dbs[0].open("alt.binaries.test/vol000000000033654.dat");
+        dbs[1].open("alt.binaries.test/vol000000000033653.dat");
 
-        newsflash::index index;
-        index.on_load = [&](std::size_t key, std::size_t idx) {
-            return dbs[key].lookup(catalog::index_t{idx});
+        index idx;
+        idx.on_load = [&](std::size_t key, std::size_t idx) {
+            return dbs[key].load(catalog::index_t{idx});
         };
 
         {
@@ -562,7 +576,7 @@ void unit_test_index()
             for (; beg != end; ++beg)
             {
                 const auto& article = *beg;
-                index.insert(article, 0, article.index);
+                idx.insert(article, 0, article.index());
             }
         }
 
@@ -573,18 +587,17 @@ void unit_test_index()
             for (; beg != end; ++beg)
             {
                 const auto& article = *beg;
-                index.insert(article, 1, article.index);
+                idx.insert(article, 1, article.index());
             }
         }
 
         {
-            index.sort(newsflash::index::sorting::sort_by_subject,
-                newsflash::index::order::ascending);
+            idx.sort(index::sorting::sort_by_subject, index::order::ascending);
 
-            for (std::size_t i=0; i<index.size(); ++i)
+            for (std::size_t i=0; i<idx.size(); ++i)
             {
-                const auto& a = index[i];
-                std::cout << a.subject << std::endl;
+                const auto& a = idx[i];
+                std::cout << a.subject() << std::endl;
             }
         }
     }

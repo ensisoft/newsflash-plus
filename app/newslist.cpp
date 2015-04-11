@@ -132,6 +132,7 @@ void NewsList::sort(int column, Qt::SortOrder order)
         case Columns::subscribed: app::sort(groups_, order, &group::flags); break;
         case Columns::name:       app::sort(groups_, order, &group::name); break;
         default: Q_ASSERT("wut"); break;
+
     }
 
     emit layoutChanged();

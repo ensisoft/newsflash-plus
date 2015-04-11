@@ -54,6 +54,7 @@ NewsGroup::NewsGroup(quint32 acc, QString path, QString name) : account_(acc), p
     ui_.tableView->setColumnWidth((int)Cols::BrokenFlag, 32);
     ui_.tableView->setColumnWidth((int)Cols::BookmarkFlag, 32);
     ui_.progressBar->setVisible(false);
+    ui_.loader->setVisible(false);
     ui_.actionStop->setEnabled(false);
 
     QObject::connect(app::g_engine, SIGNAL(newHeaderInfoAvailable(const QString&, quint64, quint64)),
@@ -64,6 +65,15 @@ NewsGroup::NewsGroup(quint32 acc, QString path, QString name) : account_(acc), p
     QObject::connect(&model_, SIGNAL(modelReset()), this, SLOT(modelReset()));
 
     setWindowTitle(name);
+
+    model_.onLoadProgress = [this] (std::size_t curItem, std::size_t numItems) {
+        ui_.loader->setVisible(true);
+        ui_.loader->setMaximum(numItems);
+        ui_.loader->setValue(curItem);
+        if ((curItem % 150) == 0)
+            QCoreApplication::processEvents();
+    };
+    loadingState_ = false;
 }
 
 NewsGroup::~NewsGroup()
@@ -85,6 +95,8 @@ void NewsGroup::addActions(QMenu& menu)
 
 void NewsGroup::loadState(app::Settings& settings)
 {
+    DEBUG("Enter loadState");
+
     ui_.tableView->setSortingEnabled(false);
 
     app::loadTableLayout("newsgroup", ui_.tableView, settings);
@@ -92,6 +104,8 @@ void NewsGroup::loadState(app::Settings& settings)
     ui_.tableView->setSortingEnabled(true);
     ui_.tableView->sortByColumn((int)app::NewsGroup::Columns::Age, 
         Qt::DescendingOrder);
+
+    DEBUG("Leave loadState");
 }
 
 void NewsGroup::saveState(app::Settings& settings)
@@ -99,11 +113,36 @@ void NewsGroup::saveState(app::Settings& settings)
     app::saveTableLayout("newsgroup", ui_.tableView, settings);
 }
 
+MainWidget::info NewsGroup::getInformation() const 
+{
+    return {"group.html", false};
+}
+
+bool NewsGroup::canClose() const
+{
+    // this is a bit of a hack here because
+    // we have the processEvents() in the loading loop
+    // it means that its possible for the MainWindow to want to
+    // react to user input and close the widget.
+    // which deletes us, which dumps core.
+    // so simply, if we're loading data we cannot be closed.
+    if (loadingState_)
+        return false;
+
+    return true;
+}
+
 void NewsGroup::load()
 {
     blockIndex_ = 0;
 
-    if (!model_.load(blockIndex_, path_, name_))
+    ui_.btnLoadMore->setEnabled(false);
+
+    quint32 numBlocks = 0;
+
+    loadingState_ = true;
+
+    if (!model_.load(blockIndex_, path_, name_, numBlocks))
     {
         model_.refresh(account_, path_, name_);
         ui_.progressBar->setVisible(true);
@@ -116,7 +155,14 @@ void NewsGroup::load()
     else
     {
         blockIndex_ = 1;
+        ui_.loader->setVisible(false);
+        if (numBlocks > 1) {
+            ui_.btnLoadMore->setEnabled(true);
+            ui_.btnLoadMore->setText(tr("Load older headers ... (%1/%2)").arg(blockIndex_).arg(numBlocks));
+        }
     }
+
+    loadingState_ = false;
 }
 
 void NewsGroup::on_actionRefresh_triggered()
@@ -142,11 +188,18 @@ void NewsGroup::on_actionStop_triggered()
 
 void NewsGroup::on_btnLoadMore_clicked()
 {
-    if (!model_.load(blockIndex_, path_, name_))
-    {
-        ui_.btnLoadMore->setEnabled(false);
-    }
+    loadingState_ = true;
+    ui_.btnLoadMore->setEnabled(false);
+
+    quint32 numBlocks = 0;
+    model_.load(blockIndex_, path_, name_, numBlocks);
+
     ++blockIndex_;
+    ui_.loader->setVisible(false);
+    ui_.btnLoadMore->setEnabled(true);
+    ui_.btnLoadMore->setText(tr("Load older headers ... (%1/%2)").arg(blockIndex_).arg(numBlocks));
+    ui_.btnLoadMore->setEnabled(blockIndex_ != numBlocks);
+    loadingState_ = false;
 }
 
 void NewsGroup::on_tableView_customContextMenuRequested(QPoint p)

@@ -37,6 +37,7 @@
 #include "../format.h"
 #include "../eventlog.h"
 #include "../settings.h"
+#include "../utility.h"
 
 namespace gui
 {
@@ -70,10 +71,16 @@ void NZBFile::addActions(QToolBar& bar)
 }
 
 void NZBFile::loadState(app::Settings& settings)
-{}
+{
+    app::loadState("nzbfile", ui_.chkFilenamesOnly, settings);
+
+    on_chkFilenamesOnly_clicked();
+}
 
 void NZBFile::saveState(app::Settings& settings)
-{}
+{
+    app::saveState("nzbfile", ui_.chkFilenamesOnly, settings);
+}
 
 void NZBFile::open(const QString& nzbfile)
 {

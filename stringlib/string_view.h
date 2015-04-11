@@ -20,8 +20,10 @@
 
 #pragma once
 
+#include <algorithm>
 #include <cstddef>
 #include <cstring>
+#include <iostream>
 
 namespace str
 {
@@ -74,22 +76,49 @@ namespace str
 
         void set_max_len(std::size_t len)
         {
-            if (len > m_len)
+            if (m_len > len)
                 m_len = len;
         }
+    private:
+        friend bool operator==(const string_view&, const string_view&);
+        friend bool operator<(const string_view&, const string_view&);
+        friend bool operator>(const string_view&, const string_view&);
+        friend std::ostream& operator<<(std::ostream&, const string_view&);
 
     private:
         const char* m_str;
         std::size_t m_len;
     };
 
-
     inline
     bool operator==(const string_view& lhs, const string_view& rhs)
     {
-        if (lhs.size() != rhs.size()) 
+        if (lhs.m_len != rhs.m_len)
             return false;
-        return std::strncmp(lhs.c_str(), rhs.c_str(), lhs.size()) == 0;
+        return std::strncmp(lhs.m_str, rhs.m_str, lhs.m_len) == 0;
+    }
+
+    inline
+    bool operator<(const string_view& lhs, const string_view& rhs)
+    {
+        int ret = std::strncmp(lhs.m_str, rhs.m_str,
+            std::min(lhs.m_len, rhs.m_len));
+        return ret < 0;
+    }
+
+    inline
+    bool operator>(const string_view& lhs, const string_view& rhs)
+    {
+        int ret = std::strncmp(lhs.m_str, rhs.m_str,
+            std::min(lhs.m_len, rhs.m_len));
+        return ret > 0;
+    }
+
+    inline
+    std::ostream& operator<<(std::ostream& out, const string_view& str)
+    {
+        out.write(str.m_str, str.m_len);
+        return out;
     }
 
 } // str
