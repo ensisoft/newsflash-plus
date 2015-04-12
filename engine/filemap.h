@@ -275,6 +275,7 @@ namespace newsflash
 
         std::string filename() const;
 
+        bool is_open() const;
     private:
         std::shared_ptr<mapper> mapper_;
         std::string filename_;

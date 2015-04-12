@@ -987,6 +987,13 @@ void MainWindow::on_actionFindPrev_triggered()
     finder->findPrev();
 }
 
+void MainWindow::on_actionFindClose_triggered()
+{
+    auto* finder = getFindWidget();
+    if (!finder) return;
+    finder->close();
+}
+
 void MainWindow::on_actionSearch_triggered()
 {
     for (auto* m : modules_)

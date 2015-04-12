@@ -45,7 +45,7 @@ QString filepattern(FileType type)
         case FileType::Image:
             return ".jpe?g | .bmp | .png | .gif";
         case FileType::Text:
-            return ".txt | .nfo | .sfv | .log";
+            return ".txt | .nfo | .sfv | .log | .nzb | .srr";
         case FileType::Archive:
             return ".zip | .rar | .7z | .r\\d{1,3} | .\\d{2}";
         case FileType::Parity:

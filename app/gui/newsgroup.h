@@ -27,6 +27,7 @@
 #  include "ui_newsgroup.h"
 #include <newsflash/warnpop.h>
 #include "mainwidget.h"
+#include "finder.h"
 #include "../newsgroup.h"
 
 namespace app {
@@ -35,7 +36,7 @@ namespace app {
 
 namespace gui
 {
-    class NewsGroup : public MainWidget
+    class NewsGroup : public MainWidget, public Finder
     {
         Q_OBJECT
 
@@ -49,6 +50,14 @@ namespace gui
         virtual void saveState(app::Settings& settings) override;
         virtual info getInformation() const override;
         virtual bool canClose() const override;
+        virtual Finder* getFinder() override;
+
+        // Finder
+        virtual bool isMatch(const QString& str, std::size_t index, bool caseSensitive) override;
+        virtual bool isMatch(const QRegExp& reg, std::size_t index) override;
+        virtual std::size_t numItems() const override;
+        virtual std::size_t curItem() const override;
+        virtual void setFound(std::size_t index) override;
 
         void load();
 
@@ -56,13 +65,17 @@ namespace gui
         void on_actionRefresh_triggered();
         void on_actionFilter_triggered();
         void on_actionStop_triggered();
+        void on_actionDownload_triggered();
         void on_btnLoadMore_clicked();
         void on_tableView_customContextMenuRequested(QPoint p);
+        void downloadToPrevious();
         void selectionChanged(const QItemSelection& sel, const QItemSelection& deSel);
         void modelBegReset();        
         void modelEndReset();
         void newHeaderInfoAvailable(const QString& group, quint64 numLocal, quint64 numRemote);
         void updateCompleted(const app::HeaderInfo& info);
+    private:
+        void downloadSelected(QString folder);
 
     private:
         Ui::NewsGroup ui_;

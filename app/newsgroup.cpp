@@ -40,6 +40,7 @@
 #include "types.h"
 #include "fileinfo.h"
 #include "filetype.h"
+#include "nzbparse.h"
 
 namespace app
 {
@@ -140,7 +141,7 @@ QVariant NewsGroup::data(const QModelIndex& index, int role) const
     const auto col   = (Columns)index.column();
     const auto& item = index_[row];    
 
-    using flags = article::flags;
+    using flags = Article::flags;
     using type  = newsflash::filetype;
 
     if (role == Qt::DisplayRole)
@@ -194,7 +195,7 @@ QVariant NewsGroup::data(const QModelIndex& index, int role) const
 
             case Columns::DownloadFlag:
                 if (item.test(flags::downloaded))
-                    return QIcon("icons:ico_flag_downloaded.png");
+                    return QIcon("icons:ico_flag_download.png");
                 break;
 
             case Columns::BookmarkFlag:
@@ -291,6 +292,9 @@ bool NewsGroup::load(quint32 blockIndex, QString path, QString name, quint32& nu
 {
     DEBUG("Load data for %1 from %2", name, path);
 
+    path_ = path;
+    name_ = name;
+
     // data is in .vol files with the file number indicating data ordering.
     // i.e. the bigger the index in the datafile name the newer the data.
     QDir dir;
@@ -359,9 +363,76 @@ void NewsGroup::select(const QModelIndexList& list, bool val)
         numSelected_ = list.size();
 }
 
+void NewsGroup::download(const QModelIndexList& list, quint32 acc, QString folder)
+{
+    if (!idlist_.is_open())
+    {
+        const auto& path = joinPath(path_, name_);
+        const auto& file = path + ".idb";
+        idlist_.open(narrow(file));
+    }
+
+    std::vector<NZBContent> pack;
+
+
+    int minRow = std::numeric_limits<int>::max();
+    int maxRow = std::numeric_limits<int>::min();
+
+    for (const auto& i : list)
+    {
+        const auto row = i.row();
+        minRow = std::min(row, minRow);
+        maxRow = std::max(row, maxRow);
+
+        auto article = index_[row];
+        NZBContent nzb;
+        nzb.bytes   = article.bytes();
+        nzb.subject = toString(article.subject());
+        nzb.poster  = toString(article.author());
+        nzb.groups.push_back(narrow(name_));
+
+        std::vector<std::uint64_t> segments;
+        segments.push_back(article.number());
+
+        if (article.has_parts())
+        {
+            const auto numSegments = article.num_parts_total();
+            const auto baseSegment = article.number();
+            const auto idbKey = article.idbkey();
+            for (auto i=0; i<numSegments + 1; ++i)
+            {
+                const std::int16_t segment = idlist_[idbKey + i];
+                if (segment == 0)
+                    continue;
+                const auto number = baseSegment + segment;
+                segments.push_back(number);
+            }
+        }
+        std::sort(std::begin(segments), std::end(segments));
+        for (const auto seg : segments)
+            nzb.segments.push_back(std::to_string(seg));
+
+        pack.push_back(nzb);
+        article.set_bits(Article::flags::downloaded, true);
+        article.save();
+    }
+    const auto size = list.size();
+    const auto desc = name_;
+    g_engine->downloadNzbContents(acc, folder, desc, std::move(pack));
+
+    const auto first = QAbstractTableModel::index(minRow, 0);
+    const auto last  = QAbstractTableModel::index(maxRow, (int)Columns::LAST);
+    emit dataChanged(first, last);
+}
+
 std::size_t NewsGroup::numItems() const 
 {
     return index_.size();
+}
+
+NewsGroup::Article NewsGroup::getArticle(std::size_t i) const 
+{
+    return index_[i];
 }
 
 void NewsGroup::newHeaderDataAvailable(const QString& file)

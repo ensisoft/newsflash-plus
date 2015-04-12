@@ -360,7 +360,7 @@
      <x>0</x>
      <y>0</y>
      <width>785</width>
-     <height>22</height>
+     <height>23</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -435,6 +435,7 @@
     <addaction name="actionFindNext"/>
     <addaction name="actionFindPrev"/>
     <addaction name="separator"/>
+    <addaction name="actionFindClose"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuTemp"/>
@@ -700,6 +701,18 @@
    </property>
    <property name="text">
     <string>New Search ...</string>
+   </property>
+  </action>
+  <action name="actionFindClose">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_close.png</normaloff>:/resource/16x16_ico_png/ico_close.png</iconset>
+   </property>
+   <property name="text">
+    <string>Close Find</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+G</string>
    </property>
   </action>
  </widget>

@@ -107,15 +107,13 @@ bool NZBFile::load(const QByteArray& bytes, const QString& desc)
 
 void NZBFile::download(const QModelIndexList& list, quint32 account, const QString& folder, const QString& desc)
 {
-    std::vector<const NZBContent*> selected;
+    std::vector<NZBContent> selected;
+    selected.reserve(list.size());
 
-    for (int i=0; i<list.size(); ++i)
-    {
-        const auto row = list[i].row();
-        selected.push_back(&data_[row]);
-    }
+    for (const auto& i : list)
+        selected.push_back(data_[i.row()]);
 
-    g_engine->downloadNzbContents(account, folder, desc, selected);
+    g_engine->downloadNzbContents(account, folder, desc, std::move(selected));
 }
 
 void NZBFile::set_show_filenames_only(bool on_off)

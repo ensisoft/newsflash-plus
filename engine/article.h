@@ -27,6 +27,7 @@
 #include <ctime>
 #include <string>
 #include <algorithm>
+#include <stdexcept>
 #include <type_traits>
 #include "bitflag.h"
 #include "filetype.h"
@@ -81,9 +82,10 @@ namespace newsflash
             {
                 if (part.second.numerator > part.second.denominator)
                     return false;
-                m_partno = part.second.numerator;
-                m_parts  = part.second.denominator;
-                m_bits.set(flags::broken, (m_partno != m_parts));
+                m_parts_avail = 1;                
+                m_partno      = part.second.numerator;
+                m_parts_total = part.second.denominator;
+                m_bits.set(flags::broken, (m_parts_avail != m_parts_total));
             }
 
             const auto date = nntp::parse_date(data.date.start, data.date.len);
@@ -120,18 +122,20 @@ namespace newsflash
             m_buffer = storage.load(offset, min, Storage::buf_read | Storage::buf_write);
 
             auto in = m_buffer.begin();
-            m_bits    = read(in, m_bits);
-            m_type    = read(in, m_type);
-            m_subject = read(in, m_subject);
-            m_author  = read(in, m_author);
-            m_index   = read(in, m_index);
-            m_bytes   = read(in, m_bytes);
-            m_idbkey  = read(in, m_idbkey);
-            m_parts   = read(in, m_parts);
-            m_partno  = read(in, m_partno);
-            m_number  = read(in, m_number);
-            m_pubdate = read(in, m_pubdate);
-            ASSERT(read(in, MAGIC) == MAGIC);
+            m_bits        = read(in, m_bits);
+            m_type        = read(in, m_type);
+            m_subject     = read(in, m_subject);
+            m_author      = read(in, m_author);
+            m_index       = read(in, m_index);
+            m_bytes       = read(in, m_bytes);
+            m_idbkey      = read(in, m_idbkey);
+            m_parts_avail = read(in, m_parts_avail);
+            m_parts_total = read(in, m_parts_total);
+            m_number      = read(in, m_number);
+            m_pubdate     = read(in, m_pubdate);
+            if (read(in, MAGIC) != MAGIC)
+                throw std::runtime_error("article read error. no magic found");
+            //ASSERT(read(in, MAGIC) == MAGIC);
         }
 
         void save(std::size_t offset, Storage& storage) const
@@ -150,8 +154,8 @@ namespace newsflash
             write(out, m_index);
             write(out, m_bytes);
             write(out, m_idbkey);
-            write(out, m_parts);
-            write(out, m_partno);
+            write(out, m_parts_avail);
+            write(out, m_parts_total);
             write(out, m_number);
             write(out, m_pubdate);
             write(out, MAGIC);
@@ -160,12 +164,9 @@ namespace newsflash
 
         void combine(const article& other)
         {
-            if (m_parts)
-            {
-                m_partno += 1;
-                m_bits.set(flags::broken, (m_partno != m_parts));
-            }
-            m_bytes += other.m_bytes;            
+            m_bytes += other.m_bytes;                        
+            m_parts_avail++;
+            m_bits.set(flags::broken, (m_parts_total != m_parts_avail));
         }
 
         std::size_t size_on_disk() const 
@@ -175,8 +176,8 @@ namespace newsflash
                 sizeof(m_index) + 
                 sizeof(m_bytes) + 
                 sizeof(m_idbkey) + 
-                sizeof(m_parts) + 
-                sizeof(m_partno) + 
+                sizeof(m_parts_avail) + 
+                sizeof(m_parts_total) + 
                 sizeof(m_number) + 
                 sizeof(m_pubdate) +
                 2 + m_subject.size() +
@@ -187,17 +188,19 @@ namespace newsflash
         void clear()
         {
             m_bits.clear();
-            m_type    = filetype::none;
-            m_index   = 0;
-            m_bytes   = 0;
-            m_idbkey  = 0;
-            m_parts   = 0;
-            m_partno  = 0;
-            m_number  = 0;
-            m_pubdate = 0;
+            m_type        = filetype::none;
+            m_index       = 0;
+            m_bytes       = 0;
+            m_idbkey      = 0;
+            m_parts_avail = 0;
+            m_parts_total = 0;
+            m_partno      = 0;
+            m_number      = 0;
+            m_pubdate     = 0;
             m_subject.clear();
             m_author.clear();
-            m_hash = 0;
+            m_hash   = 0;
+            m_partno = 0;
         }
 
         bitflag<flags>& bits()
@@ -212,8 +215,11 @@ namespace newsflash
         std::uint32_t idbkey() const 
         { return m_idbkey; }
 
-        std::uint16_t parts() const 
-        { return m_parts; }
+        std::uint16_t num_parts_total() const 
+        { return m_parts_total; }
+
+        std::uint16_t num_parts_avail() const 
+        { return m_parts_avail; }
 
         std::uint16_t partno() const 
         { return m_partno; }
@@ -295,9 +301,14 @@ namespace newsflash
                 other.m_subject.c_str(), other.m_subject.size());
         }
 
+        bool is_broken() const 
+        {
+            return m_bits.test(flags::broken);
+        }
+
         bool has_parts() const 
         {
-            return m_parts != 0;
+            return m_parts_total;
         }
 
     private:
@@ -355,13 +366,14 @@ namespace newsflash
         std::uint32_t m_index;
         std::uint32_t m_bytes;
         std::uint32_t m_idbkey;
-        std::uint16_t m_parts;
-        std::uint16_t m_partno;
+        std::uint16_t m_parts_avail;
+        std::uint16_t m_parts_total;
         std::uint64_t m_number;
         std::time_t   m_pubdate;
 
         // non persistent
     private:
+        mutable std::uint16_t m_partno;        
         mutable std::uint32_t m_hash;
         mutable buffer m_buffer;
     };

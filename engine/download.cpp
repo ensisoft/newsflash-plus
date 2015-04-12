@@ -48,6 +48,11 @@ download::download(std::vector<std::string> groups, std::vector<std::string> art
     name_        = fs::remove_illegal_filename_chars(name);
     overwrite_   = false;
     discardtext_ = false;
+    yenc_        = false;
+
+    const auto pos = name.find("yEnc");
+    if (pos != std::string::npos)
+        yenc_ = true;
 }
 
 download::~download()
@@ -68,11 +73,14 @@ std::shared_ptr<cmdlist> download::create_commands()
     const std::size_t num_articles = std::min(articles_.size(), 
         num_articles_per_cmdlist);
 
-    std::vector<std::string> next;
-    std::copy(std::begin(articles_), std::begin(articles_) + num_articles,
-        std::back_inserter(next));
+    auto beg = std::begin(articles_);
+    auto end = std::begin(articles_);
+    std::advance(end, num_articles);
 
-    articles_.erase(std::begin(articles_), std::begin(articles_) + num_articles);
+    std::vector<std::string> next;
+    std::copy(beg, end, std::back_inserter(next));
+
+    articles_.erase(beg, end);
 
     cmdlist::messages m;
     m.groups  = groups_;
@@ -173,6 +181,10 @@ void download::complete(cmdlist& cmd, std::vector<std::unique_ptr<action>>& next
     auto& messages = cmd.get_commands();
     auto& contents = cmd.get_buffers();    
 
+    const auto affinity = yenc_ ? 
+        action::affinity::any_thread :
+        action::affinity::single_thread;
+
     for (std::size_t i=0; i<contents.size(); ++i)
     {
         auto& content = contents[i];
@@ -183,9 +195,8 @@ void download::complete(cmdlist& cmd, std::vector<std::unique_ptr<action>>& next
         if (status == buffer::status::success)
         {
             std::unique_ptr<action> dec(new decode(std::move(content)));
-            dec->set_affinity(action::affinity::any_thread);
+            dec->set_affinity(affinity);
             next.push_back(std::move(dec));
-            continue;
         }
     }
 

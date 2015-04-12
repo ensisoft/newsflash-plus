@@ -304,5 +304,10 @@ std::string filemap::filename() const
     return filename_;
 }
 
+bool filemap::is_open() const
+{
+    return !!mapper_;
+}
+
 } // newsflash
 

@@ -38,14 +38,14 @@
 #include "logging.h"
 #include "cmdlist.h"
 #include "catalog.h"
-#include "array.h"
+#include "idlist.h"
 
 namespace newsflash
 {
 
 using catalog_t   = catalog<filebuf>;
 using article_t   = article<filebuf>;
-using messagedb_t = array<std::int16_t, filebuf>;
+using idlist_t = idlist<filebuf>;
 
 struct update::state {
     std::string folder;
@@ -56,7 +56,7 @@ struct update::state {
     std::map<std::uint32_t, std::uint32_t> hashmap;
 
     // message id db
-    messagedb_t idb;
+    idlist_t idb;
 
     std::string file_volume_name(std::size_t index)
     {
@@ -185,7 +185,7 @@ public:
                         const auto key = idb.size();
 
                         article.set_idbkey(key);
-                        idb.resize(idb.size() + article.parts() + 1);
+                        idb.resize(idb.size() + article.num_parts_total() + 1);
                         idb[key + article.partno()] = 0; // 0 difference to the message id stored with the article.
                     }
                     db->insert(article, index);                    

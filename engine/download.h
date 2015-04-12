@@ -82,6 +82,7 @@ namespace newsflash
     private:
         bool overwrite_;
         bool discardtext_;
+        bool yenc_;
     };
 
 } // newsflash

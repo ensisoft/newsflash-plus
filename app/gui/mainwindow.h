@@ -145,6 +145,7 @@ namespace gui
         void on_actionFind_triggered();
         void on_actionFindNext_triggered();
         void on_actionFindPrev_triggered();
+        void on_actionFindClose_triggered();
         void on_actionSearch_triggered();
         void on_actionSettings_triggered();
         void on_actionAbout_triggered();

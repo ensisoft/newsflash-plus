@@ -28,33 +28,33 @@
 
 namespace newsflash
 {
-    // an array backed up by a specific Storage engine
-    template<typename T, typename Storage>
-    class array : public Storage
+    // an array message ids 
+    template<typename Storage>
+    class idlist : public Storage
     {
     public:
         class proxy 
         {
         public:
-            operator T()
+            operator std::int16_t()
             {
-                return *(T*)buff_.address();
+                return *(std::int16_t*)buff_.address();
             }
-            proxy& operator=(T value)
+            proxy& operator=(std::int16_t value)
             {
-                std::memcpy(buff_.address(), &value, sizeof(T));
+                std::memcpy(buff_.address(), &value, sizeof(value));
                 buff_.flush();
                 return *this;
             }
         private:
-            friend class array;
+            friend class idlist;
             proxy(typename Storage::buffer b) : buff_(std::move(b))
             {}
         private:
             typename Storage::buffer buff_;
         };
 
-        array()
+        idlist()
         {
             header_.size = 0;
         }
@@ -80,8 +80,8 @@ namespace newsflash
         proxy operator[](std::size_t i)
         {
             ASSERT(i < header_.size);
-            const auto offset = sizeof(header_) + i * sizeof(T);
-            auto buff = Storage::load(offset, sizeof(T), Storage::buf_read | Storage::buf_write);
+            const auto offset = sizeof(header_) + i * sizeof(std::int16_t);
+            auto buff = Storage::load(offset, sizeof(std::int16_t), Storage::buf_read | Storage::buf_write);
             return {std::move(buff)};
         }
 

@@ -29,6 +29,7 @@
 #include <fstream>
 #include <list>
 #include <cassert>
+#include <cstdlib> // for getenv
 
 #include "engine.h"
 #include "connection.h"
@@ -1733,15 +1734,27 @@ bool engine::pump()
             auto tid   = e->get_tid();
             auto bytes = e->get_bytes_transferred();
 
-            #if 1
-                std::ofstream out;
-                out.open("/tmp/nntp.txt", std::ios::binary | std::ios::app);
-                const auto& buffers = cmds->get_buffers();
-                for (const auto& buff : buffers)
+            #ifdef NEWSFLASH_DEBUG
+            if (std::getenv("NEWSFLASH_DUMP_DATA"))
+            {
+                const auto& buffers  = cmds->get_buffers();
+                const auto& commands = cmds->get_commands();
+                for (std::size_t i=0; i<buffers.size(); ++i)
                 {
-                    out.write(buff.content(), buff.content_length()-3);
+                    if (i >= commands.size())
+                        break;
+                    const auto& buff = buffers[i];
+                    std::ofstream out;
+                    std::stringstream ss;
+                    ss << "/tmp/" << commands[i] << ".txt";
+                    std::string file;
+                    ss >> file;
+                    out.open(file, std::ios::binary | std::ios::app);
+                    if (buff.content_status() == buffer::status::success)
+                        out.write(buff.content(), buff.content_length()-3);
+                    out.flush();
                 }
-                out.flush();
+            }
             #endif
 
             state_->cmds.erase(std::find(std::begin(state_->cmds), std::end(state_->cmds), cmds));

@@ -68,7 +68,7 @@ namespace app
 
         bool downloadNzbContents(quint32 acc, const QString& path, const QString& desc, const QByteArray& nzb);
         bool downloadNzbContents(quint32 acc, const QString& path, const QString& desc, 
-            const std::vector<const NZBContent*>& nzb);
+            std::vector<NZBContent> nzb);
 
         // retrieve a newgroup listing from the specified account.
         // returns a task id that can be used to manage the task.

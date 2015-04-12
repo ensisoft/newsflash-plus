@@ -211,8 +211,7 @@ bool Engine::downloadNzbContents(quint32 acc, const QString& path, const QString
 }
 
 
-bool Engine::downloadNzbContents(quint32 acc, const QString& path, const QString& desc, 
-    const std::vector<const NZBContent*>& nzb)
+bool Engine::downloadNzbContents(quint32 acc, const QString& path, const QString& desc, std::vector<NZBContent> nzb)
 {
     QString location = path.isEmpty() ?
         downloads_ : path;
@@ -230,15 +229,15 @@ bool Engine::downloadNzbContents(quint32 acc, const QString& path, const QString
     download.account = acc;
     download.path    = narrow(location);
     download.desc    = toUtf8(desc);
-    for (auto* item : nzb)
+    for (auto& item : nzb)
     {
         newsflash::ui::download file;
-        file.articles = item->segments;
-        file.groups   = item->groups;
-        file.size     = item->bytes;
-        file.name     = nntp::find_filename(toUtf8(item->subject));
+        file.articles = std::move(item.segments);
+        file.groups   = std::move(item.groups);
+        file.size     = item.bytes;
+        file.name     = nntp::find_filename(toUtf8(item.subject));
         if (file.name.size() < 5)
-            file.name = toUtf8(item->subject);
+            file.name = toUtf8(item.subject);
         download.files.push_back(std::move(file));
     }
     engine_->download_files(std::move(download));
@@ -258,11 +257,11 @@ quint32 Engine::retrieveNewsgroupListing(quint32 acc)
     listing.account = acc;
     listing.desc    = toUtf8(tr("Newsgroup Listing"));
 
-    const auto batchId = engine_->download_listing(listing);
+    const auto action = engine_->download_listing(listing);
 
     start();
 
-    return batchId;
+    return action;
 }
 
 quint32 Engine::retrieveHeaders(quint32 acc, const QString& path, const QString& name)

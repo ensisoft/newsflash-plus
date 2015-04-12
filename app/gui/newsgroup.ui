@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>634</width>
-    <height>366</height>
+    <width>679</width>
+    <height>356</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -144,6 +144,15 @@
    </property>
    <property name="text">
     <string>Stop</string>
+   </property>
+  </action>
+  <action name="actionDownload">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_download.png</normaloff>:/resource/16x16_ico_png/ico_download.png</iconset>
+   </property>
+   <property name="text">
+    <string>Download</string>
    </property>
   </action>
  </widget>

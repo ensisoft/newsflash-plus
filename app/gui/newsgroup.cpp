@@ -34,6 +34,7 @@
 #include <newsflash/warnpop.h>
 #include <limits>
 #include "newsgroup.h"
+#include "mainwindow.h"
 #include "../debug.h"
 #include "../format.h"
 #include "../utility.h"
@@ -56,6 +57,7 @@ NewsGroup::NewsGroup(quint32 acc, QString path, QString name) : account_(acc), p
     ui_.progressBar->setVisible(false);
     ui_.loader->setVisible(false);
     ui_.actionStop->setEnabled(false);
+    ui_.actionDownload->setEnabled(false);
 
     QObject::connect(app::g_engine, SIGNAL(newHeaderInfoAvailable(const QString&, quint64, quint64)),
         this, SLOT(newHeaderInfoAvailable(const QString&, quint64, quint64)));
@@ -89,6 +91,8 @@ NewsGroup::~NewsGroup()
 void NewsGroup::addActions(QToolBar& bar)
 {
     bar.addAction(ui_.actionRefresh);
+    bar.addSeparator();
+    bar.addAction(ui_.actionDownload);
     bar.addSeparator();
     bar.addAction(ui_.actionFilter);
     bar.addSeparator();
@@ -137,6 +141,63 @@ bool NewsGroup::canClose() const
         return false;
 
     return true;
+}
+
+Finder* NewsGroup::getFinder() 
+{
+    return this;
+}
+
+bool NewsGroup::isMatch(const QString& str, std::size_t index, bool caseSensitive)
+{
+    const auto& article = model_.getArticle(index);
+    const auto& subject = article.subject();
+    const auto& latin   = QString::fromLatin1(subject.c_str(), subject.size());
+    if (!caseSensitive)
+    {
+        auto upper = latin.toUpper();
+        if (upper.indexOf(str) != -1)
+            return true;
+    }
+    else
+    {
+        if (latin.indexOf(str) != -1)
+            return true;
+    }
+    return false;
+}
+
+bool NewsGroup::isMatch(const QRegExp& reg, std::size_t index)
+{
+    const auto& article = model_.getArticle(index);
+    const auto& subject = article.subject();
+    const auto& latin   = QString::fromLatin1(subject.c_str(), subject.size());
+    if (reg.indexIn(latin) != -1)
+        return true;
+    return false;
+}
+
+std::size_t NewsGroup::numItems() const 
+{
+    return model_.numItems();
+}
+
+std::size_t NewsGroup::curItem() const 
+{
+    const auto& indices = ui_.tableView->selectionModel()->selectedRows();
+    if (indices.isEmpty())
+        return 0;
+
+    const auto& first = indices.first();
+    return first.row();
+}
+
+void NewsGroup::setFound(std::size_t index)
+{
+    auto* model = ui_.tableView->model();
+    auto i = model->index(index, 0);
+    ui_.tableView->setCurrentIndex(i);
+    ui_.tableView->scrollTo(i);
 }
 
 void NewsGroup::load()
@@ -193,6 +254,11 @@ void NewsGroup::on_actionStop_triggered()
     ui_.actionRefresh->setEnabled(true);
 }
 
+void NewsGroup::on_actionDownload_triggered() 
+{
+    downloadSelected("");
+}
+
 void NewsGroup::on_btnLoadMore_clicked()
 {
     loadingState_ = true;
@@ -211,13 +277,36 @@ void NewsGroup::on_btnLoadMore_clicked()
 
 void NewsGroup::on_tableView_customContextMenuRequested(QPoint p)
 {
+    QMenu sub("Download to");
+    sub.setIcon(QIcon("icons:ico_download.png"));
+
+    const auto& recents = g_win->getRecentPaths();
+    for (const auto& recent : recents)
+    {
+        QAction* action = sub.addAction(QIcon("icons:ico_folder.png"), recent);
+        QObject::connect(action, SIGNAL(triggered(bool)),
+            this, SLOT(downloadToPrevious()));
+    }
+    sub.addSeparator();
+    sub.setEnabled(ui_.actionDownload->isEnabled());
+
     QMenu menu(this);
     menu.addAction(ui_.actionRefresh);
+    menu.addSeparator();
+    menu.addAction(ui_.actionDownload);
+    menu.addMenu(&sub);
     menu.addSeparator();
     menu.addAction(ui_.actionFilter);
     menu.addSeparator();
     menu.addAction(ui_.actionStop);
     menu.exec(QCursor::pos());
+}
+
+void NewsGroup::downloadToPrevious()
+{
+    const auto* action = qobject_cast<const QAction*>(sender());
+    const auto folder  = action->text();
+    downloadSelected(folder);
 }
 
 void NewsGroup::selectionChanged(const QItemSelection& next, const QItemSelection& prev)
@@ -226,6 +315,9 @@ void NewsGroup::selectionChanged(const QItemSelection& next, const QItemSelectio
     // so we can restore it later.
     model_.select(next.indexes(), true);
     model_.select(prev.indexes(), false);
+
+    const auto empty = next.indexes().empty();
+    ui_.actionDownload->setEnabled(!empty);
 }
 
 void NewsGroup::modelBegReset()
@@ -244,8 +336,8 @@ void NewsGroup::modelEndReset()
             sel.select(i, i);
 
         auto* model = ui_.tableView->selectionModel();
-        model->setCurrentIndex(list[0], 
-            QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+        //model->setCurrentIndex(list[0], 
+        //    QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
         model->select(sel, 
             QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
     }
@@ -282,5 +374,16 @@ void NewsGroup::updateCompleted(const app::HeaderInfo& info)
     ui_.actionRefresh->setEnabled(true);
 }
 
+
+void NewsGroup::downloadSelected(QString folder)
+{
+    const auto& indices = ui_.tableView->selectionModel()->selectedRows();
+    if (indices.isEmpty())
+        return;
+
+    Q_ASSERT(account_);
+
+    model_.download(indices, account_, folder);
+}
 
 } // gui

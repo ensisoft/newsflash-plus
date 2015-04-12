@@ -30,6 +30,7 @@
 #include <newsflash/engine/filemap.h>
 #include <newsflash/engine/catalog.h>
 #include <newsflash/engine/index.h>
+#include <newsflash/engine/idlist.h>
 #include <vector>
 #include <deque>
 #include <functional>
@@ -46,11 +47,11 @@ namespace app
     public:
         enum class Columns {
             Type,
+            DownloadFlag,             
             Age, 
             BrokenFlag,            
             Size,  
             //Author,  
-            DownloadFlag, 
             BookmarkFlag,            
             Subject, LAST
         };
@@ -75,7 +76,12 @@ namespace app
         void scanSelected(QModelIndexList& list);
         void select(const QModelIndexList& list, bool val);
 
+        void download(const QModelIndexList& list, quint32 acc, QString folder);
+
         std::size_t numItems() const;
+
+        using Article = newsflash::article<newsflash::filemap>;
+        Article getArticle(std::size_t index) const;
 
     public slots:
         void newHeaderDataAvailable(const QString& file);
@@ -86,8 +92,8 @@ namespace app
         void loadMoreData(const std::string& file, bool guiLoad);
 
         using catalog = newsflash::catalog<newsflash::filemap>;
-        using article = newsflash::article<newsflash::filemap>;
         using index   = newsflash::index<newsflash::filemap>;
+        using idlist  = newsflash::idlist<newsflash::filemap>;
 
         struct Catalog {
             catalog db;
@@ -97,6 +103,7 @@ namespace app
 
         std::vector<Catalog> catalogs_;
         index index_;
+        idlist idlist_;
 
     private:
         quint32 numSelected_;        
