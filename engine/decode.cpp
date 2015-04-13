@@ -119,7 +119,7 @@ void decode::xperform()
         return;
     
     if (!binary_name_.empty())
-        ss << binary_name_;
+        ss << "[" << binary_name_ << "]";
     else ss << "[binary content]";
     ss << "\r\n";
 

@@ -66,8 +66,10 @@ namespace gui
         void on_actionFilter_triggered();
         void on_actionStop_triggered();
         void on_actionDownload_triggered();
+        void on_actionBrowse_triggered();
         void on_btnLoadMore_clicked();
         void on_tableView_customContextMenuRequested(QPoint p);
+        void on_tableView_doubleClicked(const QModelIndex&);
         void downloadToPrevious();
         void selectionChanged(const QItemSelection& sel, const QItemSelection& deSel);
         void modelBegReset();        

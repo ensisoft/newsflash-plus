@@ -134,7 +134,7 @@
      <normaloff>:/resource/16x16_ico_png/ico_filter.png</normaloff>:/resource/16x16_ico_png/ico_filter.png</iconset>
    </property>
    <property name="text">
-    <string>Filter</string>
+    <string>Filter ...</string>
    </property>
   </action>
   <action name="actionStop">
@@ -153,6 +153,15 @@
    </property>
    <property name="text">
     <string>Download</string>
+   </property>
+  </action>
+  <action name="actionBrowse">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_browse.png</normaloff>:/resource/16x16_ico_png/ico_browse.png</iconset>
+   </property>
+   <property name="text">
+    <string>Browse ...</string>
    </property>
   </action>
  </widget>

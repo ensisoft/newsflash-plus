@@ -35,6 +35,7 @@
 #include <limits>
 #include "newsgroup.h"
 #include "mainwindow.h"
+#include "dlgfilter.h"
 #include "../debug.h"
 #include "../format.h"
 #include "../utility.h"
@@ -244,7 +245,11 @@ void NewsGroup::on_actionRefresh_triggered()
 }
 
 void NewsGroup::on_actionFilter_triggered()
-{}
+{
+    DlgFilter dlg(this);
+    if (dlg.exec() == QDialog::Rejected)
+        return;
+}
 
 void NewsGroup::on_actionStop_triggered()
 {
@@ -257,6 +262,15 @@ void NewsGroup::on_actionStop_triggered()
 void NewsGroup::on_actionDownload_triggered() 
 {
     downloadSelected("");
+}
+
+void NewsGroup::on_actionBrowse_triggered()
+{
+    const auto& folder = g_win->selectDownloadFolder();
+    if (folder.isEmpty())
+        return;
+
+    downloadSelected(folder);
 }
 
 void NewsGroup::on_btnLoadMore_clicked()
@@ -288,6 +302,7 @@ void NewsGroup::on_tableView_customContextMenuRequested(QPoint p)
             this, SLOT(downloadToPrevious()));
     }
     sub.addSeparator();
+    sub.addAction(ui_.actionBrowse);
     sub.setEnabled(ui_.actionDownload->isEnabled());
 
     QMenu menu(this);
@@ -300,6 +315,11 @@ void NewsGroup::on_tableView_customContextMenuRequested(QPoint p)
     menu.addSeparator();
     menu.addAction(ui_.actionStop);
     menu.exec(QCursor::pos());
+}
+
+void NewsGroup::on_tableView_doubleClicked(const QModelIndex&)
+{
+    downloadSelected("");    
 }
 
 void NewsGroup::downloadToPrevious()
