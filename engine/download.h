@@ -77,6 +77,7 @@ namespace newsflash
         std::vector<std::string> groups_;
         std::vector<std::string> articles_;
         std::vector<std::shared_ptr<datafile>> files_;
+        std::vector<char> stash_;
         std::string path_;
         std::string name_;
     private:

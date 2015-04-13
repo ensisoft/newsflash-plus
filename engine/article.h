@@ -165,8 +165,11 @@ namespace newsflash
         void combine(const article& other)
         {
             m_bytes += other.m_bytes;                        
-            m_parts_avail++;
-            m_bits.set(flags::broken, (m_parts_total != m_parts_avail));
+            if (has_parts())
+            {
+                m_parts_avail++;
+                m_bits.set(flags::broken, (m_parts_total != m_parts_avail));
+            }
         }
 
         std::size_t size_on_disk() const 

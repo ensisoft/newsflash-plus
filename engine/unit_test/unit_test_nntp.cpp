@@ -240,6 +240,20 @@ void test_parse_date()
     }
 }
 
+void test_parse_part()
+{
+    auto ret = nntp::parse_part("Re: Shuffling");
+    BOOST_REQUIRE(ret.first == false);
+
+    ret = nntp::parse_part("New FREE-EBook: \"Evolved to Win\", by Moshe Sipper");
+    BOOST_REQUIRE(ret.first == false);
+
+    ret = nntp::parse_part("Girls have fun !!! babes-332.jpg (1/2)");
+    BOOST_REQUIRE(ret.first == true);
+    BOOST_REQUIRE(ret.second.numerator == 1);
+    BOOST_REQUIRE(ret.second.denominator == 2);
+}
+
 void test_parse_group()
 {
     {
@@ -663,6 +677,7 @@ int test_main(int, char* [])
 {
     test_parse_overview();
     test_parse_date();
+    test_parse_part();
     test_parse_group();
     test_date();
     test_is_binary();

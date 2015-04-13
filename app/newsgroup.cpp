@@ -365,15 +365,7 @@ void NewsGroup::select(const QModelIndexList& list, bool val)
 
 void NewsGroup::download(const QModelIndexList& list, quint32 acc, QString folder)
 {
-    if (!idlist_.is_open())
-    {
-        const auto& path = joinPath(path_, name_);
-        const auto& file = path + ".idb";
-        idlist_.open(narrow(file));
-    }
-
     std::vector<NZBContent> pack;
-
 
     int minRow = std::numeric_limits<int>::max();
     int maxRow = std::numeric_limits<int>::min();
@@ -396,6 +388,13 @@ void NewsGroup::download(const QModelIndexList& list, quint32 acc, QString folde
 
         if (article.has_parts())
         {
+            if (!idlist_.is_open())
+            {
+                const auto& path = joinPath(path_, name_);
+                const auto& file = path + ".idb";
+                idlist_.open(narrow(file));
+            }
+            
             const auto numSegments = article.num_parts_total();
             const auto baseSegment = article.number();
             const auto idbKey = article.idbkey();

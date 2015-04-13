@@ -125,14 +125,32 @@ void download::complete(action& act, std::vector<std::unique_ptr<action>>& next)
 
     if (!binary.empty())
     {
-        if (name.empty())
-            throw std::runtime_error("binary has no name");
+        const auto enc = dec->get_encoding();
+
+        // see comment in datafile about the +1 for offset
+        const auto offset = enc == encoding::yenc_multi ?
+           dec->get_binary_offset() + 1 : 0;
 
         const auto size = dec->get_binary_size();
 
-        // see comment in datafile about the +1 for offset
-        const auto offset = dec->get_encoding() == encoding::yenc_multi ?
-           dec->get_binary_offset() + 1 : 0;
+        if (name.empty())
+        {
+            if (enc != encoding::uuencode_multi)
+                throw std::runtime_error("binary has no name");
+
+            if (files_.empty())
+            {
+                std::copy(std::begin(binary), std::end(binary), std::back_inserter(stash_));
+                return;
+            }
+            else
+            {
+                name = files_.front()->binary_name();
+            }
+        }
+
+        std::copy(std::begin(stash_), std::end(stash_), std::back_inserter(binary));
+        stash_.clear();
 
         std::shared_ptr<datafile> file;
 

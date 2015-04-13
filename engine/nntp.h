@@ -121,6 +121,10 @@ namespace nntp
     // parse subject line part information.
     std::pair<bool, part> parse_part(const char* str, size_t len);
 
+    inline
+    std::pair<bool, part> parse_part(const std::string& subject)
+    { return parse_part(subject.c_str(), subject.size()); }
+
     // return a 32bit hash value representing this subject line
     // this function ensures that "foobar.mp3 (1/10)" and "foobar.mp3 (2/10)" hash to the same value.
     std::uint32_t hashvalue(const char* subjectline, size_t len);

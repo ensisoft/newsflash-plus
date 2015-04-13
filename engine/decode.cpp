@@ -69,7 +69,9 @@ void decode::xperform()
         binary_start_offset += line.length;            
 
         // save the text data before the binary in the text buffer
-        std::copy(line.start, line.start + line.length, std::back_inserter(text_));
+        if (line.length > 2 || !text_.empty())
+            std::copy(line.start, line.start + line.length, std::back_inserter(text_));
+
         ++beg;
     }
 
@@ -79,6 +81,10 @@ void decode::xperform()
     const auto dataptr = data_.content() + binary_start_offset;
     const auto datalen = data_.content_length() - binary_start_offset;
 
+    std::stringstream ss;
+    ss << "\r\n";
+
+    // decode the binary
     switch (enc)
     {
         // a simple case, a yenc encoded binary in that is only a single part
@@ -109,14 +115,21 @@ void decode::xperform()
            return;
     }
 
-    if (!text_.empty())
-    {
-        std::string str = "\r\n[binary content]\r\n";
-        std::copy(str.begin(), str.end(), std::back_inserter(text_));
-    // std::copy(dataptr + consumed, dataptr + consumed + )
-    }
+    if (text_.empty()) 
+        return;
+    
+    if (!binary_name_.empty())
+        ss << binary_name_;
+    else ss << "[binary content]";
+    ss << "\r\n";
 
-    // store the rest (if any) int the text buffer again    
+    std::string s;
+    ss >> s;
+    std::copy(std::begin(s), std::end(s), std::back_inserter(text_));
+
+    const auto textptr = dataptr + consumed;
+    const auto textend = data_.content() + data_.content_length();
+    std::copy(textptr, textend, std::back_inserter(text_));
 }
 
 std::size_t decode::decode_yenc_single(const char* data, std::size_t len)
