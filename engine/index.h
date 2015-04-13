@@ -26,6 +26,7 @@
 #include <functional>
 #include <algorithm>
 #include <deque>
+#include <limits>
 #include <cstdint>
 #include <cstring>
 #include <cassert>
@@ -46,17 +47,13 @@ namespace newsflash
             sort_by_binary,
             sort_by_downloaded,
             sort_by_bookmarked,
-            sort_by_age, 
+            sort_by_date, 
             sort_by_type,
             sort_by_size,
             sort_by_author,
             sort_by_subject,
         };
-        enum class filter {
-
-        };
-
-        enum class order {
+        enum class sortdir {
             ascending, descending
         };
 
@@ -64,62 +61,69 @@ namespace newsflash
             selected
         };
 
-        index() : size_(0), sort_(sorting::sort_by_age), order_(order::ascending)
-        {}
+        using article_t = typename newsflash::article<Storage>;        
 
-        using article_t = typename newsflash::article<Storage>;
+        index() : size_(0), sorting_(sorting::sort_by_date), sortdir_(sortdir::ascending)
+        {
+            types_.set_from_value(~0);
+            flags_.set_from_value(~0);
+            min_pubdate_ = 0;
+            max_pubdate_ = std::numeric_limits<std::time_t>::max();
+            min_size_    = 0;
+            max_size_    = std::numeric_limits<std::uint32_t>::max();
+        }
 
         // callback to invoke to load an article.
         using loader = std::function<article_t (std::size_t key, std::size_t index)>;
 
         loader on_load;
 
-        void sort(sorting column, order up_down)
+        void sort(sorting column, sortdir up_down)
         {
-            if (column == sort_)
+            if (column == sorting_)
             {
                 auto beg = std::begin(items_);
                 auto end = std::begin(items_);
                 std::advance(end, size_);
                 std::reverse(beg, end);
-                sort_  = column;
-                order_ = up_down;
+                sorting_ = column;
+                sortdir_ = up_down;
                 return;
             }
-            sort_  = column;
-            order_ = up_down;            
+            sorting_ = column;
+            sortdir_ = up_down;            
             resort();
         }
         void resort()
         {
-            switch (sort_)
+            switch (sorting_)
             {
                 case sorting::sort_by_broken:     
-                    sort(order_, article_t::flags::broken); 
+                    sort(sortdir_, article_t::flags::broken); 
                     break;
                 case sorting::sort_by_binary:     
-                    sort(order_, article_t::flags::binary); 
+                    sort(sortdir_, article_t::flags::binary); 
                     break;
                 case sorting::sort_by_downloaded: 
-                    sort(order_, article_t::flags::downloaded); 
+                    sort(sortdir_, article_t::flags::downloaded); 
                     break;
                 case sorting::sort_by_bookmarked: 
-                    sort(order_, article_t::flags::bookmarked); 
+                    sort(sortdir_, article_t::flags::bookmarked); 
                     break;
-                case sorting::sort_by_age:        
-                    sort(order_, &article_t::m_pubdate); 
+                case sorting::sort_by_date:        
+                    sort(sortdir_, &article_t::m_pubdate); 
                     break;
                 case sorting::sort_by_type:       
-                    sort(order_, &article_t::m_type); 
+                    sort(sortdir_, &article_t::m_type); 
                     break;
                 case sorting::sort_by_size:       
-                    sort(order_, &article_t::m_bytes); 
+                    sort(sortdir_, &article_t::m_bytes); 
                     break;
                 case sorting::sort_by_author:     
-                    sort(order_, &article_t::m_author); 
+                    sort(sortdir_, &article_t::m_author); 
                     break;
                 case sorting::sort_by_subject:    
-                    sort(order_, &article_t::m_subject); 
+                    sort(sortdir_, &article_t::m_subject); 
                     break;
             }            
         }
@@ -127,10 +131,16 @@ namespace newsflash
         // insert the new item into the index in the right position.
         // returns the position which is given to the inserted item.
         // this will maintain current sorting.
-        std::size_t insert(const article_t& a, std::size_t key, std::size_t index)
+        void insert(const article_t& a, std::size_t key, std::size_t index)
         {
+            if (!is_match(a))
+            {
+                items_.push_back({key, index});
+                return;
+            }
+
             typename std::deque<item>::iterator it;
-            switch (sort_)
+            switch (sorting_)
             {
                 case sorting::sort_by_broken:
                     it = lower_bound(a, article_t::flags::broken); 
@@ -145,7 +155,7 @@ namespace newsflash
                     it = lower_bound(a, article_t::flags::bookmarked);
                     break;
 
-                case sorting::sort_by_age: 
+                case sorting::sort_by_date: 
                     it = lower_bound(a, &article_t::m_pubdate);
                     break;
                 case sorting::sort_by_type: 
@@ -162,20 +172,6 @@ namespace newsflash
                     break;
             }
             items_.insert(it, {key, index});
-            
-            ++size_;
-            return std::distance(std::begin(items_), it);            
-        }
-
-        void expand(std::size_t num_items)
-        {
-            const auto cur_size = items_.size();
-            items_.reserve(cur_size + num_items);
-        }
-
-        void append(const article_t& a, std::size_t key, std::size_t index)
-        {
-            items_.push_back({key, index});
             ++size_;
         }
 
@@ -192,10 +188,10 @@ namespace newsflash
         }
 
         sorting get_sorting() const 
-        { return sort_; }
+        { return sorting_; }
 
-        order get_order() const 
-        { return order_; }
+        sortdir get_sortdir() const 
+        { return sortdir_; }
 
         void select(std::size_t index, bool val) 
         {
@@ -211,6 +207,60 @@ namespace newsflash
             return item.bits.test(flags::selected);
         }
 
+        // filter the index by displaying only articles with matching filetype
+        void set_type_filter(bitflag<filetype> types)
+        {
+            types_ = types;
+        }
+
+        void set_flag_filter(bitflag<typename article_t::flags> flags)
+        {
+            flags_ = flags;
+        }
+
+        void set_date_filter(std::time_t min_pubdate, std::time_t max_pubdate)
+        {
+            assert(max_pubdate >= min_pubdate);
+            min_pubdate_ = min_pubdate;
+            max_pubdate_ = max_pubdate;
+        }
+
+        void set_size_filter(std::uint32_t min_size, std::uint32_t max_size)
+        {
+            assert(max_size_ >= min_size);
+            min_size_ = min_size;
+            max_size_ = max_size;
+        }
+
+        void filter()
+        {
+            // we might have items from previous filter that are currently
+            // not being displayed. since the filter might become
+            // more "relaxed" and those items might match we need to put them 
+            // back into the "visible" range. also note that we must maintain
+            // the correct sorting
+
+            std::deque<item> maybe;
+            std::copy(std::begin(items_) + size_, std::end(items_),
+                std::back_inserter(maybe));
+
+            items_.resize(size_);
+
+            auto beg = std::begin(items_);
+            auto end = std::begin(items_);
+            std::advance(end, size_);
+            auto it = std::stable_partition(beg, end, [&](const item& i) {
+                    const auto& a = on_load(i.key, i.index);
+                    return is_match(a);
+                });
+            size_ = std::distance(std::begin(items_), it);            
+
+            for (const auto& i : maybe)
+            {
+                const auto& article = on_load(i.key, i.index);
+                insert(article, i.key, i.index);
+            }            
+        }
 
     private:
         template<typename Class, typename Member>
@@ -272,21 +322,21 @@ namespace newsflash
         }
 
         template<typename MemPtr>
-        void sort(order up_down, MemPtr p)
+        void sort(sortdir up_down, MemPtr p)
         {
             auto beg = std::begin(items_);
             auto end = std::begin(items_);
             std::advance(end, size_);
-            if (up_down == order::ascending) 
+            if (up_down == sortdir::ascending) 
                  std::sort(beg, end, less(p));
             else std::sort(beg, end, greater(p));
         }
-        void sort(order up_down, typename article_t::flags mask)
+        void sort(sortdir up_down, typename article_t::flags mask)
         {
             auto beg = std::begin(items_);
             auto end = std::begin(items_);
             std::advance(end, size_);
-            if (up_down == order::ascending)
+            if (up_down == sortdir::ascending)
             {
                 std::sort(beg, end, [=](const item& lhs, const item& rhs) {
                     const auto& a = on_load(lhs.key, lhs.index);
@@ -310,7 +360,7 @@ namespace newsflash
             auto beg = std::begin(items_);
             auto end = std::begin(items_);
             std::advance(end, size_);
-            if (order_ == order::ascending)
+            if (sortdir_ == sortdir::ascending)
                 return std::lower_bound(beg, end, a, less(p));
             else return std::lower_bound(beg, end, a, greater(p));
         }
@@ -320,7 +370,7 @@ namespace newsflash
             auto beg = std::begin(items_);
             auto end = std::begin(items_);
             std::advance(end, size_);
-            if (order_ == order::ascending) {
+            if (sortdir_ == sortdir::ascending) {
                 return std::lower_bound(beg, end, a, [=](const item& lhs, const article_t& rhs) {
                     const auto& a = on_load(lhs.key, lhs.index);
                     const auto& b = rhs;
@@ -337,12 +387,23 @@ namespace newsflash
             }
         }
 
-        typename std::deque<item>::iterator end() 
-        { 
-            auto it = std::begin(items_);
-            std::advance(it, size_);
-            return it;
+        bool is_match(const article_t& a) const 
+        {
+            if (!types_.test(a.type()))
+                return false;
+
+            const auto date = a.pubdate();
+            if (date < min_pubdate_ || date > max_pubdate_)
+                return false;
+
+            const auto size = a.bytes();
+            if (size < min_size_ || size > max_size_)
+                return false;
+
+            return true;
         }
+
+
 
     private:
         struct item {
@@ -352,8 +413,16 @@ namespace newsflash
         };
         std::deque<item> items_;
         std::size_t size_;
-        sorting sort_;
-        order   order_;
+    private:
+        sorting sorting_;
+        sortdir sortdir_;
+    private:
+        bitflag<filetype> types_;
+        bitflag<typename article_t::flags> flags_;
+        std::time_t min_pubdate_;
+        std::time_t max_pubdate_;
+        std::uint32_t min_size_;
+        std::uint32_t max_size_;
     };
 
 } // newsflash

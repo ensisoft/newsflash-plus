@@ -247,8 +247,8 @@ void NewsGroup::sort(int column, Qt::SortOrder order)
     emit layoutAboutToBeChanged();
 
     const auto o = (order == Qt::AscendingOrder) ? 
-        index::order::ascending :
-        index::order::descending;
+        index::sortdir::ascending :
+        index::sortdir::descending;
 
     DEBUG("Index has %1 articles", index_.size());
 
@@ -271,7 +271,7 @@ void NewsGroup::sort(int column, Qt::SortOrder order)
             break;
 
         case Columns::Age: 
-            index_.sort(index::sorting::sort_by_age, o);
+            index_.sort(index::sorting::sort_by_date, o);
             break;
 
         case Columns::Subject:
@@ -317,6 +317,7 @@ bool NewsGroup::load(quint32 blockIndex, QString path, QString name, quint32& nu
     loadMoreData(narrow(f), true);
     return true;
 }
+
 
 void NewsGroup::refresh(quint32 account, QString path, QString name)
 {

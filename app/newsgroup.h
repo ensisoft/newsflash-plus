@@ -25,6 +25,7 @@
 #include <newsflash/warnpush.h>
 #  include <QAbstractTableModel>
 #  include <QObject>
+#  include <QDateTime>
 #include <newsflash/warnpop.h>
 #include <newsflash/engine/filebuf.h>
 #include <newsflash/engine/filemap.h>
@@ -82,6 +83,29 @@ namespace app
 
         using Article = newsflash::article<newsflash::filemap>;
         Article getArticle(std::size_t index) const;
+
+        void setSizeFilter(quint32 minSize, quint32 maxSize)
+        {
+            index_.set_size_filter(minSize, maxSize);
+        }
+
+        void setDateFilter(quint32 minDays, quint32 maxDays)
+        {
+            maxDays = std::min(maxDays, 12527u);
+            const auto now = QDateTime::currentDateTime();
+            const auto beg = now.addDays(-minDays);
+            const auto end = now.addDays(-maxDays);
+            index_.set_date_filter(end.toTime_t(), beg.toTime_t());
+        }
+
+        void applyFilter()
+        {
+            const auto curSize = index_.size();
+            index_.filter();
+            const auto newSize = index_.size();
+            if (newSize != curSize)
+                QAbstractTableModel::reset();
+        }
 
     public slots:
         void newHeaderDataAvailable(const QString& file);

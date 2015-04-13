@@ -84,6 +84,17 @@ NewsGroup::NewsGroup(quint32 acc, QString path, QString name) : account_(acc), p
             QCoreApplication::processEvents();
     };
     loadingState_ = false;
+    filter_.minSize  = 0;
+    filter_.maxSize  = 189905276;
+    filter_.bMinSize = false;
+    filter_.bMaxSize = false;
+    filter_.minDays  = 0;
+    filter_.maxDays  = 12527;
+    filter_.bMinDays = false;
+    filter_.bMaxDays = false;
+    filter_.sizeUnits = DlgFilter::Unit::KB;
+    model_.setSizeFilter(filter_.minSize, filter_.maxSize);
+    model_.setDateFilter(filter_.minDays, filter_.maxDays);
 }
 
 NewsGroup::~NewsGroup()
@@ -246,9 +257,22 @@ void NewsGroup::on_actionRefresh_triggered()
 
 void NewsGroup::on_actionFilter_triggered()
 {
-    DlgFilter dlg(this);
-    if (dlg.exec() == QDialog::Rejected)
+    DlgFilter::Params filter = filter_;
+
+    DlgFilter dlg(this, filter);
+    dlg.applyFilter = [this](quint32 minDays, quint32 maxDays, quint32 minSize, quint32 maxSize) {
+        model_.setSizeFilter(minSize, maxSize);
+        model_.setDateFilter(minDays, maxDays);
+        model_.applyFilter();
+    };
+    if (dlg.exec() == QDialog::Accepted) {
+        filter_ = filter;
         return;
+    }
+
+    model_.setSizeFilter(filter_.minSize, filter_.maxSize);
+    model_.setDateFilter(filter_.minDays, filter_.maxDays);
+    model_.applyFilter();
 }
 
 void NewsGroup::on_actionStop_triggered()

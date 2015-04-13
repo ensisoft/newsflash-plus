@@ -41,19 +41,19 @@
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="btnCancel">
-       <property name="text">
-        <string>Cancel</string>
-       </property>
-      </widget>
-     </item>
-     <item>
       <widget class="QPushButton" name="btnApply">
        <property name="enabled">
         <bool>true</bool>
        </property>
        <property name="text">
         <string>Apply</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btnCancel">
+       <property name="text">
+        <string>Cancel</string>
        </property>
       </widget>
      </item>
@@ -68,7 +68,7 @@
       <item>
        <layout class="QGridLayout" name="gridLayout">
         <item row="0" column="0">
-         <widget class="QGroupBox" name="grpAtLeast">
+         <widget class="QGroupBox" name="grpMinSize">
           <property name="enabled">
            <bool>true</bool>
           </property>
@@ -76,14 +76,14 @@
            <string>Size is at least</string>
           </property>
           <property name="checkable">
-           <bool>true</bool>
+           <bool>false</bool>
           </property>
           <property name="checked">
            <bool>false</bool>
           </property>
           <layout class="QGridLayout" name="gridLayout_3">
            <item row="1" column="0">
-            <widget class="QSpinBox" name="spinAtLeast">
+            <widget class="QSpinBox" name="spinMinSize">
              <property name="maximum">
               <number>999999999</number>
              </property>
@@ -93,7 +93,7 @@
             </widget>
            </item>
            <item row="0" column="0">
-            <widget class="QSlider" name="sliderAtLeast">
+            <widget class="QSlider" name="sliderMinSize">
              <property name="minimum">
               <number>1</number>
              </property>
@@ -146,7 +146,7 @@
          </layout>
         </item>
         <item row="0" column="2">
-         <widget class="QGroupBox" name="grpAtMost">
+         <widget class="QGroupBox" name="grpMaxSize">
           <property name="enabled">
            <bool>true</bool>
           </property>
@@ -154,14 +154,14 @@
            <string>Size is no more than</string>
           </property>
           <property name="checkable">
-           <bool>true</bool>
+           <bool>false</bool>
           </property>
           <property name="checked">
            <bool>false</bool>
           </property>
           <layout class="QGridLayout" name="gridLayout_4">
            <item row="1" column="0">
-            <widget class="QSpinBox" name="spinAtMost">
+            <widget class="QSpinBox" name="spinMaxSize">
              <property name="maximum">
               <number>999999999</number>
              </property>
@@ -171,7 +171,7 @@
             </widget>
            </item>
            <item row="0" column="0">
-            <widget class="QSlider" name="sliderAtMost">
+            <widget class="QSlider" name="sliderMaxSize">
              <property name="layoutDirection">
               <enum>Qt::LeftToRight</enum>
              </property>
@@ -193,19 +193,19 @@
          </widget>
         </item>
         <item row="1" column="0">
-         <widget class="QGroupBox" name="grpAgeAtLeast">
+         <widget class="QGroupBox" name="grpMinDays">
           <property name="title">
            <string>Age is at least (days)</string>
           </property>
           <property name="checkable">
-           <bool>true</bool>
+           <bool>false</bool>
           </property>
           <property name="checked">
            <bool>false</bool>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_2">
            <item>
-            <widget class="QSlider" name="sliderAgeAtLeast">
+            <widget class="QSlider" name="sliderMinDays">
              <property name="minimum">
               <number>1</number>
              </property>
@@ -215,9 +215,9 @@
             </widget>
            </item>
            <item>
-            <widget class="QSpinBox" name="spinAgeAtLeast">
+            <widget class="QSpinBox" name="spinMinDays">
              <property name="minimum">
-              <number>1</number>
+              <number>0</number>
              </property>
              <property name="maximum">
               <number>99999</number>
@@ -228,19 +228,19 @@
          </widget>
         </item>
         <item row="1" column="2">
-         <widget class="QGroupBox" name="grpAgeAtMost">
+         <widget class="QGroupBox" name="grpMaxDays">
           <property name="title">
            <string>Age is no more than (days)</string>
           </property>
           <property name="checkable">
-           <bool>true</bool>
+           <bool>false</bool>
           </property>
           <property name="checked">
            <bool>false</bool>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout">
            <item>
-            <widget class="QSlider" name="sliderAgeAtMost">
+            <widget class="QSlider" name="sliderMaxDays">
              <property name="minimum">
               <number>1</number>
              </property>
@@ -250,9 +250,9 @@
             </widget>
            </item>
            <item>
-            <widget class="QSpinBox" name="spinAgeAtMost">
+            <widget class="QSpinBox" name="spinMaxDays">
              <property name="minimum">
-              <number>1</number>
+              <number>0</number>
              </property>
              <property name="maximum">
               <number>99999</number>
@@ -270,14 +270,24 @@
   </layout>
  </widget>
  <tabstops>
-  <tabstop>grpAgeAtLeast</tabstop>
-  <tabstop>sliderAgeAtLeast</tabstop>
-  <tabstop>sliderAgeAtMost</tabstop>
-  <tabstop>spinAgeAtLeast</tabstop>
-  <tabstop>spinAgeAtMost</tabstop>
+  <tabstop>grpMinSize</tabstop>
+  <tabstop>sliderMinSize</tabstop>
+  <tabstop>spinMinSize</tabstop>
+  <tabstop>chkKB</tabstop>
+  <tabstop>chkMB</tabstop>
+  <tabstop>chkGB</tabstop>
+  <tabstop>grpMaxSize</tabstop>
+  <tabstop>sliderMaxSize</tabstop>
+  <tabstop>spinMaxSize</tabstop>
+  <tabstop>grpMinDays</tabstop>
+  <tabstop>sliderMinDays</tabstop>
+  <tabstop>spinMinDays</tabstop>
+  <tabstop>grpMaxDays</tabstop>
+  <tabstop>sliderMaxDays</tabstop>
+  <tabstop>spinMaxDays</tabstop>
   <tabstop>btnAccept</tabstop>
-  <tabstop>btnCancel</tabstop>
   <tabstop>btnApply</tabstop>
+  <tabstop>btnCancel</tabstop>
  </tabstops>
  <resources>
   <include location="../../../../svnroot/newsflash/gui/resource.qrc"/>

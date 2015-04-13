@@ -34,49 +34,43 @@ namespace gui
         Q_OBJECT
 
     public:
-        DlgFilter(QWidget* parent) : QDialog(parent)
-        {
-            ui_.setupUi(this);
-            ui_.chkKB->setChecked(true);
-        }
+        enum class Unit {
+            KB, MB, GB
+        };
 
-        std::function<void(int minAge, int maxAge,
-            int minSize, int maxSize)> applyFilter;
+        struct Params {
+            quint32 minDays;
+            quint32 maxDays;
+            quint32 minSize;
+            quint32 maxSize;
+            bool bMinDays;
+            bool bMaxDays;
+            bool bMinSize;
+            bool bMaxSize;
+            Unit sizeUnits;
+        };
+
+        DlgFilter(QWidget* parent, Params& params);
+
+        std::function<void(quint32 minDays, quint32 maxDays,
+            quint32 minSize, quint32 maxSize)> applyFilter;
 
     private slots:
-        void on_btnAccept_clicked()
-        {
-            accept();
-        }
-        void on_btnCancel_clicked()
-        {
-            reject();
-        }
-        void on_btnApply_clicked()
-        {
-            int sizeMultiplier = 0;
-            int minSize = -1;
-            int maxSize = -1;
-            if (ui_.chkKB->isChecked())
-                sizeMultiplier = 1024;
-            else if (ui_.chkMB->isChecked())
-                sizeMultiplier = 1024 * 1024;
-            else if (ui_.chkGB->isChecked())
-                sizeMultiplier = 1024 * 1024 * 1024;
-
-            if (ui_.grpAtLeast->isChecked())
-                minSize = sizeMultiplier * ui_.spinAtLeast->value();
-            if (ui_.grpAtMost->isChecked())
-                maxSize = sizeMultiplier * ui_.spinAtMost->value();
-
-            int minAge = -1;
-            int maxAge = -1;
-
-
-            //applyFilter(minAge, maxAge, minSize, maxSize);
-        }
+        void on_btnAccept_clicked();
+        void on_btnCancel_clicked();
+        void on_btnApply_clicked();
+        void on_sliderMinSize_valueChanged(int position);
+        void on_sliderMaxSize_valueChanged(int position);
+        void on_spinMinSize_valueChanged(int value);
+        void on_spinMaxSize_valueChanged(int value);
+        void on_spinMaxDays_valueChanged(int value);
+        void on_spinMinDays_valueChanged(int value);
+        void on_sliderMaxDays_valueChanged(int position);
+        void on_sliderMinDays_valueChanged(int position);
 
     private:
         Ui::Filter ui_;
+    private:
+        Params params_;
     };
 } // gui

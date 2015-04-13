@@ -28,6 +28,7 @@
 #include <newsflash/warnpop.h>
 #include "mainwidget.h"
 #include "finder.h"
+#include "dlgfilter.h"
 #include "../newsgroup.h"
 
 namespace app {
@@ -90,6 +91,7 @@ namespace gui
         quint32 blockIndex_;
     private:
         bool loadingState_;
-
+    private:
+        DlgFilter::Params filter_;
     };
 } // gui
