@@ -38,7 +38,7 @@ class QLineEdit;
 class QComboBox;
 class QPixmap;
 class QIcon;
-
+class QAction;
 
 namespace app
 {
@@ -71,9 +71,11 @@ void loadTableLayout(const QString& key, QTableView* view, const Settings& setti
 void loadState(const QString& key, QCheckBox* chk, Settings& settings);
 void loadState(const QString& key, QLineEdit* edt, Settings& settings);
 void loadState(const QString& key, QComboBox* cmb, Settings& settings);
+void loadState(const QString& key, QAction* act, Settings& settings);
 void saveState(const QString& key, const QCheckBox* chk, Settings& settings);
 void saveState(const QString& key, const QLineEdit* edt, Settings& settings);
 void saveState(const QString& key, const QComboBox* cmb, Settings& settings);
+void saveState(const QString& key, const QAction* act, Settings& settings);
 
 template<typename Class, typename Member>
 struct CompareLess {

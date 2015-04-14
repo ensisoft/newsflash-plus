@@ -77,6 +77,7 @@ namespace app
         void refresh(quint32 account, QString path, QString name);
         void stop();
 
+        void killSelected(const QModelIndexList& list);
         void scanSelected(QModelIndexList& list);
         void select(const QModelIndexList& list, bool val);
 
@@ -87,13 +88,17 @@ namespace app
 
         using Article  = newsflash::article<newsflash::filemap>;
         using FileType = newsflash::filetype;
-        using FileFlag = newsflash::article<newsflash::filemap>::flags;
+        using FileFlag = newsflash::fileflag;
 
         Article getArticle(std::size_t index) const;
 
         void setTypeFilter(FileType type, bool onOff)
         {
             index_.set_type_filter(type, onOff);
+        }
+        void setFlagFilter(FileFlag flag, bool onOff)
+        {
+            index_.set_flag_filter(flag, onOff);
         }
 
         void setSizeFilter(quint64 minSize, quint64 maxSize)

@@ -62,6 +62,17 @@ NewsGroup::NewsGroup(quint32 acc, QString path, QString name) : account_(acc), p
     ui_.loader->setVisible(false);
     ui_.actionStop->setEnabled(false);
     ui_.actionDownload->setEnabled(false);
+    ui_.actionShowNone->setChecked(true);
+    ui_.actionShowAudio->setChecked(true);
+    ui_.actionShowVideo->setChecked(true);
+    ui_.actionShowImage->setChecked(true);
+    ui_.actionShowText->setChecked(true);
+    ui_.actionShowArchive->setChecked(true);
+    ui_.actionShowParity->setChecked(true);
+    ui_.actionShowDocument->setChecked(true);
+    ui_.actionShowOther->setChecked(true);    
+    ui_.actionShowBroken->setChecked(true);
+    ui_.actionShowDeleted->setChecked(true);
 
     QObject::connect(app::g_engine, SIGNAL(newHeaderInfoAvailable(const QString&, quint64, quint64)),
         this, SLOT(newHeaderInfoAvailable(const QString&, quint64, quint64)));
@@ -111,6 +122,8 @@ void NewsGroup::addActions(QToolBar& bar)
     bar.addSeparator();
     bar.addAction(ui_.actionFilter);
     bar.addSeparator();
+    bar.addAction(ui_.actionDelete);
+    bar.addSeparator();
     bar.addAction(ui_.actionStop);
 }
 
@@ -121,8 +134,6 @@ void NewsGroup::addActions(QMenu& menu)
 
 void NewsGroup::loadState(app::Settings& settings)
 {
-    DEBUG("Enter loadState");
-
     ui_.tableView->setSortingEnabled(false);
 
     app::loadTableLayout("newsgroup", ui_.tableView, settings);
@@ -131,22 +142,33 @@ void NewsGroup::loadState(app::Settings& settings)
     ui_.tableView->sortByColumn((int)app::NewsGroup::Columns::Age, 
         Qt::DescendingOrder);
 
-    ui_.actionShowNone->setChecked(true);
-    ui_.actionShowAudio->setChecked(true);
-    ui_.actionShowVideo->setChecked(true);
-    ui_.actionShowImage->setChecked(true);
-    ui_.actionShowText->setChecked(true);
-    ui_.actionShowArchive->setChecked(true);
-    ui_.actionShowParity->setChecked(true);
-    ui_.actionShowDocument->setChecked(true);
-    ui_.actionShowOther->setChecked(true);
-
-    DEBUG("Leave loadState");
+    app::loadState("newsgroup", ui_.actionShowNone, settings);
+    app::loadState("newsgroup", ui_.actionShowAudio, settings);
+    app::loadState("newsgroup", ui_.actionShowVideo, settings);
+    app::loadState("newsgroup", ui_.actionShowImage, settings);
+    app::loadState("newsgroup", ui_.actionShowText, settings);                
+    app::loadState("newsgroup", ui_.actionShowArchive, settings);                
+    app::loadState("newsgroup", ui_.actionShowParity, settings);                        
+    app::loadState("newsgroup", ui_.actionShowDocument, settings);                            
+    app::loadState("newsgroup", ui_.actionShowOther, settings);  
+    app::loadState("newsgroup", ui_.actionShowBroken, settings);
+    app::loadState("newsgroup", ui_.actionShowDeleted, settings);
 }
 
 void NewsGroup::saveState(app::Settings& settings)
 {
     app::saveTableLayout("newsgroup", ui_.tableView, settings);
+    app::saveState("newsgroup", ui_.actionShowNone, settings);
+    app::saveState("newsgroup", ui_.actionShowAudio, settings);
+    app::saveState("newsgroup", ui_.actionShowVideo, settings);
+    app::saveState("newsgroup", ui_.actionShowImage, settings);
+    app::saveState("newsgroup", ui_.actionShowText, settings);                
+    app::saveState("newsgroup", ui_.actionShowArchive, settings);                
+    app::saveState("newsgroup", ui_.actionShowParity, settings);                        
+    app::saveState("newsgroup", ui_.actionShowDocument, settings);                            
+    app::saveState("newsgroup", ui_.actionShowOther, settings);  
+    app::saveState("newsgroup", ui_.actionShowBroken, settings);
+    app::saveState("newsgroup", ui_.actionShowDeleted, settings);                                  
 }
 
 MainWidget::info NewsGroup::getInformation() const 
@@ -314,6 +336,27 @@ void NewsGroup::on_actionShowOther_changed()
     model_.applyFilter();    
 }
 
+void NewsGroup::on_actionShowBroken_changed()
+{
+    model_.setFlagFilter(FileFlag::broken, ui_.actionShowBroken->isChecked());
+    model_.applyFilter();
+}
+
+void NewsGroup::on_actionShowDeleted_changed()
+{
+    model_.setFlagFilter(FileFlag::deleted, ui_.actionShowDeleted->isChecked());
+    model_.applyFilter();
+}
+
+void NewsGroup::on_actionDelete_triggered()
+{
+    const auto& indices = ui_.tableView->selectionModel()->selectedRows();
+    if (indices.isEmpty())
+        return;
+
+    model_.killSelected(indices);
+}
+
 void NewsGroup::on_actionRefresh_triggered()
 {
     model_.refresh(account_, path_, name_);
@@ -406,8 +449,9 @@ void NewsGroup::on_tableView_customContextMenuRequested(QPoint p)
     menu.addAction(ui_.actionDownload);
     menu.addMenu(&sub);
     menu.addSeparator();
+    menu.addAction(ui_.actionFilter);
 
-    QMenu showType("Show by type", this);
+    QMenu showType("Filter by type", this);
     showType.setIcon(QIcon("icons:ico_filter.png"));
     showType.addAction(ui_.actionShowNone);
     showType.addAction(ui_.actionShowAudio);
@@ -419,14 +463,16 @@ void NewsGroup::on_tableView_customContextMenuRequested(QPoint p)
     showType.addAction(ui_.actionShowDocument);
     showType.addAction(ui_.actionShowOther);
 
-    QMenu showFlag("Show by status", this);
+    QMenu showFlag("Filter by status", this);
     showFlag.setIcon(QIcon("icons:ico_filter.png"));
+    showFlag.addAction(ui_.actionShowBroken);
+    showFlag.addAction(ui_.actionShowDeleted);
 
     menu.addMenu(&showType);
     menu.addMenu(&showFlag);
     menu.addSeparator();
-    menu.addAction(ui_.actionFilter);
-    menu.addSeparator();
+    menu.addAction(ui_.actionDelete);    
+    menu.addSeparator();    
     menu.addAction(ui_.actionStop);
     menu.exec(QCursor::pos());
 }

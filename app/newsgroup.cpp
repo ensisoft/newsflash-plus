@@ -141,9 +141,6 @@ QVariant NewsGroup::data(const QModelIndex& index, int role) const
     const auto col   = (Columns)index.column();
     const auto& item = index_[row];    
 
-    using flags = Article::flags;
-    using type  = newsflash::filetype;
-
     if (role == Qt::DisplayRole)
     {
         switch (col)
@@ -157,15 +154,15 @@ QVariant NewsGroup::data(const QModelIndex& index, int role) const
             case Columns::Type:
                 switch (item.type()) 
                 {
-                    case type::none:     return "n/a";
-                    case type::audio:    return toString(app::FileType::Audio);
-                    case type::video:    return toString(app::FileType::Video);
-                    case type::image:    return toString(app::FileType::Image);
-                    case type::text:     return toString(app::FileType::Text);                                                            
-                    case type::archive:  return toString(app::FileType::Archive);
-                    case type::parity:   return toString(app::FileType::Parity);
-                    case type::document: return toString(app::FileType::Document);
-                    case type::other:    return toString(app::FileType::Other);
+                    case FileType::none:     return "n/a";
+                    case FileType::audio:    return toString(app::FileType::Audio);
+                    case FileType::video:    return toString(app::FileType::Video);
+                    case FileType::image:    return toString(app::FileType::Image);
+                    case FileType::text:     return toString(app::FileType::Text);                                                            
+                    case FileType::archive:  return toString(app::FileType::Archive);
+                    case FileType::parity:   return toString(app::FileType::Parity);
+                    case FileType::document: return toString(app::FileType::Document);
+                    case FileType::other:    return toString(app::FileType::Other);
                     default: Q_ASSERT(!"unknown file type");
                 }
                 break;
@@ -189,32 +186,32 @@ QVariant NewsGroup::data(const QModelIndex& index, int role) const
         switch (col)
         {
             case Columns::BrokenFlag:
-                if (item.test(flags::broken))
+                if (item.test(FileFlag::broken))
                     return QIcon("icons:ico_flag_broken.png");
                 break;
 
             case Columns::DownloadFlag:
-                if (item.test(flags::downloaded))
+                if (item.test(FileFlag::downloaded))
                     return QIcon("icons:ico_flag_download.png");
                 break;
 
             case Columns::BookmarkFlag:
-                if (item.test(flags::bookmarked))
+                if (item.test(FileFlag::bookmarked))
                     return QIcon("icons:ico_flag_bookmark.png");
                 break;
 
             case Columns::Type:
                 switch (item.type())
                 {
-                    case type::none:     return findFileIcon(app::FileType::Text);
-                    case type::audio:    return findFileIcon(app::FileType::Audio);
-                    case type::video:    return findFileIcon(app::FileType::Video);
-                    case type::image:    return findFileIcon(app::FileType::Image);
-                    case type::text:     return findFileIcon(app::FileType::Text);                                                            
-                    case type::archive:  return findFileIcon(app::FileType::Archive);
-                    case type::parity:   return findFileIcon(app::FileType::Parity);
-                    case type::document: return findFileIcon(app::FileType::Document);
-                    case type::other:    return findFileIcon(app::FileType::Other);   
+                    case FileType::none:     return findFileIcon(app::FileType::Text);
+                    case FileType::audio:    return findFileIcon(app::FileType::Audio);
+                    case FileType::video:    return findFileIcon(app::FileType::Video);
+                    case FileType::image:    return findFileIcon(app::FileType::Image);
+                    case FileType::text:     return findFileIcon(app::FileType::Text);                                                            
+                    case FileType::archive:  return findFileIcon(app::FileType::Archive);
+                    case FileType::parity:   return findFileIcon(app::FileType::Parity);
+                    case FileType::document: return findFileIcon(app::FileType::Document);
+                    case FileType::other:    return findFileIcon(app::FileType::Other);   
                     default: Q_ASSERT(!"unknown file type");
                 }
                 break;
@@ -225,6 +222,15 @@ QVariant NewsGroup::data(const QModelIndex& index, int role) const
             case Columns::Subject:
                 break;
             case Columns::LAST: Q_ASSERT(0);
+        }
+    }
+    else if (role == Qt::FontRole)
+    {
+        if (item.is_deleted())
+        {
+            QFont font;
+            font.setStrikeOut(true);
+            return font;
         }
     }
     return {};
@@ -338,6 +344,33 @@ void NewsGroup::stop()
     task_ = 0;
 }
 
+void NewsGroup::killSelected(const QModelIndexList& list)
+{
+    int minRow = std::numeric_limits<int>::max();
+    int maxRow = std::numeric_limits<int>::min();
+    for (const auto& i : list)
+    {
+        const auto row = i.row();
+        minRow = std::min(row, minRow);
+        maxRow = std::max(row, maxRow);
+
+        auto article  = index_[row];
+        auto deletion = article.is_deleted();
+        article.set_bits(FileFlag::deleted, !deletion);
+        article.save();
+    }
+    if (!index_.show_deleted()) 
+    {
+        applyFilter();
+    }
+    else
+    {
+        const auto first = QAbstractTableModel::index(minRow, 0);
+        const auto last  = QAbstractTableModel::index(maxRow, (int)Columns::LAST);
+        emit dataChanged(first, last);
+    }
+}
+
 void NewsGroup::scanSelected(QModelIndexList& list)
 {
     const auto numArticles = index_.size();
@@ -413,7 +446,7 @@ void NewsGroup::download(const QModelIndexList& list, quint32 acc, QString folde
             nzb.segments.push_back(std::to_string(seg));
 
         pack.push_back(nzb);
-        article.set_bits(Article::flags::downloaded, true);
+        article.set_bits(FileFlag::downloaded, true);
         article.save();
     }
     const auto size = list.size();

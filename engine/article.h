@@ -45,21 +45,6 @@ namespace newsflash
     class article
     {
     public:
-        enum class flags : std::uint8_t {
-            broken,
-
-            // the article appears to contain binary content.
-            binary, 
-
-            // the article is deleted.
-            deleted,
-
-            // the article is downloaded.
-            downloaded,
-
-            // the article is bookmarked
-            bookmarked
-        };
         article() 
         {
             clear();
@@ -85,7 +70,7 @@ namespace newsflash
                 m_parts_avail = 1;                
                 m_partno      = part.second.numerator;
                 m_parts_total = part.second.denominator;
-                m_bits.set(flags::broken, (m_parts_avail != m_parts_total));
+                m_bits.set(fileflag::broken, (m_parts_avail != m_parts_total));
             }
 
             const auto date = nntp::parse_date(data.date.start, data.date.len);
@@ -100,7 +85,7 @@ namespace newsflash
                 const auto& filename = nntp::find_filename(data.subject.start, data.subject.len);
                 if (!filename.empty())
                     m_type = find_filetype(filename);
-                m_bits.set(flags::binary);
+                m_bits.set(fileflag::binary);
             }
             m_subject = str::string_view{data.subject.start, data.subject.len};
             m_author  = str::string_view{data.author.start, data.author.len};
@@ -168,7 +153,7 @@ namespace newsflash
             if (has_parts())
             {
                 m_parts_avail++;
-                m_bits.set(flags::broken, (m_parts_total != m_parts_avail));
+                m_bits.set(fileflag::broken, (m_parts_total != m_parts_avail));
             }
         }
 
@@ -206,7 +191,7 @@ namespace newsflash
             m_partno = 0;
         }
 
-        bitflag<flags>& bits()
+        bitflag<fileflag>& bits()
         { return m_bits; }
 
         std::uint32_t index() const 
@@ -249,7 +234,7 @@ namespace newsflash
             return m_hash;
         }
 
-        bool test(flags flag) const
+        bool test(fileflag flag) const
         {
             return m_bits.test(flag);
         }
@@ -280,7 +265,7 @@ namespace newsflash
         {
             m_number = number;
         }
-        void set_bits(flags flag, bool on_off)
+        void set_bits(fileflag flag, bool on_off)
         {
             m_bits.set(flag, on_off);
         }
@@ -306,7 +291,12 @@ namespace newsflash
 
         bool is_broken() const 
         {
-            return m_bits.test(flags::broken);
+            return m_bits.test(fileflag::broken);
+        }
+
+        bool is_deleted() const
+        {
+            return m_bits.test(fileflag::deleted);
         }
 
         bool has_parts() const 
@@ -362,7 +352,7 @@ namespace newsflash
     private:
         template<typename> friend class index;
 
-        bitflag<flags> m_bits;
+        bitflag<fileflag> m_bits;
         filetype m_type;        
         str::string_view m_subject;
         str::string_view m_author;

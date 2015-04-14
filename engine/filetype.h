@@ -28,17 +28,50 @@ namespace newsflash
 {
     enum class filetype : std::uint8_t 
     {
+        // no file type recognized.
         none, 
+
+        // audio file such as .mp3
         audio, 
+
+        // video file such as .mkv
         video,
+
+        // image file such as .jpg or .png
         image,
+
+        // text file such as .txt, .nfo
         text,
+
+        // archive file such as .zip or .rar
         archive,
+
+        // par2 parity file, .par2 or .vol000-001.par
         parity,
+
+        // document such as .pdf
         document,
+
+        // something else
         other
     };
 
     filetype find_filetype(const std::string& subject);
+
+    enum class fileflag : std::uint8_t {
+        broken,
+
+        // the article appears to contain binary content.
+        binary, 
+
+        // the article is deleted.
+        deleted,
+
+        // the article is downloaded.
+        downloaded,
+
+        // the article is bookmarked
+        bookmarked
+    };
 
 } // newsflash

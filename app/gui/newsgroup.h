@@ -72,6 +72,9 @@ namespace gui
         void on_actionShowParity_changed();
         void on_actionShowDocument_changed();
         void on_actionShowOther_changed();
+        void on_actionShowBroken_changed();
+        void on_actionShowDeleted_changed();
+        void on_actionDelete_triggered();
 
         void on_actionRefresh_triggered();
         void on_actionFilter_triggered();

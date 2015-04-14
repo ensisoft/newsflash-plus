@@ -99,16 +99,16 @@ namespace newsflash
             switch (sorting_)
             {
                 case sorting::sort_by_broken:     
-                    sort(sortdir_, article_t::flags::broken); 
+                    sort(sortdir_, fileflag::broken); 
                     break;
                 case sorting::sort_by_binary:     
-                    sort(sortdir_, article_t::flags::binary); 
+                    sort(sortdir_, fileflag::binary); 
                     break;
                 case sorting::sort_by_downloaded: 
-                    sort(sortdir_, article_t::flags::downloaded); 
+                    sort(sortdir_, fileflag::downloaded); 
                     break;
                 case sorting::sort_by_bookmarked: 
-                    sort(sortdir_, article_t::flags::bookmarked); 
+                    sort(sortdir_, fileflag::bookmarked); 
                     break;
                 case sorting::sort_by_date:        
                     sort(sortdir_, &article_t::m_pubdate); 
@@ -143,16 +143,16 @@ namespace newsflash
             switch (sorting_)
             {
                 case sorting::sort_by_broken:
-                    it = lower_bound(a, article_t::flags::broken); 
+                    it = lower_bound(a, fileflag::broken); 
                     break;
                 case sorting::sort_by_binary:
-                    it = lower_bound(a, article_t::flags::binary);
+                    it = lower_bound(a, fileflag::binary);
                     break;
                 case sorting::sort_by_downloaded:
-                    it = lower_bound(a, article_t::flags::downloaded);
+                    it = lower_bound(a, fileflag::downloaded);
                     break;
                 case sorting::sort_by_bookmarked:
-                    it = lower_bound(a, article_t::flags::bookmarked);
+                    it = lower_bound(a, fileflag::bookmarked);
                     break;
 
                 case sorting::sort_by_date: 
@@ -212,6 +212,11 @@ namespace newsflash
             return item.bits.test(flags::selected);
         }
 
+        bool show_deleted() const 
+        {
+            return flags_.test(fileflag::deleted);
+        }
+
         // filter the index by displaying only articles with matching file types
         void set_type_filter(filetype type, bool on_off)
         {
@@ -224,9 +229,13 @@ namespace newsflash
             types_ = types;
         }
 
-        void set_flag_filter(bitflag<typename article_t::flags> flags)
+        void set_flag_filter(bitflag<fileflag> flags)
         {
             flags_ = flags;
+        }
+        void set_flag_filter(fileflag flag, bool on_off)
+        {
+            flags_.set(flag, on_off);
         }
 
         void set_date_filter(std::time_t min_pubdate, std::time_t max_pubdate)
@@ -342,7 +351,7 @@ namespace newsflash
                  std::sort(beg, end, less(p));
             else std::sort(beg, end, greater(p));
         }
-        void sort(sortdir up_down, typename article_t::flags mask)
+        void sort(sortdir up_down, fileflag mask)
         {
             auto beg = std::begin(items_);
             auto end = std::begin(items_);
@@ -376,7 +385,7 @@ namespace newsflash
             else return std::lower_bound(beg, end, a, greater(p));
         }
 
-        typename std::deque<item>::iterator lower_bound(const article_t& a, typename article_t::flags mask)
+        typename std::deque<item>::iterator lower_bound(const article_t& a, fileflag mask)
         {
             auto beg = std::begin(items_);
             auto end = std::begin(items_);
@@ -403,6 +412,14 @@ namespace newsflash
             if (!types_.test(a.type()))
                 return false;
 
+            if (!flags_.test(fileflag::broken) && 
+                a.m_bits.test(fileflag::broken))
+                return false;
+
+            if (!flags_.test(fileflag::deleted) &&
+                a.m_bits.test(fileflag::deleted))
+                return false;
+
             const auto date = a.pubdate();
             if (date < min_pubdate_ || date > max_pubdate_)
                 return false;
@@ -427,7 +444,7 @@ namespace newsflash
         sortdir sortdir_;
     private:
         bitflag<filetype, std::uint16_t> types_;
-        bitflag<typename article_t::flags> flags_;
+        bitflag<fileflag, std::uint16_t> flags_;
         std::time_t min_pubdate_;
         std::time_t max_pubdate_;
         std::uint64_t min_size_;

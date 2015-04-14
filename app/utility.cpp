@@ -30,6 +30,7 @@
 #  include <QtGui/QPixmap>
 #  include <QtGui/QImage>
 #  include <QtGui/QIcon>
+#  include <QtGui/QAction>
 #  include <QAbstractTableModel>
 #  include <QDir>
 #include <newsflash/warnpop.h>
@@ -218,6 +219,13 @@ void loadState(const QString& key, QComboBox* cmb, Settings& settings)
         cmb->setCurrentIndex(index);
 }
 
+void loadState(const QString& key, QAction* act, Settings& settings)
+{
+    const auto check = settings.get(key, act->objectName(),
+        act->isChecked());
+    act->setChecked(check);
+}
+
 void saveState(const QString& key, const QCheckBox* chk, Settings& settings)
 {
     settings.set(key, chk->objectName(), chk->isChecked());
@@ -231,6 +239,11 @@ void saveState(const QString& key, const QLineEdit* edt, Settings& settings)
 void saveState(const QString& key, const QComboBox* cmb, Settings& settings)
 {
     settings.set(key, cmb->objectName(), cmb->currentText());
+}
+
+void saveState(const QString& key, const QAction* act, Settings& settings)
+{
+    settings.set(key, act->objectName(), act->isChecked());
 }
 
 } // app
