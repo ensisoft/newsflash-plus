@@ -36,6 +36,9 @@
 #include <deque>
 #include <functional>
 #include "filetype.h"
+#include "debug.h"
+#include "format.h"
+#include "types.h"
 
 namespace app
 {
@@ -80,21 +83,34 @@ namespace app
         void download(const QModelIndexList& list, quint32 acc, QString folder);
 
         std::size_t numItems() const;
+        std::size_t numShown() const;
 
-        using Article = newsflash::article<newsflash::filemap>;
+        using Article  = newsflash::article<newsflash::filemap>;
+        using FileType = newsflash::filetype;
+        using FileFlag = newsflash::article<newsflash::filemap>::flags;
+
         Article getArticle(std::size_t index) const;
 
-        void setSizeFilter(quint32 minSize, quint32 maxSize)
+        void setTypeFilter(FileType type, bool onOff)
         {
+            index_.set_type_filter(type, onOff);
+        }
+
+        void setSizeFilter(quint64 minSize, quint64 maxSize)
+        {
+            DEBUG("Size filter %1 - %2", app::size{minSize}, app::size{maxSize});
+
             index_.set_size_filter(minSize, maxSize);
         }
 
         void setDateFilter(quint32 minDays, quint32 maxDays)
         {
-            maxDays = std::min(maxDays, 12527u);
             const auto now = QDateTime::currentDateTime();
             const auto beg = now.addDays(-minDays);
             const auto end = now.addDays(-maxDays);
+
+            DEBUG("Date filter %1 - %2", app::age{beg}, app::age{end});
+
             index_.set_date_filter(end.toTime_t(), beg.toTime_t());
         }
 

@@ -63,6 +63,16 @@ namespace gui
         void load();
 
     private slots:
+        void on_actionShowNone_changed();
+        void on_actionShowAudio_changed();
+        void on_actionShowVideo_changed();
+        void on_actionShowImage_changed();
+        void on_actionShowText_changed();
+        void on_actionShowArchive_changed();
+        void on_actionShowParity_changed();
+        void on_actionShowDocument_changed();
+        void on_actionShowOther_changed();
+
         void on_actionRefresh_triggered();
         void on_actionFilter_triggered();
         void on_actionStop_triggered();

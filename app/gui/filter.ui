@@ -95,10 +95,10 @@
            <item row="0" column="0">
             <widget class="QSlider" name="sliderMinSize">
              <property name="minimum">
-              <number>1</number>
+              <number>0</number>
              </property>
-             <property name="maximum">
-              <number>200</number>
+             <property name="value">
+              <number>0</number>
              </property>
              <property name="orientation">
               <enum>Qt::Horizontal</enum>
@@ -176,10 +176,10 @@
               <enum>Qt::LeftToRight</enum>
              </property>
              <property name="minimum">
-              <number>1</number>
+              <number>0</number>
              </property>
-             <property name="maximum">
-              <number>200</number>
+             <property name="value">
+              <number>0</number>
              </property>
              <property name="orientation">
               <enum>Qt::Horizontal</enum>
@@ -207,7 +207,10 @@
            <item>
             <widget class="QSlider" name="sliderMinDays">
              <property name="minimum">
-              <number>1</number>
+              <number>0</number>
+             </property>
+             <property name="value">
+              <number>0</number>
              </property>
              <property name="orientation">
               <enum>Qt::Horizontal</enum>
@@ -242,7 +245,10 @@
            <item>
             <widget class="QSlider" name="sliderMaxDays">
              <property name="minimum">
-              <number>1</number>
+              <number>0</number>
+             </property>
+             <property name="value">
+              <number>0</number>
              </property>
              <property name="orientation">
               <enum>Qt::Horizontal</enum>

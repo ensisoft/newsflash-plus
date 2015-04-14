@@ -27,6 +27,17 @@
 namespace gui
 {
 
+int myLog(int value)
+{
+    for (int i=0; i<200; ++i)
+    {
+        if (std::pow(1.1, i) >= value)
+            return i;
+    }
+    Q_ASSERT(0);
+    return -1; 
+}
+
 DlgFilter::DlgFilter(QWidget* parent, DlgFilter::Params& params) : QDialog(parent), params_(params)
 {
     ui_.setupUi(this);
@@ -34,41 +45,51 @@ DlgFilter::DlgFilter(QWidget* parent, DlgFilter::Params& params) : QDialog(paren
     ui_.grpMinDays->setChecked(params.bMinDays),
     ui_.grpMinSize->setChecked(params.bMinSize);
     ui_.grpMaxSize->setChecked(params.bMaxSize);
-    ui_.sliderMinSize->setValue(params.minSize);
-    ui_.sliderMaxSize->setValue(params.maxSize);
-    ui_.sliderMinDays->setValue(params.minDays);
-    ui_.sliderMaxDays->setValue(params.maxDays);
 
     ui_.spinMaxDays->setMaximum(12527);
     ui_.spinMinDays->setMaximum(12527);
-    ui_.spinMinSize->setMaximum(189905276);
-    ui_.spinMaxSize->setMaximum(189905276);
-
-    ui_.spinMinSize->setValue(params.minSize);
-    ui_.spinMaxSize->setValue(params.maxSize);
     ui_.spinMinDays->setValue(params.minDays);
     ui_.spinMaxDays->setValue(params.maxDays);
+
+    ui_.spinMinSize->setMaximum(4 * 1024);
+    ui_.spinMaxSize->setMaximum(4 * 1024);
+    ui_.sliderMaxSize->setMaximum(myLog(4 * 1024));
+    ui_.sliderMinSize->setMaximum(myLog(4 * 1024));
+
     switch (params.sizeUnits)
     {
-        case Unit::KB: ui_.chkKB->setChecked(true); break;
-        case Unit::MB: ui_.chkMB->setChecked(true); break;
-        case Unit::GB: ui_.chkGB->setChecked(true); break;
+        case Unit::KB: 
+            ui_.chkKB->setChecked(true);         
+            ui_.spinMinSize->setValue(params_.minSize / 1024);
+            ui_.spinMaxSize->setValue(params_.maxSize / 1024);            
+            break;
+        case Unit::MB: 
+            ui_.chkMB->setChecked(true);         
+            ui_.spinMinSize->setValue(params_.minSize / (1024 * 1024));
+            ui_.spinMaxSize->setValue(params_.maxSize / (1024 * 1024));            
+            break;
+        case Unit::GB: 
+            ui_.chkGB->setChecked(true);         
+            ui_.spinMinSize->setValue(params_.minSize / (1024 * 1024 * 1024));
+            ui_.spinMaxSize->setValue(params_.maxSize / (1024 * 1024 * 1024));            
+            break;
+        default: Q_ASSERT(!"unknown filtering size unit"); break; 
     }
+
+    ui_.btnApply->setEnabled(false);
+
+
+    ui_.chkGB->setVisible(false);
+}
+
+bool DlgFilter::isApplied() const 
+{
+    return !ui_.btnApply->isEnabled();
 }
 
 void DlgFilter::on_btnAccept_clicked()
 {
-    params_.minDays = ui_.spinMinDays->value();    
-    params_.maxDays = ui_.spinMaxDays->value();
-    params_.minSize = ui_.spinMinSize->value();
-    params_.maxSize = ui_.spinMaxSize->value();
-    if (ui_.chkKB->isChecked())
-        params_.sizeUnits = Unit::KB;
-    else if (ui_.chkMB->isChecked())
-        params_.sizeUnits = Unit::MB;
-    else if (ui_.chkGB->isChecked())
-        params_.sizeUnits = Unit::GB;
-
+    setParams();
     accept();
 }
 
@@ -78,39 +99,42 @@ void DlgFilter::on_btnCancel_clicked()
 }
 void DlgFilter::on_btnApply_clicked()
 {
-    quint32 sizeMultiplier = 0;
+    setParams();
 
-    if (ui_.chkKB->isChecked())
-        sizeMultiplier = 1024;
-    else if (ui_.chkMB->isChecked())
-        sizeMultiplier = 1024 * 1024;
-    else if (ui_.chkGB->isChecked())
-        sizeMultiplier = 1024 * 1024 * 1024;
+    applyFilter(params_.minDays, params_.maxDays, params_.minSize, params_.maxSize);
 
-    const quint32 minSize = sizeMultiplier * ui_.spinMinSize->value();
-    const quint32 maxSize = sizeMultiplier * ui_.spinMaxSize->value();
-    const quint32 minAge = ui_.spinMinDays->value();
-    const quint32 maxAge = ui_.spinMaxDays->value();
-    applyFilter(minAge, maxAge, minSize, maxSize);
+    ui_.btnApply->setEnabled(false);
 }
 
 void DlgFilter::on_sliderMinSize_valueChanged(int position)
 {
-    int value = pow(1.1, position);
+    blockStupidSignals(true);
 
-            // push "at most" forward so that it equals
-            // the minimum
+    int value = 0;
+    if (position > 0)
+        value = pow(1.1, position);
+
+    // push "at most" forward so that it equals
+    // the minimum
     if (value > ui_.spinMaxSize->value())
     {
         ui_.spinMaxSize->setValue(value);
         ui_.sliderMaxSize->setValue(position);
     }
     ui_.spinMinSize->setValue(value);
+
+    ui_.btnApply->setEnabled(true);
+
+    blockStupidSignals(false);
 }    
 
 void DlgFilter::on_sliderMaxSize_valueChanged(int position)
 {
-    int value = pow(1.1, position);
+    blockStupidSignals(true);
+
+    int value = 0;
+    if (position > 0)
+        value = pow(1.1, position);
 
     if (value < ui_.spinMinSize->value())
     {
@@ -119,58 +143,75 @@ void DlgFilter::on_sliderMaxSize_valueChanged(int position)
     }
 
     ui_.spinMaxSize->setValue(value);
+
+    ui_.btnApply->setEnabled(true);    
+
+    blockStupidSignals(false);
 }
 
 void DlgFilter::on_spinMinSize_valueChanged(int value)
 {
-            // uh, log 1.1 (value) 
-    for (int x=0; x<201; ++x)
-    {
-        if ((int)pow(1.1, x) == value)
-            ui_.sliderMinSize->setValue(x);
-    }
+    blockStupidSignals(true);
+
+    ui_.sliderMinSize->setValue(myLog(value));
 
     if (value > ui_.spinMaxSize->value())
         ui_.spinMaxSize->setValue(value);
+
+    ui_.btnApply->setEnabled(true);    
+
+    blockStupidSignals(false);
 }
 
 void DlgFilter::on_spinMaxSize_valueChanged(int value)
 {
-    for (int x=0; x<201; ++x)
-    {
-        if ((int)pow(1.1, x) == value)
-            ui_.sliderMaxSize->setValue(x);
-    }
+    blockStupidSignals(true);
+
+    ui_.sliderMaxSize->setValue(myLog(value));
+
     if (value < ui_.spinMinSize->value())
         ui_.spinMinSize->setValue(value);
     
+    ui_.btnApply->setEnabled(true);    
+
+    blockStupidSignals(false);
 }
 
 void DlgFilter::on_spinMaxDays_valueChanged(int value)
 {
-    for (int x=0; x<201; ++x)
-    {
-        if ((int)pow(1.1, x) == value)
-            ui_.sliderMaxDays->setValue(x);
-    }
+    blockStupidSignals(true);
+
+    ui_.sliderMaxDays->setValue(myLog(value));
+
     if (value < ui_.spinMinDays->value())
         ui_.spinMinDays->setValue(value);
+
+    ui_.btnApply->setEnabled(true);    
+
+    blockStupidSignals(false);
 }
 
 void DlgFilter::on_spinMinDays_valueChanged(int value)
 {
-    for (int x=0; x<201; ++x)
-    {
-        if ((int)pow(1.1, x) == value)
-            ui_.sliderMinDays->setValue(x);
-    }
+    blockStupidSignals(true);
+
+    ui_.sliderMinDays->setValue(myLog(value));
+
     if (value > ui_.spinMaxDays->value())
         ui_.spinMaxDays->setValue(value);
+
+    ui_.btnApply->setEnabled(true);    
+
+    blockStupidSignals(false);
 }
 
 void DlgFilter::on_sliderMaxDays_valueChanged(int position)
 {
-    int value = pow(1.1, position);
+    blockStupidSignals(true);
+
+    int value = 0;
+    if (position > 0)
+        value = pow(1.1, position);
 
     if (value < ui_.spinMinDays->value())
     {
@@ -178,11 +219,19 @@ void DlgFilter::on_sliderMaxDays_valueChanged(int position)
         ui_.sliderMinDays->setValue(position);
     }
     ui_.spinMaxDays->setValue(value);
+
+    ui_.btnApply->setEnabled(true);    
+
+    blockStupidSignals(false);
 }
 
 void DlgFilter::on_sliderMinDays_valueChanged(int position)
 {
-    int value = pow(1.1, position);
+    blockStupidSignals(true);
+
+    int value = 0;
+    if (position > 0) 
+        value = pow(1.1, position);
 
     if (value > ui_.spinMaxDays->value())
     {
@@ -190,7 +239,63 @@ void DlgFilter::on_sliderMinDays_valueChanged(int position)
         ui_.sliderMaxDays->setValue(position);
     }
     ui_.spinMinDays->setValue(value);
+
+    ui_.btnApply->setEnabled(true);
+
+    blockStupidSignals(false);
 }
 
+void DlgFilter::on_chkKB_clicked()
+{
+    ui_.btnApply->setEnabled(true);
+}
+
+void DlgFilter::on_chkMB_clicked()
+{
+    ui_.btnApply->setEnabled(true);
+}
+
+void DlgFilter::on_chkGB_clicked()
+{
+    ui_.btnApply->setEnabled(true);
+}
+
+void DlgFilter::blockStupidSignals(bool block)
+{
+    ui_.sliderMaxDays->blockSignals(block);
+    ui_.sliderMinDays->blockSignals(block);
+    ui_.sliderMinSize->blockSignals(block);
+    ui_.sliderMaxSize->blockSignals(block);
+    ui_.spinMaxDays->blockSignals(block);
+    ui_.spinMinDays->blockSignals(block);
+    ui_.spinMaxSize->blockSignals(block);
+    ui_.spinMinSize->blockSignals(block);
+}
+
+void DlgFilter::setParams()
+{
+    quint64 sizeMultiplier = 0;
+
+    if (ui_.chkKB->isChecked())
+    {
+        sizeMultiplier = 1024;
+        params_.sizeUnits = Unit::KB;
+    }
+    else if (ui_.chkMB->isChecked())
+    {
+        sizeMultiplier = 1024 * 1024;
+        params_.sizeUnits = Unit::MB;
+    }
+    else if (ui_.chkGB->isChecked())
+    {
+        sizeMultiplier = 1024 * 1024 * 1024;
+        params_.sizeUnits = Unit::GB;
+    }
+
+    params_.minSize = sizeMultiplier * ui_.spinMinSize->value();
+    params_.maxSize = sizeMultiplier * ui_.spinMaxSize->value();
+    params_.minDays = ui_.spinMinDays->value();
+    params_.maxDays = ui_.spinMaxDays->value();    
+}
 
 } // gui

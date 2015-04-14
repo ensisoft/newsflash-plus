@@ -180,6 +180,11 @@ namespace newsflash
             return size_;
         }
 
+        std::size_t real_size() const 
+        {
+            return items_.size();
+        }
+
         article_t operator[](std::size_t index) const
         {
             assert(index < size_);
@@ -207,6 +212,12 @@ namespace newsflash
             return item.bits.test(flags::selected);
         }
 
+        // filter the index by displaying only articles with matching file types
+        void set_type_filter(filetype type, bool on_off)
+        {
+            types_.set(type, on_off);
+        }
+
         // filter the index by displaying only articles with matching filetype
         void set_type_filter(bitflag<filetype> types)
         {
@@ -225,9 +236,9 @@ namespace newsflash
             max_pubdate_ = max_pubdate;
         }
 
-        void set_size_filter(std::uint32_t min_size, std::uint32_t max_size)
+        void set_size_filter(std::uint64_t min_size, std::uint64_t max_size)
         {
-            assert(max_size_ >= min_size);
+            assert(max_size >= min_size);
             min_size_ = min_size;
             max_size_ = max_size;
         }
@@ -250,9 +261,9 @@ namespace newsflash
             auto end = std::begin(items_);
             std::advance(end, size_);
             auto it = std::stable_partition(beg, end, [&](const item& i) {
-                    const auto& a = on_load(i.key, i.index);
-                    return is_match(a);
-                });
+                const auto& a = on_load(i.key, i.index);
+                return is_match(a);
+            });
             size_ = std::distance(std::begin(items_), it);            
 
             for (const auto& i : maybe)
@@ -403,8 +414,6 @@ namespace newsflash
             return true;
         }
 
-
-
     private:
         struct item {
             std::size_t key;
@@ -417,12 +426,12 @@ namespace newsflash
         sorting sorting_;
         sortdir sortdir_;
     private:
-        bitflag<filetype> types_;
+        bitflag<filetype, std::uint16_t> types_;
         bitflag<typename article_t::flags> flags_;
         std::time_t min_pubdate_;
         std::time_t max_pubdate_;
-        std::uint32_t min_size_;
-        std::uint32_t max_size_;
+        std::uint64_t min_size_;
+        std::uint64_t max_size_;
     };
 
 } // newsflash

@@ -158,14 +158,14 @@ QVariant NewsGroup::data(const QModelIndex& index, int role) const
                 switch (item.type()) 
                 {
                     case type::none:     return "n/a";
-                    case type::audio:    return toString(FileType::Audio);
-                    case type::video:    return toString(FileType::Video);
-                    case type::image:    return toString(FileType::Image);
-                    case type::text:     return toString(FileType::Text);                                                            
-                    case type::archive:  return toString(FileType::Archive);
-                    case type::parity:   return toString(FileType::Parity);
-                    case type::document: return toString(FileType::Document);
-                    case type::other:    return toString(FileType::Other);
+                    case type::audio:    return toString(app::FileType::Audio);
+                    case type::video:    return toString(app::FileType::Video);
+                    case type::image:    return toString(app::FileType::Image);
+                    case type::text:     return toString(app::FileType::Text);                                                            
+                    case type::archive:  return toString(app::FileType::Archive);
+                    case type::parity:   return toString(app::FileType::Parity);
+                    case type::document: return toString(app::FileType::Document);
+                    case type::other:    return toString(app::FileType::Other);
                     default: Q_ASSERT(!"unknown file type");
                 }
                 break;
@@ -206,15 +206,15 @@ QVariant NewsGroup::data(const QModelIndex& index, int role) const
             case Columns::Type:
                 switch (item.type())
                 {
-                    case type::none:     return findFileIcon(FileType::Text);
-                    case type::audio:    return findFileIcon(FileType::Audio);
-                    case type::video:    return findFileIcon(FileType::Video);
-                    case type::image:    return findFileIcon(FileType::Image);
-                    case type::text:     return findFileIcon(FileType::Text);                                                            
-                    case type::archive:  return findFileIcon(FileType::Archive);
-                    case type::parity:   return findFileIcon(FileType::Parity);
-                    case type::document: return findFileIcon(FileType::Document);
-                    case type::other:    return findFileIcon(FileType::Other);   
+                    case type::none:     return findFileIcon(app::FileType::Text);
+                    case type::audio:    return findFileIcon(app::FileType::Audio);
+                    case type::video:    return findFileIcon(app::FileType::Video);
+                    case type::image:    return findFileIcon(app::FileType::Image);
+                    case type::text:     return findFileIcon(app::FileType::Text);                                                            
+                    case type::archive:  return findFileIcon(app::FileType::Archive);
+                    case type::parity:   return findFileIcon(app::FileType::Parity);
+                    case type::document: return findFileIcon(app::FileType::Document);
+                    case type::other:    return findFileIcon(app::FileType::Other);   
                     default: Q_ASSERT(!"unknown file type");
                 }
                 break;
@@ -427,7 +427,12 @@ void NewsGroup::download(const QModelIndexList& list, quint32 acc, QString folde
 
 std::size_t NewsGroup::numItems() const 
 {
-    return index_.size();
+    return index_.real_size();
+}
+
+std::size_t NewsGroup::numShown() const 
+{
+    return index_.size();    
 }
 
 NewsGroup::Article NewsGroup::getArticle(std::size_t i) const 

@@ -41,8 +41,8 @@ namespace gui
         struct Params {
             quint32 minDays;
             quint32 maxDays;
-            quint32 minSize;
-            quint32 maxSize;
+            quint64 minSize;
+            quint64 maxSize;
             bool bMinDays;
             bool bMaxDays;
             bool bMinSize;
@@ -53,8 +53,9 @@ namespace gui
         DlgFilter(QWidget* parent, Params& params);
 
         std::function<void(quint32 minDays, quint32 maxDays,
-            quint32 minSize, quint32 maxSize)> applyFilter;
+            quint64 minSize, quint64 maxSize)> applyFilter;
 
+        bool isApplied() const;
     private slots:
         void on_btnAccept_clicked();
         void on_btnCancel_clicked();
@@ -67,10 +68,17 @@ namespace gui
         void on_spinMinDays_valueChanged(int value);
         void on_sliderMaxDays_valueChanged(int position);
         void on_sliderMinDays_valueChanged(int position);
+        void on_chkKB_clicked();
+        void on_chkMB_clicked();
+        void on_chkGB_clicked();
+
+    private:
+        void blockStupidSignals(bool block);           
+        void setParams();
 
     private:
         Ui::Filter ui_;
     private:
-        Params params_;
+        Params& params_;
     };
 } // gui

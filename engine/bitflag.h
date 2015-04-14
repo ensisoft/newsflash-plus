@@ -28,11 +28,12 @@
 
 namespace newsflash
 {
-    template<typename Enum>
+    template<typename Enum, 
+        typename Bits = typename std::underlying_type<Enum>::type>
     class bitflag
     {
     public:
-        using Bits = typename std::underlying_type<Enum>::type;
+        //using Bits = typename std::underlying_type<Enum>::type;
 
         enum {
             BitCount = sizeof(Bits) * 8

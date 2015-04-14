@@ -32,6 +32,11 @@
 #include <newsflash/warnpop.h>
 #include <string>
 #include <mutex>
+#include "format.h"
+
+namespace app {
+    struct size;
+} // app
 
 namespace debug
 {
@@ -80,6 +85,13 @@ namespace debug
     inline QString toString(const QString& str)
     { return str; }
 
+    inline QString toString(const app::size& s)
+    { return app::toString(s); }
+
+    inline QString toString(const app::age& a) 
+    { return app::toString(a); }
+
+
     template<typename T>
     QString toString(const T& value)
     {
@@ -92,8 +104,8 @@ namespace debug
     template<typename T, typename... Args>
     QString toString(QString fmt, const T& value, const Args&... args)
     {
-        fmt = fmt.arg(toString(value));
-        return toString(fmt, args...);
+        fmt = fmt.arg(debug::toString(value));
+        return debug::toString(fmt, args...);
     }
 
     template<typename RandomAccessContainer, typename Index>

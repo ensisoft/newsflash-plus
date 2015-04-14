@@ -164,6 +164,78 @@
     <string>Browse ...</string>
    </property>
   </action>
+  <action name="actionShowNone">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>None</string>
+   </property>
+  </action>
+  <action name="actionShowAudio">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Audio</string>
+   </property>
+  </action>
+  <action name="actionShowVideo">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Video</string>
+   </property>
+  </action>
+  <action name="actionShowImage">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Image</string>
+   </property>
+  </action>
+  <action name="actionShowText">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Text</string>
+   </property>
+  </action>
+  <action name="actionShowArchive">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Archive</string>
+   </property>
+  </action>
+  <action name="actionShowParity">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Parity</string>
+   </property>
+  </action>
+  <action name="actionShowDocument">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Document</string>
+   </property>
+  </action>
+  <action name="actionShowOther">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Other</string>
+   </property>
+  </action>
  </widget>
  <tabstops>
   <tabstop>tableView</tabstop>

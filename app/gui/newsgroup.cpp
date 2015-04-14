@@ -45,13 +45,16 @@
 namespace gui
 {
 
+using FileType = app::NewsGroup::FileType;
+using FileFlag = app::NewsGroup::FileFlag;
+
 NewsGroup::NewsGroup(quint32 acc, QString path, QString name) : account_(acc), path_(path), name_(name)
 {
     using Cols = app::NewsGroup::Columns;
 
     ui_.setupUi(this);
     ui_.tableView->setModel(&model_);
-    ui_.grpView->setTitle(name + " (0)");
+    ui_.grpView->setTitle(name + " (0/0)");
     ui_.tableView->setColumnWidth((int)Cols::DownloadFlag, 32);
     ui_.tableView->setColumnWidth((int)Cols::BrokenFlag, 32);
     ui_.tableView->setColumnWidth((int)Cols::BookmarkFlag, 32);
@@ -85,14 +88,14 @@ NewsGroup::NewsGroup(quint32 acc, QString path, QString name) : account_(acc), p
     };
     loadingState_ = false;
     filter_.minSize  = 0;
-    filter_.maxSize  = 189905276;
+    filter_.maxSize  = std::numeric_limits<quint32>::max() + 1ull;
     filter_.bMinSize = false;
     filter_.bMaxSize = false;
     filter_.minDays  = 0;
     filter_.maxDays  = 12527;
     filter_.bMinDays = false;
     filter_.bMaxDays = false;
-    filter_.sizeUnits = DlgFilter::Unit::KB;
+    filter_.sizeUnits = DlgFilter::Unit::MB;
     model_.setSizeFilter(filter_.minSize, filter_.maxSize);
     model_.setDateFilter(filter_.minDays, filter_.maxDays);
 }
@@ -127,6 +130,16 @@ void NewsGroup::loadState(app::Settings& settings)
     ui_.tableView->setSortingEnabled(true);
     ui_.tableView->sortByColumn((int)app::NewsGroup::Columns::Age, 
         Qt::DescendingOrder);
+
+    ui_.actionShowNone->setChecked(true);
+    ui_.actionShowAudio->setChecked(true);
+    ui_.actionShowVideo->setChecked(true);
+    ui_.actionShowImage->setChecked(true);
+    ui_.actionShowText->setChecked(true);
+    ui_.actionShowArchive->setChecked(true);
+    ui_.actionShowParity->setChecked(true);
+    ui_.actionShowDocument->setChecked(true);
+    ui_.actionShowOther->setChecked(true);
 
     DEBUG("Leave loadState");
 }
@@ -191,7 +204,7 @@ bool NewsGroup::isMatch(const QRegExp& reg, std::size_t index)
 
 std::size_t NewsGroup::numItems() const 
 {
-    return model_.numItems();
+    return model_.numShown();
 }
 
 std::size_t NewsGroup::curItem() const 
@@ -245,6 +258,62 @@ void NewsGroup::load()
     loadingState_ = false;
 }
 
+
+
+void NewsGroup::on_actionShowNone_changed()
+{
+    model_.setTypeFilter(FileType::none, ui_.actionShowNone->isChecked());
+    model_.applyFilter();
+}
+
+void NewsGroup::on_actionShowAudio_changed()
+{
+    model_.setTypeFilter(FileType::audio, ui_.actionShowAudio->isChecked());
+    model_.applyFilter();    
+}
+
+void NewsGroup::on_actionShowVideo_changed()
+{
+    model_.setTypeFilter(FileType::video, ui_.actionShowVideo->isChecked());
+    model_.applyFilter();    
+}
+
+void NewsGroup::on_actionShowImage_changed()
+{
+    model_.setTypeFilter(FileType::image, ui_.actionShowImage->isChecked());
+    model_.applyFilter();    
+}
+
+void NewsGroup::on_actionShowText_changed()
+{
+    model_.setTypeFilter(FileType::text, ui_.actionShowText->isChecked());
+    model_.applyFilter();    
+}
+
+void NewsGroup::on_actionShowArchive_changed()
+{
+    model_.setTypeFilter(FileType::archive, ui_.actionShowArchive->isChecked());
+    model_.applyFilter();    
+}
+
+void NewsGroup::on_actionShowParity_changed()
+{
+    model_.setTypeFilter(FileType::parity, ui_.actionShowParity->isChecked());
+    model_.applyFilter();    
+}
+
+void NewsGroup::on_actionShowDocument_changed()
+{
+    model_.setTypeFilter(FileType::document, ui_.actionShowDocument->isChecked());
+    model_.applyFilter();    
+}
+
+void NewsGroup::on_actionShowOther_changed()
+{
+    model_.setTypeFilter(FileType::other, ui_.actionShowOther->isChecked());
+    model_.applyFilter();    
+}
+
 void NewsGroup::on_actionRefresh_triggered()
 {
     model_.refresh(account_, path_, name_);
@@ -260,14 +329,16 @@ void NewsGroup::on_actionFilter_triggered()
     DlgFilter::Params filter = filter_;
 
     DlgFilter dlg(this, filter);
-    dlg.applyFilter = [this](quint32 minDays, quint32 maxDays, quint32 minSize, quint32 maxSize) {
+    dlg.applyFilter = [this](quint32 minDays, quint32 maxDays, quint64 minSize, quint64 maxSize) {
         model_.setSizeFilter(minSize, maxSize);
         model_.setDateFilter(minDays, maxDays);
         model_.applyFilter();
     };
-    if (dlg.exec() == QDialog::Accepted) {
+    if (dlg.exec() == QDialog::Accepted) 
+    {
         filter_ = filter;
-        return;
+        if (dlg.isApplied())
+            return;
     }
 
     model_.setSizeFilter(filter_.minSize, filter_.maxSize);
@@ -335,6 +406,25 @@ void NewsGroup::on_tableView_customContextMenuRequested(QPoint p)
     menu.addAction(ui_.actionDownload);
     menu.addMenu(&sub);
     menu.addSeparator();
+
+    QMenu showType("Show by type", this);
+    showType.setIcon(QIcon("icons:ico_filter.png"));
+    showType.addAction(ui_.actionShowNone);
+    showType.addAction(ui_.actionShowAudio);
+    showType.addAction(ui_.actionShowVideo);
+    showType.addAction(ui_.actionShowImage);
+    showType.addAction(ui_.actionShowText);
+    showType.addAction(ui_.actionShowArchive);
+    showType.addAction(ui_.actionShowParity);
+    showType.addAction(ui_.actionShowDocument);
+    showType.addAction(ui_.actionShowOther);
+
+    QMenu showFlag("Show by status", this);
+    showFlag.setIcon(QIcon("icons:ico_filter.png"));
+
+    menu.addMenu(&showType);
+    menu.addMenu(&showFlag);
+    menu.addSeparator();
     menu.addAction(ui_.actionFilter);
     menu.addSeparator();
     menu.addAction(ui_.actionStop);
@@ -369,7 +459,6 @@ void NewsGroup::modelBegReset()
 
 void NewsGroup::modelEndReset()
 {
-
     QModelIndexList list;
     model_.scanSelected(list);
 
@@ -380,14 +469,13 @@ void NewsGroup::modelEndReset()
             sel.select(i, i);
 
         auto* model = ui_.tableView->selectionModel();
-        //model->setCurrentIndex(list[0], 
-        //    QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
         model->select(sel, 
             QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
     }
 
+    const auto numShown = model_.numShown();
     const auto numItems = model_.numItems();
-    ui_.grpView->setTitle(QString("%1 (%2)").arg(name_).arg(numItems));
+    ui_.grpView->setTitle(QString("%1 (%2/%3)").arg(name_).arg(numShown).arg(numItems));
 }
 
 void NewsGroup::newHeaderInfoAvailable(const QString& group, quint64 numLocal, quint64 numRemote)
