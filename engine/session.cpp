@@ -454,14 +454,14 @@ public:
         // 502 no permssion 
         nntp::scan_response({224}, buff.head(), len);        
 
-        if (inflate_.size() == 0)
-            inflate_.allocate(MB(1));
+        if (out.size() == 0)
+            out.allocate(MB(1));
 
         // astraweb supposedly uses a scheme where the zlib deflate'd data is yenc encoded.
         // http://helpdesk.astraweb.com/index.php?_m=news&_a=viewnews&newsid=9
         // but this information is just junk. the data that comes is junk too.
         // the correct way is to call XFEATURE COMPRESS GZIP
-        // and then the XOVER/XZVER data that follows is zlib deflated.
+        // and then the XOVER data that follows is zlib deflated.
 
         int err = Z_OK;
         for (;;)
@@ -473,19 +473,20 @@ public:
 
             z_.next_in   = (Bytef*)head;
             z_.avail_in  = size;
-            z_.next_out  = (Bytef*)inflate_.back();
-            z_.avail_out = inflate_.available();
+            z_.next_out  = (Bytef*)out.back();
+            z_.avail_out = out.available();
             err = inflate(&z_, Z_NO_FLUSH);
-            if (err == Z_STREAM_END)
-                break;
-            else if (err == Z_BUF_ERROR)
-                inflate_.allocate(inflate_.size() * 2);
-            else if (err < 0)
-                break;
 
-            inflate_.append(z_.total_out - obytes_);
+            out.append(z_.total_out - obytes_);
             obytes_ = z_.total_out;
             ibytes_ = z_.total_in;
+
+            if (err < 0)
+                break;
+            else if (err == Z_BUF_ERROR)
+                out.allocate(out.size() * 2);
+            else if (err == Z_STREAM_END)
+                break;
         }
         if (err != Z_STREAM_END)
         {
@@ -495,12 +496,18 @@ public:
         }
         LOG_I("Inflated header data from ", kb(ibytes_), " to ", kb(obytes_));
 
-        inflate_.set_content_start(0);
-        inflate_.set_content_type(buffer::type::overview);
-        inflate_.set_status(buffer::status::success);
-        inflate_.set_content_length(obytes_);
-        out = std::move(inflate_);
-        buff.split(ibytes_ + len);
+        out.set_content_start(0);
+        out.set_content_type(buffer::type::overview);
+        out.set_status(buffer::status::success);
+        out.set_content_length(obytes_);
+        const auto head = buff.head() + ibytes_ + len;
+        const auto size = buff.size() - ibytes_ - len;
+        if (size >= 3) 
+        {
+            if (!std::strcmp(head, ".\r\n"))
+                ibytes_ += 3;
+        }
+        buff.pop(ibytes_ + len);
         return true;
     }
 
@@ -512,10 +519,9 @@ public:
 
     virtual std::string str() const override
     { return "XOVER " + range_; }
+
 private:
     std::string range_;
-private:
-    buffer inflate_;
 private:
     z_stream z_;
     uLong obytes_;

@@ -120,6 +120,17 @@ namespace newsflash
             content_status_ = buffer::status::none;
         }
 
+        void pop(std::size_t point)
+        {
+            assert(point <= size_);
+            //const auto bytes_to_copy = point;
+            const auto bytes_to_move = size_ - point;
+
+            std::memmove(&buffer_[0], &buffer_[point], bytes_to_move);
+            size_ = bytes_to_move;
+            return;
+        }
+
         // split the buffer into two buffers at the specified splitpoint.
         // the size, capacity and the contents of the split buffer are those
         // of this buffer from 0 to splitpoint.
