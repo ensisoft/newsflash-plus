@@ -13,7 +13,7 @@ project engine
 lib engine :  
    [ glob *.cpp ] 
 
-   data.pb.cc
+   session.pb.cc
 
    /boost//filesystem/
    /boost//regex/

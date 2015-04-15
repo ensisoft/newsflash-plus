@@ -229,7 +229,7 @@ void Accounts::setAccount(const Account& acc)
         const auto old_key = it->name;
         const auto new_key = acc.name;
         //if (old_key != new_key)
-        //    store.del(old_key);
+        //    store.del(old_key);< 
 
         *it = acc;
         const auto pos = std::distance(std::begin(accounts_), it);

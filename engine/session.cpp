@@ -21,15 +21,14 @@
 //  THE SOFTWARE.
 
 #include <newsflash/config.h>
-
 #include <zlib/zlib.h>
-
 #include "session.h"
 #include "buffer.h"
 #include "nntp.h"
 #include "logging.h"
 #include "format.h"
 #include "types.h"
+#include "utility.h"
 
 namespace newsflash
 {
@@ -431,12 +430,18 @@ private:
     std::string range_;
 };
 
-// like xover but libz compressed
-class session::xzver : public session::command
+class session::xovergzip : public session::command
 {
 public:
-    xzver(std::string range) : range_(std::move(range))
-    {}
+    xovergzip(std::string range) : range_(std::move(range)), obytes_(0), ibytes_(0)
+    {
+        std::memset(&z_, 0, sizeof(z_));
+        inflateInit(&z_);
+    }
+   ~xovergzip()
+    {
+        inflateEnd(&z_);
+    }
 
     virtual bool parse(buffer& buff, buffer& out, impl& st) override
     {
@@ -444,74 +449,79 @@ public:
         if (len == 0)
             return false;
 
-        // also 
         // 412 no news group selected
         // 420 no article(s) selected
         // 502 no permssion 
-        nntp::scan_response({224}, buff.head(), len);
+        nntp::scan_response({224}, buff.head(), len);        
 
-        const auto blen = nntp::find_body(buff.head() + len, buff.size() - len);
-        if (blen == 0)
-            return false;
+        if (inflate_.size() == 0)
+            inflate_.allocate(MB(1));
 
+        // astraweb supposedly uses a scheme where the zlib deflate'd data is yenc encoded.
+        // http://helpdesk.astraweb.com/index.php?_m=news&_a=viewnews&newsid=9
+        // but this information is just junk. the data that comes is junk too.
+        // the correct way is to call XFEATURE COMPRESS GZIP
+        // and then the XOVER/XZVER data that follows is zlib deflated.
 
-        out.set_content_type(buffer::type::overview);
-        out.allocate(blen * 2);
-
-        z_stream z;
-        inflateInit(&z);
-
-        const auto* inptr = buff.head() + len;
-        const auto avail  = buff.size() - len;
-
-        uLong obytes = 0; 
-        uLong ibytes = 0;
         int err = Z_OK;
         for (;;)
         {
-            obytes = z.total_out;
-            ibytes = z.total_in;
-            z.next_out  = (Bytef*)out.back();
-            z.avail_out = out.available();
-            z.next_in   = (Bytef*)inptr + ibytes;
-            z.avail_in  = avail - ibytes;
-            err = inflate(&z, Z_NO_FLUSH);
+            const auto head = buff.head() + len + ibytes_;
+            const auto size = buff.size() - len - ibytes_;
+            if (size == 0)
+                return false;
+
+            z_.next_in   = (Bytef*)head;
+            z_.avail_in  = size;
+            z_.next_out  = (Bytef*)inflate_.back();
+            z_.avail_out = inflate_.available();
+            err = inflate(&z_, Z_NO_FLUSH);
             if (err == Z_STREAM_END)
                 break;
-            else if(err == Z_BUF_ERROR)
-                out.allocate(obytes * 2);
+            else if (err == Z_BUF_ERROR)
+                inflate_.allocate(inflate_.size() * 2);
             else if (err < 0)
                 break;
-        }
-        inflateEnd(&z);
 
+            inflate_.append(z_.total_out - obytes_);
+            obytes_ = z_.total_out;
+            ibytes_ = z_.total_in;
+        }
         if (err != Z_STREAM_END)
         {
             LOG_E("Inflate failed zlib error: ", err);        
-            out.set_status(buffer::status::error);
+            out.set_status(buffer::status::error);       
+            return true;
         }
-        else
-        {
-            LOG_I("Inflated header data from ", kb(ibytes), " to ", kb(obytes));
+        LOG_I("Inflated header data from ", kb(ibytes_), " to ", kb(obytes_));
 
-            out.set_status(buffer::status::success);
-            out.set_content_start(0);
-            out.set_content_length(obytes);
-        }
+        inflate_.set_content_start(0);
+        inflate_.set_content_type(buffer::type::overview);
+        inflate_.set_status(buffer::status::success);
+        inflate_.set_content_length(obytes_);
+        out = std::move(inflate_);
+        buff.split(ibytes_ + len);
         return true;
     }
+
     virtual bool can_pipeline() const override
-    { return false; }
+    { return true; }
 
     virtual session::state state() const override
     { return session::state::transfer; }
 
-    virtual std::string str() const 
-    { return "XZVER " + range_; }
-    
+    virtual std::string str() const override
+    { return "XOVER " + range_; }
 private:
     std::string range_;
+private:
+    buffer inflate_;
+private:
+    z_stream z_;
+    uLong obytes_;
+    uLong ibytes_;
 };
+
 
 // the LIST command obtains a valid list of newsgroups on the server
 // and information about each group (last, first and count)
@@ -559,6 +569,36 @@ public:
 private:
 };
 
+class session::xfeature_compress_gzip : public session::command
+{
+public:
+    virtual bool parse(buffer& buff, buffer& out, impl& st) override
+    {
+        const auto len = nntp::find_response(buff.head(), buff.size());
+        if (len == 0)
+            return false;
+        const auto beg = buff.head();
+        if (beg[0] != '2') 
+        {
+            LOG_E("Compression not supported.");
+            st.enable_compression = false;
+        }
+        buff.clear();
+        return true;
+    }
+    virtual bool can_pipeline() const override
+    { return false; }
+
+    virtual session::state state() const override
+    { return session::state::init; }
+
+    virtual std::string str() const override
+    { return "XFEATURE COMPRESS GZIP"; }
+
+private:
+
+};
+
 session::session() : state_(new impl)
 {
     reset();
@@ -588,6 +628,8 @@ void session::start()
     send_.emplace_back(new welcome);
     send_.emplace_back(new getcaps);
     send_.emplace_back(new modereader);  
+    if (state_->enable_compression)
+        send_.emplace_back(new xfeature_compress_gzip);
 }
 
 void session::quit()
@@ -609,7 +651,7 @@ void session::retrieve_headers(std::string range)
 {
     if (state_->enable_compression)
     {
-        send_.emplace_back(new xzver(std::move(range)));
+        send_.emplace_back(new xovergzip(std::move(range)));
     }
     else
     {

@@ -46,7 +46,7 @@
 #include "datafile.h"
 #include "listing.h"
 #include "update.h"
-#include "data.pb.h"
+#include "session.pb.h"
 
 namespace newsflash
 {
@@ -608,7 +608,7 @@ public:
         LOG_I("Task ", ui_.task_id, "( ", ui_.desc, ") created");
     }
 
-    task(const newsflash::data::Download& spec) : task(spec.task_id())
+    task(const Newsflash::Session::Download& spec) : task(spec.task_id())
     {
         ui_.batch_id   = spec.batch_id();
         ui_.account    = spec.account_id();
@@ -648,7 +648,7 @@ public:
         LOG_I("Task ", ui_.task_id, " deleted");
     }
 
-    void serialize(newsflash::data::TaskList& list)
+    void serialize(Newsflash::Session::TaskList& list)
     {
         if (ui_.state == states::error || ui_.state == states::complete)
             return;
@@ -798,17 +798,50 @@ public:
                 else if (status == buffer::status::dmca)
                     ui_.error.set(ui::task::errors::dmca);
                 else if (status == buffer::status::error)
+                {
+                    if (state.on_error_callback)
+                    {
+                        ui::error err;
+                        err.resource = ui_.desc;
+                        err.what     = "Data buffer error";                        
+                        state.on_error_callback(err);
+                    }
+
+                    LOG_E("Task ", ui_.task_id, " Error: data buffer error");
                     return goto_state(state, states::error);
+                }
             }
         }
 
         std::vector<std::unique_ptr<action>> actions;
 
-        task_->complete(*cmds, actions);
-        for (auto& a : actions)
-            do_action(state, std::move(a));
+        ui::error err;
+        err.resource = ui_.desc;
+        try
+        {
+            task_->complete(*cmds, actions);
+
+            for (auto& a : actions)
+                do_action(state, std::move(a));
         
-        return update_completion(state);
+            return update_completion(state);            
+        }
+        catch (const std::system_error& e)
+        {
+            err.code = e.code();
+            err.what = e.what();
+        }
+        catch (const std::exception& e)
+        {
+            err.what = e.what();
+        }
+
+        if (state.on_error_callback)
+        {
+            state.on_error_callback(err);
+        }
+        LOG_E("Task ", ui_.task_id, " Error: ", err.what);
+        return goto_state(state, states::error);                    
     }
 
     transition pause(engine::state& state)
@@ -924,9 +957,6 @@ public:
         {
             err.what = e.what();
         }
-
-        for (auto i=std::begin(state.cmds); i != std::end(state.cmds); ++i)
-            (*i)->cancel();
 
         if (state.on_error_callback)
         {
@@ -1105,6 +1135,14 @@ private:
             case states::error:
                 ui_.state   = new_state;
                 ui_.etatime = 0;
+                for (auto i=std::begin(state.cmds); i != std::end(state.cmds); ++i)
+                {
+                    auto cmd = *i;
+                    if (cmd->task() != ui_.task_id)
+                        continue;
+                    cmd->cancel();
+                }
+                break;
                 break;
         }
 
@@ -1183,7 +1221,7 @@ public:
         statesets_[(int)states::queued] = num_tasks_;
     }
 
-    batch(const newsflash::data::Batch& data) : batch(0)
+    batch(const Newsflash::Session::Batch& data) : batch(0)
     {
         ui_.batch_id = data.batch_id();
         ui_.task_id  = data.batch_id();
@@ -1202,7 +1240,7 @@ public:
         LOG_I("Batch ", ui_.batch_id, " deleted");
     }
 
-    void serialize(newsflash::data::TaskList& list)
+    void serialize(Newsflash::Session::TaskList& list)
     {
         if (ui_.state == states::complete || ui_.state == states::error)
             return;
@@ -1939,7 +1977,7 @@ void engine::save_session(const std::string& file)
             "failed to create engine state in: " + file);
 #endif
 
-    newsflash::data::TaskList list;
+    Newsflash::Session::TaskList list;
 
     for (const auto& acc : state_->accounts)
     {
@@ -1956,6 +1994,7 @@ void engine::save_session(const std::string& file)
         pa->set_enable_secure_server(acc.enable_secure_server);
         pa->set_enable_general_server(acc.enable_general_server);
         pa->set_enable_pipelining(acc.enable_pipelining);
+        pa->set_enable_compression(acc.enable_compression);
     }
 
     for (const auto& batch : state_->batches)
@@ -1989,7 +2028,7 @@ void engine::load_session(const std::string& file)
     
 #endif
 
-    newsflash::data::TaskList list;
+    Newsflash::Session::TaskList list;
     if (!list.ParseFromIstream(&in))
         throw std::runtime_error("engine parse from stream failed");
 
@@ -2009,7 +2048,7 @@ void engine::load_session(const std::string& file)
         a.enable_secure_server  = p.enable_secure_server();
         a.enable_general_server = p.enable_general_server();
         a.enable_pipelining     = p.enable_pipelining();
-        a.enable_compression    = false;
+        a.enable_compression    = p.enable_compression();
         set_account(a);
     }
 
@@ -2399,7 +2438,13 @@ void engine::kill_action(engine::action_id_t id)
             return b->id() == id;
         });
 
-    ASSERT(it != std::end(state_->batches));
+    // it's possible that the task is automatically killed
+    // for example in the case where it completes with an error
+    // not all the UI handles these cases properly and then incorrectly
+    // call us to kill the action
+    //ASSERT(it != std::end(state_->batches));
+    if (it == std::end(state_->batches))
+        return;
 
     (*it)->kill(*state_);
 

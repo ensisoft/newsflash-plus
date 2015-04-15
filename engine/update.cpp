@@ -158,23 +158,28 @@ public:
                     if (!a.is_match(article))
                         continue;
 
-                    a.combine(article);
-                    a.save();
                     if (a.has_parts())
                     {
+                        const auto max_parts = a.num_parts_total();
+                        const auto num_part  = article.partno();
+                        if (num_part > max_parts)
+                            continue;
+
                         const auto base = a.number();
                         const auto num  = article.number();
                         std::int16_t diff = 0;
                         if (base > num)
                             diff = -(base - num);
                         else diff = num - base;
-                        idb[a.idbkey() + article.partno()] = diff;
+                        idb[a.idbkey() + num_part] = diff;
                     }
+                    a.combine(article);
+                    a.save();                    
                     break;
                 }
                 else
                 {
-                    article.set_index(index.value);
+                    article.set_index(index.value );
                     // we store one complete 64bit article number for the whole pack
                     // and then for the additional parts we store a 16 bit delta value.
                     // note that while yenc generally uses 1 based part indexing some 

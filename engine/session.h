@@ -164,8 +164,9 @@ namespace newsflash
         class body;
         class quit;
         class xover;
-        class xzver;
+        class xovergzip;
         class list;
+        class xfeature_compress_gzip;
 
     private:
         std::deque<std::unique_ptr<command>> send_;

@@ -449,7 +449,7 @@ void Engine::onError(const newsflash::ui::error& e)
 {
     //const auto resource = from_utf8(e.resource);
     //const auto code = e.code;
-    ERROR(fromUtf8(e.what));
+    ERROR("%1: %2", fromUtf8(e.resource), fromUtf8(e.what));
 }
 
 void Engine::onFileComplete(const newsflash::ui::file& f)

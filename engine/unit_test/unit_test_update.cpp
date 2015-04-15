@@ -349,8 +349,8 @@ void unit_test_data()
         article a = db.load(off);
         BOOST_REQUIRE(a.subject() == "Metallica - Enter Sandman yEnc (01/10).mp3");
         BOOST_REQUIRE(a.author() == "ensi@gmail.com");
-        BOOST_REQUIRE(a.test(article::flags::binary));
-        BOOST_REQUIRE(a.test(article::flags::broken));
+        BOOST_REQUIRE(a.test(newsflash::fileflag::binary));
+        BOOST_REQUIRE(a.test(newsflash::fileflag::broken));
         BOOST_REQUIRE(a.bytes() == 1024 + 568 + 100);
         BOOST_REQUIRE(a.num_parts_total() == 10);
         BOOST_REQUIRE(a.num_parts_avail() == 3);
@@ -362,8 +362,8 @@ void unit_test_data()
         a = db.load(off);
         BOOST_REQUIRE(a.subject() == ".net and COM interoperability");
         BOOST_REQUIRE(a.author() == "foo@gmail.com");
-        BOOST_REQUIRE(a.test(article::flags::binary) == false);
-        BOOST_REQUIRE(a.test(article::flags::broken) == false);
+        BOOST_REQUIRE(a.test(newsflash::fileflag::binary) == false);
+        BOOST_REQUIRE(a.test(newsflash::fileflag::broken) == false);
         BOOST_REQUIRE(a.bytes() == 512);
         BOOST_REQUIRE(a.num_parts_total() == 0);
         BOOST_REQUIRE(a.num_parts_avail() == 0);
@@ -373,8 +373,8 @@ void unit_test_data()
         a = db.load(off);
         BOOST_REQUIRE(a.subject() == "#A.B.MM @  EFNet Presents: REQ 40092 - Seinfeld.S09.DVDRip.XviD-SiNK - 482/520 - sink-seinfeld.s09e21e22.r23 (1/4)");
         BOOST_REQUIRE(a.author() == "ano@anonymous.yy (knetje)");
-        BOOST_REQUIRE(a.test(article::flags::binary));
-        BOOST_REQUIRE(a.test(article::flags::broken) == true);
+        BOOST_REQUIRE(a.test(newsflash::fileflag::binary));
+        BOOST_REQUIRE(a.test(newsflash::fileflag::broken) == true);
         BOOST_REQUIRE(a.num_parts_total() == 4);
         BOOST_REQUIRE(a.num_parts_avail() == 3);
         BOOST_REQUIRE(a.bytes() == 3 * 2048);
@@ -490,8 +490,8 @@ void unit_test_data()
         article a = db.load(off);
         BOOST_REQUIRE(a.subject() == "Metallica - Enter Sandman yEnc (01/10).mp3");
         BOOST_REQUIRE(a.author() == "ensi@gmail.com");
-        BOOST_REQUIRE(a.test(article::flags::binary));
-        BOOST_REQUIRE(a.test(article::flags::broken));
+        BOOST_REQUIRE(a.test(newsflash::fileflag::binary));
+        BOOST_REQUIRE(a.test(newsflash::fileflag::broken));
         BOOST_REQUIRE(a.bytes() == 1024 + 568 + 100);
         BOOST_REQUIRE(a.num_parts_total() == 10);
         BOOST_REQUIRE(a.num_parts_avail() == 3);
@@ -503,8 +503,8 @@ void unit_test_data()
         a = db.load(off);
         BOOST_REQUIRE(a.subject() == ".net and COM interoperability");
         BOOST_REQUIRE(a.author() == "foo@gmail.com");
-        BOOST_REQUIRE(a.test(article::flags::binary) == false);
-        BOOST_REQUIRE(a.test(article::flags::broken) == false);
+        BOOST_REQUIRE(a.test(newsflash::fileflag::binary) == false);
+        BOOST_REQUIRE(a.test(newsflash::fileflag::broken) == false);
         BOOST_REQUIRE(a.bytes() == 512);
         BOOST_REQUIRE(a.num_parts_total() == 0);
         BOOST_REQUIRE(a.num_parts_avail() == 0);
@@ -513,8 +513,8 @@ void unit_test_data()
         a = db.load(off);
         BOOST_REQUIRE(a.subject() == "#A.B.MM @  EFNet Presents: REQ 40092 - Seinfeld.S09.DVDRip.XviD-SiNK - 482/520 - sink-seinfeld.s09e21e22.r23 (1/4)");
         BOOST_REQUIRE(a.author() == "ano@anonymous.yy (knetje)");
-        BOOST_REQUIRE(a.test(article::flags::binary));
-        BOOST_REQUIRE(a.test(article::flags::broken) == false);
+        BOOST_REQUIRE(a.test(newsflash::fileflag::binary));
+        BOOST_REQUIRE(a.test(newsflash::fileflag::broken) == false);
         BOOST_REQUIRE(a.num_parts_total() == 4);
         BOOST_REQUIRE(a.num_parts_avail() == 4);
         BOOST_REQUIRE(a.bytes() == 3 * 2048 + 100);
@@ -633,7 +633,7 @@ void unit_test_index()
         }
 
         {
-            idx.sort(index::sorting::sort_by_subject, index::order::ascending);
+            idx.sort(index::sorting::sort_by_subject, index::sortdir::ascending);
 
             for (std::size_t i=0; i<idx.size(); ++i)
             {
