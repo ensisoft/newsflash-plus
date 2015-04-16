@@ -160,6 +160,18 @@ So if zlib is updated at one place it needs to be updated at the other place as 
 The current version is 1.2.5
 
 
+
+protobuf
+=======================
+Google protobuffer library 2.6.1
+
+Use the protoc to compile the .proto files in the project.
+
+    $ ./configure
+    $ make
+
+
+
 Design Babblings
 ========================
 
