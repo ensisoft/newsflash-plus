@@ -83,9 +83,10 @@ namespace newsflash
             if (column == sorting_)
             {
                 auto beg = std::begin(items_);
-                auto end = std::begin(items_);
-                std::advance(end, size_);
-                std::reverse(beg, end);
+                auto mid = std::begin(items_) + size_;
+                auto end = std::end(items_);
+                std::reverse(beg, mid);
+                std::reverse(mid, end);
                 sorting_ = column;
                 sortdir_ = up_down;
                 return;
@@ -133,46 +134,52 @@ namespace newsflash
         // this will maintain current sorting.
         void insert(const article_t& a, std::size_t key, std::size_t index)
         {
+            iterator beg;
+            iterator end;
+            iterator pos;
             if (!is_match(a))
             {
-                items_.push_back({key, index});
-                return;
+                beg = std::begin(items_) + size_;
+                end = std::end(items_);
             }
-
-            typename std::deque<item>::iterator it;
+            else
+            {
+                beg = std::begin(items_);
+                end = std::begin(items_) + size_;
+                ++size_;
+            }
             switch (sorting_)
             {
                 case sorting::sort_by_broken:
-                    it = lower_bound(a, fileflag::broken); 
+                    pos = lower_bound(beg, end, a, fileflag::broken); 
                     break;
                 case sorting::sort_by_binary:
-                    it = lower_bound(a, fileflag::binary);
+                    pos = lower_bound(beg, end, a, fileflag::binary);
                     break;
                 case sorting::sort_by_downloaded:
-                    it = lower_bound(a, fileflag::downloaded);
+                    pos = lower_bound(beg, end, a, fileflag::downloaded);
                     break;
                 case sorting::sort_by_bookmarked:
-                    it = lower_bound(a, fileflag::bookmarked);
+                    pos = lower_bound(beg, end, a, fileflag::bookmarked);
                     break;
 
                 case sorting::sort_by_date: 
-                    it = lower_bound(a, &article_t::m_pubdate);
+                    pos = lower_bound(beg, end, a, &article_t::m_pubdate);
                     break;
                 case sorting::sort_by_type: 
-                    it = lower_bound(a, &article_t::m_type);
+                    pos = lower_bound(beg, end, a, &article_t::m_type);
                     break;
                 case sorting::sort_by_size:                    
-                    it = lower_bound(a, &article_t::m_bytes); 
+                    pos = lower_bound(beg, end, a, &article_t::m_bytes); 
                     break;
                 case sorting::sort_by_author:
-                    it = lower_bound(a, &article_t::m_author);
+                    pos = lower_bound(beg, end, a, &article_t::m_author);
                     break;
                 case sorting::sort_by_subject:
-                    it = lower_bound(a, &article_t::m_subject);
+                    pos = lower_bound(beg, end, a, &article_t::m_subject);
                     break;
             }
-            items_.insert(it, {key, index});
-            ++size_;
+            items_.insert(pos, {key, index});
         }
 
         std::size_t size() const 
@@ -259,27 +266,99 @@ namespace newsflash
             // more "relaxed" and those items might match we need to put them 
             // back into the "visible" range. also note that we must maintain
             // the correct sorting
-
-            std::deque<item> maybe;
-            std::copy(std::begin(items_) + size_, std::end(items_),
-                std::back_inserter(maybe));
-
-            items_.resize(size_);
-
-            auto beg = std::begin(items_);
-            auto end = std::begin(items_);
-            std::advance(end, size_);
-            auto it = std::stable_partition(beg, end, [&](const item& i) {
+            auto pred = [this](const item& i) {
                 const auto& a = on_load(i.key, i.index);
                 return is_match(a);
-            });
-            size_ = std::distance(std::begin(items_), it);            
+            };
 
-            for (const auto& i : maybe)
+            if (size_ == items_.size())
             {
-                const auto& article = on_load(i.key, i.index);
-                insert(article, i.key, i.index);
-            }            
+                auto it = std::stable_partition(std::begin(items_), std::end(items_), pred);
+                size_ = std::distance(std::begin(items_), it);
+                return;
+            }
+
+            std::deque<item> tmp;
+
+            // partition both the currently visible items and the non-visible
+            // items into visible and nonvisible. this partitions the whole
+            // index into 4 sorted ranges like this.
+            //
+            // [aaaaaa|bbbbbbb|cccccccc|dddd]
+            // beg    a   mid          b    end
+            // 
+            // where,
+            // [beg, a) is the new visible range in previously visible range
+            // [a, mid) is the new non-visible range in previously visible
+            // [mid, b) is the new visible range in previously non-visible
+            // [b, end) is the new non-visible range in previously non-visible
+            // 
+            // all the ranges are sorted according to the current sorting.
+            // then we merge the 4 ranges into 2 sorted ranges such that,
+            // [aaaaaaaa|bbbbbbbbbbb]
+            // beg      mid         end
+            //
+            // where, 
+            // [beg, mid) is the new visible range
+            // [mid, end), is the new non-visible range.
+
+            auto beg = std::begin(items_);
+            auto mid = std::begin(items_) + size_;
+            auto end = std::end(items_);
+
+            auto a = std::stable_partition(beg, mid, pred);
+            auto b = std::stable_partition(mid, end, pred);
+
+            auto out = std::back_inserter(tmp);
+            switch (sorting_)
+            {
+                case sorting::sort_by_broken:
+                    merge(beg, a, mid, b, out, fileflag::broken);
+                    merge(a, mid, b, end, out, fileflag::broken);
+                    break;
+
+                case sorting::sort_by_binary:
+                    merge(beg, a, mid, b, out, fileflag::binary);
+                    merge(a, mid, b, end, out, fileflag::binary);
+                    break;
+
+                case sorting::sort_by_downloaded:
+                    merge(beg, a, mid, b, out, fileflag::downloaded);
+                    merge(a, mid, b, end, out, fileflag::downloaded);
+                    break;
+
+                case sorting::sort_by_bookmarked:
+                    merge(beg, a, mid, b, out, fileflag::bookmarked);
+                    merge(a, mid, b, end, out, fileflag::bookmarked);
+                    break;
+
+                case sorting::sort_by_date:
+                    merge(beg, a, mid, b, out, &article_t::m_pubdate);
+                    merge(a, mid, b, end, out, &article_t::m_pubdate);
+                    break;
+
+                case sorting::sort_by_type:
+                    merge(beg, a, mid, b, out, &article_t::m_type);
+                    merge(a, mid, b, end, out, &article_t::m_type);
+                    break; 
+
+                case sorting::sort_by_size:
+                    merge(beg, a, mid, b, out, &article_t::m_bytes);
+                    merge(a, mid, b, end, out, &article_t::m_bytes);
+                    break;
+
+                case sorting::sort_by_author:
+                    merge(beg, a, mid, b, out, &article_t::m_author);
+                    merge(a, mid, b, end, out, &article_t::m_author);
+                    break;
+                    
+                case sorting::sort_by_subject:
+                    merge(beg, a, mid, b, out, &article_t::m_subject);
+                    merge(a, mid, b, end, out, &article_t::m_subject);
+                    break;
+            }
+            size_  = (a - beg) + (b - mid);
+            items_ = std::move(tmp);
         }
 
     private:
@@ -341,24 +420,24 @@ namespace newsflash
             return bigger_t<Class, Member>(p, on_load);
         }
 
-        template<typename MemPtr>
-        void sort(sortdir up_down, MemPtr p)
+        using iterator = typename std::deque<item>::iterator;
+
+        template<typename OutputIt, typename MemPtr>
+        void merge(iterator first1, iterator last1,
+            iterator first2, iterator last2, OutputIt out, MemPtr p)
         {
-            auto beg = std::begin(items_);
-            auto end = std::begin(items_);
-            std::advance(end, size_);
-            if (up_down == sortdir::ascending) 
-                 std::sort(beg, end, less(p));
-            else std::sort(beg, end, greater(p));
+            if (sortdir_ == sortdir::ascending)
+                std::merge(first1, last1, first2, last2, out, less(p));
+            else std::merge(first1, last1, first2, last2, out, greater(p));
         }
-        void sort(sortdir up_down, fileflag mask)
+
+        template<typename OutputIt>
+        void merge(iterator first1, iterator last1,
+            iterator first2, iterator last2, OutputIt out, fileflag mask)
         {
-            auto beg = std::begin(items_);
-            auto end = std::begin(items_);
-            std::advance(end, size_);
-            if (up_down == sortdir::ascending)
+            if (sortdir_ == sortdir::ascending)
             {
-                std::sort(beg, end, [=](const item& lhs, const item& rhs) {
+                std::merge(first1, last1, first2, last2, out, [=](const item& lhs, const item& rhs) {
                     const auto& a = on_load(lhs.key, lhs.index);
                     const auto& b = on_load(rhs.key, rhs.index);
                     return (a.m_bits & mask).value()  < (b.m_bits & mask).value();
@@ -366,7 +445,7 @@ namespace newsflash
             }
             else
             {
-                std::sort(beg, end, [=](const item& lhs, const item& rhs) {
+                std::merge(first1, last1, first2, last2, out, [=](const item& lhs, const item& rhs) {
                     const auto& a = on_load(lhs.key, lhs.index);
                     const auto& b = on_load(rhs.key, rhs.index);
                     return (a.m_bits & mask).value() > (b.m_bits & mask).value();
@@ -375,21 +454,60 @@ namespace newsflash
         }
 
         template<typename MemPtr>
-        typename std::deque<item>::iterator lower_bound(const article_t& a, MemPtr p)
+        void sort(sortdir up_down, MemPtr p)
         {
             auto beg = std::begin(items_);
-            auto end = std::begin(items_);
-            std::advance(end, size_);
+            auto mid = std::begin(items_) + size_;
+            auto end = std::end(items_);
+            if (up_down == sortdir::ascending) 
+            {
+                 std::sort(beg, mid, less(p));
+                 std::sort(mid, end, less(p));
+            }
+            else 
+            {
+                std::sort(beg, mid, greater(p));
+                std::sort(mid, end, greater(p));                
+            }
+        }
+
+        void sort(sortdir up_down, fileflag mask)
+        {
+            auto beg = std::begin(items_);
+            auto mid = std::begin(items_) + size_;
+            auto end = std::end(items_);
+            if (up_down == sortdir::ascending)
+            {
+                auto pred = [=](const item& lhs, const item& rhs) {
+                    const auto& a = on_load(lhs.key, lhs.index);
+                    const auto& b = on_load(rhs.key, rhs.index);
+                    return (a.m_bits & mask).value()  < (b.m_bits & mask).value();
+                };
+                std::sort(beg, mid, pred);
+                std::sort(mid, end, pred);
+            }
+            else
+            {
+                auto pred = [=](const item& lhs, const item& rhs) {
+                    const auto& a = on_load(lhs.key, lhs.index);
+                    const auto& b = on_load(rhs.key, rhs.index);
+                    return (a.m_bits & mask).value() > (b.m_bits & mask).value();
+                };
+                std::sort(beg, mid, pred);
+                std::sort(mid, end, pred);
+            }
+        }
+
+        template<typename MemPtr>
+        iterator lower_bound(iterator beg, iterator end, const article_t& a, MemPtr p)
+        {
             if (sortdir_ == sortdir::ascending)
                 return std::lower_bound(beg, end, a, less(p));
             else return std::lower_bound(beg, end, a, greater(p));
         }
 
-        typename std::deque<item>::iterator lower_bound(const article_t& a, fileflag mask)
+        iterator lower_bound(iterator beg, iterator end, const article_t& a, fileflag mask)
         {
-            auto beg = std::begin(items_);
-            auto end = std::begin(items_);
-            std::advance(end, size_);
             if (sortdir_ == sortdir::ascending) {
                 return std::lower_bound(beg, end, a, [=](const item& lhs, const article_t& rhs) {
                     const auto& a = on_load(lhs.key, lhs.index);
