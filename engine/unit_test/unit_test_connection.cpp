@@ -120,6 +120,8 @@ void test_connect()
         s.use_ssl  = false;
         s.username = "fail";
         s.password = "fail";
+        s.enable_compression = false;
+        s.enable_pipelining = false;
 
         nf::connection conn;
 
@@ -148,6 +150,8 @@ void test_connect()
         s.use_ssl  = false;
         s.username = "pass";
         s.password = "pass";
+        s.enable_compression = false;
+        s.enable_pipelining  = false;
 
         nf::connection conn;
 
@@ -168,7 +172,7 @@ void test_connect()
         BOOST_REQUIRE(!act->has_exception());
 
     }
-
+    
     // disconnect
     {
         nf::connection::spec s;
@@ -177,6 +181,8 @@ void test_connect()
         s.use_ssl  = false;
         s.username = "pass";
         s.password = "pass";
+        s.enable_pipelining = false;
+        s.enable_compression = false;
 
         nf::connection conn;
 
@@ -211,6 +217,8 @@ void test_connect()
         s.use_ssl  = false;
         s.username = "pass";
         s.password = "pass";
+        s.enable_pipelining = false;
+        s.enable_compression = false;        
 
         std::unique_ptr<nf::connection> conn(new nf::connection);
 

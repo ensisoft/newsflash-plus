@@ -500,13 +500,15 @@ public:
         out.set_content_type(buffer::type::overview);
         out.set_status(buffer::status::success);
         out.set_content_length(obytes_);
+
         const auto head = buff.head() + ibytes_ + len;
         const auto size = buff.size() - ibytes_ - len;
         if (size >= 3) 
         {
-            if (!std::strcmp(head, ".\r\n"))
+            if (!std::strncmp(head, ".\r\n", 3))
                 ibytes_ += 3;
         }
+
         buff.pop(ibytes_ + len);
         return true;
     }
@@ -544,7 +546,15 @@ public:
             return false;
 
         // this is only valid response, but check it nevertheless
-        nntp::scan_response({215}, buff.head(), len);
+        // XSUsenet wants to do authentication at LIST command.
+        // http://www.xsusenet.com
+        const auto code = nntp::scan_response({215, 480}, buff.head(), len);
+        if (code == 480)
+        {
+            st.auth_required = true;
+            buff.clear();
+            return true;
+        }
 
         const auto blen = nntp::find_body(buff.head() + len, buff.size() - len);
         if (blen == 0)
@@ -583,6 +593,21 @@ public:
         const auto len = nntp::find_response(buff.head(), buff.size());
         if (len == 0)
             return false;
+
+        // XFEATURE ENABLE COMPRESS is not standard feature
+        // specific by the NNTP specs, so im not sure what are the 
+        // potential response codes to be used here. hence we just
+        // check the initial digit for success/failure.
+        // also XSUsenet wants to do a challenge here.
+
+        const auto code = nntp::to_int<int>(buff.head(), 3);
+        if (code == 480)
+        {
+            st.auth_required = true;
+            buff.clear();
+            return true;
+        }
+
         const auto beg = buff.head();
         if (beg[0] != '2') 
         {

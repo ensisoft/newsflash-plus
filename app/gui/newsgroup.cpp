@@ -60,6 +60,7 @@ NewsGroup::NewsGroup(quint32 acc, QString path, QString name) : account_(acc), p
     ui_.tableView->setColumnWidth((int)Cols::BookmarkFlag, 32);
     ui_.progressBar->setVisible(false);
     ui_.loader->setVisible(false);
+    ui_.actionRefresh->setShortcut(QKeySequence::Refresh);
     ui_.actionStop->setEnabled(false);
     ui_.actionDownload->setEnabled(false);
     ui_.actionShowNone->setChecked(true);

@@ -40,6 +40,8 @@
 #include "format.h"
 #include "types.h"
 
+#include <valgrind/callgrind.h>
+
 namespace app
 {
     struct HeaderInfo;
@@ -121,11 +123,17 @@ namespace app
 
         void applyFilter()
         {
+            //CALLGRIND_START_INSTRUMENTATION;
+            //CALLGRIND_ZERO_STATS;
+
             const auto curSize = index_.size();
             index_.filter();
             const auto newSize = index_.size();
             if (newSize != curSize)
                 QAbstractTableModel::reset();
+
+            //CALLGRIND_DUMP_STATS_AT("applyFilter");
+            //CALLGRIND_STOP_INSTRUMENTATION;
         }
 
     public slots:

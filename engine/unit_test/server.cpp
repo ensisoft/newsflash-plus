@@ -47,10 +47,12 @@ std::string recv_command(newsflash::native_socket_t sock)
         throw std::runtime_error("incomplete command");
 
     cmd.resize(bytes - 2);
+    std::cout << "> " << cmd << std::endl;
+
     return cmd;
 }
 
-void send_response(newsflash::native_socket_t sock, std::string resp)
+void send_response(newsflash::native_socket_t sock, std::string resp, bool print = true)
 {
     resp.append("\r\n");
     int sent = 0;
@@ -63,6 +65,12 @@ void send_response(newsflash::native_socket_t sock, std::string resp)
             throw std::runtime_error("socket send error");
         sent += bytes;
     } while(sent != resp.size());
+
+    if (print)
+    {
+        resp.resize(resp.size() - 2);
+        std::cout << "< " << resp << std::endl;
+    }
 }
 
 void service_client(newsflash::native_socket_t sock)
@@ -132,9 +140,9 @@ void service_client(newsflash::native_socket_t sock)
                     throw std::runtime_error("empty line!");
                 if (line[0] == '.')
                     line = "." + line;
-                send_response(sock, line);
+                send_response(sock, line, false);
             }
-            send_response(sock, ".");
+            send_response(sock, ".", false);
         }
         else if (cmd == "BODY 3")
         {
@@ -150,9 +158,9 @@ void service_client(newsflash::native_socket_t sock)
                     throw std::runtime_error("empty line");
                 if (line[0] == '.')
                     line = '.' + line;
-                send_response(sock, line);
+                send_response(sock, line, false);
             }
-            send_response(sock, ".");
+            send_response(sock, ".", false);
         }
         else if (cmd == "BODY 4")
         {
@@ -173,7 +181,7 @@ void service_client(newsflash::native_socket_t sock)
             {
                 if (line[0] == '.')
                     line = "." + line;
-                send_response(sock, line);
+                send_response(sock, line, false);
             }
             send_response(sock, ".");
         }

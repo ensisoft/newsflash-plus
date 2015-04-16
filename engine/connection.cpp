@@ -58,6 +58,18 @@ struct connection::state {
     bool pipelining;
     bool compression;
     double bps;
+
+    void do_auth(std::string& user, std::string& pass) const 
+    {
+        if (username.empty() || password.empty())
+            throw connection::exception(error::no_permission, "authentication requried but no credentials provided");
+        user = username;
+        pass = password;
+    }
+    void do_send(const std::string& cmd) 
+    {
+        socket->sendall(&cmd[0], cmd.size());
+    }
 };
 
 void connection::resolve::xperform()
@@ -142,16 +154,17 @@ void connection::connect::xperform()
 connection::initialize::initialize(std::shared_ptr<state> s) : state_(s)
 {
     state_->session.reset(new session);
-    state_->session->on_auth = [=](std::string& user, std::string& pass) {
-        if (state_->username.empty() || state_->password.empty())
-            throw exception(error::no_permission, "authentication required but no credentials provided");
-        user = state_->username;
-        pass = state_->password;
-    };
 
-    state_->session->on_send = [=](const std::string& cmd) {
-        state_->socket->sendall(&cmd[0], cmd.size());
-    };
+    // there was a lambda here before but the lambda took the state
+    // object by a shared_ptr and created a circular depedency.
+    // i think a cleaner and less error prone system is
+    // to use a boost:bind here with real functions.
+
+    state_->session->on_auth = std::bind(&state::do_auth, state_.get(),
+        std::placeholders::_1, std::placeholders::_2);
+
+    state_->session->on_send = std::bind(&state::do_send, state_.get(),
+        std::placeholders::_1);
 
     state_->session->enable_pipelining(s->pipelining);
     state_->session->enable_compression(s->compression);
@@ -211,21 +224,11 @@ void connection::initialize::xperform()
         throw exception(connection::error::no_permission, "no permission");
 
     LOG_I("NNTP Session ready");
+    LOG_I("Using gzip compress: ", state_->compression);
 }
 
 connection::execute::execute(std::shared_ptr<state> s, std::shared_ptr<cmdlist> cmd, std::size_t tid) : state_(s), cmds_(cmd), tid_(tid), bytes_(0)
-{
-    state_->session->on_auth = [=](std::string& user, std::string& pass) { 
-        if (state_->username.empty() || state_->password.empty())
-            throw exception(error::no_permission, "authentication required but no credentials provided");
-        user = state_->username;
-        pass = state_->password;
-    };
-        
-    state_->session->on_send = [=](const std::string& cmd) {
-        state_->socket->sendall(&cmd[0], cmd.size());
-    };
-}
+{}
 
 void connection::execute::xperform()
 {
@@ -381,11 +384,7 @@ void connection::execute::xperform()
 }
 
 connection::disconnect::disconnect(std::shared_ptr<state> s) : state_(s)
-{
-    state_->session->on_send = [=](const std::string& cmd) {
-        state_->socket->sendall(&cmd[0], cmd.size());
-    };
-}
+{}
 
 void connection::disconnect::xperform()
 {
@@ -432,11 +431,7 @@ void connection::disconnect::xperform()
 }
 
 connection::ping::ping(std::shared_ptr<state> s) : state_(s)
-{
-    state_->session->on_send = [=](const std::string& cmd) {
-        state_->socket->sendall(&cmd[0], cmd.size());
-    };
-}
+{}
 
 void connection::ping::xperform() 
 {
