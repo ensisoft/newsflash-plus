@@ -41,6 +41,7 @@
 #include "../utility.h"
 #include "../engine.h"
 #include "../fileinfo.h"
+#include "../types.h"
 
 namespace gui
 {
@@ -54,7 +55,7 @@ NewsGroup::NewsGroup(quint32 acc, QString path, QString name) : account_(acc), p
 
     ui_.setupUi(this);
     ui_.tableView->setModel(&model_);
-    ui_.grpView->setTitle(name + " (0/0)");
+    ui_.grpView->setTitle(app::toString("%1 (%2 / %3)", name, app::count {0}, app::count{0}));
     ui_.tableView->setColumnWidth((int)Cols::DownloadFlag, 32);
     ui_.tableView->setColumnWidth((int)Cols::BrokenFlag, 32);
     ui_.tableView->setColumnWidth((int)Cols::BookmarkFlag, 32);
@@ -522,7 +523,7 @@ void NewsGroup::modelEndReset()
 
     const auto numShown = model_.numShown();
     const auto numItems = model_.numItems();
-    ui_.grpView->setTitle(QString("%1 (%2/%3)").arg(name_).arg(numShown).arg(numItems));
+    ui_.grpView->setTitle(app::toString("%1 (%2 / %3)", name_, app::count{numShown}, app::count{numItems}));
 }
 
 void NewsGroup::newHeaderInfoAvailable(const QString& group, quint64 numLocal, quint64 numRemote)
