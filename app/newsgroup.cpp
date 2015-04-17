@@ -422,18 +422,27 @@ void NewsGroup::download(const QModelIndexList& list, quint32 acc, QString folde
 
         if (article.has_parts())
         {
-            if (!idlist_.is_open())
-            {
-                const auto& path = joinPath(path_, name_);
-                const auto& file = path + ".idb";
-                idlist_.open(narrow(file));
-            }
-            
             const auto numSegments = article.num_parts_total();
             const auto baseSegment = article.number();
             const auto idbKey = article.idbkey();
             for (auto i=0; i<numSegments + 1; ++i)
             {
+                const auto index = idbKey + i;
+
+                // if the idlist is not yet open we must open it.
+                // also if're doing updates to the newsgroup its possible
+                // that the idlist is growing, in which case the item's idbkey
+                // could be out of it's current bounds. if that is the case
+                // we also need to reload the idlist. if the idb index
+                // is still out of bounds then we have a bug. god bless.
+                
+                if (!idlist_.is_open() || index >= idlist_.size())
+                {
+                    const auto& path = joinPath(path_, name_);
+                    const auto& file = joinPath(path, name_ + ".idb");
+                    idlist_.open(narrow(file));
+                }
+
                 const std::int16_t segment = idlist_[idbKey + i];
                 if (segment == 0)
                     continue;
@@ -513,8 +522,6 @@ void NewsGroup::loadMoreData(const std::string& file, bool guiLoad)
     // and create a new Selection list for the GUI.
     // see scanSelected and select and the GUI code for modelReset
 
-    QAbstractTableModel::beginResetModel();
-
     auto it = std::find_if(std::begin(catalogs_), std::end(catalogs_),
         [&](const Catalog& cat) {
             return cat.db.filename() == file;
@@ -532,6 +539,8 @@ void NewsGroup::loadMoreData(const std::string& file, bool guiLoad)
     db.open(file);
     if (db.article_count() == cat.prevSize)
         return;
+
+    QAbstractTableModel::beginResetModel();
 
     DEBUG("%1 is at offset %2", file, cat.prevOffset);
     DEBUG("Index has %1 articles. Loading more...", index_.size());

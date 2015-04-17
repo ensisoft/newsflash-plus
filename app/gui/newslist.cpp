@@ -56,11 +56,11 @@ NewsList::NewsList() : curAccount_(0)
     ui_.actionRefresh->setEnabled(false);    
     ui_.actionFavorite->setEnabled(false);
     ui_.actionStop->setEnabled(false);    
+    ui_.chkShowEmpty->setChecked(false);
 
-    const auto nameWidth = ui_.tableGroups->columnWidth((int)app::NewsList::Columns::name);
-    const auto subsWidth = ui_.tableGroups->columnWidth((int)app::NewsList::Columns::subscribed);
-    ui_.tableGroups->setColumnWidth((int)app::NewsList::Columns::name, nameWidth * 3);
-    ui_.tableGroups->setColumnWidth((int)app::NewsList::Columns::subscribed, 32);
+    const auto nameWidth = ui_.tableGroups->columnWidth((int)app::NewsList::Columns::Name);
+    ui_.tableGroups->setColumnWidth((int)app::NewsList::Columns::Name, nameWidth * 3);
+    ui_.tableGroups->setColumnWidth((int)app::NewsList::Columns::Subscribed, 32);
 
     QObject::connect(app::g_accounts, SIGNAL(accountsUpdated()),
         this, SLOT(accountsUpdated()));
@@ -163,6 +163,8 @@ void NewsList::setFound(std::size_t index)
 void NewsList::loadState(app::Settings& settings)
 {
     app::loadTableLayout("newslist", ui_.tableGroups, settings);
+    app::loadState("newslist", ui_.editFilter, settings);
+    app::loadState("newslist", ui_.chkShowEmpty, settings);
 
     accountsUpdated();
 }
@@ -170,6 +172,8 @@ void NewsList::loadState(app::Settings& settings)
 void NewsList::saveState(app::Settings& settings)
 {
     app::saveTableLayout("newslist", ui_.tableGroups, settings);
+    app::saveState("newslist", ui_.editFilter, settings);
+    app::saveState("newslist", ui_.chkShowEmpty, settings);
 }
 
 void NewsList::on_actionBrowse_triggered()
@@ -185,7 +189,7 @@ void NewsList::on_actionBrowse_triggered()
         const auto account   = curAccount_;
         const auto& guid     = QString("%1/%2").arg(account).arg(group);
 
-        bool exists = false;
+        bool isTabOpen = false;
 
         for (std::size_t i=0; i<g_win->numWidgets(); ++i)
         {
@@ -195,11 +199,11 @@ void NewsList::on_actionBrowse_triggered()
             if (p.toString() == guid)
             {
                 g_win->focusWidget(w);
-                exists = true;
+                isTabOpen = true;
                 break;
             }
         }
-        if (exists) continue;
+        if (isTabOpen) continue;
 
         auto* news = new NewsGroup(account, datapath, group);
         g_win->attach(news, false, true);
@@ -310,6 +314,20 @@ void NewsList::on_tableGroups_doubleClicked(const QModelIndex& index)
     on_actionBrowse_triggered();    
 }
 
+void NewsList::on_editFilter_returnPressed()
+{
+    filter();
+}
+
+void NewsList::on_editFilter_textChanged()
+{
+    filter();
+}
+
+void NewsList::on_chkShowEmpty_clicked()
+{
+    filter();
+}
 
 void NewsList::accountsUpdated()
 {
@@ -363,6 +381,7 @@ void NewsList::loadComplete(quint32 acc)
     ui_.progressBar->setVisible(false);
 
     resort();
+    filter();
 }
 
 void NewsList::makeComplete(quint32 accountId)
@@ -396,6 +415,13 @@ void NewsList::resort()
     const auto sortColumn = header->sortIndicatorSection();
     const auto sortOrder  = header->sortIndicatorOrder();
     ui_.tableGroups->sortByColumn(sortColumn, sortOrder);
+}
+
+void NewsList::filter()
+{
+    const auto& str = ui_.editFilter->text();
+    const auto  chk = ui_.chkShowEmpty->isChecked();
+    model_.filter(str, chk);
 }
 
 } // gui

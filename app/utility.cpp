@@ -142,6 +142,26 @@ QPixmap toGrayScale(const QString& pixmap)
     return toGrayScale(pix);
 }
 
+quint64 sumFileSizes(const QString& folder)
+{
+    QFileInfo info(folder);
+    if (!info.exists() || !info.isDir())
+        return 0;
+
+    quint64 ret = 0;
+
+    QDir dir;
+    dir.setPath(folder);
+    const auto& infos = dir.entryInfoList();
+    for (const auto& info : infos)
+    {
+        if (info.isSymLink() || !info.isFile())
+            continue;
+        ret += info.size();
+    }
+    return ret;
+}
+
 void saveTableLayout(const QString& key, const QTableView* view, Settings& settings)
 {
     const auto model    = view->model();
