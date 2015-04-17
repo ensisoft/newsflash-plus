@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>913</width>
-    <height>507</height>
+    <width>635</width>
+    <height>387</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -33,6 +33,23 @@
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label">
+          <property name="text">
+           <string>Quick Filter</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="editFilter"/>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="chkShowEmpty">
+          <property name="text">
+           <string>Show empty</string>
           </property>
          </widget>
         </item>
@@ -169,6 +186,15 @@
    </property>
    <property name="toolTip">
     <string>Mark as nonfavorite</string>
+   </property>
+  </action>
+  <action name="actionPurge">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_purge.png</normaloff>:/resource/16x16_ico_png/ico_purge.png</iconset>
+   </property>
+   <property name="text">
+    <string>Purge</string>
    </property>
   </action>
  </widget>

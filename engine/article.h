@@ -224,6 +224,9 @@ namespace newsflash
         const str::string_view& author() const 
         { return m_author; }
 
+        std::string subject_as_string() const 
+        { return m_subject.as_str(); }
+
         filetype type() const 
         { return m_type; }
 

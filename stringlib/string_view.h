@@ -24,6 +24,7 @@
 #include <cstddef>
 #include <cstring>
 #include <iostream>
+#include <string>
 
 namespace str
 {
@@ -79,6 +80,9 @@ namespace str
             if (m_len > len)
                 m_len = len;
         }
+
+        std::string as_str() const 
+        { return {m_str, m_len }; }
     private:
         friend bool operator==(const string_view&, const string_view&);
         friend bool operator<(const string_view&, const string_view&);

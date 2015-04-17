@@ -113,7 +113,7 @@ void NZBFile::download(const QModelIndexList& list, quint32 account, const QStri
     for (const auto& i : list)
         selected.push_back(data_[i.row()]);
 
-    g_engine->downloadNzbContents(account, folder, desc, std::move(selected));
+    g_engine->downloadNzbContents(account, folder, desc, desc, std::move(selected));
 }
 
 void NZBFile::set_show_filenames_only(bool on_off)

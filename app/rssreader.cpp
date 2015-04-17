@@ -274,7 +274,7 @@ void RSSReader::onNzbDataComplete(const QString& folder, const QString& desc, qu
 
     const auto bytes = reply.readAll();
 
-    g_engine->downloadNzbContents(acc, folder, desc, bytes);
+    g_engine->downloadNzbContents(acc, folder, desc, desc, bytes);
 }
 
 void RSSReader::onNzbDataCompleteCallback(const data_callback& cb, QNetworkReply& reply)

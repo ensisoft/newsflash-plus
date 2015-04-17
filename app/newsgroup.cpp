@@ -400,6 +400,7 @@ void NewsGroup::select(const QModelIndexList& list, bool val)
 void NewsGroup::download(const QModelIndexList& list, quint32 acc, QString folder)
 {
     std::vector<NZBContent> pack;
+    std::vector<std::string> subjects;
 
     int minRow = std::numeric_limits<int>::max();
     int maxRow = std::numeric_limits<int>::min();
@@ -417,23 +418,34 @@ void NewsGroup::download(const QModelIndexList& list, quint32 acc, QString folde
         nzb.poster  = toString(article.author());
         nzb.groups.push_back(narrow(name_));
 
+        subjects.push_back(article.subject_as_string());
+
         std::vector<std::uint64_t> segments;
         segments.push_back(article.number());
 
         if (article.has_parts())
         {
-            if (!idlist_.is_open())
-            {
-                const auto& path = joinPath(path_, name_);
-                const auto& file = path + ".idb";
-                idlist_.open(narrow(file));
-            }
-            
             const auto numSegments = article.num_parts_total();
             const auto baseSegment = article.number();
             const auto idbKey = article.idbkey();
             for (auto i=0; i<numSegments + 1; ++i)
             {
+                const auto index = idbKey + i;
+
+                // if the idlist is not yet open we must open it.
+                // also if're doing updates to the newsgroup its possible
+                // that the idlist is growing, in which case the item's idbkey
+                // could be out of it's current bounds. if that is the case
+                // we also need to reload the idlist. if the idb index
+                // is still out of bounds then we have a bug. god bless.
+                
+                if (!idlist_.is_open() || index >= idlist_.size())
+                {
+                    const auto& path = joinPath(path_, name_);
+                    const auto& file = joinPath(path, name_ + ".idb");
+                    idlist_.open(narrow(file));
+                }
+
                 const std::int16_t segment = idlist_[idbKey + i];
                 if (segment == 0)
                     continue;
@@ -449,9 +461,26 @@ void NewsGroup::download(const QModelIndexList& list, quint32 acc, QString folde
         article.set_bits(FileFlag::downloaded, true);
         article.save();
     }
-    const auto size = list.size();
-    const auto desc = name_;
-    g_engine->downloadNzbContents(acc, folder, desc, std::move(pack));
+
+    QString desc;
+    QString path;    
+    QString name = suggestName(std::move(subjects));
+    if (name.isEmpty())
+    {
+        desc = toString("%1 file(s) from %2", list.size(), name_);
+    }
+    else
+    { 
+        path = name;
+        desc = name;
+    }
+
+    // want something like alt.binaries.foobar/some-file-batch-name
+    path = joinPath(name_, path);
+
+    DEBUG("Suggest batch name '%1' and folder '%2'", name, path);    
+
+    g_engine->downloadNzbContents(acc, folder, path, desc, std::move(pack));
 
     const auto first = QAbstractTableModel::index(minRow, 0);
     const auto last  = QAbstractTableModel::index(maxRow, (int)Columns::LAST);
@@ -513,8 +542,6 @@ void NewsGroup::loadMoreData(const std::string& file, bool guiLoad)
     // and create a new Selection list for the GUI.
     // see scanSelected and select and the GUI code for modelReset
 
-    QAbstractTableModel::beginResetModel();
-
     auto it = std::find_if(std::begin(catalogs_), std::end(catalogs_),
         [&](const Catalog& cat) {
             return cat.db.filename() == file;
@@ -533,6 +560,8 @@ void NewsGroup::loadMoreData(const std::string& file, bool guiLoad)
     db.open(file);
     if (db.article_count() == cat.prevSize)
         return;
+
+    QAbstractTableModel::beginResetModel();
 
     DEBUG("%1 is at offset %2", file, cat.prevOffset);
     DEBUG("Index has %1 articles. Loading more...", index_.size());

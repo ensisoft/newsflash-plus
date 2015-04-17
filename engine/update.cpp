@@ -218,8 +218,8 @@ private:
 
 update::update(std::string path, std::string group) : local_last_(0), local_first_(0)
 {
-    const auto nfo = fs::joinpath(path, group + ".nfo");
-    const auto idb = fs::joinpath(path, group + ".idb");
+    const auto nfo = fs::joinpath(fs::joinpath(path, group), group + ".nfo");
+    const auto idb = fs::joinpath(fs::joinpath(path, group), group + ".idb");
     
     state_ = std::make_shared<state>();
     state_->folder = std::move(path);
@@ -343,7 +343,7 @@ void update::commit()
 {
     const auto& path  = state_->folder;
     const auto& group = state_->group;
-    const auto file = fs::joinpath(path, group + ".nfo");
+    const auto file = fs::joinpath(fs::joinpath(path, group), group + ".nfo");
 
     if (local_first_ == 0 || local_last_ == 0)
         return;

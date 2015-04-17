@@ -42,7 +42,7 @@ namespace app
 
     public:
         enum class Columns {
-            messages, subscribed, name, last
+            Messages, SizeOnDisk, Subscribed, Name, LAST
         };
 
         NewsList();
@@ -67,6 +67,8 @@ namespace app
 
         std::size_t numItems() const;
 
+        void filter(const QString& str, bool showEmpty);
+
     signals:
         void progressUpdated(quint32 acc, quint32 maxValue, quint32 curValue);   
         void loadComplete(quint32 acc);
@@ -74,6 +76,7 @@ namespace app
 
     private slots:
         void listCompleted(quint32 acc, const QList<app::NewsGroupInfo>& list);
+        void newHeaderDataAvailable(const QString& file);
 
     private:
         void setAccountSubscriptions(quint32 accountId);
@@ -84,7 +87,8 @@ namespace app
 
         struct group {
             QString   name;
-            quint64   size;
+            quint64   numMessages;
+            quint64   sizeOnDisk;
             quint32   flags;
         };
         struct operation {
@@ -94,8 +98,13 @@ namespace app
         };
 
     private:
+        Columns sort_;
+        Qt::SortOrder order_;
+        std::size_t size_;
         std::vector<group> groups_;
         std::map<quint32, operation> pending_;
+    private:
+        quint32 account_;
     };
 
 } // app

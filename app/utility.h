@@ -43,13 +43,20 @@ class QAction;
 namespace app
 {
 
-std::string suggestName(const std::vector<std::string> subjectLines);
+QString suggestName(std::vector<std::string> subjectLines);
 
 QString joinPath(const QString& lhs, const QString& rhs);
 
 QPixmap toGrayScale(const QPixmap& p);
 
 QPixmap toGrayScale(const QString& pixmap);
+
+
+// calculate the sum of the sizes of the files in the given folder. 
+// if there are no files or the folder doesn't exist the sum is 0.
+// the operation is not recursive and only considers real files
+// i.e. symlinks are not counted for.
+quint64 sumFileSizes(const QString& folder);
 
 class Settings;
 
@@ -133,6 +140,15 @@ void sort(Iterator beg, Iterator end, Qt::SortOrder order, MemPtr p)
     if (order == Qt::AscendingOrder)
         std::sort(beg, end, less(p));
     else std::sort(beg, end, greater(p));
+}
+
+template<typename InputIt, typename OutputIt, typename MemPtr>
+void merge(InputIt first1, InputIt last1, 
+    InputIt first2, InputIt last2, OutputIt out, Qt::SortOrder order, MemPtr p)
+{
+    if (order == Qt::AscendingOrder)
+        std::merge(first1, last1, first2, last2, out, less(p));
+    else std::merge(first1, last1, first2, last2, out, greater(p));
 }
 
 } // app

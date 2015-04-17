@@ -147,7 +147,7 @@ void Engine::setFillAccount(quint32 id)
     engine_->set_fill_account(id);
 }
 
-bool Engine::downloadNzbContents(quint32 acc, const QString& path, const QString& desc, const QByteArray& buff)
+bool Engine::downloadNzbContents(quint32 acc, const QString& basePath, const QString& path, const QString& desc, const QByteArray& buff)
 {
     QBuffer io(const_cast<QByteArray*>(&buff));
 
@@ -173,9 +173,9 @@ bool Engine::downloadNzbContents(quint32 acc, const QString& path, const QString
     if (err != NZBError::None)
         return false;
 
-    QString location = path.isEmpty() ? 
-        downloads_ : path;
-    location = joinPath(location, desc);
+    auto location = basePath.isEmpty() ? 
+        downloads_ : basePath;
+    location = joinPath(location, path);
 
     QDir dir(location);
     if (!dir.mkpath(location))
@@ -211,11 +211,11 @@ bool Engine::downloadNzbContents(quint32 acc, const QString& path, const QString
 }
 
 
-bool Engine::downloadNzbContents(quint32 acc, const QString& path, const QString& desc, std::vector<NZBContent> nzb)
+bool Engine::downloadNzbContents(quint32 acc, const QString& basePath, const QString& path, const QString& desc, std::vector<NZBContent> nzb)
 {
-    QString location = path.isEmpty() ?
-        downloads_ : path;
-    location = joinPath(location, desc);
+    auto location = basePath.isEmpty() ?
+        downloads_ : basePath;
+    location = joinPath(location, path);
 
     QDir dir(location);
     if (!dir.mkpath(location))
