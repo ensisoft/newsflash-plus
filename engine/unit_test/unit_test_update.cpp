@@ -35,7 +35,7 @@
 
 void unit_test_ranges()
 {
-    delete_file("alt.binaries.test.nfo");
+    delete_file("alt.binaries.test/alt.binaries.test.nfo");
 
     std::string str;
     newsflash::session session;
@@ -69,7 +69,7 @@ void unit_test_ranges()
 
     }
 
-    std::ofstream out("alt.binaries.test.nfo", std::ios::out | std::ios::binary | std::ios::trunc);
+    std::ofstream out("alt.binaries.test/alt.binaries.test.nfo", std::ios::out | std::ios::binary | std::ios::trunc);
     //out << "1045" << std::endl;
     //out << "2048" << std::endl;
     std::uint64_t val;
@@ -145,7 +145,7 @@ void unit_test_ranges()
         BOOST_REQUIRE(u.has_commands() == false);
     }
 
-    delete_file("alt.binaries.test.nfo");    
+    delete_file("alt.binaries.test/alt.binaries.test.nfo");    
 }
 
 void unit_test_data()
@@ -154,8 +154,8 @@ void unit_test_data()
 
     fs::createpath("alt.binaries.test");
     delete_file("alt.binaries.test/vol000000000000000.dat");
-    delete_file("alt.binaries.test.nfo");    
-    delete_file("alt.binaries.test.idb");
+    delete_file("alt.binaries.test/alt.binaries.test.nfo");    
+    delete_file("alt.binaries.test/alt.binaries.test.idb");
 
     // create from initial data
     {
@@ -342,7 +342,7 @@ void unit_test_data()
         BOOST_REQUIRE(db.article_count() == 6);        
 
         arraydb idb;
-        idb.open("alt.binaries.test.idb");
+        idb.open("alt.binaries.test/alt.binaries.test.idb");
 
         catalog::offset_t off(0);
 
@@ -484,7 +484,7 @@ void unit_test_data()
         BOOST_REQUIRE(db.article_count() == 6);
 
         arraydb idb;
-        idb.open("alt.binaries.test.idb");        
+        idb.open("alt.binaries.test/alt.binaries.test.idb");        
 
         catalog::offset_t off(0);
         article a = db.load(off);
@@ -555,8 +555,8 @@ void unit_test_index()
     fs::createpath("alt.binaries.test");
     delete_file("alt.binaries.test/vol000000000033653.dat");
     delete_file("alt.binaries.test/vol000000000033654.dat");
-    delete_file("alt.binaries.test.nfo");
-    delete_file("alt.binaries.test.idb");
+    delete_file("alt.binaries.test/alt.binaries.test.nfo");
+    delete_file("alt.binaries.test/alt.binaries.test.idb");
 
     // create data
     {

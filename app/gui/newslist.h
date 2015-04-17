@@ -64,6 +64,9 @@ namespace gui
         void on_cmbAccounts_currentIndexChanged();
         void on_tableGroups_customContextMenuRequested(QPoint point);
         void on_tableGroups_doubleClicked(const QModelIndex& index);
+        void on_editFilter_returnPressed();
+        void on_editFilter_textChanged();
+        void on_chkShowEmpty_clicked();
 
         void accountsUpdated();
         void progressUpdated(quint32 acc, quint32 maxValue, quint32 curValue);
@@ -72,6 +75,7 @@ namespace gui
 
     private:
         void resort();
+        void filter();
 
     private:
         Ui::NewsList ui_;
