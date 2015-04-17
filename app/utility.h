@@ -43,7 +43,7 @@ class QAction;
 namespace app
 {
 
-std::string suggestName(const std::vector<std::string> subjectLines);
+QString suggestName(std::vector<std::string> subjectLines);
 
 QString joinPath(const QString& lhs, const QString& rhs);
 

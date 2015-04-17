@@ -39,12 +39,16 @@
 #include <map>
 #include "utility.h"
 #include "settings.h"
+#include "format.h"
 
 namespace app
 {
 
-std::string suggestName(const std::vector<std::string>& subjectLines)
+QString suggestName(std::vector<std::string> subjectLines)
 {
+    if (subjectLines.size() == 1)
+        return {};
+
     const auto flags = boost::regbase::icase | boost::regbase::perl;
 
     boost::regex mov1("[\\[ \"<(]?[[:alnum:]\\.\\-]*\\.(DIVX|XVID|NTSC|PAL|DVDR?|720p?|1080p?|BluRay)\\.[[:alnum:]\\.]*\\-[[:alnum:]]+[)>\" \\].]??", flags);
@@ -107,7 +111,7 @@ std::string suggestName(const std::vector<std::string>& subjectLines)
         std::find(std::begin(punct), std::end(punct), s.back()) != std::end(punct))
         s.pop_back();
 
-    return s;
+    return fromUtf8(s);
 }
 
 QString joinPath(const QString& lhs, const QString& rhs)

@@ -407,7 +407,7 @@ void Search::downloadSelected(const QString& folder)
         return;
 
     auto callback = [=](const QByteArray& buff, const QString& desc, const QString& path, quint32 acc) {
-        app::g_engine->downloadNzbContents(acc, path, desc, buff);
+        app::g_engine->downloadNzbContents(acc, path, desc, desc, buff);
     };
 
     for (const auto& index : indices)

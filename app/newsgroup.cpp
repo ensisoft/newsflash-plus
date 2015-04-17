@@ -400,6 +400,7 @@ void NewsGroup::select(const QModelIndexList& list, bool val)
 void NewsGroup::download(const QModelIndexList& list, quint32 acc, QString folder)
 {
     std::vector<NZBContent> pack;
+    std::vector<std::string> subjects;
 
     int minRow = std::numeric_limits<int>::max();
     int maxRow = std::numeric_limits<int>::min();
@@ -416,6 +417,8 @@ void NewsGroup::download(const QModelIndexList& list, quint32 acc, QString folde
         nzb.subject = toString(article.subject());
         nzb.poster  = toString(article.author());
         nzb.groups.push_back(narrow(name_));
+
+        subjects.push_back(article.subject_as_string());
 
         std::vector<std::uint64_t> segments;
         segments.push_back(article.number());
@@ -458,9 +461,26 @@ void NewsGroup::download(const QModelIndexList& list, quint32 acc, QString folde
         article.set_bits(FileFlag::downloaded, true);
         article.save();
     }
-    const auto size = list.size();
-    const auto desc = name_;
-    g_engine->downloadNzbContents(acc, folder, desc, std::move(pack));
+
+    QString desc;
+    QString path;    
+    QString name = suggestName(std::move(subjects));
+    if (name.isEmpty())
+    {
+        desc = toString("%1 file(s) from %2", list.size(), name_);
+    }
+    else
+    { 
+        path = name;
+        desc = name;
+    }
+
+    // want something like alt.binaries.foobar/some-file-batch-name
+    path = joinPath(name_, path);
+
+    DEBUG("Suggest batch name '%1' and folder '%2'", name, path);    
+
+    g_engine->downloadNzbContents(acc, folder, path, desc, std::move(pack));
 
     const auto first = QAbstractTableModel::index(minRow, 0);
     const auto last  = QAbstractTableModel::index(maxRow, (int)Columns::LAST);

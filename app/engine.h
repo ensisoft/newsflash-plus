@@ -66,9 +66,8 @@ namespace app
         // set the current fill account.
         void setFillAccount(quint32 id);
 
-        bool downloadNzbContents(quint32 acc, const QString& path, const QString& desc, const QByteArray& nzb);
-        bool downloadNzbContents(quint32 acc, const QString& path, const QString& desc, 
-            std::vector<NZBContent> nzb);
+        bool downloadNzbContents(quint32 acc, const QString& basePath, const QString& path, const QString& desc, const QByteArray& nzb);
+        bool downloadNzbContents(quint32 acc, const QString& basePath, const QString& path, const QString& desc, std::vector<NZBContent> nzb);
 
         // retrieve a newgroup listing from the specified account.
         // returns a task id that can be used to manage the task.
