@@ -48,7 +48,7 @@ filetype find_filetype(const std::string& subject)
 {
     struct pattern {
         filetype type;        
-        const char* pattern;
+        const char* str;
     } patterns[] = {
         { filetype::audio, ".mp3 | .mp2 | .wav | .xm | .flac | .m3u | .mpa" },
         { filetype::video, ".avi | .mkv | .ogm | .wmv | .wma | .mpe?g | .rm | .mov | .flv | .asf | .mp4 | .3gp | .3g2 | .m4v" },
@@ -61,7 +61,7 @@ filetype find_filetype(const std::string& subject)
 
     for (auto it = std::begin(patterns); it != std::end(patterns); ++it)
     {
-        const auto pat  = split((*it).pattern);
+        const auto pat  = split((*it).str);
         const auto type = (*it).type;
         for (auto it = std::begin(pat); it != std::end(pat); ++it)
         {

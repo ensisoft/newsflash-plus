@@ -85,7 +85,6 @@ public:
         SetHandleInformation(file_, HANDLE_FLAG_INHERIT, 0);
         SetHandleInformation(mmap_, HANDLE_FLAG_INHERIT, 0);
 
-
         LARGE_INTEGER size;
         if (!GetFileSizeEx(file_, &size)) {
             CloseHandle(file_);
@@ -101,16 +100,10 @@ public:
             CloseHandle(file_);
             throw std::runtime_error("MapViewOfFile failed");
         }
-    #ifdef NEWSFLASH_DEBUG
-        mapcount_ = 0;
-    #endif
     }
 
    ~mapper()
     {
-    #ifdef NEWSFLASH_DEBUG
-        assert(mapcount_ == 0);
-    #endif
         ASSERT(UnmapViewOfFile(base_) == TRUE);        
         ASSERT(CloseHandle(mmap_) == TRUE);
         ASSERT(CloseHandle(file_) == TRUE);
@@ -118,9 +111,6 @@ public:
 
     void* map(std::size_t offset, std::size_t size,  unsigned flags)
     {
-    #ifdef NEWSFLASH_DEBUG
-        mapcount_++;
-    #endif
         return (char*)base_ + offset;
 
         // int read_write_flags = FILE_MAP_READ;
@@ -138,11 +128,7 @@ public:
     }
 
     void unmap(void* base, std::size_t)
-    {
-    #ifdef NEWSFLASH_DEBUG
-        mapcount_--;
-    #endif
-    }
+    {}
 
     std::size_t size() const 
     {
@@ -153,9 +139,6 @@ private:
     HANDLE mmap_;    
     void* base_;
     std::size_t size_;
-#ifdef NEWSFLASH_DEBUG
-    std::size_t mapcount_;
-#endif NEWSFLASH_DEBUG
 };
 
 
@@ -191,30 +174,18 @@ public:
             ::close(file_);
             throw std::runtime_error("mmap failed");
         }
-    #ifdef NEWSFLASH_DEBUG
-        mapcount_ = 0;
-    #endif
     }
 
    ~mapper()
     {
-    #ifdef NEWSFLASH_DEBUG
-        assert(mapcount_ == 0);
-    #endif
         ASSERT(munmap(base_, size_) == 0);        
         ASSERT(close(file_) == 0);
     }
     void unmap(void* ptr, std::size_t size)
-    {
-    #ifdef NEWSFLASH_DEBUG
-        mapcount_--;
-    #endif
-    }
+    {}
+
     void* map(std::size_t offset, std::size_t size, unsigned flags)
     {
-    #ifdef NEWSFLASH_DEBUG
-        mapcount_++;
-    #endif
         return (char*)base_ + offset;
 
         // int read_write_flags = 0;
@@ -245,9 +216,6 @@ private:
     int file_;        
     void* base_;    
     std::size_t size_;
-#ifdef NEWSFLASH_DEBUG
-    std::size_t mapcount_;
-#endif
 };
 
 std::size_t get_page_size()

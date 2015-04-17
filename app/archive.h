@@ -66,17 +66,12 @@ namespace app
         // error/information message
         QString message;
 
-        quint32 guid;
+        Archive();
 
-        Archive() : guid(Archive::makeGuid())
-        {}
-
+        quint32 getGuid() const 
+        { return guid; }
     private:
-        static quint32 makeGuid() 
-        {
-            static quint32 id = 1;
-            return id++;
-        }
+        quint32 guid;
     };
 
     QString toString(Archive::Status status);

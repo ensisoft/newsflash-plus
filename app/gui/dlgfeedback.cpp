@@ -59,7 +59,7 @@ DlgFeedback::DlgFeedback(QWidget* parent, mode m) : QDialog(parent), uimode_(m)
                 "3.\r\n");
             break;
 
-        case mode::Feedback:
+        case mode::FeedBack:
             setWindowTitle("Send feedback");
             setWindowIcon(QIcon("icons:ico_app_send_feedback.png"));
             ui_.grpMessage->setTitle("Message *");

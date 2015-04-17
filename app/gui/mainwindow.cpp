@@ -1029,7 +1029,7 @@ void MainWindow::on_actionReportBug_triggered()
 
 void MainWindow::on_actionSendFeedback_triggered()
 {
-    DlgFeedback dlg(this, DlgFeedback::mode::Feedback);
+    DlgFeedback dlg(this, DlgFeedback::mode::FeedBack);
     dlg.exec();
 }
 
@@ -1155,10 +1155,10 @@ void MainWindow::timerRefresh_timeout()
     }
     ui_.progressBar->setTextVisible(bytes_remaining != 0);
 
-    ui_.lblDiskFree->setText(toString("%1 %2", downloads, app::size{freespace}));
-    ui_.lblNetIO->setText(toString("%1 %2",  app::speed { netspeed }, app::size {bytes_downloaded}));     
-    ui_.lblDiskIO->setText(toString("%1", app::size { bytes_written }));
-    ui_.lblQueue->setText(toString("%1", app::size { bytes_remaining }));
+    ui_.lblDiskFree->setText(app::toString("%1 %2", downloads, app::size{freespace}));
+    ui_.lblNetIO->setText(app::toString("%1 %2",  app::speed { netspeed }, app::size {bytes_downloaded}));     
+    ui_.lblDiskIO->setText(app::toString("%1", app::size { bytes_written }));
+    ui_.lblQueue->setText(app::toString("%1", app::size { bytes_remaining }));
 
     ui_.netGraph->addSample(netspeed);
 }

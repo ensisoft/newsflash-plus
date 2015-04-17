@@ -1969,13 +1969,14 @@ void engine::save_session(const std::string& file)
 {
     GOOGLE_PROTOBUF_VERIFY_VERSION;
 
-#if defined(LINUX_OS)
-    std::ofstream out;
-    out.open(file, std::ios::out | std::ios::binary | std::ios::trunc);
-    if (!out.is_open())
-        throw std::system_error(errno, std::generic_category(),
-            "failed to create engine state in: " + file);
+#if defined(WINDOWS_OS)
+    // msvc specific extension..
+    std::ofstream out(utf8::decode(file), std::ios::out | std::ios::binary | std::ios::trunc);
+#elif defined(LINUX_OS)
+    std::ofstream out(file, std::ios::out | std::ios::binary | std::ios::trunc);
 #endif
+    if (!out.is_open())
+        throw std::system_error(errno, std::generic_category(), "failed to save engine session in: " + file);
 
     Newsflash::Session::TaskList list;
 
@@ -2019,14 +2020,14 @@ void engine::load_session(const std::string& file)
 {
     GOOGLE_PROTOBUF_VERIFY_VERSION;
 
-#if defined(LINUX_OS)
-    std::ifstream in;
-    in.open(file, std::ios::in | std::ios::binary);
-    if (!in.is_open())
-        throw std::system_error(errno, std::generic_category(),
-            "failed to open engine state file: " + file);
-    
+#if defined(WINDOWS_OS)
+    // msvc extension
+    std::ifstream in(utf8::decode(file), std::ios::in | std::ios::binary);
+#elif defined(LINUX_OS)
+    std::ifstream in(file, std::ios::in | std::ios::binary);
 #endif
+    if (!in.is_open())
+        throw std::system_error(errno, std::generic_category(), "failed to load engine session from: " + file);
 
     Newsflash::Session::TaskList list;
     if (!list.ParseFromIstream(&in))

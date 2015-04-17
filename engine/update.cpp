@@ -132,7 +132,7 @@ public:
             auto hit = hmap.find(article.hash());
             if (hit == std::end(hmap))
             {
-                const auto index = article.number() / CATALOG_SIZE;
+                const auto index = std::uint32_t(article.number() / CATALOG_SIZE);
                 hit = hmap.insert(std::make_pair(article.hash(), index)).first;
             }
 
@@ -169,8 +169,8 @@ public:
                         const auto num  = article.number();
                         std::int16_t diff = 0;
                         if (base > num)
-                            diff = -(base - num);
-                        else diff = num - base;
+                            diff -= (std::int16_t)(base - num);
+                        else diff = (std::int16_t)(num - base);
                         idb[a.idbkey() + num_part] = diff;
                     }
                     a.combine(article);
@@ -228,12 +228,13 @@ update::update(std::string path, std::string group) : local_last_(0), local_firs
 #if defined(LINUX_OS)
     std::ifstream in(nfo, std::ios::in | std::ios::binary);
 #elif defined(WINDOWS_OS)
-    std::wifstream in(utf8::decode(nfo), std::ios::in);
+    // msvc extension    
+    std::ifstream in(utf8::decode(nfo), std::ios::in);
 #endif
     if (in.is_open())
     {
         in.seekg(0, std::ios::end);
-        const unsigned long size = in.tellg();
+        const auto size = (unsigned long)in.tellg();
         in.seekg(0, std::ios::beg);
 
         in.read((char*)&local_first_, sizeof(local_first_));
@@ -242,7 +243,7 @@ update::update(std::string path, std::string group) : local_last_(0), local_firs
         const auto num_items = (size - (sizeof(local_first_) + sizeof(local_last_))) / sizeof(uint32_t);
         std::vector<std::uint32_t> vec;
         vec.resize(num_items);
-        in.read((char*)&vec[0], vec.size() * sizeof(std::uint32_t));
+        in.read((char*)&vec[0], num_items * sizeof(std::uint32_t));
         for (std::size_t i=0; i<vec.size(); i+=2)
         {
             const auto key = vec[i];
@@ -350,14 +351,12 @@ void update::commit()
 #if defined(LINUX_OS)
     std::ofstream out(file, std::ios::out | std::ios::binary | std::ios::trunc);
 #elif defined(WINDOWS_OS)
-    std::wofstream out(file, std::ios::out | std::ios::binary | std::ios::trunc);
+    std::ofstream out(utf8::decode(file), std::ios::out | std::ios::binary | std::ios::trunc);
 #endif
 
     if (!out.is_open())
         throw std::runtime_error("unable to open: " + file);
 
-    //out << local_first_ << std::endl;
-    //out << local_last_  << std::endl;
     out.write((const char*)&local_first_, sizeof(local_first_));
     out.write((const char*)&local_last_, sizeof(local_last_));
 
@@ -469,7 +468,7 @@ std::size_t update::max_num_actions() const
     const auto remote_articles = remote_last_ - remote_first_ + 1;
     const auto local_articles = local_last_ - local_first_ + 1;
     const auto actions = (remote_articles - local_articles) / 1000;
-    return actions * 2;
+    return std::size_t(actions) * 2;
 }
 
 std::string update::group() const 

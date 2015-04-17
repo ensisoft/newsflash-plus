@@ -60,9 +60,8 @@ void ArchiveManager::packCompleted(const app::FilePackInfo& pack)
 {
     DEBUG("FilePack ready %1 %2", pack.desc, pack.path);
 
-    static const char* attempts[] = {
-
-    };
+    //static const char* attempts[] = {
+    //};
 
     QStringList files;
 

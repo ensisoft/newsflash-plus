@@ -40,7 +40,7 @@
 #include "format.h"
 #include "types.h"
 
-#include <valgrind/callgrind.h>
+//#include <valgrind/callgrind.h>
 
 namespace app
 {
@@ -113,8 +113,8 @@ namespace app
         void setDateFilter(quint32 minDays, quint32 maxDays)
         {
             const auto now = QDateTime::currentDateTime();
-            const auto beg = now.addDays(-minDays);
-            const auto end = now.addDays(-maxDays);
+            const auto beg = now.addDays(-(int)minDays);
+            const auto end = now.addDays(-(int)maxDays);
 
             DEBUG("Date filter %1 - %2", app::age{beg}, app::age{end});
 

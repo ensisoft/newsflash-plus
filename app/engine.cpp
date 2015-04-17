@@ -41,6 +41,7 @@
 #include "nzbparse.h"
 #include "fileinfo.h"
 #include "newsinfo.h"
+#include "utility.h"
 
 namespace nf = newsflash;
 namespace ui = newsflash::ui;
@@ -174,8 +175,7 @@ bool Engine::downloadNzbContents(quint32 acc, const QString& path, const QString
 
     QString location = path.isEmpty() ? 
         downloads_ : path;
-    location.append("/");
-    location.append(desc);
+    location = joinPath(location, desc);
 
     QDir dir(location);
     if (!dir.mkpath(location))
@@ -215,8 +215,7 @@ bool Engine::downloadNzbContents(quint32 acc, const QString& path, const QString
 {
     QString location = path.isEmpty() ?
         downloads_ : path;
-    location.append("/");
-    location.append(desc);
+    location = joinPath(location, desc);
 
     QDir dir(location);
     if (!dir.mkpath(location))
@@ -269,9 +268,11 @@ quint32 Engine::retrieveHeaders(quint32 acc, const QString& path, const QString&
     DEBUG("Header files for %1/%2", path, name);
 
     QDir dir(path);
-    if (!dir.mkpath(path + "/" + name))
+    const auto location = joinPath(path, name);
+
+    if (!dir.mkpath(location))
     {
-        ERROR("Error creating path %1", path);
+        ERROR("Error creating path %1", location);
         return 0;
     }
 

@@ -25,6 +25,7 @@
 #include <boost/range.hpp>
 #include <algorithm>
 #include <string>
+#include <vector>
 #include <map>
 #include <cassert>
 #include <cctype>

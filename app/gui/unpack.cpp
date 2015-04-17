@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#define LOGTAG "unpack"
+#define LOGTAG "extract"
 
 #include <newsflash/config.h>
 #include <newsflash/warnpush.h>

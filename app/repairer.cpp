@@ -164,7 +164,7 @@ public:
         emit dataChanged(first, last);
     }
 
-    static const std::size_t NoSuchRecovery = std::numeric_limits<std::size_t>::max();
+    static const std::size_t NoSuchRecovery;// = std::numeric_limits<std::size_t>::max();
 
     std::size_t findArchive(Archive::Status status) const 
     {
@@ -197,9 +197,9 @@ public:
         for (int i=0; i<list.size(); ++i)
         {
             const auto rowBase = list[i].row();
-            for (int i=0; i<distance; ++i)
+            for (int x=0; x<distance; ++x)
             {
-                const auto row = rowBase + i * direction;
+                const auto row = rowBase + x * direction;
 
                 BOUNDSCHECK(list_, row);
                 BOUNDSCHECK(list_, row + direction);
@@ -261,6 +261,7 @@ private:
     std::deque<Archive> list_;
 };
 
+const std::size_t Repairer::RecoveryList::NoSuchRecovery = std::numeric_limits<std::size_t>::max();
 
 // data view of the files in the current recovery operation
 class Repairer::RecoveryData : public QAbstractTableModel
@@ -380,13 +381,13 @@ Repairer::Repairer(std::unique_ptr<ParityChecker> engine) : engine_(std::move(en
         data_->update(arc, file);
         if (info_)
         {
-            if (arc.guid == info_->getContentGuid())
+            if (arc.getGuid() == info_->getContentGuid())
                 info_->update(arc, file);
         }
 
         auto ait = std::find_if(std::begin(history_), std::end(history_), 
             [&](const RecoveryFiles& files) {
-                return files.archiveID == arc.guid;
+                return files.archiveID == arc.getGuid();
             });
         ENDCHECK(history_, ait);
         auto& files = (*ait).files;
@@ -457,7 +458,7 @@ QAbstractTableModel* Repairer::getRecoveryData(const QModelIndex& index)
 
     const auto row  = index.row();
     const auto& arc = list_->getRecovery(row);
-    const auto guid = arc.guid;
+    const auto guid = arc.getGuid();
 
     const auto it = std::find_if(std::begin(history_), std::end(history_),
         [&](const RecoveryFiles& files) {
@@ -479,7 +480,7 @@ void Repairer::addRecovery(const Archive& arc)
     list_->addRecovery(arc);
 
     RecoveryFiles files;
-    files.archiveID = arc.guid;
+    files.archiveID = arc.getGuid();
     history_.push_back(files);
 
     startNextRecovery();
@@ -538,7 +539,7 @@ void Repairer::kill(QModelIndexList& list)
 
         auto it = std::find_if(std::begin(history_), std::end(history_),
             [=](const RecoveryFiles& files) {
-                return files.archiveID == arc.guid;
+                return files.archiveID == arc.getGuid();
             });
         ENDCHECK(history_, it);
         history_.erase(it);
@@ -558,7 +559,7 @@ void Repairer::killComplete()
         {
             auto it = std::find_if(std::begin(history_), std::end(history_),
                 [=](const RecoveryFiles& files) {
-                    return files.archiveID == arc.guid;
+                    return files.archiveID == arc.getGuid();
                 });
             ENDCHECK(history_, it);
             history_.erase(it);
@@ -620,14 +621,18 @@ void Repairer::startNextRecovery()
     settings.writeLogFile   = writeLogs_;
 
     auto& arc = list_->getRecovery(index);
-    arc.state  = Archive::Status::Active;
+    arc.state = Archive::Status::Active;
+
+    // note the stupid QProcess can invoke the signals synchronously while
+    // QProcess::start() is in the *callstack* when the fucking .exe is not found...
+    emit repairStart(arc);
+    DEBUG("Started recovery for %1", arc.file);
+  
     engine_->recover(arc, settings);
 
     data_->clear();
     list_->refresh(index);
-
-    emit repairStart(arc);
-    DEBUG("Started recovery for %1", arc.file);    
+    
 }
 
 

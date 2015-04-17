@@ -283,7 +283,7 @@ QString toString(const app::etatime& eta)
 std::string narrow(const QString& str)
 {
 #if defined(WINDOWS_OS)
-    return to_utf8(str);
+    return toUtf8(str);
 #elif defined(LINUX_OS)
     const char* codeset = nl_langinfo(CODESET);
     if (!std::strcmp(codeset, "UTF-8"))

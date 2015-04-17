@@ -51,7 +51,7 @@
 namespace app
 {
 
-Feedback::Feedback() : type_(Type::Feedback), feeling_(Feeling::Positive)
+Feedback::Feedback() : type_(Type::FeedBack), feeling_(Feeling::Positive)
 {
     platform_ = getPlatformName();
     version_  = NEWSFLASH_VERSION;
@@ -80,7 +80,7 @@ void Feedback::send()
 
     switch (type_)
     {
-        case Type::Feedback:
+        case Type::FeedBack:
             switch (feeling_)
             {
                 case Feeling::Positive:

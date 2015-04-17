@@ -525,7 +525,8 @@ void NewsGroup::loadMoreData(const std::string& file, bool guiLoad)
         Catalog next;
         next.prevSize   = 0;
         next.prevOffset = 0;
-        it = catalogs_.insert(catalogs_.end(), next);
+        catalogs_.push_back(next);
+        it = catalogs_.end() - 1;
     }
     auto& cat = *it;
     auto& db  = (*it).db;

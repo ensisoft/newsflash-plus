@@ -84,10 +84,15 @@ void Par2::recover(const Archive& arc, const Settings& s)
 
     args << arc.file;
     args << "./*"; // scan extra files
+
+    // important. we must set the current_ *before* calling start()
+    // since start can emit signals synchronously from the call to start
+    // when the executable fails to launch. Nice semantic change there!
+    current_ = arc;
     process_.setWorkingDirectory(arc.path);
     process_.setProcessChannelMode(QProcess::MergedChannels);
     process_.start(par2_, args);
-    current_ = arc;
+
     DEBUG("Started par2 %1, %2", par2_, arc.file);
 }
 

@@ -21,6 +21,9 @@
 #define LOGTAG "cmds"
 
 #include <newsflash/config.h>
+#  if defined(WINDOWS_OS)
+#  include <windows.h> // for GetSystemInfo
+#endif
 #include <newsflash/warnpush.h>
 #  include <QStringList>
 #  include <QTextStream>
@@ -363,7 +366,34 @@ void Commands::firstLaunch()
     commands_.push_back(audacious);
 
 #elif defined(WINDOWS_OS)
+    Command imgView("rundll32.exe", "shimgvw.dll,ImageView_Fullscreen ${file.file}",
+        "Open images in an image viewer.",
+        Condition("file.type", "equals", toString(FileType::Image)));
+    imgView.setWhen(Command::When::OnFileDownload);
 
+    Command wmPlayer("C:\\Program Files\\Windows Media Player\\wmplayer.exe", "${file.file}", "Play video files in a video player.",
+        Condition("file.type", "equals", toString(FileType::Video)));
+    wmPlayer.setWhen(Command::When::OnFileDownload);
+
+    commands_.push_back(imgView);
+    commands_.push_back(wmPlayer);
+
+    SYSTEM_INFO sys;
+    GetNativeSystemInfo(&sys);
+    if (sys.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_INTEL) // x86
+    {
+        Command foobar("C:\\program files\\foobar2000\\foobar2000.exe", "/add ${file.file}", "Enqueue music files in an audio player.",
+            Condition("file.type", "equals", toString(FileType::Audio)));
+        foobar.setWhen(Command::When::OnFileDownload);
+        commands_.push_back(foobar);
+    }
+    else
+    {
+        Command foobar("C:\\program files (x86)\\foobar2000\\foobar2000.exe", "/add ${file.file}", "Enqueue music files in an audio player.",
+            Condition("file.type", "equals", toString(FileType::Audio)));
+        foobar.setWhen(Command::When::OnFileDownload);
+        commands_.push_back(foobar);
+    }
 #endif    
 }
 

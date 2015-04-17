@@ -39,6 +39,7 @@ namespace gui
         DlgAbout(QWidget* parent) : QDialog(parent)
         {
             ui_.setupUi(this);
+            ui_.lblTitle->setText(QString("%1 %2").arg(NEWSFLASH_TITLE).arg(NEWSFLASH_VERSION));
             ui_.lblCopyright->setText(QString::fromUtf8(NEWSFLASH_COPYRIGHT));
         }
        ~DlgAbout()

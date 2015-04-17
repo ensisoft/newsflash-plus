@@ -23,7 +23,7 @@ lib engine :
    /newsflash//zlib/<link>shared
    /newsflash//openssl/<link>shared
    /newsflash//crypto/<link>shared
-   /newsflash//protobuf/<link>shared
+   /newsflash//protobuf/<link>static
 ;
 
 #build-project unit_test ;

@@ -30,6 +30,7 @@
 #  include <QProcess>
 #  include <QFile>
 #include <newsflash/warnpop.h>
+#include <newsflash/engine/assert.h>
 #include <string>
 #include <mutex>
 #include "format.h"
@@ -111,14 +112,14 @@ namespace debug
     template<typename RandomAccessContainer, typename Index>
     void checkBounds(const RandomAccessContainer& container, Index i)
     {
-        Q_ASSERT(i >= 0);
-        Q_ASSERT(i < (Index)container.size());
+        ASSERT(i >= 0);
+        ASSERT(i < (Index)container.size());
     }
 
     template<typename Container, typename Iterator>
     void checkNotEnd(const Container& c, const Iterator& i)
     {
-        Q_ASSERT(i != c.end());
+        ASSERT(i != c.end());
     }
 
 } // debug

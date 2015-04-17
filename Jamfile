@@ -26,9 +26,10 @@ import path ;
 import qt ;
 
 # set these paths to to point to the relevant SDK locations.
-path-constant QT_PATH      : "../qt-4.8.6" ;
-path-constant BOOST_PATH   : "../boost_1_51_0" ;
-path-constant OPENSSL_PATH : "../openssl_1_0_1f" ;
+path-constant QT_PATH       : "../qt-4.8.6" ;
+path-constant BOOST_PATH    : "../boost_1_51_0" ;
+path-constant OPENSSL_PATH  : "../openssl_1_0_1f" ;
+path-constant PROTOBUF_PATH : "protobuf/src/" ;
 
 using qt : $(QT_PATH) ;
 
@@ -49,6 +50,7 @@ project newsflash
     <include>$(QT_PATH)/include/QtCore    
     <include>$(QT_PATH)/include    
     <include>$(BOOST_PATH)
+    <include>$(PROTOBUF_PATH)    
     <threading>multi
 
     <toolset>gcc:<cflags>-std=c++11
@@ -91,8 +93,8 @@ lib zlib   : : <name>zlib <search>"zlib/lib" ;
 
 
 # googles protobuf 
-lib protobuf : : <name>protobuf ;
-
+lib protobuf : : <variant>debug   <name>libprotobuf_d <search>"protobuf/lib" ;
+lib protobuf : : <variant>release <name>libprotobuf_r <search>"protobuf/lib" ;
 
 exe newsflash :
   [ glob app/*.h       ]

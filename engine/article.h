@@ -301,7 +301,7 @@ namespace newsflash
 
         bool has_parts() const 
         {
-            return m_parts_total;
+            return bool(m_parts_total != 0);
         }
 
     private:
@@ -312,7 +312,8 @@ namespace newsflash
         template<typename Value>
         Value read(iterator& it, Value val = 0) const 
         {
-            static_assert(std::is_standard_layout<Value>(), "");
+            // this should be std::is_trivially_copyable (not available in gcc 4.9.2)
+            static_assert(std::is_standard_layout<Value>::value, "");
 
             auto* p = (char*)&val;
             for (std::size_t i=0; i<sizeof(val); ++i)
@@ -332,7 +333,8 @@ namespace newsflash
         template<typename Value>
         void write(iterator& it, const Value& val) const 
         {
-            static_assert(std::is_standard_layout<Value>(), "");
+            // this should be std::is_trivially_copyable (not available in gcc 4.9.2)
+            static_assert(std::is_standard_layout<Value>::value, "");
 
             const auto* p = (const char*)&val;
             for (std::size_t i=0; i<sizeof(val); ++i)

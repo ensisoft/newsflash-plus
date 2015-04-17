@@ -58,4 +58,10 @@ QIcon toIcon(Archive::Status status)
     return {};
 }
 
+Archive::Archive() : state(Status::Queued)
+{
+    static quint32 id = 1;
+    guid = id++;
+}
+
 } // app

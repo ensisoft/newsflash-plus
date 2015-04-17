@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#define LOGTAG "unpack"
+#define LOGTAG "extract"
 
 #include <newsflash/config.h>
 #include <newsflash/warnpush.h>
@@ -114,7 +114,7 @@ public:
         emit dataChanged(first, last);
     }
 
-    static const std::size_t NoSuchUnpack = std::numeric_limits<std::size_t>::max();
+    static const std::size_t NoSuchUnpack; // = std::numeric_limits<std::size_t>::max();
 
     std::size_t findNextPending() const 
     {
@@ -154,9 +154,9 @@ public:
         for (int i=0; i<list.size(); ++i)
         {
             const auto rowBase = list[i].row();
-            for (int i=0; i<distance; ++i)
+            for (int x=0; x<distance; ++x)
             {
-                const auto row = rowBase + i * direction;
+                const auto row = rowBase + x * direction;
 
                 BOUNDSCHECK(list_, row);
                 BOUNDSCHECK(list_, row + direction);
@@ -220,6 +220,8 @@ private:
     friend class RepairEngine;
     std::deque<Archive> list_;
 };
+
+const std::size_t Unpacker::UnpackList::NoSuchUnpack = std::numeric_limits<std::size_t>::max();
 
 class Unpacker::UnpackData : public QAbstractTableModel
 {
@@ -463,15 +465,16 @@ void Unpacker::startNextUnpack()
 
     auto& unpack = list_->getArchive(index);
     unpack.state = Archive::Status::Active;
+
+    // note the stupid QProcess can invoke the signals synchronously while
+    // QProcess::start() is in the *callstack* when the fucking .exe is not found...
+    emit unpackStart(unpack);
+    DEBUG("Start unpack for %1", unpack.file);
+
     engine_->extract(unpack, settings);
 
     data_->clear();
     list_->refresh(index);
-
-    emit unpackStart(unpack);
-
-    DEBUG("Start unpack for %1", unpack.file);
-
 }
 
 QStringList Unpacker::findUnpackVolumes(const QStringList& fileEntries)

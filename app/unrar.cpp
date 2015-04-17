@@ -123,10 +123,16 @@ void Unrar::extract(const Archive& arc, const Settings& settings)
     else args << "-or"; // rename automatically
 
     args << arc.file;
-    process_.setWorkingDirectory(arc.path);
-    //process_.setProcessChannelMode(QProcess::MergedChannels);
-    process_.start(unrar_, args);
+
+    // important. we must set the current_ *before* calling start()
+    // since start can emit signals synchronously from the call to start
+    // when the executable fails to launch. Nice semantic change there!
     archive_ = arc;
+
+    process_.setWorkingDirectory(arc.path);
+    process_.setProcessChannelMode(QProcess::SeparateChannels);
+    process_.start(unrar_, args);
+    
     DEBUG("Started unrar for %1", arc.file);
 }
 

@@ -169,7 +169,16 @@ Use the protoc to compile the .proto files in the project.
 
     $ ./configure
     $ make
+    $ mkdir lib
+    $ cp src/.libs/libprotobuf.a lib/libprotobuf_d.a
+    $ cp src/.libs/libprotobuf.a lib/libprotobuf_r.a
 
+
+And for windows ...
+
+    - open the solution in vsprojects and build the library
+    - copy vsprojects/Debug/libprotobuf.lib to ../lib/libprotobuf_d.lib
+    - copy vsprojects/Release/libprotobuf.lib to ../lib/libprotobuf_r.lib
 
 
 Design Babblings

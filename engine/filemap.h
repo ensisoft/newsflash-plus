@@ -203,13 +203,6 @@ namespace newsflash
            buffer() : length_(0), offset_(0), base_(nullptr)
            {}
 
-           buffer(buffer&& other) : mapper_(other.mapper_), length_(other.length_), offset_(other.offset_), base_(other.base_)
-           {
-               other.base_ = nullptr;
-           }
-
-           buffer(const buffer&) = delete;
-
           ~buffer();
 
            void* address()
@@ -225,20 +218,6 @@ namespace newsflash
            std::size_t length() const 
            { 
                return length_; 
-           }
-
-           buffer& operator=(const buffer&) = delete;
-
-           buffer& operator=(buffer&& other) 
-           {
-                buffer carcass(std::move(*this));
-
-                mapper_ = other.mapper_;
-                length_ = other.length_;
-                offset_ = other.offset_;
-                base_   = other.base_;
-                other.base_ = nullptr;
-                return *this;
            }
 
            void flush()

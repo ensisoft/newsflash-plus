@@ -32,7 +32,7 @@ namespace app
     {
     public:
         enum class Type {
-            Feedback,
+            FeedBack,
             BugReport,
             FeatureRequest,
             LicenseRequest
