@@ -59,13 +59,17 @@ filetype find_filetype(const std::string& subject)
         { filetype::document, ".doc | .chm | .pdf" }
     };
 
+    // note that the regular expressions above should be of the form \\.mp3 
+    // i.e. we need to escape the . 
+
     for (auto it = std::begin(patterns); it != std::end(patterns); ++it)
     {
         const auto pat  = split((*it).str);
         const auto type = (*it).type;
         for (auto it = std::begin(pat); it != std::end(pat); ++it)
         {
-            boost::regex r(*it, boost::regbase::icase /* | boost::regbase::perl */);
+            // escape the . an interpret it as a char
+            boost::regex r("\\" + *it, boost::regbase::icase /* | boost::regbase::perl */);
             if (boost::regex_search(subject.begin(), subject.end(), r))
                 return type;
         }
