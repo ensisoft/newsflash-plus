@@ -116,7 +116,7 @@ void NZBFile::download(const QModelIndexList& list, quint32 account, const QStri
     g_engine->downloadNzbContents(account, folder, desc, desc, std::move(selected));
 }
 
-void NZBFile::set_show_filenames_only(bool on_off)
+void NZBFile::setShowFilenamesOnly(bool on_off)
 {
     if (on_off == show_filename_only_)
         return;
@@ -125,6 +125,12 @@ void NZBFile::set_show_filenames_only(bool on_off)
     auto first = QAbstractTableModel::index(0, 0);
     auto last  = QAbstractTableModel::index(data_.size(), 3);
     emit dataChanged(first, last);
+}
+
+const NZBContent& NZBFile::getItem(std::size_t index) const 
+{
+    BOUNDSCHECK(data_, index);
+    return data_[index];
 }
 
 

@@ -23,16 +23,15 @@
 #define LOGTAG "nzb"
 
 #include <newsflash/config.h>
-
 #include <newsflash/warnpush.h>
 #  include <QtGui/QMenu>
 #  include <QtGui/QToolBar>
 #  include <QtGui/QMessageBox>
 #  include <QFileInfo>
 #include <newsflash/warnpop.h>
-
 #include "nzbfile.h"
 #include "mainwindow.h"
+#include "finder.h"
 #include "../debug.h"
 #include "../format.h"
 #include "../eventlog.h"
@@ -80,6 +79,58 @@ void NZBFile::loadState(app::Settings& settings)
 void NZBFile::saveState(app::Settings& settings)
 {
     app::saveState("nzbfile", ui_.chkFilenamesOnly, settings);
+}
+
+MainWidget::info NZBFile::getInformation() const 
+{
+    return {"nzb.html", false};     
+}
+
+Finder* NZBFile::getFinder() 
+{
+    return this;
+}
+
+bool NZBFile::isMatch(const QString& str, std::size_t index, bool caseSensitive)
+{
+    const auto& item = model_.getItem(index);
+    if (!caseSensitive)
+    {
+        auto upper = item.subject.toUpper();
+        return upper.indexOf(str) != -1;
+    }
+
+    return item.subject.indexOf(str) != -1;
+}
+
+bool NZBFile::isMatch(const QRegExp& regex, std::size_t index)
+{
+    const auto& item = model_.getItem(index);
+
+    return regex.indexIn(item.subject) != -1;
+}
+
+std::size_t NZBFile::numItems() const 
+{
+    return model_.numItems();
+}
+
+std::size_t NZBFile::curItem() const 
+{
+    const auto& indices = ui_.tableView->selectionModel()->selectedRows();
+    if (indices.isEmpty())
+        return 0;
+
+    const auto& first = indices.first();
+    return first.row();
+}
+
+void NZBFile::setFound(std::size_t index)
+{
+    auto* model = ui_.tableView->model();
+    auto i = model->index(index, 0);
+    ui_.tableView->setCurrentIndex(i);
+    ui_.tableView->scrollTo(i);
 }
 
 void NZBFile::open(const QString& nzbfile)
@@ -161,7 +212,7 @@ void NZBFile::on_chkFilenamesOnly_clicked()
 {
     const bool on_off = ui_.chkFilenamesOnly->isChecked();
 
-    model_.set_show_filenames_only(on_off);
+    model_.setShowFilenamesOnly(on_off);
 }
 
 void NZBFile::downloadToPrevious()

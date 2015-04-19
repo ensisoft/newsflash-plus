@@ -62,7 +62,14 @@ namespace app
         // download the items specified by the index list 
         void download(const QModelIndexList& list, quint32 account, const QString& folder, const QString& desc);
 
-        void set_show_filenames_only(bool on_off);
+        void setShowFilenamesOnly(bool on_off);
+
+        const NZBContent& getItem(std::size_t index) const;
+
+        std::size_t numItems() const 
+        {
+            return data_.size();
+        }
 
         // QAbstractTableModel
         virtual int rowCount(const QModelIndex&) const override;
