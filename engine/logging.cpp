@@ -82,4 +82,12 @@ logger* set_thread_log(logger* log)
     return current;
 }
 
+void flush_log()
+{
+    auto* log = get_thread_log();
+    if (!log) return;
+
+    log->flush();
+}
+
 } // newsflash

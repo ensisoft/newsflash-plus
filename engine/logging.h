@@ -35,10 +35,12 @@
 #  define LOG_E(...) write_log(newsflash::logevent::error, __FILE__, __LINE__, ## __VA_ARGS__)
 #  define LOG_W(...) write_log(newsflash::logevent::warning, __FILE__, __LINE__, ## __VA_ARGS__)
 #  define LOG_I(...) write_log(newsflash::logevent::info,  __FILE__, __LINE__, ## __VA_ARGS__)
+#  define LOG_FLUSH() flush_log()
 #else
 #  define LOG_E(...) while(false)
 #  define LOG_W(...) while(false)
 #  define LOG_I(...) while(false)
+#  define LOG_FLUSH() while (false)
 #endif
 
 #ifdef NEWSFLASH_DEBUG
@@ -168,5 +170,7 @@ namespace newsflash
         detail::end_log_event(ss);
         log->write(ss.str());        
     }
+
+    void flush_log();
 
 } // newsflash

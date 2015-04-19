@@ -340,6 +340,8 @@ void connection::execute::xperform()
 
     cmdlist->submit_data_commands(*session);
 
+    LOG_FLUSH();
+
     state_->bps = 0;
 
     using clock = std::chrono::steady_clock;

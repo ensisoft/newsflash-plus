@@ -607,6 +607,7 @@ public:
         is_fillable_       = ui::is_fillable(spec);
 
         LOG_D("Task: download");
+        LOG_D("Task: is_fillable: ", is_fillable_);
         LOG_I("Task ", ui_.task_id, " (", ui_.desc, ") created");                
     }
 

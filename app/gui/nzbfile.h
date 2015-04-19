@@ -23,19 +23,18 @@
 #pragma once
 
 #include <newsflash/config.h>
-
 #include <newsflash/warnpush.h>
 #  include "ui_nzbfile.h"
 #include <newsflash/warnpop.h>
 #include <memory>
-
 #include "mainwidget.h"
+#include "finder.h"
 #include "../nzbfile.h"
 
 namespace gui
 {
     // nzbfile widget displays the contents of a single NZB file
-    class NZBFile : public MainWidget
+    class NZBFile : public MainWidget, public Finder
     {
         Q_OBJECT
 
@@ -43,15 +42,21 @@ namespace gui
         NZBFile();
        ~NZBFile();
 
+        // MainWidget implementation
         virtual void addActions(QMenu& menu) override;
         virtual void addActions(QToolBar& bar) override;
         virtual void loadState(app::Settings& s) override;
         virtual void saveState(app::Settings& s) override;
+        virtual info getInformation() const override;
+        virtual Finder* getFinder() override;
 
-        virtual info getInformation() const override
-        { 
-            return {"nzb.html", false}; 
-        }
+        // Finder
+        virtual bool isMatch(const QString& str, std::size_t index, bool caseSensitive) override;
+        virtual bool isMatch(const QRegExp& reg, std::size_t index) override;
+        virtual std::size_t numItems() const override;
+        virtual std::size_t curItem() const override;
+        virtual void setFound(std::size_t index) override;
+
 
         // open and display the contents of the given NZB file.
         void open(const QString& nzbfile);

@@ -282,7 +282,8 @@ bigfile::big_t bigfile::size() const
 
     struct stat64 st {0};
     if (fstat64(pimpl_->fd, &st))
-        throw std::runtime_error("failed to get file size");
+        throw std::system_error(errno, std::generic_category(), 
+            "failed to get file size");
 
     return big_t{st.st_size};
 }
@@ -294,7 +295,8 @@ void bigfile::seek(big_t offset)
 
     const off64_t pos = lseek64(pimpl_->fd, offset, SEEK_SET);
     if (pos == (off64_t)-1)
-        throw std::runtime_error("file seek failed (lseek64)");
+        throw std::system_error(errno, std::generic_category(),
+            "file seek failed");
 }
 
 void bigfile::write(const void* data, size_t bytes)
@@ -309,7 +311,8 @@ void bigfile::write(const void* data, size_t bytes)
     // std::numeric_limits<size_t>::max() -1 ??
     const size_t ret = ::write(pimpl_->fd, data, bytes);
     if (ret == (size_t)-1)
-        throw std::runtime_error("file write failed");
+        throw std::system_error(errno, std::generic_category(), 
+            "file write failed");
 }
 
 size_t bigfile::read(void* buff, size_t bytes)
@@ -320,7 +323,8 @@ size_t bigfile::read(void* buff, size_t bytes)
 
     const size_t ret = ::read(pimpl_->fd, buff, bytes);
     if (ret == (size_t)-1)
-        throw std::runtime_error("file read failed");
+        throw std::system_error(errno, std::generic_category(),
+            "file read failed");
 
     return ret;
 }

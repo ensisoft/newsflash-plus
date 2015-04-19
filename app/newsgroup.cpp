@@ -50,6 +50,30 @@ QString toString(const str::string_view& str)
     return QString::fromLatin1(str.c_str(), str.size());
 }
 
+class NewsGroup::VolumeList : public QAbstractTableModel
+{
+public:
+    VolumeList(std::vector<Catalog>& catalogs) : catalogs_(catalogs)
+    {}
+    virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const override
+    {}
+
+    virtual QVariant data(const QModelIndex& index, int role) const override
+    {}
+    virtual int rowCount(const QModelIndex& index) const override
+    {
+        return (int)catalogs_.size();
+    }
+    virtual int columnCount(const QModelIndex& index) const override
+    {
+        return 3;
+    }
+
+private:
+    std::vector<Catalog>& catalogs_;
+};
+
+
 NewsGroup::NewsGroup() : task_(0)
 {
     DEBUG("NewsGroup created");
@@ -500,6 +524,14 @@ std::size_t NewsGroup::numShown() const
 NewsGroup::Article NewsGroup::getArticle(std::size_t i) const 
 {
     return index_[i];
+}
+
+QAbstractTableModel* NewsGroup::getVolumeList()
+{
+    if (!volumeList_)
+        volumeList_.reset(new VolumeList(catalogs_));
+
+    return volumeList_.get();
 }
 
 void NewsGroup::newHeaderDataAvailable(const QString& file)

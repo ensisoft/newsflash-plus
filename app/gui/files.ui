@@ -216,6 +216,9 @@
    <property name="toolTip">
     <string>Delete files from the disk permanently</string>
    </property>
+   <property name="shortcut">
+    <string>Del</string>
+   </property>
   </action>
  </widget>
  <tabstops>

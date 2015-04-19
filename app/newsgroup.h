@@ -34,6 +34,7 @@
 #include <newsflash/engine/idlist.h>
 #include <vector>
 #include <deque>
+#include <memory>
 #include <functional>
 #include "filetype.h"
 #include "debug.h"
@@ -136,6 +137,8 @@ namespace app
             //CALLGRIND_STOP_INSTRUMENTATION;
         }
 
+        QAbstractTableModel* getVolumeList();
+
     public slots:
         void newHeaderDataAvailable(const QString& file);
         void newHeaderInfoAvailable(const QString& group, quint64 numLocal, quint64 numRemote);
@@ -152,8 +155,13 @@ namespace app
             catalog db;
             std::size_t prevSize;
             std::size_t prevOffset;
+            bool loaded;
+            QString file;
         };
 
+        class VolumeList;
+
+        std::unique_ptr<VolumeList> volumeList_;
         std::vector<Catalog> catalogs_;
         index index_;
         idlist idlist_;

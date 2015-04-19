@@ -230,7 +230,7 @@ void Search::on_actionOpen_triggered()
         model_.loadItem(index, 
             [](const QByteArray& bytes, const QString& desc) {
                 auto* view = new NZBFile();
-                g_win->attach(view, false);
+                g_win->attach(view, false, true);
                 view->open(bytes, desc);
             });
     }
