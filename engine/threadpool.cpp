@@ -72,7 +72,7 @@ void threadpool::submit(action* act)
     }
     else
     {
-        const auto act_id = act->get_id();        
+        const auto act_id = act->get_owner();        
         thread = threads_[act_id % num_threads].get();
     }
 

@@ -1130,7 +1130,7 @@ private:
                 task_->commit();
 
                 ui_.state      = new_state;                
-                ui_.completion = 100.0;
+                //ui_.completion = 100.0;
                 ui_.etatime    = 0;
 
                 state.bytes_ready += ui_.size;

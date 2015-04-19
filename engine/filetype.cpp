@@ -64,7 +64,7 @@ filetype find_filetype(const std::string& filename)
         { filetype::audio, ".mp3 | .mp2 | .wav | .xm | .flac | .m3u | .mpa" },
         { filetype::video, ".avi | .mkv | .ogm | .wmv | .wma | .mpe?g | .rm | .mov | .flv | .asf | .mp4 | .3gp | .3g2 | .m4v" },
         { filetype::image, ".jpe?g | .bmp | .png | .gif" },
-        { filetype::text,  ".txt | .nfo | .sfv | .log" },
+        { filetype::text,  ".txt | .nfo | .sfv | .log | .nzb" },
         { filetype::archive, ".zip | .rar | .7z | .r\\d{1,3} | .\\d{2} | .part\\d{1,3}\\.rar" },
         { filetype::parity, ".par | .par2" },
         { filetype::document, ".doc | .chm | .pdf" }
