@@ -36,15 +36,15 @@
 #  define LOG_W(...) write_log(newsflash::logevent::warning, __FILE__, __LINE__, ## __VA_ARGS__)
 #  define LOG_I(...) write_log(newsflash::logevent::info,  __FILE__, __LINE__, ## __VA_ARGS__)
 #else
-#  define LOG_E(...)
-#  define LOG_W(...)
-#  define LOG_I(...)
+#  define LOG_E(...) while(false)
+#  define LOG_W(...) while(false)
+#  define LOG_I(...) while(false)
 #endif
 
 #ifdef NEWSFLASH_DEBUG
 #  define LOG_D(...) write_log(newsflash::logevent::debug, __FILE__, __LINE__, ## __VA_ARGS__)
 #else
-#  define LOG_D(...)
+#  define LOG_D(...) while(false)
 #endif
 
 namespace newsflash

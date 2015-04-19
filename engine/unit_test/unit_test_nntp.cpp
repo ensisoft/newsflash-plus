@@ -261,6 +261,16 @@ void test_parse_part()
     BOOST_REQUIRE(ret.first == true);
     BOOST_REQUIRE(ret.second.numerator == 1);
     BOOST_REQUIRE(ret.second.denominator == 2);
+
+    ret = nntp::parse_part("Girls have fun !!! foobar.avi [01/50]");
+    BOOST_REQUIRE(ret.first == true);
+    BOOST_REQUIRE(ret.second.numerator == 1);
+    BOOST_REQUIRE(ret.second.denominator == 50);
+
+    ret = nntp::parse_part("Girls have fun !!! [01/60] foobar.avi.001 (15/49)");
+    BOOST_REQUIRE(ret.first == true);
+    BOOST_REQUIRE(ret.second.numerator == 15);
+    BOOST_REQUIRE(ret.second.denominator == 49);    
 }
 
 void test_parse_group()
@@ -678,8 +688,13 @@ void test_hash()
     BOOST_REQUIRE(nntp::hashvalue("girls flirting with is neat   GiBBA files  Soft I Love you to BF-Vol3 (102).jpg (1/1)") !=
         nntp::hashvalue("girls flirting with is neat   GiBBA files  Soft I Love you to BF-Vol3 (103).jpg (1/1)"));
 
-   BOOST_REQUIRE(nntp::hashvalue("girls flirting with is neat   GiBBA files  Soft I Love you to BF-Vol3 (102).jpg (1/4)") ==
+    BOOST_REQUIRE(nntp::hashvalue("girls flirting with is neat   GiBBA files  Soft I Love you to BF-Vol3 (102).jpg (1/4)") ==
         nntp::hashvalue("girls flirting with is neat   GiBBA files  Soft I Love you to BF-Vol3 (102).jpg (2/4)"));
+
+    BOOST_REQUIRE(nntp::hashvalue("heres a movie with shitty part notation foobar.avi.001 [04/50]") ==
+        nntp::hashvalue("heres a movie with shitty part notation foobar.avi.001 [10/50]"));
+
+
 }
 
 int test_main(int, char* [])

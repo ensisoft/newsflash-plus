@@ -172,11 +172,16 @@ private:
     const char* ptr_;
 };
 
+// part count notation indicates the segment of the file when the file is split
+// to multiple NNTP posts. Usual notation is (xx/yy) but sometimes [xx/yy] is used
+// also note that sometimes subject lines contain both. In this case the [xx/yy] is considered
+// to indicate the file number in the batch of files. 
+// so [xx/yy] is not considered as part count unless (xx/yy) is not found.
 const char* find_part_count(const char* subjectline, std::size_t len, std::size_t& i)
 {
     // NOTE: the regex is in reverse because the search is from the tail
     // this matches "metallica - enter sandman.mp3 (01/50)"
-     const static boost::regex ex("\\)[0-9]*/[0-9]*\\(");
+     const static boost::regex ex("(\\]|\\))[0-9]*/[0-9]*(\\(|\\[)");
     
      reverse_c_str_iterator itbeg(subjectline + len - 1);
      reverse_c_str_iterator itend(subjectline-1);
@@ -341,7 +346,8 @@ bool strcmp(const char* first,  std::size_t firstLen, const char* second, std::s
         if ((p - first) != (p2 - second))
             return false;
 
-        const auto num = p - first;
+        assert(p >= first);
+        const std::size_t num = p - first;
         std::size_t i;
         for (i=0; i<num; ++i)
             if (first[i] != second[i]) return false;
@@ -549,12 +555,25 @@ std::pair<bool, part> parse_part(const char* str, size_t len)
 
     using namespace boost::spirit::classic;
 
+    // first notation (xx/yy)
+    {
+        const auto& ret = parse(str, str+len,
+            (                                   
+               ch_p('(') >> uint_p[assign(part.numerator)] >> 
+                   ch_p('/') >> uint_p[assign(part.denominator)] >>
+                   ch_p(')')
+                   ));
+        if (ret.full)
+            return {ret.full, part};
+    }
+
+    // second notation  [xx/yy]
     const auto& ret = parse(str, str+len,
         (                                   
-         ch_p('(') >> uint_p[assign(part.numerator)] >> 
-         ch_p('/') >> uint_p[assign(part.denominator)] >>
-         ch_p(')')
-        ));
+         ch_p('[') >> uint_p[assign(part.numerator)] >> 
+             ch_p('/') >> uint_p[assign(part.denominator)] >>
+             ch_p(']')
+             ));
     return {ret.full, part};
 }
 
@@ -570,7 +589,8 @@ std::uint32_t hashvalue(const char* subjectline, size_t len)
     }
     else
     {
-        const auto num = p - subjectline;
+        assert(p >= subjectline);
+        const std::size_t num = p - subjectline;
         std::size_t i;
         for (i=0; i<num; ++i)
             boost::hash_combine(seed, subjectline[i]);
