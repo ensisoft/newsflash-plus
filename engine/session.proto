@@ -36,6 +36,7 @@ message Download {
     repeated string article           = 9;
     repeated string group             = 10;
     repeated File file                = 11;
+    required bool enable_fill         = 12;
 }
 
 message Batch {

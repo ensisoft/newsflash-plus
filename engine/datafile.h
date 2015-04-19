@@ -55,6 +55,10 @@ namespace newsflash
                 file_->num_writes_--;
             #endif
             }
+            virtual std::string describe() const override
+            {
+                return "Datafile::Write";
+            }
 
             virtual void xperform() override
             {

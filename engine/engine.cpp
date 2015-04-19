@@ -53,6 +53,21 @@ namespace newsflash
 
 #define CASE(x) case x: return #x
 
+const char* str(buffer::status s)
+{
+    using state = buffer::status;
+    switch (s)
+    {
+        CASE(state::none);
+        CASE(state::success);
+        CASE(state::unavailable);
+        CASE(state::dmca);
+        CASE(state::error);
+    }
+    assert(0);
+    return nullptr;
+}
+
 const char* str(ui::task::states s)
 {
     using state = ui::task::states;
@@ -172,6 +187,8 @@ struct engine::state {
     {
         if (a->get_affinity() == action::affinity::gui_thread)
         {
+            LOG_D("Action ", a->get_id(), " (", a->describe(),  ") perform by current thread.");
+
             a->perform();
             std::lock_guard<std::mutex> lock(mutex);
             actions.emplace(a);
@@ -179,6 +196,8 @@ struct engine::state {
         }
         else
         {
+            LOG_D("Action ", a->get_id(), " (", a->describe(), ") submitted to the threadpool.");
+
             threads->submit(a);
         }
         num_pending_actions++;                            
@@ -197,6 +216,9 @@ struct engine::state {
             return nullptr;
         std::unique_ptr<action> act = std::move(actions.front()); 
         actions.pop();
+
+        LOG_D("Action ", act->get_id(), " (", act->describe(), ") is complete");
+        LOG_D("Action ", act->get_id(), " has exception: ", act->has_exception());
         return std::move(act);
     }
 
@@ -364,6 +386,8 @@ public:
         ui_.task  = tid;
         ui_.desc  = std::move(desc);
         ui_.state = states::active;
+        LOG_I("Connection ", ui_.id, " executing cmdlist ", cmds->id());
+
         do_action(state, conn_.execute(cmds, tid));
     }
 
@@ -388,7 +412,9 @@ public:
 
     void on_action(engine::state& state, std::unique_ptr<action> act)
     {
-        assert(act->get_id() == ui_.id);
+        LOG_D("Connection ", ui_.id, " action ", act->get_id(), "(", act->describe(), ") complete");
+
+        assert(act->get_owner() == ui_.id);
 
         ticks_to_ping_ = 30;
         ticks_to_conn_ = 5;
@@ -523,8 +549,9 @@ private:
 
         LOG_D("Connection ", ui_.id,  " => ", str(ui_.state));
         LOG_D("Connection ", ui_.id, " current task ", ui_.task, " (", ui_.desc, ")");
+        LOG_D("Connection ", ui_.id, " new action ", a->get_id(), "(", a->describe(), ")");
 
-        a->set_id(ui_.id);
+        a->set_owner(ui_.id);
         a->set_log(logger_);
         state.submit(a.release(), thread_);
     }
@@ -542,8 +569,9 @@ class engine::task
 {
     task(std::size_t id) : num_active_cmdlists_(0), num_active_actions_(0), num_actions_ready_(0), num_actions_total_(0)
     {
-        ui_.task_id = id;
-        ui_.size    = 0;
+        ui_.task_id  = id;
+        ui_.size     = 0;
+        is_fillable_ = false;
     }
 
 public:
@@ -576,6 +604,7 @@ public:
             std::move(spec.path), std::move(spec.name)));
 
         num_actions_total_ = task_->max_num_actions();
+        is_fillable_       = ui::is_fillable(spec);
 
         LOG_D("Task: download");
         LOG_I("Task ", ui_.task_id, " (", ui_.desc, ") created");                
@@ -614,6 +643,7 @@ public:
         ui_.account    = spec.account_id();
         ui_.desc       = spec.desc();
         ui_.size       = spec.size();
+        is_fillable_   = spec.enable_fill();
 
         std::vector<std::string> groups;
         std::vector<std::string> articles;
@@ -667,6 +697,7 @@ public:
             spec->set_path(ptr->path());
             spec->set_num_actions_total(num_actions_total_);
             spec->set_num_actions_ready(num_actions_ready_);
+            spec->set_enable_fill(is_fillable_);
 
             const auto& grouplist = ptr->groups();
             const auto& articles  = ptr->articles();
@@ -741,6 +772,9 @@ public:
             return no_transition;
 
         auto cmds = task_->create_commands();
+
+        LOG_I("Task ", ui_.task_id, " new cmdlist ", cmds->id());
+
         cmds->set_account(ui_.account);
         cmds->set_task(ui_.task_id);
         state.enqueue(*this, cmds);
@@ -759,13 +793,18 @@ public:
 
         num_active_cmdlists_--;
 
+        LOG_D("Task ", ui_.task_id, " receiving cmdlist ", cmds->id());
+
         if (ui_.state == states::error)
             return no_transition;
 
         if (!cmds->is_good())
         {
-            if (state.fill_account && (state.fill_account != cmds->account()))
+            LOG_W("Task ", ui_.task_id, " cmdlist ", cmds->id(),  " failbit is on.");
+
+            if (is_fillable_ && state.fill_account && (state.fill_account != cmds->account()))
             {
+                LOG_I("Task ", ui_.task_id, " cmdlist ", cmds->id(), " set for refill");
                 cmds->set_account(state.fill_account);
                 state.enqueue(*this, cmds);
                 ++num_active_cmdlists_;
@@ -779,24 +818,17 @@ public:
         }
         else
         {
-            const auto& buffers = cmds->get_buffers();
-            for (const auto& buff : buffers)
+            const auto& buffers  = cmds->get_buffers();
+            const auto& commands = cmds->get_commands();
+            for (std::size_t i=0; i<buffers.size(); ++i)
             {
+                const auto& buff = buffers[i];
+                const auto& cmd  = commands[i];
                 const auto status = buff.content_status();
+                LOG_D("Task ", ui_.task_id, " command ", cmd, " status ", str(status));
+
                 if (status == buffer::status::success)
                     continue;
-
-                if (state.fill_account && state.fill_account != cmds->account())
-                {
-                    cmds->set_account(state.fill_account);
-                    state.enqueue(*this, cmds);
-                    ++num_active_cmdlists_;
-                    return no_transition;
-                }
-                else if (status == buffer::status::unavailable)
-                    ui_.error.set(ui::task::errors::unavailable);
-                else if (status == buffer::status::dmca)
-                    ui_.error.set(ui::task::errors::dmca);
                 else if (status == buffer::status::error)
                 {
                     if (state.on_error_callback)
@@ -806,10 +838,23 @@ public:
                         err.what     = "Data buffer error";                        
                         state.on_error_callback(err);
                     }
-
                     LOG_E("Task ", ui_.task_id, " Error: data buffer error");
                     return goto_state(state, states::error);
                 }
+
+                if (is_fillable_ && state.fill_account && (state.fill_account != cmds->account()))
+                {
+                    LOG_I("Task ", ui_.task_id, " cmdlist ", cmds->id(), " set for refill.");
+                    cmds->set_account(state.fill_account);
+                    state.enqueue(*this, cmds);
+                    ++num_active_cmdlists_;
+                    return no_transition;
+                }
+
+                if (status == buffer::status::unavailable)
+                    ui_.error.set(ui::task::errors::unavailable);
+                else if (status == buffer::status::dmca)
+                    ui_.error.set(ui::task::errors::dmca);                                
             }
         }
 
@@ -909,15 +954,15 @@ public:
 
     transition on_action(engine::state& state, std::unique_ptr<action> act)
     {
-        assert(act->get_id() == ui_.task_id);
+        assert(act->get_owner() == ui_.task_id);
         assert(num_active_actions_ > 0);
 
         num_active_actions_--;
         num_actions_ready_++;
 
-        //LOG_D("Task ", ui_.task_id, " action complete ",typeid(*a).name());
-        //LOG_D("Task ", ui_.task_id, " has ", num_active_actions_, " pending actions");
-        //state.logger->flush();
+        LOG_D("Task ", ui_.task_id, " receiving action ", act->get_id(), " (", act->describe(), ")");
+        LOG_D("Task ", ui_.task_id, " num_active_actions ", num_active_actions_);
+        LOG_D("Task ", ui_.task_id, " num_actions_ready ", num_actions_ready_);
 
         if (ui_.state == states::error)
             return no_transition;
@@ -1041,7 +1086,7 @@ private:
     {
         if (!a) return;
 
-        a->set_id(ui_.task_id);
+        a->set_owner(ui_.task_id);
 
         num_active_actions_++;
         //LOG_D("Task ", ui_.task_id, " has a new active action ", typeid(*a).name());
@@ -1161,6 +1206,8 @@ private:
     std::size_t num_active_actions_;
     std::size_t num_actions_ready_;
     std::size_t num_actions_total_;
+private:
+    bool is_fillable_;
 };
 
 // for msvc... 
@@ -1494,6 +1541,7 @@ void engine::state::execute()
 
 void engine::state::enqueue(const task& t, std::shared_ptr<cmdlist> cmd)
 {
+    cmd->set_conn(0);
     cmds.push_back(cmd);
 
     if (!started)
@@ -1772,6 +1820,11 @@ bool engine::pump()
             auto tid   = e->get_tid();
             auto bytes = e->get_bytes_transferred();
 
+            LOG_D("Cmdlist ", cmds->id(), " executed");
+            LOG_D("Cmdlist ", cmds->id(), " belongs to task ", cmds->task());
+            LOG_D("Cmdlist ", cmds->id(), " goodbit: ", cmds->is_good());
+            LOG_D("Cmdlist ", cmds->id(), " cancelbit: ", cmds->is_canceled());
+
             #ifdef NEWSFLASH_DEBUG
             if (std::getenv("NEWSFLASH_DUMP_DATA"))
             {
@@ -1784,7 +1837,7 @@ bool engine::pump()
                     const auto& buff = buffers[i];
                     std::ofstream out;
                     std::stringstream ss;
-                    ss << "/tmp/" << commands[i] << ".txt";
+                    ss << "/tmp/Newsflash" << commands[i] << ".txt";
                     std::string file;
                     ss >> file;
                     out.open(file, std::ios::binary | std::ios::app);
@@ -1795,8 +1848,6 @@ bool engine::pump()
             }
             #endif
 
-            state_->cmds.erase(std::find(std::begin(state_->cmds), std::end(state_->cmds), cmds));
-
             auto tit  = std::find_if(std::begin(state_->tasks), std::end(state_->tasks),
                 [&](const std::unique_ptr<engine::task>& t) {
                     return t->tid() == tid;
@@ -1804,15 +1855,25 @@ bool engine::pump()
             if (tit != std::end(state_->tasks))
             {
                 auto& task = *tit;
-                const auto transition = task->complete(*state_, cmds);
-                if (transition)
+
+                if (e->has_exception())
                 {
-                    auto& batch = state_->find_batch(task->bid());
-                    batch.update(*state_, *task, transition);
+                    LOG_E("Action ", e->get_id(), " (", e->describe(), " ) has an exception. Cmdlist ", cmds->id(), " not ready.");
+                    state_->enqueue(*task, cmds);
+                }
+                else
+                {
+                    state_->cmds.erase(std::find(std::begin(state_->cmds), std::end(state_->cmds), cmds));
+
+                    const auto transition = task->complete(*state_, cmds);
+                    if (transition)
+                    {
+                        auto& batch = state_->find_batch(task->bid());
+                        batch.update(*state_, *task, transition);
+                    }
                 }
             }
-
-            state_->bytes_downloaded += bytes;
+            state_->bytes_downloaded += bytes;            
         }
         else if (auto* w = dynamic_cast<class datafile::write*>(action.get()))
         {
@@ -1821,7 +1882,7 @@ bool engine::pump()
                 state_->bytes_written += bytes;
         }
 
-        const auto id = action->get_id();
+        const auto id = action->get_owner();
         auto it = std::find_if(std::begin(state_->conns), std::end(state_->conns),
             [&](const std::unique_ptr<engine::conn>& c) {
                 return c->id() == id;

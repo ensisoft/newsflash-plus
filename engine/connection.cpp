@@ -112,6 +112,11 @@ void connection::resolve::xperform()
     LOG_I("Hostname resolved to ", ipv4{state_->addr});
 }
 
+std::string connection::resolve::describe() const 
+{
+    return "Resolve " + state_->hostname; 
+}
+
 connection::connect::connect(std::shared_ptr<state> s) : state_(s)
 {
     if (state_->ssl)
@@ -151,6 +156,11 @@ void connection::connect::xperform()
     LOG_I("Socket connection ready!");
 }
 
+std::string connection::connect::describe() const 
+{
+    return str("Connect to ", ipv4{state_->addr}, ":", state_->port);
+}
+
 connection::initialize::initialize(std::shared_ptr<state> s) : state_(s)
 {
     state_->session.reset(new session);
@@ -170,11 +180,18 @@ connection::initialize::initialize(std::shared_ptr<state> s) : state_(s)
     state_->session->enable_compression(s->compression);
 }
 
+std::string connection::initialize::describe() const 
+{
+    return "Initialize NNTP session";
+}
+
 void connection::initialize::xperform()
 {
     std::lock_guard<std::mutex> lock(state_->mutex);
 
     LOG_I("Initializing NNTP session");
+    LOG_I("Enable gzip compress: ", state_->compression);    
+    LOG_I("Enable pipelining: ", state_->pipelining);
 
     auto& session = state_->session;
     auto& socket  = state_->socket;
@@ -224,7 +241,7 @@ void connection::initialize::xperform()
         throw exception(connection::error::no_permission, "no permission");
 
     LOG_I("NNTP Session ready");
-    LOG_I("Using gzip compress: ", state_->compression);
+
 }
 
 connection::execute::execute(std::shared_ptr<state> s, std::shared_ptr<cmdlist> cmd, std::size_t tid) : state_(s), cmds_(cmd), tid_(tid), bytes_(0)
@@ -239,7 +256,7 @@ void connection::execute::xperform()
     auto& socket  = state_->socket;
     auto& cmdlist = cmds_;
 
-    LOG_D("Execute cmdlist");
+    LOG_D("Execute cmdlist ", cmdlist->id());
     LOG_D("Cmdlist has ", cmdlist->num_data_commands(), " data commands");
 
     newsflash::buffer recvbuf(MB(4));
@@ -266,6 +283,11 @@ void connection::execute::xperform()
         {
             if (!cmdlist->submit_configure_command(i, *session))
                 break;
+
+            if (!session->pending()) {
+                configure_success = true;
+                break;
+            }
 
             newsflash::buffer config(KB(1));
 
@@ -383,6 +405,11 @@ void connection::execute::xperform()
     LOG_I("Cmdlist complete");
 }
 
+std::string connection::execute::describe() const 
+{ 
+    return "Execute cmdlist";
+}
+
 connection::disconnect::disconnect(std::shared_ptr<state> s) : state_(s)
 {}
 
@@ -430,6 +457,11 @@ void connection::disconnect::xperform()
     LOG_D("Disconnect complete");
 }
 
+std::string connection::disconnect::describe() const 
+{
+    return "Disconnect";
+}
+
 connection::ping::ping(std::shared_ptr<state> s) : state_(s)
 {}
 
@@ -464,6 +496,11 @@ void connection::ping::xperform()
         buff.append(bytes);
     }
     while (!session->recv_next(buff, temp));
+}
+
+std::string connection::ping::describe() const 
+{
+    return "Ping";
 }
 
 std::unique_ptr<action> connection::connect(spec s)

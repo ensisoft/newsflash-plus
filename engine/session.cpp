@@ -285,6 +285,7 @@ public:
             out.set_status(buffer::status::success);
         }
         out.set_content_type(buffer::type::groupinfo);
+        st.group = group_;
         return true;
     }
 
@@ -346,7 +347,7 @@ public:
         out.set_content_start(len);
         out.set_status(buffer::status::success);
 
-        LOG_D("Read body data ", newsflash::size{blen});
+        LOG_I("Read body data ", newsflash::size{blen});
         return true;
     }
 
@@ -414,7 +415,7 @@ public:
         out.set_content_start(len);
         out.set_status(buffer::status::success);
         
-        LOG_D("Read xover data ", newsflash::size{blen});
+        LOG_I("Read xover data ", newsflash::size{blen});
         return true;
     }
 
@@ -437,6 +438,7 @@ public:
     {
         std::memset(&z_, 0, sizeof(z_));
         inflateInit(&z_);
+        inflate_done_ = false;
     }
    ~xovergzip()
     {
@@ -445,6 +447,21 @@ public:
 
     virtual bool parse(buffer& buff, buffer& out, impl& st) override
     {
+        if (inflate_done_)
+        {
+            LOG_D("Rescanning....");
+            if (buff.size() >= 3)
+            {
+                if (!std::strncmp(buff.head(), ".\r\n", 3))
+                {
+                    LOG_D("Found end of body marker!");
+                    buff.pop(3);
+                    return true;
+                }
+            }
+        }
+
+
         const auto len = nntp::find_response(buff.head(), buff.size());
         if (len == 0)
             return false;
@@ -488,6 +505,8 @@ public:
             else if (err == Z_STREAM_END)
                 break;
         }
+        inflate_done_ = true;
+
         if (err != Z_STREAM_END)
         {
             LOG_E("Inflate failed zlib error: ", err);        
@@ -506,11 +525,17 @@ public:
         if (size >= 3) 
         {
             if (!std::strncmp(head, ".\r\n", 3))
-                ibytes_ += 3;
+            {
+                LOG_D("Found end of body marker!");
+                buff.pop(ibytes_ + len + 3);
+                return true;
+            }
         }
 
         buff.pop(ibytes_ + len);
-        return true;
+        // we're still missing the .\r\n that supposedly comes at the end of
+        // deflated data. therefore we return false.
+        return false;
     }
 
     virtual bool can_pipeline() const override
@@ -528,6 +553,8 @@ private:
     z_stream z_;
     uLong obytes_;
     uLong ibytes_;
+private:
+    bool inflate_done_;
 };
 
 
@@ -567,7 +594,7 @@ public:
         out.set_content_start(len);
         out.set_status(buffer::status::success);
 
-        LOG_D("Read listing data ", newsflash::size{blen});
+        LOG_I("Read listing data ", newsflash::size{blen});
         return true;
     }
     virtual bool can_pipeline() const override
@@ -611,7 +638,7 @@ public:
         const auto beg = buff.head();
         if (beg[0] != '2') 
         {
-            LOG_E("Compression not supported.");
+            LOG_W("Compression not supported.");
             st.enable_compression = false;
         }
         buff.clear();
@@ -670,6 +697,8 @@ void session::quit()
 
 void session::change_group(std::string name)
 {
+    if (name == state_->group)
+        return;
     send_.emplace_back(new group(std::move(name)));
 }
 
@@ -773,7 +802,11 @@ bool session::recv_next(buffer& buff, buffer& out)
     if (!next->parse(buff, out, *state_))
         return false;
 
-    LOG_I(response);
+    if (response[0] == '5')
+        LOG_E(response);
+    else if (response[0] == '4')
+        LOG_W(response);
+    else LOG_I(response);
 
     if (state_->error != error::none)
     {

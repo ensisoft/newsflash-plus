@@ -23,6 +23,8 @@
 #  include <boost/regex.hpp>
 #include <newsflash/warnpop.h>
 #include <sstream>
+#include <vector>
+#include <cctype>
 #include "filetype.h"
 
 namespace newsflash
@@ -44,7 +46,16 @@ std::vector<std::string> split(const std::string& input)
     return ret;
 }
 
-filetype find_filetype(const std::string& subject)
+std::string tolower(const std::string& s)
+{
+    std::string ret;
+    for (const auto& c : s)
+        ret.push_back(std::tolower(c));
+
+    return ret;
+}
+
+filetype find_filetype(const std::string& filename)
 {
     struct pattern {
         filetype type;        
@@ -59,6 +70,12 @@ filetype find_filetype(const std::string& subject)
         { filetype::document, ".doc | .chm | .pdf" }
     };
 
+    const auto pos = filename.find_last_of(".");
+    if (pos == std::string::npos)
+        return filetype::other;
+
+    const auto xtension = tolower(filename.substr(pos));
+
     // note that the regular expressions above should be of the form \\.mp3 
     // i.e. we need to escape the . 
 
@@ -68,9 +85,9 @@ filetype find_filetype(const std::string& subject)
         const auto type = (*it).type;
         for (auto it = std::begin(pat); it != std::end(pat); ++it)
         {
-            // escape the . an interpret it as a char
+            // escape the . and interpret it as a char
             boost::regex r("\\" + *it, boost::regbase::icase /* | boost::regbase::perl */);
-            if (boost::regex_search(subject.begin(), subject.end(), r))
+            if (boost::regex_search(xtension.begin(), xtension.end(), r))
                 return type;
         }
     }

@@ -73,6 +73,8 @@ namespace newsflash
             {}
 
             virtual void xperform() override;
+
+            virtual std::string describe() const override;            
         private:
             std::shared_ptr<state> state_;
         };
@@ -84,6 +86,8 @@ namespace newsflash
             connect(std::shared_ptr<state> s);
 
             virtual void xperform() override;
+
+            virtual std::string describe() const override;            
         private:
             std::shared_ptr<state> state_;
         };
@@ -95,6 +99,8 @@ namespace newsflash
             initialize(std::shared_ptr<state> s);
 
             virtual void xperform() override;
+
+            virtual std::string describe() const override;
         private:
             std::shared_ptr<state> state_;
         };
@@ -106,6 +112,8 @@ namespace newsflash
             execute(std::shared_ptr<state> s, std::shared_ptr<cmdlist> cmds, std::size_t tid);
 
             virtual void xperform() override;
+
+            virtual std::string describe() const override;
 
             std::shared_ptr<cmdlist> get_cmdlist() const
             { return cmds_; }
@@ -129,6 +137,9 @@ namespace newsflash
             disconnect(std::shared_ptr<state> s);
 
             virtual void xperform() override;
+
+            virtual std::string describe() const override;
+            
         private:
             std::shared_ptr<state> state_;
         };
@@ -139,6 +150,8 @@ namespace newsflash
             ping(std::shared_ptr<state> s);
 
             virtual void xperform() override;
+
+            virtual std::string describe() const override;
 
         private:
             std::shared_ptr<state> state_;

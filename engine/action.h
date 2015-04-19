@@ -25,6 +25,8 @@
 #include <newsflash/config.h>
 #include <exception>
 #include <memory>
+#include <atomic>
+#include <string>
 #include "logging.h"
 
 namespace newsflash
@@ -52,8 +54,11 @@ namespace newsflash
 
         virtual ~action() = default;
 
-        action(affinity a = affinity::any_thread) : id_(0), affinity_(a)
-        {}
+        action(affinity a = affinity::any_thread) : owner_(0), affinity_(a)
+        {
+            static std::atomic<std::size_t> id(1);
+            id_ = id++;
+        }
 
         // return wheather an exception happened in perform()
         bool has_exception() const 
@@ -85,16 +90,22 @@ namespace newsflash
             set_thread_log(nullptr);
         }
 
+        virtual std::string describe() const
+        { return {}; }
+
         affinity get_affinity() const 
         { return affinity_; }
 
         // get action object id.
-        std::size_t get_id() const 
+        std::size_t get_owner() const 
+        { return owner_; }
+
+        std::size_t get_id() const
         { return id_; }
 
         // set the action id
-        void set_id(std::size_t id) 
-        { id_ = id;}
+        void set_owner(std::size_t id) 
+        { owner_ = id;}
 
         // set the thread affinity.
         void set_affinity(affinity aff)
@@ -109,7 +120,8 @@ namespace newsflash
 
     private:
         std::exception_ptr exptr_;
-        std::size_t id_;
+        std::size_t owner_;
+        std::size_t id_;        
         std::shared_ptr<logger> log_;
     private:
         affinity affinity_;

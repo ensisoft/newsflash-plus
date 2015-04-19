@@ -45,6 +45,11 @@ decode::decode(buffer&& data) : data_(std::move(data))
 decode::~decode()
 {}
 
+std::string decode::describe() const 
+{
+    return "Decode";
+}
+
 void decode::xperform()
 {
     // iterate over the content line by line and inspect

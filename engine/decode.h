@@ -62,6 +62,8 @@ namespace newsflash
         decode(buffer&& data);
        ~decode();
 
+        virtual std::string describe() const override;
+
         // get text content buffer (if any)
 
         // doesn't work with msvc!

@@ -56,7 +56,7 @@ namespace newsflash
         other
     };
 
-    filetype find_filetype(const std::string& subject);
+    filetype find_filetype(const std::string& filename);
 
     enum class fileflag : std::uint8_t {
         broken,

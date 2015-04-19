@@ -9,7 +9,15 @@ project engine
   <toolset>gcc:<linkflags>-rdynamic
   
 ;
-  
+
+# OBSCURE ERROR WARNING!!!
+# I got the following obscure error message.
+#
+# `/usr/bin/ld: ../protobuf/lib/libprotobuf_d.a(common.o): relocation R_X86_64_32S against `.rodata' 
+# can not be used when making a shared object; recompile with -fPIC'
+# 
+# the culprit is the protobuf linking statement when building the engine as a shared lib and trying to use protobuf as a static lib
+
 lib engine :  
    [ glob *.cpp ] 
 
@@ -23,7 +31,7 @@ lib engine :
    /newsflash//zlib/<link>shared
    /newsflash//openssl/<link>shared
    /newsflash//crypto/<link>shared
-   /newsflash//protobuf/<link>static
+#   /newsflash//protobuf/<link>static
 ;
 
 #build-project unit_test ;

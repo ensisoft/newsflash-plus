@@ -1,4 +1,4 @@
-// Copyright (c) 2013,2014 Sami V‰is‰nen, Ensisoft 
+// Copyright (c) 2013,2014 Sami V√§is√§nen, Ensisoft 
 //
 // http://www.ensisoft.com
 //
@@ -64,6 +64,15 @@ void test_parse_overview()
         REQUIRE(ret.second.references, "references");
         REQUIRE(ret.second.bytecount, "12223");
         REQUIRE(ret.second.linecount, "50");
+    }
+
+    {
+        const char* str = "25534\t(cameltoe clips) [93/98] - \"CAMELTOE  CLIPS 6.vol076+32.PAR2\" yEnc (126/130)\tlekkrstrak@hotmail.com (cameltoelover)\tTue, 15 Feb 2011 20:45:19 +0100\t<6d263$4d5ad7cf$d979c5b1$19427@news.lightningusenet.com>\t\t931\t3052\tXref: news-big.astraweb.com alt.binaries.pictures.cameltoes:25534";
+
+        const auto& ret = nntp::parse_overview(str, std::strlen(str));        
+        REQUIRE(ret.second.number, "25534");
+        REQUIRE(ret.second.bytecount, "931");
+        REQUIRE(ret.second.linecount, "3052");
     }
 
     {
@@ -623,7 +632,7 @@ void test_strcmp()
     std::string str5 = "Metallica - 02 - Enter sandman (2/15).mp3";
     std::string str6 = "[foobar]";
     std::string str7 = "[doodar]";
-    std::string str8 = "some weird letters ˆˆˆ‰‰‰,,,<|^^≈≈";
+    std::string str8 = "some weird letters √∂√∂√∂√§√§√§,,,<|^^√Ö√Ö";
     std::string str9 = "foobar keke (01/50)";
     std::string strA = "foobar keke (01/xy)";
 

@@ -38,6 +38,7 @@ int test_main(int, char*[])
     BOOST_REQUIRE(n::find_filetype("foobar.part001.rar") == t::archive);
     BOOST_REQUIRE(n::find_filetype("Battlefield_Bad_Company_2_NTSC_XBOX360-CCCLX_packed.exe") == t::other);
 
+    BOOST_REQUIRE(n::find_filetype("movie.mkv.jpg") == t::image);
 
 
     return 0;

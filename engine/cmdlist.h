@@ -183,6 +183,9 @@ namespace newsflash
         std::size_t conn() const 
         { return conn_; }
 
+        std::size_t id() const 
+        { return id_; }
+
         type cmdtype() const 
         { return cmdtype_; }
 
@@ -208,9 +211,14 @@ namespace newsflash
 
         void set_conn(std::size_t cid)
         { conn_ = cid; }
+
+
     private:
         cmdlist() : cancelbit_(false), failbit_(false), account_(0), task_(0), conn_(0)
-        {}
+        {
+            static std::atomic<std::size_t> id(1);
+            id_ = id++;
+        }
 
     private:
         type cmdtype_;
@@ -221,6 +229,7 @@ namespace newsflash
         std::size_t account_;
         std::size_t task_;
         std::size_t conn_;
+        std::size_t id_;
         std::vector<buffer> buffers_;
         std::vector<std::string> groups_;
         std::vector<std::string> commands_;
