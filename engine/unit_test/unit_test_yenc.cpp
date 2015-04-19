@@ -29,6 +29,7 @@
 #include <string>
 #include <ctime>
 #include "../yenc.h"
+#include "../bodyiter.h"
 
 // test parsing headers, parts and end lines
 void test_parsing()
@@ -221,37 +222,111 @@ void test_parsing()
  */
 void test_decoding()
 {
-    std::ifstream src;
-    std::ifstream ref;
+    {
+        std::ifstream src;
+        std::ifstream ref;
     
-    src.open("test_data/newsflash_2_0_0.yenc", std::ios::binary);
-    ref.open("test_data/newsflash_2_0_0.png", std::ios::binary);
+        src.open("test_data/newsflash_2_0_0.yenc", std::ios::binary);
+        ref.open("test_data/newsflash_2_0_0.png", std::ios::binary);
     
-    BOOST_REQUIRE(src.is_open());
-    BOOST_REQUIRE(ref.is_open());
+        BOOST_REQUIRE(src.is_open());
+        BOOST_REQUIRE(ref.is_open());
     
-    std::vector<char> temp;
-    std::vector<char> orig;
-    std::copy(std::istreambuf_iterator<char>(src), std::istreambuf_iterator<char>(), std::back_inserter(temp));
-    std::copy(std::istreambuf_iterator<char>(ref), std::istreambuf_iterator<char>(), std::back_inserter(orig));
+        std::vector<char> temp;
+        std::vector<char> orig;
+        std::copy(std::istreambuf_iterator<char>(src), std::istreambuf_iterator<char>(), std::back_inserter(temp));
+        std::copy(std::istreambuf_iterator<char>(ref), std::istreambuf_iterator<char>(), std::back_inserter(orig));
 
-    auto it = temp.begin();
+        auto it = temp.begin();
 
-    const auto& header = yenc::parse_header(it, temp.end());
-    BOOST_REQUIRE(header.first);
-    BOOST_REQUIRE(header.second.part == 0);
-    BOOST_REQUIRE(header.second.line == 128);
-    BOOST_REQUIRE(header.second.name == "test.png");
+        const auto& header = yenc::parse_header(it, temp.end());
+        BOOST_REQUIRE(header.first);
+        BOOST_REQUIRE(header.second.part == 0);
+        BOOST_REQUIRE(header.second.line == 128);
+        BOOST_REQUIRE(header.second.name == "test.png");
 
-    std::vector<char> data;
-    yenc::decode(it, temp.end(), std::back_inserter(data));
+        std::vector<char> data;
+        yenc::decode(it, temp.end(), std::back_inserter(data));
 
-    BOOST_REQUIRE(orig.size() == data.size());
-    BOOST_REQUIRE(std::memcmp(&orig[0], &data[0], orig.size()) == 0);
+        BOOST_REQUIRE(orig.size() == data.size());
+        BOOST_REQUIRE(orig == data);
 
-    const auto& footer = yenc::parse_footer(it, temp.end());
-    BOOST_REQUIRE(footer.first);
-    BOOST_REQUIRE(footer.second.size == header.second.size);
+        const auto& footer = yenc::parse_footer(it, temp.end());
+        BOOST_REQUIRE(footer.first);
+        BOOST_REQUIRE(footer.second.size == header.second.size);
+    }
+
+    {
+        std::ifstream ref;
+        std::ifstream src;
+        ref.open("test_data/vip.part4.yenc.bin");
+        src.open("test_data/vip.part4.yenc.txt");
+
+        BOOST_REQUIRE(ref.is_open());
+        BOOST_REQUIRE(src.is_open());
+
+        std::vector<char> temp;
+        std::vector<char> orig;
+        std::copy(std::istreambuf_iterator<char>(src), std::istreambuf_iterator<char>(), std::back_inserter(temp));
+        std::copy(std::istreambuf_iterator<char>(ref), std::istreambuf_iterator<char>(), std::back_inserter(orig));
+
+        auto it = temp.begin();
+        const auto& header = yenc::parse_header(it, temp.end());
+        BOOST_REQUIRE(header.first);
+        BOOST_REQUIRE(header.second.part == 4);
+        BOOST_REQUIRE(header.second.line == 128);
+        BOOST_REQUIRE(header.second.size == 15000000);
+        BOOST_REQUIRE(header.second.total == 20);
+
+        const auto& part = yenc::parse_part(it, temp.end());
+        BOOST_REQUIRE(part.first);
+        BOOST_REQUIRE(part.second.begin == 2304001);
+        BOOST_REQUIRE(part.second.end == 3072000);
+
+        std::vector<char> data;
+        yenc::decode(it, temp.end(), std::back_inserter(data));
+
+        BOOST_REQUIRE(orig.size() == data.size());
+        BOOST_REQUIRE(orig == data);
+
+    }
+
+    {
+        std::ifstream ref;
+        std::ifstream src;
+        ref.open("test_data/vip.part4.yenc.bin");
+        src.open("test_data/vip.part4.yenc.txt");
+
+        BOOST_REQUIRE(ref.is_open());
+        BOOST_REQUIRE(src.is_open());
+
+        std::vector<char> temp;
+        std::vector<char> orig;
+        std::copy(std::istreambuf_iterator<char>(src), std::istreambuf_iterator<char>(), std::back_inserter(temp));
+        std::copy(std::istreambuf_iterator<char>(ref), std::istreambuf_iterator<char>(), std::back_inserter(orig));        
+
+        nntp::bodyiter beg(&temp[0], temp.size());
+        nntp::bodyiter end(&temp[temp.size()], 0);
+
+        const auto& header = yenc::parse_header(beg, end);
+        BOOST_REQUIRE(header.first);
+        BOOST_REQUIRE(header.second.part == 4);
+        BOOST_REQUIRE(header.second.line == 128);
+        BOOST_REQUIRE(header.second.size == 15000000);
+        BOOST_REQUIRE(header.second.total == 20);
+
+        const auto& part = yenc::parse_part(beg, end);
+        BOOST_REQUIRE(part.first);
+        BOOST_REQUIRE(part.second.begin == 2304001);
+        BOOST_REQUIRE(part.second.end == 3072000);
+
+        std::vector<char> data;
+        yenc::decode(beg, end, std::back_inserter(data));
+
+        BOOST_REQUIRE(orig.size() == data.size());
+        BOOST_REQUIRE(orig == data);
+
+    }
         
 }
 
@@ -262,31 +337,39 @@ void test_decoding()
  */
 void test_encoding()
 {
-    std::ifstream ref;
-    std::ifstream src;
-    ref.open("test_data/newsflash_2_0_0.yenc", std::ios::binary);
-    src.open("test_data/newsflash_2_0_0.png", std::ios::binary);
 
-    BOOST_REQUIRE(ref.is_open());
-    BOOST_REQUIRE(src.is_open());
+    {
+        std::ifstream ref;
+        std::ifstream src;
+        ref.open("test_data/newsflash_2_0_0.yenc", std::ios::binary);
+        src.open("test_data/newsflash_2_0_0.png", std::ios::binary);
 
-    std::vector<char> png;
-    std::copy(std::istreambuf_iterator<char>(src), std::istreambuf_iterator<char>(), std::back_inserter(png));
+        BOOST_REQUIRE(ref.is_open());
+        BOOST_REQUIRE(src.is_open());
+
+        std::vector<char> png;
+        std::copy(std::istreambuf_iterator<char>(src), std::istreambuf_iterator<char>(), std::back_inserter(png));
     
-    std::vector<char> data;
-    std::copy(std::istreambuf_iterator<char>(ref), std::istreambuf_iterator<char>(), std::back_inserter(data));
+        std::vector<char> data;
+        std::copy(std::istreambuf_iterator<char>(ref), std::istreambuf_iterator<char>(), std::back_inserter(data));
 
-    const std::string header("=ybegin line=128 size=16153 name=test.png\r\n");
-    const std::string trailer("\r\n=yend size=16153 crc32=4a68571d\r\n");
+        const std::string header("=ybegin line=128 size=16153 name=test.png\r\n");
+        const std::string trailer("\r\n=yend size=16153 crc32=4a68571d\r\n");
     
-    std::vector<char> yenc;
+        std::vector<char> yenc;
 
-    std::copy(header.begin(), header.end(), std::back_inserter(yenc));
-    yenc::encode(png.begin(), png.end(), std::back_inserter(yenc));
-    std::copy(trailer.begin(), trailer.end(), back_inserter(yenc));
+        std::copy(header.begin(), header.end(), std::back_inserter(yenc));
+        yenc::encode(png.begin(), png.end(), std::back_inserter(yenc));
+        std::copy(trailer.begin(), trailer.end(), back_inserter(yenc));
 
-    BOOST_REQUIRE(yenc.size() == data.size());
-    BOOST_REQUIRE(std::memcmp(&yenc[0], &data[0], yenc.size()) == 0);
+        BOOST_REQUIRE(yenc.size() == data.size());
+        BOOST_REQUIRE(std::memcmp(&yenc[0], &data[0], yenc.size()) == 0);
+
+    }
+
+
+
+
 }
 
 

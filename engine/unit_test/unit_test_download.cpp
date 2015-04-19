@@ -31,6 +31,7 @@
 #include "../action.h"
 #include "../session.h"
 #include "../cmdlist.h"
+#include "../settings.h"
 #include "unit_test_common.h"
 
 namespace nf = newsflash;
@@ -110,24 +111,28 @@ void unit_test_decode_binary()
 void unit_test_decode_text()
 {}
 
-void test_decode_from_files()
+void unit_test_decode_from_files()
 {
-    // this test case assumes that we've got some raw NNTP dumps somewhere on the disk and then a 
-    // reference binary somewhere 
     namespace fs = boost::filesystem;
 
     //nf::download 
     std::vector<std::string> articles;
 
-    for (auto it = fs::directory_iterator("/tmp/Newsflash/"); it != fs::directory_iterator(); ++it)
+    for (auto it = fs::directory_iterator("test_data/r09"); it != fs::directory_iterator(); ++it)
     {
         auto entry = *it;
         auto file  = entry.path().string();
         if (file.find(".log") != std::string::npos)
             continue;
+        if (file.find(".r09") != std::string::npos)
+            continue;
         articles.push_back(file);
     }
     nf::download download({"alt.binaries.foo"}, articles, "", "test");
+    nf::settings settings;
+    settings.discard_text_content = true;
+    settings.overwrite_existing_files = true;
+    download.configure(settings);
     nf::session ses;
     ses.on_send = [&](const std::string&) {};
 
@@ -156,12 +161,9 @@ void test_decode_from_files()
 
 int test_main(int, char*[])
 {
-    //unit_test_bodylist();
     unit_test_create_cmds();
     unit_test_decode_binary();
     unit_test_decode_text();
-
-    //test_decode_from_files();
-
+    unit_test_decode_from_files();
     return 0;
 }
