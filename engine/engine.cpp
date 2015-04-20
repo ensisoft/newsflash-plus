@@ -817,10 +817,12 @@ public:
                 return no_transition;
             }
         }
-        else
+        else if (cmds->cmdtype() != cmdlist::type::groupinfo)
         {
             const auto& buffers  = cmds->get_buffers();
             const auto& commands = cmds->get_commands();
+            assert(commands.size() >= buffers.size());
+            
             for (std::size_t i=0; i<buffers.size(); ++i)
             {
                 const auto& buff = buffers[i];

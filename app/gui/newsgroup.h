@@ -75,7 +75,7 @@ namespace gui
         void on_actionShowBroken_changed();
         void on_actionShowDeleted_changed();
         void on_actionDelete_triggered();
-
+        void on_actionHeaders_triggered();
         void on_actionRefresh_triggered();
         void on_actionFilter_triggered();
         void on_actionStop_triggered();

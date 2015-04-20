@@ -56,18 +56,73 @@ public:
     VolumeList(std::vector<Catalog>& catalogs) : catalogs_(catalogs)
     {}
     virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const override
-    {}
+    {
+        if (orientation != Qt::Horizontal)
+            return {};
+
+        switch ((Columns)section)
+        {
+            case Columns::State:  return "Status";
+            case Columns::File:   return "File";
+            case Columns::LAST:   Q_ASSERT(0); break;
+        }
+        return {};
+    }
 
     virtual QVariant data(const QModelIndex& index, int role) const override
-    {}
+    {
+        const auto row   = index.row();
+        const auto col   = (Columns)index.column();
+        const auto& item = catalogs_[row];
+
+        if (role == Qt::DisplayRole)
+        {
+            switch (col)
+            {
+                case Columns::State: return toString(item.state);
+                case Columns::File:  return item.file;
+                case Columns::LAST:  Q_ASSERT(0); break;
+            }
+        }
+        if (role == Qt::DecorationRole)
+        {
+            if (col == Columns::State)
+            {
+                if (item.state == State::Loaded)
+                    return QIcon("icons:ico_bullet_green.png");
+                return QIcon("icons:ico_bullet_grey.png");
+            }
+        }
+
+        return {};
+    }
+
     virtual int rowCount(const QModelIndex& index) const override
     {
         return (int)catalogs_.size();
     }
     virtual int columnCount(const QModelIndex& index) const override
     {
-        return 3;
+        return (int)Columns::LAST;
     }
+
+private:
+    QString toString(State s) const 
+    {
+        switch (s)
+        {
+            case State::Loaded:   return "Loaded";
+            case State::UnLoaded: return "";
+        }
+        Q_ASSERT(0);
+        return "";
+    }
+
+    enum class Columns {
+        State,
+        File,
+        LAST
+    };
 
 private:
     std::vector<Catalog>& catalogs_;
@@ -584,6 +639,8 @@ void NewsGroup::loadMoreData(const std::string& file, bool guiLoad)
         Catalog next;
         next.prevSize   = 0;
         next.prevOffset = 0;
+        next.state      = State::Loaded;
+        next.file       = QFileInfo(widen(file)).baseName();
         catalogs_.push_back(next);
         it = catalogs_.end() - 1;
     }

@@ -151,12 +151,16 @@ namespace app
         using index   = newsflash::index<newsflash::filemap>;
         using idlist  = newsflash::idlist<newsflash::filemap>;
 
+        enum class State {
+            Loaded, UnLoaded
+        };
+
         struct Catalog {
             catalog db;
             std::size_t prevSize;
             std::size_t prevOffset;
-            bool loaded;
             QString file;
+            State state;
         };
 
         class VolumeList;

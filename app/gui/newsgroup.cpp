@@ -36,6 +36,7 @@
 #include "newsgroup.h"
 #include "mainwindow.h"
 #include "dlgfilter.h"
+#include "dlgvolumes.h"
 #include "../debug.h"
 #include "../format.h"
 #include "../utility.h"
@@ -121,6 +122,8 @@ void NewsGroup::addActions(QToolBar& bar)
     bar.addAction(ui_.actionRefresh);
     bar.addSeparator();
     bar.addAction(ui_.actionDownload);
+    bar.addSeparator();
+    bar.addAction(ui_.actionHeaders);
     bar.addSeparator();
     bar.addAction(ui_.actionFilter);
     bar.addSeparator();
@@ -357,6 +360,12 @@ void NewsGroup::on_actionDelete_triggered()
         return;
 
     model_.killSelected(indices);
+}
+
+void NewsGroup::on_actionHeaders_triggered()
+{
+    DlgVolumes dlg(this, model_);
+    dlg.exec();
 }
 
 void NewsGroup::on_actionRefresh_triggered()

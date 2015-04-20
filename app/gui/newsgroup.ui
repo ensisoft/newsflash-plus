@@ -264,6 +264,15 @@
     <string>Del</string>
    </property>
   </action>
+  <action name="actionHeaders">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_headers.png</normaloff>:/resource/16x16_ico_png/ico_headers.png</iconset>
+   </property>
+   <property name="text">
+    <string>Headers</string>
+   </property>
+  </action>
  </widget>
  <tabstops>
   <tabstop>tableView</tabstop>
