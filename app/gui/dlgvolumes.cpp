@@ -20,10 +20,11 @@
 
 #include <newsflash/config.h>
 #include <newsflash/warnpush.h>
-
+#  include <QtGui/QMessageBox>
 #include <newsflash/warnpop.h>
 #include "dlgvolumes.h"
 #include "../newsgroup.h"
+#include "../format.h"
 
 namespace gui
 {
@@ -49,9 +50,23 @@ void DlgVolumes::on_btnPurge_clicked()
 
 void DlgVolumes::on_btnLoad_clicked()
 {
+    ui_.btnLoad->setEnabled(false);
+    ui_.btnClose->setEnabled(false);
+
     const auto& indices = ui_.tableView->selectionModel()->selectedRows();
-    for (const auto& i : indices)
-        model_.load(i.row());
+    try 
+    {
+        for (const auto& i : indices)
+            model_.load(i.row());
+    }
+    catch (const std::exception& e)
+    {
+        QMessageBox::critical(this, "Headers", 
+            tr("Unable to load the newsgroup data.\n%1").arg(app::widen(e.what())));
+    }
+
+    ui_.btnLoad->setEnabled(true);
+    ui_.btnClose->setEnabled(true);
 }
 
 } // gui

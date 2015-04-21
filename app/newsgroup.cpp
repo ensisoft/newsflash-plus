@@ -475,6 +475,8 @@ void NewsGroup::load(std::size_t blockIndex)
     const auto& file = joinPath(path, block.file);
     DEBUG("Loading headers from %1", file);
 
+    block.state = State::Loaded;
+
     loadMoreData(block, true);
 
     onLoadComplete(blockIndex, catalogs_.size());
@@ -722,10 +724,19 @@ void NewsGroup::newHeaderDataAvailable(const QString& file)
         });
     if (it == std::end(blocks_))
     {
+        // the data is organized into files that are lexiographically comparable
+        // i.e. bigger numbers means newer data. If we're reciving new headers
+        // in a datafile that is newer than the current we're always going 
+        // load it up on the ui. otherwise it's up to the user to specifically
+        // request to load older data blocks.
+        bool newData = true;
+        if (!blocks_.empty())
+            newData = file > blocks_[0].file;
+
         Block block;
         block.prevSize   = 0;
         block.prevOffset = 0;
-        block.state      = State::UnLoaded;
+        block.state      = newData ? State::Loaded : State::UnLoaded;
         block.file       = file;
         block.index      = catalogs_.size();
         block.purge      = false;
@@ -745,6 +756,9 @@ void NewsGroup::newHeaderDataAvailable(const QString& file)
     }
 
     auto& block = *it;    
+    if (block.state != State::Loaded)
+        return;
+
     loadMoreData(block, false);
 
     if (volumeList_) 
@@ -821,7 +835,6 @@ void NewsGroup::loadMoreData(Block& block, bool guiLoad)
     // index to start loading the objects.
     block.prevOffset = beg.offset();
     block.prevSize   = db.size();
-    block.state      = State::Loaded;
     DEBUG("%1 is at new offset %2", block.file, block.prevOffset);
 
     QAbstractTableModel::reset();    

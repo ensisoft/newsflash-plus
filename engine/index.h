@@ -27,6 +27,8 @@
 #include <algorithm>
 #include <deque>
 #include <limits>
+#include <thread>
+#include <future>
 #include <cstdint>
 #include <cstring>
 #include <cassert>
@@ -306,9 +308,16 @@ namespace newsflash
             auto mid = std::begin(items_) + size_;
             auto end = std::end(items_);
 
-            auto a = std::stable_partition(beg, mid, pred);
-            auto b = std::stable_partition(mid, end, pred);
+            auto future = std::async(std::launch::async, [&] {
+                return std::stable_partition(mid, end, pred);
+            });
 
+            auto a = std::stable_partition(beg, mid, pred);            
+            //auto b = std::stable_partition(mid, end, pred);                        
+
+            future.wait();
+            auto b = future.get();
+           
             auto out = std::back_inserter(tmp);
             switch (sorting_)
             {
@@ -461,13 +470,20 @@ namespace newsflash
             auto end = std::end(items_);
             if (up_down == sortdir::ascending) 
             {
-                 std::sort(beg, mid, less(p));
-                 std::sort(mid, end, less(p));
+                auto future = std::async(std::launch::async, [&] {
+                    std::sort(beg, mid, less(p));
+                });
+
+                std::sort(mid, end, less(p));
+                future.wait();
             }
             else 
             {
-                std::sort(beg, mid, greater(p));
+                auto future = std::async(std::launch::async, [&] {
+                    std::sort(beg, mid, greater(p));
+                });
                 std::sort(mid, end, greater(p));                
+                future.wait();
             }
         }
 
