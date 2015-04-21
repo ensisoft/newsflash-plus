@@ -66,8 +66,9 @@ namespace app
         NewsGroup();
        ~NewsGroup();
 
-        std::function<void ()> onLoadComplete;
-        std::function<void (std::size_t curItem, std::size_t numMItems)> onLoadProgress;
+        std::function<void (std::size_t curBlock, std::size_t numBlocks)> onLoadBegin;
+        std::function<void (std::size_t curItem, std::size_t numMitems)> onLoadProgress;
+        std::function<void (std::size_t curBlock, std::size_t numBlocks)> onLoadComplete;        
 
         // QAbstractTableModel
         virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
@@ -76,7 +77,10 @@ namespace app
         virtual int columnCount(const QModelIndex&) const override;
         virtual void sort(int column, Qt::SortOrder order) override;
 
-        bool load(quint32 blockIndex, QString path, QString name, quint32& numBlocks);
+        bool init(QString path, QString name);
+        void load(std::size_t blockIndex);
+        void load();
+        void purge(std::size_t blockIndex);
         void refresh(quint32 account, QString path, QString name);
         void stop();
 
@@ -88,6 +92,8 @@ namespace app
 
         std::size_t numItems() const;
         std::size_t numShown() const;
+        std::size_t numBlocksAvail() const;
+        std::size_t numBlocksLoaded() const;
 
         using Article  = newsflash::article<newsflash::filemap>;
         using FileType = newsflash::filetype;
@@ -145,7 +151,8 @@ namespace app
         void updateCompleted(const app::HeaderInfo& info);
 
     private:
-        void loadMoreData(const std::string& file, bool guiLoad);
+        struct Block;
+        void loadMoreData(Block& block, bool guiLoad);
 
         using catalog = newsflash::catalog<newsflash::filemap>;
         using index   = newsflash::index<newsflash::filemap>;
@@ -155,18 +162,20 @@ namespace app
             Loaded, UnLoaded
         };
 
-        struct Catalog {
-            catalog db;
+        struct Block {
             std::size_t prevSize;
             std::size_t prevOffset;
+            std::size_t index;
             QString file;
             State state;
+            bool purge;
         };
 
         class VolumeList;
-
         std::unique_ptr<VolumeList> volumeList_;
-        std::vector<Catalog> catalogs_;
+
+        std::deque<Block> blocks_;
+        std::deque<catalog> catalogs_;
         index index_;
         idlist idlist_;
 

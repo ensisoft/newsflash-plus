@@ -28,6 +28,7 @@
 namespace gui
 {
 
+
 DlgVolumes::DlgVolumes(QWidget* parent, app::NewsGroup& model) : QDialog(parent), model_(model)
 {
     ui_.setupUi(this);
@@ -39,10 +40,18 @@ void DlgVolumes::on_btnClose_clicked()
     close();
 }
 
-void DlgVolumes::on_btnDelete_clicked()
-{}
+void DlgVolumes::on_btnPurge_clicked()
+{
+    const auto& indices = ui_.tableView->selectionModel()->selectedRows();
+    for (const auto& i : indices)
+        model_.purge(i.row());
+}
 
 void DlgVolumes::on_btnLoad_clicked()
-{}
+{
+    const auto& indices = ui_.tableView->selectionModel()->selectedRows();
+    for (const auto& i : indices)
+        model_.load(i.row());
+}
 
 } // gui

@@ -26,10 +26,12 @@
 #include <algorithm>
 #include <iterator>
 #include <stdexcept>
+#include <limits>
 #include <string>
 #include <cstdint>
 #include <cassert>
 #include <cstring>
+#include <ctime>
 #include <ctime>
 #include "nntp.h"
 #include "assert.h"
@@ -128,11 +130,12 @@ namespace newsflash
  
         catalog()
         {
-            header_.cookie        = MAGIC;
-            header_.version       = VERSION;
-            header_.offset        = sizeof(header_);
-            header_.article_count = 0;
-            header_.article_start = 0;
+            header_.cookie  = MAGIC;
+            header_.version = VERSION;
+            header_.offset  = sizeof(header_);
+            header_.size    = 0;
+            header_.last    = std::numeric_limits<std::time_t>::min();
+            header_.first   = std::numeric_limits<std::time_t>::max();
             std::memset(header_.table, 0, sizeof(header_.table));            
         }
 
@@ -196,16 +199,18 @@ namespace newsflash
         // append an article into the catalog.      
         void append(const article<Storage>& a)
         {            
-            ASSERT(header_.article_count < CATALOG_SIZE);
+            ASSERT(header_.size < CATALOG_SIZE);
 
             const auto off = header_.offset;
-            const auto idx = header_.article_count;
+            const auto idx = header_.size;
 
             a.save(off, *this);
 
             header_.table[idx] = off;
-            header_.article_count++;
+            header_.size++;
             header_.offset += a.size_on_disk();
+            header_.first = std::min(a.pubdate(), header_.first);
+            header_.last  = std::max(a.pubdate(), header_.last);
         }
 
         // insert article at the specified index.
@@ -218,7 +223,10 @@ namespace newsflash
             
             header_.table[i.value] = header_.offset;
             header_.offset += a.size_on_disk();
-            header_.article_count++;
+            header_.size++;
+            header_.first = std::min(a.pubdate(), header_.first);
+            header_.last  = std::max(a.pubdate(), header_.last);            
+            assert(header_.size < CATALOG_SIZE);
         }
 
         void flush()
@@ -230,14 +238,19 @@ namespace newsflash
             buff.flush();
         }
 
-        std::uint32_t article_count() const 
+        std::uint32_t size() const 
         {
-            return header_.article_count;
+            return header_.size;
         }
 
-        std::uint64_t article_start() const 
+        std::time_t first_date() const 
         {
-            return header_.article_start;
+            return header_.first;
+        }
+
+        std::time_t last_date() const 
+        {
+            return header_.last;
         }
 
         bool is_empty(index_t i) const 
@@ -248,14 +261,15 @@ namespace newsflash
 
     private:
         static const std::uint32_t MAGIC   {0xdeadbabe};
-        static const std::uint32_t VERSION {1};
+        static const std::uint32_t VERSION {2};
 
         struct header {
             std::uint32_t cookie;
             std::uint32_t version;
             std::uint32_t offset;
-            std::uint32_t article_count;
-            std::uint64_t article_start;
+            std::uint32_t size;
+            std::time_t   first;
+            std::time_t   last;
             std::uint32_t table[CATALOG_SIZE];
         };
         header header_;

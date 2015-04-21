@@ -67,9 +67,9 @@ namespace newsflash
         {
             types_.set_from_value(~0);
             flags_.set_from_value(~0);
-            min_pubdate_ = 0;
+            min_pubdate_ = std::numeric_limits<std::time_t>::min();
             max_pubdate_ = std::numeric_limits<std::time_t>::max();
-            min_size_    = 0;
+            min_size_    = std::numeric_limits<std::uint32_t>::min();
             max_size_    = std::numeric_limits<std::uint32_t>::max();
         }
 

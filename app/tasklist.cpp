@@ -153,7 +153,9 @@ QVariant TaskList::data(const QModelIndex& index, int role) const
 QVariant TaskList::headerData(int section, Qt::Orientation orientation, int role) const
 {
     if (role != Qt::DisplayRole)
-        return QVariant();
+        return {};
+    if (orientation != Qt::Horizontal)
+        return {};
 
     switch (columns(section))
     {
@@ -165,7 +167,7 @@ QVariant TaskList::headerData(int section, Qt::Orientation orientation, int role
         case columns::desc:   return "Description";
         case columns::sentinel: Q_ASSERT(false);
     }    
-    return QVariant();
+    return {};
 }
 
 int TaskList::rowCount(const QModelIndex&) const 

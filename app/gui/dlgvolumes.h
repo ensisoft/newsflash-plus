@@ -41,7 +41,7 @@ namespace gui
 
     private slots:
         void on_btnClose_clicked();
-        void on_btnDelete_clicked();
+        void on_btnPurge_clicked();
         void on_btnLoad_clicked();
 
     private:

@@ -27,13 +27,15 @@
 #include "../filemap.h"
 #include "../filebuf.h"
 #include "../catalog.h"
+#include "../filetype.h"
 #include "unit_test_common.h"
 
 
 void unit_test_create_new()
 {
-    using catalog = newsflash::catalog<newsflash::filebuf>;
-    using article = newsflash::article<newsflash::filebuf>;
+    using catalog  = newsflash::catalog<newsflash::filebuf>;
+    using article  = newsflash::article<newsflash::filebuf>;
+    using fileflag = newsflash::fileflag;
 
     delete_file("file");
 
@@ -42,33 +44,32 @@ void unit_test_create_new()
         catalog db;
         db.open("file");
 
-        BOOST_REQUIRE(db.article_count() == 0);
-        BOOST_REQUIRE(db.article_start() == 0);
+        BOOST_REQUIRE(db.size() == 0);
 
         article a;
         a.set_author("John Doe");
         a.set_subject("[#scnzb@efnet][529762] Automata.2014.BRrip.x264.Ac3-MiLLENiUM [1/4] - \"Automata.2014.BRrip.x264.Ac3-MiLLENiUM.mkv\" yEnc (1/1513)");
         a.set_bytes(1024);
         a.set_number(666);
-        a.set_bits(article::flags::broken, true);
+        a.set_bits(fileflag::broken, true);
         db.append(a);
-        BOOST_REQUIRE(db.article_count() == 1); 
+        BOOST_REQUIRE(db.size() == 1); 
 
         a.clear();
         a.set_author("Mickey Mouse");
         a.set_subject("Mickey and Goofy in Disneyland");
-        a.set_bits(article::flags::downloaded, true);
+        a.set_bits(fileflag::downloaded, true);
         a.set_bytes(456);
         a.set_number(500);
         db.append(a);
-        BOOST_REQUIRE(db.article_count() == 2);         
+        BOOST_REQUIRE(db.size() == 2);         
 
         a.clear();
         a.set_subject("Leiah - Kings and Queens \"Foobar.mp3\" (01/10)");
         a.set_author("foo@acme.com");
         a.set_number(45);
         db.append(a);
-        BOOST_REQUIRE(db.article_count() == 3);
+        BOOST_REQUIRE(db.size() == 3);
 
         db.flush();
     }
@@ -77,7 +78,7 @@ void unit_test_create_new()
     {
         catalog db;
         db.open("file");
-        BOOST_REQUIRE(db.article_count() == 3);                
+        BOOST_REQUIRE(db.size() == 3);                
 
         // iterators
         auto beg = db.begin();
@@ -87,7 +88,7 @@ void unit_test_create_new()
         catalog::offset_t offset(0);
 
         auto a = db.load(offset);
-        BOOST_REQUIRE(a.test(article::flags::broken));
+        BOOST_REQUIRE(a.test(fileflag::broken));
         BOOST_REQUIRE(a.author()  == "John Doe");
         BOOST_REQUIRE(a.subject() == "[#scnzb@efnet][529762] Automata.2014.BRrip.x264.Ac3-MiLLENiUM [1/4] - \"Automata.2014.BRrip.x264.Ac3-MiLLENiUM.mkv\" yEnc (1/1513)");
         BOOST_REQUIRE(a.bytes()   == 1024);
@@ -98,7 +99,7 @@ void unit_test_create_new()
 
         offset += a.size_on_disk();
         a = db.load(offset);
-        BOOST_REQUIRE(a.test(article::flags::downloaded));
+        BOOST_REQUIRE(a.test(fileflag::downloaded));
         BOOST_REQUIRE(a.author()  == "Mickey Mouse");
         BOOST_REQUIRE(a.subject() == "Mickey and Goofy in Disneyland");
         BOOST_REQUIRE(a.bytes() == 456);

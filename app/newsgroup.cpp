@@ -53,16 +53,21 @@ QString toString(const str::string_view& str)
 class NewsGroup::VolumeList : public QAbstractTableModel
 {
 public:
-    VolumeList(std::vector<Catalog>& catalogs) : catalogs_(catalogs)
+    VolumeList(std::deque<Block>& blocks,
+        std::deque<catalog>& catalogs) : blocks_(blocks), catalogs_(catalogs)
     {}
     virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const override
     {
+        if (role != Qt::DisplayRole)
+            return {};
         if (orientation != Qt::Horizontal)
             return {};
 
         switch ((Columns)section)
         {
             case Columns::State:  return "Status";
+            case Columns::Usage:  return "Used";
+            case Columns::Ages:   return "Ages";
             case Columns::File:   return "File";
             case Columns::LAST:   Q_ASSERT(0); break;
         }
@@ -73,24 +78,55 @@ public:
     {
         const auto row   = index.row();
         const auto col   = (Columns)index.column();
-        const auto& item = catalogs_[row];
+        const auto& item = blocks_[row];
 
         if (role == Qt::DisplayRole)
         {
             switch (col)
             {
                 case Columns::State: return toString(item.state);
-                case Columns::File:  return item.file;
+                case Columns::File:  return QFileInfo(item.file).baseName(); 
+
+                case Columns::Usage: 
+                    if (item.state == State::Loaded)
+                    {
+                        const auto& db = catalogs_[item.index];
+                        const auto maxItems = (double)newsflash::CATALOG_SIZE;
+                        const auto numItems = (double)db.size();
+                        const auto used     = (numItems / maxItems) * 100.0;
+                        return QString("%1%").arg(used, 0, 'f', 2);
+                    }
+                    break;
+
+                case Columns::Ages:
+                    if (item.state == State::Loaded)
+                    {
+                        const auto& db = catalogs_[item.index];
+                        const auto first = QDateTime::fromTime_t(db.first_date());
+                        const auto last  = QDateTime::fromTime_t(db.last_date());
+                        const auto now   = QDateTime::currentDateTime();
+                        return QString("%1 - %2 d").arg(last.daysTo(now)).arg(first.daysTo(now));
+                    }
+                    break;
+
                 case Columns::LAST:  Q_ASSERT(0); break;
             }
         }
-        if (role == Qt::DecorationRole)
+        else if (role == Qt::DecorationRole)
         {
             if (col == Columns::State)
             {
                 if (item.state == State::Loaded)
                     return QIcon("icons:ico_bullet_green.png");
                 return QIcon("icons:ico_bullet_grey.png");
+            }
+        }
+        else if (role == Qt::FontRole)
+        {
+            if (item.purge) {
+                QFont font;
+                font.setStrikeOut(true);
+                return font;
             }
         }
 
@@ -106,13 +142,28 @@ public:
         return (int)Columns::LAST;
     }
 
+    void updateBlock(std::size_t index)
+    {
+        BOUNDSCHECK(catalogs_, index);
+        auto first = QAbstractTableModel::index(index, 0);
+        auto last  = QAbstractTableModel::index(index, (int)Columns::LAST);
+        emit dataChanged(first, last);
+    }
+
+    void hardReset()
+    {
+        QAbstractTableModel::beginResetModel();
+        QAbstractTableModel::reset();
+        QAbstractTableModel::endResetModel();
+    }
+
 private:
     QString toString(State s) const 
     {
         switch (s)
         {
             case State::Loaded:   return "Loaded";
-            case State::UnLoaded: return "";
+            case State::UnLoaded: return "Available";
         }
         Q_ASSERT(0);
         return "";
@@ -120,12 +171,15 @@ private:
 
     enum class Columns {
         State,
+        Usage,
+        Ages,
         File,
         LAST
     };
 
 private:
-    std::vector<Catalog>& catalogs_;
+    std::deque<Block>& blocks_;
+    std::deque<catalog>& catalogs_;
 };
 
 
@@ -142,12 +196,12 @@ NewsGroup::NewsGroup() : task_(0)
 
     // loader callback
     index_.on_load = [this] (std::size_t key, std::size_t idx) {
-        auto& catalog = catalogs_[key];
-        return catalog.db.load(catalog::index_t{idx});
+        auto& c = catalogs_[key];
+        return c.load(catalog::index_t{idx});
     };
 
     numSelected_ = 0;
-}
+ }
 
 NewsGroup::~NewsGroup()
 {
@@ -373,34 +427,84 @@ void NewsGroup::sort(int column, Qt::SortOrder order)
     emit layoutChanged();
 }
 
-bool NewsGroup::load(quint32 blockIndex, QString path, QString name, quint32& numBlocks)
+bool NewsGroup::init(QString path, QString name)
 {
-    DEBUG("Load data for %1 from %2", name, path);
-
+    DEBUG("Init data for %1 from %2", name, path);
     path_ = path;
     name_ = name;
+
+    const auto& dataPath = joinPath(path_, name_);
 
     // data is in .vol files with the file number indicating data ordering.
     // i.e. the bigger the index in the datafile name the newer the data.
     QDir dir;
-    dir.setPath(joinPath(path, name));
+    dir.setPath(dataPath);
     dir.setSorting(QDir::Name | QDir::Reversed);
     dir.setNameFilters(QStringList("vol*.dat"));
     QStringList files = dir.entryList();
-    numBlocks = files.size();
-
     if (files.isEmpty())
         return false;
 
-    if (blockIndex >= files.size())
-        return false;
+    for (const auto& file : files)
+    {
+        Block block;
+        block.prevOffset = 0;
+        block.prevSize   = 0;
+        block.file       = joinPath(dataPath, file);
+        block.state      = State::UnLoaded;
+        block.index      = catalogs_.size();
+        block.purge      = false;
+        blocks_.push_back(block);
+        catalogs_.emplace_back();
+    }
 
-    const auto p = joinPath(path, name);
-    const auto f = joinPath(p, files[blockIndex]);
-    DEBUG("Loading headers from %1", f);
-
-    loadMoreData(narrow(f), true);
     return true;
+}
+
+void NewsGroup::load(std::size_t blockIndex)
+{
+    BOUNDSCHECK(blocks_, blockIndex);
+
+    auto& block = blocks_[blockIndex];
+    if (block.state == State::Loaded)
+        return;
+
+    onLoadBegin(blockIndex, blocks_.size());
+
+    const auto& path = joinPath(path_, name_);
+    const auto& file = joinPath(path, block.file);
+    DEBUG("Loading headers from %1", file);
+
+    loadMoreData(block, true);
+
+    onLoadComplete(blockIndex, catalogs_.size());
+
+    if (volumeList_)
+        volumeList_->updateBlock(blockIndex);
+}
+
+void NewsGroup::load()
+{
+    auto it = std::find_if(std::begin(blocks_), std::end(blocks_),
+        [](const Block& block) {
+            return block.state != State::Loaded;
+        });
+    if (it == std::end(blocks_))
+        return;
+
+    auto index = std::distance(std::begin(blocks_), it);
+    load(index);
+}
+
+void NewsGroup::purge(std::size_t blockIndex)
+{
+    BOUNDSCHECK(blocks_, blockIndex);
+
+    auto& block = blocks_[blockIndex];
+    block.purge = !block.purge;
+
+    if (volumeList_)
+        volumeList_->updateBlock(blockIndex);
 }
 
 
@@ -576,6 +680,21 @@ std::size_t NewsGroup::numShown() const
     return index_.size();    
 }
 
+std::size_t NewsGroup::numBlocksAvail() const 
+{
+    return catalogs_.size();
+}
+
+std::size_t NewsGroup::numBlocksLoaded() const 
+{
+    const auto num = std::count_if(std::begin(blocks_), std::end(blocks_),
+        [](const Block& block) {
+            return block.state == State::Loaded;
+        });
+
+    return num;
+}
+
 NewsGroup::Article NewsGroup::getArticle(std::size_t i) const 
 {
     return index_[i];
@@ -584,7 +703,7 @@ NewsGroup::Article NewsGroup::getArticle(std::size_t i) const
 QAbstractTableModel* NewsGroup::getVolumeList()
 {
     if (!volumeList_)
-        volumeList_.reset(new VolumeList(catalogs_));
+        volumeList_.reset(new VolumeList(blocks_, catalogs_));
 
     return volumeList_.get();
 }
@@ -597,7 +716,43 @@ void NewsGroup::newHeaderDataAvailable(const QString& file)
     if (file.indexOf(joinPath(path_, name_)) != 0)
         return;
 
-    loadMoreData(narrow(file), false);
+    auto it = std::find_if(std::begin(blocks_), std::end(blocks_),
+        [&](const Block& block) {
+            return block.file == file;
+        });
+    if (it == std::end(blocks_))
+    {
+        Block block;
+        block.prevSize   = 0;
+        block.prevOffset = 0;
+        block.state      = State::UnLoaded;
+        block.file       = file;
+        block.index      = catalogs_.size();
+        block.purge      = false;
+        catalogs_.emplace_back();
+
+        // descending order, since the larger the index in the filename 
+        // the newer the content.
+        it = std::lower_bound(std::begin(blocks_), std::end(blocks_), block,
+            [&](const Block& lhs, const Block& rhs) {
+                return lhs.file > rhs.file;
+            });
+
+        it = blocks_.insert(it, block);
+
+        if (volumeList_)
+            volumeList_->hardReset();
+    }
+
+    auto& block = *it;    
+    loadMoreData(block, false);
+
+    if (volumeList_) 
+    {
+        auto index = std::distance(std::begin(blocks_), it);
+        volumeList_->updateBlock(index);
+    }
+
 }
 
 void NewsGroup::newHeaderInfoAvailable(const QString& group, quint64 numLocal, quint64 numRemote)
@@ -613,7 +768,7 @@ void NewsGroup::updateCompleted(const app::HeaderInfo& info)
     task_ = 0;
 }
 
-void NewsGroup::loadMoreData(const std::string& file, bool guiLoad)
+void NewsGroup::loadMoreData(Block& block, bool guiLoad)
 {
     // resetting the model will make it forget the current selection.
     // however using beginInsertRows and endInsertRows would need to be 
@@ -629,45 +784,27 @@ void NewsGroup::loadMoreData(const std::string& file, bool guiLoad)
     // and create a new Selection list for the GUI.
     // see scanSelected and select and the GUI code for modelReset
 
-    auto it = std::find_if(std::begin(catalogs_), std::end(catalogs_),
-        [&](const Catalog& cat) {
-            return cat.db.filename() == file;
-        });
-
-    if (it == std::end(catalogs_))
-    {
-        Catalog next;
-        next.prevSize   = 0;
-        next.prevOffset = 0;
-        next.state      = State::Loaded;
-        next.file       = QFileInfo(widen(file)).baseName();
-        catalogs_.push_back(next);
-        it = catalogs_.end() - 1;
-    }
-    auto& cat = *it;
-    auto& db  = (*it).db;
-    db.open(file);
-    if (db.article_count() == cat.prevSize)
+    auto& db = catalogs_[block.index];
+    db.open(narrow(block.file));
+    if (db.size() == block.prevSize)
         return;
 
     QAbstractTableModel::beginResetModel();
 
-    DEBUG("%1 is at offset %2", file, cat.prevOffset);
+    DEBUG("%1 is at offset %2", block.file, block.prevOffset);
     DEBUG("Index has %1 articles. Loading more...", index_.size());
 
-    const auto index = std::distance(std::begin(catalogs_), it);
-
     std::size_t curItem  = 0;
-    std::size_t numItems = db.article_count();
+    std::size_t numItems = db.size();
 
     // load all the articles, starting at the latest offset that we know off.
-    auto beg = db.begin(cat.prevOffset);
+    auto beg = db.begin(block.prevOffset);
     auto end = db.end();
     for (; beg != end; ++beg)
     {
         const auto& article  = *beg;
 
-        index_.insert(article, index, article.index());        
+        index_.insert(article, block.index, article.index());        
 
         if (guiLoad)
         {
@@ -682,9 +819,10 @@ void NewsGroup::loadMoreData(const std::string& file, bool guiLoad)
     // when new data is added to the same database
     // we reload the db and then use the current latest
     // index to start loading the objects.
-    cat.prevOffset = beg.offset();
-    cat.prevSize   = db.article_count();
-    DEBUG("%1 is at new offst %2", file, cat.prevOffset);
+    block.prevOffset = beg.offset();
+    block.prevSize   = db.size();
+    block.state      = State::Loaded;
+    DEBUG("%1 is at new offset %2", block.file, block.prevOffset);
 
     QAbstractTableModel::reset();    
     QAbstractTableModel::endResetModel();    

@@ -93,13 +93,29 @@ NewsGroup::NewsGroup(quint32 acc, QString path, QString name) : account_(acc), p
 
     setWindowTitle(name);
 
-    model_.onLoadProgress = [this] (std::size_t curItem, std::size_t numItems) {
+    model_.onLoadBegin = [this](std::size_t curBlock, std::size_t numBlocks) {
+        loadingState_ = true;
         ui_.loader->setVisible(true);
+        ui_.btnLoadMore->setEnabled(false);
+
+    };
+
+    model_.onLoadProgress = [this] (std::size_t curItem, std::size_t numItems) {
         ui_.loader->setMaximum(numItems);
         ui_.loader->setValue(curItem);
         if ((curItem % 150) == 0)
             QCoreApplication::processEvents();
     };
+    model_.onLoadComplete = [this](std::size_t curBlock, std::size_t numBlocks) {
+        loadingState_ = false;
+        ui_.loader->setVisible(false);
+        const auto numLoaded = model_.numBlocksLoaded();
+        const auto numTotal  = model_.numBlocksAvail();
+        ui_.btnLoadMore->setEnabled(numLoaded != numTotal);
+        ui_.btnLoadMore->setText(
+            tr("Load older headers ... (%1/%2)").arg(numLoaded).arg(numTotal));
+    };
+
     loadingState_ = false;
     filter_.minSize  = 0;
     filter_.maxSize  = std::numeric_limits<quint32>::max() + 1ull;
@@ -254,32 +270,27 @@ void NewsGroup::setFound(std::size_t index)
 
 void NewsGroup::load()
 {
-    blockIndex_ = 0;
-
-    ui_.btnLoadMore->setEnabled(false);
-
-    quint32 numBlocks = 0;
-
-    loadingState_ = true;
-
-    if (!model_.load(blockIndex_, path_, name_, numBlocks))
+    try
     {
-        model_.refresh(account_, path_, name_);
-        ui_.progressBar->setVisible(true);
-        ui_.progressBar->setMaximum(0),
-        ui_.progressBar->setMinimum(0);
-        ui_.actionStop->setEnabled(true);
-        ui_.actionRefresh->setEnabled(false);
-        ui_.btnLoadMore->setVisible(false);
-    } 
-    else
-    {
-        blockIndex_ = 1;
-        ui_.loader->setVisible(false);
-        if (numBlocks > 1) {
-            ui_.btnLoadMore->setEnabled(true);
-            ui_.btnLoadMore->setText(tr("Load older headers ... (%1/%2)").arg(blockIndex_).arg(numBlocks));
+        if (!model_.init(path_, name_))
+        {
+            model_.refresh(account_, path_, name_);
+            ui_.progressBar->setVisible(true);
+            ui_.progressBar->setMaximum(0),
+            ui_.progressBar->setMinimum(0);
+            ui_.actionStop->setEnabled(true);
+            ui_.actionRefresh->setEnabled(false);
+            ui_.btnLoadMore->setVisible(false);
+        } 
+        else
+        {
+            model_.load(0);
         }
+    }
+    catch (const std::exception& e)
+    {
+        QMessageBox::critical(this, name_, 
+            tr("Unable to load the newsgroup data.\n%1").arg(app::widen(e.what())));
     }
 
     loadingState_ = false;
@@ -425,17 +436,10 @@ void NewsGroup::on_actionBrowse_triggered()
 void NewsGroup::on_btnLoadMore_clicked()
 {
     loadingState_ = true;
+    ui_.loader->setVisible(true);
     ui_.btnLoadMore->setEnabled(false);
 
-    quint32 numBlocks = 0;
-    model_.load(blockIndex_, path_, name_, numBlocks);
-
-    ++blockIndex_;
-    ui_.loader->setVisible(false);
-    ui_.btnLoadMore->setEnabled(true);
-    ui_.btnLoadMore->setText(tr("Load older headers ... (%1/%2)").arg(blockIndex_).arg(numBlocks));
-    ui_.btnLoadMore->setEnabled(blockIndex_ != numBlocks);
-    loadingState_ = false;
+    model_.load();
 }
 
 void NewsGroup::on_tableView_customContextMenuRequested(QPoint p)
@@ -456,6 +460,8 @@ void NewsGroup::on_tableView_customContextMenuRequested(QPoint p)
 
     QMenu menu(this);
     menu.addAction(ui_.actionRefresh);
+    menu.addSeparator();
+    menu.addAction(ui_.actionHeaders);
     menu.addSeparator();
     menu.addAction(ui_.actionDownload);
     menu.addMenu(&sub);

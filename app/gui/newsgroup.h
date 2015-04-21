@@ -101,7 +101,6 @@ namespace gui
         quint32 account_;
         QString path_;
         QString name_;
-        quint32 blockIndex_;
     private:
         bool loadingState_;
     private:
