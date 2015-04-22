@@ -308,16 +308,9 @@ namespace newsflash
             auto mid = std::begin(items_) + size_;
             auto end = std::end(items_);
 
-            auto future = std::async(std::launch::async, [&] {
-                return std::stable_partition(mid, end, pred);
-            });
-
             auto a = std::stable_partition(beg, mid, pred);            
-            //auto b = std::stable_partition(mid, end, pred);                        
+            auto b = std::stable_partition(mid, end, pred);                        
 
-            future.wait();
-            auto b = future.get();
-           
             auto out = std::back_inserter(tmp);
             switch (sorting_)
             {
@@ -470,20 +463,13 @@ namespace newsflash
             auto end = std::end(items_);
             if (up_down == sortdir::ascending) 
             {
-                auto future = std::async(std::launch::async, [&] {
-                    std::sort(beg, mid, less(p));
-                });
-
+                std::sort(beg, mid, less(p));
                 std::sort(mid, end, less(p));
-                future.wait();
             }
             else 
             {
-                auto future = std::async(std::launch::async, [&] {
-                    std::sort(beg, mid, greater(p));
-                });
+                std::sort(beg, mid, greater(p));
                 std::sort(mid, end, greater(p));                
-                future.wait();
             }
         }
 

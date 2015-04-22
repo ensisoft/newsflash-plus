@@ -107,20 +107,22 @@ namespace newsflash
             m_buffer = storage.load(offset, min, Storage::buf_read | Storage::buf_write);
 
             auto in = m_buffer.begin();
-            m_bits        = read(in, m_bits);
-            m_type        = read(in, m_type);
-            m_subject     = read(in, m_subject);
-            m_author      = read(in, m_author);
-            m_index       = read(in, m_index);
-            m_bytes       = read(in, m_bytes);
-            m_idbkey      = read(in, m_idbkey);
-            m_parts_avail = read(in, m_parts_avail);
-            m_parts_total = read(in, m_parts_total);
-            m_number      = read(in, m_number);
-            m_pubdate     = read(in, m_pubdate);
-            if (read(in, MAGIC) != MAGIC)
+            read(in, m_bits);
+            read(in, m_type);
+            read(in, m_subject);
+            read(in, m_author);
+            read(in, m_index);
+            read(in, m_bytes);
+            read(in, m_idbkey);
+            read(in, m_parts_avail);
+            read(in, m_parts_total);
+            read(in, m_number);
+            read(in, m_pubdate);
+
+            auto m = MAGIC;
+            read(in, m);
+            if (m != MAGIC)
                 throw std::runtime_error("article read error. no magic found");
-            //ASSERT(read(in, MAGIC) == MAGIC);
         }
 
         void save(std::size_t offset, Storage& storage) const
@@ -313,7 +315,7 @@ namespace newsflash
         typedef typename Storage::buffer::const_iterator const_iterator;
 
         template<typename Value>
-        Value read(iterator& it, Value val = 0) const 
+        void read(iterator& it, Value& val) const 
         {
             // this should be std::is_trivially_copyable (not available in gcc 4.9.2)
             static_assert(std::is_standard_layout<Value>::value, "");
@@ -321,16 +323,15 @@ namespace newsflash
             auto* p = (char*)&val;
             for (std::size_t i=0; i<sizeof(val); ++i)
                 p[i] = *it++;
-
-            return val;
         }
 
-        str::string_view read(iterator& it, str::string_view s = str::string_view()) const 
+        void read(iterator& it, str::string_view& s) const 
         {
-            const auto len = read<std::uint16_t>(it);
+            std::uint16_t len;
+            read(it, len);
             const auto ptr = (const char*)&(*it);
             it += len;
-            return {ptr, len};
+            s = str::string_view{ptr, len};
         }
 
         template<typename Value>

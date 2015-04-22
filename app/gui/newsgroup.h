@@ -89,6 +89,7 @@ namespace gui
         void modelBegReset();        
         void modelEndReset();
         void newHeaderInfoAvailable(const QString& group, quint64 numLocal, quint64 numRemote);
+        void newHeaderDataAvailable(const QString& file);
         void updateCompleted(const app::HeaderInfo& info);
     private:
         void downloadSelected(QString folder);

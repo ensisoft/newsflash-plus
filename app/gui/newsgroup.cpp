@@ -79,6 +79,8 @@ NewsGroup::NewsGroup(quint32 acc, QString path, QString name) : account_(acc), p
 
     QObject::connect(app::g_engine, SIGNAL(newHeaderInfoAvailable(const QString&, quint64, quint64)),
         this, SLOT(newHeaderInfoAvailable(const QString&, quint64, quint64)));
+    QObject::connect(app::g_engine, SIGNAL(newHeaderDataAvailable(const QString&)),
+        this, SLOT(newHeaderDataAvailable(const QString&)));
     QObject::connect(app::g_engine, SIGNAL(updateCompleted(const app::HeaderInfo&)),
         this, SLOT(updateCompleted(const app::HeaderInfo&)));    
 
@@ -113,7 +115,7 @@ NewsGroup::NewsGroup(quint32 acc, QString path, QString name) : account_(acc), p
         const auto numTotal  = model_.numBlocksAvail();
         ui_.btnLoadMore->setEnabled(numLoaded != numTotal);
         ui_.btnLoadMore->setText(
-            tr("Load older headers ... (%1/%2)").arg(numLoaded).arg(numTotal));
+            tr("Load more headers ... (%1/%2)").arg(numLoaded).arg(numTotal));
     };
 
     loadingState_ = false;
@@ -557,6 +559,19 @@ void NewsGroup::newHeaderInfoAvailable(const QString& group, quint64 numLocal, q
         ui_.progressBar->setMaximum(max);
         ui_.progressBar->setValue(d * max);
     }
+}
+
+void NewsGroup::newHeaderDataAvailable(const QString& file)
+{
+    if (file.indexOf(app::joinPath(path_, name_)) != 0)
+        return;
+
+    const auto numAvail  = model_.numBlocksAvail();
+    const auto numLoaded = model_.numBlocksLoaded();
+    ui_.btnLoadMore->setEnabled(numAvail != numLoaded);
+    ui_.btnLoadMore->setVisible(true);
+    ui_.btnLoadMore->setText(
+        tr("Load more headers ... (%1/%2)").arg(numLoaded).arg(numAvail));
 }
 
 void NewsGroup::updateCompleted(const app::HeaderInfo& info)
