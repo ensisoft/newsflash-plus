@@ -542,7 +542,7 @@ void NewsGroup::killSelected(const QModelIndexList& list)
         auto article  = index_[row];
         auto deletion = article.is_deleted();
         article.set_bits(FileFlag::deleted, !deletion);
-        article.save();
+        //article.save();
     }
     if (!index_.show_deleted()) 
     {
@@ -644,7 +644,7 @@ void NewsGroup::download(const QModelIndexList& list, quint32 acc, QString folde
 
         pack.push_back(nzb);
         article.set_bits(FileFlag::downloaded, true);
-        article.save();
+        //article.save();
     }
 
     QString desc;

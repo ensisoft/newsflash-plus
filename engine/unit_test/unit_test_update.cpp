@@ -339,7 +339,7 @@ void unit_test_data()
 
         catalog db;
         db.open("alt.binaries.test/vol000000000000000.dat");
-        BOOST_REQUIRE(db.article_count() == 6);        
+        BOOST_REQUIRE(db.size() == 6);        
 
         arraydb idb;
         idb.open("alt.binaries.test/alt.binaries.test.idb");
@@ -481,7 +481,7 @@ void unit_test_data()
 
         catalog db;
         db.open("alt.binaries.test/vol000000000000000.dat");
-        BOOST_REQUIRE(db.article_count() == 6);
+        BOOST_REQUIRE(db.size() == 6);
 
         arraydb idb;
         idb.open("alt.binaries.test/alt.binaries.test.idb");        

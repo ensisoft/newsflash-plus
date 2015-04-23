@@ -114,19 +114,19 @@ namespace newsflash
                     sort(sortdir_, fileflag::bookmarked); 
                     break;
                 case sorting::sort_by_date:        
-                    sort(sortdir_, &article_t::m_pubdate); 
+                    sort(sortdir_, &article_t::pubdate); 
                     break;
                 case sorting::sort_by_type:       
-                    sort(sortdir_, &article_t::m_type); 
+                    sort(sortdir_, &article_t::type); 
                     break;
                 case sorting::sort_by_size:       
-                    sort(sortdir_, &article_t::m_bytes); 
+                    sort(sortdir_, &article_t::bytes); 
                     break;
                 case sorting::sort_by_author:     
-                    sort(sortdir_, &article_t::m_author); 
+                    sort(sortdir_, &article_t::author); 
                     break;
                 case sorting::sort_by_subject:    
-                    sort(sortdir_, &article_t::m_subject); 
+                    sort(sortdir_, &article_t::subject); 
                     break;
             }            
         }
@@ -166,19 +166,19 @@ namespace newsflash
                     break;
 
                 case sorting::sort_by_date: 
-                    pos = lower_bound(beg, end, a, &article_t::m_pubdate);
+                    pos = lower_bound(beg, end, a, &article_t::pubdate);
                     break;
                 case sorting::sort_by_type: 
-                    pos = lower_bound(beg, end, a, &article_t::m_type);
+                    pos = lower_bound(beg, end, a, &article_t::type);
                     break;
                 case sorting::sort_by_size:                    
-                    pos = lower_bound(beg, end, a, &article_t::m_bytes); 
+                    pos = lower_bound(beg, end, a, &article_t::bytes); 
                     break;
                 case sorting::sort_by_author:
-                    pos = lower_bound(beg, end, a, &article_t::m_author);
+                    pos = lower_bound(beg, end, a, &article_t::author);
                     break;
                 case sorting::sort_by_subject:
-                    pos = lower_bound(beg, end, a, &article_t::m_subject);
+                    pos = lower_bound(beg, end, a, &article_t::subject);
                     break;
             }
             items_.insert(pos, {key, index});
@@ -335,28 +335,28 @@ namespace newsflash
                     break;
 
                 case sorting::sort_by_date:
-                    merge(beg, a, mid, b, out, &article_t::m_pubdate);
-                    merge(a, mid, b, end, out, &article_t::m_pubdate);
+                    merge(beg, a, mid, b, out, &article_t::pubdate);
+                    merge(a, mid, b, end, out, &article_t::pubdate);
                     break;
 
                 case sorting::sort_by_type:
-                    merge(beg, a, mid, b, out, &article_t::m_type);
-                    merge(a, mid, b, end, out, &article_t::m_type);
+                    merge(beg, a, mid, b, out, &article_t::type);
+                    merge(a, mid, b, end, out, &article_t::type);
                     break; 
 
                 case sorting::sort_by_size:
-                    merge(beg, a, mid, b, out, &article_t::m_bytes);
-                    merge(a, mid, b, end, out, &article_t::m_bytes);
+                    merge(beg, a, mid, b, out, &article_t::bytes);
+                    merge(a, mid, b, end, out, &article_t::bytes);
                     break;
 
                 case sorting::sort_by_author:
-                    merge(beg, a, mid, b, out, &article_t::m_author);
-                    merge(a, mid, b, end, out, &article_t::m_author);
+                    merge(beg, a, mid, b, out, &article_t::author);
+                    merge(a, mid, b, end, out, &article_t::author);
                     break;
                     
                 case sorting::sort_by_subject:
-                    merge(beg, a, mid, b, out, &article_t::m_subject);
-                    merge(a, mid, b, end, out, &article_t::m_subject);
+                    merge(beg, a, mid, b, out, &article_t::subject);
+                    merge(a, mid, b, end, out, &article_t::subject);
                     break;
             }
             size_  = (a - beg) + (b - mid);
@@ -366,7 +366,7 @@ namespace newsflash
     private:
         template<typename Class, typename Member>
         struct bigger_t {
-            typedef Member (Class::*MemPtr);
+            typedef Member (Class::*MemPtr)(void) const;
 
             bigger_t(MemPtr p, loader func) : ptr_(p), load_(func)
             {}
@@ -375,13 +375,13 @@ namespace newsflash
             {
                 const auto& a = load_(lhs.key, lhs.index);
                 const auto& b = load_(rhs.key, rhs.index);
-                return a.*ptr_ > b.*ptr_;
+                return (a.*ptr_)() > (b.*ptr_)();
             }
             bool operator()(const item& lhs, const article_t& rhs) const 
             {
                 const auto& a = load_(lhs.key, lhs.index);
                 const auto& b = rhs;
-                return a.*ptr_ > b.*ptr_;
+                return (a.*ptr_)() > (b.*ptr_)();
             }
         private:
             MemPtr ptr_;
@@ -389,7 +389,7 @@ namespace newsflash
         };
         template<typename Class, typename Member>
         struct smaller_t {
-            typedef Member (Class::*MemPtr);
+            typedef Member (Class::*MemPtr)(void) const;
 
             smaller_t(MemPtr p, loader func) : ptr_(p), load_(func)
             {}
@@ -398,13 +398,13 @@ namespace newsflash
             {
                 const auto& a = load_(lhs.key, lhs.index);
                 const auto& b = load_(rhs.key, rhs.index);
-                return a.*ptr_ < b.*ptr_;
+                return (a.*ptr_)() < (b.*ptr_)();
             }
             bool operator()(const item& lhs, const article_t& rhs) const 
             {
                 const auto& a = load_(lhs.key, lhs.index);
                 const auto& b = rhs;
-                return a.*ptr_ < b.*ptr_;
+                return (a.*ptr_)() < (b.*ptr_)();
             }
         private:
             MemPtr ptr_;
@@ -412,12 +412,12 @@ namespace newsflash
         };
 
         template<typename Class, typename Member>
-        smaller_t<Class, Member> less(Member Class::*p)
+        smaller_t<Class, Member> less(Member (Class::*p)(void) const)
         {
             return smaller_t<Class, Member>(p, on_load);
         }
         template<typename Class, typename Member>
-        bigger_t<Class, Member> greater(Member Class::*p)
+        bigger_t<Class, Member> greater(Member (Class::*p)(void) const)
         {
             return bigger_t<Class, Member>(p, on_load);
         }
@@ -442,7 +442,7 @@ namespace newsflash
                 std::merge(first1, last1, first2, last2, out, [=](const item& lhs, const item& rhs) {
                     const auto& a = on_load(lhs.key, lhs.index);
                     const auto& b = on_load(rhs.key, rhs.index);
-                    return (a.m_bits & mask).value()  < (b.m_bits & mask).value();
+                    return (a.bits() & mask).value()  < (b.bits() & mask).value();
                 });
             }
             else
@@ -450,7 +450,7 @@ namespace newsflash
                 std::merge(first1, last1, first2, last2, out, [=](const item& lhs, const item& rhs) {
                     const auto& a = on_load(lhs.key, lhs.index);
                     const auto& b = on_load(rhs.key, rhs.index);
-                    return (a.m_bits & mask).value() > (b.m_bits & mask).value();
+                    return (a.bits() & mask).value() > (b.bits() & mask).value();
                 });
             }
         }
@@ -483,7 +483,7 @@ namespace newsflash
                 auto pred = [=](const item& lhs, const item& rhs) {
                     const auto& a = on_load(lhs.key, lhs.index);
                     const auto& b = on_load(rhs.key, rhs.index);
-                    return (a.m_bits & mask).value()  < (b.m_bits & mask).value();
+                    return (a.bits() & mask).value()  < (b.bits() & mask).value();
                 };
                 std::sort(beg, mid, pred);
                 std::sort(mid, end, pred);
@@ -493,7 +493,7 @@ namespace newsflash
                 auto pred = [=](const item& lhs, const item& rhs) {
                     const auto& a = on_load(lhs.key, lhs.index);
                     const auto& b = on_load(rhs.key, rhs.index);
-                    return (a.m_bits & mask).value() > (b.m_bits & mask).value();
+                    return (a.bits() & mask).value() > (b.bits() & mask).value();
                 };
                 std::sort(beg, mid, pred);
                 std::sort(mid, end, pred);
@@ -514,7 +514,7 @@ namespace newsflash
                 return std::lower_bound(beg, end, a, [=](const item& lhs, const article_t& rhs) {
                     const auto& a = on_load(lhs.key, lhs.index);
                     const auto& b = rhs;
-                    return (a.m_bits & mask).value() < (b.m_bits & mask).value();
+                    return (a.bits() & mask).value() < (b.bits() & mask).value();
                 });
             }
             else
@@ -522,7 +522,7 @@ namespace newsflash
                 return std::lower_bound(beg, end, a, [=](const item& lhs, const article_t& rhs) {
                     const auto& a = on_load(lhs.key, lhs.index);
                     const auto& b = rhs;
-                    return (a.m_bits & mask).value() > (b.m_bits & mask).value();
+                    return (a.bits() & mask).value() > (b.bits() & mask).value();
                 });
             }
         }
@@ -532,12 +532,12 @@ namespace newsflash
             if (!types_.test(a.type()))
                 return false;
 
+            const auto bits = a.bits();
             if (!flags_.test(fileflag::broken) && 
-                a.m_bits.test(fileflag::broken))
+                bits.test(fileflag::broken))
                 return false;
-
             if (!flags_.test(fileflag::deleted) &&
-                a.m_bits.test(fileflag::deleted))
+                bits.test(fileflag::deleted))
                 return false;
 
             const auto date = a.pubdate();

@@ -123,6 +123,42 @@ void unit_test_create_new()
         BOOST_REQUIRE(beg == end);
     }
 
+    // open again with different backend 
+    {
+        using catalog = newsflash::catalog<newsflash::filemap>;
+        using article = newsflash::catalog<newsflash::filemap>;
+
+        catalog db;
+        db.open("file");
+        BOOST_REQUIRE(db.size() == 3);
+
+        auto beg = db.begin();
+        auto end = db.end();
+
+        catalog::offset_t offset(0);
+
+        auto a = db.load(offset);
+        BOOST_REQUIRE(a.test(fileflag::broken));
+        BOOST_REQUIRE(a.author() == "John Doe");
+        BOOST_REQUIRE(a.subject() == "[#scnzb@efnet][529762] Automata.2014.BRrip.x264.Ac3-MiLLENiUM [1/4] - \"Automata.2014.BRrip.x264.Ac3-MiLLENiUM.mkv\" yEnc (1/1513)");
+        BOOST_REQUIRE(a.bytes() == 1024);
+        BOOST_REQUIRE(a.number() == 666);
+
+        offset += a.size_on_disk();
+        a = db.load(offset);
+        BOOST_REQUIRE(a.test(fileflag::downloaded));
+        BOOST_REQUIRE(a.author() == "Mickey Mouse");
+        BOOST_REQUIRE(a.subject() == "Mickey and Goofy in Disneyland");
+        BOOST_REQUIRE(a.bytes() == 456);
+        BOOST_REQUIRE(a.number() == 500);
+
+        offset += a.size_on_disk();
+        a = db.load(offset);
+        BOOST_REQUIRE(a.author() == "foo@acme.com");
+        BOOST_REQUIRE(a.subject() == "Leiah - Kings and Queens \"Foobar.mp3\" (01/10)");
+        BOOST_REQUIRE(a.number() == 45);        
+    }
+
     delete_file("file");
 }
 

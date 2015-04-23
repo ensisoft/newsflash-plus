@@ -161,20 +161,20 @@ namespace newsflash
 
            iterator begin()
            {
-               return {(byte*)base_ + offset_, length_, 0};
+               return {(byte*)base_, length_, 0};
            }
            iterator end()
            {
-               return {(byte*)base_ + offset_, length_, length_ };
+               return {(byte*)base_, length_, length_ };
            }
 
            const_iterator begin() const 
            {
-               return {(byte*)base_ + offset_, length_, 0};
+               return {(byte*)base_, length_, 0};
            }
            const_iterator end() const 
            {
-               return {(byte*)base_ + offset_, length_, length_};
+               return {(byte*)base_, length_, length_};
            }
 
         #else
@@ -183,7 +183,7 @@ namespace newsflash
 
            iterator begin() 
            {
-                return (iterator)base_ + offset_;
+                return (iterator)base_;
            }
            iterator end() 
            {
@@ -192,7 +192,7 @@ namespace newsflash
 
            const_iterator begin() const
            {
-                return (const_iterator)base_ + offset_;
+                return (const_iterator)base_;
            }
            const_iterator end() const
            {
@@ -200,19 +200,19 @@ namespace newsflash
            }
         #endif
 
-           buffer() : length_(0), offset_(0), base_(nullptr)
+           buffer() : length_(0), base_(nullptr)
            {}
 
           ~buffer();
 
            void* address()
            {
-               return (byte*)base_ + offset_;; 
+               return (byte*)base_; 
            }
 
            const void* address() const 
            {
-               return (const byte*)base_ + offset_;
+               return (const byte*)base_;
            }
 
            std::size_t length() const 
@@ -224,20 +224,16 @@ namespace newsflash
            { /* this is a no-op */ }
 
         private:
-            buffer(std::shared_ptr<mapper> m, std::size_t len, std::size_t off, void* b) : 
-                mapper_(m), length_(len), offset_(off), base_(b)
+            buffer(std::shared_ptr<mapper> m, std::size_t len, void* b) : 
+                mapper_(m), length_(len), base_(b)
             {}
             friend class filemap;
         private:
             std::shared_ptr<mapper> mapper_;
             std::size_t length_;
-            std::size_t offset_;
         private:
             void* base_;
         };
-
-        filemap();
-       ~filemap();
 
         // open a filemap to the given file.
         void open(std::string file);
@@ -246,6 +242,9 @@ namespace newsflash
             buf_read  = 1 << 0,
             buf_write = 1 << 1
         };
+
+        // get a raw pointer to the mapped file.
+        void* map_ptr(std::size_t offset, std::size_t size);
 
         // load a buffer of data from the file
         buffer load(std::size_t offset, std::size_t size, unsigned flags);

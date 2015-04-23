@@ -109,26 +109,10 @@ public:
         ASSERT(CloseHandle(file_) == TRUE);
     }    
 
-    void* map(std::size_t offset, std::size_t size,  unsigned flags)
+    void* map(std::size_t offset /*, std::size_t size,  unsigned flags*/)
     {
         return (char*)base_ + offset;
-
-        // int read_write_flags = FILE_MAP_READ;
-        // if (flags & filemap::buf_write)
-        //     read_write_flags = FILE_MAP_WRITE;
-        //        
-        // void* ptr = MapViewOfFile(mmap_, 
-        //     read_write_flags,
-        //     0,
-        //     offset,
-        //     size);
-        // if (ptr == NULL)
-        //     throw std::runtime_error("map failed");
-        // return ptr;
     }
-
-    void unmap(void* base, std::size_t)
-    {}
 
     std::size_t size() const 
     {
@@ -140,14 +124,6 @@ private:
     void* base_;
     std::size_t size_;
 };
-
-
-std::size_t get_page_size()
-{
-    SYSTEM_INFO sys {0};
-    GetSystemInfo(&sys);
-    return sys.dwAllocationGranularity;
-}
 
 #endif
 
@@ -181,31 +157,9 @@ public:
         ASSERT(munmap(base_, size_) == 0);        
         ASSERT(close(file_) == 0);
     }
-    void unmap(void* ptr, std::size_t size)
-    {}
-
-    void* map(std::size_t offset, std::size_t size, unsigned flags)
+    void* map(std::size_t offset /*, std::size_t size, unsigned flags*/)
     {
         return (char*)base_ + offset;
-
-        // int read_write_flags = 0;
-        // if (flags & filemap::buf_read)
-        //     read_write_flags |= PROT_READ;
-        // if (flags & filemap::buf_write)
-        //     read_write_flags |= PROT_WRITE;
-        //
-        // int share_flags = MAP_SHARED;
-        //
-        // void* ptr = ::mmap(0, size, 
-        //     read_write_flags,
-        //     share_flags,
-        //     file_,
-        //     offset);
-        // if (ptr == MAP_FAILED)
-        //     throw std::runtime_error("map failed");
-
-        // return ptr;
-
     }
     std::size_t size() const 
     {
@@ -218,25 +172,9 @@ private:
     std::size_t size_;
 };
 
-std::size_t get_page_size()
-{
-    return getpagesize();
-}
-
 #endif
 
 filemap::buffer::~buffer()
-{
-    if (base_) // could have been moved
-    {
-        mapper_->unmap(base_, length_);
-    }
-}
-
-filemap::filemap()
-{}
-
-filemap::~filemap()
 {}
 
 void filemap::open(std::string file)
@@ -247,19 +185,24 @@ void filemap::open(std::string file)
     filename_ = std::move(file);
 }
 
-
-filemap::buffer filemap::load(std::size_t offset, std::size_t size, unsigned flags)
+void* filemap::map_ptr(std::size_t offset, std::size_t size)
 {
-    static const auto pagesize = get_page_size();
-    const auto beg = (offset / pagesize) * pagesize;
-    const auto len = size + (offset % pagesize);
     const auto end = offset + size;
     if (end > mapper_->size())
         throw std::runtime_error("filemap offset past the end of file");
 
-    auto* p = (char*)mapper_->map(beg, len, flags);
+    return mapper_->map(offset);
+}
 
-    return {mapper_, size, (offset % pagesize), p};
+filemap::buffer filemap::load(std::size_t offset, std::size_t size, unsigned flags)
+{
+    const auto end = offset + size;
+    if (end > mapper_->size())
+        throw std::runtime_error("filemap offset past the end of file");
+
+    auto* p = (char*)mapper_->map(offset);//, len, flags);
+
+    return {mapper_, size, p};
 }
 
 std::size_t filemap::size() const

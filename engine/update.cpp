@@ -174,7 +174,7 @@ public:
                         idb[a.idbkey() + num_part] = diff;
                     }
                     a.combine(article);
-                    a.save();                    
+                    db->update(a, index);
                     break;
                 }
                 else

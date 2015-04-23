@@ -229,6 +229,14 @@ namespace newsflash
             assert(header_.size < CATALOG_SIZE);
         }
 
+        // update the article at the specified index.
+        void update(const article<Storage>& a, index_t i)
+        {
+            ASSERT(i.value < CATALOG_SIZE);
+            ASSERT(header_.table[i.value] != 0);
+            a.save(header_.table[i.value], *this);
+        }
+
         void flush()
         {
             auto buff = Storage::load(0, sizeof(header_), Storage::buf_write);

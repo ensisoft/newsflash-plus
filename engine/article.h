@@ -30,17 +30,13 @@
 #include <stdexcept>
 #include <type_traits>
 #include "bitflag.h"
+#include "filemap.h"
 #include "filetype.h"
 #include "assert.h"
 #include "nntp.h"
 
 namespace newsflash
 {
-    // forward declaration for the template. otherwise gcc conflics with index from strings.h
-    // for the friend declaration.
-    template<typename T>
-    class index;
-
     template<typename Storage>
     class article
     {
@@ -87,15 +83,19 @@ namespace newsflash
                     m_type = find_filetype(filename);
                 m_bits.set(fileflag::binary);
             }
-            m_subject = str::string_view{data.subject.start, data.subject.len};
-            m_author  = str::string_view{data.author.start, data.author.len};
+            m_subject = std::string{data.subject.start, data.subject.len};
+            m_author  = std::string{data.author.start, data.author.len};
             m_number  = nntp::to_int<std::uint64_t>(data.number.start, data.number.len);
             m_bytes   = nntp::to_int<std::uint32_t>(data.bytecount.start, data.bytecount.len);
             m_hash    = nntp::hashvalue(m_subject.c_str(), m_subject.size());
-            m_author.set_max_len(64);            
+            if (m_author.size() > 64)
+                m_author.resize(64);
+            //m_author.set_max_len(64);            
+
             return true;
         }
 
+        // load the article data from the specified offset in the storage object.
         void load(std::size_t offset, Storage& storage)
         {
             const auto size  = storage.size();
@@ -103,14 +103,9 @@ namespace newsflash
             const auto min   = std::min<std::size_t>(avail, 1024);
             assert(offset < size);            
 
-            // have to keep hold of the buffer so that data remains valid.
-            m_buffer = storage.load(offset, min, Storage::buf_read | Storage::buf_write);
+            auto buffer = storage.load(offset, min, Storage::buf_read);
 
-            auto in = m_buffer.begin();
-            read(in, m_bits);
-            read(in, m_type);
-            read(in, m_subject);
-            read(in, m_author);
+            auto in = buffer.begin();
             read(in, m_index);
             read(in, m_bytes);
             read(in, m_idbkey);
@@ -118,26 +113,21 @@ namespace newsflash
             read(in, m_parts_total);
             read(in, m_number);
             read(in, m_pubdate);
-
+            read(in, m_bits);
+            read(in, m_type);            
+            read(in, m_subject);
+            read(in, m_author);            
             auto m = MAGIC;
             read(in, m);
             if (m != MAGIC)
                 throw std::runtime_error("article read error. no magic found");
         }
 
+        // save the article at a specific location (offset) in the storage object.
         void save(std::size_t offset, Storage& storage) const
         {
-            m_buffer = storage.load(offset, size_on_disk(), Storage::buf_write);
-            save();
-        }
-
-        void save() const 
-        {
-            auto out = m_buffer.begin();            
-            write(out, m_bits);
-            write(out, m_type);
-            write(out, m_subject);
-            write(out, m_author);
+            auto buffer = storage.load(offset, size_on_disk(), Storage::buf_write);
+            auto out = buffer.begin();            
             write(out, m_index);
             write(out, m_bytes);
             write(out, m_idbkey);
@@ -145,8 +135,12 @@ namespace newsflash
             write(out, m_parts_total);
             write(out, m_number);
             write(out, m_pubdate);
+            write(out, m_bits);
+            write(out, m_type);            
+            write(out, m_subject);
+            write(out, m_author);            
             write(out, MAGIC);
-            m_buffer.flush();
+            buffer.flush();
         }
 
         void combine(const article& other)
@@ -193,7 +187,7 @@ namespace newsflash
             m_partno = 0;
         }
 
-        bitflag<fileflag>& bits()
+        bitflag<fileflag> bits() const
         { return m_bits; }
 
         std::uint32_t index() const 
@@ -220,14 +214,14 @@ namespace newsflash
         std::time_t pubdate() const 
         { return m_pubdate; }
 
-        const str::string_view& subject() const 
+        const std::string& subject() const 
         { return m_subject; }
 
-        const str::string_view& author() const 
+        const std::string& author() const 
         { return m_author; }
 
         std::string subject_as_string() const 
-        { return m_subject.as_str(); }
+        { return m_subject; }
 
         filetype type() const 
         { return m_type; }
@@ -246,20 +240,20 @@ namespace newsflash
 
         void set_author(const char* str)
         {
-            m_author = str::string_view{str, std::strlen(str)};
+            m_author = str;
         }
         void set_author(const char* str, std::size_t len)
         {
-            m_author = str::string_view{str, len};
+            m_author = std::string{str, len};
         }
 
         void set_subject(const char* str)
         {
-            m_subject = str::string_view{str, std::strlen(str)};
+            m_subject = str;
         }
         void set_subject(const char* str, std::size_t len)
         {
-            m_subject = str::string_view{str, len};
+            m_subject = std::string{str, len};
         }
 
         void set_bytes(std::uint32_t bytes)
@@ -333,6 +327,14 @@ namespace newsflash
             it += len;
             s = str::string_view{ptr, len};
         }
+        void read(iterator& it, std::string& s) const 
+        {
+            std::uint16_t len;
+            read(it, len);
+            const auto ptr = (const char*)&(*it);
+            it += len;
+            s = std::string(ptr, len);
+        }
 
         template<typename Value>
         void write(iterator& it, const Value& val) const 
@@ -352,16 +354,21 @@ namespace newsflash
             std::copy(str.begin(), str.end(), it);
             it += len;
         }
+        void write(iterator& it, const std::string& str) const 
+        {
+            const std::uint16_t len = str.size();
+            write(it, len);
+            std::copy(str.begin(), str.end(), it);
+            it += len;
+        }
+
     private:
         static const std::uint32_t MAGIC;
 
     private:
-        template<typename> friend class index;
-
         bitflag<fileflag> m_bits;
-        filetype m_type;        
-        str::string_view m_subject;
-        str::string_view m_author;
+        filetype m_type;                
+
         std::uint32_t m_index;
         std::uint32_t m_bytes;
         std::uint32_t m_idbkey;
@@ -369,15 +376,160 @@ namespace newsflash
         std::uint16_t m_parts_total;
         std::uint64_t m_number;
         std::time_t   m_pubdate;
-
+        std::string   m_subject;
+        std::string   m_author;
         // non persistent
     private:
         mutable std::uint16_t m_partno;        
         mutable std::uint32_t m_hash;
-        mutable buffer m_buffer;
     };
 
     template<typename T>
     const std::uint32_t article<T>::MAGIC = 0xc0febabe;
+
+
+    // we can optimize article object for a specific storage type.
+    // when the article data is provided by a memory mapped file
+    // we can address the article data without copying by accessing
+    // the data through the base pointer at the correct offsets.
+    // this will avoid *all* copying of article data.
+    template<>
+    class article<filemap> 
+    {
+    public:
+        article() : m_ptr(nullptr), m_len(0)
+        {}
+    
+        void load(std::size_t offset, filemap& storage)
+        {
+            // get a pointer and then cast.
+            const auto size  = storage.size();
+            const auto avail = size - offset;
+            const auto bytes = std::min<std::size_t>(avail, 1024);
+
+            void* base = storage.map_ptr(offset, bytes);
+
+            m_ptr = static_cast<data*>(base);
+            m_len = sizeof(data);
+
+            std::uint16_t len_subject;
+            std::memcpy(&len_subject, (char*)base + m_len, 2);
+            m_len += 2;
+            m_subject = str::string_view{(char*)base + m_len, 
+                len_subject};
+
+            m_len += len_subject;
+
+            std::uint16_t len_author;
+            std::memcpy(&len_author, (char*)base + m_len, 2);
+
+            m_len += 2;
+            m_author = str::string_view{(char*)base + m_len, 
+                len_author};
+
+            m_len += len_author;
+            m_len += 4; // MAGIC
+        }
+        void save(std::size_t offset, filemap& storage)
+        {
+            // nothing to do. writes to the memory address
+            // will go to the backend file already.
+        }
+
+        str::string_view subject() const 
+        { return m_subject; }
+
+        std::string subject_as_string() const 
+        { return m_subject.as_str(); }
+
+        str::string_view author() const
+        { return m_author; }
+
+        bitflag<fileflag> bits() const 
+        { return m_ptr->bits; }
+    
+        std::uint32_t bytes() const
+        { return m_ptr->bytes; }
+        
+        std::uint32_t index() const 
+        { return m_ptr->index; }
+
+        std::uint32_t num_parts_total() const 
+        { return m_ptr->parts_total; }
+
+        std::uint32_t num_parts_avail() const 
+        { return m_ptr->parts_avail; }
+
+        std::uint32_t idbkey() const 
+        { return m_ptr->idbkey; }
+
+        std::uint64_t number() const 
+        { return m_ptr->number; }
+
+        std::time_t pubdate() const 
+        { return m_ptr->pubdate; }
+
+        std::uint32_t size_on_disk() const 
+        { return m_len; }
+
+        bool test(fileflag flag) const 
+        { 
+            bitflag<fileflag> b(m_ptr->bits); 
+            return b.test(flag);
+        }
+
+        bool is_broken() const 
+        { return test(fileflag::broken); }
+
+        bool is_binary() const 
+        { return test(fileflag::binary); }
+
+        bool is_deleted() const 
+        { return test(fileflag::deleted); }
+
+        bool has_parts() const 
+        { return m_ptr->parts_total != 0; }
+
+        filetype type() const
+        {
+            return (filetype)m_ptr->type;
+        }
+
+        void set_bits(fileflag flags, bool bit)
+        {
+            bitflag<fileflag> f(m_ptr->bits);
+            f.set(flags, bit);
+
+            m_ptr->bits = f.value();
+        }
+
+    private:
+        // important. this struct is binary compatible
+        // with raw data written by the non-specialize article template.
+        // this must be kept in sync with that code 
+        struct __attribute__ ((packed)) data {
+            std::uint32_t index;
+            std::uint32_t bytes;
+            std::uint32_t idbkey;
+            std::uint16_t parts_avail;
+            std::uint16_t parts_total;
+            std::uint64_t number;
+            std::time_t   pubdate;
+            std::uint8_t  bits;
+            std::uint8_t  type;            
+            //std::uint16_t subject_len;
+            //char subject[1];
+        };
+
+        static_assert(sizeof(bitflag<fileflag>) == 1, "");
+        static_assert(sizeof(filetype) == 1, "");
+
+        data* m_ptr;
+
+    private:
+        str::string_view m_subject;        
+        str::string_view m_author;
+        std::uint32_t m_len;        
+    };
 
 } // newsflash
