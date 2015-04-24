@@ -43,6 +43,8 @@
 
 //#include <valgrind/callgrind.h>
 
+class QEventLoop;
+
 namespace app
 {
     struct HeaderInfo;
@@ -145,6 +147,9 @@ namespace app
 
         QAbstractTableModel* getVolumeList();
 
+        static 
+        void deleteData(quint32 account, QString path, QString group);
+
     public slots:
         void newHeaderDataAvailable(const QString& file);
         void newHeaderInfoAvailable(const QString& group, quint64 numLocal, quint64 numRemote);
@@ -152,7 +157,7 @@ namespace app
 
     private:
         struct Block;
-        void loadMoreData(Block& block, bool guiLoad);
+        void loadData(Block& block, bool guiLoad);
 
         using catalog = newsflash::catalog<newsflash::filemap>;
         using index   = newsflash::index<newsflash::filemap>;

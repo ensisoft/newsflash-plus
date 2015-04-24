@@ -50,9 +50,6 @@ void DlgVolumes::on_btnPurge_clicked()
 
 void DlgVolumes::on_btnLoad_clicked()
 {
-    ui_.btnLoad->setEnabled(false);
-    ui_.btnClose->setEnabled(false);
-
     const auto& indices = ui_.tableView->selectionModel()->selectedRows();
     try 
     {
@@ -64,9 +61,6 @@ void DlgVolumes::on_btnLoad_clicked()
         QMessageBox::critical(this, "Headers", 
             tr("Unable to load the newsgroup data.\n%1").arg(app::widen(e.what())));
     }
-
-    ui_.btnLoad->setEnabled(true);
-    ui_.btnClose->setEnabled(true);
 }
 
 } // gui

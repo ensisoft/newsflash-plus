@@ -84,6 +84,8 @@ void NewsList::addActions(QMenu& menu)
     menu.addAction(ui_.actionFavorite);
     menu.addAction(ui_.actionUnfavorite);
     menu.addSeparator();
+    menu.addAction(ui_.actionDeleteData);
+    menu.addSeparator();
     menu.addAction(ui_.actionStop);
 }
 
@@ -94,6 +96,8 @@ void NewsList::addActions(QToolBar& bar)
     bar.addAction(ui_.actionBrowse);
     bar.addAction(ui_.actionFavorite);
     bar.addAction(ui_.actionUnfavorite);
+    bar.addSeparator();
+    bar.addAction(ui_.actionDeleteData);
     bar.addSeparator();
     bar.addAction(ui_.actionStop);
 }
@@ -249,12 +253,51 @@ void NewsList::on_actionUnfavorite_triggered()
 
     Q_ASSERT(curAccount_);
 
+    model_.unsubscribe(indices, curAccount_);
+}
+
+void NewsList::on_actionDeleteData_triggered()
+{
+    const auto& indices = ui_.tableGroups->selectionModel()->selectedRows();
+    if (indices.isEmpty())
+        return;
+
     QMessageBox msg(this);
     msg.setIcon(QMessageBox::Question);
     msg.setWindowTitle(tr("Delete Group Data"));
-    msg.setText(tr("Would you like to remove the local database?"));
+    msg.setText(tr("This will delete all the group data. Are you sure?"));
+    msg.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+    if (msg.exec() == QMessageBox::No)
+        return;
 
-    model_.unsubscribe(indices, curAccount_);
+    const auto* account = app::g_accounts->findAccount(curAccount_);
+    Q_ASSERT(account);
+
+    for (const auto& i : indices)
+    {
+        const auto& datapath = account->datapath;
+        const auto& group    = model_.getName(i);
+        const auto account   = curAccount_;
+        const auto& guid     = QString("%1/%2").arg(account).arg(group);
+
+        // check if the tab is open
+        for (std::size_t i=0; i<g_win->numWidgets(); ++i)
+        {
+            auto* w = g_win->getWidget(i);
+            const auto& p = w->property("newsgroup-guid");
+            if (p.isNull()) 
+                continue;
+            if (p.toString() != guid) 
+                continue;
+
+            auto* tab = qobject_cast<NewsGroup*>(w);
+            g_win->closeWidget(tab);
+            break;
+        }
+        NewsGroup::deleteData(account, datapath, group);
+
+        model_.clearSize(i);
+    }
 }
 
 
@@ -306,6 +349,8 @@ void NewsList::on_tableGroups_customContextMenuRequested(QPoint point)
     menu.addSeparator();
     menu.addAction(ui_.actionFavorite);
     menu.addAction(ui_.actionUnfavorite);
+    menu.addSeparator();
+    menu.addAction(ui_.actionDeleteData);
     menu.exec(QCursor::pos());
 }
 

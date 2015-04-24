@@ -166,6 +166,31 @@ quint64 sumFileSizes(const QString& folder)
     return ret;
 }
 
+bool removeDirectory(const QString& folder)
+{
+    QDir dir(folder);
+    if (!dir.exists())
+        return false;
+
+    const auto& infos = dir.entryInfoList(QDir::NoDotAndDotDot | QDir::AllEntries);
+    for (const auto& info : infos)
+    {
+        if (info.isDir())
+        {
+            if (!removeDirectory(info.absoluteFilePath()))
+                return false;
+        }
+        else if (info.isFile())
+        {
+            if (!QFile::remove(info.absoluteFilePath()))
+                return false;
+        }
+    }
+
+    return dir.rmdir(folder);
+}
+
+
 void saveTableLayout(const QString& key, const QTableView* view, Settings& settings)
 {
     const auto model    = view->model();

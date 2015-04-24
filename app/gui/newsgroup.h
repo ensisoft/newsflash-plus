@@ -50,7 +50,6 @@ namespace gui
         virtual void loadState(app::Settings& settings) override;
         virtual void saveState(app::Settings& settings) override;
         virtual info getInformation() const override;
-        virtual bool canClose() const override;
         virtual Finder* getFinder() override;
 
         // Finder
@@ -61,6 +60,9 @@ namespace gui
         virtual void setFound(std::size_t index) override;
 
         void load();
+
+        static
+        void deleteData(quint32 account, QString path, QString group);
 
     private slots:
         void on_actionShowNone_changed();
@@ -102,8 +104,6 @@ namespace gui
         quint32 account_;
         QString path_;
         QString name_;
-    private:
-        bool loadingState_;
     private:
         DlgFilter::Params filter_;
     };

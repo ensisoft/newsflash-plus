@@ -39,6 +39,7 @@
 #include "cmdlist.h"
 #include "catalog.h"
 #include "idlist.h"
+#include "filesys.h"
 
 namespace newsflash
 {
@@ -51,8 +52,10 @@ struct update::state {
     std::string folder;
     std::string group;
 
-    //std::mutex m;
+    // maps a volume index to a file.
     std::map<std::uint32_t, std::unique_ptr<catalog_t>> files;
+
+    // maps a hash value to a volume index
     std::map<std::uint32_t, std::uint32_t> hashmap;
 
     // message id db
@@ -134,6 +137,20 @@ public:
             {
                 const auto index = std::uint32_t(article.number() / CATALOG_SIZE);
                 hit = hmap.insert(std::make_pair(article.hash(), index)).first;
+            }
+            else
+            {
+                // if we have a previous hash entry but the datafile
+                // is not to be found, it has propably been purged.
+                // in this case we're just going to ignore the entry and
+                // throw it away.
+                const auto file_index = hit->second;
+                const auto file_name  = state_->file_volume_name(file_index);
+                if (!fs::exists(file_name))
+                {
+                    hmap.erase(hit);
+                    continue;
+                }
             }
 
             const auto file_index  = hit->second;

@@ -194,6 +194,14 @@ void MainWindow::detachAllWidgets()
     widgets_.clear();
 }
 
+void MainWindow::closeWidget(MainWidget* widget)
+{
+    const auto index = ui_.mainTab->indexOf(widget);
+    if (index == -1)
+        return;
+    on_mainTab_tabCloseRequested(index);
+}
+
 void MainWindow::loadState()
 {
     // load global objects state.
@@ -828,8 +836,6 @@ void MainWindow::on_mainTab_currentChanged(int index)
 void MainWindow::on_mainTab_tabCloseRequested(int tab)
 {
     auto* widget = static_cast<MainWidget*>(ui_.mainTab->widget(tab));
-    if (!widget->canClose())
-        return;
 
     ui_.mainTab->removeTab(tab);
 

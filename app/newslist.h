@@ -62,6 +62,8 @@ namespace app
         void subscribe(QModelIndexList& list, quint32 account);
         void unsubscribe(QModelIndexList& list, quint32 account);
 
+        void clearSize(const QModelIndex& index);
+
         QString getName(const QModelIndex& index) const;
         QString getName(std::size_t index) const;
 

@@ -188,13 +188,13 @@
     <string>Mark as nonfavorite</string>
    </property>
   </action>
-  <action name="actionPurge">
+  <action name="actionDeleteData">
    <property name="icon">
     <iconset resource="resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_purge.png</normaloff>:/resource/16x16_ico_png/ico_purge.png</iconset>
+     <normaloff>:/resource/16x16_ico_png/ico_delete.png</normaloff>:/resource/16x16_ico_png/ico_delete.png</iconset>
    </property>
    <property name="text">
-    <string>Purge</string>
+    <string>Delete data</string>
    </property>
   </action>
  </widget>

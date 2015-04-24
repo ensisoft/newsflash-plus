@@ -327,6 +327,18 @@ void NewsList::unsubscribe(QModelIndexList& list, quint32 accountId)
     setAccountSubscriptions(accountId);    
 }
 
+void NewsList::clearSize(const QModelIndex& index)
+{
+    const auto row = index.row();
+    BOUNDSCHECK(groups_, row);
+
+    groups_[row].sizeOnDisk = 0;
+
+    const auto first = QAbstractTableModel::index(row, 0);
+    const auto last  = QAbstractTableModel::index(row, (int)Columns::LAST);
+    emit dataChanged(first, last);
+}
+
 QString NewsList::getName(const QModelIndex& index) const 
 {
     return groups_[index.row()].name;

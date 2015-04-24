@@ -83,6 +83,8 @@ namespace gui
         // detach all widgets
         void detachAllWidgets();
 
+        void closeWidget(MainWidget* widget);
+        
         // load previously stored application/gui state.
         void loadState();
 

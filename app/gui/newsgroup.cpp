@@ -96,20 +96,15 @@ NewsGroup::NewsGroup(quint32 acc, QString path, QString name) : account_(acc), p
     setWindowTitle(name);
 
     model_.onLoadBegin = [this](std::size_t curBlock, std::size_t numBlocks) {
-        loadingState_ = true;
         ui_.loader->setVisible(true);
         ui_.btnLoadMore->setEnabled(false);
-
     };
 
     model_.onLoadProgress = [this] (std::size_t curItem, std::size_t numItems) {
         ui_.loader->setMaximum(numItems);
         ui_.loader->setValue(curItem);
-        if ((curItem % 150) == 0)
-            QCoreApplication::processEvents();
     };
     model_.onLoadComplete = [this](std::size_t curBlock, std::size_t numBlocks) {
-        loadingState_ = false;
         ui_.loader->setVisible(false);
         const auto numLoaded = model_.numBlocksLoaded();
         const auto numTotal  = model_.numBlocksAvail();
@@ -118,7 +113,6 @@ NewsGroup::NewsGroup(quint32 acc, QString path, QString name) : account_(acc), p
             tr("Load more headers ... (%1/%2)").arg(numLoaded).arg(numTotal));
     };
 
-    loadingState_ = false;
     filter_.minSize  = 0;
     filter_.maxSize  = std::numeric_limits<quint32>::max() + 1ull;
     filter_.bMinSize = false;
@@ -130,10 +124,14 @@ NewsGroup::NewsGroup(quint32 acc, QString path, QString name) : account_(acc), p
     filter_.sizeUnits = DlgFilter::Unit::MB;
     model_.setSizeFilter(filter_.minSize, filter_.maxSize);
     model_.setDateFilter(filter_.minDays, filter_.maxDays);
+
+    DEBUG("NewsGroup GUI created");
 }
 
 NewsGroup::~NewsGroup()
-{}
+{
+    DEBUG("Newsgroup GUI deleted");
+}
 
 void NewsGroup::addActions(QToolBar& bar)
 {
@@ -197,20 +195,6 @@ void NewsGroup::saveState(app::Settings& settings)
 MainWidget::info NewsGroup::getInformation() const 
 {
     return {"group.html", false};
-}
-
-bool NewsGroup::canClose() const
-{
-    // this is a bit of a hack here because
-    // we have the processEvents() in the loading loop
-    // it means that its possible for the MainWindow to want to
-    // react to user input and close the widget.
-    // which deletes us, which dumps core.
-    // so simply, if we're loading data we cannot be closed.
-    if (loadingState_)
-        return false;
-
-    return true;
 }
 
 Finder* NewsGroup::getFinder() 
@@ -294,11 +278,12 @@ void NewsGroup::load()
         QMessageBox::critical(this, name_, 
             tr("Unable to load the newsgroup data.\n%1").arg(app::widen(e.what())));
     }
-
-    loadingState_ = false;
 }
 
-
+void NewsGroup::deleteData(quint32 account, QString path, QString group)
+{
+    app::NewsGroup::deleteData(account, std::move(path), std::move(group));
+}
 
 void NewsGroup::on_actionShowNone_changed()
 {
@@ -437,7 +422,6 @@ void NewsGroup::on_actionBrowse_triggered()
 
 void NewsGroup::on_btnLoadMore_clicked()
 {
-    loadingState_ = true;
     ui_.loader->setVisible(true);
     ui_.btnLoadMore->setEnabled(false);
 

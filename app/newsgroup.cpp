@@ -201,13 +201,27 @@ NewsGroup::NewsGroup() : task_(0)
     };
 
     numSelected_ = 0;
- }
+}
 
 NewsGroup::~NewsGroup()
 {
     if (task_)
     {
         g_engine->killAction(task_);
+    }
+    for (const auto& b : blocks_)
+    {
+        if (!b.purge) 
+            continue;
+        QFile file(b.file);
+        if (!file.remove())
+        {
+            ERROR("Failed to purge %1", b.file);
+        }
+        else
+        {
+            INFO("Purged %1", b.file);
+        }
     }
 
     DEBUG("Newsgroup deleted");
@@ -464,25 +478,24 @@ bool NewsGroup::init(QString path, QString name)
 void NewsGroup::load(std::size_t blockIndex)
 {
     BOUNDSCHECK(blocks_, blockIndex);
-
     auto& block = blocks_[blockIndex];
     if (block.state == State::Loaded)
-        return;
-
-    onLoadBegin(blockIndex, blocks_.size());
+        return;    
 
     const auto& path = joinPath(path_, name_);
     const auto& file = joinPath(path, block.file);
     DEBUG("Loading headers from %1", file);
 
+    onLoadBegin(blockIndex, blocks_.size());
+    
+    loadData(block, true);
+
     block.state = State::Loaded;
 
-    loadMoreData(block, true);
-
-    onLoadComplete(blockIndex, catalogs_.size());
+    onLoadComplete(blockIndex, blocks_.size());        
 
     if (volumeList_)
-        volumeList_->updateBlock(blockIndex);
+        volumeList_->updateBlock(blockIndex);    
 }
 
 void NewsGroup::load()
@@ -710,6 +723,21 @@ QAbstractTableModel* NewsGroup::getVolumeList()
     return volumeList_.get();
 }
 
+void NewsGroup::deleteData(quint32 account, QString path, QString group)
+{
+    const auto& dataDir = joinPath(path, group);
+
+    DEBUG("Delete NewsGroup data %1", dataDir);
+
+    if (!removeDirectory(dataDir)) 
+    {
+        ERROR("Failed to remove data directory %1", dataDir);
+        return;
+    }
+
+    INFO("Deleted data directory %1", dataDir);
+}
+
 void NewsGroup::newHeaderDataAvailable(const QString& file)
 {
     DEBUG("New headers available in %1", file);
@@ -759,7 +787,7 @@ void NewsGroup::newHeaderDataAvailable(const QString& file)
     if (block.state != State::Loaded)
         return;
 
-    loadMoreData(block, false);
+    loadData(block, false);
 
     if (volumeList_) 
     {
@@ -782,7 +810,7 @@ void NewsGroup::updateCompleted(const app::HeaderInfo& info)
     task_ = 0;
 }
 
-void NewsGroup::loadMoreData(Block& block, bool guiLoad)
+void NewsGroup::loadData(Block& block, bool guiLoad)
 {
     // resetting the model will make it forget the current selection.
     // however using beginInsertRows and endInsertRows would need to be 
@@ -814,7 +842,7 @@ void NewsGroup::loadMoreData(Block& block, bool guiLoad)
     // load all the articles, starting at the latest offset that we know off.
     auto beg = db.begin(block.prevOffset);
     auto end = db.end();
-    for (; beg != end; ++beg)
+    for (; beg != end; ++beg, ++curItem)
     {
         const auto& article  = *beg;
 
@@ -823,7 +851,6 @@ void NewsGroup::loadMoreData(Block& block, bool guiLoad)
         if (guiLoad)
         {
             onLoadProgress(curItem, numItems);
-            ++curItem;
         }
     }
 
