@@ -273,10 +273,10 @@ void NewsList::on_actionDeleteData_triggered()
     const auto* account = app::g_accounts->findAccount(curAccount_);
     Q_ASSERT(account);
 
-    for (const auto& i : indices)
+    for (const auto& index : indices)
     {
         const auto& datapath = account->datapath;
-        const auto& group    = model_.getName(i);
+        const auto& group    = model_.getName(index);
         const auto account   = curAccount_;
         const auto& guid     = QString("%1/%2").arg(account).arg(group);
 
@@ -296,7 +296,7 @@ void NewsList::on_actionDeleteData_triggered()
         }
         NewsGroup::deleteData(account, datapath, group);
 
-        model_.clearSize(i);
+        model_.clearSize(index);
     }
 }
 

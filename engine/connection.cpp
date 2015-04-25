@@ -479,25 +479,24 @@ void connection::ping::xperform()
     newsflash::buffer buff(64);
     newsflash::buffer temp;
 
-    // NNTP doesn't have a "real" ping built into it
-    // so we simply send a mundane command (change group)
-    // to perform some activity on the transmission line.
-    session->change_group("keeping.session.alive");
-    session->send_next();
-
-    do
+    session->ping();    
+    while (session->pending())
     {
-        auto received = socket->wait(true, false);
-        if (!newsflash::wait_for(received, std::chrono::seconds(4)))
-            throw exception(connection::error::timeout, "connection timeout (no ping)");
+        session->send_next();
+        do
+        {
+            auto received = socket->wait(true, false);
+            if (!newsflash::wait_for(received, std::chrono::seconds(4)))
+                throw exception(connection::error::timeout, "connection timeout (no ping)");
 
-        const auto bytes = socket->recvsome(buff.back(), buff.available());
-        if (bytes == 0)
-            throw exception(connection::error::network, "connection was closed unexpectedly");
+            const auto bytes = socket->recvsome(buff.back(), buff.available());
+            if (bytes == 0)
+                throw exception(connection::error::network, "connection was closed unexpectedly");
 
-        buff.append(bytes);
+            buff.append(bytes);
+        } 
+        while (!session->recv_next(buff, temp));
     }
-    while (!session->recv_next(buff, temp));
 }
 
 std::string connection::ping::describe() const 

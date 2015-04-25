@@ -142,32 +142,25 @@ void NewsList::sort(int column, Qt::SortOrder order)
     emit layoutAboutToBeChanged();
 
     auto beg = std::begin(groups_);
-    auto mid = std::begin(groups_) + size_;
-    auto end = std::end(groups_);
-
+    auto end = std::begin(groups_) + size_;
     switch ((Columns)column)
     {
         case Columns::Messages:  
-            app::sort(beg, mid, order, &group::numMessages);
-            app::sort(mid, end, order, &group::numMessages); 
+            app::sort(beg, end, order, &group::numMessages);
             break;
 
         case Columns::SizeOnDisk:
-            app::sort(beg, mid, order, &group::sizeOnDisk);
-            app::sort(mid, end, order, &group::sizeOnDisk);
+            app::sort(beg, end, order, &group::sizeOnDisk);
             break;
 
         case Columns::Name:      
-            app::sort(beg, mid, order, &group::name); 
-            app::sort(mid, end, order, &group::name);
+            app::sort(beg, end, order, &group::name); 
             break;
 
         default: Q_ASSERT("wut"); break;
     }
 
-    beg = std::begin(groups_);
-    end = std::begin(groups_) + size_;
-    // put the subscribed items at the top.
+    // and put the subscribed items at the top.
     auto it = std::stable_partition(beg, end, [&](const group& g) {
             return ((g.flags & Flags::Subscribed) != 0);
         });    
@@ -364,42 +357,28 @@ void NewsList::filter(const QString& str, bool showEmpty)
     QAbstractTableModel::beginResetModel();
 
     auto beg = std::begin(groups_);
-    auto mid = std::begin(groups_) + size_;
-    auto end = std::end(groups_);
-
-    auto pred = [&](const group& g) {
+    auto end = std::partition(std::begin(groups_), std::end(groups_), 
+        [&](const group& g) {
         if (!showEmpty && !g.numMessages)
             return false;
         return g.name.indexOf(str) != -1;
-    };
+    });
 
-    auto a = std::stable_partition(beg, mid, pred);
-    auto b = std::stable_partition(mid, end, pred);
-
-    std::vector<group> tmp;
-    auto out = std::back_inserter(tmp);
+    size_ = std::distance(beg, end);
     
-    if (sort_ == Columns::Messages)
+    switch (sort_)
     {
-        app::merge(beg, a, mid, b, out, order_, &group::numMessages);
-        app::merge(a, mid, b, end, out, order_, &group::numMessages);
+        case Columns::Messages:
+            app::sort(beg, end, order_, &group::numMessages);
+            break;
+        case Columns::Name:
+            app::sort(beg, end, order_, &group::name);
+            break;
+        case Columns::SizeOnDisk:
+            app::sort(beg, end, order_, &group::sizeOnDisk);
+            break;
+        default: Q_ASSERT(!"incorrect sorting");
     }
-    else if (sort_ == Columns::Name)
-    {
-        app::merge(beg, a, mid, b, out, order_, &group::name);
-        app::merge(a, mid, b, end, out, order_, &group::name);
-    }
-    else if (sort_ == Columns::SizeOnDisk)
-    {
-        app::merge(beg, a, mid, b, out, order_, &group::sizeOnDisk);
-        app::merge(a, mid, b, end, out, order_, &group::sizeOnDisk);
-    }
-    else Q_ASSERT(!"incorrect sorting");
-
-    size_ = (a - beg) + (b - mid);
-    groups_ = std::move(tmp);
-
-    DEBUG("Found %1 matching items...", size_);
 
     // and finally grab the favs and put them at the top
     beg = std::begin(groups_);
@@ -407,6 +386,8 @@ void NewsList::filter(const QString& str, bool showEmpty)
     auto it = std::stable_partition(beg, end, [&](const group& g) {
             return ((g.flags & Flags::Subscribed) != 0);
         });   
+
+    DEBUG("Found %1 matching items...", size_);    
     DEBUG("Found %1 favs", std::distance(beg, it));
 
     QAbstractTableModel::reset();

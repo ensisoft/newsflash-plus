@@ -65,6 +65,12 @@ project newsflash
     # in order to dump a stacktrace from the assert
     # todo: whats the flag for clang??
     <toolset>gcc:<linkflags>-rdynamic    
+
+    # this option is needed starting with msvc2012(?) 
+    # to allow the binary run on WinXP. 
+    # note that it seems to be enough to have this on the executable.
+    # so theres no need to dick around with Qt, json, zlib settings.
+    <toolset>msvc:<linkflags>/SUBSYSTEM:WINDOWS,5.01        
 ;
 
 if [ os.name ] = NT

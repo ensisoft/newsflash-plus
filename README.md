@@ -113,7 +113,14 @@ Download and extract Qt everywhere to a location where you want it installed for
     $ configure.exe -no-qt3support -no-webkit -debug-and-release -openssl -I c:\coding\openssl_1_0_1f\include -L c:\coding\openssl_1_0_1f\lib
 
 
+NOTE About WindowsXP. To target WinXP we need /SUBSYSTEM:WINDOWS,5.01
+More information here:
 
+http://www.tripleboot.org/?p=423
+
+and here...
+
+http://blogs.msdn.com/b/vcblog/archive/2012/10/08/windows-xp-targeting-with-c-in-visual-studio-2012.aspx?Redirected=true
 
 Par2cmdline
 ========================

@@ -724,6 +724,14 @@ void session::retrieve_list()
     send_.emplace_back(new list);
 }
 
+void session::ping()
+{
+    // NNTP doesn't have a "real" ping built into it
+    // so we simply send a mundane command (change group)
+    // to perform some activity on the transmission line.
+    send_.emplace_back(new group("keeping.session.alive"));
+}
+
 bool session::send_next()
 {
     if (send_.empty())

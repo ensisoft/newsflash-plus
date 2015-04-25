@@ -664,18 +664,18 @@ std::string find_filename(const char* str, size_t len)
             ++start;
 
         // trim whitespace
-        while (std::isspace(*start) && start < dot)
+        while (std::isspace((unsigned char)*start) && start < dot)
             ++start;
     }
     else
     {
         // seek untill first non space or dash alphanumeric character is found
-        while ((std::isalnum(*start) || *start == '-' || *start == '_')
+        while ((std::isalnum((unsigned char)*start) || *start == '-' || *start == '_')
             && start > str)
             --start;
 
         // trim leading non-alpha
-        while (!std::isalnum(*start) && start < dot)
+        while (!std::isalnum((unsigned char)*start) && start < dot)
             ++start;            
     }
 

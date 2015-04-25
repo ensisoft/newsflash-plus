@@ -111,6 +111,9 @@ namespace newsflash
         // retrieve newsgroup listing
         void retrieve_list();
 
+        // do a ping to keep the session alive.
+        void ping();
+
         // send next queued command.
         // returns true if next command was sent otherwise false.
         bool send_next();

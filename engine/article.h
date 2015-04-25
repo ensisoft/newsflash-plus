@@ -507,7 +507,12 @@ namespace newsflash
         // important. this struct is binary compatible
         // with raw data written by the non-specialize article template.
         // this must be kept in sync with that code 
+#if defined(__MSVC__)
+#  pragma pack(push, 1)
+        struct data {
+#else
         struct __attribute__ ((packed)) data {
+#endif
             std::uint32_t index;
             std::uint32_t bytes;
             std::uint32_t idbkey;
@@ -520,6 +525,9 @@ namespace newsflash
             //std::uint16_t subject_len;
             //char subject[1];
         };
+#if defined(__MSVC__)
+#  pragma pack(pop)
+#endif
 
         static_assert(sizeof(bitflag<fileflag>) == 1, "");
         static_assert(sizeof(filetype) == 1, "");
