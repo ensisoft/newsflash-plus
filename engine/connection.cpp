@@ -36,6 +36,7 @@
 #include "action.h"
 #include "event.h"
 #include "socketapi.h"
+#include "throttle.h"
 
 namespace newsflash
 {
@@ -58,6 +59,7 @@ struct connection::state {
     bool pipelining;
     bool compression;
     double bps;
+    throttle* pthrottle;
 
     void do_auth(std::string& user, std::string& pass) const 
     {
@@ -519,6 +521,7 @@ std::unique_ptr<action> connection::connect(spec s)
     state_->bps = 0;
     state_->cancel.reset(new event);
     state_->cancel->reset();
+    state_->pthrottle = s.pthrottle;
     std::unique_ptr<action> act(new resolve(state_));
     return act;
 }

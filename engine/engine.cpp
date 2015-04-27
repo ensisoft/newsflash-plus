@@ -46,6 +46,7 @@
 #include "datafile.h"
 #include "listing.h"
 #include "update.h"
+#include "throttle.h"
 #include "session.pb.h"
 
 namespace newsflash
@@ -143,6 +144,8 @@ struct engine::state {
     engine::on_header_info on_header_info_callback;
     engine::on_async_notify on_notify_callback;
     engine::on_complete on_complete_callback;
+
+    throttle ratecontrol;
 
    ~state()
     {
@@ -275,8 +278,9 @@ public:
         const auto& acc = state.find_account(aid);
 
         connection::spec spec;
-        spec.password = acc.password;
-        spec.username = acc.username;
+        spec.pthrottle = &state.ratecontrol;
+        spec.password  = acc.password;
+        spec.username  = acc.username;
         spec.enable_compression = acc.enable_compression;
         spec.enable_pipelining = acc.enable_pipelining;
         if ((state.prefer_secure && acc.enable_secure_server) ||
@@ -316,8 +320,9 @@ public:
         const auto& acc = state.find_account(dna.ui_.account);
 
         connection::spec spec;
-        spec.password = acc.password;
-        spec.username = acc.username;
+        spec.pthrottle = &state.ratecontrol;
+        spec.password  = acc.password;
+        spec.username  = acc.username;
         spec.enable_compression = acc.enable_compression;
         spec.enable_pipelining  = acc.enable_pipelining;        
         spec.hostname = dna.ui_.host;
@@ -357,6 +362,7 @@ public:
 
             const auto& acc = state.find_account(ui_.account);
             connection::spec s;
+            s.pthrottle = &state.ratecontrol;
             s.password = acc.password;
             s.username = acc.username;
             s.use_ssl  = ui_.secure;
@@ -1631,6 +1637,7 @@ engine::engine() : state_(new state)
     state_->started               = false;
     state_->group_items           = false;
     state_->repartition_task_list = false;
+    state_->ratecontrol.set_quota(std::numeric_limits<std::size_t>::max());
 
 }
 

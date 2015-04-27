@@ -34,6 +34,7 @@
 namespace newsflash
 {
     class cmdlist;
+    class throttle;
 
     class connection
     {
@@ -165,6 +166,7 @@ namespace newsflash
             bool use_ssl;
             bool enable_pipelining;
             bool enable_compression;
+            throttle* pthrottle;
         };
 
         // begin connecting to the given host specification.

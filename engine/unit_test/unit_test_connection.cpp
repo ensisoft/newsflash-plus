@@ -38,6 +38,7 @@
 #include "../buffer.h"
 #include "../logging.h"
 #include "../decode.h"
+#include "../throttle.h"
 #include "unit_test_common.h"
 
 namespace nf = newsflash;
@@ -152,6 +153,7 @@ void test_connect()
         s.password = "pass";
         s.enable_compression = false;
         s.enable_pipelining  = false;
+        s.pthrottle = nullptr;
 
         nf::connection conn;
 
@@ -183,6 +185,7 @@ void test_connect()
         s.password = "pass";
         s.enable_pipelining = false;
         s.enable_compression = false;
+        s.pthrottle = nullptr;
 
         nf::connection conn;
 
@@ -218,7 +221,8 @@ void test_connect()
         s.username = "pass";
         s.password = "pass";
         s.enable_pipelining = false;
-        s.enable_compression = false;        
+        s.enable_compression = false;      
+        s.pthrottle = nullptr;  
 
         std::unique_ptr<nf::connection> conn(new nf::connection);
 
@@ -250,6 +254,8 @@ void test_execute()
 
     std::unique_ptr<nf::action> act;
 
+    nf::throttle throttle;
+
     nf::connection::spec s;
     s.hostname = "localhost";
     s.hostport = 1919;
@@ -258,6 +264,8 @@ void test_execute()
     s.enable_pipelining  = false;
     s.username  = "pass";
     s.password  = "pass";
+    s.pthrottle = &throttle;
+
 
     nf::connection conn;
 
