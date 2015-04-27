@@ -2256,12 +2256,14 @@ void engine::set_prefer_secure(bool on_off)
 
 void engine::set_throttle(bool on_off)
 {
-    // todo:
+    state_->ratecontrol.enable(on_off);
+    LOG_D("Throttle is now ", on_off);
 }
 
 void engine::set_throttle_value(unsigned value)
 {
-    // todo:
+    state_->ratecontrol.set_quota(value);
+    LOG_D("Throttle value ", value, " bytes per second.");
 }
 
 bool engine::get_overwrite_existing_files() const 
@@ -2281,14 +2283,12 @@ bool engine::get_prefer_secure() const
 
 bool engine::get_throttle() const 
 {
-    // todo:
-    return false;
+    return state_->ratecontrol.is_enabled();
 }
 
 unsigned engine::get_throttle_value() const
 { 
-    // todo:
-    return 0;
+    return state_->ratecontrol.get_quota();
 }
 
 std::uint64_t engine::get_bytes_queued() const 

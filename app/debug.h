@@ -37,6 +37,7 @@
 
 namespace app {
     struct size;
+    struct speed;
 } // app
 
 namespace debug
@@ -92,6 +93,8 @@ namespace debug
     inline QString toString(const app::age& a) 
     { return app::toString(a); }
 
+    inline QString toString(const app::speed& s)
+    { return app::toString(s); }
 
     template<typename T>
     QString toString(const T& value)

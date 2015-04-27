@@ -459,7 +459,7 @@ void shutdownComputer()
 
     QString cmd = list[0];
     list.removeFirst();
-    QProcess::startDetached(shutdown_command, list);
+    QProcess::startDetached(cmd, list);
 }
 
 QString getOpenfileCommand()

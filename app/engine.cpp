@@ -422,7 +422,7 @@ bool Engine::eventFilter(QObject* object, QEvent* event)
         }
         const auto numPending = engine_->num_pending_tasks();
 
-        DEBUG("Num pending tasks %1", numPending);        
+        //DEBUG("Num pending tasks %1", numPending);        
         
         emit numPendingTasks(numPending);
         return true;

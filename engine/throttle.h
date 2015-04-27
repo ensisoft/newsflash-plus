@@ -23,10 +23,13 @@
 #pragma once
 
 #include <newsflash/config.h>
+#include <atomic>
 #include <mutex>
 #include <chrono>
 #include <cstddef>
 #include <algorithm>
+#include <limits>
+#include <thread>
 
 namespace newsflash
 { 
@@ -34,9 +37,14 @@ namespace newsflash
     class throttle
     {
     public:
-        throttle() : time_(0), quota_(0), accum_(0)
+        throttle() : time_(0), quota_(0), accum_(0), enabled_(false)
         {
             start_ = clock_t::now();
+        }
+
+        void enable(bool on_off)
+        {
+            enabled_ = on_off;
         }
 
         // enable throttling. 
@@ -48,6 +56,9 @@ namespace newsflash
 
         void accumulate(std::size_t actual, std::size_t quota)
         {
+            if (!enabled_)
+                return;
+
             std::lock_guard<std::mutex> lock(mutex_);
             if (actual > quota)
                 actual = quota;
@@ -61,11 +72,14 @@ namespace newsflash
 
         std::size_t give_quota()
         {
+            if (!enabled_)
+                return std::numeric_limits<std::size_t>::max();
+
             // at any given moment we have a fraction of the total
             // quota available to be shared between all connections.
             std::lock_guard<std::mutex> lock(mutex_);
             const auto now  = millis();
-            const auto gone = time_ - now;
+            const auto gone = now - time_;
             if (gone > 1000)
             {
                 accum_ = (gone % 1000) / 1000.0 * quota_;
@@ -80,6 +94,14 @@ namespace newsflash
             accum_ += chunk;
             return chunk;
         }
+
+        bool is_enabled() const 
+        { return enabled_; }
+
+        std::size_t get_quota() const 
+        { return quota_; }
+
+
     private:
         using clock_t = std::chrono::steady_clock;
         using point_t = std::chrono::time_point<clock_t>;
@@ -99,6 +121,7 @@ namespace newsflash
         std::size_t quota_;
         std::size_t accum_;
         std::mutex  mutex_;
+        std::atomic<bool> enabled_;
     };
 
 } // newsflash

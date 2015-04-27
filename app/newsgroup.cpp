@@ -578,7 +578,7 @@ void NewsGroup::scanSelected(QModelIndexList& list)
         if (index_.is_selected(i))
         {
             list.append(QAbstractTableModel::index(i, 0));
-            if (list.size() == numSelected_)
+            if (list.size() == (int)numSelected_)
                 break;
         }
     }
@@ -645,7 +645,7 @@ void NewsGroup::download(const QModelIndexList& list, quint32 acc, QString folde
             const auto numSegments = article.num_parts_total();
             const auto baseSegment = article.number();
             const auto idbKey = article.idbkey();
-            for (auto i=0; i<numSegments + 1; ++i)
+            for (unsigned i=0; i<numSegments + 1; ++i)
             {
                 const auto index = idbKey + i;
 

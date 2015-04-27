@@ -21,7 +21,10 @@
 //  THE SOFTWARE.
 
 #include <newsflash/config.h>
-
+#include <newsflash/warnpush.h>
+#  include <boost/random/mersenne_twister.hpp>
+#include <newsflash/warnpop.h>
+#include <thread>
 #include <mutex>
 #include <fstream>
 #include <cassert>
@@ -60,6 +63,7 @@ struct connection::state {
     bool compression;
     double bps;
     throttle* pthrottle;
+    boost::random::mt19937 random; // std::rand is not MT safe.
 
     void do_auth(std::string& user, std::string& pass) const 
     {
@@ -253,10 +257,11 @@ void connection::execute::xperform()
 {
     std::lock_guard<std::mutex> lock(state_->mutex);
 
-    auto& session = state_->session;
-    auto& cancel  = state_->cancel;
-    auto& socket  = state_->socket;
-    auto& cmdlist = cmds_;
+    auto& session  = state_->session;
+    auto& cancel   = state_->cancel;
+    auto& socket   = state_->socket;
+    auto* throttle = state_->pthrottle;
+    auto& cmdlist  = cmds_;
 
     LOG_D("Execute cmdlist ", cmdlist->id());
     LOG_D("Cmdlist has ", cmdlist->num_data_commands(), " data commands");
@@ -367,10 +372,25 @@ void connection::execute::xperform()
             else if (canceled)
                 return;
 
+            std::size_t quota = 0;
+            while (!quota)
+            {
+                quota = throttle->give_quota();
+                if (!quota)
+                {
+                    const auto ms = state_->random() % 10;
+                    std::this_thread::sleep_for(std::chrono::milliseconds(ms));
+                }
+            }
+
+            std::size_t avail = std::min(recvbuf.available(), quota);
+
             // readsome
-            const auto bytes = socket->recvsome(recvbuf.back(), recvbuf.available());
+            const auto bytes = socket->recvsome(recvbuf.back(), avail);
             if (bytes == 0)
                 throw exception(connection::error::network, "connection was closed unexpectedly");
+
+            throttle->accumulate(bytes, quota);
 
             recvbuf.append(bytes);
             accum += bytes;
@@ -522,6 +542,7 @@ std::unique_ptr<action> connection::connect(spec s)
     state_->cancel.reset(new event);
     state_->cancel->reset();
     state_->pthrottle = s.pthrottle;
+    state_->random.seed((std::size_t)this);
     std::unique_ptr<action> act(new resolve(state_));
     return act;
 }

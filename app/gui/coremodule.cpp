@@ -28,7 +28,6 @@
 #  include <QtGui/QMessageBox>
 #  include <QDir>
 #include <newsflash/warnpop.h>
-
 #include "coremodule.h"
 #include "mainwindow.h"
 #include "../engine.h"
@@ -39,6 +38,9 @@
 #include "../debug.h"
 #include "../format.h"
 #include "../telephone.h"
+#include "../utility.h"
+#include "../format.h"
+#include "../types.h"
 
 namespace gui
 {
@@ -88,6 +90,14 @@ void CoreSettings::on_btnBrowseDownloads_clicked()
 
     ui_.editDownloads->setText(dir);
 }
+
+void CoreSettings::on_sliderThrottle_valueChanged(int val)
+{
+    const auto bytes = val * app::KB(5);
+
+    ui_.editThrottle->setText(app::toString(app::speed{(quint32)bytes}));
+}
+
 
 CoreModule::CoreModule()
 {}
@@ -159,6 +169,21 @@ SettingsWidget* CoreModule::getSettings()
     {
         ui.grpFillAccount->setChecked(false);
     }
+
+
+    auto throttle = app::g_engine->getThrottleValue();
+    if (!throttle)
+        throttle = app::KB(5);
+
+    // simple linear scale. each noch is 5kb.
+    // maximum is 100mb/s
+    const auto bytes = app::MB(10);
+    const auto tick  = app::KB(5);
+    const auto ticks = bytes / tick;
+    ui.sliderThrottle->setMaximum(ticks);
+    ui.sliderThrottle->setMinimum(1);
+    ui.sliderThrottle->setValue(throttle / tick);
+
     return ptr;
 }
 
@@ -174,7 +199,7 @@ void CoreModule::applySettings(SettingsWidget* gui)
     const auto download  = ui.editDownloads->text();
 
     const auto ask_for_account = ui.rdbAskAccount->isChecked();
-    const auto use_one_account = ui.rdbUseAccount->isChecked();
+    //const auto use_one_account = ui.rdbUseAccount->isChecked();
     if (ask_for_account)
     {
         app::g_accounts->setMainAccount(0);
@@ -219,9 +244,12 @@ void CoreModule::applySettings(SettingsWidget* gui)
     app::g_engine->setOverwriteExistingFiles(overwrite);
     app::g_engine->setDiscardTextContent(discard);
 
-    // todo: throttle value.
+    const auto tick = ui.sliderThrottle->value();
+    const auto throttle = tick * app::KB(5);
+    app::g_engine->setThrottleValue(throttle);
 
-    //backend.set("settings", "check_for_software_updates", updates);
+    DEBUG("Throttle value %1", app::speed{(quint32)throttle});
+
     check_for_updates_ = updates;
 }
 

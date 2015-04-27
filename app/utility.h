@@ -152,4 +152,16 @@ void merge(InputIt first1, InputIt last1,
     else std::merge(first1, last1, first2, last2, out, greater(p));
 }
 
+inline
+quint64 MB(int mb) 
+{ 
+    return mb * 1024 * 1024; 
+}
+
+inline
+quint64 KB(int kb)
+{
+    return kb * 1024;
+}
+
 } // app

@@ -151,7 +151,7 @@ void Downloads::refresh(bool isActive)
         return;
 
     // only modify the title if we're not visible
-    if (num_tasks > numDownloads_)
+    if (num_tasks > (int)numDownloads_)
     {
         const auto newTasks = num_tasks - numDownloads_;
         setWindowTitle(QString("Downloads (%1)").arg(newTasks));

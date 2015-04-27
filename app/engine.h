@@ -207,6 +207,11 @@ namespace app
             return engine_->get_throttle();
         }
 
+        unsigned getThrottleValue() const 
+        {
+            return engine_->get_throttle_value();
+        }
+
         void setOverwriteExistingFiles(bool on_off)
         {
             engine_->set_overwrite_existing_files(on_off);

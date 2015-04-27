@@ -164,7 +164,7 @@ public:
 
         const auto numRows = commands_.size();
         const auto last    = indices.last();
-        if (last.row() >= numRows - 1)
+        if (last.row() >=  (int)numRows - 1)
             return;
 
         for (int i=0; i<indices.size(); ++i)

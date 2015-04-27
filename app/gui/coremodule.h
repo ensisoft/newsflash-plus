@@ -43,6 +43,7 @@ namespace gui
     class CoreSettings  : public SettingsWidget
     {
         Q_OBJECT
+
     public:
         CoreSettings();
        ~CoreSettings();
@@ -51,6 +52,7 @@ namespace gui
     private slots:
         void on_btnBrowseLog_clicked();
         void on_btnBrowseDownloads_clicked();
+        void on_sliderThrottle_valueChanged(int val);
 
     private:
         Ui::CoreSettings ui_;
