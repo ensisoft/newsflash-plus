@@ -49,16 +49,6 @@
            </widget>
           </item>
           <item>
-           <widget class="QCheckBox" name="chkShutdown">
-            <property name="toolTip">
-             <string>Shutdown computer after all downloads are finished</string>
-            </property>
-            <property name="text">
-             <string>Shutdown computer afterwards</string>
-            </property>
-           </widget>
-          </item>
-          <item>
            <spacer name="horizontalSpacer">
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
@@ -204,7 +194,7 @@
   </action>
   <action name="actionTaskFlush">
    <property name="icon">
-    <iconset resource="resource.qrc">
+    <iconset>
      <normaloff>:/resource/16x16_ico_png/ico_flush.png</normaloff>:/resource/16x16_ico_png/ico_flush.png</iconset>
    </property>
    <property name="text">
@@ -246,7 +236,7 @@
   </action>
   <action name="actionTaskClear">
    <property name="icon">
-    <iconset resource="resource.qrc">
+    <iconset>
      <normaloff>:/resource/16x16_ico_png/ico_trash.png</normaloff>:/resource/16x16_ico_png/ico_trash.png</iconset>
    </property>
    <property name="text">
@@ -413,7 +403,6 @@
  <tabstops>
   <tabstop>chkRemoveComplete</tabstop>
   <tabstop>chkGroupSimilar</tabstop>
-  <tabstop>chkShutdown</tabstop>
   <tabstop>tableTasks</tabstop>
   <tabstop>tableConns</tabstop>
  </tabstops>

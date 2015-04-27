@@ -99,6 +99,7 @@ namespace app
         { return enabled_; }
 
     signals:
+        void repairEnqueue(const app::Archive& arc);
         void repairStart(const app::Archive& rec);
         void repairReady(const app::Archive& rec);
         void scanProgress(const QString& file, int val);

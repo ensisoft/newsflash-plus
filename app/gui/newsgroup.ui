@@ -272,6 +272,45 @@
    <property name="text">
     <string>Headers</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+H</string>
+   </property>
+  </action>
+  <action name="actionBookmark">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_bookmark.png</normaloff>:/resource/16x16_ico_png/ico_bookmark.png</iconset>
+   </property>
+   <property name="text">
+    <string>Bookmark</string>
+   </property>
+   <property name="toolTip">
+    <string>Toggle bookmark</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+B</string>
+   </property>
+  </action>
+  <action name="actionBookmarkNext">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_bookmark_next.png</normaloff>:/resource/16x16_ico_png/ico_bookmark_next.png</iconset>
+   </property>
+   <property name="text">
+    <string>Next</string>
+   </property>
+   <property name="toolTip">
+    <string>Next bookmark</string>
+   </property>
+  </action>
+  <action name="actionBookmarkPrev">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_bookmark_prev.png</normaloff>:/resource/16x16_ico_png/ico_bookmark_prev.png</iconset>
+   </property>
+   <property name="text">
+    <string>Prev</string>
+   </property>
   </action>
  </widget>
  <tabstops>

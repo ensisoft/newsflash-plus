@@ -487,6 +487,9 @@ namespace newsflash
         bool is_deleted() const 
         { return test(fileflag::deleted); }
 
+        bool is_bookmarked() const 
+        { return test(fileflag::bookmarked); }
+
         bool has_parts() const 
         { return m_ptr->parts_total != 0; }
 

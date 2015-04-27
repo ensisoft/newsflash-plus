@@ -18,49 +18,69 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#pragma once
+#define LOGTAG "shutdown"
 
+#include <newsflash/config.h>
 #include <newsflash/warnpush.h>
-#  include <QObject>
-#  include <QString>
+
 #include <newsflash/warnpop.h>
-#include <memory>
-#include <vector>
-#include <set>
-#include "archive.h"
+#include "shutdown.h"
+#include "platform.h"
+#include "debug.h"
+#include "eventlog.h"
 
 namespace app
 {
-    struct FileInfo;
-    struct FilePackInfo;
-    class Repairer;
-    class Unpacker;
-    class Shutdown;
 
-    // translates file events into archives (when necessary)
-    // and manages a list of currently pending archives. 
-    // finally executes the list of tools on the archive.
-    class ArchiveManager : public QObject
-    {
-        Q_OBJECT
+Shutdown::Shutdown() : numRepairs_(0), numUnpacks_(0), numDownloads_(0)
+{
+   waitDownloads_ = false;
+   waitRepairs_   = false;
+   waitUnpacks_   = false;
+   powerOff_      = false;
+}
 
-    public:
-        ArchiveManager(Repairer& repairer, Unpacker& unpacker);
-       ~ArchiveManager();
+void Shutdown::repairEnqueue()
+{
+    ++numRepairs_;
 
-    public slots:
-        void fileCompleted(const app::FileInfo& file);
-        void packCompleted(const app::FilePackInfo& pack);
+    DEBUG("Pending repairs %1", numRepairs_);
+}
 
-    private slots:
-        void repairReady(const app::Archive& arc);
-        void unpackReady(const app::Archive& arc);
+void Shutdown::repairReady()
+{
+    --numRepairs_;    
 
-    private:
-        Repairer& repairer_;
-        Unpacker& unpacker_;
-    private:
-        std::set<QString> unpacks_;
-    };
+    evaluate();
+}
+
+void Shutdown::unpackEnqueue()
+{
+    ++numUnpacks_;
+
+    DEBUG("Pending unpacks %1", numUnpacks_);
+}
+
+void Shutdown::unpackReady()
+{
+    --numUnpacks_;
+
+    evaluate();
+}
+
+void Shutdown::evaluate()
+{
+    if (waitDownloads_ && numDownloads_)
+        return;
+    if (waitRepairs_ && numRepairs_)
+        return;
+    if (waitUnpacks_ && numUnpacks_)
+        return;
+
+    powerOff_ = true;
+    emit initPoweroff();
+}
+
+Shutdown* g_shutdown;
 
 } // app

@@ -110,13 +110,6 @@
        </widget>
       </item>
       <item>
-       <widget class="QCheckBox" name="chkInvert">
-        <property name="text">
-         <string>Invert</string>
-        </property>
-       </widget>
-      </item>
-      <item>
        <widget class="QCheckBox" name="chkRegExp">
         <property name="text">
          <string>Regular expression</string>
@@ -160,7 +153,6 @@
   <tabstop>btnQuit</tabstop>
   <tabstop>editFind</tabstop>
   <tabstop>chkMatchCase</tabstop>
-  <tabstop>chkInvert</tabstop>
   <tabstop>chkRegExp</tabstop>
   <tabstop>btnPrev</tabstop>
   <tabstop>btnNext</tabstop>

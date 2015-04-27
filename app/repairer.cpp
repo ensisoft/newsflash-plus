@@ -479,6 +479,8 @@ void Repairer::addRecovery(const Archive& arc)
 {
     list_->addRecovery(arc);
 
+    emit repairEnqueue(arc);
+
     RecoveryFiles files;
     files.archiveID = arc.getGuid();
     history_.push_back(files);

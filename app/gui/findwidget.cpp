@@ -81,7 +81,6 @@ void FindWidget::on_editFind_textEdited()
 void FindWidget::doFind(bool forward)
 {
     const auto regexp = ui_.chkRegExp->isChecked();
-    const auto invert = ui_.chkInvert->isChecked();
     const auto matchcase = ui_.chkMatchCase->isChecked();
     const auto str = ui_.editFind->text();
 

@@ -143,6 +143,10 @@ void NewsGroup::addActions(QToolBar& bar)
     bar.addSeparator();
     bar.addAction(ui_.actionFilter);
     bar.addSeparator();
+    bar.addAction(ui_.actionBookmarkPrev);
+    bar.addAction(ui_.actionBookmark);    
+    bar.addAction(ui_.actionBookmarkNext);
+    bar.addSeparator();
     bar.addAction(ui_.actionDelete);
     bar.addSeparator();
     bar.addAction(ui_.actionStop);
@@ -150,7 +154,21 @@ void NewsGroup::addActions(QToolBar& bar)
 
 void NewsGroup::addActions(QMenu& menu)
 {
-
+    menu.addAction(ui_.actionRefresh);
+    menu.addSeparator();
+    menu.addAction(ui_.actionDownload);
+    menu.addSeparator();
+    menu.addAction(ui_.actionHeaders);
+    menu.addSeparator();
+    menu.addAction(ui_.actionFilter);
+    menu.addSeparator();
+    menu.addAction(ui_.actionBookmarkPrev);
+    menu.addAction(ui_.actionBookmark);    
+    menu.addAction(ui_.actionBookmarkNext);
+    menu.addSeparator();
+    menu.addAction(ui_.actionDelete);
+    menu.addSeparator();
+    menu.addAction(ui_.actionStop);
 }
 
 void NewsGroup::loadState(app::Settings& settings)
@@ -420,6 +438,55 @@ void NewsGroup::on_actionBrowse_triggered()
     downloadSelected(folder);
 }
 
+void NewsGroup::on_actionBookmark_triggered()
+{
+    const auto& indices = ui_.tableView->selectionModel()->selectedRows();
+    if (indices.isEmpty())
+        return;
+
+    model_.bookmark(indices);
+}
+
+void NewsGroup::on_actionBookmarkPrev_triggered()
+{
+    const auto& indices = ui_.tableView->selectionModel()->selectedRows();
+    int start = indices.isEmpty() ? 0
+        : indices[0].row() - 1;
+
+    const auto numItems = model_.numShown();
+    for (std::size_t i=0; i<numItems; ++i, --start)
+    {
+        if (start < 0)
+            start = numItems - 1;
+
+        const auto& item = model_.getArticle(start);
+        if ( item.is_bookmarked())
+        {
+            setFound(start);
+            break;
+        }
+    }
+}
+
+void NewsGroup::on_actionBookmarkNext_triggered()
+{
+    const auto& indices = ui_.tableView->selectionModel()->selectedRows();
+    const auto start = indices.isEmpty() ? 0 
+        : indices[0].row() + 1;
+
+    const auto numItems = model_.numShown();
+    for (std::size_t i=0; i<numItems; ++i)
+    {
+        const auto index = (start + i) % numItems;
+        const auto& item = model_.getArticle(index);
+        if (item.is_bookmarked())
+        {
+            setFound(index);
+            break;            
+        }
+    }
+}
+
 void NewsGroup::on_btnLoadMore_clicked()
 {
     ui_.loader->setVisible(true);
@@ -453,6 +520,8 @@ void NewsGroup::on_tableView_customContextMenuRequested(QPoint p)
     menu.addMenu(&sub);
     menu.addSeparator();
     menu.addAction(ui_.actionFilter);
+    menu.addSeparator();
+
 
     QMenu showType("Filter by type", this);
     showType.setIcon(QIcon("icons:ico_filter.png"));
@@ -474,6 +543,10 @@ void NewsGroup::on_tableView_customContextMenuRequested(QPoint p)
     menu.addMenu(&showType);
     menu.addMenu(&showFlag);
     menu.addSeparator();
+    menu.addAction(ui_.actionBookmarkPrev);
+    menu.addAction(ui_.actionBookmark);
+    menu.addAction(ui_.actionBookmarkNext);
+    menu.addSeparator();    
     menu.addAction(ui_.actionDelete);    
     menu.addSeparator();    
     menu.addAction(ui_.actionStop);
@@ -501,6 +574,8 @@ void NewsGroup::selectionChanged(const QItemSelection& next, const QItemSelectio
 
     const auto empty = next.indexes().empty();
     ui_.actionDownload->setEnabled(!empty);
+    ui_.actionBookmark->setEnabled(!empty);
+    ui_.actionDelete->setEnabled(!empty);
 }
 
 void NewsGroup::modelBegReset()

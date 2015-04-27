@@ -50,7 +50,9 @@
     <file>resource/16x16_ico_png/ico_bullet_yellow.png</file> 
     <file>resource/16x16_ico_png/ico_search.png</file>    
     <file>resource/16x16_ico_png/ico_headers.png</file>
-
+    <file>resource/16x16_ico_png/ico_bookmark_next.png</file>
+    <file>resource/16x16_ico_png/ico_bookmark_prev.png</file>
+    <file>resource/16x16_ico_png/ico_bookmark.png</file>
 
     <!-- application icons -->
     <file>resource/16x16_ico_png/ico_application.png</file>    
@@ -157,8 +159,7 @@
     <file>resource/16x16_ico_png/ico_purge.png</file>
     <file>resource/16x16_ico_png/ico_properties.png</file>
     <file>resource/16x16_ico_png/ico_sorting.png</file>
-    <file>resource/16x16_ico_png/ico_next_bookmark.png</file>
-    <file>resource/16x16_ico_png/ico_previous_bookmark.png</file>
+
 
 
     <file>resource/16x16_ico_png/ico_link.png</file>

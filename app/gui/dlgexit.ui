@@ -14,7 +14,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Shutting Down</string>
+   <string>Exiting ...</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>

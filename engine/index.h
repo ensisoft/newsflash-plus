@@ -277,6 +277,7 @@ namespace newsflash
             {
                 auto it = std::stable_partition(std::begin(items_), std::end(items_), pred);
                 size_ = std::distance(std::begin(items_), it);
+                deselect_non_visible();
                 return;
             }
 
@@ -361,6 +362,7 @@ namespace newsflash
             }
             size_  = (a - beg) + (b - mid);
             items_ = std::move(tmp);
+            deselect_non_visible();
         }
 
     private:
@@ -549,6 +551,17 @@ namespace newsflash
                 return false;
 
             return true;
+        }
+
+        void deselect_non_visible()
+        {
+            auto beg = std::begin(items_) + size_;
+            auto end = std::end(items_);
+            for (; beg != end; ++beg)
+            {
+                auto& item = *beg;
+                item.bits.set(flags::selected, false);
+            }
         }
 
     private:

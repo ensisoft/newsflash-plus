@@ -22,45 +22,62 @@
 
 #include <newsflash/warnpush.h>
 #  include <QObject>
-#  include <QString>
 #include <newsflash/warnpop.h>
-#include <memory>
-#include <vector>
-#include <set>
-#include "archive.h"
 
 namespace app
 {
-    struct FileInfo;
-    struct FilePackInfo;
-    class Repairer;
-    class Unpacker;
-    class Shutdown;
+    class Archive;
 
-    // translates file events into archives (when necessary)
-    // and manages a list of currently pending archives. 
-    // finally executes the list of tools on the archive.
-    class ArchiveManager : public QObject
+    class Shutdown : public QObject
     {
         Q_OBJECT
 
     public:
-        ArchiveManager(Repairer& repairer, Unpacker& unpacker);
-       ~ArchiveManager();
+        Shutdown();
+
+        void waitDownloads(bool onOff)
+        { waitDownloads_ = onOff; }
+
+        void waitRepairs(bool onOff)
+        { waitRepairs_ = onOff; }
+
+        void waitUnpacks(bool onOff)
+        { waitUnpacks_ = onOff; }
+
+        bool waitDownloads() const 
+        { return waitDownloads_; }
+
+        bool waitRepairs() const
+        { return waitRepairs_; }
+
+        bool waitUnpacks() const 
+        { return waitUnpacks_; }
+
+        bool isPoweroffEnabled() const
+        { return powerOff_; }
+
+    signals:
+        void initPoweroff();
 
     public slots:
-        void fileCompleted(const app::FileInfo& file);
-        void packCompleted(const app::FilePackInfo& pack);
-
-    private slots:
-        void repairReady(const app::Archive& arc);
-        void unpackReady(const app::Archive& arc);
+        void repairEnqueue();
+        void repairReady();
+        void unpackEnqueue();
+        void unpackReady();
+    private:
+        void evaluate();
 
     private:
-        Repairer& repairer_;
-        Unpacker& unpacker_;
+        std::size_t numRepairs_;
+        std::size_t numUnpacks_;
+        std::size_t numDownloads_;
     private:
-        std::set<QString> unpacks_;
+        bool waitDownloads_;
+        bool waitRepairs_;
+        bool waitUnpacks_;
+        bool powerOff_;
     };
+
+    extern Shutdown* g_shutdown;
 
 } // app

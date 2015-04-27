@@ -292,12 +292,27 @@ void openFile(const QString& file)
 
 void openWeb(const QString& url)
 {
-    // todo:
+    QDesktopServices::openUrl(url);
 }
 
 void shutdownComputer()
 {
-    //todo:
+    HANDLE hToken = NULL;
+    HANDLE hProc  = GetCurrentProcess();
+    OpenProcessToken(hProc, TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hToken);
+    
+    TOKEN_PRIVILEGES tkp = {0};
+    LookupPrivilegeValue(NULL, SE_SHUTDOWN_NAME, &tkp.Privileges[0].Luid);
+    tkp.PrivilegeCount = 1;
+    tkp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+        
+    AdjustTokenPrivileges(hToken, FALSE, &tkp, 0, (PTOKEN_PRIVILEGES)NULL, 0);
+        
+    ExitWindowsEx(EWX_SHUTDOWN | EWX_FORCE,
+      SHTDN_REASON_MAJOR_OPERATINGSYSTEM | 
+      SHTDN_REASON_MINOR_UPGRADE |
+      SHTDN_REASON_FLAG_PLANNED);
+
 }
 
 #elif defined(LINUX_OS)
@@ -438,7 +453,13 @@ void openWeb(const QString& url)
 
 void shutdownComputer()
 {
-    // todo:
+    QStringList list = shutdown_command.split(" ", QString::SkipEmptyParts);
+    if (list.size() < 1)
+        return;
+
+    QString cmd = list[0];
+    list.removeFirst();
+    QProcess::startDetached(shutdown_command, list);
 }
 
 QString getOpenfileCommand()

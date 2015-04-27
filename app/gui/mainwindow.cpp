@@ -48,6 +48,7 @@
 #include "dlgabout.h"
 #include "dlgfeedback.h"
 #include "dlgaccount.h"
+#include "dlgshutdown.h"
 #include "config.h"
 #include "findwidget.h"
 #include "../eventlog.h"
@@ -340,6 +341,8 @@ void MainWindow::prepareFileMenu()
         if (m->addActions(*ui_.menuFile))
             ui_.menuFile->addSeparator();
 
+    ui_.menuFile->addSeparator();
+    ui_.menuFile->addAction(ui_.actionShutdown);
     ui_.menuFile->addSeparator();
     ui_.menuFile->addAction(ui_.actionExit);        
 }
@@ -637,6 +640,8 @@ void MainWindow::closeEvent(QCloseEvent* event)
 
     event->accept();
     DEBUG("Shutdown complete!");
+
+    emit closed();
 }
 
 void MainWindow::dragEnterEvent(QDragEnterEvent* event)
@@ -1050,6 +1055,12 @@ void MainWindow::on_actionRequestLicense_triggered()
     DlgFeedback dlg(this, DlgFeedback::mode::LicenseRequest);
     dlg.exec();
 }
+void MainWindow::on_actionShutdown_triggered()
+{
+    DlgShutdown dlg(this);
+    dlg.exec();
+}
+
 
 void MainWindow::actionWindowToggleView_triggered()
 {

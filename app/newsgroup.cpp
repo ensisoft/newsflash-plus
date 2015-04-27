@@ -595,6 +595,25 @@ void NewsGroup::select(const QModelIndexList& list, bool val)
         numSelected_ = list.size();
 }
 
+void NewsGroup::bookmark(const QModelIndexList& list)
+{
+    int minRow = std::numeric_limits<int>::max();
+    int maxRow = std::numeric_limits<int>::min();
+    for (const auto& i : list)
+    {
+        const auto row = i.row();
+        minRow = std::min(row, minRow);
+        maxRow = std::max(row, maxRow);
+        auto article  = index_[row];
+        auto bookmark = article.is_bookmarked();
+        article.set_bits(FileFlag::bookmarked, !bookmark);
+    }
+
+    const auto first = QAbstractTableModel::index(minRow, 0);
+    const auto last  = QAbstractTableModel::index(maxRow, (int)Columns::LAST);
+    emit dataChanged(first, last);
+}
+
 void NewsGroup::download(const QModelIndexList& list, quint32 acc, QString folder)
 {
     std::vector<NZBContent> pack;

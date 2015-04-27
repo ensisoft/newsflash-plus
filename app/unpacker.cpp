@@ -368,6 +368,8 @@ void Unpacker::addUnpack(const Archive& arc)
 {
     list_->addUnpack(arc);
 
+    emit unpackEnqueue(arc);
+
     startNextUnpack();
 }
 

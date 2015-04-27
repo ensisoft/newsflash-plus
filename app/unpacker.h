@@ -100,6 +100,7 @@ namespace app
         std::size_t numUnpacks() const ;
 
     signals:
+        void unpackEnqueue(const app::Archive& arc);
         void unpackStart(const app::Archive& arc);
         void unpackReady(const app::Archive& arc);
         void unpackProgress(const QString& file, int done);

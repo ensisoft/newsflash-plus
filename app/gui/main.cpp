@@ -78,6 +78,7 @@
 #include "../unrar.h"
 #include "../arcman.h"
 #include "../webengine.h"
+#include "../shutdown.h"
 
 namespace gui
 {
@@ -126,6 +127,10 @@ int run(int argc, char* argv[])
             ERROR("Failed to read settings %1, %2", file, err);
     }
 
+    app::Shutdown shutdown;
+    app::g_shutdown = &shutdown;
+
+
     // initialize global pointers.
     app::WebEngine web;
     app::g_web = &web;
@@ -142,12 +147,19 @@ int run(int argc, char* argv[])
     app::MovieDatabase omdb;
     app::g_movies = &omdb;
 
-    // todo: maybe create the widgets and modules on the free store
     // instead of the stack..
 
      // main application window
     gui::MainWindow win(set);
     gui::g_win = &win;
+
+    // first shutdown module sends initPoweroff signal
+    // we ask the MainWindow to close. 
+    QObject::connect(&shutdown, SIGNAL(initPoweroff()),
+        &win, SLOT(close()));
+    // After mainwindow is closed.. exit the loop
+    QObject::connect(&win, SIGNAL(closed()), 
+        &qtinstance, SLOT(quit()));
 
     // accounts widget
     gui::Accounts gacc;
@@ -179,6 +191,11 @@ int run(int argc, char* argv[])
     std::unique_ptr<app::ParityChecker> parityEngine(new app::Par2(
         app::distdir::file("par2")));
     app::Repairer repairer(std::move(parityEngine));
+    QObject::connect(&repairer, SIGNAL(repairEnqueue(const app::Archive&)),
+        &shutdown, SLOT(repairEnqueue()));
+    QObject::connect(&repairer, SIGNAL(repairReady(const app::Archive&)),
+        &shutdown, SLOT(repairReady()));
+
     // connect to the repair GUI
     gui::Repair repairGui(repairer);    
 
@@ -186,7 +203,13 @@ int run(int argc, char* argv[])
     std::unique_ptr<app::Archiver> extractEngine(new app::Unrar(
         app::distdir::file("unrar")));
     app::Unpacker unpacker(std::move(extractEngine));
+    QObject::connect(&unpacker, SIGNAL(unpackEnqueue(const app::Archive&)),
+        &shutdown, SLOT(unpackEnqueue()));
+    QObject::connect(&unpacker, SIGNAL(unpackReady(const app::Archive&)),
+        &shutdown, SLOT(unpackReady()));
+
     gui::Unpack unpackGui(unpacker);
+
 
     // compose repair + unpack together into a single GUI element
     gui::Archives archives(unpackGui, repairGui);
@@ -283,6 +306,12 @@ int run(int argc, char* argv[])
     // so before we start destructing those objects its better to make clean
     // all the references to those in the mainwindow.
     win.detachAllWidgets();
+
+    if (shutdown.isPoweroffEnabled())
+    {
+        DEBUG("Powering off... G'bye");
+        app::shutdownComputer();
+    }
 
     return ret;
 }

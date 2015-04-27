@@ -34,7 +34,6 @@
 #include "repairer.h"
 #include "unpacker.h"
 
-
 namespace app
 {
 
@@ -60,47 +59,26 @@ void ArchiveManager::packCompleted(const app::FilePackInfo& pack)
 {
     DEBUG("FilePack ready %1 %2", pack.desc, pack.path);
 
-    QString repairFile;
     QStringList files;
 
     QDir dir;
     dir.setPath(pack.path);
     dir.setNameFilters(QStringList("*.par2"));
     files = dir.entryList();
-
-    // check if there's a foobar.par2 file. if such file is found
-    // we choose this file for repair.
     for (int i=0; i<files.size(); ++i)
     {
         QFileInfo file(files[i]);
         QString name = file.completeBaseName();
-        if (!name.contains(".vol"))
-        {
-            repairFile = file.fileName();
-            break;
-        }
+        if (name.contains(".vol"))
+            continue;
+
+        Archive arc;
+        arc.path  = pack.path;
+        arc.desc  = file.fileName();
+        arc.file  = file.fileName();        
+        arc.state = Archive::Status::Queued;
+        repairer_.addRecovery(arc);
     }
-
-    // if foobar.par2 file was not found then we take the first
-    // foobar.volXXX+YYY.par2 file
-    if (repairFile.isEmpty())
-    {
-        if (!files.isEmpty())
-        {
-            QFileInfo file(files[0]);
-            repairFile = file.fileName();
-        }
-    }
-
-    if (repairFile.isEmpty())
-        return;
-
-    Archive arc;
-    arc.path  = pack.path;
-    arc.desc  = repairFile;
-    arc.file  = repairFile;
-    arc.state = Archive::Status::Queued;
-    repairer_.addRecovery(arc);    
 }
 
 void ArchiveManager::repairReady(const app::Archive& arc)

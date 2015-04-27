@@ -90,6 +90,8 @@ namespace app
         void scanSelected(QModelIndexList& list);
         void select(const QModelIndexList& list, bool val);
 
+        void bookmark(const QModelIndexList& list);
+
         void download(const QModelIndexList& list, quint32 acc, QString folder);
 
         std::size_t numItems() const;
@@ -135,11 +137,10 @@ namespace app
             //CALLGRIND_START_INSTRUMENTATION;
             //CALLGRIND_ZERO_STATS;
 
-            const auto curSize = index_.size();
+            QAbstractTableModel::beginResetModel();
             index_.filter();
-            const auto newSize = index_.size();
-            if (newSize != curSize)
-                QAbstractTableModel::reset();
+            QAbstractTableModel::reset();
+            QAbstractTableModel::endResetModel();
 
             //CALLGRIND_DUMP_STATS_AT("applyFilter");
             //CALLGRIND_STOP_INSTRUMENTATION;

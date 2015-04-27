@@ -120,7 +120,10 @@ namespace gui
 
         MainWidget* getWidget(std::size_t i);
 
-   private:
+    signals:
+        void closed();
+
+    private:
         void show(const QString& name);
         void show(MainWidget* widget);
         void show(std::size_t index);
@@ -155,6 +158,7 @@ namespace gui
         void on_actionSendFeedback_triggered();
         void on_actionRequestFeature_triggered();
         void on_actionRequestLicense_triggered();
+        void on_actionShutdown_triggered();
         void actionWindowToggleView_triggered();
         void actionWindowFocus_triggered();
         void timerWelcome_timeout();

@@ -633,7 +633,7 @@
   </action>
   <action name="actionWindowNext">
    <property name="icon">
-    <iconset resource="resource.qrc">
+    <iconset>
      <normaloff>:/resource/16x16_ico_png/ico_next_bookmark.png</normaloff>:/resource/16x16_ico_png/ico_next_bookmark.png</iconset>
    </property>
    <property name="text">
@@ -645,7 +645,7 @@
   </action>
   <action name="actionWindowPrev">
    <property name="icon">
-    <iconset resource="resource.qrc">
+    <iconset>
      <normaloff>:/resource/16x16_ico_png/ico_previous_bookmark.png</normaloff>:/resource/16x16_ico_png/ico_previous_bookmark.png</iconset>
    </property>
    <property name="text">
@@ -713,6 +713,18 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+G</string>
+   </property>
+  </action>
+  <action name="actionShutdown">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/png/shutdown.png</normaloff>:/resource/png/shutdown.png</iconset>
+   </property>
+   <property name="text">
+    <string>Shutdown ...</string>
+   </property>
+   <property name="toolTip">
+    <string>Schedule computer shutdown</string>
    </property>
   </action>
  </widget>
