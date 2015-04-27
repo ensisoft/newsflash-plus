@@ -78,7 +78,8 @@
 #include "../unrar.h"
 #include "../arcman.h"
 #include "../webengine.h"
-#include "../shutdown.h"
+#include "../poweroff.h"
+#include "../platform.h"
 
 namespace gui
 {
@@ -127,8 +128,8 @@ int run(int argc, char* argv[])
             ERROR("Failed to read settings %1, %2", file, err);
     }
 
-    app::Shutdown shutdown;
-    app::g_shutdown = &shutdown;
+    app::Poweroff power;
+    app::g_poweroff = &power;
 
 
     // initialize global pointers.
@@ -137,6 +138,9 @@ int run(int argc, char* argv[])
 
     app::Engine engine;
     app::g_engine = &engine;
+
+    QObject::connect(&engine, SIGNAL(numPendingTasks(std::size_t)),
+        &power, SLOT(numPendingTasks(std::size_t)));
 
     app::Accounts acc;
     app::g_accounts = &acc;
@@ -153,13 +157,11 @@ int run(int argc, char* argv[])
     gui::MainWindow win(set);
     gui::g_win = &win;
 
-    // first shutdown module sends initPoweroff signal
+    // first power module sends initPoweroff signal
     // we ask the MainWindow to close. 
-    QObject::connect(&shutdown, SIGNAL(initPoweroff()),
-        &win, SLOT(close()));
-    // After mainwindow is closed.. exit the loop
-    QObject::connect(&win, SIGNAL(closed()), 
-        &qtinstance, SLOT(quit()));
+    // After mainwindow is closed.. exit the loop    
+    QObject::connect(&power, SIGNAL(initPoweroff()), &win, SLOT(close()));
+    QObject::connect(&win, SIGNAL(closed()), &qtinstance, SLOT(quit()));
 
     // accounts widget
     gui::Accounts gacc;
@@ -192,9 +194,9 @@ int run(int argc, char* argv[])
         app::distdir::file("par2")));
     app::Repairer repairer(std::move(parityEngine));
     QObject::connect(&repairer, SIGNAL(repairEnqueue(const app::Archive&)),
-        &shutdown, SLOT(repairEnqueue()));
+        &power, SLOT(repairEnqueue()));
     QObject::connect(&repairer, SIGNAL(repairReady(const app::Archive&)),
-        &shutdown, SLOT(repairReady()));
+        &power, SLOT(repairReady()));
 
     // connect to the repair GUI
     gui::Repair repairGui(repairer);    
@@ -204,9 +206,9 @@ int run(int argc, char* argv[])
         app::distdir::file("unrar")));
     app::Unpacker unpacker(std::move(extractEngine));
     QObject::connect(&unpacker, SIGNAL(unpackEnqueue(const app::Archive&)),
-        &shutdown, SLOT(unpackEnqueue()));
+        &power, SLOT(unpackEnqueue()));
     QObject::connect(&unpacker, SIGNAL(unpackReady(const app::Archive&)),
-        &shutdown, SLOT(unpackReady()));
+        &power, SLOT(unpackReady()));
 
     gui::Unpack unpackGui(unpacker);
 
@@ -221,6 +223,9 @@ int run(int argc, char* argv[])
         &arcMan, SLOT(packCompleted(const app::FilePackInfo&)));
     QObject::connect(&engine, SIGNAL(fileCompleted(const app::FileInfo&)),
         &arcMan, SLOT(fileCompleted(const app::FileInfo&)));
+
+    QObject::connect(&arcMan, SIGNAL(numPendingArchives(std::size_t)),
+        &power, SLOT(numPendingArchives(std::size_t)));
 
 
     // eventlog module. this is a bit special
@@ -307,7 +312,7 @@ int run(int argc, char* argv[])
     // all the references to those in the mainwindow.
     win.detachAllWidgets();
 
-    if (shutdown.isPoweroffEnabled())
+    if (power.isPoweroffEnabled())
     {
         DEBUG("Powering off... G'bye");
         app::shutdownComputer();

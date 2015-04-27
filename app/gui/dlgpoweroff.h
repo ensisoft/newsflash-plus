@@ -20,64 +20,38 @@
 
 #pragma once
 
+#include <newsflash/config.h>
 #include <newsflash/warnpush.h>
-#  include <QObject>
+#  include <QtGui/QDialog>
+#  include "ui_poweroff.h"
 #include <newsflash/warnpop.h>
+#include "../poweroff.h"
 
-namespace app
+namespace gui
 {
-    class Archive;
-
-    class Shutdown : public QObject
+    class DlgPoweroff : public QDialog
     {
         Q_OBJECT
 
     public:
-        Shutdown();
+        DlgPoweroff(QWidget* parent) : QDialog(parent)
+        {
+            ui_.setupUi(this);
+            ui_.btnDownloads->setChecked(app::g_poweroff->waitDownloads());
+            ui_.btnRepairs->setChecked(app::g_poweroff->waitRepairs());
+            ui_.btnUnpacks->setChecked(app::g_poweroff->waitUnpacks());
+        }
 
-        void waitDownloads(bool onOff)
-        { waitDownloads_ = onOff; }
-
-        void waitRepairs(bool onOff)
-        { waitRepairs_ = onOff; }
-
-        void waitUnpacks(bool onOff)
-        { waitUnpacks_ = onOff; }
-
-        bool waitDownloads() const 
-        { return waitDownloads_; }
-
-        bool waitRepairs() const
-        { return waitRepairs_; }
-
-        bool waitUnpacks() const 
-        { return waitUnpacks_; }
-
-        bool isPoweroffEnabled() const
-        { return powerOff_; }
-
-    signals:
-        void initPoweroff();
-
-    public slots:
-        void repairEnqueue();
-        void repairReady();
-        void unpackEnqueue();
-        void unpackReady();
-    private:
-        void evaluate();
+    private slots:
+        void on_btnClose_clicked()
+        {
+            app::g_poweroff->waitDownloads(ui_.btnDownloads->isChecked());
+            app::g_poweroff->waitRepairs(ui_.btnRepairs->isChecked());
+            app::g_poweroff->waitUnpacks(ui_.btnUnpacks->isChecked());
+            close();
+        }
 
     private:
-        std::size_t numRepairs_;
-        std::size_t numUnpacks_;
-        std::size_t numDownloads_;
-    private:
-        bool waitDownloads_;
-        bool waitRepairs_;
-        bool waitUnpacks_;
-        bool powerOff_;
+        Ui::Poweroff ui_;
     };
-
-    extern Shutdown* g_shutdown;
-
-} // app
+} // gui

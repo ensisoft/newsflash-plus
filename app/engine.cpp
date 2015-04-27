@@ -94,6 +94,7 @@ Engine::Engine()
         std::placeholders::_1));
     engine_->set_header_info_callback(std::bind(&Engine::onHeaderInfoAvailable, this,
         std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+    engine_->set_complete_callback(std::bind(&Engine::onAllComplete, this));
 
     // remember that the notify callback can come from any thread
     // within the engine and it has to be thread safe.
@@ -419,6 +420,11 @@ bool Engine::eventFilter(QObject* object, QEvent* event)
                 emit shutdownComplete();
             }
         }
+        const auto numPending = engine_->num_pending_tasks();
+
+        DEBUG("Num pending tasks %1", numPending);        
+        
+        emit numPendingTasks(numPending);
         return true;
     }
     return QObject::eventFilter(object, event);
@@ -547,6 +553,12 @@ void Engine::onHeaderInfoAvailable(const std::string& group,
     std::uint64_t numLocal, std::uint64_t numRemote)
 {
     emit newHeaderInfoAvailable(fromUtf8(group), numLocal, numRemote);
+}
+
+void Engine::onAllComplete()
+{
+    DEBUG("All downloads are complete.");
+    emit allCompleted();
 }
 
 Engine* g_engine;

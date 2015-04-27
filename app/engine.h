@@ -286,6 +286,8 @@ namespace app
         void packCompleted(const app::FilePackInfo& pack);
         void listCompleted(quint32 account, const QList<app::NewsGroupInfo>& list);
         void updateCompleted(const app::HeaderInfo& headers);
+        void allCompleted();
+        void numPendingTasks(std::size_t num);
 
     private:
         virtual bool eventFilter(QObject* object, QEvent* event) override;
@@ -303,6 +305,7 @@ namespace app
         void onHeaderDataAvailable(const std::string& file);
         void onHeaderInfoAvailable(const std::string& group,
             std::uint64_t numLocal, std::uint64_t numRemote);
+        void onAllComplete();
 
     private:
         QString logifiles_;

@@ -70,6 +70,9 @@ namespace newsflash
         // can come from multiple threads inside the engine.
         using on_async_notify = std::function<void ()>;
 
+        // this callback is called when all tasks are done.
+        using on_complete = std::function<void()>;
+
         using action_id_t = std::size_t;
 
         engine();
@@ -131,6 +134,8 @@ namespace newsflash
 
         void set_header_data_callback(on_header_data callback);
         void set_header_info_callback(on_header_info callback);
+
+        void set_complete_callback(on_complete callback);
 
         // if set to true engine will overwrite files that already exist in the filesystem.
         // otherwise file name collisions are resolved by some naming scheme
@@ -218,7 +223,10 @@ namespace newsflash
 
         void kill_action(action_id_t id);
 
+        // get the number of tasks.
         std::size_t num_tasks() const;
+
+        std::size_t num_pending_tasks() const;
 
     private:
         class task;

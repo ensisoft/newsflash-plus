@@ -158,7 +158,7 @@ namespace gui
         void on_actionSendFeedback_triggered();
         void on_actionRequestFeature_triggered();
         void on_actionRequestLicense_triggered();
-        void on_actionShutdown_triggered();
+        void on_actionPoweroff_triggered();
         void actionWindowToggleView_triggered();
         void actionWindowFocus_triggered();
         void timerWelcome_timeout();

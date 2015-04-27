@@ -360,7 +360,7 @@
      <x>0</x>
      <y>0</y>
      <width>785</width>
-     <height>23</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -715,16 +715,16 @@
     <string>Ctrl+G</string>
    </property>
   </action>
-  <action name="actionShutdown">
+  <action name="actionPoweroff">
    <property name="icon">
     <iconset resource="resource.qrc">
      <normaloff>:/resource/png/shutdown.png</normaloff>:/resource/png/shutdown.png</iconset>
    </property>
    <property name="text">
-    <string>Shutdown ...</string>
+    <string>Poweroff ...</string>
    </property>
    <property name="toolTip">
-    <string>Schedule computer shutdown</string>
+    <string>Poweroff the computer</string>
    </property>
   </action>
  </widget>

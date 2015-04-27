@@ -48,7 +48,7 @@
 #include "dlgabout.h"
 #include "dlgfeedback.h"
 #include "dlgaccount.h"
-#include "dlgshutdown.h"
+#include "dlgpoweroff.h"
 #include "config.h"
 #include "findwidget.h"
 #include "../eventlog.h"
@@ -342,7 +342,7 @@ void MainWindow::prepareFileMenu()
             ui_.menuFile->addSeparator();
 
     ui_.menuFile->addSeparator();
-    ui_.menuFile->addAction(ui_.actionShutdown);
+    ui_.menuFile->addAction(ui_.actionPoweroff);
     ui_.menuFile->addSeparator();
     ui_.menuFile->addAction(ui_.actionExit);        
 }
@@ -1055,9 +1055,9 @@ void MainWindow::on_actionRequestLicense_triggered()
     DlgFeedback dlg(this, DlgFeedback::mode::LicenseRequest);
     dlg.exec();
 }
-void MainWindow::on_actionShutdown_triggered()
+void MainWindow::on_actionPoweroff_triggered()
 {
-    DlgShutdown dlg(this);
+    DlgPoweroff dlg(this);
     dlg.exec();
 }
 

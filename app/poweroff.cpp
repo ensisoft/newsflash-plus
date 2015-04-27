@@ -18,13 +18,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#define LOGTAG "shutdown"
+#define LOGTAG "power"
 
 #include <newsflash/config.h>
 #include <newsflash/warnpush.h>
 
 #include <newsflash/warnpop.h>
-#include "shutdown.h"
+#include "poweroff.h"
 #include "platform.h"
 #include "debug.h"
 #include "eventlog.h"
@@ -32,7 +32,7 @@
 namespace app
 {
 
-Shutdown::Shutdown() : numRepairs_(0), numUnpacks_(0), numDownloads_(0)
+Poweroff::Poweroff() : numRepairs_(0), numUnpacks_(0), numArchives_(0), numTasks_(0)
 {
    waitDownloads_ = false;
    waitRepairs_   = false;
@@ -40,38 +40,57 @@ Shutdown::Shutdown() : numRepairs_(0), numUnpacks_(0), numDownloads_(0)
    powerOff_      = false;
 }
 
-void Shutdown::repairEnqueue()
+void Poweroff::repairEnqueue()
 {
     ++numRepairs_;
-
-    DEBUG("Pending repairs %1", numRepairs_);
 }
 
-void Shutdown::repairReady()
+void Poweroff::repairReady()
 {
     --numRepairs_;    
 
     evaluate();
 }
 
-void Shutdown::unpackEnqueue()
+void Poweroff::unpackEnqueue()
 {
     ++numUnpacks_;
-
-    DEBUG("Pending unpacks %1", numUnpacks_);
 }
 
-void Shutdown::unpackReady()
+void Poweroff::unpackReady()
 {
     --numUnpacks_;
 
     evaluate();
 }
 
-void Shutdown::evaluate()
+void Poweroff::numPendingArchives(std::size_t num)
 {
-    if (waitDownloads_ && numDownloads_)
+    numArchives_ = num;
+
+    evaluate();
+}
+
+void Poweroff::numPendingTasks(std::size_t num)
+{
+    numTasks_ = num;
+
+    evaluate();
+}
+
+void Poweroff::evaluate()
+{
+    if (!waitDownloads_ && !waitRepairs_ && !waitUnpacks_)
         return;
+
+    if (waitDownloads_ && numTasks_)
+        return;
+    if (waitRepairs_ || waitUnpacks_)
+    {
+        if (numArchives_)
+            return;
+    }
+
     if (waitRepairs_ && numRepairs_)
         return;
     if (waitUnpacks_ && numUnpacks_)
@@ -81,6 +100,6 @@ void Shutdown::evaluate()
     emit initPoweroff();
 }
 
-Shutdown* g_shutdown;
+Poweroff* g_poweroff;
 
 } // app

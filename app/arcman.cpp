@@ -78,7 +78,11 @@ void ArchiveManager::packCompleted(const app::FilePackInfo& pack)
         arc.file  = file.fileName();        
         arc.state = Archive::Status::Queued;
         repairer_.addRecovery(arc);
+
+        pendingArchives_.insert(arc.getGuid());
     }
+
+    emit numPendingArchives(pendingArchives_.size());    
 }
 
 void ArchiveManager::repairReady(const app::Archive& arc)
@@ -99,7 +103,12 @@ void ArchiveManager::repairReady(const app::Archive& arc)
         unrar.state = Archive::Status::Queued;
         unpacker_.addUnpack(unrar);
         unpacks_.insert(arc.path + "/" + vol);
+        pendingArchives_.insert(unrar.getGuid());
     }
+
+    pendingArchives_.erase(arc.getGuid());
+
+    emit numPendingArchives(pendingArchives_.size());
 }
 
 void ArchiveManager::unpackReady(const app::Archive& arc)
@@ -110,6 +119,11 @@ void ArchiveManager::unpackReady(const app::Archive& arc)
     const auto& volumes = unpacker_.findUnpackVolumes(entries);
     for (const auto& vol : volumes)
     {
+        // sometimes we have a .rar file inside a .rar file. (subtitles)
+        // in such a case we want to rescan the archive folder for new 
+        // rar files that we havent extracted yet and extract those too.
+        // this means that we need to manually keep track of the archives
+        // that we have already extracted.
         if (unpacks_.find(arc.path + "/" + vol) != std::end(unpacks_))
             continue;
 
@@ -119,7 +133,12 @@ void ArchiveManager::unpackReady(const app::Archive& arc)
         unrar.desc = vol;
         unrar.state = Archive::Status::Queued;
         unpacks_.insert(arc.path + "/" + vol);
+        pendingArchives_.insert(unrar.getGuid());
     }
+
+    pendingArchives_.erase(arc.getGuid());
+
+    emit numPendingArchives(pendingArchives_.size());
 }
 
 } // app

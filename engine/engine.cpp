@@ -124,6 +124,7 @@ struct engine::state {
     std::queue<std::unique_ptr<action>> actions;
     std::unique_ptr<threadpool> threads;
     std::size_t num_pending_actions;
+    std::size_t num_pending_tasks;
 
     bool prefer_secure;
     bool overwrite_existing;
@@ -141,6 +142,7 @@ struct engine::state {
     engine::on_header_data on_header_data_callback;    
     engine::on_header_info on_header_info_callback;
     engine::on_async_notify on_notify_callback;
+    engine::on_complete on_complete_callback;
 
    ~state()
     {
@@ -739,6 +741,16 @@ public:
 
             state.bytes_queued -= ui_.size;
         }
+        if (!(ui_.state == states::complete || ui_.state == states::error))
+        {
+            state.num_pending_tasks--;
+            if (state.num_pending_tasks == 0)
+            {
+                LOG_D("All tasks are complete");
+                if (state.on_complete_callback)
+                    state.on_complete_callback();
+            }
+        }
     }
 
     void configure(const settings& s)
@@ -1190,13 +1202,23 @@ private:
                         continue;
                     cmd->cancel();
                 }
-                break;
-                break;
+                break;                
         }
 
         LOG_D("Task ", ui_.task_id, " => ", str(new_state));
         LOG_D("Task ", ui_.task_id, " has ", num_active_cmdlists_,  " active cmdlists");
         LOG_D("Task ", ui_.task_id, " has ", num_active_actions_, " active actions");        
+
+        if (new_state == states::error || new_state == states::complete)
+        {
+            state.num_pending_tasks--;
+            if (state.num_pending_tasks == 0)
+            {
+                LOG_D("All tasks are complete");
+                if (state.on_complete_callback)
+                    state.on_complete_callback();
+            }
+        }
 
         return { old_state, new_state };
     }
@@ -1604,6 +1626,7 @@ engine::engine() : state_(new state)
     state_->bytes_ready           = 0;
     state_->bytes_written         = 0;
     state_->num_pending_actions   = 0;
+    state_->num_pending_tasks     = 0;
     state_->prefer_secure         = true;
     state_->started               = false;
     state_->group_items           = false;
@@ -1756,6 +1779,7 @@ engine::action_id_t engine::download_files(ui::batch batch)
 
         state_->tasks.push_back(std::move(job));
         state_->bytes_queued += file.size;
+        state_->num_pending_tasks++;
     }
 
     state_->batches.push_back(std::move(b));
@@ -1777,6 +1801,7 @@ engine::action_id_t engine::download_listing(ui::listing list)
 
     state_->tasks.push_back(std::move(job));
     state_->batches.push_back(std::move(batch));
+    state_->num_pending_tasks++;
     state_->execute();
     return batchid;
 }
@@ -1795,6 +1820,7 @@ engine::action_id_t engine::download_headers(ui::update update)
 
     state_->tasks.push_back(std::move(task));
     state_->batches.push_back(std::move(batch));
+    state_->num_pending_tasks++;
     state_->execute();
     return batchid;
 }
@@ -2187,6 +2213,11 @@ void engine::set_update_callback(on_update update_callback)
     state_->on_update_callback = std::move(update_callback);
 }
 
+void engine::set_complete_callback(on_complete callback)
+{
+    state_->on_complete_callback = std::move(callback);
+}
+
 void engine::set_overwrite_existing_files(bool on_off)
 {
     state_->overwrite_existing = on_off;
@@ -2519,6 +2550,11 @@ void engine::kill_action(engine::action_id_t id)
 std::size_t engine::num_tasks() const 
 {
     return state_->tasks.size();
+}
+
+std::size_t engine::num_pending_tasks() const 
+{
+    return state_->num_pending_tasks;
 }
 
 } // newsflash
