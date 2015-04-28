@@ -67,6 +67,9 @@ namespace newsflash
 
         // Get handle for waiting either writability or readability or both.
         virtual waithandle wait(bool waitread, bool waitwrite) const = 0;
+
+        // returns true if the socket buffer has more data for immediate read.
+        virtual bool can_recv() const = 0;
     protected:
     private:
     };

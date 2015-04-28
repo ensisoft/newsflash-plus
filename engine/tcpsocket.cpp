@@ -185,6 +185,13 @@ waithandle tcpsocket::wait(bool waitread, bool waitwrite) const
     return { handle_, socket_, waitread, waitwrite };
 }
 
+bool tcpsocket::can_recv() const 
+{
+    auto handle = wait(true, false);
+    return wait_for(handle, std::chrono::milliseconds(0));
+
+}
+
 tcpsocket& tcpsocket::operator=(tcpsocket&& other)
 {
     if (&other == this)

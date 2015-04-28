@@ -272,6 +272,15 @@ waithandle sslsocket::wait(bool waitread, bool waitwrite) const
     return { handle_, socket_, waitread, waitwrite };
 }
 
+bool sslsocket::can_recv() const 
+{
+    if (SSL_pending(ssl_))
+        return true;
+
+    auto handle = wait(true, false);
+    return wait_for(handle, std::chrono::milliseconds(0));
+}
+
 sslsocket& sslsocket::operator=(sslsocket&& other)
 {
     if (&other == this)

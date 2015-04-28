@@ -37,9 +37,9 @@ void test_sync()
         input.open(QIODevice::ReadOnly);
         BOOST_REQUIRE(input.isOpen());
 
-        std::vector<app::nzbcontent> content;
-        const auto err = app::parse_nzb(input, content);
-        BOOST_REQUIRE(err == app::nzberror::none);
+        std::vector<app::NZBContent> content;
+        const auto err = app::parseNZB(input, content);
+        BOOST_REQUIRE(err == app::NZBError::None);
 
         // check content.
         BOOST_REQUIRE(content.size() == 2);
@@ -61,34 +61,34 @@ void test_sync()
     // Io error 
     {
         QFile input;
-        std::vector<app::nzbcontent> content;
-        const auto err = app::parse_nzb(input, content);
+        std::vector<app::NZBContent> content;
+        const auto err = app::parseNZB(input, content);
 
-        BOOST_REQUIRE(err == app::nzberror::io);
+        BOOST_REQUIRE(err == app::NZBError::Io);
     }
 
     // nzb content error
     {
         QFile input("ubuntu-12.04.4-server-amd64.iso-nzb-error.nzb");
-        std::vector<app::nzbcontent> content;
+        std::vector<app::NZBContent> content;
 
         input.open(QIODevice::ReadOnly);      
         BOOST_REQUIRE(input.isOpen());
-        const auto err = app::parse_nzb(input, content);
+        const auto err = app::parseNZB(input, content);
 
-        BOOST_REQUIRE(err == app::nzberror::nzb);
+        BOOST_REQUIRE(err == app::NZBError::NZB);
     }
 
     // xml error
     {
         QFile input("ubuntu-12.04.4-server-amd64.iso-xml-error.nzb");
-        std::vector<app::nzbcontent> content;
+        std::vector<app::NZBContent> content;
 
         input.open(QIODevice::ReadOnly);      
         BOOST_REQUIRE(input.isOpen());
-        const auto err = app::parse_nzb(input, content);
+        const auto err = app::parseNZB(input, content);
 
-        BOOST_REQUIRE(err == app::nzberror::xml);
+        BOOST_REQUIRE(err == app::NZBError::XML);
     }
 }
 

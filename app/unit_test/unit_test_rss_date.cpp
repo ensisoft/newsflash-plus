@@ -21,10 +21,8 @@
 //  THE SOFTWARE.
 
 #include <newsflash/config.h>
-
 #include <boost/test/minimal.hpp>
-
-#include "../rss.h"
+#include "../rssdate.h"
 
 void unit_test_parse()
 {
@@ -32,19 +30,19 @@ void unit_test_parse()
 
     // incorrect
     {
-        auto dt = rss::parse_date("fooboasgas");
+        auto dt = app::parseRssDate("fooboasgas");
         BOOST_REQUIRE(!dt.isValid());
 
-        dt = rss::parse_date("Fri, 34 Feb 2013 12:00:00 +0000");
+        dt = app::parseRssDate("Fri, 34 Feb 2013 12:00:00 +0000");
         BOOST_REQUIRE(!dt.isValid());
 
-        dt = rss::parse_date("Fri, 12 Feb 201345 12:00:00 +0000");
+        dt = app::parseRssDate("Fri, 12 Feb 201345 12:00:00 +0000");
         BOOST_REQUIRE(!dt.isValid());
     }
 
     // correct
     {
-        auto dt = rss::parse_date("Fri, 26 Feb 2010 13:47:54 +0000");
+        auto dt = app::parseRssDate("Fri, 26 Feb 2010 13:47:54 +0000");
         BOOST_REQUIRE(dt.isValid());
 
         auto date = dt.date();

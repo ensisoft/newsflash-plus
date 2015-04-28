@@ -42,25 +42,14 @@ int test_main(int, char* argv[])
         BOOST_REQUIRE(done == 4);
         
     }
-
-
-    {
-        QString message;
-        bool success = false;
-        BOOST_REQUIRE(app::Unrar::parseTermination(
-            "ERROR: Bad archive Cold.in.July.2014.1080p.BluRay.DTS.x264-CyTSuNee.part02.rar", message, success));
-        BOOST_REQUIRE(message == "ERROR: Bad archive Cold.in.July.2014.1080p.BluRay.DTS.x264-CyTSuNee.part02.rar");
-        BOOST_REQUIRE(success == false);
-
-    }
-
-    {
-        QString message;
-        BOOST_REQUIRE(app::Unrar::parseMessage(
-            "Chugginton.S04E10.DVDRip.x264-KiDDoS.mkv : packed data checksum error in volume chugginton.s04e10.dvdrip.x264-kiddos.r00",
-            message));
-        BOOST_REQUIRE(message == "packed data checksum error in volume chugginton.s04e10.dvdrip.x264-kiddos.r00");
-    }
+    
+    // {
+    //     QString message;
+    //     BOOST_REQUIRE(app::Unrar::parseMessage(
+    //         "Chugginton.S04E10.DVDRip.x264-KiDDoS.mkv : packed data checksum error in volume chugginton.s04e10.dvdrip.x264-kiddos.r00",
+    //         message));
+    //     BOOST_REQUIRE(message == "packed data checksum error in volume chugginton.s04e10.dvdrip.x264-kiddos.r00");
+    // }
 
     {
         QStringList files;

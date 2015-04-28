@@ -372,35 +372,37 @@ void connection::execute::xperform()
             else if (canceled)
                 return;
 
-            std::size_t quota = 0;
-            while (!quota)
+            while (socket->can_recv())
             {
-                quota = throttle->give_quota();
-                if (!quota)
+                auto quota = throttle->give_quota();
+                while (!quota)
                 {
-                    const auto ms = state_->random() % 10;
+                    const auto ms = state_->random() % 50;
                     std::this_thread::sleep_for(std::chrono::milliseconds(ms));
+                    quota = throttle->give_quota();                    
                 }
+
+                std::size_t avail = std::min(recvbuf.available(), quota);
+
+                // readsome
+                const auto bytes = socket->recvsome(recvbuf.back(), avail);
+                if (bytes == 0)
+                    throw exception(connection::error::network, "connection was closed unexpectedly");
+
+                //LOG_D("Quota ", quota, " avail ", recvbuf.available(), " recvd ", bytes);
+
+                throttle->accumulate(bytes, quota);
+
+                recvbuf.append(bytes);
+                accum += bytes;
+
+                const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() - start);
+                const auto seconds = ms.count() / 1000.0;
+                const auto bps = accum / seconds;
+                state_->bps    = 0.05 * bps + (0.95 * state_->bps);
+                state_->bytes += bytes;
+                bytes_ += bytes;
             }
-
-            std::size_t avail = std::min(recvbuf.available(), quota);
-
-            // readsome
-            const auto bytes = socket->recvsome(recvbuf.back(), avail);
-            if (bytes == 0)
-                throw exception(connection::error::network, "connection was closed unexpectedly");
-
-            throttle->accumulate(bytes, quota);
-
-            recvbuf.append(bytes);
-            accum += bytes;
-
-            const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() - start);
-            const auto seconds = ms.count() / 1000.0;
-            const auto bps = accum / seconds;
-            state_->bps    = 0.05 * bps + (0.95 * state_->bps);
-            state_->bytes += bytes;
-            bytes_ += bytes;
         }
         while (!session->recv_next(recvbuf, content));
 

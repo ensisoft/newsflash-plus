@@ -36,6 +36,7 @@ unit-test unit_test_bodyiter           : unit_test_bodyiter.cpp ;
 unit-test unit_test_decode             : unit_test_decode.cpp ;
 unit-test unit_test_filetype           : unit_test_filetype.cpp ;
 unit-test unit_test_array              : unit_test_array.cpp ;
+unit-test unit_test_throttle           : unit_test_throttle.cpp ;
 
 #unit-test unit_test_logging : unit_test_logging.cpp ;
 

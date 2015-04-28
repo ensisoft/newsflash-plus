@@ -38,26 +38,18 @@ namespace newsflash
         // take ownership of the given socket and handle.
         // the socket is expected to be already connected.
         tcpsocket(native_socket_t sock, native_handle_t handle);
-
         tcpsocket(tcpsocket&& other);
-
        ~tcpsocket();
 
         virtual void begin_connect(ipv4addr_t host, ipv4port_t port) override;
-
         virtual void complete_connect() override;
-
         virtual void sendall(const void* buff, int len) override;
-
         virtual int sendsome(const void* buff, int len) override;
-
         virtual int recvsome(void* buff, int capacity) override;
-
         virtual void close() override;
-
         virtual waithandle wait() const override;
-
         virtual waithandle wait(bool waitread, bool waitwrite) const override;
+        virtual bool can_recv() const override;
 
         tcpsocket& operator=(tcpsocket&& other);
     private:
