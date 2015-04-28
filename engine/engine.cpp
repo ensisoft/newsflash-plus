@@ -839,13 +839,13 @@ public:
         {
             const auto& buffers  = cmds->get_buffers();
             const auto& commands = cmds->get_commands();
-            assert(commands.size() >= buffers.size());
+            //assert(commands.size() >= buffers.size());
             
             for (std::size_t i=0; i<buffers.size(); ++i)
             {
                 const auto& buff = buffers[i];
-                const auto& cmd  = commands[i];
                 const auto status = buff.content_status();
+                const auto& cmd   = (i < commands.size()) ? commands[i] : str("cmd", i);
                 LOG_D("Task ", ui_.task_id, " command ", cmd, " status ", str(status));
 
                 if (status == buffer::status::success)

@@ -65,13 +65,9 @@ function copy() {
     fi
 }
 
-PYTHON="Python-2.5.1"
-
-makedir "tools"
-makedir "media"
 makedir "plugins-qt"
 makedir "plugins-qt/imageformats"
-makedir "$PYTHON"
+
 
 # build third parties
 cd "tools/unrar" 

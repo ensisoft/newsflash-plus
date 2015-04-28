@@ -26,21 +26,64 @@ engine/
 keygen/
 - newsflash keygen code
 
-tools/launcher
-- a tool to help launch external processes and marshall kill indication back to the initial caller
+
 tools/par2cmdline
-- 3rd party par2 parity repair command line tool
+-------------------------
+Par2cmdline is a tool to repair and verify par2 files. The original version was 0.4.
+http://sourceforge.net/projects/parchive/files/par2cmdline/
+
+*update* The original version has stalled to version 0.4. 
+ArchLinux packages par2 from https://github.com/BlackIkeEagle/par2cmdline which is a fork off the original par2. 
+The Newsflash par2 has been updated to version 0.6.11
+("bump 0.6.11", https://github.com/BlackIkeEagle/par2cmdline/commit/7735bb3f67f4f46b0fcb88894f9a28fb2fe451c6)
+
+
+
 tools/unrar
-- 3rd party .rar archive extractor application
+-------------------------
+Unrar is a tool to unrar .rar archives. Current version 5.21 beta2
+http://www.rarlab.com/rar_add.htm
 
-qjson/ 
-- 3rd party Qt json library
 
-zlib/
-- zlib compression library
+qjson
+-------------------------
+Qt JSON library 0.8.1
+http://qjson.sourceforge.net/
+https://github.com/flavio/qjson
+
+
+zlib
+-------------------------
+The zlib compression library. The current version is 1.2.5
+This zlib is here (in the project hiearchy) because it needs to be kept in sync
+with the zlib code in python zlib module. Otherwise bad things can happen if the we have
+two versions of zlib.so loaded in the same process with same symbol names.
+
+So if zlib is updated at one place it needs to be updated at the other place as well!!
+
+
+protobuf
+-------------------------
+Google protobuffer library 2.6.1
+
+Use the protoc to compile the .proto files in the project.
+
+
+
 
 Building for Linux
--------------------------
+=======================
+
+Start by cloning the source
+
+   $ cd ~
+   $ mkdir coding
+   $ cd coding
+   $ git clone https://bitbucket.org/ensisoft/newsflash.git 
+   $ cd newsflash
+   $ mkdir dist_d
+   $ mkdir dist
+
 
 Download and extract boost package boost_1_51_0, then build and install boost.build
 
@@ -68,21 +111,68 @@ Install the required packages for building Qt
 Download and extract Qt everywhere and build it. Note that you must have XRender and fontconfig
 for nice looking font rendering in Qt.
 
-    $ tar -zxvvf qt-everywhere-opensource-src-4.8.2.tar.gz
-    $ cd qt-everywhere-opensource-src-4.8.2
-    $ ./configure --prefix=../qt-4.8.2 --no-qt3support --no-webkit
+    $ tar -zxvvf qt-everywhere-opensource-src-4.8.6.tar.gz
+    $ cd qt-everywhere-opensource-src-4.8.6
+    $ ./configure --prefix=~coding/qt-4.8.6 --no-qt3support --no-webkit
     $ make
     $ make install
 
+NOTE: if you get this Cryptic error:
+"bash: ./configure: /bin/sh^M: bad interpreter: No such file or directory" 
+it means that the script interpreter is shitting itself on windows style line endings, so you probably downloaded
+the .zip file instead of the .tar.gz  (you can fix this with dos2unix, but then also the executable bits are not set
+and configure will fail with some other cryptic error such as "no make or gmake was found bla bla".
 
-Make a release package. 
+Build zlib
 
+    $ cd zlib
     $ bjam release
-    $ ./python build_package.py x.y.z
+
+Build protobuf
+
+    $ cd protobuf
+    $ ./configure
+    $ make
+    $ mkdir lib
+    $ cp src/.libs/libprotobuf.a lib/libprotobuf_d.a
+    $ cp src/.libs/libprotobuf.a lib/libprotobuf_r.a
+    $ cp src/protoc ~/coding/newsflash/engine/
+    $ cd ~/coding/newsflash/engine/
+    $ ./protoc session.proto --cpp_out=.
+
+Build qjson
+
+NOTE: I have edited the CMakeList.txt to have a custom Qt path. 
+
+    $ cd qjson
+    $ cmake -G "Unix Makefiles"
+    $ make
+
+Build par2cmdline
+
+     $ cd tools/par2cmdline
+     $ ./configure
+     $ make
+     $ cp par2 ~/coding/newsflash/dist
+     $ cp par2 ~/coding/newsflash/dist_d
+
+Build  unrar
+
+    $ cd tools/unrar
+    $ make
+    $ cp unrar ~/coding/newsflash/dist
+    $ cp unrar ~/coding/newsflash/dist_d
 
 
 Building for Windows
-----------------------------
+=======================
+
+NOTE About WindowsXP. To target WinXP we need /SUBSYSTEM:WINDOWS,5.01
+More information here:
+
+http://www.tripleboot.org/?p=423
+http://blogs.msdn.com/b/vcblog/archive/2012/10/08/windows-xp-targeting-with-c-in-visual-studio-2012.aspx?Redirected=true
+
 Download and extract boost package boost_1_51_0, then build and install boost.build
 
     $ cd boost_1_51_0/tools/build/v2/
@@ -113,79 +203,17 @@ Download and extract Qt everywhere to a location where you want it installed for
     $ configure.exe -no-qt3support -no-webkit -debug-and-release -openssl -I c:\coding\openssl_1_0_1f\include -L c:\coding\openssl_1_0_1f\lib
 
 
-NOTE About WindowsXP. To target WinXP we need /SUBSYSTEM:WINDOWS,5.01
-More information here:
-
-http://www.tripleboot.org/?p=423
-
-and here...
-
-http://blogs.msdn.com/b/vcblog/archive/2012/10/08/windows-xp-targeting-with-c-in-visual-studio-2012.aspx?Redirected=true
-
-Par2cmdline
-========================
-Par2cmdline is a tool to repair and verify par2 files. The original version was 0.4.
-http://sourceforge.net/projects/parchive/files/par2cmdline/
-
-*update* The original version has stalled to version 0.4. 
-ArchLinux packages par2 from https://github.com/BlackIkeEagle/par2cmdline which is a fork off the original par2. 
-The Newsflash par2 has been updated to version 0.6.11
-("bump 0.6.11", https://github.com/BlackIkeEagle/par2cmdline/commit/7735bb3f67f4f46b0fcb88894f9a28fb2fe451c6)
-
-
-        $ ./configure
-        $ make
-
-Unrar
-=========================
-Unrar is a tool to unrar .rar archives. Current version 5.21 beta2
-http://www.rarlab.com/rar_add.htm
-
-        $ make
-         
-qjson
-=======================
-Qt JSON library 0.8.1
-http://qjson.sourceforge.net/
-https://github.com/flavio/qjson
-
-
-    $ cmake -G "Unix Makefiles"
-    $ make
-
-
-Zlib
-========================
-The zlib compression library.
-
-This zlib is here (in the project hiearchy) because it needs to be kept in sync
-with the zlib code in python zlib module. Otherwise bad things can happen if the we have
-two versions of zlib.so loaded in the same process with same symbol names.
-
-So if zlib is updated at one place it needs to be updated at the other place as well!!
-
-The current version is 1.2.5
-
-
-
 protobuf
-=======================
-Google protobuffer library 2.6.1
-
-Use the protoc to compile the .proto files in the project.
-
-    $ ./configure
-    $ make
-    $ mkdir lib
-    $ cp src/.libs/libprotobuf.a lib/libprotobuf_d.a
-    $ cp src/.libs/libprotobuf.a lib/libprotobuf_r.a
-
-
-And for windows ...
 
     - open the solution in vsprojects and build the library
     - copy vsprojects/Debug/libprotobuf.lib to ../lib/libprotobuf_d.lib
     - copy vsprojects/Release/libprotobuf.lib to ../lib/libprotobuf_r.lib
+
+
+Par2cmdline
+
+
+Unrar
 
 
 Design Babblings

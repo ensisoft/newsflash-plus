@@ -102,7 +102,9 @@ public:
             articles_.push_back(a);
         }
     }
-
+    
+	virtual std::string describe() const override
+	{ return "Parse XOVER"; }
 private:
     friend class update;
     std::shared_ptr<state> state_;
@@ -222,6 +224,9 @@ public:
         for (auto* db : updates_)
             db->flush();
     }
+    
+    virtual std::string describe() const override
+    { return "Update Db"; }
 private:
     friend class update;
     std::shared_ptr<state> state_;
