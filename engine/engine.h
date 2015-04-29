@@ -73,6 +73,10 @@ namespace newsflash
         // this callback is called when all tasks are done.
         using on_complete = std::function<void()>;
 
+        // this callback is called when payload data that affects
+        // quota is downloaded.
+        using on_quota = std::function<void (std::size_t bytes, std::size_t account)>;
+
         using action_id_t = std::size_t;
 
         engine();
@@ -136,6 +140,8 @@ namespace newsflash
         void set_header_info_callback(on_header_info callback);
 
         void set_complete_callback(on_complete callback);
+
+        void set_quota_callback(on_quota callback);
 
         // if set to true engine will overwrite files that already exist in the filesystem.
         // otherwise file name collisions are resolved by some naming scheme

@@ -42,6 +42,7 @@
 #include "fileinfo.h"
 #include "newsinfo.h"
 #include "utility.h"
+#include "types.h"
 
 namespace nf = newsflash;
 namespace ui = newsflash::ui;
@@ -95,6 +96,8 @@ Engine::Engine()
     engine_->set_header_info_callback(std::bind(&Engine::onHeaderInfoAvailable, this,
         std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
     engine_->set_complete_callback(std::bind(&Engine::onAllComplete, this));
+    engine_->set_quota_callback(std::bind(&Engine::onQuota, this,
+        std::placeholders::_1, std::placeholders::_2));
 
     // remember that the notify callback can come from any thread
     // within the engine and it has to be thread safe.
@@ -559,6 +562,13 @@ void Engine::onAllComplete()
 {
     DEBUG("All downloads are complete.");
     emit allCompleted();
+}
+
+void Engine::onQuota(std::size_t bytes, std::size_t account)
+{
+    DEBUG("Quota update %1 for account %2", app::size{bytes}, account);
+
+    emit quotaUpdate(bytes, account);
 }
 
 Engine* g_engine;

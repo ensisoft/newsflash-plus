@@ -144,6 +144,7 @@ struct engine::state {
     engine::on_header_info on_header_info_callback;
     engine::on_async_notify on_notify_callback;
     engine::on_complete on_complete_callback;
+    engine::on_quota on_quota_callback;
 
     throttle ratecontrol;
 
@@ -1855,6 +1856,11 @@ bool engine::pump()
             auto cmds  = e->get_cmdlist();
             auto tid   = e->get_tid();
             auto bytes = e->get_bytes_transferred();
+            if (cmds->cmdtype() == cmdlist::type::body)
+            {
+                if (state_->on_quota_callback)
+                    state_->on_quota_callback(bytes, cmds->account());
+            }
 
             LOG_D("Cmdlist ", cmds->id(), " executed");
             LOG_D("Cmdlist ", cmds->id(), " belongs to task ", cmds->task());
@@ -2223,6 +2229,11 @@ void engine::set_update_callback(on_update update_callback)
 void engine::set_complete_callback(on_complete callback)
 {
     state_->on_complete_callback = std::move(callback);
+}
+
+void engine::set_quota_callback(on_quota callback)
+{
+    state_->on_quota_callback = std::move(callback);
 }
 
 void engine::set_overwrite_existing_files(bool on_off)

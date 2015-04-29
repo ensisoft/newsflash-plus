@@ -49,6 +49,9 @@ Accounts::Accounts()
     mainAccount_ = 0;
     fillAccount_ = 0;
     DEBUG("Accounts created");
+
+    QObject::connect(g_engine, SIGNAL(quotaUpdate(std::size_t, std::size_t)),
+        this, SLOT(quotaUpdate(std::size_t, std::size_t)));
 }
 
 Accounts::~Accounts()
@@ -345,9 +348,9 @@ bool Accounts::saveState(Settings& store) const
 }
 
 void Accounts::loadState(Settings& store)
-{
-    QStringList list = store.get("accounts", "list").toStringList();
-
+{     
+    const auto& today = QDate::currentDate();
+    const auto& list  = store.get("accounts", "list").toStringList();
     for (const auto& key : list)
     {
         Account acc;
@@ -373,6 +376,15 @@ void Accounts::loadState(Settings& store)
         acc.lastUseDate         = store.get(key, "last_use_date").toDate();
         acc.subscriptions       = store.get(key, "subscriptions").toStringList();
         acc.datapath            = store.get(key, "datapath", homedir::path(acc.name));
+        const auto& used = acc.lastUseDate;
+        if (today.month() > used.month() ||
+            today.year() > used.year())
+        {
+            acc.downloadsThisMonth = 0;
+            if (acc.quotaType == Quota::monthly)
+                acc.quotaSpent = 0;
+        }
+
         accounts_.push_back(acc);
         DEBUG("Account loaded %1", acc.name);
 
@@ -429,6 +441,35 @@ QVariant Accounts::data(const QModelIndex& index, int role) const
         return QIcon("icons:ico_account.png");
     }
     return QVariant();
+}
+
+void Accounts::quotaUpdate(std::size_t bytes, std::size_t account)
+{
+    auto* pacc = findAccount(account);
+    if (pacc == nullptr)
+        return;
+
+    const auto today = QDate::currentDate();
+    const auto used  = pacc->lastUseDate;
+    if (today.month() > used.month() || 
+        today.year() > used.year())
+    {
+        pacc->downloadsThisMonth = 0;
+        if (pacc->quotaType == Quota::monthly)
+            pacc->quotaSpent = 0;
+    }
+
+    pacc->downloadsAllTime   += bytes;
+    pacc->downloadsThisMonth += bytes;
+    if (pacc->quotaType != Quota::none)
+    {
+        pacc->quotaSpent += bytes;
+    }
+
+    pacc->lastUseDate = today;
+
+    emit accountUpdated(pacc);
+    emit accountsUpdated();
 }
 
 Accounts* g_accounts;

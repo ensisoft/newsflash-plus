@@ -49,9 +49,6 @@ namespace gui
     private:
         bool eventFilter(QObject* object, QEvent* event);
 
-    private:
-        void updatePie();
-
     private slots:
         void on_actionAdd_triggered();
         void on_actionDel_triggered();
@@ -60,12 +57,15 @@ namespace gui
         void on_btnResetAllTime_clicked();
         void on_btnMonthlyQuota_toggled(bool checked);
         void on_btnFixedQuota_toggled(bool checked);
-        void on_spinTotal_valueChanged(double value);
-        void on_spinSpent_valueChanged(double value);
+        void on_spinThisMonth_valueChanged(double value);
+        void on_spinAllTime_valueChanged(double value);
+        void on_spinQuotaAvail_valueChanged(double value);
+        void on_spinQuotaUsed_valueChanged(double value);
         void on_listView_doubleClicked(const QModelIndex& index);
         void on_listView_customContextMenuRequested(QPoint pos);
         void on_grpQuota_toggled(bool on);
         void currentRowChanged();
+        void updatePie();        
 
     private:
         Ui::Accounts ui_;

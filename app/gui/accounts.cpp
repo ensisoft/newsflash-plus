@@ -45,29 +45,28 @@ namespace gui
 
 Accounts::Accounts()
 {
+    const bool empty = app::g_accounts->numAccounts() == 0;
+
     ui_.setupUi(this);
     ui_.listView->setModel(app::g_accounts);
     ui_.lblMovie->installEventFilter(this);
-
-    const bool empty = app::g_accounts->numAccounts() == 0;
-
     ui_.actionDel->setEnabled(!empty);
     ui_.actionEdit->setEnabled(!empty);
-
     ui_.grpServer->setEnabled(false);
     ui_.grpQuota->setEnabled(false);
     ui_.grpQuota->setChecked(false);    
-
     ui_.btnMonthlyQuota->setChecked(true);
+    ui_.pie->setScale(0.8);
+    ui_.pie->setDrawPie(false);
 
     auto* selection = ui_.listView->selectionModel();
     QObject::connect(selection, SIGNAL(currentRowChanged(const QModelIndex&, const QModelIndex&)),
         this, SLOT(currentRowChanged()));
 
-    QStandardItemModel* pie = new QStandardItemModel(2, 2, this);
-    pie->setHeaderData(0, Qt::Horizontal, tr("Available"));
-    pie->setHeaderData(1, Qt::Horizontal, tr("Used"));
-    ui_.pie->setModel(pie);
+    QObject::connect(app::g_accounts, SIGNAL(accountsUpdated()),
+        this, SLOT(updatePie()));
+    QObject::connect(app::g_accounts, SIGNAL(accountsUpdated()),
+        this, SLOT(currentRowChanged()));
 
     qsrand(std::time(nullptr));
 
@@ -162,37 +161,27 @@ bool Accounts::eventFilter(QObject* object, QEvent* event)
 
 void Accounts::updatePie()
 {
-    QStandardItemModel* pie = static_cast<QStandardItemModel*>(ui_.pie->model());
-    if (pie->rowCount())
-    {
-        Q_ASSERT(pie->rowCount() == 2);
-        pie->removeRow(0);
-        pie->removeRow(0);
-    }    
+    ui_.pie->setDrawPie(false);
+    ui_.pie->setScale(0.8);
 
     const auto row = ui_.listView->currentIndex().row();
     if (row == -1)
         return;
 
-    const auto& account = app::g_accounts->getAccount(row);    
+    const auto& account = app::g_accounts->getAccount(row);
+    if (account.quotaType != app::Accounts::Quota::none)
+    {
+        const auto quota_spent = app::gigs(account.quotaSpent);
+        const auto quota_total = app::gigs(account.quotaAvail);
+        auto slice_used  = quota_spent.as_float() / quota_total.as_float();
+        if (slice_used > 1.0)
+            slice_used = 1.0;
+        auto slice_avail = 1.0 - slice_used;
+        ui_.pie->setAvailSlice(slice_avail);        
+        ui_.pie->setDrawPie(true);
 
-    const auto quota_spent = app::gigs(account.quotaSpent);
-    const auto quota_total = app::gigs(account.quotaAvail);
-    const auto quota_avail = app::gigs(account.quotaAvail - account.quotaSpent);
-    const auto slice_avail = 100 * (quota_avail.as_float() / quota_total.as_float());
-    const auto slice_used  = 100 * (quota_spent.as_float() / quota_total.as_float());
-
-    DEBUG("Quota avail %1, used %2", slice_avail, slice_used);
-
-    pie->insertRows(0, 1, QModelIndex());
-    pie->insertRows(1, 1, QModelIndex());
-    pie->setData(pie->index(0, 0), "Avail");
-    pie->setData(pie->index(0, 1), slice_avail);
-    pie->setData(pie->index(0, 0), QColor(0, 0x80, 0), Qt::DecorationRole);
-    pie->setData(pie->index(1, 0), "Used");
-    pie->setData(pie->index(1, 1), slice_used);    
-    pie->setData(pie->index(1, 0), QColor(0x80, 0, 0), Qt::DecorationRole);
-
+        DEBUG("Quota avail %1, used %2", slice_avail, slice_used);
+    }
 }
 
 
@@ -232,12 +221,12 @@ void Accounts::currentRowChanged()
     const auto row = ui_.listView->currentIndex().row();
     if (row == -1)
     {
-        ui_.edtMonth->clear();
-        ui_.edtAllTime->clear();
+        ui_.spinThisMonth->setValue(0);
+        ui_.spinAllTime->setValue(0);
         ui_.grpServer->setEnabled(false);
         ui_.grpQuota->setEnabled(false);
-        ui_.spinTotal->setValue(0);
-        ui_.spinSpent->setValue(0);
+        ui_.spinQuotaUsed->setValue(0);
+        ui_.spinQuotaAvail->setValue(0);
         ui_.actionDel->setEnabled(false);
         ui_.actionEdit->setEnabled(false);
         return;
@@ -253,17 +242,16 @@ void Accounts::currentRowChanged()
     const auto quota_type   = account.quotaType;
     const auto quota_spent  = app::gigs(account.quotaSpent);
     const auto quota_total  = app::gigs(account.quotaAvail);
-    //const auto quota_avail  = app::gigs(account.quota_avail - account.quota_spent);
     const auto gigs_alltime = app::gigs(account.downloadsAllTime);
     const auto gigs_month   = app::gigs(account.downloadsThisMonth);
 
     in_row_changed_ = true;
 
-    ui_.edtMonth->setText(toString(gigs_month));
-    ui_.edtAllTime->setText(toString(gigs_alltime));
-    ui_.spinTotal->setValue(quota_total.as_float());
-    ui_.spinSpent->setValue(quota_spent.as_float());
-    ui_.spinSpent->setMaximum(quota_total.as_float());    
+    ui_.spinAllTime->setValue(gigs_alltime.as_float());
+    ui_.spinThisMonth->setValue(gigs_month.as_float());
+    ui_.spinQuotaAvail->setValue(quota_total.as_float());
+    ui_.spinQuotaUsed->setMaximum(quota_total.as_float());        
+    ui_.spinQuotaUsed->setValue(quota_spent.as_float());
 
     in_row_changed_ = false;
 
@@ -298,9 +286,7 @@ void Accounts::on_btnResetMonth_clicked()
 
     account.downloadsThisMonth = 0;
 
-    const app::gigs nada;
-
-    ui_.edtMonth->setText(toString(nada));
+    ui_.spinThisMonth->setValue(0);
 }
 
 void Accounts::on_btnResetAllTime_clicked()
@@ -313,9 +299,7 @@ void Accounts::on_btnResetAllTime_clicked()
 
     account.downloadsAllTime = 0;
 
-    const app::gigs nada;
-
-    ui_.edtAllTime->setText(toString(nada));
+    ui_.spinAllTime->setValue(0);
 }
 
 void Accounts::on_btnMonthlyQuota_toggled(bool checked)
@@ -344,7 +328,38 @@ void Accounts::on_btnFixedQuota_toggled(bool checked)
     ui_.btnMonthlyQuota->setChecked(false);
 }
 
-void Accounts::on_spinTotal_valueChanged(double value)
+void Accounts::on_spinThisMonth_valueChanged(double value)
+{
+    if (in_row_changed_)
+        return;
+    const auto row = ui_.listView->currentIndex().row();
+    if (row == -1)
+        return;
+
+    auto& account = app::g_accounts->getAccount(row);
+
+    const app::gigs gigs { value };
+
+    account.downloadsThisMonth = gigs.as_bytes();
+    account.lastUseDate = QDate::currentDate();
+}
+
+void Accounts::on_spinAllTime_valueChanged(double value)
+{
+    if (in_row_changed_)
+        return;
+    const auto row = ui_.listView->currentIndex().row();
+    if (row == -1)
+        return;
+
+    auto& account = app::g_accounts->getAccount(row);
+
+    const app::gigs gigs { value };
+
+    account.downloadsAllTime = gigs.as_bytes();
+}
+
+void Accounts::on_spinQuotaAvail_valueChanged(double value)
 {
     if (in_row_changed_)
         return;
@@ -361,12 +376,12 @@ void Accounts::on_spinTotal_valueChanged(double value)
 
     account.quotaAvail = gigs.as_bytes();
 
-    ui_.spinSpent->setMaximum(gigs.as_float());
+    ui_.spinQuotaUsed->setMaximum(gigs.as_float());
 
     updatePie();
 }
 
-void Accounts::on_spinSpent_valueChanged(double value)
+void Accounts::on_spinQuotaUsed_valueChanged(double value)
 {
     if (in_row_changed_)
         return;
@@ -417,6 +432,8 @@ void Accounts::on_grpQuota_toggled(bool on)
             account.quotaType = app::Accounts::Quota::fixed;
         else account.quotaType = app::Accounts::Quota::monthly;
     }
+
+    ui_.pie->setDrawPie(on);
 }
 
 } // gui

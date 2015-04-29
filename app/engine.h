@@ -293,6 +293,7 @@ namespace app
         void updateCompleted(const app::HeaderInfo& headers);
         void allCompleted();
         void numPendingTasks(std::size_t num);
+        void quotaUpdate(std::size_t bytes, std::size_t account);
 
     private:
         virtual bool eventFilter(QObject* object, QEvent* event) override;
@@ -311,6 +312,7 @@ namespace app
         void onHeaderInfoAvailable(const std::string& group,
             std::uint64_t numLocal, std::uint64_t numRemote);
         void onAllComplete();
+        void onQuota(std::size_t bytes, std::size_t account);
 
     private:
         QString logifiles_;

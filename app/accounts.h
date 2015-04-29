@@ -148,6 +148,10 @@ namespace app
 
     signals:
         void accountsUpdated();
+        void accountUpdated(const Account* acc);
+
+    private slots:
+        void quotaUpdate(std::size_t bytes, std::size_t account);
 
     private:
         std::vector<Account> accounts_;
