@@ -45,6 +45,7 @@ namespace gui
         virtual info getInformation() const override;
         virtual void loadState(app::Settings& s) override;
         virtual void saveState(app::Settings& s) override;
+        virtual void updateRegistration(bool success) override;
 
     private:
         bool eventFilter(QObject* object, QEvent* event);
@@ -63,6 +64,7 @@ namespace gui
         void on_spinQuotaUsed_valueChanged(double value);
         void on_listView_doubleClicked(const QModelIndex& index);
         void on_listView_customContextMenuRequested(QPoint pos);
+        void on_lblRegister_linkActivated(QString);
         void on_grpQuota_toggled(bool on);
         void currentRowChanged();
         void updatePie();        

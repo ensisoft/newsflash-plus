@@ -107,6 +107,8 @@ namespace gui
 
         virtual Finder* getFinder() { return nullptr; }
 
+        virtual void updateRegistration(bool success) {};
+
     signals:
         void updateMenu(MainWidget* self);
 

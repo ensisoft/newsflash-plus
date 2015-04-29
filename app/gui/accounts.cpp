@@ -29,10 +29,12 @@
 #  include <QtGui/QMovie>
 #  include <QtGui/QStandardItemModel>
 #include <newsflash/warnpop.h>
-#include <newsflash/keygen/keygen.h>
 #include <ctime>
 #include "dlgaccount.h"
+#include "dlgfeedback.h"
+#include "dlgregister.h"
 #include "accounts.h"
+#include "mainwindow.h"
 #include "../accounts.h"
 #include "../settings.h"
 #include "../debug.h"
@@ -131,19 +133,18 @@ MainWidget::info Accounts::getInformation() const
 
 void Accounts::loadState(app::Settings& s)
 {
-    const auto license  = s.get("accounts", "license", "");
-    const bool validate = keygen::verify_code(license);
-    if (validate)
-    {
-        ui_.lblMovie->setMovie(nullptr);
-        ui_.lblMovie->setVisible(false);
-        ui_.lblPlead->setVisible(false);
-        ui_.lblRegister->setVisible(false);
-    }
 }
 
 void Accounts::saveState(app::Settings& s)
 {
+}
+
+void Accounts::updateRegistration(bool success)
+{
+    ui_.lblMovie->setVisible(!success);
+    ui_.lblPlead->setVisible(!success);
+    ui_.lblRegister->setVisible(!success);
+    ui_.grpAdvert->setVisible(!success);
 }
 
 
@@ -412,6 +413,11 @@ void Accounts::on_listView_customContextMenuRequested(QPoint pos)
     QMenu menu(this);
     addActions(menu);
     menu.exec(QCursor::pos());
+}
+
+void Accounts::on_lblRegister_linkActivated(QString)
+{
+    g_win->updateLicense();
 }
 
 void Accounts::on_grpQuota_toggled(bool on)

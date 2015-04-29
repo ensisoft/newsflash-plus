@@ -35,7 +35,7 @@
 #  include <QDir>
 #  include <QFileInfo>
 #include <newsflash/warnpop.h>
-
+#include <newsflash/keygen/keygen.h>
 #include "mainwindow.h"
 #include "mainwidget.h"
 #include "mainmodule.h"
@@ -49,6 +49,7 @@
 #include "dlgfeedback.h"
 #include "dlgaccount.h"
 #include "dlgpoweroff.h"
+#include "dlgregister.h"
 #include "config.h"
 #include "findwidget.h"
 #include "../eventlog.h"
@@ -246,6 +247,9 @@ void MainWindow::loadState()
     recents_ = settings_.get("paths", "recents").toStringList();
     recent_save_nzb_path_ = settings_.get("paths", "save_nzb").toString();
     recent_load_nzb_path_ = settings_.get("paths", "load_nzb").toString();
+    keyCode_ = settings_.get("license", "keycode").toString();
+
+    const auto success = keygen::verify_code(keyCode_);
 
     for (std::size_t i=0; i<widgets_.size(); ++i)
     {
@@ -262,10 +266,14 @@ void MainWindow::loadState()
             actions_[i]->setChecked(show);        
           
         widgets_[i]->loadState(settings_);
+        widgets_[i]->updateRegistration(success);
     }
 
     for (auto* m : modules_)
+    {
         m->loadState(settings_);
+        m->updateRegistration(success);
+    }
 
     app::g_engine->loadSession();
 }
@@ -761,6 +769,7 @@ bool MainWindow::saveState(DlgExit* dlg)
         settings_.set("paths", "recents", recents_);
         settings_.set("paths", "save_nzb", recent_save_nzb_path_);
         settings_.set("paths", "load_nzb", recent_load_nzb_path_);
+        settings_.set("license", "keycode", keyCode_);
 
         // save tab visibility values
         // but only for permanent widgets, i.e. those that have actions.
@@ -957,6 +966,32 @@ void MainWindow::on_actionHelp_triggered()
     app::openFile(help);
 }
 
+void MainWindow::on_actionRegister_triggered()
+{
+    DlgRegister dlg(this);
+    if (dlg.exec() == QDialog::Rejected)
+        return;
+
+    const auto& keycode = dlg.registrationCode();
+    const auto success  = keygen::verify_code(keycode);
+    if (!success)
+    {
+        QMessageBox::critical(this, 
+            tr("Registration failed"),
+            tr("The registration was unsuccesful.\n"
+               "Please make sure that you've input the key correctly."));
+        return;
+    }
+
+    for (auto& m : modules_)
+        m->updateRegistration(success);
+
+    for (auto& w : widgets_)
+        w->updateRegistration(success);
+
+    keyCode_ = keycode;
+}
+
 void MainWindow::on_actionContextHelp_triggered()
 {
     const auto* widget = static_cast<MainWidget*>(ui_.mainTab->currentWidget());
@@ -1026,10 +1061,20 @@ void MainWindow::showMessage(const QString& message)
     ui_.statusBar->showMessage(message, 5000);
 }
 
+void MainWindow::updateLicense()
+{
+    on_actionRegister_triggered();
+}
+
 void MainWindow::on_actionAbout_triggered()
 {
     DlgAbout dlg(this);
     dlg.exec();
+}
+
+void MainWindow::on_actionForum_triggered()
+{
+    app::openWeb("http://www.ensisoft.com/forum");
 }
 
 void MainWindow::on_actionReportBug_triggered()

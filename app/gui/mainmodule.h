@@ -82,6 +82,8 @@ namespace gui
         virtual MainWidget* openFile(const QString& name) { return nullptr; }
 
         virtual MainWidget* openSearch() { return nullptr; }
+
+        virtual void updateRegistration(bool success) {};
     protected:
     private:
     };

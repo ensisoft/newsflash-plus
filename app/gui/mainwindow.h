@@ -97,6 +97,8 @@ namespace gui
         // show message in the window's message area
         void showMessage(const QString& message);
 
+        void updateLicense();
+
         void prepareFileMenu();
         void prepareMainTab();
 
@@ -146,6 +148,7 @@ namespace gui
         void on_actionWindowPrev_triggered();
         void on_actionOpen_triggered();
         void on_actionHelp_triggered();
+        void on_actionRegister_triggered();
         void on_actionExit_triggered();
         void on_actionFind_triggered();
         void on_actionFindNext_triggered();
@@ -154,6 +157,7 @@ namespace gui
         void on_actionSearch_triggered();
         void on_actionSettings_triggered();
         void on_actionAbout_triggered();
+        void on_actionForum_triggered();
         void on_actionReportBug_triggered();
         void on_actionSendFeedback_triggered();
         void on_actionRequestFeature_triggered();
@@ -180,6 +184,7 @@ namespace gui
         QString recent_save_nzb_path_;
         QString recent_load_nzb_path_;
         QTimer  refresh_timer_;
+        QString keyCode_;
     private:
         app::Settings& settings_;
         std::vector<app::Settings> transient_;
