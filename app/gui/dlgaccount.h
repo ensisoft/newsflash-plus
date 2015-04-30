@@ -37,22 +37,26 @@ namespace gui
         Q_OBJECT
 
     public:
-        DlgAccount(QWidget* parent, app::Accounts::Account& acc);
+        DlgAccount(QWidget* parent, app::Accounts::Account& acc, bool isNew);
        ~DlgAccount();
         
     private:
         void changeEvent(QEvent *e);
 
     private slots:
-        void on_btnOK_clicked();
+        void on_btnAccept_clicked();
+        void on_btnBrowse_clicked();        
+        void on_btnCancel_clicked();
         void on_grpSecure_clicked(bool val);
         void on_grpGeneral_clicked(bool val);
+        void on_edtDataPath_textEdited();
 
     private:
         Ui::DlgAccount ui_;
 
     private:
         app::Accounts::Account& acc_;
+        bool isNew_;
     };
 
 } // gui

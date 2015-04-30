@@ -22,21 +22,23 @@
 
 #include <newsflash/config.h>
 #include <newsflash/warnpush.h>
-
+#  include <QDir>
+#  include <QStringList>
+#  include <QFile>
 #include <newsflash/warnpop.h>
 #include "nzbcore.h"
+#include "nzbthread.h"
 #include "debug.h"
 #include "eventlog.h"
+#include "engine.h"
 
 namespace app
 {
 
-NZBCore::NZBCore()
+NZBCore::NZBCore() : action_(PostAction::Rename)
 {
-    QObject::connect(&watch_timer_, SIGNAL(timeout()),
+    QObject::connect(&timer_, SIGNAL(timeout()),
         this, SLOT(performScan()));
-
-    ppa_ = post_processing_action::mark_processed;
 
     DEBUG("nzbcore created");
 }
@@ -51,21 +53,73 @@ void NZBCore::watch(bool on_off)
     DEBUG("Scanning timer is on %1", on_off);
 
     if (!on_off)
-        watch_timer_.stop();
-    else watch_timer_.start();
+        timer_.stop();
+    else timer_.start();
 
-    watch_timer_.setInterval(10 * 1000);
+    timer_.setInterval(10 * 1000);
 }
+
+void NZBCore::downloadNzbContents(const QString& file, const QString& basePath, const QString& path, const QString& desc,
+    quint32 account)
+{
+    QFile io(file);
+    if (!io.open(QIODevice::ReadOnly))
+    {
+        ERROR("Failed to open %1", file, " %2", io.errorString());
+        return;
+    }
+
+    QByteArray nzb = io.readAll();
+    DEBUG("Read %1 bytes", nzb.size());
+
+    if (g_engine->downloadNzbContents(account, basePath, path, desc, nzb))
+    {
+        switch (action_)
+        {
+            case PostAction::Rename:
+                QFile::rename(file, file + "_remove");
+                break;
+
+            case PostAction::Delete:
+                QFile::remove(file);
+                break;
+        }
+    }
+
+}
+
 
 void NZBCore::performScan()
 {
-    for (int i=0; i<watched_folders_.size(); ++i)
+    timer_.blockSignals(true);
+    timer_.stop();
+
+    for (const auto& folder : watchFolders_)
     {
+        DEBUG("Scanning folder %1", folder);
+        QDir dir;
+        dir.setPath(folder);
+        dir.setNameFilters(QStringList("*.nzb"));
+        const auto files = dir.entryList();
+        for (const auto& file : files)
+        {
+            // check if alredy processed
+            if (file.endsWith("_remove"))
+                continue;
 
+            const auto absPath = dir.absoluteFilePath(file);
+            if (ignored_.find(absPath) != std::end(ignored_))
+                continue;
+
+            if (!PromptForFile(absPath))
+            {
+                ignored_.insert(absPath);
+                INFO("%1 is from now on ignored", absPath);
+            }
+        }
     }
+    timer_.blockSignals(false);
+    timer_.start();
 }
-
-
-
 
 } //app

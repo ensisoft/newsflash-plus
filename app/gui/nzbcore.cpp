@@ -48,15 +48,6 @@ NZBSettings::~NZBSettings()
 
 bool NZBSettings::validate() const
 {
-    if (ui_.rdbMoveProcessed->isChecked())
-    {
-        const auto& dir = ui_.editDumpFolder->text(); 
-        if (dir.isEmpty())
-        {
-            ui_.editDumpFolder->setFocus();
-            return false;
-        }
-    }
     return true;
 }
 
@@ -80,49 +71,67 @@ void NZBSettings::on_btnAddWatchFolder_clicked()
         }
     }
 
-    ui_.watchList->addItem(dir);
+    QListWidgetItem* item = new QListWidgetItem;
+    item->setText(dir);
+    item->setIcon(QIcon("icons:ico_folder.png"));
+
+    ui_.watchList->addItem(item);
     ui_.btnDelWatchFolder->setEnabled(true);
 }
 
 void NZBSettings::on_btnDelWatchFolder_clicked()
 {
+    const auto row = ui_.watchList->currentRow();
+    if (row == -1)
+        return;
+
+    auto* item = ui_.watchList->takeItem(row);
+    ui_.watchList->removeItemWidget(item);    
+    delete item;
+
     if (ui_.watchList->count() == 0)
         ui_.btnDelWatchFolder->setEnabled(false);
 }
 
-void NZBSettings::on_btnSelectDumpFolder_clicked()
-{
-    auto dir = QFileDialog::getExistingDirectory(this, tr("Select NZB Dump Folder"));
-    if (dir.isEmpty())
-        return;
-
-    dir = QDir(dir).absolutePath();
-    dir = QDir::toNativeSeparators(dir);
-    ui_.editDumpFolder->setText(dir);
-}
-
-void NZBSettings::on_btnSelectDownloadFolder_clicked()
-{
-    auto dir = QFileDialog::getExistingDirectory(this, tr("Select Custom Download Folder"));
-    if (dir.isEmpty())
-        return;
-
-    dir = QDir(dir).absolutePath();
-    dir = QDir::toNativeSeparators(dir);
-}
-
 NZBCore::NZBCore()
-{}
+{
+    module_.PromptForFile = [this] (const QString& file) { 
+        const auto acc = g_win->chooseAccount(file);
+        if (acc == 0)
+            return false;
+
+        QFileInfo info(file);
+        const auto desc = info.completeBaseName();
+        const auto path = info.completeBaseName();
+        module_.downloadNzbContents(file, "", path, desc, acc);
+        return true;        
+    };
+}
 
 NZBCore::~NZBCore()
 {}
 
 
-void NZBCore::loadState(app::Settings& s)
-{}
-    
-void NZBCore::saveState(app::Settings& s)
+void NZBCore::loadState(app::Settings& settings)
 {
+    const auto& list  = settings.get("nzb", "watch_folders").toStringList();
+    const auto onOff  = settings.get("nzb", "enable_watching").toBool();
+    const auto action = settings.get("nzb", "watch_action").toInt();
+
+    module_.setWatchFolders(list);
+    module_.setPostAction((app::NZBCore::PostAction)action);
+    module_.watch(onOff);    
+}
+    
+void NZBCore::saveState(app::Settings& settings)
+{
+    const auto& list  = module_.getWatchFolders();
+    const auto onOff  = module_.isEnabled();
+    const auto action = module_.getAction();
+
+    settings.set("nzb", "watch_folders", list);
+    settings.set("nzb", "enable_watching", onOff);
+    settings.set("nzb", "watch_action", (int)action);
 }
 
 SettingsWidget* NZBCore::getSettings()
@@ -130,22 +139,26 @@ SettingsWidget* NZBCore::getSettings()
     auto* ptr = new NZBSettings();
     auto& ui  = ptr->ui_;
 
-    // const auto& list = s.get("nzb", "watched_folders").toStringList();
+    const auto& list = module_.getWatchFolders();
+    for (const auto& folder : list)
+    {
+        QListWidgetItem* item = new QListWidgetItem;
+        item->setText(folder);
+        item->setIcon(QIcon("icons:ico_folder.png"));
+        ui.watchList->addItem(item);
+    }
 
-    // ui.btnDelWatchFolder->setEnabled(!list.isEmpty());
+    ui.btnDelWatchFolder->setEnabled(!list.isEmpty());
 
-    // for (int i=0; i<list.size(); ++i)
-    //     ui.watchList->addItem(list[i]);
+    const auto onOff = module_.isEnabled();
+    ui.grpWatch->setChecked(onOff);
 
-    // const auto enable_watch = s.get("nzb", "enable_watching", false);
-    // const auto dumps = s.get("nzb", "nzb_dump_folder", "");
-    // const auto downloads = s.get("nzb", "download_folder", "");
-    // const auto enable_download_folder = s.get("nzb", "enable_custom_download_folder", false);
+    const auto action = module_.getAction();
+    if (action == app::NZBCore::PostAction::Rename)
+        ui.rdbRename->setChecked(true);
+    else if (action == app::NZBCore::PostAction::Delete)
+        ui.rdbDelete->setChecked(true);
 
-    // ui.editDumpFolder->setText(dumps);
-    // ui.editCustomDownloadFolder->setText(downloads);
-    // ui.grpAutoDownload->setChecked(enable_watch);    
-    // ui.grpCustomDownloadFolder->setChecked(enable_download_folder);
     return ptr;
 }
 
@@ -162,12 +175,14 @@ void NZBCore::applySettings(SettingsWidget* gui)
         list << path;
     }
 
-    const auto enable_watch = ui.grpAutoDownload->isChecked();
-    const auto nzb_dump_folder = ui.editDumpFolder->text();
+    const auto onOff = ui.grpWatch->isChecked();
+    module_.watch(onOff);
+    module_.setWatchFolders(list);
 
-
-    module_.set_watch_folders(list);
-    module_.watch(enable_watch);
+    if (ui.rdbRename->isChecked())
+        module_.setPostAction(app::NZBCore::PostAction::Rename);
+    else if (ui.rdbDelete->isChecked())
+        module_.setPostAction(app::NZBCore::PostAction::Delete);
 }
 
 

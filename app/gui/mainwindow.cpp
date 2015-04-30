@@ -442,7 +442,7 @@ quint32 MainWindow::chooseAccount(const QString& description)
     if (app::g_accounts->numAccounts() == 0)
     {
         auto account = app::g_accounts->suggestAccount();
-        DlgAccount dlg(this, account);
+        DlgAccount dlg(this, account, true);
         if (dlg.exec() == QDialog::Rejected)
             return 0;
 
@@ -1072,7 +1072,7 @@ void MainWindow::on_actionAbout_triggered()
     dlg.exec();
 }
 
-void MainWindow::on_actionForum_triggered()
+void MainWindow::on_actionViewForum_triggered()
 {
     app::openWeb("http://www.ensisoft.com/forum");
 }
@@ -1161,7 +1161,7 @@ void MainWindow::timerWelcome_timeout()
     if (addAccount)
     {
         auto account = app::g_accounts->suggestAccount();
-        DlgAccount dlg(this, account);
+        DlgAccount dlg(this, account, true);
         if (dlg.exec() == QDialog::Accepted)
             app::g_accounts->setAccount(account);
     }

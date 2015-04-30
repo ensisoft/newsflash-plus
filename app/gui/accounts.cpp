@@ -190,7 +190,7 @@ void Accounts::on_actionAdd_triggered()
 {
     auto account  = app::g_accounts->suggestAccount();
 
-    DlgAccount dlg(this, account);
+    DlgAccount dlg(this, account, true);
     if (dlg.exec() == QDialog::Accepted)
         app::g_accounts->setAccount(account);
 }
@@ -212,7 +212,7 @@ void Accounts::on_actionEdit_triggered()
 
     auto account = app::g_accounts->getAccount(row);
 
-    DlgAccount dlg(this, account);
+    DlgAccount dlg(this, account, false);
     if (dlg.exec() == QDialog::Accepted)
         app::g_accounts->setAccount(account);
 }

@@ -21,13 +21,16 @@
 //  THE SOFTWARE.
 
 #include <newsflash/config.h>
-
+#include <newsflash/warnpush.h>
+#  include <QtGui/QFileDialog>
+#include <newsflash/warnpop.h>
 #include "dlgaccount.h"
+#include "../utility.h"
 
 namespace gui
 {
 
-DlgAccount::DlgAccount(QWidget* parent, app::Accounts::Account& acc) : QDialog(parent), acc_(acc)
+DlgAccount::DlgAccount(QWidget* parent, app::Accounts::Account& acc, bool isNew) : QDialog(parent), acc_(acc), isNew_(isNew)
 {
     ui_.setupUi(this);
 
@@ -45,9 +48,16 @@ DlgAccount::DlgAccount(QWidget* parent, app::Accounts::Account& acc) : QDialog(p
     ui_.grpLogin->setChecked(acc_.enableLogin);
     ui_.maxConnections->setValue(acc_.maxConnections);
 
+    if (isNew_)
+    {
+        acc.datapath.remove(acc.name);
+    }
+    ui_.edtDataPath->setText(acc.datapath);
+    ui_.edtDataPath->setCursorPosition(0);
+
     ui_.edtName->setFocus();    
 
-    ui_.btnOK->setEnabled(
+    ui_.btnAccept->setEnabled(
         ui_.grpSecure->isChecked() || 
         ui_.grpGeneral->isChecked());     
 }
@@ -67,21 +77,22 @@ void DlgAccount::changeEvent(QEvent* e)
     }
 }
 
-void DlgAccount::on_btnOK_clicked()
+void DlgAccount::on_btnAccept_clicked()
 {
-    acc_.name                  = ui_.edtName->text();
+    acc_.name                = ui_.edtName->text();
     acc_.enableGeneralServer = ui_.grpGeneral->isChecked();
     acc_.enableSecureServer  = ui_.grpSecure->isChecked();
-    acc_.enableLogin          = ui_.grpLogin->isChecked();
-    acc_.generalPort          = ui_.edtPort->text().toInt();
-    acc_.generalHost          = ui_.edtHost->text();
-    acc_.securePort           = ui_.edtPortSecure->text().toInt();
-    acc_.secureHost           = ui_.edtHostSecure->text();
-    acc_.username              = ui_.edtUsername->text();
-    acc_.password              = ui_.edtPassword->text();
-    acc_.maxConnections       = ui_.maxConnections->value();
-    acc_.enableCompression    = ui_.chkCompression->isChecked();
-    acc_.enablePipelining     = ui_.chkPipelining->isChecked();
+    acc_.enableLogin         = ui_.grpLogin->isChecked();
+    acc_.generalPort         = ui_.edtPort->text().toInt();
+    acc_.generalHost         = ui_.edtHost->text();
+    acc_.securePort          = ui_.edtPortSecure->text().toInt();
+    acc_.secureHost          = ui_.edtHostSecure->text();
+    acc_.username            = ui_.edtUsername->text();
+    acc_.password            = ui_.edtPassword->text();
+    acc_.maxConnections      = ui_.maxConnections->value();
+    acc_.enableCompression   = ui_.chkCompression->isChecked();
+    acc_.enablePipelining    = ui_.chkPipelining->isChecked();
+    acc_.datapath            = ui_.edtDataPath->text();
 
     if (acc_.name.isEmpty())
     {
@@ -138,14 +149,35 @@ void DlgAccount::on_btnOK_clicked()
         ui_.maxConnections->setFocus();
         return;
     }
+    if (acc_.datapath.isEmpty())
+    {
+        ui_.edtDataPath->setFocus();
+        return;
+    }
     
     accept();
+}
+
+void DlgAccount::on_btnBrowse_clicked()
+{
+    const auto dir = QFileDialog::getExistingDirectory(this, tr("Select Data Directory"));
+    if (dir.isEmpty())
+        return;
+
+    ui_.edtDataPath->setText(dir);
+    isNew_ = false;
+    //ui_.edtDataPath->setCursorPosition(0);
+}
+
+void DlgAccount::on_btnCancel_clicked()
+{
+    reject();
 }
 
 void DlgAccount::on_grpSecure_clicked(bool val)
 {
     // need to enable at least 1 server
-    ui_.btnOK->setEnabled(
+    ui_.btnAccept->setEnabled(
         ui_.grpSecure->isChecked() || 
         ui_.grpGeneral->isChecked());
 }
@@ -153,9 +185,19 @@ void DlgAccount::on_grpSecure_clicked(bool val)
 void DlgAccount::on_grpGeneral_clicked(bool val)
 {
     // need to enable at least 1 server
-    ui_.btnOK->setEnabled(
+    ui_.btnAccept->setEnabled(
         ui_.grpSecure->isChecked() || 
         ui_.grpGeneral->isChecked());    
+}
+
+void DlgAccount::on_edtDataPath_textEdited()
+{
+    if (!isNew_)
+        return;
+
+    const auto name = ui_.edtName->text();
+    const auto path = app::joinPath(acc_.datapath, acc_.name);
+    ui_.edtDataPath->setText(path);
 }
 
 } // gui

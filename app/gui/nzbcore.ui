@@ -15,7 +15,7 @@
   </property>
   <layout class="QGridLayout" name="gridLayout_4">
    <item row="0" column="0">
-    <widget class="QGroupBox" name="grpAutoDownload">
+    <widget class="QGroupBox" name="grpWatch">
      <property name="title">
       <string>Enable automatic download</string>
      </property>
@@ -76,39 +76,18 @@
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_2">
          <item>
-          <widget class="QRadioButton" name="rdbMarkProcessed">
+          <widget class="QRadioButton" name="rdbRename">
            <property name="text">
             <string>Rename file</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QRadioButton" name="rdbDeleteProcessed">
+          <widget class="QRadioButton" name="rdbDelete">
            <property name="text">
             <string>Delete file</string>
            </property>
           </widget>
-         </item>
-         <item>
-          <widget class="QRadioButton" name="rdbMoveProcessed">
-           <property name="text">
-            <string>Move file to ...</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_3">
-           <item>
-            <widget class="QLineEdit" name="editDumpFolder"/>
-           </item>
-           <item>
-            <widget class="QPushButton" name="btnSelectDumpFolder">
-             <property name="text">
-              <string>Browse...</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
          </item>
         </layout>
        </widget>
@@ -119,113 +98,13 @@
   </layout>
  </widget>
  <tabstops>
-  <tabstop>grpAutoDownload</tabstop>
+  <tabstop>grpWatch</tabstop>
   <tabstop>watchList</tabstop>
   <tabstop>btnAddWatchFolder</tabstop>
   <tabstop>btnDelWatchFolder</tabstop>
-  <tabstop>rdbMarkProcessed</tabstop>
-  <tabstop>rdbDeleteProcessed</tabstop>
-  <tabstop>rdbMoveProcessed</tabstop>
-  <tabstop>editDumpFolder</tabstop>
-  <tabstop>btnSelectDumpFolder</tabstop>
+  <tabstop>rdbRename</tabstop>
+  <tabstop>rdbDelete</tabstop>
  </tabstops>
  <resources/>
- <connections>
-  <connection>
-   <sender>rdbMarkProcessed</sender>
-   <signal>clicked(bool)</signal>
-   <receiver>editDumpFolder</receiver>
-   <slot>setDisabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>220</x>
-     <y>350</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>177</x>
-     <y>424</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>rdbMarkProcessed</sender>
-   <signal>clicked(bool)</signal>
-   <receiver>btnSelectDumpFolder</receiver>
-   <slot>setDisabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>220</x>
-     <y>350</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>382</x>
-     <y>424</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>rdbDeleteProcessed</sender>
-   <signal>clicked(bool)</signal>
-   <receiver>editDumpFolder</receiver>
-   <slot>setDisabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>220</x>
-     <y>372</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>177</x>
-     <y>424</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>rdbDeleteProcessed</sender>
-   <signal>clicked(bool)</signal>
-   <receiver>btnSelectDumpFolder</receiver>
-   <slot>setDisabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>220</x>
-     <y>372</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>382</x>
-     <y>424</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>rdbMoveProcessed</sender>
-   <signal>clicked(bool)</signal>
-   <receiver>editDumpFolder</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>220</x>
-     <y>394</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>177</x>
-     <y>424</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>rdbMoveProcessed</sender>
-   <signal>clicked(bool)</signal>
-   <receiver>btnSelectDumpFolder</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>220</x>
-     <y>394</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>382</x>
-     <y>424</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+ <connections/>
 </ui>

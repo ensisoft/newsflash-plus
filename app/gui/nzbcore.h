@@ -48,8 +48,6 @@ namespace gui
     private slots:
         void on_btnAddWatchFolder_clicked();
         void on_btnDelWatchFolder_clicked();
-        void on_btnSelectDumpFolder_clicked();
-        void on_btnSelectDownloadFolder_clicked();
     private:
         Ui::NZBCore ui_;
     private:
