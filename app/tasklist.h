@@ -60,6 +60,8 @@ namespace app
 
         void setGroupSimilar(bool on_off);
 
+        void clear();
+
         const 
         newsflash::ui::task& getItem(std::size_t i) const 
         { return tasks_[i]; }

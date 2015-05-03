@@ -56,6 +56,7 @@ struct Mapping {
     {Type::MoviesInt, 2060, Cat::Movies},
     {Type::MoviesSD, 2010, Cat::Movies},
     {Type::MoviesHD, 2040, Cat::Movies},
+    {Type::MoviesSD, 2030, Cat::Movies}, // xvid
 
     {Type::AudioMp3, 3010, Cat::Music},
     {Type::AudioVideo, 3020, Cat::Music},
@@ -77,6 +78,10 @@ struct Mapping {
     {Type::XxxDVD, 6010, Cat::Porno},
     {Type::XxxHD, 6040, Cat::Porno},
     {Type::XxxSD, 6030, Cat::Porno},
+    {Type::XxxOther, 6070, Cat::Porno}, // anime
+    {Type::XxxOther, 6020, Cat::Porno}, // clip
+    {Type::XxxOther, 6060, Cat::Porno}, // imgset
+    {Type::XxxOther, 6050, Cat::Porno}, // pack
 
     {Type::Ebook, 7020, Cat::Other}
 };
@@ -88,7 +93,10 @@ app::MediaType mapType(unsigned code)
             return m.code == code;
         });
     if (it == std::end(map))
+    {
+//        DEBUG("Newznab code %1 could not be mapped.", code);
         return app::MediaType::Other;
+    }
     return (*it).type;
 }
 

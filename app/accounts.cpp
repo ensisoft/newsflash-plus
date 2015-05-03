@@ -262,8 +262,7 @@ void Accounts::setMainAccount(quint32 id)
         [=](const Account& a) {
             return a.id == id;
         });
-
-    Q_ASSERT(it != std::end(accounts_));
+    ENDCHECK(accounts_, it);
 
     mainAccount_ = id;
 
@@ -284,8 +283,7 @@ void Accounts::setFillAccount(quint32 id)
         [=](const Account& a) {
             return a.id == id;
         });    
-
-    Q_ASSERT(it != std::end(accounts_));
+    ENDCHECK(accounts_, it);
 
     fillAccount_ = id;
     g_engine->setFillAccount(id);

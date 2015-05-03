@@ -74,6 +74,7 @@ QString toString(MediaType m)
         case Media::XxxDVD:            return "XXX DVD";
         case Media::XxxHD:             return "XXX HD";
         case Media::XxxSD:             return "XXX SD";
+        case Media::XxxOther:          return "XXX Other";
         case Media::Ebook:             return "EBook";
         case Media::Other:             return "Other";
     }
@@ -125,6 +126,7 @@ QIcon toIcon(MediaType type)
         case m::XxxDVD:
         case m::XxxHD:
         case m::XxxSD:
+        case m::XxxOther:
             return QIcon("icons:ico_media_xxx.png");
 
         case m::Ebook:

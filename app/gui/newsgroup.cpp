@@ -112,6 +112,11 @@ NewsGroup::NewsGroup(quint32 acc, QString path, QString name) : account_(acc), p
         ui_.btnLoadMore->setText(
             tr("Load more headers ... (%1/%2)").arg(numLoaded).arg(numTotal));
     };
+    model_.onKilled = [this] {
+        ui_.actionStop->setEnabled(false);
+        ui_.progressBar->setVisible(false);
+        ui_.actionRefresh->setEnabled(true);        
+    };
 
     filter_.minSize  = 0;
     filter_.maxSize  = std::numeric_limits<quint32>::max() + 1ull;
@@ -520,8 +525,7 @@ void NewsGroup::on_tableView_customContextMenuRequested(QPoint p)
     menu.addMenu(&sub);
     menu.addSeparator();
     menu.addAction(ui_.actionFilter);
-    menu.addSeparator();
-
+    
 
     QMenu showType("Filter by type", this);
     showType.setIcon(QIcon("icons:ico_filter.png"));

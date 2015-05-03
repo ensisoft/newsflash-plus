@@ -259,7 +259,11 @@ namespace app
 
         void killTask(std::size_t index)
         {
+            const auto action = engine_->get_action_id(index);
+
             engine_->kill_task(index);
+
+            emit actionKilled(action);
         }
 
         void pauseTask(std::size_t index)
@@ -294,6 +298,7 @@ namespace app
         void allCompleted();
         void numPendingTasks(std::size_t num);
         void quotaUpdate(std::size_t bytes, std::size_t account);
+        void actionKilled(quint32 action);
 
     private:
         virtual bool eventFilter(QObject* object, QEvent* event) override;

@@ -1833,6 +1833,21 @@ engine::action_id_t engine::download_headers(ui::update update)
     return batchid;
 }
 
+engine::action_id_t engine::get_action_id(std::size_t index)
+{
+    if (state_->group_items)
+    {
+        ASSERT(index < state_->batches.size());
+        return state_->batches[index]->id();
+    }
+
+    ASSERT(index < state_->tasks.size());
+    const auto& task = state_->tasks[index];
+    const auto bid = task->bid();
+    const auto& batch = state_->find_batch(bid);
+    return batch.id();
+}
+
 bool engine::pump()
 {
 // #ifdef NEWSFLASH_DEBUG

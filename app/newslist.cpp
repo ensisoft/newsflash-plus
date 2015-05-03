@@ -166,6 +166,7 @@ void NewsList::sort(int column, Qt::SortOrder order)
         });    
 
     DEBUG("Found %1 favs", std::distance(beg, it)); 
+    Q_UNUSED(it);
 
     emit layoutChanged();
     sort_  = (Columns)column;
@@ -389,6 +390,7 @@ void NewsList::filter(const QString& str, bool showEmpty)
 
     DEBUG("Found %1 matching items...", size_);    
     DEBUG("Found %1 favs", std::distance(beg, it));
+    Q_UNUSED(it);
 
     QAbstractTableModel::reset();
     QAbstractTableModel::endResetModel();

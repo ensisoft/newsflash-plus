@@ -69,6 +69,13 @@ void PieView::paintEvent(QPaintEvent* event)
 
     painter.setBrush(used);
     painter.drawPie(rc, 0, sliceUsed * fullCircle);
+
+
+    painter.setPen(Qt::darkGreen);
+    painter.drawText(x, y, "Quota Avail");
+    painter.setPen(Qt::darkRed);
+    painter.drawText(x, y + 20, "Quota Used");
+
 }
 
 } // gui

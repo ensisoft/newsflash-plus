@@ -831,6 +831,9 @@ void MainWindow::on_mainTab_currentChanged(int index)
         widget->addActions(*ui_.mainToolBar);
         widget->addActions(*ui_.menuTemp);
 
+        auto* finder = widget->getFinder();
+        ui_.menuEdit->setEnabled(finder != nullptr);
+
         auto title = widget->windowTitle();
         auto space = title.indexOf(" ");
         if (space != -1)

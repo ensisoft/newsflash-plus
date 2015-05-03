@@ -23,34 +23,29 @@
 #include <newsflash/config.h>
 #include <newsflash/warnpush.h>
 #  include <QtGui/QDialog>
-#  include "ui_volumes.h"
+#  include "ui_wildcards.h"
 #include <newsflash/warnpop.h>
-
-namespace app {
-    class NewsGroup;
-}
 
 namespace gui
 {
-    class DlgVolumes : public QDialog
+    class DlgWildcards : public QDialog
     {
         Q_OBJECT
 
     public:
-        DlgVolumes(QWidget* parent, app::NewsGroup& model);
-
+        DlgWildcards(QWidget* parent) : QDialog(parent)
+        {
+            ui_.setupUi(this);
+        }
     private slots:
-        void on_btnClose_clicked();
-        void on_btnPurge_clicked();
-        void on_btnLoad_clicked();
-        void on_actionLoad_triggered();
-        void on_actionPurge_triggered();
-        void on_tableView_customContextMenuRequested(QPoint);
+        void on_btnClose_clicked()
+        {
+            close();
+        }
 
     private:
-        Ui::Volumes ui_;
-    private:
-        app::NewsGroup& model_;
+        Ui::Wildcards ui_;
+
     };
 
 } // gui

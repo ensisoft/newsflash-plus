@@ -99,10 +99,15 @@ void Nzbs::prepare(MediaType type, std::vector<QUrl>& urls)
         {Media::ConsoleXbox360, "1050"},
         {Media::ConsolePS3, "1080"},
         {Media::ConsolePS2, "1090"},
+
         {Media::MoviesInt, "2060"}, // foreign
         {Media::MoviesSD, "2010"}, // dvd
+        {Media::MoviesSD, "2030"}, // xvid
         {Media::MoviesHD, "2040"}, // x264
+        {Media::MoviesHD, "2030"}, // xvid
         {Media::MoviesWMV, "2020"}, // wmv-hd
+
+
         {Media::AudioMp3, "3010"},
         {Media::AudioVideo, "3020"}, 
         {Media::AudioLossless, "3040"}, // flac
@@ -117,9 +122,16 @@ void Nzbs::prepare(MediaType type, std::vector<QUrl>& urls)
         {Media::TvHD, "5040"}, // hd
         {Media::TvHD, "5090"}, // boxhd
         {Media::TvOther, "5060"},
+
         {Media::XxxDVD, "6010"},
         {Media::XxxHD, "6040"}, // x264
-        {Media::XxxSD, "6030"} // xvid
+        {Media::XxxSD, "6030"}, // xvid
+        {Media::XxxOther, "6070"}, // anime
+        {Media::XxxOther, "6020"}, // clip
+        {Media::XxxOther, "6060"}, // imgset
+        {Media::XxxOther, "6050"}, // pack
+
+
       //{media::other, "7010"} // other misc
     };
 

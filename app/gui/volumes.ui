@@ -22,6 +22,9 @@
      <layout class="QVBoxLayout" name="verticalLayout">
       <item>
        <widget class="QTableView" name="tableView">
+        <property name="contextMenuPolicy">
+         <enum>Qt::CustomContextMenu</enum>
+        </property>
         <property name="selectionBehavior">
          <enum>QAbstractItemView::SelectRows</enum>
         </property>
@@ -102,7 +105,33 @@
     </layout>
    </item>
   </layout>
+  <action name="actionLoad">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_headers.png</normaloff>:/resource/16x16_ico_png/ico_headers.png</iconset>
+   </property>
+   <property name="text">
+    <string>Load</string>
+   </property>
+   <property name="toolTip">
+    <string>Load data file</string>
+   </property>
+  </action>
+  <action name="actionPurge">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_purge.png</normaloff>:/resource/16x16_ico_png/ico_purge.png</iconset>
+   </property>
+   <property name="text">
+    <string>Purge</string>
+   </property>
+   <property name="toolTip">
+    <string>Purge data file</string>
+   </property>
+  </action>
  </widget>
- <resources/>
+ <resources>
+  <include location="resource.qrc"/>
+ </resources>
  <connections/>
 </ui>

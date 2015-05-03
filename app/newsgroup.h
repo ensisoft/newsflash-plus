@@ -71,6 +71,7 @@ namespace app
         std::function<void (std::size_t curBlock, std::size_t numBlocks)> onLoadBegin;
         std::function<void (std::size_t curItem, std::size_t numMitems)> onLoadProgress;
         std::function<void (std::size_t curBlock, std::size_t numBlocks)> onLoadComplete;        
+        std::function<void ()> onKilled;
 
         // QAbstractTableModel
         virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
@@ -155,6 +156,7 @@ namespace app
         void newHeaderDataAvailable(const QString& file);
         void newHeaderInfoAvailable(const QString& group, quint64 numLocal, quint64 numRemote);
         void updateCompleted(const app::HeaderInfo& info);
+        void actionKilled(quint32 action);
 
     private:
         struct Block;

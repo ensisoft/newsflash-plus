@@ -216,6 +216,37 @@ Par2cmdline
 Unrar
 
 
+
+Potential (New) Features
+=========================
+
+- disk size checker, notify / react to low disk conditions.
+- joining of hjsplit files
+- some sort of searching in the headers
+- auto downloader/scheduler for TV series for example
+- support for nzbindex.nl, binsearch.info or other similar registration-free backend
+- help files
+- installer/uninstaller
+
+
+Bugs
+========================
+
+
+- assertion in the engine when quitting with active update ()
+- batch eta is messed up
+- update eta is messed up
+- fill server is used for non-fillable downloads (from headers)
+- killing the task doesn't update headers ui 
+- archive repair doesnt alwys work
+- sometimes ssl connections stop working
+- headers update will download faster than it can consume, needs throttling
+- unrar progress bar doesnt always work
++ search modifiers link doesn't do anything
++ search button changes incorrectly
++ command pipelining with ssl socket is broken
+
+
 Design Babblings
 ========================
 

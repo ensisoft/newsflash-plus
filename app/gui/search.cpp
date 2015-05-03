@@ -32,6 +32,7 @@
 #include "searchmodule.h"
 #include "nzbfile.h"
 #include "dlgmovie.h"
+#include "dlgwildcards.h"
 #include "../debug.h"
 #include "../search.h"
 #include "../settings.h"
@@ -61,6 +62,7 @@ Search::Search(SearchModule& module) : module_(module)
     ui_.actionOpen->setEnabled(false);
     ui_.editSearch->setFocus();
     ui_.btnSearchMore->setEnabled(false);
+    ui_.editSearch->setFocus();
 
     ui_.cmbYear->addItem("");
     const auto thisYear = QDate::currentDate().year();
@@ -75,7 +77,7 @@ Search::Search(SearchModule& module) : module_(module)
     model_.OnSearchCallback = [=](bool emptyResult) {
         if (emptyResult)
             ui_.btnSearchMore->setText("No more results");
-        else ui_.btnSearch->setText("Load more results ...");
+        else ui_.btnSearchMore->setText("Load more results ...");
         ui_.btnSearchMore->setEnabled(!emptyResult);
         const QHeaderView* header = ui_.tableView->horizontalHeader();
         const auto sortColumn = header->sortIndicatorSection();
@@ -176,6 +178,10 @@ void Search::loadState(app::Settings& settings)
     app::loadState("search", ui_.editSearch, settings);
     app::loadState("search", ui_.cmbYear, settings);
     app::loadTableLayout("search", ui_.tableView, settings);
+
+    const auto text = ui_.editSearch->text();
+    ui_.editSearch->setFocus();
+    ui_.editSearch->setCursorPosition(text.size());
 }
 
 void Search::saveState(app::Settings& settings)
@@ -326,6 +332,12 @@ void Search::on_tableView_customContextMenuRequested(QPoint point)
 void Search::on_editSearch_returnPressed()
 {
     beginSearch(0, QuerySize);
+}
+
+void Search::on_lblWildcard_linkActivated(QString)
+{
+    DlgWildcards dlg(this);
+    dlg.exec();
 }
 
 void Search::tableview_selectionChanged()

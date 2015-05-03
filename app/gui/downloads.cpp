@@ -296,10 +296,8 @@ void Downloads::on_actionTaskDelete_triggered()
 
 void Downloads::on_actionTaskClear_triggered()
 {
-    tableTasks_selectionChanged();
+    tasks_.clear();    
 }
-
-void openfile(const QString& file);
 
 void Downloads::on_actionTaskOpenLog_triggered()
 {
@@ -397,7 +395,7 @@ void Downloads::tableTasks_selectionChanged()
         ui_.actionTaskMoveBottom->setEnabled(false);
         ui_.actionTaskMoveDown->setEnabled(false);
         ui_.actionTaskDelete->setEnabled(false);
-        ui_.actionTaskClear->setEnabled(false);
+        //ui_.actionTaskClear->setEnabled(false);
         return;
     }
     ui_.actionTaskPause->setEnabled(true);
@@ -407,7 +405,7 @@ void Downloads::tableTasks_selectionChanged()
     ui_.actionTaskMoveBottom->setEnabled(true);
     ui_.actionTaskMoveDown->setEnabled(true);
     ui_.actionTaskDelete->setEnabled(true);
-    ui_.actionTaskClear->setEnabled(true);    
+    //ui_.actionTaskClear->setEnabled(true);    
 
     using state = newsflash::ui::task::states;
 

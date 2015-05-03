@@ -23,6 +23,7 @@
 #include <newsflash/config.h>
 #include <newsflash/warnpush.h>
 #  include <QtGui/QFileDialog>
+#  include <QDir>
 #include <newsflash/warnpop.h>
 #include "dlgaccount.h"
 #include "../utility.h"
@@ -47,11 +48,7 @@ DlgAccount::DlgAccount(QWidget* parent, app::Accounts::Account& acc, bool isNew)
     ui_.grpGeneral->setChecked(acc_.enableGeneralServer);
     ui_.grpLogin->setChecked(acc_.enableLogin);
     ui_.maxConnections->setValue(acc_.maxConnections);
-
-    if (isNew_)
-    {
-        acc.datapath.remove(acc.name);
-    }
+    ui_.edtDataPath->setText(acc.datapath);
     ui_.edtDataPath->setText(acc.datapath);
     ui_.edtDataPath->setCursorPosition(0);
 
@@ -60,6 +57,12 @@ DlgAccount::DlgAccount(QWidget* parent, app::Accounts::Account& acc, bool isNew)
     ui_.btnAccept->setEnabled(
         ui_.grpSecure->isChecked() || 
         ui_.grpGeneral->isChecked());     
+
+    if (isNew_)
+    {
+        name_ = acc_.name;
+        path_ = QDir::cleanPath(acc_.datapath.remove(name_));
+    }
 }
 
 DlgAccount::~DlgAccount()
@@ -190,14 +193,15 @@ void DlgAccount::on_grpGeneral_clicked(bool val)
         ui_.grpGeneral->isChecked());    
 }
 
-void DlgAccount::on_edtDataPath_textEdited()
+void DlgAccount::on_edtName_textEdited()
 {
     if (!isNew_)
         return;
 
     const auto name = ui_.edtName->text();
-    const auto path = app::joinPath(acc_.datapath, acc_.name);
+    const auto path = app::joinPath(path_, name_);
     ui_.edtDataPath->setText(path);
+    name_ = name;
 }
 
 } // gui

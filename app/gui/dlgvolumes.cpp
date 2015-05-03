@@ -21,6 +21,7 @@
 #include <newsflash/config.h>
 #include <newsflash/warnpush.h>
 #  include <QtGui/QMessageBox>
+#  include <QtGui/QMenu>
 #include <newsflash/warnpop.h>
 #include "dlgvolumes.h"
 #include "../newsgroup.h"
@@ -62,5 +63,26 @@ void DlgVolumes::on_btnLoad_clicked()
             tr("Unable to load the newsgroup data.\n%1").arg(app::widen(e.what())));
     }
 }
+
+void DlgVolumes::on_actionLoad_triggered()
+{
+    on_btnLoad_clicked();
+}
+
+void DlgVolumes::on_actionPurge_triggered()
+{
+    on_btnPurge_clicked();
+}
+
+void DlgVolumes::on_tableView_customContextMenuRequested(QPoint)
+{
+    QMenu menu(this);
+    menu.addAction(ui_.actionLoad);
+    menu.addSeparator();
+    menu.addAction(ui_.actionPurge);
+    menu.exec(QCursor::pos());
+}
+
+
 
 } // gui

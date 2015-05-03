@@ -40,7 +40,9 @@
 #include <mutex>
 #include <thread>
 #include <atomic>
+#include <string>
 #include <cassert>
+#include <cstring>
 #include "sslsocket.h"
 #include "sslcontext.h"
 #include "socketapi.h"
@@ -63,6 +65,21 @@
 // http://stackoverflow.com/questions/3952104/how-to-handle-openssl-ssl-error-want-read-want-write-on-non-blocking-sockets
 // http://www.serverframework.com/asynchronousevents/2010/10/using-openssl-with-asynchronous-sockets.html
 // http://www.mail-archive.com/openssl-users@openssl.org/msg34340.html
+
+namespace {
+
+std::string get_ssl_error(unsigned long code)
+{
+    char buff[256];
+    std::memset(buff, 0, sizeof(buff));
+
+    ERR_error_string_n(code, buff, sizeof(buff));
+
+    return {buff};
+
+}
+
+} // namespace
 
 namespace newsflash
 {
@@ -132,6 +149,7 @@ void sslsocket::sendall(const void* buff, int len)
 
 int sslsocket::sendsome(const void* buff, int len)
 {
+    ERR_clear_error();
     // the SSL_read operation may fail because SSL handshake
     // is being done transparently and that requires IO on the socket
     // which cannot be completed at the time. This is indicated by 
@@ -157,25 +175,41 @@ int sslsocket::sendsome(const void* buff, int len)
                 ssl_wait_write();
                 break;
 
+            // some I/O error occurred. The OpenSSL error queue may contain
+            // more information. If the error queue is empty (i.e. ERR_get_error returns 0)
+            // ret can be used to find more about the error. if ret == 0 an EOF was observed
+            // that violates the protocol. if err == -1 the underlying BIO reported an I/O
+            // error.
             case SSL_ERROR_SYSCALL:
                 {
-                    const auto err = get_last_socket_error();
-                    if (err != std::errc::operation_would_block)
-                        throw std::system_error(err, "socket send");
+                    const auto ssl_err = ERR_get_error();
+                    if (ssl_err == 0)
+                    {
+                        if (ret == 0)
+                            throw std::runtime_error("socket was closed unexpectedly");
 
-                    // on windows writeability is edge triggered, 
-                    // i.e. the event is signaled once when the socket is writeable and a call
-                    // to send clears the signal. the signal remains cleared
-                    // untill send fails with WSAEWOULDBLOCK which will schedule
-                    // the event for signaling once the socket can write more.        
-                    return 0;
+                        const auto sock_err = get_last_socket_error();
+                        if (sock_err != std::errc::operation_would_block)
+                            throw std::system_error(sock_err, "socket send");
+                    }
+                    else
+                    {
+                        throw std::runtime_error(get_ssl_error(ssl_err));
+                    }
                 }
                 break;
+                
             default:
                 throw std::runtime_error("SSL_write");
         }
     }
     while (!sent);
+
+    // on windows writeability is edge triggered, 
+    // i.e. the event is signaled once when the socket is writeable and a call
+    // to send clears the signal. the signal remains cleared
+    // untill send fails with WSAEWOULDBLOCK which will schedule
+    // the event for signaling once the socket can write more.        
 
 #if defined(WINDOWS_OS)
     // set the signal manually since the socket can write more,
@@ -189,6 +223,7 @@ int sslsocket::sendsome(const void* buff, int len)
 
 int sslsocket::recvsome(void* buff, int capacity)
 {
+    ERR_clear_error();
     // the SSL_read operation may fail because SSL handshake
     // is being done transparently and that requires IO on the socket
     // which cannot be completed at the time. This is indicated by 
@@ -215,15 +250,30 @@ int sslsocket::recvsome(void* buff, int capacity)
                 ssl_wait_read();
                 break;
 
+            // some I/O error occurred. The OpenSSL error queue may contain
+            // more information. If the error queue is empty (i.e. ERR_get_error returns 0)
+            // ret can be used to find more about the error. if ret == 0 an EOF was observed
+            // that violates the protocol. if err == -1 the underlying BIO reported an I/O
+            // error.
             case SSL_ERROR_SYSCALL:
-               {
-                    const auto err = get_last_socket_error();
-                    if (err != std::errc::operation_would_block)
-                        throw std::system_error(err, "socket send");
+                {
+                    const auto ssl_err = ERR_get_error();
+                    if (ssl_err == 0)
+                    {
+                        if (ret == 0)
+                            throw std::runtime_error("socket was closed unexpectedly");
 
-                    return 0;
+                        const auto sock_err = get_last_socket_error();
+                        if (sock_err != std::errc::operation_would_block)
+                            throw std::system_error(sock_err, "socket send");
+                    }
+                    else
+                    {
+                        throw std::runtime_error(get_ssl_error(ssl_err));
+                    }
                 }
                 break;
+
 
             // socket was closed.
             case SSL_ERROR_ZERO_RETURN:
@@ -274,6 +324,8 @@ waithandle sslsocket::wait(bool waitread, bool waitwrite) const
 
 bool sslsocket::can_recv() const 
 {
+    ERR_clear_error();
+
     if (SSL_pending(ssl_))
         return true;
 
@@ -325,6 +377,8 @@ void sslsocket::complete_secure_connect()
     // connect the IO object with SSL, this takes the ownership
     // of the BIO object.
     SSL_set_bio(ssl_, bio_, bio_);
+
+    ERR_clear_error();
 
     // go into client mode.
     while (true)

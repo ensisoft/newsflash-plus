@@ -193,6 +193,8 @@ NewsGroup::NewsGroup() : task_(0)
         this, SLOT(newHeaderInfoAvailable(const QString&, quint64, quint64)));
     QObject::connect(g_engine, SIGNAL(updateCompleted(const app::HeaderInfo&)),
         this, SLOT(updateCompleted(const app::HeaderInfo&)));
+    QObject::connect(g_engine, SIGNAL(actionKilled(quint32)),
+        this, SLOT(actionKilled(quint32)));
 
     // loader callback
     index_.on_load = [this] (std::size_t key, std::size_t idx) {
@@ -829,6 +831,18 @@ void NewsGroup::updateCompleted(const app::HeaderInfo& info)
     task_ = 0;
 }
 
+void NewsGroup::actionKilled(quint32 action)
+{
+    //DEBUG("Action killed %1, my action %2", action, task_);
+
+    if (action == task_)
+    {
+        DEBUG("Newsgroup update killed...");
+        task_ = 0;
+        onKilled();
+    }
+}
+
 void NewsGroup::loadData(Block& block, bool guiLoad)
 {
     // resetting the model will make it forget the current selection.
@@ -852,8 +866,8 @@ void NewsGroup::loadData(Block& block, bool guiLoad)
 
     QAbstractTableModel::beginResetModel();
 
-    DEBUG("%1 is at offset %2", block.file, block.prevOffset);
-    DEBUG("Index has %1 articles. Loading more...", index_.size());
+    //DEBUG("%1 is at offset %2", block.file, block.prevOffset);
+    //DEBUG("Index has %1 articles. Loading more...", index_.size());
 
     std::size_t curItem  = 0;
     std::size_t numItems = db.size();
@@ -873,7 +887,7 @@ void NewsGroup::loadData(Block& block, bool guiLoad)
         }
     }
 
-    DEBUG("Load done. Index now has %1 articles", index_.size());
+    //DEBUG("Load done. Index now has %1 articles", index_.size());
 
     // save the database and the current offset
     // when new data is added to the same database
@@ -881,7 +895,7 @@ void NewsGroup::loadData(Block& block, bool guiLoad)
     // index to start loading the objects.
     block.prevOffset = beg.offset();
     block.prevSize   = db.size();
-    DEBUG("%1 is at new offset %2", block.file, block.prevOffset);
+    //DEBUG("%1 is at new offset %2", block.file, block.prevOffset);
 
     QAbstractTableModel::reset();    
     QAbstractTableModel::endResetModel();    

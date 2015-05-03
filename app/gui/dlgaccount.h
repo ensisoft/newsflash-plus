@@ -25,9 +25,9 @@
 #include <newsflash/config.h>
 #include <newsflash/warnpush.h>
 #  include <QtGui/QDialog>
+#  include <QString>
 #  include "ui_dlgaccount.h"
 #include <newsflash/warnpop.h>
-
 #include "../accounts.h"
 
 namespace gui
@@ -49,7 +49,7 @@ namespace gui
         void on_btnCancel_clicked();
         void on_grpSecure_clicked(bool val);
         void on_grpGeneral_clicked(bool val);
-        void on_edtDataPath_textEdited();
+        void on_edtName_textEdited();
 
     private:
         Ui::DlgAccount ui_;
@@ -57,6 +57,8 @@ namespace gui
     private:
         app::Accounts::Account& acc_;
         bool isNew_;
+        QString name_;
+        QString path_;
     };
 
 } // gui

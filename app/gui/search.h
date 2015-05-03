@@ -64,6 +64,7 @@ namespace gui
         void on_btnSearchMore_clicked();
         void on_tableView_customContextMenuRequested(QPoint point);
         void on_editSearch_returnPressed();
+        void on_lblWildcard_linkActivated(QString);
         void tableview_selectionChanged();
         void downloadToPrevious();
         void popupDetails();

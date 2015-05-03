@@ -98,6 +98,8 @@ namespace newsflash
 
         action_id_t download_headers(ui::update update);
 
+        action_id_t get_action_id(std::size_t task_index);
+
         // process pending actions in the engine. You should call this function
         // as a response to to the async_notify.
         // returns true if there are still pending actions to be completed later

@@ -502,6 +502,13 @@
          <widget class="QLineEdit" name="editSearch"/>
         </item>
         <item>
+         <widget class="QPushButton" name="btnSearch">
+          <property name="text">
+           <string>Search</string>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="QLabel" name="lblWildcard">
           <property name="text">
            <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
@@ -509,13 +516,6 @@
 p, li { white-space: pre-wrap; }
 &lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Sans Serif'; font-size:8pt; font-weight:400; font-style:normal;&quot;&gt;
 &lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;a href=&quot;search.html&quot;&gt;&lt;span style=&quot; font-family:'MS Shell Dlg 2'; text-decoration: underline; color:#0000ff;&quot;&gt;Search modifiers&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="btnSearch">
-          <property name="text">
-           <string>Search</string>
           </property>
          </widget>
         </item>
@@ -678,7 +678,6 @@ p, li { white-space: pre-wrap; }
   <tabstop>chkComputer</tabstop>
   <tabstop>chkXXX</tabstop>
   <tabstop>editSearch</tabstop>
-  <tabstop>btnSearch</tabstop>
   <tabstop>tableView</tabstop>
  </tabstops>
  <resources>

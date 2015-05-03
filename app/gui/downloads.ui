@@ -236,8 +236,8 @@
   </action>
   <action name="actionTaskClear">
    <property name="icon">
-    <iconset>
-     <normaloff>:/resource/16x16_ico_png/ico_trash.png</normaloff>:/resource/16x16_ico_png/ico_trash.png</iconset>
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_clear.png</normaloff>:/resource/16x16_ico_png/ico_clear.png</iconset>
    </property>
    <property name="text">
     <string>Clear</string>

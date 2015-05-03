@@ -182,9 +182,17 @@ int TaskList::columnCount(const QModelIndex&) const
 
 void TaskList::refresh(bool remove_complete)
 {
-    const auto cur_size = tasks_.size();
+    const auto curSize = tasks_.size();
 
     g_engine->refreshTaskList(tasks_);
+    
+    const auto newSize = tasks_.size();
+    if (newSize != curSize)
+    {
+        QAbstractTableModel::beginResetModel();
+        QAbstractTableModel::reset();
+        QAbstractTableModel::endResetModel();
+    }
 
     if (remove_complete)
     {
@@ -195,25 +203,17 @@ void TaskList::refresh(bool remove_complete)
             const auto& task = tasks_[row];
             if (task.state == states::complete || task.state == states::error)
             {
-                beginRemoveRows(QModelIndex(), row, row);
+                QAbstractTableModel::beginRemoveRows(QModelIndex(), row, row);
                 g_engine->killTask(row);
                 g_engine->refreshTaskList(tasks_);
-                endRemoveRows();
+                QAbstractTableModel::endRemoveRows();
                 ++removed;
             }
         }
     }
-
-    if (tasks_.size() != cur_size)
-    {
-        reset();        
-    }
-    else
-    {
-        auto first = QAbstractTableModel::index(0, 0);
-        auto last  = QAbstractTableModel::index(tasks_.size(), (int)columns::sentinel);
-        emit dataChanged(first, last);
-    }
+    const auto first = QAbstractTableModel::index(0, 0);
+    const auto last  = QAbstractTableModel::index(tasks_.size(), (int)columns::sentinel);
+    emit dataChanged(first, last);
 }
 
 void TaskList::pause(QModelIndexList& list)
@@ -315,16 +315,37 @@ void TaskList::moveToBottom(QModelIndexList& list)
 
     g_engine->refreshTaskList(tasks_);
 
-    auto first = QAbstractTableModel::index(min_index, 0);
-    auto last  = QAbstractTableModel::index(max_index, (int)columns::sentinel);
+    const auto first = QAbstractTableModel::index(min_index, 0);
+    const auto last  = QAbstractTableModel::index(max_index, (int)columns::sentinel);
     emit dataChanged(first, last);
 }
 
 void TaskList::setGroupSimilar(bool on_off)
 {
+    QAbstractTableModel::beginResetModel();
+
     g_engine->setGroupSimilar(on_off);
     g_engine->refreshTaskList(tasks_);
-    reset();
+
+    QAbstractTableModel::reset();
+    QAbstractTableModel::endResetModel();
+}
+
+void TaskList::clear()
+{
+    std::size_t removed = 0;
+    for (std::size_t i=0; i<tasks_.size(); ++i)
+    {
+        const auto& item = tasks_[i];
+        const auto row   = i - removed;
+        if (item.state == states::complete || item.state == states::error)
+        {
+            QAbstractTableModel::beginRemoveRows(QModelIndex(), row, row);
+            g_engine->killTask(row);
+            QAbstractTableModel::endRemoveRows();
+            ++removed;
+        }
+    }
 }
 
 void TaskList::manageTasks(QModelIndexList& list, TaskList::Action a)
@@ -367,8 +388,8 @@ void TaskList::manageTasks(QModelIndexList& list, TaskList::Action a)
 
     g_engine->refreshTaskList(tasks_);
 
-    auto first = QAbstractTableModel::index(min_index, 0);
-    auto last  = QAbstractTableModel::index(max_index, (int)columns::sentinel);
+    const auto first = QAbstractTableModel::index(min_index, 0);
+    const auto last  = QAbstractTableModel::index(max_index, (int)columns::sentinel);
     emit dataChanged(first, last);    
 }
 

@@ -126,7 +126,7 @@ bool Par2::isRunning() const
 void Par2::processStdOut()
 {
     const auto buff = process_.readAllStandardOutput();
-    const auto size = buff.size();
+    //const auto size = buff.size();
     //DEBUG("par2 %1 wrote %2 bytes", par2_, size);
 
     stdout_.append(buff);
@@ -202,7 +202,7 @@ void Par2::processFinished(int exitCode, QProcess::ExitStatus status)
             // deal with any remaining output 
             processStdOut();
         
-            const auto state   = state_.getState();
+            //const auto state   = state_.getState();
             const auto message = state_.getMessage();
             const auto success = state_.getSuccess();
             DEBUG("par2 result %1 message %2", success, message);
