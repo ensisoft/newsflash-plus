@@ -53,6 +53,7 @@ Par2::~Par2()
     Q_ASSERT(state == QProcess::NotRunning && 
         "Current archive is still being processed."
         "We should either wait for its completion or stop it.");
+    Q_UNUSED(state);
 }
 
 void Par2::recover(const Archive& arc, const Settings& s)
@@ -60,6 +61,7 @@ void Par2::recover(const Archive& arc, const Settings& s)
     const auto state = process_.state();
     Q_ASSERT(state == QProcess::NotRunning &&
         "we already have a current recovery being processed.");
+    Q_UNUSED(state);
 
     stdout_.clear();
     stderr_.clear();

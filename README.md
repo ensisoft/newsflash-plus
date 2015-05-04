@@ -233,7 +233,7 @@ Bugs
 ========================
 
 
-- assertion in the engine when quitting with active update ()
+- assertion in the engine when quitting with active update (engine.cpp:698, num_active_cmdlists_ == 0)
 - batch eta is messed up
 - update eta is messed up
 - fill server is used for non-fillable downloads (from headers)

@@ -58,6 +58,9 @@ namespace newsflash
             // currently being downloaded.
             active,
 
+            // active but draining queued buffers.
+            crunching,
+
             // paused by the user
             paused,
 

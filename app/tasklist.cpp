@@ -43,12 +43,13 @@ const char* str(states s)
 {
     switch (s)
     {
-        case states::queued: return "Queued";
-        case states::waiting: return "Waiting";
-        case states::active: return "Active";
-        case states::paused: return "Paused";
-        case states::complete: return "Complete";
-        case states::error: return "Error";
+        case states::queued:    return "Queued";
+        case states::waiting:   return "Waiting";
+        case states::active:    return "Active";
+        case states::crunching: return "Crunching";
+        case states::paused:    return "Paused";
+        case states::complete:  return "Complete";
+        case states::error:     return "Error";
     }
     return "???";
 }
@@ -135,6 +136,8 @@ QVariant TaskList::data(const QModelIndex& index, int role) const
                 return QIcon("icons:ico_task_waiting.png");
             case states::active: 
                 return QIcon("icons:ico_task_active.png");
+            case states::crunching:
+                return QIcon("icons:ico_task_crunching.png");
             case states::paused: 
                 return QIcon("icons:ico_task_paused.png");   
             case states::complete: 

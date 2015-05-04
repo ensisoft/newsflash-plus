@@ -80,6 +80,7 @@ const char* str(ui::task::states s)
         CASE(state::paused);
         CASE(state::complete);
         CASE(state::error);
+        CASE(state::crunching);
     }
     assert(0);
     return nullptr;    
@@ -581,6 +582,7 @@ class engine::task
         ui_.task_id  = id;
         ui_.size     = 0;
         is_fillable_ = false;
+        num_bytes_queued_ = 0;
     }
 
 public:
@@ -769,7 +771,7 @@ public:
     void tick(engine::state& state, const std::chrono::milliseconds& elapsed)
     {
         // todo: actually measure the time
-        if (ui_.state == states::active)
+        if (ui_.state == states::active || ui_.state == states::crunching)
             ui_.runtime++;
     }
 
@@ -960,7 +962,7 @@ public:
         ui = ui_;                
         ui.etatime = 0;
 
-        if (ui_.state == states::active || ui_.state == states::waiting)
+        if (ui_.state == states::active || ui_.state == states::waiting || ui_.state == states::crunching)
         {
             if (ui_.runtime >= 10 && ui_.completion > 0.0)
             {
@@ -976,11 +978,15 @@ public:
 
     transition on_action(engine::state& state, std::unique_ptr<action> act)
     {
+        const auto size = act->size();
+
         assert(act->get_owner() == ui_.task_id);
         assert(num_active_actions_ > 0);
+        assert(size <= num_bytes_queued_);        
 
         num_active_actions_--;
         num_actions_ready_++;
+        num_bytes_queued_ -= size;
 
         LOG_D("Task ", ui_.task_id, " receiving action ", act->get_id(), " (", act->describe(), ")");
         LOG_D("Task ", ui_.task_id, " num_active_actions ", num_active_actions_);
@@ -1081,7 +1087,16 @@ private:
         // if we have pending actions our state should not change
         // i.e. we're active (or possibly paused)
         if (num_active_actions_)
+        {
+            LOG_D("Task ", ui_.task_id, " has ", num_bytes_queued_ / (double)MB(1), " mb queud");
+
+            if (num_bytes_queued_ >= MB(32))
+            {
+                if (ui_.state == states::active)
+                    return goto_state(state, states::crunching);
+            }
             return no_transition; 
+        }
 
         // if we have currently executing cmdlists our state should not change.
         // i.e. we're active (or possibly paused)
@@ -1094,7 +1109,8 @@ private:
         // we'll transition into waiting state.
         if (task_->has_commands())
         {
-            if (ui_.state == states::active)
+            if (ui_.state == states::active ||
+                ui_.state == states::crunching)
                 return goto_state(state, states::waiting);
         }
         else
@@ -1111,6 +1127,8 @@ private:
         a->set_owner(ui_.task_id);
 
         num_active_actions_++;
+        num_bytes_queued_ += a->size();
+
         //LOG_D("Task ", ui_.task_id, " has a new active action ", typeid(*a).name());
         //LOG_D("Task ", ui_.task_id, " has ", num_active_actions_, " active actions");
         //state.logger->flush();
@@ -1140,6 +1158,10 @@ private:
             case states::paused:
                 ui_.state   = new_state;
                 ui_.etatime = 0;
+                break;
+
+            case states::crunching:
+                ui_.state   = new_state;
                 break;
 
             case states::complete:
@@ -1215,6 +1237,7 @@ private:
         LOG_D("Task ", ui_.task_id, " => ", str(new_state));
         LOG_D("Task ", ui_.task_id, " has ", num_active_cmdlists_,  " active cmdlists");
         LOG_D("Task ", ui_.task_id, " has ", num_active_actions_, " active actions");        
+        LOG_FLUSH();
 
         if (new_state == states::error || new_state == states::complete)
         {
@@ -1238,6 +1261,7 @@ private:
     std::size_t num_active_actions_;
     std::size_t num_actions_ready_;
     std::size_t num_actions_total_;
+    std::size_t num_bytes_queued_;
 private:
     bool is_fillable_;
 };
@@ -1479,8 +1503,11 @@ private:
             goto_state(state, states::active);
         else if (!is_empty_set(states::waiting))
             goto_state(state, states::waiting);
+
         if (!is_empty_set(states::paused))
             goto_state(state, states::paused);
+        else if (is_full_set(states::crunching))
+            goto_state(state, states::crunching);
         else if (is_full_set(states::complete))
             goto_state(state, states::complete);
         else if (is_full_set(states::error))
@@ -1517,7 +1544,7 @@ private:
     ui::task ui_;
 private:
     std::size_t num_tasks_;
-    std::size_t statesets_[6];
+    std::size_t statesets_[7];
     std::string path_;
     bool filebatch_;
 };
@@ -1860,6 +1887,8 @@ bool engine::pump()
 //     }
 // #endif
 
+    set_thread_log(state_->logger.get());
+
     for (;;)
     {
         std::unique_ptr<action> action = state_->get_action();
@@ -2001,6 +2030,15 @@ bool engine::pump()
                 {
                     auto& batch = state_->find_batch(task->bid());
                     batch.update(*state_, *task, transition);
+                }
+                if (task->eligible_for_run())
+                {
+                    const auto transition = task->run(*state_);
+                    if (transition)
+                    {
+                        auto& batch = state_->find_batch(task->bid());
+                        batch.update(*state_, *task, transition);                        
+                    }
                 }
                 break;
             }

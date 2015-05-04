@@ -102,6 +102,8 @@ public:
             articles_.push_back(a);
         }
     }
+    virtual std::size_t size() const override
+    { return buffer_.content_length(); }
     
 	virtual std::string describe() const override
 	{ return "Parse XOVER"; }
@@ -227,15 +229,19 @@ public:
     
     virtual std::string describe() const override
     { return "Update Db"; }
+
+    virtual std::size_t size() const override
+    { return bytes_; }
 private:
     friend class update;
     std::shared_ptr<state> state_;
     std::vector<article_t> articles_;
     std::set<catalog_t*> updates_;
+private:
     std::uint64_t first_;
     std::uint64_t last_;    
-private: 
-    buffer buffer_;
+private:
+    std::size_t bytes_;
 };
 
 update::update(std::string path, std::string group) : local_last_(0), local_first_(0)
@@ -446,7 +452,8 @@ void update::complete(action& a, std::vector<std::unique_ptr<action>>& next)
     {
         std::unique_ptr<store> s(new store(state_));
         s->articles_ = std::move(p->articles_);
-        s->buffer_ = std::move(p->buffer_);
+        s->bytes_ = p->size();
+        //s->buffer_ = std::move(p->buffer_);
 
         //s->set_affinity(action::affinity::single_thread);
         s->set_affinity(action::affinity::gui_thread);

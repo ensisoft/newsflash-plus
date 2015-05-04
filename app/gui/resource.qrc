@@ -124,6 +124,7 @@
     <file>resource/16x16_ico_png/ico_task_damaged.png</file>    
     <file>resource/16x16_ico_png/ico_task_complete.png</file>
     <file>resource/16x16_ico_png/ico_task_error.png</file>
+    <file>resource/16x16_ico_png/ico_task_crunching.png</file>
 
     <!-- task action icons -->
     <file>resource/16x16_ico_png/ico_task_pause.png</file>

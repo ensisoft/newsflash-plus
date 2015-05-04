@@ -84,6 +84,7 @@ Unrar::~Unrar()
     Q_ASSERT(state == QProcess::NotRunning &&
         "Current archive is still being processed."
         "We should either wait for its completion or stop it");        
+    Q_UNUSED(state);
 }
 
 void Unrar::extract(const Archive& arc, const Settings& settings)
@@ -91,6 +92,7 @@ void Unrar::extract(const Archive& arc, const Settings& settings)
     const auto state = process_.state();
     Q_ASSERT(state == QProcess::NotRunning &&
         "We already have a current archive being extracted");
+    Q_UNUSED(state);
 
     stdout_.clear();
     stderr_.clear();

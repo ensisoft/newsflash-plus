@@ -93,6 +93,9 @@ namespace newsflash
         virtual std::string describe() const
         { return {}; }
 
+        virtual std::size_t size() const 
+        { return 0; }
+
         affinity get_affinity() const 
         { return affinity_; }
 
