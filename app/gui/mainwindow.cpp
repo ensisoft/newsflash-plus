@@ -175,8 +175,6 @@ void MainWindow::attach(MainWidget* widget, bool permanent, bool loadstate)
         }
     }
 
-    buildWindowMenu();
-
     QObject::connect(widget, SIGNAL(updateMenu(MainWidget*)),
         this, SLOT(updateMenu(MainWidget*)));
 }
@@ -544,7 +542,7 @@ void MainWindow::show(std::size_t index)
     const auto& icon = widget->windowIcon();
     const auto& text = widget->windowTitle();
     ui_.mainTab->insertTab(index, widget, icon, text);
-    buildWindowMenu();
+    prepareWindowMenu();
 
 }
 
@@ -574,7 +572,7 @@ void MainWindow::hide(std::size_t index)
 
     ui_.mainTab->removeTab(pos);
  
-    buildWindowMenu();
+    prepareWindowMenu();
 }
 
 void MainWindow::focus(MainWidget* ui)
@@ -716,7 +714,7 @@ FindWidget* MainWindow::getFindWidget()
 }
 
 
-void MainWindow::buildWindowMenu()
+void MainWindow::prepareWindowMenu()
 {
     ui_.menuWindow->clear();
 
@@ -847,7 +845,7 @@ void MainWindow::on_mainTab_currentChanged(int index)
     ui_.mainToolBar->addSeparator();
     ui_.mainToolBar->addAction(ui_.actionContextHelp);
 
-    buildWindowMenu();
+    prepareWindowMenu();
 }
 
 void MainWindow::on_mainTab_tabCloseRequested(int tab)
@@ -908,7 +906,7 @@ void MainWindow::on_mainTab_tabCloseRequested(int tab)
         delete widget;
         widgets_.erase(it);
     }
-    buildWindowMenu();
+    prepareWindowMenu();
 }
 
 void MainWindow::on_actionWindowClose_triggered()

@@ -300,6 +300,7 @@ int run(int argc, char* argv[])
 
     win.loadState();
     win.prepareFileMenu();
+    win.prepareWindowMenu();
     win.prepareMainTab();
     win.show();
 

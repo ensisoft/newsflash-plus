@@ -100,6 +100,7 @@ namespace gui
         void updateLicense();
 
         void prepareFileMenu();
+        void prepareWindowMenu();
         void prepareMainTab();
 
         // perform a common action and select a download folder for some content.
@@ -132,7 +133,6 @@ namespace gui
         void hide(MainWidget* widget);        
         void hide(std::size_t index);
         void focus(MainWidget* widget);    
-        void buildWindowMenu();
         bool saveState(DlgExit* dlg);
         void closeEvent(QCloseEvent* event);        
         void dragEnterEvent(QDragEnterEvent* event);
