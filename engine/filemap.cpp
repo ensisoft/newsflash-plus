@@ -154,8 +154,8 @@ public:
 
    ~mapper()
     {
-        ASSERT(munmap(base_, size_) == 0);        
-        ASSERT(close(file_) == 0);
+        ASSERT(::munmap(base_, size_) == 0);        
+        ASSERT(::close(file_) == 0);
     }
     void* map(std::size_t offset /*, std::size_t size, unsigned flags*/)
     {

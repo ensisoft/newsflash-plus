@@ -26,8 +26,6 @@
 
 namespace app
 {
-    class Archive;
-
     class Poweroff : public QObject
     {
         Q_OBJECT
