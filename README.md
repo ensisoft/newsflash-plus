@@ -227,21 +227,23 @@ Potential (New) Features
 - support for nzbindex.nl, binsearch.info or other similar registration-free backend
 - help files
 - installer/uninstaller
-
+- musicBrainz.org integration
++ UseNext advert
 
 Bugs
 ========================
 
-
-- assertion in the engine when quitting with active update (engine.cpp:698, num_active_cmdlists_ == 0)
 - batch eta is messed up
 - update eta is messed up
-- fill server is used for non-fillable downloads (from headers)
-- killing the task doesn't update headers ui 
+- assertion in the engine when quitting with active update (engine.cpp:698, num_active_cmdlists_ == 0)
 - archive repair doesnt alwys work
 - sometimes ssl connections stop working
-- headers update will download faster than it can consume, needs throttling
 - unrar progress bar doesnt always work
+- shutdown not working
+
++ killing the task doesn't update headers ui 
++ headers update will download faster than it can consume, needs throttling
++ fill server is used for non-fillable downloads (from headers)
 + search modifiers link doesn't do anything
 + search button changes incorrectly
 + command pipelining with ssl socket is broken

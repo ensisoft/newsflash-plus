@@ -181,5 +181,7 @@
     <file>resource/nh-special.gif</file>
     <file>resource/uns-special-2.gif</file>
     <file>resource/ajax-loader.gif</file>
+    <file>resource/usenext-1.gif</file>
+    <file>resource/usenext-2.gif</file>    
   </qresource>
 </RCC>

@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>463</width>
+    <width>549</width>
     <height>45</height>
    </rect>
   </property>
@@ -51,12 +51,17 @@
        </item>
        <item>
         <property name="text">
-         <string>archive.path</string>
+         <string>archive.file</string>
         </property>
        </item>
        <item>
         <property name="text">
-         <string>archive.file</string>
+         <string>archive.name</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>archive.path</string>
         </property>
        </item>
        <item>

@@ -602,16 +602,19 @@ std::uint32_t hashvalue(const char* subjectline, size_t len)
     return std::uint32_t(seed);
 }
 
+
 std::string find_filename(const char* str, size_t len)
 {
     using namespace boost::spirit::classic;
     
     // see if it's an yEnc subjectline match.
-    std::string yenc_name;
-    const auto ret = parse(str, str + len,
-        (*(anychar_p - '"') >> str_p("\"") >> (*(anychar_p - '"'))[assign(yenc_name)] >> str_p("\" yEnc")));
-    if (ret.hit)
-        return yenc_name;
+    {
+        std::string yenc_name;
+        const auto ret = parse(str, str + len,
+            (*(anychar_p - '"') >> str_p("\"") >> (*(anychar_p - '"'))[assign(yenc_name)] >> str_p("\" yEnc")));
+        if (ret.hit)
+            return yenc_name;
+    }
 
     const static boost::regex regex(REVERSE_FILE_EXTENSION_REGEX, boost::regbase::icase | boost::regbase::perl);
 
@@ -626,7 +629,7 @@ std::string find_filename(const char* str, size_t len)
     // first returns an iterator pointing to the 
     // start of the sequence, which in this case is the end of the filename
     // extension.
-    const char* end = res[0].first.as_ptr(); 
+    const char* ext = res[0].first.as_ptr(); 
     // second returns an iterator pointing one past the end of the sequence
     // which in this case is one before the the start of the filename extension
     const char* start = res[0].second.as_ptr();
@@ -635,22 +638,32 @@ std::string find_filename(const char* str, size_t len)
         ++start;
 
     // seek the dot, its part of the regex so it must be found before start of str    
-    const char* dot = end;
+    const char* dot = ext;
     while (*dot != '.')
-        --dot;
+    {
+        if (--dot < start)
+            return "";
+    }
+
+    if (dot == start)
+        return "";
+
+    if (dot[-1] == ' ')
+        return "";
+
 
     char start_marker = 0;
     // look at the first character after the filename extension and see if it's a special
     // character such as ", ], )
-    if (++end < str + len)
+    if (++ext < str + len)
     {
-        if (*end == '"')
+        if (*ext == '"')
             start_marker = '"';
-        else if (*end == ')')
+        else if (*ext == ')')
             start_marker = '(';
-        else if (*end == ']')
+        else if (*ext == ']')
             start_marker = '[';
-        else if (*end == '#')
+        else if (*ext == '#')
             start_marker = '#';
     }
 
@@ -669,9 +682,65 @@ std::string find_filename(const char* str, size_t len)
     }
     else
     {
+        // see if we can find some sort of upper limit how far to seek
+        // forwards from the file extension
+        // if the subject line contains something like
+        // Foobar bla blah - File 07 of 10 - foobar.mp3" we use the "File xx of yy" as a marker
+        {
+            const static boost::regex mk1("File [0-9]* of [0-9]*");
+            const static boost::regex mk2("(\\(|\\[)[0-9]*/[0-9]*(\\)|\\])");
+
+            boost::match_results<const char*> res;
+            if (regex_search(str, dot, res, mk1) ||
+                regex_search(str, dot, res, mk2))
+            {
+                const auto e = res[0].second;
+                const auto m = e - str;
+                str  = e;
+                len -= m;
+            }
+        }
+
+        struct name_pred {
+
+            name_pred() : prev_(0)
+            {}
+
+            bool is_allowed(int c)
+            {
+                const auto ret = test(c);
+                prev_ = c;
+                return ret;
+            }
+            bool test(int c)
+            {
+                if (std::isalnum(c))
+                    return true;
+                if (std::isblank(c))
+                    return true;
+
+                switch (c)
+                {
+                    case '-':
+                        if (prev_ == ' ' || prev_ == '-')
+                            return false;
+                        return true;
+                    case '_':
+                    case '(':
+                    case ')':
+                       return true;    
+                    default: 
+                    break;
+                }
+                return false;
+            }
+        private:
+            int  prev_;
+        };
+        name_pred pred;
+
         // seek untill first non space or dash alphanumeric character is found
-        while ((std::isalnum((unsigned char)*start) || *start == '-' || *start == '_')
-            && start > str)
+        while (pred.is_allowed((unsigned char)*start) && start > str)
             --start;
 
         // trim leading non-alpha
@@ -679,12 +748,12 @@ std::string find_filename(const char* str, size_t len)
             ++start;            
     }
 
-    assert(start <= dot && dot < end);
+    assert(start <= dot && dot < ext);
 
     if (start - dot == 0)
         return "";
 
-    return std::string(start, end-start);
+    return std::string(start, ext-start);
 }
 
 std::size_t find_response(const void* buff, std::size_t size)

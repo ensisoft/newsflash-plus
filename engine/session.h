@@ -94,11 +94,12 @@ namespace newsflash
         // quit the session. prepares a quit command 
         void quit();
 
-        // request to change the currently selected newsgroup 
-        // to the new group identified by name. the result will be a
-        // groupinfo buffer with group details (low/high water mark + total article count)
-        // in the buffer header.
+        // request to change the currently selected newsgroup to the new group 
         void change_group(std::string name);
+
+        // retrive group information. the result will be a groupinfo buffer
+        // with high and low water marks for article numbers.
+        void retrieve_group_info(std::string name);
 
         // retrieve the article identified by the given messageid.
         // the result will be an article buffer with content carrying

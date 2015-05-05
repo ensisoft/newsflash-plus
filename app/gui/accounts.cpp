@@ -71,19 +71,33 @@ Accounts::Accounts()
         this, SLOT(currentRowChanged()));
 
     qsrand(std::time(nullptr));
+    const auto num = (qrand() >> 7) % 4;
 
     QString resource;
     QString campaing;    
-    if ((qrand() >> 7) & 1)
+    int speed = 200;
+    if (num == 0)
     {
         resource = ":/resource/uns-special-2.gif";
         campaing = "https://usenetserver.com/partners/?a_aid=foobar1234&amp;a_bid=dcec941d";
     }
-    else
+    else if (num == 1)
     {
         resource = ":/resource/nh-special.gif";
         campaing = "http://www.newshosting.com/en/index.php?&amp;a_aid=foobar1234&amp;a_bid=2b57ce3a";
     }    
+    else if (num == 2)
+    {
+        resource = ":resource/usenext-1.gif";
+        campaing = "http://www.usenext.com/?utm_source=AF_TP_93470&utm_medium=AFGE&utm_campaign=441944&utm_content=0_1";
+        speed = 100;
+    }
+    else if (num == 3)
+    {
+        resource = ":resource/usenext-2.gif";
+        campaing = "http://www.usenext.com/?utm_source=AF_TP_93470&utm_medium=AFGE&utm_campaign=441948&utm_content=0_1";
+    }
+
     //DEBUG("Usenet campaing '%1' '%2'", resource, campaing);    
 
     // NOTE: if the movie doesn't show up the problem might have
@@ -92,7 +106,7 @@ Accounts::Accounts()
     QMovie* mov = new QMovie(this);
     mov->setFileName(resource);
     mov->start();
-    mov->setSpeed(200);    
+    mov->setSpeed(speed);    
 
     const auto& pix  = mov->currentPixmap();
     const auto& size = pix.size();

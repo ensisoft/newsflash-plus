@@ -428,23 +428,32 @@ void test_find_filename()
         const char* str;
         std::string expected;
     } tests[] = {
+        {"Darkstar - Heart of Darkstar - File 07 of 10 - Darkstar_Heart of Darkness_07_The Dream (Scene 2).mp3 (01/11)",
+         "Darkstar_Heart of Darkness_07_The Dream (Scene 2).mp3"},
+
         {"[#scnzb@efnet][529762] Automata.2014.BRrip.x264.Ac3-MiLLENiUM [1/4] - \"Automata.2014.BRrip.x264.Ac3-MiLLENiUM.mkv\" yEnc (1/1513)",
             "Automata.2014.BRrip.x264.Ac3-MiLLENiUM.mkv"},
-        {"Ip.Man.The.Final.Fight.2013.COMPLETE.BluRay-oOo - [1/7] - #34;Ip.Man.The.Final.Fight.2013.COMPLETE.BluRay-oOo.rar#34; yEnc (204/204)", "34;Ip.Man.The.Final.Fight.2013.COMPLETE.BluRay-oOo.rar"},        
-        {"fooobar music.mp3 foobar", "music.mp3"},
+
+        {"Ip.Man.The.Final.Fight.2013.COMPLETE.BluRay-oOo - [1/7] - #34;Ip.Man.The.Final.Fight.2013.COMPLETE.BluRay-oOo.rar#34; yEnc (204/204)", 
+          "34;Ip.Man.The.Final.Fight.2013.COMPLETE.BluRay-oOo.rar"},        
+
+        {"Katatonia - Live Consternation - 04 Had to (Leave).mp3 Katatonia - Live Consternation Amsterdam [DM-320](16/19)",
+          "04 Had to (Leave).mp3"},
+
+        {"fooobar music.mp3 foobar", "fooobar music.mp3"},
         {"foobar (music-file.mp3) bla blah", "music-file.mp3"},
         {"foobar [music file.mp3] bla blah", "music file.mp3"},
         {"foobar \"music file again.mp3\" blabla", "music file again.mp3"},
         {"music.mp3 bla blah blah", "music.mp3"},
-        {"blah blah blah music.mp3", "music.mp3"},
+        {"blah blah blah music.mp3", "blah blah blah music.mp3"},
         {"blah blah music.mp3\"", "blah blah music.mp3"},
         {"blah blah music.mp3]", "blah blah music.mp3"},
 
-        {"01 Intro.mp3 (00/11) Paradise Lost yEnc", "Intro.mp3"},        
+        {"01 Intro.mp3 (00/11) Paradise Lost yEnc", "01 Intro.mp3"},        
         {"01-Intro.mp3 (00/11) Paradise Lost yEnc", "01-Intro.mp3"},
         {"\"01 Intro.mp3\" (00/11) Paradise Lost yEnc", "01 Intro.mp3"},
 
-        {"foo bar keke.mp3", "keke.mp3"},        
+        {"foo bar keke.mp3", "foo bar keke.mp3"},        
         {"   **** 1123nmnlullj.jpg", "1123nmnlullj.jpg"},
         {"\"(03) 03 - ALL HAIL TO THE QUEEN.mp3\" yEnc", "(03) 03 - ALL HAIL TO THE QUEEN.mp3"},
         {"(6/28) nGJ6001.JPG = foobar keke", "nGJ6001.JPG"},
@@ -462,6 +471,8 @@ void test_find_filename()
         {"blah blah blah ----image.jpeg", "image.jpeg"},
         {"blah blah ----image.jpeg----", "image.jpeg"},
 
+        {".pdf", ""},
+
         {"", ""},
         {"foobar kekeke herp derp", ""},
         {".pdf foobar", ""},
@@ -474,6 +485,12 @@ void test_find_filename()
     for (const auto& it : tests)
     {
         const auto& ret = nntp::find_filename(it.str, std::strlen(it.str));
+
+        std::cout << std::endl;
+        std::cout << "Test: " << it.str << std::endl;
+        std::cout << "Found: " << ret << std::endl;
+        std::cout << "Wanted: " << it.expected << std::endl;
+
         BOOST_REQUIRE(ret == it.expected);
     }
 }

@@ -53,6 +53,11 @@
        </item>
        <item>
         <property name="text">
+         <string>${archive.name}</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
          <string>${archive.path}</string>
         </property>
        </item>
@@ -91,6 +96,11 @@
        <item>
         <property name="text">
          <string>${archive.file}</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>${archive.name}</string>
         </property>
        </item>
        <item>
@@ -137,6 +147,11 @@
        </item>
        <item>
         <property name="text">
+         <string>${archive.name}</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
          <string>${archive.path}</string>
         </property>
        </item>
@@ -175,6 +190,11 @@
        <item>
         <property name="text">
          <string>${archive.file}</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>${archive.name}</string>
         </property>
        </item>
        <item>

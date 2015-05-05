@@ -53,9 +53,13 @@ bool evaluateOp(const QString& lhs, const QString& op, const QString& rhs)
     else if (op == "not equals")
         return lhs != rhs;
     else if (op == "contains")
-        return lhs.contains(rhs) != -1;
+        return lhs.contains(rhs);
     else if (op == "not contains")
-        return lhs.contains(rhs) == -1;
+        return !lhs.contains(rhs);
+    else if (op == "ends with")
+        return lhs.endsWith(rhs);
+    else if (op == "starts with")
+        return lhs.startsWith(rhs);
 
     return false;
 }
@@ -65,7 +69,7 @@ bool Commands::Condition::evaluate(const app::FileInfo& info) const
     QString lhs;
     if (lhs_ == "file.type")
         lhs = toString(info.type);
-    else if (lhs_ == "file.file")
+    if (lhs_ == "file.file")
         lhs = QDir::toNativeSeparators(info.path + "/" + info.name);
     else if (lhs_ == "file.name")
         lhs = info.name;
@@ -89,8 +93,10 @@ bool Commands::Condition::evaluate(const app::Archive& arc) const
     QString lhs;
     if (lhs_ == "archive.path")
         lhs = arc.path;
-    else if (lhs_ == "archive.file")
+    else if (lhs_ == "archive.name")
         lhs = arc.file;
+    else if (lhs == "archive.file")
+        lhs = QDir::toNativeSeparators(arc.path + "/" + arc.file);
     else if (lhs_ == "archive.success")
         lhs = toString(arc.state == Archive::Status::Success);
 
@@ -220,8 +226,10 @@ void Commands::Command::onUnpack(const app::Archive& arc)
     {
         if (item == "${archive.path}")
             args << arc.path;
-        else if (item == "${archive.file}")
+        else if (item == "${archive.name}")
             args << arc.file;
+        else if (item== "${archive.file}")
+            args << QDir::toNativeSeparators(arc.path + "/" + arc.file);
         else args << item;
     }
     if (!QProcess::startDetached(exec_, args))
@@ -253,8 +261,10 @@ void Commands::Command::onRepair(const app::Archive& arc)
     {
         if (item == "${archive.path}")
             args << arc.path;
-        else if (item == "${archive.file}")
+        else if (item == "${archive.name}")
             args << arc.file;
+        else if (item == "${archive.file}")
+            args << QDir::toNativeSeparators(arc.path + "/" + arc.file);
         else args << item;
     }
     if (!QProcess::startDetached(exec_, args))

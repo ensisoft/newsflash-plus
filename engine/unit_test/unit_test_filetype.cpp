@@ -37,6 +37,7 @@ int test_main(int, char*[])
     BOOST_REQUIRE(n::find_filetype("foobar.mpeg") == t::video);
     BOOST_REQUIRE(n::find_filetype("foobar.part001.rar") == t::archive);
     BOOST_REQUIRE(n::find_filetype("Battlefield_Bad_Company_2_NTSC_XBOX360-CCCLX_packed.exe") == t::other);
+    BOOST_REQUIRE(n::find_filetype("Darkstar - Heart of Darkstar - File 07 of 10 - Darkstar_Heart of Darkness_07_The Dream (Scene 2).mp3 (01/11)") == t::audio);
 
     BOOST_REQUIRE(n::find_filetype("movie.mkv.jpg") == t::image);
 

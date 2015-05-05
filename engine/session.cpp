@@ -702,6 +702,11 @@ void session::change_group(std::string name)
     send_.emplace_back(new group(std::move(name)));
 }
 
+void session::retrieve_group_info(std::string name)
+{
+    send_.emplace_back(new group(std::move(name)));
+}
+
 void session::retrieve_article(std::string messageid)
 {
     send_.emplace_back(new body(std::move(messageid)));

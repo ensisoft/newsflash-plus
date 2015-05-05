@@ -415,6 +415,8 @@ void connection::execute::xperform()
         if (err != session::error::none)
             throw exception(connection::error::no_permission, "no permission");
 
+        cmdlist->receive_data_buffer(std::move(content));
+
         // if the session is pipelined there's no way to stop the data transmission
         // of already pipelined commands other than by doing a hard socket reset.
         // if the session is not pipelined we can just exit the reading loop after 
@@ -429,7 +431,6 @@ void connection::execute::xperform()
             session->clear();
             return;
         }
-        cmdlist->receive_data_buffer(std::move(content));
     }    
 
     LOG_I("Cmdlist complete");

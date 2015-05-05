@@ -127,8 +127,8 @@ namespace newsflash
             }
             else if (cmdtype_ == type::groupinfo)
             {
-                ASSERT(!groups_.empty());
-                ses.change_group(groups_[0]);
+                assert(!groups_.empty());
+                ses.retrieve_group_info(groups_[0]);
             }
             else
             {

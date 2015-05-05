@@ -39,13 +39,13 @@ QString filepattern(FileType type)
             Q_ASSERT(!"none is not a valid filetype");
             break;
         case FileType::Audio:
-            return ".mp3 | .mp2 | .wav | .ogg | .xm | .flac | .m3u | .mpa";
+            return ".mp3 | .mp2 | .wav | .ogg | .xm | .flac | .m3u | .pls | .mpa";
         case FileType::Video:
             return ".avi | .mkv | .ogm | .wmv | .wma | .mpe?g | .rm | .mov | .flv | .asf | .mp4 | .3gp | .3g2 | .m4v";
         case FileType::Image:
             return ".jpe?g | .bmp | .png | .gif";
         case FileType::Text:
-            return ".txt | .nfo | .sfv | .log | .nzb | .srr";
+            return ".txt | .nfo | .sfv | .log | .nzb | .srr | .rft";
         case FileType::Archive:
             return ".zip | .rar | .7z | .r\\d{1,3} | .\\d{2}";
         case FileType::Parity:
