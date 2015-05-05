@@ -238,6 +238,8 @@ namespace newsflash
         // open a filemap to the given file.
         void open(std::string file);
 
+        void close();
+
         enum buffer_flags {
             buf_read  = 1 << 0,
             buf_write = 1 << 1

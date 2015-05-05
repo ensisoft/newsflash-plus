@@ -310,7 +310,7 @@ void Engine::loadState(Settings& s)
     const auto discard   = s.get("engine", "discard_text", true);
     const auto secure    = s.get("engine", "prefer_secure", true);
     const auto throttle  = s.get("engine", "throttle", false);
-    const auto throttleval = s.get("engine", "throttle_value", 0);
+    const auto throttleval = s.get("engine", "throttle_value", 5 * 1024);
     connect_ = s.get("engine", "connect", true);
 
     engine_->set_overwrite_existing_files(overwrite);

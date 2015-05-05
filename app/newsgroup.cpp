@@ -211,6 +211,12 @@ NewsGroup::~NewsGroup()
     {
         g_engine->killAction(task_);
     }
+
+    for (auto& cat : catalogs_)
+    {
+        cat.close();
+    }
+
     for (const auto& b : blocks_)
     {
         if (!b.purge) 

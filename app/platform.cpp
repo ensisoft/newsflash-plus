@@ -37,6 +37,7 @@
 #  include <Shellapi.h> // for ExtractIconEx
 #  pragma comment(lib, "Shell32.lib")
 #  pragma comment(lib, "Gdi32.lib")
+#  pragma comment(lib, "Advapi32.lib") // for ProcessToken functions
 #endif
 #if defined(LINUX_OS)
 #  include <sys/vfs.h>

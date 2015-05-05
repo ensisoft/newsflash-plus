@@ -104,8 +104,15 @@ namespace newsflash
 
     private:
         using clock_t = std::chrono::steady_clock;
+#if defined(__MSVC__)
+        // msvc2013 returns this type from steady_clock::now
+        // instead of time_point<steady_clock> and then there are no conversion
+        // operators between these two unrelated types.
+        using point_t = std::chrono::time_point < std::chrono::system_clock > ;
+#else
         using point_t = std::chrono::time_point<clock_t>;
-
+#endif
+       
         std::size_t millis() const 
         {
             const auto now  = clock_t::now();

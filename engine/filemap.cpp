@@ -185,6 +185,12 @@ void filemap::open(std::string file)
     filename_ = std::move(file);
 }
 
+void filemap::close()
+{
+    mapper_.reset(); 
+    filename_.clear();
+}
+
 void* filemap::map_ptr(std::size_t offset, std::size_t size)
 {
     const auto end = offset + size;

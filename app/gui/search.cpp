@@ -32,7 +32,7 @@
 #include "searchmodule.h"
 #include "nzbfile.h"
 #include "dlgmovie.h"
-//#include "dlgwildcards.h"
+#include "dlgwildcards.h"
 #include "../debug.h"
 #include "../search.h"
 #include "../settings.h"
@@ -336,8 +336,8 @@ void Search::on_editSearch_returnPressed()
 
 void Search::on_lblWildcard_linkActivated(QString)
 {
-    //DlgWildcards dlg(this);
-    //dlg.exec();
+    DlgWildcards dlg(this);
+    dlg.exec();
 }
 
 void Search::tableview_selectionChanged()

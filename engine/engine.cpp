@@ -134,7 +134,7 @@ struct engine::state {
     bool started;
     bool group_items;
     bool repartition_task_list;
-
+    bool quit_pump_loop;
 
     engine::on_error on_error_callback;
     engine::on_file  on_file_callback;
@@ -200,6 +200,7 @@ struct engine::state {
             std::lock_guard<std::mutex> lock(mutex);
             actions.emplace(a);
             on_notify_callback();
+            quit_pump_loop = true;
         }
         else
         {
@@ -1919,11 +1920,15 @@ bool engine::pump()
 //         LOG_D("Pumping all ", num_actions, " currently completed actions");
 //     }
 // #endif
+    state_->quit_pump_loop = false;
 
     set_thread_log(state_->logger.get());
 
     for (;;)
     {
+        if (state_->quit_pump_loop)
+            break;
+
         std::unique_ptr<action> action = state_->get_action();
         if (!action)
             break;
