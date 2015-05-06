@@ -172,6 +172,8 @@ void Commands::Command::onFile(const app::FileInfo& file)
     {
         ERROR("Failed to execute command %1", exec_);
     }
+
+    DEBUG("Execute command %1", exec_);
 }
 
 void Commands::Command::onFilePack(const app::FilePackInfo& pack)
@@ -202,6 +204,8 @@ void Commands::Command::onFilePack(const app::FilePackInfo& pack)
     {
         ERROR("Failed to execute command %1", exec_);
     }
+
+    DEBUG("Execute command %1", exec_);    
 }
 
 void Commands::Command::onUnpack(const app::Archive& arc)
@@ -237,6 +241,8 @@ void Commands::Command::onUnpack(const app::Archive& arc)
         ERROR("Failed to execute command %1", exec_);
     }
 
+    DEBUG("Execute command %1", exec_);    
+
 }
 
 void Commands::Command::onRepair(const app::Archive& arc)
@@ -271,6 +277,8 @@ void Commands::Command::onRepair(const app::Archive& arc)
     {
         ERROR("Failed to execute command %1", exec_);
     }
+
+    DEBUG("Execute command %1", exec_);        
 }
 
 
@@ -358,6 +366,7 @@ void Commands::saveState(Settings& settings)
 
 void Commands::firstLaunch()
 {
+
 #if defined(LINUX_OS)
     Command vlc("/usr/bin/vlc", "${file.file}", "Play video files in a video player.",
         Condition("file.type", "equals", toString(FileType::Video)));
@@ -404,7 +413,18 @@ void Commands::firstLaunch()
         foobar.setWhen(Command::When::OnFileDownload);
         commands_.push_back(foobar);
     }
+
 #endif    
+
+    QString joiner = distdir::file("join");
+#if defined(WINDOWS_OS)
+    joiner.append(".exe");
+#endif
+
+    Command join(joiner, "--folder ${archive.path} --cleanup",
+        "Join .001, .002... files together.");
+    join.setWhen(Command::When::OnArchiveRepair);
+    commands_.push_back(join);
 }
 
 void Commands::fileCompleted(const app::FileInfo& info)

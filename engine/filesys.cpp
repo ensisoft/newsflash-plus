@@ -32,7 +32,8 @@
 
 namespace bfs = boost::filesystem;
 
-namespace {
+namespace fs
+{
 
 #if defined(WINDOWS_OS)
 bool is_illegal_filename_char(int c)
@@ -83,11 +84,6 @@ bool is_illegal_filepath_char(int c)
 
 #endif
 
-} // namespace
-
-
-namespace fs
-{
 
 std::string remove_illegal_filename_chars(std::string name)
 {

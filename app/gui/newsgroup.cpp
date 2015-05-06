@@ -28,6 +28,7 @@
 #  include <QtGui/QToolBar>
 #  include <QtGui/QMenu>
 #  include <QtGui/QPixmap>
+#  include <QtGui/QKeyEvent>
 #  include <QFile>
 #  include <QFileInfo>
 #  include <QDir>
@@ -60,6 +61,7 @@ NewsGroup::NewsGroup(quint32 acc, QString path, QString name) : account_(acc), p
     ui_.tableView->setColumnWidth((int)Cols::DownloadFlag, 32);
     ui_.tableView->setColumnWidth((int)Cols::BrokenFlag, 32);
     ui_.tableView->setColumnWidth((int)Cols::BookmarkFlag, 32);
+    ui_.tableView->installEventFilter(this);
     ui_.progressBar->setVisible(false);
     ui_.loader->setVisible(false);
     ui_.actionRefresh->setShortcut(QKeySequence::Refresh);
@@ -569,14 +571,15 @@ void NewsGroup::downloadToPrevious()
     downloadSelected(folder);
 }
 
-void NewsGroup::selectionChanged(const QItemSelection& next, const QItemSelection& prev)
+void NewsGroup::selectionChanged(const QItemSelection& selected, const QItemSelection& deselected)
 {
     // store the currently selected list of items
     // so we can restore it later.
-    model_.select(next.indexes(), true);
-    model_.select(prev.indexes(), false);
+    model_.select(deselected.indexes(), false);    
+    model_.select(selected.indexes(), true);
 
-    const auto empty = next.indexes().empty();
+
+    const auto empty = deselected.indexes().empty();
     ui_.actionDownload->setEnabled(!empty);
     ui_.actionBookmark->setEnabled(!empty);
     ui_.actionDelete->setEnabled(!empty);
@@ -657,6 +660,23 @@ void NewsGroup::downloadSelected(QString folder)
     Q_ASSERT(account_);
 
     model_.download(indices, account_, folder);
+}
+
+bool NewsGroup::eventFilter(QObject* recv, QEvent* event)
+{
+    if (recv != ui_.tableView)
+        return QObject::eventFilter(recv, event);
+    if (event->type() != QEvent::KeyPress)
+        return QObject::eventFilter(recv, event);
+
+    const auto* key = static_cast<QKeyEvent*>(event);
+    if (key->key() == Qt::Key_Space)
+    {
+        on_btnLoadMore_clicked();
+        return false;
+    }
+
+    return true;
 }
 
 } // gui

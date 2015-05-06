@@ -608,6 +608,7 @@ public:
         ui_.state      = states::queued;
         ui_.desc       = spec.name;
         ui_.size       = spec.size;
+        is_fillable_   = ui::is_fillable(spec);
 
         LOG_D("Task: download has ", spec.articles.size(), " articles");
         LOG_D("Task: download path: '", spec.path, "'");
@@ -616,7 +617,6 @@ public:
             std::move(spec.path), std::move(spec.name)));
 
         num_actions_total_ = task_->max_num_actions();
-        is_fillable_       = ui::is_fillable(spec);
 
         LOG_D("Task: download");
         LOG_D("Task: is_fillable: ", is_fillable_);
@@ -1099,9 +1099,15 @@ private:
         // since the completion updates only when the data is downloaded AND processed.
         //assert(num_actions_total_);
         //assert(num_actions_ready_ <= num_actions_total_);
-        ui_.completion = (double)num_actions_ready_ / (double)num_actions_total_ * 100.0;
-        if (ui_.completion > 100.0)
-            ui_.completion = 100.0;
+        if (num_actions_total_ == 0)
+            num_actions_total_ = task_->max_num_actions();
+
+        if (num_actions_total_)
+        {
+            ui_.completion = (double)num_actions_ready_ / (double)num_actions_total_ * 100.0;
+            if (ui_.completion > 100.0)
+                ui_.completion = 100.0;
+        }
 
         // if we have pending actions our state should not change
         // i.e. we're active (or possibly paused)

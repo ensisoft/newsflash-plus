@@ -27,7 +27,9 @@
 #include <newsflash/warnpop.h>
 #include <sstream>
 #include <algorithm>
+#include <stack>
 #include <cctype>
+
 #if defined(LINUX_OS)
 #  include <strings.h> // for strcasecmp
 #endif
@@ -603,9 +605,11 @@ std::uint32_t hashvalue(const char* subjectline, size_t len)
 }
 
 
-std::string find_filename(const char* str, size_t len)
+std::string find_filename(const char* str, size_t len, bool include_extension)
 {
     using namespace boost::spirit::classic;
+
+    const static boost::regex regex(REVERSE_FILE_EXTENSION_REGEX, boost::regbase::icase | boost::regbase::perl);
     
     // see if it's an yEnc subjectline match.
     {
@@ -613,10 +617,20 @@ std::string find_filename(const char* str, size_t len)
         const auto ret = parse(str, str + len,
             (*(anychar_p - '"') >> str_p("\"") >> (*(anychar_p - '"'))[assign(yenc_name)] >> str_p("\" yEnc")));
         if (ret.hit)
-            return yenc_name;
-    }
+        {
+            if (include_extension)
+                return yenc_name;
 
-    const static boost::regex regex(REVERSE_FILE_EXTENSION_REGEX, boost::regbase::icase | boost::regbase::perl);
+        }
+        using iterator = std::string::reverse_iterator;
+
+        boost::match_results<iterator> res;
+        if (regex_search(yenc_name.rbegin(), yenc_name.rend(), res, regex))
+        {
+            auto start = res[0].second;
+            yenc_name.erase(start.base());
+        }
+    }
 
     reverse_c_str_iterator itbeg(str + len - 1);
     reverse_c_str_iterator itend(str - 1);
@@ -703,7 +717,7 @@ std::string find_filename(const char* str, size_t len)
 
         struct name_pred {
 
-            name_pred() : prev_(0)
+            name_pred() : prev_(0), good_(true)
             {}
 
             bool is_allowed(int c)
@@ -712,40 +726,80 @@ std::string find_filename(const char* str, size_t len)
                 prev_ = c;
                 return ret;
             }
+            bool is_good()
+            {
+                return good_;
+            }
             bool test(int c)
             {
                 if (std::isalnum(c))
                     return true;
-                if (std::isblank(c))
-                    return true;
 
-                switch (c)
+                if (c == '_' || c == '.' || c == ' ')
                 {
-                    case '-':
-                        if (prev_ == ' ' || prev_ == '-')
-                            return false;
-                        return true;
-                    case '_':
-                    case '(':
-                    case ')':
-                       return true;    
-                    default: 
-                    break;
+                    return true;
                 }
+                else if (c == '-')
+                {
+                    if (prev_ == ' ' || prev_ == '-')
+                        return false;
+                    return true;
+                }
+                else if (c == ']' || c == ')' || c == '"')
+                {
+                    good_ = false;
+                    enclosure_.push(c);
+                    return true;
+                }
+                else if (c == '[')
+                {
+                    return test_top(']');
+                }
+                else if (c == '(')
+                {
+                    return test_top(')');
+                }
+                else if (c == '"')
+                {
+                    return test_top('"');
+                }
+
                 return false;
             }
         private:
-            int  prev_;
+            bool test_top(int expected)
+            {
+                if (enclosure_.empty())
+                    return false;
+                auto top = enclosure_.top();
+                enclosure_.pop();
+                good_ = top == expected;
+                return good_;
+            }
+
+        private:
+            int prev_;
+            bool good_;
+            std::stack<int> enclosure_;
+
         };
         name_pred pred;
 
-        // seek untill first non space or dash alphanumeric character is found
-        while (pred.is_allowed((unsigned char)*start) && start > str)
-            --start;
+        const char* good = start;
 
-        // trim leading non-alpha
-        while (!std::isalnum((unsigned char)*start) && start < dot)
-            ++start;            
+        while (pred.is_allowed((unsigned char)*start) && start > str)
+        {
+            if (pred.is_good())
+                good = start;
+            --start;
+        }
+
+        assert(good <= dot);
+
+        while ((*good == ' ') && (good < dot))
+            ++good;
+
+        start = good;
     }
 
     assert(start <= dot && dot < ext);
@@ -753,7 +807,10 @@ std::string find_filename(const char* str, size_t len)
     if (start - dot == 0)
         return "";
 
-    return std::string(start, ext-start);
+    if (include_extension)
+        return std::string(start, ext - start);
+
+    return std::string(start, dot - start);
 }
 
 std::size_t find_response(const void* buff, std::size_t size)

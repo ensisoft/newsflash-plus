@@ -1,0 +1,7 @@
+
+project joiner :
+   requirements
+   <library>/qt//QtCore
+   ;
+   
+exe join : main.cpp ;

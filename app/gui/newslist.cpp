@@ -212,6 +212,7 @@ void NewsList::on_actionBrowse_triggered()
         auto* news = new NewsGroup(account, datapath, group);
         g_win->attach(news, false, true);
         news->setProperty("newsgroup-guid", guid);        
+        news->setProperty("parent-object", QVariant::fromValue(static_cast<QObject*>(this)));
         news->load();        
     }
 }

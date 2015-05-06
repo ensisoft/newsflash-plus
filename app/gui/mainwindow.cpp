@@ -851,6 +851,7 @@ void MainWindow::on_mainTab_currentChanged(int index)
 void MainWindow::on_mainTab_tabCloseRequested(int tab)
 {
     auto* widget = static_cast<MainWidget*>(ui_.mainTab->widget(tab));
+    auto parent  = widget->property("parent-object");
 
     ui_.mainTab->removeTab(tab);
 
@@ -907,6 +908,19 @@ void MainWindow::on_mainTab_tabCloseRequested(int tab)
         widgets_.erase(it);
     }
     prepareWindowMenu();
+
+    // see if we have a parent
+    if (parent.isValid())
+    {
+        auto* p = parent.value<QObject*>();
+
+        auto it = std::find_if(std::begin(widgets_), std::end(widgets_), 
+            [&](MainWidget* w) {
+                return static_cast<QObject*>(w) == p;
+            });
+        if (it != std::end(widgets_))
+            focusWidget(*it);
+    }
 }
 
 void MainWindow::on_actionWindowClose_triggered()

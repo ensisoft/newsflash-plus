@@ -494,10 +494,13 @@ bool update::has_commands() const
 
 std::size_t update::max_num_actions() const 
 {
+    if (remote_last_ == 0)
+        return 0;
+
     const auto remote_articles = remote_last_ - remote_first_ + 1;
     const auto local_articles = local_last_ - local_first_ + 1;
-    const auto actions = (remote_articles - local_articles) / 1000;
-    return std::size_t(actions) * 2;
+    const auto num_buffers = (remote_articles - local_articles) / 1000;
+    return std::size_t(num_buffers) * 2;
 }
 
 std::string update::group() const 
@@ -523,3 +526,4 @@ std::uint64_t update::num_remote_articles() const
 }
 
 } // newsflash
+

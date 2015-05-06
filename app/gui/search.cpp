@@ -234,8 +234,9 @@ void Search::on_actionOpen_triggered()
     for (const auto& index : indices)
     {
         model_.loadItem(index, 
-            [](const QByteArray& bytes, const QString& desc) {
+            [=](const QByteArray& bytes, const QString& desc) {
                 auto* view = new NZBFile();
+                view->setProperty("parent-object", QVariant::fromValue(static_cast<QObject*>(this)));
                 g_win->attach(view, false, true);
                 view->open(bytes, desc);
             });

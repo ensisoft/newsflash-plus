@@ -53,7 +53,10 @@ namespace {
                 auto arg = list[i];
 
                 auto* combo = combos[i];
-                combo->setCurrentIndex(combo->findText(arg));
+                const auto index = combo->findText(arg);
+                if (index != -1)
+                    combo->setCurrentIndex(combo->findText(arg));
+                else combo->setEditText(arg);
             }
         }
         QString cmdString() const 

@@ -51,6 +51,8 @@ QPixmap toGrayScale(const QPixmap& p);
 
 QPixmap toGrayScale(const QString& pixmap);
 
+QString cleanPath(const QString& str);
+
 // calculate the sum of the sizes of the files in the given folder. 
 // if there are no files or the folder doesn't exist the sum is 0.
 // the operation is not recursive and only considers real files

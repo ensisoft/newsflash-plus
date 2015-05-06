@@ -44,4 +44,8 @@ std::string createpath(const std::string& path);
 
 bool exists(const std::string& path);
 
+bool is_illegal_filepath_char(int c);
+bool is_illegal_filename_char(int c);
+
+
 } // fs

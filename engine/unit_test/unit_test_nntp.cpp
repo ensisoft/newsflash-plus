@@ -440,6 +440,9 @@ void test_find_filename()
         {"Katatonia - Live Consternation - 04 Had to (Leave).mp3 Katatonia - Live Consternation Amsterdam [DM-320](16/19)",
           "04 Had to (Leave).mp3"},
 
+        {"(Uncensored) Lovely Hina Otsuka scene 3.wmv.006 yEnc (22/30)",
+          "(Uncensored) Lovely Hina Otsuka scene 3.wmv.006"},
+
         {"fooobar music.mp3 foobar", "fooobar music.mp3"},
         {"foobar (music-file.mp3) bla blah", "music-file.mp3"},
         {"foobar [music file.mp3] bla blah", "music file.mp3"},
@@ -493,6 +496,15 @@ void test_find_filename()
 
         BOOST_REQUIRE(ret == it.expected);
     }
+
+
+    BOOST_REQUIRE(nntp::find_filename(std::string("foobar [1/4] \"file.mp3\" yEnc (01/10)"), true) == "file.mp3");
+    BOOST_REQUIRE(nntp::find_filename(std::string("foobar [1/4] \"file.mp3\" yEnc (01/10)"), false) == "file");    
+
+    BOOST_REQUIRE(nntp::find_filename(std::string("blah blah ---image.jpg---"), true) == "image.jpg");
+    BOOST_REQUIRE(nntp::find_filename(std::string("blah blah ---image.jpg---"), false) == "image");
+
+
 }
 
 void test_find_response()

@@ -97,6 +97,7 @@ namespace gui
         void newHeaderDataAvailable(const QString& file);
         void updateCompleted(const app::HeaderInfo& info);
     private:
+        bool eventFilter(QObject* recv, QEvent* event);
         void downloadSelected(QString folder);
 
     private:

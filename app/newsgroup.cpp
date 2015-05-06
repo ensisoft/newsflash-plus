@@ -696,7 +696,7 @@ void NewsGroup::download(const QModelIndexList& list, quint32 acc, QString folde
     }
     else
     { 
-        path = name;
+        path = cleanPath(name);
         desc = name;
     }
 

@@ -573,8 +573,9 @@ void RSS::on_actionOpen_triggered()
     if (indices.isEmpty())
         return;
 
-    static auto callback = [](const QByteArray& bytes, const QString& desc) {
+    static auto callback = [=](const QByteArray& bytes, const QString& desc) {
         auto* view = new NZBFile();
+        view->setProperty("parent-object", QVariant::fromValue(static_cast<QObject*>(this)));
         g_win->attach(view, false);
         view->open(bytes, desc);
     };

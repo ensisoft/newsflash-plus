@@ -35,6 +35,7 @@
 #  include <QDir>
 #include <newsflash/warnpop.h>
 #include <newsflash/engine/nntp.h>
+#include <newsflash/engine/filesys.h>
 #include <newsflash/stringlib/string.h>
 #include <map>
 #include "utility.h"
@@ -58,17 +59,14 @@ QString suggestName(std::vector<std::string> subjectLines)
     for (const auto& s : subjectLines)
     {
         boost::match_results<std::string::const_iterator> res;
-        if (boost::regex_search(s, res, mov1))
-        {
-            rank[res[0]]++;
-        }
-        else if (boost::regex_search(s, res, mov2))
+        if (boost::regex_search(s, res, mov1) ||
+            boost::regex_search(s, res, mov2))
         {
             rank[res[0]]++;
         }
         else
         {
-            std::string name = nntp::find_filename(s);
+            std::string name = nntp::find_filename(s, false);
             if (!name.empty())
             {
                 boost::algorithm::erase_regex(name,  boost::regex("\\.[a-Z]{2,4}$", flags));
@@ -96,19 +94,24 @@ QString suggestName(std::vector<std::string> subjectLines)
     }
 
     // trim useless characters from the start and end
-    const char punct[] = {
-        ' ', '"', '\'', '*', '[', '-', '#', ']', '.', ':', '(',')', '!',
+    const char start_punct[] = {
+        ' ', '"', '\'', '*', '-', '#', ']', '.', ':', ')', '!',
         '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
     };
+
+    const char end_punct[] = {
+        ' ', '"', '\'', '*', '[', '-', '#', '.', ':', '(', '!',
+        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
+    };    
     
     // start of the string.
     while (!s.empty() &&
-        std::find(std::begin(punct), std::end(punct), s.front()) != std::end(punct))
+        std::find(std::begin(start_punct), std::end(start_punct), s.front()) != std::end(start_punct))
         s.erase(s.begin());
 
     // end of the string.
     while (!s.empty() && 
-        std::find(std::begin(punct), std::end(punct), s.back()) != std::end(punct))
+        std::find(std::begin(end_punct), std::end(end_punct), s.back()) != std::end(end_punct))
         s.pop_back();
 
     return fromUtf8(s);
@@ -118,6 +121,21 @@ QString joinPath(const QString& lhs, const QString& rhs)
 {
     const auto p = lhs + "/" + rhs;
     return QDir::toNativeSeparators(QDir::cleanPath(p));
+}
+
+QString cleanPath(const QString& str)
+{
+    QString ret;
+    for (int i=0; i<str.size(); ++i)
+    {
+        const auto c = str[i].unicode();
+
+        if (fs::is_illegal_filepath_char(c) ||
+            fs::is_illegal_filename_char(c))
+            continue;
+        ret.append(str[i]);
+    }
+    return ret;
 }
 
 QPixmap toGrayScale(const QPixmap& p)
