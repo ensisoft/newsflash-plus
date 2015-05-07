@@ -491,6 +491,22 @@ MainWidget* MainWindow::getWidget(std::size_t i)
     return widgets_[i];
 }
 
+void MainWindow::messageReceived(const QString& message)
+{
+    QFileInfo info(message);
+    if (!info.isFile() || !info.exists())
+        return;
+
+    DEBUG("Message received as a file path %1", message);
+
+    for (auto* m : modules_)
+    {
+        MainWidget* widget = m->dropFile(message);
+        if (widget)
+            attach(widget, false, true);
+    }
+}
+
 void MainWindow::updateMenu(MainWidget* widget)
 {
     if (widget != current_)
@@ -711,6 +727,15 @@ FindWidget* MainWindow::getFindWidget()
         findWidget = static_cast<FindWidget*>(kids[0]);
     }
     return findWidget;
+}
+
+void MainWindow::openHelp(const QString& page)
+{
+    const auto& help = app::distdir::path("help/" + page);
+    QFileInfo info(help);
+    if (info.exists())
+        app::openFile(help);
+    else app::openWeb("http://www.ensisoft.com/help/" + page);
 }
 
 
@@ -977,8 +1002,7 @@ void MainWindow::on_actionOpen_triggered()
 
 void MainWindow::on_actionHelp_triggered()
 {
-    const auto& help = app::distdir::path("help/index.html");
-    app::openFile(help);
+    openHelp("index.html");
 }
 
 void MainWindow::on_actionRegister_triggered()
@@ -1015,8 +1039,7 @@ void MainWindow::on_actionContextHelp_triggered()
 
     const auto& info = widget->getInformation();
     const auto& help = info.helpurl;
-    const auto& file = app::distdir::path("help/" + help);
-    app::openFile(file);
+    openHelp(help);
 }
 
 void MainWindow::on_actionExit_triggered()
@@ -1169,8 +1192,7 @@ void MainWindow::timerWelcome_timeout()
 
     if (showHelp)
     {
-        const auto& help = app::distdir::path("help/quick.html");
-        app::openFile(help);
+        openHelp("quick.html");
     }
 
     if (addAccount)

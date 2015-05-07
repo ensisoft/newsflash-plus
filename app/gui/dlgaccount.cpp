@@ -27,6 +27,7 @@
 #include <newsflash/warnpop.h>
 #include "dlgaccount.h"
 #include "../utility.h"
+#include "../debug.h"
 
 namespace gui
 {
@@ -199,9 +200,12 @@ void DlgAccount::on_edtName_textEdited()
         return;
 
     const auto name = ui_.edtName->text();
-    const auto path = app::joinPath(path_, name_);
+    const auto path = app::joinPath(path_, name);
     ui_.edtDataPath->setText(path);
     name_ = name;
+
+    //DEBUG("New account name is %1", name_);
+    //DEBUG("New account path is %2", path);
 }
 
 } // gui

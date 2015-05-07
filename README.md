@@ -240,6 +240,7 @@ Bugs
 - sometimes ssl connections stop working
 - unrar progress bar doesnt always work
 - shutdown not working??
+- XFEATURE breaks LIST on Astraweb
 + archive repair doesnt alwys work
 + update eta/done% is messed up
 + killing the task doesn't update headers ui 

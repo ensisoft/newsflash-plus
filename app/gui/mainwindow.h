@@ -123,6 +123,9 @@ namespace gui
 
         MainWidget* getWidget(std::size_t i);
 
+    public slots:
+        void messageReceived(const QString& msg);
+
     signals:
         void closed();
 
@@ -138,6 +141,7 @@ namespace gui
         void dragEnterEvent(QDragEnterEvent* event);
         void dropEvent(QDropEvent* event);
         FindWidget* getFindWidget();
+        void openHelp(const QString& page);
         
     private slots:
         void on_mainTab_currentChanged(int index);

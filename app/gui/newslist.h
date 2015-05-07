@@ -62,6 +62,7 @@ namespace gui
         void on_actionFavorite_triggered();
         void on_actionUnfavorite_triggered();
         void on_actionDeleteData_triggered();
+        void on_actionStop_triggered();
         void on_cmbAccounts_currentIndexChanged();
         void on_tableGroups_customContextMenuRequested(QPoint point);
         void on_tableGroups_doubleClicked(const QModelIndex& index);

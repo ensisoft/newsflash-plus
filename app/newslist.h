@@ -56,6 +56,7 @@ namespace app
         virtual int columnCount(const QModelIndex&) const override;
 
         void clear();
+        void stop(quint32 acc);
         void loadListing(const QString& file, quint32 account);
         void makeListing(const QString& file, quint32 account);
 
@@ -95,7 +96,7 @@ namespace app
         };
         struct operation {
             quint32 account;
-            quint32 batchId;
+            quint32 taskId;
             QString file;
         };
 

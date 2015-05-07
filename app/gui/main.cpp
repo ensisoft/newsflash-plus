@@ -93,12 +93,15 @@ int run(int argc, char* argv[])
         for (int i=1; i<cmds.size(); ++i)
             qtinstance.sendMessage(cmds[i]);
 
-        QMessageBox msg;
-        msg.setStandardButtons(QMessageBox::Ok);
-        msg.setIcon(QMessageBox::Information);
-        msg.setText("Another instance of " NEWSFLASH_TITLE " is already running.\r\n"
-                    "This instance will now exit.");
-        msg.exec();
+        if (cmds.size() == 1)
+        {
+            QMessageBox msg;
+            msg.setStandardButtons(QMessageBox::Ok);
+            msg.setIcon(QMessageBox::Information);
+            msg.setText("Another instance of " NEWSFLASH_TITLE " is already running.\r\n"
+                "This instance will now exit.");
+            msg.exec();
+        }
         return 0;
     }
 
@@ -156,6 +159,9 @@ int run(int argc, char* argv[])
      // main application window
     gui::MainWindow win(set);
     gui::g_win = &win;
+    QObject::connect(&qtinstance, SIGNAL(messageReceived(const QString&)),
+        &win, SLOT(messageReceived(const QString&)));
+
 
     // first power module sends initPoweroff signal
     // we ask the MainWindow to close. 

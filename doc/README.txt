@@ -13,15 +13,13 @@ make the most ouf of the software.
 
 Known Bugs:
 
-- Filter settings are not correctly applied if group is reloaded.
+- Using "Compressed headers" setting breaks refreshing the newsgroup listing.
+- Sometimes SSL connections stop working. Either restart or change to TCP.
+- Unrar progress bar doesn't always work.
 
 Known problems on Microsoft Windows XP:
 
-- If you install the application to path that has Unicode characters
-  (for example Japanese, Chinese etc), Python will not work.
-  This is a limitation of Python not Newsflash Plus.
-
-- If you download to a path that has Unicode characters 
+- If you download files to a path that has Unicode characters 
   (for example Japanese, Chinese etc), automatic par2 repair 
   and .rar extraction will not work. This is not a limitation of Newsflash Plus
   but a problem in the tools.  
@@ -39,18 +37,18 @@ Known problems on Microsoft Windows XP:
 
 
 Known problems on Linux Desktops:
+
 - If you're running Gnome sometimes not all icons (in menus and buttons) are visible.
   The fix for this is to run the following commands:
   
   gconftool-2 --type boolean --set /desktop/gnome/interface/buttons_have_icons true
   gconftool-2 --type boolean --set /desktop/gnome/interface/menus_have_icons true
 
-- GTK+ theme not working properly. (Will either complain about QGtkTheme not being able to detect them or then crash)
-
 
 Shutting down PC on Linux machines:
 
 There are several ways to attempt to shutdown the PC.
+
    1. "/sbin/shutdown" requires super user permissions. 
 
    To enable this, make a new group in /etc/group something like
@@ -66,7 +64,7 @@ There are several ways to attempt to shutdown the PC.
    the new groups are not effective, untill log off/log on is done. newgrp can be used to change
    into new group immediately.
 
-   2. use gnome-session-quit. 
+   2. use gnome-session-quit (or equivalent. Consult your Distribution docs)
    This command may not be available on the older Gnome/Ubuntu installations. Also if you run KDE you won't have it. 
    KDE probably has somethig similar.
 
@@ -80,6 +78,7 @@ There are several ways to attempt to shutdown the PC.
 
 
 Shutting down PC on Windows machines:
+
   Newsflash needs to be run with adminstrator privileges
 
 

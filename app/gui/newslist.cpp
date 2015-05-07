@@ -231,6 +231,8 @@ void NewsList::on_actionRefresh_triggered()
 
     ui_.progressBar->setMaximum(0);        
     ui_.progressBar->setVisible(true);
+    ui_.actionStop->setEnabled(true);
+    ui_.actionRefresh->setEnabled(false);
     model_.makeListing(file, account->id);        
 
 }
@@ -301,9 +303,23 @@ void NewsList::on_actionDeleteData_triggered()
     }
 }
 
+void NewsList::on_actionStop_triggered()
+{
+    Q_ASSERT(curAccount_);
+
+    model_.stop(curAccount_);
+
+    ui_.actionStop->setEnabled(false);    
+    ui_.actionRefresh->setEnabled(true);
+    ui_.progressBar->setVisible(false);
+}
+
 
 void NewsList::on_cmbAccounts_currentIndexChanged()
 {
+    ui_.actionStop->setEnabled(false);
+    ui_.actionRefresh->setEnabled(false);
+
     const auto index = ui_.cmbAccounts->currentIndex();
     if (index == -1)
         return;
@@ -332,11 +348,15 @@ void NewsList::on_cmbAccounts_currentIndexChanged()
         {
             model_.clear();
             model_.loadListing(file, acc.id);
+            ui_.actionStop->setEnabled(false);
+            ui_.actionRefresh->setEnabled(true);
         }
         else
         {
             model_.clear();
             model_.makeListing(file, acc.id);
+            ui_.actionStop->setEnabled(true);
+            ui_.actionRefresh->setEnabled(false);
         }
         return;
     }
@@ -438,6 +458,7 @@ void NewsList::makeComplete(quint32 accountId)
         return;
 
     ui_.progressBar->setVisible(false);
+    ui_.actionStop->setEnabled(false);
 
     const auto numAcccounts = app::g_accounts->numAccounts();
     for (std::size_t i=0; i<numAcccounts; ++i)

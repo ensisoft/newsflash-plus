@@ -195,6 +195,18 @@ void NewsList::clear()
     QAbstractTableModel::endResetModel();
 }
 
+void NewsList::stop(quint32 account)
+{
+    auto it = pending_.find(account);
+    if (it == std::end(pending_))
+        return;    
+
+    auto& op = it->second;
+    g_engine->killAction(op.taskId);
+
+    pending_.erase(it);
+}
+
 void NewsList::loadListing(const QString& file, quint32 accountId)
 {
     DEBUG("Loading newslist from %1", file);
@@ -260,12 +272,12 @@ void NewsList::makeListing(const QString& file, quint32 account)
     if (it != std::end(pending_))
         return;
 
-    auto batchid = g_engine->retrieveNewsgroupListing(account);
+    auto task = g_engine->retrieveNewsgroupListing(account);
 
     operation op;
     op.file    = file;
     op.account = account;
-    op.batchId  = batchid;
+    op.taskId  = task;
     pending_.insert(std::make_pair(account, op));
 
     emit progressUpdated(account, 0, 0);

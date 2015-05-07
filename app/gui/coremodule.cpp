@@ -180,9 +180,12 @@ SettingsWidget* CoreModule::getSettings()
     const auto bytes = app::MB(10);
     const auto tick  = app::KB(5);
     const auto ticks = bytes / tick;
+    const auto numTicks = throttle / tick;
     ui.sliderThrottle->setMaximum(ticks);
     ui.sliderThrottle->setMinimum(1);
-    ui.sliderThrottle->setValue(throttle / tick);
+    ui.sliderThrottle->setValue(numTicks);
+
+    ui.editThrottle->setText(app::toString(app::speed{(quint32)(numTicks * tick)}));
 
     return ptr;
 }
