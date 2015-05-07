@@ -665,6 +665,7 @@ std::string find_filename(const char* str, size_t len, bool include_extension)
     if (dot[-1] == ' ')
         return "";
 
+    const auto ext_len = ext - dot;
 
     char start_marker = 0;
     // look at the first character after the filename extension and see if it's a special
@@ -677,8 +678,8 @@ std::string find_filename(const char* str, size_t len, bool include_extension)
             start_marker = '(';
         else if (*ext == ']')
             start_marker = '[';
-        else if (*ext == '#')
-            start_marker = '#';
+        //else if (*ext == '#')
+        //    start_marker = '#';
     }
 
     if (start_marker)
@@ -717,7 +718,7 @@ std::string find_filename(const char* str, size_t len, bool include_extension)
 
         struct name_pred {
 
-            name_pred() : prev_(0), good_(true)
+            name_pred(bool parity) : prev_(0), good_(true), parity_(parity)
             {}
 
             bool is_allowed(int c)
@@ -744,6 +745,11 @@ std::string find_filename(const char* str, size_t len, bool include_extension)
                     if (prev_ == ' ' || prev_ == '-')
                         return false;
                     return true;
+                }
+                else if (c == '+')
+                {
+                    if (parity_ && std::isdigit(prev_))
+                        return true;
                 }
                 else if (c == ']' || c == ')' || c == '"')
                 {
@@ -780,14 +786,17 @@ std::string find_filename(const char* str, size_t len, bool include_extension)
         private:
             int prev_;
             bool good_;
+            bool parity_;
             std::stack<int> enclosure_;
 
         };
-        name_pred pred;
+        bool is_parity = !strncmp(dot, ".PAR2", ext_len) || !strncmp(dot, ".par2", ext_len);
+
+        name_pred pred(is_parity);
 
         const char* good = start;
 
-        while (pred.is_allowed((unsigned char)*start) && start > str)
+        while (pred.is_allowed((unsigned char)*start) && start >= str)
         {
             if (pred.is_good())
                 good = start;
@@ -796,7 +805,7 @@ std::string find_filename(const char* str, size_t len, bool include_extension)
 
         assert(good <= dot);
 
-        while ((*good == ' ') && (good < dot))
+        while ((*good == ' ' || *good == '-') && (good < dot))
             ++good;
 
         start = good;

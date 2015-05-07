@@ -46,6 +46,7 @@ message Batch {
     required string desc       = 4;
     required uint64 byte_size  = 5;
     required uint32 num_tasks  = 6;
+    required uint32 num_slices = 7;
 }
 
 message TaskList {

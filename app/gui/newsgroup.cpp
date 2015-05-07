@@ -90,6 +90,8 @@ NewsGroup::NewsGroup(quint32 acc, QString path, QString name) : account_(acc), p
         this, SLOT(modelBegReset()));
     QObject::connect(&model_, SIGNAL(modelReset()), 
         this, SLOT(modelEndReset()));
+    QObject::connect(&model_, SIGNAL(layoutChanged()),
+        this, SLOT(modelLayoutChanged()));
 
     QObject::connect(ui_.tableView->selectionModel(),
         SIGNAL(selectionChanged(const QItemSelection&, const QItemSelection&)),
@@ -573,13 +575,21 @@ void NewsGroup::downloadToPrevious()
 
 void NewsGroup::selectionChanged(const QItemSelection& selected, const QItemSelection& deselected)
 {
+    model_.select(selection_, false);
+
+    selection_ = ui_.tableView->selectionModel()->selectedRows();
+
+    model_.select(selection_, true);
+
+
     // store the currently selected list of items
     // so we can restore it later.
-    model_.select(deselected.indexes(), false);    
-    model_.select(selected.indexes(), true);
+    //model_.select(deselected.indexes(), false);    
+    //model_.select(selected.indexes(), true);
+    //const auto empty = deselected.empty();
 
+    const auto empty = selection_.empty();
 
-    const auto empty = deselected.indexes().empty();
     ui_.actionDownload->setEnabled(!empty);
     ui_.actionBookmark->setEnabled(!empty);
     ui_.actionDelete->setEnabled(!empty);
@@ -604,9 +614,23 @@ void NewsGroup::modelEndReset()
             QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
     }
 
+    selection_ = list;
+
     const auto numShown = model_.numShown();
     const auto numItems = model_.numItems();
     ui_.grpView->setTitle(app::toString("%1 (%2 / %3)", name_, app::count{numShown}, app::count{numItems}));
+
+    if (!selection_.empty())
+    {
+        const auto first = selection_[0];
+        ui_.tableView->scrollTo(first);
+    }
+}
+
+void NewsGroup::modelLayoutChanged()
+{
+    // just forward this.
+    modelEndReset();
 }
 
 void NewsGroup::newHeaderInfoAvailable(const QString& group, quint64 numLocal, quint64 numRemote)
@@ -664,19 +688,21 @@ void NewsGroup::downloadSelected(QString folder)
 
 bool NewsGroup::eventFilter(QObject* recv, QEvent* event)
 {
-    if (recv != ui_.tableView)
-        return QObject::eventFilter(recv, event);
-    if (event->type() != QEvent::KeyPress)
-        return QObject::eventFilter(recv, event);
+    Q_ASSERT(recv == ui_.tableView);
 
-    const auto* key = static_cast<QKeyEvent*>(event);
-    if (key->key() == Qt::Key_Space)
+    if (event->type() == QEvent::KeyPress)
     {
-        on_btnLoadMore_clicked();
-        return false;
+        const auto* key = static_cast<QKeyEvent*>(event);
+        if (key->key() == Qt::Key_Space)
+        {
+            on_btnLoadMore_clicked();
+        }
+        else if (key->key() == Qt::Key_Escape)
+        {
+            ui_.tableView->clearSelection();
+        }
     }
-
-    return true;
+    return false;
 }
 
 } // gui

@@ -152,6 +152,7 @@ Build par2cmdline
 
      $ cd tools/par2cmdline
      $ ./configure
+     $ sed -i 's/-g -O2/-O2/g' Makefile
      $ make
      $ cp par2 ~/coding/newsflash/dist
      $ cp par2 ~/coding/newsflash/dist_d
@@ -236,10 +237,10 @@ Bugs
 
 - batch eta is messed up
 - assertion in the engine when quitting with active update (engine.cpp:698, num_active_cmdlists_ == 0)
-- archive repair doesnt alwys work
 - sometimes ssl connections stop working
 - unrar progress bar doesnt always work
-- shutdown not working
+- shutdown not working??
++ archive repair doesnt alwys work
 + update eta/done% is messed up
 + killing the task doesn't update headers ui 
 + headers update will download faster than it can consume, needs throttling

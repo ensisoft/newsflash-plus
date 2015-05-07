@@ -107,6 +107,34 @@ FileType findFileType(const QString& filename)
     return FileType::Other;
 }
 
+FileType fileType(const QString& ext)
+{
+    struct map {
+        FileType type;
+        QString pattern;
+    } patterns[] = {
+        {FileType::Audio, filepattern(FileType::Audio)},
+        {FileType::Video, filepattern(FileType::Video)},
+        {FileType::Image, filepattern(FileType::Image)},
+        {FileType::Text,  filepattern(FileType::Text)},
+        {FileType::Archive, filepattern(FileType::Archive)},
+        {FileType::Parity, filepattern(FileType::Parity)},
+        {FileType::Document, filepattern(FileType::Document)}
+    };    
+
+    for (auto it = std::begin(patterns); it != std::end(patterns); ++it)
+    {
+        const auto& tokens = it->pattern.split("|");
+        for (int i=0; i<tokens.size(); ++i)
+        {
+            if (tokens[i].contains(ext))
+                return it->type;
+        }
+    }
+    return FileType::None;
+}
+
+
 QIcon findFileIcon(FileType type)
 {
     switch (type)

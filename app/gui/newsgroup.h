@@ -93,6 +93,7 @@ namespace gui
         void selectionChanged(const QItemSelection& sel, const QItemSelection& deSel);
         void modelBegReset();        
         void modelEndReset();
+        void modelLayoutChanged();
         void newHeaderInfoAvailable(const QString& group, quint64 numLocal, quint64 numRemote);
         void newHeaderDataAvailable(const QString& file);
         void updateCompleted(const app::HeaderInfo& info);
@@ -110,5 +111,7 @@ namespace gui
         QString name_;
     private:
         DlgFilter::Params filter_;
+    private:
+        QModelIndexList selection_;
     };
 } // gui

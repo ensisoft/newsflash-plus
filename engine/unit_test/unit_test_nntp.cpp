@@ -435,13 +435,16 @@ void test_find_filename()
             "Automata.2014.BRrip.x264.Ac3-MiLLENiUM.mkv"},
 
         {"Ip.Man.The.Final.Fight.2013.COMPLETE.BluRay-oOo - [1/7] - #34;Ip.Man.The.Final.Fight.2013.COMPLETE.BluRay-oOo.rar#34; yEnc (204/204)", 
-          "34;Ip.Man.The.Final.Fight.2013.COMPLETE.BluRay-oOo.rar"},        
+          "Ip.Man.The.Final.Fight.2013.COMPLETE.BluRay-oOo.rar"},        
 
         {"Katatonia - Live Consternation - 04 Had to (Leave).mp3 Katatonia - Live Consternation Amsterdam [DM-320](16/19)",
           "04 Had to (Leave).mp3"},
 
         {"(Uncensored) Lovely Hina Otsuka scene 3.wmv.006 yEnc (22/30)",
           "(Uncensored) Lovely Hina Otsuka scene 3.wmv.006"},
+
+        {"(Uncensored) black Gal Dance - Sakura Kiryu scene 1.wmv.vol110+110.PAR2 yEnc (01/30)",
+          "Sakura Kiryu scene 1.wmv.vol110+110.PAR2"},
 
         {"fooobar music.mp3 foobar", "fooobar music.mp3"},
         {"foobar (music-file.mp3) bla blah", "music-file.mp3"},

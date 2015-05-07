@@ -125,6 +125,10 @@ namespace app
     // try to identify file's type.
     FileType findFileType(const QString& filename);
 
+    // get filetype based on the extension.
+    // if not known returns None.
+    FileType fileType(const QString& ext);
+
     QIcon findFileIcon(FileType type);
 
 

@@ -41,6 +41,7 @@
 #include "utility.h"
 #include "settings.h"
 #include "format.h"
+#include "filetype.h"
 
 namespace app
 {
@@ -100,8 +101,8 @@ QString suggestName(std::vector<std::string> subjectLines)
     };
 
     const char end_punct[] = {
-        ' ', '"', '\'', '*', '[', '-', '#', '.', ':', '(', '!',
-        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
+        ' ', '"', '\'', '*', '[', '-', '#', '.', ':', '(', '!'
+//        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
     };    
     
     // start of the string.
@@ -114,7 +115,17 @@ QString suggestName(std::vector<std::string> subjectLines)
         std::find(std::begin(end_punct), std::end(end_punct), s.back()) != std::end(end_punct))
         s.pop_back();
 
-    return fromUtf8(s);
+    QString ret = fromUtf8(s);
+    QFileInfo nfo(ret);
+
+    const auto ext = nfo.suffix();
+    if (fileType(ext) != FileType::None)
+        ret.chop(ext.size()); 
+
+    if (ret.endsWith('.'))
+        ret.chop(1);
+
+    return ret;
 }
 
 QString joinPath(const QString& lhs, const QString& rhs)

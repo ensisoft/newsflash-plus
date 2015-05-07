@@ -140,19 +140,20 @@ void Par2::processStdOut()
         if (byte == '\r' || byte == '\n')
         {
             const auto line = widen(temp);
+            if (byte == '\n')
+            {
+                if (logFile_.isOpen())
+                {
+                    logFile_.write(temp.data());
+                    logFile_.write("\n");
+                }
+            }
+
             const auto exec = state_.getState();
             ParityChecker::File file;
             if (state_.update(line, file))
             {
                 onUpdateFile(current_, std::move(file));
-                if (byte == '\n')
-                {
-                    if (logFile_.isOpen())
-                    {
-                        logFile_.write(temp.data());
-                        logFile_.write("\n");
-                    }
-                }
             }
             if (exec == ParState::ExecState::Scan)
             {
@@ -161,7 +162,7 @@ void Par2::processStdOut()
                 if (ParState::parseScanProgress(line, file, done))
                     onScanProgress(current_, file, done);
             }
-            if (exec == ParState::ExecState::Repair)
+            else if (exec == ParState::ExecState::Repair)
             {
                 QString step;
                 float done;

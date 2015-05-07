@@ -521,6 +521,7 @@ public:
         return 0.0;
     }
 
+
     std::size_t task() const 
     { return ui_.task; }
 
@@ -1083,6 +1084,9 @@ public:
     std::uint64_t size() const
     { return ui_.size; }
 
+    double done() const 
+    { return ui_.completion; }
+
     bool is_valid() const 
     {
         return (ui_.account != 0) &&
@@ -1316,6 +1320,8 @@ class engine::batch
         ui_.task_id  = id;
         std::fill(std::begin(statesets_), std::end(statesets_), 0);        
         filebatch_  = false;
+        num_slices_ = 0;
+        num_tasks_  = 0;
     }
 
 public:
@@ -1329,15 +1335,15 @@ public:
             [](std::uint64_t val, const ui::download& next) {
                 return val + next.size;
             });
-        num_tasks_ = spec.files.size();
-        path_      = spec.path;
-        filebatch_ = true;
+        num_tasks_  = spec.files.size();
+        num_slices_ = spec.files.size();
+        path_       = spec.path;
+        filebatch_  = true;
 
         LOG_I("Batch ", ui_.batch_id, " (", ui_.desc, ") created");     
         LOG_D("Batch has ", num_tasks_, " tasks");                   
 
         statesets_[(int)states::queued] = num_tasks_;
-
     }
 
     batch(std::size_t id, const ui::listing& list) : batch(id)
@@ -1345,6 +1351,7 @@ public:
         ui_.account  = list.account;
         ui_.desc     = list.desc;
         num_tasks_   = 1;
+        num_slices_  = 1;
 
         LOG_I("Batch ", ui_.batch_id, " (", ui_.desc, ") created");     
         LOG_D("Batch has 1 task");
@@ -1357,6 +1364,7 @@ public:
         ui_.account = update.account;
         ui_.desc    = update.desc;
         num_tasks_  = 1;
+        num_slices_ = 1;
 
         LOG_I("Batch ", ui_.batch_id, " (", ui_.desc, ") created");
         LOG_D("Batch has 1 tasks");
@@ -1365,14 +1373,15 @@ public:
 
     batch(const Newsflash::Session::Batch& data) : batch(0)
     {
-        ui_.batch_id = data.batch_id();
-        ui_.task_id  = data.batch_id();
-        ui_.account  = data.account_id();
-        ui_.desc     = data.desc();
-        ui_.size     = data.byte_size();
-        num_tasks_   = data.num_tasks();
-        path_        = data.path();
-        filebatch_   = true;
+        ui_.batch_id   = data.batch_id();
+        ui_.task_id    = data.batch_id();
+        ui_.account    = data.account_id();
+        ui_.desc       = data.desc();
+        ui_.size       = data.byte_size();
+        num_slices_    = data.num_slices();
+        num_tasks_     = data.num_tasks();
+        path_          = data.path();
+        filebatch_     = true;
 
         statesets_[(int)states::queued] = num_tasks_;                
     }
@@ -1396,6 +1405,7 @@ public:
         data->set_byte_size(ui_.size);
         data->set_path(path_);                
         data->set_num_tasks(num_tasks_);
+        data->set_num_slices(num_slices_);
     }
 
     void pause(engine::state& state)
@@ -1505,6 +1515,20 @@ public:
     {
         if (ui_.state == states::active)
             ui_.runtime++;
+
+        double total = 0.0;
+
+        const double slice = 1.0 / (double)num_slices_;
+        for (auto it = std::begin(state.tasks); it != std::end(state.tasks); ++it)
+        {
+            const auto& task = *it;
+            if (task->bid() != ui_.batch_id)
+                continue;
+            double done = task->done() / 100.0;
+            total += done * slice;
+        }
+        ui_.completion  = total * 100.0;     
+        ui_.completion += (num_slices_ - num_tasks_) * slice * 100.0;
     }
 
     std::size_t id() const 
@@ -1583,6 +1607,7 @@ private:
 private:
     ui::task ui_;
 private:
+    std::size_t num_slices_;
     std::size_t num_tasks_;
     std::size_t statesets_[7];
     std::string path_;
