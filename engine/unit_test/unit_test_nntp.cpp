@@ -444,7 +444,7 @@ void test_find_filename()
           "(Uncensored) Lovely Hina Otsuka scene 3.wmv.006"},
 
         {"(Uncensored) black Gal Dance - Sakura Kiryu scene 1.wmv.vol110+110.PAR2 yEnc (01/30)",
-          "Sakura Kiryu scene 1.wmv.vol110+110.PAR2"},
+          "(Uncensored) black Gal Dance - Sakura Kiryu scene 1.wmv.vol110+110.PAR2"},
 
         {"fooobar music.mp3 foobar", "fooobar music.mp3"},
         {"foobar (music-file.mp3) bla blah", "music-file.mp3"},

@@ -151,6 +151,9 @@ NOTE: I have edited the CMakeList.txt to have a custom Qt path.
 Build par2cmdline
 
      $ cd tools/par2cmdline
+     $ aclocal
+     $ automake --add-missing
+     $ autoconf
      $ ./configure
      $ sed -i 's/-g -O2/-O2/g' Makefile
      $ make

@@ -718,7 +718,7 @@ std::string find_filename(const char* str, size_t len, bool include_extension)
 
         struct name_pred {
 
-            name_pred(bool parity) : prev_(0), good_(true), parity_(parity)
+            name_pred(bool parity) : prev_(0), dash_(false), good_(true), parity_(parity)
             {}
 
             bool is_allowed(int c)
@@ -734,7 +734,11 @@ std::string find_filename(const char* str, size_t len, bool include_extension)
             bool test(int c)
             {
                 if (std::isalnum(c))
+                {
+					if (prev_ == '-')
+					    good_ = true;
                     return true;
+				}
 
                 if (c == '_' || c == '.' || c == ' ')
                 {
@@ -742,8 +746,14 @@ std::string find_filename(const char* str, size_t len, bool include_extension)
                 }
                 else if (c == '-')
                 {
-                    if (prev_ == ' ' || prev_ == '-')
-                        return false;
+                    if (prev_ == ' ' || prev_ == '-')                    
+                    {
+						if (dash_ == true)
+						    return false;
+						    
+						good_ = false;
+						dash_ = true;
+					}
                     return true;
                 }
                 else if (c == '+')
@@ -785,6 +795,7 @@ std::string find_filename(const char* str, size_t len, bool include_extension)
 
         private:
             int prev_;
+            bool dash_;
             bool good_;
             bool parity_;
             std::stack<int> enclosure_;
