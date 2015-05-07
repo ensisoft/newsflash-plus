@@ -67,7 +67,7 @@ WebEngine::~WebEngine()
         DEBUG("WebEngine has %1 pending queries...", queries_.size());
 
         for (auto& query : queries_)
-            query.abort();
+            query->abort();
     }
 
     DEBUG("WebEngine deleted");
@@ -75,15 +75,18 @@ WebEngine::~WebEngine()
 
 WebQuery* WebEngine::submit(WebQuery query)
 {
-    queries_.push_back(std::move(query));
-    auto& back = queries_.back();
+    std::unique_ptr<WebQuery> q(new WebQuery(std::move(query)));
+
+    WebQuery* ret = q.get();
+
+    queries_.push_back(std::move(q));
 
     timer_.setInterval(1000);
     timer_.start();
     if (queries_.size() == 1)
         heartbeat();
 
-    return &back;
+    return ret;
 }
 
 void WebEngine::finished(QNetworkReply* reply)
@@ -92,7 +95,7 @@ void WebEngine::finished(QNetworkReply* reply)
     for (; it != std::end(queries_); ++it)
     {
         auto& query = *it;
-        if (query.receive(*reply))
+        if (query->receive(*reply))
             break;
     }        
     ENDCHECK(queries_, it);
@@ -105,19 +108,19 @@ void WebEngine::heartbeat()
 {
     // first see if there's a new query to be submitted.
     auto it = std::find_if(std::begin(queries_), std::end(queries_),
-        [](const WebQuery& query) {
-            return !query.isActive() && !query.isAborted();
+        [](const std::unique_ptr<WebQuery>& query) {
+            return !query->isActive() && !query->isAborted();
         });
     if (it != std::end(queries_))
     {
         auto& query = *it;
-        query.submit(qnam_);
+        query->submit(qnam_);
     }
 
     // remove queries that were aborted before being submitted.
     auto end = std::remove_if(std::begin(queries_), std::end(queries_),
-        [&](const WebQuery& query) {
-            return query.isAborted();
+        [&](const std::unique_ptr<WebQuery>& query) {
+            return query->isAborted();
         });
     queries_.erase(end, std::end(queries_));
 
@@ -131,18 +134,18 @@ void WebEngine::heartbeat()
     for (auto it = std::begin(queries_); it != std::end(queries_); )
     {
         auto& query = *it;
-        if (!query.isActive())
+        if (!query->isActive())
         {
             ++it;
             continue;
         }
-        if (query.tick())
+        if (query->tick())
         {
             ++it;
             continue;
         }
 
-        query.abort();
+        query->abort();
         it = queries_.erase(it);
     }
 

@@ -31,6 +31,7 @@
 #  include <QUrl>
 #include <newsflash/warnpop.h>
 #include <functional>
+#include <memory>
 #include <list>
 
 namespace app
@@ -58,7 +59,7 @@ namespace app
     private:
         QNetworkAccessManager qnam_;
         QTimer timer_;
-        std::list<WebQuery> queries_;
+        std::list<std::unique_ptr<WebQuery>> queries_;
     };
 
     extern WebEngine* g_web;
