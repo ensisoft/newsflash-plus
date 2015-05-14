@@ -184,9 +184,30 @@ QString getPlatformName()
 
     // http://msdn.microsoft.com/en-us/library/ms724833(v=VS.85).aspx
     // major versions
-    if (info.dwMajorVersion == 6)
+    if (info.dwMajorVersion == 10)
     {
-        if (info.dwMinorVersion == 1)
+        if (info.dwMinorVersion == 0)
+        {
+            if (info.productType == VER_NT_WORKSTATION)
+                ret = "Windows 10 Insider Preview";
+            else ret = "Windows Server Techncial Preview";
+        }
+    }
+    else if (info.dwMajorVersion == 6)
+    {
+        if (info.dwMinorVersion == 3)
+        {
+            if (info.wProducType == VER_NT_WORKSTATION)
+                ret = "Windows 8.1";
+            else ret = "Windows Server 2012 R2";
+        }
+        else if (info.dwMinorVersion == 2)
+        {
+            if (info.wProductType == VER_NT_WORKSTATION)
+                ret = "Windows 8";
+            else ret = "Windows Server 2012";
+        }
+        else if (info.dwMinorVersion == 1)
         {
             if (info.wProductType == VER_NT_WORKSTATION)
                 ret = "Windows 7";
@@ -194,9 +215,9 @@ QString getPlatformName()
         }
         else if (info.dwMinorVersion == 0)
         {
-            if (info.wProductType != VER_NT_WORKSTATION)
-                ret = "Windows Server 2008";
-            else ret = "Windows Vista";
+            if (info.wProductType == VER_NT_WORKSTATION)
+                ret = "Windows Vista"; 
+            else ret = "Windows Server 2008";
         }
     }
     else if (info.dwMajorVersion == 5)

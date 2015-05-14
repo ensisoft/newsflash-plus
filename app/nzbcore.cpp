@@ -72,6 +72,8 @@ void NZBCore::downloadNzbContents(const QString& file, const QString& basePath, 
     QByteArray nzb = io.readAll();
     DEBUG("Read %1 bytes", nzb.size());
 
+    io.close();
+
     if (g_engine->downloadNzbContents(account, basePath, path, desc, nzb))
     {
         switch (action_)
