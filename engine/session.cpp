@@ -325,7 +325,8 @@ public:
         {
             // the output buffer only carries meta information
             // i.e. that there was no content data available.
-            if (comment.str.find("dmca") != std::string::npos)
+            if (comment.str.find("dmca") != std::string::npos ||
+                comment.str.find("DMCA") != std::string::npos)
                 out.set_status(buffer::status::dmca);
             else out.set_status(buffer::status::unavailable);
 
