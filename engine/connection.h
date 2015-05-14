@@ -122,14 +122,22 @@ namespace newsflash
             std::size_t get_tid() const 
             { return tid_; }
 
+            // get the total number of data bytes transferred (downloaded)
+            // from the server. this includes some protocol data.
             std::size_t get_bytes_transferred() const
             { return bytes_; }
+
+            // get the total number of content bytes transferred (downloaded)
+            // from the server. this is only the payload data.
+            std::size_t get_content_transferred() const 
+            { return content_; }
 
         private:
             std::shared_ptr<state> state_;
             std::shared_ptr<cmdlist> cmds_;
             std::size_t tid_;
             std::size_t bytes_;
+            std::size_t content_;
         };
 
         class disconnect : public action

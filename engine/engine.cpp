@@ -1087,12 +1087,17 @@ public:
     double done() const 
     { return ui_.completion; }
 
+    bitflag<ui::task::errors> errors() const 
+    { return ui_.error; }
+
     bool is_valid() const 
     {
         return (ui_.account != 0) &&
                (ui_.task_id != 0) &&
                (ui_.batch_id != 0);
     }
+
+
 
 private:
     transition update_completion(engine::state& state)
@@ -1492,6 +1497,8 @@ public:
 
     void update(engine::state& state, const task& t, const task::transition& s)
     {
+        ui_.error |= t.errors();
+
         leave_state(t, s.previous);
         enter_state(t, s.current);
         update(state);
@@ -1968,10 +1975,10 @@ bool engine::pump()
         {
             auto cmds  = e->get_cmdlist();
             auto tid   = e->get_tid();
-            auto bytes = e->get_bytes_transferred();
+            auto bytes = e->get_content_transferred(); //e->get_bytes_transferred();
             if (cmds->cmdtype() == cmdlist::type::body)
             {
-                if (state_->on_quota_callback)
+                if (state_->on_quota_callback && bytes)
                     state_->on_quota_callback(bytes, cmds->account());
             }
 

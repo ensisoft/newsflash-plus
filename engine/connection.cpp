@@ -250,8 +250,11 @@ void connection::initialize::xperform()
 
 }
 
-connection::execute::execute(std::shared_ptr<state> s, std::shared_ptr<cmdlist> cmd, std::size_t tid) : state_(s), cmds_(cmd), tid_(tid), bytes_(0)
-{}
+connection::execute::execute(std::shared_ptr<state> s, std::shared_ptr<cmdlist> cmd, std::size_t tid) : state_(s), cmds_(cmd), tid_(tid)
+{
+    bytes_   = 0;
+    content_ = 0;
+}
 
 void connection::execute::xperform()
 {
@@ -409,6 +412,8 @@ void connection::execute::xperform()
             bytes_ += bytes;
         }
         while (!session->recv_next(recvbuf, content));
+
+        content_ += content.content_length();
 
         // todo: is this oK? (in case when quota finishes..??)
         const auto err = session->get_error();
