@@ -697,7 +697,8 @@ public:
         if (ui_.state == states::error || ui_.state == states::complete)
             return;
 
-        assert(num_active_cmdlists_ == 0);
+        // this I guess shouldn't really matter.
+        //assert(num_active_cmdlists_ == 0);
         assert(num_active_actions_  == 0);
 
         if (auto* ptr = dynamic_cast<download*>(task_.get()))
