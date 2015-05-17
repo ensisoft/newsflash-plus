@@ -45,6 +45,7 @@ CREATE TABLE `newsflash2` (
        `license`     VARCHAR(64),
        `paypalref`   VARCHAR(20),
        `contributor` VARCHAR(255),
+       `euro`        FLOAT,
        PRIMARY KEY(`fingerprint`)
        );
 
