@@ -408,7 +408,7 @@ WebQuery* Newznab::importList(ImportCallback cb)
             if (fields.isEmpty())
                 continue;
             const auto& host = fields[0];
-            if (host.startsWith("http://"))
+            if (host.startsWith("http://") || host.startsWith("https://"))
                 list.hosts.push_back(host);
         }
         list.success = true;
