@@ -19,7 +19,9 @@
 // THE SOFTWARE.
 
 #include <newsflash/config.h>
-#include <boost/test/minimal.hpp>
+#include <newsflash/warnpush.h>
+#  include <boost/test/minimal.hpp>
+#include <newsflash/warnpop.h>
 #include "../unrar.h"
 
 int test_main(int, char* argv[])
@@ -36,11 +38,25 @@ int test_main(int, char* argv[])
 
         int done;
         BOOST_REQUIRE(app::Unrar::parseProgress(
-             "...         sonido-hawking-1080p.mkv                                    ....  4....  5",
+             "...         sonido-hawking-1080p.mkv                                    ....  4....  5%",
              name, done));
         BOOST_REQUIRE(name == "sonido-hawking-1080p.mkv");
-        BOOST_REQUIRE(done == 4);
-        
+        BOOST_REQUIRE(done == 5);
+
+        BOOST_REQUIRE(app::Unrar::parseProgress(
+            "...         sonido - hawking - 1080p.mkv                                    ....  4....  5%",           
+            name, done));
+        BOOST_REQUIRE(name == "sonido - hawking - 1080p.mkv");
+        BOOST_REQUIRE(done == 5);
+
+        BOOST_REQUIRE(app::Unrar::parseProgress(
+            "...         4757chap7447ie73375/CHAPPIE (2015)/QoQ-sbuSLN.462x.0.2DD.LD-BEW.p0801.5102.eippahC.mkv     .... 16%",
+            name, done));
+        BOOST_REQUIRE(name == "QoQ-sbuSLN.462x.0.2DD.LD-BEW.p0801.5102.eippahC.mkv");
+        BOOST_REQUIRE(done == 16);
+
+
+
     }
     
     // {

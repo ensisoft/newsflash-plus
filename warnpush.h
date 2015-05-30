@@ -37,5 +37,7 @@
 #  pragma GCC diagnostic push 
 #  pragma GCC diagnostic ignored "-Wunused-local-typedefs"
 #  pragma GCC diagnostic ignored "-Wlong-long"
+// GCC 5.1.0 with boost 1_51_0
+#  pragma GCC diagnostic ignored "-Wdeprecated-declarations" 
 #endif
 

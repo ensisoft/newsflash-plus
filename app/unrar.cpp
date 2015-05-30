@@ -178,6 +178,11 @@ QStringList Unrar::findArchives(const QStringList& fileNames) const
     return Unrar::findVolumes(fileNames);
 }
 
+    // \D matches a non-digit
+    // \d matches a digit
+    // \S matches non-whitespace character
+    // \s matches white space character
+
 bool Unrar::parseMessage(const QString& line, QString& msg)
 {
     QStringList captures;
@@ -208,13 +213,39 @@ bool Unrar::parseVolume(const QString& line, QString& volume)
 bool Unrar::parseProgress(const QString& line, QString& file, int& done)
 {
     QStringList captures;
-    if (isMatch(line, "\\s+(\\S+)\\D+(\\d+)", captures, 2))
+    if (!isMatch(line, "(\\d+)%$", captures, 1))
+        return false;
+
+    QString str;
+    const auto slash = line.lastIndexOf('/');
+    if (slash != -1)
     {
-        file = captures[0];
-        done = captures[1].toInt();
-        return true;
+        str = line.mid(slash + 1);
     }
-    return false;
+    else
+    {
+        int mid = 0;
+        for (;  mid< line.size(); ++mid)
+        {
+            if (!(line[mid] == ' ' || line[mid] == '.'))
+                break;
+        }
+        str = line.mid(mid);
+    }
+
+    int chop = str.size() -1 ;
+    for (; chop >= 0; chop--)
+    {
+        const auto next = str[chop];
+        if (!(next == ' ' || next == '.' || next == '%' || next.isDigit()))
+            break;
+    }
+    chop = str.size() - (chop + 1);
+    str.chop(chop);
+
+    done = captures[0].toInt();
+    file = str;
+    return true;
 }
 
 bool Unrar::parseTermination(const QString& line)
