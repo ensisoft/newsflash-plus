@@ -1,3 +1,0 @@
-
-
-unit-test unit_test_python : unit_test_python.cpp /pylib//py ;

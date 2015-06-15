@@ -1,3 +1,0 @@
-project msglib ;
-
-build-project "unit_test" ;
