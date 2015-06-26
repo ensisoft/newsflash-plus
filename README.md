@@ -77,6 +77,7 @@ Building for Linux
 
 Start by cloning the source
 
+```
    $ cd ~
    $ mkdir coding
    $ cd coding
@@ -84,16 +85,19 @@ Start by cloning the source
    $ cd newsflash
    $ mkdir dist_d
    $ mkdir dist
+```
 
 
 Download and extract boost package boost_1_51_0, then build and install boost.build
 
+```
     $ tar -zxvvf boost_1_51_0.tar.gz
     $ cd boost_1_51_0/tools/build/v2/
     $ ./bootstrap.sh
     $ sudo ./b2 install
     $ bjam --version
     Boost.Build 2011.12-svn
+```
 
 Install the required packages for building Qt
 
@@ -112,11 +116,13 @@ Install the required packages for building Qt
 Download and extract Qt everywhere and build it. Note that you must have XRender and fontconfig
 for nice looking font rendering in Qt.
 
+```
     $ tar -zxvvf qt-everywhere-opensource-src-4.8.6.tar.gz
     $ cd qt-everywhere-opensource-src-4.8.6
     $ ./configure --prefix=~coding/qt-4.8.6 --no-qt3support --no-webkit
     $ make
     $ make install
+```
 
 NOTE: if you get this Cryptic error:
 "bash: ./configure: /bin/sh^M: bad interpreter: No such file or directory" 
@@ -126,11 +132,14 @@ and configure will fail with some other cryptic error such as "no make or gmake 
 
 Build zlib
 
+```
     $ cd zlib
     $ bjam release
+```    
 
 Build protobuf
 
+```
     $ cd protobuf
     $ ./configure
     $ make
@@ -140,17 +149,21 @@ Build protobuf
     $ cp src/protoc ~/coding/newsflash/engine/
     $ cd ~/coding/newsflash/engine/
     $ ./protoc session.proto --cpp_out=.
+```    
 
 Build qjson
 
 NOTE: I have edited the CMakeList.txt to have a custom Qt path. 
 
+```
     $ cd qjson
     $ cmake -G "Unix Makefiles"
     $ make
+```    
 
 Build par2cmdline
 
+```
      $ cd tools/par2cmdline
      $ aclocal
      $ automake --add-missing
@@ -160,13 +173,16 @@ Build par2cmdline
      $ make
      $ cp par2 ~/coding/newsflash/dist
      $ cp par2 ~/coding/newsflash/dist_d
+```     
 
 Build  unrar
 
+```
     $ cd tools/unrar
     $ make
     $ cp unrar ~/coding/newsflash/dist
     $ cp unrar ~/coding/newsflash/dist_d
+```
 
 
 Building for Windows
@@ -180,6 +196,7 @@ http://blogs.msdn.com/b/vcblog/archive/2012/10/08/windows-xp-targeting-with-c-in
 
 Download and extract boost package boost_1_51_0, then build and install boost.build
 
+```
     $ cd boost_1_51_0/tools/build/v2/
     $ bootstrap.bat
     $ b2
@@ -187,12 +204,14 @@ Download and extract boost package boost_1_51_0, then build and install boost.bu
     $ set PATH=%PATH%;c:\boost-build-engine\bin
     $ bjam --version
     Boost.Build 2011.12-svn
+```    
 
 Build openssl. Install NASM and ActivePerl. 
     
     http://sourceforge.net/projects/nasm/        
     http://www.activestate.com/activeperl
 
+```
     $ set PATH=%PATH%;"c:\Program Files (x86)\NASM\"
     $ cd openssl-1.0.1f
     $ perl configure VC-WIN32 --prefix=c:\coding\openssl_1_0_1f
@@ -201,11 +220,13 @@ Build openssl. Install NASM and ActivePerl.
       * replace LFLAGS /debug with /release
     $ nmake -f ms\ntdll.mak
     $ nmake -f ms\ntdll.mak install
-
+```
 
 Download and extract Qt everywhere to a location where you want it installed for example c:\coding\qt-4.8.6
 
+```
     $ configure.exe -no-qt3support -no-webkit -debug-and-release -openssl -I c:\coding\openssl_1_0_1f\include -L c:\coding\openssl_1_0_1f\lib
+```    
 
 
 protobuf
