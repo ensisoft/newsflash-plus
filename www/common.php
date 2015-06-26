@@ -1,5 +1,6 @@
 
 <?php
+  include("credentials.php")
   $SUCCESS              = "0";
   $DIRTY_ROTTEN_SPAMMER = "1";
   $DATABASE_UNAVAILABLE = "2";
@@ -13,8 +14,6 @@
   $TYPE_BUG_REPORT        = 4;
   $TYPE_FEATURE_REQUEST   = 5;
   $TYPE_LICENSE_REQUEST   = 6;
-
-  $MY_EMAIL             = "samiv@ensisoft.com";
 
   function get_host_name()
   {
