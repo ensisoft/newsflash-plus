@@ -3,6 +3,7 @@ Newsflash Plus
 
 The world's best binary news reader!
 
+![Screenshot](https://raw.githubusercontent.com/ensisoft/newsflash-plus/master/screens/newsflash-downloads-win32.png "downloading from Usenet")
 
 Build Configuration
 -------------------------
