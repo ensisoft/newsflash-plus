@@ -190,7 +190,7 @@ QString getPlatformName()
         {
             if (info.productType == VER_NT_WORKSTATION)
                 ret = "Windows 10 Insider Preview";
-            else ret = "Windows Server Techncial Preview";
+            else ret = "Windows Server Technical Preview";
         }
     }
     else if (info.dwMajorVersion == 6)

@@ -66,7 +66,7 @@ QString toString(QFile::FileError error)
         case e::TimeOutError:     return "A timeout occurred.";
         case e::UnspecifiedError: return "An unspecified error occurred.";
         case e::RemoveError:      return "The file could not be removed.";
-        case e::RenameError:      return "The file coult not be renamed.";
+        case e::RenameError:      return "The file could not be renamed.";
         case e::PositionError:    return "The position in file could not be changed.";
         case e::ResizeError:      return "The file could not be resized.";
         case e::PermissionsError: return "The file could not be accessed (no permission).";
@@ -85,7 +85,7 @@ QString toString(QNetworkReply::NetworkError error)
         case e::NoError:                            return "No error occurred.";
         case e::ConnectionRefusedError:             return "The remote server refused the connection.";
         case e::RemoteHostClosedError:              return "The remote server closed the connection prematurely.";
-        case e::HostNotFoundError:                  return "The remote host name was not foud.";
+        case e::HostNotFoundError:                  return "The remote host name was not found.";
         case e::TimeoutError:                       return "The connection timed out.";
         case e::OperationCanceledError:             return "Operation was canceled.";
         case e::SslHandshakeFailedError:            return "SSL handshake failed.";
@@ -111,13 +111,13 @@ QString toString(QProcess::ProcessError error)
     switch (error)
     {
         case e::FailedToStart: return 
-           "The process failed start. Either the program is missing, "
+           "The process failed to start. Either the program is missing "
            "or you have insufficient permissions.";
         case e::Crashed:      return "The process crashed.";
         case e::Timedout:     return "The process is not responding.";
         case e::WriteError:   return "Process write error.";
         case e::ReadError:    return "Process read error.";
-        case e::UnknownError: return "Unknown error";
+        case e::UnknownError: return "Unknown error.";
     }
     Q_ASSERT(false);
     return "";
