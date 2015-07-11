@@ -25,6 +25,8 @@
 #pragma once
 
 #include <cstdint>
+#include <cassert>
+#include <cstring>
 #include <string>
 #include <iterator>
 
@@ -138,8 +140,15 @@ namespace utf8
     template<typename WideChar, typename InputIterator, typename OutputIterator>
     InputIterator decode(InputIterator beg, InputIterator end, OutputIterator dest)
     {
-        //typedef typename std::iterator_traits<OutputIterator>::value_type wide_t;
+
         typedef WideChar wide_t;
+
+#define READBITS(mask, shift, advance) \
+        wide |= wide_t(mask & *beg) << shift;\
+        if (advance) { \
+            if (++beg == end)\
+                return pos;\
+        }
 
         InputIterator pos;
 
@@ -150,58 +159,90 @@ namespace utf8
             switch (*beg & 0xF0)
             { 
                 case 0xF0: // 4 byte sequence
-                    if (sizeof(wide_t) < 4)
+                    assert(sizeof(wide_t) >= 4);
+
+                    // invalid values would encode numbers larger than 
+                    // then 0x10ffff limit of Unicode.
+                    if (*beg >= 0xF5)
                         return pos;
-                    wide |= wide_t(0x03 & *beg) << 3;
-                    for (int i=2; i>=0; --i)
-                    {
-                        if (++beg == end)
-                            return pos;
-                        wide |= wide_t(0x3F & *beg) << i*6;
-                    }
+
+                    READBITS(0x03, 3, true);
+                    READBITS(0x3f, 12, true);
+                    READBITS(0x3f, 6, true);
+                    READBITS(0x3f, 0, false);
+
+                    if (wide >= 0x10ffff)
+                        return pos;
                     *dest++ = wide;
                     break;
 
                 case 0xE0: // 3 byte sequence (fits in 16 bits)
-                    if (sizeof(wide_t) < 2)
-                        return pos;
-                    wide |= wide_t(0x0F & *beg) << 12;
-                    if (++beg == end)
-                        return pos;
-                    wide |= wide_t(0x3F & *beg) << 6;
-                    if (++beg == end)
-                        return pos;
-                    wide |= 0x3F & *beg;
+                    assert(sizeof(wide_t) >= 2);
+
+                    READBITS(0x0f, 12, true);
+                    READBITS(0x3f, 6, true);
+                    READBITS(0x3f, 0, false);
+
                     *dest++ = wide;
                     break;
 
                 case 0xC0: // 2 byte sequence
                 case 0xD0:
-                    if (sizeof(wide_t) < 2)
+                    assert(sizeof(wide_t) >= 2);
+
+                    // invalid values. could only be used for
+                    // "overlong encoding" of ASCII characters.
+                    if (*beg == 0xC0 || *beg == 0xC1)
                         return pos;
-                    wide |= wide_t(0x1F & *beg) << 6;
-                    if (++beg == end)
-                        return pos;
-                    wide |= 0x3F & *beg;
-                    if (wide < 0x7F)
-                        return pos; // illegal sequence, multibyte but just ascii
+
+                    READBITS(0x1f, 6, true);
+                    READBITS(0x3f, 0, false);
+
                     *dest++ = wide;
                     break;
 
-                default:   // 1 byte sequnce (ascii)
+                    // continuation bytes should not appear by themselves
+                    // but only after a leading byte
+                case 0x80:
+                case 0x90:
+                case 0xA0:
+                case 0xB0:
+                    return pos;
+
+                default:   // 1 byte sequence (ascii)
                     *dest++ = *beg;
                     break;
             }
             ++beg;
         }
         return beg;
+
+    #undef READBITS
     }
 
-    inline std::wstring decode(const std::string& utf8)
+    inline 
+    std::wstring decode(const std::string& utf8, bool* success = nullptr)
     {
         std::wstring ret;
-        decode<wchar_t>(utf8.begin(), utf8.end(), 
-            std::back_inserter(ret));
+        const auto pos = decode<wchar_t>(utf8.begin(), utf8.end(), std::back_inserter(ret));
+        
+        if (success) 
+            *success = (pos == utf8.end());
+
+        return ret;
+    }
+
+    inline
+    std::wstring decode(const char* utf8, bool* success = nullptr)
+    {
+        std::wstring ret;
+        const auto beg = utf8;
+        const auto end = utf8 + std::strlen(utf8);
+        const auto pos = decode<wchar_t>(beg, end, std::back_inserter(ret));
+
+        if (success) 
+            *success = (pos == end);
+
         return ret;
     }
 

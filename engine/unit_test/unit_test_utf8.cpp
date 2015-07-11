@@ -21,8 +21,10 @@
 //  THE SOFTWARE.
 
 
-
-#include <boost/test/minimal.hpp>
+#include <newsflash/config.h>
+#include <newsflash/warnpush.h>
+#  include <boost/test/minimal.hpp>
+#include <newsflash/warnpop.h>
 #include <cstdint>
 #include <vector>
 #include <iterator>
@@ -31,10 +33,10 @@
 
 using namespace std;
 
-void test0()
-{
     typedef uint32_t ucs4;
 
+void test_success()
+{
     // english (latin1)
     {
         // quick brown fox
@@ -114,9 +116,48 @@ void test0()
     }
 }
 
+
+void test_failure()
+{
+    // invalid bytes
+    {
+        // this is a 5 byte sequence that would decode to a value higher than 0x10ffff
+        const unsigned char utf8[] = {
+            0xf8, 0x80, 0x80, 0x80, 0x80
+        };
+        bool success = true;
+        utf8::decode((const char*)utf8, &success);
+        BOOST_REQUIRE(success == false);
+    }   
+
+    // invalid continuation byte without a leading byte
+    {
+        // € sign + 0x90
+        const unsigned char utf8[] = {
+            0xe2, 0x82, 0xac, 0x90
+        };
+
+        bool success = true;
+        utf8::decode((const char*)utf8, &success);
+        BOOST_REQUIRE(success == false);
+    }
+
+    // a start byte without enough continuation bytes.
+    {
+        // € sign
+        const unsigned char utf8[] = {
+            0xe2, 0x82 //, 0xac
+        };
+        bool success = true;
+        utf8::decode((const char*)utf8, &success);
+        BOOST_REQUIRE(success == false);
+    }
+}
+
 int test_main(int, char* [])
 {
-    test0();
+    test_success();
+    test_failure();
 
     return 0;
 }
