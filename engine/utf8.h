@@ -143,12 +143,20 @@ namespace utf8
 
         typedef WideChar wide_t;
 
-#define READBITS(mask, shift, advance) \
-        wide |= wide_t(mask & *beg) << shift;\
-        if (advance) { \
-            if (++beg == end)\
+#define READBITS(val_mask, shift, advance) \
+        if (true) {\
+            const std::uint8_t val = *beg;\
+            const std::uint8_t key = ~((val_mask + 1) | val_mask);\
+            const std::uint8_t key_mask = ~val_mask;\
+            if ((key_mask & val) != key)\
                 return pos;\
+            wide |= wide_t(val_mask & val) << shift;\
+            if (advance) { \
+                if (++beg == end)\
+                    return pos;\
+            }\
         }
+
 
         InputIterator pos;
 
@@ -166,7 +174,7 @@ namespace utf8
                     if (*beg >= 0xF5)
                         return pos;
 
-                    READBITS(0x03, 3, true);
+                    READBITS(0x07, 18, true);
                     READBITS(0x3f, 12, true);
                     READBITS(0x3f, 6, true);
                     READBITS(0x3f, 0, false);
@@ -210,6 +218,8 @@ namespace utf8
                     return pos;
 
                 default:   // 1 byte sequence (ascii)
+                    if (0x80 & *beg)
+                        return pos;
                     *dest++ = *beg;
                     break;
             }

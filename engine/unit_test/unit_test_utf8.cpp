@@ -152,6 +152,15 @@ void test_failure()
         utf8::decode((const char*)utf8, &success);
         BOOST_REQUIRE(success == false);
     }
+
+    // latin1
+    {
+        const char* str = "Sebastian Fitzek - PASSAGIER 23 ungek\374rzt - H\366rbuch.vol000+01.PAR2";
+
+        bool success = true;
+        utf8::decode(str, &success);
+        BOOST_REQUIRE(success == false);
+    }
 }
 
 int test_main(int, char* [])
