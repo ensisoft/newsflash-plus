@@ -20,6 +20,8 @@
 
 #pragma once
 
+#include <newsflash/config.h>
+
 #include <string>
 #include <iosfwd>
 #include "types.h"
@@ -39,6 +41,9 @@ namespace newsflash
     localtime get_localtime();
 
     unsigned long get_thread_identity();
+
+    // convert the ISO-8859-15 encoded narrow string to unicode.
+    std::wstring widen(const std::string& narrow);
 
 } // newsflash
 

@@ -33,8 +33,11 @@
 #include <stdexcept>
 #include <cstring>
 #include <cerrno>
+#include <cassert>
 #include <fstream>
+#include <algorithm>
 #include "platform.h"
+#include "iso_8859_15.h"
 
 namespace newsflash
 {
@@ -74,6 +77,18 @@ unsigned long get_thread_identity()
 #elif defined(WINDOWS_OS)
     return (unsigned long)GetCurrentThreadId();    
 #endif
+}
+
+std::wstring widen(const std::string& narrow)
+{
+    std::wstring ret;
+    ret.reserve(narrow.size());
+
+    for (auto letter : narrow)
+    {
+        ret += ISO_8859_15[(unsigned char)letter].unicode;
+    }
+    return ret;
 }
 
 } // newsflash

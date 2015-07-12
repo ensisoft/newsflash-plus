@@ -98,7 +98,7 @@ namespace newsflash
         std::size_t get_binary_size() const 
         { return binary_size_; }
 
-        // get the binary file name
+        // get the binary file name in UTF-8
         std::string get_binary_name() const 
         { return binary_name_; }
 

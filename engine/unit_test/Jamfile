@@ -6,7 +6,7 @@ import testing ;
 
 project 
   : requirements
-    <library>/newsflash//engine/<link>static 
+#    <library>/newsflash//engine/<link>static 
   ;
 
 unit-test unit_test_utf8               : unit_test_utf8.cpp ;

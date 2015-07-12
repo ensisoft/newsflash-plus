@@ -29,6 +29,28 @@
 #include "bodyiter.h"
 #include "yenc.h"
 #include "uuencode.h"
+#include "platform.h"
+
+namespace {
+
+// yEnc encoding doesn't specify an encoding for the filenames,
+// but I have a feeling that some bastards put utf-8 in there.
+// so basically to figure out the filename we first see if it's a valid
+// utf-8 sequence, if it is, use it as it is. Otherwise
+// assume that the string is latin1 and convert to unicode and then encode into utf-8
+
+std::string to_utf8(const std::string& str) 
+{
+    bool success = false;
+    utf8::decode(str, &success);
+    if (success)
+        return str;
+
+    const auto wide = newsflash::widen(str);
+    return utf8::encode(wide);
+}
+
+} // namespace
 
 namespace newsflash
 {
@@ -153,7 +175,7 @@ std::size_t decode::decode_yenc_single(const char* data, std::size_t len)
         throw exception("broken or missing yenc footer");
 
     binary_        = std::move(buff);
-    binary_name_   = header.second.name;
+    binary_name_   = to_utf8(header.second.name);
     binary_offset_ = 0;
     binary_size_   = binary_.size();
 
@@ -198,7 +220,7 @@ std::size_t decode::decode_yenc_multi(const char* data, std::size_t len)
         throw exception("broken or missing yenc footer");
 
     binary_        = std::move(buff);
-    binary_name_   = header.second.name;
+    binary_name_   = to_utf8(header.second.name);
     binary_offset_ = offset;
     binary_size_   = header.second.size;
 
@@ -235,7 +257,7 @@ std::size_t decode::decode_uuencode_single(const char* data, std::size_t len)
     uuencode::parse_end(beg, end);
 
     binary_        = std::move(buff);
-    binary_name_   = header.second.file;
+    binary_name_   = to_utf8(header.second.file);
     binary_offset_ = 0;
     binary_size_   = 0;
 
