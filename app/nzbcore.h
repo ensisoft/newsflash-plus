@@ -65,8 +65,10 @@ namespace app
         void setPostAction(PostAction action)
         { action_ = action; }
 
-        void downloadNzbContents(const QString& file, const QString& basePath, const QString& path, const QString& desc,
+        bool downloadNzbContents(const QString& file, const QString& basePath, const QString& path, const QString& desc,
             quint32 account);
+
+        void postProcess(const QString& file);
 
         const QStringList& getWatchFolders() const 
         { return watchFolders_; }

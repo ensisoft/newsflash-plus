@@ -59,14 +59,14 @@ void NZBCore::watch(bool on_off)
     timer_.setInterval(10 * 1000);
 }
 
-void NZBCore::downloadNzbContents(const QString& file, const QString& basePath, const QString& path, const QString& desc,
+bool NZBCore::downloadNzbContents(const QString& file, const QString& basePath, const QString& path, const QString& desc,
     quint32 account)
 {
     QFile io(file);
     if (!io.open(QIODevice::ReadOnly))
     {
         ERROR("Failed to open %1", file, " %2", io.errorString());
-        return;
+        return false;
     }
 
     QByteArray nzb = io.readAll();
@@ -74,22 +74,22 @@ void NZBCore::downloadNzbContents(const QString& file, const QString& basePath, 
 
     io.close();
 
-    if (g_engine->downloadNzbContents(account, basePath, path, desc, nzb))
-    {
-        switch (action_)
-        {
-            case PostAction::Rename:
-                QFile::rename(file, file + "_remove");
-                break;
-
-            case PostAction::Delete:
-                QFile::remove(file);
-                break;
-        }
-    }
-
+    return g_engine->downloadNzbContents(account, basePath, path, desc, nzb);
 }
 
+void NZBCore::postProcess(const QString& file)
+{
+    switch (action_)
+    {
+        case PostAction::Rename:
+            QFile::rename(file, file + "_remove");
+            break;
+
+        case PostAction::Delete:
+            QFile::remove(file);
+            break;
+    }
+}
 
 void NZBCore::performScan()
 {

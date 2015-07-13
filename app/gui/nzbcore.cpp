@@ -27,6 +27,7 @@
 #  include <QtGui/QMenu>
 #  include <QDir>
 #include <newsflash/warnpop.h>
+#include "dlgdragdrop.h"
 #include "mainwindow.h"
 #include "nzbcore.h"
 #include "nzbfile.h"
@@ -91,9 +92,9 @@ void NZBSettings::on_btnDelWatchFolder_clicked()
         ui_.btnDelWatchFolder->setEnabled(false);
 }
 
-NZBCore::NZBCore()
+NZBCore::NZBCore() : m_action(DragDropAction::AskForAction)
 {
-    module_.PromptForFile = [this] (const QString& file) { 
+    m_module.PromptForFile = [this] (const QString& file) { 
         const auto acc = g_win->chooseAccount(file);
         if (acc == 0)
             return false;
@@ -101,7 +102,8 @@ NZBCore::NZBCore()
         QFileInfo info(file);
         const auto desc = info.completeBaseName();
         const auto path = info.completeBaseName();
-        module_.downloadNzbContents(file, "", path, desc, acc);
+        if (m_module.downloadNzbContents(file, "", path, desc, acc))
+            m_module.postProcess(file);
         return true;        
     };
 }
@@ -115,21 +117,25 @@ void NZBCore::loadState(app::Settings& settings)
     const auto& list  = settings.get("nzb", "watch_folders").toStringList();
     const auto onOff  = settings.get("nzb", "enable_watching").toBool();
     const auto action = settings.get("nzb", "watch_action").toInt();
+    const auto dragdrop = settings.get("nzb", "drag_drop_action").toInt();
 
-    module_.setWatchFolders(list);
-    module_.setPostAction((app::NZBCore::PostAction)action);
-    module_.watch(onOff);    
+    m_action = (DragDropAction)dragdrop;
+
+    m_module.setWatchFolders(list);
+    m_module.setPostAction((app::NZBCore::PostAction)action);
+    m_module.watch(onOff);    
 }
     
 void NZBCore::saveState(app::Settings& settings)
 {
-    const auto& list  = module_.getWatchFolders();
-    const auto onOff  = module_.isEnabled();
-    const auto action = module_.getAction();
+    const auto& list  = m_module.getWatchFolders();
+    const auto onOff  = m_module.isEnabled();
+    const auto action = m_module.getAction();
 
     settings.set("nzb", "watch_folders", list);
     settings.set("nzb", "enable_watching", onOff);
     settings.set("nzb", "watch_action", (int)action);
+    settings.set("nzb", "drag_drop_action", (int)m_action);
 }
 
 SettingsWidget* NZBCore::getSettings()
@@ -137,7 +143,7 @@ SettingsWidget* NZBCore::getSettings()
     auto* ptr = new NZBSettings();
     auto& ui  = ptr->ui_;
 
-    const auto& list = module_.getWatchFolders();
+    const auto& list = m_module.getWatchFolders();
     for (const auto& folder : list)
     {
         QListWidgetItem* item = new QListWidgetItem;
@@ -148,14 +154,21 @@ SettingsWidget* NZBCore::getSettings()
 
     ui.btnDelWatchFolder->setEnabled(!list.isEmpty());
 
-    const auto onOff = module_.isEnabled();
+    const auto onOff = m_module.isEnabled();
     ui.grpWatch->setChecked(onOff);
 
-    const auto action = module_.getAction();
+    const auto action = m_module.getAction();
     if (action == app::NZBCore::PostAction::Rename)
         ui.rdbRename->setChecked(true);
     else if (action == app::NZBCore::PostAction::Delete)
         ui.rdbDelete->setChecked(true);
+
+    if (m_action == DragDropAction::AskForAction)
+        ui.rdAskForAction->setChecked(true);
+    else if (m_action == DragDropAction::ShowContents)
+        ui.rdShowContents->setChecked(true);
+    else if (m_action == DragDropAction::DownloadContents)
+        ui.rdDownloadContents->setChecked(true);
 
     return ptr;
 }
@@ -174,13 +187,20 @@ void NZBCore::applySettings(SettingsWidget* gui)
     }
 
     const auto onOff = ui.grpWatch->isChecked();
-    module_.watch(onOff);
-    module_.setWatchFolders(list);
+    m_module.watch(onOff);
+    m_module.setWatchFolders(list);
 
     if (ui.rdbRename->isChecked())
-        module_.setPostAction(app::NZBCore::PostAction::Rename);
+        m_module.setPostAction(app::NZBCore::PostAction::Rename);
     else if (ui.rdbDelete->isChecked())
-        module_.setPostAction(app::NZBCore::PostAction::Delete);
+        m_module.setPostAction(app::NZBCore::PostAction::Delete);
+
+    if (ui.rdAskForAction->isChecked())
+        m_action = DragDropAction::AskForAction;
+    else if (ui.rdShowContents->isChecked())
+        m_action = DragDropAction::ShowContents;
+    else if (ui.rdDownloadContents->isChecked())
+        m_action = DragDropAction::DownloadContents;
 }
 
 
@@ -195,10 +215,40 @@ MainWidget* NZBCore::dropFile(const QString& file)
     if (info.suffix() != "nzb")
         return nullptr;
 
-    auto* widget = new NZBFile;
-    widget->open(file);
+    DragDropAction action = m_action;
 
-    return widget;
+    if (action == DragDropAction::AskForAction)
+    {
+        DlgDragDrop dlg(g_win, info.completeBaseName());
+        if (dlg.exec() == QDialog::Rejected)
+            return nullptr;
+
+        if (dlg.downloadContents())
+            action = DragDropAction::DownloadContents;
+        else if (dlg.showContents())
+            action = DragDropAction::ShowContents;
+
+        if (dlg.rememberSetting())
+            m_action = action;
+    }
+    
+    if (action == DragDropAction::ShowContents)
+    {
+        auto* widget = new NZBFile;
+        widget->open(file);
+        return widget;
+    }
+    else if (action == DragDropAction::DownloadContents)
+    {
+        const auto acc = g_win->chooseAccount(info.completeBaseName());
+        if (acc == 0)
+            return nullptr;
+
+        const auto desc = info.completeBaseName();
+        const auto path = info.completeBaseName();
+        m_module.downloadNzbContents(file, "", path, desc, acc);
+    }
+    return nullptr;
 }
 
 MainWidget* NZBCore::openFile(const QString& file)

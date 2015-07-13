@@ -72,6 +72,14 @@ namespace gui
         { return {"nzbcore", "nzb.html"}; }        
 
     private:
-        app::NZBCore module_;
+        enum class DragDropAction {
+            AskForAction,
+            ShowContents,
+            DownloadContents
+        };
+        DragDropAction m_action;
+    private:
+        app::NZBCore m_module;
+
     };
 } // gui
