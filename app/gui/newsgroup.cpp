@@ -500,6 +500,9 @@ void NewsGroup::on_btnLoadMore_clicked()
     ui_.btnLoadMore->setEnabled(false);
 
     model_.load();
+
+    ui_.loader->setVisible(false);
+    
 }
 
 void NewsGroup::on_tableView_customContextMenuRequested(QPoint p)
