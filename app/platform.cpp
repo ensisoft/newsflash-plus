@@ -497,4 +497,10 @@ QString getShutdownCommand()
 
 #endif
 
+void openFolder(const QString& folder)
+{
+    // just a simple forward for now.
+    openFile(folder);
+}
+
 } // app

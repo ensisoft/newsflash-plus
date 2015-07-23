@@ -157,7 +157,7 @@
      <normaloff>:/resource/16x16_ico_png/ico_open_folder.png</normaloff>:/resource/16x16_ico_png/ico_open_folder.png</iconset>
    </property>
    <property name="text">
-    <string>Open folder ...</string>
+    <string>Open folder</string>
    </property>
    <property name="toolTip">
     <string>Open folder</string>

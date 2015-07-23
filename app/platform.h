@@ -56,6 +56,8 @@ void openFile(const QString& file);
 
 void openWeb(const QString& url);
 
+void openFolder(const QString& folder);
+
 // perform computer shutdown.
 void shutdownComputer();
 

@@ -66,6 +66,10 @@ namespace app
         newsflash::ui::task& getItem(std::size_t i) const 
         { return tasks_[i]; }
 
+        const
+        newsflash::ui::task& getItem(const QModelIndex& i) const 
+        { return tasks_[i.row()]; }
+
     private:
         enum class Action {
             Pause, Resume, MoveUp, MoveDown

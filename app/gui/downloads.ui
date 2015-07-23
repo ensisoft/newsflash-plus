@@ -399,6 +399,15 @@
     <string>Ctrl+T</string>
    </property>
   </action>
+  <action name="actionTaskOpenFolder">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_open_folder.png</normaloff>:/resource/16x16_ico_png/ico_open_folder.png</iconset>
+   </property>
+   <property name="text">
+    <string>Open Folder</string>
+   </property>
+  </action>
  </widget>
  <tabstops>
   <tabstop>chkRemoveComplete</tabstop>

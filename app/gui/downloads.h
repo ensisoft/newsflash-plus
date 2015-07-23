@@ -66,6 +66,7 @@ namespace gui
         void on_actionTaskDelete_triggered();
         void on_actionTaskClear_triggered();
         void on_actionTaskOpenLog_triggered();
+        void on_actionTaskOpenFolder_triggered();
         void on_actionConnClone_triggered();
         void on_actionConnDelete_triggered();
         void on_actionConnOpenLog_triggered();

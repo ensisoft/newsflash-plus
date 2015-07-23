@@ -303,7 +303,7 @@ void Files::on_actionOpenFolder_triggered()
     {
         const auto row   = indices[i].row();
         const auto& item = model_.getItem(row);
-        app::openFile(item.path);
+        app::openFolder(item.path);
     }
 }
 

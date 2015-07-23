@@ -607,6 +607,7 @@ public:
         ui_.state      = states::queued;
         ui_.desc       = spec.name;
         ui_.size       = spec.size;
+        ui_.path       = spec.path;
         is_fillable_   = ui::is_fillable(spec);
 
         LOG_D("Task: download has ", spec.articles.size(), " articles");
@@ -655,6 +656,7 @@ public:
         ui_.account    = spec.account_id();
         ui_.desc       = spec.desc();
         ui_.size       = spec.size();
+        ui_.path       = spec.path();
         is_fillable_   = spec.enable_fill();
 
         std::vector<std::string> groups;
@@ -1335,13 +1337,13 @@ public:
     {
         ui_.account    = spec.account;
         ui_.desc       = spec.desc;
+        ui_.path       = spec.path;
         ui_.size       = std::accumulate(std::begin(spec.files), std::end(spec.files), std::uint64_t(0), 
             [](std::uint64_t val, const ui::download& next) {
                 return val + next.size;
             });
         num_tasks_  = spec.files.size();
         num_slices_ = spec.files.size();
-        path_       = spec.path;
         filebatch_  = true;
 
         LOG_I("Batch ", ui_.batch_id, " (", ui_.desc, ") created");     
@@ -1381,10 +1383,10 @@ public:
         ui_.task_id    = data.batch_id();
         ui_.account    = data.account_id();
         ui_.desc       = data.desc();
+        ui_.path       = data.path();        
         ui_.size       = data.byte_size();
         num_slices_    = data.num_slices();
         num_tasks_     = data.num_tasks();
-        path_          = data.path();
         filebatch_     = true;
 
         statesets_[(int)states::queued] = num_tasks_;                
@@ -1407,7 +1409,7 @@ public:
         data->set_account_id(ui_.account);
         data->set_desc(ui_.desc);
         data->set_byte_size(ui_.size);
-        data->set_path(path_);                
+        data->set_path(ui_.path);                
         data->set_num_tasks(num_tasks_);
         data->set_num_slices(num_slices_);
     }
@@ -1510,7 +1512,7 @@ public:
             if (ui_.state == states::complete)
             {
                 ui::batch batch;
-                batch.path = path_;
+                batch.path = ui_.path;
                 batch.desc = ui_.desc;
                 state.on_batch_callback(batch);
             }
@@ -1616,7 +1618,6 @@ private:
     std::size_t num_slices_;
     std::size_t num_tasks_;
     std::size_t statesets_[7];
-    std::string path_;
     bool filebatch_;
 };
 

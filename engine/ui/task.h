@@ -90,6 +90,9 @@ namespace newsflash
         // the human readable description of the task.
         std::string desc;
 
+        // the path to the data with the task. (if any)
+        std::string path;
+
         // download/transfer size in bytes (if known)
         std::uint64_t size;
 

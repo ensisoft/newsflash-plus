@@ -36,6 +36,7 @@
 #include "../settings.h"
 #include "../engine.h"
 #include "../platform.h"
+#include "../accounts.h"
 
 namespace gui
 {
@@ -305,6 +306,37 @@ void Downloads::on_actionTaskOpenLog_triggered()
     app::openFile(file);
 }
 
+void Downloads::on_actionTaskOpenFolder_triggered()
+{
+    const QModelIndexList& indices = ui_.tableTasks->selectionModel()->selectedRows();
+    if (indices.isEmpty())
+        return;
+
+    QSet<QString> opened;
+
+    for (const auto& i : indices)
+    {
+        const auto& task = tasks_.getItem(i);
+        if (task.path.empty())
+        {
+            const auto* acc = app::g_accounts->findAccount(task.account);
+            if (acc == nullptr)
+                continue;
+            app::openFolder(acc->datapath);
+            opened.insert(acc->datapath);
+        }
+        else
+        {
+            const auto& path = app::fromUtf8(task.path);
+            if (opened.contains(path))
+                continue;
+
+            app::openFolder(path);
+            opened.insert(path);
+        }
+    }
+}
+
 void Downloads::on_actionConnClone_triggered()
 {
     QModelIndexList indices = ui_.tableConns->selectionModel()->selectedRows();
@@ -355,6 +387,8 @@ void Downloads::on_tableTasks_customContextMenuRequested(QPoint point)
     menu.addAction(ui_.actionTaskClear);
     menu.addSeparator();
     menu.addAction(ui_.actionTaskOpenLog);
+    menu.addSeparator();
+    menu.addAction(ui_.actionTaskOpenFolder);
     menu.exec(QCursor::pos());
 }
 
@@ -395,6 +429,7 @@ void Downloads::tableTasks_selectionChanged()
         ui_.actionTaskMoveBottom->setEnabled(false);
         ui_.actionTaskMoveDown->setEnabled(false);
         ui_.actionTaskDelete->setEnabled(false);
+        ui_.actionTaskOpenFolder->setEnabled(false);
         //ui_.actionTaskClear->setEnabled(false);
         return;
     }
@@ -405,6 +440,7 @@ void Downloads::tableTasks_selectionChanged()
     ui_.actionTaskMoveBottom->setEnabled(true);
     ui_.actionTaskMoveDown->setEnabled(true);
     ui_.actionTaskDelete->setEnabled(true);
+    ui_.actionTaskOpenFolder->setEnabled(true);
     //ui_.actionTaskClear->setEnabled(true);    
 
     using state = newsflash::ui::task::states;
