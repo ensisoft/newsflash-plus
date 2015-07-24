@@ -1,6 +1,7 @@
 <?php
   include("common.php");
   include("database.php");
+  include("credentials.php");
 
   $type     = sql_string($_REQUEST['type']);
   $name     = sql_string($_REQUEST['name']);
@@ -62,9 +63,7 @@
              "Host: $host\n" .
              "Version: $version\n" .
              "Platform: $platform\n\n" .
-             "$text" .
-             "\n\nYou can approve this comment by clicking the following link\n" .
-             "http://www.ensisoft.com/approve.php?id=$id&secret=queef";
+             "$text"; 
 
   if (strlen($email))
       $headers = "From: $email\r\nReply-To: $email\r\n";

@@ -1,6 +1,5 @@
 
 <?php
-  include("credentials.php")
   $SUCCESS              = "0";
   $DIRTY_ROTTEN_SPAMMER = "1";
   $DATABASE_UNAVAILABLE = "2";
@@ -52,14 +51,4 @@
       return False;
   }
   
-  function create_random_string()
-  {
-      for ($i=0; $i<6; $i++) 
-      {
-          $d  = rand(1,30)%2;
-          $s .= $d ? chr(rand(65,90)) : chr(rand(48,57));      
-      }
-      return $s;
-  }
-
 ?>
