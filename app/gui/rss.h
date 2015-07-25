@@ -58,6 +58,7 @@ namespace gui
         virtual void applySettings(SettingsWidget* gui) override;
         virtual void freeSettings(SettingsWidget* s);
         virtual Finder* getFinder() override;
+        virtual void firstLaunch() override;
 
         // Finder implementation
         virtual bool isMatch(const QString& str, std::size_t index, bool caseSensitive) override;
@@ -80,6 +81,7 @@ namespace gui
         void on_actionSettings_triggered();
         void on_actionStop_triggered();
         void on_actionBrowse_triggered();
+        void on_actionInformation_triggered();
         void on_tableView_customContextMenuRequested(QPoint point);
         void on_tableView_doubleClicked(const QModelIndex&);
 
@@ -87,7 +89,6 @@ namespace gui
         void rowChanged();
         void downloadToPrevious();
         void popupDetails();
-        void testSlot();
 
     private:
         Ui::RSS ui_;
@@ -97,6 +98,7 @@ namespace gui
         newsflash::bitflag<app::MediaType> streams_;
         bool enable_nzbs_;
         bool enable_womble_;
+        bool show_popup_hint_;
         QString nzbs_userid_;
         QString nzbs_apikey_;
         QTimer  popup_;

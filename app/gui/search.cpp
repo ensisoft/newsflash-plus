@@ -335,6 +335,26 @@ void Search::on_editSearch_returnPressed()
     beginSearch(0, QuerySize);
 }
 
+void Search::on_editSeason_returnPressed()
+{
+    beginSearch(0, QuerySize);
+}
+
+void Search::on_editEpisode_returnPressed()
+{
+    beginSearch(0, QuerySize);
+}
+
+void Search::on_editAlbum_returnPressed()
+{
+    beginSearch(0, QuerySize);
+}
+
+void Search::on_editTrack_returnPressed()
+{
+    beginSearch(0, QuerySize);
+}
+
 void Search::on_lblWildcard_linkActivated(QString)
 {
     DlgWildcards dlg(this);
@@ -395,7 +415,18 @@ void Search::popupDetails()
             return;
         if (!movie_)
             movie_.reset(new DlgMovie(this));
-        movie_->lookup(title);
+        movie_->lookupMovie(title);
+    }
+    else if (isTVSeries(item.type))
+    {
+        const auto& title = app::findTVSeriesTitle(item.title);
+        if (title.isEmpty())
+            return;
+
+        if (!movie_)
+            movie_.reset(new DlgMovie(this));
+
+        movie_->lookupSeries(title);
     }
 }
 

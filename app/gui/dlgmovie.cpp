@@ -51,7 +51,7 @@ DlgMovie::DlgMovie(QWidget* parent) : QDialog(parent)
 DlgMovie::~DlgMovie()
 {}
 
-void DlgMovie::lookup(const QString& movieTitle)
+void DlgMovie::lookupMovie(const QString& movieTitle)
 {
     title_ = movieTitle;
     
@@ -74,6 +74,13 @@ void DlgMovie::lookup(const QString& movieTitle)
     show();
     activateWindow();
     setWindowTitle(QString("%1 (Click to Close Window)").arg(movieTitle));
+}
+
+void DlgMovie::lookupSeries(const QString& seriesTitle)
+{
+    // this is a simple forward for now. maybe in the future
+    // we want Season and Episode here as well.
+    lookupMovie(seriesTitle);
 }
 
 void DlgMovie::lookupReady(const QString& title)

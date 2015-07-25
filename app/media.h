@@ -94,6 +94,16 @@ namespace app
             type == MediaType::MoviesHD ||
             type == MediaType::MoviesWMV;
     }
+
+    inline 
+    bool isTVSeries(MediaType type)
+    {
+        return type == MediaType::TvInt ||
+            type == MediaType::TvSD ||
+            type == MediaType::TvHD ||
+            type == MediaType::TvOther ||
+            type == MediaType::TvSport;
+    }
     
 
 
@@ -177,8 +187,9 @@ namespace app
         return !(lhs == rhs);
     }
 
-
+    
     QString findMovieTitle(const QString& subject);
+    QString findTVSeriesTitle(const QString& subject, QString* season = nullptr, QString* episode =  nullptr);
 
     QString toString(MediaType media);
 

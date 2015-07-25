@@ -27,17 +27,46 @@
 namespace app
 {
 
+bool tryCapture(const QString& subject, const QString& regex, int index, QString& out)
+{
+    const QRegExp pattern(regex);
+    if (pattern.indexIn(subject) == -1)
+        return false;
+
+    out = pattern.cap(index);
+    return true;
+}
+
 QString findMovieTitle(const QString& subject)
 {
-    // match something like
-    // Two.Girls.And.a.Guy.1997.1080p.BluRay.x264-BARC0DE
-    const QRegExp pattern("(^\\S*)\\.(\\d{4})\\.");
+    QString ret;
 
+    // Two.Girls.And.a.Guy.1997.1080p.BluRay.x264-BARC0DE    
+    if (tryCapture(subject, "(^\\S*)\\.(\\d{4})\\.", 1, ret))
+        return ret;
+
+    // Dark.Salvation.DVDRip.Multi4.READ
+    if (tryCapture(subject, "(^\\S*)\\.(DVDRIP)", 1, ret))
+        return ret;
+    if (tryCapture(subject, "(^\\S*)\\.(DVDRip)", 1, ret))
+        return ret;
+
+    return ret;    
+}
+
+QString findTVSeriesTitle(const QString& subject, QString* season, QString* episode)
+{
+    // Betas.S01E05.1080p.WEBRip.H264-BATV
+    const QRegExp pattern("^(\\S*)\\.S(\\d{2})E(\\d{2})\\.");
     if (pattern.indexIn(subject) == -1)
         return "";
 
-    const auto title = pattern.cap(1);
-    return title;
+    if (season)
+        *season = pattern.cap(2);
+    if (episode)
+        *episode = pattern.cap(3);
+
+    return pattern.cap(1);
 }
 
 QString toString(MediaType m) 

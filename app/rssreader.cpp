@@ -167,6 +167,11 @@ const MediaItem& RSSReader::getItem(std::size_t i) const
 {
     return model_->getItem(i);
 }
+const MediaItem& RSSReader::getItem(const QModelIndex& i) const 
+{
+    return model_->getItem(i.row());
+}
+
 
 bool RSSReader::isEmpty() const 
 {

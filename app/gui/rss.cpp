@@ -116,6 +116,7 @@ RSS::RSS()
         ui_.actionRefresh->setEnabled(true);
     };
 
+    show_popup_hint_ = false;
 
     DEBUG("RSS gui created");
 }
@@ -337,6 +338,11 @@ Finder* RSS::getFinder()
     return this;
 }
 
+void RSS::firstLaunch() 
+{
+    show_popup_hint_ = true;
+}
+
 bool RSS::isMatch(const QString& str, std::size_t index, bool caseSensitive)
 {
     const auto& item = model_.getItem(index);
@@ -526,6 +532,7 @@ void RSS::refreshStreams(bool verbose)
     ui_.actionOpen->setEnabled(false);
     ui_.actionStop->setEnabled(true);    
     ui_.actionRefresh->setEnabled(false);
+    ui_.actionInformation->setEnabled(false);
 }
 
 void RSS::on_actionRefresh_triggered()
@@ -613,6 +620,50 @@ void RSS::on_actionBrowse_triggered()
     downloadSelected(folder);    
 }
 
+void RSS::on_actionInformation_triggered()
+{
+    const auto& indices = ui_.tableView->selectionModel()->selectedRows();
+    if (indices.isEmpty())
+        return;
+
+    const auto& first = indices[0];
+    const auto& item  = model_.getItem(first);
+
+    if (isMovie(item.type))
+    {
+        const auto& title = app::findMovieTitle(item.title);
+        if (title.isEmpty())
+            return;
+        if (!movie_)
+        {
+            movie_.reset(new DlgMovie(this));
+        }
+        movie_->lookupMovie(title);
+    }
+    else if (isTVSeries(item.type))
+    {
+        const auto& title = app::findTVSeriesTitle(item.title);
+        if (title.isEmpty())
+            return;
+        // the same dialog + api can be used for TV series.
+        if (!movie_)
+            movie_.reset(new DlgMovie(this));
+
+        movie_->lookupSeries(title);
+    }
+
+    if (show_popup_hint_)
+    {
+        QMessageBox msg(this);
+        msg.setStandardButtons(QMessageBox::Ok);
+        msg.setIcon(QMessageBox::Information),
+        msg.setWindowTitle("Hint");
+        msg.setText("Did you know that you can also open this dialog by letting the mouse hover over the selected item.");
+        msg.exec();
+        show_popup_hint_ = false;
+    }    
+}
+
 void RSS::on_tableView_customContextMenuRequested(QPoint point)
 {
     QMenu sub("Download to");
@@ -640,6 +691,8 @@ void RSS::on_tableView_customContextMenuRequested(QPoint point)
     menu.addSeparator();
     menu.addAction(ui_.actionOpen);
     menu.addSeparator();
+    menu.addAction(ui_.actionInformation);
+    menu.addSeparator();    
     menu.addAction(ui_.actionStop);
     menu.addSeparator();
     menu.addAction(ui_.actionSettings);
@@ -653,13 +706,24 @@ void RSS::on_tableView_doubleClicked(const QModelIndex&)
 
 void RSS::rowChanged()
 {
-    const auto list = ui_.tableView->selectionModel()->selectedRows();
-    if (list.isEmpty())
+    const auto& indices = ui_.tableView->selectionModel()->selectedRows();
+    if (indices.isEmpty())
         return;
 
     ui_.actionDownload->setEnabled(true);
     ui_.actionSave->setEnabled(true);
     ui_.actionOpen->setEnabled(true);
+    ui_.actionInformation->setEnabled(true);
+
+    for (const auto& i : indices)
+    {
+        const auto& item = model_.getItem(i);
+        if (!(isMovie(item.type) || isTVSeries(item.type)))
+        {
+            ui_.actionInformation->setEnabled(false);
+            break;
+        }
+    }
 }
 
 void RSS::downloadToPrevious()
@@ -671,6 +735,7 @@ void RSS::downloadToPrevious()
 
     downloadSelected(folder);
 }
+
 void RSS::popupDetails()
 {
     //DEBUG("Popup event!");
@@ -696,8 +761,6 @@ void RSS::popupDetails()
     if (i == all.size())
         return;
 
-    using media = app::MediaType;
-
     const auto& item  = model_.getItem(sel.row());
     if (isMovie(item.type))
     {
@@ -708,13 +771,20 @@ void RSS::popupDetails()
         {
             movie_.reset(new DlgMovie(this));
         }    
-        movie_->lookup(title);
+        movie_->lookupMovie(title);
     }
-}
+    else if (isTVSeries(item.type))
+    {
+        const auto& title = app::findTVSeriesTitle(item.title);
+        if (title.isEmpty())
+            return;
 
-void RSS::testSlot()
-{
-    DEBUG("PASKAA!!!");
+        if (!movie_)
+            movie_.reset(new DlgMovie(this));
+
+        movie_->lookupSeries(title);
+    }
+
 }
 
 } // gui

@@ -257,6 +257,15 @@
     <string>Open selected items</string>
    </property>
   </action>
+  <action name="actionInformation">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_info.png</normaloff>:/resource/16x16_ico_png/ico_info.png</iconset>
+   </property>
+   <property name="text">
+    <string>Information</string>
+   </property>
+  </action>
  </widget>
  <tabstops>
   <tabstop>tableView</tabstop>

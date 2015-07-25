@@ -31,6 +31,7 @@
 
 namespace gui
 {
+    // Movie details dialog. Also works for TV Series.
     class DlgMovie : public QDialog
     {
         Q_OBJECT
@@ -39,7 +40,11 @@ namespace gui
         DlgMovie(QWidget* parent);
        ~DlgMovie();
 
-        void lookup(const QString& movieTitle);
+        // show the dialog and initiate lookup for the Movie 
+        void lookupMovie(const QString& movieTitle);
+
+        // show the dialog and initite lookup for the TV Series
+        void lookupSeries(const QString& seriesTitle);
 
     private slots:
         void lookupReady(const QString& title);

@@ -78,6 +78,7 @@ namespace app
         void stop();
 
         const MediaItem& getItem(std::size_t i) const;
+        const MediaItem& getItem(const QModelIndex& i) const;
 
         bool isEmpty() const;
 
