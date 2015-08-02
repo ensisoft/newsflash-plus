@@ -23,11 +23,7 @@
 #include <QByteArray>
 #include <QString>
 #include <QList>
-
-namespace {
-    const char* const FALLBACK = "00-14-78-F6-01-71";
-    const char* const BACKDOOR = "727f1c60d2c6b9ad8fb9783195b5d5db";
-} // namespace
+#include "secret.h"
 
 namespace keygen
 {

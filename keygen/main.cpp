@@ -26,6 +26,7 @@
 #include <app/webengine.h>
 #include <app/webquery.h>
 #include "keygen.h"
+#include "secret.h"
 
 bool readYesNo(const char* question)
 {
@@ -100,7 +101,7 @@ int main(int argc, char *argv[])
     url.addQueryItem("paypalref", paypalRef);
     url.addQueryItem("contributor", contributor);
     url.addQueryItem("euro", euro);
-    url.addQueryItem("magic", "7788aaa88112kkkkkk");
+    url.addQueryItem("magic", keygen::MAGIC);
 
     app::WebEngine web;
     app::WebQuery  query(url);
