@@ -14,7 +14,7 @@
     
   mysql_query("INSERT INTO newsflash2 (fingerprint,host,version,platform,count) " .
               "VALUES($fingerprint, $host, $version, $platform, 1) " . 
-              "ON DUPLICATE KEY UPDATE count=count+1, host=$host, version=$version, platform=$platform", $db) or die($DATABASE_ERROR);
+              "ON DUPLICATE KEY UPDATE latest=now(), count=count+1, host=$host, version=$version, platform=$platform", $db) or die($DATABASE_ERROR);
   mysql_close($db);
   
   //echo($NEWSFLASH_VERSION);
