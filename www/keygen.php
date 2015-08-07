@@ -1,4 +1,5 @@
 <?php
+  include("common.php");
   include("database.php");
   include("credentials.php");
 
@@ -10,9 +11,13 @@
   $magic       = $_REQUEST['magic'];
 
   if ($magic != $MAGIC)
-      die("no permission");
+    die("no permission");
 
-  mysql_query("UPDATE newsflash2 SET license=$licensecode, paypalref=$paypalref, contributor=$contributor, euro=$euro WHERE fingerprint=$fingerprint");
+  mysql_query("UPDATE newsflash2 SET " .
+    "license=$licensecode, paypalref=$paypalref, " . 
+    "contributor=$contributor, euro=$euro " . 
+    "WHERE fingerprint=$fingerprint") or die("SQL Error");
+
   mysql_close($db);
 
   echo("success");
