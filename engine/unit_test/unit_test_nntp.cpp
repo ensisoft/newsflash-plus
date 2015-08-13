@@ -703,6 +703,27 @@ void test_strcmp()
     BOOST_REQUIRE(nntp::strcmp(
         "Metallica - Enter Sandman yEnc (01/10).mp3",
         "Metallica - Enter Sandman yEnc (02/10).mp3"));
+
+    BOOST_REQUIRE(nntp::strcmp(
+        "foobar - [02/32] - \"foobar_HD_1920x1080.mp4.001\" yEnc (3/10)",
+        "foobar - [02/32] - \"foobar_HD_1920x1080.mp4.001\" yEnc (10/10)"));
+
+   BOOST_REQUIRE(nntp::strcmp(
+        "foobar - [02/32] - \"foobar_HD_1920x1080.mp4.001\" yEnc (3/10) whatever",
+        "foobar - [02/32] - \"foobar_HD_1920x1080.mp4.001\" yEnc (10/10) whatever"));        
+
+   BOOST_REQUIRE(nntp::strcmp(
+        "foobar - [02/32] - \"foobar_HD_1920x1080.mp4.001\" yEnc (003/100) whatever",
+        "foobar - [02/32] - \"foobar_HD_1920x1080.mp4.001\" yEnc (010/100) whatever"));           
+
+   BOOST_REQUIRE(nntp::strcmp(
+        "foobar - [02/32] - \"foobar_HD_1920x1080.mp4.001\" yEnc (1/100) whatever",
+        "foobar - [02/32] - \"foobar_HD_1920x1080.mp4.001\" yEnc (100/100) whatever"));              
+
+   BOOST_REQUIRE(nntp::strcmp(
+        "foobar - [02/32] - \"foobar_HD_1920x1080.mp4.001\" yEnc (1/100) foo",
+        "foobar - [02/32] - \"foobar_HD_1920x1080.mp4.001\" yEnc (100/100) bar") == false);
+
 }
 
 void test_hash()
@@ -724,6 +745,8 @@ void test_hash()
     BOOST_REQUIRE(nntp::hashvalue("heres a movie with shitty part notation foobar.avi.001 [04/50]") ==
         nntp::hashvalue("heres a movie with shitty part notation foobar.avi.001 [10/50]"));
 
+    BOOST_REQUIRE(nntp::hashvalue("foobar - [02/32] - \"foobar_HD_1920x1080.mp4.001\" yEnc (3/10)") == 
+        nntp::hashvalue("foobar - [02/32] - \"foobar_HD_1920x1080.mp4.001\" yEnc (10/10)"));
 
 }
 

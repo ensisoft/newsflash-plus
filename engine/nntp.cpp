@@ -329,33 +329,51 @@ bool is_binary_post(const char* str, size_t len)
 
 bool strcmp(const char* first,  std::size_t firstLen, const char* second, std::size_t secondLen)
 {
-    if (firstLen != secondLen)
-        return false;
+    std::size_t skip_first  = 0;
+    std::size_t skip_second = 0;
 
-    std::size_t skip = 0;
-    const auto* p = find_part_count(first, firstLen, skip);
-    if (!p)
+    const auto* p1 = find_part_count(first, firstLen, skip_first);
+    if (!p1)
     {
+        if (firstLen != secondLen)
+            return false;
+
         for (std::size_t i=0; i<firstLen; ++i)
             if (first[i] != second[i]) return false;
     }
     else
     {
-        const auto* p2 = find_part_count(second, secondLen, skip);
+        const auto* p2 = find_part_count(second, secondLen, skip_second);
         if (!p2) 
             return false;
 
-        if ((p - first) != (p2 - second))
+        // the part count needs to begin at the same position
+        if ((p1 - first) != (p2 - second))
             return false;
 
-        assert(p >= first);
-        const std::size_t num = p - first;
-        std::size_t i;
-        for (i=0; i<num; ++i)
-            if (first[i] != second[i]) return false;
-        i += skip;
-        for (; i<firstLen; ++i)
-            if (first[i] != second[i]) return false;
+        assert(p1 >= first);
+        assert(p2 >= second);
+
+        std::size_t num = p1 - first;
+        std::size_t i = 0;
+        std::size_t j = 0;
+
+        // compare the strings untill the part count.
+        for (std::size_t x=0; x<num; ++x, ++i, ++j)
+            if (first[i] != second[j]) return false;
+
+        i += skip_first;
+        j += skip_second;
+
+        // if the reminder after the part count is not the same
+        // length it's not a match.
+        if (firstLen - i != secondLen - j)
+            return false;
+
+        num = firstLen - i;
+
+        for (std::size_t x=0; x<num;  ++x, ++i, ++j)
+            if (first[i] != second[j]) return false;
     }
 
     return true;
@@ -735,10 +753,10 @@ std::string find_filename(const char* str, size_t len, bool include_extension)
             {
                 if (std::isalnum(c))
                 {
-					if (prev_ == '-')
-					    good_ = true;
+                    if (prev_ == '-')
+                        good_ = true;
                     return true;
-				}
+                }
 
                 if (c == '_' || c == '.' || c == ' ')
                 {
@@ -748,12 +766,12 @@ std::string find_filename(const char* str, size_t len, bool include_extension)
                 {
                     if (prev_ == ' ' || prev_ == '-')                    
                     {
-						if (dash_ == true)
-						    return false;
-						    
-						good_ = false;
-						dash_ = true;
-					}
+                        if (dash_ == true)
+                            return false;
+                            
+                        good_ = false;
+                        dash_ = true;
+                    }
                     return true;
                 }
                 else if (c == '+')
