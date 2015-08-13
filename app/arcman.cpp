@@ -37,7 +37,7 @@
 namespace app
 {
 
-ArchiveManager::ArchiveManager(Repairer& repairer, Unpacker& unpacker) : repairer_(repairer), unpacker_(unpacker)
+ArchiveManager::ArchiveManager(Repairer& repairer, Unpacker& unpacker) : m_repairer(repairer), m_unpacker(unpacker)
 {
     DEBUG("ArchiveManager created");
 
@@ -77,23 +77,55 @@ void ArchiveManager::packCompleted(const app::FilePackInfo& pack)
         arc.desc  = file.fileName();
         arc.file  = file.fileName();        
         arc.state = Archive::Status::Queued;
-        repairer_.addRecovery(arc);
+        m_repairer.addRecovery(arc);
 
-        pendingArchives_.insert(arc.getGuid());
+        // record how many pending repairs we have scheduled for the archives
+        // in this filepack location. 
+        // we can launch extracts only after *all* the repairs have completed.
+        // otherwise we might end up in a race condition (with the cleanup options)
+        // where the extract process extracs and cleans up archives that have not yet
+        // completed their repair thus resulting in a silly (and incorrect) repair error.
+        m_repairs[pack.path]++;
+
+        DEBUG("FilePack in '%1' has now %2 pending repairs", 
+            pack.path, m_repairs[pack.path]);
+
+        m_pendingArchives.insert(arc.getGuid());
     }
 
-    emit numPendingArchives(pendingArchives_.size());    
+    emit numPendingArchives(m_pendingArchives.size());    
+
+    DEBUG("%1 pending archives", m_pendingArchives.size());    
 }
 
 void ArchiveManager::repairReady(const app::Archive& arc)
 {
+    DEBUG("Repair ready %1", arc.file);
+
+    // see comments in packCompleted.
+    auto it = m_repairs.find(arc.path);
+    ENDCHECK(m_repairs, it);
+
+    it->second--;
+    if (it->second > 0)
+    {
+        DEBUG("There are pending (%1) repairs for '%2'. Unpacking postponed.",
+            arc.path, it->second);
+        return;
+    }
+
+    m_repairs.erase(it);
+
+    DEBUG("Repairs completed for '%1'. Scanning for archives to unpack.", 
+        arc.path);
+
     QDir dir;
     dir.setPath(arc.path);
     const auto& entries = dir.entryList();
-    const auto& volumes = unpacker_.findUnpackVolumes(entries);
+    const auto& volumes = m_unpacker.findUnpackVolumes(entries);
     for (const auto& vol : volumes)
     {
-        if (unpacks_.find(arc.path + "/" + vol) != std::end(unpacks_))
+        if (m_unpacks.find(arc.path + "/" + vol) != std::end(m_unpacks))
             continue;
 
         Archive unrar;
@@ -101,22 +133,27 @@ void ArchiveManager::repairReady(const app::Archive& arc)
         unrar.file  = vol;
         unrar.desc  = vol;
         unrar.state = Archive::Status::Queued;
-        unpacker_.addUnpack(unrar);
-        unpacks_.insert(arc.path + "/" + vol);
-        pendingArchives_.insert(unrar.getGuid());
+        m_unpacker.addUnpack(unrar);
+        m_unpacks.insert(arc.path + "/" + vol);
+
+        m_pendingArchives.insert(unrar.getGuid());
     }
 
-    pendingArchives_.erase(arc.getGuid());
+    CONTAINS(m_pendingArchives, arc.getGuid());
 
-    emit numPendingArchives(pendingArchives_.size());
+    m_pendingArchives.erase(arc.getGuid());
+
+    emit numPendingArchives(m_pendingArchives.size());
 }
 
 void ArchiveManager::unpackReady(const app::Archive& arc)
 {
+    DEBUG("Unpack ready %1", arc.file);
+
     QDir dir;
     dir.setPath(arc.path);
     const auto& entries = dir.entryList();
-    const auto& volumes = unpacker_.findUnpackVolumes(entries);
+    const auto& volumes = m_unpacker.findUnpackVolumes(entries);
     for (const auto& vol : volumes)
     {
         // sometimes we have a .rar file inside a .rar file. (subtitles)
@@ -124,7 +161,7 @@ void ArchiveManager::unpackReady(const app::Archive& arc)
         // rar files that we havent extracted yet and extract those too.
         // this means that we need to manually keep track of the archives
         // that we have already extracted.
-        if (unpacks_.find(arc.path + "/" + vol) != std::end(unpacks_))
+        if (m_unpacks.find(arc.path + "/" + vol) != std::end(m_unpacks))
             continue;
 
         Archive unrar;
@@ -132,13 +169,15 @@ void ArchiveManager::unpackReady(const app::Archive& arc)
         unrar.file = vol;
         unrar.desc = vol;
         unrar.state = Archive::Status::Queued;
-        unpacks_.insert(arc.path + "/" + vol);
-        pendingArchives_.insert(unrar.getGuid());
+        m_unpacks.insert(arc.path + "/" + vol);
+        m_pendingArchives.insert(unrar.getGuid());
     }
 
-    pendingArchives_.erase(arc.getGuid());
+    CONTAINS(m_pendingArchives, arc.getGuid());
 
-    emit numPendingArchives(pendingArchives_.size());
+    m_pendingArchives.erase(arc.getGuid());
+
+    emit numPendingArchives(m_pendingArchives.size());
 }
 
 } // app

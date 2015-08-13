@@ -27,6 +27,7 @@
 #include <memory>
 #include <vector>
 #include <set>
+#include <map>
 #include "archive.h"
 
 namespace app
@@ -60,12 +61,13 @@ namespace app
         void unpackReady(const app::Archive& arc);
 
     private:
-        Repairer& repairer_;
-        Unpacker& unpacker_;
+        Repairer& m_repairer;
+        Unpacker& m_unpacker;
     private:
-        std::set<QString> unpacks_;
+        std::set<QString> m_unpacks;
+        std::map<QString, quint32> m_repairs;
 
-        std::set<quint32> pendingArchives_;
+        std::set<quint32> m_pendingArchives;
     };
 
 } // app

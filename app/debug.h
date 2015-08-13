@@ -125,6 +125,12 @@ namespace debug
         ASSERT(i != c.end());
     }
 
+    template<typename Container, typename Key>
+    void checkContains(const Container& c, const Key& k)
+    {
+        ASSERT(c.find(k) != c.end());
+    }
+
 } // debug
 
 #if defined(NEWSFLASH_DEBUG)
@@ -141,3 +147,5 @@ namespace debug
 #define BOUNDSCHECK(container, index) debug::checkBounds(container, index);
 
 #define ENDCHECK(container, it) debug::checkNotEnd(container, it);
+
+#define CONTAINS(container, key) debug::checkContains(container, key);
