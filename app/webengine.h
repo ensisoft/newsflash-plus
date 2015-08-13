@@ -57,9 +57,9 @@ namespace app
         void heartbeat();
 
     private:
-        QNetworkAccessManager qnam_;
-        QTimer timer_;
-        std::list<std::unique_ptr<WebQuery>> queries_;
+        QNetworkAccessManager m_qnam;
+        QTimer m_timer;
+        std::list<std::unique_ptr<WebQuery>> m_queries;
     };
 
     extern WebEngine* g_web;

@@ -44,22 +44,22 @@ namespace app
         OnReplyCallback OnReply;
 
         // construct a new simple query.
-        WebQuery(QUrl url) : url_(url), reply_(nullptr), abort_(false), ticks_(0)
+        WebQuery(QUrl url) : m_url(url), m_reply(nullptr), m_aborted(false), m_timeout(false), m_ticks(0)
         {}
 
         // construct a query with attachment.
         WebQuery(QUrl url, QString attchName, QByteArray attchData) : WebQuery(url)
         {
-            attchData_ = attchData;
-            attchName_ = attchName;
+            m_attchData = attchData;
+            m_attchName = attchName;
         }
 
         // submit the query through QNetworkAccessManager.
         bool submit(QNetworkAccessManager& qnam);
 
-        // tick the query. when maximum ticks are reached the
-        // query is expired and timed out.
-        bool tick();
+        // tick the query. if the current tick count exceeds the max tick count
+        // returns false, otherwise true.
+        bool tick(unsigned maxTicks);
 
         // inspect a reply. if the reply is for this query
         // invokes the OnReply callback and returns true.
@@ -71,21 +71,29 @@ namespace app
 
         bool isAborted() const;
 
-        // abort the query.
+        bool isTimeout() const;
+
+        // abort the query. this will not invoke the OnReply callback.
         void abort();
 
+        // times out the query. this is used by the WebEngine and
+        // is not intended to be called by the clients.
+        void timeout();
+
         bool isOwner(const QNetworkReply& reply) const
-        { return &reply == reply_; }
+        { return &reply == m_reply; }
+
     private:
         bool haveAttachment() const;
     private:
-        QUrl url_;
-        QString attchName_;
-        QByteArray attchData_;
-        QNetworkReply* reply_;
+        QUrl m_url;
+        QString m_attchName;
+        QByteArray m_attchData;
+        QNetworkReply* m_reply;
     private:
-        bool abort_;
-        unsigned ticks_;
+        bool m_aborted;
+        bool m_timeout;
+        unsigned m_ticks;
     };
 
 } // app
