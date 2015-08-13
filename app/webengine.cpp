@@ -51,22 +51,22 @@ WebEngine::WebEngine()
 {
     DEBUG("WebEngine created");
 
-    QObject::connect(&qnam_, SIGNAL(finished(QNetworkReply*)),
+    QObject::connect(&m_qnam, SIGNAL(finished(QNetworkReply*)),
         this, SLOT(finished(QNetworkReply*)));
-    QObject::connect(&timer_, SIGNAL(timeout()),
+    QObject::connect(&m_timer, SIGNAL(timeout()),
         this, SLOT(heartbeat()));
 }
 
 WebEngine::~WebEngine()
 {
-    if (!queries_.empty())
+    if (!m_queries.empty())
     {
-        timer_.stop();
-        timer_.blockSignals(true);
-        qnam_.blockSignals(true);
-        DEBUG("WebEngine has %1 pending queries...", queries_.size());
+        m_timer.stop();
+        m_timer.blockSignals(true);
+        m_qnam.blockSignals(true);
+        DEBUG("WebEngine has %1 pending queries...", m_queries.size());
 
-        for (auto& query : queries_)
+        for (auto& query : m_queries)
             query->abort();
     }
 
@@ -79,11 +79,11 @@ WebQuery* WebEngine::submit(WebQuery query)
 
     WebQuery* ret = q.get();
 
-    queries_.push_back(std::move(q));
+    m_queries.push_back(std::move(q));
 
-    timer_.setInterval(1000);
-    timer_.start();
-    if (queries_.size() == 1)
+    m_timer.setInterval(1000);
+    m_timer.start();
+    if (m_queries.size() == 1)
         heartbeat();
 
     return ret;
@@ -91,68 +91,81 @@ WebQuery* WebEngine::submit(WebQuery query)
 
 void WebEngine::finished(QNetworkReply* reply)
 {
-    auto it = std::begin(queries_);
-    for (; it != std::end(queries_); ++it)
+    auto it = std::begin(m_queries);
+    for (; it != std::end(m_queries); ++it)
     {
         auto& query = *it;
         if (query->receive(*reply))
             break;
     }        
-    ENDCHECK(queries_, it);
+    ENDCHECK(m_queries, it);
 
-    queries_.erase(it);
+    auto& query = *it;
+
+    // see the comments in heartbeat()
+    if (!query->isTimeout())
+        m_queries.erase(it);
+
+
     reply->deleteLater();
 }
 
 void WebEngine::heartbeat()
 {
     // first see if there's a new query to be submitted.
-    auto it = std::find_if(std::begin(queries_), std::end(queries_),
+    auto it = std::find_if(std::begin(m_queries), std::end(m_queries),
         [](const std::unique_ptr<WebQuery>& query) {
             return !query->isActive() && !query->isAborted();
         });
-    if (it != std::end(queries_))
+    if (it != std::end(m_queries))
     {
         auto& query = *it;
-        query->submit(qnam_);
+        query->submit(m_qnam);
     }
 
     // remove queries that were aborted before being submitted.
-    auto end = std::remove_if(std::begin(queries_), std::end(queries_),
+    auto end = std::remove_if(std::begin(m_queries), std::end(m_queries),
         [&](const std::unique_ptr<WebQuery>& query) {
             return query->isAborted();
         });
-    queries_.erase(end, std::end(queries_));
+    m_queries.erase(end, std::end(m_queries));
 
-    // important. need to block qnam signals here
-    // because if we manually timeout a QNetworkRequest (and call abort)
-    // it will asynchronousnly invoke the finished signal with Aborted error status.
-    // this would mess up our iteration here.
-    qnam_.blockSignals(true);
+
+    // important: if we manually timeout() a webquery the finished signal for the
+    // query will be emitted. This is exactly what we want since basically this 
+    // means that the query completed/finished but with *errors*. 
+    // However we must be careful since the same callback is also used for 
+    // succesful queries and in those cases it deletes the query object
+    // not to mess up our iteration here!
 
     // tick live queries and abort the ones that have timed out.
-    for (auto it = std::begin(queries_); it != std::end(queries_); )
+    for (auto it = std::begin(m_queries); it != std::end(m_queries); )
     {
         auto& query = *it;
+        // if not yet active (i.e. submitted), skip it.
         if (!query->isActive())
         {
             ++it;
             continue;
         }
-        if (query->tick())
+
+        const unsigned TimeoutTresholdTicks = 30;
+
+        // update the tick, returns true if still within timeout treshold.
+        if (query->tick(TimeoutTresholdTicks))
         {
             ++it;
             continue;
         }
 
-        query->abort();
-        it = queries_.erase(it);
+        // timeout the query.
+        // see the comments above about the signal handler.
+        query->timeout();
+        it = m_queries.erase(it);
     }
 
-    qnam_.blockSignals(false);
-
-    if (queries_.empty())
-        timer_.stop();
+    if (m_queries.empty())
+        m_timer.stop();
 }
 
 WebEngine* g_web;
