@@ -40,7 +40,7 @@ void PieView::paintEvent(QPaintEvent* event)
     QPainter painter(this);
     painter.setRenderHints(QPainter::HighQualityAntialiasing);
 
-    const auto rect   = this->rect();
+    //const auto rect   = this->rect();
     const auto width  = this->width();
     const auto height = this->height();
     const auto edge   = std::min(width, height) * m_scale;
@@ -60,7 +60,7 @@ void PieView::paintEvent(QPaintEvent* event)
     QBrush used(Qt::darkRed);
     QBrush avail(Qt::darkGreen);    
     
-    const auto sliceAvail = m_avail;
+    //const auto sliceAvail = m_avail;
     const auto sliceUsed  = 1.0 - m_avail;
     const auto fullCircle = 360 * 16;
 
