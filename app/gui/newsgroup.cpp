@@ -576,10 +576,15 @@ void NewsGroup::downloadToPrevious()
 
 void NewsGroup::selectionChanged(const QItemSelection& selected, const QItemSelection& deselected)
 {
+    // update the selection bits in the index items.
+
+    // current selection is deselected.
     model_.select(selection_, false);
 
+    // grab new items.
     selection_ = ui_.tableView->selectionModel()->selectedRows();
 
+    // update (store) the item bits.
     model_.select(selection_, true);
 
 
@@ -597,10 +602,15 @@ void NewsGroup::selectionChanged(const QItemSelection& selected, const QItemSele
 }
 
 void NewsGroup::modelBegReset()
-{}
+{
+    // intentationally empty placeholder.
+}
 
 void NewsGroup::modelEndReset()
 {
+    // the model was reset... need to scan the model in order to restore the 
+    // current selection on the UI
+
     QModelIndexList list;
     model_.scanSelected(list);
 
@@ -611,8 +621,10 @@ void NewsGroup::modelEndReset()
             sel.select(i, i);
 
         auto* model = ui_.tableView->selectionModel();
+        model->blockSignals(true);
         model->select(sel, 
             QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+        model->blockSignals(false);
     }
 
     selection_ = list;
