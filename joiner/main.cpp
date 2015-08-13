@@ -28,6 +28,7 @@
 #include <QtGlobal>
 #include <QtDebug>
 #include <QRegExp>
+#include <QFileInfo>
 #include <set>
 #include <map>
 
@@ -41,7 +42,9 @@ int main(int argc, char* argv[])
 {
     QCoreApplication app(argc, argv);
 
-    bool cleanup = false;
+    bool cleanup   = false;
+    bool overwrite = false;
+    bool help      = false;
     QString folder;
 
     const auto& cmds = app.arguments();
@@ -57,7 +60,21 @@ int main(int argc, char* argv[])
         }
         else if (name == "--cleanup")
             cleanup = true;
+        else if (name == "--overwrite")
+            overwrite = true;
+        else if (name == "--help")
+            help = true;
     }
+    if (help)
+    {
+        qDebug() << "HJSplit file joiner";
+        qDebug() << "--folder\tSpecify the scanning folder.";
+        qDebug() << "--cleanup\tRemove HJSplit files after joining.";
+        qDebug() << "--overwrite\tOverwrite the target file if it exists.";
+        qDebug() << "--help\t\tPrint this help and exit.";
+        return 0;
+    }
+
 
     if (folder.isEmpty())
     {
@@ -95,28 +112,39 @@ int main(int argc, char* argv[])
         const auto& file  = it->first;
         const auto& parts = it->second;
 
-        QFile out(joinPath(folder, file));
-        if (!out.open(QIODevice::WriteOnly | QIODevice::Truncate))
+        QFileInfo info(joinPath(folder, file));
+        if (info.exists() && !overwrite)
         {
-            qCritical() << "Error: Failed to open:" << file;
-            return 1;
+            qDebug() << file << "already exists. Refusing to overwrite.";
         }
-        for (const auto& part : parts)
+        else
         {
-            // dunno wth is the .000 file, looks like some sort of descriptor
-            if (!part.endsWith(".000"))
+            QFile out(joinPath(folder, file));
+            if (!out.open(QIODevice::WriteOnly | QIODevice::Truncate))
             {
-                QFile in(joinPath(folder, part));
-                if (!in.open(QIODevice::ReadOnly))
-                {
-                    qCritical() << "Error: Failed to open:" << part;
-                    return 1;
-                }
-                QByteArray data = in.readAll();
-                out.write(data);
-                qDebug() << "Joined:" << part << "->" << file;
+                qCritical() << "Error: Failed to open:" << file;
+                return 1;
             }
-            if (cleanup)
+            for (const auto& part : parts)
+            {
+                // dunno wth is the .000 file, looks like some sort of descriptor
+                if (!part.endsWith(".000"))
+                {
+                    QFile in(joinPath(folder, part));
+                    if (!in.open(QIODevice::ReadOnly))
+                    {
+                        qCritical() << "Error: Failed to open:" << part;
+                        return 1;
+                    }
+                    QByteArray data = in.readAll();
+                    out.write(data);
+                    qDebug() << "Joined:" << part << "->" << file;
+                }
+            }
+        }
+        if (cleanup)
+        {
+            for (const auto& part : parts)
             {
                 QFile::remove(joinPath(folder, part));
                 qDebug() << "Deleted: " << part;
