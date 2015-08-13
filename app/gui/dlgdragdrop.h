@@ -36,7 +36,8 @@ namespace gui
         DlgDragDrop(QWidget* parent, const QString& filename) : QDialog(parent)
         {
             m_ui.setupUi(this);
-            m_ui.groupBox->setTitle(filename);
+            //m_ui.groupBox->setTitle(filename);
+            m_ui.lblHint->setText(filename);
         }
         bool downloadContents() const 
         {

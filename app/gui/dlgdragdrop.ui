@@ -17,14 +17,13 @@
    <item>
     <widget class="QGroupBox" name="groupBox">
      <property name="title">
-      <string>NZB File action</string>
+      <string>Select Drag &amp;&amp; Drop Action</string>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout">
       <item>
        <widget class="QLabel" name="lblHint">
         <property name="text">
-         <string>A Newzbin (.nzb) file was drag &amp; dropped.
-What would you like to do?</string>
+         <string/>
         </property>
         <property name="alignment">
          <set>Qt::AlignCenter</set>
