@@ -115,6 +115,9 @@ namespace app
         // get the item contents and save them to the specified file.
         void saveItem(const QModelIndex& index, const QString& file);
 
+        void downloadItem(const QModelIndex& index,
+            const QString& folder, quint32 account);
+
         const MediaItem& getItem(const QModelIndex& index) const;
 
     private:

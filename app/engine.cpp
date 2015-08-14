@@ -43,6 +43,7 @@
 #include "newsinfo.h"
 #include "utility.h"
 #include "types.h"
+#include "download.h"
 
 namespace nf = newsflash;
 namespace ui = newsflash::ui;
@@ -151,9 +152,9 @@ void Engine::setFillAccount(quint32 id)
     engine_->set_fill_account(id);
 }
 
-bool Engine::downloadNzbContents(quint32 acc, const QString& basePath, const QString& path, const QString& desc, const QByteArray& buff)
+bool Engine::downloadNzbContents(const Download& download, const QByteArray& nzb)
 {
-    QBuffer io(const_cast<QByteArray*>(&buff));
+    QBuffer io(const_cast<QByteArray*>(&nzb));
 
     std::vector<NZBContent> items;
 
@@ -177,49 +178,16 @@ bool Engine::downloadNzbContents(quint32 acc, const QString& basePath, const QSt
     if (err != NZBError::None)
         return false;
 
-    auto location = basePath.isEmpty() ? 
-        downloads_ : basePath;
-    location = joinPath(location, path);
-
-    QDir dir(location);
-    if (!dir.mkpath(location))
-    {
-        ERROR("Error creating path %1", location);
-        return false;
-    }
-
-    newsflash::ui::batch download;
-    download.account = acc;
-    download.path = narrow(location);
-    download.desc = toUtf8(desc);
-    for (auto& item : items)
-    {
-        newsflash::ui::download file;
-        file.articles = std::move(item.segments);
-        file.groups   = std::move(item.groups);
-        file.size     = item.bytes;
-        file.name     = nntp::find_filename(toUtf8(item.subject));
-        if (file.name.size() < 5)
-            file.name = toUtf8(item.subject);
-        download.files.push_back(std::move(file));
-    }
-    engine_->download_files(std::move(download));
-
-    start();
-
-    INFO("Downloading \"%1\"", desc);
-    NOTE("Downloading \"%1\"", desc);
-
-    emit newDownloadQueued(desc);
-    return true;
+    return downloadNzbContents(download, std::move(items));
 }
 
-
-bool Engine::downloadNzbContents(quint32 acc, const QString& basePath, const QString& path, const QString& desc, std::vector<NZBContent> nzb)
+bool Engine::downloadNzbContents(const Download& download, std::vector<NZBContent> nzb)
 {
-    auto location = basePath.isEmpty() ?
-        downloads_ : basePath;
-    location = joinPath(location, path);
+    QString location = download.basepath;
+    if (location.isEmpty())
+        location = downloads_;
+
+    location = joinPath(location, download.folder);
 
     QDir dir(location);
     if (!dir.mkpath(location))
@@ -228,10 +196,10 @@ bool Engine::downloadNzbContents(quint32 acc, const QString& basePath, const QSt
         return false;
     }
 
-    newsflash::ui::batch download;
-    download.account = acc;
-    download.path    = narrow(location);
-    download.desc    = toUtf8(desc);
+    newsflash::ui::batch batch;
+    batch.account = download.account;
+    batch.path    = narrow(location);
+    batch.desc    = toUtf8(download.desc);
     for (auto& item : nzb)
     {
         newsflash::ui::download file;
@@ -241,16 +209,17 @@ bool Engine::downloadNzbContents(quint32 acc, const QString& basePath, const QSt
         file.name     = nntp::find_filename(toUtf8(item.subject));
         if (file.name.size() < 5)
             file.name = toUtf8(item.subject);
-        download.files.push_back(std::move(file));
+        batch.files.push_back(std::move(file));
     }
-    engine_->download_files(std::move(download));
+    engine_->download_files(std::move(batch));
 
     start();
 
-    INFO("Downloading \"%1\"", desc);
-    NOTE("Downloading \"%1\"", desc);
+    INFO("Downloading \"%1\"", download.desc);
+    NOTE("Downloading \"%1\"", download.desc);
 
-    emit newDownloadQueued(desc);
+    emit newDownloadQueued(download);
+
     return true;
 }
 

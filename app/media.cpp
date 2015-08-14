@@ -111,6 +111,19 @@ QString toString(MediaType m)
     return {};
 }
 
+QString toString(MediaSource source)
+{
+    switch (source)
+    {
+        case MediaSource::RSS:     return "RSS";
+        case MediaSource::Search:  return "Search";
+        case MediaSource::Headers: return "News";
+        case MediaSource::File:    return "File";
+    }
+    Q_ASSERT(false);
+    return {};
+}
+
 QIcon toIcon(MediaType type)
 {
     using m = MediaType;
@@ -166,5 +179,17 @@ QIcon toIcon(MediaType type)
     return {};
 }
 
+QIcon toIcon(MediaSource source)
+{
+    switch (source)
+    {
+        case MediaSource::RSS: return QIcon("icons:ico_rss.png");
+        case MediaSource::Search: return QIcon("icons:ico_search.png");
+        case MediaSource::Headers: return QIcon("icons:ico_news.png");
+        case MediaSource::File: return QIcon("icons:ico_nzb.png");
+    }
+    Q_ASSERT(false);
+    return {};
+}
 
 } // app

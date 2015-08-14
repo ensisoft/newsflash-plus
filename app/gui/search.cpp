@@ -450,9 +450,9 @@ void Search::downloadSelected(const QString& folder)
     if (indices.isEmpty())
         return;
 
-    auto callback = [=](const QByteArray& buff, const QString& desc, const QString& path, quint32 acc) {
-        app::g_engine->downloadNzbContents(acc, path, desc, desc, buff);
-    };
+    //auto callback = [=](const QByteArray& buff, const QString& desc, const QString& path, quint32 acc) {
+    //    app::g_engine->downloadNzbContents(acc, path, desc, desc, buff);
+    //};
 
     for (const auto& index : indices)
     {
@@ -462,10 +462,7 @@ void Search::downloadSelected(const QString& folder)
         if (acc == 0)
             continue;
 
-        model_.loadItem(index,
-            std::bind(callback, std::placeholders::_1, std::placeholders::_2,
-                folder, acc));
-
+        model_.downloadItem(index, folder, acc);
     }
     ui_.progress->setVisible(true);
     ui_.actionStop->setEnabled(true);

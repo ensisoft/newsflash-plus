@@ -31,6 +31,10 @@
 
 namespace app
 {
+    enum class MediaSource {
+        RSS, Search, Headers, File
+    };
+
     // media types tags that apply to any particular media object.
     // coming from RSS feeds, Newznab etc.
     // int = international
@@ -192,7 +196,9 @@ namespace app
     QString findTVSeriesTitle(const QString& subject, QString* season = nullptr, QString* episode =  nullptr);
 
     QString toString(MediaType media);
+    QString toString(MediaSource source);
 
     QIcon toIcon(MediaType media);
+    QIcon toIcon(MediaSource source);
 
 } // app

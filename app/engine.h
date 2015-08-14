@@ -42,6 +42,8 @@ namespace app
 {
     class Settings;
     struct NZBContent;
+    struct Download;
+
     struct FileInfo;
     struct FilePackInfo;
     struct NewsGroupInfo;
@@ -66,8 +68,8 @@ namespace app
         // set the current fill account.
         void setFillAccount(quint32 id);
 
-        bool downloadNzbContents(quint32 acc, const QString& basePath, const QString& path, const QString& desc, const QByteArray& nzb);
-        bool downloadNzbContents(quint32 acc, const QString& basePath, const QString& path, const QString& desc, std::vector<NZBContent> nzb);
+        bool downloadNzbContents(const Download& download, const QByteArray& nzb);
+        bool downloadNzbContents(const Download& download, std::vector<NZBContent> nzb);
 
         // retrieve a newgroup listing from the specified account.
         // returns a task id that can be used to manage the task.
@@ -288,7 +290,7 @@ namespace app
 
     signals:
         void shutdownComplete();
-        void newDownloadQueued(const QString& desc);
+        void newDownloadQueued(const Download& download);
         void newHeaderDataAvailable(const QString& file);
         void newHeaderInfoAvailable(const QString& group, quint64 numLocal, quint64 numRemote);
         void fileCompleted(const app::FileInfo& file);

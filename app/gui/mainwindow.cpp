@@ -202,11 +202,6 @@ void MainWindow::closeWidget(MainWidget* widget)
 
 void MainWindow::loadState()
 {
-    // load global objects state.
-    app::g_accounts->loadState(settings_);
-    app::g_tools->loadstate(settings_);    
-    app::g_engine->loadState(settings_);
-
     if (!settings_.contains("window", "width"))
     {
         // if the settings file doesn't exist then we assume that this is the
@@ -776,9 +771,10 @@ bool MainWindow::saveState(DlgExit* dlg)
         for (const auto& a : transient_)
             settings_.merge(a);
 
+        // todo: refactor this
         app::g_accounts->saveState(settings_);
         app::g_engine->saveState(settings_);
-        app::g_tools->savestate(settings_);
+        app::g_tools->saveState(settings_);
 
 
         settings_.set("window", "width", width());

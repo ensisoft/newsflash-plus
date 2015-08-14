@@ -43,6 +43,7 @@
 #include "platform.h"
 #include "webquery.h"
 #include "webengine.h"
+#include "download.h"
 
 namespace app
 {
@@ -225,7 +226,7 @@ void RSSReader::onRefreshComplete(RSSFeed* feed, MediaType type, QNetworkReply& 
 
 void RSSReader::onNzbFileComplete(const QString& file, QNetworkReply& reply)
 {
-    DEBUG("Get nzb data reply %1", reply);
+    DEBUG("Got nzb data reply %1", reply);
 
     const auto it = std::find_if(std::begin(queries_), std::end(queries_),
         [&](const WebQuery* q ){
@@ -258,7 +259,7 @@ void RSSReader::onNzbFileComplete(const QString& file, QNetworkReply& reply)
 
 void RSSReader::onNzbDataComplete(const QString& folder, const QString& desc, quint32 acc, QNetworkReply& reply)
 {
-    DEBUG("Get nzb data reply %1", reply);
+    DEBUG("Got nzb data reply %1", reply);
 
     const auto it = std::find_if(std::begin(queries_), std::end(queries_),
         [&](const WebQuery* q ){
@@ -277,14 +278,22 @@ void RSSReader::onNzbDataComplete(const QString& folder, const QString& desc, qu
         return;
     }
 
-    const auto bytes = reply.readAll();
+    QByteArray nzb = reply.readAll();
 
-    g_engine->downloadNzbContents(acc, folder, desc, desc, bytes);
+    Download download;
+    // TODO: MediaType !!
+    download.type     = MediaType::ConsoleNDS;
+    download.source   = MediaSource::RSS;
+    download.account  = acc;
+    download.basepath = folder;
+    download.folder   = desc;
+    download.desc     = desc;
+    g_engine->downloadNzbContents(download, nzb);
 }
 
 void RSSReader::onNzbDataCompleteCallback(const data_callback& cb, QNetworkReply& reply)
 {
-    DEBUG("Get nzb data reply %1", reply);
+    DEBUG("Got nzb data reply %1", reply);
 
     const auto it = std::find_if(std::begin(queries_), std::end(queries_),
         [&](const WebQuery* q ){

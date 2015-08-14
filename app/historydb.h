@@ -26,25 +26,24 @@
 #  include <QString>
 #  include <QDateTime>
 #  include <QAbstractTableModel>
+#  include <QFile>
 #include <newsflash/warnpop.h>
 #include <vector>
 #include "media.h"
 
 namespace app
 {
+    struct Download;
+
     class HistoryDb : public QAbstractTableModel
     {
         Q_OBJECT
 
     public:
-        enum class MediaSource {
-            RSS, Search, Headers
-        };
-
         struct Item {
-            QDateTime date;
-            QString desc;
-            MediaType type;
+            QDateTime   date;
+            QString     desc;
+            MediaType   type;
             MediaSource source;
         };
 
@@ -59,6 +58,12 @@ namespace app
        virtual int columnCount(const QModelIndex&) const override;
 
        void loadHistory();
+
+       const Item* lookup(const QString& desc);
+
+    public slots:
+        void newDownloadQueued(const Download& download);
+
     private:
         enum class Columns {
             Date, Type, Desc, SENTINEL
@@ -66,6 +71,8 @@ namespace app
 
     private:
         std::vector<Item> m_items;
+    private:
+        QFile m_file;
     };
 
     extern HistoryDb* g_history;

@@ -41,6 +41,7 @@
 #include "fileinfo.h"
 #include "filetype.h"
 #include "nzbparse.h"
+#include "download.h"
 
 namespace app
 {
@@ -705,7 +706,14 @@ void NewsGroup::download(const QModelIndexList& list, quint32 acc, QString folde
 
     DEBUG("Suggest batch name '%1' and folder '%2'", name, path);    
 
-    g_engine->downloadNzbContents(acc, folder, path, desc, std::move(pack));
+    Download download;
+    download.type     = MediaType::Other;
+    download.source   = MediaSource::Headers;
+    download.account  = acc;
+    download.basepath = folder;
+    download.folder   = path;
+    download.desc     = desc;
+    g_engine->downloadNzbContents(download, std::move(pack));
 
     const auto first = QAbstractTableModel::index(minRow, 0);
     const auto last  = QAbstractTableModel::index(maxRow, (int)Columns::LAST);

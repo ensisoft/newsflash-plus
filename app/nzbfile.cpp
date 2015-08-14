@@ -36,6 +36,7 @@
 #include "filetype.h"
 #include "engine.h"
 #include "types.h"
+#include "download.h"
 
 namespace app
 {
@@ -113,7 +114,14 @@ void NZBFile::download(const QModelIndexList& list, quint32 account, const QStri
     for (const auto& i : list)
         selected.push_back(data_[i.row()]);
 
-    g_engine->downloadNzbContents(account, folder, desc, desc, std::move(selected));
+    Download download;
+    download.type     = MediaType::Other;
+    download.source   = MediaSource::File;
+    download.account  = account;
+    download.basepath = folder;
+    download.folder   = desc;
+    download.desc     = desc;
+    g_engine->downloadNzbContents(download, std::move(selected));
 }
 
 void NZBFile::setShowFilenamesOnly(bool on_off)
