@@ -55,6 +55,7 @@
 #include "unpack.h"
 #include "notify.h"
 #include "searchmodule.h"
+#include "historydb.h"
 #include "../debug.h"
 #include "../format.h"
 #include "../distdir.h"
@@ -78,6 +79,7 @@
 #include "../webengine.h"
 #include "../poweroff.h"
 #include "../platform.h"
+#include "../historydb.h"
 
 namespace gui
 {
@@ -151,6 +153,9 @@ int run(int argc, char* argv[])
 
     app::MovieDatabase omdb;
     app::g_movies = &omdb;
+
+    app::HistoryDb hdb;
+    app::g_history = &hdb;
 
     // instead of the stack..
 
@@ -252,6 +257,9 @@ int run(int argc, char* argv[])
     // search engine
     gui::SearchModule search;
     win.attach(&search);
+
+    gui::HistoryDb historygui(app::g_history);
+    win.attach(&historygui);
 
     // commands module
     app::Commands cmds;
