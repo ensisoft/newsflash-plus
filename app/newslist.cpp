@@ -41,6 +41,7 @@
 #include "types.h"
 #include "newsinfo.h"
 #include "utility.h"
+#include "media.h"
 
 namespace app
 {
@@ -73,7 +74,8 @@ QVariant NewsList::headerData(int section, Qt::Orientation orietantation, int ro
     {
         switch ((NewsList::Columns)section)
         {
-            case Columns::Messages:   return "Messages";            
+            case Columns::Messages:   return "Messages";        
+            case Columns::Category:   return "Category";    
             case Columns::SizeOnDisk: return "Size";
             case Columns::Subscribed: return "";
             case Columns::Name:       return "Name";
@@ -100,15 +102,25 @@ QVariant NewsList::data(const QModelIndex& index, int role) const
         const auto& group = groups_[row];
         switch ((NewsList::Columns)col)
         {
-            case Columns::Messages:    return toString(app::count{group.numMessages});
+            case Columns::Messages:  
+                return toString(app::count{group.numMessages});
+
+            case Columns::Category:  
+                return toString(group.type);
+
             case Columns::SizeOnDisk:  
                 if (group.sizeOnDisk == 0)
                     break;
                 return toString(app::size{group.sizeOnDisk});
 
-            case Columns::Name:        return group.name;
-            case Columns::Subscribed:  break;
-            case Columns::LAST: Q_ASSERT(0); break;
+            case Columns::Name:        
+                return group.name;
+            case Columns::Subscribed:  
+                break;
+
+            case Columns::LAST: 
+                Q_ASSERT(0); 
+                break;
         }
     }
     else if (role == Qt::DecorationRole)
@@ -118,11 +130,15 @@ QVariant NewsList::data(const QModelIndex& index, int role) const
         {
             case Columns::Messages:
                 return QIcon("icons:ico_news.png");
+
             case Columns::Subscribed:
                 if (group.flags & Flags::Subscribed)
+                {
                     return QIcon("icons:ico_favourite.png");
+                }
                 break;
 
+            case Columns::Category: break;
             case Columns::Name: break;
             case Columns::SizeOnDisk: break;
             case Columns::LAST: Q_ASSERT(0); break;
@@ -147,6 +163,10 @@ void NewsList::sort(int column, Qt::SortOrder order)
     {
         case Columns::Messages:  
             app::sort(beg, end, order, &group::numMessages);
+            break;
+
+        case Columns::Category:
+            app::sort(beg, end, order, &group::type);
             break;
 
         case Columns::SizeOnDisk:
@@ -239,7 +259,8 @@ void NewsList::loadListing(const QString& file, quint32 accountId)
         g.name  = toks[0];
         g.numMessages = toks[1].toULongLong();
         g.sizeOnDisk  = sumFileSizes(joinPath(datapath, g.name));
-        g.flags = 0;
+        g.flags       = 0;
+        g.type        = findMediaType(g.name);
         for (int i=0; i<newslist.size(); ++i)
         {
             if (newslist[i] == g.name)
@@ -390,6 +411,10 @@ void NewsList::filter(const QString& str, bool showEmpty)
         case Columns::SizeOnDisk:
             app::sort(beg, end, order_, &group::sizeOnDisk);
             break;
+        case Columns::Category:
+            app::sort(beg, end, order_, &group::type);
+            break;
+
         default: Q_ASSERT(!"incorrect sorting");
     }
 

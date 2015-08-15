@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>635</width>
-    <height>387</height>
+    <width>845</width>
+    <height>555</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -47,13 +47,6 @@
          <widget class="QLineEdit" name="editFilter"/>
         </item>
         <item>
-         <widget class="QCheckBox" name="chkShowEmpty">
-          <property name="text">
-           <string>Show empty</string>
-          </property>
-         </widget>
-        </item>
-        <item>
          <spacer name="horizontalSpacer">
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
@@ -62,6 +55,87 @@
            <size>
             <width>40</width>
             <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_4">
+        <item>
+         <widget class="QCheckBox" name="chkMusic_3">
+          <property name="text">
+           <string>Music</string>
+          </property>
+          <property name="checked">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="chkMovies_3">
+          <property name="text">
+           <string>Movies</string>
+          </property>
+          <property name="checked">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="chkTV_3">
+          <property name="text">
+           <string>TV</string>
+          </property>
+          <property name="checked">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="chkConsole_3">
+          <property name="text">
+           <string>Console</string>
+          </property>
+          <property name="checked">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="chkComputer_3">
+          <property name="text">
+           <string>Computer</string>
+          </property>
+          <property name="checked">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="checkBox">
+          <property name="text">
+           <string>Images</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="chkShowEmpty">
+          <property name="text">
+           <string>Show empty</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="horizontalSpacer_4">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>40</width>
+            <height>30</height>
            </size>
           </property>
          </spacer>

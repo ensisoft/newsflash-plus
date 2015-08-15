@@ -46,47 +46,52 @@ namespace app
         ConsoleWii,    
         ConsoleXbox,   
         ConsoleXbox360,
-        ConsolePSP,    
+        ConsolePSP, 
+        ConsolePS1,   
         ConsolePS2,    
         ConsolePS3,   
         ConsolePS4,   
+        ConsoleOther,
 
         //movies,
         MoviesInt,
         MoviesSD, 
         MoviesHD,
         MoviesWMV,
+        MoviesOther,
         
         //audio,
         AudioMp3,
         AudioVideo,
         AudioAudiobook,
         AudioLossless,
+        AudioOther,
 
         //apps,
         AppsPC,    
         AppsISO,   
         AppsMac,   
         AppsAndroid,
-        AppsIos,    
+        AppsIos,   
+        AppsOther, 
 
         //tv,
         TvInt,
         TvSD, 
         TvHD, 
-        TvOther,
         TvSport, 
+        TvOther,        
 
         //xxx,
         XxxDVD,
         XxxHD,
         XxxSD,
+        XxxImg,        
         XxxOther,
-
 
         //other
         Ebook,
-
+        Images,
         Other
     };
 
@@ -96,7 +101,8 @@ namespace app
         return type == MediaType::MoviesInt ||
             type == MediaType::MoviesSD ||
             type == MediaType::MoviesHD ||
-            type == MediaType::MoviesWMV;
+            type == MediaType::MoviesWMV ||
+            type == MediaType::MoviesOther;
     }
 
     inline 
@@ -109,8 +115,6 @@ namespace app
             type == MediaType::TvSport;
     }
     
-
-
     // media item. these items are retrieved from RSS feeds/newznab etc. searches.
     struct MediaItem {
 
@@ -200,5 +204,7 @@ namespace app
 
     QIcon toIcon(MediaType media);
     QIcon toIcon(MediaSource source);
+
+    MediaType findMediaType(const QString& newsgroup);
 
 } // app

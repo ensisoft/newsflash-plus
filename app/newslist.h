@@ -27,9 +27,10 @@
 #  include <QDateTime>
 #  include <QString>
 #  include <QList>
-//#include <newsflash/warnpop.h>
+#include <newsflash/warnpop.h>
 #include <vector>
 #include <map>
+#include "media.h"
 
 namespace app
 {
@@ -42,7 +43,7 @@ namespace app
 
     public:
         enum class Columns {
-            Messages, SizeOnDisk, Subscribed, Name, LAST
+            Messages, Category, SizeOnDisk, Subscribed, Name, LAST
         };
 
         NewsList();
@@ -93,6 +94,7 @@ namespace app
             quint64   numMessages;
             quint64   sizeOnDisk;
             quint32   flags;
+            MediaType type;
         };
         struct operation {
             quint32 account;
