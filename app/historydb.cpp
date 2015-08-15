@@ -25,6 +25,7 @@
 #  include <QTextStream>
 #  include <QFileInfo>
 #include <newsflash/warnpop.h>
+#include <algorithm>
 #include "historydb.h"
 #include "debug.h"
 #include "eventlog.h"
@@ -36,7 +37,7 @@
 namespace app
 {
 
-HistoryDb::HistoryDb()
+HistoryDb::HistoryDb() : m_loaded(false)
 {
     DEBUG("HistoryDb created");
 }
@@ -75,20 +76,7 @@ QVariant HistoryDb::data(const QModelIndex& index, int role) const
     {
         if (col == Columns::Date)
         {
-            switch (item.source)
-            {
-                case MediaSource::RSS:
-                    return QIcon("icons:ico_rss.png");
-
-                case MediaSource::Search:
-                    return QIcon("");
-
-                case MediaSource::Headers:
-                    return QIcon("icons:ico_news.png");
-
-                case MediaSource::File:
-                    return QIcon("");
-            }
+            return toIcon(item.source);
         }
     }
     return {};
@@ -111,7 +99,7 @@ QVariant HistoryDb::headerData(int section, Qt::Orientation orientation, int rol
 
 void HistoryDb::sort(int column, Qt::SortOrder order)
 {
-
+    // todo: is this data even needed to be sortable?
 }
 
 int HistoryDb::rowCount(const QModelIndex&) const 
@@ -142,6 +130,9 @@ void HistoryDb::loadHistory()
 
     DEBUG("Opened history file %1", file);
 
+    m_items.clear();
+    m_file.seek(0);
+
     QTextStream stream(&m_file);
     stream.setCodec("UTF-8");
     while (!stream.atEnd())
@@ -161,8 +152,62 @@ void HistoryDb::loadHistory()
     }
 
     DEBUG("Loaded history data with %1 items", m_items.size());
+
+    m_loaded = true;
 }
 
+void HistoryDb::unloadHistory()
+{
+    m_items.clear();
+    m_loaded = false;
+}
+
+void HistoryDb::clearHistory(bool commit)
+{
+    if (commit)
+    {
+        if (m_file.isOpen())
+            m_file.close();
+
+        const auto& file = homedir::file("history.txt");
+
+        m_file.open(QIODevice::Truncate | QIODevice::WriteOnly);
+    }
+
+    if (m_loaded)
+    {
+        QAbstractTableModel::beginResetModel();
+        m_items.clear();
+        QAbstractTableModel::reset();
+        QAbstractTableModel::endResetModel();
+    }
+}
+
+bool HistoryDb::isEmpty() const
+{
+    return m_items.empty();
+}
+
+bool HistoryDb::lookup(const QString& desc, MediaType type, Item* item) const 
+{
+    auto it = std::find_if(std::begin(m_items), std::end(m_items), 
+        [&](const Item& i) {
+            return i.desc == desc && i.type == type;
+        });
+    if (it == std::end(m_items))
+        return false;
+
+    if (item)
+        *item = *it;
+
+    return true;
+}
+
+bool HistoryDb::isDuplicate(const QString& desc, MediaType type, Item* item) const 
+{
+    // todo:
+    return false;
+}
 
 void HistoryDb::newDownloadQueued(const Download& download)
 {
@@ -183,7 +228,6 @@ void HistoryDb::newDownloadQueued(const Download& download)
     item.type   = download.type;
     item.source = download.source;
 
-
     QTextStream stream(&m_file);
     stream.setCodec("UTF-8");
     stream << (int)item.source << "\t";
@@ -194,10 +238,14 @@ void HistoryDb::newDownloadQueued(const Download& download)
 
     m_file.flush();
 
-    beginInsertRows(QModelIndex(), 0, 0);
-    m_items.push_back(item);
-    endInsertRows();
+    if (m_loaded)
+    {
+        beginInsertRows(QModelIndex(), 0, 0);
+        m_items.push_back(item);
+        endInsertRows();
+    }
 }
+
 
 HistoryDb* g_history;
 

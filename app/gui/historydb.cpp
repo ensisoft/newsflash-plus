@@ -22,7 +22,7 @@
 
 #include <newsflash/config.h>
 #include <newsflash/warnpush.h>
-
+#  include <QtGui/QMessageBox>
 #include <newsflash/warnpop.h>
 #include "historydb.h"
 #include "../eventlog.h"
@@ -36,13 +36,35 @@ HistoryDbSettings::HistoryDbSettings(app::HistoryDb* model) : m_model(model)
 {
     m_ui.setupUi(this);
     m_ui.tableView->setModel(m_model);
+    m_ui.btnClear->setEnabled(!m_model->isEmpty());
 }
 
 HistoryDbSettings::~HistoryDbSettings()
 {}
 
+void HistoryDbSettings::accept()
+{
+
+}
+
 void HistoryDbSettings::on_btnClear_clicked()
-{}
+{
+    // todo: this action isn't reversible, 
+    // i.e. if the settings dialog is canceled
+    // the data is still already lost.
+    // perhaps this should follow the same semantics?
+    // then we don't need to ask here, but the user can just
+    // cancel the settings and the data isnt lost.
+
+    QMessageBox::StandardButton answer = QMessageBox::question(this, "Clear History",
+        "Are you sure you want to clear the history?",
+        QMessageBox::Yes | QMessageBox::No);
+    if (answer == QMessageBox::No)
+        return;
+
+    m_model->clearHistory(true);
+    m_ui.btnClear->setEnabled(false);
+}
 
 HistoryDb::HistoryDb(app::HistoryDb* model) : m_model(model)
 {

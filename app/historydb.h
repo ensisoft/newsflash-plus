@@ -35,6 +35,7 @@ namespace app
 {
     struct Download;
 
+    // Record downloads to a historical database.
     class HistoryDb : public QAbstractTableModel
     {
         Q_OBJECT
@@ -57,9 +58,28 @@ namespace app
        virtual int rowCount(const QModelIndex&) const override;
        virtual int columnCount(const QModelIndex&) const override;
 
+       // Load the history data.
        void loadHistory();
 
-       const Item* lookup(const QString& desc);
+       // Unload the history data reduce memory footprint.
+       void unloadHistory();
+
+       // clear/remove the current history data. 
+       // if commit is true the history database is also
+       // eradicated. otherwise only in memory data is only cleared.
+       void clearHistory(bool commit);
+
+
+       // returns true if database is empty.
+       bool isEmpty() const;
+
+       // try to lookup an item in the database with
+       // direct match on desc and type attributes. 
+       // returns true if matching item is found and stores
+       // it in item if non-null ptr.
+       bool lookup(const QString& desc, MediaType type, Item* item) const;
+
+       bool isDuplicate(const QString& desc, MediaType type, Item* item) const;
 
     public slots:
         void newDownloadQueued(const Download& download);
@@ -71,6 +91,7 @@ namespace app
 
     private:
         std::vector<Item> m_items;
+        bool m_loaded;
     private:
         QFile m_file;
     };

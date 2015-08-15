@@ -42,6 +42,8 @@ namespace gui
         HistoryDbSettings(app::HistoryDb* model);
        ~HistoryDbSettings();
 
+        virtual void accept() override;
+
     private slots:
         void on_btnClear_clicked();
     private:
