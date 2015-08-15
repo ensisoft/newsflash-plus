@@ -21,7 +21,9 @@
 #include <newsflash/config.h>
 #include "dlgselectaccount.h"
 #include "dlgaccount.h"
+#include "dlgduplicate.h"
 #include "../accounts.h"
+#include "../historydb.h"
 
 namespace gui
 {
@@ -70,6 +72,21 @@ quint32 selectAccount(QWidget* parent, const QString& desc)
 
     return acc.id;
 
+}
+
+bool checkDuplicate(QWidget* parent, const QString& desc,
+    app::MediaType type)
+{
+    app::HistoryDb::Item item;
+    if (!app::g_history->isDuplicate(desc, type, &item))
+        return true;
+
+    DlgDuplicate dlg(parent, desc);
+    if (dlg.exec() == QDialog::Rejected)
+        return false;
+
+
+    return true;
 }
 
 } // gui

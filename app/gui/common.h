@@ -24,7 +24,7 @@
 #include <newsflash/warnpush.h>
 #  include <QString>
 #include <newsflash/warnpop.h>
-
+#include "../media.h"
 // common UI functions.
 
 class QWidget;
@@ -36,5 +36,8 @@ namespace gui
 // the account id of the selected account or 0 
 // if the operation was canceled and no account selected.
 quint32 selectAccount(QWidget* parent, const QString& desc);
+
+bool checkDuplicate(QWidget* parent, const QString& desc, 
+    app::MediaType type);
 
 } // gui

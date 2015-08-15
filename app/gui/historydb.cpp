@@ -28,6 +28,7 @@
 #include "../eventlog.h"
 #include "../debug.h"
 #include "../historydb.h"
+#include "../settings.h"
 
 namespace gui
 {
@@ -37,6 +38,7 @@ HistoryDbSettings::HistoryDbSettings(app::HistoryDb* model) : m_model(model)
     m_ui.setupUi(this);
     m_ui.tableView->setModel(m_model);
     m_ui.btnClear->setEnabled(!m_model->isEmpty());
+    m_ui.chkCheckDuplicates->setChecked(m_model->checkDuplicates());
 }
 
 HistoryDbSettings::~HistoryDbSettings()
@@ -44,7 +46,9 @@ HistoryDbSettings::~HistoryDbSettings()
 
 void HistoryDbSettings::accept()
 {
+    bool checkDuplicates = m_ui.chkCheckDuplicates->isChecked();
 
+    m_model->checkDuplicates(checkDuplicates);
 }
 
 void HistoryDbSettings::on_btnClear_clicked()
@@ -74,6 +78,16 @@ HistoryDb::HistoryDb(app::HistoryDb* model) : m_model(model)
 HistoryDb::~HistoryDb()
 {
     DEBUG("History UI deleted");
+}
+
+void HistoryDb::loadState(app::Settings& settings)
+{
+
+}
+
+void HistoryDb::saveState(app::Settings& settings)
+{
+    
 }
 
 SettingsWidget* HistoryDb::getSettings()

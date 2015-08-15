@@ -312,6 +312,7 @@ int run(int argc, char* argv[])
     app::g_accounts->loadState(settings);
     app::g_tools->loadState(settings);
     app::g_engine->loadState(settings);
+    app::g_history->loadState(settings);
     app::g_history->loadHistory();
  
     win.loadState();

@@ -33,11 +33,12 @@
 #include "homedir.h"
 #include "types.h"
 #include "download.h"
+#include "settings.h"
 
 namespace app
 {
 
-HistoryDb::HistoryDb() : m_loaded(false)
+HistoryDb::HistoryDb() : m_loaded(false), m_checkDuplicates(true)
 {
     DEBUG("HistoryDb created");
 }
@@ -111,6 +112,16 @@ int HistoryDb::rowCount(const QModelIndex&) const
 int HistoryDb::columnCount(const QModelIndex&) const 
 {
     return (int)Columns::SENTINEL;
+}
+
+void HistoryDb::loadState(Settings& settings)
+{
+    m_checkDuplicates = settings.get("history", "check_duplicates", m_checkDuplicates);
+}
+
+void HistoryDb::saveState(Settings& settings) const
+{
+    settings.set("history", "check_duplicates", m_checkDuplicates);
 }
 
 void HistoryDb::loadHistory()
@@ -188,6 +199,21 @@ bool HistoryDb::isEmpty() const
     return m_items.empty();
 }
 
+bool HistoryDb::isLoaded() const 
+{
+    return m_loaded;
+}
+
+bool HistoryDb::checkDuplicates() const
+{
+    return m_checkDuplicates;
+}
+
+void HistoryDb::checkDuplicates(bool onOff) 
+{
+    m_checkDuplicates = onOff;
+}
+
 bool HistoryDb::lookup(const QString& desc, MediaType type, Item* item) const 
 {
     auto it = std::find_if(std::begin(m_items), std::end(m_items), 
@@ -205,7 +231,64 @@ bool HistoryDb::lookup(const QString& desc, MediaType type, Item* item) const
 
 bool HistoryDb::isDuplicate(const QString& desc, MediaType type, Item* item) const 
 {
-    // todo:
+    if (!m_checkDuplicates)
+        return false;
+
+    if (!m_loaded)
+        const_cast<HistoryDb*>(this)->loadHistory();
+
+    if (isMovie(type)) 
+    {
+        QString title = findMovieTitle(desc);
+        if (title.isEmpty())
+            return false;
+
+        title = title.toLower();
+
+        for (const auto& item : m_items)
+        {
+            if (!isMovie(item.type))
+                continue;
+            QString t = findMovieTitle(item.desc);
+            if (t.toLower() == title)
+                return true;
+        }
+    }
+    else if (isTVSeries(type))
+    {
+        QString season;
+        QString episode;
+        QString title = findTVSeriesTitle(desc, &season, &episode);
+        if (title.isEmpty())
+            return false;
+
+        title = title.toLower();
+
+        for (const auto& item : m_items)
+        {
+            if (!isTVSeries(item.type))
+                continue;
+            QString e, s;
+            QString t = findTVSeriesTitle(item.desc, &s, &e);
+            if (s != season || e != episode)
+                continue;
+            if (t.toLower() == title)
+                return true;
+        }
+    }
+    else
+    {
+        QString lower = desc.toLower();
+
+        for (const auto& item : m_items)
+        {
+            if (item.type != type)
+                continue;
+            if (item.desc.toLower() == lower)
+                return true;
+        }
+    }
+
     return false;
 }
 

@@ -21,56 +21,36 @@
 #pragma once
 
 #include <newsflash/config.h>
-#include <newsflash/warnpush.h>
-#  include <QObject>
-#  include "ui_historydb.h"
-#include <newsflash/warnpop.h>
-#include "mainmodule.h"
-#include "settings.h"
 
-namespace app {
-    class HistoryDb;
-}
+#include <newsflash/warnpush.h>
+#  include <QtGui/QDialog>
+#  include "ui_dlgduplicate.h"
+#include <newsflash/warnpop.h>
 
 namespace gui
 {
-    class HistoryDbSettings : public SettingsWidget
+    class DlgDuplicate : public QDialog
     {
         Q_OBJECT
 
     public:
-        HistoryDbSettings(app::HistoryDb* model);
-       ~HistoryDbSettings();
-
-        virtual void accept() override;
+        DlgDuplicate(QWidget* parent, const QString& desc) : QDialog(parent)
+        {
+            m_ui.setupUi(this);
+        }
 
     private slots:
-        void on_btnClear_clicked();
+        void on_btnAccept_clicked()
+        {
+            accept();
+        }
+
+        void on_btnCancel_clicked()
+        {
+            reject();
+        }
     private:
-        friend class HistoryDb;
-    private:
-        Ui::History m_ui;
-    private:
-        app::HistoryDb* m_model;
+        Ui::Duplicate m_ui;
     };
 
-    // Interface module for HistoryDb
-    class HistoryDb : public QObject, public MainModule
-    {
-        Q_OBJECT
-
-    public:
-        HistoryDb(app::HistoryDb* model);
-       ~HistoryDb();
-
-        virtual void loadState(app::Settings& settings) override;
-        virtual void saveState(app::Settings& settings) override;
-
-        virtual SettingsWidget* getSettings() override;
-        virtual void applySettings(SettingsWidget* gui) override;
-        virtual void freeSettings(SettingsWidget* gui) override;
-    private:
-
-        app::HistoryDb* m_model;
-    };
 } // gui

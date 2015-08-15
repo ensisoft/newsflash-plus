@@ -33,6 +33,8 @@
 
 namespace app
 {
+    class Settings;
+
     struct Download;
 
     // Record downloads to a historical database.
@@ -58,6 +60,10 @@ namespace app
        virtual int rowCount(const QModelIndex&) const override;
        virtual int columnCount(const QModelIndex&) const override;
 
+       void loadState(Settings& settings);
+
+       void saveState(Settings& settings) const;
+
        // Load the history data.
        void loadHistory();
 
@@ -69,9 +75,14 @@ namespace app
        // eradicated. otherwise only in memory data is only cleared.
        void clearHistory(bool commit);
 
-
        // returns true if database is empty.
        bool isEmpty() const;
+
+       bool isLoaded() const;
+
+       bool checkDuplicates() const;
+
+       void checkDuplicates(bool onOff);
 
        // try to lookup an item in the database with
        // direct match on desc and type attributes. 
@@ -92,6 +103,7 @@ namespace app
     private:
         std::vector<Item> m_items;
         bool m_loaded;
+        bool m_checkDuplicates;
     private:
         QFile m_file;
     };
