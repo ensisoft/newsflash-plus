@@ -41,11 +41,9 @@
 #include "dlgwelcome.h"
 #include "dlgsettings.h"
 #include "dlgaccount.h"
-#include "dlgchoose.h"
 #include "dlgexit.h"
 #include "dlgabout.h"
 #include "dlgfeedback.h"
-#include "dlgaccount.h"
 #include "dlgpoweroff.h"
 #include "dlgregister.h"
 #include "config.h"
@@ -426,51 +424,6 @@ QString MainWindow::selectNzbSaveFile(const QString& filename)
 QStringList MainWindow::getRecentPaths() const 
 {
     return recents_;
-}
-
-quint32 MainWindow::chooseAccount(const QString& description)
-{
-    if (app::g_accounts->numAccounts() == 0)
-    {
-        auto account = app::g_accounts->suggestAccount();
-        DlgAccount dlg(this, account, true);
-        if (dlg.exec() == QDialog::Rejected)
-            return 0;
-
-        app::g_accounts->setAccount(account);
-        return account.id;
-    }
-
-    auto* main = app::g_accounts->getMainAccount();
-    if (main)
-        return main->id;
-
-    QStringList names;
-
-    const auto num_acc = app::g_accounts->numAccounts();
-    for (std::size_t i=0; i<num_acc; ++i)
-    {
-        const auto& acc = app::g_accounts->getAccount(i);
-        names << acc.name;
-    }
-    DlgChoose dlg(this, names, description);
-    if (dlg.exec() == QDialog::Rejected)
-        return 0;
-
-    const auto& acc_name = dlg.account();
-
-    int account_index;
-    for (account_index=0; account_index<names.size(); ++account_index)
-    {
-        if (names[account_index] == acc_name)
-            break;
-    }
-    const auto& acc = app::g_accounts->getAccount(account_index);
-
-    if (dlg.remember())
-        app::g_accounts->setMainAccount(acc.id);
-
-    return acc.id;
 }
 
 std::size_t MainWindow::numWidgets() const 

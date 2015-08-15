@@ -31,6 +31,7 @@
 #include "mainwindow.h"
 #include "nzbcore.h"
 #include "nzbfile.h"
+#include "common.h"
 #include "../settings.h"
 #include "../debug.h"
 
@@ -95,7 +96,7 @@ void NZBSettings::on_btnDelWatchFolder_clicked()
 NZBCore::NZBCore() : m_action(DragDropAction::AskForAction)
 {
     m_module.PromptForFile = [this] (const QString& file) { 
-        const auto acc = g_win->chooseAccount(file);
+        const auto acc = selectAccount(g_win, file);
         if (acc == 0)
             return false;
 
@@ -240,7 +241,7 @@ MainWidget* NZBCore::dropFile(const QString& file)
     }
     else if (action == DragDropAction::DownloadContents)
     {
-        const auto acc = g_win->chooseAccount(info.completeBaseName());
+        const auto acc = selectAccount(g_win, info.completeBaseName());
         if (acc == 0)
             return nullptr;
 

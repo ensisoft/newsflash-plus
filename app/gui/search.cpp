@@ -33,6 +33,7 @@
 #include "nzbfile.h"
 #include "dlgmovie.h"
 #include "dlgwildcards.h"
+#include "common.h"
 #include "../debug.h"
 #include "../search.h"
 #include "../settings.h"
@@ -450,15 +451,11 @@ void Search::downloadSelected(const QString& folder)
     if (indices.isEmpty())
         return;
 
-    //auto callback = [=](const QByteArray& buff, const QString& desc, const QString& path, quint32 acc) {
-    //    app::g_engine->downloadNzbContents(acc, path, desc, desc, buff);
-    //};
-
     for (const auto& index : indices)
     {
         const auto& item = model_.getItem(index);
         const auto& desc = item.title;
-        const auto acc   = g_win->chooseAccount(desc);
+        const auto acc   = selectAccount(this, desc);
         if (acc == 0)
             continue;
 

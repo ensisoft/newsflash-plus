@@ -30,6 +30,7 @@
 #include "rss.h"
 #include "mainwindow.h"
 #include "nzbfile.h"
+#include "common.h"
 #include "../debug.h"
 #include "../format.h"
 #include "../eventlog.h"
@@ -417,7 +418,7 @@ void RSS::downloadSelected(const QString& folder)
         const auto row = indices[i].row();
         const auto& item = model_.getItem(row);
         const auto& desc = item.title;
-        const auto acc = g_win->chooseAccount(desc);
+        const auto acc = selectAccount(this, desc);
         if (acc == 0)
             continue;
 

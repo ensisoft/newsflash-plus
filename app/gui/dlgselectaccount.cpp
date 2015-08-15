@@ -18,36 +18,54 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#pragma once
-
 #include <newsflash/config.h>
-#include <newsflash/warnpush.h>
-#  include <QtGui/QDialog>
-#  include <QString>
-#  include <QStringList>
-#  include "ui_dlgchoose.h"
-#include <newsflash/warnpop.h>
+
+#include "dlgselectaccount.h"
+
 
 namespace gui
 {
-    class DlgChoose : public QDialog
-    {
-        Q_OBJECT
-    public:
-        DlgChoose(QWidget* parent, const QStringList& accounts, const QString& task);
-       ~DlgChoose();
 
-        QString account() const;
+DlgSelectAccount::DlgSelectAccount(QWidget* parent, const QStringList& accounts, const QString& task) : QDialog(parent)
+{
+    ui_.setupUi(this);
 
-        bool remember() const;
+    for (int i=0; i<accounts.size(); ++i)
+        ui_.cmbList->addItem(accounts[i]);
 
-    private slots:
-        void on_btnAccept_clicked();
-        void on_btnCancel_clicked();
-    private:
-        void changeEvent(QEvent* e);
+    ui_.lblHint->setText(task);
+}
 
-    private:
-        Ui::DlgChoose ui_;
-    };
+DlgSelectAccount::~DlgSelectAccount()
+{}
+
+QString DlgSelectAccount::account() const 
+{ return ui_.cmbList->currentText(); }
+
+bool DlgSelectAccount::remember() const 
+{ return ui_.chkRemember->isChecked(); }
+
+void DlgSelectAccount::on_btnAccept_clicked()
+{
+    accept();
+}
+
+void DlgSelectAccount::on_btnCancel_clicked()
+{
+    reject();
+}
+
+void DlgSelectAccount::changeEvent(QEvent* e)
+{
+    QDialog::changeEvent(e);
+    switch (e->type()) {
+    case QEvent::LanguageChange:
+        ui_.retranslateUi(this);
+        break;
+    default:
+        break;
+    }    
+}
+
+
 } // gui

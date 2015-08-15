@@ -115,8 +115,6 @@ namespace gui
 
         QStringList getRecentPaths() const;
 
-        quint32 chooseAccount(const QString& description);
-
         std::size_t numWidgets() const;
 
         MainWidget* getWidget(std::size_t i);
