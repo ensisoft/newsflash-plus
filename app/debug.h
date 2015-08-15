@@ -131,6 +131,12 @@ namespace debug
         ASSERT(c.find(k) != c.end());
     }
 
+    template<typename Container>
+    void checkContains(const Container& c, typename Container::iterator it)
+    {
+        ASSERT(it != c.end());
+    }
+
 } // debug
 
 #if defined(NEWSFLASH_DEBUG)

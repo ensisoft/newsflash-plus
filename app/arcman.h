@@ -61,6 +61,9 @@ namespace app
         void unpackReady(const app::Archive& arc);
 
     private:
+        bool isOurArchive(const app::Archive& arc) const;
+
+    private:
         Repairer& m_repairer;
         Unpacker& m_unpacker;
     private:
