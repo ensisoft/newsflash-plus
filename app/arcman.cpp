@@ -53,7 +53,9 @@ ArchiveManager::~ArchiveManager()
 }
 
 void ArchiveManager::fileCompleted(const app::FileInfo& file)
-{}
+{
+    // intentionally empty placeholder
+}
 
 void ArchiveManager::packCompleted(const app::FilePackInfo& pack)
 {
@@ -100,6 +102,9 @@ void ArchiveManager::packCompleted(const app::FilePackInfo& pack)
 
 void ArchiveManager::repairReady(const app::Archive& arc)
 {
+    if (!isOurArchive(arc))
+        return;
+
     DEBUG("Repair ready %1", arc.file);
 
     // see comments in packCompleted.
@@ -148,6 +153,9 @@ void ArchiveManager::repairReady(const app::Archive& arc)
 
 void ArchiveManager::unpackReady(const app::Archive& arc)
 {
+    if (!isOurArchive(arc))
+        return;
+
     DEBUG("Unpack ready %1", arc.file);
 
     QDir dir;
@@ -178,6 +186,13 @@ void ArchiveManager::unpackReady(const app::Archive& arc)
     m_pendingArchives.erase(arc.getGuid());
 
     emit numPendingArchives(m_pendingArchives.size());
+}
+
+bool ArchiveManager::isOurArchive(const app::Archive& arc) const 
+{
+    const auto it = m_pendingArchives.find(arc.getGuid());
+
+    return it != std::end(m_pendingArchives);
 }
 
 } // app
