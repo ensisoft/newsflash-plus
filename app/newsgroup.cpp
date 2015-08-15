@@ -690,15 +690,26 @@ void NewsGroup::download(const QModelIndexList& list, quint32 acc, QString folde
 
     QString desc;
     QString path;    
-    QString name = suggestName(std::move(subjects));
-    if (name.isEmpty())
+    QString name;
+
+    if (subjects.size() == 1)
     {
-        desc = toString("%1 file(s) from %2", list.size(), name_);
+        const std::string& filename = nntp::find_filename(subjects[0]);
+        if (filename.size() > 5)
+            desc = fromLatin(filename);
     }
     else
-    { 
-        path = cleanPath(name);
-        desc = name;
+    {
+        name = suggestName(std::move(subjects));
+        if (name.isEmpty())
+        {
+            desc = toString("%1 file(s) from %2", list.size(), name_);
+        }
+        else
+        { 
+            path = cleanPath(name);
+            desc = name;
+        }
     }
 
     // want something like alt.binaries.foobar/some-file-batch-name
@@ -707,7 +718,7 @@ void NewsGroup::download(const QModelIndexList& list, quint32 acc, QString folde
     DEBUG("Suggest batch name '%1' and folder '%2'", name, path);    
 
     Download download;
-    download.type     = MediaType::Other;
+    download.type     = findMediaType(name_);
     download.source   = MediaSource::Headers;
     download.account  = acc;
     download.basepath = folder;
