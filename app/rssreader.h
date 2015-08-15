@@ -87,7 +87,7 @@ namespace app
     private:
         void onRefreshComplete(RSSFeed* feed, MediaType type, QNetworkReply& reply);
         void onNzbFileComplete(const QString& file, QNetworkReply& reply);
-        void onNzbDataComplete(const QString& folder, const QString& title, quint32 acc, QNetworkReply& rely);
+        void onNzbDataComplete(const QString& folder, const QString& title, MediaType type, quint32 acc, QNetworkReply& rely);
         void onNzbDataCompleteCallback(const data_callback& cb, QNetworkReply& reply);
 
     private:

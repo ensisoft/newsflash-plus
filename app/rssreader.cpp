@@ -150,7 +150,7 @@ void RSSReader::downloadNzbContent(std::size_t index, quint32 account, const QSt
     const auto& desc = item.title;
 
     WebQuery query(link);
-    query.OnReply = std::bind(&RSSReader::onNzbDataComplete, this, folder, desc, account,
+    query.OnReply = std::bind(&RSSReader::onNzbDataComplete, this, folder, desc, item.type, account,
         std::placeholders::_1);
     auto* ret = g_web->submit(query);
     queries_.push_back(ret);
@@ -257,7 +257,7 @@ void RSSReader::onNzbFileComplete(const QString& file, QNetworkReply& reply)
     INFO("Saved NZB file %1 %2", file, size {(unsigned)bytes.size()});
 }
 
-void RSSReader::onNzbDataComplete(const QString& folder, const QString& desc, quint32 acc, QNetworkReply& reply)
+void RSSReader::onNzbDataComplete(const QString& folder, const QString& desc, MediaType type, quint32 acc, QNetworkReply& reply)
 {
     DEBUG("Got nzb data reply %1", reply);
 
@@ -281,8 +281,7 @@ void RSSReader::onNzbDataComplete(const QString& folder, const QString& desc, qu
     QByteArray nzb = reply.readAll();
 
     Download download;
-    // TODO: MediaType !!
-    download.type     = MediaType::ConsoleNDS;
+    download.type     = type;
     download.source   = MediaSource::RSS;
     download.account  = acc;
     download.basepath = folder;

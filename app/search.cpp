@@ -244,8 +244,7 @@ void Search::downloadItem(const QModelIndex& index, const QString& folder, quint
         QByteArray nzb = reply.readAll();
 
         Download download;
-        // TODO: TYPE !!!
-        download.type     = MediaType::AudioMp3;
+        download.type     = item.type;
         download.source   = MediaSource::Search;
         download.account  = account;
         download.basepath = folder;
