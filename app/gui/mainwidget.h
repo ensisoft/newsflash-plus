@@ -57,7 +57,7 @@ namespace gui
             QString helpurl;
 
             // Whether the component should be visible by default (on first launch).
-            bool visible_by_default;            
+            bool initiallyVisible;
         };
 
         virtual ~MainWidget() = default;
@@ -108,7 +108,11 @@ namespace gui
         virtual void updateRegistration(bool success) {};
 
     signals:
+        // request the widget to have it's toolbar updated.
         void updateMenu(MainWidget* self);
+
+        // request the settings to be displayed.
+        void showSettings(MainWidget* self);
 
     private:
     };

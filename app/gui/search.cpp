@@ -223,7 +223,7 @@ void Search::on_actionStop_triggered()
 
 void Search::on_actionSettings_triggered()
 {
-    g_win->showSetting("Search");
+    emit showSettings(this);
 }
 
 void Search::on_actionOpen_triggered()
@@ -478,7 +478,7 @@ void Search::beginSearch(quint32 queryOffset, quint32 querySize)
         if (msg.exec() == QMessageBox::No)
             return;
 
-        g_win->showSetting("Search");
+        emit showSettings(this);
         return;
     }
     const auto& name    = ui_.cmbIndexer->currentText();

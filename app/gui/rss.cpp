@@ -601,7 +601,7 @@ void RSS::on_actionOpen_triggered()
 
 void RSS::on_actionSettings_triggered()
 {
-    g_win->showSetting("RSS");
+    emit showSettings(this);
 }
 
 void RSS::on_actionStop_triggered()

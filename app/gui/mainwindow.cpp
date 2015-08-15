@@ -173,6 +173,8 @@ void MainWindow::attach(MainWidget* widget, bool permanent, bool loadstate)
 
     QObject::connect(widget, SIGNAL(updateMenu(MainWidget*)),
         this, SLOT(updateMenu(MainWidget*)));
+    QObject::connect(widget, SIGNAL(showSettings(MainWidget*)),
+        this, SLOT(showSettings(MainWidget*)));
 }
 
 void MainWindow::attach(MainModule* module, bool loadstate)
@@ -246,7 +248,7 @@ void MainWindow::loadState()
         Q_ASSERT(!text.isEmpty());
         const auto icon = widgets_[i]->windowIcon();
         const auto info = widgets_[i]->getInformation();
-        const auto show = settings_.get("window_visible_tabs", text, info.visible_by_default);
+        const auto show = settings_.get("window_visible_tabs", text, info.initiallyVisible);
         if (show)
         {
             ui_.mainTab->insertTab(i, widgets_[i], icon, text);
@@ -466,6 +468,11 @@ void MainWindow::updateMenu(MainWidget* widget)
 
     ui_.mainToolBar->addSeparator();
     ui_.mainToolBar->addAction(ui_.actionContextHelp);
+}
+
+void MainWindow::showSettings(MainWidget* widget)
+{
+    showSetting(widget->windowTitle());
 }
 
 void MainWindow::show(const QString& title)
