@@ -317,8 +317,8 @@ void NewsList::on_actionStop_triggered()
 
 void NewsList::on_cmbAccounts_currentIndexChanged()
 {
-    ui_.actionStop->setEnabled(false);
-    ui_.actionRefresh->setEnabled(false);
+    //ui_.actionStop->setEnabled(false);
+    //ui_.actionRefresh->setEnabled(false);
 
     const auto index = ui_.cmbAccounts->currentIndex();
     if (index == -1)
@@ -343,8 +343,7 @@ void NewsList::on_cmbAccounts_currentIndexChanged()
         ui_.progressBar->setMaximum(0);
         ui_.progressBar->setVisible(true);
 
-        QFileInfo info(file);
-        if (info.exists())
+        if (QFile::exists(file))
         {
             model_.clear();
             model_.loadListing(file, acc.id);
@@ -445,6 +444,7 @@ void NewsList::loadComplete(quint32 acc)
         return;
 
     ui_.progressBar->setVisible(false);
+    ui_.actionRefresh->setEnabled(true);
 
     resort();
     filter();
@@ -459,6 +459,7 @@ void NewsList::makeComplete(quint32 accountId)
 
     ui_.progressBar->setVisible(false);
     ui_.actionStop->setEnabled(false);
+    ui_.actionRefresh->setEnabled(true);
 
     const auto numAcccounts = app::g_accounts->numAccounts();
     for (std::size_t i=0; i<numAcccounts; ++i)
