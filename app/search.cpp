@@ -77,7 +77,7 @@ bool Search::beginSearch(const Advanced& query, std::unique_ptr<Indexer> index)
     bits.set(c::Television, query.television);
     bits.set(c::Console, query.console);
     bits.set(c::Apps, query.computer);
-    bits.set(c::Porno, query.porno);
+    bits.set(c::Adult, query.adult);
 
     Indexer::AdvancedQuery q;
     q.categories = bits;

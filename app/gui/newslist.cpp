@@ -43,33 +43,33 @@
 namespace gui
 {
 
-NewsList::NewsList() : curAccount_(0)
+NewsList::NewsList() : m_curAccount(0)
 {
-    ui_.setupUi(this);
-    ui_.tableGroups->setModel(&model_);
-    ui_.tableGroups->setColumnWidth(0, 150);
-    ui_.progressBar->setMaximum(0);
-    ui_.progressBar->setMinimum(0);
-    ui_.progressBar->setValue(0);
-    ui_.progressBar->setVisible(false);
-    ui_.actionRefresh->setShortcut(QKeySequence::Refresh);
-    ui_.actionRefresh->setEnabled(false);    
-    ui_.actionFavorite->setEnabled(false);
-    ui_.actionStop->setEnabled(false);    
-    ui_.chkShowEmpty->setChecked(false);
+    m_ui.setupUi(this);
+    m_ui.tableGroups->setModel(&m_model);
+    m_ui.tableGroups->setColumnWidth(0, 150);
+    m_ui.progressBar->setMaximum(0);
+    m_ui.progressBar->setMinimum(0);
+    m_ui.progressBar->setValue(0);
+    m_ui.progressBar->setVisible(false);
+    m_ui.actionRefresh->setShortcut(QKeySequence::Refresh);
+    m_ui.actionRefresh->setEnabled(false);    
+    m_ui.actionFavorite->setEnabled(false);
+    m_ui.actionStop->setEnabled(false);    
+    m_ui.chkShowEmpty->setChecked(false);
 
-    const auto nameWidth = ui_.tableGroups->columnWidth((int)app::NewsList::Columns::Name);
-    ui_.tableGroups->setColumnWidth((int)app::NewsList::Columns::Name, nameWidth * 3);
-    ui_.tableGroups->setColumnWidth((int)app::NewsList::Columns::Subscribed, 32);
+    const auto nameWidth = m_ui.tableGroups->columnWidth((int)app::NewsList::Columns::Name);
+    m_ui.tableGroups->setColumnWidth((int)app::NewsList::Columns::Name, nameWidth * 3);
+    m_ui.tableGroups->setColumnWidth((int)app::NewsList::Columns::Subscribed, 32);
 
     QObject::connect(app::g_accounts, SIGNAL(accountsUpdated()),
         this, SLOT(accountsUpdated()));
 
-    QObject::connect(&model_, SIGNAL(progressUpdated(quint32, quint32, quint32)),
+    QObject::connect(&m_model, SIGNAL(progressUpdated(quint32, quint32, quint32)),
         this, SLOT(progressUpdated(quint32, quint32, quint32)));
-    QObject::connect(&model_, SIGNAL(loadComplete(quint32)),
+    QObject::connect(&m_model, SIGNAL(loadComplete(quint32)),
         this, SLOT(loadComplete(quint32)));
-    QObject::connect(&model_, SIGNAL(makeComplete(quint32)),
+    QObject::connect(&m_model, SIGNAL(makeComplete(quint32)),
         this, SLOT(makeComplete(quint32)));
 }
 
@@ -78,28 +78,28 @@ NewsList::~NewsList()
 
 void NewsList::addActions(QMenu& menu)
 {
-    menu.addAction(ui_.actionRefresh);
+    menu.addAction(m_ui.actionRefresh);
     menu.addSeparator();
-    menu.addAction(ui_.actionBrowse);
-    menu.addAction(ui_.actionFavorite);
-    menu.addAction(ui_.actionUnfavorite);
+    menu.addAction(m_ui.actionBrowse);
+    menu.addAction(m_ui.actionFavorite);
+    menu.addAction(m_ui.actionUnfavorite);
     menu.addSeparator();
-    menu.addAction(ui_.actionDeleteData);
+    menu.addAction(m_ui.actionDeleteData);
     menu.addSeparator();
-    menu.addAction(ui_.actionStop);
+    menu.addAction(m_ui.actionStop);
 }
 
 void NewsList::addActions(QToolBar& bar)
 {
-    bar.addAction(ui_.actionRefresh);
+    bar.addAction(m_ui.actionRefresh);
     bar.addSeparator();
-    bar.addAction(ui_.actionBrowse);
-    bar.addAction(ui_.actionFavorite);
-    bar.addAction(ui_.actionUnfavorite);
+    bar.addAction(m_ui.actionBrowse);
+    bar.addAction(m_ui.actionFavorite);
+    bar.addAction(m_ui.actionUnfavorite);
     bar.addSeparator();
-    bar.addAction(ui_.actionDeleteData);
+    bar.addAction(m_ui.actionDeleteData);
     bar.addSeparator();
-    bar.addAction(ui_.actionStop);
+    bar.addAction(m_ui.actionStop);
 }
 
 void NewsList::activate(QWidget*)
@@ -119,7 +119,7 @@ Finder* NewsList::getFinder()
 
 bool NewsList::isMatch(const QString& str, std::size_t index, bool caseSensitive)
 {
-    const auto& name = model_.getName(index);
+    const auto& name = m_model.getName(index);
     if (!caseSensitive)
     {
         auto upper = name.toUpper();
@@ -136,7 +136,7 @@ bool NewsList::isMatch(const QString& str, std::size_t index, bool caseSensitive
 
 bool NewsList::isMatch(const QRegExp& regex, std::size_t index)
 {
-    const auto& name = model_.getName(index);
+    const auto& name = m_model.getName(index);
     if (regex.indexIn(name) != -1)
         return true;
     return false;
@@ -144,12 +144,12 @@ bool NewsList::isMatch(const QRegExp& regex, std::size_t index)
 
 std::size_t NewsList::numItems() const
 {
-    return model_.numItems();
+    return m_model.numItems();
 }
 
 std::size_t NewsList::curItem() const 
 {
-    const auto& indices = ui_.tableGroups->selectionModel()->selectedRows();
+    const auto& indices = m_ui.tableGroups->selectionModel()->selectedRows();
     if (indices.isEmpty())
         return 0;
     const auto& first = indices.first();
@@ -158,39 +158,58 @@ std::size_t NewsList::curItem() const
 
 void NewsList::setFound(std::size_t index)
 {
-    auto* model = ui_.tableGroups->model();
+    auto* model = m_ui.tableGroups->model();
     auto i = model->index(index, 0);
-    ui_.tableGroups->setCurrentIndex(i);
-    ui_.tableGroups->scrollTo(i);
+    m_ui.tableGroups->setCurrentIndex(i);
+    m_ui.tableGroups->scrollTo(i);
 }
 
 void NewsList::loadState(app::Settings& settings)
 {
-    app::loadTableLayout("newslist", ui_.tableGroups, settings);
-    app::loadState("newslist", ui_.editFilter, settings);
-    app::loadState("newslist", ui_.chkShowEmpty, settings);
+    app::loadTableLayout("newslist", m_ui.tableGroups, settings);
+    app::loadState("newslist", m_ui.editFilter, settings);
+    app::loadState("newslist", m_ui.chkShowEmpty, settings);
+    app::loadState("newslist", m_ui.chkShowText, settings);
+    app::loadState("newslist", m_ui.chkMusic, settings);
+    app::loadState("newslist", m_ui.chkMovies, settings);
+    app::loadState("newslist", m_ui.chkTV, settings);
+    app::loadState("newslist", m_ui.chkGames, settings);
+    app::loadState("newslist", m_ui.chkApps, settings);
+    app::loadState("newslist", m_ui.chkAdult, settings);
+    app::loadState("newslist", m_ui.chkImages, settings);    
+    app::loadState("newslist", m_ui.chkOther, settings);
 
     accountsUpdated();
 }
 
 void NewsList::saveState(app::Settings& settings)
 {
-    app::saveTableLayout("newslist", ui_.tableGroups, settings);
-    app::saveState("newslist", ui_.editFilter, settings);
-    app::saveState("newslist", ui_.chkShowEmpty, settings);
+    app::saveTableLayout("newslist", m_ui.tableGroups, settings);
+    app::saveState("newslist", m_ui.editFilter, settings);
+    app::saveState("newslist", m_ui.chkShowEmpty, settings);
+    app::saveState("newslist", m_ui.chkShowText, settings);    
+    app::saveState("newslist", m_ui.chkMusic, settings);
+    app::saveState("newslist", m_ui.chkMovies, settings);
+    app::saveState("newslist", m_ui.chkTV, settings);
+    app::saveState("newslist", m_ui.chkGames, settings);
+    app::saveState("newslist", m_ui.chkApps, settings);
+    app::saveState("newslist", m_ui.chkAdult, settings);
+    app::saveState("newslist", m_ui.chkImages, settings);
+    app::saveState("newslist", m_ui.chkOther, settings);
+
 }
 
 void NewsList::on_actionBrowse_triggered()
 {
-    const auto* account = app::g_accounts->findAccount(curAccount_);
+    const auto* account = app::g_accounts->findAccount(m_curAccount);
     Q_ASSERT(account);
 
-    const auto& indices = ui_.tableGroups->selectionModel()->selectedRows();
+    const auto& indices = m_ui.tableGroups->selectionModel()->selectedRows();
     for (const auto& i : indices)
     {
         const auto& datapath = account->datapath;
-        const auto& group    = model_.getName(i);
-        const auto account   = curAccount_;
+        const auto& group    = m_model.getName(i);
+        const auto account   = m_curAccount;
         const auto& guid     = QString("%1/%2").arg(account).arg(group);
 
         bool isTabOpen = false;
@@ -220,48 +239,48 @@ void NewsList::on_actionBrowse_triggered()
 
 void NewsList::on_actionRefresh_triggered()
 {
-    model_.clear();
+    m_model.clear();
 
-    const auto* account = app::g_accounts->findAccount(curAccount_);
+    const auto* account = app::g_accounts->findAccount(m_curAccount);
     Q_ASSERT(account);
 
     DEBUG("Refresh newslist '%1' (%2)", account->name, account->id);
 
     const auto file = app::homedir::file(account->name + ".lst");
 
-    ui_.progressBar->setMaximum(0);        
-    ui_.progressBar->setVisible(true);
-    ui_.actionStop->setEnabled(true);
-    ui_.actionRefresh->setEnabled(false);
-    model_.makeListing(file, account->id);        
+    m_ui.progressBar->setMaximum(0);        
+    m_ui.progressBar->setVisible(true);
+    m_ui.actionStop->setEnabled(true);
+    m_ui.actionRefresh->setEnabled(false);
+    m_model.makeListing(file, account->id);        
 
 }
 
 void NewsList::on_actionFavorite_triggered()
 {
-    auto indices = ui_.tableGroups->selectionModel()->selectedRows();
+    auto indices = m_ui.tableGroups->selectionModel()->selectedRows();
     if (indices.isEmpty())
         return;
 
-    Q_ASSERT(curAccount_);
+    Q_ASSERT(m_curAccount);
 
-    model_.subscribe(indices, curAccount_);
+    m_model.subscribe(indices, m_curAccount);
 }
 
 void NewsList::on_actionUnfavorite_triggered()
 {
-    auto indices = ui_.tableGroups->selectionModel()->selectedRows();
+    auto indices = m_ui.tableGroups->selectionModel()->selectedRows();
     if (indices.isEmpty())
         return;
 
-    Q_ASSERT(curAccount_);
+    Q_ASSERT(m_curAccount);
 
-    model_.unsubscribe(indices, curAccount_);
+    m_model.unsubscribe(indices, m_curAccount);
 }
 
 void NewsList::on_actionDeleteData_triggered()
 {
-    const auto& indices = ui_.tableGroups->selectionModel()->selectedRows();
+    const auto& indices = m_ui.tableGroups->selectionModel()->selectedRows();
     if (indices.isEmpty())
         return;
 
@@ -273,14 +292,14 @@ void NewsList::on_actionDeleteData_triggered()
     if (msg.exec() == QMessageBox::No)
         return;
 
-    const auto* account = app::g_accounts->findAccount(curAccount_);
+    const auto* account = app::g_accounts->findAccount(m_curAccount);
     Q_ASSERT(account);
 
     for (const auto& index : indices)
     {
         const auto& datapath = account->datapath;
-        const auto& group    = model_.getName(index);
-        const auto account   = curAccount_;
+        const auto& group    = m_model.getName(index);
+        const auto account   = m_curAccount;
         const auto& guid     = QString("%1/%2").arg(account).arg(group);
 
         // check if the tab is open
@@ -299,32 +318,32 @@ void NewsList::on_actionDeleteData_triggered()
         }
         NewsGroup::deleteData(account, datapath, group);
 
-        model_.clearSize(index);
+        m_model.clearSize(index);
     }
 }
 
 void NewsList::on_actionStop_triggered()
 {
-    Q_ASSERT(curAccount_);
+    Q_ASSERT(m_curAccount);
 
-    model_.stop(curAccount_);
+    m_model.stop(m_curAccount);
 
-    ui_.actionStop->setEnabled(false);    
-    ui_.actionRefresh->setEnabled(true);
-    ui_.progressBar->setVisible(false);
+    m_ui.actionStop->setEnabled(false);    
+    m_ui.actionRefresh->setEnabled(true);
+    m_ui.progressBar->setVisible(false);
 }
 
 
 void NewsList::on_cmbAccounts_currentIndexChanged()
 {
-    ui_.actionStop->setEnabled(false);
-    ui_.actionRefresh->setEnabled(false);
+    m_ui.actionStop->setEnabled(false);
+    m_ui.actionRefresh->setEnabled(false);
 
-    const auto index = ui_.cmbAccounts->currentIndex();
+    const auto index = m_ui.cmbAccounts->currentIndex();
     if (index == -1)
         return;
 
-    const auto name = ui_.cmbAccounts->currentText();
+    const auto name = m_ui.cmbAccounts->currentText();
     const auto file = app::homedir::file(name + ".lst");
 
     const auto numAccounts = app::g_accounts->numAccounts();
@@ -333,30 +352,30 @@ void NewsList::on_cmbAccounts_currentIndexChanged()
         const auto& acc = app::g_accounts->getAccount(i);
         if (acc.name != name)
             continue;
-        if (curAccount_ == acc.id)
+        if (m_curAccount == acc.id)
             return;
 
-        curAccount_ = acc.id;
+        m_curAccount = acc.id;
 
         DEBUG("Current account changed to '%1' (%2)", acc.name, acc.id);
 
-        ui_.progressBar->setMaximum(0);
-        ui_.progressBar->setVisible(true);
+        m_ui.progressBar->setMaximum(0);
+        m_ui.progressBar->setVisible(true);
 
         QFileInfo info(file);
         if (info.exists())
         {
-            model_.clear();
-            model_.loadListing(file, acc.id);
-            ui_.actionStop->setEnabled(false);
-            ui_.actionRefresh->setEnabled(true);
+            m_model.clear();
+            m_model.loadListing(file, acc.id);
+            m_ui.actionStop->setEnabled(false);
+            m_ui.actionRefresh->setEnabled(true);
         }
         else
         {
-            model_.clear();
-            model_.makeListing(file, acc.id);
-            ui_.actionStop->setEnabled(true);
-            ui_.actionRefresh->setEnabled(false);
+            m_model.clear();
+            m_model.makeListing(file, acc.id);
+            m_ui.actionStop->setEnabled(true);
+            m_ui.actionRefresh->setEnabled(false);
         }
         return;
     }
@@ -366,12 +385,12 @@ void NewsList::on_cmbAccounts_currentIndexChanged()
 void NewsList::on_tableGroups_customContextMenuRequested(QPoint point)
 {
     QMenu menu(this);
-    menu.addAction(ui_.actionBrowse);
+    menu.addAction(m_ui.actionBrowse);
     menu.addSeparator();
-    menu.addAction(ui_.actionFavorite);
-    menu.addAction(ui_.actionUnfavorite);
+    menu.addAction(m_ui.actionFavorite);
+    menu.addAction(m_ui.actionUnfavorite);
     menu.addSeparator();
-    menu.addAction(ui_.actionDeleteData);
+    menu.addAction(m_ui.actionDeleteData);
     menu.exec(QCursor::pos());
 }
 
@@ -395,10 +414,53 @@ void NewsList::on_chkShowEmpty_clicked()
     filter();
 }
 
+void NewsList::on_chkShowText_clicked()
+{
+    filter();
+}
+
+void NewsList::on_chkMusic_clicked()
+{
+    filter();
+}
+void NewsList::on_chkMovies_clicked()
+{
+    filter();
+}
+
+void NewsList::on_chkTV_clicked()
+{
+    filter();
+}
+
+void NewsList::on_chkGames_clicked()
+{
+    filter();
+}
+
+void NewsList::on_chkApps_clicked()
+{
+    filter();
+}
+
+void NewsList::on_chkImages_clicked()
+{
+    filter();
+}
+
+void NewsList::on_chkOther_clicked()
+{
+    filter();
+}
+void NewsList::on_chkAdult_clicked()
+{
+    filter();
+}
+
 void NewsList::accountsUpdated()
 {
-    ui_.cmbAccounts->clear();
-    ui_.cmbAccounts->blockSignals(true);
+    m_ui.cmbAccounts->clear();
+    m_ui.cmbAccounts->blockSignals(true);
 
     int currentAccountIndex = -1;
 
@@ -406,45 +468,45 @@ void NewsList::accountsUpdated()
     for (std::size_t i=0; i<numAccounts; ++i)
     {
         const auto& account = app::g_accounts->getAccount(i);
-        if (account.id == curAccount_)
+        if (account.id == m_curAccount)
             currentAccountIndex = (int)i;
 
-        ui_.cmbAccounts->addItem(account.name);
+        m_ui.cmbAccounts->addItem(account.name);
     }
 
     if (currentAccountIndex == -1)
     {
-        model_.clear();
-        curAccount_ = 0;
+        m_model.clear();
+        m_curAccount = 0;
     }
     else
     {
-        ui_.cmbAccounts->setCurrentIndex(currentAccountIndex);
+        m_ui.cmbAccounts->setCurrentIndex(currentAccountIndex);
     }
 
-    ui_.cmbAccounts->blockSignals(false);    
+    m_ui.cmbAccounts->blockSignals(false);    
 
-    ui_.actionRefresh->setEnabled(numAccounts != 0);
-    ui_.actionFavorite->setEnabled(numAccounts != 0);
+    m_ui.actionRefresh->setEnabled(numAccounts != 0);
+    m_ui.actionFavorite->setEnabled(numAccounts != 0);
 }
 
 void NewsList::progressUpdated(quint32 acc, quint32 maxValue, quint32 curValue)
 {
-    if (curAccount_ != acc)
+    if (m_curAccount != acc)
         return;
 
-    ui_.progressBar->setMaximum(maxValue);
-    ui_.progressBar->setValue(curValue);
+    m_ui.progressBar->setMaximum(maxValue);
+    m_ui.progressBar->setValue(curValue);
 }
 
 void NewsList::loadComplete(quint32 acc)
 {
     DEBUG("Load complete %1", acc);
 
-    if (curAccount_ != acc)
+    if (m_curAccount != acc)
         return;
 
-    ui_.progressBar->setVisible(false);
+    m_ui.progressBar->setVisible(false);
 
     resort();
     filter();
@@ -454,11 +516,11 @@ void NewsList::makeComplete(quint32 accountId)
 {
     DEBUG("Make complete %1", accountId);
 
-    if (curAccount_ != accountId)
+    if (m_curAccount != accountId)
         return;
 
-    ui_.progressBar->setVisible(false);
-    ui_.actionStop->setEnabled(false);
+    m_ui.progressBar->setVisible(false);
+    m_ui.actionStop->setEnabled(false);
 
     const auto numAcccounts = app::g_accounts->numAccounts();
     for (std::size_t i=0; i<numAcccounts; ++i)
@@ -469,7 +531,7 @@ void NewsList::makeComplete(quint32 accountId)
 
         const auto& name = acc.name;
         const auto& file = app::homedir::file(name + ".lst");
-        model_.loadListing(file, acc.id);
+        m_model.loadListing(file, acc.id);
         return;
     }
 
@@ -478,17 +540,41 @@ void NewsList::makeComplete(quint32 accountId)
 
 void NewsList::resort()
 {
-    const QHeaderView* header = ui_.tableGroups->horizontalHeader();
+    const QHeaderView* header = m_ui.tableGroups->horizontalHeader();
     const auto sortColumn = header->sortIndicatorSection();
     const auto sortOrder  = header->sortIndicatorOrder();
-    ui_.tableGroups->sortByColumn(sortColumn, sortOrder);
+    m_ui.tableGroups->sortByColumn(sortColumn, sortOrder);
 }
 
 void NewsList::filter()
 {
-    const auto& str = ui_.editFilter->text();
-    const auto  chk = ui_.chkShowEmpty->isChecked();
-    model_.filter(str, chk);
+    const auto& str = m_ui.editFilter->text();
+    const auto showMusic      = m_ui.chkMusic->isChecked();
+    const auto showMovies     = m_ui.chkMovies->isChecked();
+    const auto showTelevision = m_ui.chkTV->isChecked();
+    const auto showGames      = m_ui.chkGames->isChecked();
+    const auto showApps       = m_ui.chkApps->isChecked();
+    const auto showAdult      = m_ui.chkAdult->isChecked();
+    const auto showImages     = m_ui.chkImages->isChecked();
+    const auto showOther      = m_ui.chkOther->isChecked();
+    const auto showEmpty      = m_ui.chkShowEmpty->isChecked();
+    const auto showText       = m_ui.chkShowText->isChecked();
+
+    using F = app::NewsList::FilterFlags;
+
+    newsflash::bitflag<F> flags;
+    flags.set(F::ShowMusic, showMusic);
+    flags.set(F::ShowMovies, showMovies);
+    flags.set(F::ShowTv, showTelevision);
+    flags.set(F::ShowGames, showGames);
+    flags.set(F::ShowApps, showApps);
+    flags.set(F::ShowAdult, showAdult);
+    flags.set(F::ShowImages, showImages),
+    flags.set(F::ShowOther, showOther);
+    flags.set(F::ShowEmpty, showEmpty);
+    flags.set(F::ShowText, showText);
+
+    m_model.filter(str, flags);
 }
 
 } // gui

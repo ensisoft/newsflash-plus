@@ -396,12 +396,38 @@
               <number>0</number>
              </property>
              <item>
-              <widget class="QCheckBox" name="chkMusic">
+              <widget class="QCheckBox" name="chkAdult">
                <property name="contextMenuPolicy">
                 <enum>Qt::CustomContextMenu</enum>
                </property>
                <property name="text">
-                <string>Music</string>
+                <string>Adult</string>
+               </property>
+               <property name="checked">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QCheckBox" name="chkComputer">
+               <property name="contextMenuPolicy">
+                <enum>Qt::CustomContextMenu</enum>
+               </property>
+               <property name="text">
+                <string>Apps</string>
+               </property>
+               <property name="checked">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QCheckBox" name="chkConsole">
+               <property name="contextMenuPolicy">
+                <enum>Qt::CustomContextMenu</enum>
+               </property>
+               <property name="text">
+                <string>Games</string>
                </property>
                <property name="checked">
                 <bool>true</bool>
@@ -422,51 +448,25 @@
               </widget>
              </item>
              <item>
+              <widget class="QCheckBox" name="chkMusic">
+               <property name="contextMenuPolicy">
+                <enum>Qt::CustomContextMenu</enum>
+               </property>
+               <property name="text">
+                <string>Music</string>
+               </property>
+               <property name="checked">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+             <item>
               <widget class="QCheckBox" name="chkTV">
                <property name="contextMenuPolicy">
                 <enum>Qt::CustomContextMenu</enum>
                </property>
                <property name="text">
                 <string>TV</string>
-               </property>
-               <property name="checked">
-                <bool>true</bool>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QCheckBox" name="chkConsole">
-               <property name="contextMenuPolicy">
-                <enum>Qt::CustomContextMenu</enum>
-               </property>
-               <property name="text">
-                <string>Console</string>
-               </property>
-               <property name="checked">
-                <bool>true</bool>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QCheckBox" name="chkComputer">
-               <property name="contextMenuPolicy">
-                <enum>Qt::CustomContextMenu</enum>
-               </property>
-               <property name="text">
-                <string>Computer</string>
-               </property>
-               <property name="checked">
-                <bool>true</bool>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QCheckBox" name="chkXXX">
-               <property name="contextMenuPolicy">
-                <enum>Qt::CustomContextMenu</enum>
-               </property>
-               <property name="text">
-                <string>XXX</string>
                </property>
                <property name="checked">
                 <bool>true</bool>
@@ -669,16 +669,22 @@ p, li { white-space: pre-wrap; }
   <tabstop>btnAdvanced</tabstop>
   <tabstop>btnTelevision</tabstop>
   <tabstop>btnMusic</tabstop>
+  <tabstop>cmbIndexer</tabstop>
   <tabstop>editAlbum</tabstop>
   <tabstop>editTrack</tabstop>
   <tabstop>cmbYear</tabstop>
   <tabstop>editSeason</tabstop>
   <tabstop>editEpisode</tabstop>
-  <tabstop>chkTV</tabstop>
+  <tabstop>chkAdult</tabstop>
   <tabstop>chkComputer</tabstop>
-  <tabstop>chkXXX</tabstop>
+  <tabstop>chkConsole</tabstop>
+  <tabstop>chkMovies</tabstop>
+  <tabstop>chkMusic</tabstop>
+  <tabstop>chkTV</tabstop>
   <tabstop>editSearch</tabstop>
+  <tabstop>btnSearch</tabstop>
   <tabstop>tableView</tabstop>
+  <tabstop>btnSearchMore</tabstop>
  </tabstops>
  <resources>
   <include location="resource.qrc"/>

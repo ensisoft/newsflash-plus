@@ -59,7 +59,7 @@ namespace app
             bool television;
             bool console;
             bool computer;
-            bool porno;
+            bool adult;
             quint32 qoffset;
             quint32 qsize;
         };

@@ -64,59 +64,85 @@
       <item>
        <layout class="QHBoxLayout" name="horizontalLayout_4">
         <item>
-         <widget class="QCheckBox" name="chkMusic_3">
+         <widget class="QCheckBox" name="chkAdult">
+          <property name="text">
+           <string>Adult</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="chkApps">
+          <property name="text">
+           <string>Apps</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="chkGames">
+          <property name="text">
+           <string>Games</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="chkImages">
+          <property name="text">
+           <string>Images</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="chkMusic">
           <property name="text">
            <string>Music</string>
           </property>
           <property name="checked">
+           <bool>true</bool>
+          </property>
+          <property name="autoRepeat">
            <bool>false</bool>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QCheckBox" name="chkMovies_3">
+         <widget class="QCheckBox" name="chkMovies">
           <property name="text">
            <string>Movies</string>
           </property>
           <property name="checked">
-           <bool>false</bool>
+           <bool>true</bool>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QCheckBox" name="chkTV_3">
+         <widget class="QCheckBox" name="chkOther">
+          <property name="text">
+           <string>Other</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="chkTV">
           <property name="text">
            <string>TV</string>
           </property>
           <property name="checked">
-           <bool>false</bool>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QCheckBox" name="chkConsole_3">
-          <property name="text">
-           <string>Console</string>
-          </property>
-          <property name="checked">
-           <bool>false</bool>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QCheckBox" name="chkComputer_3">
-          <property name="text">
-           <string>Computer</string>
-          </property>
-          <property name="checked">
-           <bool>false</bool>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QCheckBox" name="checkBox">
-          <property name="text">
-           <string>Images</string>
+           <bool>true</bool>
           </property>
          </widget>
         </item>
@@ -124,6 +150,13 @@
          <widget class="QCheckBox" name="chkShowEmpty">
           <property name="text">
            <string>Show empty</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="chkShowText">
+          <property name="text">
+           <string>Show text groups</string>
           </property>
          </widget>
         </item>
@@ -272,6 +305,21 @@
    </property>
   </action>
  </widget>
+ <tabstops>
+  <tabstop>cmbAccounts</tabstop>
+  <tabstop>editFilter</tabstop>
+  <tabstop>chkAdult</tabstop>
+  <tabstop>chkApps</tabstop>
+  <tabstop>chkGames</tabstop>
+  <tabstop>chkImages</tabstop>
+  <tabstop>chkMusic</tabstop>
+  <tabstop>chkMovies</tabstop>
+  <tabstop>chkOther</tabstop>
+  <tabstop>chkTV</tabstop>
+  <tabstop>chkShowEmpty</tabstop>
+  <tabstop>chkShowText</tabstop>
+  <tabstop>tableGroups</tabstop>
+ </tabstops>
  <resources>
   <include location="resource.qrc"/>
  </resources>

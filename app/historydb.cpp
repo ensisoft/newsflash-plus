@@ -254,7 +254,7 @@ bool HistoryDb::isDuplicate(const QString& desc, MediaType type, Item* item) con
                 return true;
         }
     }
-    else if (isTVSeries(type))
+    else if (isTelevision(type))
     {
         QString season;
         QString episode;
@@ -266,7 +266,7 @@ bool HistoryDb::isDuplicate(const QString& desc, MediaType type, Item* item) con
 
         for (const auto& item : m_items)
         {
-            if (!isTVSeries(item.type))
+            if (!isTelevision(item.type))
                 continue;
             QString e, s;
             QString t = findTVSeriesTitle(item.desc, &s, &e);

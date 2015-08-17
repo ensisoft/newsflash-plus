@@ -46,7 +46,8 @@
 namespace app
 {
 
-const int CurrentFileVersion = 1;
+const int CurrentFileVersion = 2;
+// FileVersion 2 adds the media type for the group.
 
 NewsList::NewsList() : sort_(Columns::LAST), order_(Qt::AscendingOrder), size_(0), account_(0)
 {
@@ -247,8 +248,10 @@ void NewsList::loadListing(const QString& file, quint32 accountId)
     QTextStream stream(&io);
     stream.setCodec("UTF-8");
 
-    /* const quint32 curVersion  = */ stream.readLine().toUInt();
-    const quint32 numGroups  = stream.readLine().toUInt();
+    const quint32 fileVersion = stream.readLine().toUInt();
+    const quint32 numGroups   = stream.readLine().toUInt();
+
+    DEBUG("Data file version %1", fileVersion);
 
     quint32 curGroup   = 0;
     while (!stream.atEnd())
@@ -260,7 +263,15 @@ void NewsList::loadListing(const QString& file, quint32 accountId)
         g.numMessages = toks[1].toULongLong();
         g.sizeOnDisk  = sumFileSizes(joinPath(datapath, g.name));
         g.flags       = 0;
-        g.type        = findMediaType(g.name);
+        if (fileVersion == 1)
+        {
+            g.type = findMediaType(g.name);
+        }
+        else if (fileVersion == 2)
+        {
+            g.type = (MediaType)toks[2].toInt();
+        }
+
         for (int i=0; i<newslist.size(); ++i)
         {
             if (newslist[i] == g.name)
@@ -381,7 +392,7 @@ std::size_t NewsList::numItems() const
     return size_;
 }
 
-void NewsList::filter(const QString& str, bool showEmpty)
+void NewsList::filter(const QString& str, newsflash::bitflag<FilterFlags> options)
 {
     Q_ASSERT((sort_ != Columns::LAST) &&
         "The data is not yet sorted. Current sorting is needed for filtering.");
@@ -393,9 +404,41 @@ void NewsList::filter(const QString& str, bool showEmpty)
     auto beg = std::begin(groups_);
     auto end = std::partition(std::begin(groups_), std::end(groups_), 
         [&](const group& g) {
-        if (!showEmpty && !g.numMessages)
+
+        if (isMusic(g.type) && !options.test(FilterFlags::ShowMusic))
             return false;
-        return g.name.indexOf(str) != -1;
+
+        if (isMovie(g.type) && !options.test(FilterFlags::ShowMovies))
+            return false;
+
+        if (isTelevision(g.type) && !options.test(FilterFlags::ShowTv))
+            return false;
+
+        if (isConsole(g.type) && !options.test(FilterFlags::ShowGames))
+            return false;
+
+        if (isApps(g.type) && !options.test(FilterFlags::ShowApps))
+            return false;
+
+        if (isAdult(g.type) && !options.test(FilterFlags::ShowAdult))
+            return false;
+
+        if (isImage(g.type) && !options.test(FilterFlags::ShowImages))
+            return false;
+
+        if (isOther(g.type) && !options.test(FilterFlags::ShowOther))
+            return false;
+
+        if (options.test(FilterFlags::ShowEmpty) && !g.numMessages)
+            return false;
+
+        if (!options.test(FilterFlags::ShowText))
+        {
+            if (!g.name.contains(".binaries."))
+                return false;
+        }
+
+        return (bool)g.name.contains(str);
     });
 
     size_ = std::distance(beg, end);
@@ -455,7 +498,11 @@ void NewsList::listCompleted(quint32 acc, const QList<app::NewsGroupInfo>& list)
     for (int i=0; i<list.size(); ++i)
     {
         const auto& group = list[i];
-        stream << group.name << "\t" << group.size << "\n";
+        // in v4.0.0 we only write this data here.
+        //stream << group.name << "\t" << group.size << "\n";
+        // now we're adding the cached category for the group.
+        const auto type = findMediaType(group.name);
+        stream << group.name << "\t" << group.size << "\t" << (int)type << "\n";
     }
 
     io.flush();

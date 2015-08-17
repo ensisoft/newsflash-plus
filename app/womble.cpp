@@ -93,19 +93,19 @@ void Womble::prepare(MediaType m, std::vector<QUrl>& urls)
         Media type;
         const char* arg;
     } feeds[] = {
-        {Media::ConsoleNDS, "nds"},
-        {Media::ConsolePSP, "psp"},
-        {Media::ConsoleWii, "wii"},
-        {Media::ConsoleXbox, "xbox"},
-        {Media::ConsoleXbox360, "xbox360"},
-        {Media::ConsolePS3, "ps3"},
-        {Media::ConsolePS2, "ps2"},
+        {Media::GamesNDS, "nds"},
+        {Media::GamesPSP, "psp"},
+        {Media::GamesWii, "wii"},
+        {Media::GamesXbox, "xbox"},
+        {Media::GamesXbox360, "xbox360"},
+        {Media::GamesPS3, "ps3"},
+        {Media::GamesPS2, "ps2"},
         {Media::MoviesSD, "divx"},
         {Media::MoviesSD, "xvid"},
         {Media::MoviesSD, "dvd-pal"},
         {Media::MoviesHD, "bluray"}, // better than x264
-        {Media::AudioMp3, "mp3"},
-        {Media::AudioVideo, "mvids"}, // mvid and mv are same as mvids
+        {Media::MusicMp3, "mp3"},
+        {Media::MusicVideo, "mvids"}, // mvid and mv are same as mvids
         {Media::AppsPC, "0-day"},
         {Media::AppsPC, "0day"},
         {Media::AppsPC, "0day-"},
@@ -113,7 +113,7 @@ void Womble::prepare(MediaType m, std::vector<QUrl>& urls)
         {Media::TvSD, "tv-xvid"},
         {Media::TvSD, "tv-dvdrip"},
         {Media::TvHD, "tv-x264"},
-        {Media::XxxDVD, "xxx"},
+        {Media::AdultDVD, "xxx"},
         {Media::Ebook, "ebook"}        
     };    
 

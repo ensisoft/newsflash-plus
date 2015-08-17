@@ -251,7 +251,8 @@ void MainWindow::loadState()
         const auto show = settings_.get("window_visible_tabs", text, info.initiallyVisible);
         if (show)
         {
-            ui_.mainTab->insertTab(i, widgets_[i], icon, text);
+            const auto title = widgets_[i]->windowTitle();
+            ui_.mainTab->insertTab(i, widgets_[i], icon, title);
         }
         if (i < actions_.size())
             actions_[i]->setChecked(show);        
