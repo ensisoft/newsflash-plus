@@ -23,7 +23,7 @@
 #include <newsflash/config.h>
 #include <newsflash/warnpush.h>
 #  include <QtGui/QDialog>
-#  include "ui_wildcards.h"
+#  include "ui_dlgwildcards.h"
 #include <newsflash/warnpop.h>
 
 namespace gui

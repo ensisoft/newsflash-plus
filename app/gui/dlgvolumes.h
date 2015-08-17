@@ -23,7 +23,7 @@
 #include <newsflash/config.h>
 #include <newsflash/warnpush.h>
 #  include <QtGui/QDialog>
-#  include "ui_volumes.h"
+#  include "ui_dlgvolumes.h"
 #include <newsflash/warnpop.h>
 
 namespace app {

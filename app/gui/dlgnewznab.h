@@ -24,7 +24,7 @@
 #include <newsflash/warnpush.h>
 #  include <QtGui/QDialog>
 #  include <QObject>
-#  include "ui_newznab.h"
+#  include "ui_dlgnewznab.h"
 #include <newsflash/warnpop.h>
 #include "../newznab.h"
 #include "../webquery.h"

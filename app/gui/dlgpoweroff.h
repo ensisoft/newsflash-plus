@@ -23,7 +23,7 @@
 #include <newsflash/config.h>
 #include <newsflash/warnpush.h>
 #  include <QtGui/QDialog>
-#  include "ui_poweroff.h"
+#  include "ui_dlgpoweroff.h"
 #include <newsflash/warnpop.h>
 #include "../poweroff.h"
 

@@ -25,7 +25,7 @@
 #  include <QtGui/QDialog>
 #  include <QString>
 #  include <QStringList>
-#  include "ui_dlgchoose.h"
+#  include "ui_dlgselectaccount.h"
 #include <newsflash/warnpop.h>
 
 namespace gui

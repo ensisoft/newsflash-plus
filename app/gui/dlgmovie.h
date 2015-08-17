@@ -26,7 +26,7 @@
 #  include <QtGui/QDialog>
 #  include <QtGui/QMovie>
 #  include <QtGui/QPixmap>
-#  include "ui_movie.h"
+#  include "ui_dlgmovie.h"
 #include <newsflash/warnpop.h>
 
 namespace gui

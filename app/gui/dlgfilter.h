@@ -23,7 +23,7 @@
 #include <newsflash/config.h>
 #include <newsflash/warnpush.h>
 #  include <QtGui/QDialog>
-#  include "ui_filter.h"
+#  include "ui_dlgfilter.h"
 #include <newsflash/warnpop.h>
 #include <functional>
 

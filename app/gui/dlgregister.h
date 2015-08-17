@@ -23,7 +23,7 @@
 #include <newsflash/config.h>
 #include <newsflash/warnpush.h>
 #  include <QtGui/QDialog>
-#  include "ui_register.h"
+#  include "ui_dlgregister.h"
 #include <newsflash/warnpop.h>
 
 namespace gui
