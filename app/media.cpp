@@ -37,6 +37,24 @@ bool tryCapture(const QString& subject, const QString& regex, int index, QString
     return true;
 }
 
+QString findAdultTitle(const QString& subject)
+{
+    QString ret;
+
+    // Butterfly.2008.XXX.HDTVRiP.x264-REDX"
+    if (tryCapture(subject, "(^\\S*)\\.(\\d{4})\\.XXX\\.", 1, ret))
+        return ret;
+
+    if (tryCapture(subject, "(^\\S*)\\.((FRENCH)|(GERMAN))\\.XXX\\.", 1, ret))
+        return ret;
+
+    // Boning.The.Mom.Next.Door.XXX.COMPLETE.NTSC.DVDR-DFA
+    if (tryCapture(subject, "(^\\S*)\\.XXX\\.", 1, ret))
+        return ret;
+
+    return ret;
+}
+
 QString findMovieTitle(const QString& subject)
 {
     QString ret;
@@ -58,15 +76,18 @@ QString findTVSeriesTitle(const QString& subject, QString* season, QString* epis
 {
     // Betas.S01E05.1080p.WEBRip.H264-BATV
     const QRegExp pattern("^(\\S*)\\.S(\\d{2})E(\\d{2})\\.");
-    if (pattern.indexIn(subject) == -1)
-        return "";
+    if (pattern.indexIn(subject) != -1)
+    {
+        if (season)
+            *season = pattern.cap(2);
+        if (episode)
+            *episode = pattern.cap(3);
+        return pattern.cap(1);
+    }
 
-    if (season)
-        *season = pattern.cap(2);
-    if (episode)
-        *episode = pattern.cap(3);
 
-    return pattern.cap(1);
+    return "";
+
 }
 
 QString toString(MediaType m) 

@@ -82,7 +82,11 @@ namespace app
 
        bool checkDuplicates() const;
 
+       bool exactMatching() const;
+
        void checkDuplicates(bool onOff);
+
+       void exactMatching(bool onOff);
 
        // try to lookup an item in the database with
        // direct match on desc and type attributes. 
@@ -99,11 +103,13 @@ namespace app
         enum class Columns {
             Date, Type, Desc, SENTINEL
         };
+        bool matchExactly(const QString& desc, MediaType type, Item* item) const;
 
     private:
         std::vector<Item> m_items;
         bool m_loaded;
         bool m_checkDuplicates;
+        bool m_exactMatch;
     private:
         QFile m_file;
     };

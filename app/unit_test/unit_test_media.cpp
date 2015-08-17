@@ -18,26 +18,26 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#pragma once
-
 #include <newsflash/config.h>
 #include <newsflash/warnpush.h>
-#  include <QString>
+#  include <boost/test/minimal.hpp>
 #include <newsflash/warnpop.h>
 #include "../media.h"
-// common UI functions.
 
-class QWidget;
-
-namespace gui
+int test_main(int, char* argv[])
 {
+    BOOST_REQUIRE(app::findAdultTitle("Boning.The.Mom.Next.Door.XXX.COMPLETE.NTSC.DVDR-DFA") ==
+        "Boning.The.Mom.Next.Door");
+    BOOST_REQUIRE(app::findAdultTitle("Big.Dick.Gloryholes.4.XXX.NTSC.DVDR-EViLVAULT") == 
+        "Big.Dick.Gloryholes.4");
+    BOOST_REQUIRE(app::findAdultTitle("Butterfly.2008.XXX.HDTVRiP.x264-REDX") ==
+        "Butterfly");
+    BOOST_REQUIRE(app::findAdultTitle("Boca.Chica.Blues.2010.XXX.1080p.HDTV.x264-REDX") ==
+        "Boca.Chica.Blues");
+    BOOST_REQUIRE(app::findAdultTitle("Hotesses.De.Lair.FRENCH.XXX.DVDRiP.x264-TattooLovers") ==
+        "Hotesses.De.Lair");
 
-// Prompts the user for account selection and returns
-// the account id of the selected account or 0 
-// if the operation was canceled and no account selected.
-quint32 selectAccount(QWidget* parent, const QString& desc);
+    BOOST_REQUIRE(app::findTVSeriesTitle("The.Killing.S04E06.DVDRip.x264-OSiTV") == "The.Killing");
 
-bool passDuplicateCheck(QWidget* parent, const QString& desc, 
-    app::MediaType type);
-
-} // gui
+    return 0;
+}

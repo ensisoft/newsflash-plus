@@ -82,11 +82,24 @@
         </property>
        </widget>
       </item>
+      <item>
+       <widget class="QCheckBox" name="chkExact">
+        <property name="text">
+         <string>Match title exactly</string>
+        </property>
+       </widget>
+      </item>
      </layout>
     </widget>
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>tableView</tabstop>
+  <tabstop>btnClear</tabstop>
+  <tabstop>chkCheckDuplicates</tabstop>
+  <tabstop>chkExact</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

@@ -451,18 +451,28 @@ void Search::downloadSelected(const QString& folder)
     if (indices.isEmpty())
         return;
 
+    bool actions = false;
+
     for (const auto& index : indices)
     {
         const auto& item = model_.getItem(index);
         const auto& desc = item.title;
-        const auto acc   = selectAccount(this, desc);
+
+        if (!passDuplicateCheck(this, desc, item.type))
+            continue;
+
+        const auto acc = selectAccount(this, desc);
         if (acc == 0)
             continue;
 
         model_.downloadItem(index, folder, acc);
+        actions = true;
     }
-    ui_.progress->setVisible(true);
-    ui_.actionStop->setEnabled(true);
+    if (actions)
+    {
+        ui_.progress->setVisible(true);
+        ui_.actionStop->setEnabled(true);
+    }
 }
 
 void Search::beginSearch(quint32 queryOffset, quint32 querySize)

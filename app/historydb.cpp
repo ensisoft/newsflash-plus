@@ -38,7 +38,7 @@
 namespace app
 {
 
-HistoryDb::HistoryDb() : m_loaded(false), m_checkDuplicates(true)
+HistoryDb::HistoryDb() : m_loaded(false), m_checkDuplicates(true), m_exactMatch(false)
 {
     DEBUG("HistoryDb created");
 }
@@ -117,11 +117,13 @@ int HistoryDb::columnCount(const QModelIndex&) const
 void HistoryDb::loadState(Settings& settings)
 {
     m_checkDuplicates = settings.get("history", "check_duplicates", m_checkDuplicates);
+    m_exactMatch = settings.get("history", "exact_matching", m_exactMatch);
 }
 
 void HistoryDb::saveState(Settings& settings) const
 {
     settings.set("history", "check_duplicates", m_checkDuplicates);
+    settings.set("history", "exact_matching", m_exactMatch);
 }
 
 void HistoryDb::loadHistory()
@@ -209,9 +211,19 @@ bool HistoryDb::checkDuplicates() const
     return m_checkDuplicates;
 }
 
+bool HistoryDb::exactMatching() const
+{
+    return m_exactMatch;
+}
+
 void HistoryDb::checkDuplicates(bool onOff) 
 {
     m_checkDuplicates = onOff;
+}
+
+void HistoryDb::exactMatching(bool onOff)
+{
+    m_exactMatch = onOff;
 }
 
 bool HistoryDb::lookup(const QString& desc, MediaType type, Item* item) const 
@@ -237,21 +249,25 @@ bool HistoryDb::isDuplicate(const QString& desc, MediaType type, Item* item) con
     if (!m_loaded)
         const_cast<HistoryDb*>(this)->loadHistory();
 
-    if (isMovie(type)) 
+    if (m_exactMatch)
+        return matchExactly(desc, type, item);
+
+    if (isMovie(type))
     {
         QString title = findMovieTitle(desc);
-        if (title.isEmpty())
-            return false;
-
-        title = title.toLower();
-
-        for (const auto& item : m_items)
+        if (!title.isEmpty())
         {
-            if (!isMovie(item.type))
-                continue;
-            QString t = findMovieTitle(item.desc);
-            if (t.toLower() == title)
-                return true;
+            DEBUG("Checking Movie title %1", title);
+
+            title = title.toLower();
+            for (const auto& item : m_items)
+            {
+                if (!isMovie(item.type))
+                    continue;
+                QString t = findMovieTitle(item.desc);
+                if (t.toLower() == title)
+                    return true;
+            }
         }
     }
     else if (isTelevision(type))
@@ -259,37 +275,47 @@ bool HistoryDb::isDuplicate(const QString& desc, MediaType type, Item* item) con
         QString season;
         QString episode;
         QString title = findTVSeriesTitle(desc, &season, &episode);
-        if (title.isEmpty())
-            return false;
-
-        title = title.toLower();
-
-        for (const auto& item : m_items)
+        if (!title.isEmpty())
         {
-            if (!isTelevision(item.type))
-                continue;
-            QString e, s;
-            QString t = findTVSeriesTitle(item.desc, &s, &e);
-            if (s != season || e != episode)
-                continue;
-            if (t.toLower() == title)
-                return true;
+            DEBUG("Checking Television title %1", title);
+
+            title = title.toLower();
+            for (const auto& item : m_items)
+            {
+                if (!isTelevision(item.type))
+                    continue;
+                QString e, s;
+                QString t = findTVSeriesTitle(item.desc, &s, &e);
+                if (s != season || e != episode)
+                    continue;
+                if (t.toLower() == title)
+                    return true;
+            }
         }
     }
-    else
+    else if (isAdult(type))
     {
-        QString lower = desc.toLower();
-
-        for (const auto& item : m_items)
+        QString title = findAdultTitle(desc);
+        if (!title.isEmpty())
         {
-            if (item.type != type)
-                continue;
-            if (item.desc.toLower() == lower)
-                return true;
+            DEBUG("Checking Adult title %1", title);
+
+            title = title.toLower();
+            for (const auto& item : m_items)
+            {
+                if (!isAdult(item.type))
+                    continue;
+
+                QString t = findAdultTitle(item.desc);
+                if (t.toLower() == title)
+                    return true;
+            }
         }
     }
 
-    return false;
+    return matchExactly(desc, type, item);
+
+
 }
 
 void HistoryDb::newDownloadQueued(const Download& download)
@@ -329,6 +355,18 @@ void HistoryDb::newDownloadQueued(const Download& download)
     }
 }
 
+bool HistoryDb::matchExactly(const QString& desc, MediaType type, Item* item) const 
+{
+    for (const auto& item : m_items)
+    {
+        if (item.type != type)
+            continue;
+        if (item.desc == desc)
+            return true;
+    }
+    return false;
+
+}
 
 HistoryDb* g_history;
 

@@ -39,6 +39,7 @@ HistoryDbSettings::HistoryDbSettings(app::HistoryDb* model) : m_model(model)
     m_ui.tableView->setModel(m_model);
     m_ui.btnClear->setEnabled(!m_model->isEmpty());
     m_ui.chkCheckDuplicates->setChecked(m_model->checkDuplicates());
+    m_ui.chkExact->setChecked(m_model->exactMatching());
 }
 
 HistoryDbSettings::~HistoryDbSettings()
@@ -47,8 +48,10 @@ HistoryDbSettings::~HistoryDbSettings()
 void HistoryDbSettings::accept()
 {
     bool checkDuplicates = m_ui.chkCheckDuplicates->isChecked();
+    bool exactMatching = m_ui.chkExact->isChecked();
 
     m_model->checkDuplicates(checkDuplicates);
+    m_model->exactMatching(exactMatching);
 }
 
 void HistoryDbSettings::on_btnClear_clicked()

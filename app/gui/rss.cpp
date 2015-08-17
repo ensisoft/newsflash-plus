@@ -36,6 +36,7 @@
 #include "../eventlog.h"
 #include "../settings.h"
 #include "../utility.h"
+#include "../historydb.h"
 
 namespace {
 
@@ -419,6 +420,10 @@ void RSS::downloadSelected(const QString& folder)
         const auto row = indices[i].row();
         const auto& item = model_.getItem(row);
         const auto& desc = item.title;
+
+        if (!passDuplicateCheck(this, desc, item.type))
+            continue;
+
         const auto acc = selectAccount(this, desc);
         if (acc == 0)
             continue;

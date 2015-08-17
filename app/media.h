@@ -267,6 +267,7 @@ namespace app
     }
 
     
+    QString findAdultTitle(const QString& subject);
     QString findMovieTitle(const QString& subject);
     QString findTVSeriesTitle(const QString& subject, QString* season = nullptr, QString* episode =  nullptr);
 

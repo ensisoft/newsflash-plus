@@ -32,3 +32,4 @@ unit-test unit_test_parstate : unit_test_parstate.cpp ../parstate.cpp ;
 unit-test unit_test_nzbparse : unit_test_nzbparse.cpp ../nzbparse.cpp ;
 unit-test unit_test_rssdate  : unit_test_rss_date.cpp ../rssdate.cpp ;
 unit-test unit_test_poweroff : unit_test_poweroff.cpp unit_test_poweroff.h ../poweroff.cpp ../poweroff.h ;
+unit-test unit_test_media    : unit_test_media.cpp ../media.cpp ../debug.cpp ;

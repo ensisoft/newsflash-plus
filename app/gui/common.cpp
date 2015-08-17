@@ -74,7 +74,7 @@ quint32 selectAccount(QWidget* parent, const QString& desc)
 
 }
 
-bool checkDuplicate(QWidget* parent, const QString& desc,
+bool passDuplicateCheck(QWidget* parent, const QString& desc,
     app::MediaType type)
 {
     app::HistoryDb::Item item;
@@ -83,7 +83,7 @@ bool checkDuplicate(QWidget* parent, const QString& desc,
 
     DlgDuplicate dlg(parent, desc);
     if (dlg.exec() == QDialog::Rejected)
-        return false;
+        return false; // canceled 
 
 
     return true;
