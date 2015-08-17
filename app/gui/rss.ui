@@ -30,12 +30,32 @@
       <item row="0" column="0">
        <layout class="QHBoxLayout" name="horizontalLayout">
         <item>
-         <widget class="QCheckBox" name="chkMusic">
+         <widget class="QCheckBox" name="chkAdult">
           <property name="text">
-           <string>Music</string>
+           <string>Adult</string>
           </property>
           <property name="checked">
-           <bool>false</bool>
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="chkApps">
+          <property name="text">
+           <string>Apps</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="chkGames">
+          <property name="text">
+           <string>Games</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
           </property>
          </widget>
         </item>
@@ -45,7 +65,17 @@
            <string>Movies</string>
           </property>
           <property name="checked">
-           <bool>false</bool>
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="chkMusic">
+          <property name="text">
+           <string>Music</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
           </property>
          </widget>
         </item>
@@ -55,37 +85,7 @@
            <string>TV</string>
           </property>
           <property name="checked">
-           <bool>false</bool>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QCheckBox" name="chkConsole">
-          <property name="text">
-           <string>Console</string>
-          </property>
-          <property name="checked">
-           <bool>false</bool>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QCheckBox" name="chkComputer">
-          <property name="text">
-           <string>Computer</string>
-          </property>
-          <property name="checked">
-           <bool>false</bool>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QCheckBox" name="chkXXX">
-          <property name="text">
-           <string>XXX</string>
-          </property>
-          <property name="checked">
-           <bool>false</bool>
+           <bool>true</bool>
           </property>
          </widget>
         </item>
@@ -268,6 +268,12 @@
   </action>
  </widget>
  <tabstops>
+  <tabstop>chkAdult</tabstop>
+  <tabstop>chkApps</tabstop>
+  <tabstop>chkGames</tabstop>
+  <tabstop>chkMovies</tabstop>
+  <tabstop>chkMusic</tabstop>
+  <tabstop>chkTV</tabstop>
   <tabstop>tableView</tabstop>
  </tabstops>
  <resources>

@@ -59,7 +59,7 @@ namespace app
             bool television;
             bool console;
             bool computer;
-            bool porno;
+            bool adult;
             quint32 qoffset;
             quint32 qsize;
         };
@@ -114,6 +114,9 @@ namespace app
 
         // get the item contents and save them to the specified file.
         void saveItem(const QModelIndex& index, const QString& file);
+
+        void downloadItem(const QModelIndex& index,
+            const QString& folder, quint32 account);
 
         const MediaItem& getItem(const QModelIndex& index) const;
 

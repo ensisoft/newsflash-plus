@@ -44,13 +44,13 @@ struct Mapping {
     Code code;
     Cat  cat;
 } map[] = {
-    {Type::ConsoleNDS, 1010, Cat::Console},
-    {Type::ConsoleWii, 1030, Cat::Console},
-    {Type::ConsoleXbox, 1040, Cat::Console},
-    {Type::ConsoleXbox360, 1050, Cat::Console},
-    {Type::ConsolePSP, 1020, Cat::Console},
-    {Type::ConsolePS2, 1080, Cat::Console},    
-    {Type::ConsolePS3, 1090, Cat::Console},    
+    {Type::GamesNDS, 1010, Cat::Console},
+    {Type::GamesWii, 1030, Cat::Console},
+    {Type::GamesXbox, 1040, Cat::Console},
+    {Type::GamesXbox360, 1050, Cat::Console},
+    {Type::GamesPSP, 1020, Cat::Console},
+    {Type::GamesPS2, 1080, Cat::Console},    
+    {Type::GamesPS3, 1090, Cat::Console},    
     //{Type::ConsolePS4, ??},        
 
     {Type::MoviesInt, 2060, Cat::Movies},
@@ -58,10 +58,9 @@ struct Mapping {
     {Type::MoviesHD, 2040, Cat::Movies},
     {Type::MoviesSD, 2030, Cat::Movies}, // xvid
 
-    {Type::AudioMp3, 3010, Cat::Music},
-    {Type::AudioVideo, 3020, Cat::Music},
-    {Type::AudioAudiobook, 3030, Cat::Music},
-    {Type::AudioLossless, 3040, Cat::Music},
+    {Type::MusicMp3, 3010, Cat::Music},
+    {Type::MusicVideo, 3020, Cat::Music},
+    {Type::MusicLossless, 3040, Cat::Music},
 
     {Type::AppsPC, 4000, Cat::Apps},
     {Type::AppsISO, 4020, Cat::Apps},
@@ -75,15 +74,16 @@ struct Mapping {
     {Type::TvOther, 5050, Cat::Television},
     {Type::TvSport, 5060, Cat::Television},
 
-    {Type::XxxDVD, 6010, Cat::Porno},
-    {Type::XxxHD, 6040, Cat::Porno},
-    {Type::XxxSD, 6030, Cat::Porno},
-    {Type::XxxOther, 6070, Cat::Porno}, // anime
-    {Type::XxxOther, 6020, Cat::Porno}, // clip
-    {Type::XxxOther, 6060, Cat::Porno}, // imgset
-    {Type::XxxOther, 6050, Cat::Porno}, // pack
+    {Type::AdultDVD, 6010, Cat::Adult},
+    {Type::AdultHD, 6040, Cat::Adult},
+    {Type::AdultSD, 6030, Cat::Adult},
+    {Type::AdultOther, 6070, Cat::Adult}, // anime
+    {Type::AdultOther, 6020, Cat::Adult}, // clip
+    {Type::AdultOther, 6060, Cat::Adult}, // imgset
+    {Type::AdultOther, 6050, Cat::Adult}, // pack
 
-    {Type::Ebook, 7020, Cat::Other}
+    {Type::Ebook, 7020, Cat::Other},
+    {Type::Audiobook, 3030, Cat::Other}
 };
 
 app::MediaType mapType(unsigned code)

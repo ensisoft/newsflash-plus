@@ -18,53 +18,26 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <newsflash/config.h>
+#pragma once
 
-#include "dlgchoose.h"
+#include <newsflash/config.h>
+#include <newsflash/warnpush.h>
+#  include <QString>
+#include <newsflash/warnpop.h>
+#include "../media.h"
+// common UI functions.
+
+class QWidget;
 
 namespace gui
 {
 
-DlgChoose::DlgChoose(QWidget* parent, const QStringList& accounts, const QString& task) : QDialog(parent)
-{
-    ui_.setupUi(this);
+// Prompts the user for account selection and returns
+// the account id of the selected account or 0 
+// if the operation was canceled and no account selected.
+quint32 selectAccount(QWidget* parent, const QString& desc);
 
-    for (int i=0; i<accounts.size(); ++i)
-        ui_.cmbList->addItem(accounts[i]);
-
-    ui_.lblHint->setText(task);
-}
-
-DlgChoose::~DlgChoose()
-{}
-
-QString DlgChoose::account() const 
-{ return ui_.cmbList->currentText(); }
-
-bool DlgChoose::remember() const 
-{ return ui_.chkRemember->isChecked(); }
-
-void DlgChoose::on_btnAccept_clicked()
-{
-    accept();
-}
-
-void DlgChoose::on_btnCancel_clicked()
-{
-    reject();
-}
-
-void DlgChoose::changeEvent(QEvent* e)
-{
-    QDialog::changeEvent(e);
-    switch (e->type()) {
-    case QEvent::LanguageChange:
-        ui_.retranslateUi(this);
-        break;
-    default:
-        break;
-    }    
-}
-
+bool passDuplicateCheck(QWidget* parent, const QString& desc, 
+    app::MediaType type);
 
 } // gui

@@ -67,6 +67,15 @@ namespace gui
         void on_editFilter_returnPressed();
         void on_editFilter_textChanged();
         void on_chkShowEmpty_clicked();
+        void on_chkShowText_clicked();
+        void on_chkMusic_clicked();
+        void on_chkMovies_clicked();
+        void on_chkTV_clicked();
+        void on_chkGames_clicked();
+        void on_chkApps_clicked();
+        void on_chkImages_clicked();
+        void on_chkOther_clicked();
+        void on_chkAdult_clicked();
 
         void accountsUpdated();
         void progressUpdated(quint32 acc, quint32 maxValue, quint32 curValue);
@@ -78,10 +87,11 @@ namespace gui
         void filter();
 
     private:
-        Ui::NewsList ui_;
+        Ui::NewsList m_ui;
     private:
-        app::NewsList model_;
-        quint32 curAccount_;
+        app::NewsList m_model;
+    private:
+        quint32 m_curAccount;
     };
 
 } // gui

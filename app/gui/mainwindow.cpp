@@ -41,11 +41,9 @@
 #include "dlgwelcome.h"
 #include "dlgsettings.h"
 #include "dlgaccount.h"
-#include "dlgchoose.h"
 #include "dlgexit.h"
 #include "dlgabout.h"
 #include "dlgfeedback.h"
-#include "dlgaccount.h"
 #include "dlgpoweroff.h"
 #include "dlgregister.h"
 #include "config.h"
@@ -175,6 +173,8 @@ void MainWindow::attach(MainWidget* widget, bool permanent, bool loadstate)
 
     QObject::connect(widget, SIGNAL(updateMenu(MainWidget*)),
         this, SLOT(updateMenu(MainWidget*)));
+    QObject::connect(widget, SIGNAL(showSettings(MainWidget*)),
+        this, SLOT(showSettings(MainWidget*)));
 }
 
 void MainWindow::attach(MainModule* module, bool loadstate)
@@ -202,11 +202,6 @@ void MainWindow::closeWidget(MainWidget* widget)
 
 void MainWindow::loadState()
 {
-    // load global objects state.
-    app::g_accounts->loadState(settings_);
-    app::g_tools->loadstate(settings_);    
-    app::g_engine->loadState(settings_);
-
     if (!settings_.contains("window", "width"))
     {
         // if the settings file doesn't exist then we assume that this is the
@@ -253,10 +248,11 @@ void MainWindow::loadState()
         Q_ASSERT(!text.isEmpty());
         const auto icon = widgets_[i]->windowIcon();
         const auto info = widgets_[i]->getInformation();
-        const auto show = settings_.get("window_visible_tabs", text, info.visible_by_default);
+        const auto show = settings_.get("window_visible_tabs", text, info.initiallyVisible);
         if (show)
         {
-            ui_.mainTab->insertTab(i, widgets_[i], icon, text);
+            const auto title = widgets_[i]->windowTitle();
+            ui_.mainTab->insertTab(i, widgets_[i], icon, title);
         }
         if (i < actions_.size())
             actions_[i]->setChecked(show);        
@@ -433,51 +429,6 @@ QStringList MainWindow::getRecentPaths() const
     return recents_;
 }
 
-quint32 MainWindow::chooseAccount(const QString& description)
-{
-    if (app::g_accounts->numAccounts() == 0)
-    {
-        auto account = app::g_accounts->suggestAccount();
-        DlgAccount dlg(this, account, true);
-        if (dlg.exec() == QDialog::Rejected)
-            return 0;
-
-        app::g_accounts->setAccount(account);
-        return account.id;
-    }
-
-    auto* main = app::g_accounts->getMainAccount();
-    if (main)
-        return main->id;
-
-    QStringList names;
-
-    const auto num_acc = app::g_accounts->numAccounts();
-    for (std::size_t i=0; i<num_acc; ++i)
-    {
-        const auto& acc = app::g_accounts->getAccount(i);
-        names << acc.name;
-    }
-    DlgChoose dlg(this, names, description);
-    if (dlg.exec() == QDialog::Rejected)
-        return 0;
-
-    const auto& acc_name = dlg.account();
-
-    int account_index;
-    for (account_index=0; account_index<names.size(); ++account_index)
-    {
-        if (names[account_index] == acc_name)
-            break;
-    }
-    const auto& acc = app::g_accounts->getAccount(account_index);
-
-    if (dlg.remember())
-        app::g_accounts->setMainAccount(acc.id);
-
-    return acc.id;
-}
-
 std::size_t MainWindow::numWidgets() const 
 {
     return widgets_.size();
@@ -518,6 +469,11 @@ void MainWindow::updateMenu(MainWidget* widget)
 
     ui_.mainToolBar->addSeparator();
     ui_.mainToolBar->addAction(ui_.actionContextHelp);
+}
+
+void MainWindow::showSettings(MainWidget* widget)
+{
+    showSetting(widget->windowTitle());
 }
 
 void MainWindow::show(const QString& title)
@@ -776,9 +732,10 @@ bool MainWindow::saveState(DlgExit* dlg)
         for (const auto& a : transient_)
             settings_.merge(a);
 
+        // todo: refactor this
         app::g_accounts->saveState(settings_);
         app::g_engine->saveState(settings_);
-        app::g_tools->savestate(settings_);
+        app::g_tools->saveState(settings_);
 
 
         settings_.set("window", "width", width());

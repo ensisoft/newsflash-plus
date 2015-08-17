@@ -92,13 +92,13 @@ void Nzbs::prepare(MediaType type, std::vector<QUrl>& urls)
         Media type;
         const char* arg;
     } feeds[] = {
-        {Media::ConsoleNDS, "1010"},
-        {Media::ConsolePSP, "1020"},
-        {Media::ConsoleWii, "1030"},
-        {Media::ConsoleXbox, "1040"},
-        {Media::ConsoleXbox360, "1050"},
-        {Media::ConsolePS3, "1080"},
-        {Media::ConsolePS2, "1090"},
+        {Media::GamesNDS, "1010"},
+        {Media::GamesPSP, "1020"},
+        {Media::GamesWii, "1030"},
+        {Media::GamesXbox, "1040"},
+        {Media::GamesXbox360, "1050"},
+        {Media::GamesPS3, "1080"},
+        {Media::GamesPS2, "1090"},
 
         {Media::MoviesInt, "2060"}, // foreign
         {Media::MoviesSD, "2010"}, // dvd
@@ -108,9 +108,9 @@ void Nzbs::prepare(MediaType type, std::vector<QUrl>& urls)
         {Media::MoviesWMV, "2020"}, // wmv-hd
 
 
-        {Media::AudioMp3, "3010"},
-        {Media::AudioVideo, "3020"}, 
-        {Media::AudioLossless, "3040"}, // flac
+        {Media::MusicMp3, "3010"},
+        {Media::MusicVideo, "3020"}, 
+        {Media::MusicLossless, "3040"}, // flac
         {Media::AppsPC, "4010"}, // 0day
         {Media::AppsISO, "4020"},
         {Media::AppsMac, "4030"},
@@ -123,13 +123,13 @@ void Nzbs::prepare(MediaType type, std::vector<QUrl>& urls)
         {Media::TvHD, "5090"}, // boxhd
         {Media::TvOther, "5060"},
 
-        {Media::XxxDVD, "6010"},
-        {Media::XxxHD, "6040"}, // x264
-        {Media::XxxSD, "6030"}, // xvid
-        {Media::XxxOther, "6070"}, // anime
-        {Media::XxxOther, "6020"}, // clip
-        {Media::XxxOther, "6060"}, // imgset
-        {Media::XxxOther, "6050"}, // pack
+        {Media::AdultDVD, "6010"},
+        {Media::AdultHD, "6040"}, // x264
+        {Media::AdultSD, "6030"}, // xvid
+        {Media::AdultOther, "6070"}, // anime
+        {Media::AdultOther, "6020"}, // clip
+        {Media::AdultOther, "6060"}, // imgset
+        {Media::AdultOther, "6050"}, // pack
 
 
       //{media::other, "7010"} // other misc

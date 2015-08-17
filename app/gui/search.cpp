@@ -33,6 +33,7 @@
 #include "nzbfile.h"
 #include "dlgmovie.h"
 #include "dlgwildcards.h"
+#include "common.h"
 #include "../debug.h"
 #include "../search.h"
 #include "../settings.h"
@@ -170,7 +171,7 @@ void Search::loadState(app::Settings& settings)
     app::loadState("search", ui_.chkTV, settings);
     app::loadState("search", ui_.chkConsole, settings);
     app::loadState("search", ui_.chkComputer, settings);
-    app::loadState("search", ui_.chkXXX, settings);
+    app::loadState("search", ui_.chkAdult, settings);
     app::loadState("search", ui_.editAlbum, settings);
     app::loadState("search", ui_.editTrack, settings);
     app::loadState("search", ui_.editSeason, settings);
@@ -192,7 +193,7 @@ void Search::saveState(app::Settings& settings)
     app::saveState("search", ui_.chkTV, settings);
     app::saveState("search", ui_.chkConsole, settings);
     app::saveState("search", ui_.chkComputer, settings);
-    app::saveState("search", ui_.chkXXX, settings);
+    app::saveState("search", ui_.chkAdult, settings);
     app::saveState("search", ui_.editAlbum, settings);
     app::saveState("search", ui_.editTrack, settings);
     app::saveState("search", ui_.editSeason, settings);
@@ -222,7 +223,7 @@ void Search::on_actionStop_triggered()
 
 void Search::on_actionSettings_triggered()
 {
-    g_win->showSetting("Search");
+    emit showSettings(this);
 }
 
 void Search::on_actionOpen_triggered()
@@ -417,7 +418,7 @@ void Search::popupDetails()
             movie_.reset(new DlgMovie(this));
         movie_->lookupMovie(title);
     }
-    else if (isTVSeries(item.type))
+    else if (isTelevision(item.type))
     {
         const auto& title = app::findTVSeriesTitle(item.title);
         if (title.isEmpty())
@@ -450,25 +451,28 @@ void Search::downloadSelected(const QString& folder)
     if (indices.isEmpty())
         return;
 
-    auto callback = [=](const QByteArray& buff, const QString& desc, const QString& path, quint32 acc) {
-        app::g_engine->downloadNzbContents(acc, path, desc, desc, buff);
-    };
+    bool actions = false;
 
     for (const auto& index : indices)
     {
         const auto& item = model_.getItem(index);
         const auto& desc = item.title;
-        const auto acc   = g_win->chooseAccount(desc);
+
+        if (!passDuplicateCheck(this, desc, item.type))
+            continue;
+
+        const auto acc = selectAccount(this, desc);
         if (acc == 0)
             continue;
 
-        model_.loadItem(index,
-            std::bind(callback, std::placeholders::_1, std::placeholders::_2,
-                folder, acc));
-
+        model_.downloadItem(index, folder, acc);
+        actions = true;
     }
-    ui_.progress->setVisible(true);
-    ui_.actionStop->setEnabled(true);
+    if (actions)
+    {
+        ui_.progress->setVisible(true);
+        ui_.actionStop->setEnabled(true);
+    }
 }
 
 void Search::beginSearch(quint32 queryOffset, quint32 querySize)
@@ -484,7 +488,7 @@ void Search::beginSearch(quint32 queryOffset, quint32 querySize)
         if (msg.exec() == QMessageBox::No)
             return;
 
-        g_win->showSetting("Search");
+        emit showSettings(this);
         return;
     }
     const auto& name    = ui_.cmbIndexer->currentText();
@@ -514,7 +518,7 @@ void Search::beginSearch(quint32 queryOffset, quint32 querySize)
         query.television = ui_.chkTV->isChecked();
         query.console    = ui_.chkConsole->isChecked();
         query.computer   = ui_.chkComputer->isChecked();
-        query.porno      = ui_.chkXXX->isChecked();
+        query.adult      = ui_.chkAdult->isChecked();
         query.keywords   = ui_.editSearch->text();
         query.qoffset    = queryOffset;        
         query.qsize      = querySize;

@@ -30,6 +30,7 @@
 #include "nzbfile.h"
 #include "mainwindow.h"
 #include "finder.h"
+#include "common.h"
 #include "../debug.h"
 #include "../format.h"
 #include "../eventlog.h"
@@ -231,7 +232,7 @@ void NZBFile::downloadSelected(const QString& folder)
     const auto& filename = ui_.grpBox->title();
     const auto& basename = QFileInfo(filename).completeBaseName();
 
-    const auto acc = g_win->chooseAccount(basename);
+    const auto acc = selectAccount(this, basename);
     if (!acc)
         return;
 

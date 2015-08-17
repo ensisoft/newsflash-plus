@@ -67,7 +67,7 @@ namespace app
             Television,
             Console, 
             Apps,
-            Porno,
+            Adult,
             Other
         };
         using Categories = newsflash::bitflag<Category>;

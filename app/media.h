@@ -31,59 +31,79 @@
 
 namespace app
 {
+    enum class MediaSource {
+        RSS, Search, Headers, File
+    };
+
     // media types tags that apply to any particular media object.
     // coming from RSS feeds, Newznab etc.
     // int = international
     // sd  = standard definition
     // hd  = high definition
+
+    // todo: media types should be ideally be defined as a type
+    // and a bunch of "tags" so that a movie can be tagged for example
+    // can be tagged with the appropriate tags such as 
+    // "hd, 1080, mkv, x264, french" for a High definition x264 encoded french movie.
+    // unfortunately this is not the reality with the indexers.
+
+    // todo: this needs versioning.
     enum class MediaType {
-        //console,
-        ConsoleNDS,    
-        ConsoleWii,    
-        ConsoleXbox,   
-        ConsoleXbox360,
-        ConsolePSP,    
-        ConsolePS2,    
-        ConsolePS3,   
-        ConsolePS4,   
+        // adult content
+        AdultDVD,
+        AdultHD,
+        AdultSD,
+        AdultImg,        
+        AdultOther,
+
+        //apps,
+        AppsAndroid,        
+        AppsMac,   
+        AppsIos,           
+        AppsISO,           
+        AppsPC,    
+        AppsOther, 
+
+        MusicLossless,        
+        MusicMp3,
+        MusicVideo,
+        MusicOther,
+
+        //console (games)
+        GamesNDS,    
+        GamesPSP, 
+        GamesPS1,   
+        GamesPS2,    
+        GamesPS3,   
+        GamesPS4,   
+        GamesWii,            
+        GamesXbox,   
+        GamesXbox360,        
+        GamesOther,
+
+        Images,
 
         //movies,
         MoviesInt,
         MoviesSD, 
         MoviesHD,
         MoviesWMV,
-        
-        //audio,
-        AudioMp3,
-        AudioVideo,
-        AudioAudiobook,
-        AudioLossless,
-
-        //apps,
-        AppsPC,    
-        AppsISO,   
-        AppsMac,   
-        AppsAndroid,
-        AppsIos,    
+        MoviesOther,
 
         //tv,
         TvInt,
         TvSD, 
         TvHD, 
-        TvOther,
         TvSport, 
-
-        //xxx,
-        XxxDVD,
-        XxxHD,
-        XxxSD,
-        XxxOther,
-
+        TvOther,        
 
         //other
         Ebook,
+        Audiobook,                
+        Other,
 
-        Other
+        // needs to be the last value.
+        SENTINEL
     };
 
     inline
@@ -92,11 +112,12 @@ namespace app
         return type == MediaType::MoviesInt ||
             type == MediaType::MoviesSD ||
             type == MediaType::MoviesHD ||
-            type == MediaType::MoviesWMV;
+            type == MediaType::MoviesWMV ||
+            type == MediaType::MoviesOther;
     }
 
     inline 
-    bool isTVSeries(MediaType type)
+    bool isTelevision(MediaType type)
     {
         return type == MediaType::TvInt ||
             type == MediaType::TvSD ||
@@ -104,9 +125,67 @@ namespace app
             type == MediaType::TvOther ||
             type == MediaType::TvSport;
     }
+
+    inline
+    bool isMusic(MediaType type)
+    {
+        return type == MediaType::MusicMp3 ||
+            type == MediaType::MusicVideo ||
+            type == MediaType::MusicLossless ||
+            type == MediaType::MusicOther;
+    }
+
+    inline
+    bool isConsole(MediaType type)
+    {
+        return type == MediaType::GamesNDS ||
+            type == MediaType::GamesWii ||
+            type == MediaType::GamesXbox ||
+            type == MediaType::GamesXbox360 ||
+            type == MediaType::GamesPSP ||
+            type == MediaType::GamesPS1 ||
+            type == MediaType::GamesPS2 ||
+            type == MediaType::GamesPS3 ||
+            type == MediaType::GamesPS4 ||
+            type == MediaType::GamesOther;
+    }
+
+    inline
+    bool isApps(MediaType type)
+    {
+        return type == MediaType::AppsPC ||
+            type == MediaType::AppsISO ||
+            type == MediaType::AppsMac ||
+            type == MediaType::AppsAndroid ||
+            type == MediaType::AppsIos ||
+            type == MediaType::AppsOther;
+    }
+
+    inline
+    bool isAdult(MediaType type)
+    {
+        return type == MediaType::AdultDVD ||
+            type == MediaType::AdultHD ||
+            type == MediaType::AdultSD ||
+            type == MediaType::AdultImg ||
+            type == MediaType::AdultOther;
+    }
+
+    inline
+    bool isImage(MediaType type)
+    {
+        return type == MediaType::Images;
+    }
+
+    inline
+    bool isOther(MediaType type)
+    {
+        return type == MediaType::Ebook ||
+            type == MediaType::Audiobook || 
+            type == MediaType::Other;
+    }
+
     
-
-
     // media item. these items are retrieved from RSS feeds/newznab etc. searches.
     struct MediaItem {
 
@@ -138,7 +217,7 @@ namespace app
     public:
         MediaIterator(unsigned value) : value_(value)
         {}
-        MediaIterator() : value_((unsigned)MediaType::Ebook + 1)
+        MediaIterator() : value_((unsigned)MediaType::SENTINEL)
         {}
 
         // postfix
@@ -162,12 +241,12 @@ namespace app
         static 
         MediaIterator begin() 
         {
-            return MediaIterator((unsigned)MediaType::ConsoleNDS);
+            return MediaIterator((unsigned)MediaType::AdultDVD);
         }
         static
         MediaIterator end() 
         {
-            return MediaIterator((unsigned)MediaType::Ebook + 1);
+            return MediaIterator((unsigned)MediaType::SENTINEL);
         }
 
     private:
@@ -188,11 +267,16 @@ namespace app
     }
 
     
+    QString findAdultTitle(const QString& subject);
     QString findMovieTitle(const QString& subject);
     QString findTVSeriesTitle(const QString& subject, QString* season = nullptr, QString* episode =  nullptr);
 
     QString toString(MediaType media);
+    QString toString(MediaSource source);
 
     QIcon toIcon(MediaType media);
+    QIcon toIcon(MediaSource source);
+
+    MediaType findMediaType(const QString& newsgroup);
 
 } // app

@@ -42,7 +42,7 @@
             "-I${home}/coding/qt-4.8.2/include/QtCore",
 
             // for MOC and UIC generated headers
-            "-I${home}/coding/newsflash/bin/gcc-5.1.0/debug/threading-multi/"
+            "-I${home}/coding/newsflash/bin/gcc-5.2.0/debug/threading-multi/"
         ]
     }
 }

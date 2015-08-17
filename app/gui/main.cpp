@@ -55,6 +55,7 @@
 #include "unpack.h"
 #include "notify.h"
 #include "searchmodule.h"
+#include "historydb.h"
 #include "../debug.h"
 #include "../format.h"
 #include "../distdir.h"
@@ -78,6 +79,7 @@
 #include "../webengine.h"
 #include "../poweroff.h"
 #include "../platform.h"
+#include "../historydb.h"
 
 namespace gui
 {
@@ -119,21 +121,23 @@ int run(int argc, char* argv[])
     QDir::setSearchPaths("icons", QStringList(":/resource/16x16_ico_png"));
 
     // settings is that everything depends on so we must load settings first.
-    app::Settings set;
+    app::Settings settings;
 
     const auto file = app::homedir::file("settings.json");
     if (QFile::exists(file))
     {
-        const auto err = set.load(file);
+        const auto err = settings.load(file);
         if (err != QFile::NoError)
             ERROR("Failed to read settings %1, %2", file, err);
     }
 
+    // initialize global pointers.
     app::Poweroff power;
     app::g_poweroff = &power;
 
+    app::HistoryDb hdb;
+    app::g_history = &hdb;
 
-    // initialize global pointers.
     app::WebEngine web;
     app::g_web = &web;
 
@@ -142,6 +146,8 @@ int run(int argc, char* argv[])
 
     QObject::connect(&engine, SIGNAL(numPendingTasks(std::size_t)),
         &power, SLOT(numPendingTasks(std::size_t)));
+    QObject::connect(&engine, SIGNAL(newDownloadQueued(const Download&)),
+        &hdb, SLOT(newDownloadQueued(const Download&)));
 
     app::Accounts acc;
     app::g_accounts = &acc;
@@ -152,10 +158,8 @@ int run(int argc, char* argv[])
     app::MovieDatabase omdb;
     app::g_movies = &omdb;
 
-    // instead of the stack..
-
      // main application window
-    gui::MainWindow win(set);
+    gui::MainWindow win(settings);
     gui::g_win = &win;
     QObject::connect(&qtinstance, SIGNAL(messageReceived(const QString&)),
         &win, SLOT(messageReceived(const QString&)));
@@ -253,6 +257,9 @@ int run(int argc, char* argv[])
     gui::SearchModule search;
     win.attach(&search);
 
+    gui::HistoryDb historygui(app::g_history);
+    win.attach(&historygui);
+
     // commands module
     app::Commands cmds;
     QObject::connect(&engine, SIGNAL(packCompleted(const app::FilePackInfo&)),
@@ -302,6 +309,12 @@ int run(int argc, char* argv[])
         WARN("System tray is not available. Notifications are disabled.");
     }
 
+    app::g_accounts->loadState(settings);
+    app::g_tools->loadState(settings);
+    app::g_engine->loadState(settings);
+    app::g_history->loadState(settings);
+    app::g_history->loadHistory();
+ 
     win.loadState();
     win.prepareFileMenu();
     win.prepareWindowMenu();

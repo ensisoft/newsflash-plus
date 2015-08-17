@@ -95,7 +95,8 @@ namespace gui
     private:
         app::RSSReader model_;        
     private:
-        newsflash::bitflag<app::MediaType> streams_;
+        newsflash::bitflag<app::MediaType,
+            std::uint64_t> streams_;
         bool enable_nzbs_;
         bool enable_womble_;
         bool show_popup_hint_;

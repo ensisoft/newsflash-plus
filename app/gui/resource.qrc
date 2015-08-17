@@ -94,6 +94,7 @@
     <file>resource/16x16_ico_png/ico_media_movie.png</file>            
     <file>resource/16x16_ico_png/ico_media_console.png</file>                
     <file>resource/16x16_ico_png/ico_media_apps.png</file>
+    <file>resource/16x16_ico_png/ico_media_image.png</file>
 
     <!-- account module icons -->
     <file>resource/16x16_ico_png/ico_accounts.png</file>

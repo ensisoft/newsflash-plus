@@ -311,6 +311,9 @@
    <property name="text">
     <string>Prev</string>
    </property>
+   <property name="toolTip">
+    <string>Previous bookmark</string>
+   </property>
   </action>
  </widget>
  <tabstops>

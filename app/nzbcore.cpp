@@ -30,6 +30,7 @@
 #include "nzbthread.h"
 #include "debug.h"
 #include "eventlog.h"
+#include "download.h"
 #include "engine.h"
 
 namespace app
@@ -74,7 +75,14 @@ bool NZBCore::downloadNzbContents(const QString& file, const QString& basePath, 
 
     io.close();
 
-    return g_engine->downloadNzbContents(account, basePath, path, desc, nzb);
+    Download download;
+    download.type     = MediaType::Other;
+    download.source   = MediaSource::File;
+    download.account  = account;
+    download.basepath = basePath;
+    download.folder   = path;
+    download.desc     = desc;
+    return g_engine->downloadNzbContents(download, nzb);
 }
 
 void NZBCore::postProcess(const QString& file)
@@ -83,10 +91,14 @@ void NZBCore::postProcess(const QString& file)
     {
         case PostAction::Rename:
             QFile::rename(file, file + "_remove");
+
+            DEBUG("Renamed file %1 to %1_remove", file);
             break;
 
         case PostAction::Delete:
             QFile::remove(file);
+
+            DEBUG("Removed file %1", file);
             break;
     }
 }

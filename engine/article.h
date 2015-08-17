@@ -366,7 +366,7 @@ namespace newsflash
         static const std::uint32_t MAGIC;
 
     private:
-        bitflag<fileflag> m_bits;
+        bitflag<fileflag, std::uint8_t> m_bits;
         filetype m_type;                
 
         std::uint32_t m_index;
@@ -532,8 +532,8 @@ namespace newsflash
 #  pragma pack(pop)
 #endif
 
-        static_assert(sizeof(bitflag<fileflag>) == 1, "");
-        static_assert(sizeof(filetype) == 1, "");
+        //static_assert(sizeof(bitflag<fileflag>) == 1, "");
+        //static_assert(sizeof(filetype) == 1, "");
 
         data* m_ptr;
 

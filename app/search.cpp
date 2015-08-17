@@ -32,6 +32,8 @@
 #include "eventlog.h"
 #include "webquery.h"
 #include "webengine.h"
+#include "download.h"
+#include "engine.h"
 
 namespace app
 { 
@@ -75,7 +77,7 @@ bool Search::beginSearch(const Advanced& query, std::unique_ptr<Indexer> index)
     bits.set(c::Television, query.television);
     bits.set(c::Console, query.console);
     bits.set(c::Apps, query.computer);
-    bits.set(c::Porno, query.porno);
+    bits.set(c::Adult, query.adult);
 
     Indexer::AdvancedQuery q;
     q.categories = bits;
@@ -215,6 +217,45 @@ void Search::saveItem(const QModelIndex& index, const QString& file)
     queries_.push_back(ret);
 }
 
+void Search::downloadItem(const QModelIndex& index, const QString& folder, quint32 account)
+{
+    const auto& item = getItem(index);
+    const auto& link = item.nzblink;
+
+    WebQuery query(link);
+    query.OnReply = [=](QNetworkReply& reply)
+    {
+        const auto it = std::find_if(std::begin(queries_), std::end(queries_),
+            [&](const WebQuery* q) {
+                return q->isOwner(reply);
+            });
+        ENDCHECK(queries_, it);
+        queries_.erase(it);
+        if (queries_.empty())
+            OnReadyCallback();
+
+        const auto err = reply.error();
+        const auto url = reply.url();
+        if (err != QNetworkReply::NoError)
+        {
+            ERROR("Failed to retrieve NZB content (%1), %2", url, err);
+            return;
+        }
+        QByteArray nzb = reply.readAll();
+
+        Download download;
+        download.type     = item.type;
+        download.source   = MediaSource::Search;
+        download.account  = account;
+        download.basepath = folder;
+        download.folder   = item.title;
+        download.desc     = item.title;
+        g_engine->downloadNzbContents(download, nzb);
+
+    };
+    auto* ret = g_web->submit(query);
+    queries_.push_back(ret);
+}
 
 const MediaItem& Search::getItem(const QModelIndex& index) const 
 {

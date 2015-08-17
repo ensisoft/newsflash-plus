@@ -27,9 +27,11 @@
 #  include <QDateTime>
 #  include <QString>
 #  include <QList>
-//#include <newsflash/warnpop.h>
+#include <newsflash/warnpop.h>
+#include <newsflash/engine/bitflag.h>
 #include <vector>
 #include <map>
+#include "media.h"
 
 namespace app
 {
@@ -42,7 +44,7 @@ namespace app
 
     public:
         enum class Columns {
-            Messages, SizeOnDisk, Subscribed, Name, LAST
+            Messages, Category, SizeOnDisk, Subscribed, Name, LAST
         };
 
         NewsList();
@@ -70,7 +72,20 @@ namespace app
 
         std::size_t numItems() const;
 
-        void filter(const QString& str, bool showEmpty);
+        enum class FilterFlags {
+            ShowEmpty,
+            ShowText,
+            ShowMusic,
+            ShowMovies,
+            ShowTv,
+            ShowGames,
+            ShowApps,
+            ShowAdult,
+            ShowImages,
+            ShowOther           
+        };
+
+        void filter(const QString& str, newsflash::bitflag<FilterFlags> options);
 
     signals:
         void progressUpdated(quint32 acc, quint32 maxValue, quint32 curValue);   
@@ -93,6 +108,7 @@ namespace app
             quint64   numMessages;
             quint64   sizeOnDisk;
             quint32   flags;
+            MediaType type;
         };
         struct operation {
             quint32 account;

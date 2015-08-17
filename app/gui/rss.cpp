@@ -30,11 +30,13 @@
 #include "rss.h"
 #include "mainwindow.h"
 #include "nzbfile.h"
+#include "common.h"
 #include "../debug.h"
 #include "../format.h"
 #include "../eventlog.h"
 #include "../settings.h"
 #include "../utility.h"
+#include "../historydb.h"
 
 namespace {
 
@@ -164,17 +166,18 @@ void RSS::activate(QWidget*)
 
 void RSS::saveState(app::Settings& settings)
 {
-    settings.set("rss", "music", ui_.chkMusic->isChecked());
-    settings.set("rss", "movies", ui_.chkMovies->isChecked());
-    settings.set("rss", "tv", ui_.chkTV->isChecked());
-    settings.set("rss", "console", ui_.chkConsole->isChecked());
-    settings.set("rss", "computer", ui_.chkComputer->isChecked());
-    settings.set("rss", "xxx", ui_.chkXXX->isChecked());
+    app::saveState("rss", ui_.chkAdult, settings);
+    app::saveState("rss", ui_.chkApps, settings);
+    app::saveState("rss", ui_.chkGames, settings);
+    app::saveState("rss", ui_.chkMovies, settings);
+    app::saveState("rss", ui_.chkMusic, settings);
+    app::saveState("rss", ui_.chkTV, settings);
+
     settings.set("rss", "enable_nzbs", enable_nzbs_);
     settings.set("rss", "enable_womble", enable_womble_);
     settings.set("rss", "nzbs_apikey", nzbs_apikey_);
     settings.set("rss", "nzbs_userid", nzbs_userid_);
-    settings.set("rss", "streams", quint32(streams_.value()));
+    settings.set("rss", "streams", quint64(streams_.value()));
 
     app::saveTableLayout("rss", ui_.tableView, settings);
 }
@@ -187,18 +190,18 @@ void RSS::shutdown()
 
 void RSS::loadState(app::Settings& settings)
 {
-    ui_.chkMusic->setChecked(settings.get("rss", "music", true));
-    ui_.chkMovies->setChecked(settings.get("rss", "movies", true));
-    ui_.chkTV->setChecked(settings.get("rss", "tv", true));
-    ui_.chkConsole->setChecked(settings.get("rss", "console", true));
-    ui_.chkComputer->setChecked(settings.get("rss", "computer", true));
-    ui_.chkXXX->setChecked(settings.get("rss", "xxx", true));
+    app::loadState("rss", ui_.chkAdult, settings);
+    app::loadState("rss", ui_.chkApps, settings);
+    app::loadState("rss", ui_.chkGames, settings);
+    app::loadState("rss", ui_.chkMovies, settings);
+    app::loadState("rss", ui_.chkMusic, settings);
+    app::loadState("rss", ui_.chkTV, settings);
 
     enable_nzbs_    = settings.get("rss", "enable_nzbs", false);
     enable_womble_  = settings.get("rss", "enable_womble", true);
     nzbs_apikey_    = settings.get("rss", "nzbs_apikey", "");
     nzbs_userid_    = settings.get("rss", "nzbs_userid", "");    
-    const auto bits = settings.get("rss", "streams", quint32(~0));
+    const auto bits = settings.get("rss", "streams", quint64(~0));
 
     streams_.set_from_value(bits); // enable all bits (streams)
 
@@ -230,32 +233,32 @@ SettingsWidget* RSS::getSettings()
     if (streams_.test(m::AppsMac) || streams_.test(m::AppsIos)) 
         ui.chkComputerMac->setChecked(true);        
 
-    if (streams_.test(m::AudioMp3)) ui.chkMusicMP3->setChecked(true);
-    if (streams_.test(m::AudioVideo)) ui.chkMusicVideo->setChecked(true);
-    if (streams_.test(m::AudioLossless)) ui.chkMusicLosless->setChecked(true);
+    if (streams_.test(m::MusicMp3)) ui.chkMusicMP3->setChecked(true);
+    if (streams_.test(m::MusicVideo)) ui.chkMusicVideo->setChecked(true);
+    if (streams_.test(m::MusicLossless)) ui.chkMusicLosless->setChecked(true);
 
     if (streams_.test(m::MoviesInt)) ui.chkMoviesInt->setChecked(true);
     if (streams_.test(m::MoviesSD)) ui.chkMoviesSD->setChecked(true);
     if (streams_.test(m::MoviesHD)) ui.chkMoviesHD->setChecked(true);
     if (streams_.test(m::MoviesWMV)) ui.chkMoviesWMV->setChecked(true);
 
-    if (streams_.test(m::ConsoleNDS) ||
-        streams_.test(m::ConsoleWii))
+    if (streams_.test(m::GamesNDS) ||
+        streams_.test(m::GamesWii))
         ui.chkConsoleNintendo->setChecked(true);
 
-    if (streams_.test(m::ConsolePSP) ||
-        streams_.test(m::ConsolePS2) ||
-        streams_.test(m::ConsolePS3) ||
-        streams_.test(m::ConsolePS4))
+    if (streams_.test(m::GamesPSP) ||
+        streams_.test(m::GamesPS2) ||
+        streams_.test(m::GamesPS3) ||
+        streams_.test(m::GamesPS4))
         ui.chkConsolePlaystation->setChecked(true);
 
-    if (streams_.test(m::ConsoleXbox) ||
-        streams_.test(m::ConsoleXbox360))
+    if (streams_.test(m::GamesXbox) ||
+        streams_.test(m::GamesXbox360))
         ui.chkConsoleXbox->setChecked(true);
 
-    if (streams_.test(m::XxxDVD)) ui.chkXXXDVD->setChecked(true);
-    if (streams_.test(m::XxxSD)) ui.chkXXXSD->setChecked(true);
-    if (streams_.test(m::XxxHD)) ui.chkXXXHD->setChecked(true);
+    if (streams_.test(m::AdultDVD)) ui.chkXXXDVD->setChecked(true);
+    if (streams_.test(m::AdultSD)) ui.chkXXXSD->setChecked(true);
+    if (streams_.test(m::AdultHD)) ui.chkXXXHD->setChecked(true);
 
     ui.grpWomble->setChecked(enable_womble_);
     ui.grpNZBS->setChecked(enable_nzbs_);
@@ -287,9 +290,9 @@ void RSS::applySettings(SettingsWidget* gui)
         streams_.set(m::AppsIos);
     }
 
-    if (ui.chkMusicMP3->isChecked()) streams_.set(m::AudioMp3);
-    if (ui.chkMusicVideo->isChecked()) streams_.set(m::AudioVideo);
-    if (ui.chkMusicLosless->isChecked()) streams_.set(m::AudioLossless);
+    if (ui.chkMusicMP3->isChecked()) streams_.set(m::MusicMp3);
+    if (ui.chkMusicVideo->isChecked()) streams_.set(m::MusicVideo);
+    if (ui.chkMusicLosless->isChecked()) streams_.set(m::MusicLossless);
 
     if (ui.chkMoviesInt->isChecked()) streams_.set(m::MoviesInt);
     if (ui.chkMoviesSD->isChecked()) streams_.set(m::MoviesSD);
@@ -298,25 +301,25 @@ void RSS::applySettings(SettingsWidget* gui)
 
     if (ui.chkConsoleNintendo->isChecked())
     {
-        streams_.set(m::ConsoleNDS);
-        streams_.set(m::ConsoleWii);
+        streams_.set(m::GamesNDS);
+        streams_.set(m::GamesWii);
     }
     if (ui.chkConsolePlaystation->isChecked())
     {
-        streams_.set(m::ConsolePSP);
-        streams_.set(m::ConsolePS2);
-        streams_.set(m::ConsolePS3);
-        streams_.set(m::ConsolePS4);
+        streams_.set(m::GamesPSP);
+        streams_.set(m::GamesPS2);
+        streams_.set(m::GamesPS3);
+        streams_.set(m::GamesPS4);
     }
     if (ui.chkConsoleXbox->isChecked())
     {
-        streams_.set(m::ConsoleXbox);
-        streams_.set(m::ConsoleXbox360);
+        streams_.set(m::GamesXbox);
+        streams_.set(m::GamesXbox360);
     }
 
-    if (ui.chkXXXDVD->isChecked()) streams_.set(m::XxxDVD);
-    if (ui.chkXXXHD->isChecked()) streams_.set(m::XxxHD);
-    if (ui.chkXXXSD->isChecked()) streams_.set(m::XxxSD);
+    if (ui.chkXXXDVD->isChecked()) streams_.set(m::AdultDVD);
+    if (ui.chkXXXHD->isChecked()) streams_.set(m::AdultHD);
+    if (ui.chkXXXSD->isChecked()) streams_.set(m::AdultSD);
 
     enable_womble_    = ui.grpWomble->isChecked();
     enable_nzbs_      = ui.grpNZBS->isChecked();
@@ -417,7 +420,11 @@ void RSS::downloadSelected(const QString& folder)
         const auto row = indices[i].row();
         const auto& item = model_.getItem(row);
         const auto& desc = item.title;
-        const auto acc = g_win->chooseAccount(desc);
+
+        if (!passDuplicateCheck(this, desc, item.type))
+            continue;
+
+        const auto acc = selectAccount(this, desc);
         if (acc == 0)
             continue;
 
@@ -448,28 +455,27 @@ void RSS::refreshStreams(bool verbose)
     }
 
     using m = app::MediaType;
-    using s = newsflash::bitflag<app::MediaType>;
+    using s = newsflash::bitflag<app::MediaType, quint64>;
 
-//    const auto foo = s(m::audio_mp3) | m::audio_lossless;
-
-    const auto audio   = s(m::AudioMp3) | s(m::AudioLossless) | s(m::AudioVideo);
-    const auto video   = s(m::MoviesInt) | s(m::MoviesSD) | s(m::MoviesHD) | s(m::MoviesWMV);
-    const auto tv = s(m::TvInt) | s(m::TvHD) | s(m::TvSD);    
-    const auto computer = s(m::AppsPC) | s(m::AppsISO) | s(m::AppsAndroid) | s(m::AppsIos) | s(m::AppsMac);
-    const auto xxx = s(m::XxxDVD) | s(m::XxxHD) | s(m::XxxSD);
-    const auto console = s(m::ConsolePSP) | s(m::ConsolePS2) | s(m::ConsolePS3) | s(m::ConsolePS4) |
-        s(m::ConsoleXbox) | s(m::ConsoleXbox360) | s(m::ConsoleNDS) | s(m::ConsoleWii);
+    const auto musicMask   = s(m::MusicMp3) | s(m::MusicLossless) | s(m::MusicVideo) | s(m::MusicOther);
+    const auto moviesMask  = s(m::MoviesInt) | s(m::MoviesSD) | s(m::MoviesHD) | s(m::MoviesWMV) | s(m::MoviesOther);
+    const auto tvMask      = s(m::TvInt) | s(m::TvHD) | s(m::TvSD) | s(m::TvSport) | s(m::TvOther);    
+    const auto appsMask    = s(m::AppsPC) | s(m::AppsISO) | s(m::AppsAndroid) | s(m::AppsIos) | s(m::AppsMac) | s(m::AppsOther);
+    const auto adultMask   = s(m::AdultDVD) | s(m::AdultHD) | s(m::AdultSD) | s(m::AdultImg) | s(m::AdultOther);
+    const auto gamesMask   = s(m::GamesNDS) | s(m::GamesWii) | s(m::GamesXbox) | s(m::GamesXbox360) |
+        s(m::GamesPSP) | s(m::GamesPS1) | s(m::GamesPS2) | s(m::GamesPS3) | s(m::GamesPS3) | s(m::GamesPS4) |
+        s(m::GamesOther);
 
     struct feed {
         QCheckBox* chk;
         s mask;
     } selected_feeds[] = {
-        {ui_.chkConsole, console},        
-        {ui_.chkMusic, audio},
-        {ui_.chkMovies, video},
-        {ui_.chkTV, tv},
-        {ui_.chkComputer, computer},
-        {ui_.chkXXX, xxx}
+        {ui_.chkGames, gamesMask},        
+        {ui_.chkMusic, musicMask},
+        {ui_.chkMovies, moviesMask},
+        {ui_.chkTV, tvMask},
+        {ui_.chkApps, appsMask},
+        {ui_.chkAdult, adultMask}
     };
 
     bool have_selections = false;
@@ -600,7 +606,7 @@ void RSS::on_actionOpen_triggered()
 
 void RSS::on_actionSettings_triggered()
 {
-    g_win->showSetting("RSS");
+    emit showSettings(this);
 }
 
 void RSS::on_actionStop_triggered()
@@ -640,7 +646,7 @@ void RSS::on_actionInformation_triggered()
         }
         movie_->lookupMovie(title);
     }
-    else if (isTVSeries(item.type))
+    else if (isTelevision(item.type))
     {
         const auto& title = app::findTVSeriesTitle(item.title);
         if (title.isEmpty())
@@ -718,7 +724,7 @@ void RSS::rowChanged()
     for (const auto& i : indices)
     {
         const auto& item = model_.getItem(i);
-        if (!(isMovie(item.type) || isTVSeries(item.type)))
+        if (!(isMovie(item.type) || isTelevision(item.type)))
         {
             ui_.actionInformation->setEnabled(false);
             break;
@@ -773,7 +779,7 @@ void RSS::popupDetails()
         }    
         movie_->lookupMovie(title);
     }
-    else if (isTVSeries(item.type))
+    else if (isTelevision(item.type))
     {
         const auto& title = app::findTVSeriesTitle(item.title);
         if (title.isEmpty())

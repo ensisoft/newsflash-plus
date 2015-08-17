@@ -88,10 +88,6 @@ namespace gui
 
         void focusWidget(const MainWidget* widget);
 
-        // open and show the application settings and select the
-        // matching settings page.
-        void showSetting(const QString& name);
-
         // show message in the window's message area
         void showMessage(const QString& message);
 
@@ -114,8 +110,6 @@ namespace gui
         QString selectNzbSaveFile(const QString& filename);
 
         QStringList getRecentPaths() const;
-
-        quint32 chooseAccount(const QString& description);
 
         std::size_t numWidgets() const;
 
@@ -140,6 +134,7 @@ namespace gui
         void dropEvent(QDropEvent* event);
         FindWidget* getFindWidget();
         void openHelp(const QString& page);
+        void showSetting(const QString& name);        
         
     private slots:
         void on_mainTab_currentChanged(int index);
@@ -171,6 +166,7 @@ namespace gui
         void timerRefresh_timeout();
         void displayNote(const app::Event& event);
         void updateMenu(MainWidget* widget);
+        void showSettings(MainWidget* widget);
 
     private:
         Ui::MainWindow ui_;

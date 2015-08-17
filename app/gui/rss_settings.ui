@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>658</width>
-    <height>628</height>
+    <height>654</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -22,7 +22,37 @@
      <layout class="QGridLayout" name="gridLayout_11">
       <item row="1" column="0">
        <layout class="QGridLayout" name="gridLayout_12">
-        <item row="0" column="1">
+        <item row="3" column="1">
+         <widget class="QGroupBox" name="groupBox_13">
+          <property name="title">
+           <string>TV</string>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout_15">
+           <item>
+            <widget class="QCheckBox" name="chkTvInt">
+             <property name="text">
+              <string>International</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="chkTvSD">
+             <property name="text">
+              <string>SD</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="chkTvHD">
+             <property name="text">
+              <string>HD</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item row="2" column="1">
          <widget class="QGroupBox" name="groupBox_12">
           <property name="title">
            <string>Movies</string>
@@ -59,28 +89,58 @@
           </layout>
          </widget>
         </item>
-        <item row="0" column="0">
-         <widget class="QGroupBox" name="groupBox_13">
+        <item row="2" column="0">
+         <widget class="QGroupBox" name="groupBox_17">
           <property name="title">
-           <string>TV</string>
+           <string>Games</string>
           </property>
-          <layout class="QVBoxLayout" name="verticalLayout_15">
+          <layout class="QVBoxLayout" name="verticalLayout_19">
            <item>
-            <widget class="QCheckBox" name="chkTvInt">
+            <widget class="QCheckBox" name="chkConsoleNintendo">
              <property name="text">
-              <string>International</string>
+              <string>Nintendo</string>
              </property>
             </widget>
            </item>
            <item>
-            <widget class="QCheckBox" name="chkTvSD">
+            <widget class="QCheckBox" name="chkConsolePlaystation">
+             <property name="text">
+              <string>Playstation</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="chkConsoleXbox">
+             <property name="text">
+              <string>XBox</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QGroupBox" name="groupBox_16">
+          <property name="title">
+           <string>Adult</string>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout_18">
+           <item>
+            <widget class="QCheckBox" name="chkXXXDVD">
+             <property name="text">
+              <string>DVD</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="chkXXXSD">
              <property name="text">
               <string>SD</string>
              </property>
             </widget>
            </item>
            <item>
-            <widget class="QCheckBox" name="chkTvHD">
+            <widget class="QCheckBox" name="chkXXXHD">
              <property name="text">
               <string>HD</string>
              </property>
@@ -89,44 +149,7 @@
           </layout>
          </widget>
         </item>
-        <item row="1" column="0">
-         <widget class="QGroupBox" name="groupBox_14">
-          <property name="title">
-           <string>Computer</string>
-          </property>
-          <layout class="QVBoxLayout" name="verticalLayout_16">
-           <item>
-            <widget class="QCheckBox" name="chkComputerPC">
-             <property name="text">
-              <string>PC</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QCheckBox" name="chkComputerISO">
-             <property name="text">
-              <string>ISO</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QCheckBox" name="chkComputerMac">
-             <property name="text">
-              <string>Mac</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QCheckBox" name="chkComputerAndroid">
-             <property name="text">
-              <string>Android</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-        <item row="2" column="0">
+        <item row="3" column="0">
          <widget class="QGroupBox" name="groupBox_15">
           <property name="title">
            <string>Music</string>
@@ -156,60 +179,37 @@
           </layout>
          </widget>
         </item>
-        <item row="2" column="1">
-         <widget class="QGroupBox" name="groupBox_16">
-          <property name="title">
-           <string>XXX</string>
-          </property>
-          <layout class="QVBoxLayout" name="verticalLayout_18">
-           <item>
-            <widget class="QCheckBox" name="chkXXXDVD">
-             <property name="text">
-              <string>DVD</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QCheckBox" name="chkXXXSD">
-             <property name="text">
-              <string>SD</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QCheckBox" name="chkXXXHD">
-             <property name="text">
-              <string>HD</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
         <item row="1" column="1">
-         <widget class="QGroupBox" name="groupBox_17">
+         <widget class="QGroupBox" name="groupBox_14">
           <property name="title">
-           <string>Console</string>
+           <string>Apps</string>
           </property>
-          <layout class="QVBoxLayout" name="verticalLayout_19">
+          <layout class="QVBoxLayout" name="verticalLayout_21">
            <item>
-            <widget class="QCheckBox" name="chkConsoleNintendo">
+            <widget class="QCheckBox" name="chkComputerPC">
              <property name="text">
-              <string>Nintendo</string>
+              <string>PC</string>
              </property>
             </widget>
            </item>
            <item>
-            <widget class="QCheckBox" name="chkConsolePlaystation">
+            <widget class="QCheckBox" name="chkComputerISO">
              <property name="text">
-              <string>Playstation</string>
+              <string>ISO</string>
              </property>
             </widget>
            </item>
            <item>
-            <widget class="QCheckBox" name="chkConsoleXbox">
+            <widget class="QCheckBox" name="chkComputerMac">
              <property name="text">
-              <string>XBox</string>
+              <string>Mac</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="chkComputerAndroid">
+             <property name="text">
+              <string>Android</string>
              </property>
             </widget>
            </item>
@@ -319,13 +319,9 @@
   </layout>
  </widget>
  <tabstops>
-  <tabstop>chkTvInt</tabstop>
-  <tabstop>chkTvSD</tabstop>
-  <tabstop>chkTvHD</tabstop>
-  <tabstop>chkMoviesInt</tabstop>
-  <tabstop>chkMoviesSD</tabstop>
-  <tabstop>chkMoviesHD</tabstop>
-  <tabstop>chkMoviesWMV</tabstop>
+  <tabstop>chkXXXDVD</tabstop>
+  <tabstop>chkXXXSD</tabstop>
+  <tabstop>chkXXXHD</tabstop>
   <tabstop>chkComputerPC</tabstop>
   <tabstop>chkComputerISO</tabstop>
   <tabstop>chkComputerMac</tabstop>
@@ -333,12 +329,16 @@
   <tabstop>chkConsoleNintendo</tabstop>
   <tabstop>chkConsolePlaystation</tabstop>
   <tabstop>chkConsoleXbox</tabstop>
+  <tabstop>chkMoviesInt</tabstop>
+  <tabstop>chkMoviesSD</tabstop>
+  <tabstop>chkMoviesHD</tabstop>
+  <tabstop>chkMoviesWMV</tabstop>
   <tabstop>chkMusicMP3</tabstop>
   <tabstop>chkMusicLosless</tabstop>
   <tabstop>chkMusicVideo</tabstop>
-  <tabstop>chkXXXDVD</tabstop>
-  <tabstop>chkXXXSD</tabstop>
-  <tabstop>chkXXXHD</tabstop>
+  <tabstop>chkTvInt</tabstop>
+  <tabstop>chkTvSD</tabstop>
+  <tabstop>chkTvHD</tabstop>
   <tabstop>grpWomble</tabstop>
   <tabstop>grpNZBS</tabstop>
   <tabstop>edtNZBSUserId</tabstop>

@@ -18,36 +18,26 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#pragma once
-
 #include <newsflash/config.h>
 #include <newsflash/warnpush.h>
-#  include <QtGui/QDialog>
-#  include <QString>
-#  include <QStringList>
-#  include "ui_dlgchoose.h"
+#  include <boost/test/minimal.hpp>
 #include <newsflash/warnpop.h>
+#include "../media.h"
 
-namespace gui
+int test_main(int, char* argv[])
 {
-    class DlgChoose : public QDialog
-    {
-        Q_OBJECT
-    public:
-        DlgChoose(QWidget* parent, const QStringList& accounts, const QString& task);
-       ~DlgChoose();
+    BOOST_REQUIRE(app::findAdultTitle("Boning.The.Mom.Next.Door.XXX.COMPLETE.NTSC.DVDR-DFA") ==
+        "Boning.The.Mom.Next.Door");
+    BOOST_REQUIRE(app::findAdultTitle("Big.Dick.Gloryholes.4.XXX.NTSC.DVDR-EViLVAULT") == 
+        "Big.Dick.Gloryholes.4");
+    BOOST_REQUIRE(app::findAdultTitle("Butterfly.2008.XXX.HDTVRiP.x264-REDX") ==
+        "Butterfly");
+    BOOST_REQUIRE(app::findAdultTitle("Boca.Chica.Blues.2010.XXX.1080p.HDTV.x264-REDX") ==
+        "Boca.Chica.Blues");
+    BOOST_REQUIRE(app::findAdultTitle("Hotesses.De.Lair.FRENCH.XXX.DVDRiP.x264-TattooLovers") ==
+        "Hotesses.De.Lair");
 
-        QString account() const;
+    BOOST_REQUIRE(app::findTVSeriesTitle("The.Killing.S04E06.DVDRip.x264-OSiTV") == "The.Killing");
 
-        bool remember() const;
-
-    private slots:
-        void on_btnAccept_clicked();
-        void on_btnCancel_clicked();
-    private:
-        void changeEvent(QEvent* e);
-
-    private:
-        Ui::DlgChoose ui_;
-    };
-} // gui
+    return 0;
+}
