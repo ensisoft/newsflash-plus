@@ -81,10 +81,30 @@ bool passDuplicateCheck(QWidget* parent, const QString& desc,
     if (!app::g_history->isDuplicate(desc, type, &item))
         return true;
 
-    DlgDuplicate dlg(parent, desc);
+    DlgDuplicate dlg(parent, desc, item);
     if (dlg.exec() == QDialog::Rejected)
         return false; // canceled 
 
+    const bool onOff = dlg.checkDuplicates();
+
+    app::g_history->checkDuplicates(onOff);
+
+    return true;
+}
+
+bool passDuplicateCheck(QWidget* parent, const QString& desc)
+{
+    app::HistoryDb::Item item;
+    if (!app::g_history->isDuplicate(desc, &item))
+        return true;
+
+    DlgDuplicate dlg(parent, desc, item);
+    if (dlg.exec() == QDialog::Rejected)
+        return false; // canceled
+
+    const bool onOff = dlg.checkDuplicates();
+
+    app::g_history->checkDuplicates(onOff);
 
     return true;
 }

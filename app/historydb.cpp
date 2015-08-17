@@ -38,7 +38,9 @@
 namespace app
 {
 
-HistoryDb::HistoryDb() : m_loaded(false), m_checkDuplicates(true), m_exactMatch(false)
+const int CurrentFileVersion = 1;
+
+HistoryDb::HistoryDb() : m_loaded(false), m_checkDuplicates(true), m_exactMatch(false), m_daySpan(100)
 {
     DEBUG("HistoryDb created");
 }
@@ -118,12 +120,14 @@ void HistoryDb::loadState(Settings& settings)
 {
     m_checkDuplicates = settings.get("history", "check_duplicates", m_checkDuplicates);
     m_exactMatch = settings.get("history", "exact_matching", m_exactMatch);
+    m_daySpan = settings.get("history", "dayspan", m_daySpan);
 }
 
 void HistoryDb::saveState(Settings& settings) const
 {
     settings.set("history", "check_duplicates", m_checkDuplicates);
     settings.set("history", "exact_matching", m_exactMatch);
+    settings.set("history", "dayspan", m_daySpan);
 }
 
 void HistoryDb::loadHistory()
@@ -148,6 +152,15 @@ void HistoryDb::loadHistory()
 
     QTextStream stream(&m_file);
     stream.setCodec("UTF-8");
+
+    const quint32 fileVersion = stream.readLine().toUInt();
+
+    DEBUG("Data file version %1", fileVersion);
+
+    QDateTime now = QDateTime::currentDateTime();
+
+    bool needsPruning = false;
+
     while (!stream.atEnd())
     {
         const auto& line = stream.readLine();
@@ -161,7 +174,36 @@ void HistoryDb::loadHistory()
         item.type   = (MediaType)toks[1].toInt();
         item.date   = QDateTime::fromTime_t(toks[2].toLongLong());
         item.desc   = toks[3];
+        if (item.date.daysTo(now) > m_daySpan)
+        {
+            needsPruning = true;
+            continue;
+        }
+
         m_items.push_back(item);
+    }
+
+
+    if (needsPruning)
+    {
+        // truncate        
+        m_file.resize(0);
+        m_file.seek(0);
+
+        QTextStream out(&m_file);
+        out.setCodec("UTF-8");
+        out << CurrentFileVersion << "\n";
+
+        for (const auto& item : m_items)
+        {
+            out << (int)item.source << "\t";
+            out << (int)item.type   << "\t";
+            out << item.date.toTime_t() << "\t";
+            out << item.desc;
+            out << "\n";
+        }
+
+        DEBUG("Pruned the download history");
     }
 
     DEBUG("Loaded history data with %1 items", m_items.size());
@@ -184,7 +226,9 @@ void HistoryDb::clearHistory(bool commit)
 
         const auto& file = homedir::file("history.txt");
 
-        m_file.open(QIODevice::Truncate | QIODevice::WriteOnly);
+        QFile::remove(file);
+
+        DEBUG("Removed %1", file);
     }
 
     if (m_loaded)
@@ -260,13 +304,16 @@ bool HistoryDb::isDuplicate(const QString& desc, MediaType type, Item* item) con
             DEBUG("Checking Movie title %1", title);
 
             title = title.toLower();
-            for (const auto& item : m_items)
+            for (const auto& i : m_items)
             {
-                if (!isMovie(item.type))
+                if (!isMovie(i.type))
                     continue;
-                QString t = findMovieTitle(item.desc);
-                if (t.toLower() == title)
+                QString t = findMovieTitle(i.desc);
+                if (t.toLower() == title) {
+                    if (item) 
+                        *item = i;
                     return true;
+                }
             }
         }
     }
@@ -280,16 +327,19 @@ bool HistoryDb::isDuplicate(const QString& desc, MediaType type, Item* item) con
             DEBUG("Checking Television title %1", title);
 
             title = title.toLower();
-            for (const auto& item : m_items)
+            for (const auto& i : m_items)
             {
-                if (!isTelevision(item.type))
+                if (!isTelevision(i.type))
                     continue;
                 QString e, s;
-                QString t = findTVSeriesTitle(item.desc, &s, &e);
+                QString t = findTVSeriesTitle(i.desc, &s, &e);
                 if (s != season || e != episode)
                     continue;
-                if (t.toLower() == title)
+                if (t.toLower() == title) {
+                    if (item) 
+                        *item = i;
                     return true;
+                }
             }
         }
     }
@@ -301,21 +351,47 @@ bool HistoryDb::isDuplicate(const QString& desc, MediaType type, Item* item) con
             DEBUG("Checking Adult title %1", title);
 
             title = title.toLower();
-            for (const auto& item : m_items)
+            for (const auto& i : m_items)
             {
-                if (!isAdult(item.type))
+                if (!isAdult(i.type))
                     continue;
 
-                QString t = findAdultTitle(item.desc);
-                if (t.toLower() == title)
+                QString t = findAdultTitle(i.desc);
+                if (t.toLower() == title) {
+                    if (item)
+                        *item = i;
                     return true;
+                }
             }
         }
     }
 
     return matchExactly(desc, type, item);
 
+}
 
+bool HistoryDb::isDuplicate(const QString& desc, Item* item) const 
+{
+    for (const auto& i : m_items)
+    {
+        if (i.desc == desc)
+        {
+            if (item)
+                *item = i;
+            return true;
+        }
+    }
+    return false;
+}
+
+int HistoryDb::daySpan() const 
+{
+    return m_daySpan;
+}
+
+void HistoryDb::setDaySpan(int span)
+{
+    m_daySpan = span;
 }
 
 void HistoryDb::newDownloadQueued(const Download& download)
@@ -330,6 +406,16 @@ void HistoryDb::newDownloadQueued(const Download& download)
             ERROR("Unable to open history file %1, %2", file, m_file.error());
             return;
         }
+
+        if (m_file.size() == 0)
+        {
+            QTextStream stream(&m_file);
+            stream.setCodec("UTF-8");
+            stream << CurrentFileVersion << "\n";
+
+            DEBUG("Created history file %1", file);
+        }
+
     }
     HistoryDb::Item item;
     item.date   = QDateTime::currentDateTime();
@@ -357,12 +443,16 @@ void HistoryDb::newDownloadQueued(const Download& download)
 
 bool HistoryDb::matchExactly(const QString& desc, MediaType type, Item* item) const 
 {
-    for (const auto& item : m_items)
+    for (const auto& i : m_items)
     {
-        if (item.type != type)
+        if (i.type != type)
             continue;
-        if (item.desc == desc)
+        if (i.desc == desc)
+        {
+            if (item)
+                *item = i;
             return true;
+        }
     }
     return false;
 

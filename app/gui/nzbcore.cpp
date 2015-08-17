@@ -96,13 +96,16 @@ void NZBSettings::on_btnDelWatchFolder_clicked()
 NZBCore::NZBCore() : m_action(DragDropAction::AskForAction)
 {
     m_module.PromptForFile = [this] (const QString& file) { 
+        QFileInfo info(file);
+        const auto desc = info.completeBaseName();
+        const auto path = info.completeBaseName();
+        if (!passDuplicateCheck(g_win, desc))
+            return false;
+
         const auto acc = selectAccount(g_win, file);
         if (acc == 0)
             return false;
 
-        QFileInfo info(file);
-        const auto desc = info.completeBaseName();
-        const auto path = info.completeBaseName();
         if (m_module.downloadNzbContents(file, "", path, desc, acc))
             m_module.postProcess(file);
         return true;        
@@ -241,12 +244,15 @@ MainWidget* NZBCore::dropFile(const QString& file)
     }
     else if (action == DragDropAction::DownloadContents)
     {
+        const auto desc = info.completeBaseName();
+        const auto path = info.completeBaseName();
+        if (!passDuplicateCheck(g_win, desc))
+            return nullptr;
+
         const auto acc = selectAccount(g_win, info.completeBaseName());
         if (acc == 0)
             return nullptr;
 
-        const auto desc = info.completeBaseName();
-        const auto path = info.completeBaseName();
         m_module.downloadNzbContents(file, "", path, desc, acc);
     }
     return nullptr;

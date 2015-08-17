@@ -6,12 +6,12 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>286</width>
-    <height>127</height>
+    <width>338</width>
+    <height>132</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Form</string>
+   <string>Confirm Download</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
    <item>
@@ -25,6 +25,9 @@
         <property name="text">
          <string>bla bla</string>
         </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
        </widget>
       </item>
      </layout>
@@ -32,6 +35,16 @@
    </item>
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <widget class="QCheckBox" name="chkDuplicates">
+       <property name="text">
+        <string>Check for duplicates</string>
+       </property>
+       <property name="checked">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
      <item>
       <spacer name="horizontalSpacer">
        <property name="orientation">

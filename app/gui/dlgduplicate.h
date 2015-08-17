@@ -26,6 +26,9 @@
 #  include <QtGui/QDialog>
 #  include "ui_dlgduplicate.h"
 #include <newsflash/warnpop.h>
+#include "../historydb.h"
+#include "../types.h"
+#include "../format.h"
 
 namespace gui
 {
@@ -34,9 +37,23 @@ namespace gui
         Q_OBJECT
 
     public:
-        DlgDuplicate(QWidget* parent, const QString& desc) : QDialog(parent)
+        DlgDuplicate(QWidget* parent, const QString& desc, 
+            const app::HistoryDb::Item& item) : QDialog(parent)
         {
             m_ui.setupUi(this);
+
+            QString str = toString("%1\n\n"
+                "is a duplicate with\n\n"
+                "%2\n\n"
+                "already downloaded %3",
+                desc, item.desc, app::event{item.date});
+
+            m_ui.lblDesc->setText(str);
+        }
+
+        bool checkDuplicates() const 
+        {
+            return m_ui.chkDuplicates->isChecked();
         }
 
     private slots:

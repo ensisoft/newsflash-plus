@@ -96,6 +96,12 @@ namespace app
 
        bool isDuplicate(const QString& desc, MediaType type, Item* item) const;
 
+       bool isDuplicate(const QString& desc, Item* item) const;
+
+       int daySpan() const;
+
+       void setDaySpan(int span);
+
     public slots:
         void newDownloadQueued(const Download& download);
 
@@ -112,6 +118,8 @@ namespace app
         bool m_exactMatch;
     private:
         QFile m_file;
+    private:
+        int m_daySpan;
     };
 
     extern HistoryDb* g_history;

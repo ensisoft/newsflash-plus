@@ -40,4 +40,6 @@ quint32 selectAccount(QWidget* parent, const QString& desc);
 bool passDuplicateCheck(QWidget* parent, const QString& desc, 
     app::MediaType type);
 
+bool passDuplicateCheck(QWidget* parent, const QString& desc);
+
 } // gui
