@@ -23,18 +23,16 @@
 #pragma once
 
 #include <newsflash/config.h>
-
-#include <type_traits>
+#include <cstdint>
+#include <cassert>
 
 namespace newsflash
 {
     template<typename Enum, 
-        typename Bits = typename std::underlying_type<Enum>::type>
+        typename Bits = std::uint32_t>
     class bitflag
     {
     public:
-        //using Bits = typename std::underlying_type<Enum>::type;
-
         enum {
             BitCount = sizeof(Bits) * 8
         };
@@ -50,9 +48,11 @@ namespace newsflash
 
         bitflag& set(Enum value, bool on = true) 
         {
+            const auto b = bittify(value);
+
             if (on)
-                bits_ |= (1 << Bits(value));
-            else bits_ &= ~(1 << Bits(value));
+                bits_ |= b;
+            else bits_ &= ~b;
             return *this;
         }
 
@@ -71,7 +71,7 @@ namespace newsflash
         // test a particular value.
         bool test(Enum value) const
         { 
-            const auto b = 1 << Bits(value);
+            const auto b = bittify(value); 
             return (bits_ & b) == b;
         }
         
@@ -82,7 +82,7 @@ namespace newsflash
         // test of the nth bith.
         bool test(unsigned index) const 
         {
-            const auto b = 1 << index;
+            const auto b = bittify((Enum)index);
             return (bits_ & b);
         }
 
@@ -97,6 +97,16 @@ namespace newsflash
 
         void set_from_value(Bits b)
         { bits_ = b; }
+
+    private:
+        Bits bittify(Enum value) const 
+        {
+            assert((unsigned)value < BitCount &&
+                "The value of enum member is too large to fit in the bitset."
+                "You need to use larger underlying type.");
+            return Bits(1) << Bits(value);
+        }
+
     private:
         Bits bits_;
     };
@@ -104,26 +114,26 @@ namespace newsflash
     // we only provide this operator, since its global
     // this also covers Enum | bitflag<Enum> and bitflag<Enum> | Enum
     // through implicit conversion to bitflag<Enum>
-    template<typename Enum>
-    auto operator | (bitflag<Enum> lhs, bitflag<Enum> rhs) -> decltype(lhs)
+    template<typename Enum, typename Bits>
+    auto operator | (bitflag<Enum, Bits> lhs, bitflag<Enum, Bits> rhs) -> decltype(lhs)
     {
         return { lhs.value() | rhs.value() };
     }
 
-    template<typename Enum>
-    auto operator | (bitflag<Enum> lhs, Enum e) -> decltype(lhs)
+    template<typename Enum, typename Bits>
+    auto operator | (bitflag<Enum, Bits> lhs, Enum e) -> decltype(lhs)
     {
-        return lhs | bitflag<Enum>(e);
+        return lhs | bitflag<Enum, Bits>(e);
     }
 
-    template<typename Enum>
-    auto operator & (bitflag<Enum> lhs, bitflag<Enum> rhs) -> decltype(lhs)
+    template<typename Enum, typename Bits>
+    auto operator & (bitflag<Enum, Bits> lhs, bitflag<Enum, Bits> rhs) -> decltype(lhs)
     {
-        return bitflag<Enum>(lhs.value() & rhs.value());
+        return bitflag<Enum, Bits>(lhs.value() & rhs.value());
     }
 
-    template<typename Enum>
-    auto operator & (bitflag<Enum> lhs, Enum e) -> decltype(lhs)
+    template<typename Enum, typename Bits>
+    auto operator & (bitflag<Enum, Bits> lhs, Enum e) -> decltype(lhs)
     {
         return lhs & bitflag<Enum>(e);
     }
