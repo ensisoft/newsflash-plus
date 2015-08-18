@@ -30,8 +30,10 @@ namespace gui
 DlgNewznab::DlgNewznab(QWidget* parent, app::Newznab::Account& acc) : QDialog(parent), acc_(acc), query_(nullptr)
 {
     ui_.setupUi(this);
+    if (!acc.apikey.isEmpty())
+        ui_.editKey->setText(acc.apikey);
+
     ui_.editHost->setText(acc.apiurl);
-    ui_.editKey->setText(acc.apikey);
     ui_.editEmail->setText(acc.email);
     ui_.editPassword->setText(acc.password);
     ui_.editUsername->setText(acc.username);

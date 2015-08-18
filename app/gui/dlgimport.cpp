@@ -24,23 +24,26 @@
 #include <newsflash/warnpop.h>
 #include <algorithm>
 #include "dlgimport.h"
+#include "dlgnewznab.h"
 #include "../newznab.h"
 #include "../debug.h"
+#include "../platform.h"
 
 namespace gui
 {
 
-DlgImport::DlgImport(QWidget* parent, std::vector<app::Newznab::Account>& accs) : QDialog(parent), accs_(accs), query_(nullptr)
+DlgImport::DlgImport(QWidget* parent, std::vector<app::Newznab::Account>& accs) : QDialog(parent), m_accounts(accs), m_query(nullptr)
 {
-    ui_.setupUi(this);
-    ui_.progressBar->setVisible(true);
-    ui_.progressBar->setMinimum(0);
-    ui_.progressBar->setMaximum(0);
+    m_ui.setupUi(this);
+    m_ui.progressBar->setVisible(true);
+    m_ui.progressBar->setMinimum(0);
+    m_ui.progressBar->setMaximum(0);
+    m_ui.btnStart->setEnabled(false);
 
     auto callback = [=](const app::Newznab::ImportList& list) {
-        query_ = nullptr;
-        ui_.progressBar->setVisible(false);
-        ui_.grpList->setTitle("Import List");        
+        m_query = nullptr;
+        m_ui.progressBar->setVisible(false);
+        m_ui.grpList->setTitle("Import List");        
         if (!list.success) 
         {
             QMessageBox::critical(this, tr("Import List"),
@@ -51,48 +54,37 @@ DlgImport::DlgImport(QWidget* parent, std::vector<app::Newznab::Account>& accs) 
         {
             app::Newznab::Account acc;
             acc.apiurl = host;
-            accs_.push_back(acc);
+            m_accounts.push_back(acc);
             QListWidgetItem* item = new QListWidgetItem();
             item->setText(host);
             item->setIcon(QIcon("icons:ico_bullet_grey.png"));
-            ui_.listWidget->addItem(item);
+            m_ui.listWidget->addItem(item);
         }
-        ui_.btnStart->setEnabled(true);
+        m_ui.btnStart->setEnabled(true);
     };
 
     // begin importing the list from our host.
-    query_ = app::Newznab::importList(std::move(callback));
-
-    // testing stuff here.
-    // app::Newznab::Account acc;
-    // acc.apiurl = "https://www.nzbsooti.sx/api";
-    // acc.email  = "ensiferum_@hotmail.com";    
-    // accs_.push_back(acc);
-
-    // QListWidgetItem* item = new QListWidgetItem();
-    // item->setText(acc.apiurl);
-    // item->setIcon(QIcon("icons:ico_bullet_grey.png"));
-    // ui_.listWidget->addItem(item);
+    m_query = app::Newznab::importList(std::move(callback));
 }
 
 DlgImport::~DlgImport()
 {
-    if (query_)
-        query_->abort();
+    if (m_query)
+        m_query->abort();
 }
 
 void DlgImport::on_btnStart_clicked()
 {
-    const auto email = ui_.editEmail->text();
+    const auto email = m_ui.editEmail->text();
     if (email.isEmpty())
     {
-        ui_.editEmail->setFocus();
+        m_ui.editEmail->setFocus();
         return;
     }
 
-    ui_.btnStart->setEnabled(false);
+    m_ui.btnStart->setEnabled(false);
 
-    registerNext(email);
+    registerNext(email, 0);
 }
 
 void DlgImport::on_btnClose_clicked()
@@ -100,63 +92,91 @@ void DlgImport::on_btnClose_clicked()
     close();
 }
 
-void DlgImport::registerNext(QString email)
+void DlgImport::registerNext(QString email, std::size_t index)
 {
-    auto it = std::find_if(std::begin(accs_), std::end(accs_),
-        [](const app::Newznab::Account& acc) {
-            return acc.apikey.isEmpty();
-        });
-    if (it == std::end(accs_))
+    if (index == m_accounts.size())
     {
-        //ui_.btnStart->setEnabled(true);
+        m_ui.btnStart->setEnabled(true);
         return;
     }
 
-    auto callback = [=](const app::Newznab::HostInfo& info, QString apiurl) {
-        query_ = nullptr;
-        ui_.progressBar->setVisible(false);
+    auto& account = m_accounts[index];
+    if (!account.apikey.isEmpty() ||
+        !account.username.isEmpty())
+        registerNext(email, index + 1);
 
-        auto* item = ui_.listWidget->findItems(apiurl, Qt::MatchFixedString)[0];
-        if (info.success)
+    account.email = email;
+
+    m_query = app::Newznab::apiRegisterUser(account, 
+        std::bind(&DlgImport::registerInfo, this, std::placeholders::_1, 
+            email, index));
+
+    m_ui.log->appendPlainText(tr("Registering to %1").arg(account.apiurl));
+    m_ui.progressBar->setVisible(true);
+    m_ui.btnStart->setEnabled(false);
+
+    auto* item = m_ui.listWidget->item(index);
+    item->setIcon(QIcon("icons:ico_bullet_blue.png"));
+    m_ui.listWidget->editItem(item);
+}
+
+void DlgImport::registerInfo(const app::Newznab::HostInfo& ret, QString email, std::size_t index)
+{
+    m_query = nullptr;
+
+    m_ui.progressBar->setVisible(false);
+
+    auto* item = m_ui.listWidget->item(index);
+    if (ret.success)
+    {
+        m_ui.log->appendPlainText("Success!");
+        m_ui.log->appendPlainText(QString("Username: %1").arg(ret.username));
+        m_ui.log->appendPlainText(QString("Password: %1").arg(ret.password));
+        m_ui.log->appendPlainText(QString("Apikey: %1").arg(ret.apikey));
+        m_ui.log->appendPlainText("\n");            
+        auto& account = m_accounts[index];
+        account.username  = ret.username;
+        account.password  = ret.password;
+        account.apikey    = ret.apikey;
+
+        if (account.apikey.isEmpty())
         {
-            ui_.log->appendPlainText("Success!");
-            ui_.log->appendPlainText(QString("Username: %1").arg(info.username));
-            ui_.log->appendPlainText(QString("Password: %1").arg(info.password));
-            ui_.log->appendPlainText(QString("Apikey: %1").arg(info.apikey));
-            ui_.log->appendPlainText("\n");            
-            app::Newznab::Account acc;
-            acc.email    = email;
-            acc.apiurl   = apiurl;            
-            acc.username = info.username;
-            acc.password = info.password;
-            acc.apikey   = info.apikey;
-            accs_.push_back(acc);            
-            item->setIcon(QIcon("icons:ico_bullet_green.png"));
+            item->setIcon(QIcon("icons:ico_bullet_yellow.png"));            
+
+            m_ui.log->appendPlainText("Manual login required.");
+
+            QMessageBox::information(this, "Success",
+                "The registration was succesful!\n"
+                "However the sites requires a manual login to retrieve the API Key (under My Profile).\n"
+                "Please login and Copy & Paste the key in order to complete registration. Thanks");
+
+            app::openWeb(account.apiurl);
+
+            DlgNewznab dlg(this, account);
+            if (dlg.exec() == QDialog::Rejected)
+            {
+                item->setIcon(QIcon("icons:ico_bullet_red.png"));
+            }
+            else
+            {
+                item->setIcon(QIcon("icons:ico_bullet_green.png"));
+            }
         }
         else
         {
-            ui_.log->appendPlainText("Failed...");
-            ui_.log->appendPlainText(info.error);
-            ui_.log->appendPlainText("\n");
-            item->setIcon(QIcon("icons:ico_bullet_red.png"));
+            item->setIcon(QIcon("icons:ico_bullet_green.png"));            
         }
-        ui_.listWidget->editItem(item);
-        registerNext(email);
-    };
-    const auto& acc = *it;
+    }
+    else
+    {
+        m_ui.log->appendPlainText("Failed...");
+        m_ui.log->appendPlainText(ret.error);
+        m_ui.log->appendPlainText("\n");
+        item->setIcon(QIcon("icons:ico_bullet_red.png"));
+    }
+    m_ui.listWidget->editItem(item);
 
-    query_ = app::Newznab::apiRegisterUser(acc, std::bind(std::move(callback),
-        std::placeholders::_1, acc.apiurl));
-
-    ui_.log->appendPlainText(tr("Registering to %1").arg(acc.apiurl));
-    ui_.progressBar->setVisible(true);
-
-    auto* item = ui_.listWidget->findItems(acc.apiurl, Qt::MatchFixedString)[0];
-    item->setIcon(QIcon("icons:ico_bullet_blue.png"));
-    ui_.listWidget->editItem(item);
-
-    accs_.erase(it);
-
+    registerNext(email, index + 1);
 }
 
 } // gui

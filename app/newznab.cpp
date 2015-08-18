@@ -371,8 +371,7 @@ WebQuery* Newznab::apiRegisterUser(const Account& acc, HostCallback cb)
         QDomDocument dom;
         if (parseResponse(reply, info, dom))
         {
-            const auto& root = dom.firstChildElement();
-            const auto& reg  = root.firstChildElement("register");
+            const auto& reg  = dom.firstChildElement("register");
             info.username    = reg.attribute("username");
             info.password    = reg.attribute("password");
             info.apikey      = reg.attribute("apikey");
