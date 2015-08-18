@@ -47,17 +47,53 @@ namespace {
     // filename called "file-history.txt"
 
     // version 2:
-    // rename file to "files.txt"
+    // rename file to "filelist.txt"
     // add version number
+
+    QString migrateFile(int& version)
+    {
+        const auto& newName = app::homedir::file("filelist.txt");
+        const auto& oldName = app::homedir::file("file-history.txt");
+        if (QFile::exists(oldName))
+        {
+            version = 1;
+            DEBUG("Rename %1 to %2", oldName, newName);
+            if (!QFile::rename(oldName, newName))
+                return oldName;
+
+            return newName;
+        }
+        version = CurrentFileVersion;
+        return newName;
+    }
 
 }
 
 namespace app
 {
 
-Files::Files() : keepSorted_(false), sortColumn_(0), sortOrder_(Qt::AscendingOrder)
+Files::Files() : m_keepSorted(false), m_sortColumn(0), m_sortOrder(Qt::AscendingOrder), m_version(0)
 {
     DEBUG("Files created");
+
+    int version = 0;
+
+    const auto& file = migrateFile(m_version);
+
+    m_file.setFileName(file);
+    if (!m_file.open(QIODevice::ReadWrite))
+    {
+        WARN("Unable to open filelist file %1, %2", file, m_file.error());
+        return;
+    }
+    if (m_file.size() == 0)
+    {
+        QTextStream out(&m_file);
+        out << CurrentFileVersion << "\n";
+        return;
+    }
+
+    DEBUG("Opened filelist %1", file);    
 }
 
 Files::~Files()
@@ -71,9 +107,9 @@ QVariant Files::data(const QModelIndex& index, int role) const
     // so that we can just push-back instead of more expensive push_front (on deque)
     // and the latest item is then always at table row 0 
 
-    const auto row   = files_.size() - (size_t)index.row()  - 1;
+    const auto row   = m_files.size() - (size_t)index.row()  - 1;
     const auto col   = (columns)index.column();
-    const auto& file = files_[row];    
+    const auto& file = m_files[row];    
 
     if (role == Qt::DisplayRole)
     {
@@ -112,9 +148,7 @@ QVariant Files::headerData(int section, Qt::Orientation orientation, int role) c
 
 void Files::sort(int column, Qt::SortOrder order) 
 {
-    if (order == Qt::AscendingOrder)
-        DEBUG("Sort in Ascending Order");
-    else DEBUG("Sort in Descending Order");
+    DEBUG("Sorting in %1 order", order);
 
     emit layoutAboutToBeChanged();
 
@@ -123,7 +157,7 @@ void Files::sort(int column, Qt::SortOrder order)
     // last item in the list is considered to be the first item
     // on the UI
 #define SORT(x) \
-    std::sort(std::begin(files_), std::end(files_), \
+    std::sort(std::begin(m_files), std::end(m_files), \
         [&](const Files::File& lhs, const Files::File& rhs) { \
             if (order == Qt::AscendingOrder) \
                 return lhs.x > rhs.x; \
@@ -143,13 +177,13 @@ void Files::sort(int column, Qt::SortOrder order)
 
     emit layoutChanged();
 
-    sortColumn_ = column;
-    sortOrder_  = order;
+    m_sortColumn = column;
+    m_sortOrder  = order;
 }
 
 int Files::rowCount(const QModelIndex&) const 
 { 
-    return (int)files_.size();
+    return (int)m_files.size();
 }
 
 int Files::columnCount(const QModelIndex&) const 
@@ -157,26 +191,25 @@ int Files::columnCount(const QModelIndex&) const
     return (int)columns::count;
 }
 
+
+
 void Files::loadHistory()
 {
-    const auto& file = homedir::file("file-history.txt");
-
-    QFile history;        
-    history.setFileName(file);
-    if (!history.open(QIODevice::ReadOnly))
-    {
-        if (!QFileInfo(file).exists())
-            return;
-
-        WARN("Unable to read file history %1, %2", file, 
-            history.error());
+    if (!m_file.isOpen())
         return;
+
+    QTextStream load(&m_file);
+    load.setCodec("UTF-8");
+
+    if (m_version > 1)
+    {
+        m_version = load.readLine().toInt();
     }
 
-    DEBUG("Opened history file %1", file);
+    DEBUG("File version %1", m_version);
 
-    QTextStream load(&history);
-    load.setCodec("UTF-8");
+    bool needsPruning = false;
+
     while (!load.atEnd())
     {
         const auto& line = load.readLine();
@@ -184,6 +217,11 @@ void Files::loadHistory()
             break;
 
         const auto& toks = line.split("\t");
+        if (toks.size() < 4)
+        {
+            ERROR("Invalid data.");
+            continue;
+        }
 
         Files::File next;
         next.type = (FileType)toks[0].toInt();
@@ -194,51 +232,56 @@ void Files::loadHistory()
 
         const QFileInfo info(next.path + "/" + next.name);
         if (!info.exists())
+        {
+            needsPruning = true;
             continue;
+        }
 
-        files_.push_back(std::move(next));
+        m_files.push_back(std::move(next));
     }
 
-    history.close();
-
-    // write back out the history data and truncate the file
-    // this removes lines of data for files that are not available anymore.
-    history_.setFileName(file);
-    if (!history_.open(QIODevice::ReadWrite | QIODevice::Truncate))
+    if (needsPruning)
     {
-        WARN("Unable to write file history data %1, %2", file, 
-            history_.error());
-        return;
+        // seek back to the start of the file and write back out
+        // the data that is still valid.
+        m_file.resize(0);
+        m_file.seek(0);
+
+        QTextStream save(&m_file);
+        save.setCodec("UTF-8");
+        save << CurrentFileVersion << "\n";
+
+        for (const auto& next : m_files)
+        {
+            save << (int)next.type << "\t";
+            save << next.time.toTime_t() << "\t";
+            save << next.path << "\t";
+            save << next.name;
+            save << "\n";
+        }
+
+        DEBUG("Pruned file list");
     }
 
-    QTextStream save(&history_);
-    save.setCodec("UTF-8");
-    for (const auto& next : files_)
-    {
-        save << (int)next.type << "\t";
-        save << next.time.toTime_t() << "\t";
-        save << next.path << "\t";
-        save << next.name;
-        save << "\n";
-    }
-
-    reset();
+    DEBUG("Loaded files list with %1 files", m_files.size());
 }
 
 void Files::eraseHistory()
 {
-    if (history_.isOpen())
-        history_.close();
+    if (m_file.isOpen())
+    {
+        m_file.resize(0);
+        m_file.seek(0);
 
-    const auto& file = history_.fileName();
-    if (file.isEmpty())
-        return;
+        QTextStream out(&m_file);
+        out.setCodec("UTF-8");
+        out << CurrentFileVersion << "\n";
+    }
 
-    QFile::remove(file);
-
-    files_.clear();
-
-    reset();
+    QAbstractTableModel::beginResetModel();
+    m_files.clear();    
+    QAbstractTableModel::reset();
+    QAbstractTableModel::endResetModel();
 }
 
 void Files::eraseFiles(QModelIndexList& list)
@@ -266,9 +309,9 @@ void Files::eraseFiles(QModelIndexList& list)
         }
 
         beginRemoveRows(QModelIndex(), row, row);
-        auto it = std::begin(files_);
-        std::advance(it, files_.size() - row - 1);
-        files_.erase(it);
+        auto it = std::begin(m_files);
+        std::advance(it, m_files.size() - row - 1);
+        m_files.erase(it);
         endRemoveRows();
         ++removed;
     }
@@ -276,14 +319,14 @@ void Files::eraseFiles(QModelIndexList& list)
 
 void Files::keepSorted(bool onOff)
 {
-    keepSorted_ = onOff;
+    m_keepSorted = onOff;
 }
 
 const Files::File& Files::getItem(std::size_t i) const 
 {
     // the vector is accessed in reverse manner (item at index 0 is at the end)
     // so latest item (push_back) comes at the top of the list on the GUI
-    return files_[files_.size() - i -1];
+    return m_files[m_files.size() - i -1];
 }
 
 void Files::fileCompleted(const app::FileInfo& file)
@@ -295,37 +338,26 @@ void Files::fileCompleted(const app::FileInfo& file)
     next.icon = findFileIcon(next.type);
     next.time = QDateTime::currentDateTime();
 
-    if (!history_.isOpen())
+    if (m_file.isOpen())
     {
-        const auto& file = homedir::file("file-history.txt");
-        history_.setFileName(file);
-        if (!history_.open(QIODevice::WriteOnly | QIODevice::Append))
-        {
-            ERROR("Unable to write file history data %1, %2", file,
-                history_.error());
-        }
-    }
-
-    // record the file download event in the history file.
-    if (history_.isOpen())
-    {
-        QTextStream stream(&history_);
+        // record the file download event in the history file.
+        QTextStream stream(&m_file);
         stream.setCodec("UTF-8");
         stream << (int)next.type << "\t";
         stream << next.time.toTime_t() << "\t";
         stream << next.path << "\t";
         stream << next.name;
         stream << "\n";
-        history_.flush();
+        m_file.flush();
     }
 
     beginInsertRows(QModelIndex(), 0, 0);
-    files_.push_back(std::move(next));
+    m_files.push_back(std::move(next));
     endInsertRows();
 
-    if (keepSorted_)
+    if (m_keepSorted)
     {
-        sort(sortColumn_, (Qt::SortOrder)sortOrder_);
+        sort(m_sortColumn, (Qt::SortOrder)m_sortOrder);
     }
 }
 

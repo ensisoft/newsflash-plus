@@ -43,9 +43,15 @@ namespace app
         Q_OBJECT
 
     public:
+        // File on the filesystem that is tracked by us.
         struct File {
+            // Name of the file
             QString   name;
+
+            // Full path to the file.
             QString   path;
+
+            // DateTime when first 
             QDateTime time;
             QIcon     icon;
             FileType  type;
@@ -70,19 +76,23 @@ namespace app
         const File& getItem(std::size_t i) const;
 
         std::size_t numFiles() const 
-        { return files_.size(); }
+        { return m_files.size(); }
 
     public slots:
         void fileCompleted(const app::FileInfo& file);
         void packCompleted(const app::FilePackInfo& pack);
 
     private:
-        std::vector<File> files_;
-        bool keepSorted_;
-        int sortColumn_;
-        int sortOrder_;
+        std::vector<File> m_files;
+
     private:
-        QFile history_;
+        bool m_keepSorted;
+        int  m_sortColumn;
+        int  m_sortOrder;
+
+    private:
+        int m_version;
+        QFile m_file;
     };
     
 } // app

@@ -43,6 +43,24 @@ const int CurrentFileVersion = 1;
 HistoryDb::HistoryDb() : m_loaded(false), m_checkDuplicates(true), m_exactMatch(false), m_daySpan(100)
 {
     DEBUG("HistoryDb created");
+
+    const auto& file = homedir::file("history.txt");
+
+    m_file.setFileName(file);
+
+    if (!m_file.open(QIODevice::ReadWrite))
+    {
+        ERROR("Unable to open history file %1, %2", file, m_file.error());
+        return;
+    }
+    if (m_file.size() == 0)
+    {
+        QTextStream out(&m_file);
+        out << CurrentFileVersion << "\n";
+        return;
+    }
+
+    DEBUG("Opened history file %1", file);    
 }
 
 HistoryDb::~HistoryDb()
@@ -132,20 +150,8 @@ void HistoryDb::saveState(Settings& settings) const
 
 void HistoryDb::loadHistory()
 {
-    const auto& file = homedir::file("history.txt");
-
-    m_file.setFileName(file);
-    m_file.open(QIODevice::ReadWrite | QIODevice::Append);
     if (!m_file.isOpen())
-    {
-        if (!QFile::exists(file))
-            return;
-
-        ERROR("Unable to load history data %1, %2", file, m_file.error());
         return;
-    }
-
-    DEBUG("Opened history file %1", file);
 
     m_items.clear();
     m_file.seek(0);
@@ -155,7 +161,7 @@ void HistoryDb::loadHistory()
 
     const quint32 fileVersion = stream.readLine().toUInt();
 
-    DEBUG("Data file version %1", fileVersion);
+    DEBUG("File version %1", fileVersion);
 
     QDateTime now = QDateTime::currentDateTime();
 
@@ -167,7 +173,12 @@ void HistoryDb::loadHistory()
         if (line.isNull())
             break;
 
-        QStringList toks = line.split("\t");
+        const auto& toks = line.split("\t");
+        if (toks.size() < 4)
+        {
+            ERROR("Invalid data.");
+            continue;
+        }
 
         HistoryDb::Item item;
         item.source = (MediaSource)toks[0].toInt();
@@ -186,7 +197,8 @@ void HistoryDb::loadHistory()
 
     if (needsPruning)
     {
-        // truncate        
+        // truncate the file and write back out the items 
+        // that are still retained in history.
         m_file.resize(0);
         m_file.seek(0);
 
@@ -222,13 +234,13 @@ void HistoryDb::clearHistory(bool commit)
     if (commit)
     {
         if (m_file.isOpen())
-            m_file.close();
+        {
+            m_file.resize(0);
+            m_file.seek(0);
 
-        const auto& file = homedir::file("history.txt");
-
-        QFile::remove(file);
-
-        DEBUG("Removed %1", file);
+            QTextStream out(&m_file);
+            out << CurrentFileVersion << "\n";
+        }
     }
 
     if (m_loaded)
@@ -396,42 +408,23 @@ void HistoryDb::setDaySpan(int span)
 
 void HistoryDb::newDownloadQueued(const Download& download)
 {
-    if (!m_file.isOpen())
-    {
-        const auto& file = homedir::file("history.txt");
-        m_file.setFileName(file);
-        m_file.open(QIODevice::WriteOnly | QIODevice::Append);
-        if (!m_file.isOpen())
-        {
-            ERROR("Unable to open history file %1, %2", file, m_file.error());
-            return;
-        }
-
-        if (m_file.size() == 0)
-        {
-            QTextStream stream(&m_file);
-            stream.setCodec("UTF-8");
-            stream << CurrentFileVersion << "\n";
-
-            DEBUG("Created history file %1", file);
-        }
-
-    }
     HistoryDb::Item item;
     item.date   = QDateTime::currentDateTime();
     item.desc   = download.desc;
     item.type   = download.type;
     item.source = download.source;
 
-    QTextStream stream(&m_file);
-    stream.setCodec("UTF-8");
-    stream << (int)item.source << "\t";
-    stream << (int)item.type   << "\t";
-    stream << item.date.toTime_t() << "\t";
-    stream << item.desc;
-    stream << "\n";
-
-    m_file.flush();
+    if (m_file.isOpen())
+    {
+        QTextStream stream(&m_file);
+        stream.setCodec("UTF-8");
+        stream << (int)item.source << "\t";
+        stream << (int)item.type   << "\t";
+        stream << item.date.toTime_t() << "\t";
+        stream << item.desc;
+        stream << "\n";
+        m_file.flush();        
+    }
 
     if (m_loaded)
     {
