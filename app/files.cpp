@@ -39,6 +39,17 @@ namespace {
     enum class columns {
         type, time, path, name, count
     };
+
+    const int CurrentFileVersion = 2;
+
+    // Version 1:
+    // no version number in the file.
+    // filename called "file-history.txt"
+
+    // version 2:
+    // rename file to "files.txt"
+    // add version number
+
 }
 
 namespace app

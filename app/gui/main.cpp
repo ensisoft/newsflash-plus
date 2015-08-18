@@ -80,6 +80,8 @@
 #include "../poweroff.h"
 #include "../platform.h"
 #include "../historydb.h"
+#include "../media.h"
+#include "../filetype.h"
 
 namespace gui
 {
@@ -130,6 +132,12 @@ int run(int argc, char* argv[])
         if (err != QFile::NoError)
             ERROR("Failed to read settings %1, %2", file, err);
     }
+
+    if (!settings.contains("version", "mediatype"))
+        settings.set("version", "mediatype", 1);
+
+    if (!settings.contains("version", "filetype"))
+        settings.set("version", "filetype", 1);
 
     // initialize global pointers.
     app::Poweroff power;

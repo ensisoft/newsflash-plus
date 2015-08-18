@@ -31,6 +31,10 @@ class QString;
 
 namespace app
 {
+    enum {
+        FileTypeVersion = 1
+    };
+
     // filetypes categorizes files into broad categories
     // of possible types.
     enum class FileType {

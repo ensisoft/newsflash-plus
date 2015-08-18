@@ -59,6 +59,8 @@
 #include "../tools.h"
 #include "../distdir.h"
 #include "../types.h"
+#include "../media.h"
+#include "../filetype.h"
 
 namespace gui
 {
@@ -207,6 +209,16 @@ void MainWindow::loadState()
         // if the settings file doesn't exist then we assume that this is the
         // first launch of the application and just setup for the user welcome
         QTimer::singleShot(500, this, SLOT(timerWelcome_timeout()));
+    }
+    else
+    {
+        const auto MediaTypeVersion = settings_.get("version", "mediatype").toInt();
+        const auto FileTypeVersion  = settings_.get("version", "filetype").toInt();
+        if (MediaTypeVersion != app::MediaTypeVersion ||
+            FileTypeVersion  != app::FileTypeVersion)
+        {
+            QTimer::singleShot(500, this, SLOT(timerMigrate_timeout()));            
+        }
     }
 
     const auto width  = settings_.get("window", "width", 0);
@@ -749,6 +761,9 @@ bool MainWindow::saveState(DlgExit* dlg)
         settings_.set("paths", "load_nzb", recent_load_nzb_path_);
         settings_.set("license", "keycode", keyCode_);
 
+        settings_.set("version", "mediatype", app::MediaTypeVersion);
+        settings_.set("version", "filetype", app::FileTypeVersion);
+
         // save tab visibility values
         // but only for permanent widgets, i.e. those that have actions.
         for (std::size_t i=0; i<actions_.size(); ++i)
@@ -1215,6 +1230,14 @@ void MainWindow::timerRefresh_timeout()
     ui_.lblQueue->setText(app::toString("%1", app::size { bytes_remaining }));
 
     ui_.netGraph->addSample(netspeed);
+}
+
+void MainWindow::timerMigrate_timeout()
+{
+    QMessageBox::information(this,
+        "Settings Update",
+        "Your old settings have been migrated to current version.\n"
+        "Some of the settings might require adjustment.");
 }
 
 void MainWindow::displayNote(const app::Event& event)

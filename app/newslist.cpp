@@ -47,7 +47,7 @@ namespace app
 {
 
 const int CurrentFileVersion = 2;
-// FileVersion 2 adds the media type for the group.
+// FileVersion 2 adds the media type for the group. (MediaTypeVersion 2)
 
 NewsList::NewsList() : sort_(Columns::LAST), order_(Qt::AscendingOrder), size_(0), account_(0)
 {
@@ -163,27 +163,27 @@ void NewsList::sort(int column, Qt::SortOrder order)
     switch ((Columns)column)
     {
         case Columns::Messages:  
-            app::sort(beg, end, order, &group::numMessages);
+            app::sort(beg, end, order, &NewsGroup::numMessages);
             break;
 
         case Columns::Category:
-            app::sort(beg, end, order, &group::type);
+            app::sort(beg, end, order, &NewsGroup::type);
             break;
 
         case Columns::SizeOnDisk:
-            app::sort(beg, end, order, &group::sizeOnDisk);
+            app::sort(beg, end, order, &NewsGroup::sizeOnDisk);
             break;
 
         case Columns::Name:      
-            app::sort(beg, end, order, &group::name); 
+            app::sort(beg, end, order, &NewsGroup::name); 
             break;
 
         default: Q_ASSERT("wut"); break;
     }
 
     // and put the subscribed items at the top.
-    auto it = std::stable_partition(beg, end, [&](const group& g) {
-            return ((g.flags & Flags::Subscribed) != 0);
+    auto it = std::stable_partition(beg, end, [&](const NewsGroup& group) {
+            return ((group.flags & Flags::Subscribed) != 0);
         });    
 
     DEBUG("Found %1 favs", std::distance(beg, it)); 
@@ -258,26 +258,41 @@ void NewsList::loadListing(const QString& file, quint32 accountId)
     {
         const auto& line = stream.readLine();
         const auto& toks = line.split("\t");
-        group g;
-        g.name  = toks[0];
-        g.numMessages = toks[1].toULongLong();
-        g.sizeOnDisk  = sumFileSizes(joinPath(datapath, g.name));
-        g.flags       = 0;
+        if (toks.size() < 2)
+        {
+            ERROR("Invalid newslist data.");
+            return;
+        }
+
+        NewsGroup group;
+        group.name  = toks[0];
+        group.numMessages = toks[1].toULongLong();
+        group.sizeOnDisk  = sumFileSizes(joinPath(datapath, group.name));
+        group.flags       = 0;
+        group.type        = MediaType::Other;
+
         if (fileVersion == 1)
         {
-            g.type = findMediaType(g.name);
+            group.type = findMediaType(group.name);
         }
         else if (fileVersion == 2)
         {
-            g.type = (MediaType)toks[2].toInt();
+            if (toks.size() < 3)
+            {
+                ERROR("Invalid newslist data.");
+                return;
+            }
+
+            // MediaTypeVersion 2
+            group.type = (MediaType)toks[2].toInt();
         }
 
         for (int i=0; i<newslist.size(); ++i)
         {
-            if (newslist[i] == g.name)
-                g.flags |= Flags::Subscribed;
+            if (newslist[i] == group.name)
+                group.flags |= Flags::Subscribed;
         }
-        groups_.push_back(g);
+        groups_.push_back(group);
         curGroup++;
 
         if (!(curGroup % 100))
@@ -403,42 +418,42 @@ void NewsList::filter(const QString& str, newsflash::bitflag<FilterFlags> option
 
     auto beg = std::begin(groups_);
     auto end = std::partition(std::begin(groups_), std::end(groups_), 
-        [&](const group& g) {
+        [&](const NewsGroup& group) {
 
-        if (isMusic(g.type) && !options.test(FilterFlags::ShowMusic))
+        if (isMusic(group.type) && !options.test(FilterFlags::ShowMusic))
             return false;
 
-        if (isMovie(g.type) && !options.test(FilterFlags::ShowMovies))
+        if (isMovie(group.type) && !options.test(FilterFlags::ShowMovies))
             return false;
 
-        if (isTelevision(g.type) && !options.test(FilterFlags::ShowTv))
+        if (isTelevision(group.type) && !options.test(FilterFlags::ShowTv))
             return false;
 
-        if (isConsole(g.type) && !options.test(FilterFlags::ShowGames))
+        if (isConsole(group.type) && !options.test(FilterFlags::ShowGames))
             return false;
 
-        if (isApps(g.type) && !options.test(FilterFlags::ShowApps))
+        if (isApps(group.type) && !options.test(FilterFlags::ShowApps))
             return false;
 
-        if (isAdult(g.type) && !options.test(FilterFlags::ShowAdult))
+        if (isAdult(group.type) && !options.test(FilterFlags::ShowAdult))
             return false;
 
-        if (isImage(g.type) && !options.test(FilterFlags::ShowImages))
+        if (isImage(group.type) && !options.test(FilterFlags::ShowImages))
             return false;
 
-        if (isOther(g.type) && !options.test(FilterFlags::ShowOther))
+        if (isOther(group.type) && !options.test(FilterFlags::ShowOther))
             return false;
 
-        if (options.test(FilterFlags::ShowEmpty) && !g.numMessages)
+        if (options.test(FilterFlags::ShowEmpty) && !group.numMessages)
             return false;
 
         if (!options.test(FilterFlags::ShowText))
         {
-            if (!g.name.contains(".binaries."))
+            if (!group.name.contains(".binaries."))
                 return false;
         }
 
-        return (bool)g.name.contains(str);
+        return (bool)group.name.contains(str);
     });
 
     size_ = std::distance(beg, end);
@@ -446,16 +461,16 @@ void NewsList::filter(const QString& str, newsflash::bitflag<FilterFlags> option
     switch (sort_)
     {
         case Columns::Messages:
-            app::sort(beg, end, order_, &group::numMessages);
+            app::sort(beg, end, order_, &NewsGroup::numMessages);
             break;
         case Columns::Name:
-            app::sort(beg, end, order_, &group::name);
+            app::sort(beg, end, order_, &NewsGroup::name);
             break;
         case Columns::SizeOnDisk:
-            app::sort(beg, end, order_, &group::sizeOnDisk);
+            app::sort(beg, end, order_, &NewsGroup::sizeOnDisk);
             break;
         case Columns::Category:
-            app::sort(beg, end, order_, &group::type);
+            app::sort(beg, end, order_, &NewsGroup::type);
             break;
 
         default: Q_ASSERT(!"incorrect sorting");
@@ -464,8 +479,8 @@ void NewsList::filter(const QString& str, newsflash::bitflag<FilterFlags> option
     // and finally grab the favs and put them at the top
     beg = std::begin(groups_);
     end = std::begin(groups_) + size_;
-    auto it = std::stable_partition(beg, end, [&](const group& g) {
-            return ((g.flags & Flags::Subscribed) != 0);
+    auto it = std::stable_partition(beg, end, [&](const NewsGroup& group) {
+            return ((group.flags & Flags::Subscribed) != 0);
         });   
 
     DEBUG("Found %1 matching items...", size_);    
@@ -525,8 +540,8 @@ void NewsList::newHeaderDataAvailable(const QString& file)
         return;
 
     auto it = std::find_if(std::begin(groups_), std::end(groups_),
-        [&](const group& g) {
-            if (file.indexOf(g.name) != -1)
+        [&](const NewsGroup& group) {
+            if (file.indexOf(group.name) != -1)
                 return true;
             return false;
         });

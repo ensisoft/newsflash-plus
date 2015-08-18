@@ -201,9 +201,15 @@ void RSS::loadState(app::Settings& settings)
     enable_womble_  = settings.get("rss", "enable_womble", true);
     nzbs_apikey_    = settings.get("rss", "nzbs_apikey", "");
     nzbs_userid_    = settings.get("rss", "nzbs_userid", "");    
-    const auto bits = settings.get("rss", "streams", quint64(~0));
 
-    streams_.set_from_value(bits); // enable all bits (streams)
+    quint64 streams = 0;
+
+    // if the mediatype has become incompatible we simply reset it.
+    if (settings.get("version", "mediatype").toInt() != app::MediaTypeVersion)
+        streams = ~streams;
+    else streams = settings.get("rss", "streams", ~quint64(0));
+
+    streams_.set_from_value(streams); 
 
     model_.enableFeed("womble", enable_womble_);
     model_.enableFeed("nzbs", enable_nzbs_);

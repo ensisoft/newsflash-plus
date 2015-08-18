@@ -103,7 +103,7 @@ namespace app
             Subscribed = 0x1
         };
 
-        struct group {
+        struct NewsGroup {
             QString   name;
             quint64   numMessages;
             quint64   sizeOnDisk;
@@ -120,7 +120,7 @@ namespace app
         Columns sort_;
         Qt::SortOrder order_;
         std::size_t size_;
-        std::vector<group> groups_;
+        std::vector<NewsGroup> groups_;
         std::map<quint32, operation> pending_;
     private:
         quint32 account_;

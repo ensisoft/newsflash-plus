@@ -164,6 +164,7 @@ namespace gui
         void actionWindowFocus_triggered();
         void timerWelcome_timeout();
         void timerRefresh_timeout();
+        void timerMigrate_timeout();
         void displayNote(const app::Event& event);
         void updateMenu(MainWidget* widget);
         void showSettings(MainWidget* widget);

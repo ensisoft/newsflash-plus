@@ -47,7 +47,17 @@ namespace app
     // "hd, 1080, mkv, x264, french" for a High definition x264 encoded french movie.
     // unfortunately this is not the reality with the indexers.
 
-    // todo: this needs versioning.
+
+    // version number for the MediaType
+    // if the Enum is reorganized (new values added to the middle, etc.)
+    // the version number needs to be bumped
+    // and code that relies on a particular version needs to be updated
+    // to account for the new version.
+    enum {
+        MediaTypeVersion = 2
+    };
+
+
     enum class MediaType {
         // adult content
         AdultDVD,
