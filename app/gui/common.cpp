@@ -28,6 +28,18 @@
 namespace gui
 {
 
+bool needAccountUserInput()
+{
+    if (app::g_accounts->numAccounts() == 0)
+        return true;
+
+    auto* main = app::g_accounts->getMainAccount();
+    if (!main)
+        return true;
+
+    return false;
+}
+
 quint32 selectAccount(QWidget* parent, const QString& desc)
 {
     if (app::g_accounts->numAccounts() == 0)
@@ -74,6 +86,11 @@ quint32 selectAccount(QWidget* parent, const QString& desc)
 
 }
 
+bool isDuplicate(const QString& desc, app::MediaType type)
+{
+    return app::g_history->isDuplicate(desc, type);
+}
+
 bool passDuplicateCheck(QWidget* parent, const QString& desc,
     app::MediaType type)
 {
@@ -90,6 +107,11 @@ bool passDuplicateCheck(QWidget* parent, const QString& desc,
     app::g_history->checkDuplicates(onOff);
 
     return true;
+}
+
+bool isDuplicate(const QString& desc)
+{
+    return app::g_history->isDuplicate(desc);
 }
 
 bool passDuplicateCheck(QWidget* parent, const QString& desc)

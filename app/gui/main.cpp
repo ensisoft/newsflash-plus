@@ -310,6 +310,8 @@ int run(int argc, char* argv[])
         QObject::connect(&notify, SIGNAL(exit()), &win, SLOT(close()));
         QObject::connect(&notify, SIGNAL(minimize()), &win, SLOT(hide()));
         QObject::connect(&notify, SIGNAL(restore()), &win, SLOT(show()));
+
+        QObject::connect(&win, SIGNAL(shown()), &notify, SLOT(windowRestored()));
         DEBUG("Connected notify module.");
     }
     else

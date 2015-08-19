@@ -66,6 +66,8 @@ namespace gui
         // ctor/dtor
         MainWindow(app::Settings& settings);
        ~MainWindow();
+
+        void showWindow(); 
        
         // attach a new widget to the mainwindow and display it.
         // ownership of the object remains with the caller.
@@ -120,6 +122,7 @@ namespace gui
 
     signals:
         void closed();
+        void shown();
 
     private:
         void show(const QString& name);

@@ -124,6 +124,13 @@ MainWindow::~MainWindow()
     DEBUG("MainWindow deleted");
 }
 
+void MainWindow::showWindow()
+{
+    show();
+
+    emit shown();
+}
+
 void MainWindow::attach(MainWidget* widget, bool permanent, bool loadstate)
 {
     Q_ASSERT(!widget->parent());

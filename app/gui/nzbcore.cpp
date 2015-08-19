@@ -96,11 +96,18 @@ void NZBSettings::on_btnDelWatchFolder_clicked()
 NZBCore::NZBCore() : m_action(DragDropAction::AskForAction)
 {
     m_module.PromptForFile = [this] (const QString& file) { 
+
         QFileInfo info(file);
         const auto desc = info.completeBaseName();
         const auto path = info.completeBaseName();
+        if (isDuplicate(desc))
+            g_win->showWindow();
+
         if (!passDuplicateCheck(g_win, desc))
             return false;
+
+        if (needAccountUserInput())
+            g_win->showWindow();
 
         const auto acc = selectAccount(g_win, file);
         if (acc == 0)

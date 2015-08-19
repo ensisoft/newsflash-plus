@@ -58,34 +58,34 @@ namespace gui
 
 Notify::Notify()
 {
-    restore_  = new QAction(tr("Restore from tray"), this);
-    restore_->setIcon(QIcon("icons:ico_app_restore.png"));
-    restore_->setEnabled(false);
-    QObject::connect(restore_, SIGNAL(triggered()), this, SIGNAL(restore()));
-    QObject::connect(restore_, SIGNAL(triggered()), this, SLOT(actionRestore()));
+    m_restoreAction  = new QAction(tr("Restore from tray"), this);
+    m_restoreAction->setIcon(QIcon("icons:ico_app_restore.png"));
+    m_restoreAction->setEnabled(false);
+    QObject::connect(m_restoreAction, SIGNAL(triggered()), this, SIGNAL(restore()));
+    QObject::connect(m_restoreAction, SIGNAL(triggered()), this, SLOT(actionRestore()));
 
-    minimize_ = new QAction(tr("Minimize to tray"), this);
-    minimize_->setIcon(QIcon("icons:ico_app_minimize.png"));
-    QObject::connect(minimize_, SIGNAL(triggered()), this, SIGNAL(minimize()));
-    QObject::connect(minimize_, SIGNAL(triggered()), this, SLOT(actionMinimize()));
+    m_minimizeAction = new QAction(tr("Minimize to tray"), this);
+    m_minimizeAction->setIcon(QIcon("icons:ico_app_minimize.png"));
+    QObject::connect(m_minimizeAction, SIGNAL(triggered()), this, SIGNAL(minimize()));
+    QObject::connect(m_minimizeAction, SIGNAL(triggered()), this, SLOT(actionMinimize()));
 
-    exit_ = new QAction(tr("Exit application"), this);
-    exit_->setIcon(QIcon("icons:ico_app_exit.png"));
-    QObject::connect(exit_, SIGNAL(triggered()), this, SIGNAL(exit()));
+    m_exitAction = new QAction(tr("Exit application"), this);
+    m_exitAction->setIcon(QIcon("icons:ico_app_exit.png"));
+    QObject::connect(m_exitAction, SIGNAL(triggered()), this, SIGNAL(exit()));
 
-    when_.set(NotifyWhen::Enable);
-    when_.set(NotifyWhen::OnFile);
-    when_.set(NotifyWhen::OnFilePack);
-    when_.set(NotifyWhen::OnError);
-    when_.set(NotifyWhen::OnWarning);
-    when_.set(NotifyWhen::OnRepair);
-    when_.set(NotifyWhen::OnUnpack);
+    m_notifications.set(NotifyWhen::Enable);
+    m_notifications.set(NotifyWhen::OnFile);
+    m_notifications.set(NotifyWhen::OnFilePack);
+    m_notifications.set(NotifyWhen::OnError);
+    m_notifications.set(NotifyWhen::OnWarning);
+    m_notifications.set(NotifyWhen::OnRepair);
+    m_notifications.set(NotifyWhen::OnUnpack);
 
-    tray_.setIcon(QIcon("icons:ico_newsflash.png"));
-    tray_.setToolTip(NEWSFLASH_TITLE " " NEWSFLASH_VERSION);
-    tray_.setVisible(true);
+    m_trayIcon.setIcon(QIcon("icons:ico_newsflash.png"));
+    m_trayIcon.setToolTip(NEWSFLASH_TITLE " " NEWSFLASH_VERSION);
+    m_trayIcon.setVisible(true);
 
-    QObject::connect(&tray_, SIGNAL(activated(QSystemTrayIcon::ActivationReason)),
+    QObject::connect(&m_trayIcon, SIGNAL(activated(QSystemTrayIcon::ActivationReason)),
         this, SLOT(trayActivated(QSystemTrayIcon::ActivationReason)));
 
     DEBUG("Notify UI created");
@@ -98,20 +98,20 @@ Notify::~Notify()
 
 bool Notify::addActions(QMenu& menu)
 {
-    menu.addAction(minimize_);
+    menu.addAction(m_minimizeAction);
     return true;
 }
 
 void Notify::loadState(app::Settings& settings)
 {
-    const auto bits = when_.value();
+    const auto bits = m_notifications.value();
 
-    when_.set_from_value(settings.get("notify", "bits", bits));
+    m_notifications.set_from_value(settings.get("notify", "bits", bits));
 }
 
 void Notify::saveState(app::Settings& settings)
 {
-    const auto bits = when_.value();
+    const auto bits = m_notifications.value();
 
     settings.set("notify", "bits", bits);
 }
@@ -120,13 +120,13 @@ SettingsWidget* Notify::getSettings()
 {
     auto* p = new MySettings;
     auto& ui = p->ui_;
-    ui.chkNotifyFile->setChecked(when_.test(NotifyWhen::OnFile));
-    ui.chkNotifyBatch->setChecked(when_.test(NotifyWhen::OnFilePack));
-    ui.chkNotifyError->setChecked(when_.test(NotifyWhen::OnError));
-    ui.chkNotifyWarning->setChecked(when_.test(NotifyWhen::OnWarning));
-    ui.chkNotifyRepair->setChecked(when_.test(NotifyWhen::OnRepair));
-    ui.chkNotifyExtract->setChecked(when_.test(NotifyWhen::OnUnpack));
-    ui.grpEnable->setChecked(when_.test(NotifyWhen::Enable));
+    ui.chkNotifyFile->setChecked(m_notifications.test(NotifyWhen::OnFile));
+    ui.chkNotifyBatch->setChecked(m_notifications.test(NotifyWhen::OnFilePack));
+    ui.chkNotifyError->setChecked(m_notifications.test(NotifyWhen::OnError));
+    ui.chkNotifyWarning->setChecked(m_notifications.test(NotifyWhen::OnWarning));
+    ui.chkNotifyRepair->setChecked(m_notifications.test(NotifyWhen::OnRepair));
+    ui.chkNotifyExtract->setChecked(m_notifications.test(NotifyWhen::OnUnpack));
+    ui.grpEnable->setChecked(m_notifications.test(NotifyWhen::Enable));
     return p;
 }
 
@@ -135,71 +135,71 @@ void Notify::applySettings(SettingsWidget* widget)
     auto* p  = dynamic_cast<MySettings*>(widget);
     auto& ui = p->ui_;
 
-    when_.set(NotifyWhen::Enable, ui.grpEnable->isChecked());
-    when_.set(NotifyWhen::OnFile, ui.chkNotifyFile->isChecked());
-    when_.set(NotifyWhen::OnFilePack, ui.chkNotifyBatch->isChecked());
-    when_.set(NotifyWhen::OnError, ui.chkNotifyError->isChecked());
-    when_.set(NotifyWhen::OnWarning, ui.chkNotifyWarning->isChecked());
-    when_.set(NotifyWhen::OnRepair, ui.chkNotifyRepair->isChecked());
-    when_.set(NotifyWhen::OnUnpack, ui.chkNotifyExtract->isChecked());
+    m_notifications.set(NotifyWhen::Enable, ui.grpEnable->isChecked());
+    m_notifications.set(NotifyWhen::OnFile, ui.chkNotifyFile->isChecked());
+    m_notifications.set(NotifyWhen::OnFilePack, ui.chkNotifyBatch->isChecked());
+    m_notifications.set(NotifyWhen::OnError, ui.chkNotifyError->isChecked());
+    m_notifications.set(NotifyWhen::OnWarning, ui.chkNotifyWarning->isChecked());
+    m_notifications.set(NotifyWhen::OnRepair, ui.chkNotifyRepair->isChecked());
+    m_notifications.set(NotifyWhen::OnUnpack, ui.chkNotifyExtract->isChecked());
 }
 
 void Notify::fileCompleted(const app::FileInfo& file)
 {
-    if (!when_.test(NotifyWhen::Enable))
+    if (!m_notifications.test(NotifyWhen::Enable))
         return;
 
-    if (!when_.test(NotifyWhen::OnFile))
+    if (!m_notifications.test(NotifyWhen::OnFile))
         return;
-    tray_.showMessage(tr("File complete"), file.name);
+    m_trayIcon.showMessage(tr("File complete"), file.name);
 }
 
 void Notify::packCompleted(const app::FilePackInfo& pack)
 {
-    if (!when_.test(NotifyWhen::Enable))
+    if (!m_notifications.test(NotifyWhen::Enable))
         return;
 
-    if (!when_.test(NotifyWhen::OnFilePack))
+    if (!m_notifications.test(NotifyWhen::OnFilePack))
         return;
-    tray_.showMessage(tr("File batch complete"), pack.desc);
+    m_trayIcon.showMessage(tr("File batch complete"), pack.desc);
 }
 
 void Notify::newEvent(const app::Event& event)
 {
-    if (!when_.test(NotifyWhen::Enable))
+    if (!m_notifications.test(NotifyWhen::Enable))
         return;
 
     if (event.type == app::Event::Type::Error)
     {
-        if (!when_.test(NotifyWhen::OnError))
+        if (!m_notifications.test(NotifyWhen::OnError))
             return;
-        tray_.showMessage(tr("Error"), event.message);
+        m_trayIcon.showMessage(tr("Error"), event.message);
     }
     else if (event.type == app::Event::Type::Warning)
     {
-        if (!when_.test(NotifyWhen::OnWarning))
+        if (!m_notifications.test(NotifyWhen::OnWarning))
             return;
-        tray_.showMessage(tr("Warning"), event.message);            
+        m_trayIcon.showMessage(tr("Warning"), event.message);            
     }
 }
 
 void Notify::repairReady(const app::Archive& arc)
 {
-    if (!when_.test(NotifyWhen::Enable))
+    if (!m_notifications.test(NotifyWhen::Enable))
         return;
 
-    if (!when_.test(NotifyWhen::OnRepair))
+    if (!m_notifications.test(NotifyWhen::OnRepair))
         return;
 
     if (arc.state == app::Archive::Status::Error ||
         arc.state == app::Archive::Status::Failed)
     {
-        tray_.showMessage(tr("Repair failed"), 
+        m_trayIcon.showMessage(tr("Repair failed"), 
             tr("%1\n%2").arg(arc.desc).arg(arc.message));
     }
     else
     {
-        tray_.showMessage(tr("Repair ready"),
+        m_trayIcon.showMessage(tr("Repair ready"),
             tr("%1\n%2").arg(arc.desc).arg(arc.message));        
     }
 
@@ -207,23 +207,29 @@ void Notify::repairReady(const app::Archive& arc)
 
 void Notify::unpackReady(const app::Archive& arc)
 {
-    if (!when_.test(NotifyWhen::Enable))
+    if (!m_notifications.test(NotifyWhen::Enable))
         return;
 
-    if (!when_.test(NotifyWhen::OnUnpack))
+    if (!m_notifications.test(NotifyWhen::OnUnpack))
         return;
 
     if (arc.state == app::Archive::Status::Error ||
         arc.state == app::Archive::Status::Failed)
     {
-        tray_.showMessage(tr("Unpacking failed"),
+        m_trayIcon.showMessage(tr("Unpacking failed"),
             tr("%1\n%2").arg(arc.desc).arg(arc.message));
     }
     else
     {
-        tray_.showMessage(tr("Unpacking ready"),
+        m_trayIcon.showMessage(tr("Unpacking ready"),
             tr("%1\n%2").arg(arc.desc).arg(arc.message));        
     }
+}
+
+void Notify::windowRestored()
+{
+    m_minimizeAction->setEnabled(true);
+    m_restoreAction->setEnabled(false);
 }
 
 void Notify::trayActivated(QSystemTrayIcon::ActivationReason reason)
@@ -232,20 +238,20 @@ void Notify::trayActivated(QSystemTrayIcon::ActivationReason reason)
         return;
 
     QMenu menu;
-    menu.addAction(restore_);
+    menu.addAction(m_restoreAction);
     menu.addSeparator();
-    menu.addAction(exit_);
+    menu.addAction(m_exitAction);
     menu.exec(QCursor::pos());
 }
 
 void Notify::actionRestore()
 {
-    minimize_->setEnabled(true);
+    m_minimizeAction->setEnabled(true);
 }
 
 void Notify::actionMinimize()
 {
-    restore_->setEnabled(true);
+    m_restoreAction->setEnabled(true);
 }
 
 } // gui

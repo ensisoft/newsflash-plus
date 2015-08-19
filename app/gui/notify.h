@@ -65,6 +65,7 @@ namespace gui
         void newEvent(const app::Event& event);
         void repairReady(const app::Archive& arc);
         void unpackReady(const app::Archive& arc);
+        void windowRestored();
 
     private slots:
         void trayActivated(QSystemTrayIcon::ActivationReason);
@@ -72,17 +73,35 @@ namespace gui
         void actionMinimize();
 
     private:
-        QSystemTrayIcon tray_;
-        QAction* minimize_;
-        QAction* restore_;
-        QAction* exit_;
+        QSystemTrayIcon m_trayIcon;
+        QAction* m_minimizeAction;
+        QAction* m_restoreAction;
+        QAction* m_exitAction;
 
-    private:
         enum class NotifyWhen {
-            Enable, OnFile, OnFilePack, OnError, OnWarning, OnRepair, OnUnpack
+            // notifications are enabled.
+            Enable, 
+
+            // notify when file is downloaded.
+            OnFile, 
+
+            // notify when a batch of files is downloaded.
+            OnFilePack, 
+
+            // notify on error event.
+            OnError, 
+
+            // notify on warning event.
+            OnWarning, 
+
+            // notify when a repair completes.
+            OnRepair, 
+
+            // notify when an unpack completes
+            OnUnpack
         };
         using Flags = newsflash::bitflag<NotifyWhen>;
-        Flags when_;        
+        Flags m_notifications;        
     };
 
 } // gui

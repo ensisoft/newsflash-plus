@@ -94,9 +94,9 @@ namespace app
        // it in item if non-null ptr.
        bool lookup(const QString& desc, MediaType type, Item* item) const;
 
-       bool isDuplicate(const QString& desc, MediaType type, Item* item) const;
+       bool isDuplicate(const QString& desc, MediaType type, Item* item = nullptr) const;
 
-       bool isDuplicate(const QString& desc, Item* item) const;
+       bool isDuplicate(const QString& desc, Item* item = nullptr) const;
 
        int daySpan() const;
 

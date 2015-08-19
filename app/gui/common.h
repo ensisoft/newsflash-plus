@@ -32,10 +32,17 @@ class QWidget;
 namespace gui
 {
 
+bool needAccountUserInput();
+
 // Prompts the user for account selection and returns
 // the account id of the selected account or 0 
 // if the operation was canceled and no account selected.
 quint32 selectAccount(QWidget* parent, const QString& desc);
+
+bool isDuplicate(const QString& desc, 
+    app::MediaType);
+
+bool isDuplicate(const QString& desc);
 
 bool passDuplicateCheck(QWidget* parent, const QString& desc, 
     app::MediaType type);
