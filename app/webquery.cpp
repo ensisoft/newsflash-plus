@@ -32,6 +32,12 @@
 namespace app
 {
 
+WebQuery::~WebQuery()
+{
+    if (m_reply)
+        m_reply->deleteLater();
+}
+
 void append(QByteArray& buff,  QString str)
 {
     buff.append(str.toAscii());

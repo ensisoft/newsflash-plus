@@ -150,7 +150,10 @@ void DlgImport::registerInfo(const app::Newznab::HostInfo& ret, QString email, s
                 "However the sites requires a manual login to retrieve the API Key (under My Profile).\n"
                 "Please login and Copy & Paste the key in order to complete registration. Thanks");
 
-            app::openWeb(account.apiurl);
+            QString url = account.apiurl;
+            if (url.endsWith("api"))
+                url.chop(3);
+            app::openWeb(url);
 
             DlgNewznab dlg(this, account);
             if (dlg.exec() == QDialog::Rejected)

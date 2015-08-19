@@ -54,12 +54,14 @@ namespace app
 
     private slots:
         void finished(QNetworkReply* reply);
+        void timedout(QNetworkReply* reply);
         void heartbeat();
 
     private:
         QNetworkAccessManager m_qnam;
         QTimer m_timer;
-        std::list<std::unique_ptr<WebQuery>> m_queries;
+        std::list<std::unique_ptr<WebQuery>> m_live;
+        std::list<std::unique_ptr<WebQuery>> m_dead;
     };
 
     extern WebEngine* g_web;

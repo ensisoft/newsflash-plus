@@ -54,6 +54,9 @@ namespace app
             m_attchName = attchName;
         }
 
+       ~WebQuery();
+
+
         // submit the query through QNetworkAccessManager.
         bool submit(QNetworkAccessManager& qnam);
 
@@ -80,9 +83,12 @@ namespace app
         // is not intended to be called by the clients.
         void timeout();
 
+        bool isOwner(const QNetworkReply* reply) const
+        { return reply == m_reply; }
+
         bool isOwner(const QNetworkReply& reply) const
         { return &reply == m_reply; }
-
+        
     private:
         bool haveAttachment() const;
     private:

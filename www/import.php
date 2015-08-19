@@ -22,7 +22,7 @@
   // username: newsflash
   // password: newsflash
   //echo("http://nzb.su/api");
-  echo("http://nzbsooti.sx/api");
+  echo("https://nzbsooti.sx/api");
   echo("\t");
   echo("cbff37a3f9eb181de2bce28900a14157");
   echo("\n");

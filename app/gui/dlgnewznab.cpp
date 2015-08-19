@@ -32,8 +32,9 @@ DlgNewznab::DlgNewznab(QWidget* parent, app::Newznab::Account& acc) : QDialog(pa
     ui_.setupUi(this);
     if (!acc.apikey.isEmpty())
         ui_.editKey->setText(acc.apikey);
-
-    ui_.editHost->setText(acc.apiurl);
+    if (!acc.apiurl.isEmpty())
+        ui_.editHost->setText(acc.apiurl);
+    
     ui_.editEmail->setText(acc.email);
     ui_.editPassword->setText(acc.password);
     ui_.editUsername->setText(acc.username);
