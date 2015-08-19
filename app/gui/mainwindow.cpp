@@ -61,6 +61,7 @@
 #include "../types.h"
 #include "../media.h"
 #include "../filetype.h"
+#include "../historydb.h"
 
 namespace gui
 {
@@ -748,6 +749,7 @@ bool MainWindow::saveState(DlgExit* dlg)
         app::g_accounts->saveState(settings_);
         app::g_engine->saveState(settings_);
         app::g_tools->saveState(settings_);
+        app::g_history->saveState(settings_);
 
 
         settings_.set("window", "width", width());
