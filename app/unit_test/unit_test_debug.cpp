@@ -40,5 +40,10 @@ int test_main(int, char* argv[])
         DEBUG("Unrar error %1", QProcess::WriteError);
     }
 
+    for  (int i=0; i<100000; ++i)
+    {
+        DEBUG("ping");
+    }
+
     return 0;
 }

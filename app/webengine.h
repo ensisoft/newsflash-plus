@@ -44,6 +44,10 @@ namespace app
         Q_OBJECT
 
     public:
+        enum {
+            DefaultTimeout = 30
+        };
+
         WebEngine();
        ~WebEngine();
 
@@ -51,6 +55,11 @@ namespace app
         // object stored in the engine. the pointer will be valid
         // untill the query completes.
         WebQuery* submit(WebQuery query);
+
+        void setTimeout(std::size_t seconds);
+
+    signals:
+        void allFinished();
 
     private slots:
         void finished(QNetworkReply* reply);
@@ -62,6 +71,7 @@ namespace app
         QTimer m_timer;
         std::list<std::unique_ptr<WebQuery>> m_live;
         std::list<std::unique_ptr<WebQuery>> m_dead;
+        std::size_t m_timeout;
     };
 
     extern WebEngine* g_web;

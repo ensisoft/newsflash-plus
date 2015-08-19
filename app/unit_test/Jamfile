@@ -25,6 +25,17 @@ unit-test unit_test_debug
   : unit_test_debug.cpp
   ../debug.cpp ;
 
+unit-test unit_test_webengine
+  : unit_test_webengine.cpp
+  ../webengine.cpp 
+  ../webengine.h  
+  ../webquery.cpp
+  ../format.cpp
+  ../debug.cpp
+  ../debug.h
+  ../../engine/assert.cpp
+  ;
+
 
 unit-test unit_test_accounts : unit_test_accounts.cpp ;
 unit-test unit_test_settings : unit_test_settings.cpp ../settings.cpp ../format.cpp ../debug.cpp ;

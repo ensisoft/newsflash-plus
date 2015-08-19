@@ -25,6 +25,7 @@
 #  include <QtNetwork/QNetworkRequest>
 #  include <QtNetwork/QNetworkReply>
 #  include <QtNetwork/QNetworkAccessManager>
+#  include <QThread>
 #include <newsflash/warnpop.h>
 #include "webengine.h"
 #include "webquery.h"
@@ -50,7 +51,7 @@
 namespace app
 {
 
-WebEngine::WebEngine()
+WebEngine::WebEngine() : m_timeout(DefaultTimeout)
 {
     DEBUG("WebEngine created");
 
@@ -92,9 +93,15 @@ WebQuery* WebEngine::submit(WebQuery query)
     return ret;
 }
 
+void WebEngine::setTimeout(std::size_t seconds)
+{
+    m_timeout = seconds;
+}
+
 void WebEngine::finished(QNetworkReply* reply)
 {
     DEBUG("Finished reply handler!");
+    DEBUG("Current thread %1", QThread::currentThreadId());
 
     auto it = std::find_if(std::begin(m_live), std::end(m_live),
         [=](const std::unique_ptr<WebQuery>& q) {
@@ -177,10 +184,8 @@ void WebEngine::heartbeat()
             continue;
         }
 
-        const unsigned TimeoutTresholdTicks = 30;
-
         // update the tick, returns true if still within timeout treshold.
-        if (query->tick(TimeoutTresholdTicks))
+        if (query->tick(m_timeout))
         {
             ++it;
             continue;
@@ -216,7 +221,10 @@ void WebEngine::heartbeat()
     }
 
     if (m_live.empty())
+    {
         m_timer.stop();
+        emit allFinished();
+    }
 }
 
 WebEngine* g_web;
