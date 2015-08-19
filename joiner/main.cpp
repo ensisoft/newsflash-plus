@@ -29,13 +29,26 @@
 #include <QtDebug>
 #include <QRegExp>
 #include <QFileInfo>
+#include <QFile>
+#include <QTextStream>
+#include <cstdio>
 #include <set>
 #include <map>
+
 
 QString joinPath(QString lhs, QString rhs)
 {
     QDir dir(lhs + "/" + rhs);
     return dir.absolutePath();
+}
+
+void printHelp(QTextStream& out)
+{
+    out << "HJSplit file joiner\n\n";
+    out << "--folder\tSpecify the scanning folder.\n";
+    out << "--cleanup\tRemove HJSplit files after joining.\n";
+    out << "--overwrite\tOverwrite the target file if it exists.\n";
+    out << "--help\t\tPrint this help and exit.\n";
 }
 
 int main(int argc, char* argv[])
@@ -65,24 +78,25 @@ int main(int argc, char* argv[])
         else if (name == "--help")
             help = true;
     }
+    QFile io;
+    io.open(stdout, QIODevice::WriteOnly); 
+
+    QTextStream cout(&io);
+
     if (help)
     {
-        qDebug() << "HJSplit file joiner";
-        qDebug() << "--folder\tSpecify the scanning folder.";
-        qDebug() << "--cleanup\tRemove HJSplit files after joining.";
-        qDebug() << "--overwrite\tOverwrite the target file if it exists.";
-        qDebug() << "--help\t\tPrint this help and exit.";
+        printHelp(cout);
         return 0;
     }
 
 
     if (folder.isEmpty())
     {
-        qCritical("Missing argument");
+        printHelp(cout);
         return 1;
     }
 
-    qDebug() << "Scanning folder" << folder;
+    cout << "Scanning folder" << folder << "....\n";
 
     std::map<QString, std::set<QString>> parts;
 
@@ -104,7 +118,7 @@ int main(int argc, char* argv[])
         auto& set = parts[key];
         set.insert(file);
 
-        qDebug() << "Found:" << file << "->" << key;
+        cout << "Found:" << file << "->" << key << "\n";
     }
 
     for (auto it = parts.begin(); it != parts.end(); ++it)
@@ -115,14 +129,14 @@ int main(int argc, char* argv[])
         QFileInfo info(joinPath(folder, file));
         if (info.exists() && !overwrite)
         {
-            qDebug() << file << "already exists. Refusing to overwrite.";
+            cout << file << "already exists. Refusing to overwrite." << "\n";
         }
         else
         {
             QFile out(joinPath(folder, file));
             if (!out.open(QIODevice::WriteOnly | QIODevice::Truncate))
             {
-                qCritical() << "Error: Failed to open:" << file;
+                cout << "Error: Failed to open:" << file;
                 return 1;
             }
             for (const auto& part : parts)
@@ -133,12 +147,12 @@ int main(int argc, char* argv[])
                     QFile in(joinPath(folder, part));
                     if (!in.open(QIODevice::ReadOnly))
                     {
-                        qCritical() << "Error: Failed to open:" << part;
+                        cout << "Error: Failed to open:" << part << "\n";
                         return 1;
                     }
                     QByteArray data = in.readAll();
                     out.write(data);
-                    qDebug() << "Joined:" << part << "->" << file;
+                    cout << "Joined:" << part << "->" << file << "\n";
                 }
             }
         }
@@ -147,7 +161,7 @@ int main(int argc, char* argv[])
             for (const auto& part : parts)
             {
                 QFile::remove(joinPath(folder, part));
-                qDebug() << "Deleted: " << part;
+                cout << "Deleted: " << part << "\n";
             }
         }
     }

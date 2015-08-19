@@ -188,7 +188,7 @@ QString getPlatformName()
     {
         if (info.dwMinorVersion == 0)
         {
-            if (info.productType == VER_NT_WORKSTATION)
+            if (info.wProductType == VER_NT_WORKSTATION)
                 ret = "Windows 10 Insider Preview";
             else ret = "Windows Server Technical Preview";
         }
@@ -197,7 +197,7 @@ QString getPlatformName()
     {
         if (info.dwMinorVersion == 3)
         {
-            if (info.wProducType == VER_NT_WORKSTATION)
+            if (info.wProductType == VER_NT_WORKSTATION)
                 ret = "Windows 8.1";
             else ret = "Windows Server 2012 R2";
         }

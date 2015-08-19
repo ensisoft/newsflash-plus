@@ -42,7 +42,7 @@ namespace gui
         {
             m_ui.setupUi(this);
 
-            QString str = toString("%1\n\n"
+            QString str = app::toString("%1\n\n"
                 "is a duplicate with\n\n"
                 "%2\n\n"
                 "already downloaded %3",

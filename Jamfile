@@ -70,7 +70,7 @@ project newsflash
     # to allow the binary run on WinXP. 
     # note that it seems to be enough to have this on the executable.
     # so theres no need to dick around with Qt, json, zlib settings.
-    <toolset>msvc:<linkflags>/SUBSYSTEM:WINDOWS,5.01        
+    #<toolset>msvc:<linkflags>/SUBSYSTEM:WINDOWS,5.01        
 ;
 
 if [ os.name ] = NT
@@ -109,7 +109,7 @@ exe newsflash :
   [ glob app/gui/*.h   ]
   [ glob app/gui/*.cpp ]
 
-  app/gui/resource.qrc
+  app/gui/icon.rc
   app/gui/resource.qrc
   app/gui/qtsingleapplication/qtsingleapplication.h
   app/gui/qtsingleapplication/qtsingleapplication.cpp
@@ -131,7 +131,9 @@ exe newsflash :
   qjson
   protobuf/<link>static
   engine/<link>static
-;
+  :
+  <toolset>msvc:<linkflags>/SUBSYSTEM:WINDOWS,5.01        
+  ;
 
 
 install dist_d : newsflash 
