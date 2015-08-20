@@ -93,7 +93,7 @@ namespace gui
         void modelEndReset();
         void modelLayoutChanged();
         void newHeaderInfoAvailable(const QString& group, quint64 numLocal, quint64 numRemote);
-        void newHeaderDataAvailable(const QString& file);
+        void newHeaderDataAvailable(const QString& group, const QString& file);
         void updateCompleted(const app::HeaderInfo& info);
     private:
         bool eventFilter(QObject* recv, QEvent* event);

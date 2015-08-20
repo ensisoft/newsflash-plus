@@ -94,7 +94,7 @@ namespace app
 
     private slots:
         void listCompleted(quint32 acc, const QList<app::NewsGroupInfo>& list);
-        void newHeaderDataAvailable(const QString& file);
+        void newHeaderDataAvailable(const QString& group, const QString& file);
 
     private:
         void setAccountSubscriptions(quint32 accountId);

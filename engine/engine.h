@@ -57,8 +57,10 @@ namespace newsflash
         // this callback is invoked when a update is complete
         using on_update = std::function<void(const ui::update& update)>;
 
-        // 
-        using on_header_data = std::function<void(const std::string& file)>;
+        // this callback is invoked when new data has been written to a
+        // data file belonging to the specified news group.
+        using on_header_data = std::function<void(const std::string& group,
+            const std::string& file)>;
 
         using on_header_info = std::function<void(const std::string& group,
             std::uint64_t num_articles_local, std::uint64_t num_articles_remote)>;

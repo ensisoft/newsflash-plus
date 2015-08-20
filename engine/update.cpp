@@ -477,7 +477,9 @@ void update::complete(action& a, std::vector<std::unique_ptr<action>>& next)
             // another thread via another store task
             for (auto* file : p->updates_)
             {
-                on_write(file->filename());
+                const auto& groupname = state_->group;
+                const auto& filename  = file->filename();
+                on_write(groupname, filename);
             }
         }
     }

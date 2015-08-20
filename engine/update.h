@@ -32,7 +32,13 @@ namespace newsflash
     class update : public task
     {
     public:
-        std::function<void(std::string)> on_write;
+        // callback that is fired when new data has been written
+        // to some of the data files belonging to the group.
+        std::function<void(const std::string& group,
+            const std::string& file)> on_write;
+
+        // callback that is fired when information about the
+        // group is discovered.
         std::function<void(const std::string& group,
             std::uint64_t local, std::uint64_t remote)> on_info;
 

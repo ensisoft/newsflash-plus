@@ -56,8 +56,8 @@ NewsList::NewsList() : sort_(Columns::LAST), order_(Qt::AscendingOrder), size_(0
     QObject::connect(g_engine, SIGNAL(listCompleted(quint32, const QList<app::NewsGroupInfo>&)),
         this, SLOT(listCompleted(quint32, const QList<app::NewsGroupInfo>&)));
 
-    QObject::connect(g_engine, SIGNAL(newHeaderDataAvailable(const QString&)),
-        this, SLOT(newHeaderDataAvailable(const QString&)));
+    QObject::connect(g_engine, SIGNAL(newHeaderDataAvailable(const QString&, const QString&)),
+        this, SLOT(newHeaderDataAvailable(const QString&, const QString&)));
 }
 
 NewsList::~NewsList()
@@ -528,7 +528,7 @@ void NewsList::listCompleted(quint32 acc, const QList<app::NewsGroupInfo>& list)
     emit makeComplete(acc);
 }
 
-void NewsList::newHeaderDataAvailable(const QString& file)
+void NewsList::newHeaderDataAvailable(const QString& newsGroupName, const QString& file)
 {
     if (account_ == 0)
         return;
@@ -541,9 +541,7 @@ void NewsList::newHeaderDataAvailable(const QString& file)
 
     auto it = std::find_if(std::begin(groups_), std::end(groups_),
         [&](const NewsGroup& group) {
-            if (file.indexOf(group.name) != -1)
-                return true;
-            return false;
+            return group.name == newsGroupName;
         });
     if (it == std::end(groups_))
         return;

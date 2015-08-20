@@ -291,7 +291,7 @@ namespace app
     signals:
         void shutdownComplete();
         void newDownloadQueued(const Download& download);
-        void newHeaderDataAvailable(const QString& file);
+        void newHeaderDataAvailable(const QString& group, const QString& file);
         void newHeaderInfoAvailable(const QString& group, quint64 numLocal, quint64 numRemote);
         void fileCompleted(const app::FileInfo& file);
         void packCompleted(const app::FilePackInfo& pack);
@@ -315,7 +315,8 @@ namespace app
         void onBatchComplete(const newsflash::ui::batch& b);
         void onListComplete(const newsflash::ui::listing& l);
         void onUpdateComplete(const newsflash::ui::update& u);
-        void onHeaderDataAvailable(const std::string& file);
+        void onHeaderDataAvailable(const std::string& group,
+            const std::string& file);
         void onHeaderInfoAvailable(const std::string& group,
             std::uint64_t numLocal, std::uint64_t numRemote);
         void onAllComplete();

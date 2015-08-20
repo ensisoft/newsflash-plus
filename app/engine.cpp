@@ -93,7 +93,7 @@ Engine::Engine()
     engine_->set_list_callback(std::bind(&Engine::onListComplete, this,
         std::placeholders::_1));
     engine_->set_header_data_callback(std::bind(&Engine::onHeaderDataAvailable, this,
-        std::placeholders::_1));
+        std::placeholders::_1, std::placeholders::_2));
     engine_->set_header_info_callback(std::bind(&Engine::onHeaderInfoAvailable, this,
         std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
     engine_->set_complete_callback(std::bind(&Engine::onAllComplete, this));
@@ -516,9 +516,9 @@ void Engine::onUpdateComplete(const newsflash::ui::update& u)
     emit updateCompleted(info);
 }
 
-void Engine::onHeaderDataAvailable(const std::string& file)
+void Engine::onHeaderDataAvailable(const std::string& group, const std::string& file)
 {
-    emit newHeaderDataAvailable(widen(file));
+    emit newHeaderDataAvailable(fromUtf8(group), widen(file));
 }
 
 void Engine::onHeaderInfoAvailable(const std::string& group,

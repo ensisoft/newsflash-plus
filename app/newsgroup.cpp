@@ -188,8 +188,8 @@ NewsGroup::NewsGroup() : task_(0)
 {
     DEBUG("NewsGroup created");
 
-    QObject::connect(g_engine, SIGNAL(newHeaderDataAvailable(const QString&)),
-        this, SLOT(newHeaderDataAvailable(const QString&)));
+    QObject::connect(g_engine, SIGNAL(newHeaderDataAvailable(const QString&, const QString&)),
+        this, SLOT(newHeaderDataAvailable(const QString&, const QString&)));
     QObject::connect(g_engine, SIGNAL(newHeaderInfoAvailable(const QString&, quint64, quint64)),
         this, SLOT(newHeaderInfoAvailable(const QString&, quint64, quint64)));
     QObject::connect(g_engine, SIGNAL(updateCompleted(const app::HeaderInfo&)),
@@ -784,7 +784,7 @@ void NewsGroup::deleteData(quint32 account, QString path, QString group)
     INFO("Deleted data directory %1", dataDir);
 }
 
-void NewsGroup::newHeaderDataAvailable(const QString& file)
+void NewsGroup::newHeaderDataAvailable(const QString& group, const QString& file)
 {
     DEBUG("New headers available in %1", file);
 

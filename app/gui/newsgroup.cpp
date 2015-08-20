@@ -79,8 +79,8 @@ NewsGroup::NewsGroup(quint32 acc, QString path, QString name) : account_(acc), p
 
     QObject::connect(app::g_engine, SIGNAL(newHeaderInfoAvailable(const QString&, quint64, quint64)),
         this, SLOT(newHeaderInfoAvailable(const QString&, quint64, quint64)));
-    QObject::connect(app::g_engine, SIGNAL(newHeaderDataAvailable(const QString&)),
-        this, SLOT(newHeaderDataAvailable(const QString&)));
+    QObject::connect(app::g_engine, SIGNAL(newHeaderDataAvailable(const QString&, const QString&)),
+        this, SLOT(newHeaderDataAvailable(const QString&, const QString&)));
     QObject::connect(app::g_engine, SIGNAL(updateCompleted(const app::HeaderInfo&)),
         this, SLOT(updateCompleted(const app::HeaderInfo&)));    
 
@@ -664,7 +664,7 @@ void NewsGroup::newHeaderInfoAvailable(const QString& group, quint64 numLocal, q
     }
 }
 
-void NewsGroup::newHeaderDataAvailable(const QString& file)
+void NewsGroup::newHeaderDataAvailable(const QString& group, const QString& file)
 {
     if (file.indexOf(app::joinPath(path_, name_)) != 0)
         return;
