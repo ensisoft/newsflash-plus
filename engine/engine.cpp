@@ -1563,6 +1563,13 @@ private:
     {
         return statesets_[(int)s] == num_tasks_;
     }
+    bool is_full_set(states a, states b)
+    {
+        const auto num_a = statesets_[(int)a];
+        const auto num_b = statesets_[(int)b];
+        return num_a + num_b == num_tasks_;
+    }
+
     void update(engine::state& state)
     {
         const std::size_t num_states = std::accumulate(std::begin(statesets_),
@@ -1579,8 +1586,12 @@ private:
 
         if (!is_empty_set(states::paused))
             goto_state(state, states::paused);
-        else if (is_full_set(states::complete))
-            goto_state(state, states::complete);
+        else if (is_full_set(states::complete, states::error))
+        {
+            if (is_full_set(states::error))
+                goto_state(state, states::error);
+            else goto_state(state, states::complete);
+        }
         else if (is_full_set(states::error))
             goto_state(state, states::error);
         else if (is_full_set(states::queued))
