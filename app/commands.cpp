@@ -397,6 +397,7 @@ void Commands::firstLaunch()
     Command wmPlayerAudio("C:\\Program Files\\Windows Media Player\\wmplayer.exe", "${file.file}", "Play audio files in a audio player.",
         Condition("file.type", "equals", toString(FileType::Audio)));
     wmPlayerAudio.setWhen(Command::When::OnFileDownload);    
+    wmPlayerAudio.appendCondition(Condition("file.name", "not contains", ".flac"));
 
     commands_.push_back(imgView);
     commands_.push_back(wmPlayerVideo);
