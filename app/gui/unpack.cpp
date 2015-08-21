@@ -119,7 +119,7 @@ void Unpack::loadState(app::Settings& settings)
     const auto keepBroken = settings.get("unpack", "keep_broken", true);
     const auto overwrite  = settings.get("unpack", "overwrite_existing_files", false);
     const auto purge      = settings.get("unpack", "purge_on_success", true);
-    const auto writeLog   = settings.get("unpack", "write_log", false);
+    const auto writeLog   = settings.get("unpack", "write_log", true);
 
     ui_.chkKeepBroken->setChecked(keepBroken);
     ui_.chkOverwriteExisting->setChecked(keepBroken);

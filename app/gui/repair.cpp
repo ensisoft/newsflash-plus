@@ -121,7 +121,7 @@ void Repair::loadState(app::Settings& settings)
     app::loadTableLayout("repair", ui_.repairData, settings);
 
     const auto writeLogs = settings.get("repair", "write_log_files", true);
-    const auto purgePars = settings.get("repair", "purge_recovery_files_on_success", false);
+    const auto purgePars = settings.get("repair", "purge_recovery_files_on_success", true);
     ui_.chkWriteLogs->setChecked(writeLogs);
     ui_.chkPurgePars->setChecked(purgePars);
 

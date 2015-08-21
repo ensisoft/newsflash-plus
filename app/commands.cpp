@@ -390,12 +390,17 @@ void Commands::firstLaunch()
         Condition("file.type", "equals", toString(FileType::Image)));
     imgView.setWhen(Command::When::OnFileDownload);
 
-    Command wmPlayer("C:\\Program Files\\Windows Media Player\\wmplayer.exe", "${file.file}", "Play video files in a video player.",
+    Command wmPlayerVideo("C:\\Program Files\\Windows Media Player\\wmplayer.exe", "${file.file}", "Play video files in a video player.",
         Condition("file.type", "equals", toString(FileType::Video)));
-    wmPlayer.setWhen(Command::When::OnFileDownload);
+    wmPlayerVideo.setWhen(Command::When::OnFileDownload);
+
+    Command wmPlayerAudio("C:\\Program Files\\Windows Media Player\\wmplayer.exe", "${file.file}", "Play audio files in a audio player.",
+        Condition("file.type", "equals", toString(FileType::Audio)));
+    wmPlayerAudio.setWhen(Command::When::OnFileDownload);    
 
     commands_.push_back(imgView);
-    commands_.push_back(wmPlayer);
+    commands_.push_back(wmPlayerVideo);
+    commands_.push_back(wmPlayerAudio);    
 
     SYSTEM_INFO sys;
     GetNativeSystemInfo(&sys);

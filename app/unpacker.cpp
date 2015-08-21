@@ -351,6 +351,7 @@ Unpacker::Unpacker(std::unique_ptr<Archiver> archiver) : engine_(std::move(archi
     cleanup_    = false;
     overwrite_  = false;
     keepBroken_ = true;
+    writeLog_   = true;
 }
 
 Unpacker::~Unpacker()
