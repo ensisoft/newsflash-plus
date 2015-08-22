@@ -178,6 +178,14 @@ QString makeApiUrl(QString host)
     return host;
 }
 
+QString slashCombine(const QString& lhs, const QString& rhs)
+{
+    if (lhs.endsWith("/") || rhs.startsWith("/"))
+        return lhs + rhs;
+
+    return lhs + "/" + rhs;
+}
+
 } // namespace 
 
 namespace app
@@ -232,7 +240,23 @@ Indexer::Error Newznab::parse(QIODevice& io, std::vector<MediaItem>& results)
         if (item.title.isEmpty())
             continue;
 
-        item.nzblink = elem.firstChildElement("link").text();
+        const QString& link = elem.firstChildElement("link").text();
+        if (link.startsWith("https://") || link.startsWith("http://"))
+        {
+            item.nzblink = link;
+        }
+        else
+        {
+            // nzbsooti.sx does not provide whole urls.
+            QString host = apiurl_;
+            if (host.endsWith("/"))
+                host.chop(1);
+            if (host.endsWith("api"))
+                host.chop(3);
+
+            item.nzblink = slashCombine(host, link);
+        }
+
 
         // the GUID is RSS is in HTTP URL format... we only need the ID part.
         // for example: http://nzb.su/details/51216cf764458c19d61fc0ede42ad52c
