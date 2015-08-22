@@ -63,6 +63,8 @@ void ArchiveManager::packCompleted(const app::FilePackInfo& pack)
 
     QStringList files;
 
+    bool haveRepairs = false;
+
     QDir dir;
     dir.setPath(pack.path);
     dir.setNameFilters(QStringList("*.par2"));
@@ -93,6 +95,27 @@ void ArchiveManager::packCompleted(const app::FilePackInfo& pack)
             pack.path, m_repairs[pack.path]);
 
         m_pendingArchives.insert(arc.getGuid());
+
+        haveRepairs = true;
+    }
+    if (!haveRepairs)
+    {
+        QDir dir;
+        dir.setPath(pack.path);
+        const QStringList& entries = dir.entryList();
+        const QStringList& volumes = m_unpacker.findUnpackVolumes(entries);
+        for (const auto& vol : volumes)
+        {
+            Archive unrar;
+            unrar.path  = pack.path;
+            unrar.file  = vol;
+            unrar.desc  = vol;
+            unrar.state = Archive::Status::Queued;
+            m_unpacker.addUnpack(unrar);
+            m_unpacks.insert(pack.path + "/" + vol);
+
+            m_pendingArchives.insert(unrar.getGuid());
+        }
     }
 
     emit numPendingArchives(m_pendingArchives.size());    
