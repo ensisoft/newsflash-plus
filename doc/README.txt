@@ -8,42 +8,10 @@ software. I hope you enjoy it.
 If you find any bugs or problems or just feel like you have
 a great idea for a new feature dont't hesitate to contact me.
 
-I recommend you check the documentation for tips on how to
-make the most ouf of the software.
+Visit these online resources to find out more.
 
-Known Bugs:
-
-- Using "Compressed headers" setting breaks refreshing the newsgroup listing.
-- Sometimes SSL connections stop working. Either restart or change to TCP.
-- Unrar progress bar doesn't always work.
-
-Known problems on Microsoft Windows XP:
-
-- If you download files to a path that has Unicode characters 
-  (for example Japanese, Chinese etc), automatic par2 repair 
-  and .rar extraction will not work. This is not a limitation of Newsflash Plus
-  but a problem in the tools.  
-
-- There is no uninstaller. If you want to uninstall the application
-  simply find the installation folder (e.g. C:\Program Files\Newsflash on standard installation)
-  and delete the whole folder.
-  Configuration files can be removed by deleting the config folder C:\Documents And Settings\USERNAME\.newsflash
-  There are no registry entries created by the program
-
-- Sometimes after opening a file open dialog the window on the background goes blank.
-  As a work around try using a non-default theme, such as Windows XP.
-
-- Sometimes opening folders (Go to folder) hangs. This seems to be a Windows Explorer issue.
-
-
-Known problems on Linux Desktops:
-
-- If you're running Gnome sometimes not all icons (in menus and buttons) are visible.
-  The fix for this is to run the following commands:
-  
-  gconftool-2 --type boolean --set /desktop/gnome/interface/buttons_have_icons true
-  gconftool-2 --type boolean --set /desktop/gnome/interface/menus_have_icons true
-
+http://www.ensisoft.com/
+http://www.ensisoft.com/forum
 
 Shutting down PC on Linux machines:
 
