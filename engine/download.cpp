@@ -43,10 +43,11 @@ namespace newsflash
 download::download(std::vector<std::string> groups, std::vector<std::string> articles, std::string path, std::string name) : 
     groups_(std::move(groups)), articles_(std::move(articles)),  path_(std::move(path))
 {
-    name_        = fs::remove_illegal_filename_chars(name);
-    overwrite_   = false;
-    discardtext_ = false;
-    yenc_        = false;
+    name_         = fs::remove_illegal_filename_chars(name);
+    overwrite_    = false;
+    discardtext_  = false;
+    yenc_         = false;
+    decode_jobs_  = articles_.size();
 
     const auto pos = name.find("yEnc");
     if (pos != std::string::npos)
@@ -102,6 +103,22 @@ void download::cancel()
 
 void download::commit()
 {
+    if (!stash_.empty())
+    {
+        std::shared_ptr<datafile> file = create_file(stash_name_, 0);
+
+        // collect the stuff from the stash.
+        for (auto& p : stash_)
+        {
+            if (!p) continue;
+
+            std::unique_ptr<action> write(new datafile::write(0, std::move(*p), file));
+            write->perform();
+            p.reset();
+        }
+        stash_.clear();
+    }
+
     // release our file handles so that we dont keep the file objects
     // open anymore needlessly. yet we keep the file objects around
     // since our other data is stored there.
@@ -121,56 +138,77 @@ void download::complete(action& act, std::vector<std::unique_ptr<action>>& next)
     auto text   = dec->get_text_data_move(); //std::move(*dec).get_text_data();
     auto name   = dec->get_binary_name();
 
+    // process the binary data.
     if (!binary.empty())
     {
         const auto enc = dec->get_encoding();
-
-        // see comment in datafile about the +1 for offset
-        const auto offset = enc == encoding::yenc_multi ?
-           dec->get_binary_offset() + 1 : 0;
-
-        const auto size = dec->get_binary_size();
-
-        if (name.empty())
+        if (enc == decode::encoding::yenc)
         {
-            if (enc != encoding::uuencode_multi)
-                throw std::runtime_error("binary has no name");
+            // see comment in datafile about the +1 for offset
+            const auto offset = dec->has_offset() ?
+                dec->get_binary_offset() + 1 : 0;
+            const auto size = dec->get_binary_size();
 
-            if (files_.empty())
+            std::shared_ptr<datafile> file = create_file(name, size);
+            std::unique_ptr<action> write(new datafile::write(offset, std::move(binary), file));
+            next.push_back(std::move(write));
+        }
+        else if (enc == decode::encoding::uuencode)
+        {
+            // uuencode is a cumbersome encoding scheme. it's used mostly for pictures
+            // and large pictures are split into multiple posts. however the encoding itself
+            // provides no means for identifying the order of chunks. so basically we can
+            // only encoding a maximum of 3 part binary properly since we can identify 
+            // the beginning and ending chunks. if a post has more parts than that the
+            // ordering of the parts between begin and end is unknown and we have to hope
+            // that the subject line convention has given us the ordering. 
+            // the subject line based ordering is then implied here through the order
+            // of the article ids and by queuing the decoding actions to a single thread
+            // so that the same ordering is maintained throughout. 
+
+            if (dec->is_multipart())
             {
-                std::copy(std::begin(binary), std::end(binary), std::back_inserter(stash_));
-                return;
+                if (stash_.empty())
+                    stash_.resize(decode_jobs_);
+
+                if (dec->is_first_part())
+                {
+                    std::unique_ptr<stash> s(new stash(std::move(binary)));
+                    stash_[0]   = std::move(s);
+                    stash_name_ = name;
+                }
+                else if (dec->is_last_part())
+                {
+                    std::unique_ptr<stash> s(new stash(std::move(binary)));
+                    stash_[decode_jobs_ - 1] = std::move(s);                    
+                }
+                else 
+                {
+                    std::size_t index;
+                    for (index=1; index<decode_jobs_ - 1; ++index)
+                    {
+                        auto& p = stash_[index];
+                        if (!p)
+                            break;
+                    }
+                    std::unique_ptr<stash> s(new stash(std::move(binary)));
+                    stash_[index] = std::move(s);                    
+                } 
             }
             else
             {
-                name = files_.front()->binary_name();
+                std::shared_ptr<datafile> file= create_file(name, 0);
+                std::unique_ptr<action> write(new datafile::write(0, std::move(binary), file));
+                next.push_back(std::move(write));
             }
         }
-
-        std::copy(std::begin(stash_), std::end(stash_), std::back_inserter(binary));
-        stash_.clear();
-
-        std::shared_ptr<datafile> file;
-
-        auto it = std::find_if(std::begin(files_), std::end(files_),
-            [=](const std::shared_ptr<datafile>& f) {
-                return f->is_binary() && f->binary_name() == name;
-            });
-        if (it == std::end(files_))
+        else
         {
-            file = std::make_shared<datafile>(path_, name, size, true, overwrite_);
-            files_.push_back(file);
-        } 
-        else 
-        {
-            file = *it;
-            assert(file->is_open());
+            throw std::runtime_error("Unsupported binary encoding");
         }
-
-        std::unique_ptr<action> write(new datafile::write(offset, std::move(binary), file));
-        next.push_back(std::move(write));
     }
 
+    // process the text data unless it's to be discarded.
     if (!text.empty() && !discardtext_)
     {
         std::shared_ptr<datafile> file;
@@ -210,8 +248,9 @@ void download::complete(cmdlist& cmd, std::vector<std::unique_ptr<action>>& next
         // create a decoding job and push into the output queue
         if (status == buffer::status::success)
         {
-            std::unique_ptr<action> dec(new decode(std::move(content)));
+            std::unique_ptr<decode> dec(new decode(std::move(content)));
             dec->set_affinity(affinity);
+            //dec->set_decoding_id(decode_index_);
             next.push_back(std::move(dec));
         }
     }
@@ -238,6 +277,31 @@ std::size_t download::max_num_actions() const
     // 2 actions per each article. decode and write.
     return articles_.size() * 2;
 }
+
+std::shared_ptr<datafile> download::create_file(const std::string& name, std::size_t assumed_size)
+{
+    if (name.empty())
+        throw std::runtime_error("binary has no name");
+
+    std::shared_ptr<datafile> file;
+
+    auto it = std::find_if(std::begin(files_), std::end(files_),
+        [=](const std::shared_ptr<datafile>& f) {
+            return f->is_binary() && f->binary_name() == name;
+        });
+    if (it == std::end(files_))
+    {
+        file = std::make_shared<datafile>(path_, name, assumed_size, true, overwrite_);
+        files_.push_back(file);
+    } 
+    else 
+    {
+        file = *it;
+        assert(file->is_open());
+    }    
+    return file;
+}
+
 
 } // newsflash
 

@@ -20,7 +20,9 @@
 
 #include <newsflash/config.h>
 
-#include <boost/test/minimal.hpp>
+#include <newsflash/warnpush.h>
+#  include <boost/test/minimal.hpp>
+#include <newsflash/warnpop.h>
 #include "../decode.h"
 #include "unit_test_common.h"
 
@@ -39,7 +41,7 @@ void unit_test_yenc_single()
         BOOST_REQUIRE(dec.get_binary_size() == png.size());
         BOOST_REQUIRE(dec.get_binary_name() == "test.png");
         BOOST_REQUIRE(dec.get_errors().any_bit() == false);
-        BOOST_REQUIRE(dec.get_encoding() == nf::encoding::yenc_single);
+        BOOST_REQUIRE(dec.get_encoding() == nf::decode::encoding::yenc);
 
         const auto& bin = dec.get_binary_data();
         const auto& txt = dec.get_text_data();
@@ -153,6 +155,9 @@ void unit_test_uuencode_single()
         BOOST_REQUIRE(dec.get_binary_offset() == 0);
         BOOST_REQUIRE(dec.get_binary_size() == 0);
         BOOST_REQUIRE(dec.get_binary_name() == "test");
+        BOOST_REQUIRE(dec.is_multipart() == false);
+        BOOST_REQUIRE(dec.is_first_part() == true);
+        BOOST_REQUIRE(dec.is_last_part() == true);
 
         const auto& bin = dec.get_binary_data();
         BOOST_REQUIRE(bin == png);
@@ -164,14 +169,70 @@ void unit_test_uuencode_single()
 
 void unit_test_uuencode_multi()
 {
-    // todo:    
+    // succesful decode
+    {
+        std::vector<char> out;
+
+        // first part
+        {
+            nf::decode dec(read_file_buffer("test_data/1489406.jpg-001.uuencode"));
+            dec.perform();
+
+            BOOST_REQUIRE(dec.get_binary_offset() == 0);
+            BOOST_REQUIRE(dec.get_binary_size() == 0);
+            BOOST_REQUIRE(dec.get_binary_name() == "1489406.jpg");
+            BOOST_REQUIRE(dec.is_multipart() == true);
+            BOOST_REQUIRE(dec.is_first_part() == true);
+            BOOST_REQUIRE(dec.is_last_part() == false);
+
+            const auto& bin = dec.get_binary_data();
+            std::copy(bin.begin(), bin.end(), std::back_inserter(out));
+
+        }
+
+        // second part
+        {
+            nf::decode dec(read_file_buffer("test_data/1489406.jpg-002.uuencode"));
+            dec.perform();
+
+            BOOST_REQUIRE(dec.get_binary_offset() == 0);
+            BOOST_REQUIRE(dec.get_binary_size() == 0);
+            BOOST_REQUIRE(dec.get_binary_name() == "");
+            BOOST_REQUIRE(dec.is_multipart() == true);
+            BOOST_REQUIRE(dec.is_first_part() == false);
+            BOOST_REQUIRE(dec.is_last_part() == false);
+
+            const auto& bin = dec.get_binary_data();
+            std::copy(bin.begin(), bin.end(), std::back_inserter(out));
+
+        }
+
+        // third part        
+        {
+            nf::decode dec(read_file_buffer("test_data/1489406.jpg-003.uuencode"));
+            dec.perform();
+
+            BOOST_REQUIRE(dec.get_binary_offset() == 0);
+            BOOST_REQUIRE(dec.get_binary_size() == 0);
+            BOOST_REQUIRE(dec.get_binary_name() == "");
+            BOOST_REQUIRE(dec.is_multipart() == true);
+            BOOST_REQUIRE(dec.is_first_part() == false);
+            BOOST_REQUIRE(dec.is_last_part() == true);
+
+            const auto& bin = dec.get_binary_data();
+            std::copy(bin.begin(), bin.end(), std::back_inserter(out));
+        }
+
+        const auto jpg = read_file_contents("test_data/1489406.jpg");
+
+        BOOST_REQUIRE(jpg == out);
+    }    
 }
 
 int test_main(int, char*[])
 {
     unit_test_yenc_single();
     unit_test_yenc_multi();
-
     unit_test_uuencode_single();
     unit_test_uuencode_multi();
 

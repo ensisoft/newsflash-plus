@@ -71,13 +71,21 @@ namespace newsflash
 
         const std::string& path() const 
         { return path_; }
+
     private:
+        std::shared_ptr<datafile> create_file(const std::string& name, std::size_t assumed_size);
+
+    private:
+        using stash = std::vector<char>;
+
         std::vector<std::string> groups_;
         std::vector<std::string> articles_;
         std::vector<std::shared_ptr<datafile>> files_;
-        std::vector<char> stash_;
+        std::vector<std::unique_ptr<stash>> stash_;
         std::string path_;
         std::string name_;
+        std::string stash_name_;
+        std::size_t decode_jobs_;
     private:
         bool overwrite_;
         bool discardtext_;

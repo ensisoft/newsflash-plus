@@ -67,7 +67,7 @@ void unit_test_create_cmds()
 
 }
 
-void unit_test_decode_binary()
+void unit_test_decode_yenc()
 {
     delete_file("1489406.jpg");
 
@@ -104,6 +104,46 @@ void unit_test_decode_binary()
     BOOST_REQUIRE(jpg == ref);
 
     delete_file("1489406.jpg");    
+}
+
+void unit_test_decode_uuencode()
+{
+    delete_file("1489406.jpg");
+
+    nf::download download({"alt.binaries.foobar"}, {"1", "2", "3"}, "", "test");
+    nf::session session;
+    session.on_send = [&](const std::string&) {};
+
+    auto cmdlist = download.create_commands();
+
+    cmdlist->submit_data_commands(session);
+    cmdlist->receive_data_buffer(read_file_buffer("test_data/1489406.jpg-003.uuencode"));    
+    cmdlist->receive_data_buffer(read_file_buffer("test_data/1489406.jpg-001.uuencode"));
+    cmdlist->receive_data_buffer(read_file_buffer("test_data/1489406.jpg-002.uuencode"));
+
+    std::vector<std::unique_ptr<nf::action>> actions1;
+    std::vector<std::unique_ptr<nf::action>> actions2;
+    download.complete(*cmdlist, actions1);
+
+    while (!actions1.empty())
+    {
+        for (auto& it : actions1)
+        {
+            it->perform();
+            download.complete(*it, actions2);
+        }
+        actions1 = std::move(actions2);
+        actions2 = std::vector<std::unique_ptr<nf::action>>();
+    }
+
+    download.commit();
+
+    const auto& jpg = read_file_contents("1489406.jpg");
+    const auto& ref = read_file_contents("test_data/1489406.jpg");
+    BOOST_REQUIRE(jpg == ref);    
+
+    delete_file("1489406.jpg");        
+
 }
 
 void unit_test_decode_text()
@@ -157,10 +197,13 @@ void unit_test_decode_from_files()
     }
 }
 
+
+
 int test_main(int, char*[])
 {
     unit_test_create_cmds();
-    unit_test_decode_binary();
+    unit_test_decode_yenc();
+    unit_test_decode_uuencode();    
     unit_test_decode_text();
     unit_test_decode_from_files();
     return 0;

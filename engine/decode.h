@@ -37,6 +37,10 @@ namespace newsflash
     class decode : public action
     {
     public:
+        enum class encoding {
+            yenc, uuencode, unknown
+        };
+
         // gets throw when decoding has encountered
         // an unrecoverable error and to continue is impossible
         class exception : public std::exception
@@ -110,6 +114,18 @@ namespace newsflash
         encoding get_encoding() const
         { return encoding_; }
 
+        bool is_multipart() const
+        { return multipart_; }
+
+        bool is_first_part() const 
+        { return first_part_; }
+
+        bool is_last_part() const 
+        { return last_part_; }
+
+        bool has_offset() const
+        { return binary_offset_ != 0; }
+
     private:
         virtual void xperform() override;
         std::size_t decode_yenc_single(const char* data, std::size_t len);
@@ -128,6 +144,10 @@ namespace newsflash
         encoding encoding_;
     private:
         bitflag<error> errors_;
+    private:
+        bool multipart_;
+        bool first_part_;
+        bool last_part_;
     };
 
 } // newsflash

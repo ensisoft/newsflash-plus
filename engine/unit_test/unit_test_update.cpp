@@ -418,7 +418,7 @@ void unit_test_data()
 
         auto cmd = u.create_commands();
 
-        newsflash::buffer buff(1024);
+        newsflash::buffer buff(1024 * 5);
         buff.append("211 49999 1 500000 alt.binaries.test group selected\r\n");
         buff.set_content_length(std::strlen("211 49999 1 500000 alt.binaries.test group selected\r\n"));        
         buff.set_content_start(0);
@@ -446,6 +446,32 @@ void unit_test_data()
         ov.number.start    = "103";        
         ov.messageid.start = "<103>";        
         str += nntp::make_overview(ov);
+
+        // uuencoded multipart binary.
+        ov.author.start    = "ensi@gmail.com";
+        ov.subject.start   = "Kelli Smith (v2) IMG_0108.JPEG (3/3)";
+        ov.bytecount.start = "1024";
+        ov.date.start      = "Tue, 13 May 2006 00:00:00";
+        ov.number.start    = "303";
+        ov.messageid.start = "<300>";
+        str += nntp::make_overview(ov);        
+
+        ov.author.start    = "ensi@gmail.com";
+        ov.subject.start   = "Kelli Smith (v2) IMG_0108.JPEG (1/3)";
+        ov.bytecount.start = "1024";
+        ov.date.start      = "Tue, 13 May 2006 00:00:00";
+        ov.number.start    = "301";
+        ov.messageid.start = "<100>";        
+        str += nntp::make_overview(ov);                
+
+        ov.author.start    = "ensi@gmail.com";
+        ov.subject.start   = "Kelli Smith (v2) IMG_0108.JPEG (2/3)";
+        ov.bytecount.start = "1024";
+        ov.date.start      = "Tue, 13 May 2006 00:00:00";
+        ov.number.start    = "302";
+        ov.messageid.start = "<200>";                
+        str += nntp::make_overview(ov);                                
+
 
         buff.clear();
         buff.append(str);
@@ -481,7 +507,7 @@ void unit_test_data()
 
         catalog db;
         db.open("alt.binaries.test/vol000000000000000.dat");
-        BOOST_REQUIRE(db.size() == 6);
+        BOOST_REQUIRE(db.size() == 7);
 
         arraydb idb;
         idb.open("alt.binaries.test/alt.binaries.test.idb");        
@@ -542,8 +568,18 @@ void unit_test_data()
         BOOST_REQUIRE(a.num_parts_avail() == 2);
         BOOST_REQUIRE(a.is_broken() == false);
         BOOST_REQUIRE(idb[a.idbkey() + 1] + a.number() == 103);   
-        BOOST_REQUIRE(idb[a.idbkey() + 2] + a.number() == 102);             
+        BOOST_REQUIRE(idb[a.idbkey() + 2] + a.number() == 102);            
 
+        off += a.size_on_disk();
+        a = db.load(off);
+        BOOST_REQUIRE(a.subject() == "Kelli Smith (v2) IMG_0108.JPEG (3/3)");
+        BOOST_REQUIRE(a.author() == "ensi@gmail.com");
+        BOOST_REQUIRE(a.num_parts_total() == 3);
+        BOOST_REQUIRE(a.num_parts_avail() == 3);
+        BOOST_REQUIRE(a.is_broken() == false);
+        BOOST_REQUIRE(idb[a.idbkey() + 1] + a.number() == 301);
+        BOOST_REQUIRE(idb[a.idbkey() + 2] + a.number() == 302);        
+        BOOST_REQUIRE(idb[a.idbkey() + 3] + a.number() == 303);                
     }
 }
 
@@ -648,11 +684,11 @@ void unit_test_index()
     //delete_file("alt.binaries.test.nfo");    
 }
 
+
 int test_main(int, char* [])
 {
     unit_test_ranges();
     unit_test_data();
     //unit_test_index();
-
     return 0;
 }

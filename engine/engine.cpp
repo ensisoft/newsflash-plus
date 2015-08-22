@@ -2010,7 +2010,7 @@ bool engine::pump()
                     const auto& buff = buffers[i];
                     std::ofstream out;
                     std::stringstream ss;
-                    ss << "/tmp/Newsflash" << commands[i] << ".txt";
+                    ss << "/tmp/Newsflash/" << commands[i] << ".txt";
                     std::string file;
                     ss >> file;
                     out.open(file, std::ios::binary | std::ios::app);

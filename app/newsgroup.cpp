@@ -672,7 +672,7 @@ void NewsGroup::download(const QModelIndexList& list, quint32 acc, QString folde
                     idlist_.open(narrow(file));
                 }
 
-                const std::int16_t segment = idlist_[idbKey + i];
+                const std::int16_t segment = idlist_[index];
                 if (segment == 0)
                     continue;
                 const auto number = baseSegment + segment;
