@@ -73,6 +73,8 @@ Search::Search(SearchModule& module) : module_(module)
     model_.OnReadyCallback = [=]() {
         ui_.progress->setVisible(false);
         ui_.actionStop->setEnabled(false);
+        ui_.actionRefresh->setEnabled(true);
+        ui_.btnSearch->setEnabled(true);
     };
 
     model_.OnSearchCallback = [=](bool emptyResult) {
@@ -219,6 +221,8 @@ void Search::on_actionStop_triggered()
     model_.stop();
     ui_.actionStop->setEnabled(false);
     ui_.progress->setVisible(false);
+    ui_.btnSearch->setEnabled(true);
+    ui_.actionRefresh->setEnabled(true);
 }
 
 void Search::on_actionSettings_triggered()
@@ -552,6 +556,9 @@ void Search::beginSearch(quint32 queryOffset, quint32 querySize)
     ui_.actionDownload->setEnabled(false);
     ui_.actionOpen->setEnabled(false);
     ui_.actionSave->setEnabled(false);    
+    ui_.actionRefresh->setEnabled(false);
+    ui_.btnSearchMore->setEnabled(false);
+    ui_.btnSearch->setEnabled(false);
 }
 
 
