@@ -18,8 +18,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#pragma once
-
 #include "config.h"
 
 // note that GCC and clang don't give the same warnings, hence
@@ -32,6 +30,7 @@
 #  pragma clang diagnostic ignored "-Wuninitialized"
 #  pragma clang diagnostic ignored "-Wc++11-long-long"
 #  pragma clang diagnostic ignored "-Winconsistent-missing-override"
+#  pragma clang diagnostic ignored "-Wunused-local-typedefs"
 #elif defined(__GCC__)
   // for boost
 #  pragma GCC diagnostic push 
