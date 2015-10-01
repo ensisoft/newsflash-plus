@@ -187,7 +187,7 @@ namespace newsflash
             m_partno = 0;
         }
 
-        bitflag<fileflag> bits() const
+        bitflag<fileflag, std::uint8_t> bits() const
         { return m_bits; }
 
         std::uint32_t index() const 
