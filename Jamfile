@@ -71,11 +71,35 @@ project newsflash
     # todo: whats the flag for clang??
     <toolset>gcc:<linkflags>-rdynamic    
 
+    # https://msdn.microsoft.com/en-us/library/fcc1zstk.aspx
+    #
     # this option is needed starting with msvc2012(?) 
     # to allow the binary run on WinXP. 
     # note that it seems to be enough to have this on the executable.
     # so theres no need to dick around with Qt, json, zlib settings.
+    # WINDOWS, creates a win32 application that uses WinMain, no console.
+    # CONSOLE, creates a console application that uses main(), system created console.
     #<toolset>msvc:<linkflags>/SUBSYSTEM:WINDOWS,5.01        
+
+    # https://msdn.microsoft.com/en-us/library/dn502518.aspx
+    # https://msdn.microsoft.com/en-us/library/958x11bc.aspx
+    # 
+    # /Zi turns on the .pdb generation. We want this for our release build
+    # so that we can do post-mortem debuggin with the generated minidump and pdb.
+    # /FS is needed for parallel build, it forces debug data to be written through 
+    # a serialized a surrogate process.
+    # Note that /Zi names the .pdb file as vcx0.pdb where the x is the version number
+    # so for example vc120.pdb
+    <variant>release,<toolset>msvc:<cflags>/Zi
+    <variant>release,<toolset>msvc:<cflags>/FS
+
+
+    # http://www.wintellect.com/devcenter/jrobbins/correctly-creating-native-c-release-build-pdbs
+    # need to tell the linker also about the debug data.
+    <variant>release,<toolset>msvc:<linkflags>/DEBUG
+    <variant>release,<toolset>msvc:<linkflags>/OPT:REF
+    <variant>release,<toolset>msvc:<linkflags>/OPT:ICF        
+
 ;
 
 if [ os.name ] = NT
