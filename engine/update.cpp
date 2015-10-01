@@ -255,7 +255,7 @@ update::update(std::string path, std::string group) : local_last_(0), local_firs
     std::ifstream in(nfo, std::ios::in | std::ios::binary);
 #elif defined(WINDOWS_OS)
     // msvc extension    
-    std::ifstream in(utf8::decode(nfo), std::ios::in);
+    std::ifstream in(utf8::decode(nfo), std::ios::in | std::ios::binary);
 #endif
     if (in.is_open())
     {
@@ -267,14 +267,17 @@ update::update(std::string path, std::string group) : local_last_(0), local_firs
         in.read((char*)&local_last_, sizeof(local_last_));
 
         const auto num_items = (size - (sizeof(local_first_) + sizeof(local_last_))) / sizeof(uint32_t);
-        std::vector<std::uint32_t> vec;
-        vec.resize(num_items);
-        in.read((char*)&vec[0], num_items * sizeof(std::uint32_t));
-        for (std::size_t i=0; i<vec.size(); i+=2)
+        if (num_items)
         {
-            const auto key = vec[i];
-            const auto val = vec[i+1];
-            state_->hashmap.insert(std::make_pair(key, val));
+            std::vector<std::uint32_t> vec;
+            vec.resize(num_items);
+            in.read((char*)&vec[0], num_items * sizeof(std::uint32_t));
+            for (std::size_t i=0; i<vec.size(); i+=2)
+            {
+                const auto key = vec[i];
+                const auto val = vec[i+1];
+                state_->hashmap.insert(std::make_pair(key, val));
+            }
         }
         xover_last_  = local_last_;
         xover_first_ = local_first_;

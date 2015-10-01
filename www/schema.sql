@@ -25,15 +25,6 @@ CREATE TABLE `feedback` (
        PRIMARY KEY (`id`)
        );
 
-/* import counts for importing newznab settings */
-CREATE TABLE `import` (
-       `id`         INT UNSIGNED NOT NULL AUTO_INCREMENT,
-       `platform`   VARCHAR(10),
-       `host`       VARCHAR(255),
-       `date`       TIMESTAMP DEFAULT NOW(),
-       PRIMARY KEY(`id`)
-       );
-
 /* automatic update tracking */
 CREATE TABLE `newsflash2` (
        `fingerprint` VARCHAR(64),

@@ -31,7 +31,7 @@
   function sql_string($str)
   {
       if (isset($str))
-          return "'" . addslashes(strip_tags($str)) . "'";
+          return "'" . mysql_real_escape_string(strip_tags($str)) . "'";
       // this is good for SQL embedding
       return "NULL";
   }

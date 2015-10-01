@@ -135,7 +135,7 @@ namespace newsflash
     template<typename Enum, typename Bits>
     auto operator & (bitflag<Enum, Bits> lhs, Enum e) -> decltype(lhs)
     {
-        return lhs & bitflag<Enum>(e);
+        return lhs & bitflag<Enum, Bits>(e);
     }
 
 } // newsflash
