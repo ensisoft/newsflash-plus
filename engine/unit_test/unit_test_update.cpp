@@ -36,6 +36,8 @@
 void unit_test_ranges()
 {
     delete_file("alt.binaries.test/alt.binaries.test.nfo");
+    
+    fs::createpath("alt.binaries.test");
 
     std::string str;
     newsflash::session session;
