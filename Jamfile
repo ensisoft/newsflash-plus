@@ -60,6 +60,11 @@ project newsflash
     # if this is not defined linking problems ensue on msvc
     <define>BOOST_ALL_NO_LIB
 
+    # enable checked iterators on gcc.
+    # this is a debug flag and unfortunately has some 
+    # side effects such as breaking boost.regex.
+    #<toolset>gcc:<cflags>-D_GLIBCXX_DEBUG
+
 
     # we need -rdynamic for backtrace and backtrace_symbols
     # in order to dump a stacktrace from the assert
