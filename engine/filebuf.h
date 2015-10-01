@@ -23,6 +23,7 @@
 #include <newsflash/config.h>
 #include <memory>
 #include <vector>
+#include <string>
 
 namespace newsflash
 {
