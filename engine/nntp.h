@@ -35,9 +35,65 @@
 #include <cstddef>
 #include <cstdint>
 #include <exception>
+#include <iterator>
 
 namespace nntp
 {
+    class reverse_c_str_iterator :
+        public std::iterator<std::bidirectional_iterator_tag, char>
+    {
+    public:
+        reverse_c_str_iterator() : ptr_(nullptr) {}
+        reverse_c_str_iterator(const char* str) : ptr_(str) {}
+
+        // postfix
+        reverse_c_str_iterator operator++(int)
+        {
+            reverse_c_str_iterator it(*this);
+            --ptr_;
+            return it;
+        }
+        reverse_c_str_iterator& operator++()
+        {
+            --ptr_;
+            return *this;
+        }
+        // postfix
+        reverse_c_str_iterator operator--(int)
+        {
+            reverse_c_str_iterator it(*this);
+            ++ptr_;
+            return it;
+        }
+        reverse_c_str_iterator& operator--()
+        {
+            ++ptr_;
+            return *this;
+        }
+    
+        const char& operator*() const
+        {
+            assert(ptr_);
+            return *ptr_;
+        }
+        
+        const char* as_ptr() const
+        {
+            return ptr_;
+        }
+        bool operator != (const reverse_c_str_iterator& rhs) const
+        {
+            return ptr_ != rhs.ptr_;
+        }
+        bool operator == (const reverse_c_str_iterator& rhs) const
+        {
+            return ptr_ == rhs.ptr_;
+        }
+    
+    private:
+        const char* ptr_;
+    };
+
     // broken down Usenet article overview fields.
     struct overview {
         struct field {

@@ -31,6 +31,20 @@
 #include <ctime>
 #include "../nntp.h"
 
+void test_reverse_iterator()
+{
+    const char* str = "jeesus ajaa mopolla";
+
+    nntp::reverse_c_str_iterator beg(str + std::strlen(str) -1);
+    nntp::reverse_c_str_iterator end(str - 1);
+    std::string s;
+
+    for (; beg != end; ++beg)
+        s += *beg;
+
+    BOOST_REQUIRE(s == "allopom aaja suseej");
+}
+
 void test_parse_overview()
 {
     const auto& REQUIRE = [](const nntp::overview::field& field, const char* expected)
@@ -752,6 +766,7 @@ void test_hash()
 
 int test_main(int, char* [])
 {
+    test_reverse_iterator();
     test_parse_overview();
     test_parse_date();
     test_parse_part();
