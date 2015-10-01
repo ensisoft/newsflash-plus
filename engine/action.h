@@ -73,7 +73,7 @@ namespace newsflash
         // perform the action
         void perform()
         {
-            set_thread_log(log_.get());
+            logger* prev = set_thread_log(log_.get());
             try
             {
                 xperform();
@@ -85,7 +85,7 @@ namespace newsflash
                 if (log_)
                     log_->flush();
             }
-            set_thread_log(nullptr);
+            set_thread_log(prev);
         }
 
         virtual std::string describe() const
