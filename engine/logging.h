@@ -25,6 +25,7 @@
 #include <fstream>
 #include <ostream>
 #include <cerrno>
+#include <mutex>
 #include "format.h"
 #include "utf8.h"
 
@@ -110,11 +111,13 @@ namespace newsflash
         }
         virtual void write(const std::string& msg) override
         {
+            std::lock_guard<std::mutex> lock(mutex_);            
             out_ << msg;
         }
 
         virtual void flush() override
         {
+            std::lock_guard<std::mutex> lock(mutex_);            
             out_.flush();
         }
 
@@ -126,6 +129,7 @@ namespace newsflash
     private:
         std::ofstream out_;
         std::string file_;
+        std::mutex mutex_;        
     };
 
     class stdlog : public logger
@@ -135,10 +139,12 @@ namespace newsflash
         {}
         virtual void write(const std::string& msg) override
         { 
+            std::lock_guard<std::mutex> lock(mutex_);
             out_ << msg;
         }
         virtual void flush() override
         {
+            std::lock_guard<std::mutex> lock(mutex_);            
             out_.flush();
         }
 
@@ -149,6 +155,7 @@ namespace newsflash
         { return "stdlog"; }
     private:
         std::ostream& out_;
+        std::mutex mutex_;
     };
 
     logger* get_thread_log();

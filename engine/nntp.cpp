@@ -132,7 +132,7 @@ const char* find_part_count(const char* subjectline, std::size_t len, std::size_
 {
     // NOTE: the regex is in reverse because the search is from the tail
     // this matches "metallica - enter sandman.mp3 (01/50)"
-     const static boost::regex ex("(\\]|\\))[0-9]*/[0-9]*(\\(|\\[)");
+     const /*static*/ boost::regex ex("(\\]|\\))[0-9]*/[0-9]*(\\(|\\[)");
     
      nntp::reverse_c_str_iterator itbeg(subjectline + len - 1);
      nntp::reverse_c_str_iterator itend(subjectline - 1);
@@ -192,9 +192,9 @@ bool is_binary_post(const char* str, size_t len)
     // 1 to find whether a post is should be collapsed, i.e. is multipart post
     // 2 to find whether the post is a binary post
     // http://www.boost.org/libs/regex/doc/syntax_perl.html      
-    const static boost::regex filename(REVERSE_FILE_EXTENSION_REGEX, boost::regbase::icase | boost::regbase::perl);
-    const static boost::regex yenc("yEnc *\\([0-9]*/[0-9]*\\)");
-    const static boost::regex part("\\([0-9]*/[0-9]*\\)|yEnc");
+    const /*static*/ boost::regex filename(REVERSE_FILE_EXTENSION_REGEX, boost::regbase::icase | boost::regbase::perl);
+    const /*static*/ boost::regex yenc("yEnc *\\([0-9]*/[0-9]*\\)");
+    const /*static*/ boost::regex part("\\([0-9]*/[0-9]*\\)|yEnc");
 
     const char* start = str + len - 1;
     const char* end   = nullptr;
@@ -576,7 +576,7 @@ std::string find_filename(const char* str, size_t len, bool include_extension)
 {
     using namespace boost::spirit::classic;
 
-    const static boost::regex regex(REVERSE_FILE_EXTENSION_REGEX, boost::regbase::icase | boost::regbase::perl);
+    const /* static*/ boost::regex regex(REVERSE_FILE_EXTENSION_REGEX, boost::regbase::icase | boost::regbase::perl);
     
     // see if it's an yEnc subjectline match.
     {
@@ -669,8 +669,8 @@ std::string find_filename(const char* str, size_t len, bool include_extension)
         // if the subject line contains something like
         // Foobar bla blah - File 07 of 10 - foobar.mp3" we use the "File xx of yy" as a marker
         {
-            const static boost::regex mk1("File [0-9]* of [0-9]*");
-            const static boost::regex mk2("(\\(|\\[)[0-9]*/[0-9]*(\\)|\\])");
+            const /* static */ boost::regex mk1("File [0-9]* of [0-9]*");
+            const /* static */ boost::regex mk2("(\\(|\\[)[0-9]*/[0-9]*(\\)|\\])");
 
             boost::match_results<const char*> res;
             if (regex_search(str, dot, res, mk1) ||
