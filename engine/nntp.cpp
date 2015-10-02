@@ -30,6 +30,10 @@
 #include <stack>
 #include <cctype>
 
+#ifndef BOOST_HAS_THREADS
+#  error Boost is not in thread safe mode.
+#endif
+
 #if defined(LINUX_OS)
 #  include <strings.h> // for strcasecmp
 #endif
@@ -119,61 +123,6 @@ namespace {
         R"([0-9]{1,3}s\.|ffai\.|fws\.|sdn\.|st\.|3ca\.|rrs\.)" \
         R"(v4m\.|vlf\.|mhc\.)";
 
-class reverse_c_str_iterator :
-  public std::iterator<std::bidirectional_iterator_tag, const char>
-{
-public:
-    reverse_c_str_iterator() : ptr_(nullptr) {}
-    reverse_c_str_iterator(const char* str) : ptr_(str) {}
-
-    // postfix
-    reverse_c_str_iterator operator++(int)
-    {
-        reverse_c_str_iterator it(*this);
-        --ptr_;
-        return it;
-    }
-    reverse_c_str_iterator& operator++()
-    {
-        --ptr_;
-        return *this;
-    }
-    // postfix
-    reverse_c_str_iterator operator--(int)
-    {
-        reverse_c_str_iterator it(*this);
-        ++ptr_;
-        return it;
-    }
-    reverse_c_str_iterator& operator--()
-    {
-        ++ptr_;
-        return *this;
-    }
-
-    const char& operator*() const
-    {
-        assert(ptr_);
-        return *ptr_;
-    }
-    
-    const char* as_ptr() const
-    {
-        return ptr_;
-    }
-    bool operator != (const reverse_c_str_iterator& rhs) const
-    {
-        return ptr_ != rhs.ptr_;
-    }
-    bool operator == (const reverse_c_str_iterator& rhs) const
-    {
-        return ptr_ == rhs.ptr_;
-    }
-    
-private:
-    const char* ptr_;
-};
-
 // part count notation indicates the segment of the file when the file is split
 // to multiple NNTP posts. Usual notation is (xx/yy) but sometimes [xx/yy] is used
 // also note that sometimes subject lines contain both. In this case the [xx/yy] is considered
@@ -185,10 +134,10 @@ const char* find_part_count(const char* subjectline, std::size_t len, std::size_
     // this matches "metallica - enter sandman.mp3 (01/50)"
      const static boost::regex ex("(\\]|\\))[0-9]*/[0-9]*(\\(|\\[)");
     
-     reverse_c_str_iterator itbeg(subjectline + len - 1);
-     reverse_c_str_iterator itend(subjectline-1);
+     nntp::reverse_c_str_iterator itbeg(subjectline + len - 1);
+     nntp::reverse_c_str_iterator itend(subjectline - 1);
 
-     boost::match_results<reverse_c_str_iterator> res;
+     boost::match_results<nntp::reverse_c_str_iterator> res;
 
      if (!regex_search(itbeg, itend, res, ex))
          return NULL;

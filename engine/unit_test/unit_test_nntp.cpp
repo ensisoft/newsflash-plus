@@ -27,6 +27,9 @@
 #include <algorithm>
 #include <vector>
 #include <string>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
 #include <cstdlib>
 #include <ctime>
 #include "../nntp.h"
@@ -283,6 +286,11 @@ void test_parse_part()
     BOOST_REQUIRE(ret.first == true);
     BOOST_REQUIRE(ret.second.numerator == 15);
     BOOST_REQUIRE(ret.second.denominator == 49);    
+
+    ret = nntp::parse_part("<Aokay>  Your ccde2010 Fills - 199|424 - yEnc - ccde_Klara_22.jpg (07/16)");
+    BOOST_REQUIRE(ret.first == true);
+    BOOST_REQUIRE(ret.second.numerator == 7);
+    BOOST_REQUIRE(ret.second.denominator == 16);
 }
 
 void test_parse_group()
@@ -328,7 +336,7 @@ void test_date()
         date.tzoffset = 0;
 
         const auto t1 = nntp::timevalue(date);
-        std::cout << "t1: " << std::ctime(&t1) << std::endl;
+        // std::cout << "t1: " << std::ctime(&t1) << std::endl;
 
         date.day = 27;
         BOOST_REQUIRE(nntp::timevalue(date) > t1);
@@ -365,7 +373,7 @@ void test_date()
         date.tzoffset = 0;
 
         const auto t1 = nntp::timevalue(date);
-        std::cout << "t1: " << std::ctime(&t1) << std::endl;
+        // std::cout << "t1: " << std::ctime(&t1) << std::endl;
 
         date.tzoffset = -200; // -2h 00 min
         BOOST_REQUIRE(nntp::timevalue(date) == t1 + 2 * 3600);
@@ -504,10 +512,10 @@ void test_find_filename()
     {
         const auto& ret = nntp::find_filename(it.str, std::strlen(it.str));
 
-        std::cout << std::endl;
-        std::cout << "Test: " << it.str << std::endl;
-        std::cout << "Found: " << ret << std::endl;
-        std::cout << "Wanted: " << it.expected << std::endl;
+        // std::cout << std::endl;
+        // std::cout << "Test: " << it.str << std::endl;
+        // std::cout << "Found: " << ret << std::endl;
+        // std::cout << "Wanted: " << it.expected << std::endl;
 
         BOOST_REQUIRE(ret == it.expected);
     }
@@ -530,6 +538,8 @@ void test_find_response()
     BOOST_REQUIRE(nntp::find_response("foo\r\n", 5) == 5);
     BOOST_REQUIRE(nntp::find_response("foo\r\nfoo", 5) == 5);
 }
+
+
 
 void test_find_body()
 {
@@ -764,6 +774,60 @@ void test_hash()
 
 }
 
+std::mutex mutex;
+std::condition_variable cond;
+
+bool release_thundering_herd;
+
+void run_tests()
+{
+    std::unique_lock<std::mutex> lock(mutex);
+    if (!release_thundering_herd)
+        cond.wait(lock);
+    lock.unlock();
+
+    typedef void (*testcase)(void);
+
+    const testcase cases[] = {
+        test_reverse_iterator,
+        test_parse_overview,
+        test_parse_date,
+        test_parse_part,
+        test_parse_group,
+        test_date,
+        test_is_binary,
+        test_find_filename,
+        test_find_response,
+        test_find_body,
+        test_scan_response,
+        test_to_int,
+        test_strcmp,
+        test_hash,
+    };
+    for (auto test : cases)
+    {
+        for (int i=0; i<1000; ++i)
+            test();
+    }
+}
+
+void test_thread_safety()
+{
+    std::unique_lock<std::mutex> lock(mutex);
+
+    std::thread t0(run_tests);
+    std::thread t1(run_tests);
+    std::thread t2(run_tests);
+
+    release_thundering_herd = true;
+    cond.notify_all();
+    lock.unlock();    
+
+    t0.join();
+    t1.join();
+    t2.join();
+}
+
 int test_main(int, char* [])
 {
     test_reverse_iterator();
@@ -780,6 +844,8 @@ int test_main(int, char* [])
     test_to_int();
     test_strcmp();
     test_hash();
+
+    test_thread_safety();
 
     return 0;
 }
