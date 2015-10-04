@@ -42,8 +42,12 @@ namespace newsflash
         // human readable descripton for the task list.
         std::string desc;
 
+        // this will be the number of articles stored locally
+        // when an update is completed.
         std::uint64_t num_local_articles;
 
+        // this will be the total number of articles availble
+        // on the server at the completion of the update.
         std::uint64_t num_remote_articles;
     };
 

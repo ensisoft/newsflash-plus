@@ -177,21 +177,24 @@ public:
                     if (!a.is_match(article))
                         continue;
 
-                    if (a.has_parts())
-                    {
-                        const auto max_parts = a.num_parts_total();
-                        const auto num_part  = article.partno();
-                        if (num_part > max_parts)
-                            continue;
+                    if (!a.has_parts())
+                        break;
 
-                        const auto base = a.number();
-                        const auto num  = article.number();
-                        std::int16_t diff = 0;
-                        if (base > num)
-                            diff -= (std::int16_t)(base - num);
-                        else diff = (std::int16_t)(num - base);
-                        idb[a.idbkey() + num_part] = diff;
-                    }
+                    const auto max_parts = a.num_parts_total();
+                    const auto num_part  = article.partno();
+                    if (max_parts == 1)
+                        break;
+                    if (num_part > max_parts)
+                        break;
+
+                    const auto base = a.number();
+                    const auto num  = article.number();
+                    std::int16_t diff = 0;
+                    if (base > num)
+                        diff -= (std::int16_t)(base - num);
+                    else diff = (std::int16_t)(num - base);
+                    idb[a.idbkey() + num_part] = diff;
+
                     a.combine(article);
                     db->update(a, index);
                     break;

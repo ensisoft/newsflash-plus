@@ -474,6 +474,24 @@ void unit_test_data()
         ov.messageid.start = "<200>";                
         str += nntp::make_overview(ov);                                
 
+        // duplicates
+        ov.author.start    = "whatever@foo.com";
+        ov.subject.start   = "summer 2015 - File 63 of 73 - 1000034.jpg (1/1)";
+        ov.bytecount.start = "2430";
+        ov.date.start      = "Tue, 14 May 2015 00:00:00";
+        ov.number.start    = "402";
+        ov.messageid.start = "<402>";
+        str += nntp::make_overview(ov);
+
+        ov.author.start    = "whatever@foo.com";
+        ov.subject.start   = "summer 2015 - File 63 of 73 - 1000034.jpg (1/1)";
+        ov.bytecount.start = "2430";
+        ov.date.start      = "Tue, 14 May 2015 00:00:00";
+        ov.number.start    = "403";
+        ov.messageid.start = "<403>";        
+        str += nntp::make_overview(ov);        
+
+
 
         buff.clear();
         buff.append(str);
@@ -509,7 +527,7 @@ void unit_test_data()
 
         catalog db;
         db.open("alt.binaries.test/vol000000000000000.dat");
-        BOOST_REQUIRE(db.size() == 7);
+        BOOST_REQUIRE(db.size() == 8);
 
         arraydb idb;
         idb.open("alt.binaries.test/alt.binaries.test.idb");        
@@ -582,6 +600,15 @@ void unit_test_data()
         BOOST_REQUIRE(idb[a.idbkey() + 1] + a.number() == 301);
         BOOST_REQUIRE(idb[a.idbkey() + 2] + a.number() == 302);        
         BOOST_REQUIRE(idb[a.idbkey() + 3] + a.number() == 303);                
+
+        off += a.size_on_disk();
+        a = db.load(off);
+        BOOST_REQUIRE(a.subject() == "summer 2015 - File 63 of 73 - 1000034.jpg (1/1)");
+        BOOST_REQUIRE(a.author() == "whatever@foo.com");
+        BOOST_REQUIRE(a.num_parts_total() == 1);
+        BOOST_REQUIRE(a.num_parts_avail() == 1);
+        BOOST_REQUIRE(a.is_broken() == false);
+        BOOST_REQUIRE(a.bytes() == 2430);
     }
 }
 
@@ -681,9 +708,9 @@ void unit_test_index()
         }
     }
 
-    //delete_file("alt.binaries.test/vol33653.dat");
-    //delete_file("alt.binaries.test/vol33654.dat");    
-    //delete_file("alt.binaries.test.nfo");    
+    delete_file("alt.binaries.test/vol33653.dat");
+    delete_file("alt.binaries.test/vol33654.dat");    
+    delete_file("alt.binaries.test.nfo");    
 }
 
 
@@ -691,6 +718,6 @@ int test_main(int, char* [])
 {
     unit_test_ranges();
     unit_test_data();
-    //unit_test_index();
+    unit_test_index();
     return 0;
 }
