@@ -81,10 +81,7 @@ void do_assert(const char* expression, const char* file, const char* func, int l
 #if defined(WINDOWS_OS)
     // todo: use StackWalk64 to print stack frame
 
-    const HANDLE process = GetCurrentProcess();
-
-    char filename[100] = {0};
-    sprintf(filename, "core.%d", process);
+    const char* filename = "assert_" NEWSFLASH_VERSION ".dmp";
     
     // write minidump
     HANDLE handle = CreateFileA(filename,
@@ -96,16 +93,54 @@ void do_assert(const char* expression, const char* file, const char* func, int l
         NULL);
     if (handle != INVALID_HANDLE_VALUE)
     {
-        MiniDumpWriteDump(
-            GetCurrentProcess(),
-            GetCurrentProcessId(),
-            handle,
-            MiniDumpNormal,
-            nullptr, // exception info
-            nullptr, // UserStreamParam
-            nullptr); // callbackParam
+        // MiniDumpWithThreadInfo
+        // Include thread state information. For more information, see MINIDUMP_THREAD_INFO_LIST. 
+        // DbgHelp 6.1 and earlier:  This value is not supported.
+        //
+        // MiniDumpWithIndirectlyReferencedMemory
+        // Include pages with data referenced by locals or other stack memory. This option can increase the size of the minidump file significantly. 
+        // DbgHelp 5.1:  This value is not supported.
+        const DWORD flags[] = {
+            MiniDumpWithThreadInfo | MiniDumpWithIndirectlyReferencedMemory,
+            MiniDumpWithIndirectlyReferencedMemory,        
+            0
+        };        
+        for (auto flag : flags)
+        {
+            const auto ret = MiniDumpWriteDump(
+                GetCurrentProcess(),
+                GetCurrentProcessId(),
+                handle,
+                MINIDUMP_TYPE(MiniDumpNormal | flag),
+                nullptr, // exception info
+                nullptr, // UserStreamParam
+                nullptr); // callbackParam
+            if (ret == TRUE)
+                break;
+        }
         CloseHandle(handle);
     }
+
+
+    // todo: we should figure out how to display this message to the user 
+    // in case a non-gui thread faults. maybe need a watchdog?
+    if (IsGUIThread(FALSE) == TRUE)
+    {
+        MessageBoxA(
+            NULL,
+            NEWSFLASH_TITLE " has encountered a serious error.\r\n"
+            "Please help me try to fix the problem by sending a detailed description of events\r\n"
+            "that lead to the crash. Please also attach the  assert_" NEWSFLASH_VERSION ".dmp file.\r\n"
+            "In order to replicate the problem I might need to inspect your data,\r\n"
+            "so please preseve your current data files as they are. This also includes\r\n"
+            "your config files in your \"Documents and Settings\\username\\.newsflash folder\"\r\n"
+            "Your data might be vital for resolving the problem!\r\n"
+            "Send your reports with your contact details to samiv@ensisoft.com\r\n"
+            "Please subject your email with \"Crashreport\"",
+            NEWSFLASH_TITLE,
+            MB_ICONERROR);
+    }
+
 #elif defined(LINUX_OS)
     void* callstack[MAX_CALLSTACK] = {0};
 
