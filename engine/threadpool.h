@@ -75,6 +75,7 @@ namespace newsflash
 
    private:
         void thread_main(threadpool::worker* self);
+        void thread_seh(threadpool::worker* self);
 
     private:
         std::condition_variable cond_;

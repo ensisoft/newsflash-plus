@@ -25,6 +25,7 @@
 #include <thread>
 #include "threadpool.h"
 #include "action.h"
+#include "minidump.h"
 
 namespace newsflash
 {
@@ -47,7 +48,7 @@ threadpool::threadpool(std::size_t num_threads) : round_robin_(0), pool_size_(nu
         std::lock_guard<std::mutex> lock(thread->mutex);
 
         thread->run_loop = true;
-        thread->thread.reset(new std::thread(std::bind(&threadpool::thread_main, this, thread.get())));
+        thread->thread.reset(new std::thread(std::bind(&threadpool::thread_seh, this, thread.get())));
         threads_.push_back(std::move(thread));
     }
 }
@@ -130,7 +131,7 @@ threadpool::worker* threadpool::allocate()
 
     thread->run_loop = true;
     thread->in_use = true;
-    thread->thread.reset(new std::thread(std::bind(&threadpool::thread_main, this, 
+    thread->thread.reset(new std::thread(std::bind(&threadpool::thread_seh, this, 
         handle)));
 
     threads_.push_back(std::move(thread));
@@ -168,5 +169,11 @@ void threadpool::thread_main(threadpool::worker* self)
         queue_size_--;
     }
 }
+
+void threadpool::thread_seh(threadpool::worker* self)
+{
+    SEH_BLOCK(thread_main(self);)
+}
+
 
 } // newsflash

@@ -21,6 +21,8 @@
 #define LOGTAG "main"
 
 #include <newsflash/config.h>
+#include <newsflash/engine/minidump.h>
+#include <newsflash/engine/engine.h>
 
 #include <newsflash/warnpush.h>
 #  include <QtGui/QStyle>
@@ -35,7 +37,6 @@
 
 #include "qtsingleapplication/qtsingleapplication.h"
 #include "mainwindow.h"
-#include "minidump.h"
 #include "config.h"
 #include "accounts.h"
 #include "newslist.h"
@@ -86,27 +87,8 @@
 namespace gui
 {
 
-int run(int argc, char* argv[])
+int run(QtSingleApplication& qtinstance)
 {
-    QtSingleApplication qtinstance(argc, argv);
-    if (qtinstance.isRunning())
-    {
-        const QStringList& cmds = QCoreApplication::arguments();
-        for (int i=1; i<cmds.size(); ++i)
-            qtinstance.sendMessage(cmds[i]);
-
-        if (cmds.size() == 1)
-        {
-            QMessageBox msg;
-            msg.setStandardButtons(QMessageBox::Ok);
-            msg.setIcon(QMessageBox::Information);
-            msg.setText("Another instance of " NEWSFLASH_TITLE " is already running.\r\n"
-                "This instance will now exit.");
-            msg.exec();
-        }
-        return 0;
-    }
-
     // initialize home directory.
     app::homedir::init(".newsflash");    
 
@@ -351,11 +333,11 @@ int run(int argc, char* argv[])
 
 } // gui
 
-int seh_main(int argc, char* argv[])
+int seh_main(QtSingleApplication& qtinstance)
 {
     int ret = 0;
 
-    SEH_BLOCK(ret = gui::run(argc, argv);)
+    SEH_BLOCK(ret = gui::run(qtinstance);)
 
     return ret;
 }
@@ -364,9 +346,29 @@ int main(int argc, char* argv[])
 {
     DEBUG("It's alive!");
     DEBUG("%1 %2", NEWSFLASH_TITLE, NEWSFLASH_VERSION);
+
+    QtSingleApplication qtinstance(argc, argv);
+    if (qtinstance.isRunning())
+    {
+        const QStringList& cmds = QCoreApplication::arguments();
+        for (int i=1; i<cmds.size(); ++i)
+            qtinstance.sendMessage(cmds[i]);
+
+        if (cmds.size() == 1)
+        {
+            QMessageBox msg;
+            msg.setStandardButtons(QMessageBox::Ok);
+            msg.setIcon(QMessageBox::Information);
+            msg.setText("Another instance of " NEWSFLASH_TITLE " is already running.\r\n"
+                "This instance will now exit.");
+            msg.exec();
+        }
+        return 0;
+    }
+
     try 
     {
-        int ret = seh_main(argc, argv);
+        int ret = seh_main(qtinstance);
 
         DEBUG("Goodbye...(exitcode: %1)", ret);
         return ret;
@@ -376,12 +378,11 @@ int main(int argc, char* argv[])
         std::cerr << e.what();
         std::cerr << std::endl;
 
-// Todo: this doesn't work fix it
         QMessageBox msg;
         msg.setStandardButtons(QMessageBox::Ok);
         msg.setIcon(QMessageBox::Critical);
         msg.setText(
-            QString("%1 has encountered an error and will now close.\r\n %2")
+            QString("%1 has encountered an unhandled exception and will now close.\r\n %2")
             .arg(NEWSFLASH_TITLE)
             .arg(e.what()));
         msg.exec();
