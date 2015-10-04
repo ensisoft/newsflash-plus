@@ -162,6 +162,7 @@ exe newsflash :
   engine/<link>static
   :
   <toolset>msvc:<linkflags>/SUBSYSTEM:WINDOWS,5.01        
+  #<toolset>msvc:<linkflags>/SUBSYSTEM:CONSOLE,5.01          
   ;
 
 

@@ -92,6 +92,8 @@ int run(QtSingleApplication& qtinstance)
     // initialize home directory.
     app::homedir::init(".newsflash");    
 
+    newsflash::initialize();
+
     app::logCopyright();    
 
     QCoreApplication::setLibraryPaths(QStringList());

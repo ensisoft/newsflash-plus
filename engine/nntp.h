@@ -371,5 +371,5 @@ namespace nntp
         return ret;
     }
 
-
+    void thread_safe_initialize();
 } // nntp

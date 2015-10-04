@@ -46,6 +46,9 @@
 #include "update.h"
 #include "throttle.h"
 #include "session.pb.h"
+#include "sslcontext.h"
+#include "encoding.h"
+#include "nntp.h"
 
 namespace newsflash
 {
@@ -2714,6 +2717,19 @@ std::size_t engine::num_tasks() const
 std::size_t engine::num_pending_tasks() const 
 {
     return state_->num_pending_tasks;
+}
+
+
+void initialize()
+{
+    // msvs doesn't implement magic static untill msvs2015
+    // details here;
+    // https://msdn.microsoft.com/en-us/library/hh567368.aspx
+    nntp::thread_safe_initialize();
+
+    openssl_init();
+
+    identify_encoding("", 0);
 }
 
 } // newsflash

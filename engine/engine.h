@@ -247,6 +247,8 @@ namespace newsflash
     private:
         std::shared_ptr<state> state_;
     };
+
+    void initialize();
     
 } // newsflash
 
