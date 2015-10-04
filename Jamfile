@@ -161,8 +161,9 @@ exe newsflash :
   protobuf/<link>static
   engine/<link>static
   :
-  <toolset>msvc:<linkflags>/SUBSYSTEM:WINDOWS,5.01        
-  #<toolset>msvc:<linkflags>/SUBSYSTEM:CONSOLE,5.01          
+  # see comments in the project properties. 
+  <variant>release,<toolset>msvc:<linkflags>/SUBSYSTEM:WINDOWS,5.01        
+  <variant>debug,<toolset>msvc:<linkflags>/SUBSYSTEM:CONSOLE,5.01          
   ;
 
 
