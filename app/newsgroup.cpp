@@ -448,6 +448,8 @@ void NewsGroup::sort(int column, Qt::SortOrder order)
     }
 
     emit layoutChanged();
+
+    DEBUG("Sorting done!");
 }
 
 bool NewsGroup::init(QString path, QString name)
@@ -486,6 +488,8 @@ bool NewsGroup::init(QString path, QString name)
 
 void NewsGroup::load(std::size_t blockIndex)
 {
+    DEBUG("Load block %1", blockIndex);
+
     BOUNDSCHECK(blocks_, blockIndex);
     auto& block = blocks_[blockIndex];
     if (block.state == State::Loaded)
@@ -505,10 +509,13 @@ void NewsGroup::load(std::size_t blockIndex)
 
     if (volumeList_)
         volumeList_->updateBlock(blockIndex);    
+
+    DEBUG("Loaded block %1", blockIndex);
 }
 
 void NewsGroup::load()
 {
+    // find first available block that isn't loaded yet.
     auto it = std::find_if(std::begin(blocks_), std::end(blocks_),
         [](const Block& block) {
             return block.state != State::Loaded;
@@ -816,6 +823,18 @@ void NewsGroup::newHeaderDataAvailable(const QString& group, const QString& file
         block.purge      = false;
         catalogs_.emplace_back();
 
+#ifdef NEWSFLASH_DEBUG
+        ASSERT(std::is_sorted(std::begin(blocks_), std::end(blocks_),
+            [&](const Block& lhs, const Block& rhs) {
+                return lhs.file > rhs.file;
+            }));
+
+        for (const auto& block : blocks_)
+        {
+            DEBUG("Block list: %1", block.file);
+        }
+#endif
+
         // descending order, since the larger the index in the filename 
         // the newer the content.
         it = std::lower_bound(std::begin(blocks_), std::end(blocks_), block,
@@ -841,6 +860,19 @@ void NewsGroup::newHeaderDataAvailable(const QString& group, const QString& file
         volumeList_->updateBlock(index);
     }
 
+#ifdef NEWSFLASH_DEBUG
+    ASSERT(std::is_sorted(std::begin(blocks_), std::end(blocks_),
+        [&](const Block& lhs, const Block& rhs) {
+            return lhs.file > rhs.file;
+        }));
+
+    for (const auto& block : blocks_)
+    {
+        DEBUG("Block list: %1", block.file);
+    }
+#endif
+
+    DEBUG("Loaded new headers from %1", file);
 }
 
 void NewsGroup::newHeaderInfoAvailable(const QString& group, quint64 numLocal, quint64 numRemote)
@@ -891,8 +923,8 @@ void NewsGroup::loadData(Block& block, bool guiLoad)
 
     QAbstractTableModel::beginResetModel();
 
-    //DEBUG("%1 is at offset %2", block.file, block.prevOffset);
-    //DEBUG("Index has %1 articles. Loading more...", index_.size());
+    DEBUG("Block %1 is at offset %2", block.file, block.prevOffset);
+    DEBUG("Index has %1 articles. Loading more...", index_.size());
 
     std::size_t curItem  = 0;
     std::size_t numItems = db.size();
@@ -912,7 +944,7 @@ void NewsGroup::loadData(Block& block, bool guiLoad)
         }
     }
 
-    //DEBUG("Load done. Index now has %1 articles", index_.size());
+    DEBUG("Load done. Index now has %1 articles", index_.size());
 
     // save the database and the current offset
     // when new data is added to the same database
@@ -920,7 +952,7 @@ void NewsGroup::loadData(Block& block, bool guiLoad)
     // index to start loading the objects.
     block.prevOffset = beg.offset();
     block.prevSize   = db.size();
-    //DEBUG("%1 is at new offset %2", block.file, block.prevOffset);
+    DEBUG("Block %1 is at new offset %2", block.file, block.prevOffset);
 
     QAbstractTableModel::reset();    
     QAbstractTableModel::endResetModel();    
