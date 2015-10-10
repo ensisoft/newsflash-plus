@@ -163,6 +163,7 @@ namespace gui
         void on_actionRequestFeature_triggered();
         void on_actionRequestLicense_triggered();
         void on_actionPoweroff_triggered();
+        void on_actionDonate_triggered();
         void actionWindowToggleView_triggered();
         void actionWindowFocus_triggered();
         void timerWelcome_timeout();

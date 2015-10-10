@@ -19,6 +19,8 @@
     <file>resource/16x16_ico_png/ico_filter.png</file>    
     <file>resource/16x16_ico_png/ico_move_up.png</file>
     <file>resource/16x16_ico_png/ico_move_down.png</file>
+    <file>resource/16x16_ico_png/ico_next.png</file>    
+    <file>resource/16x16_ico_png/ico_prev.png</file>        
 
     <!-- data flag icons -->
     <file>resource/16x16_ico_png/ico_flag_binary.png</file>

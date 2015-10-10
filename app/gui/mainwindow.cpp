@@ -1123,6 +1123,11 @@ void MainWindow::on_actionPoweroff_triggered()
     dlg.exec();
 }
 
+void MainWindow::on_actionDonate_triggered()
+{
+    app::openWeb("http://www.ensisoft.com/donate");
+}
+
 
 void MainWindow::actionWindowToggleView_triggered()
 {
