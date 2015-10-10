@@ -444,7 +444,7 @@ void NewsList::filter(const QString& str, newsflash::bitflag<FilterFlags> option
         if (isOther(group.type) && !options.test(FilterFlags::ShowOther))
             return false;
 
-        if (options.test(FilterFlags::ShowEmpty) && !group.numMessages)
+        if (!options.test(FilterFlags::ShowEmpty) && !group.numMessages)
             return false;
 
         if (!options.test(FilterFlags::ShowText))
