@@ -21,17 +21,20 @@
 #define LOGTAG "unrar"
 
 #include <newsflash/config.h>
+#include <newsflash/engine/bigfile.h>
 #include <newsflash/warnpush.h>
 #  include <QRegExp>
 #  include <QtDebug>
 #include <newsflash/warnpop.h>
 #include <string>
 #include <cstring>
+#include <cctype>
 #include <map>
 #include "unrar.h"
 #include "debug.h"
 #include "format.h"
 #include "eventlog.h"
+#include "utility.h"
 
 namespace {
 
@@ -365,6 +368,7 @@ void Unrar::processStdOut()
             if (logFile_.isOpen())
             {
                 logFile_.write(temp.data());
+                logFile_.write("\r");
                 logFile_.write("\n");
             }
 
@@ -374,7 +378,11 @@ void Unrar::processStdOut()
         {
             temp.push_back('.');
         }
-        else temp.push_back(byte);
+        else
+        {         
+            if (!std::iscntrl((unsigned)byte))
+                temp.push_back(byte);
+        }
     }
     const auto leftOvers = (int)temp.size();
     stdout_ = stdout_.right(leftOvers);
@@ -457,9 +465,15 @@ void Unrar::processFinished(int exitCode, QProcess::ExitStatus status)
 
                 for (const auto& f : files_)
                 {
-                    QFile file(archive_.path + "/" + f);
-                    file.remove();
-                    DEBUG("Removed %1", f);
+                    const auto& name = joinPath(archive_.path, f);
+                    QFile file(name);
+                    if (!file.remove())
+                        ERROR("Failed to remove %1, %2", name, file.error());
+                    else DEBUG("Removed %1", f);
+                    //
+                    //const auto& ret = newsflash::bigfile::erase(toUtf8(name));
+                    //if (ret != std::error_code())
+                    //    ERROR("Failed to remove %1, %2", name, ret.message());
                 }
             }
         }

@@ -49,6 +49,8 @@ namespace app
     struct event;
     struct age;
 
+    QString widen(const std::string& s);
+
     QString toString(QFile::FileError error);
     QString toString(QNetworkReply::NetworkError error);
     QString toString(QProcess::ProcessError error);
@@ -62,6 +64,9 @@ namespace app
     QString toString(const app::runtime& rt);
     QString toString(const app::etatime& eta);
     QString toString(const app::count& vol);    
+
+    inline QString toString(const std::string& s)
+    { return widen(s); }
 
     inline QString toString(const char* str)
     { return str; }
