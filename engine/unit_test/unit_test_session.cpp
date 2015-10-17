@@ -19,8 +19,9 @@
 // THE SOFTWARE.
 
 #include <newsflash/config.h>
-
-#include <boost/test/minimal.hpp>
+#include <newsflash/warnpush.h>
+#  include <boost/test/minimal.hpp>
+#include <newsflash/warnpop.h>
 #include "../session.h"
 #include "../buffer.h"
 
@@ -89,7 +90,10 @@ void unit_test_init_session_success()
 
     session.send_next();
     BOOST_REQUIRE(output == "CAPABILITIES\r\n");
-    set(incoming, "500 what?\r\n");
+    //set(incoming, "500 what?\r\n");
+    // this is technically not correct, but we make a little test case here in order
+    // to workaround issue #29 (usenet.premiumize.me responds with 400 instead of 500 to CAPABILITIES)
+    set(incoming, "400 Unrecognized command\r\n");
     session.recv_next(incoming, tmp);
 
     session.send_next();

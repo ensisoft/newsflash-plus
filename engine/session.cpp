@@ -107,7 +107,10 @@ public:
         if (res == 0)
             return false;
 
-        const auto code = nntp::scan_response({101, 480, 500}, buff.head(), res);
+        // usenet.premiumize.me responds to CAPABILITIES with 400 instead of 500.
+        // https://github.com/ensisoft/newsflash-plus/issues/29
+        const auto code = nntp::to_int<int>(buff.head(), 3);
+        //const auto code = nntp::scan_response({101, 480, 500}, buff.head(), res);
         if (code != 101)
         {
             if (code == 480)
