@@ -23,6 +23,7 @@
 #include <newsflash/config.h>
 #include <newsflash/engine/minidump.h>
 #include <newsflash/engine/engine.h>
+#include <newsflash/engine/logging.h>
 
 #include <newsflash/warnpush.h>
 #  include <QtGui/QStyle>
@@ -95,6 +96,17 @@ int run(QtSingleApplication& qtinstance)
     newsflash::initialize();
 
     app::logCopyright();    
+
+    const auto& args = qtinstance.arguments();
+    for (const auto& arg : args)
+    {
+        if (arg == "--debug")
+        {
+            newsflash::enable_debug_log(true);
+            INFO("Debug log enabled");
+            break;
+        }
+    }
 
     QCoreApplication::setLibraryPaths(QStringList());
     QCoreApplication::addLibraryPath(app::distdir::path());

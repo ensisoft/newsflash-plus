@@ -34,6 +34,9 @@ namespace {
     };
 
     boost::thread_specific_ptr<TLS> threadLogger;
+
+    bool debugLog;
+
 } // namespace
 
 namespace newsflash
@@ -78,6 +81,16 @@ logger* set_thread_log(logger* log)
 
     threadLogger->logger = log;
     return current;
+}
+
+void enable_debug_log(bool on_off)
+{
+    debugLog = on_off;
+}
+
+bool is_debug_log_enabled()
+{
+    return debugLog;
 }
 
 void flush_log()

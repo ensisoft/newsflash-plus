@@ -30,21 +30,17 @@
 #include "utf8.h"
 
 #ifdef NEWSFLASH_ENABLE_LOG
-#  define LOG_E(...) write_log(newsflash::logevent::error, __FILE__, __LINE__, ## __VA_ARGS__)
+#  define LOG_E(...) write_log(newsflash::logevent::error,   __FILE__, __LINE__, ## __VA_ARGS__)
 #  define LOG_W(...) write_log(newsflash::logevent::warning, __FILE__, __LINE__, ## __VA_ARGS__)
-#  define LOG_I(...) write_log(newsflash::logevent::info,  __FILE__, __LINE__, ## __VA_ARGS__)
+#  define LOG_I(...) write_log(newsflash::logevent::info,    __FILE__, __LINE__, ## __VA_ARGS__)
+#  define LOG_D(...) write_log(newsflash::logevent::debug,   __FILE__, __LINE__, ## __VA_ARGS__)
 #  define LOG_FLUSH() flush_log()
 #else
-#  define LOG_E(...) while(false)
-#  define LOG_W(...) while(false)
-#  define LOG_I(...) while(false)
+#  define LOG_E(...)  while(false)
+#  define LOG_W(...)  while(false)
+#  define LOG_I(...)  while(false)
+#  define LOG_D(...)  while(false)
 #  define LOG_FLUSH() while (false)
-#endif
-
-#ifdef NEWSFLASH_DEBUG
-#  define LOG_D(...) write_log(newsflash::logevent::debug, __FILE__, __LINE__, ## __VA_ARGS__)
-#else
-#  define LOG_D(...) while(false)
 #endif
 
 namespace newsflash
@@ -161,9 +157,19 @@ namespace newsflash
     logger* get_thread_log();
     logger* set_thread_log(logger* log);
 
+    void enable_debug_log(bool on_off);
+
+    bool is_debug_log_enabled();
+
     template<typename... Args>
     void write_log(logevent type, const char* file, int line, const Args&... args)
     {
+        if (type == logevent::debug)
+        {
+            if (!is_debug_log_enabled())
+                return;
+        }
+
         auto* log = get_thread_log();
         if (log == nullptr)
             return;
