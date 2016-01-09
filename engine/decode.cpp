@@ -63,6 +63,7 @@ decode::decode(buffer&& data) : data_(std::move(data))
     multipart_     = false;
     first_part_    = false;
     last_part_     = false;
+    has_offset_    = false;
 }
 
 decode::~decode()
@@ -182,6 +183,7 @@ std::size_t decode::decode_yenc_single(const char* data, std::size_t len)
     multipart_     = false;
     first_part_    = true;
     last_part_     = true;
+    has_offset_    = false;
     encoding_      = encoding::yenc;    
 
     if (footer.second.crc32)
@@ -231,6 +233,7 @@ std::size_t decode::decode_yenc_multi(const char* data, std::size_t len)
     multipart_     = true;
     first_part_    = header.second.part == 1;
     last_part_     = (header.second.part == header.second.total);
+    has_offset_    = true;
     encoding_      = encoding::yenc;
 
     if (footer.second.pcrc32)
@@ -270,6 +273,7 @@ std::size_t decode::decode_uuencode_single(const char* data, std::size_t len)
     binary_offset_ = 0;
     binary_size_   = 0;
     first_part_    = true;
+    has_offset_    = false;
     encoding_      = encoding::uuencode;    
     if (parse_end_success)
     {
@@ -301,6 +305,7 @@ std::size_t decode::decode_uuencode_multi(const char* data, std::size_t len)
     binary_size_   = 0;
     multipart_     = true;
     first_part_    = false;
+    has_offset_    = false;
     last_part_     = parse_end_success;
     encoding_      = encoding::uuencode;
 

@@ -124,7 +124,7 @@ namespace newsflash
         { return last_part_; }
 
         bool has_offset() const
-        { return binary_offset_ != 0; }
+        { return has_offset_; }
 
     private:
         virtual void xperform() override;
@@ -148,6 +148,7 @@ namespace newsflash
         bool multipart_;
         bool first_part_;
         bool last_part_;
+        bool has_offset_;
     };
 
 } // newsflash
