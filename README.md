@@ -151,6 +151,34 @@ Build protobuf
     $ ./protoc session.proto --cpp_out=.
 ```    
 
+WARNING: This might shit itself if aclocal has been updated to another version.
+
+```
+    WARNING: 'aclocal-1.14' is missing on your system.
+         You should only need it if you modified 'acinclude.m4' or
+         'configure.ac' or m4 files included by 'configure.ac'.
+         The 'aclocal' program is part of the GNU Automake package:
+         <http://www.gnu.org/software/automake>
+         It also requires GNU Autoconf, GNU m4 and Perl in order to run:
+         <http://www.gnu.org/software/autoconf>
+         <http://www.gnu.org/software/m4/>
+         <http://www.perl.org/>
+    Makefile:641: recipe for target 'aclocal.m4' failed
+ ```
+
+You can try to fix it by opening and editing protobuf/Makefile 
+
+```
+L240: ACLOCAL = ${SHELL} /home/enska/coding/newsflash/protobuf/missing <del>aclocal-1.14</del>
+L240: ACLOCAL = ${SHELL} /home/enska/coding/newsflash/protobuf/missing aclocal-1.15
+
+L246: AUTOMAKE = ${SHELL} /home/enska/coding/newsflash/protobuf/missing <del>automake-1.14</del>
+L246: AUTOMAKE = ${SHELL} /home/enska/coding/newsflash/protobuf/missing automake-1.15
+
+```
+
+
+
 Build qjson
 
 NOTE: I have edited the CMakeList.txt to have a custom Qt path. 
@@ -183,6 +211,10 @@ Build  unrar
     $ cp unrar ~/coding/newsflash/dist
     $ cp unrar ~/coding/newsflash/dist_d
 ```
+
+Comments about ICU.
+Both Qt and boost.regex depend on ICU. So if ICU updates both Qt and boost.regex needs to be rebuilt.
+
 
 
 Building for Windows
@@ -229,7 +261,7 @@ Download and extract Qt everywhere to a location where you want it installed for
 ```    
 
 
-protobuf
+Build protobuf library
 
     - open the solution in vsprojects and build the library
     - copy vsprojects/Debug/libprotobuf.lib to ../lib/libprotobuf_d.lib
@@ -237,43 +269,50 @@ protobuf
 
 
 Par2cmdline
-
+    todo
 
 Unrar
+    todo
 
 
 
-Potential (New) Features
-=========================
-
-- disk size checker, notify / react to low disk conditions.
-- some sort of searching in the headers
-- auto downloader/scheduler for TV series for example
-- support for nzbindex.nl, binsearch.info or other similar registration-free backend
-- help files
-- installer/uninstaller
-- musicBrainz.org integration
-
-+ joining of hjsplit files
-+ UseNext advert
-
-Bugs
+UX Guidelines
 ========================
 
-- batch eta is messed up
-- assertion in the engine when quitting with active update (engine.cpp:698, num_active_cmdlists_ == 0)
-- sometimes ssl connections stop working
-- unrar progress bar doesnt always work
-- shutdown not working??
-- XFEATURE breaks LIST on Astraweb
-+ archive repair doesnt alwys work
-+ update eta/done% is messed up
-+ killing the task doesn't update headers ui 
-+ headers update will download faster than it can consume, needs throttling
-+ fill server is used for non-fillable downloads (from headers)
-+ search modifiers link doesn't do anything
-+ search button changes incorrectly
-+ command pipelining with ssl socket is broken
+Active user context
+------------------------
+
+User actions happen either immediately in the current user context when input from user 
+is processed (synchronous) or alternatively they complete later in time (async).
+
+When an synchronous operation is performed we can ask user for confirmation (if we must)
+through modal dialogs. Examples are choosing the file to open, choosing folder, asking for 
+account to be used etc. Also if the operation is cannot be performed (the file cannot be opened etc)
+It's preferrable to indicate the failure immediately to the user using an Error dialog.
+
+However if the operation is enqueued to background operation, any events generated later on
+such as information, damage/completion or error reports must be go to the application log.
+We may not interrupt the user. 
+
+
+Visual indications
+-------------------------
+
+When there's new data  such as a new event, new download etc. the relevant tab
+should visually indicate this. 
+
+Limit options
+-------------------------
+
+todo
+
+
+Limit modal dialogs
+-------------------------
+
+todo
+
+
 
 
 Design Babblings
