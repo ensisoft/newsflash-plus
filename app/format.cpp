@@ -143,31 +143,31 @@ QString toString(const app::count& count)
 QString toString(const app::size& size)
 {
     if (size.bytes >= GB)
-        return QString("%1 Gb").arg(size.bytes / GB, 0, 'f', 1, ' ');
+        return QString("%1 GB").arg(size.bytes / GB, 0, 'f', 1, ' ');
     else if (size.bytes >= MB)
-        return QString("%1 Mb").arg(size.bytes / MB, 0, 'f', 1, ' ');
+        return QString("%1 MB").arg(size.bytes / MB, 0, 'f', 1, ' ');
 
-    return QString("%1 Kb").arg(size.bytes / KB, 0, 'f', 1, ' ');
+    return QString("%1 kB").arg(size.bytes / KB, 0, 'f', 1, ' ');
 }
 
 QString toString(const app::speed& speed)
 {
     if (speed.bps >= GB)
-        return QString("%1 Gb/s").arg(speed.bps / GB, 0, 'f', 1);
+        return QString("%1 GB/s").arg(speed.bps / GB, 0, 'f', 1);
     else if (speed.bps >= MB)
-        return QString("%1 Mb/s").arg(speed.bps / MB, 0, 'f', 1);
+        return QString("%1 MB/s").arg(speed.bps / MB, 0, 'f', 1);
 
-    return QString("%1 Kb/s").arg(speed.bps / KB, 0, 'f', 1);
+    return QString("%1 kB/s").arg(speed.bps / KB, 0, 'f', 1);
 }
 
 QString toString(const app::gigs& gigs)
 {
-    return QString("%1 Gb").arg(gigs.as_float(), 0, 'f', 1, ' ');
+    return QString("%1 GB").arg(gigs.as_float(), 0, 'f', 1, ' ');
 }
 
 QString toString(const app::megs& megs)
 {
-    return QString("%1 Mb").arg(megs.as_float(), 0, 'f', 1, ' ');
+    return QString("%1 MB").arg(megs.as_float(), 0, 'f', 1, ' ');
 }
 
 QString toString(const app::event& event)
