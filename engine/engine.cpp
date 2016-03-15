@@ -1905,8 +1905,9 @@ engine::action_id_t engine::download_files(ui::batch batch, bool priority)
         state_->bytes_queued += file.size;
         state_->num_pending_tasks++;
     }
-
-    state_->batches.push_back(std::move(b));
+    if (priority)
+        state_->batches.push_front(std::move(b));
+    else state_->batches.push_back(std::move(b));
     state_->execute();
     return batchid;
 }
