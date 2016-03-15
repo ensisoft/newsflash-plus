@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -84,7 +84,7 @@ void test_parse_overview()
     {
         const char* str = "25534\t(cameltoe clips) [93/98] - \"CAMELTOE  CLIPS 6.vol076+32.PAR2\" yEnc (126/130)\tlekkrstrak@hotmail.com (cameltoelover)\tTue, 15 Feb 2011 20:45:19 +0100\t<6d263$4d5ad7cf$d979c5b1$19427@news.lightningusenet.com>\t\t931\t3052\tXref: news-big.astraweb.com alt.binaries.pictures.cameltoes:25534";
 
-        const auto& ret = nntp::parse_overview(str, std::strlen(str));        
+        const auto& ret = nntp::parse_overview(str, std::strlen(str));
         REQUIRE(ret.second.number, "25534");
         REQUIRE(ret.second.bytecount, "931");
         REQUIRE(ret.second.linecount, "3052");
@@ -103,7 +103,7 @@ void test_parse_overview()
         REQUIRE(ret.second.messageid, "<messageid>");
         REQUIRE(ret.second.references, nullptr);
         REQUIRE(ret.second.bytecount, "12223");
-        REQUIRE(ret.second.linecount, "50");        
+        REQUIRE(ret.second.linecount, "50");
     }
 
     {
@@ -142,7 +142,7 @@ void test_parse_overview()
 
     {
         // broken data (one field missing)
-        const char* str = "123456\tsubject\tauthor\t\t<messageid>\t\t12223\t";        
+        const char* str = "123456\tsubject\tauthor\t\t<messageid>\t\t12223\t";
         BOOST_REQUIRE(nntp::parse_overview(str, std::strlen(str)).first == false);
     }
 
@@ -285,7 +285,7 @@ void test_parse_part()
     ret = nntp::parse_part("Girls have fun !!! [01/60] foobar.avi.001 (15/49)");
     BOOST_REQUIRE(ret.first == true);
     BOOST_REQUIRE(ret.second.numerator == 15);
-    BOOST_REQUIRE(ret.second.denominator == 49);    
+    BOOST_REQUIRE(ret.second.denominator == 49);
 
     ret = nntp::parse_part("<Aokay>  Your ccde2010 Fills - 199|424 - yEnc - ccde_Klara_22.jpg (07/16)");
     BOOST_REQUIRE(ret.first == true);
@@ -418,8 +418,8 @@ void test_is_binary()
         {"(paska.jpg)(1/1)", true},
         {"baby brown - CC Soldier .mp3 Beaz in RnB & SouL (02/30)", true},
         {"schalke(9/9) $ yEnc (70/120)", true},
-            
-            
+
+
         {"foobar", false},
         {"foobar yEnc kkeekek", false},
         {".NET 2.0 WebResource", false},
@@ -454,8 +454,8 @@ void test_find_filename()
         {"[#scnzb@efnet][529762] Automata.2014.BRrip.x264.Ac3-MiLLENiUM [1/4] - \"Automata.2014.BRrip.x264.Ac3-MiLLENiUM.mkv\" yEnc (1/1513)",
             "Automata.2014.BRrip.x264.Ac3-MiLLENiUM.mkv"},
 
-        {"Ip.Man.The.Final.Fight.2013.COMPLETE.BluRay-oOo - [1/7] - #34;Ip.Man.The.Final.Fight.2013.COMPLETE.BluRay-oOo.rar#34; yEnc (204/204)", 
-          "Ip.Man.The.Final.Fight.2013.COMPLETE.BluRay-oOo.rar"},        
+        {"Ip.Man.The.Final.Fight.2013.COMPLETE.BluRay-oOo - [1/7] - #34;Ip.Man.The.Final.Fight.2013.COMPLETE.BluRay-oOo.rar#34; yEnc (204/204)",
+          "Ip.Man.The.Final.Fight.2013.COMPLETE.BluRay-oOo.rar"},
 
         {"Katatonia - Live Consternation - 04 Had to (Leave).mp3 Katatonia - Live Consternation Amsterdam [DM-320](16/19)",
           "04 Had to (Leave).mp3"},
@@ -475,11 +475,11 @@ void test_find_filename()
         {"blah blah music.mp3\"", "blah blah music.mp3"},
         {"blah blah music.mp3]", "blah blah music.mp3"},
 
-        {"01 Intro.mp3 (00/11) Paradise Lost yEnc", "01 Intro.mp3"},        
+        {"01 Intro.mp3 (00/11) Paradise Lost yEnc", "01 Intro.mp3"},
         {"01-Intro.mp3 (00/11) Paradise Lost yEnc", "01-Intro.mp3"},
         {"\"01 Intro.mp3\" (00/11) Paradise Lost yEnc", "01 Intro.mp3"},
 
-        {"foo bar keke.mp3", "foo bar keke.mp3"},        
+        {"foo bar keke.mp3", "foo bar keke.mp3"},
         {"   **** 1123nmnlullj.jpg", "1123nmnlullj.jpg"},
         {"\"(03) 03 - ALL HAIL TO THE QUEEN.mp3\" yEnc", "(03) 03 - ALL HAIL TO THE QUEEN.mp3"},
         {"(6/28) nGJ6001.JPG = foobar keke", "nGJ6001.JPG"},
@@ -522,7 +522,7 @@ void test_find_filename()
 
 
     BOOST_REQUIRE(nntp::find_filename(std::string("foobar [1/4] \"file.mp3\" yEnc (01/10)"), true) == "file.mp3");
-    BOOST_REQUIRE(nntp::find_filename(std::string("foobar [1/4] \"file.mp3\" yEnc (01/10)"), false) == "file");    
+    BOOST_REQUIRE(nntp::find_filename(std::string("foobar [1/4] \"file.mp3\" yEnc (01/10)"), false) == "file");
 
     BOOST_REQUIRE(nntp::find_filename(std::string("blah blah ---image.jpg---"), true) == "image.jpg");
     BOOST_REQUIRE(nntp::find_filename(std::string("blah blah ---image.jpg---"), false) == "image");
@@ -553,7 +553,7 @@ void test_find_body()
     BOOST_REQUIRE(nntp::find_body("foo.\r\nkeke\r\n.\r\n", strlen("foo.\r\nkeke\r\n.\r\n")) == strlen("foo.\r\nkeke\r\n.\r\n"));
 
     {
-        const char* str = 
+        const char* str =
          "On 2/23/2013 10:55 AM, James Silverton wrote:\r\n"
          "> On 2/23/2013 10:08 AM, RussCA wrote:\r\n"
          ">> On 2/23/2013 9:01 AM, John wrote:\r\n"
@@ -601,7 +601,7 @@ void test_find_body()
         const std::size_t len = nntp::find_body(str, std::strlen(str));
 
         BOOST_REQUIRE(len == std::strlen(str));
-    }    
+    }
 }
 
 #define REQUIRE_EXCEPTION(x) \
@@ -616,7 +616,7 @@ void test_scan_response()
     {
         int value;
         std::string foo, bar;
-        BOOST_REQUIRE(nntp::scan_response({123}, "123 234254 foo bar", 
+        BOOST_REQUIRE(nntp::scan_response({123}, "123 234254 foo bar",
             strlen("123 234254 foo bar"), value, foo, bar) == 123);
         BOOST_REQUIRE(value == 234254);
         BOOST_REQUIRE(foo == "foo");
@@ -632,7 +632,7 @@ void test_scan_response()
     {
         int value;
         nntp::trailing_comment cmt;
-        BOOST_REQUIRE(nntp::scan_response({233, 200, 405}, "233 12344 welcome posting allowed", 
+        BOOST_REQUIRE(nntp::scan_response({233, 200, 405}, "233 12344 welcome posting allowed",
             strlen("233 12344 welcome posting allowed"), value, cmt) == 233);
 
         BOOST_REQUIRE(value == 12344);
@@ -659,7 +659,7 @@ void test_to_int()
     BOOST_REQUIRE(to_int<int>("0", 1)     == 0);
     BOOST_REQUIRE(to_int<int>("1", 1)     == 1);
     BOOST_REQUIRE(to_int<int>("0003", 4)  == 3);
-    BOOST_REQUIRE(to_int<int>("0", 1, overflow) == 0);    
+    BOOST_REQUIRE(to_int<int>("0", 1, overflow) == 0);
     BOOST_REQUIRE(overflow == false);
     BOOST_REQUIRE(to_int<int>("1234", 4, overflow) == 1234);
     BOOST_REQUIRE(overflow == false);
@@ -704,7 +704,7 @@ void test_strcmp()
     BOOST_REQUIRE(nntp::strcmp(str1, str2) == false); // IGNORE CASE
     BOOST_REQUIRE(nntp::strcmp(str1, str3) == false);
     BOOST_REQUIRE(nntp::strcmp(str4, str4) == true);
-    BOOST_REQUIRE(nntp::strcmp(str4, str4) == true);    
+    BOOST_REQUIRE(nntp::strcmp(str4, str4) == true);
     BOOST_REQUIRE(nntp::strcmp(str6, str6) == true);
     BOOST_REQUIRE(nntp::strcmp(str8, str8) == true);
 
@@ -714,7 +714,7 @@ void test_strcmp()
 
     BOOST_REQUIRE(nntp::strcmp(
         "[ TOWN ]-[ www.town.ag ]-[ partner of www.ssl-news.info ] [15/32] - \"6nf3wQL3uc.part14.rar\" - 2,56 GB yEnc (71/273)",
-        "[ TOWN ]-[ www.town.ag ]-[ partner of www.ssl-news.info ] [16/32] - \"6nf3wQL3uc.part14.rar\" - 2,56 GB yEnc (71/273)") == false);    
+        "[ TOWN ]-[ www.town.ag ]-[ partner of www.ssl-news.info ] [16/32] - \"6nf3wQL3uc.part14.rar\" - 2,56 GB yEnc (71/273)") == false);
 
     BOOST_REQUIRE(nntp::strcmp(
         "girls flirting with is neat   GiBBA files  Soft I Love you to BF-Vol3 (102).jpg (1/4)",
@@ -722,7 +722,7 @@ void test_strcmp()
 
     BOOST_REQUIRE(nntp::strcmp(
         "girls flirting with is neat   GiBBA files  Soft I Love you to BF-Vol3 (102).jpg (1/4)",
-        "girls flirting with is neat   GiBBA files  Soft I Love you to BF-Vol3 (103).jpg (2/4)") == false);        
+        "girls flirting with is neat   GiBBA files  Soft I Love you to BF-Vol3 (103).jpg (2/4)") == false);
 
     BOOST_REQUIRE(nntp::strcmp(
         "Metallica - Enter Sandman yEnc (01/10).mp3",
@@ -734,15 +734,15 @@ void test_strcmp()
 
    BOOST_REQUIRE(nntp::strcmp(
         "foobar - [02/32] - \"foobar_HD_1920x1080.mp4.001\" yEnc (3/10) whatever",
-        "foobar - [02/32] - \"foobar_HD_1920x1080.mp4.001\" yEnc (10/10) whatever"));        
+        "foobar - [02/32] - \"foobar_HD_1920x1080.mp4.001\" yEnc (10/10) whatever"));
 
    BOOST_REQUIRE(nntp::strcmp(
         "foobar - [02/32] - \"foobar_HD_1920x1080.mp4.001\" yEnc (003/100) whatever",
-        "foobar - [02/32] - \"foobar_HD_1920x1080.mp4.001\" yEnc (010/100) whatever"));           
+        "foobar - [02/32] - \"foobar_HD_1920x1080.mp4.001\" yEnc (010/100) whatever"));
 
    BOOST_REQUIRE(nntp::strcmp(
         "foobar - [02/32] - \"foobar_HD_1920x1080.mp4.001\" yEnc (1/100) whatever",
-        "foobar - [02/32] - \"foobar_HD_1920x1080.mp4.001\" yEnc (100/100) whatever"));              
+        "foobar - [02/32] - \"foobar_HD_1920x1080.mp4.001\" yEnc (100/100) whatever"));
 
    BOOST_REQUIRE(nntp::strcmp(
         "foobar - [02/32] - \"foobar_HD_1920x1080.mp4.001\" yEnc (1/100) foo",
@@ -758,7 +758,7 @@ void test_hash()
         nntp::hashvalue("[408390]-[FULL]-[#a.b.erotica@EFNet]-[ nvg.15.04.04.corrine ]-[42/55] - \"nvg.15.04.04.corrine.r32\" yEnc (63/66)"));
 
     BOOST_REQUIRE(nntp::hashvalue("[408390]-[FULL]-[#a.b.erotica@EFNet]-[ nvg.15.04.04.corrine ]-[43/55] - \"nvg.15.04.04.corrine.r32\" yEnc (63/66)") !=
-        nntp::hashvalue("[408390]-[FULL]-[#a.b.erotica@EFNet]-[ nvg.15.04.04.corrine ]-[44/55] - \"nvg.15.04.04.corrine.r32\" yEnc (63/66)"));    
+        nntp::hashvalue("[408390]-[FULL]-[#a.b.erotica@EFNet]-[ nvg.15.04.04.corrine ]-[44/55] - \"nvg.15.04.04.corrine.r32\" yEnc (63/66)"));
 
     BOOST_REQUIRE(nntp::hashvalue("girls flirting with is neat   GiBBA files  Soft I Love you to BF-Vol3 (102).jpg (1/1)") !=
         nntp::hashvalue("girls flirting with is neat   GiBBA files  Soft I Love you to BF-Vol3 (103).jpg (1/1)"));
@@ -769,7 +769,7 @@ void test_hash()
     BOOST_REQUIRE(nntp::hashvalue("heres a movie with shitty part notation foobar.avi.001 [04/50]") ==
         nntp::hashvalue("heres a movie with shitty part notation foobar.avi.001 [10/50]"));
 
-    BOOST_REQUIRE(nntp::hashvalue("foobar - [02/32] - \"foobar_HD_1920x1080.mp4.001\" yEnc (3/10)") == 
+    BOOST_REQUIRE(nntp::hashvalue("foobar - [02/32] - \"foobar_HD_1920x1080.mp4.001\" yEnc (3/10)") ==
         nntp::hashvalue("foobar - [02/32] - \"foobar_HD_1920x1080.mp4.001\" yEnc (10/10)"));
 
 }
@@ -821,7 +821,7 @@ void test_thread_safety()
 
     release_thundering_herd = true;
     cond.notify_all();
-    lock.unlock();    
+    lock.unlock();
 
     t0.join();
     t1.join();

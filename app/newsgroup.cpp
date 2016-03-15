@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -86,9 +86,9 @@ public:
             switch (col)
             {
                 case Columns::State: return toString(item.state);
-                case Columns::File:  return QFileInfo(item.file).baseName(); 
+                case Columns::File:  return QFileInfo(item.file).baseName();
 
-                case Columns::Usage: 
+                case Columns::Usage:
                     if (item.state == State::Loaded)
                     {
                         const auto& db = catalogs_[item.index];
@@ -159,7 +159,7 @@ public:
     }
 
 private:
-    QString toString(State s) const 
+    QString toString(State s) const
     {
         switch (s)
         {
@@ -220,7 +220,7 @@ NewsGroup::~NewsGroup()
 
     for (const auto& b : blocks_)
     {
-        if (!b.purge) 
+        if (!b.purge)
             continue;
         QFile file(b.file);
         if (!file.remove())
@@ -236,7 +236,7 @@ NewsGroup::~NewsGroup()
     DEBUG("Newsgroup deleted");
 }
 
-QVariant NewsGroup::headerData(int section, Qt::Orientation orientation, int role) const 
+QVariant NewsGroup::headerData(int section, Qt::Orientation orientation, int role) const
 {
     if (orientation != Qt::Horizontal)
         return QVariant();
@@ -247,10 +247,10 @@ QVariant NewsGroup::headerData(int section, Qt::Orientation orientation, int rol
         switch ((Columns)section)
         {
             // fallthrough intentional for these cases.
-            case Columns::BrokenFlag:          
+            case Columns::BrokenFlag:
             case Columns::DownloadFlag:
             case Columns::BookmarkFlag:
-                return ""; 
+                return "";
 
             case Columns::Type:    return "File";
             case Columns::Age:     return "Age";
@@ -268,7 +268,7 @@ QVariant NewsGroup::headerData(int section, Qt::Orientation orientation, int rol
 
         switch ((Columns)section)
         {
-            case Columns::BrokenFlag:   return icoBroken;            
+            case Columns::BrokenFlag:   return icoBroken;
             case Columns::DownloadFlag: return icoDownload;
             case Columns::BookmarkFlag: return icoBookmark;
             default: break;
@@ -279,7 +279,7 @@ QVariant NewsGroup::headerData(int section, Qt::Orientation orientation, int rol
         switch ((Columns)section)
         {
             case Columns::Type:         return "Sort by file type";
-            case Columns::BrokenFlag:   return "Sort by broken status";            
+            case Columns::BrokenFlag:   return "Sort by broken status";
             case Columns::DownloadFlag: return "Sort by download status";
             case Columns::BookmarkFlag: return "Sort by bookmark status";
             case Columns::Age:          return "Sort by age";
@@ -295,26 +295,26 @@ QVariant NewsGroup::data(const QModelIndex& index, int role) const
 {
     const auto row   = (std::size_t)index.row();
     const auto col   = (Columns)index.column();
-    const auto& item = index_[row];    
+    const auto& item = index_[row];
 
     if (role == Qt::DisplayRole)
     {
         switch (col)
         {
-            // fall-through intended.            
+            // fall-through intended.
             case Columns::BrokenFlag:
             case Columns::DownloadFlag:
             case Columns::BookmarkFlag:
-                return {}; 
+                return {};
 
             case Columns::Type:
-                switch (item.type()) 
+                switch (item.type())
                 {
                     case FileType::none:     return "n/a";
                     case FileType::audio:    return toString(app::FileType::Audio);
                     case FileType::video:    return toString(app::FileType::Video);
                     case FileType::image:    return toString(app::FileType::Image);
-                    case FileType::text:     return toString(app::FileType::Text);                                                            
+                    case FileType::text:     return toString(app::FileType::Text);
                     case FileType::archive:  return toString(app::FileType::Archive);
                     case FileType::parity:   return toString(app::FileType::Parity);
                     case FileType::document: return toString(app::FileType::Document);
@@ -323,15 +323,15 @@ QVariant NewsGroup::data(const QModelIndex& index, int role) const
                 }
                 break;
 
-            case Columns::Age:    
-                if (item.pubdate() == 0) 
+            case Columns::Age:
+                if (item.pubdate() == 0)
                     return "???";
                 return toString(age { QDateTime::fromTime_t(item.pubdate()) });
 
-            case Columns::Size:    
+            case Columns::Size:
                 return toString(size { item.bytes() });
 
-            case Columns::Subject: 
+            case Columns::Subject:
                 return toString(item.subject());
 
             case Columns::LAST: Q_ASSERT(false);
@@ -363,11 +363,11 @@ QVariant NewsGroup::data(const QModelIndex& index, int role) const
                     case FileType::audio:    return findFileIcon(app::FileType::Audio);
                     case FileType::video:    return findFileIcon(app::FileType::Video);
                     case FileType::image:    return findFileIcon(app::FileType::Image);
-                    case FileType::text:     return findFileIcon(app::FileType::Text);                                                            
+                    case FileType::text:     return findFileIcon(app::FileType::Text);
                     case FileType::archive:  return findFileIcon(app::FileType::Archive);
                     case FileType::parity:   return findFileIcon(app::FileType::Parity);
                     case FileType::document: return findFileIcon(app::FileType::Document);
-                    case FileType::other:    return findFileIcon(app::FileType::Other);   
+                    case FileType::other:    return findFileIcon(app::FileType::Other);
                     default: Q_ASSERT(!"unknown file type");
                 }
                 break;
@@ -392,12 +392,12 @@ QVariant NewsGroup::data(const QModelIndex& index, int role) const
     return {};
 }
 
-int NewsGroup::rowCount(const QModelIndex&) const 
+int NewsGroup::rowCount(const QModelIndex&) const
 {
     return (int)index_.size();
 }
 
-int NewsGroup::columnCount(const QModelIndex&) const 
+int NewsGroup::columnCount(const QModelIndex&) const
 {
     return (int)Columns::LAST;
 }
@@ -408,7 +408,7 @@ void NewsGroup::sort(int column, Qt::SortOrder order)
 
     emit layoutAboutToBeChanged();
 
-    const auto o = (order == Qt::AscendingOrder) ? 
+    const auto o = (order == Qt::AscendingOrder) ?
         index::sortdir::ascending :
         index::sortdir::descending;
 
@@ -416,23 +416,23 @@ void NewsGroup::sort(int column, Qt::SortOrder order)
 
     switch ((Columns)column)
     {
-        case Columns::Type: 
+        case Columns::Type:
             index_.sort(index::sorting::sort_by_type, o);
             break;
 
-        case Columns::BrokenFlag: 
+        case Columns::BrokenFlag:
             index_.sort(index::sorting::sort_by_broken, o);
-            break;        
+            break;
 
-        case Columns::DownloadFlag: 
+        case Columns::DownloadFlag:
             index_.sort(index::sorting::sort_by_downloaded, o);
             break;
 
-        case Columns::BookmarkFlag: 
+        case Columns::BookmarkFlag:
             index_.sort(index::sorting::sort_by_bookmarked, o);
             break;
 
-        case Columns::Age: 
+        case Columns::Age:
             index_.sort(index::sorting::sort_by_date, o);
             break;
 
@@ -493,22 +493,22 @@ void NewsGroup::load(std::size_t blockIndex)
     BOUNDSCHECK(blocks_, blockIndex);
     auto& block = blocks_[blockIndex];
     if (block.state == State::Loaded)
-        return;    
+        return;
 
     const auto& path = joinPath(path_, name_);
     const auto& file = joinPath(path, block.file);
     DEBUG("Loading headers from %1", file);
 
     onLoadBegin(blockIndex, blocks_.size());
-    
+
     loadData(block, true);
 
     block.state = State::Loaded;
 
-    onLoadComplete(blockIndex, blocks_.size());        
+    onLoadComplete(blockIndex, blocks_.size());
 
     if (volumeList_)
-        volumeList_->updateBlock(blockIndex);    
+        volumeList_->updateBlock(blockIndex);
 
     DEBUG("Loaded block %1", blockIndex);
 }
@@ -541,7 +541,7 @@ void NewsGroup::purge(std::size_t blockIndex)
 
 void NewsGroup::refresh(quint32 account, QString path, QString name)
 {
-    Q_ASSERT(task_ == 0);        
+    Q_ASSERT(task_ == 0);
 
     DEBUG("Refresh data for %1 in %2", name, path);
     path_ = path;
@@ -573,7 +573,7 @@ void NewsGroup::killSelected(const QModelIndexList& list)
         article.set_bits(FileFlag::deleted, !deletion);
         //article.save();
     }
-    if (!index_.show_deleted()) 
+    if (!index_.show_deleted())
     {
         applyFilter();
     }
@@ -607,7 +607,7 @@ void NewsGroup::select(const QModelIndexList& list, bool val)
     for (const auto& i : list)
         index_.select(i.row(), val);
 
-    if (val) 
+    if (val)
         numSelected_ = list.size();
 }
 
@@ -671,7 +671,7 @@ void NewsGroup::download(const QModelIndexList& list, quint32 acc, QString folde
                 // could be out of it's current bounds. if that is the case
                 // we also need to reload the idlist. if the idb index
                 // is still out of bounds then we have a bug. god bless.
-                
+
                 if (!idlist_.is_open() || index >= idlist_.size())
                 {
                     const auto& path = joinPath(path_, name_);
@@ -695,8 +695,10 @@ void NewsGroup::download(const QModelIndexList& list, quint32 acc, QString folde
         //article.save();
     }
 
+    bool priority = false;
+
     QString desc;
-    QString path;    
+    QString path;
     QString name;
 
     if (subjects.size() == 1)
@@ -704,6 +706,8 @@ void NewsGroup::download(const QModelIndexList& list, quint32 acc, QString folde
         const std::string& filename = nntp::find_filename(subjects[0]);
         if (filename.size() > 5)
             desc = fromLatin(filename);
+
+        priority = true;
     }
     else
     {
@@ -713,7 +717,7 @@ void NewsGroup::download(const QModelIndexList& list, quint32 acc, QString folde
             desc = toString("%1 file(s) from %2", list.size(), name_);
         }
         else
-        { 
+        {
             path = cleanPath(name);
             desc = name;
         }
@@ -722,7 +726,7 @@ void NewsGroup::download(const QModelIndexList& list, quint32 acc, QString folde
     // want something like alt.binaries.foobar/some-file-batch-name
     path = joinPath(name_, path);
 
-    DEBUG("Suggest batch name '%1' and folder '%2'", name, path);    
+    DEBUG("Suggest batch name '%1' and folder '%2'", name, path);
 
     Download download;
     download.type     = findMediaType(name_);
@@ -731,6 +735,7 @@ void NewsGroup::download(const QModelIndexList& list, quint32 acc, QString folde
     download.basepath = folder;
     download.folder   = path;
     download.desc     = desc;
+    download.priority = priority;
     g_engine->downloadNzbContents(download, std::move(pack));
 
     const auto first = QAbstractTableModel::index(minRow, 0);
@@ -738,22 +743,22 @@ void NewsGroup::download(const QModelIndexList& list, quint32 acc, QString folde
     emit dataChanged(first, last);
 }
 
-std::size_t NewsGroup::numItems() const 
+std::size_t NewsGroup::numItems() const
 {
     return index_.real_size();
 }
 
-std::size_t NewsGroup::numShown() const 
+std::size_t NewsGroup::numShown() const
 {
-    return index_.size();    
+    return index_.size();
 }
 
-std::size_t NewsGroup::numBlocksAvail() const 
+std::size_t NewsGroup::numBlocksAvail() const
 {
     return catalogs_.size();
 }
 
-std::size_t NewsGroup::numBlocksLoaded() const 
+std::size_t NewsGroup::numBlocksLoaded() const
 {
     const auto num = std::count_if(std::begin(blocks_), std::end(blocks_),
         [](const Block& block) {
@@ -763,7 +768,7 @@ std::size_t NewsGroup::numBlocksLoaded() const
     return num;
 }
 
-NewsGroup::Article NewsGroup::getArticle(std::size_t i) const 
+NewsGroup::Article NewsGroup::getArticle(std::size_t i) const
 {
     return index_[i];
 }
@@ -782,7 +787,7 @@ void NewsGroup::deleteData(quint32 account, QString path, QString group)
 
     DEBUG("Delete NewsGroup data %1", dataDir);
 
-    if (!removeDirectory(dataDir)) 
+    if (!removeDirectory(dataDir))
     {
         ERROR("Failed to remove data directory %1", dataDir);
         return;
@@ -807,7 +812,7 @@ void NewsGroup::newHeaderDataAvailable(const QString& group, const QString& file
     {
         // the data is organized into files that are lexiographically comparable
         // i.e. bigger numbers means newer data. If we're reciving new headers
-        // in a datafile that is newer than the current we're always going 
+        // in a datafile that is newer than the current we're always going
         // load it up on the ui. otherwise it's up to the user to specifically
         // request to load older data blocks.
         bool newData = true;
@@ -835,7 +840,7 @@ void NewsGroup::newHeaderDataAvailable(const QString& group, const QString& file
         }
 #endif
 
-        // descending order, since the larger the index in the filename 
+        // descending order, since the larger the index in the filename
         // the newer the content.
         it = std::lower_bound(std::begin(blocks_), std::end(blocks_), block,
             [&](const Block& lhs, const Block& rhs) {
@@ -848,13 +853,13 @@ void NewsGroup::newHeaderDataAvailable(const QString& group, const QString& file
             volumeList_->hardReset();
     }
 
-    auto& block = *it;    
+    auto& block = *it;
     if (block.state != State::Loaded)
         return;
 
     loadData(block, false);
 
-    if (volumeList_) 
+    if (volumeList_)
     {
         auto index = std::distance(std::begin(blocks_), it);
         volumeList_->updateBlock(index);
@@ -903,16 +908,16 @@ void NewsGroup::actionKilled(quint32 action)
 void NewsGroup::loadData(Block& block, bool guiLoad)
 {
     // resetting the model will make it forget the current selection.
-    // however using beginInsertRows and endInsertRows would need to be 
-    // done for each row because the insertions into the index are not 
-    // necessarily consecutive. This was tried and turns out that it's 
+    // however using beginInsertRows and endInsertRows would need to be
+    // done for each row because the insertions into the index are not
+    // necessarily consecutive. This was tried and turns out that it's
     // much slower than just resetting the model.
     // however this means that we must maintain stuff like the current
     // selection manually. this is easily accomplished by having a
     // selection bit for each item in the index. When the GUI makes
     // a new selection we store the information per each selected
     // item in the selected bit. When model is reset we can then
-    // scan the index for the items that were selected before. 
+    // scan the index for the items that were selected before.
     // and create a new Selection list for the GUI.
     // see scanSelected and select and the GUI code for modelReset
 
@@ -936,7 +941,7 @@ void NewsGroup::loadData(Block& block, bool guiLoad)
     {
         const auto& article  = *beg;
 
-        index_.insert(article, block.index, article.index());        
+        index_.insert(article, block.index, article.index());
 
         if (guiLoad)
         {
@@ -954,8 +959,8 @@ void NewsGroup::loadData(Block& block, bool guiLoad)
     block.prevSize   = db.size();
     DEBUG("Block %1 is at new offset %2", block.file, block.prevOffset);
 
-    QAbstractTableModel::reset();    
-    QAbstractTableModel::endResetModel();    
+    QAbstractTableModel::reset();
+    QAbstractTableModel::endResetModel();
 }
 
 } // app

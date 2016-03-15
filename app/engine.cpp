@@ -183,6 +183,8 @@ bool Engine::downloadNzbContents(const Download& download, const QByteArray& nzb
 
 bool Engine::downloadNzbContents(const Download& download, std::vector<NZBContent> nzb)
 {
+    Q_ASSERT(download.isValid());
+
     QString location = download.basepath;
     if (location.isEmpty())
         location = downloads_;
@@ -211,7 +213,7 @@ bool Engine::downloadNzbContents(const Download& download, std::vector<NZBConten
             file.name = toUtf8(item.subject);
         batch.files.push_back(std::move(file));
     }
-    engine_->download_files(std::move(batch));
+    engine_->download_files(std::move(batch), download.priority);
 
     start();
 

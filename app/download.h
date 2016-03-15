@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -33,7 +33,7 @@ namespace app
     // Download bundle properties.
     struct Download {
 
-        // Assumed type of the media. 
+        // Assumed type of the media.
         MediaType type;
 
         // Source where this download data comes from.
@@ -47,22 +47,34 @@ namespace app
         // the default location defined in the engine.
         QString basepath;
 
-        // The name of the folder to be created for all the content items 
-        // the download. If this is empty then data files are stored in 
+        // The name of the folder to be created for all the content items
+        // the download. If this is empty then data files are stored in
         // basePath location.
         QString folder;
 
         // The human readable description for the download.
         QString desc;
 
+        // Priority flag downloads to the top of the queue
+        bool priority;
+
         Download() {
             static quint32 id = 1;
             guid = id++;
+            priority = false;
+            type     = MediaType::Other;
+            source   = MediaSource::RSS;
+            account  = 0;
         }
 
-        quint32 getGuid() const 
+        quint32 getGuid() const
         { return guid; }
-        
+
+        bool isValid() const
+        {
+            return account != 0;
+        }
+
     private:
         quint32 guid;
     };

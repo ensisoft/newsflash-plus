@@ -297,7 +297,7 @@
      <normaloff>:/resource/16x16_ico_png/ico_bookmark_next.png</normaloff>:/resource/16x16_ico_png/ico_bookmark_next.png</iconset>
    </property>
    <property name="text">
-    <string>Next</string>
+    <string>Next bookmark</string>
    </property>
    <property name="toolTip">
     <string>Next bookmark</string>
@@ -309,7 +309,7 @@
      <normaloff>:/resource/16x16_ico_png/ico_bookmark_prev.png</normaloff>:/resource/16x16_ico_png/ico_bookmark_prev.png</iconset>
    </property>
    <property name="text">
-    <string>Prev</string>
+    <string>Prev bookmark</string>
    </property>
    <property name="toolTip">
     <string>Previous bookmark</string>

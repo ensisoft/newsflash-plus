@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -41,8 +41,8 @@ namespace newsflash
     {
     public:
         // this callback is invoked when an error has occurred.
-        // the error object carries information and details about 
-        // what happened. 
+        // the error object carries information and details about
+        // what happened.
         using on_error = std::function<void (const ui::error& error)>;
 
         // this callback is invoked when a new file has been completed.
@@ -66,8 +66,8 @@ namespace newsflash
             std::uint64_t num_articles_local, std::uint64_t num_articles_remote)>;
 
         // this callback is invoked when there are pending events inside the engine
-        // the handler function should organize for a call into engine::pump() 
-        // to process the pending events. 
+        // the handler function should organize for a call into engine::pump()
+        // to process the pending events.
         // note that this callback handler needs to be thread safe and the notifications
         // can come from multiple threads inside the engine.
         using on_async_notify = std::function<void ()>;
@@ -94,7 +94,7 @@ namespace newsflash
 
         // download the files included in the dowload.
         // all the files are grouped together into a single batch.
-        action_id_t download_files(ui::batch batch);
+        action_id_t download_files(ui::batch batch, bool priority = false);
 
         action_id_t download_listing(ui::listing list);
 
@@ -108,7 +108,7 @@ namespace newsflash
         // or false if the pending action queue is empty.
         bool pump();
 
-        // service engine periodically to perform activities such as 
+        // service engine periodically to perform activities such as
         // reconnect after a specific timeout period.
         // the client should call this function at some steady interval
         // such as 1s or so.
@@ -137,7 +137,7 @@ namespace newsflash
 
         void set_update_callback(on_update update_callback);
 
-        // set the notify callback. this 
+        // set the notify callback. this
         void set_notify_callback(on_async_notify notify_callback);
 
         void set_header_data_callback(on_header_data callback);
@@ -154,7 +154,7 @@ namespace newsflash
         // if set engine discards any textual data and only keeps binary content.
         void set_discard_text_content(bool on_off);
 
-        // if set engine will prefer secure SSL/TCP connections 
+        // if set engine will prefer secure SSL/TCP connections
         // instead of basic TCP connections whenever secure servers
         // are enabled for the given account.
         void set_prefer_secure(bool on_off);
@@ -226,7 +226,9 @@ namespace newsflash
 
         // resume the task at the given task list index.
         void resume_task(std::size_t index);
-        
+
+        void move_task_top(action_id_t task);
+
         void move_task_up(std::size_t index);
 
         void move_task_down(std::size_t index);
@@ -249,6 +251,6 @@ namespace newsflash
     };
 
     void initialize();
-    
+
 } // newsflash
 

@@ -1,48 +1,25 @@
 {
-	"folders":
-	[
-		{
-			"path": "engine",
-            "folder_exclude_patterns": [
-                "bin"
-            ]
-		},
-
-        {
-            "path": "app",
-            "folder_exclude_patterns" : [
-                "bin"
-            ]
-        }
-	],
-    "build_systems":
-    [
-       {
-          "name": "bjam",
-          "cmd": ["bjam"]
-       }
-    ],
     "settings":
     {
         "sublimeclang_options":
         [
             "-std=c++11",
+            "-stdlib=libc++",
+            "-Wno-unknown-pragmas",
             "-Wno-inconsistent-missing-override",
             "-Wno-deprecated-register",
 
             "-DSUBLIME_CLANG_WORKAROUNDS",
             "-I${home}/coding",
             "-I${home}/coding/newsflash/",
-            "-I${home}/coding/newsflash/app/",            
-            "-I${home}/coding/newsflash/app/gui",                        
+            "-I${home}/coding/newsflash/app/",
+            "-I${home}/coding/newsflash/app/gui",
             "-I${home}/coding/newsflash/python/Include",
-            "-I${home}/coding/newsflash/qjson/include",            
+            "-I${home}/coding/newsflash/qjson/include",
             "-I${home}/coding/boost_1_51_0",
             "-I${home}/coding/qt-4.8.2/include",
             "-I${home}/coding/qt-4.8.2/include/QtCore",
-
-            // for MOC and UIC generated headers
-            "-I${home}/coding/newsflash/bin/gcc-5.2.0/debug/threading-multi/"
+            "-I${home}/coding/newsflash/bin/gcc-5.3.0/debug/threading-multi/"
         ]
     }
 }

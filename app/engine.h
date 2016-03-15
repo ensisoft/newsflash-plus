@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -16,7 +16,7 @@
 // AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.        
+// THE SOFTWARE.
 
 #pragma once
 
@@ -54,7 +54,7 @@ namespace app
     class Engine : public QObject
     {
         Q_OBJECT
-        
+
     public:
         Engine();
        ~Engine();
@@ -107,9 +107,9 @@ namespace app
             totalspeed_ = 0;
 
             // at any given moment the current engine combined download
-            // speed should equal that of of all it's connections. 
+            // speed should equal that of of all it's connections.
             // however this is the only place where we are able to get that
-            // information. so in order to be able to call get_download_speed() 
+            // information. so in order to be able to call get_download_speed()
             // reliable a call to update_conn_list has to be made first.
             for (const auto& ui : list)
                 totalspeed_ += ui.bps;
@@ -117,8 +117,8 @@ namespace app
 
         // get the free disk space at the default download location.
         quint64 getFreeDiskSpace() const
-        { 
-            return diskspace_; 
+        {
+            return diskspace_;
         }
 
         // get current total download speed (of all connections)
@@ -139,23 +139,23 @@ namespace app
             return engine_->get_bytes_queued();
         }
 
-        // get the number of bytes currently ready. 
+        // get the number of bytes currently ready.
         // bytes ready is always a fraction of bytesQueued
         // so if bytesQueued is zero then bytesReady is also zero.
-        quint64 getBytesReady() const 
+        quint64 getBytesReady() const
         {
             return engine_->get_bytes_ready();
         }
 
-        // get the number of bytes written to the disk 
-        quint64 getBytesWritten() const 
+        // get the number of bytes written to the disk
+        quint64 getBytesWritten() const
         {
             return engine_->get_bytes_written();
         }
 
         const QString& getLogfilesPath() const
-        { 
-            return logifiles_; 
+        {
+            return logifiles_;
         }
 
         QString getEngineLogfile() const
@@ -168,9 +168,9 @@ namespace app
             logifiles_ = path;
         }
 
-        const QString& getDownloadPath() const 
-        { 
-            return downloads_; 
+        const QString& getDownloadPath() const
+        {
+            return downloads_;
         }
 
         void setDownloadPath(const QString& path)
@@ -184,8 +184,8 @@ namespace app
             return engine_->get_overwrite_existing_files();
         }
 
-        bool getDiscardTextContent() const 
-        { 
+        bool getDiscardTextContent() const
+        {
             return engine_->get_discard_text_content();
         }
 
@@ -196,20 +196,20 @@ namespace app
 
         bool isStarted() const
         {
-            return engine_->is_started(); 
+            return engine_->is_started();
         }
 
         bool getConnect() const
-        { 
-            return connect_; 
+        {
+            return connect_;
         }
 
-        bool getThrottle() const 
+        bool getThrottle() const
         {
             return engine_->get_throttle();
         }
 
-        unsigned getThrottleValue() const 
+        unsigned getThrottleValue() const
         {
             return engine_->get_throttle_value();
         }

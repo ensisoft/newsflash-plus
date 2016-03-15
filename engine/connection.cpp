@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -63,14 +63,14 @@ struct connection::state {
     throttle* pthrottle;
     boost::random::mt19937 random; // std::rand is not MT safe.
 
-    void do_auth(std::string& user, std::string& pass) const 
+    void do_auth(std::string& user, std::string& pass) const
     {
         if (username.empty() || password.empty())
             throw connection::exception(error::no_permission, "authentication requried but no credentials provided");
         user = username;
         pass = password;
     }
-    void do_send(const std::string& cmd) 
+    void do_send(const std::string& cmd)
     {
         socket->sendall(&cmd[0], cmd.size());
     }
@@ -116,9 +116,9 @@ void connection::resolve::xperform()
     LOG_I("Hostname resolved to ", ipv4{state_->addr});
 }
 
-std::string connection::resolve::describe() const 
+std::string connection::resolve::describe() const
 {
-    return "Resolve " + state_->hostname; 
+    return "Resolve " + state_->hostname;
 }
 
 connection::connect::connect(std::shared_ptr<state> s) : state_(s)
@@ -155,12 +155,12 @@ void connection::connect::xperform()
         return;
     }
 
-    socket->complete_connect();    
+    socket->complete_connect();
 
     LOG_I("Socket connection ready!");
 }
 
-std::string connection::connect::describe() const 
+std::string connection::connect::describe() const
 {
     return str("Connect to ", ipv4{state_->addr}, ":", state_->port);
 }
@@ -184,7 +184,7 @@ connection::initialize::initialize(std::shared_ptr<state> s) : state_(s)
     state_->session->enable_compression(s->compression);
 }
 
-std::string connection::initialize::describe() const 
+std::string connection::initialize::describe() const
 {
     return "Initialize NNTP session";
 }
@@ -194,7 +194,7 @@ void connection::initialize::xperform()
     std::lock_guard<std::mutex> lock(state_->mutex);
 
     LOG_I("Initializing NNTP session");
-    LOG_I("Enable gzip compress: ", state_->compression);    
+    LOG_I("Enable gzip compress: ", state_->compression);
     LOG_I("Enable pipelining: ", state_->pipelining);
 
     auto& session = state_->session;
@@ -207,19 +207,19 @@ void connection::initialize::xperform()
     newsflash::buffer buff(1024);
     newsflash::buffer temp;
 
-    // while there are pending commands in the session we read 
+    // while there are pending commands in the session we read
     // data from the socket into the buffer and then feed the buffer
     // into the session to update the session state.
     while (session->send_next())
     {
-        do 
+        do
         {
             // wait for data or cancellation
             auto received = socket->wait(true, false);
             auto canceled = cancel->wait();
             if (!newsflash::wait_for(received, canceled, std::chrono::seconds(5)))
                 throw exception(connection::error::timeout, "connection timeout");
-            if (canceled) 
+            if (canceled)
             {
                 LOG_D("Initialize was canceled");
                 return;
@@ -227,14 +227,14 @@ void connection::initialize::xperform()
 
             // readsome data
             const auto bytes = socket->recvsome(buff.back(), buff.available());
-            if (bytes == 0) 
+            if (bytes == 0)
                 throw exception(connection::error::network, "socket was closed unexpectedly");
 
             // commit
             buff.append(bytes);
         }
         while (!session->recv_next(buff, temp));
-    }    
+    }
 
     // check for errors
     const auto err = session->get_error();
@@ -273,7 +273,7 @@ void connection::execute::xperform()
     // we pass the session object to the cmdlist to allow
     // it to submit a request into the session.
     // then while there are pending commands in the session
-    // we read data from the socket into the buffer and pass 
+    // we read data from the socket into the buffer and pass
     // it into the session in order to update the session state.
     // once a command is completed we pass the output buffer
     // to the cmdlist so that it can update its own state.
@@ -301,7 +301,7 @@ void connection::execute::xperform()
 
             while (session->send_next())
             {
-                do 
+                do
                 {
                     auto received = socket->wait(true, false);
                     auto canceled = cancel->wait();
@@ -360,10 +360,10 @@ void connection::execute::xperform()
 
     while (session->pending())
     {
-        newsflash::buffer content(MB(4));                
+        newsflash::buffer content(MB(4));
 
-        session->send_next();        
-        do 
+        session->send_next();
+        do
         {
             auto canceled = cancel->wait();
             if (newsflash::wait_for(canceled, std::chrono::milliseconds(0)))
@@ -385,7 +385,7 @@ void connection::execute::xperform()
             {
                 const auto ms = state_->random() % 50;
                 std::this_thread::sleep_for(std::chrono::milliseconds(ms));
-                quota = throttle->give_quota();                    
+                quota = throttle->give_quota();
             }
 
             std::size_t avail = std::min(recvbuf.available(), quota);
@@ -422,7 +422,7 @@ void connection::execute::xperform()
 
         // if the session is pipelined there's no way to stop the data transmission
         // of already pipelined commands other than by doing a hard socket reset.
-        // if the session is not pipelined we can just exit the reading loop after 
+        // if the session is not pipelined we can just exit the reading loop after
         // a complete command is completed and we can maintain the socket/session.
         if (cmdlist->is_canceled())
         {
@@ -434,13 +434,13 @@ void connection::execute::xperform()
             session->clear();
             return;
         }
-    }    
+    }
 
     LOG_I("Cmdlist complete");
 }
 
-std::string connection::execute::describe() const 
-{ 
+std::string connection::execute::describe() const
+{
     return "Execute cmdlist";
 }
 
@@ -466,7 +466,7 @@ void connection::disconnect::xperform()
 
         session->quit();
         session->send_next();
-        do 
+        do
         {
             // wait for data, if no response then khtx bye whatever, we're done anyway
             auto received = socket->wait(true, false);
@@ -491,7 +491,7 @@ void connection::disconnect::xperform()
     LOG_D("Disconnect complete");
 }
 
-std::string connection::disconnect::describe() const 
+std::string connection::disconnect::describe() const
 {
     return "Disconnect";
 }
@@ -499,7 +499,7 @@ std::string connection::disconnect::describe() const
 connection::ping::ping(std::shared_ptr<state> s) : state_(s)
 {}
 
-void connection::ping::xperform() 
+void connection::ping::xperform()
 {
     std::lock_guard<std::mutex> lock(state_->mutex);
 
@@ -511,7 +511,7 @@ void connection::ping::xperform()
     newsflash::buffer buff(64);
     newsflash::buffer temp;
 
-    session->ping();    
+    session->ping();
     while (session->pending())
     {
         session->send_next();
@@ -526,12 +526,12 @@ void connection::ping::xperform()
                 throw exception(connection::error::network, "connection was closed unexpectedly");
 
             buff.append(bytes);
-        } 
+        }
         while (!session->recv_next(buff, temp));
     }
 }
 
-std::string connection::ping::describe() const 
+std::string connection::ping::describe() const
 {
     return "Ping";
 }
@@ -602,10 +602,10 @@ void connection::cancel()
     state_->cancel->set();
 }
 
-const std::string& connection::username() const 
+const std::string& connection::username() const
 { return state_->username; }
 
-const std::string& connection::password() const 
+const std::string& connection::password() const
 { return state_->password; }
 
 

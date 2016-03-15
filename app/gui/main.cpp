@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -91,11 +91,11 @@ namespace gui
 int run(QtSingleApplication& qtinstance)
 {
     // initialize home directory.
-    app::homedir::init(".newsflash");    
+    app::homedir::init(".newsflash");
 
     newsflash::initialize();
 
-    app::logCopyright();    
+    app::logCopyright();
 
     const auto& args = qtinstance.arguments();
     for (const auto& arg : args)
@@ -170,8 +170,8 @@ int run(QtSingleApplication& qtinstance)
 
 
     // first power module sends initPoweroff signal
-    // we ask the MainWindow to close. 
-    // After mainwindow is closed.. exit the loop    
+    // we ask the MainWindow to close.
+    // After mainwindow is closed.. exit the loop
     QObject::connect(&power, SIGNAL(initPoweroff()), &win, SLOT(close()));
     QObject::connect(&win, SIGNAL(closed()), &qtinstance, SLOT(quit()));
 
@@ -192,7 +192,7 @@ int run(QtSingleApplication& qtinstance)
     win.attach(&downloads);
 
     // files component
-    app::Files files;    
+    app::Files files;
     gui::Files filesUI(files);
     win.attach(&filesUI);
     // connect to the engine
@@ -211,7 +211,7 @@ int run(QtSingleApplication& qtinstance)
         &power, SLOT(repairReady()));
 
     // connect to the repair GUI
-    gui::Repair repairGui(repairer);    
+    gui::Repair repairGui(repairer);
 
     //  unpack
     std::unique_ptr<app::Archiver> extractEngine(new app::Unrar(
@@ -243,7 +243,7 @@ int run(QtSingleApplication& qtinstance)
     // eventlog module. this is a bit special
     // because it is used literally from everywhere.
     gui::EventLog log;
-    win.attach(&log);    
+    win.attach(&log);
 
     // core module
     gui::CoreModule core;
@@ -320,7 +320,7 @@ int run(QtSingleApplication& qtinstance)
     app::g_engine->loadState(settings);
     app::g_history->loadState(settings);
     app::g_history->loadHistory();
- 
+
     win.loadState();
     win.prepareFileMenu();
     win.prepareWindowMenu();
@@ -380,7 +380,7 @@ int main(int argc, char* argv[])
         return 0;
     }
 
-    try 
+    try
     {
         int ret = seh_main(qtinstance);
 
