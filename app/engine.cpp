@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -16,7 +16,7 @@
 // AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.        
+// THE SOFTWARE.
 
 #define LOGTAG "engine"
 
@@ -53,7 +53,7 @@ namespace {
     // event queue when the core engine has pending actions.
     // the callback from the engine comes from anothread thread
     // and we post the event to the app's main thread's event
-    // queue which then picks up the event and calls the engine's 
+    // queue which then picks up the event and calls the engine's
     // message dispatcher.
     class AsyncNotifyEvent : public QEvent
     {
@@ -63,7 +63,7 @@ namespace {
        ~AsyncNotifyEvent()
         {}
 
-        static QEvent::Type identity() 
+        static QEvent::Type identity()
         {
             static auto id = QEvent::registerEventType();
             return (QEvent::Type)id;
@@ -129,9 +129,9 @@ void Engine::setAccount(const Accounts::Account& acc)
     a.username              = toUtf8(acc.username);
     a.password              = toUtf8(acc.password);
     a.secure_host           = toLatin(acc.secureHost);
-    a.general_host          = toLatin(acc.generalHost);    
-    a.secure_port           = acc.securePort;    
-    a.general_port          = acc.generalPort;    
+    a.general_host          = toLatin(acc.generalHost);
+    a.secure_port           = acc.securePort;
+    a.general_port          = acc.generalPort;
     a.enable_compression    = acc.enableCompression;
     a.enable_pipelining     = acc.enablePipelining;
     a.enable_general_server = acc.enableGeneralServer;
@@ -268,9 +268,9 @@ quint32 Engine::retrieveHeaders(quint32 acc, const QString& path, const QString&
 
 void Engine::loadState(Settings& s)
 {
-    logifiles_ = s.get("engine", "logfiles", 
+    logifiles_ = s.get("engine", "logfiles",
         QDir::toNativeSeparators(QDir::tempPath() + "/Newsflash"));
-    downloads_ = s.get("engine", "downloads", 
+    downloads_ = s.get("engine", "downloads",
         QDir::toNativeSeparators(QDir::homePath() + "/Downloads"));
 
     mountpoint_ = resolveMountPoint(downloads_);
@@ -316,7 +316,7 @@ void Engine::loadSession()
         if (QFileInfo(file).exists())
         {
             DEBUG("Loading engine session %1 ...", file);
-            
+
             engine_->load_session(toUtf8(file));
             if (engine_->num_tasks())
                 connect(connect_);
@@ -339,7 +339,7 @@ void Engine::saveSession()
 }
 
 void Engine::connect(bool on_off)
-{ 
+{
     connect_ = on_off;
     if (!connect_)
     {
@@ -354,16 +354,16 @@ void Engine::connect(bool on_off)
 void Engine::refresh()
 {
     // rescan the default download location volume
-    // for free space. note that the location might 
-    // point to a folder that doesn't yet exist.. 
-    // so traverse the path towards the root untill 
+    // for free space. note that the location might
+    // point to a folder that doesn't yet exist..
+    // so traverse the path towards the root untill
     // an existing path is found.
     diskspace_ = app::getFreeDiskSpace(mountpoint_);
 }
 
 bool Engine::shutdown()
 {
-    killTimer(ticktimer_);    
+    killTimer(ticktimer_);
     shutdown_  = true;
     ticktimer_ = 0;
 
@@ -394,8 +394,8 @@ bool Engine::eventFilter(QObject* object, QEvent* event)
         }
         const auto numPending = engine_->num_pending_tasks();
 
-        //DEBUG("Num pending tasks %1", numPending);        
-        
+        //DEBUG("Num pending tasks %1", numPending);
+
         emit numPendingTasks(numPending);
         return true;
     }
@@ -440,7 +440,7 @@ void Engine::onFileComplete(const newsflash::ui::file& f)
 
     path = QDir(path).absolutePath();
     path = QDir::toNativeSeparators(path);
-    DEBUG("File complete \"%1/%2\" damaged: %3 binary: %4", 
+    DEBUG("File complete \"%1/%2\" damaged: %3 binary: %4",
         path, name, f.damaged, f.binary);
 
     app::FileInfo file;
@@ -454,15 +454,15 @@ void Engine::onFileComplete(const newsflash::ui::file& f)
     if (f.damaged)
     {
         WARN("\"%1\" is damaged.", file.name);
+        NOTE("\"%1\" is damaged.", file.name);
     }
     else
     {
-        INFO("Completed \"%1\".", file.name);
+        INFO("\"%1\" is complete.", file.name);
+        NOTE("\"%1\" is complete.", file.name);
     }
 
     emit fileCompleted(file);
-
-    NOTE("\"%1\" is ready", file.name);
 }
 
 void Engine::onBatchComplete(const newsflash::ui::batch& b)
@@ -509,7 +509,7 @@ void Engine::onUpdateComplete(const newsflash::ui::update& u)
     info.numRemoteArticles = u.num_remote_articles;
     DEBUG("%1 Update complete at %2", info.groupName, info.groupPath);
 
-    INFO("%1 updated with %2 articles of %3 available", info.groupName, 
+    INFO("%1 updated with %2 articles of %3 available", info.groupName,
         info.numLocalArticles, info.numRemoteArticles);
     NOTE("Updated %1", info.groupName);
 
@@ -544,4 +544,3 @@ Engine* g_engine;
 
 
 } // app
-    
