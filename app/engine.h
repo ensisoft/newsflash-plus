@@ -59,6 +59,8 @@ namespace app
         Engine();
        ~Engine();
 
+        void testAccount(const Accounts::Account& acc);
+
         // set/modify account in the engine.
         void setAccount(const Accounts::Account& acc);
 
@@ -301,6 +303,8 @@ namespace app
         void numPendingTasks(std::size_t num);
         void quotaUpdate(std::size_t bytes, std::size_t account);
         void actionKilled(quint32 action);
+        void testAccountComplete(bool success);
+        void testAccountLogMsg(const QString& msg);
 
     private:
         virtual bool eventFilter(QObject* object, QEvent* event) override;
@@ -321,6 +325,8 @@ namespace app
             std::uint64_t numLocal, std::uint64_t numRemote);
         void onAllComplete();
         void onQuota(std::size_t bytes, std::size_t account);
+        void onConnectionTestComplete(bool success);
+        void onConnectionTestLogMsg(const std::string& msg);
 
     private:
         QString logifiles_;

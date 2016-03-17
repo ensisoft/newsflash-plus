@@ -79,10 +79,16 @@ namespace newsflash
         // quota is downloaded.
         using on_quota = std::function<void (std::size_t bytes, std::size_t account)>;
 
+        using on_conn_test = std::function<void (bool success)>;
+
+        using on_conn_test_log  = std::function<void (const std::string& msgline)>;
+
         using action_id_t = std::size_t;
 
         engine();
        ~engine();
+
+        void test_account(const ui::account& acc);
 
         // set or modify an account.
         void set_account(const ui::account& acc);
@@ -146,6 +152,9 @@ namespace newsflash
         void set_complete_callback(on_complete callback);
 
         void set_quota_callback(on_quota callback);
+
+        void set_test_callback(on_conn_test callback);
+        void set_test_log_callback(on_conn_test_log callback);
 
         // if set to true engine will overwrite files that already exist in the filesystem.
         // otherwise file name collisions are resolved by some naming scheme
@@ -243,6 +252,7 @@ namespace newsflash
     private:
         class task;
         class conn;
+        class conntest;
         class batch;
         struct state;
 

@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -26,24 +26,28 @@
 #  include <QString>
 #  include "ui_dlgaccount.h"
 #include <newsflash/warnpop.h>
+#include <memory>
 #include "../accounts.h"
 
 namespace gui
 {
-    class DlgAccount : public QDialog 
+    class DlgAccTest;
+
+    class DlgAccount : public QDialog
     {
         Q_OBJECT
 
     public:
         DlgAccount(QWidget* parent, app::Accounts::Account& acc, bool isNew);
        ~DlgAccount();
-        
+
     private:
         void changeEvent(QEvent *e);
 
     private slots:
+        void on_btnTest_clicked();
         void on_btnAccept_clicked();
-        void on_btnBrowse_clicked();        
+        void on_btnBrowse_clicked();
         void on_btnCancel_clicked();
         void on_grpSecure_clicked(bool val);
         void on_grpGeneral_clicked(bool val);
@@ -57,6 +61,8 @@ namespace gui
         bool isNew_;
         QString name_;
         QString path_;
+    private:
+        std::unique_ptr<DlgAccTest> test_;
     };
 
 } // gui

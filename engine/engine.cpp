@@ -111,6 +111,7 @@ struct engine::state {
     std::deque<std::unique_ptr<engine::task>> tasks;
     std::deque<std::unique_ptr<engine::conn>> conns;
     std::deque<std::unique_ptr<engine::batch>> batches;
+
     std::vector<ui::account> accounts;
     std::list<std::shared_ptr<cmdlist>> cmds;
     std::uint64_t bytes_downloaded;
@@ -122,6 +123,7 @@ struct engine::state {
     std::string logpath;
 
     std::unique_ptr<class logger> logger;
+    std::unique_ptr<conntest> current_connection_test;
 
     std::mutex  mutex;
     std::queue<std::unique_ptr<action>> actions;
@@ -147,6 +149,8 @@ struct engine::state {
     engine::on_async_notify on_notify_callback;
     engine::on_complete on_complete_callback;
     engine::on_quota on_quota_callback;
+    engine::on_conn_test on_test_callback;
+    engine::on_conn_test_log on_test_log_callback;
 
     throttle ratecontrol;
 
@@ -576,6 +580,106 @@ private:
     threadpool::worker* thread_;
     unsigned ticks_to_ping_;
     unsigned ticks_to_conn_;
+};
+
+
+// similar to engine::conn but one shot only.
+// used for connection tests only.
+class engine::conntest
+{
+public:
+    conntest(const ui::account& account, std::size_t id, engine::state& state)
+    {
+        connection::spec spec;
+        spec.pthrottle = nullptr;
+        spec.password = account.password;
+        spec.username = account.username;
+        spec.enable_compression = account.enable_compression;
+        spec.enable_pipelining = account.enable_pipelining;
+        if (account.enable_secure_server)
+        {
+            spec.hostname = account.secure_host;
+            spec.hostport = account.secure_port;
+            spec.use_ssl  = true;
+        }
+        else
+        {
+            spec.hostname = account.general_host;
+            spec.hostport = account.general_port;
+            spec.use_ssl  = false;
+        }
+        logger_ = std::make_shared<buffer_logger>();
+        id_     = id;
+        success_ = false;
+        finished_ = false;
+
+        do_action(state, conn_.connect(spec));
+    }
+    void on_action(engine::state& state, std::unique_ptr<action> act)
+    {
+        assert(act->get_owner() == id_);
+
+        if (state.on_test_log_callback)
+        {
+            const auto& msgs = logger_->lines();
+            for (const auto& msg : msgs)
+                state.on_test_log_callback(msg);
+        }
+        logger_->clear();
+
+        if (act->has_exception())
+        {
+            success_  = false;
+            finished_ = true;
+            try
+            {
+                act->rethrow();
+            }
+            catch (const std::exception& e)
+            {}
+            if (state.on_test_callback)
+                state.on_test_callback(false);
+            return;
+        }
+
+        auto next = conn_.complete(std::move(act));
+        if (next)
+        {
+            do_action(state, std::move(next));
+        }
+        else
+        {
+            success_  = true;
+            finished_ = true;
+            if (state.on_test_callback)
+                state.on_test_callback(success_);
+        }
+    }
+
+    bool is_finished() const
+    { return finished_; }
+
+    bool is_successful() const
+    { return success_; }
+
+    std::size_t id() const
+    { return id_; }
+
+private:
+    void do_action(engine::state& state, std::unique_ptr<action> act)
+    {
+        act->set_owner(id_);
+        act->set_log(logger_);
+        state.submit(act.release());
+    }
+
+private:
+    connection conn_;
+    std::shared_ptr<buffer_logger> logger_;
+    std::size_t id_;
+private:
+    bool success_;
+    bool finished_;
 };
 
 class engine::task
@@ -1765,6 +1869,13 @@ engine::~engine()
     state_->threads.reset();
 }
 
+void engine::test_account(const ui::account& acc)
+{
+    const auto id = state_->oid++;
+
+    state_->current_connection_test.reset(new conntest(acc, id, *state_));
+}
+
 void engine::set_account(const ui::account& acc)
 {
     auto it = std::find_if(std::begin(state_->accounts), std::end(state_->accounts),
@@ -2114,6 +2225,13 @@ bool engine::pump()
                 }
             }
         }
+        else if (state_->current_connection_test &&
+            state_->current_connection_test->id() == id)
+        {
+            state_->current_connection_test->on_action(*state_, std::move(action));
+            if (state_->current_connection_test->is_finished())
+                state_->current_connection_test.reset();
+        }
         else
         {
             for (auto& task : state_->tasks)
@@ -2382,6 +2500,16 @@ void engine::set_complete_callback(on_complete callback)
 void engine::set_quota_callback(on_quota callback)
 {
     state_->on_quota_callback = std::move(callback);
+}
+
+void engine::set_test_callback(on_conn_test callback)
+{
+    state_->on_test_callback = std::move(callback);
+}
+
+void engine::set_test_log_callback(on_conn_test_log callback)
+{
+    state_->on_test_log_callback = std::move(callback);
 }
 
 void engine::set_overwrite_existing_files(bool on_off)

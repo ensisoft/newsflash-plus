@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -24,8 +24,11 @@
 #  include <QDir>
 #include <newsflash/warnpop.h>
 #include "dlgaccount.h"
+#include "dlgacctest.h"
 #include "../utility.h"
 #include "../debug.h"
+#include "../accounts.h"
+#include "../engine.h"
 
 namespace gui
 {
@@ -51,11 +54,11 @@ DlgAccount::DlgAccount(QWidget* parent, app::Accounts::Account& acc, bool isNew)
     ui_.edtDataPath->setText(acc.datapath);
     ui_.edtDataPath->setCursorPosition(0);
 
-    ui_.edtName->setFocus();    
+    ui_.edtName->setFocus();
 
     ui_.btnAccept->setEnabled(
-        ui_.grpSecure->isChecked() || 
-        ui_.grpGeneral->isChecked());     
+        ui_.grpSecure->isChecked() ||
+        ui_.grpGeneral->isChecked());
 
     if (isNew_)
     {
@@ -77,6 +80,72 @@ void DlgAccount::changeEvent(QEvent* e)
     default:
         break;
     }
+}
+
+void DlgAccount::on_btnTest_clicked()
+{
+    app::Accounts::Account acc;
+    acc.name                = ui_.edtName->text();
+    acc.enableGeneralServer = ui_.grpGeneral->isChecked();
+    acc.enableSecureServer  = ui_.grpSecure->isChecked();
+    acc.enableLogin         = ui_.grpLogin->isChecked();
+    acc.generalPort         = ui_.edtPort->text().toInt();
+    acc.generalHost         = ui_.edtHost->text();
+    acc.securePort          = ui_.edtPortSecure->text().toInt();
+    acc.secureHost          = ui_.edtHostSecure->text();
+    acc.username            = ui_.edtUsername->text();
+    acc.password            = ui_.edtPassword->text();
+    acc.maxConnections      = ui_.maxConnections->value();
+    acc.enableCompression   = ui_.chkCompression->isChecked();
+    acc.enablePipelining    = ui_.chkPipelining->isChecked();
+    acc.datapath            = ui_.edtDataPath->text();
+
+    if (acc.enableSecureServer)
+    {
+        if (acc.securePort <= 0)
+        {
+            ui_.edtPortSecure->setFocus();
+            return;
+        }
+        if (acc.secureHost.isEmpty())
+        {
+            ui_.edtHostSecure->setFocus();
+            return;
+        }
+    }
+    if (acc.enableGeneralServer)
+    {
+        if (acc.generalPort <= 0)
+        {
+            ui_.edtPort->setFocus();
+            return;
+        }
+        if (acc.generalHost.isEmpty())
+        {
+            ui_.edtHost->setFocus();
+            return;
+        }
+    }
+    if (acc.enableLogin)
+    {
+        if (acc.username.isEmpty())
+        {
+            ui_.edtUsername->setFocus();
+            return;
+        }
+        if (acc.password.isEmpty())
+        {
+            ui_.edtPassword->setFocus();
+            return;
+        }
+    }
+    if (!test_)
+        test_.reset(new DlgAccTest(this));
+
+    test_->start();
+    test_->show();
+
+    app::g_engine->testAccount(acc);
 }
 
 void DlgAccount::on_btnAccept_clicked()
@@ -156,7 +225,7 @@ void DlgAccount::on_btnAccept_clicked()
         ui_.edtDataPath->setFocus();
         return;
     }
-    
+
     accept();
 }
 
@@ -178,18 +247,23 @@ void DlgAccount::on_btnCancel_clicked()
 
 void DlgAccount::on_grpSecure_clicked(bool val)
 {
+    bool have_server = ui_.grpSecure->isChecked() ||
+        ui_.grpGeneral->isChecked();
+
     // need to enable at least 1 server
-    ui_.btnAccept->setEnabled(
-        ui_.grpSecure->isChecked() || 
-        ui_.grpGeneral->isChecked());
+    ui_.btnAccept->setEnabled(have_server);
+    ui_.btnTest->setEnabled(have_server);
 }
+
 
 void DlgAccount::on_grpGeneral_clicked(bool val)
 {
+    bool have_server = ui_.grpSecure->isChecked() ||
+        ui_.grpGeneral->isChecked();
+
     // need to enable at least 1 server
-    ui_.btnAccept->setEnabled(
-        ui_.grpSecure->isChecked() || 
-        ui_.grpGeneral->isChecked());    
+    ui_.btnAccept->setEnabled(have_server);
+    ui_.btnTest->setEnabled(have_server);
 }
 
 void DlgAccount::on_edtName_textEdited()

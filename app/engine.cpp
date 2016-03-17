@@ -99,6 +99,10 @@ Engine::Engine()
     engine_->set_complete_callback(std::bind(&Engine::onAllComplete, this));
     engine_->set_quota_callback(std::bind(&Engine::onQuota, this,
         std::placeholders::_1, std::placeholders::_2));
+    engine_->set_test_callback(std::bind(&Engine::onConnectionTestComplete, this,
+        std::placeholders::_1));
+    engine_->set_test_log_callback(std::bind(&Engine::onConnectionTestLogMsg, this,
+        std::placeholders::_1));
 
     // remember that the notify callback can come from any thread
     // within the engine and it has to be thread safe.
@@ -119,6 +123,25 @@ Engine::~Engine()
     engine_.reset();
 
     DEBUG("Engine destroyed");
+}
+
+void Engine::testAccount(const Accounts::Account& acc)
+{
+    newsflash::ui::account a;
+    a.id                    = acc.id;
+    a.name                  = toUtf8(acc.name);
+    a.username              = toUtf8(acc.username);
+    a.password              = toUtf8(acc.password);
+    a.secure_host           = toLatin(acc.secureHost);
+    a.general_host          = toLatin(acc.generalHost);
+    a.secure_port           = acc.securePort;
+    a.general_port          = acc.generalPort;
+    a.enable_secure_server  = acc.enableSecureServer;
+    a.enable_general_server = acc.enableGeneralServer;
+    a.enable_compression    = acc.enableCompression;
+    a.enable_pipelining     = acc.enablePipelining;
+    a.connections = 1;
+    engine_->test_account(a);
 }
 
 void Engine::setAccount(const Accounts::Account& acc)
@@ -540,6 +563,20 @@ void Engine::onQuota(std::size_t bytes, std::size_t account)
     DEBUG("Quota update %1 for account %2", app::size{bytes}, account);
 
     emit quotaUpdate(bytes, account);
+}
+
+void Engine::onConnectionTestComplete(bool success)
+{
+    DEBUG("Connection test complete: %1", success);
+
+    emit testAccountComplete(success);
+}
+
+void Engine::onConnectionTestLogMsg(const std::string& msg)
+{
+    DEBUG("Connection test log: '%1'", msg);
+
+    emit testAccountLogMsg(fromUtf8(msg));
 }
 
 Engine* g_engine;

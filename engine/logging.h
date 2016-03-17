@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -26,6 +26,7 @@
 #include <ostream>
 #include <cerrno>
 #include <mutex>
+#include <vector>
 #include "format.h"
 #include "utf8.h"
 
@@ -48,7 +49,7 @@ namespace newsflash
     enum class logevent {
         error   = 'E',
         warning = 'W',
-        info    = 'I', 
+        info    = 'I',
         debug   = 'D'
     };
 
@@ -77,7 +78,7 @@ namespace newsflash
 
     } // detail
 
-    class logger 
+    class logger
     {
     public:
         virtual ~logger() = default;
@@ -93,6 +94,29 @@ namespace newsflash
     private:
     };
 
+    class buffer_logger : public logger
+    {
+    public:
+        virtual void write(const std::string& msg) override
+        {
+            lines_.push_back(msg);
+        }
+        virtual void flush() override
+        {}
+        virtual bool is_open() const override
+        { return true; }
+        virtual std::string name() const override
+        { return "buffer_logger"; }
+
+        const std::vector<std::string>& lines() const
+        { return lines_; }
+
+        void clear()
+        { lines_.clear(); }
+    private:
+        std::vector<std::string> lines_;
+    };
+
     class filelogger : public logger
     {
     public:
@@ -100,20 +124,20 @@ namespace newsflash
         {
             out_.open(file, std::ios::trunc);
             if (!out_.is_open() && !ignore_failures)
-                throw std::system_error(std::error_code(errno, 
+                throw std::system_error(std::error_code(errno,
                     std::system_category()), "failed to open log file: " + file);
 
             file_ = std::move(file);
         }
         virtual void write(const std::string& msg) override
         {
-            std::lock_guard<std::mutex> lock(mutex_);            
+            std::lock_guard<std::mutex> lock(mutex_);
             out_ << msg;
         }
 
         virtual void flush() override
         {
-            std::lock_guard<std::mutex> lock(mutex_);            
+            std::lock_guard<std::mutex> lock(mutex_);
             out_.flush();
         }
 
@@ -125,7 +149,7 @@ namespace newsflash
     private:
         std::ofstream out_;
         std::string file_;
-        std::mutex mutex_;        
+        std::mutex mutex_;
     };
 
     class stdlog : public logger
@@ -134,13 +158,13 @@ namespace newsflash
         stdlog(std::ostream& out) : out_(out)
         {}
         virtual void write(const std::string& msg) override
-        { 
+        {
             std::lock_guard<std::mutex> lock(mutex_);
             out_ << msg;
         }
         virtual void flush() override
         {
-            std::lock_guard<std::mutex> lock(mutex_);            
+            std::lock_guard<std::mutex> lock(mutex_);
             out_.flush();
         }
 
@@ -178,7 +202,7 @@ namespace newsflash
         detail::beg_log_event(ss, type, file, line);
         detail::write_log_args(ss, args...);
         detail::end_log_event(ss);
-        log->write(ss.str());        
+        log->write(ss.str());
     }
 
     void flush_log();
