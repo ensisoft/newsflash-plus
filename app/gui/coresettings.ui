@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>444</width>
-    <height>536</height>
+    <width>447</width>
+    <height>583</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -119,6 +119,13 @@
         </property>
         <property name="text">
          <string>Discard text content</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QCheckBox" name="chkCheckLowDisk">
+        <property name="text">
+         <string>Check for low disk before downloading</string>
         </property>
        </widget>
       </item>
@@ -246,6 +253,7 @@
   <tabstop>btnBrowseDownloads</tabstop>
   <tabstop>chkOverwriteExisting</tabstop>
   <tabstop>chkDiscardText</tabstop>
+  <tabstop>chkCheckLowDisk</tabstop>
   <tabstop>rdbAskAccount</tabstop>
   <tabstop>rdbUseAccount</tabstop>
   <tabstop>cmbMainAccount</tabstop>

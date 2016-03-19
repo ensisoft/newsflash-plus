@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -45,7 +45,7 @@ namespace gui
 
 const auto QuerySize = 100;
 
-Search::Search(SearchModule& module) : module_(module) 
+Search::Search(SearchModule& module) : module_(module)
 {
     ui_.setupUi(this);
     ui_.btnBasic->setChecked(true);
@@ -88,7 +88,7 @@ Search::Search(SearchModule& module) : module_(module)
         ui_.tableView->sortByColumn(sortColumn, sortOrder);
     };
 
-    QObject::connect(ui_.btnBasic, SIGNAL(clicked()), 
+    QObject::connect(ui_.btnBasic, SIGNAL(clicked()),
         ui_.wBasic, SLOT(show()));
     QObject::connect(ui_.btnBasic, SIGNAL(clicked()),
         ui_.wAdvanced, SLOT(hide()));
@@ -97,32 +97,32 @@ Search::Search(SearchModule& module) : module_(module)
     QObject::connect(ui_.btnBasic, SIGNAL(clicked()),
         ui_.wTV, SLOT(hide()));
 
-    QObject::connect(ui_.btnAdvanced, SIGNAL(clicked()), 
+    QObject::connect(ui_.btnAdvanced, SIGNAL(clicked()),
         ui_.wBasic, SLOT(hide()));
-    QObject::connect(ui_.btnAdvanced, SIGNAL(clicked()), 
+    QObject::connect(ui_.btnAdvanced, SIGNAL(clicked()),
         ui_.wAdvanced, SLOT(show()));
     QObject::connect(ui_.btnAdvanced, SIGNAL(clicked()),
         ui_.wMusic, SLOT(hide()));
     QObject::connect(ui_.btnAdvanced, SIGNAL(clicked()),
         ui_.wTV, SLOT(hide()));
 
-    QObject::connect(ui_.btnTelevision, SIGNAL(clicked()), 
+    QObject::connect(ui_.btnTelevision, SIGNAL(clicked()),
         ui_.wBasic, SLOT(hide()));
-    QObject::connect(ui_.btnTelevision, SIGNAL(clicked()), 
+    QObject::connect(ui_.btnTelevision, SIGNAL(clicked()),
         ui_.wAdvanced, SLOT(hide()));
     QObject::connect(ui_.btnTelevision, SIGNAL(clicked()),
         ui_.wMusic, SLOT(hide()));
     QObject::connect(ui_.btnTelevision, SIGNAL(clicked()),
         ui_.wTV, SLOT(show()));
 
-    QObject::connect(ui_.btnMusic, SIGNAL(clicked()), 
+    QObject::connect(ui_.btnMusic, SIGNAL(clicked()),
         ui_.wBasic, SLOT(hide()));
-    QObject::connect(ui_.btnMusic, SIGNAL(clicked()), 
+    QObject::connect(ui_.btnMusic, SIGNAL(clicked()),
         ui_.wAdvanced, SLOT(hide()));
     QObject::connect(ui_.btnMusic, SIGNAL(clicked()),
         ui_.wMusic, SLOT(show()));
     QObject::connect(ui_.btnMusic, SIGNAL(clicked()),
-        ui_.wTV, SLOT(hide()));    
+        ui_.wTV, SLOT(hide()));
 
     auto* model = ui_.tableView->selectionModel();
     QObject::connect(model, SIGNAL(selectionChanged(const QItemSelection&, const QItemSelection&)),
@@ -152,7 +152,7 @@ void Search::addActions(QMenu& menu)
     menu.addAction(ui_.actionSave);
     menu.addAction(ui_.actionOpen);
     menu.addSeparator();
-    menu.addAction(ui_.actionStop); 
+    menu.addAction(ui_.actionStop);
 }
 
 void Search::addActions(QToolBar& bar)
@@ -189,7 +189,7 @@ void Search::loadState(app::Settings& settings)
 
 void Search::saveState(app::Settings& settings)
 {
-    app::saveTableLayout("search", ui_.tableView, settings);    
+    app::saveTableLayout("search", ui_.tableView, settings);
     app::saveState("search", ui_.chkMusic, settings);
     app::saveState("search", ui_.chkMovies, settings);
     app::saveState("search", ui_.chkTV, settings);
@@ -200,7 +200,7 @@ void Search::saveState(app::Settings& settings)
     app::saveState("search", ui_.editTrack, settings);
     app::saveState("search", ui_.editSeason, settings);
     app::saveState("search", ui_.editEpisode, settings);
-    app::saveState("search", ui_.editSearch, settings);    
+    app::saveState("search", ui_.editSearch, settings);
     app::saveState("search", ui_.cmbYear, settings);
 }
 
@@ -238,7 +238,7 @@ void Search::on_actionOpen_triggered()
 
     for (const auto& index : indices)
     {
-        model_.loadItem(index, 
+        model_.loadItem(index,
             [=](const QByteArray& bytes, const QString& desc) {
                 auto* view = new NZBFile();
                 view->setProperty("parent-object", QVariant::fromValue(static_cast<QObject*>(this)));
@@ -264,7 +264,7 @@ void Search::on_actionSave_triggered()
             continue;
         model_.saveItem(index, file);
         ui_.progress->setVisible(true);
-        ui_.actionStop->setEnabled(true);    
+        ui_.actionStop->setEnabled(true);
     }
 }
 
@@ -398,10 +398,10 @@ void Search::popupDetails()
     const auto local  = ui_.tableView->viewport()->mapFromGlobal(global);
 
     // see if the current item under the mouse pointer is also
-    // currently selected. 
+    // currently selected.
     const auto& all = ui_.tableView->selectionModel()->selectedRows();
     const auto& sel = ui_.tableView->indexAt(local);
-    int i=0; 
+    int i=0;
     for (; i<all.size(); ++i)
     {
         if (all[i].row() == sel.row())
@@ -465,6 +465,9 @@ void Search::downloadSelected(const QString& folder)
         if (!passDuplicateCheck(this, desc, item.type))
             continue;
 
+        if (!passSpaceCheck(this, desc, folder, item.size, item.size))
+            continue;
+
         const auto acc = selectAccount(this, desc);
         if (acc == 0)
             continue;
@@ -524,18 +527,18 @@ void Search::beginSearch(quint32 queryOffset, quint32 querySize)
         query.computer   = ui_.chkComputer->isChecked();
         query.adult      = ui_.chkAdult->isChecked();
         query.keywords   = ui_.editSearch->text();
-        query.qoffset    = queryOffset;        
+        query.qoffset    = queryOffset;
         query.qsize      = querySize;
         model_.beginSearch(query, std::move(nab));
     }
     else if (ui_.btnMusic->isChecked())
     {
         app::Search::Music music;
-        music.keywords = ui_.editSearch->text();        
+        music.keywords = ui_.editSearch->text();
         music.album    = ui_.editAlbum->text();
         music.track    = ui_.editTrack->text();
         music.year     = ui_.cmbYear->currentText();
-        music.qoffset  = queryOffset;        
+        music.qoffset  = queryOffset;
         music.qsize    = querySize;
         model_.beginSearch(music, std::move(nab));
 
@@ -546,7 +549,7 @@ void Search::beginSearch(quint32 queryOffset, quint32 querySize)
         tv.episode  = ui_.editEpisode->text();
         tv.season   = ui_.editSeason->text();
         tv.keywords = ui_.editSearch->text();
-        tv.qoffset  = queryOffset;        
+        tv.qoffset  = queryOffset;
         tv.qsize    = querySize;
         model_.beginSearch(tv, std::move(nab));
     }
@@ -555,7 +558,7 @@ void Search::beginSearch(quint32 queryOffset, quint32 querySize)
     ui_.actionStop->setEnabled(true);
     ui_.actionDownload->setEnabled(false);
     ui_.actionOpen->setEnabled(false);
-    ui_.actionSave->setEnabled(false);    
+    ui_.actionSave->setEnabled(false);
     ui_.actionRefresh->setEnabled(false);
     ui_.btnSearchMore->setEnabled(false);
     ui_.btnSearch->setEnabled(false);

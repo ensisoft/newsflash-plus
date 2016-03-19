@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -71,7 +71,7 @@ bool CoreSettings::validate() const
 
 void CoreSettings::on_btnBrowseLog_clicked()
 {
-    auto dir = QFileDialog::getExistingDirectory(this, 
+    auto dir = QFileDialog::getExistingDirectory(this,
         tr("Select Log Folder"));
     if (dir.isEmpty())
         return;
@@ -103,13 +103,13 @@ CoreModule::CoreModule()
 CoreModule::~CoreModule()
 {}
 
-void CoreModule::loadState(app::Settings& s) 
+void CoreModule::loadState(app::Settings& s)
 {
     check_for_updates_ = s.get("settings", "check_for_software_updates", true);
     if (check_for_updates_)
     {
         et_.reset(new app::Telephone);
-        QObject::connect(et_.get(), SIGNAL(completed(bool, QString)), 
+        QObject::connect(et_.get(), SIGNAL(completed(bool, QString)),
             this, SLOT(calledHome(bool, QString)));
         et_->callhome();
     }
@@ -129,11 +129,13 @@ SettingsWidget* CoreModule::getSettings()
     const auto discard   = app::g_engine->getDiscardTextContent();
     const auto logfiles  = app::g_engine->getLogfilesPath();
     const auto downloads = app::g_engine->getDownloadPath();
+    const auto lowdisk   = app::g_engine->getCheckLowDisk();
     const auto updates   = check_for_updates_; //s.get("settings", "check_for_software_updates", true);
 
     ui.chkOverwriteExisting->setChecked(overwrite);
     ui.chkDiscardText->setChecked(discard);
     ui.chkUpdates->setChecked(updates);
+    ui.chkCheckLowDisk->setChecked(lowdisk);
     ui.editLogFiles->setText(logfiles);
     ui.editDownloads->setText(downloads);
 
@@ -196,6 +198,7 @@ void CoreModule::applySettings(SettingsWidget* gui)
     const bool overwrite = ui.chkOverwriteExisting->isChecked();
     const bool discard   = ui.chkDiscardText->isChecked();
     const bool updates   = ui.chkUpdates->isChecked();
+    const bool lowdisk   = ui.chkCheckLowDisk->isChecked();
     const auto logfiles  = ui.editLogFiles->text();
     const auto download  = ui.editDownloads->text();
 
@@ -244,6 +247,7 @@ void CoreModule::applySettings(SettingsWidget* gui)
     app::g_engine->setLogfilesPath(logfiles);
     app::g_engine->setOverwriteExistingFiles(overwrite);
     app::g_engine->setDiscardTextContent(discard);
+    app::g_engine->setCheckLowDisk(lowdisk);
 
     const auto tick = ui.sliderThrottle->value();
     const auto throttle = tick * app::KB(5);
@@ -263,7 +267,7 @@ void CoreModule::calledHome(bool new_version_available, QString latest)
 {
     if (new_version_available)
     {
-        QMessageBox::information(g_win, 
+        QMessageBox::information(g_win,
             tr("A New Version Is Available"),
             tr("A new version of the software is available.\n"
                "Current version %1\n"

@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -56,12 +56,12 @@ namespace app
     public:
         enum class Columns {
             Type,
-            DownloadFlag,             
-            Age, 
-            BrokenFlag,            
-            Size,  
-            //Author,  
-            BookmarkFlag,            
+            DownloadFlag,
+            Age,
+            BrokenFlag,
+            Size,
+            //Author,
+            BookmarkFlag,
             Subject, LAST
         };
 
@@ -70,12 +70,12 @@ namespace app
 
         std::function<void (std::size_t curBlock, std::size_t numBlocks)> onLoadBegin;
         std::function<void (std::size_t curItem, std::size_t numMitems)> onLoadProgress;
-        std::function<void (std::size_t curBlock, std::size_t numBlocks)> onLoadComplete;        
+        std::function<void (std::size_t curBlock, std::size_t numBlocks)> onLoadComplete;
         std::function<void ()> onKilled;
 
         // QAbstractTableModel
         virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
-        virtual QVariant data(const QModelIndex& index, int role) const override;        
+        virtual QVariant data(const QModelIndex& index, int role) const override;
         virtual int rowCount(const QModelIndex&) const override;
         virtual int columnCount(const QModelIndex&) const override;
         virtual void sort(int column, Qt::SortOrder order) override;
@@ -93,7 +93,13 @@ namespace app
 
         void bookmark(const QModelIndexList& list);
 
-        void download(const QModelIndexList& list, quint32 acc, QString folder);
+        void download(const QModelIndexList& list, quint32 acc, const QString& folder);
+
+        // sum the sizes of the selected items.
+        quint64 sumDataSizes(const QModelIndexList& list) const;
+
+        // suggest a batch name for the selected items.
+        QString suggestName(const QModelIndexList& list) const;
 
         std::size_t numItems() const;
         std::size_t numShown() const;
@@ -149,7 +155,7 @@ namespace app
 
         QAbstractTableModel* getVolumeList();
 
-        static 
+        static
         void deleteData(quint32 account, QString path, QString group);
 
     public slots:
@@ -188,8 +194,8 @@ namespace app
         idlist idlist_;
 
     private:
-        quint32 numSelected_;        
-        quint32 task_;        
+        quint32 numSelected_;
+        quint32 task_;
         QString path_;
         QString name_;
 

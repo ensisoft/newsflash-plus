@@ -630,7 +630,7 @@ void NewsGroup::bookmark(const QModelIndexList& list)
     emit dataChanged(first, last);
 }
 
-void NewsGroup::download(const QModelIndexList& list, quint32 acc, QString folder)
+void NewsGroup::download(const QModelIndexList& list, quint32 acc, const QString& folder)
 {
     std::vector<NZBContent> pack;
     std::vector<std::string> subjects;
@@ -706,12 +706,13 @@ void NewsGroup::download(const QModelIndexList& list, quint32 acc, QString folde
         const std::string& filename = nntp::find_filename(subjects[0]);
         if (filename.size() > 5)
             desc = fromLatin(filename);
+        else desc = fromLatin(subjects[0]);
 
         priority = true;
     }
     else
     {
-        name = suggestName(std::move(subjects));
+        name = app::suggestName(subjects);
         if (name.isEmpty())
         {
             desc = toString("%1 file(s) from %2", list.size(), name_);
@@ -741,6 +742,44 @@ void NewsGroup::download(const QModelIndexList& list, quint32 acc, QString folde
     const auto first = QAbstractTableModel::index(minRow, 0);
     const auto last  = QAbstractTableModel::index(maxRow, (int)Columns::LAST);
     emit dataChanged(first, last);
+}
+
+quint64 NewsGroup::sumDataSizes(const QModelIndexList& list) const
+{
+    quint64 ret = 0;
+    for (const auto& i : list)
+    {
+        const auto row = i.row();
+        const auto& article = index_[row];
+        ret += article.bytes();
+    }
+    return ret;
+}
+
+QString NewsGroup::suggestName(const QModelIndexList& list) const
+{
+    QString ret;
+
+    std::vector<std::string> subjectLines;
+
+    for (const auto& i : list)
+    {
+        const auto row = i.row();
+        const auto& article = index_[row];
+        subjectLines.push_back(article.subject_as_string());
+    }
+    if (subjectLines.size() == 1)
+    {
+        const std::string& filename = nntp::find_filename(subjectLines[0]);
+        if (filename.size() > 5)
+            ret = fromLatin(filename);
+        else ret = fromLatin(subjectLines[0]);
+    }
+    else
+    {
+        ret = app::suggestName(subjectLines);
+    }
+    return ret;
 }
 
 std::size_t NewsGroup::numItems() const

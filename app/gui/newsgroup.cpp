@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -36,6 +36,7 @@
 #include "mainwindow.h"
 #include "dlgfilter.h"
 #include "dlgvolumes.h"
+#include "common.h"
 #include "../debug.h"
 #include "../format.h"
 #include "../utility.h"
@@ -73,7 +74,7 @@ NewsGroup::NewsGroup(quint32 acc, QString path, QString name) : account_(acc), p
     ui_.actionShowArchive->setChecked(true);
     ui_.actionShowParity->setChecked(true);
     ui_.actionShowDocument->setChecked(true);
-    ui_.actionShowOther->setChecked(true);    
+    ui_.actionShowOther->setChecked(true);
     ui_.actionShowBroken->setChecked(true);
     ui_.actionShowDeleted->setChecked(true);
 
@@ -82,11 +83,11 @@ NewsGroup::NewsGroup(quint32 acc, QString path, QString name) : account_(acc), p
     QObject::connect(app::g_engine, SIGNAL(newHeaderDataAvailable(const QString&, const QString&)),
         this, SLOT(newHeaderDataAvailable(const QString&, const QString&)));
     QObject::connect(app::g_engine, SIGNAL(updateCompleted(const app::HeaderInfo&)),
-        this, SLOT(updateCompleted(const app::HeaderInfo&)));    
+        this, SLOT(updateCompleted(const app::HeaderInfo&)));
 
-    QObject::connect(&model_, SIGNAL(modelAboutToBeReset()), 
+    QObject::connect(&model_, SIGNAL(modelAboutToBeReset()),
         this, SLOT(modelBegReset()));
-    QObject::connect(&model_, SIGNAL(modelReset()), 
+    QObject::connect(&model_, SIGNAL(modelReset()),
         this, SLOT(modelEndReset()));
     QObject::connect(&model_, SIGNAL(layoutChanged()),
         this, SLOT(modelLayoutChanged()));
@@ -117,7 +118,7 @@ NewsGroup::NewsGroup(quint32 acc, QString path, QString name) : account_(acc), p
     model_.onKilled = [this] {
         ui_.actionStop->setEnabled(false);
         ui_.progressBar->setVisible(false);
-        ui_.actionRefresh->setEnabled(true);        
+        ui_.actionRefresh->setEnabled(true);
     };
 
     filter_.minSize  = 0;
@@ -151,7 +152,7 @@ void NewsGroup::addActions(QToolBar& bar)
     bar.addAction(ui_.actionFilter);
     bar.addSeparator();
     bar.addAction(ui_.actionBookmarkPrev);
-    bar.addAction(ui_.actionBookmark);    
+    bar.addAction(ui_.actionBookmark);
     bar.addAction(ui_.actionBookmarkNext);
     bar.addSeparator();
     bar.addAction(ui_.actionDelete);
@@ -170,7 +171,7 @@ void NewsGroup::addActions(QMenu& menu)
     menu.addAction(ui_.actionFilter);
     menu.addSeparator();
     menu.addAction(ui_.actionBookmarkPrev);
-    menu.addAction(ui_.actionBookmark);    
+    menu.addAction(ui_.actionBookmark);
     menu.addAction(ui_.actionBookmarkNext);
     menu.addSeparator();
     menu.addAction(ui_.actionDelete);
@@ -185,18 +186,18 @@ void NewsGroup::loadState(app::Settings& settings)
     app::loadTableLayout("newsgroup", ui_.tableView, settings);
 
     ui_.tableView->setSortingEnabled(true);
-    ui_.tableView->sortByColumn((int)app::NewsGroup::Columns::Age, 
+    ui_.tableView->sortByColumn((int)app::NewsGroup::Columns::Age,
         Qt::DescendingOrder);
 
     app::loadState("newsgroup", ui_.actionShowNone, settings);
     app::loadState("newsgroup", ui_.actionShowAudio, settings);
     app::loadState("newsgroup", ui_.actionShowVideo, settings);
     app::loadState("newsgroup", ui_.actionShowImage, settings);
-    app::loadState("newsgroup", ui_.actionShowText, settings);                
-    app::loadState("newsgroup", ui_.actionShowArchive, settings);                
-    app::loadState("newsgroup", ui_.actionShowParity, settings);                        
-    app::loadState("newsgroup", ui_.actionShowDocument, settings);                            
-    app::loadState("newsgroup", ui_.actionShowOther, settings);  
+    app::loadState("newsgroup", ui_.actionShowText, settings);
+    app::loadState("newsgroup", ui_.actionShowArchive, settings);
+    app::loadState("newsgroup", ui_.actionShowParity, settings);
+    app::loadState("newsgroup", ui_.actionShowDocument, settings);
+    app::loadState("newsgroup", ui_.actionShowOther, settings);
     app::loadState("newsgroup", ui_.actionShowBroken, settings);
     app::loadState("newsgroup", ui_.actionShowDeleted, settings);
 }
@@ -208,21 +209,21 @@ void NewsGroup::saveState(app::Settings& settings)
     app::saveState("newsgroup", ui_.actionShowAudio, settings);
     app::saveState("newsgroup", ui_.actionShowVideo, settings);
     app::saveState("newsgroup", ui_.actionShowImage, settings);
-    app::saveState("newsgroup", ui_.actionShowText, settings);                
-    app::saveState("newsgroup", ui_.actionShowArchive, settings);                
-    app::saveState("newsgroup", ui_.actionShowParity, settings);                        
-    app::saveState("newsgroup", ui_.actionShowDocument, settings);                            
-    app::saveState("newsgroup", ui_.actionShowOther, settings);  
+    app::saveState("newsgroup", ui_.actionShowText, settings);
+    app::saveState("newsgroup", ui_.actionShowArchive, settings);
+    app::saveState("newsgroup", ui_.actionShowParity, settings);
+    app::saveState("newsgroup", ui_.actionShowDocument, settings);
+    app::saveState("newsgroup", ui_.actionShowOther, settings);
     app::saveState("newsgroup", ui_.actionShowBroken, settings);
-    app::saveState("newsgroup", ui_.actionShowDeleted, settings);                                  
+    app::saveState("newsgroup", ui_.actionShowDeleted, settings);
 }
 
-MainWidget::info NewsGroup::getInformation() const 
+MainWidget::info NewsGroup::getInformation() const
 {
     return {"group.html", false};
 }
 
-Finder* NewsGroup::getFinder() 
+Finder* NewsGroup::getFinder()
 {
     return this;
 }
@@ -256,12 +257,12 @@ bool NewsGroup::isMatch(const QRegExp& reg, std::size_t index)
     return false;
 }
 
-std::size_t NewsGroup::numItems() const 
+std::size_t NewsGroup::numItems() const
 {
     return model_.numShown();
 }
 
-std::size_t NewsGroup::curItem() const 
+std::size_t NewsGroup::curItem() const
 {
     const auto& indices = ui_.tableView->selectionModel()->selectedRows();
     if (indices.isEmpty())
@@ -292,7 +293,7 @@ void NewsGroup::load()
             ui_.actionStop->setEnabled(true);
             ui_.actionRefresh->setEnabled(false);
             ui_.btnLoadMore->setVisible(false);
-        } 
+        }
         else
         {
             model_.load(0);
@@ -300,7 +301,7 @@ void NewsGroup::load()
     }
     catch (const std::exception& e)
     {
-        QMessageBox::critical(this, name_, 
+        QMessageBox::critical(this, name_,
             tr("Unable to load the newsgroup data.\n%1").arg(app::widen(e.what())));
     }
 }
@@ -319,49 +320,49 @@ void NewsGroup::on_actionShowNone_changed()
 void NewsGroup::on_actionShowAudio_changed()
 {
     model_.setTypeFilter(FileType::audio, ui_.actionShowAudio->isChecked());
-    model_.applyFilter();    
+    model_.applyFilter();
 }
 
 void NewsGroup::on_actionShowVideo_changed()
 {
     model_.setTypeFilter(FileType::video, ui_.actionShowVideo->isChecked());
-    model_.applyFilter();    
+    model_.applyFilter();
 }
 
 void NewsGroup::on_actionShowImage_changed()
 {
     model_.setTypeFilter(FileType::image, ui_.actionShowImage->isChecked());
-    model_.applyFilter();    
+    model_.applyFilter();
 }
 
 void NewsGroup::on_actionShowText_changed()
 {
     model_.setTypeFilter(FileType::text, ui_.actionShowText->isChecked());
-    model_.applyFilter();    
+    model_.applyFilter();
 }
 
 void NewsGroup::on_actionShowArchive_changed()
 {
     model_.setTypeFilter(FileType::archive, ui_.actionShowArchive->isChecked());
-    model_.applyFilter();    
+    model_.applyFilter();
 }
 
 void NewsGroup::on_actionShowParity_changed()
 {
     model_.setTypeFilter(FileType::parity, ui_.actionShowParity->isChecked());
-    model_.applyFilter();    
+    model_.applyFilter();
 }
 
 void NewsGroup::on_actionShowDocument_changed()
 {
     model_.setTypeFilter(FileType::document, ui_.actionShowDocument->isChecked());
-    model_.applyFilter();    
+    model_.applyFilter();
 }
 
 void NewsGroup::on_actionShowOther_changed()
 {
     model_.setTypeFilter(FileType::other, ui_.actionShowOther->isChecked());
-    model_.applyFilter();    
+    model_.applyFilter();
 }
 
 void NewsGroup::on_actionShowBroken_changed()
@@ -411,7 +412,7 @@ void NewsGroup::on_actionFilter_triggered()
         model_.setDateFilter(minDays, maxDays);
         model_.applyFilter();
     };
-    if (dlg.exec() == QDialog::Accepted) 
+    if (dlg.exec() == QDialog::Accepted)
     {
         filter_ = filter;
         if (dlg.isApplied())
@@ -431,7 +432,7 @@ void NewsGroup::on_actionStop_triggered()
     ui_.actionRefresh->setEnabled(true);
 }
 
-void NewsGroup::on_actionDownload_triggered() 
+void NewsGroup::on_actionDownload_triggered()
 {
     downloadSelected("");
 }
@@ -478,7 +479,7 @@ void NewsGroup::on_actionBookmarkPrev_triggered()
 void NewsGroup::on_actionBookmarkNext_triggered()
 {
     const auto& indices = ui_.tableView->selectionModel()->selectedRows();
-    const auto start = indices.isEmpty() ? 0 
+    const auto start = indices.isEmpty() ? 0
         : indices[0].row() + 1;
 
     const auto numItems = model_.numShown();
@@ -489,7 +490,7 @@ void NewsGroup::on_actionBookmarkNext_triggered()
         if (item.is_bookmarked())
         {
             setFound(index);
-            break;            
+            break;
         }
     }
 }
@@ -502,7 +503,7 @@ void NewsGroup::on_btnLoadMore_clicked()
     model_.load();
 
     ui_.loader->setVisible(false);
-    
+
 }
 
 void NewsGroup::on_tableView_customContextMenuRequested(QPoint p)
@@ -530,7 +531,7 @@ void NewsGroup::on_tableView_customContextMenuRequested(QPoint p)
     menu.addMenu(&sub);
     menu.addSeparator();
     menu.addAction(ui_.actionFilter);
-    
+
 
     QMenu showType("Filter by type", this);
     showType.setIcon(QIcon("icons:ico_filter.png"));
@@ -555,16 +556,16 @@ void NewsGroup::on_tableView_customContextMenuRequested(QPoint p)
     menu.addAction(ui_.actionBookmarkPrev);
     menu.addAction(ui_.actionBookmark);
     menu.addAction(ui_.actionBookmarkNext);
-    menu.addSeparator();    
-    menu.addAction(ui_.actionDelete);    
-    menu.addSeparator();    
+    menu.addSeparator();
+    menu.addAction(ui_.actionDelete);
+    menu.addSeparator();
     menu.addAction(ui_.actionStop);
     menu.exec(QCursor::pos());
 }
 
 void NewsGroup::on_tableView_doubleClicked(const QModelIndex&)
 {
-    downloadSelected("");    
+    downloadSelected("");
 }
 
 void NewsGroup::downloadToPrevious()
@@ -590,7 +591,7 @@ void NewsGroup::selectionChanged(const QItemSelection& selected, const QItemSele
 
     // store the currently selected list of items
     // so we can restore it later.
-    //model_.select(deselected.indexes(), false);    
+    //model_.select(deselected.indexes(), false);
     //model_.select(selected.indexes(), true);
     //const auto empty = deselected.empty();
 
@@ -608,7 +609,7 @@ void NewsGroup::modelBegReset()
 
 void NewsGroup::modelEndReset()
 {
-    // the model was reset... need to scan the model in order to restore the 
+    // the model was reset... need to scan the model in order to restore the
     // current selection on the UI
 
     QModelIndexList list;
@@ -622,7 +623,7 @@ void NewsGroup::modelEndReset()
 
         auto* model = ui_.tableView->selectionModel();
         model->blockSignals(true);
-        model->select(sel, 
+        model->select(sel,
             QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
         model->blockSignals(false);
     }
@@ -688,13 +689,29 @@ void NewsGroup::updateCompleted(const app::HeaderInfo& info)
 }
 
 
-void NewsGroup::downloadSelected(QString folder)
+void NewsGroup::downloadSelected(const QString& folder)
 {
     const auto& indices = ui_.tableView->selectionModel()->selectedRows();
     if (indices.isEmpty())
         return;
 
     Q_ASSERT(account_);
+
+    // we don't need to ask for the account here since
+    // the data is specific to an account (because we're using article numbers)
+    // and we already know the account.
+    //
+    // Also we're not doing the duplicate checking since the user can
+    // already see what has been downloaded in this view before
+    // and because we don't have a bullet proof way of grouping
+    // selected items into batches with well defined names.
+    //
+    // However we need to and should do the space checking.
+    const auto byteSize = model_.sumDataSizes(indices);
+    const auto desc = model_.suggestName(indices);
+    if (!passSpaceCheck(this, desc, folder,
+        byteSize, byteSize))
+        return;
 
     model_.download(indices, account_, folder);
 }

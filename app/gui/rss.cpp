@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -67,7 +67,7 @@ public:
             if(apikey.isEmpty())
             {
                 ui_.edtNZBSApikey->setFocus();
-                return false;                
+                return false;
             }
         }
         return true;
@@ -102,7 +102,7 @@ RSS::RSS()
     QObject::connect(selection, SIGNAL(selectionChanged(const QItemSelection&, const QItemSelection&)),
         this, SLOT(rowChanged()));
 
-    QObject::connect(&popup_, SIGNAL(timeout()), 
+    QObject::connect(&popup_, SIGNAL(timeout()),
         this, SLOT(popupDetails()));
 
     ui_.tableView->viewport()->installEventFilter(this);
@@ -131,14 +131,14 @@ RSS::~RSS()
 void RSS::addActions(QMenu& menu)
 {
     menu.addAction(ui_.actionRefresh);
-    menu.addSeparator();    
+    menu.addSeparator();
     menu.addAction(ui_.actionDownload);
     menu.addAction(ui_.actionSave);
-    menu.addSeparator();        
+    menu.addSeparator();
     menu.addAction(ui_.actionOpen);
     menu.addSeparator();
     menu.addAction(ui_.actionSettings);
-    menu.addSeparator();        
+    menu.addSeparator();
     menu.addAction(ui_.actionStop);
 }
 
@@ -147,10 +147,10 @@ void RSS::addActions(QToolBar& bar)
     bar.addAction(ui_.actionRefresh);
     bar.addSeparator();
     bar.addAction(ui_.actionDownload);
-    bar.addSeparator();   
+    bar.addSeparator();
     bar.addAction(ui_.actionSettings);
-    bar.addSeparator();    
-    bar.addAction(ui_.actionStop);    
+    bar.addSeparator();
+    bar.addAction(ui_.actionStop);
 }
 
 void RSS::activate(QWidget*)
@@ -200,7 +200,7 @@ void RSS::loadState(app::Settings& settings)
     enable_nzbs_    = settings.get("rss", "enable_nzbs", false);
     enable_womble_  = settings.get("rss", "enable_womble", true);
     nzbs_apikey_    = settings.get("rss", "nzbs_apikey", "");
-    nzbs_userid_    = settings.get("rss", "nzbs_userid", "");    
+    nzbs_userid_    = settings.get("rss", "nzbs_userid", "");
 
     quint64 streams = 0;
 
@@ -209,7 +209,7 @@ void RSS::loadState(app::Settings& settings)
         streams = ~streams;
     else streams = settings.get("rss", "streams", ~quint64(0));
 
-    streams_.set_from_value(streams); 
+    streams_.set_from_value(streams);
 
     model_.enableFeed("womble", enable_womble_);
     model_.enableFeed("nzbs", enable_nzbs_);
@@ -236,8 +236,8 @@ SettingsWidget* RSS::getSettings()
     if (streams_.test(m::AppsPC)) ui.chkComputerPC->setChecked(true);
     if (streams_.test(m::AppsISO)) ui.chkComputerISO->setChecked(true);
     if (streams_.test(m::AppsAndroid)) ui.chkComputerAndroid->setChecked(true);
-    if (streams_.test(m::AppsMac) || streams_.test(m::AppsIos)) 
-        ui.chkComputerMac->setChecked(true);        
+    if (streams_.test(m::AppsMac) || streams_.test(m::AppsIos))
+        ui.chkComputerMac->setChecked(true);
 
     if (streams_.test(m::MusicMp3)) ui.chkMusicMP3->setChecked(true);
     if (streams_.test(m::MusicVideo)) ui.chkMusicVideo->setChecked(true);
@@ -334,7 +334,7 @@ void RSS::applySettings(SettingsWidget* gui)
 
     model_.enableFeed("womble", enable_womble_);
     model_.enableFeed("nzbs", enable_nzbs_);
-    model_.setCredentials("nzbs", nzbs_userid_, nzbs_apikey_);    
+    model_.setCredentials("nzbs", nzbs_userid_, nzbs_apikey_);
 }
 
 void RSS::freeSettings(SettingsWidget* s)
@@ -342,12 +342,12 @@ void RSS::freeSettings(SettingsWidget* s)
     delete s;
 }
 
-Finder* RSS::getFinder() 
+Finder* RSS::getFinder()
 {
     return this;
 }
 
-void RSS::firstLaunch() 
+void RSS::firstLaunch()
 {
     show_popup_hint_ = true;
 }
@@ -377,12 +377,12 @@ bool RSS::isMatch(const QRegExp& regex, std::size_t index)
     return false;
 }
 
-std::size_t RSS::numItems() const 
+std::size_t RSS::numItems() const
 {
     return model_.numItems();
 }
 
-std::size_t RSS::curItem() const 
+std::size_t RSS::curItem() const
 {
     const auto& indices = ui_.tableView->selectionModel()->selectedRows();
     if (indices.isEmpty())
@@ -430,6 +430,9 @@ void RSS::downloadSelected(const QString& folder)
         if (!passDuplicateCheck(this, desc, item.type))
             continue;
 
+        if (!passSpaceCheck(this, desc, folder, item.size, item.size))
+            continue;
+
         const auto acc = selectAccount(this, desc);
         if (acc == 0)
             continue;
@@ -440,8 +443,8 @@ void RSS::downloadSelected(const QString& folder)
 
     if (actions)
     {
-        ui_.progressBar->setVisible(true);        
-        ui_.actionStop->setEnabled(true);        
+        ui_.progressBar->setVisible(true);
+        ui_.actionStop->setEnabled(true);
     }
 }
 
@@ -457,7 +460,7 @@ void RSS::refreshStreams(bool verbose)
             msg.setText(tr("You haven't enabled any RSS feed sites.\n\rYou can enable them in the RSS settings."));
             msg.exec();
         }
-        return;       
+        return;
     }
 
     using m = app::MediaType;
@@ -465,7 +468,7 @@ void RSS::refreshStreams(bool verbose)
 
     const auto musicMask   = s(m::MusicMp3) | s(m::MusicLossless) | s(m::MusicVideo) | s(m::MusicOther);
     const auto moviesMask  = s(m::MoviesInt) | s(m::MoviesSD) | s(m::MoviesHD) | s(m::MoviesWMV) | s(m::MoviesOther);
-    const auto tvMask      = s(m::TvInt) | s(m::TvHD) | s(m::TvSD) | s(m::TvSport) | s(m::TvOther);    
+    const auto tvMask      = s(m::TvInt) | s(m::TvHD) | s(m::TvSD) | s(m::TvSport) | s(m::TvOther);
     const auto appsMask    = s(m::AppsPC) | s(m::AppsISO) | s(m::AppsAndroid) | s(m::AppsIos) | s(m::AppsMac) | s(m::AppsOther);
     const auto adultMask   = s(m::AdultDVD) | s(m::AdultHD) | s(m::AdultSD) | s(m::AdultImg) | s(m::AdultOther);
     const auto gamesMask   = s(m::GamesNDS) | s(m::GamesWii) | s(m::GamesXbox) | s(m::GamesXbox360) |
@@ -476,7 +479,7 @@ void RSS::refreshStreams(bool verbose)
         QCheckBox* chk;
         s mask;
     } selected_feeds[] = {
-        {ui_.chkGames, gamesMask},        
+        {ui_.chkGames, gamesMask},
         {ui_.chkMusic, musicMask},
         {ui_.chkMovies, moviesMask},
         {ui_.chkTV, tvMask},
@@ -518,11 +521,11 @@ void RSS::refreshStreams(bool verbose)
             QMessageBox msg(this);
             msg.setStandardButtons(QMessageBox::Ok);
             msg.setIcon(QMessageBox::Information);
-            msg.setText("You haven't selected any RSS Media categories.\r\n" 
+            msg.setText("You haven't selected any RSS Media categories.\r\n"
                 "Select the sub-categories in RSS settings and main categories in the RSS main window");
             msg.exec();
         }
-        return; 
+        return;
     }
     else if (!have_feeds)
     {
@@ -542,7 +545,7 @@ void RSS::refreshStreams(bool verbose)
     ui_.actionDownloadTo->setEnabled(false);
     ui_.actionSave->setEnabled(false);
     ui_.actionOpen->setEnabled(false);
-    ui_.actionStop->setEnabled(true);    
+    ui_.actionStop->setEnabled(true);
     ui_.actionRefresh->setEnabled(false);
     ui_.actionInformation->setEnabled(false);
 }
@@ -619,7 +622,7 @@ void RSS::on_actionStop_triggered()
 {
     model_.stop();
     ui_.progressBar->hide();
-    ui_.actionStop->setEnabled(false);    
+    ui_.actionStop->setEnabled(false);
     ui_.actionRefresh->setEnabled(true);
 }
 
@@ -629,7 +632,7 @@ void RSS::on_actionBrowse_triggered()
     if (folder.isEmpty())
         return;
 
-    downloadSelected(folder);    
+    downloadSelected(folder);
 }
 
 void RSS::on_actionInformation_triggered()
@@ -673,7 +676,7 @@ void RSS::on_actionInformation_triggered()
         msg.setText("Did you know that you can also open this dialog by letting the mouse hover over the selected item.");
         msg.exec();
         show_popup_hint_ = false;
-    }    
+    }
 }
 
 void RSS::on_tableView_customContextMenuRequested(QPoint point)
@@ -704,7 +707,7 @@ void RSS::on_tableView_customContextMenuRequested(QPoint point)
     menu.addAction(ui_.actionOpen);
     menu.addSeparator();
     menu.addAction(ui_.actionInformation);
-    menu.addSeparator();    
+    menu.addSeparator();
     menu.addAction(ui_.actionStop);
     menu.addSeparator();
     menu.addAction(ui_.actionSettings);
@@ -782,7 +785,7 @@ void RSS::popupDetails()
         if (!movie_)
         {
             movie_.reset(new DlgMovie(this));
-        }    
+        }
         movie_->lookupMovie(title);
     }
     else if (isTelevision(item.type))

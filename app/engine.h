@@ -59,6 +59,8 @@ namespace app
         Engine();
        ~Engine();
 
+        QString resolveDownloadPath(const QString& basePath) const;
+
         void testAccount(const Accounts::Account& acc);
 
         // set/modify account in the engine.
@@ -121,6 +123,15 @@ namespace app
         quint64 getFreeDiskSpace() const
         {
             return diskspace_;
+        }
+
+        // get the free disk space on the disk where the downloadPath points to.
+        quint64 getFreeDiskSpace(const QString& downloadPath) const
+        {
+            const auto& location   = resolveDownloadPath(downloadPath);
+            const auto& mountPoint = app::resolveMountPoint(location);
+            const auto  freeSpace  = app::getFreeDiskSpace(mountPoint);
+            return freeSpace;
         }
 
         // get current total download speed (of all connections)
@@ -215,6 +226,12 @@ namespace app
         {
             return engine_->get_throttle_value();
         }
+
+        bool getCheckLowDisk() const
+        { return checkLowDisk_; }
+
+        void setCheckLowDisk(bool on_off)
+        { checkLowDisk_ = on_off; }
 
         void setOverwriteExistingFiles(bool on_off)
         {
@@ -338,6 +355,7 @@ namespace app
         std::unique_ptr<newsflash::engine> engine_;
         bool connect_;
         bool shutdown_;
+        bool checkLowDisk_;
     };
 
     extern Engine* g_engine;

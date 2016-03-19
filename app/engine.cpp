@@ -80,6 +80,7 @@ Engine::Engine()
     diskspace_  = 0;
     totalspeed_ = 0;
     shutdown_  = false;
+    checkLowDisk_ = true;
 
     engine_.reset(new newsflash::engine);
     engine_->set_error_callback(std::bind(&Engine::onError, this,
@@ -123,6 +124,13 @@ Engine::~Engine()
     engine_.reset();
 
     DEBUG("Engine destroyed");
+}
+
+QString Engine::resolveDownloadPath(const QString& basePath) const
+{
+    if (basePath.isEmpty())
+        return downloads_;
+    return basePath;
 }
 
 void Engine::testAccount(const Accounts::Account& acc)
@@ -297,6 +305,7 @@ void Engine::loadState(Settings& s)
         QDir::toNativeSeparators(QDir::tempPath() + "/Newsflash"));
     downloads_ = s.get("engine", "downloads",
         QDir::toNativeSeparators(QDir::homePath() + "/Downloads"));
+    checkLowDisk_ = s.get("engine", "check_low_disk", checkLowDisk_);
 
     mountpoint_ = resolveMountPoint(downloads_);
 
@@ -331,6 +340,7 @@ void Engine::saveState(Settings& s)
     s.set("engine", "logfiles", logifiles_);
     s.set("engine", "downloads", downloads_);
     s.set("engine", "connect", connect_);
+    s.set("engine", "check_low_disk", checkLowDisk_);
 }
 
 void Engine::loadSession()
@@ -384,6 +394,10 @@ void Engine::refresh()
     // so traverse the path towards the root untill
     // an existing path is found.
     diskspace_ = app::getFreeDiskSpace(mountpoint_);
+    if (checkLowDisk_)
+    {
+        // todo:
+    }
 }
 
 bool Engine::shutdown()

@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -46,7 +46,7 @@
 namespace app
 {
 
-QString suggestName(std::vector<std::string> subjectLines)
+QString suggestName(const std::vector<std::string>& subjectLines)
 {
     if (subjectLines.size() == 1)
         return {};
@@ -54,8 +54,8 @@ QString suggestName(std::vector<std::string> subjectLines)
     const auto flags = boost::regbase::icase | boost::regbase::perl;
 
     boost::regex mov1("[\\[ \"<(]?[[:alnum:]\\.\\-]*\\.(DIVX|XVID|NTSC|PAL|DVDR?|720p?|1080p?|BluRay)\\.[[:alnum:]\\.]*\\-[[:alnum:]]+[)>\" \\].]??", flags);
-    boost::regex mov2("[\\[ \"<(]?[[:alnum:]\\.]*(DVD(RIP|SRC)?|XVID|DIVX|NTSC|PAL)\\-[[:alnum:]]+[)>\" \\].]??", flags);    
-    std::map<std::string, int> rank;   
+    boost::regex mov2("[\\[ \"<(]?[[:alnum:]\\.]*(DVD(RIP|SRC)?|XVID|DIVX|NTSC|PAL)\\-[[:alnum:]]+[)>\" \\].]??", flags);
+    std::map<std::string, int> rank;
 
     for (const auto& s : subjectLines)
     {
@@ -73,7 +73,7 @@ QString suggestName(std::vector<std::string> subjectLines)
                 boost::algorithm::erase_regex(name,  boost::regex("\\.[a-Z]{2,4}$", flags));
                 // another hack here, par2 files have "terminator2.vol000-010.par" notation
                 // we want to get rid of the volxxx crap as well
-                boost::algorithm::erase_regex(name, boost::regex("(\\.vol\\d*\\+\\d*|\\.part\\d*|\\.)$", flags));                
+                boost::algorithm::erase_regex(name, boost::regex("(\\.vol\\d*\\+\\d*|\\.part\\d*|\\.)$", flags));
                 rank[name]++;
             }
         }
@@ -103,15 +103,15 @@ QString suggestName(std::vector<std::string> subjectLines)
     const char end_punct[] = {
         ' ', '"', '\'', '*', '[', '-', '#', '.', ':', '(', '!'
 //        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
-    };    
-    
+    };
+
     // start of the string.
     while (!s.empty() &&
         std::find(std::begin(start_punct), std::end(start_punct), s.front()) != std::end(start_punct))
         s.erase(s.begin());
 
     // end of the string.
-    while (!s.empty() && 
+    while (!s.empty() &&
         std::find(std::begin(end_punct), std::end(end_punct), s.back()) != std::end(end_punct))
         s.pop_back();
 
@@ -120,7 +120,7 @@ QString suggestName(std::vector<std::string> subjectLines)
 
     const auto ext = nfo.suffix();
     if (fileType(ext) != FileType::None)
-        ret.chop(ext.size()); 
+        ret.chop(ext.size());
 
     if (ret.endsWith('.'))
         ret.chop(1);
@@ -223,11 +223,11 @@ bool removeDirectory(const QString& folder)
 void saveTableLayout(const QString& key, const QTableView* view, Settings& settings)
 {
     const auto model    = view->model();
-    const auto objName  = view->objectName();    
+    const auto objName  = view->objectName();
     const auto colCount = model->columnCount();
 
     // the last column is expected to have "stretching" enabled.
-    // so can't explicitly set it's width. (will mess up the rendering) 
+    // so can't explicitly set it's width. (will mess up the rendering)
 
     for (int i=0; i<colCount - 1; ++i)
     {
@@ -243,19 +243,19 @@ void saveTableLayout(const QString& key, const QTableView* view, Settings& setti
         const auto sortOrder  = header->sortIndicatorOrder();
         settings.set(key, "sort_column", sortColumn);
         settings.set(key, "sort_order", sortOrder);
-    }    
+    }
 }
 
 void loadTableLayout(const QString& key, QTableView* view, const Settings& settings)
 {
     const auto model    = view->model();
-    const auto objName  = view->objectName();    
+    const auto objName  = view->objectName();
     const auto colCount = model->columnCount();
 
     for (int i=0; i<colCount-1; ++i)
     {
         const auto name  = QString("%1_column_%2").arg(objName).arg(i);
-        const auto width = settings.get(key, name, 
+        const auto width = settings.get(key, name,
             view->columnWidth(i));
         view->setColumnWidth(i, width);
     }
@@ -275,7 +275,7 @@ void loadTableLayout(const QString& key, QTableView* view, const Settings& setti
 
 void loadState(const QString& key, QCheckBox* chk, Settings& settings)
 {
-    const auto check = settings.get(key, chk->objectName(), 
+    const auto check = settings.get(key, chk->objectName(),
         chk->isChecked());
     chk->setChecked(check);
 }
@@ -290,7 +290,7 @@ void loadState(const QString& key, QLineEdit* edt, Settings& settings)
 
 void loadState(const QString& key, QComboBox* cmb, Settings& settings)
 {
-    const auto text = settings.get(key, cmb->objectName(), 
+    const auto text = settings.get(key, cmb->objectName(),
         cmb->currentText());
     const auto index = cmb->findText(text);
     if (index != -1)

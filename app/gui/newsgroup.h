@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -89,7 +89,7 @@ namespace gui
         void on_tableView_doubleClicked(const QModelIndex&);
         void downloadToPrevious();
         void selectionChanged(const QItemSelection& sel, const QItemSelection& deSel);
-        void modelBegReset();        
+        void modelBegReset();
         void modelEndReset();
         void modelLayoutChanged();
         void newHeaderInfoAvailable(const QString& group, quint64 numLocal, quint64 numRemote);
@@ -97,7 +97,7 @@ namespace gui
         void updateCompleted(const app::HeaderInfo& info);
     private:
         bool eventFilter(QObject* recv, QEvent* event);
-        void downloadSelected(QString folder);
+        void downloadSelected(const QString& folder);
 
     private:
         Ui::NewsGroup ui_;

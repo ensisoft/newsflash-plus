@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -19,11 +19,17 @@
 // THE SOFTWARE.
 
 #include <newsflash/config.h>
+#include <newsflash/engine/ui/task.h>
+#include <deque>
 #include "dlgselectaccount.h"
 #include "dlgaccount.h"
 #include "dlgduplicate.h"
+#include "dlglowdisk.h"
 #include "../accounts.h"
 #include "../historydb.h"
+#include "../platform.h"
+#include "../engine.h"
+#include "../debug.h"
 
 namespace gui
 {
@@ -100,7 +106,7 @@ bool passDuplicateCheck(QWidget* parent, const QString& desc,
 
     DlgDuplicate dlg(parent, desc, item);
     if (dlg.exec() == QDialog::Rejected)
-        return false; // canceled 
+        return false; // canceled
 
     const bool onOff = dlg.checkDuplicates();
 
@@ -127,6 +133,47 @@ bool passDuplicateCheck(QWidget* parent, const QString& desc)
     const bool onOff = dlg.checkDuplicates();
 
     app::g_history->checkDuplicates(onOff);
+
+    return true;
+}
+
+
+bool passSpaceCheck(QWidget* parent,
+    const QString& downloadDesc,
+    const QString& downloadPath,
+    quint64 expectedFinalBinarySize,
+    quint64 expectedBatchSize)
+{
+    if (!app::g_engine->getCheckLowDisk())
+        return true;
+
+    const auto& location   = app::g_engine->resolveDownloadPath(downloadPath);
+    const auto& mountPoint = app::resolveMountPoint(location);
+    const auto freeSpace   = app::getFreeDiskSpace(mountPoint);
+    const auto queuedBytes = app::g_engine->getBytesQueued();
+
+    const auto totalLoad = queuedBytes +
+        expectedFinalBinarySize +
+        expectedBatchSize;
+
+    DEBUG("Disk partition at %1 has %2 bytes free",
+        mountPoint, app::size { freeSpace });
+    DEBUG("Download requires approx. %2 ", app::size { expectedFinalBinarySize +
+        expectedBatchSize });
+
+    if (freeSpace > totalLoad)
+        return true;
+
+    DlgLowDisk dlg(parent, downloadDesc, mountPoint,
+        queuedBytes,
+        expectedFinalBinarySize + expectedBatchSize,
+        freeSpace);
+    if (dlg.exec() == QDialog::Rejected)
+        return false; // canceled
+
+    const bool onOff = dlg.checkLowDisk();
+
+    app::g_engine->setCheckLowDisk(onOff);
 
     return true;
 }

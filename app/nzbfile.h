@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -56,27 +56,29 @@ namespace app
         // otherwise returns false and no signal will arrive.
         bool load(const QString& file);
 
-        // load NZB contents from a byte array. 
+        // load NZB contents from a byte array.
         bool load(const QByteArray& array, const QString& desc);
 
-        // download the items specified by the index list 
+        // download the items specified by the index list
         void download(const QModelIndexList& list, quint32 account, const QString& folder, const QString& desc);
+
+        quint64 sumDataSizes(const QModelIndexList& list) const;
 
         void setShowFilenamesOnly(bool on_off);
 
         const NZBContent& getItem(std::size_t index) const;
 
-        std::size_t numItems() const 
+        std::size_t numItems() const
         {
             return data_.size();
         }
 
         // QAbstractTableModel
         virtual int rowCount(const QModelIndex&) const override;
-        virtual int columnCount(const QModelIndex&) const override;                
+        virtual int columnCount(const QModelIndex&) const override;
         virtual void sort(int column, Qt::SortOrder order) override;
         virtual QVariant data(const QModelIndex& index, int role) const override;
-        virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const override;                
+        virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
 
     private slots:
         void parseComplete();

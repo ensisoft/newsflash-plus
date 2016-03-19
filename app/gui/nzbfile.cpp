@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -80,12 +80,12 @@ void NZBFile::saveState(app::Settings& settings)
     app::saveState("nzbfile", ui_.chkFilenamesOnly, settings);
 }
 
-MainWidget::info NZBFile::getInformation() const 
+MainWidget::info NZBFile::getInformation() const
 {
-    return {"nzb.html", false};     
+    return {"nzb.html", false};
 }
 
-Finder* NZBFile::getFinder() 
+Finder* NZBFile::getFinder()
 {
     return this;
 }
@@ -109,12 +109,12 @@ bool NZBFile::isMatch(const QRegExp& regex, std::size_t index)
     return regex.indexIn(item.subject) != -1;
 }
 
-std::size_t NZBFile::numItems() const 
+std::size_t NZBFile::numItems() const
 {
     return model_.numItems();
 }
 
-std::size_t NZBFile::curItem() const 
+std::size_t NZBFile::curItem() const
 {
     const auto& indices = ui_.tableView->selectionModel()->selectedRows();
     if (indices.isEmpty())
@@ -134,17 +134,17 @@ void NZBFile::setFound(std::size_t index)
 
 void NZBFile::open(const QString& nzbfile)
 {
-    model_.on_ready = [&](bool success) 
+    model_.on_ready = [&](bool success)
     {
         ui_.progressBar->setVisible(false);
         ui_.actionDownload->setEnabled(success);
-        ui_.actionBrowse->setEnabled(success);     
+        ui_.actionBrowse->setEnabled(success);
         ui_.tableView->sortByColumn((int)app::NZBFile::Columns::File);
         if (!success)
         {
             QMessageBox::critical(this, "An Error Occurred",
                 "The Newzbin file could not be loaded.");
-        }           
+        }
     };
 
     if (model_.load(nzbfile))
@@ -156,11 +156,11 @@ void NZBFile::open(const QString& nzbfile)
 
 void NZBFile::open(const QByteArray& bytes, const QString& desc)
 {
-    model_.on_ready = [&](bool success) 
+    model_.on_ready = [&](bool success)
     {
         ui_.progressBar->setVisible(false);
         ui_.actionDownload->setEnabled(success);
-        ui_.actionBrowse->setEnabled(success);        
+        ui_.actionBrowse->setEnabled(success);
         ui_.tableView->sortByColumn((int)app::NZBFile::Columns::File);
     };
 
@@ -231,6 +231,13 @@ void NZBFile::downloadSelected(const QString& folder)
 
     const auto& filename = ui_.grpBox->title();
     const auto& basename = QFileInfo(filename).completeBaseName();
+
+    // todo: should we do duplicate checking here somehow?
+
+    const auto byteSize = model_.sumDataSizes(indices);
+    if (!passSpaceCheck(this, basename, folder,
+        byteSize, byteSize))
+        return;
 
     const auto acc = selectAccount(this, basename);
     if (!acc)

@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -55,7 +55,7 @@ NZBFile::~NZBFile()
         thread_.reset();
     }
 
-    DEBUG("NZBFile destroyed");    
+    DEBUG("NZBFile destroyed");
 }
 
 bool NZBFile::load(const QString& file)
@@ -92,7 +92,7 @@ bool NZBFile::load(const QByteArray& bytes, const QString& desc)
         thread_.reset();
     }
     buffer_ = bytes;
-    file_   = desc;    
+    file_   = desc;
 
     std::unique_ptr<QBuffer> io(new QBuffer);
     io->setBuffer(&buffer_);
@@ -124,6 +124,18 @@ void NZBFile::download(const QModelIndexList& list, quint32 account, const QStri
     g_engine->downloadNzbContents(download, std::move(selected));
 }
 
+quint64 NZBFile::sumDataSizes(const QModelIndexList& list) const
+{
+    quint64 bytes = 0;
+    for (const auto& i : list)
+    {
+        const auto row = i.row();
+        const auto& item = data_[row];
+        bytes += item.bytes;
+    }
+    return bytes;
+}
+
 void NZBFile::setShowFilenamesOnly(bool on_off)
 {
     if (on_off == show_filename_only_)
@@ -135,7 +147,7 @@ void NZBFile::setShowFilenamesOnly(bool on_off)
     emit dataChanged(first, last);
 }
 
-const NZBContent& NZBFile::getItem(std::size_t index) const 
+const NZBContent& NZBFile::getItem(std::size_t index) const
 {
     BOUNDSCHECK(data_, index);
     return data_[index];
