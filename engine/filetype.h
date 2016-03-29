@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -26,13 +26,13 @@
 
 namespace newsflash
 {
-    enum class filetype : std::uint8_t 
+    enum class filetype : std::uint8_t
     {
         // no file type recognized.
-        none, 
+        none,
 
         // audio file such as .mp3
-        audio, 
+        audio,
 
         // video file such as .mkv
         video,
@@ -62,7 +62,7 @@ namespace newsflash
         broken,
 
         // the article appears to contain binary content.
-        binary, 
+        binary,
 
         // the article is deleted.
         deleted,
@@ -71,7 +71,10 @@ namespace newsflash
         downloaded,
 
         // the article is bookmarked
-        bookmarked
+        bookmarked,
+
+        // the article string data is utf8 encoded.
+        enable_utf8
     };
 
 } // newsflash

@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -49,10 +49,10 @@ localtime get_localtime()
     struct timeval tv;
     // get seconds and microseconds
     gettimeofday(&tv, NULL);
-    
+
     tm time;
     localtime_r(&tv.tv_sec, &time);
-    
+
     ret.hours   = time.tm_hour;
     ret.minutes = time.tm_min;
     ret.seconds = time.tm_sec;
@@ -63,7 +63,7 @@ localtime get_localtime()
     ret.hours   = sys.wHour;
     ret.minutes = sys.wMinute;
     ret.seconds = sys.wSecond;
-    ret.millis  = sys.wMilliseconds;    
+    ret.millis  = sys.wMilliseconds;
 
 #endif
     return ret;
@@ -75,21 +75,11 @@ unsigned long get_thread_identity()
 #if defined(LINUX_OS)
     return (unsigned long)pthread_self();
 #elif defined(WINDOWS_OS)
-    return (unsigned long)GetCurrentThreadId();    
+    return (unsigned long)GetCurrentThreadId();
 #endif
 }
 
-std::wstring widen(const std::string& narrow)
-{
-    std::wstring ret;
-    ret.reserve(narrow.size());
 
-    for (auto letter : narrow)
-    {
-        ret += ISO_8859_15[(unsigned char)letter].unicode;
-    }
-    return ret;
-}
 
 } // newsflash
 

@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -33,17 +33,14 @@ namespace newsflash
 {
     struct localtime {
         size_t millis;
-        size_t seconds;        
+        size_t seconds;
         size_t minutes;
         size_t hours;
     };
-    
+
     localtime get_localtime();
 
     unsigned long get_thread_identity();
-
-    // convert the ISO-8859-15 encoded narrow string to unicode.
-    std::wstring widen(const std::string& narrow);
 
 } // newsflash
 

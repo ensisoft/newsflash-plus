@@ -1,4 +1,4 @@
-// Copyright (c) 2010-2013 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2013 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
 //
@@ -35,7 +35,7 @@ namespace utf8
     namespace detail {
         template<typename T>
         struct integer_type;
-        
+
         template<>
         struct integer_type<int>
         {
@@ -47,13 +47,13 @@ namespace utf8
         {
             typedef unsigned long unsigned_type;
         };
-        
+
         template<>
         struct integer_type<unsigned long>
         {
             typedef unsigned long unsigned_type;
         };
-        
+
         template<>
         struct integer_type<unsigned int>
         {
@@ -73,7 +73,7 @@ namespace utf8
         };
     };
 
-    // encode the range specified by beg and end iterators 
+    // encode the range specified by beg and end iterators
     // as an utf8 encoded byte stream into the output iterator dest.
     template<typename InputIterator, typename OutputIterator>
     void encode(InputIterator beg, InputIterator end, OutputIterator dest)
@@ -82,9 +82,9 @@ namespace utf8
         typedef typename detail::integer_type<value_type>::unsigned_type unsigned_type;
 
         // Unicode conversion table
-        // number range (4 bytes)| binary representation (octets) 
+        // number range (4 bytes)| binary representation (octets)
         // -----------------------------------------------------------
-        // 0000 0000 - 0000 007F | 0xxxxxxx                 (US-ASCII) 
+        // 0000 0000 - 0000 007F | 0xxxxxxx                 (US-ASCII)
         // 0000 0080 - 0000 07FF | 110xxxxx 10xxxxxx
         // 0000 0800 - 0000 FFFF | 1110xxxx 10xxxxxx 10xxxxxx
         // 0001 0000 - 0010 FFFF | 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
@@ -122,7 +122,7 @@ namespace utf8
     inline std::string encode(const std::string& ascii)
     {
         std::string utf8;
-        encode(ascii.begin(), ascii.end(), 
+        encode(ascii.begin(), ascii.end(),
             std::back_inserter(utf8));
         return utf8;
     }
@@ -135,7 +135,105 @@ namespace utf8
             std::back_inserter(utf8));
         return utf8;
     }
-    
+
+    template<typename InputIterator>
+    bool is_well_formed(InputIterator beg, InputIterator end)
+    {
+#define WELL_FORMED_RANGE(x, beg, end) \
+        (x >= beg && x <= end)
+
+#define NEXT_BYTE() \
+    do { \
+        if (++beg == end) \
+            return false; \
+        byte = *beg; \
+    } while(0)
+
+        while (beg != end)
+        {
+            auto byte = *beg;
+            if (WELL_FORMED_RANGE(byte, 0x00, 0x7F)) {
+                // single byte sequence
+            }
+            else if (WELL_FORMED_RANGE(byte, 0xC2, 0xDF)) {
+                // two byte sequence
+                NEXT_BYTE();
+                if (!WELL_FORMED_RANGE(byte, 0x080, 0xBF))
+                    return false;
+            }
+            else if (WELL_FORMED_RANGE(byte, 0xE0, 0xE0)) {
+                NEXT_BYTE();
+                if (!WELL_FORMED_RANGE(byte, 0xA0, 0xBF))
+                    return false;
+                NEXT_BYTE();
+                if (!WELL_FORMED_RANGE(byte, 0x80, 0xBF))
+                    return false;
+            }
+            else if (WELL_FORMED_RANGE(byte, 0xE1, 0xEC)) {
+                NEXT_BYTE();
+                if (!WELL_FORMED_RANGE(byte, 0x80, 0xBF))
+                    return false;
+                NEXT_BYTE();
+                if (!WELL_FORMED_RANGE(byte, 0x80, 0xBF))
+                    return false;
+            }
+            else if (WELL_FORMED_RANGE(byte, 0xED, 0xED)) {
+                NEXT_BYTE();
+                if (!WELL_FORMED_RANGE(byte, 0x80, 0x9F))
+                    return false;
+                if (!WELL_FORMED_RANGE(byte, 0x80, 0xBF))
+                    return false;
+            }
+            else if (WELL_FORMED_RANGE(byte, 0xEE, 0xEF)) {
+                NEXT_BYTE();
+                if (!WELL_FORMED_RANGE(byte, 0x80, 0xBF))
+                    return false;
+                NEXT_BYTE();
+                if (!WELL_FORMED_RANGE(byte, 0x80, 0xBF))
+                    return false;
+            }
+            else if (WELL_FORMED_RANGE(byte, 0xF0, 0xF0)) {
+                NEXT_BYTE();
+                if (!WELL_FORMED_RANGE(byte, 0x90, 0xBF))
+                    return false;
+                NEXT_BYTE();
+                if (!WELL_FORMED_RANGE(byte, 0x80, 0xBf))
+                    return false;
+                NEXT_BYTE();
+                if (!WELL_FORMED_RANGE(byte, 0x80, 0xBf))
+                    return false;
+            }
+            else if (WELL_FORMED_RANGE(byte, 0xF1, 0xF3)) {
+                NEXT_BYTE();
+                if (!WELL_FORMED_RANGE(byte, 0x80, 0xBF))
+                    return false;
+                NEXT_BYTE();
+                if (!WELL_FORMED_RANGE(byte, 0x80, 0xBf))
+                    return false;
+                NEXT_BYTE();
+                if (!WELL_FORMED_RANGE(byte, 0x80, 0xBf))
+                    return false;
+            }
+            else if (WELL_FORMED_RANGE(byte, 0xF4, 0xF4)) {
+                NEXT_BYTE();
+                if (!WELL_FORMED_RANGE(byte, 0x80, 0xBF))
+                    return false;
+                NEXT_BYTE();
+                if (!WELL_FORMED_RANGE(byte, 0x80, 0xBf))
+                    return false;
+                NEXT_BYTE();
+                if (!WELL_FORMED_RANGE(byte, 0x80, 0xBf))
+                    return false;
+            }
+            else
+            {
+                return false;
+            }
+            ++beg;
+        }
+        return true;
+    }
+
 
     template<typename WideChar, typename InputIterator, typename OutputIterator>
     InputIterator decode(InputIterator beg, InputIterator end, OutputIterator dest)
@@ -157,19 +255,18 @@ namespace utf8
             }\
         }
 
-
-        InputIterator pos;
+        InputIterator pos = beg;
 
         while (beg != end)
         {
             pos = beg;
             wide_t wide = 0;
             switch (*beg & 0xF0)
-            { 
+            {
                 case 0xF0: // 4 byte sequence
                     assert(sizeof(wide_t) >= 4);
 
-                    // invalid values would encode numbers larger than 
+                    // invalid values would encode numbers larger than
                     // then 0x10ffff limit of Unicode.
                     if (*beg >= 0xF5)
                         return pos;
@@ -230,13 +327,13 @@ namespace utf8
     #undef READBITS
     }
 
-    inline 
+    inline
     std::wstring decode(const std::string& utf8, bool* success = nullptr)
     {
         std::wstring ret;
         const auto pos = decode<wchar_t>(utf8.begin(), utf8.end(), std::back_inserter(ret));
-        
-        if (success) 
+
+        if (success)
             *success = (pos == utf8.end());
 
         return ret;
@@ -250,7 +347,7 @@ namespace utf8
         const auto end = utf8 + std::strlen(utf8);
         const auto pos = decode<wchar_t>(beg, end, std::back_inserter(ret));
 
-        if (success) 
+        if (success)
             *success = (pos == end);
 
         return ret;

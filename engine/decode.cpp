@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -29,7 +29,7 @@
 #include "bodyiter.h"
 #include "yenc.h"
 #include "uuencode.h"
-#include "platform.h"
+#include "iso_8859_15.h"
 
 namespace {
 
@@ -39,14 +39,14 @@ namespace {
 // utf-8 sequence, if it is, use it as it is. Otherwise
 // assume that the string is latin1 and convert to unicode and then encode into utf-8
 
-std::string to_utf8(const std::string& str) 
+std::string to_utf8(const std::string& str)
 {
     bool success = false;
     utf8::decode(str, &success);
     if (success)
         return str;
 
-    const auto wide = newsflash::widen(str);
+    const auto& wide = newsflash::ISO_8859_15_to_unicode(str);
     return utf8::encode(wide);
 }
 
@@ -69,7 +69,7 @@ decode::decode(buffer&& data) : data_(std::move(data))
 decode::~decode()
 {}
 
-std::string decode::describe() const 
+std::string decode::describe() const
 {
     return "Decode";
 }
@@ -79,8 +79,8 @@ void decode::xperform()
     // iterate over the content line by line and inspect
     // every line untill we can identify a binary encoding.
     // we're assuming that data before and after binary content
-    // is simply textual content such as is often the case with 
-    // for example uuencoded images embedded in a text. 
+    // is simply textual content such as is often the case with
+    // for example uuencoded images embedded in a text.
     newsflash::encoding enc = newsflash::encoding::unknown;
 
     nntp::linebuffer lines(data_.content(), data_.content_length());
@@ -92,10 +92,10 @@ void decode::xperform()
     {
         const auto line = *beg;
         enc = identify_encoding(line.start, line.length);
-        if (enc != newsflash::encoding::unknown) 
+        if (enc != newsflash::encoding::unknown)
             break;
 
-        binary_start_offset += line.length;            
+        binary_start_offset += line.length;
 
         // save the text data before the binary in the text buffer
         if (line.length > 2 || !text_.empty())
@@ -135,16 +135,16 @@ void decode::xperform()
             consumed = decode_uuencode_multi(dataptr, datalen);
             break;
 
-        // if we're unable to identify the encoding it could be something that we're not 
+        // if we're unable to identify the encoding it could be something that we're not
         // yet supporting such as MIME/base64.
         // in this case all the content is stored in the text buffer.
         case newsflash::encoding::unknown:
            return;
     }
 
-    if (text_.empty()) 
+    if (text_.empty())
         return;
-    
+
     if (!binary_name_.empty())
         ss << "[" << binary_name_ << "]";
     else ss << "[binary content]";
@@ -184,7 +184,7 @@ std::size_t decode::decode_yenc_single(const char* data, std::size_t len)
     first_part_    = true;
     last_part_     = true;
     has_offset_    = false;
-    encoding_      = encoding::yenc;    
+    encoding_      = encoding::yenc;
 
     if (footer.second.crc32)
     {
@@ -264,7 +264,7 @@ std::size_t decode::decode_uuencode_single(const char* data, std::size_t len)
     uuencode::decode(beg, end, std::back_inserter(buff));
 
     // this might fail if we're dealing with the start of a uuencoded binary
-    // that is split into several parts. 
+    // that is split into several parts.
     // then there's no end in this chunk.
     const bool parse_end_success = uuencode::parse_end(beg, end);
 
@@ -274,7 +274,7 @@ std::size_t decode::decode_uuencode_single(const char* data, std::size_t len)
     binary_size_   = 0;
     first_part_    = true;
     has_offset_    = false;
-    encoding_      = encoding::uuencode;    
+    encoding_      = encoding::uuencode;
     if (parse_end_success)
     {
         last_part_ = true;

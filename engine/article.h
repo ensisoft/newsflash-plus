@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -34,6 +34,8 @@
 #include "filetype.h"
 #include "assert.h"
 #include "nntp.h"
+#include "utf8.h"
+#include "iso_8859_15.h"
 
 namespace newsflash
 {
@@ -41,7 +43,7 @@ namespace newsflash
     class article
     {
     public:
-        article() 
+        article()
         {
             clear();
         }
@@ -63,7 +65,7 @@ namespace newsflash
             {
                 if (part.second.numerator > part.second.denominator)
                     return false;
-                m_parts_avail = 1;                
+                m_parts_avail = 1;
                 m_partno      = part.second.numerator;
                 m_parts_total = part.second.denominator;
                 m_bits.set(fileflag::broken, (m_parts_avail != m_parts_total));
@@ -83,14 +85,36 @@ namespace newsflash
                     m_type = find_filetype(filename);
                 m_bits.set(fileflag::binary);
             }
-            m_subject = std::string{data.subject.start, data.subject.len};
-            m_author  = std::string{data.author.start, data.author.len};
+
+            // we support utf8 now.
+            // using runtime article specific flag here insted of versioning the catalog
+            // so that we can support backwards compatibility with old data.
+            // we can break this on a major release and refactor to more efficient
+            // implementation runtime wise.
+            m_bits.set(fileflag::enable_utf8);
+
+            // if the subject string is well formed UTF-8 we're going to store it as is
+            // otherwise we expect that it's in extended latin. (actually according to spec
+            // latin-1 but in reality this isn't the case)
+            if (utf8::is_well_formed(data.subject.start, data.subject.start + data.subject.len))
+                m_subject = std::string{data.subject.start, data.subject.len};
+            else  m_subject = ISO_8859_15_to_utf8(data.subject.start, data.subject.len);
+
+            if (utf8::is_well_formed(data.author.start, data.author.start + data.author.len))
+                m_author  = std::string{data.author.start, data.author.len};
+            else m_author = ISO_8859_15_to_utf8(data.author.start, data.author.len);
+
             m_number  = nntp::to_int<std::uint64_t>(data.number.start, data.number.len);
             m_bytes   = nntp::to_int<std::uint32_t>(data.bytecount.start, data.bytecount.len);
-            m_hash    = nntp::hashvalue(m_subject.c_str(), m_subject.size());
+
+            // with the addition of utf-8 in the subject line we must cater for cases
+            // where existing data is updated. so instead of calculating the hash from the utf-8
+            // subject line we do it as before, i.e. from the subject line.
+            //m_hash    = nntp::hashvalue(m_subject.c_str(), m_subject.size());
+            m_hash = nntp::hashvalue(data.subject.start, data.subject.len);
+
             if (m_author.size() > 64)
                 m_author.resize(64);
-            //m_author.set_max_len(64);            
 
             return true;
         }
@@ -101,7 +125,7 @@ namespace newsflash
             const auto size  = storage.size();
             const auto avail = size - offset;
             const auto min   = std::min<std::size_t>(avail, 1024);
-            assert(offset < size);            
+            assert(offset < size);
 
             auto buffer = storage.load(offset, min, Storage::buf_read);
 
@@ -114,9 +138,9 @@ namespace newsflash
             read(in, m_number);
             read(in, m_pubdate);
             read(in, m_bits);
-            read(in, m_type);            
+            read(in, m_type);
             read(in, m_subject);
-            read(in, m_author);            
+            read(in, m_author);
             auto m = MAGIC;
             read(in, m);
             if (m != MAGIC)
@@ -127,7 +151,7 @@ namespace newsflash
         void save(std::size_t offset, Storage& storage) const
         {
             auto buffer = storage.load(offset, size_on_disk(), Storage::buf_write);
-            auto out = buffer.begin();            
+            auto out = buffer.begin();
             write(out, m_index);
             write(out, m_bytes);
             write(out, m_idbkey);
@@ -136,16 +160,16 @@ namespace newsflash
             write(out, m_number);
             write(out, m_pubdate);
             write(out, m_bits);
-            write(out, m_type);            
+            write(out, m_type);
             write(out, m_subject);
-            write(out, m_author);            
+            write(out, m_author);
             write(out, MAGIC);
             buffer.flush();
         }
 
         void combine(const article& other)
         {
-            m_bytes += other.m_bytes;                        
+            m_bytes += other.m_bytes;
             if (has_parts())
             {
                 m_parts_avail++;
@@ -153,16 +177,16 @@ namespace newsflash
             }
         }
 
-        std::size_t size_on_disk() const 
+        std::size_t size_on_disk() const
         {
-            return sizeof(m_bits) + 
-                sizeof(m_type) + 
-                sizeof(m_index) + 
-                sizeof(m_bytes) + 
-                sizeof(m_idbkey) + 
-                sizeof(m_parts_avail) + 
-                sizeof(m_parts_total) + 
-                sizeof(m_number) + 
+            return sizeof(m_bits) +
+                sizeof(m_type) +
+                sizeof(m_index) +
+                sizeof(m_bytes) +
+                sizeof(m_idbkey) +
+                sizeof(m_parts_avail) +
+                sizeof(m_parts_total) +
+                sizeof(m_number) +
                 sizeof(m_pubdate) +
                 2 + m_subject.size() +
                 2 + m_author.size() +
@@ -190,43 +214,43 @@ namespace newsflash
         bitflag<fileflag, std::uint8_t> bits() const
         { return m_bits; }
 
-        std::uint32_t index() const 
+        std::uint32_t index() const
         { return m_index; }
 
-        std::uint32_t bytes() const 
+        std::uint32_t bytes() const
         { return m_bytes; }
 
-        std::uint32_t idbkey() const 
+        std::uint32_t idbkey() const
         { return m_idbkey; }
 
-        std::uint16_t num_parts_total() const 
+        std::uint16_t num_parts_total() const
         { return m_parts_total; }
 
-        std::uint16_t num_parts_avail() const 
+        std::uint16_t num_parts_avail() const
         { return m_parts_avail; }
 
-        std::uint16_t partno() const 
+        std::uint16_t partno() const
         { return m_partno; }
 
-        std::uint64_t number() const 
+        std::uint64_t number() const
         { return m_number; }
 
-        std::time_t pubdate() const 
+        std::time_t pubdate() const
         { return m_pubdate; }
 
-        const std::string& subject() const 
+        const std::string& subject() const
         { return m_subject; }
 
-        const std::string& author() const 
+        const std::string& author() const
         { return m_author; }
 
-        std::string subject_as_string() const 
+        std::string subject_as_string() const
         { return m_subject; }
 
-        filetype type() const 
+        filetype type() const
         { return m_type; }
 
-        const std::uint32_t hash() const 
+        const std::uint32_t hash() const
         {
             if (!m_hash)
                 m_hash = nntp::hashvalue(m_subject.c_str(), m_subject.size());
@@ -282,13 +306,23 @@ namespace newsflash
             m_index = index;
         }
 
-        bool is_match(const article& other) const 
+        bool is_match(const article& other) const
         {
-            return nntp::strcmp(m_subject.c_str(), m_subject.size(),
-                other.m_subject.c_str(), other.m_subject.size());
+            if (m_bits.test(fileflag::enable_utf8) && other.m_bits.test(fileflag::enable_utf8))
+                return nntp::strcmp(m_subject, other.m_subject);
+
+            if (!m_bits.test(fileflag::enable_utf8) && !other.m_bits.test(fileflag::enable_utf8))
+                return nntp::strcmp(m_subject, other.m_subject);
+
+            // mixed case. old and new data.
+            if (!m_bits.test(fileflag::enable_utf8))
+                return nntp::strcmp(ISO_8859_15_to_utf8(m_subject), other.m_subject);
+
+            return nntp::strcmp(m_subject, ISO_8859_15_to_utf8(other.m_subject));
+
         }
 
-        bool is_broken() const 
+        bool is_broken() const
         {
             return m_bits.test(fileflag::broken);
         }
@@ -298,9 +332,13 @@ namespace newsflash
             return m_bits.test(fileflag::deleted);
         }
 
-        bool has_parts() const 
+        bool has_parts() const
         {
             return bool(m_parts_total != 0);
+        }
+        bool is_utf8_enabled() const
+        {
+            return m_bits.test(fileflag::enable_utf8);
         }
 
     private:
@@ -309,7 +347,7 @@ namespace newsflash
         typedef typename Storage::buffer::const_iterator const_iterator;
 
         template<typename Value>
-        void read(iterator& it, Value& val) const 
+        void read(iterator& it, Value& val) const
         {
             // this should be std::is_trivially_copyable (not available in gcc 4.9.2)
             static_assert(std::is_standard_layout<Value>::value, "");
@@ -319,7 +357,7 @@ namespace newsflash
                 p[i] = *it++;
         }
 
-        void read(iterator& it, str::string_view& s) const 
+        void read(iterator& it, str::string_view& s) const
         {
             std::uint16_t len;
             read(it, len);
@@ -327,7 +365,7 @@ namespace newsflash
             it += len;
             s = str::string_view{ptr, len};
         }
-        void read(iterator& it, std::string& s) const 
+        void read(iterator& it, std::string& s) const
         {
             std::uint16_t len;
             read(it, len);
@@ -337,7 +375,7 @@ namespace newsflash
         }
 
         template<typename Value>
-        void write(iterator& it, const Value& val) const 
+        void write(iterator& it, const Value& val) const
         {
             // this should be std::is_trivially_copyable (not available in gcc 4.9.2)
             static_assert(std::is_standard_layout<Value>::value, "");
@@ -347,14 +385,14 @@ namespace newsflash
                 *it++ = p[i];
         }
 
-        void write(iterator& it, const str::string_view& str) const 
+        void write(iterator& it, const str::string_view& str) const
         {
             const std::uint16_t len = str.size();
             write(it, len);
             std::copy(str.begin(), str.end(), it);
             it += len;
         }
-        void write(iterator& it, const std::string& str) const 
+        void write(iterator& it, const std::string& str) const
         {
             const std::uint16_t len = str.size();
             write(it, len);
@@ -367,7 +405,7 @@ namespace newsflash
 
     private:
         bitflag<fileflag, std::uint8_t> m_bits;
-        filetype m_type;                
+        filetype m_type;
 
         std::uint32_t m_index;
         std::uint32_t m_bytes;
@@ -380,7 +418,7 @@ namespace newsflash
         std::string   m_author;
         // non persistent
     private:
-        mutable std::uint16_t m_partno;        
+        mutable std::uint16_t m_partno;
         mutable std::uint32_t m_hash;
     };
 
@@ -394,12 +432,12 @@ namespace newsflash
     // the data through the base pointer at the correct offsets.
     // this will avoid *all* copying of article data.
     template<>
-    class article<filemap> 
+    class article<filemap>
     {
     public:
         article() : m_ptr(nullptr), m_len(0)
         {}
-    
+
         void load(std::size_t offset, filemap& storage)
         {
             // get a pointer and then cast.
@@ -415,7 +453,7 @@ namespace newsflash
             std::uint16_t len_subject;
             std::memcpy(&len_subject, (char*)base + m_len, 2);
             m_len += 2;
-            m_subject = str::string_view{(char*)base + m_len, 
+            m_subject = str::string_view{(char*)base + m_len,
                 len_subject};
 
             m_len += len_subject;
@@ -424,7 +462,7 @@ namespace newsflash
             std::memcpy(&len_author, (char*)base + m_len, 2);
 
             m_len += 2;
-            m_author = str::string_view{(char*)base + m_len, 
+            m_author = str::string_view{(char*)base + m_len,
                 len_author};
 
             m_len += len_author;
@@ -436,61 +474,64 @@ namespace newsflash
             // will go to the backend file already.
         }
 
-        str::string_view subject() const 
+        str::string_view subject() const
         { return m_subject; }
 
-        std::string subject_as_string() const 
+        std::string subject_as_string() const
         { return m_subject.as_str(); }
 
         str::string_view author() const
         { return m_author; }
 
-        bitflag<fileflag> bits() const 
+        bitflag<fileflag> bits() const
         { return m_ptr->bits; }
-    
+
         std::uint32_t bytes() const
         { return m_ptr->bytes; }
-        
-        std::uint32_t index() const 
+
+        std::uint32_t index() const
         { return m_ptr->index; }
 
-        std::uint32_t num_parts_total() const 
+        std::uint32_t num_parts_total() const
         { return m_ptr->parts_total; }
 
-        std::uint32_t num_parts_avail() const 
+        std::uint32_t num_parts_avail() const
         { return m_ptr->parts_avail; }
 
-        std::uint32_t idbkey() const 
+        std::uint32_t idbkey() const
         { return m_ptr->idbkey; }
 
-        std::uint64_t number() const 
+        std::uint64_t number() const
         { return m_ptr->number; }
 
-        std::time_t pubdate() const 
+        std::time_t pubdate() const
         { return m_ptr->pubdate; }
 
-        std::uint32_t size_on_disk() const 
+        std::uint32_t size_on_disk() const
         { return m_len; }
 
-        bool test(fileflag flag) const 
-        { 
-            bitflag<fileflag> b(m_ptr->bits); 
+        bool test(fileflag flag) const
+        {
+            bitflag<fileflag> b(m_ptr->bits);
             return b.test(flag);
         }
 
-        bool is_broken() const 
+        bool is_broken() const
         { return test(fileflag::broken); }
 
-        bool is_binary() const 
+        bool is_binary() const
         { return test(fileflag::binary); }
 
-        bool is_deleted() const 
+        bool is_deleted() const
         { return test(fileflag::deleted); }
 
-        bool is_bookmarked() const 
+        bool is_bookmarked() const
         { return test(fileflag::bookmarked); }
 
-        bool has_parts() const 
+        bool is_utf8_enabled() const
+        { return test(fileflag::enable_utf8); }
+
+        bool has_parts() const
         { return m_ptr->parts_total != 0; }
 
         filetype type() const
@@ -509,7 +550,7 @@ namespace newsflash
     private:
         // important. this struct is binary compatible
         // with raw data written by the non-specialize article template.
-        // this must be kept in sync with that code 
+        // this must be kept in sync with that code
 #if defined(__MSVC__)
 #  pragma pack(push, 1)
         struct data {
@@ -524,7 +565,7 @@ namespace newsflash
             std::uint64_t number;
             std::time_t   pubdate;
             std::uint8_t  bits;
-            std::uint8_t  type;            
+            std::uint8_t  type;
             //std::uint16_t subject_len;
             //char subject[1];
         };
@@ -538,9 +579,9 @@ namespace newsflash
         data* m_ptr;
 
     private:
-        str::string_view m_subject;        
+        str::string_view m_subject;
         str::string_view m_author;
-        std::uint32_t m_len;        
+        std::uint32_t m_len;
     };
 
 } // newsflash

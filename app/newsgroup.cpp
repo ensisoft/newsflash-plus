@@ -46,8 +46,12 @@
 namespace app
 {
 
-QString toString(const str::string_view& str)
+// Starting with RFC-3977 the default encoding used should be UTF-8
+// so we're going to assume that the subject lines are UTF-8 encoded.
+QString toString(const str::string_view& str, bool utf8_enabled)
 {
+    if (utf8_enabled)
+        return QString::fromUtf8(str.c_str(), str.size());
     return QString::fromLatin1(str.c_str(), str.size());
 }
 
@@ -332,7 +336,7 @@ QVariant NewsGroup::data(const QModelIndex& index, int role) const
                 return toString(size { item.bytes() });
 
             case Columns::Subject:
-                return toString(item.subject());
+                return toString(item.subject(), item.is_utf8_enabled());
 
             case Columns::LAST: Q_ASSERT(false);
         }
@@ -647,8 +651,8 @@ void NewsGroup::download(const QModelIndexList& list, quint32 acc, const QString
         auto article = index_[row];
         NZBContent nzb;
         nzb.bytes   = article.bytes();
-        nzb.subject = toString(article.subject());
-        nzb.poster  = toString(article.author());
+        nzb.subject = toString(article.subject(), article.is_utf8_enabled());
+        nzb.poster  = toString(article.author(), article.is_utf8_enabled());
         nzb.groups.push_back(narrow(name_));
 
         subjects.push_back(article.subject_as_string());
