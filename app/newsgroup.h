@@ -32,10 +32,13 @@
 #include <newsflash/engine/catalog.h>
 #include <newsflash/engine/index.h>
 #include <newsflash/engine/idlist.h>
+#include <newsflash/engine/bitflag.h>
+#include <newsflash/stringlib/string.h>
 #include <vector>
 #include <deque>
 #include <memory>
 #include <functional>
+#include <ctime>
 #include "filetype.h"
 #include "debug.h"
 #include "format.h"
@@ -114,18 +117,19 @@ namespace app
 
         void setTypeFilter(FileType type, bool onOff)
         {
-            index_.set_type_filter(type, onOff);
+            show_these_filetypes_.set(type, onOff);
         }
         void setFlagFilter(FileFlag flag, bool onOff)
         {
-            index_.set_flag_filter(flag, onOff);
+            show_these_fileflags_.set(flag, onOff);
         }
 
         void setSizeFilter(quint64 minSize, quint64 maxSize)
         {
             DEBUG("Size filter %1 - %2", app::size{minSize}, app::size{maxSize});
 
-            index_.set_size_filter(minSize, maxSize);
+            min_show_file_size_ = minSize;
+            max_show_file_size_ = maxSize;
         }
 
         void setDateFilter(quint32 minDays, quint32 maxDays)
@@ -136,7 +140,16 @@ namespace app
 
             DEBUG("Date filter %1 - %2", app::age{beg}, app::age{end});
 
-            index_.set_date_filter(end.toTime_t(), beg.toTime_t());
+            min_show_pubdate_ = end.toTime_t();
+            max_show_pubdate_ = beg.toTime_t();
+        }
+
+        void setStringFilter(const QString& str, bool case_sensitive)
+        {
+            match_string_wide_ = str;
+            string_matcher_case_sensitive_ = case_sensitive;
+            string_matcher_utf8_.reset(toUtf8(str), string_matcher_case_sensitive_);
+
         }
 
         void applyFilter()
@@ -168,6 +181,10 @@ namespace app
         struct Block;
         void loadData(Block& block, bool guiLoad);
 
+        bool showDeleted() const {
+            return show_these_fileflags_.test(newsflash::fileflag::deleted);
+        }
+
         using catalog = newsflash::catalog<newsflash::filemap>;
         using index   = newsflash::index<newsflash::filemap>;
         using idlist  = newsflash::idlist<newsflash::filemap>;
@@ -198,6 +215,18 @@ namespace app
         quint32 task_;
         QString path_;
         QString name_;
+    private:
+        // filtering options
+        newsflash::bitflag<FileType, std::uint16_t> show_these_filetypes_;
+        newsflash::bitflag<FileFlag, std::uint16_t> show_these_fileflags_;
+        std::uint64_t min_show_file_size_;
+        std::uint64_t max_show_file_size_;
+        std::time_t   min_show_pubdate_;
+        std::time_t   max_show_pubdate_;
+
+        QString      match_string_wide_;
+        str::string_matcher<> string_matcher_utf8_;
+        bool string_matcher_case_sensitive_;
 
     };
 } // app

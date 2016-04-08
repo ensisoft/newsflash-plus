@@ -30,6 +30,10 @@
 #  include <QCoreApplication>
 #include <newsflash/warnpop.h>
 #include <newsflash/engine/nntp.h>
+#include <newsflash/engine/utf8.h>
+#include <newsflash/engine/iso_8859_15.h>
+#include <newsflash/stringlib/string.h>
+#include <limits>
 #include "newsgroup.h"
 #include "eventlog.h"
 #include "debug.h"
@@ -187,7 +191,6 @@ private:
     std::deque<catalog>& catalogs_;
 };
 
-
 NewsGroup::NewsGroup() : task_(0)
 {
     DEBUG("NewsGroup created");
@@ -206,8 +209,47 @@ NewsGroup::NewsGroup() : task_(0)
         auto& c = catalogs_[key];
         return c.load(catalog::index_t{idx});
     };
+    index_.on_filter = [this](const Article& article) {
+        if (!show_these_filetypes_.test(article.type()))
+            return false;
 
+        const auto bits = article.bits();
+        if (!show_these_fileflags_.test(FileFlag::broken) &&
+            bits.test(FileFlag::broken))
+            return false;
+        if (!show_these_fileflags_.test(FileFlag::deleted) &&
+            bits.test(FileFlag::deleted))
+            return false;
+
+        const auto date = article.pubdate();
+        if (date < min_show_pubdate_ || date > max_show_pubdate_)
+            return false;
+
+        const auto size = article.bytes();
+        if (size < min_show_file_size_ || size > max_show_file_size_)
+            return false;
+
+        if (string_matcher_utf8_.empty())
+            return true;
+
+        const auto& subject = article.subject();
+        if (article.is_utf8_enabled() && string_matcher_case_sensitive_)
+            return string_matcher_utf8_.search(subject.c_str(), subject.size());
+
+        const auto& wide = toString(subject, article.is_utf8_enabled());
+        if (string_matcher_case_sensitive_)
+            return (bool)wide.contains(match_string_wide_, Qt::CaseSensitive);
+
+        return (bool)wide.contains(match_string_wide_, Qt::CaseInsensitive);
+
+    };
     numSelected_ = 0;
+    show_these_filetypes_.set_from_value(~0);
+    show_these_fileflags_.set_from_value(~0);
+    min_show_file_size_ = std::numeric_limits<std::uint64_t>::min();
+    max_show_file_size_ = std::numeric_limits<std::uint64_t>::max();
+    min_show_pubdate_   = std::numeric_limits<std::time_t>::min();
+    max_show_pubdate_   = std::numeric_limits<std::time_t>::max();
 }
 
 NewsGroup::~NewsGroup()
@@ -577,7 +619,7 @@ void NewsGroup::killSelected(const QModelIndexList& list)
         article.set_bits(FileFlag::deleted, !deletion);
         //article.save();
     }
-    if (!index_.show_deleted())
+    if (!showDeleted())
     {
         applyFilter();
     }

@@ -118,21 +118,11 @@ namespace utf8
         } // while
     }
 
-    // convenience function to encode (extended) ascii string to utf8
-    inline std::string encode(const std::string& ascii)
-    {
-        std::string utf8;
-        encode(ascii.begin(), ascii.end(),
-            std::back_inserter(utf8));
-        return utf8;
-    }
-
     // convenience function to encode a wide unicode string to utf8
     inline std::string encode(const std::wstring& unicode)
     {
         std::string utf8;
-        encode(unicode.begin(), unicode.end(),
-            std::back_inserter(utf8));
+        encode(unicode.begin(), unicode.end(), std::back_inserter(utf8));
         return utf8;
     }
 
@@ -327,8 +317,7 @@ namespace utf8
     #undef READBITS
     }
 
-    inline
-    std::wstring decode(const std::string& utf8, bool* success = nullptr)
+    inline std::wstring decode(const std::string& utf8, bool* success = nullptr)
     {
         std::wstring ret;
         const auto pos = decode<wchar_t>(utf8.begin(), utf8.end(), std::back_inserter(ret));
@@ -339,8 +328,7 @@ namespace utf8
         return ret;
     }
 
-    inline
-    std::wstring decode(const char* utf8, bool* success = nullptr)
+    inline std::wstring decode(const char* utf8, bool* success = nullptr)
     {
         std::wstring ret;
         const auto beg = utf8;

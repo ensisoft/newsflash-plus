@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -23,6 +23,7 @@
 #include <newsflash/config.h>
 #include <newsflash/warnpush.h>
 #  include <QtGui/QDialog>
+#  include <QString>
 #  include "ui_dlgfilter.h"
 #include <newsflash/warnpop.h>
 #include <functional>
@@ -48,12 +49,15 @@ namespace gui
             bool bMinSize;
             bool bMaxSize;
             Unit sizeUnits;
+            QString matchString;
+            bool matchStringCaseSensitive;
         };
 
         DlgFilter(QWidget* parent, Params& params);
 
         std::function<void(quint32 minDays, quint32 maxDays,
-            quint64 minSize, quint64 maxSize)> applyFilter;
+            quint64 minSize, quint64 maxSize,
+            const QString& matchStringFilter, bool matchStringCaseSensitive)> applyFilter;
 
         bool isApplied() const;
     private slots:
@@ -68,12 +72,13 @@ namespace gui
         void on_spinMinDays_valueChanged(int value);
         void on_sliderMaxDays_valueChanged(int position);
         void on_sliderMinDays_valueChanged(int position);
+        void on_edtMatchString_textChanged(const QString&);
         void on_chkKB_clicked();
         void on_chkMB_clicked();
         void on_chkGB_clicked();
-
+        void on_chkCaseSensitive_clicked();
     private:
-        void blockStupidSignals(bool block);           
+        void blockStupidSignals(bool block);
         void setParams();
 
     private:

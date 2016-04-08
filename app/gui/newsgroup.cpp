@@ -130,6 +130,7 @@ NewsGroup::NewsGroup(quint32 acc, QString path, QString name) : account_(acc), p
     filter_.bMinDays = false;
     filter_.bMaxDays = false;
     filter_.sizeUnits = DlgFilter::Unit::MB;
+    filter_.matchStringCaseSensitive = true;
     model_.setSizeFilter(filter_.minSize, filter_.maxSize);
     model_.setDateFilter(filter_.minDays, filter_.maxDays);
 
@@ -301,6 +302,8 @@ void NewsGroup::load()
     }
     catch (const std::exception& e)
     {
+        ui_.progressBar->setVisible(false);
+        ui_.loader->setVisible(false);
         QMessageBox::critical(this, name_,
             tr("Unable to load the newsgroup data.\n%1").arg(app::widen(e.what())));
     }
@@ -407,9 +410,11 @@ void NewsGroup::on_actionFilter_triggered()
     DlgFilter::Params filter = filter_;
 
     DlgFilter dlg(this, filter);
-    dlg.applyFilter = [this](quint32 minDays, quint32 maxDays, quint64 minSize, quint64 maxSize) {
+    dlg.applyFilter = [this](quint32 minDays, quint32 maxDays, quint64 minSize, quint64 maxSize,
+        const QString& matchString, bool matchStringCaseSensitive) {
         model_.setSizeFilter(minSize, maxSize);
         model_.setDateFilter(minDays, maxDays);
+        model_.setStringFilter(matchString, matchStringCaseSensitive);
         model_.applyFilter();
     };
     if (dlg.exec() == QDialog::Accepted)
@@ -421,6 +426,7 @@ void NewsGroup::on_actionFilter_triggered()
 
     model_.setSizeFilter(filter_.minSize, filter_.maxSize);
     model_.setDateFilter(filter_.minDays, filter_.maxDays);
+    model_.setStringFilter(filter_.matchString, filter_.matchStringCaseSensitive);
     model_.applyFilter();
 }
 

@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -47,7 +47,7 @@ namespace newsflash
             sort_by_binary,
             sort_by_downloaded,
             sort_by_bookmarked,
-            sort_by_date, 
+            sort_by_date,
             sort_by_type,
             sort_by_size,
             sort_by_author,
@@ -61,22 +61,18 @@ namespace newsflash
             selected
         };
 
-        using article_t = typename newsflash::article<Storage>;        
+        using article_t = typename newsflash::article<Storage>;
 
         index() : size_(0), sorting_(sorting::sort_by_date), sortdir_(sortdir::ascending)
-        {
-            types_.set_from_value(~0);
-            flags_.set_from_value(~0);
-            min_pubdate_ = std::numeric_limits<std::time_t>::min();
-            max_pubdate_ = std::numeric_limits<std::time_t>::max();
-            min_size_    = std::numeric_limits<std::uint32_t>::min();
-            max_size_    = std::numeric_limits<std::uint32_t>::max();
-        }
+        {}
 
-        // callback to invoke to load an article.
+        // loading callback
         using loader = std::function<article_t (std::size_t key, std::size_t index)>;
+        // filtering callback (predicate)
+        using predicate = std::function<bool (const article_t& a)>;
 
-        loader on_load;
+        loader on_load; // callback to load an article object
+        predicate on_filter; // callback to filter an article object
 
         void sort(sorting column, sortdir up_down)
         {
@@ -92,41 +88,41 @@ namespace newsflash
                 return;
             }
             sorting_ = column;
-            sortdir_ = up_down;            
+            sortdir_ = up_down;
             resort();
         }
         void resort()
         {
             switch (sorting_)
             {
-                case sorting::sort_by_broken:     
-                    sort(sortdir_, fileflag::broken); 
+                case sorting::sort_by_broken:
+                    sort(sortdir_, fileflag::broken);
                     break;
-                case sorting::sort_by_binary:     
-                    sort(sortdir_, fileflag::binary); 
+                case sorting::sort_by_binary:
+                    sort(sortdir_, fileflag::binary);
                     break;
-                case sorting::sort_by_downloaded: 
-                    sort(sortdir_, fileflag::downloaded); 
+                case sorting::sort_by_downloaded:
+                    sort(sortdir_, fileflag::downloaded);
                     break;
-                case sorting::sort_by_bookmarked: 
-                    sort(sortdir_, fileflag::bookmarked); 
+                case sorting::sort_by_bookmarked:
+                    sort(sortdir_, fileflag::bookmarked);
                     break;
-                case sorting::sort_by_date:        
-                    sort(sortdir_, &article_t::pubdate); 
+                case sorting::sort_by_date:
+                    sort(sortdir_, &article_t::pubdate);
                     break;
-                case sorting::sort_by_type:       
-                    sort(sortdir_, &article_t::type); 
+                case sorting::sort_by_type:
+                    sort(sortdir_, &article_t::type);
                     break;
-                case sorting::sort_by_size:       
-                    sort(sortdir_, &article_t::bytes); 
+                case sorting::sort_by_size:
+                    sort(sortdir_, &article_t::bytes);
                     break;
-                case sorting::sort_by_author:     
-                    sort(sortdir_, &article_t::author); 
+                case sorting::sort_by_author:
+                    sort(sortdir_, &article_t::author);
                     break;
-                case sorting::sort_by_subject:    
-                    sort(sortdir_, &article_t::subject); 
+                case sorting::sort_by_subject:
+                    sort(sortdir_, &article_t::subject);
                     break;
-            }            
+            }
         }
 
         // insert the new item into the index in the right position.
@@ -151,7 +147,7 @@ namespace newsflash
             switch (sorting_)
             {
                 case sorting::sort_by_broken:
-                    pos = lower_bound(beg, end, a, fileflag::broken); 
+                    pos = lower_bound(beg, end, a, fileflag::broken);
                     break;
                 case sorting::sort_by_binary:
                     pos = lower_bound(beg, end, a, fileflag::binary);
@@ -163,14 +159,14 @@ namespace newsflash
                     pos = lower_bound(beg, end, a, fileflag::bookmarked);
                     break;
 
-                case sorting::sort_by_date: 
+                case sorting::sort_by_date:
                     pos = lower_bound(beg, end, a, &article_t::pubdate);
                     break;
-                case sorting::sort_by_type: 
+                case sorting::sort_by_type:
                     pos = lower_bound(beg, end, a, &article_t::type);
                     break;
-                case sorting::sort_by_size:                    
-                    pos = lower_bound(beg, end, a, &article_t::bytes); 
+                case sorting::sort_by_size:
+                    pos = lower_bound(beg, end, a, &article_t::bytes);
                     break;
                 case sorting::sort_by_author:
                     pos = lower_bound(beg, end, a, &article_t::author);
@@ -182,12 +178,12 @@ namespace newsflash
             items_.insert(pos, {key, index});
         }
 
-        std::size_t size() const 
-        { 
+        std::size_t size() const
+        {
             return size_;
         }
 
-        std::size_t real_size() const 
+        std::size_t real_size() const
         {
             return items_.size();
         }
@@ -199,71 +195,31 @@ namespace newsflash
             return on_load(item.key, item.index);
         }
 
-        sorting get_sorting() const 
+        sorting get_sorting() const
         { return sorting_; }
 
-        sortdir get_sortdir() const 
+        sortdir get_sortdir() const
         { return sortdir_; }
 
-        void select(std::size_t index, bool val) 
+        void select(std::size_t index, bool val)
         {
             assert(index < size_);
             auto& item = items_[index];
             item.bits.set(flags::selected, val);
         }
 
-        bool is_selected(std::size_t index) const 
+        bool is_selected(std::size_t index) const
         {
             assert(index < size_);
             const auto& item = items_[index];
             return item.bits.test(flags::selected);
         }
 
-        bool show_deleted() const 
-        {
-            return flags_.test(fileflag::deleted);
-        }
-
-        // filter the index by displaying only articles with matching file types
-        void set_type_filter(filetype type, bool on_off)
-        {
-            types_.set(type, on_off);
-        }
-
-        // filter the index by displaying only articles with matching filetype
-        void set_type_filter(bitflag<filetype> types)
-        {
-            types_ = types;
-        }
-
-        void set_flag_filter(bitflag<fileflag> flags)
-        {
-            flags_ = flags;
-        }
-        void set_flag_filter(fileflag flag, bool on_off)
-        {
-            flags_.set(flag, on_off);
-        }
-
-        void set_date_filter(std::time_t min_pubdate, std::time_t max_pubdate)
-        {
-            assert(max_pubdate >= min_pubdate);
-            min_pubdate_ = min_pubdate;
-            max_pubdate_ = max_pubdate;
-        }
-
-        void set_size_filter(std::uint64_t min_size, std::uint64_t max_size)
-        {
-            assert(max_size >= min_size);
-            min_size_ = min_size;
-            max_size_ = max_size;
-        }
-
         void filter()
         {
             // we might have items from previous filter that are currently
             // not being displayed. since the filter might become
-            // more "relaxed" and those items might match we need to put them 
+            // more "relaxed" and those items might match we need to put them
             // back into the "visible" range. also note that we must maintain
             // the correct sorting
             auto pred = [this](const item& i) {
@@ -287,19 +243,19 @@ namespace newsflash
             //
             // [aaaaaa|bbbbbbb|cccccccc|dddd]
             // beg    a   mid          b    end
-            // 
+            //
             // where,
             // [beg, a) is the new visible range in previously visible range
             // [a, mid) is the new non-visible range in previously visible
             // [mid, b) is the new visible range in previously non-visible
             // [b, end) is the new non-visible range in previously non-visible
-            // 
+            //
             // all the ranges are sorted according to the current sorting.
             // then we merge the 4 ranges into 2 sorted ranges such that,
             // [aaaaaaaa|bbbbbbbbbbb]
             // beg      mid         end
             //
-            // where, 
+            // where,
             // [beg, mid) is the new visible range
             // [mid, end), is the new non-visible range.
 
@@ -307,8 +263,8 @@ namespace newsflash
             auto mid = std::begin(items_) + size_;
             auto end = std::end(items_);
 
-            auto a = std::stable_partition(beg, mid, pred);            
-            auto b = std::stable_partition(mid, end, pred);                        
+            auto a = std::stable_partition(beg, mid, pred);
+            auto b = std::stable_partition(mid, end, pred);
 
             auto out = std::back_inserter(tmp);
             switch (sorting_)
@@ -341,7 +297,7 @@ namespace newsflash
                 case sorting::sort_by_type:
                     merge(beg, a, mid, b, out, &article_t::type);
                     merge(a, mid, b, end, out, &article_t::type);
-                    break; 
+                    break;
 
                 case sorting::sort_by_size:
                     merge(beg, a, mid, b, out, &article_t::bytes);
@@ -352,7 +308,7 @@ namespace newsflash
                     merge(beg, a, mid, b, out, &article_t::author);
                     merge(a, mid, b, end, out, &article_t::author);
                     break;
-                    
+
                 case sorting::sort_by_subject:
                     merge(beg, a, mid, b, out, &article_t::subject);
                     merge(a, mid, b, end, out, &article_t::subject);
@@ -371,13 +327,13 @@ namespace newsflash
             bigger_t(MemPtr p, loader func) : ptr_(p), load_(func)
             {}
 
-            bool operator()(const item& lhs, const item& rhs) const 
+            bool operator()(const item& lhs, const item& rhs) const
             {
                 const auto& a = load_(lhs.key, lhs.index);
                 const auto& b = load_(rhs.key, rhs.index);
                 return (a.*ptr_)() > (b.*ptr_)();
             }
-            bool operator()(const item& lhs, const article_t& rhs) const 
+            bool operator()(const item& lhs, const article_t& rhs) const
             {
                 const auto& a = load_(lhs.key, lhs.index);
                 const auto& b = rhs;
@@ -394,13 +350,13 @@ namespace newsflash
             smaller_t(MemPtr p, loader func) : ptr_(p), load_(func)
             {}
 
-            bool operator()(const item& lhs, const item& rhs) const 
+            bool operator()(const item& lhs, const item& rhs) const
             {
                 const auto& a = load_(lhs.key, lhs.index);
                 const auto& b = load_(rhs.key, rhs.index);
                 return (a.*ptr_)() < (b.*ptr_)();
             }
-            bool operator()(const item& lhs, const article_t& rhs) const 
+            bool operator()(const item& lhs, const article_t& rhs) const
             {
                 const auto& a = load_(lhs.key, lhs.index);
                 const auto& b = rhs;
@@ -461,15 +417,15 @@ namespace newsflash
             auto beg = std::begin(items_);
             auto mid = std::begin(items_) + size_;
             auto end = std::end(items_);
-            if (up_down == sortdir::ascending) 
+            if (up_down == sortdir::ascending)
             {
                 std::sort(beg, mid, less(p));
                 std::sort(mid, end, less(p));
             }
-            else 
+            else
             {
                 std::sort(beg, mid, greater(p));
-                std::sort(mid, end, greater(p));                
+                std::sort(mid, end, greater(p));
             }
         }
 
@@ -527,28 +483,9 @@ namespace newsflash
             }
         }
 
-        bool is_match(const article_t& a) const 
+        bool is_match(const article_t& a) const
         {
-            if (!types_.test(a.type()))
-                return false;
-
-            const auto bits = a.bits();
-            if (!flags_.test(fileflag::broken) && 
-                bits.test(fileflag::broken))
-                return false;
-            if (!flags_.test(fileflag::deleted) &&
-                bits.test(fileflag::deleted))
-                return false;
-
-            const auto date = a.pubdate();
-            if (date < min_pubdate_ || date > max_pubdate_)
-                return false;
-
-            const auto size = a.bytes();
-            if (size < min_size_ || size > max_size_)
-                return false;
-
-            return true;
+            return on_filter(a);
         }
 
         void deselect_non_visible()
@@ -573,13 +510,6 @@ namespace newsflash
     private:
         sorting sorting_;
         sortdir sortdir_;
-    private:
-        bitflag<filetype, std::uint16_t> types_;
-        bitflag<fileflag, std::uint16_t> flags_;
-        std::time_t min_pubdate_;
-        std::time_t max_pubdate_;
-        std::uint64_t min_size_;
-        std::uint64_t max_size_;
     };
 
 } // newsflash

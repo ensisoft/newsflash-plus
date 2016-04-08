@@ -1,4 +1,4 @@
-// Copyright (c) 2010-2013 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2013 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
 //
@@ -73,8 +73,7 @@ newsflash::buffer read_file_buffer(const char* file)
     buff.set_status(newsflash::buffer::status::success);
     buff.set_content_length(size);
     buff.set_content_start(0);
-
-    return std::move(buff);
+    return buff;
 }
 
 
@@ -96,12 +95,12 @@ inline
 std::vector<char> read_file_contents(const char* file)
 {
     FILE* p = fopen(file, "rb");
-    
+
     fseek(p, 0, SEEK_END);
     long size = ftell(p);
     fseek(p, 0, SEEK_SET);
 
-    std::vector<char> buff;    
+    std::vector<char> buff;
     buff.resize(size);
 
     fread(&buff[0], 1, size, p);
@@ -147,10 +146,10 @@ int strcasecmp(const char* first, const char* second)
 {
     int i = 0;
 #if defined(WINDOWS_OS)
-    i = _stricmp(first, second);
+    i = ::_stricmp(first, second);
 #elif defined(LINUX_OS)
-    i = strcasecmp(first, second);
-#endif 
+    i = ::strcasecmp(first, second);
+#endif
     if (i < 0)
         return -1;
     if (i > 0)
@@ -166,13 +165,13 @@ void delete_file(const char* file)
         boost::filesystem::path ph(file);
         boost::filesystem::remove(ph);
     }
-    catch (...) 
+    catch (...)
     {
         std::cerr << "(DONT PANIC!) failed to delete file: " << file << std::endl;
     }
 }
 
-inline 
+inline
 void sleepms(int millis)
 {
 #if defined(WINDOWS_OS)

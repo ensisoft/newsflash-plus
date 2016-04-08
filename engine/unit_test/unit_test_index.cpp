@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -19,12 +19,13 @@
 // THE SOFTWARE.
 
 #include <newsflash/config.h>
-
-#include <boost/test/minimal.hpp>
+#include <newsflash/warnpush.h>
+#  include <boost/test/minimal.hpp>
+#include <newsflash/warnpop.h>
 #include "../index.h"
 #include "../article.h"
 
-struct storage 
+struct storage
 {
     struct buffer {
         using iterator = char*;
@@ -74,12 +75,16 @@ int test_main(int, char*[])
 
     // test sorting.
     {
-        using index = newsflash::index<storage>;
+        using index   = newsflash::index<storage>;
+        using article = newsflash::article<storage>;
         index i;
         i.on_load = [&](std::size_t key, std::size_t index) {
             BOOST_REQUIRE(key < 2);
             BOOST_REQUIRE(index < 3);
             return catalog[key][index];
+        };
+        i.on_filter = [](const article& a) {
+            return true;
         };
 
         i.sort(index::sorting::sort_by_date, index::sortdir::ascending);
@@ -98,9 +103,9 @@ int test_main(int, char*[])
         BOOST_REQUIRE(i[0] == catalog[1][0]);
         BOOST_REQUIRE(i[1] == catalog[0][1]);
         BOOST_REQUIRE(i[2] == catalog[0][2]);
-        BOOST_REQUIRE(i[3] == catalog[0][0]);   
+        BOOST_REQUIRE(i[3] == catalog[0][0]);
 
-        i.insert(catalog[1][1], 1, 1);     
+        i.insert(catalog[1][1], 1, 1);
         BOOST_REQUIRE(i.size() == 5);
         BOOST_REQUIRE(i[0] == catalog[1][0]);
         BOOST_REQUIRE(i[1] == catalog[0][1]);
@@ -111,50 +116,98 @@ int test_main(int, char*[])
 
     // test filtering.
     {
-        using index = newsflash::index<storage>;
+        using index   = newsflash::index<storage>;
+        using article = newsflash::article<storage>;
         index i;
         i.on_load = [&](std::size_t key, std::size_t index) {
             BOOST_REQUIRE(key < 2);
             BOOST_REQUIRE(index < 3);
             return catalog[key][index];
         };
+        i.on_filter = [](const article& a) {
+            const auto size = a.bytes();
+            if (size < 1025 || size > 1026)
+                return false;
+            return true;
+        };
 
-        i.set_size_filter(1025, 1026);
+        //i.set_size_filter(1025, 1026);
         i.filter();
         i.sort(index::sorting::sort_by_date, index::sortdir::ascending);
 
         i.insert(catalog[0][0], 0, 0);
         i.insert(catalog[0][1], 0, 1);
-        i.insert(catalog[0][2], 0, 2);        
+        i.insert(catalog[0][2], 0, 2);
         i.insert(catalog[1][0], 1, 0);
         i.insert(catalog[1][1], 1, 1);
         BOOST_REQUIRE(i.size() == 0);
 
-        i.set_size_filter(1024, 1024);
+        //i.set_size_filter(1024, 1024);
+        i.on_filter = [](const article& a) {
+            const auto size = a.bytes();
+            if (size < 1024 || size > 1024)
+                return false;
+            return true;
+        };
+
         i.filter();
         BOOST_REQUIRE(i.size() == 1);
 
-        i.set_size_filter(150, 1024);
+        //i.set_size_filter(150, 1024);
+        i.on_filter = [](const article& a) {
+            const auto size = a.bytes();
+            if (size < 150 || size > 1024)
+                return false;
+            return true;
+        };
         i.filter();
         BOOST_REQUIRE(i.size() == 2);
         BOOST_REQUIRE(i[0] == catalog[1][1]);
         BOOST_REQUIRE(i[1] == catalog[0][1]);
 
         i.sort(index::sorting::sort_by_size, index::sortdir::ascending);
-        i.set_date_filter(1000, 1000);
+        //i.set_date_filter(1000, 1000);
+        i.on_filter = [](const article& a) {
+            const auto size = a.bytes();
+            if (size < 150 || size > 1024)
+                return false;
+            const auto date = a.pubdate();
+            if (date < 1000 || date > 1000)
+                return false;
+            return true;
+        };
+
         i.filter();
         BOOST_REQUIRE(i.size() == 0);
-        i.set_date_filter(0, std::numeric_limits<std::time_t>::max());
+        //i.set_date_filter(0, std::numeric_limits<std::time_t>::max());
+        i.on_filter = [](const article& a) {
+            const auto size = a.bytes();
+            if (size < 150 || size > 1024)
+                return false;
+            const auto date = a.pubdate();
+            if (date < 0 || date > std::numeric_limits<std::uint32_t>::max())
+                return false;
+            return true;
+        };
         i.filter();
         BOOST_REQUIRE(i.size() == 2);
-        i.set_size_filter(0, std::numeric_limits<std::uint32_t>::max());        
+        //i.set_size_filter(0, std::numeric_limits<std::uint32_t>::max());
+        i.on_filter = [](const article& a) {
+            const auto size = a.bytes();
+            if (size < 0 || size > std::numeric_limits<std::uint32_t>::max())
+                return false;
+            const auto date = a.pubdate();
+            if (date < 0 || date > std::numeric_limits<std::uint32_t>::max())
+                return false;
+            return true;
+        };
         i.filter();
         BOOST_REQUIRE(i.size() == 5);
         BOOST_REQUIRE(i[0] == catalog[0][2]);
         BOOST_REQUIRE(i[1] == catalog[1][0]);
         BOOST_REQUIRE(i[2] == catalog[0][0]);
-        BOOST_REQUIRE(i[3] == catalog[0][1]);        
-        BOOST_REQUIRE(i[4] == catalog[1][1]);                
+        BOOST_REQUIRE(i[3] == catalog[0][1]);
+        BOOST_REQUIRE(i[4] == catalog[1][1]);
 
     }
 

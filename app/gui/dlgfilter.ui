@@ -6,59 +6,18 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>472</width>
-    <height>257</height>
+    <width>463</width>
+    <height>360</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Filter</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="../../../../svnroot/newsflash/gui/resource.qrc">
+   <iconset resource="resource.qrc">
     <normaloff>:/resource/16x16_ico_png/ico_filter.png</normaloff>:/resource/16x16_ico_png/ico_filter.png</iconset>
   </property>
   <layout class="QGridLayout" name="gridLayout_6">
-   <item row="2" column="0">
-    <layout class="QHBoxLayout" name="horizontalLayout_2">
-     <item>
-      <spacer name="horizontalSpacer">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>40</width>
-         <height>20</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-     <item>
-      <widget class="QPushButton" name="btnAccept">
-       <property name="text">
-        <string>OK</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="btnApply">
-       <property name="enabled">
-        <bool>true</bool>
-       </property>
-       <property name="text">
-        <string>Apply</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="btnCancel">
-       <property name="text">
-        <string>Cancel</string>
-       </property>
-      </widget>
-     </item>
-    </layout>
-   </item>
    <item row="1" column="0">
     <widget class="QGroupBox" name="groupBox">
      <property name="title">
@@ -273,30 +232,92 @@
      </layout>
     </widget>
    </item>
+   <item row="3" column="0">
+    <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <item>
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btnAccept">
+       <property name="text">
+        <string>OK</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btnApply">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="text">
+        <string>Apply</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btnCancel">
+       <property name="text">
+        <string>Cancel</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item row="2" column="0">
+    <widget class="QGroupBox" name="groupBox_2">
+     <property name="title">
+      <string>Show items that contain this string</string>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_5">
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout">
+        <item>
+         <widget class="QCheckBox" name="chkCaseSensitive">
+          <property name="text">
+           <string>Case sensitive</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <widget class="QLineEdit" name="edtMatchString"/>
+      </item>
+     </layout>
+    </widget>
+   </item>
   </layout>
  </widget>
  <tabstops>
-  <tabstop>grpMinSize</tabstop>
   <tabstop>sliderMinSize</tabstop>
   <tabstop>spinMinSize</tabstop>
   <tabstop>chkKB</tabstop>
   <tabstop>chkMB</tabstop>
   <tabstop>chkGB</tabstop>
-  <tabstop>grpMaxSize</tabstop>
   <tabstop>sliderMaxSize</tabstop>
   <tabstop>spinMaxSize</tabstop>
-  <tabstop>grpMinDays</tabstop>
   <tabstop>sliderMinDays</tabstop>
   <tabstop>spinMinDays</tabstop>
-  <tabstop>grpMaxDays</tabstop>
   <tabstop>sliderMaxDays</tabstop>
   <tabstop>spinMaxDays</tabstop>
+  <tabstop>chkCaseSensitive</tabstop>
+  <tabstop>edtMatchString</tabstop>
   <tabstop>btnAccept</tabstop>
   <tabstop>btnApply</tabstop>
   <tabstop>btnCancel</tabstop>
  </tabstops>
  <resources>
-  <include location="../../../../svnroot/newsflash/gui/resource.qrc"/>
+  <include location="resource.qrc"/>
  </resources>
  <connections>
   <connection>

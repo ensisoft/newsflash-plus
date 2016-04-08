@@ -8,8 +8,6 @@
             "-Wno-unknown-pragmas",
             "-Wno-inconsistent-missing-override",
             "-Wno-deprecated-register",
-
-            "-DSUBLIME_CLANG_WORKAROUNDS",
             "-I${home}/coding",
             "-I${home}/coding/newsflash/",
             "-I${home}/coding/newsflash/app/",

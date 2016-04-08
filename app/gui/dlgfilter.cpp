@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -35,7 +35,7 @@ int myLog(int value)
             return i;
     }
     Q_ASSERT(0);
-    return -1; 
+    return -1;
 }
 
 DlgFilter::DlgFilter(QWidget* parent, DlgFilter::Params& params) : QDialog(parent), params_(params)
@@ -58,31 +58,33 @@ DlgFilter::DlgFilter(QWidget* parent, DlgFilter::Params& params) : QDialog(paren
 
     switch (params.sizeUnits)
     {
-        case Unit::KB: 
-            ui_.chkKB->setChecked(true);         
+        case Unit::KB:
+            ui_.chkKB->setChecked(true);
             ui_.spinMinSize->setValue(params_.minSize / 1024);
-            ui_.spinMaxSize->setValue(params_.maxSize / 1024);            
+            ui_.spinMaxSize->setValue(params_.maxSize / 1024);
             break;
-        case Unit::MB: 
-            ui_.chkMB->setChecked(true);         
+        case Unit::MB:
+            ui_.chkMB->setChecked(true);
             ui_.spinMinSize->setValue(params_.minSize / (1024 * 1024));
-            ui_.spinMaxSize->setValue(params_.maxSize / (1024 * 1024));            
+            ui_.spinMaxSize->setValue(params_.maxSize / (1024 * 1024));
             break;
-        case Unit::GB: 
-            ui_.chkGB->setChecked(true);         
+        case Unit::GB:
+            ui_.chkGB->setChecked(true);
             ui_.spinMinSize->setValue(params_.minSize / (1024 * 1024 * 1024));
-            ui_.spinMaxSize->setValue(params_.maxSize / (1024 * 1024 * 1024));            
+            ui_.spinMaxSize->setValue(params_.maxSize / (1024 * 1024 * 1024));
             break;
-        default: Q_ASSERT(!"unknown filtering size unit"); break; 
+        default: Q_ASSERT(!"unknown filtering size unit"); break;
     }
 
-    ui_.btnApply->setEnabled(false);
+    ui_.edtMatchString->setText(params.matchString);
+    ui_.chkCaseSensitive->setChecked(params.matchStringCaseSensitive);
 
+    ui_.btnApply->setEnabled(false);
 
     ui_.chkGB->setVisible(false);
 }
 
-bool DlgFilter::isApplied() const 
+bool DlgFilter::isApplied() const
 {
     return !ui_.btnApply->isEnabled();
 }
@@ -101,7 +103,8 @@ void DlgFilter::on_btnApply_clicked()
 {
     setParams();
 
-    applyFilter(params_.minDays, params_.maxDays, params_.minSize, params_.maxSize);
+    applyFilter(params_.minDays, params_.maxDays, params_.minSize, params_.maxSize,
+        params_.matchString, params_.matchStringCaseSensitive);
 
     ui_.btnApply->setEnabled(false);
 }
@@ -126,7 +129,7 @@ void DlgFilter::on_sliderMinSize_valueChanged(int position)
     ui_.btnApply->setEnabled(true);
 
     blockStupidSignals(false);
-}    
+}
 
 void DlgFilter::on_sliderMaxSize_valueChanged(int position)
 {
@@ -144,7 +147,7 @@ void DlgFilter::on_sliderMaxSize_valueChanged(int position)
 
     ui_.spinMaxSize->setValue(value);
 
-    ui_.btnApply->setEnabled(true);    
+    ui_.btnApply->setEnabled(true);
 
     blockStupidSignals(false);
 }
@@ -158,7 +161,7 @@ void DlgFilter::on_spinMinSize_valueChanged(int value)
     if (value > ui_.spinMaxSize->value())
         ui_.spinMaxSize->setValue(value);
 
-    ui_.btnApply->setEnabled(true);    
+    ui_.btnApply->setEnabled(true);
 
     blockStupidSignals(false);
 }
@@ -171,8 +174,8 @@ void DlgFilter::on_spinMaxSize_valueChanged(int value)
 
     if (value < ui_.spinMinSize->value())
         ui_.spinMinSize->setValue(value);
-    
-    ui_.btnApply->setEnabled(true);    
+
+    ui_.btnApply->setEnabled(true);
 
     blockStupidSignals(false);
 }
@@ -186,7 +189,7 @@ void DlgFilter::on_spinMaxDays_valueChanged(int value)
     if (value < ui_.spinMinDays->value())
         ui_.spinMinDays->setValue(value);
 
-    ui_.btnApply->setEnabled(true);    
+    ui_.btnApply->setEnabled(true);
 
     blockStupidSignals(false);
 }
@@ -200,7 +203,7 @@ void DlgFilter::on_spinMinDays_valueChanged(int value)
     if (value > ui_.spinMaxDays->value())
         ui_.spinMaxDays->setValue(value);
 
-    ui_.btnApply->setEnabled(true);    
+    ui_.btnApply->setEnabled(true);
 
     blockStupidSignals(false);
 }
@@ -220,7 +223,7 @@ void DlgFilter::on_sliderMaxDays_valueChanged(int position)
     }
     ui_.spinMaxDays->setValue(value);
 
-    ui_.btnApply->setEnabled(true);    
+    ui_.btnApply->setEnabled(true);
 
     blockStupidSignals(false);
 }
@@ -230,7 +233,7 @@ void DlgFilter::on_sliderMinDays_valueChanged(int position)
     blockStupidSignals(true);
 
     int value = 0;
-    if (position > 0) 
+    if (position > 0)
         value = pow(1.1, position);
 
     if (value > ui_.spinMaxDays->value())
@@ -245,6 +248,11 @@ void DlgFilter::on_sliderMinDays_valueChanged(int position)
     blockStupidSignals(false);
 }
 
+void DlgFilter::on_edtMatchString_textChanged(const QString&)
+{
+    ui_.btnApply->setEnabled(true);
+}
+
 void DlgFilter::on_chkKB_clicked()
 {
     ui_.btnApply->setEnabled(true);
@@ -256,6 +264,11 @@ void DlgFilter::on_chkMB_clicked()
 }
 
 void DlgFilter::on_chkGB_clicked()
+{
+    ui_.btnApply->setEnabled(true);
+}
+
+void DlgFilter::on_chkCaseSensitive_clicked()
 {
     ui_.btnApply->setEnabled(true);
 }
@@ -295,7 +308,9 @@ void DlgFilter::setParams()
     params_.minSize = sizeMultiplier * ui_.spinMinSize->value();
     params_.maxSize = sizeMultiplier * ui_.spinMaxSize->value();
     params_.minDays = ui_.spinMinDays->value();
-    params_.maxDays = ui_.spinMaxDays->value();    
+    params_.maxDays = ui_.spinMaxDays->value();
+    params_.matchString = ui_.edtMatchString->text();
+    params_.matchStringCaseSensitive = ui_.chkCaseSensitive->isChecked();
 }
 
 } // gui

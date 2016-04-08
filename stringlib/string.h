@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -61,7 +61,7 @@ namespace str
             DistanceType table_[256];
         };
 
-        // store Distances between different objects 
+        // store Distances between different objects
         // within a range. DistanceType is a type that can be
         // used to measure and express the distance in a range
         // between objects of KeyType type.
@@ -87,7 +87,7 @@ namespace str
             typedef std::map<KeyType, DistanceType> map_type;
             map_type table_;
         };
-        
+
         struct object_matcher
         {
             template<typename T1, typename T2> inline
@@ -124,7 +124,7 @@ namespace str
             {
                 if (boost::empty(needle_))
                     return;
-                
+
                 needle_iterator beg(boost::const_begin(needle_));
                 needle_iterator end(boost::const_end(needle_));
                 for (--end; beg != end; ++beg)
@@ -139,7 +139,7 @@ namespace str
             {
                 return boost::empty(needle_);
             }
-            
+
             // this is an overload that defaults to using default object matching policy
             template<typename HaystackRange> inline
             bool is_within(const HaystackRange& haystack) const
@@ -172,7 +172,7 @@ namespace str
                 {
                     haystack_iterator search(begin);
                     // start matching the needle and haystack backwards
-                    
+
                     std::advance(search, length-1);
                     if (search >= boost::end(haystack))
                         return false;
@@ -196,7 +196,7 @@ namespace str
 
                             assert(search >= boost::begin(haystack));
                         }
-                        // how many did we match? 
+                        // how many did we match?
                         difference matched(std::distance(pattern, boost::end(needle_))-1);
                         advance  = SkipTable::operator[](matcher.identity(*search));
                         if (advance == difference())
@@ -233,8 +233,8 @@ namespace str
         };
 
     } // detail
-    
-    // std_locale simply wraps std::locale and implements 
+
+    // std_locale simply wraps std::locale and implements
     // the ObjectMatcher interface required by boyer-moore template
     class std_locale
     {
@@ -248,17 +248,17 @@ namespace str
         bool is_equal(char c1, char c2) const
         {
             #ifdef _MSC_VER
-                // what the *** there's a hickup with std::toupper 
+                // what the *** there's a hickup with std::toupper
                 // taking the locale with vc7.1
                 return std::toupper(c1) == std::toupper(c2);
                 /*
-                  return 
-                  _totupper_l(c1, locale_) == 
+                  return
+                  _totupper_l(c1, locale_) ==
                   _totupper_l(c2, locale_);
                 */
             #else
-                return 
-                  std::toupper<char>(c1, locale_) == 
+                return
+                  std::toupper<char>(c1, locale_) ==
                   std::toupper<char>(c2, locale_);
             #endif
         }
@@ -282,26 +282,30 @@ namespace str
     {
     public:
         // construct the needle from a string
-        string_matcher(const std::string& needle, bool case_sensitive = true, const Locale& loc = Locale()) : 
-          needle_string_(needle),
-          needle_(needle_string_),
-          locale_(loc),
-          case_sensitive_(case_sensitive)
+        string_matcher(const std::string& needle, bool case_sensitive = true, const Locale& loc = Locale()) :
+            needle_string_(needle), needle_(needle_string_), locale_(loc),
+            case_sensitive_(case_sensitive)
         {
-            case_sensitive ? 
+            case_sensitive ?
               needle_.preprocess() :
               needle_.preprocess(locale_) ;
         }
+        explicit
+        string_matcher(const Locale& locale = Locale()) :
+            needle_(needle_string_),
+            locale_(locale)
+        {}
+
         // returns  true if needle is an empty string
         inline bool empty() const
         {
             return needle_.empty();
         }
-        
+
         // search the haystack for this needle string.
         bool search(const std::string& haystack) const
         {
-            return case_sensitive_ ? 
+            return case_sensitive_ ?
               needle_.is_within(haystack) :
               needle_.is_within(haystack, locale_);
         }
@@ -317,12 +321,20 @@ namespace str
             assert(len);
             typedef std::pair<const char*, const char*> range;
             range r(haystack, haystack + len);
-            
-            return case_sensitive_ ? 
-              needle_.is_within(r) : 
+
+            return case_sensitive_ ?
+              needle_.is_within(r) :
               needle_.is_within(r, locale_);
         }
-      
+        void reset(const std::string& needle, bool case_sensitive)
+        {
+            needle_string_ = needle;
+            case_sensitive ?
+                needle_.preprocess() :
+                needle_.preprocess(locale_);
+            case_sensitive_ = case_sensitive;
+        }
+
     private:
         typedef detail::boyer_moore<std::string, detail::ascii_table_lookup<> > matcher;
         std::string needle_string_;
@@ -330,7 +342,7 @@ namespace str
         Locale locale_;
         bool case_sensitive_;
     };
-    
+
 
     template<typename Range> inline
     bool find_match(const Range& haystack, const Range& needle)
@@ -338,7 +350,7 @@ namespace str
         // TODO:
         /*
         using namespace detail;
-        typedef typename 
+        typedef typename
           boost::range_value<Range>::type value_type;
         typedef typename
           boost::range_difference<Range>::type distance_type;
@@ -354,7 +366,7 @@ namespace str
     bool find_match(const std::string& haystack, const std::string& needle)
     {
         using namespace detail;
-        typedef 
+        typedef
           boost::range_difference<std::string>::type distance_type;
         typedef boyer_moore<std::string, ascii_table_lookup<distance_type> > matcher;
         matcher m(needle);
@@ -372,10 +384,10 @@ namespace str
         using namespace detail;
         typedef std::pair<const char*, const char*> range;
         typedef boyer_moore<range, ascii_table_lookup<size_t> > matcher;
-        
+
         range r_haystack(haystack, haystack + haystack_len);
         range r_needle(needle, needle + needle_len);
-        
+
         matcher m(r_needle);
         m.preprocess();
         return m.is_within(r_haystack);
@@ -388,9 +400,9 @@ namespace str
             return false;
         return find_match(haystack, strlen(haystack), needle, strlen(needle));
     }
-    
-    std::string find_longest_common_substring(std::vector<std::string> vec, bool case_sensitive = true);    
-    
+
+    std::string find_longest_common_substring(std::vector<std::string> vec, bool case_sensitive = true);
+
     // try to find the longest common substring in strings a and b
     std::string find_longest_common_substring(const std::string& a, const std::string& b, bool case_sensitive = true);
 

@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -20,7 +20,9 @@
 
 #include <newsflash/config.h>
 
-#include <boost/test/minimal.hpp>
+#include <newsflash/warnpush.h>
+#  include <boost/test/minimal.hpp>
+#include <newsflash/warnpop.h>
 #include <chrono>
 #include "../filemap.h"
 #include "../filebuf.h"
@@ -51,7 +53,7 @@ void unit_test_create_new()
         a.set_number(666);
         a.set_bits(fileflag::broken, true);
         db.append(a);
-        BOOST_REQUIRE(db.size() == 1); 
+        BOOST_REQUIRE(db.size() == 1);
 
         a.clear();
         a.set_author("Mickey Mouse");
@@ -60,7 +62,7 @@ void unit_test_create_new()
         a.set_bytes(456);
         a.set_number(500);
         db.append(a);
-        BOOST_REQUIRE(db.size() == 2);         
+        BOOST_REQUIRE(db.size() == 2);
 
         a.clear();
         a.set_subject("Leiah - Kings and Queens \"Foobar.mp3\" (01/10)");
@@ -76,7 +78,7 @@ void unit_test_create_new()
     {
         catalog db;
         db.open("file");
-        BOOST_REQUIRE(db.size() == 3);                
+        BOOST_REQUIRE(db.size() == 3);
 
         // iterators
         auto beg = db.begin();
@@ -121,7 +123,7 @@ void unit_test_create_new()
         BOOST_REQUIRE(beg == end);
     }
 
-    // open again with different backend 
+    // open again with different backend
     {
         using catalog = newsflash::catalog<newsflash::filemap>;
         using article = newsflash::catalog<newsflash::filemap>;
@@ -154,7 +156,7 @@ void unit_test_create_new()
         a = db.load(offset);
         BOOST_REQUIRE(a.author() == "foo@acme.com");
         BOOST_REQUIRE(a.subject() == "Leiah - Kings and Queens \"Foobar.mp3\" (01/10)");
-        BOOST_REQUIRE(a.number() == 45);        
+        BOOST_REQUIRE(a.number() == 45);
     }
 
     delete_file("file");
@@ -235,9 +237,9 @@ void unit_test_performance()
     //     const auto end = std::chrono::steady_clock::now();
     //     const auto diff = end - beg;
     //     const auto ms  = std::chrono::duration_cast<std::chrono::milliseconds>(diff);
-    //     std::cout << "Reading with filemap Time spent (ms): " << ms.count() << std::endl;        
+    //     std::cout << "Reading with filemap Time spent (ms): " << ms.count() << std::endl;
     // }
-    
+
 }
 
 void check_file()

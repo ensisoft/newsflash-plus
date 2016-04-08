@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -19,8 +19,9 @@
 // THE SOFTWARE.
 
 #include <newsflash/config.h>
-
+#include <newsflash/warnpush.h>
 #include <boost/test/minimal.hpp>
+#include <newsflash/warnpop.h>
 #include "../update.h"
 #include "../cmdlist.h"
 #include "../session.h"
@@ -36,7 +37,7 @@
 void unit_test_ranges()
 {
     delete_file("alt.binaries.test/alt.binaries.test.nfo");
-    
+
     fs::createpath("alt.binaries.test");
 
     std::string str;
@@ -65,7 +66,7 @@ void unit_test_ranges()
         str.clear();
 
         cmd = u.create_commands();
-        cmd->submit_data_commands(session);        
+        cmd->submit_data_commands(session);
         session.send_next();
         BOOST_REQUIRE(str == "XOVER 501-1500\r\nXOVER 1-500\r\n");
 
@@ -102,11 +103,11 @@ void unit_test_ranges()
         cmd->submit_data_commands(session);
         session.send_next();
         BOOST_REQUIRE(str == "XOVER 2049-3048\r\nXOVER 3049-3052\r\n");
-        
+
     }
 
 
-    // older items 
+    // older items
     {
         newsflash::update u("", "alt.binaries.test");
 
@@ -147,7 +148,7 @@ void unit_test_ranges()
         BOOST_REQUIRE(u.has_commands() == false);
     }
 
-    delete_file("alt.binaries.test/alt.binaries.test.nfo");    
+    delete_file("alt.binaries.test/alt.binaries.test.nfo");
 }
 
 void unit_test_data()
@@ -156,7 +157,7 @@ void unit_test_data()
 
     fs::createpath("alt.binaries.test");
     delete_file("alt.binaries.test/vol000000000000000.dat");
-    delete_file("alt.binaries.test/alt.binaries.test.nfo");    
+    delete_file("alt.binaries.test/alt.binaries.test.nfo");
     delete_file("alt.binaries.test/alt.binaries.test.idb");
 
     // create from initial data
@@ -202,7 +203,7 @@ void unit_test_data()
         ov.date.start      = "Tue, 13 May 2006 00:00:00";
         ov.number.start    = "7";
         ov.messageid.start = "<7>";
-        str += nntp::make_overview(ov);        
+        str += nntp::make_overview(ov);
 
         ov.author.start    = "foo@gmail.com";
         ov.subject.start   = ".net and COM interoperability";
@@ -225,16 +226,16 @@ void unit_test_data()
         ov.bytecount.start = "2048";
         ov.date.start      = "Tue, 13 Jun 2008 00:00:00";
         ov.number.start    = "40";
-        ov.messageid.start = "<40>";        
-        str += nntp::make_overview(ov);        
+        ov.messageid.start = "<40>";
+        str += nntp::make_overview(ov);
 
         ov.author.start    = "ano@anonymous.yy (knetje)";
         ov.subject.start   = "#A.B.MM @  EFNet Presents: REQ 40092 - Seinfeld.S09.DVDRip.XviD-SiNK - 482/520 - sink-seinfeld.s09e21e22.r23 (3/4)";
         ov.bytecount.start = "2048";
         ov.date.start      = "Tue, 13 Jun 2008 00:00:00";
         ov.number.start    = "50";
-        ov.messageid.start = "<50>";    
-        str += nntp::make_overview(ov);              
+        ov.messageid.start = "<50>";
+        str += nntp::make_overview(ov);
 
         ov.author.start    = "foo@acme.com";
         ov.subject.start   = "girls flirting with is neat GiBBA files Soft I love you to BF-Vol3 (102).jpg (1/1)";
@@ -258,7 +259,7 @@ void unit_test_data()
         ov.date.start      = "Tue, 13 Jun 2008 00:00:00";
         ov.number.start    = "102";
         ov.messageid.start = "<102>";
-        str += nntp::make_overview(ov);        
+        str += nntp::make_overview(ov);
 
         // these items are not valid and should be discarded.
         ov.author.start    = "foo@acme.com";
@@ -341,7 +342,7 @@ void unit_test_data()
 
         catalog db;
         db.open("alt.binaries.test/vol000000000000000.dat");
-        BOOST_REQUIRE(db.size() == 6);        
+        BOOST_REQUIRE(db.size() == 6);
 
         arraydb idb;
         idb.open("alt.binaries.test/alt.binaries.test.idb");
@@ -381,14 +382,14 @@ void unit_test_data()
         BOOST_REQUIRE(a.num_parts_avail() == 3);
         BOOST_REQUIRE(a.bytes() == 3 * 2048);
         BOOST_REQUIRE(idb[a.idbkey() + 1] + a.number() == 30);
-        BOOST_REQUIRE(idb[a.idbkey() + 2] + a.number() == 40);        
-        BOOST_REQUIRE(idb[a.idbkey() + 3] + a.number() == 50);                
+        BOOST_REQUIRE(idb[a.idbkey() + 2] + a.number() == 40);
+        BOOST_REQUIRE(idb[a.idbkey() + 3] + a.number() == 50);
 
         off += a.size_on_disk();
         a = db.load(off);
         BOOST_REQUIRE(a.subject() == "girls flirting with is neat GiBBA files Soft I love you to BF-Vol3 (102).jpg (1/1)");
         BOOST_REQUIRE(a.author()  == "foo@acme.com");
-        BOOST_REQUIRE(a.is_broken() == false);        
+        BOOST_REQUIRE(a.is_broken() == false);
         BOOST_REQUIRE(a.num_parts_total() == 1);
         BOOST_REQUIRE(a.num_parts_avail() == 1);
         BOOST_REQUIRE(idb[a.idbkey() + 1] + a.number() == 100);
@@ -400,17 +401,17 @@ void unit_test_data()
         BOOST_REQUIRE(a.author()  == "foo@acme.com");
         BOOST_REQUIRE(a.is_broken() == false);
         BOOST_REQUIRE(a.num_parts_total() == 1);
-        BOOST_REQUIRE(a.num_parts_avail() == 1);        
-        BOOST_REQUIRE(idb[a.idbkey() + 1] + a.number() == 101);        
+        BOOST_REQUIRE(a.num_parts_avail() == 1);
+        BOOST_REQUIRE(idb[a.idbkey() + 1] + a.number() == 101);
 
         off += a.size_on_disk();
         a = db.load(off);
         BOOST_REQUIRE(a.subject() == "girls flirting with is neat GiBBA files Soft I love you to BF-Vol3 (104).jpg (2/2)");
         BOOST_REQUIRE(a.author()  == "foo@acme.com");
         BOOST_REQUIRE(a.num_parts_total() == 2);
-        BOOST_REQUIRE(a.num_parts_avail() == 1);        
+        BOOST_REQUIRE(a.num_parts_avail() == 1);
         BOOST_REQUIRE(a.is_broken());
-        BOOST_REQUIRE(idb[a.idbkey() + 2] + a.number() == 102);                
+        BOOST_REQUIRE(idb[a.idbkey() + 2] + a.number() == 102);
 
     }
 
@@ -422,7 +423,7 @@ void unit_test_data()
 
         newsflash::buffer buff(1024 * 5);
         buff.append("211 49999 1 500000 alt.binaries.test group selected\r\n");
-        buff.set_content_length(std::strlen("211 49999 1 500000 alt.binaries.test group selected\r\n"));        
+        buff.set_content_length(std::strlen("211 49999 1 500000 alt.binaries.test group selected\r\n"));
         buff.set_content_start(0);
         buff.set_content_type(newsflash::buffer::type::groupinfo);
         cmd->receive_data_buffer(buff);
@@ -442,11 +443,11 @@ void unit_test_data()
         str += nntp::make_overview(ov);
 
         ov.author.start    = "foo@acme.com";
-        ov.subject.start   = "girls flirting with is neat GiBBA files Soft I love you to BF-Vol3 (104).jpg (1/2)";        
+        ov.subject.start   = "girls flirting with is neat GiBBA files Soft I love you to BF-Vol3 (104).jpg (1/2)";
         ov.bytecount.start = "150";
-        ov.date.start      = "Tue, 13 Jun 2008 00:00:00";        
-        ov.number.start    = "103";        
-        ov.messageid.start = "<103>";        
+        ov.date.start      = "Tue, 13 Jun 2008 00:00:00";
+        ov.number.start    = "103";
+        ov.messageid.start = "<103>";
         str += nntp::make_overview(ov);
 
         // uuencoded multipart binary.
@@ -456,23 +457,23 @@ void unit_test_data()
         ov.date.start      = "Tue, 13 May 2006 00:00:00";
         ov.number.start    = "303";
         ov.messageid.start = "<300>";
-        str += nntp::make_overview(ov);        
+        str += nntp::make_overview(ov);
 
         ov.author.start    = "ensi@gmail.com";
         ov.subject.start   = "Kelli Smith (v2) IMG_0108.JPEG (1/3)";
         ov.bytecount.start = "1024";
         ov.date.start      = "Tue, 13 May 2006 00:00:00";
         ov.number.start    = "301";
-        ov.messageid.start = "<100>";        
-        str += nntp::make_overview(ov);                
+        ov.messageid.start = "<100>";
+        str += nntp::make_overview(ov);
 
         ov.author.start    = "ensi@gmail.com";
         ov.subject.start   = "Kelli Smith (v2) IMG_0108.JPEG (2/3)";
         ov.bytecount.start = "1024";
         ov.date.start      = "Tue, 13 May 2006 00:00:00";
         ov.number.start    = "302";
-        ov.messageid.start = "<200>";                
-        str += nntp::make_overview(ov);                                
+        ov.messageid.start = "<200>";
+        str += nntp::make_overview(ov);
 
         // duplicates
         ov.author.start    = "whatever@foo.com";
@@ -488,8 +489,8 @@ void unit_test_data()
         ov.bytecount.start = "2430";
         ov.date.start      = "Tue, 14 May 2015 00:00:00";
         ov.number.start    = "403";
-        ov.messageid.start = "<403>";        
-        str += nntp::make_overview(ov);        
+        ov.messageid.start = "<403>";
+        str += nntp::make_overview(ov);
 
 
 
@@ -523,14 +524,14 @@ void unit_test_data()
 
         using catalog = newsflash::catalog<newsflash::filemap>;
         using article = newsflash::article<newsflash::filemap>;
-        using arraydb = newsflash::idlist<newsflash::filemap>;        
+        using arraydb = newsflash::idlist<newsflash::filemap>;
 
         catalog db;
         db.open("alt.binaries.test/vol000000000000000.dat");
         BOOST_REQUIRE(db.size() == 8);
 
         arraydb idb;
-        idb.open("alt.binaries.test/alt.binaries.test.idb");        
+        idb.open("alt.binaries.test/alt.binaries.test.idb");
 
         catalog::offset_t off(0);
         article a = db.load(off);
@@ -543,7 +544,7 @@ void unit_test_data()
         BOOST_REQUIRE(a.num_parts_avail() == 3);
         BOOST_REQUIRE(idb[a.idbkey() + 1] + a.number() == 5);
         BOOST_REQUIRE(idb[a.idbkey() + 2] + a.number() == 2);
-        BOOST_REQUIRE(idb[a.idbkey() + 3] + a.number() == 7);        
+        BOOST_REQUIRE(idb[a.idbkey() + 3] + a.number() == 7);
 
         off += a.size_on_disk();
         a = db.load(off);
@@ -578,7 +579,7 @@ void unit_test_data()
         a = db.load(off);
         BOOST_REQUIRE(a.subject() == "girls flirting with is neat GiBBA files Soft I love you to BF-Vol3 (103).jpg (1/1)");
         BOOST_REQUIRE(a.author()  == "foo@acme.com");
-        BOOST_REQUIRE(idb[a.idbkey() + 1] + a.number() == 101);        
+        BOOST_REQUIRE(idb[a.idbkey() + 1] + a.number() == 101);
 
         off += a.size_on_disk();
         a = db.load(off);
@@ -587,8 +588,8 @@ void unit_test_data()
         BOOST_REQUIRE(a.num_parts_total() == 2);
         BOOST_REQUIRE(a.num_parts_avail() == 2);
         BOOST_REQUIRE(a.is_broken() == false);
-        BOOST_REQUIRE(idb[a.idbkey() + 1] + a.number() == 103);   
-        BOOST_REQUIRE(idb[a.idbkey() + 2] + a.number() == 102);            
+        BOOST_REQUIRE(idb[a.idbkey() + 1] + a.number() == 103);
+        BOOST_REQUIRE(idb[a.idbkey() + 2] + a.number() == 102);
 
         off += a.size_on_disk();
         a = db.load(off);
@@ -598,8 +599,8 @@ void unit_test_data()
         BOOST_REQUIRE(a.num_parts_avail() == 3);
         BOOST_REQUIRE(a.is_broken() == false);
         BOOST_REQUIRE(idb[a.idbkey() + 1] + a.number() == 301);
-        BOOST_REQUIRE(idb[a.idbkey() + 2] + a.number() == 302);        
-        BOOST_REQUIRE(idb[a.idbkey() + 3] + a.number() == 303);                
+        BOOST_REQUIRE(idb[a.idbkey() + 2] + a.number() == 302);
+        BOOST_REQUIRE(idb[a.idbkey() + 3] + a.number() == 303);
 
         off += a.size_on_disk();
         a = db.load(off);
@@ -665,6 +666,7 @@ void unit_test_index()
     {
         using catalog = newsflash::catalog<newsflash::filemap>;
         using index   = newsflash::index<newsflash::filemap>;
+        using article = newsflash::article<newsflash::filemap>;
 
         catalog dbs[2];
         dbs[0].open("alt.binaries.test/vol000000000033654.dat");
@@ -673,6 +675,9 @@ void unit_test_index()
         index idx;
         idx.on_load = [&](std::size_t key, std::size_t idx) {
             return dbs[key].load(catalog::index_t{idx});
+        };
+        idx.on_filter = [](const article& a) {
+            return true;
         };
 
         {
@@ -709,8 +714,8 @@ void unit_test_index()
     }
 
     delete_file("alt.binaries.test/vol33653.dat");
-    delete_file("alt.binaries.test/vol33654.dat");    
-    delete_file("alt.binaries.test.nfo");    
+    delete_file("alt.binaries.test/vol33654.dat");
+    delete_file("alt.binaries.test.nfo");
 }
 
 
