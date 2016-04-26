@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -102,7 +102,7 @@ public:
     }
     virtual std::size_t size() const override
     { return buffer_.content_length(); }
-    
+
 	virtual std::string describe() const override
 	{ return "Parse XOVER"; }
 private:
@@ -156,7 +156,7 @@ public:
             }
 
             const auto file_index  = hit->second;
-            const auto file_bucket = article.hash() % CATALOG_SIZE;            
+            const auto file_bucket = article.hash() % CATALOG_SIZE;
             auto it = files.find(file_index);
             if (it == std::end(files))
             {
@@ -204,8 +204,8 @@ public:
                     article.set_index(index.value );
                     // we store one complete 64bit article number for the whole pack
                     // and then for the additional parts we store a 16 bit delta value.
-                    // note that while yenc generally uses 1 based part indexing some 
-                    // posters use 0 based instead. Hence we just add + 1 to cater for 
+                    // note that while yenc generally uses 1 based part indexing some
+                    // posters use 0 based instead. Hence we just add + 1 to cater for
                     // both cases safely.
                     if (article.has_parts())
                     {
@@ -215,7 +215,7 @@ public:
                         idb.resize(idb.size() + article.num_parts_total() + 1);
                         idb[key + article.partno()] = 0; // 0 difference to the message id stored with the article.
                     }
-                    db->insert(article, index);                    
+                    db->insert(article, index);
                     break;
                 }
             }
@@ -227,7 +227,7 @@ public:
         for (auto* db : updates_)
             db->flush();
     }
-    
+
     virtual std::string describe() const override
     { return "Update Db"; }
 
@@ -240,7 +240,7 @@ private:
     std::set<catalog_t*> updates_;
 private:
     std::uint64_t first_;
-    std::uint64_t last_;    
+    std::uint64_t last_;
 private:
     std::size_t bytes_;
 };
@@ -249,7 +249,7 @@ update::update(std::string path, std::string group) : local_last_(0), local_firs
 {
     const auto nfo = fs::joinpath(fs::joinpath(path, group), group + ".nfo");
     const auto idb = fs::joinpath(fs::joinpath(path, group), group + ".idb");
-    
+
     state_ = std::make_shared<state>();
     state_->folder = std::move(path);
     state_->group  = std::move(group);
@@ -257,7 +257,7 @@ update::update(std::string path, std::string group) : local_last_(0), local_firs
 #if defined(LINUX_OS)
     std::ifstream in(nfo, std::ios::in | std::ios::binary);
 #elif defined(WINDOWS_OS)
-    // msvc extension    
+    // msvc extension
     std::ifstream in(utf8::decode(nfo), std::ios::in | std::ios::binary);
 #endif
     if (in.is_open())
@@ -301,7 +301,7 @@ update::update(std::string path, std::string group) : local_last_(0), local_firs
 update::~update()
 {}
 
-std::shared_ptr<cmdlist> update::create_commands() 
+std::shared_ptr<cmdlist> update::create_commands()
 {
     std::shared_ptr<cmdlist> ret;
 
@@ -342,11 +342,11 @@ std::shared_ptr<cmdlist> update::create_commands()
 
         // while there are older messages older on the remote host we generate
         // commands to retrieve the older messges starting at the current oldest
-        // message on the local machine and progressing towards the oldest on the 
+        // message on the local machine and progressing towards the oldest on the
         // remote server.
         for (int i=0; i<10; ++i)
         {
-            const auto last  = xover_first_ - 1;            
+            const auto last  = xover_first_ - 1;
             const auto first = last - remote_first_ >= 999 ?  last - 999 : remote_first_;
             xover_first_ = first;
             std::string range;
@@ -360,7 +360,7 @@ std::shared_ptr<cmdlist> update::create_commands()
         ret.reset(new cmdlist(ov));
     }
 
-    return std::move(ret);
+    return ret;
 }
 
 void update::cancel()
@@ -491,14 +491,15 @@ void update::complete(action& a, std::vector<std::unique_ptr<action>>& next)
     }
 }
 
-bool update::has_commands() const 
+bool update::has_commands() const
 {
     if (remote_first_ == 0 && remote_last_  == 0)
         return true;
-    return (remote_last_ != xover_last_) || (remote_first_ != xover_first_);
+    //return (remote_last_ != xover_last_) || (remote_first_ != xover_first_);
+    return xover_last_ < remote_last_ || xover_first_ > remote_first_;
 }
 
-std::size_t update::max_num_actions() const 
+std::size_t update::max_num_actions() const
 {
     if (remote_last_ == 0)
         return 0;
@@ -509,12 +510,12 @@ std::size_t update::max_num_actions() const
     return std::size_t(num_buffers) * 2;
 }
 
-std::string update::group() const 
+std::string update::group() const
 {
     return state_->group;
 }
 
-std::string update::path() const 
+std::string update::path() const
 {
     return state_->folder;
 }
@@ -522,7 +523,7 @@ std::string update::path() const
 std::uint64_t update::num_local_articles() const
 {
     const auto num_local = local_last_ - local_first_ + 1;
-    return num_local;    
+    return num_local;
 }
 
 std::uint64_t update::num_remote_articles() const

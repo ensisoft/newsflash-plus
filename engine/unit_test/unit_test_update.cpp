@@ -62,6 +62,7 @@ void unit_test_ranges()
         cmd->receive_data_buffer(buff);
 
         u.complete(*cmd, actions);
+        BOOST_REQUIRE(u.has_commands());
 
         str.clear();
 
