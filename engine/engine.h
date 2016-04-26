@@ -57,6 +57,9 @@ namespace newsflash
         // this callback is invoked when a update is complete
         using on_update = std::function<void(const ui::update& update)>;
 
+        // this callback is invoked when a task is complete.
+        using on_task = std::function<void(const ui::task& task)>;
+
         // this callback is invoked when new data has been written to a
         // data file belonging to the specified news group.
         using on_header_data = std::function<void(const std::string& group,
@@ -73,7 +76,7 @@ namespace newsflash
         using on_async_notify = std::function<void ()>;
 
         // this callback is called when all tasks are done.
-        using on_complete = std::function<void()>;
+        using on_finish = std::function<void()>;
 
         // this callback is called when payload data that affects
         // quota is downloaded.
@@ -141,6 +144,8 @@ namespace newsflash
 
         void set_list_callback(on_list list_callback);
 
+        void set_task_callback(on_task task_callback);
+
         void set_update_callback(on_update update_callback);
 
         // set the notify callback. this
@@ -149,7 +154,7 @@ namespace newsflash
         void set_header_data_callback(on_header_data callback);
         void set_header_info_callback(on_header_info callback);
 
-        void set_complete_callback(on_complete callback);
+        void set_finish_callback(on_finish callback);
 
         void set_quota_callback(on_quota callback);
 

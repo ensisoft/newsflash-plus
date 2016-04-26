@@ -332,6 +332,7 @@ namespace app
 
     private:
         void onError(const newsflash::ui::error& e);
+        void onTaskComplete(const newsflash::ui::task& t);
         void onFileComplete(const newsflash::ui::file& f);
         void onBatchComplete(const newsflash::ui::batch& b);
         void onListComplete(const newsflash::ui::listing& l);

@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -37,7 +37,7 @@ using states  = newsflash::ui::task::states;
 using flags   = newsflash::ui::task::errors;
 using bitflag = newsflash::bitflag<newsflash::ui::task::errors>;
 
-enum class columns { status, done, time, eta, size, desc, sentinel };    
+enum class columns { status, done, time, eta, size, desc, sentinel };
 
 const char* str(states s)
 {
@@ -59,8 +59,8 @@ const char* str(bitflag f)
     if (f.test(flags::dmca))
         return "DMCA";
     else if (f.test(flags::damaged))
-        return "Damaged";    
-    else if (f.test(flags::unavailable))
+        return "Damaged";
+    else if (f.test(flags::incomplete))
         return "Incomplete";
 
     return "Complete";
@@ -77,7 +77,7 @@ TaskList::TaskList()
 TaskList::~TaskList()
 {}
 
-QVariant TaskList::data(const QModelIndex& index, int role) const 
+QVariant TaskList::data(const QModelIndex& index, int role) const
 {
     const auto col = index.column();
     const auto row = index.row();
@@ -91,7 +91,14 @@ QVariant TaskList::data(const QModelIndex& index, int role) const
         {
             case columns::status:
                 if (ui.state == states::complete)
-                    return str(ui.error);
+                {
+                    if (ui.completion > 0.0)
+                        return str(ui.error);
+
+                    if (ui.error.test(newsflash::ui::task::errors::dmca))
+                        return "DMCA";
+                    return "Unavailable";
+                }
                 return str(ui.state);
 
             case columns::done:
@@ -101,7 +108,7 @@ QVariant TaskList::data(const QModelIndex& index, int role) const
                 return toString(runtime{ui.runtime});
 
             case columns::eta:
-                if (ui.state == states::waiting || 
+                if (ui.state == states::waiting ||
                     ui.state == states::paused ||
                     ui.state == states::queued)
                     return QString("  %1  ").arg(infinity);
@@ -130,24 +137,24 @@ QVariant TaskList::data(const QModelIndex& index, int role) const
 
         switch (ui.state)
         {
-            case states::queued: 
+            case states::queued:
                 return QIcon("icons:ico_task_queued.png");
-            case states::waiting: 
+            case states::waiting:
                 return QIcon("icons:ico_task_waiting.png");
-            case states::active: 
+            case states::active:
                 return QIcon("icons:ico_task_active.png");
             case states::crunching:
                 return QIcon("icons:ico_task_crunching.png");
-            case states::paused: 
-                return QIcon("icons:ico_task_paused.png");   
-            case states::complete: 
+            case states::paused:
+                return QIcon("icons:ico_task_paused.png");
+            case states::complete:
                 if (ui.error.any_bit())
                     return QIcon("icons:ico_task_damaged.png");
 
-                return QIcon("icons:ico_task_complete.png");                
+                return QIcon("icons:ico_task_complete.png");
 
-            case states::error: 
-                return QIcon("icons:ico_task_error.png");                
+            case states::error:
+                return QIcon("icons:ico_task_error.png");
         }
     }
     return QVariant();
@@ -169,11 +176,11 @@ QVariant TaskList::headerData(int section, Qt::Orientation orientation, int role
         case columns::size:   return "Size";
         case columns::desc:   return "Description";
         case columns::sentinel: Q_ASSERT(false);
-    }    
+    }
     return {};
 }
 
-int TaskList::rowCount(const QModelIndex&) const 
+int TaskList::rowCount(const QModelIndex&) const
 {
     return (int)tasks_.size();
 }
@@ -188,7 +195,7 @@ void TaskList::refresh(bool remove_complete)
     const auto curSize = tasks_.size();
 
     g_engine->refreshTaskList(tasks_);
-    
+
     const auto newSize = tasks_.size();
     if (newSize != curSize)
     {
@@ -202,7 +209,7 @@ void TaskList::refresh(bool remove_complete)
         std::size_t removed = 0;
         for (std::size_t i=0; i<tasks_.size(); ++i)
         {
-            const auto& row  = i - removed;            
+            const auto& row  = i - removed;
             const auto& task = tasks_[row];
             if (task.state == states::complete || task.state == states::error)
             {
@@ -354,14 +361,14 @@ void TaskList::clear()
 void TaskList::manageTasks(QModelIndexList& list, TaskList::Action a)
 {
     int min_index = std::numeric_limits<int>::max();
-    int max_index = std::numeric_limits<int>::min();    
+    int max_index = std::numeric_limits<int>::min();
     for (int i=0; i<list.size(); ++i)
     {
         const auto row = list[i].row();
         if (row > max_index)
             max_index = row;
         if (row < min_index)
-            min_index = row;        
+            min_index = row;
 
         switch (a)
         {
@@ -393,7 +400,7 @@ void TaskList::manageTasks(QModelIndexList& list, TaskList::Action a)
 
     const auto first = QAbstractTableModel::index(min_index, 0);
     const auto last  = QAbstractTableModel::index(max_index, (int)columns::sentinel);
-    emit dataChanged(first, last);    
+    emit dataChanged(first, last);
 }
 
 } // app

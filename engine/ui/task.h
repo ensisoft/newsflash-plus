@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -36,7 +36,7 @@ namespace newsflash
     {
         // content errors.
         enum class errors {
-        
+
             // some of the requested data was not available
             unavailable,
 
@@ -44,7 +44,9 @@ namespace newsflash
             dmca,
 
             // some data appears to be damaged
-            damaged
+            damaged,
+
+            incomplete
         };
 
         enum class states {
@@ -65,7 +67,7 @@ namespace newsflash
 
             // task is done. see damaged and error flags for details
             complete,
-            
+
             // some error occurred making it impossible for the task
             // to continue. examples could be inability to create
             // files in the filesystem.
@@ -97,7 +99,7 @@ namespace newsflash
         std::uint64_t size;
 
         // the time elapsed running the task (in seconds)
-        std::uint32_t runtime; 
+        std::uint32_t runtime;
 
         // the estimated completion time (in seconds),
         // will be set to WHO_KNOWS when eta cannot be calculated
@@ -108,7 +110,7 @@ namespace newsflash
         // the current completion %  (range 0.0 - 100.0)
         double completion;
 
-        task() : 
+        task() :
             state(states::queued),
             task_id(0),
             batch_id(0),
@@ -119,6 +121,6 @@ namespace newsflash
             completion(0.0)
         {}
     };
-    
+
 } // ui
 } // engine

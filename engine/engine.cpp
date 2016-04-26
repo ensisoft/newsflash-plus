@@ -143,11 +143,12 @@ struct engine::state {
     engine::on_file  on_file_callback;
     engine::on_batch on_batch_callback;
     engine::on_list  on_list_callback;
+    engine::on_task  on_task_callback;
     engine::on_update on_update_callback;
     engine::on_header_data on_header_data_callback;
     engine::on_header_info on_header_info_callback;
     engine::on_async_notify on_notify_callback;
-    engine::on_complete on_complete_callback;
+    engine::on_finish on_finish_callback;
     engine::on_quota on_quota_callback;
     engine::on_conn_test on_test_callback;
     engine::on_conn_test_log on_test_log_callback;
@@ -872,8 +873,8 @@ public:
             if (state.num_pending_tasks == 0)
             {
                 LOG_D("All tasks are complete");
-                if (state.on_complete_callback)
-                    state.on_complete_callback();
+                if (state.on_finish_callback)
+                    state.on_finish_callback();
             }
         }
     }
@@ -951,7 +952,7 @@ public:
             }
             else
             {
-                ui_.error.set(ui::task::errors::unavailable);
+                ui_.error.set(ui::task::errors::incomplete);
                 return no_transition;
             }
         }
@@ -993,7 +994,7 @@ public:
                 }
 
                 if (status == buffer::status::unavailable)
-                    ui_.error.set(ui::task::errors::unavailable);
+                    ui_.error.set(ui::task::errors::incomplete);
                 else if (status == buffer::status::dmca)
                     ui_.error.set(ui::task::errors::dmca);
             }
@@ -1328,9 +1329,10 @@ private:
 
                 task_->commit();
 
-                ui_.state      = new_state;
-                //ui_.completion = 100.0;
-                ui_.etatime    = 0;
+                ui_.state   = new_state;
+                ui_.etatime = 0;
+                if (state.on_task_callback)
+                    state.on_task_callback(ui_);
 
                 state.bytes_ready += ui_.size;
                 if (auto* ptr = dynamic_cast<class download*>(task_.get()))
@@ -1380,6 +1382,9 @@ private:
             case states::error:
                 ui_.state   = new_state;
                 ui_.etatime = 0;
+                if (state.on_task_callback)
+                    state.on_task_callback(ui_);
+
                 for (auto i=std::begin(state.cmds); i != std::end(state.cmds); ++i)
                 {
                     auto cmd = *i;
@@ -1401,8 +1406,8 @@ private:
             if (state.num_pending_tasks == 0)
             {
                 LOG_D("All tasks are complete");
-                if (state.on_complete_callback)
-                    state.on_complete_callback();
+                if (state.on_finish_callback)
+                    state.on_finish_callback();
             }
         }
 
@@ -2487,14 +2492,19 @@ void engine::set_list_callback(on_list list_callback)
     state_->on_list_callback = std::move(list_callback);
 }
 
+void engine::set_task_callback(on_task task_callback)
+{
+    state_->on_task_callback = std::move(task_callback);
+}
+
 void engine::set_update_callback(on_update update_callback)
 {
     state_->on_update_callback = std::move(update_callback);
 }
 
-void engine::set_complete_callback(on_complete callback)
+void engine::set_finish_callback(on_finish callback)
 {
-    state_->on_complete_callback = std::move(callback);
+    state_->on_finish_callback = std::move(callback);
 }
 
 void engine::set_quota_callback(on_quota callback)

@@ -87,6 +87,8 @@ Engine::Engine()
         std::placeholders::_1));
     engine_->set_file_callback(std::bind(&Engine::onFileComplete, this,
          std::placeholders::_1));
+    engine_->set_task_callback(std::bind(&Engine::onTaskComplete, this,
+        std::placeholders::_1));
     engine_->set_batch_callback(std::bind(&Engine::onBatchComplete, this,
         std::placeholders::_1));
     engine_->set_update_callback(std::bind(&Engine::onUpdateComplete, this,
@@ -97,7 +99,7 @@ Engine::Engine()
         std::placeholders::_1, std::placeholders::_2));
     engine_->set_header_info_callback(std::bind(&Engine::onHeaderInfoAvailable, this,
         std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-    engine_->set_complete_callback(std::bind(&Engine::onAllComplete, this));
+    engine_->set_finish_callback(std::bind(&Engine::onAllComplete, this));
     engine_->set_quota_callback(std::bind(&Engine::onQuota, this,
         std::placeholders::_1, std::placeholders::_2));
     engine_->set_test_callback(std::bind(&Engine::onConnectionTestComplete, this,
@@ -468,6 +470,41 @@ void Engine::onError(const newsflash::ui::error& e)
     //const auto resource = from_utf8(e.resource);
     //const auto code = e.code;
     ERROR("%1: %2", fromUtf8(e.resource), fromUtf8(e.what));
+}
+
+void Engine::onTaskComplete(const newsflash::ui::task& t)
+{
+    using States = newsflash::ui::task::states;
+    Q_ASSERT(t.state == States::error ||
+             t.state == States::complete);
+
+    const auto& desc = widen(t.desc);
+
+    DEBUG("Task \"%1\" completion %2", desc, t.completion);
+
+    if (t.state == ui::task::states::error)
+    {
+        ERROR("\"%1\" encountered an error.", desc);
+    }
+    else
+    {
+        if (t.error.any_bit())
+        {
+            if (t.completion > 0.0) {
+                WARN("\"%1\" is incomplete.", desc);
+                NOTE("\"%1\" is incomplete.", desc);
+            }
+            else {
+                WARN("\"%1\" is no longer available.", desc);
+                NOTE("\"%1\" is no longer available.", desc);
+            }
+        }
+        else
+        {
+            INFO("\"%1\" is complete.", desc);
+            INFO("\"%1\" is complete.", desc);
+        }
+    }
 }
 
 void Engine::onFileComplete(const newsflash::ui::file& f)
