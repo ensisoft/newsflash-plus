@@ -22,6 +22,7 @@
 #include <newsflash/warnpush.h>
 #include <newsflash/warnpop.h>
 #include <limits>
+#include <cmath>
 #include "dlgfilter.h"
 
 namespace gui
