@@ -1,9 +1,0 @@
-
-project joiner :
-   requirements
-   <library>/qt//QtCore
-
-   <toolset>msvc:<linkflags>/SUBSYSTEM:CONSOLE,5.01
-   ;
-   
-exe join : main.cpp ;

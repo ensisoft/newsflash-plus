@@ -2,20 +2,20 @@
 # README BEFORE YOU START SCREAMING AND BREAKING THINGS !!!
 #
 # MSVC: /Zc:whchar-t  option was set on in the boost-build\tools\msvc.jam file
-#       however this option was not on when I built Qt library. If /Zc:wchar-t is 
-#       on wchar_t is as a native type instead of a typedef for unsigned short and 
+#       however this option was not on when I built Qt library. If /Zc:wchar-t is
+#       on wchar_t is as a native type instead of a typedef for unsigned short and
 #       linking against Qt fails (QString::fromStdWString(...), & QString::FromWCharArray
-#       
+#
 #       Qt was built without debug libraries but when a debug version of this release
 #       is built boost.build expects debug versions of qtlibs (i.e. QtCored4.dll).
 #       -> copy+rename qt libs
 #
-#       
+#
 # qt4.jam: qt4.jam file turns on QT_NO_DEBUG flag. I have commented this out in /usr/share/boost-build/qt4.jam
 #
-# 
-# Other notes: 
-# 
+#
+# Other notes:
+#
 # Moving Qt from it's installation folder will break the installation. Don't do that.
 #
 # Boost 1.51.0 generates a lof of mundane warnings about ununsed typedefs. the -Wno-unused-typedefs
@@ -38,30 +38,30 @@ using qt : $(QT_PATH) ;
 use-project /boost/ : $(BOOST_PATH) ;
 use-project engine  : "engine" ;
 
-project newsflash 
-: 
+project newsflash
+:
   requirements
     <include>../
-    <include>.  
-    <include>app/gui/ 
+    <include>.
+    <include>app/gui/
     <include>qjson/include/
     <include>python/Include/
-    <include>$(OPENSSL_PATH)/include    
-    <include>$(QT_PATH)/include/QtCore    
-    <include>$(QT_PATH)/include    
+    <include>$(OPENSSL_PATH)/include
+    <include>$(QT_PATH)/include/QtCore
+    <include>$(QT_PATH)/include
     <include>$(BOOST_PATH)
-    <include>$(PROTOBUF_PATH)    
+    <include>$(PROTOBUF_PATH)
     <threading>multi
 
     <toolset>gcc:<cflags>-std=c++11
     <toolset>gcc:<cflags>-Wno-unused-local-typedefs
     <toolset>clang:<cflags>-std=c++11
-    
+
     # if this is not defined linking problems ensue on msvc
     <define>BOOST_ALL_NO_LIB
 
     # enable checked iterators on gcc.
-    # this is a debug flag and unfortunately has some 
+    # this is a debug flag and unfortunately has some
     # side effects such as breaking boost.regex.
     #<toolset>gcc:<cflags>-D_GLIBCXX_DEBUG
 
@@ -69,24 +69,24 @@ project newsflash
     # we need -rdynamic for backtrace and backtrace_symbols
     # in order to dump a stacktrace from the assert
     # todo: whats the flag for clang??
-    <toolset>gcc:<linkflags>-rdynamic    
+    <toolset>gcc:<linkflags>-rdynamic
 
     # https://msdn.microsoft.com/en-us/library/fcc1zstk.aspx
     #
-    # this option is needed starting with msvc2012(?) 
-    # to allow the binary run on WinXP. 
+    # this option is needed starting with msvc2012(?)
+    # to allow the binary run on WinXP.
     # note that it seems to be enough to have this on the executable.
     # so theres no need to dick around with Qt, json, zlib settings.
     # WINDOWS, creates a win32 application that uses WinMain, no console.
     # CONSOLE, creates a console application that uses main(), system created console.
-    #<toolset>msvc:<linkflags>/SUBSYSTEM:WINDOWS,5.01        
+    #<toolset>msvc:<linkflags>/SUBSYSTEM:WINDOWS,5.01
 
     # https://msdn.microsoft.com/en-us/library/dn502518.aspx
     # https://msdn.microsoft.com/en-us/library/958x11bc.aspx
-    # 
+    #
     # /Zi turns on the .pdb generation. We want this for our release build
     # so that we can do post-mortem debuggin with the generated minidump and pdb.
-    # /FS is needed for parallel build, it forces debug data to be written through 
+    # /FS is needed for parallel build, it forces debug data to be written through
     # a serialized a surrogate process.
     # Note that /Zi names the .pdb file as vcx0.pdb where the x is the version number
     # so for example vc120.pdb
@@ -98,7 +98,7 @@ project newsflash
     # need to tell the linker also about the debug data.
     <variant>release,<toolset>msvc:<linkflags>/DEBUG
     <variant>release,<toolset>msvc:<linkflags>/OPT:REF
-    <variant>release,<toolset>msvc:<linkflags>/OPT:ICF        
+    <variant>release,<toolset>msvc:<linkflags>/OPT:ICF
 
 ;
 
@@ -114,7 +114,7 @@ if [ os.name ] = LINUX
   # on linux openssl is just *there* (only dev-package needs to be installed)
   # so only got to name the libraries here
   lib openssl : : <name>ssl    <search>$(/usr/lib) ;
-  lib crypto  : : <name>crypto <search>$(/usr/lib) ; 
+  lib crypto  : : <name>crypto <search>$(/usr/lib) ;
 }
 
 ## prebuilt libraries
@@ -127,7 +127,7 @@ lib qjson  : : <name>qjson <search>"qjson/lib/" ;
 lib zlib   : : <name>zlib <search>"zlib/lib" ;
 
 
-# googles protobuf 
+# googles protobuf
 lib protobuf : : <variant>debug   <name>protobuf_d <search>"protobuf/lib" ;
 lib protobuf : : <variant>release <name>protobuf_r <search>"protobuf/lib" ;
 
@@ -161,11 +161,20 @@ exe newsflash :
   protobuf/<link>static
   engine/<link>static
   :
-  # see comments in the project properties. 
-  <variant>release,<toolset>msvc:<linkflags>/SUBSYSTEM:WINDOWS,5.01        
-  <variant>debug,<toolset>msvc:<linkflags>/SUBSYSTEM:CONSOLE,5.01          
+  # see comments in the project properties.
+  <variant>release,<toolset>msvc:<linkflags>/SUBSYSTEM:WINDOWS,5.01
+  <variant>debug,<toolset>msvc:<linkflags>/SUBSYSTEM:CONSOLE,5.01
   ;
 
 
-install dist_d : newsflash 
+# build tools
+
+exe join :
+  tools/joiner/main.cpp
+  /qt//QtCore
+  :
+  <toolset>msvc:<linkflags>/SUBSYSTEM:CONSOLE,5.01
+;
+
+install dist_d : newsflash join
 : <variant>release:<location>dist ;
