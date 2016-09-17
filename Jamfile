@@ -26,10 +26,10 @@ import path ;
 import qt ;
 
 # set these paths to to point to the relevant SDK locations.
-path-constant QT_PATH       : "../qt-4.8.6" ;
-path-constant BOOST_PATH    : "../boost_1_51_0" ;
-path-constant OPENSSL_PATH  : "../openssl_1_0_1f" ;
-path-constant PROTOBUF_PATH : "protobuf/src/" ;
+path-constant QT_PATH       : "third_party/qt-4.8.6" ;
+path-constant BOOST_PATH    : "third_party/boost_1_51_0" ;
+path-constant OPENSSL_PATH  : "third_party/openssl_1_0_1f" ;
+path-constant PROTOBUF_PATH : "third_party/protobuf/src/" ;
 
 using qt : $(QT_PATH) ;
 
@@ -44,13 +44,14 @@ project newsflash
     <include>../
     <include>.
     <include>app/gui/
-    <include>qjson/include/
-    <include>python/Include/
+    <include>third_party/qjson/include/
+    <include>third_party/
     <include>$(OPENSSL_PATH)/include
     <include>$(QT_PATH)/include/QtCore
     <include>$(QT_PATH)/include
     <include>$(BOOST_PATH)
     <include>$(PROTOBUF_PATH)
+
     <threading>multi
 
     <toolset>gcc:<cflags>-std=c++11
@@ -121,15 +122,15 @@ if [ os.name ] = LINUX
 
 # this library is LGPL license, so must use as a .so
 # instead of statically link it.
-lib qjson  : : <name>qjson <search>"qjson/lib/" ;
+lib qjson  : : <name>qjson <search>"third_party/qjson/lib/" ;
 
 # compression library
-lib zlib   : : <name>zlib <search>"zlib/lib" ;
+lib zlib   : : <name>zlib <search>"third_party/zlib/lib" ;
 
 
 # googles protobuf
-lib protobuf : : <variant>debug   <name>protobuf_d <search>"protobuf/lib" ;
-lib protobuf : : <variant>release <name>protobuf_r <search>"protobuf/lib" ;
+lib protobuf : : <variant>debug   <name>protobuf_d <search>"third_party/protobuf/lib" ;
+lib protobuf : : <variant>release <name>protobuf_r <search>"third_party/protobuf/lib" ;
 
 exe newsflash :
   [ glob app/*.h       ]
@@ -145,7 +146,7 @@ exe newsflash :
   app/gui/qtsingleapplication/qtlocalpeer.h
   app/gui/qtsingleapplication/qtlocalpeer.cpp
 
-  keygen/keygen.cpp
+  tools/keygen/keygen.cpp
   stringlib/string.cpp
 
   /boost//filesystem/<link>static
@@ -177,4 +178,6 @@ exe join :
 ;
 
 install dist_d : newsflash join
-: <variant>release:<location>dist ;
+ : <variant>release:<location>dist ;
+
+

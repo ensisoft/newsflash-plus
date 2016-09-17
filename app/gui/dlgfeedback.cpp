@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -18,12 +18,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <newsflash/config.h>
-#include <newsflash/warnpush.h>
+#include "config.h"
+
+#include "warnpush.h"
 #  include <QtGui/QFileDialog>
 #  include <QtGui/QMessageBox>
-#include <newsflash/warnpop.h>
-#include <newsflash/keygen/keygen.h>
+#include "warnpop.h"
+
+#include "tools/keygen/keygen.h"
+
 #include "dlgfeedback.h"
 #include "../platform.h"
 
@@ -33,7 +36,7 @@ namespace gui
 DlgFeedback::DlgFeedback(QWidget* parent, mode m) : QDialog(parent), uimode_(m)
 {
     const auto& fingerprint = keygen::generate_fingerprint();
-    const auto& platform = app::getPlatformName();    
+    const auto& platform = app::getPlatformName();
 
     ui_.setupUi(this);
     ui_.editVersion->setText(feedback_.version());
@@ -80,7 +83,7 @@ DlgFeedback::DlgFeedback(QWidget* parent, mode m) : QDialog(parent), uimode_(m)
                     "I've made a donation. Please send me the registration code.\r\n\r\n"
                     "ID: %1").arg(fingerprint));
             break;
-    }   
+    }
 }
 
 DlgFeedback::~DlgFeedback()
@@ -89,7 +92,7 @@ DlgFeedback::~DlgFeedback()
 void DlgFeedback::on_btnSend_clicked()
 {
     using Feelings = app::Feedback::Feeling;
-    using Response = app::Feedback::Response;    
+    using Response = app::Feedback::Response;
 
 #define MUST_HAVE(x) \
     if (x->text().isEmpty()) {\

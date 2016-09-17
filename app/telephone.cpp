@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -20,14 +20,16 @@
 
 #define LOGTAG "home"
 
-#include <newsflash/config.h>
-#include <newsflash/warnpush.h>
+#include "config.h"
+
+#include "warnpush.h"
 #  include <QtNetwork/QNetworkRequest>
 #  include <QtNetwork/QNetworkReply>
 #  include <QUrl>
 #  include <QRegExp>
-#include <newsflash/warnpop.h>
-#include <newsflash/keygen/keygen.h>
+#include "warnpop.h"
+
+#include "tools/keygen/keygen.h"
 #include "telephone.h"
 #include "debug.h"
 #include "eventlog.h"
@@ -51,14 +53,14 @@ Telephone::~Telephone()
 void Telephone::callhome()
 {
     DEBUG("Calling home...");
-    
+
     const auto& platform    = getPlatformName();
     const auto& fingerprint = keygen::generate_fingerprint();
 
     QUrl url;
-    url.setUrl("http://ensisoft.com/callhome.php");    
+    url.setUrl("http://ensisoft.com/callhome.php");
     url.addQueryItem("version", NEWSFLASH_VERSION);
-    url.addQueryItem("platform", platform);    
+    url.addQueryItem("platform", platform);
     url.addQueryItem("fingerprint", fingerprint);
 
     WebQuery query(url);

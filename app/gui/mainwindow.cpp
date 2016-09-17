@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -20,8 +20,9 @@
 
 #define LOGTAG "mainwindow"
 
-#include <newsflash/config.h>
-#include <newsflash/warnpush.h>
+#include "config.h"
+
+#include "warnpush.h"
 #  include <boost/version.hpp>
 #  include <QtGui/QCloseEvent>
 #  include <QtGui/QMessageBox>
@@ -32,8 +33,10 @@
 #  include <QTimer>
 #  include <QDir>
 #  include <QFileInfo>
-#include <newsflash/warnpop.h>
-#include <newsflash/keygen/keygen.h>
+#include "warnpop.h"
+
+#include "tools/keygen/keygen.h"
+
 #include "mainwindow.h"
 #include "mainwidget.h"
 #include "mainmodule.h"
@@ -66,7 +69,7 @@
 namespace gui
 {
 
-MainWindow* g_win;    
+MainWindow* g_win;
 
 MainWindow::MainWindow(app::Settings& s) : QMainWindow(nullptr), current_(nullptr), settings_(s)
 {
@@ -85,7 +88,7 @@ MainWindow::MainWindow(app::Settings& s) : QMainWindow(nullptr), current_(nullpt
     ui_.statusBar->insertPermanentWidget(1, ui_.frmFreeSpace);
     ui_.statusBar->insertPermanentWidget(2, ui_.frmDiskWrite);
     ui_.statusBar->insertPermanentWidget(3, ui_.frmGraph);
-    ui_.statusBar->insertPermanentWidget(4, ui_.frmKbs);    
+    ui_.statusBar->insertPermanentWidget(4, ui_.frmKbs);
     ui_.mainToolBar->setVisible(true);
     ui_.statusBar->setVisible(true);
     ui_.actionViewToolbar->setChecked(true);
@@ -113,7 +116,7 @@ MainWindow::MainWindow(app::Settings& s) : QMainWindow(nullptr), current_(nullpt
         this, SLOT(displayNote(const app::Event&)));
 
     setWindowTitle(NEWSFLASH_TITLE);
-    setAcceptDrops(true);    
+    setAcceptDrops(true);
 
     DEBUG("MainWindow created");
 
@@ -145,14 +148,14 @@ void MainWindow::attach(MainWidget* widget, bool permanent, bool loadstate)
 
     // only permanent widgets get a view action.
     // permant widgets are those that instead of being closed
-    // are just hidden and toggled in the View menu. 
+    // are just hidden and toggled in the View menu.
     if (permanent)
     {
         QAction* action = ui_.menuView->addAction(text);
         action->setCheckable(true);
         action->setChecked(true);
         action->setProperty("index", index);
-        QObject::connect(action, SIGNAL(triggered()), this, 
+        QObject::connect(action, SIGNAL(triggered()), this,
             SLOT(actionWindowToggleView_triggered()));
 
         actions_.push_back(action);
@@ -225,7 +228,7 @@ void MainWindow::loadState()
         if (MediaTypeVersion != app::MediaTypeVersion ||
             FileTypeVersion  != app::FileTypeVersion)
         {
-            QTimer::singleShot(500, this, SLOT(timerMigrate_timeout()));            
+            QTimer::singleShot(500, this, SLOT(timerMigrate_timeout()));
         }
     }
 
@@ -233,7 +236,7 @@ void MainWindow::loadState()
     const auto height = settings_.get("window", "height", 0);
     if (width && height)
     {
-        DEBUG("MainWindow dimensions %1 x %2", width, height);        
+        DEBUG("MainWindow dimensions %1 x %2", width, height);
         resize(width, height);
     }
 
@@ -275,8 +278,8 @@ void MainWindow::loadState()
             ui_.mainTab->insertTab(i, widgets_[i], icon, title);
         }
         if (i < actions_.size())
-            actions_[i]->setChecked(show);        
-          
+            actions_[i]->setChecked(show);
+
         widgets_[i]->loadState(settings_);
         widgets_[i]->updateRegistration(success);
     }
@@ -314,7 +317,7 @@ void MainWindow::showSetting(const QString& name)
     for (auto* m : modules_)
     {
         auto* tab = m->getSettings();
-        if (tab) 
+        if (tab)
             dlg.attach(tab);
 
         m_tabs.push_back(tab);
@@ -324,7 +327,7 @@ void MainWindow::showSetting(const QString& name)
     dlg.show(name);
     dlg.exec();
 
-    const bool apply = 
+    const bool apply =
        (dlg.result() == QDialog::Accepted);
 
     for (std::size_t i=0; i<widgets_.size(); ++i)
@@ -347,7 +350,7 @@ void MainWindow::showSetting(const QString& name)
 
         if (tab)
             module->freeSettings(tab);
-    }    
+    }
 }
 
 void MainWindow::prepareFileMenu()
@@ -364,12 +367,12 @@ void MainWindow::prepareFileMenu()
     ui_.menuFile->addSeparator();
     ui_.menuFile->addAction(ui_.actionPoweroff);
     ui_.menuFile->addSeparator();
-    ui_.menuFile->addAction(ui_.actionExit);        
+    ui_.menuFile->addAction(ui_.actionExit);
 }
 
 void MainWindow::prepareMainTab()
 {
-    ui_.mainTab->setCurrentIndex(0);            
+    ui_.mainTab->setCurrentIndex(0);
 }
 
 QString MainWindow::selectDownloadFolder()
@@ -444,12 +447,12 @@ QString MainWindow::selectNzbSaveFile(const QString& filename)
     return QDir::toNativeSeparators(file);
 }
 
-QStringList MainWindow::getRecentPaths() const 
+QStringList MainWindow::getRecentPaths() const
 {
     return recents_;
 }
 
-std::size_t MainWindow::numWidgets() const 
+std::size_t MainWindow::numWidgets() const
 {
     return widgets_.size();
 }
@@ -561,7 +564,7 @@ void MainWindow::hide(std::size_t index)
     action->setChecked(false);
 
     ui_.mainTab->removeTab(pos);
- 
+
     prepareWindowMenu();
 }
 
@@ -599,7 +602,7 @@ void MainWindow::closeEvent(QCloseEvent* event)
     dialog.setText(tr("Saving application data..."));
 
     // now try to persist all the state. this operation is allowed to fail.
-    // if it does fail, then ask the user if he wants to continue quitting 
+    // if it does fail, then ask the user if he wants to continue quitting
     if (!saveState(&dialog))
     {
         refresh_timer_.start();
@@ -632,7 +635,7 @@ void MainWindow::closeEvent(QCloseEvent* event)
     ui_.mainTab->blockSignals(true);
     ui_.mainToolBar->blockSignals(true);
     ui_.menuBar->blockSignals(true);
-    ui_.mainTab->clear();    
+    ui_.mainTab->clear();
 
     event->accept();
     DEBUG("Shutdown complete!");
@@ -690,7 +693,7 @@ FindWidget* MainWindow::getFindWidget()
     if (kids.isEmpty())
     {
         auto* layout = main->layout();
-        Q_ASSERT(layout && 
+        Q_ASSERT(layout &&
             "The MainWidget doesn't have appropriate layout object.");
         findWidget = new FindWidget(main, *finder);
         findWidget->setObjectName("findWidget");
@@ -737,7 +740,7 @@ void MainWindow::prepareWindowMenu()
     ui_.menuWindow->addSeparator();
     ui_.menuWindow->addAction(ui_.actionWindowClose);
     ui_.menuWindow->addAction(ui_.actionWindowNext);
-    ui_.menuWindow->addAction(ui_.actionWindowPrev);    
+    ui_.menuWindow->addAction(ui_.actionWindowPrev);
 }
 
 bool MainWindow::saveState(DlgExit* dlg)
@@ -764,7 +767,7 @@ bool MainWindow::saveState(DlgExit* dlg)
         settings_.set("window", "x", x());
         settings_.set("window", "y", y());
         settings_.set("window", "show_toolbar", ui_.mainToolBar->isVisible());
-        settings_.set("window", "show_statusbar", ui_.statusBar->isVisible()); 
+        settings_.set("window", "show_statusbar", ui_.statusBar->isVisible());
         settings_.set("paths", "recents", recents_);
         settings_.set("paths", "save_nzb", recent_save_nzb_path_);
         settings_.set("paths", "load_nzb", recent_load_nzb_path_);
@@ -827,7 +830,7 @@ void MainWindow::on_mainTab_currentChanged(int index)
 
     if (index != -1)
     {
-        auto* widget = static_cast<MainWidget*>(ui_.mainTab->widget(index)); 
+        auto* widget = static_cast<MainWidget*>(ui_.mainTab->widget(index));
 
         widget->activate(ui_.mainTab);
         widget->addActions(*ui_.mainToolBar);
@@ -883,14 +886,14 @@ void MainWindow::on_mainTab_tabCloseRequested(int tab)
         // that was deleted we want this data to be gone from the settings.json.
         // the easiest way to do this is just to clear the settings object
         // and then have all the modules persist their *current* state
-        // into the settings and then write this out to the disk. 
+        // into the settings and then write this out to the disk.
         // however this does not work for temporary widgets that are deleted
         // during program run because and which are not around anymore at the time
-        // when the settings are saved. 
+        // when the settings are saved.
 
         // so in order to maintain clean set of settings we have a separate
         // settings object for each type of transient widgets
-        // which we then combine with the permanent settings to create the 
+        // which we then combine with the permanent settings to create the
         // final settings object saved to the file
 
         auto sit = std::find_if(std::begin(transient_), std::end(transient_),
@@ -918,7 +921,7 @@ void MainWindow::on_mainTab_tabCloseRequested(int tab)
     {
         auto* p = parent.value<QObject*>();
 
-        auto it = std::find_if(std::begin(widgets_), std::end(widgets_), 
+        auto it = std::find_if(std::begin(widgets_), std::end(widgets_),
             [&](MainWidget* w) {
                 return static_cast<QObject*>(w) == p;
             });
@@ -994,7 +997,7 @@ void MainWindow::on_actionRegister_triggered()
     const auto success  = keygen::verify_code(keycode);
     if (!success)
     {
-        QMessageBox::critical(this, 
+        QMessageBox::critical(this,
             tr("Registration failed"),
             tr("The registration was unsuccesful.\n"
                "Please make sure that you've input the key correctly."));
@@ -1039,14 +1042,14 @@ void MainWindow::on_actionFind_triggered()
 void MainWindow::on_actionFindNext_triggered()
 {
     auto* finder = getFindWidget();
-    if (!finder) return;    
+    if (!finder) return;
     finder->findNext();
 }
 
 void MainWindow::on_actionFindPrev_triggered()
 {
     auto* finder = getFindWidget();
-    if (!finder) return;    
+    if (!finder) return;
     finder->findPrev();
 }
 
@@ -1145,7 +1148,7 @@ void MainWindow::actionWindowToggleView_triggered()
     {
         show(index);
     }
-    else 
+    else
     {
         hide(index);
     }
@@ -1239,7 +1242,7 @@ void MainWindow::timerRefresh_timeout()
     ui_.progressBar->setTextVisible(bytes_remaining != 0);
 
     ui_.lblDiskFree->setText(app::toString("%1 %2", downloads, app::size{freespace}));
-    ui_.lblNetIO->setText(app::toString("%1 %2",  app::speed { netspeed }, app::size {bytes_downloaded}));     
+    ui_.lblNetIO->setText(app::toString("%1 %2",  app::speed { netspeed }, app::size {bytes_downloaded}));
     ui_.lblDiskIO->setText(app::toString("%1", app::size { bytes_written }));
     ui_.lblQueue->setText(app::toString("%1", app::size { bytes_remaining }));
 
