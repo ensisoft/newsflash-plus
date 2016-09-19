@@ -1,13 +1,13 @@
-IF(NOT EXISTS "/home/build/coding/newsflash/qjson/install_manifest.txt")
-  MESSAGE(FATAL_ERROR "Cannot find install manifest: \"/home/build/coding/newsflash/qjson/install_manifest.txt\"")
-ENDIF(NOT EXISTS "/home/build/coding/newsflash/qjson/install_manifest.txt")
+IF(NOT EXISTS "C:/coding/newsflash-plus/third_party/qjson/install_manifest.txt")
+  MESSAGE(FATAL_ERROR "Cannot find install manifest: \"C:/coding/newsflash-plus/third_party/qjson/install_manifest.txt\"")
+ENDIF(NOT EXISTS "C:/coding/newsflash-plus/third_party/qjson/install_manifest.txt")
 
-FILE(READ "/home/build/coding/newsflash/qjson/install_manifest.txt" files)
+FILE(READ "C:/coding/newsflash-plus/third_party/qjson/install_manifest.txt" files)
 STRING(REGEX REPLACE "\n" ";" files "${files}")
 FOREACH(file ${files})
   MESSAGE(STATUS "Uninstalling \"$ENV{DESTDIR}${file}\"")
   EXEC_PROGRAM(
-  "/usr/bin/cmake" ARGS "-E remove \"$ENV{DESTDIR}${file}\""
+  "C:/Program Files/CMake/bin/cmake.exe" ARGS "-E remove \"$ENV{DESTDIR}${file}\""
   OUTPUT_VARIABLE rm_out
   RETURN_VALUE rm_retval
   )

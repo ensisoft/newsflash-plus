@@ -18,12 +18,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include "config.h"
+#include "newsflash/config.h"
 
-#include "warnpush.h"
+#include "newsflash/warnpush.h"
 #  include <QtGui/QFileDialog>
 #  include <QtGui/QMessageBox>
-#include "warnpop.h"
+#include "newsflash/warnpop.h"
 
 #include "tools/keygen/keygen.h"
 

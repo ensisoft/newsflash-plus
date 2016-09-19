@@ -20,14 +20,17 @@
 
 #pragma once
 
-#include <newsflash/config.h>
-#include <newsflash/warnpush.h>
+#include "newsflash/config.h"
+
+#include "newsflash/warnpush.h"
 #  include <QtGui/QIcon>
 #  include <QString>
 #  include <QDateTime>
-#include <newsflash/warnpop.h>
-#include <newsflash/engine/bitflag.h>
+#include "newsflash/warnpop.h"
+
 #include <iterator>
+
+#include "engine/bitflag.h"
 
 namespace app
 {

@@ -20,16 +20,19 @@
 
 #define LOGTAG "unrar"
 
-#include <newsflash/config.h>
-#include <newsflash/engine/bigfile.h>
-#include <newsflash/warnpush.h>
+#include "newsflash/config.h"
+
+#include "newsflash/warnpush.h"
 #  include <QRegExp>
 #  include <QtDebug>
-#include <newsflash/warnpop.h>
+#include "newsflash/warnpop.h"
+
 #include <string>
 #include <cstring>
 #include <cctype>
 #include <map>
+
+#include "engine/bigfile.h"
 #include "unrar.h"
 #include "debug.h"
 #include "format.h"

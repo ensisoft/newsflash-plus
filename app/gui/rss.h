@@ -20,13 +20,16 @@
 
 #pragma once
 
-#include <newsflash/config.h>
-#include <newsflash/warnpush.h>
+#include "newsflash/config.h"
+
+#include "newsflash/warnpush.h"
 #  include <QTimer>
 #  include "ui_rss.h"
-#include <newsflash/warnpop.h>
+#include "newsflash/warnpop.h"
+
 #include <memory>
-#include <newsflash/engine/bitflag.h>
+
+#include "engine/bitflag.h"
 #include "mainwidget.h"
 #include "settings.h"
 #include "dlgmovie.h"

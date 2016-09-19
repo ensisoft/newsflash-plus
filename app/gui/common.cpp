@@ -18,9 +18,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <newsflash/config.h>
-#include <newsflash/engine/ui/task.h>
+#include "newsflash/config.h"
+
 #include <deque>
+
+#include "engine/ui/task.h"
 #include "dlgselectaccount.h"
 #include "dlgaccount.h"
 #include "dlgduplicate.h"

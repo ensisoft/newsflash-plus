@@ -12,6 +12,9 @@ Build configuration is defined as much as possible in the config file in this fo
 It's assumed that either clang or gcc is used for a linux based build and msvc for windows.
 A C++11 compliant compiler is required. 
 
+Only 32bit building is currently supported.
+
+
 Description of Modules
 -------------------------
 
@@ -39,37 +42,49 @@ The Newsflash par2 has been updated to version 0.6.11
 ("bump 0.6.11", https://github.com/BlackIkeEagle/par2cmdline/commit/7735bb3f67f4f46b0fcb88894f9a28fb2fe451c6)
 
 
-
 tools/unrar
 -------------------------
 Unrar is a tool to unrar .rar archives. Current version 5.21 beta2
 http://www.rarlab.com/rar_add.htm
 
 
-qjson
+third_party/qt-4.8.0
+-------------------------
+Qt Window/Application Framework/toolkit
+https://download.qt.io/archive/qt/4.8/4.8.6/qt-everywhere-opensource-src-4.8.6.zip
+
+Needs to be downloaded and extracted into third_party/
+
+third_party/boost_1_51_0
+--------------------------
+High quality C++ libraries for stuff such as filesystem, parser generators etc.
+https://www.boost.org
+
+third_party/qjson
 -------------------------
 Qt JSON library 0.8.1
 http://qjson.sourceforge.net/
 https://github.com/flavio/qjson
 
 
-zlib
+third_party/zlib
 -------------------------
 The zlib compression library. The current version is 1.2.5
-This zlib is here (in the project hiearchy) because it needs to be kept in sync
-with the zlib code in python zlib module. Otherwise bad things can happen if the we have
-two versions of zlib.so loaded in the same process with same symbol names.
-
-So if zlib is updated at one place it needs to be updated at the other place as well!!
+http://www.zlib.net/
 
 
-protobuf
+third_party/protobuf
 -------------------------
 Google protobuffer library 2.6.1
+https://github.com/google/protobuf
 
 Use the protoc to compile the .proto files in the project.
 
 
+third_party/openssl
+------------------------
+Secure Socket Layer & Cryptography. Current version is 1.0.1g
+https://www.openssl.org/source/
 
 
 Building for Linux
@@ -78,11 +93,8 @@ Building for Linux
 Start by cloning the source
 
 ```
-   $ cd ~
-   $ mkdir coding
-   $ cd coding
-   $ git clone https://bitbucket.org/ensisoft/newsflash.git 
-   $ cd newsflash
+   $ git clone https://github.com/ensisoft/newsflash-plus
+   $ cd newsflash-plus
    $ mkdir dist_d
    $ mkdir dist
 ```
@@ -91,15 +103,25 @@ Start by cloning the source
 Download and extract boost package boost_1_51_0, then build and install boost.build
 
 ```
-    $ tar -zxvvf boost_1_51_0.tar.gz
-    $ cd boost_1_51_0/tools/build/v2/
+    $ cd third_party/boost_1_51_0/tools/build/v2/
     $ ./bootstrap.sh
     $ sudo ./b2 install
     $ bjam --version
     Boost.Build 2011.12-svn
 ```
 
-Install the required packages for building Qt
+Build openssl.
+
+```
+    nothing to be done for now since we're using the system openssl
+```
+
+
+Build Qt 
+
+Note that you must have XRender and fontconfig for nice looking font rendering in Qt.
+
+Install these packages.
 
     libx11-dev
     libext-dev
@@ -113,12 +135,8 @@ Install the required packages for building Qt
     autoconf
     qt4-qmake
 
-Download and extract Qt everywhere and build it. Note that you must have XRender and fontconfig
-for nice looking font rendering in Qt.
-
 ```
-    $ tar -zxvvf qt-everywhere-opensource-src-4.8.6.tar.gz
-    $ cd qt-everywhere-opensource-src-4.8.6
+    $ cd third_party/qt-4.8.6
     $ ./configure --prefix=~coding/qt-4.8.6 --no-qt3support --no-webkit
     $ make
     $ make install
@@ -133,22 +151,18 @@ and configure will fail with some other cryptic error such as "no make or gmake 
 Build zlib
 
 ```
-    $ cd zlib
+    $ cd third_party/zlib
     $ bjam release
 ```    
 
 Build protobuf
 
 ```
-    $ cd protobuf
+    $ cd third_party/protobuf
     $ ./configure
     $ make
     $ mkdir lib
-    $ cp src/.libs/libprotobuf.a lib/libprotobuf_d.a
-    $ cp src/.libs/libprotobuf.a lib/libprotobuf_r.a
-    $ cp src/protoc ~/coding/newsflash/engine/
-    $ cd ~/coding/newsflash/engine/
-    $ ./protoc session.proto --cpp_out=.
+    $ cp src/.libs/libprotobuf.a lib/libprotobuf.a
 ```    
 
 WARNING: This might shit itself if aclocal has been updated to another version.
@@ -184,10 +198,18 @@ Build qjson
 NOTE: I have edited the CMakeList.txt to have a custom Qt path. 
 
 ```
-    $ cd qjson
+    $ cd third_party/qjson
     $ cmake -G "Unix Makefiles"
     $ make
 ```    
+
+Build zlib
+
+```
+    $ cd third_party/zlib
+    $ bjam release
+    
+```
 
 Build par2cmdline
 
@@ -212,6 +234,8 @@ Build  unrar
     $ cp unrar ~/coding/newsflash/dist_d
 ```
 
+
+
 Comments about ICU.
 Both Qt and boost.regex depend on ICU. So if ICU updates both Qt and boost.regex needs to be rebuilt.
 
@@ -226,10 +250,22 @@ More information here:
 http://www.tripleboot.org/?p=423
 http://blogs.msdn.com/b/vcblog/archive/2012/10/08/windows-xp-targeting-with-c-in-visual-studio-2012.aspx?Redirected=true
 
+Currently only 32bit build is supported. You'll need Microsoft Visual Studio 2013. 
+Once you've installed visual studio open the VS2013 x86 Native Tools Commmand Prompt.
+
+Start by cloning the source
+
+```
+    $ git clone https://github.com/ensisoft/newslash-plus
+    $ cd newsflash-plus
+    $ mkdir dist_d
+    $ mkdir dist
+```
+
 Download and extract boost package boost_1_51_0, then build and install boost.build
 
 ```
-    $ cd boost_1_51_0/tools/build/v2/
+    $ cd third_party/boost_1_51_0/tools/build/v2/
     $ bootstrap.bat
     $ b2
     $ set BOOST_BUILD_PATH=c:\boost-build\share\boost-build
@@ -239,14 +275,19 @@ Download and extract boost package boost_1_51_0, then build and install boost.bu
 ```    
 
 Build openssl. Install NASM and ActivePerl. 
-    
+
     http://sourceforge.net/projects/nasm/        
     http://www.activestate.com/activeperl
 
+Note that openssl does not maintain source code compatibility between versions. And this applies
+even to minor versions. I.e. openssl 1.0.2 is source compatible with openssl 1.0.1
+Qt seems to want the 1.0.1x series.
+
 ```
     $ set PATH=%PATH%;"c:\Program Files (x86)\NASM\"
-    $ cd openssl-1.0.1f
-    $ perl configure VC-WIN32 --prefix=c:\coding\openssl_1_0_1f
+    $ set PATH=%PATH%;"c:\Perl64\bin"
+    $ cd third_party/openssl
+    $ perl configure VC-WIN32 --prefix="%cd%\sdk"
     $ ms\do_nasm
     $ notepad ms\ntdll.mak
       * replace LFLAGS /debug with /release
@@ -254,26 +295,64 @@ Build openssl. Install NASM and ActivePerl.
     $ nmake -f ms\ntdll.mak install
 ```
 
-Download and extract Qt everywhere to a location where you want it installed for example c:\coding\qt-4.8.6
+Build Qt
 
 ```
-    $ configure.exe -no-qt3support -no-webkit -debug-and-release -openssl -I c:\coding\openssl_1_0_1f\include -L c:\coding\openssl_1_0_1f\lib
+    $ cd third_party/qt-4.8.6
+    $ configure.exe -no-qt3support -no-webkit -debug-and-release -openssl -I "%cd%\..\openssl\sdk\include" -L "%cd%\..\openssl\sdk\lib"
+    $ nmake
+    $ nmake install
+```    
+
+Build zlib
+
+```
+    $ cd third_party/zlib
+    $ bjam release
 ```    
 
 
 Build protobuf library
 
-    - open the solution in vsprojects and build the library
-    - copy vsprojects/Debug/libprotobuf.lib to ../lib/libprotobuf_d.lib
-    - copy vsprojects/Release/libprotobuf.lib to ../lib/libprotobuf_r.lib
+```
+    $ cd third_party/protobuf
+    $ cd vsprojects
+    $ msbuild protobuf.sln /p:Configuration=Release
+    $ msbuild protobuf.sln /P/Configuration=Debug
+```
+
+Build qjson
+
+NOTE: I have edited the CMakeList.txt to have a custom Qt path. 
+
+``` 
+    $ cd third_party/qjson
+    $ cmake -G "Visual Studio 12 2013" 
+    $ msbuild  qjson.sln /p:Configuration=Release
+```
+
+Build zlib
+
+```
+    $ cd third_party/zlib
+    $ bjam release
+    
+```
 
 
-Par2cmdline
-    todo
+Build Par2cmdline
 
-Unrar
-    todo
+```
+    $ cd tools/par2cmdline
+    $ msbuild par2cmdline.sln /p:Configuration=Release
+``` 
 
+Build Unrar
+
+```
+    $ cd tools/unrar
+    $ msbuild UnRAR.vcxproj /p:Configuration=Release
+```
 
 
 UX Guidelines

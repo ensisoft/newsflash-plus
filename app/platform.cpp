@@ -18,8 +18,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <newsflash/config.h>
-#include <newsflash/warnpush.h>
+#include "newsflash/config.h"
+
+#include "newsflash/warnpush.h"
 #  include <QtGui/QDesktopServices>
 #  include <QtGui/QPixmap>
 #  include <QtGui/QImage>
@@ -30,7 +31,7 @@
 #  include <QStringList>
 #  include <QDir>
 #  include <QUrl>
-#include <newsflash/warnpop.h>
+#include "newsflash/warnpop.h"
 
 #if defined(WINDOWS_OS)
 #  include <windows.h>

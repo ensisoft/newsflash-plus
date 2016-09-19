@@ -20,11 +20,13 @@
 
 #define LOGTAG "cmds"
 
-#include <newsflash/config.h>
-#  if defined(WINDOWS_OS)
+#include "newsflash/config.h"
+
+#if defined(WINDOWS_OS)
 #  include <windows.h> // for GetSystemInfo
 #endif
-#include <newsflash/warnpush.h>
+
+#include "newsflash/warnpush.h"
 #  include <QStringList>
 #  include <QTextStream>
 #  include <QFileInfo>
@@ -32,8 +34,9 @@
 #  include <QDir>
 #  include <QIODevice>
 #  include <QProcess>
-#include <newsflash/warnpop.h>
-#include <newsflash/engine/linebuffer.h>
+#include "newsflash/warnpop.h"
+
+#include "engine/linebuffer.h"
 #include "commands.h"
 #include "settings.h"
 #include "debug.h"

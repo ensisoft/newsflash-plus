@@ -18,10 +18,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <newsflash/config.h>
+#include "newsflash/config.h"
 
-#include <system_error>
-
+#include "newsflash/warnpush.h"
 #if defined(WINDOWS_OS)
 #  include <windows.h>
 #  include "utf8.h"
@@ -30,6 +29,9 @@
 #  include <time.h>
 #  include <pthread.h>
 #endif
+#include "newsflash/warnpop.h"
+
+#include <system_error>
 #include <stdexcept>
 #include <cstring>
 #include <cerrno>

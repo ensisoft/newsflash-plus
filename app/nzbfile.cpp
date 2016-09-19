@@ -20,14 +20,16 @@
 
 #define LOGTAG "nzb"
 
-#include <newsflash/config.h>
-#include <newsflash/warnpush.h>
+#include "newsflash/config.h"
+
+#include "newsflash/warnpush.h"
 #  include <QtGui/QIcon>
 #  include <QFile>
 #  include <QBuffer>
 #  include <QAbstractListModel>
-#include <newsflash/warnpop.h>
-#include <newsflash/engine/nntp.h>
+#include "newsflash/warnpop.h"
+
+#include "engine/nntp.h"
 #include "nzbfile.h"
 #include "nzbthread.h"
 #include "debug.h"

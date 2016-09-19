@@ -20,7 +20,7 @@
 
 #define LOGTAG "news"
 
-#include <newsflash/warnpush.h>
+#include "newsflash/warnpush.h"
 #  include <QtGui/QIcon>
 #  include <QtGui/QFont>
 #  include <QtGui/QBrush>
@@ -28,12 +28,14 @@
 #  include <QFileInfo>
 #  include <QDir>
 #  include <QCoreApplication>
-#include <newsflash/warnpop.h>
-#include <newsflash/engine/nntp.h>
-#include <newsflash/engine/utf8.h>
-#include <newsflash/engine/iso_8859_15.h>
-#include <newsflash/stringlib/string.h>
+#include "newsflash/warnpop.h"
+
 #include <limits>
+
+#include "engine/nntp.h"
+#include "engine/utf8.h"
+#include "engine/iso_8859_15.h"
+#include "stringlib/string.h"
 #include "newsgroup.h"
 #include "eventlog.h"
 #include "debug.h"

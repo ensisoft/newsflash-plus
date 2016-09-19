@@ -20,17 +20,19 @@
 
 #pragma once
 
-#include <newsflash/config.h>
+#include "newsflash/config.h"
 
-#include <newsflash/warnpush.h>
+#include "newsflash/warnpush.h"
 #  include <QAbstractTableModel>
 #  include <QDateTime>
 #  include <QString>
 #  include <QList>
-#include <newsflash/warnpop.h>
-#include <newsflash/engine/bitflag.h>
+#include "newsflash/warnpop.h"
+
 #include <vector>
 #include <map>
+
+#include "engine/bitflag.h"
 #include "media.h"
 
 namespace app

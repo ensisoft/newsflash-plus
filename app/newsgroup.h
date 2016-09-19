@@ -20,25 +20,27 @@
 
 #pragma once
 
-#include <newsflash/config.h>
+#include "newsflash/config.h"
 
-#include <newsflash/warnpush.h>
+#include "newsflash/warnpush.h"
 #  include <QAbstractTableModel>
 #  include <QObject>
 #  include <QDateTime>
-#include <newsflash/warnpop.h>
-#include <newsflash/engine/filebuf.h>
-#include <newsflash/engine/filemap.h>
-#include <newsflash/engine/catalog.h>
-#include <newsflash/engine/index.h>
-#include <newsflash/engine/idlist.h>
-#include <newsflash/engine/bitflag.h>
-#include <newsflash/stringlib/string.h>
+#include "newsflash/warnpop.h"
+
 #include <vector>
 #include <deque>
 #include <memory>
 #include <functional>
 #include <ctime>
+
+#include "engine/filebuf.h"
+#include "engine/filemap.h"
+#include "engine/catalog.h"
+#include "engine/index.h"
+#include "engine/idlist.h"
+#include "engine/bitflag.h"
+#include "stringlib/string.h"
 #include "filetype.h"
 #include "debug.h"
 #include "format.h"

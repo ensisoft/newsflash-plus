@@ -20,8 +20,8 @@
 
 #pragma once
 
-#include <newsflash/config.h>
-#include <newsflash/stringlib/string_view.h>
+#include "newsflash/config.h"
+
 #include <cstdint>
 #include <cstring>
 #include <ctime>
@@ -29,6 +29,8 @@
 #include <algorithm>
 #include <stdexcept>
 #include <type_traits>
+
+#include "stringlib/string_view.h"
 #include "bitflag.h"
 #include "filemap.h"
 #include "filetype.h"

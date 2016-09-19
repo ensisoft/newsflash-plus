@@ -18,13 +18,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <newsflash/config.h>
-#include <newsflash/warnpush.h>
+#include "newsflash/config.h"
+
+#include "newsflash/warnpush.h"
 #  include <QRegExp>
 #  include <QStringList>
 #  include <QtDebug>
-#include <newsflash/warnpop.h>
-#include <newsflash/engine/assert.h>
+#include "newsflash/warnpop.h"
+
+#include "engine/assert.h"
 #include "parstate.h"
 
 namespace {

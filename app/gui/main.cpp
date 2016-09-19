@@ -20,25 +20,25 @@
 
 #define LOGTAG "main"
 
-#include <newsflash/config.h>
-#include <newsflash/engine/minidump.h>
-#include <newsflash/engine/engine.h>
-#include <newsflash/engine/logging.h>
+#include "newsflash/config.h"
 
-#include <newsflash/warnpush.h>
+#include "newsflash/warnpush.h"
 #  include <QtGui/QStyle>
 #  include <QtGui/QMessageBox>
 #  include <QtGui/QSystemTrayIcon>
 #  include <QDir>
 #  include <QFile>
 #  include <QUrl>
-#include <newsflash/warnpop.h>
+#include "newsflash/warnpop.h"
 #include <iostream>
 #include <exception>
 
+#include "engine/minidump.h"
+#include "engine/engine.h"
+#include "engine/logging.h"
+
 #include "qtsingleapplication/qtsingleapplication.h"
 #include "mainwindow.h"
-#include "config.h"
 #include "accounts.h"
 #include "newslist.h"
 #include "eventlog.h"

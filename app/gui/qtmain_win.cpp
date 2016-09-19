@@ -41,7 +41,7 @@
 // its easier to just build this as a source into the binary
 // than dick around with qtmain library only on windows build
 // we're including the source directly in the build.
-#include <newsflash/config.h>
+#include "newsflash/config.h"
 
 #if defined(WINDOWS_OS)
 

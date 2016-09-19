@@ -18,8 +18,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <newsflash/config.h>
-#include <newsflash/warnpush.h>
+#include "newsflash/config.h"
+
+#include "newsflash/warnpush.h"
 #  include <boost/algorithm/string/regex.hpp>
 #  include <boost/regex.hpp>
 #  include <QtGui/QTableView>
@@ -33,11 +34,13 @@
 #  include <QtGui/QAction>
 #  include <QAbstractTableModel>
 #  include <QDir>
-#include <newsflash/warnpop.h>
-#include <newsflash/engine/nntp.h>
-#include <newsflash/engine/filesys.h>
-#include <newsflash/stringlib/string.h>
+#include "newsflash/warnpop.h"
+
 #include <map>
+
+#include "engine/nntp.h"
+#include "engine/filesys.h"
+#include "stringlib/string.h"
 #include "utility.h"
 #include "settings.h"
 #include "format.h"

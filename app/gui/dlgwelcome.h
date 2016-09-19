@@ -20,14 +20,12 @@
 
 #pragma once
 
-#include <newsflash/config.h>
+#include "newsflash/config.h"
 
-#include <newsflash/warnpush.h>
+#include "newsflash/warnpush.h"
 #  include <QtGui/QDialog>
 #  include "ui_dlgwelcome.h"
-#include <newsflash/warnpop.h>
-
-#include "config.h"
+#include "newsflash/warnpop.h"
 
 namespace gui
 {

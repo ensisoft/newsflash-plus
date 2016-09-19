@@ -20,16 +20,19 @@
 
 #pragma once
 
-#include <newsflash/config.h>
-#include <newsflash/warnpush.h>
+#include "newsflash/config.h"
+
+#include "newsflash/warnpush.h"
 #  include <QtNetwork/QNetworkReply>
 #  include <QProcess>
 #  include <QString>
 #  include <QFile>
 #  include <QUrl>
-#include <newsflash/warnpop.h>
-#include <newsflash/engine/ui/task.h>
+#include "newsflash/warnpop.h"
+
 #include <string>
+
+#include "engine/ui/task.h"
 
 namespace app
 {

@@ -20,18 +20,21 @@
 
 #pragma once
 
-#include <newsflash/config.h>
-#include <newsflash/warnpush.h>
+#include "newsflash/config.h"
+
+#include "newsflash/warnpush.h"
 #  include <QObject>
 #  include <QString>
 #  include <QMetaType>
-#include <newsflash/warnpop.h>
-#include <newsflash/engine/ui/connection.h>
-#include <newsflash/engine/ui/task.h>
-#include <newsflash/engine/engine.h>
+#include "newsflash/warnpop.h"
+
 #include <memory>
 #include <vector>
 #include <string>
+
+#include "engine/ui/connection.h"
+#include "engine/ui/task.h"
+#include "engine/engine.h"
 #include "platform.h"
 #include "format.h"
 #include "accounts.h"

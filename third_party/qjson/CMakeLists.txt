@@ -34,7 +34,7 @@ SET(QT_USE_IMPORTED_TARGETS TRUE)
 # samiv, ensisoft
 # see comments here, 
 # http://stackoverflow.com/questions/12511370/how-to-include-a-certain-qt-installation-using-cmake
-SET(QT_ROOT_DIR "../../qt-4.8.6")
+SET(QT_ROOT_DIR "../qt-4.8.6")
 SET(QT_QMAKE_EXECUTABLE ${QT_ROOT_DIR}/bin/qmake)
 
 # Find Qt4

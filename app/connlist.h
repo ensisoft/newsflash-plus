@@ -20,12 +20,15 @@
 
 #pragma once
 
-#include <newsflash/config.h>
-#include <newsflash/warnpush.h>
+#include "newsflash/config.h"
+
+#include "newsflash/warnpush.h"
 #  include <QAbstractTableModel>
-#include <newsflash/warnpop.h>
-#include <newsflash/engine/ui/connection.h>
+#include "newsflash/warnpop.h"
+
 #include <deque>
+
+#include "engine/ui/connection.h"
 
 namespace app
 {

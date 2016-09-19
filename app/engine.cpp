@@ -20,17 +20,18 @@
 
 #define LOGTAG "engine"
 
-#include <newsflash/config.h>
+#include "newsflash/config.h"
 
-#include <newsflash/warnpush.h>
+#include "newsflash/warnpush.h"
 #  include <QCoreApplication>
 #  include <QEvent>
 #  include <QFile>
 #  include <QDir>
 #  include <QBuffer>
-#include <newsflash/warnpop.h>
-#include <newsflash/engine/ui/account.h>
-#include <newsflash/engine/nntp.h>
+#include "newsflash/warnpop.h"
+
+#include "engine/ui/account.h"
+#include "engine/nntp.h"
 #include "engine.h"
 #include "debug.h"
 #include "homedir.h"

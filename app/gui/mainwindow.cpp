@@ -20,9 +20,9 @@
 
 #define LOGTAG "mainwindow"
 
-#include "config.h"
+#include "newsflash/config.h"
 
-#include "warnpush.h"
+#include "newsflash/warnpush.h"
 #  include <boost/version.hpp>
 #  include <QtGui/QCloseEvent>
 #  include <QtGui/QMessageBox>
@@ -33,7 +33,7 @@
 #  include <QTimer>
 #  include <QDir>
 #  include <QFileInfo>
-#include "warnpop.h"
+#include "newsflash/warnpop.h"
 
 #include "tools/keygen/keygen.h"
 
@@ -49,7 +49,6 @@
 #include "dlgfeedback.h"
 #include "dlgpoweroff.h"
 #include "dlgregister.h"
-#include "config.h"
 #include "findwidget.h"
 #include "../eventlog.h"
 #include "../debug.h"

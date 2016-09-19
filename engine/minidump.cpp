@@ -18,7 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <newsflash/config.h>
+#include "newsflash/config.h"
+
 #if defined(WINDOWS_OS)
 #  include <windows.h>
 #  include <DbgHelp.h> // for minidumps
@@ -28,7 +29,6 @@
 #include <atomic>
 #include <cassert>
 #include "minidump.h"
-#include "config.h"
 
 namespace seh
 {

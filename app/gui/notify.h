@@ -20,12 +20,14 @@
 
 #pragma once 
 
-#include <newsflash/config.h>
-#include <newsflash/warnpush.h>
+#include "newsflash/config.h"
+
+#include "newsflash/warnpush.h"
 #  include <QtGui/QSystemTrayIcon>
 #  include <QObject>
-#include <newsflash/warnpop.h>
-#include <newsflash/engine/bitflag.h>
+#include "newsflash/warnpop.h"
+
+#include "engine/bitflag.h"
 #include "mainmodule.h"
 
 class QAction;

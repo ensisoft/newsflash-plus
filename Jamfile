@@ -6,6 +6,8 @@
 #       on wchar_t is as a native type instead of a typedef for unsigned short and
 #       linking against Qt fails (QString::fromStdWString(...), & QString::FromWCharArray
 #
+#       open boost-build\tools\msvc.jam and edit the /Zc:wchar_t line to /Zc:wchar_t-
+#
 #       Qt was built without debug libraries but when a debug version of this release
 #       is built boost.build expects debug versions of qtlibs (i.e. QtCored4.dll).
 #       -> copy+rename qt libs
@@ -28,7 +30,7 @@ import qt ;
 # set these paths to to point to the relevant SDK locations.
 path-constant QT_PATH       : "third_party/qt-4.8.6" ;
 path-constant BOOST_PATH    : "third_party/boost_1_51_0" ;
-path-constant OPENSSL_PATH  : "third_party/openssl_1_0_1f" ;
+path-constant OPENSSL_PATH  : "third_party/openssl/sdk/" ;
 path-constant PROTOBUF_PATH : "third_party/protobuf/src/" ;
 
 using qt : $(QT_PATH) ;
@@ -41,7 +43,6 @@ use-project engine  : "engine" ;
 project newsflash
 :
   requirements
-    <include>../
     <include>.
     <include>app/gui/
     <include>third_party/qjson/include/
@@ -103,11 +104,21 @@ project newsflash
 
 ;
 
+## prebuilt third_party libraries
+
 if [ os.name ] = NT
 {
   # define openssl libraries, they have different names on win32 vs. linux
   lib openssl : : <name>ssleay32 <search>$(OPENSSL_PATH)/lib ;
   lib crypto  : : <name>libeay32 <search>$(OPENSSL_PATH)/lib ;
+
+  # different iterator debug levels. need to link specifically to debug/release versions.
+  lib protobuf : : <variant>debug   <name>libprotobuf <search>"third_party/protobuf/vsprojects/Debug" ;
+  lib protobuf : : <variant>release <name>libprotobuf <search>"third_party/protobuf/vsprojects/Release" ;
+
+  # this library is LGPL license, so must use as a shared library
+  # instead of statically link it.
+  lib qjson  : : <name>qjson <search>"third_party/qjson/lib/Release" ;
 }
 
 if [ os.name ] = LINUX
@@ -116,21 +127,19 @@ if [ os.name ] = LINUX
   # so only got to name the libraries here
   lib openssl : : <name>ssl    <search>$(/usr/lib) ;
   lib crypto  : : <name>crypto <search>$(/usr/lib) ;
+
+  # protobuf
+  lib protobuf : : <name>protobuf <search>"third_party/protobuf/src/.libs" ;
+
+  # this library is LGPL license, so must use as a shared library
+  # instead of statically link it.
+  lib qjson  : : <name>qjson <search>"third_party/qjson/lib/" ;
+
 }
 
-## prebuilt libraries
-
-# this library is LGPL license, so must use as a .so
-# instead of statically link it.
-lib qjson  : : <name>qjson <search>"third_party/qjson/lib/" ;
 
 # compression library
 lib zlib   : : <name>zlib <search>"third_party/zlib/lib" ;
-
-
-# googles protobuf
-lib protobuf : : <variant>debug   <name>protobuf_d <search>"third_party/protobuf/lib" ;
-lib protobuf : : <variant>release <name>protobuf_r <search>"third_party/protobuf/lib" ;
 
 exe newsflash :
   [ glob app/*.h       ]
@@ -177,7 +186,7 @@ exe join :
   <toolset>msvc:<linkflags>/SUBSYSTEM:CONSOLE,5.01
 ;
 
+
 install dist_d : newsflash join
  : <variant>release:<location>dist ;
-
 

@@ -20,14 +20,14 @@
 
 #define LOGTAG "home"
 
-#include "config.h"
+#include "newsflash/config.h"
 
-#include "warnpush.h"
+#include "newsflash/warnpush.h"
 #  include <QtNetwork/QNetworkRequest>
 #  include <QtNetwork/QNetworkReply>
 #  include <QUrl>
 #  include <QRegExp>
-#include "warnpop.h"
+#include "newsflash/warnpop.h"
 
 #include "tools/keygen/keygen.h"
 #include "telephone.h"
