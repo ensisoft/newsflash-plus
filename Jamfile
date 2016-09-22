@@ -44,7 +44,7 @@ project newsflash
 :
   requirements
     <include>.
-    <include>app/gui/
+    <include>gui
     <include>third_party/qjson/include/
     <include>third_party/
     <include>$(OPENSSL_PATH)/include
@@ -144,16 +144,16 @@ lib zlib   : : <name>zlib <search>"third_party/zlib/lib" ;
 exe newsflash :
   [ glob app/*.h       ]
   [ glob app/*.cpp     ]
-  [ glob app/gui/*.ui  ]
-  [ glob app/gui/*.h   ]
-  [ glob app/gui/*.cpp ]
+  [ glob gui/*.ui  ]
+  [ glob gui/*.h   ]
+  [ glob gui/*.cpp ]
 
-  app/gui/icon.rc
-  app/gui/resource.qrc
-  app/gui/qtsingleapplication/qtsingleapplication.h
-  app/gui/qtsingleapplication/qtsingleapplication.cpp
-  app/gui/qtsingleapplication/qtlocalpeer.h
-  app/gui/qtsingleapplication/qtlocalpeer.cpp
+  gui/icon.rc
+  gui/resource.qrc
+  gui/qtsingleapplication/qtsingleapplication.h
+  gui/qtsingleapplication/qtsingleapplication.cpp
+  gui/qtsingleapplication/qtlocalpeer.h
+  gui/qtsingleapplication/qtlocalpeer.cpp
 
   tools/keygen/keygen.cpp
   stringlib/string.cpp
