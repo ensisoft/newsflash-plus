@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -20,28 +20,33 @@
 
 #pragma once
 
-#include <boost/noncopyable.hpp>
-#include <openssl/ssl.h>
+#include "newsflash/config.h"
+
+#include "newsflash/warnpush.h"
+#  include <boost/noncopyable.hpp>
+#  include <openssl/ssl.h>
+#include "newsflash/warnpop.h"
+
 #include "sslcontext.h"
 #include "socket.h"
 
 namespace newsflash
 {
-    // transfer data over SSL over TCP socket. 
+    // transfer data over SSL over TCP socket.
     class sslsocket : public socket, boost::noncopyable
     {
     public:
         sslsocket();
 
         // take ownership of the existing socket and handle
-        // objects and try to initialize SSL in client mode. 
+        // objects and try to initialize SSL in client mode.
         // the socket is assumed to be already connected.
         sslsocket(native_socket_t sock, native_handle_t handle);
 
-        // take ownership of the existing socket, handle 
+        // take ownership of the existing socket, handle
         // and SSL objects. The socket is assume to be already
-        // connected and associated with the given SSL objects. 
-        // Also the SSL operation mode is presumed to be already set 
+        // connected and associated with the given SSL objects.
+        // Also the SSL operation mode is presumed to be already set
         // (SSL_accept vs. SSL_connect).
         sslsocket(native_socket_t sock, native_handle_t handle, SSL* ssl, BIO* bio);
         sslsocket(sslsocket&& other);
@@ -77,6 +82,6 @@ namespace newsflash
         BIO* bio_;
 
         sslcontext context_;
-    }; 
+    };
 } // newsflash
 

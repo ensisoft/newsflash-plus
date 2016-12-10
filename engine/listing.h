@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -32,7 +32,7 @@ namespace newsflash
     {
     public:
         struct group {
-            std::string name;            
+            std::string name;
             std::uint64_t last;
             std::uint64_t first;
             std::uint64_t size;
@@ -43,7 +43,7 @@ namespace newsflash
 
         virtual std::shared_ptr<cmdlist> create_commands() override;
 
-        virtual void complete(cmdlist& cmd, 
+        virtual void complete(cmdlist& cmd,
             std::vector<std::unique_ptr<action>>& actions) override;
 
         virtual bool has_commands() const override
@@ -52,8 +52,11 @@ namespace newsflash
         virtual std::size_t max_num_actions() const override
         { return 1; }
 
-        const std::vector<group>& group_list() const 
+        const std::vector<group>& group_list() const
         { return groups_; }
+
+        bool is_ready() const
+        { return ready_; }
 
     private:
         std::vector<group> groups_;

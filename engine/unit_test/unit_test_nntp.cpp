@@ -18,11 +18,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <newsflash/config.h>
-#include <newsflash/warnpush.h>
+#include "newsflash/config.h"
+
+#include "newsflash/warnpush.h"
 #  include <boost/test/minimal.hpp>
 #  include <boost/lexical_cast.hpp>
-#include <newsflash/warnpop.h>
+#include "newsflash/warnpop.h"
+
 #include <iostream>
 #include <algorithm>
 #include <vector>
@@ -32,7 +34,8 @@
 #include <condition_variable>
 #include <cstdlib>
 #include <ctime>
-#include "../nntp.h"
+
+#include "engine/nntp.h"
 
 void test_reverse_iterator()
 {

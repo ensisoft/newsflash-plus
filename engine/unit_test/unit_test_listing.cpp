@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -18,16 +18,20 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <newsflash/config.h>
+#include "newsflash/config.h"
 
-#include <boost/test/minimal.hpp>
+#include "newsflash/warnpush.h"
+#  include <boost/test/minimal.hpp>
+#include "newsflash/warnpop.h"
+
 #include <vector>
 #include <string>
 #include <fstream>
+
+#include "engine/listing.h"
+#include "engine/buffer.h"
+#include "engine/cmdlist.h"
 #include "unit_test_common.h"
-#include "../listing.h"
-#include "../buffer.h"
-#include "../cmdlist.h"
 
 std::vector<std::string> read_file(const char* file)
 {
@@ -47,12 +51,12 @@ std::vector<std::string> read_file(const char* file)
 
 void unit_test_success()
 {
-    const char* body = 
+    const char* body =
         "215 group listing follows\r\n"
-        "alt.binaries.pictures.graphics.3d 900 800 y\r\n"            
-        "alt.binaries.movies.divx 321 123 y\r\n"                      
+        "alt.binaries.pictures.graphics.3d 900 800 y\r\n"
+        "alt.binaries.movies.divx 321 123 y\r\n"
         "alt.binaries.sounds.mp3    8523443434535555 80 n\r\n"
-        ".\r\n";                      
+        ".\r\n";
 
     newsflash::buffer i(1024);
     newsflash::buffer o;
@@ -87,22 +91,22 @@ void unit_test_success()
     BOOST_REQUIRE(groups.size() == 3);
     BOOST_REQUIRE(groups[0].name == "alt.binaries.pictures.graphics.3d");
     BOOST_REQUIRE(groups[0].last == 900);
-    BOOST_REQUIRE(groups[0].first == 800);    
+    BOOST_REQUIRE(groups[0].first == 800);
 
     BOOST_REQUIRE(groups[1].name == "alt.binaries.movies.divx");
     BOOST_REQUIRE(groups[1].last == 321);
-    BOOST_REQUIRE(groups[1].first == 123);        
+    BOOST_REQUIRE(groups[1].first == 123);
 
     BOOST_REQUIRE(groups[2].name == "alt.binaries.sounds.mp3");
     BOOST_REQUIRE(groups[2].last == std::uint64_t(8523443434535555));
-    BOOST_REQUIRE(groups[2].first == 80);            
+    BOOST_REQUIRE(groups[2].first == 80);
 
 
 }
 
 void unit_test_failure()
 {
-    // todo: 
+    // todo:
 }
 
 int test_main(int, char* [])

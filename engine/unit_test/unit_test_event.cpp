@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -18,10 +18,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <newsflash/config.h>
-#include <newsflash/warnpush.h>
+#include "newsflash/config.h"
+
+#include "newsflash/warnpush.h"
 #  include <boost/test/minimal.hpp>
-#include <newsflash/warnpop.h>
+#include "newsflash/warnpop.h"
+
 #include <condition_variable>
 #include <mutex>
 #include <atomic>
@@ -30,10 +32,11 @@
 #include <string>
 #include <iostream>
 #include <chrono>
-#include "../waithandle.h"
-#include "../event.h"
 
-class barrier 
+#include "engine/waithandle.h"
+#include "engine/event.h"
+
+class barrier
 {
 public:
     barrier(std::size_t count) : count_(count)
@@ -53,7 +56,7 @@ public:
 private:
     std::mutex mutex_;
     std::condition_variable cond_;
-    std::size_t count_;    
+    std::size_t count_;
 };
 
 void unit_test_event()
@@ -75,7 +78,7 @@ void unit_test_event()
         BOOST_REQUIRE(!wait_for(handle, std::chrono::milliseconds(0)));
         BOOST_REQUIRE(!handle.read());
 
-    }    
+    }
 
     {
         newsflash::event event1, event2;
@@ -111,18 +114,18 @@ void unit_test_event()
     {
         // rendezvous
         bar.wait();
-        
+
         // begin wait forever
         auto handle = event.wait();
         wait(handle);
-        
+
         BOOST_REQUIRE(handle.read());
-        
+
         // expected to be true after wait completes
-        BOOST_REQUIRE(flag.test_and_set());        
-        
+        BOOST_REQUIRE(flag.test_and_set());
+
     };
-    
+
     // single thread waiter
     {
         for (int i=0; i<1000; ++i)

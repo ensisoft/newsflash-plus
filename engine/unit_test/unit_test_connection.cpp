@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -18,25 +18,28 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <newsflash/config.h>
-#include <newsflash/warnpush.h>
+#include "newsflash/config.h"
+
+#include "newsflash/warnpush.h"
 #  include <boost/test/minimal.hpp>
-#include <newsflash/warnpop.h>
+#include "newsflash/warnpop.h"
+
 #include <thread>
 #include <deque>
 #include <string>
 #include <fstream>
 #include <iterator>
-#include "../connection.h"
-#include "../action.h"
-#include "../sockets.h"
-#include "../socketapi.h"
-#include "../cmdlist.h"
-#include "../session.h"
-#include "../buffer.h"
-#include "../logging.h"
-#include "../decode.h"
-#include "../throttle.h"
+
+#include "engine/connection.h"
+#include "engine/action.h"
+#include "engine/sockets.h"
+#include "engine/socketapi.h"
+#include "engine/cmdlist.h"
+#include "engine/session.h"
+#include "engine/buffer.h"
+#include "engine/logging.h"
+#include "engine/decode.h"
+#include "engine/throttle.h"
 #include "unit_test_common.h"
 
 namespace nf = newsflash;
@@ -73,13 +76,13 @@ void test_connect()
 
         // resolve
         act = conn.connect(s);
-        act->set_log(log);                
+        act->set_log(log);
         act->perform();
         BOOST_REQUIRE(!act->has_exception());
 
         // connect
         act = conn.complete(std::move(act));
-        act->set_log(log);               
+        act->set_log(log);
         act->perform();
         BOOST_REQUIRE(act->has_exception());
     }
@@ -106,7 +109,7 @@ void test_connect()
     //     act = conn.complete(std::move(act));
 
     //     // initialize
-    //     act->set_log(log);        
+    //     act->set_log(log);
     //     act->perform();
     //     BOOST_REQUIRE(act->has_exception());
     // }
@@ -125,19 +128,19 @@ void test_connect()
         nf::connection conn;
 
         // resolve
-        act = conn.connect(s); 
-        act->set_log(log);        
-        act->perform(); 
+        act = conn.connect(s);
+        act->set_log(log);
+        act->perform();
         act = conn.complete(std::move(act));
 
         // connect
-        act->set_log(log);        
-        act->perform(); 
+        act->set_log(log);
+        act->perform();
         act = conn.complete(std::move(act));
 
         // initialize
-        act->set_log(log);        
-        act->perform(); 
+        act->set_log(log);
+        act->perform();
         BOOST_REQUIRE(act->has_exception());
     }
 
@@ -157,22 +160,22 @@ void test_connect()
 
         // resolve
         act = conn.connect(s);
-        act->set_log(log);        
+        act->set_log(log);
         act->perform();
         act = conn.complete(std::move(act)); // resolve
 
         // connect
-        act->set_log(log);        
-        act->perform(); 
-        act = conn.complete(std::move(act)); 
+        act->set_log(log);
+        act->perform();
+        act = conn.complete(std::move(act));
 
         // initialize
-        act->set_log(log);        
+        act->set_log(log);
         act->perform();
         BOOST_REQUIRE(!act->has_exception());
 
     }
-    
+
     // disconnect
     {
         nf::connection::spec s;
@@ -189,26 +192,26 @@ void test_connect()
 
         // resolve
         act = conn.connect(s);
-        act->set_log(log);        
-        act->perform(); 
+        act->set_log(log);
+        act->perform();
         act = conn.complete(std::move(act));
 
         // connect
-        act->set_log(log);        
+        act->set_log(log);
         act->perform();
         act = conn.complete(std::move(act));
 
         // initialize
-        act->set_log(log);        
+        act->set_log(log);
         act->perform();
         act = conn.complete(std::move(act));
 
 
         act = conn.disconnect();
-        act->set_log(log);        
+        act->set_log(log);
         act->perform();
         BOOST_REQUIRE(!act->has_exception());
-    }    
+    }
 
     // discard the connection object while connecting
     {
@@ -219,8 +222,8 @@ void test_connect()
         s.username = "pass";
         s.password = "pass";
         s.enable_pipelining = false;
-        s.enable_compression = false;      
-        s.pthrottle = nullptr;  
+        s.enable_compression = false;
+        s.pthrottle = nullptr;
 
         std::unique_ptr<nf::connection> conn(new nf::connection);
 
@@ -231,14 +234,14 @@ void test_connect()
         act = conn->complete(std::move(act));
 
         act->set_log(log);
-        // for the connect action, 
+        // for the connect action,
         // spawn a new thread that executes the action the background
         // meanwhile the main thread destroys the object.
         std::thread thread([&]() {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
             act->perform();
         });
-        
+
         conn.reset();
         thread.join();
     }

@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -18,12 +18,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <newsflash/config.h>
+#include "newsflash/config.h"
 
-#include <newsflash/warnpush.h>
+#include "newsflash/warnpush.h"
 #  include <boost/test/minimal.hpp>
-#include <newsflash/warnpop.h>
-#include "../decode.h"
+#include "newsflash/warnpop.h"
+
+#include "engine/decode.h"
 #include "unit_test_common.h"
 
 namespace nf = newsflash;
@@ -125,7 +126,7 @@ void unit_test_yenc_multi()
         }
         BOOST_REQUIRE(offset += jpg.size());
         BOOST_REQUIRE(jpg == out);
-    } 
+    }
 
     // error (throws an exception)
     {
@@ -163,7 +164,7 @@ void unit_test_uuencode_single()
         BOOST_REQUIRE(bin == png);
     }
 
-    // uuencode doesn't support any crc/size error checking or 
+    // uuencode doesn't support any crc/size error checking or
     // multipart binaries with offsets.
 }
 
@@ -207,7 +208,7 @@ void unit_test_uuencode_multi()
 
         }
 
-        // third part        
+        // third part
         {
             nf::decode dec(read_file_buffer("test_data/1489406.jpg-003.uuencode"));
             dec.perform();
@@ -226,7 +227,7 @@ void unit_test_uuencode_multi()
         const auto jpg = read_file_contents("test_data/1489406.jpg");
 
         BOOST_REQUIRE(jpg == out);
-    }    
+    }
 }
 
 int test_main(int, char*[])

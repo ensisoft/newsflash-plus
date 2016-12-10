@@ -18,16 +18,18 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <newsflash/config.h>
+#include "newsflash/config.h"
 
-#include <newsflash/warnpush.h>
+#include "newsflash/warnpush.h"
 #  include <boost/test/minimal.hpp>
-#include <newsflash/warnpop.h>
+#include "newsflash/warnpop.h"
+
 #include <chrono>
-#include "../filemap.h"
-#include "../filebuf.h"
-#include "../catalog.h"
-#include "../filetype.h"
+
+#include "engine/filemap.h"
+#include "engine/filebuf.h"
+#include "engine/catalog.h"
+#include "engine/filetype.h"
 #include "unit_test_common.h"
 
 

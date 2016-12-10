@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -18,19 +18,22 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <newsflash/config.h>
+#include "newsflash/config.h"
 
-#include <boost/test/minimal.hpp>
-#include "../bodyiter.h"
+#include "newsflash/warnpush.h"
+#  include <boost/test/minimal.hpp>
+#include "newsflash/warnpush.h"
+
+#include "engine/bodyiter.h"
 
 void test_bodyiter()
 {
-    // if a textual body response constains a double as the first character on a 
+    // if a textual body response constains a double as the first character on a
     // new line the dot is doubled. (".\r\n" indicates the end of transmission)
 
     // test forward
     {
-        const char* text = 
+        const char* text =
         "..here is some text\r\n"
         "more data follows.\r\n"
         "two dots in the middle .. of text\r\n"
@@ -43,7 +46,7 @@ void test_bodyiter()
         nntp::bodyiter end(text + std::strlen(text), 0);
 
         std::string str(beg, end);
-        BOOST_REQUIRE( str == 
+        BOOST_REQUIRE( str ==
             ".here is some text\r\n"
             "more data follows.\r\n"
             "two dots in the middle .. of text\r\n"
@@ -57,7 +60,7 @@ void test_bodyiter()
 
     // test backwards
     // {
-    //     const char* text = 
+    //     const char* text =
     //     "..here is some text\r\n"
     //     "more data follows.\r\n"
     //     "two dots in the middle .. of text\r\n"
@@ -75,7 +78,7 @@ void test_bodyiter()
     //         str.insert(str.begin(), *end);
     //     }
 
-    //     BOOST_REQUIRE( str == 
+    //     BOOST_REQUIRE( str ==
     //         ".here is some text\r\n"
     //         "more data follows.\r\n"
     //         "two dots in the middle .. of text\r\n"
@@ -115,7 +118,7 @@ void test_bodyiter()
         str.push_back(*--beg);
         str.push_back(*--beg);
         BOOST_REQUIRE(str == "\n\r.");
-    }    
+    }
 }
 
 int test_main(int, char*[])

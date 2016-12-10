@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -18,16 +18,21 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <newsflash/config.h>
-#include <boost/test/minimal.hpp>
-#include <boost/random/mersenne_twister.hpp>
+#include "newsflash/config.h"
+
+#include "newsflash/warnpush.h"
+#  include <boost/test/minimal.hpp>
+#  include <boost/random/mersenne_twister.hpp>
+#include "newsflash/warnpop.h"
+
 #include <thread>
 #include <iostream>
 #include <atomic>
 #include <cstdlib>
 #include <ctime>
-#include "../throttle.h"
-#include "../platform.h"
+
+#include "engine/throttle.h"
+#include "engine/platform.h"
 
 int test_main(int, char*[])
 {
@@ -96,7 +101,7 @@ int test_main(int, char*[])
                 const auto bytes = rand() / (double)rand.max() * quota;
                 bytes_total += bytes;
                 throttle.accumulate(bytes, quota);
-            }                
+            }
         };
 
         std::thread t1(func);

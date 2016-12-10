@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -18,13 +18,18 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <boost/test/minimal.hpp>
+#include "newsflash/warnpush.h"
+#  include <boost/test/minimal.hpp>
+#include "newsflash/warnpop.h"
+
 #include <iostream>
 #include <fstream>
 #include <string>
 #include <ctime>
-#include "../yenc.h"
-#include "../bodyiter.h"
+
+#include "engine/yenc.h"
+#include "engine/bodyiter.h"
+
 
 // test parsing headers, parts and end lines
 void test_parsing()
@@ -71,7 +76,7 @@ void test_parsing()
 
     {
         const char* str = "=yend size=16154 crc32=4a68571d";
-        
+
         const auto& ret = yenc::parse_footer(str, str+strlen(str));
 
         BOOST_REQUIRE(ret.first == true);
@@ -79,13 +84,13 @@ void test_parsing()
         BOOST_REQUIRE(ret.second.crc32 ==1248352029);
         BOOST_REQUIRE(ret.second.part == 0);
         BOOST_REQUIRE(ret.second.pcrc32 == 0);
-        
+
     }
 
     {
         // single part yend
         const char* str = "=yend size=16154";
-        
+
         const auto& ret = yenc::parse_footer(str, str+strlen(str));
 
         BOOST_REQUIRE(ret.first == true);
@@ -93,7 +98,7 @@ void test_parsing()
         BOOST_REQUIRE(ret.second.crc32== 0);
         BOOST_REQUIRE(ret.second.part == 0);
         BOOST_REQUIRE(ret.second.pcrc32 == 0);
-        
+
     }
 
     {
@@ -107,14 +112,14 @@ void test_parsing()
         BOOST_REQUIRE(ret.second.pcrc32==1248352029);
         BOOST_REQUIRE(ret.second.part == 0);
         BOOST_REQUIRE(ret.second.crc32 == 0);
-        
+
     }
 
 
     {
         const char* str = "=ybegin part=1 line=128 size=824992 name=foobar.PAR2\r\n" \
                           "=ypart begin=12345 end=54321\r\n";
-        
+
         const auto& header = yenc::parse_header(str, str+strlen(str));
         BOOST_REQUIRE(header.first == true);
         BOOST_REQUIRE(header.second.part == 1);
@@ -142,7 +147,7 @@ void test_parsing()
 
     {
         const char* str = "=ypart begin=123 end=100\r\n foo";
-  
+
         const auto& part = yenc::parse_part(str, str+strlen(str));
 
         BOOST_REQUIRE(part.first == true);
@@ -154,7 +159,7 @@ void test_parsing()
 
         const char* str = "=ybegin part=1 line=128 size=1497442 name=Nokia Smartphone Hacks - "\
                           "eBook - Must have für alle Handy Fans - 2007 German.part08.rar\r\n"\
-                          "=ypart begin=1 end=384000"; 
+                          "=ypart begin=1 end=384000";
 
         const auto& header = yenc::parse_header(str, str+strlen(str));
 
@@ -164,19 +169,19 @@ void test_parsing()
         BOOST_REQUIRE(header.second.size == 1497442);
         BOOST_REQUIRE(header.second.total == 0);
         BOOST_REQUIRE(header.second.name == "Nokia Smartphone Hacks - eBook - Must have für alle Handy Fans - 2007 German.part08.rar");
-    
+
         const auto& part = yenc::parse_part(str, str+strlen(str));
         BOOST_REQUIRE(part.first == true);
         BOOST_REQUIRE(part.second.begin == 1);
         BOOST_REQUIRE(part.second.end == 384000);
-        
+
     }
 
     {
         // order of the parameters is changed
 
         const char* str = "=ybegin part=1  total=4 size=1507728 line=128 name=(null)";
-        
+
         const auto& ret = yenc::parse_header(str, str+strlen(str));
         BOOST_REQUIRE(ret.first == true);
         BOOST_REQUIRE(ret.second.part  == 1);
@@ -211,7 +216,7 @@ void test_parsing()
 
 /*
  * Synopsis: yEnc decode the reference text file and compare to the original binary.
- * 
+ *
  * Expected: Decoded output and the binary data match.
  *
  */
@@ -220,13 +225,13 @@ void test_decoding()
     {
         std::ifstream src;
         std::ifstream ref;
-    
+
         src.open("test_data/newsflash_2_0_0.yenc", std::ios::binary);
         ref.open("test_data/newsflash_2_0_0.png", std::ios::binary);
-    
+
         BOOST_REQUIRE(src.is_open());
         BOOST_REQUIRE(ref.is_open());
-    
+
         std::vector<char> temp;
         std::vector<char> orig;
         std::copy(std::istreambuf_iterator<char>(src), std::istreambuf_iterator<char>(), std::back_inserter(temp));
@@ -298,7 +303,7 @@ void test_decoding()
         std::vector<char> temp;
         std::vector<char> orig;
         std::copy(std::istreambuf_iterator<char>(src), std::istreambuf_iterator<char>(), std::back_inserter(temp));
-        std::copy(std::istreambuf_iterator<char>(ref), std::istreambuf_iterator<char>(), std::back_inserter(orig));        
+        std::copy(std::istreambuf_iterator<char>(ref), std::istreambuf_iterator<char>(), std::back_inserter(orig));
 
         nntp::bodyiter beg(&temp[0], temp.size());
         nntp::bodyiter end(&temp[temp.size()], 0);
@@ -322,12 +327,12 @@ void test_decoding()
         BOOST_REQUIRE(orig == data);
 
     }
-        
+
 }
 
 /*
  * Synopsis: yEnc encode the reference binary into yEnc text stream and compare to the reference yEnc data.
- * 
+ *
  * Expected: Encoded output and the reference yEnc match.
  */
 void test_encoding()
@@ -344,13 +349,13 @@ void test_encoding()
 
         std::vector<char> png;
         std::copy(std::istreambuf_iterator<char>(src), std::istreambuf_iterator<char>(), std::back_inserter(png));
-    
+
         std::vector<char> data;
         std::copy(std::istreambuf_iterator<char>(ref), std::istreambuf_iterator<char>(), std::back_inserter(data));
 
         const std::string header("=ybegin line=128 size=16153 name=test.png\r\n");
         const std::string trailer("\r\n=yend size=16153 crc32=4a68571d\r\n");
-    
+
         std::vector<char> yenc;
 
         std::copy(header.begin(), header.end(), std::back_inserter(yenc));
@@ -377,7 +382,7 @@ void test_encoding()
 void test_decode_encode()
 {
     char junk[1024 * sizeof(int)];
-    
+
     std::srand(std::time(nullptr));
 
     for (int i=0; i<1024; ++i)
@@ -388,14 +393,14 @@ void test_decode_encode()
 
     // encode...
     yenc::encode(junk, junk+sizeof(junk), std::back_inserter(yenc));
-    
+
     // and decode back into binary
     auto it = yenc.begin();
     yenc::decode(it, yenc.end(), std::back_inserter(data));
-    
+
     BOOST_REQUIRE(data.size() == sizeof(junk));
     BOOST_REQUIRE(std::memcmp(&data[0], junk, sizeof(junk)) == 0);
-    
+
 }
 
 void test_encode_special()
@@ -403,7 +408,7 @@ void test_encode_special()
     // verify leading dot expansion
     {
         const char data[] = {
-            '.' - 42, 
+            '.' - 42,
             'a' - 42,
             'b' - 42,
             'b' - 42,

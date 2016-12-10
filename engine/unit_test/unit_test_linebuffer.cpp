@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -18,16 +18,19 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <newsflash/config.h>
+#include "newsflash/config.h"
 
-#include <boost/test/minimal.hpp>
-#include "../linebuffer.h"
+#include "newsflash/warnpush.h"
+#  include <boost/test/minimal.hpp>
+#include "newsflash/warnpop.h"
+
+#include "engine/linebuffer.h"
 
 void test_linebuffer()
 {
     // no lines
     {
-        const char* str = 
+        const char* str =
            "fooobooar";
 
         nntp::linebuffer buffer(str, std::strlen(str));
@@ -38,7 +41,7 @@ void test_linebuffer()
 
     // some lines
     {
-        const char* str = 
+        const char* str =
            "assa\r\n"
            "sassa\r\n"
            "mandelmassa\r\n"
@@ -61,7 +64,7 @@ void test_linebuffer()
 
     // last line is not full
     {
-        const char* str = 
+        const char* str =
            "jeesus\r\n"
            "ajaa\r\n"
            "mopolla";
@@ -107,7 +110,7 @@ void test_linebuffer()
 
     // check pos
     {
-        const char* str = 
+        const char* str =
            "jeesus\r\n"
            "ajaa\r\n"
            "mopolla";

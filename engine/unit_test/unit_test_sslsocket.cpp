@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -18,19 +18,23 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <newsflash/config.h>
+#include "newsflash/config.h"
 
-#include <boost/test/minimal.hpp>
+#include "newsflash/warnpush.h"
+#  include <boost/test/minimal.hpp>
+#include "newsflash/warnpop.h"
+
 #include <condition_variable>
 #include <openssl/err.h>
 #include <functional>
 #include <thread>
 #include <chrono>
-#include "../socketapi.h"
-#include "../sslsocket.h"
-#include "../sslcontext.h"
-#include "../platform.h"
-#include "../types.h"
+
+#include "engine/socketapi.h"
+#include "engine/sslsocket.h"
+#include "engine/sslcontext.h"
+#include "engine/platform.h"
+#include "engine/types.h"
 #include "unit_test_common.h"
 
 #if defined (LINUX_OS)
@@ -66,7 +70,7 @@ struct checkpoint {
     checkpoint() : hit(false)
     {}
 
-    void check() 
+    void check()
     {
         std::unique_lock<std::mutex> lock(m);
         while (!hit)
@@ -83,7 +87,7 @@ struct checkpoint {
     void clear()
     {
         std::lock_guard<std::mutex> lock(m);
-        hit = false;        
+        hit = false;
     }
 };
 
@@ -143,7 +147,7 @@ void ssl_server_main(int port)
 
     // set the DH key parameters for the session key generation.
     // the actual key is generated on the fly and the parameters
-    // coming from the dh file can be reused. 
+    // coming from the dh file can be reused.
     BOOST_REQUIRE(SSL_CTX_set_tmp_dh(ctx, dh) == 1);
     //BOOST_REQUIRE(SSL_CTX_set_tmp_rsa(ctx, rsa) == 1);
     BOOST_REQUIRE(SSL_CTX_set_cipher_list(ctx, "ALL") == 1);
@@ -233,7 +237,7 @@ void test_connection_success()
         delete [] buff.data;
         delete [] buff.buff;
     }
- 
+
 }
 
 int test_main(int argc, char* argv[])

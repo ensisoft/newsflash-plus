@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -18,11 +18,17 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <openssl/engine.h>
-#include <openssl/conf.h>
-#include <openssl/ssl.h>
-#include <openssl/err.h>
+#include "newsflash/config.h"
+
+#include "newsflash/warnpush.h"
+#  include <openssl/engine.h>
+#  include <openssl/conf.h>
+#  include <openssl/ssl.h>
+#  include <openssl/err.h>
+#include "newsflash/warnpop.h"
+
 #include <cassert>
+
 #include "sslcontext.h"
 #include "platform.h"
 
@@ -33,7 +39,7 @@ namespace {
     std::mutex  g_mutex;
     context*    g_context;
 
-    class context 
+    class context
     {
     public:
         context() : context_(nullptr)
@@ -50,7 +56,7 @@ namespace {
         void init()
         {
             SSL_METHOD* meth = const_cast<SSL_METHOD*>(SSLv23_method());
-            
+
             context_ = SSL_CTX_new(meth);
             if (!context_)
                throw std::runtime_error("SSL_CTX_new");
@@ -86,7 +92,7 @@ sslcontext::sslcontext()
         g_context = new context();
         try
         {
-            g_context->init();                
+            g_context->init();
         }
         catch (const std::exception&)
         {
@@ -122,7 +128,7 @@ SSL_CTX* sslcontext::ssl()
 // https://www.openssl.org/support/faq.html#PROG2
 // https://www.openssl.org/support/faq.html#PROG13
 struct openssl {
-    openssl() 
+    openssl()
     {
         locks = new std::mutex[CRYPTO_num_locks()];
 
@@ -135,16 +141,16 @@ struct openssl {
 
         // these callback functions need to be set last because
         // the setup functions above call these (especially the locking function)
-        // which calls back to us and whole thing goes astray. 
+        // which calls back to us and whole thing goes astray.
         // Calling the functions above without locking should be safe
         // considering that this constructor code is already protected from MT access
         // If there are random crashes, maybe this assumption is wrong
         // and locking needs to be taken care of already.
         CRYPTO_set_id_callback(identity_callback);
-        CRYPTO_set_locking_callback(lock_callback);                        
+        CRYPTO_set_locking_callback(lock_callback);
     }
 
-   ~openssl() 
+   ~openssl()
     {
         CRYPTO_set_locking_callback(nullptr);
 
@@ -157,13 +163,13 @@ struct openssl {
         delete [] locks;
     }
 
-    static 
+    static
     unsigned long identity_callback()
     {
         return newsflash::get_thread_identity();
     }
 
-    static 
+    static
     void lock_callback(int mode, int index, const char*, int)
     {
         if (mode & CRYPTO_LOCK)
@@ -171,7 +177,7 @@ struct openssl {
        else locks[index].unlock();
     }
 
-    static std::mutex* locks;        
+    static std::mutex* locks;
 };
 
 std::mutex* openssl::locks;

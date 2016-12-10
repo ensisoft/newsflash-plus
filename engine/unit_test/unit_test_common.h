@@ -24,17 +24,18 @@
 
 #pragma once
 
-#include <newsflash/config.h>
+#include "newsflash/config.h"
 
 #ifdef TEST_CUSTOM
 #  define BOOST_REQUIRE TEST_REQUIRE
 #endif
 
-//#include <boost/test/minimal.hpp>
-#include <boost/filesystem/path.hpp>
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/convenience.hpp>
-#include <newsflash/config.h>
+#include "newsflash/warnpush.h"
+#  include <boost/filesystem/path.hpp>
+#  include <boost/filesystem/operations.hpp>
+#  include <boost/filesystem/convenience.hpp>
+#include "newsflash/warnpop.h"
+
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
@@ -44,7 +45,7 @@
 #include <vector>
 #include <ctime>
 
-#include "../buffer.h"
+#include "engine/buffer.h"
 
   //#define BOOST_FILESYSTEM_VERSION 2
 

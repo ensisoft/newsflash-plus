@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -18,12 +18,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <newsflash/config.h>
-#include <newsflash/warnpush.h>
+#include "newsflash/config.h"
+#include "newsflash/warnpush.h"
 #  include <boost/test/minimal.hpp>
-#include <newsflash/warnpop.h>
-#include "../session.h"
-#include "../buffer.h"
+#include "newsflash/warnpop.h"
+
+#include "engine/session.h"
+#include "engine/buffer.h"
 
 namespace nf = newsflash;
 
@@ -63,7 +64,7 @@ void unit_test_init_session_success()
     session.start();
 
     session.send_next();
-    BOOST_REQUIRE(output == ""); 
+    BOOST_REQUIRE(output == "");
     set(incoming, "200 welcome posting allowed\r\n");
     session.recv_next(incoming, tmp);
 
@@ -145,7 +146,7 @@ void unit_test_init_session_success_caps()
     session.send_next();
     BOOST_REQUIRE(output == "MODE READER\r\n");
     set(incoming, "200 posting allowed\r\n");
-    session.recv_next(incoming, tmp);    
+    session.recv_next(incoming, tmp);
 
     BOOST_REQUIRE(!session.pending()); // done;
     BOOST_REQUIRE(session.has_gzip_compress() == false);
@@ -218,7 +219,7 @@ void unit_test_change_group()
 
     session.change_group("alt.binaries.foo");
     session.send_next();
-    BOOST_REQUIRE(output == "GROUP alt.binaries.foo\r\n");    
+    BOOST_REQUIRE(output == "GROUP alt.binaries.foo\r\n");
     set(incoming, "211 4 1 4 alt.binaries.foo group succesfully selected\r\n");
     session.recv_next(incoming, tmp);
 
@@ -229,7 +230,7 @@ void unit_test_change_group()
     BOOST_REQUIRE(tmp.content_type() == nf::buffer::type::groupinfo);
     BOOST_REQUIRE(tmp.content_status() == nf::buffer::status::success);
     BOOST_REQUIRE(tmp.content_length() == std::strlen("211 4 1 4 alt.binaries.foo group succesfully selected\r\n"));
-    BOOST_REQUIRE(!std::strncmp(tmp.content(), 
+    BOOST_REQUIRE(!std::strncmp(tmp.content(),
         "211 4 1 4 alt.binaries.foo group succesfully selected\r\n", tmp.content_length()));
 }
 
@@ -302,7 +303,7 @@ void unit_test_retrieve_article()
     }
 
     // pipelining
-    { 
+    {
         nf::buffer incoming(1024);
         nf::buffer content(1024);
 

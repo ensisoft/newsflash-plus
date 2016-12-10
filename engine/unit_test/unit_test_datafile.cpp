@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -18,14 +18,17 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <newsflash/config.h>
-#include <newsflash/warnpush.h>
+#include "newsflash/config.h"
+
+#include "newsflash/warnpush.h"
 #  include <boost/test/minimal.hpp>
-#include <newsflash/warnpop.h>
+#include "newsflash/warnpop.h"
 #include <thread>
+
+#include "engine/datafile.h"
+#include "engine/threadpool.h"
 #include "unit_test_common.h"
-#include "../datafile.h"
-#include "../threadpool.h"
+
 
 namespace nf = newsflash;
 
@@ -37,26 +40,26 @@ void unit_test_overwrite()
     // rename file to resolve collision when overwrite is false
     {
         nf::datafile file("", "datafile", 0, true, false);
-        BOOST_REQUIRE(file.name() == "datafile");
-        BOOST_REQUIRE(file.path() == "");
+        BOOST_REQUIRE(file.filename() == "datafile");
+        BOOST_REQUIRE(file.filepath() == "");
         BOOST_REQUIRE(file_exists("datafile"));
 
         nf::datafile second("", "datafile", 0, true, false);
-        BOOST_REQUIRE(second.name() == "(2) datafile");
-        BOOST_REQUIRE(second.path() == "");
+        BOOST_REQUIRE(second.filename() == "(2) datafile");
+        BOOST_REQUIRE(second.filepath() == "");
         BOOST_REQUIRE(file_exists("(2) datafile"));
     }
 
     // overwrite existing file
     {
         nf::datafile file("", "datafile", 0, true, true);
-        BOOST_REQUIRE(file.name() == "datafile");
+        BOOST_REQUIRE(file.filename() == "datafile");
         BOOST_REQUIRE(file_exists("datafile"));
     }
 
 
     delete_file("datafile");
-    delete_file("(2) datafile");    
+    delete_file("(2) datafile");
 }
 
 void unit_test_append()
@@ -71,7 +74,7 @@ void unit_test_append()
 
     // open again for append
     {
-//        newsflash::datafile file("", "datafile", 0, false, false, true); 
+//        newsflash::datafile file("", "datafile", 0, false, false, true);
 //        BOOST_REQUIRE(file.name() == "datafile");
     }
 
@@ -80,7 +83,7 @@ void unit_test_append()
 
 void unit_test_discard()
 {
-    delete_file("datafile"); 
+    delete_file("datafile");
 
     // single threaded discard
     {
@@ -89,12 +92,12 @@ void unit_test_discard()
             BOOST_REQUIRE(file_exists("datafile"));
             file.discard_on_close();
         }
-        BOOST_REQUIRE(!file_exists("datafile"));        
+        BOOST_REQUIRE(!file_exists("datafile"));
     }
 
     // discard while pending actions
     {
-        // prepare some write actions 
+        // prepare some write actions
         nf::threadpool threads(4);
 
         threads.on_complete = [&](nf::action* a) {
@@ -113,13 +116,13 @@ void unit_test_discard()
             threads.submit(new nf::datafile::write(0, buff, file));
             threads.submit(new nf::datafile::write(0, buff, file));
             threads.submit(new nf::datafile::write(0, buff, file));
-            file->discard_on_close();        
+            file->discard_on_close();
             threads.submit(new nf::datafile::write(0, buff, file));
-            threads.submit(new nf::datafile::write(0, buff, file));        
-            file.reset();                                
+            threads.submit(new nf::datafile::write(0, buff, file));
+            file.reset();
 
-            threads.wait_all_actions();            
-            BOOST_REQUIRE(!file_exists("datafile"));            
+            threads.wait_all_actions();
+            BOOST_REQUIRE(!file_exists("datafile"));
         }
 
         threads.shutdown();

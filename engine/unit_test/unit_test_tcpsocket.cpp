@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -20,16 +20,17 @@
 
 //#include <boost/test/minimal.hpp>
 
-#include <newsflash/config.h>
+#include "newsflash/config.h"
 
-#include <newsflash/test_minimal.h>
+#include "test_minimal.h"
 
 #include <thread>
 #include <chrono>
-#include "../socketapi.h"
-#include "../tcpsocket.h"
-#include "../types.h"
-#include "../platform.h"
+
+#include "engine/socketapi.h"
+#include "engine/tcpsocket.h"
+#include "engine/types.h"
+#include "engine/platform.h"
 #include "unit_test_common.h"
 
 #if defined(LINUX_OS)
@@ -57,7 +58,7 @@ native_socket_t openhost(int& port)
         if (ret != OS_SOCKET_ERROR)
             break;
 
-        TEST_MESSAGE("bind failed on port %d\n", port);        
+        TEST_MESSAGE("bind failed on port %d\n", port);
 
         ++port;
     }
@@ -116,7 +117,7 @@ void test_connection_success()
 
     // allocate buffers of various sizes and transfer them
     struct buffer {
-        int   len;        
+        int   len;
         char* data;
         char* buff;
     } buffers[] = {
@@ -142,14 +143,14 @@ void test_connection_success()
         // send from host to client
         int sent = 0;
         int recv = 0;
-        do 
+        do
         {
             if (sent != buff.len)
             {
                 auto handle = client.wait(false, true);
                 newsflash::wait(handle);
-                TEST_REQUIRE(handle.write());                
-            
+                TEST_REQUIRE(handle.write());
+
                 int ret = client.sendsome(buff.data + sent, buff.len - sent);
                 sent += ret;
 
@@ -166,7 +167,7 @@ void test_connection_success()
 
                 TEST_MESSAGE("recv %d bytes", recv);
             }
-        } 
+        }
         while ((sent != buff.len) || (recv != buff.len));
 
         TEST_REQUIRE(!std::memcmp(buff.data, buff.buff, buff.len));
@@ -175,7 +176,7 @@ void test_connection_success()
     }
 
     for (auto& buff : buffers)
-    {        
+    {
         delete [] buff.data;
         delete [] buff.buff;
     }

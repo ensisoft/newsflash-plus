@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -18,12 +18,16 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <newsflash/config.h>
+#include "newsflash/config.h"
 
-#include <boost/test/minimal.hpp>
+#include "newsflash/warnpush.h"
+#  include <boost/test/minimal.hpp>
+#include "newsflash/warnpop.h"
+
 #include <vector>
 #include <algorithm>
-#include "../filebuf.h"
+
+#include "engine/filebuf.h"
 #include "unit_test_common.h"
 
 std::size_t MB(double m)
@@ -42,7 +46,7 @@ void test_read_write()
 
     struct block {
         std::size_t size;
-        unsigned char value;        
+        unsigned char value;
     } blocks [] = {
         {KB(1), 0xaa},
         {KB(2.5), 0xbb},
@@ -66,7 +70,7 @@ void test_read_write()
             offset += b->size;
             std::cout << "wrote: " <<  b->size << " bytes" << std::endl;
             r.flush();
-        }        
+        }
     }
 
     // open and read

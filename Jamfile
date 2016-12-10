@@ -26,6 +26,7 @@
 import os ;
 import path ;
 import qt ;
+import testing ;
 
 # set these paths to to point to the relevant SDK locations.
 path-constant QT_PATH       : "third_party/qt-4.8.6" ;
@@ -38,7 +39,7 @@ using qt : $(QT_PATH) ;
 # bring stuff into scope so that it's usable in subprojects
 
 use-project /boost/ : $(BOOST_PATH) ;
-use-project engine  : "engine" ;
+#use-project engine  : "engine" ;
 
 project newsflash
 :
@@ -141,6 +142,61 @@ if [ os.name ] = LINUX
 # compression library
 lib zlib   : : <name>zlib <search>"third_party/zlib/lib" ;
 
+# engine library
+lib engine :
+    [ glob engine/*.cpp ]
+    engine/session.pb.cc
+
+    /boost//filesystem/<link>static
+    /boost//system/<link>static
+    /boost//thread/<link>static
+    /boost//regex/<link>static
+    protobuf/<link>static
+
+    zlib/<link>shared
+    openssl/<link>shared
+    crypto/<link>shared
+:
+<link>static
+;
+
+# build engine unit tests
+unit-test unit_test_utf8               : engine/unit_test/unit_test_utf8.cpp        engine/<link>static ;
+unit-test unit_test_uuencode           : engine/unit_test/unit_test_uuencode.cpp    engine/<link>static ;
+unit-test unit_test_yenc               : engine/unit_test/unit_test_yenc.cpp        engine/<link>static ;
+unit-test unit_test_session            : engine/unit_test/unit_test_session.cpp     engine/<link>static ;
+unit-test unit_test_buffer             : engine/unit_test/unit_test_buffer.cpp      engine/<link>static ;
+unit-test unit_test_threadpool         : engine/unit_test/unit_test_threadpool.cpp  engine/<link>static ;
+unit-test unit_test_event              : engine/unit_test/unit_test_event.cpp       engine/<link>static ;
+unit-test unit_test_tcpsocket          : engine/unit_test/unit_test_tcpsocket.cpp   engine/<link>static ;
+unit-test unit_test_sslsocket          : engine/unit_test/unit_test_sslsocket.cpp   engine/<link>static ;
+unit-test unit_test_listing            : engine/unit_test/unit_test_listing.cpp     engine/<link>static ;
+unit-test unit_test_download           : engine/unit_test/unit_test_download.cpp    engine/<link>static ;
+unit-test unit_test_update             : engine/unit_test/unit_test_update.cpp      engine/<link>static ;
+unit-test unit_test_stringtable        : engine/unit_test/unit_test_stringtable.cpp engine/<link>static ;
+unit-test unit_test_datafile           : engine/unit_test/unit_test_datafile.cpp    engine/<link>static ;
+unit-test unit_test_catalog            : engine/unit_test/unit_test_catalog.cpp     engine/<link>static ;
+unit-test unit_test_index              : engine/unit_test/unit_test_index.cpp       engine/<link>static ;
+unit-test unit_test_cmdlist            : engine/unit_test/unit_test_cmdlist.cpp     engine/<link>static ;
+unit-test unit_test_nntp               : engine/unit_test/unit_test_nntp.cpp        engine/<link>static ;
+unit-test unit_test_linebuffer         : engine/unit_test/unit_test_linebuffer.cpp  engine/<link>static ;
+unit-test unit_test_bigfile            : engine/unit_test/unit_test_bigfile.cpp     engine/<link>static ;
+unit-test unit_test_filemap            : engine/unit_test/unit_test_filemap.cpp     engine/<link>static ;
+unit-test unit_test_filebuf            : engine/unit_test/unit_test_filebuf.cpp     engine/<link>static ;
+unit-test unit_test_bodyiter           : engine/unit_test/unit_test_bodyiter.cpp    engine/<link>static ;
+unit-test unit_test_decode             : engine/unit_test/unit_test_decode.cpp      engine/<link>static ;
+unit-test unit_test_filetype           : engine/unit_test/unit_test_filetype.cpp    engine/<link>static ;
+unit-test unit_test_throttle           : engine/unit_test/unit_test_throttle.cpp    engine/<link>static ;
+unit-test unit_test_engine             : engine/unit_test/unit_test_engine.cpp      engine/<link>static ;
+
+
+# this is a dummy server used by some of the test cases.
+exe server : engine/unit_test/server.cpp engine/<link>static ;
+
+# in order to run this unit test you must be running the test server
+unit-test unit_test_connection         : engine/unit_test/unit_test_connection.cpp  engine/<link>static ;
+
+
 exe newsflash :
   [ glob app/*.h       ]
   [ glob app/*.cpp     ]
@@ -158,17 +214,12 @@ exe newsflash :
   tools/keygen/keygen.cpp
   stringlib/string.cpp
 
-  /boost//filesystem/<link>static
-  /boost//system/<link>static
-  /boost//regex/<link>static
-
   /qt//QtCore
   /qt//QtGui
   /qt//QtNetwork
   /qt//QtXml
 
   qjson
-  protobuf/<link>static
   engine/<link>static
   :
   # see comments in the project properties.

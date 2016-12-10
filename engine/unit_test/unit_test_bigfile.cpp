@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -18,14 +18,17 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <newsflash/config.h>
-#include <newsflash/warnpush.h>
+#include "newsflash/config.h"
+
+#include "newsflash/warnpush.h"
 #  include <boost/filesystem/operations.hpp>
 #  include <boost/test/minimal.hpp>
-#include <newsflash/warnpop.h>
+#include "newsflash/warnpop.h"
+
 #include <iostream>
+
+#include "engine/bigfile.h"
 #include "unit_test_common.h"
-#include "../bigfile.h"
 
 namespace fs = boost::filesystem;
 
@@ -51,11 +54,11 @@ void test_file_open()
 
         file.open("test0.file", newsflash::bigfile::o_create);
         BOOST_REQUIRE(file.is_open());
-        BOOST_REQUIRE(file.size() == 0);        
+        BOOST_REQUIRE(file.size() == 0);
         file.close();
 
         delete_file("test0.file");
-    }    
+    }
 
     // try opening an existing file
     {
@@ -91,7 +94,7 @@ void test_file_open()
         REQUIRE_EXCEPTION(file.open("."));
 
 #if defined(LINUX_OS)
-        REQUIRE_EXCEPTION(file.open("/dev/mem")); // no permission 
+        REQUIRE_EXCEPTION(file.open("/dev/mem")); // no permission
 #elif defined(WINDOWS_OS)
         REQUIRE_EXCEPTION(file.open("\\\foobar\file"));
 #endif
@@ -175,13 +178,13 @@ void test_large_file()
 
     BOOST_REQUIRE(newsflash::bigfile::size("test2.file").second == big_t(0xffffffffL) + sizeof(buff));
 
-    delete_file("test2.file");    
+    delete_file("test2.file");
 }
 
 void test_unicode_filename()
 {
 #if defined(WINDOWS_OS)
-    // わたしわさみ    
+    // わたしわさみ
     //const char* utf8 = u8"\u308f\u305f\u3057\u308f\u3055\u307f";
     const char utf8[] = {0xe3, 0x82, 0x8f, 0xe3, 0x81, 0x9f, 0xe3, 0x81, 0x97, 0xe3, 0x82, 0x8f, 0xe3, 0x81, 0x95, 0xe3, 0x81, 0xbf, 0};
 
@@ -209,11 +212,11 @@ void print_err(const std::error_code& err)
 //     BOOST_REQUIRE(err == std::errc::no_such_file_or_directory);
 
 // #if defined(LINUX_OS)
-//     print_err(file.open("/dev/mem")); // no permission 
+//     print_err(file.open("/dev/mem")); // no permission
 // #elif defined(WINDOWS_OS)
 //     print_err(file.open("\\\foobar\\file"));
 // #endif
-    
+
 // }
 
 void test_static_methods()

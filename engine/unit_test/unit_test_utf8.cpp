@@ -21,15 +21,18 @@
 //  THE SOFTWARE.
 
 
-#include <newsflash/config.h>
-#include <newsflash/warnpush.h>
+#include "newsflash/config.h"
+
+#include "newsflash/warnpush.h"
 #  include <boost/test/minimal.hpp>
-#include <newsflash/warnpop.h>
+#include "newsflash/warnpop.h"
+
 #include <cstdint>
 #include <vector>
 #include <iterator>
 #include <string>
-#include "../utf8.h"
+
+#include "engine/utf8.h"
 
 using namespace std;
 

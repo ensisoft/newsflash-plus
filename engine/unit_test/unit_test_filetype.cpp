@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -18,9 +18,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <newsflash/config.h>
-#include <boost/test/minimal.hpp>
-#include "../filetype.h"
+#include "newsflash/config.h"
+
+#include "newsflash/warnpush.h"
+#  include <boost/test/minimal.hpp>
+#include "newsflash/warnpop.h"
+
+#include "engine/filetype.h"
 
 int test_main(int, char*[])
 {
@@ -30,10 +34,10 @@ int test_main(int, char*[])
     BOOST_REQUIRE(n::find_filetype("agajlasg.asd") == t::other);
     BOOST_REQUIRE(n::find_filetype("foobar.png") == t::image);
     BOOST_REQUIRE(n::find_filetype("foobar.PNG") == t::image);
-    BOOST_REQUIRE(n::find_filetype("foobar.mp4") == t::video);    
+    BOOST_REQUIRE(n::find_filetype("foobar.mp4") == t::video);
     BOOST_REQUIRE(n::find_filetype("foobar.r00") == t::archive);
-    BOOST_REQUIRE(n::find_filetype("foobar.r59") == t::archive);    
-    BOOST_REQUIRE(n::find_filetype("foobar.rar") == t::archive);        
+    BOOST_REQUIRE(n::find_filetype("foobar.r59") == t::archive);
+    BOOST_REQUIRE(n::find_filetype("foobar.rar") == t::archive);
     BOOST_REQUIRE(n::find_filetype("foobar.mpeg") == t::video);
     BOOST_REQUIRE(n::find_filetype("foobar.part001.rar") == t::archive);
     BOOST_REQUIRE(n::find_filetype("Battlefield_Bad_Company_2_NTSC_XBOX360-CCCLX_packed.exe") == t::other);

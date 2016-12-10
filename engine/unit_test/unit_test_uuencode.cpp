@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -18,21 +18,21 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#if defined(_MSC_VER)
-#  define NOMINMAX
-#  define _CRT_SECURE_NO_WARNINGS
-#  define _SCL_SECURE_NO_WARNINGS
-#endif
+#include "newsflash/config.h"
 
-#include <boost/test/minimal.hpp>
+#include "newsflash/warnpush.h"
+#  include <boost/test/minimal.hpp>
+#include "newsflash/warnpop.h"
+
 #include <fstream>
 #include <iterator>
 #include <iostream>
 #include <vector>
 #include <string>
 #include <algorithm>
+
+#include "engine/uuencode.h"
 #include "unit_test_common.h"
-#include "../uuencode.h"
 
 namespace uue = uuencode;
 
@@ -45,13 +45,13 @@ void test_encode()
 
     std::ifstream src;
     std::ifstream ref;
-    
+
     src.open("test_data/newsflash_2_0_0.png", std::ios::binary);
     ref.open("test_data/newsflash_2_0_0.uuencode", std::ios::binary);
 
     BOOST_REQUIRE(src.is_open());
     BOOST_REQUIRE(ref.is_open());
-    
+
     std::vector<char> buff;
 
     uue::begin_encoding("644", "test", std::back_inserter(buff));
@@ -64,13 +64,13 @@ void test_encode()
     // out.close();
 
     std::vector<char> orig;
-    std::copy(std::istreambuf_iterator<char>(ref), std::istreambuf_iterator<char>(), 
+    std::copy(std::istreambuf_iterator<char>(ref), std::istreambuf_iterator<char>(),
         std::back_inserter(orig));
-    
+
     BOOST_REQUIRE(orig.size() == buff.size());
     BOOST_REQUIRE(std::memcmp(&orig[0], &buff[0], orig.size()) == 0);
 
-    delete_file("newsflash_2_0_0.uuencode");    
+    delete_file("newsflash_2_0_0.uuencode");
 }
 
 // Synopsis: UUDecode text file and compared the output to the original binary.
@@ -79,13 +79,13 @@ void test_decode()
 {
     std::ifstream src;
     std::ifstream ref;
-    
+
     src.open("test_data/newsflash_2_0_0.uuencode", std::ios::binary);
     ref.open("test_data/newsflash_2_0_0.png", std::ios::binary);
-    
+
     BOOST_REQUIRE(src.is_open());
     BOOST_REQUIRE(ref.is_open());
-    
+
     std::istreambuf_iterator<char> beg(src);
     std::istreambuf_iterator<char> end;
 
@@ -93,21 +93,21 @@ void test_decode()
     BOOST_REQUIRE(header.first);
     BOOST_REQUIRE(header.second.file == "test");
     BOOST_REQUIRE(header.second.mode == "644");
-    
+
     std::vector<char> buff;
     BOOST_REQUIRE(uue::decode(beg, end, std::back_inserter(buff)));
     BOOST_REQUIRE(*beg == '`'); // points to the end
 
     BOOST_REQUIRE(uue::parse_end(beg, end));
     // BOOST_REQUIRE(beg == end);
-    
+
     std::vector<char> orig;
-    std::copy(std::istreambuf_iterator<char>(ref), std::istreambuf_iterator<char>(), 
+    std::copy(std::istreambuf_iterator<char>(ref), std::istreambuf_iterator<char>(),
         std::back_inserter(orig));
-    
+
     BOOST_REQUIRE(orig.size() == buff.size());
     BOOST_REQUIRE(memcmp(&orig[0], &buff[0], orig.size()) == 0);
-    
+
 }
 
 // test various header lines
@@ -118,7 +118,7 @@ void test_parse_begin()
     const char* str3 = "begin 655 diu dau.png"; // broken sort of
     const char* str4 = "beg in foobar 655\r\n";
     const char* str5 = "";
-    
+
     {
         const char* str = str1;
         auto ret = uue::parse_begin(str, str1+strlen(str1));
@@ -127,11 +127,11 @@ void test_parse_begin()
         BOOST_REQUIRE(ret.second.mode == "655");
         BOOST_REQUIRE(ret.second.file == "diu dau.png");
     }
-    
+
     {
         const char* str = str2;
         auto ret = uue::parse_begin(str, str2+strlen(str2));
-        
+
         BOOST_REQUIRE(str == str2+strlen(str2));
         BOOST_REQUIRE(ret.second.mode == "655");
         BOOST_REQUIRE(ret.second.file == "diu dau.png");
@@ -140,12 +140,12 @@ void test_parse_begin()
     {
         const char* str = str3;
         auto ret = uue::parse_begin(str, str3+strlen(str3));
-        
+
         BOOST_REQUIRE(str == str3+strlen(str3));
         BOOST_REQUIRE(ret.second.mode == "655");
         BOOST_REQUIRE(ret.second.file == "diu dau.png");
     }
-    
+
     {
         const char* str = str4;
         auto ret = uue::parse_begin(str, str4+strlen(str4));
@@ -153,11 +153,11 @@ void test_parse_begin()
         //BOOST_REQUIRE(str == str4);
         BOOST_REQUIRE(ret.first == false);
     }
-    
+
     {
         const char* str = str5;
         auto ret = uue::parse_begin(str, str5+strlen(str5));
-        
+
         BOOST_REQUIRE(ret.first == false);
 
     }
@@ -175,13 +175,13 @@ void test_stop_decode()
                           "----== Posted via Newsfeeds.Com - Unlimited-Unrestricted-Secure Usenet News==----\r\n"\
                           "http://www.newsfeeds.com The #1 Newsgroup Service in the World! 120,000+ Newsgroups\r\n"\
                           "----= East and West-Coast Server Farms - Total Privacy via Encryption =----\r\n";
-    
+
         const char* beg = str;
         const char* end = str + std::strlen(str);
 
         std::vector<char> buff;
         uuencode::decode(beg, end, std::back_inserter(buff));
-    
+
         BOOST_REQUIRE(!std::strncmp(beg, "\r\n----== Posted via Newsfeeds.com", 20));
     }
 

@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -18,13 +18,14 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <newsflash/config.h>
-#include <newsflash/warnpush.h>
-#  include <boost/test/minimal.hpp>
-#include <newsflash/warnpop.h>
+#include "newsflash/config.h"
 
-#include "../cmdlist.h"
-#include "../session.h"
+#include "newsflash/warnpush.h"
+#  include <boost/test/minimal.hpp>
+#include "newsflash/warnpop.h"
+
+#include "engine/cmdlist.h"
+#include "engine/session.h"
 
 namespace nf = newsflash;
 
@@ -176,12 +177,12 @@ void unit_test_refill()
     session.recv_next(recv, b1);
     session.recv_next(recv, b2);
     session.recv_next(recv, b3);
-    session.recv_next(recv, b4);            
+    session.recv_next(recv, b4);
 
     list.receive_data_buffer(std::move(b1));
     list.receive_data_buffer(std::move(b2));
     list.receive_data_buffer(std::move(b3));
-    list.receive_data_buffer(std::move(b4));            
+    list.receive_data_buffer(std::move(b4));
 
     using status = nf::buffer::status;
 
@@ -190,7 +191,7 @@ void unit_test_refill()
         BOOST_REQUIRE(buffers[0].content_status() == status::success);
         BOOST_REQUIRE(buffers[1].content_status() == status::success);
         BOOST_REQUIRE(buffers[2].content_status() == status::unavailable);
-        BOOST_REQUIRE(buffers[3].content_status() == status::unavailable);        
+        BOOST_REQUIRE(buffers[3].content_status() == status::unavailable);
     }
 
     command = "";
@@ -216,8 +217,8 @@ void unit_test_refill()
         BOOST_REQUIRE(buffers[0].content_status() == status::success);
         BOOST_REQUIRE(buffers[1].content_status() == status::success);
         BOOST_REQUIRE(buffers[2].content_status() == status::success);
-        BOOST_REQUIRE(buffers[3].content_status() == status::dmca);        
-    
+        BOOST_REQUIRE(buffers[3].content_status() == status::dmca);
+
         BOOST_REQUIRE(buffers[0] == "hello\r\n.\r\n");
         BOOST_REQUIRE(buffers[1] == "foo\r\n.\r\n");
         BOOST_REQUIRE(buffers[2] == "adrvardk\r\n.\r\n");

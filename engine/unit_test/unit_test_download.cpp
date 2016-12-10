@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -18,18 +18,21 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <newsflash/config.h>
-#include <newsflash/warnpush.h>
+#include "newsflash/config.h"
+
+#include "newsflash/warnpush.h"
 #  include <boost/test/minimal.hpp>
 #  include <boost/lexical_cast.hpp>
 #  include <boost/filesystem.hpp>
-#include <newsflash/warnpop.h>
+#include "newsflash/warnpop.h"
+
 #include <thread>
-#include "../download.h"
-#include "../action.h"
-#include "../session.h"
-#include "../cmdlist.h"
-#include "../settings.h"
+
+#include "engine/download.h"
+#include "engine/action.h"
+#include "engine/session.h"
+#include "engine/cmdlist.h"
+#include "engine/settings.h"
 #include "unit_test_common.h"
 
 namespace nf = newsflash;
@@ -47,7 +50,7 @@ void unit_test_create_cmds()
     nf::download download({"alt.binaries.foobar"}, articles, "", "test");
     nf::session session;
     session.on_send = [&](const std::string& cmd) {
-        BOOST_REQUIRE(cmd == "BODY " + 
+        BOOST_REQUIRE(cmd == "BODY " +
             boost::lexical_cast<std::string>(cmd_number) + "\r\n");
         ++cmd_number;
     };
@@ -103,7 +106,7 @@ void unit_test_decode_yenc()
     const auto& ref = read_file_contents("test_data/1489406.jpg");
     BOOST_REQUIRE(jpg == ref);
 
-    delete_file("1489406.jpg");    
+    delete_file("1489406.jpg");
 }
 
 // unit test case for Issue #32
@@ -118,7 +121,7 @@ void unit_test_decode_yenc_bug_32()
     auto cmdlist = download.create_commands();
 
     cmdlist->submit_data_commands(session);
-    cmdlist->receive_data_buffer(read_file_buffer("test_data/wallpaper.jpg-002.yenc"));    
+    cmdlist->receive_data_buffer(read_file_buffer("test_data/wallpaper.jpg-002.yenc"));
     cmdlist->receive_data_buffer(read_file_buffer("test_data/wallpaper.jpg-001.yenc"));
 
     std::vector<std::unique_ptr<nf::action>> actions1;
@@ -139,7 +142,7 @@ void unit_test_decode_yenc_bug_32()
     download.commit();
 
     const auto& jpg = read_file_contents("02252012paul-10w(WallPaperByPaul)[1280X800].jpg");
-    const auto& ref = read_file_contents("test_data/wallpaper.jpg");    
+    const auto& ref = read_file_contents("test_data/wallpaper.jpg");
     BOOST_REQUIRE(jpg == ref);
 
     delete_file("02252012paul-10w(WallPaperByPaul)[1280X800].jpg");
@@ -156,7 +159,7 @@ void unit_test_decode_uuencode()
     auto cmdlist = download.create_commands();
 
     cmdlist->submit_data_commands(session);
-    cmdlist->receive_data_buffer(read_file_buffer("test_data/1489406.jpg-003.uuencode"));    
+    cmdlist->receive_data_buffer(read_file_buffer("test_data/1489406.jpg-003.uuencode"));
     cmdlist->receive_data_buffer(read_file_buffer("test_data/1489406.jpg-001.uuencode"));
     cmdlist->receive_data_buffer(read_file_buffer("test_data/1489406.jpg-002.uuencode"));
 
@@ -179,9 +182,9 @@ void unit_test_decode_uuencode()
 
     const auto& jpg = read_file_contents("1489406.jpg");
     const auto& ref = read_file_contents("test_data/1489406.jpg");
-    BOOST_REQUIRE(jpg == ref);    
+    BOOST_REQUIRE(jpg == ref);
 
-    delete_file("1489406.jpg");        
+    delete_file("1489406.jpg");
 
 }
 
@@ -192,7 +195,7 @@ void unit_test_decode_from_files()
 {
     namespace fs = boost::filesystem;
 
-    //nf::download 
+    //nf::download
     std::vector<std::string> articles;
 
     for (auto it = fs::directory_iterator("test_data/r09"); it != fs::directory_iterator(); ++it)
@@ -228,7 +231,7 @@ void unit_test_decode_from_files()
         for (auto& dec : decodes)
         {
             dec->perform();
-            std::vector<std::unique_ptr<nf::action>> writes;            
+            std::vector<std::unique_ptr<nf::action>> writes;
             download.complete(*dec, writes);
             for (auto& io : writes)
                 io->perform();
@@ -243,7 +246,7 @@ int test_main(int, char*[])
     unit_test_create_cmds();
     unit_test_decode_yenc();
     unit_test_decode_yenc_bug_32();
-    unit_test_decode_uuencode();    
+    unit_test_decode_uuencode();
     unit_test_decode_text();
     unit_test_decode_from_files();
     return 0;

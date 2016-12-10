@@ -18,20 +18,22 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <newsflash/config.h>
-#include <newsflash/warnpush.h>
-#include <boost/test/minimal.hpp>
-#include <newsflash/warnpop.h>
-#include "../update.h"
-#include "../cmdlist.h"
-#include "../session.h"
-#include "../buffer.h"
-#include "../nntp.h"
-#include "../filesys.h"
-#include "../filemap.h"
-#include "../catalog.h"
-#include "../index.h"
-#include "../idlist.h"
+#include "newsflash/config.h"
+
+#include "newsflash/warnpush.h"
+#  include <boost/test/minimal.hpp>
+#include "newsflash/warnpop.h"
+
+#include "engine/update.h"
+#include "engine/cmdlist.h"
+#include "engine/session.h"
+#include "engine/buffer.h"
+#include "engine/nntp.h"
+#include "engine/filesys.h"
+#include "engine/filemap.h"
+#include "engine/catalog.h"
+#include "engine/index.h"
+#include "engine/idlist.h"
 #include "unit_test_common.h"
 
 void unit_test_ranges()
