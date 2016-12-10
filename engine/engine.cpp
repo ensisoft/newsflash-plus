@@ -18,7 +18,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <newsflash/config.h>
+#include "newsflash/config.h"
+
+#include "newsflash/warnpush.h"
+#  include "engine.pb.h"
+#include "newsflash/warnpop.h"
 
 #include <algorithm>
 #include <numeric> // for accumulate
@@ -45,7 +49,6 @@
 #include "listing.h"
 #include "update.h"
 #include "throttle.h"
-#include "session.pb.h"
 #include "sslcontext.h"
 #include "encoding.h"
 #include "nntp.h"
@@ -758,7 +761,7 @@ public:
         LOG_I("Task ", ui_.task_id, "( ", ui_.desc, ") created");
     }
 
-    task(const Newsflash::Session::Download& spec) : task(spec.task_id())
+    task(const data::Download& spec) : task(spec.task_id())
     {
         ui_.batch_id   = spec.batch_id();
         ui_.account    = spec.account_id();
@@ -800,7 +803,7 @@ public:
         LOG_I("Task ", ui_.task_id, " deleted");
     }
 
-    void serialize(Newsflash::Session::TaskList& list)
+    void serialize(data::TaskList& list)
     {
         if (ui_.state == states::error || ui_.state == states::complete)
             return;
@@ -1489,7 +1492,7 @@ public:
         statesets_[(int)states::queued] = num_tasks_;
     }
 
-    batch(const Newsflash::Session::Batch& data) : batch(0)
+    batch(const data::Batch& data) : batch(0)
     {
         ui_.batch_id   = data.batch_id();
         ui_.task_id    = data.batch_id();
@@ -1509,7 +1512,7 @@ public:
         LOG_I("Batch ", ui_.batch_id, " deleted");
     }
 
-    void serialize(Newsflash::Session::TaskList& list)
+    void serialize(data::TaskList& list)
     {
         if (ui_.state == states::complete || ui_.state == states::error)
             return;
@@ -2350,9 +2353,9 @@ void engine::save_session(const std::string& file)
     std::ofstream out(file, std::ios::out | std::ios::binary | std::ios::trunc);
 #endif
     if (!out.is_open())
-        throw std::system_error(errno, std::generic_category(), "failed to save engine session in: " + file);
+        throw std::system_error(errno, std::generic_category(), "failed to sdata in: " + file);
 
-    Newsflash::Session::TaskList list;
+    data::TaskList list;
 
     for (const auto& acc : state_->accounts)
     {
@@ -2401,9 +2404,9 @@ void engine::load_session(const std::string& file)
     std::ifstream in(file, std::ios::in | std::ios::binary);
 #endif
     if (!in.is_open())
-        throw std::system_error(errno, std::generic_category(), "failed to load engine session from: " + file);
+        throw std::system_error(errno, std::generic_category(), "failed to ldata from: " + file);
 
-    Newsflash::Session::TaskList list;
+    data::TaskList list;
     if (!list.ParseFromIstream(&in))
         throw std::runtime_error("engine parse from stream failed");
 

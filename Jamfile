@@ -145,7 +145,7 @@ lib zlib   : : <name>zlib <search>"third_party/zlib/lib" ;
 # engine library
 lib engine :
     [ glob engine/*.cpp ]
-    engine/session.pb.cc
+    engine/engine.pb.cc
 
     /boost//filesystem/<link>static
     /boost//system/<link>static
