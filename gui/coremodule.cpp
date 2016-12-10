@@ -26,6 +26,9 @@
 #  include <QtGui/QMessageBox>
 #  include <QDir>
 #include "newsflash/warnpop.h"
+
+#include <cmath>
+
 #include "coremodule.h"
 #include "mainwindow.h"
 #include "app/engine.h"
@@ -91,7 +94,11 @@ void CoreSettings::on_btnBrowseDownloads_clicked()
 
 void CoreSettings::on_sliderThrottle_valueChanged(int val)
 {
-    const auto bytes = val * app::KB(5);
+    //const auto bytes = val * app::KB(5);
+
+    const auto x = (double)val / (double)ui_.sliderThrottle->maximum();
+    const auto y = std::pow(x, 2.5);
+    const auto bytes = app::MB(100) * y;
 
     ui_.editThrottle->setText(app::toString(app::speed{(quint32)bytes}));
 }
@@ -175,17 +182,15 @@ SettingsWidget* CoreModule::getSettings()
     if (!throttle)
         throttle = app::KB(5);
 
-    // simple linear scale. each noch is 5kb.
-    // maximum is 100mb/s
-    const auto bytes = app::MB(10);
-    const auto tick  = app::KB(5);
-    const auto ticks = bytes / tick;
-    const auto numTicks = throttle / tick;
-    ui.sliderThrottle->setMaximum(ticks);
-    ui.sliderThrottle->setMinimum(1);
-    ui.sliderThrottle->setValue(numTicks);
+    const auto y = (double)throttle / (double)app::MB(100);
+    const auto x = std::pow(y, 1.0/2.5);
+    const auto t = 100 * x;
 
-    ui.editThrottle->setText(app::toString(app::speed{(quint32)(numTicks * tick)}));
+    ui.sliderThrottle->setMaximum(99);
+    ui.sliderThrottle->setMinimum(1);
+    ui.sliderThrottle->setValue(t);
+
+    ui.editThrottle->setText(app::toString(app::speed{(quint32)(y * app::MB(100))}));
 
     return ptr;
 }
@@ -249,8 +254,12 @@ void CoreModule::applySettings(SettingsWidget* gui)
     app::g_engine->setDiscardTextContent(discard);
     app::g_engine->setCheckLowDisk(lowdisk);
 
-    const auto tick = ui.sliderThrottle->value();
-    const auto throttle = tick * app::KB(5);
+    const auto tick  = ui.sliderThrottle->value();
+    const auto ticks = ui.sliderThrottle->maximum();
+    const auto x = (double)tick / (double)ticks;
+    const auto y = std::pow(x, 2.5);
+    const auto throttle = y * app::MB(100);
+
     app::g_engine->setThrottleValue(throttle);
 
     DEBUG("Throttle value %1", app::speed{(quint32)throttle});
