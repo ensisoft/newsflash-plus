@@ -152,16 +152,18 @@ bool passSpaceCheck(QWidget* parent,
     const auto& location   = app::g_engine->resolveDownloadPath(downloadPath);
     const auto& mountPoint = app::resolveMountPoint(location);
     const auto freeSpace   = app::getFreeDiskSpace(mountPoint);
-    const auto queuedBytes = app::g_engine->getBytesQueued();
+    const auto queuedBytes = app::g_engine->getBytesQueued(mountPoint);
 
     const auto totalLoad = queuedBytes +
         expectedFinalBinarySize +
         expectedBatchSize;
 
-    DEBUG("Disk partition at %1 has %2 bytes free",
-        mountPoint, app::size { freeSpace });
+    DEBUG("Disk partition at %1 has %2 free and currently has %3 queued",
+        mountPoint, app::size { freeSpace },
+        app::size { queuedBytes });
     DEBUG("Download requires approx. %2 ", app::size { expectedFinalBinarySize +
         expectedBatchSize });
+
 
     if (freeSpace > totalLoad)
         return true;

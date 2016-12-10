@@ -155,6 +155,8 @@ namespace app
             return engine_->get_bytes_queued();
         }
 
+        quint64 getBytesQueued(const QString& mountPoint);
+
         // get the number of bytes currently ready.
         // bytes ready is always a fraction of bytesQueued
         // so if bytesQueued is zero then bytesReady is also zero.

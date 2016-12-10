@@ -45,6 +45,7 @@
 #include "utility.h"
 #include "types.h"
 #include "download.h"
+#include "platform.h"
 
 namespace nf = newsflash;
 namespace ui = newsflash::ui;
@@ -416,6 +417,27 @@ bool Engine::shutdown()
 
     DEBUG("Engine has pending actions");
     return false;
+}
+
+quint64 Engine::getBytesQueued(const QString& mountPoint)
+{
+    quint64 ret = 0;
+
+    std::deque<newsflash::ui::task> tasks;
+
+    engine_->update(tasks);
+
+    for (const auto& task : tasks)
+    {
+        const auto& path  = widen(task.path);
+        const auto& mount = resolveMountPoint(path);
+        if (mount == mountPoint)
+        {
+            ret += task.size * (1.0 - (task.completion/100.0));
+        }
+    }
+
+    return ret;
 }
 
 bool Engine::eventFilter(QObject* object, QEvent* event)
