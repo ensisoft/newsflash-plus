@@ -237,6 +237,24 @@ exe join :
   <toolset>msvc:<linkflags>/SUBSYSTEM:CONSOLE,5.01
 ;
 
+exe keygen : 
+  tools/keygen/main.cpp
+  tools/keygen/keygen.cpp
+  app/webengine.cpp
+  app/webengine.h
+  app/webquery.h
+  app/webquery.cpp
+  app/debug.cpp
+  app/debug.h
+  engine/assert.cpp
+  /qt//QtCore
+  /qt//QtNetwork
+  :
+  <toolset>msvc:<linkflags>/SUBSYSTEM:CONSOLE,5.01
+;
+
+
+
 
 install dist_d : newsflash join
  : <variant>release:<location>dist ;
