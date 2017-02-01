@@ -28,6 +28,7 @@
 #  include <windows.h>
 #  include <DbgHelp.h> // for minidumps
 #  pragma comment(lib, "DbgHelp.lib")
+#  pragma comment(lib, "User32.lib") // for MessageBox, IsGUIThread
 #elif defined(LINUX_OS)
 #  include <execinfo.h>
 #  include <sys/wait.h>
