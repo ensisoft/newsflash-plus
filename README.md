@@ -250,8 +250,8 @@ More information here:
 http://www.tripleboot.org/?p=423
 http://blogs.msdn.com/b/vcblog/archive/2012/10/08/windows-xp-targeting-with-c-in-visual-studio-2012.aspx?Redirected=true
 
-Currently only 32bit build is supported. You'll need Microsoft Visual Studio 2013. 
-Once you've installed visual studio open the VS2013 x86 Native Tools Commmand Prompt.
+Currently only ~~32bit~~ 64bit build is supported. You'll need Microsoft Visual Studio 2013. 
+Once you've installed visual studio open the VS2013 ~~x86~~ x64 Native Tools Commmand Prompt.
 
 Start by cloning the source
 
@@ -274,9 +274,9 @@ Download and extract boost package boost_1_51_0, then build and install boost.bu
     Boost.Build 2011.12-svn
 ```    
 
-Build openssl. Install NASM and ActivePerl. 
+Build openssl. Install ~~NASM and~~ ActivePerl. 
 
-    http://sourceforge.net/projects/nasm/        
+    ~~http://sourceforge.net/projects/nasm/~~        
     http://www.activestate.com/activeperl
 
 Note that openssl does not maintain source code compatibility between versions. And this applies
@@ -287,19 +287,27 @@ Qt seems to want the 1.0.1x series.
     $ set PATH=%PATH%;"c:\Program Files (x86)\NASM\"
     $ set PATH=%PATH%;"c:\Perl64\bin"
     $ cd third_party/openssl
-    $ perl configure VC-WIN32 --prefix="%cd%\sdk"
-    $ ms\do_nasm
+    $ ~~perl configure VC-WIN32 --prefix="%cd%\sdk"~~
+    $ perl configure VC-WIN64A no-asm --prefix="%cd%\sdk"
+    $ ~~ms\do_nasm~~
+    $ ms\do_win64a
     $ notepad ms\ntdll.mak
       * replace LFLAGS /debug with /release
+      * replace MlFLAGS /debug with /release
     $ nmake -f ms\ntdll.mak
     $ nmake -f ms\ntdll.mak install
 ```
 
 Build Qt
 
+The -platform parameter can be used to define the platform "spec". Qt don't bother documenting the available specs, so just have a look 
+inside the source folder mkspecs folder to see what is available. 
+
+Also 64bit build is cleverly supported by the 32bit spec. Just make sure to use x64 native tools command prompt. 
+
 ```
     $ cd third_party/qt-4.8.6
-    $ configure.exe -no-qt3support -no-webkit -debug-and-release -openssl -I "%cd%\..\openssl\sdk\include" -L "%cd%\..\openssl\sdk\lib"
+    $ configure.exe -platform win32-msvc2013 -no-qt3support -no-webkit -debug-and-release -openssl -I "%cd%\..\openssl\sdk\include" -L "%cd%\..\openssl\sdk\lib"
     $ nmake
     $ nmake install
 ```    
@@ -308,17 +316,20 @@ Build zlib
 
 ```
     $ cd third_party/zlib
-    $ bjam release
+    $ bjam release address-model=64
 ```    
 
 
 Build protobuf library
 
 ```
+    ~~
     $ cd third_party/protobuf
     $ cd vsprojects
     $ msbuild protobuf.sln /p:Configuration=Release
     $ msbuild protobuf.sln /P/Configuration=Debug
+    ~~
+    Open the libprotobuf.vcproj in Visual Studio 2013. Then open the configuration manager, and create a new configuration for x86 based on Win32. Then build.
 ```
 
 Build qjson
@@ -327,8 +338,8 @@ NOTE: I have edited the CMakeList.txt to have a custom Qt path.
 
 ``` 
     $ cd third_party/qjson
-    $ cmake -G "Visual Studio 12 2013" 
-    $ msbuild  qjson.sln /p:Configuration=Release
+    $ cmake -G "Visual Studio 12 2013 Win64" 
+    $ msbuild  qjson.sln /p:Configuration=Release /p:Platform=x64
 ```
 
 Build zlib
@@ -344,14 +355,14 @@ Build Par2cmdline
 
 ```
     $ cd tools/par2cmdline
-    $ msbuild par2cmdline.sln /p:Configuration=Release
+    $ msbuild par2cmdline.sln /p:Configuration=Release /p:Platform=x64
 ``` 
 
 Build Unrar
 
 ```
     $ cd tools/unrar
-    $ msbuild UnRAR.vcxproj /p:Configuration=Release
+    $ msbuild UnRAR.vcxproj /p:Configuration=Release /p:Platform=x64
 ```
 
 

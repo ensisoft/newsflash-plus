@@ -114,8 +114,8 @@ if [ os.name ] = NT
   lib crypto  : : <name>libeay32 <search>$(OPENSSL_PATH)/lib ;
 
   # different iterator debug levels. need to link specifically to debug/release versions.
-  lib protobuf : : <variant>debug   <name>libprotobuf <search>"third_party/protobuf/vsprojects/Debug" ;
-  lib protobuf : : <variant>release <name>libprotobuf <search>"third_party/protobuf/vsprojects/Release" ;
+  lib protobuf : : <variant>debug   <name>libprotobuf <search>"third_party/protobuf/vsprojects/x64/Debug" ;
+  lib protobuf : : <variant>release <name>libprotobuf <search>"third_party/protobuf/vsprojects/x64/Release" ;
 
   # this library is LGPL license, so must use as a shared library
   # instead of statically link it.
