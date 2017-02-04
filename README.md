@@ -339,7 +339,8 @@ NOTE: I have edited the CMakeList.txt to have a custom Qt path.
 ``` 
     $ cd third_party/qjson
     $ cmake -G "Visual Studio 12 2013 Win64" 
-    $ msbuild  qjson.sln /p:Configuration=Release /p:Platform=x64
+    $ msbuild qjson.sln /p:Configuration=Release /p:Platform=x64
+    $ msbuild qjson.sln /p:Configuration=Debug /p:Platform=x64
 ```
 
 Build zlib

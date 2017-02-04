@@ -119,7 +119,8 @@ if [ os.name ] = NT
 
   # this library is LGPL license, so must use as a shared library
   # instead of statically link it.
-  lib qjson  : : <name>qjson <search>"third_party/qjson/lib/Release" ;
+  lib qjson : : <variant>release <name>qjson <search>"third_party/qjson/lib/Release" ;
+  lib qjson : : <variant>debug   <name>qjson <search>"third_party/qjson/lib/Debug" ;
 }
 
 if [ os.name ] = LINUX
