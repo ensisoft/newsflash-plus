@@ -85,13 +85,24 @@ namespace newsflash
             return {std::move(buff)};
         }
 
-        std::size_t size() const 
+        std::uint32_t size() const 
         {
             return header_.size;
         }
     private:
+        // this has been some sloppy programming. the header lacks
+        // a version field which makes it unfortunately hard to revise
+        // this data structure. Initially the size has been of type size_t
+        // but now with 32bit legacy we need to fix that to a uint32_t. 
+        // Ideally now that we have 64bit support (on windows also) the 
+        // type should be uint64_t but that creates a problem with the 
+        // existing data since we don't have the version information.
+        // for now we're just going to fix the 32 vs. 64bit issue 
+        // by using a uint32_t and reconsider the versioning later if 
+        // there's a need to support more than 4b parts. 
         struct header {
-            std::size_t size;
+            //std::size_t size;
+            std::uint32_t size;
         };
         header header_;
     };
