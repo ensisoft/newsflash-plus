@@ -254,7 +254,7 @@ exe keygen :
   <toolset>msvc:<linkflags>/SUBSYSTEM:CONSOLE,5.01
 ;
 
-
+explicit keygen ;
 
 
 install dist_d : newsflash join
