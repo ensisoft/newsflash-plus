@@ -35,7 +35,9 @@ std::string recv_command(newsflash::native_socket_t sock)
     const auto bytes = ::recv(sock, &cmd[0], cmd.size(), 0);
     if (bytes < 0)
     {
-        if (errno == ECONNRESET)
+        const auto err = newsflash::get_last_socket_error();
+        if (err == std::errc::connection_reset ||
+            err == std::errc::connection_aborted)
             return "";
         throw std::runtime_error("socket recv errro");
     }
@@ -229,7 +231,7 @@ int main(int argc, char*[])
     for (;;)
     {
         struct sockaddr_in addr = {0};
-        socklen_t len = sizeof(addr);
+        int len = sizeof(addr);
         auto client = ::accept(sock, static_cast<sockaddr*>((void*)&addr), &len);
 
         std::cout << "Got new client connection. Threading...\n";

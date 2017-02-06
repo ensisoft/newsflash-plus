@@ -116,8 +116,16 @@ void complete_socket_connect(native_handle_t handle, native_socket_t sock)
 
 std::error_code get_last_socket_error()
 {
-    return std::error_code(WSAGetLastError(), 
-        std::system_category());
+    const auto code = WSAGetLastError();
+    switch (code)
+    {
+        case WSAECONNABORTED: return std::error_code(ECONNABORTED, std::generic_category());
+        case WSAETIMEDOUT:    return std::error_code(ETIMEDOUT, std::generic_category());
+        case WSAECONNRESET:   return std::error_code(ECONNRESET, std::generic_category());
+        case WSAECONNREFUSED: return std::error_code(ECONNREFUSED, std::generic_category());
+        case WSAEHOSTUNREACH: return std::error_code(EHOSTUNREACH, std::generic_category());
+    }
+    return std::error_code(code, std::system_category());
 }
 
 native_handle_t get_wait_handle(native_socket_t sock)

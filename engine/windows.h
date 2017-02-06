@@ -26,7 +26,7 @@
 #  error this file is only for windows
 #endif
 #include <windows.h>
-#include <winsock.h>
+#include <winsock2.h>
 
 namespace newsflash
 {
