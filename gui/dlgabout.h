@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -37,7 +37,7 @@ namespace gui
         DlgAbout(QWidget* parent) : QDialog(parent)
         {
             ui_.setupUi(this);
-            ui_.lblTitle->setText(QString("%1 %2").arg(NEWSFLASH_TITLE).arg(NEWSFLASH_VERSION));
+            ui_.lblTitle->setText(QString("%1 %2 %3").arg(NEWSFLASH_TITLE).arg(NEWSFLASH_VERSION).arg(NEWSFLASH_ARCH));
             ui_.lblCopyright->setText(QString::fromUtf8(NEWSFLASH_COPYRIGHT));
         }
        ~DlgAbout()
