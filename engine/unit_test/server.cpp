@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -56,7 +56,7 @@ void send_response(newsflash::native_socket_t sock, std::string resp, bool print
 {
     resp.append("\r\n");
     int sent = 0;
-    do 
+    do
     {
         const char* ptr = resp.data() + sent;
         const auto len  = resp.size() - sent;
@@ -64,7 +64,7 @@ void send_response(newsflash::native_socket_t sock, std::string resp, bool print
         if (bytes < 0)
             throw std::runtime_error("socket send error");
         sent += bytes;
-    } while(sent != resp.size());
+    } while(sent != (int)resp.size());
 
     if (print)
     {
@@ -165,7 +165,7 @@ void service_client(newsflash::native_socket_t sock)
         else if (cmd == "BODY 4")
         {
             send_response(sock, "222 body follows");
-            std::string content = 
+            std::string content =
                "here is some textual content\n"
                "first line.\n"
                ". second line starts with a dot\n"
@@ -231,7 +231,11 @@ int main(int argc, char*[])
     for (;;)
     {
         struct sockaddr_in addr = {0};
+    #if defined(WINDOWS_OS)
         int len = sizeof(addr);
+    #else
+        socklen_t len = sizeof(addr);
+    #endif
         auto client = ::accept(sock, static_cast<sockaddr*>((void*)&addr), &len);
 
         std::cout << "Got new client connection. Threading...\n";
