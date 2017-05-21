@@ -525,7 +525,7 @@ void Engine::onTaskComplete(const newsflash::ui::task& t)
         else
         {
             INFO("\"%1\" is complete.", desc);
-            INFO("\"%1\" is complete.", desc);
+            NOTE("\"%1\" is complete.", desc);
         }
     }
 }
@@ -552,13 +552,13 @@ void Engine::onFileComplete(const newsflash::ui::file& f)
 
     if (f.damaged)
     {
-        WARN("\"%1\" is damaged.", file.name);
-        NOTE("\"%1\" is damaged.", file.name);
+        WARN("File \"%1\" is damaged.", file.name);
+        NOTE("File \"%1\" is damaged.", file.name);
     }
     else
     {
-        INFO("\"%1\" is complete.", file.name);
-        NOTE("\"%1\" is complete.", file.name);
+        INFO("File \"%1\" is complete.", file.name);
+        NOTE("File \"%1\" is complete.", file.name);
     }
 
     emit fileCompleted(file);
