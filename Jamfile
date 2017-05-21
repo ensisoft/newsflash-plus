@@ -197,6 +197,8 @@ exe server : engine/unit_test/server.cpp engine/<link>static ;
 # in order to run this unit test you must be running the test server
 unit-test unit_test_connection         : engine/unit_test/unit_test_connection.cpp  engine/<link>static ;
 
+explicit unit_test_connection ;
+
 
 exe newsflash :
   [ glob app/*.h       ]
@@ -238,7 +240,7 @@ exe join :
   <toolset>msvc:<linkflags>/SUBSYSTEM:CONSOLE,5.01
 ;
 
-exe keygen : 
+exe keygen :
   tools/keygen/main.cpp
   tools/keygen/keygen.cpp
   app/webengine.cpp
