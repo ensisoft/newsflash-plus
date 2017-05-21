@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -67,8 +67,8 @@ namespace gui
         MainWindow(app::Settings& settings);
        ~MainWindow();
 
-        void showWindow(); 
-       
+        void showWindow();
+
         // attach a new widget to the mainwindow and display it.
         // ownership of the object remains with the caller.
         // if permanent is true the widget will appear in the View Menu
@@ -84,7 +84,7 @@ namespace gui
         void detachAllWidgets();
 
         void closeWidget(MainWidget* widget);
-        
+
         // load previously stored application/gui state.
         void loadState();
 
@@ -106,8 +106,8 @@ namespace gui
         QString selectSaveNzbFolder();
 
         // select a NZB file for opening.
-        QString selectNzbOpenFile(); 
-        
+        QString selectNzbOpenFile();
+
         // select NZB file for saving data
         QString selectNzbSaveFile(const QString& filename);
 
@@ -116,6 +116,8 @@ namespace gui
         std::size_t numWidgets() const;
 
         MainWidget* getWidget(std::size_t i);
+
+        void showSetting(const QString& name);
 
     public slots:
         void messageReceived(const QString& msg);
@@ -128,17 +130,16 @@ namespace gui
         void show(const QString& name);
         void show(MainWidget* widget);
         void show(std::size_t index);
-        void hide(MainWidget* widget);        
+        void hide(MainWidget* widget);
         void hide(std::size_t index);
-        void focus(MainWidget* widget);    
+        void focus(MainWidget* widget);
         bool saveState(DlgExit* dlg);
-        void closeEvent(QCloseEvent* event);        
+        void closeEvent(QCloseEvent* event);
         void dragEnterEvent(QDragEnterEvent* event);
         void dropEvent(QDropEvent* event);
         FindWidget* getFindWidget();
         void openHelp(const QString& page);
-        void showSetting(const QString& name);        
-        
+
     private slots:
         void on_mainTab_currentChanged(int index);
         void on_mainTab_tabCloseRequested(int index);
@@ -181,7 +182,7 @@ namespace gui
         std::vector<MainWidget*> widgets_;
         std::vector<QAction*> actions_;
 
-        MainWidget* current_;                
+        MainWidget* current_;
     private:
         QStringList recents_;
         QString recent_save_nzb_path_;
@@ -192,7 +193,7 @@ namespace gui
         app::Settings& settings_;
         std::vector<app::Settings> transient_;
     };
-    
+
     extern MainWindow* g_win;
 
 } // gui

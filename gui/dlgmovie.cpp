@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -23,6 +23,7 @@
 #  include <QTimer>
 #include "newsflash/warnpop.h"
 #include "dlgmovie.h"
+#include "mainwindow.h"
 #include "app/omdb.h"
 
 namespace gui
@@ -31,9 +32,11 @@ namespace gui
 DlgMovie::DlgMovie(QWidget* parent) : QDialog(parent)
 {
     ui_.setupUi(this);
+    ui_.btnCredentials->setVisible(false);
+    ui_.lblMessage->setVisible(false);
 
     setMouseTracking(true);
-    //setWindowFlags(Qt::Popup /* | Qt::FramelessWindowHint */);    
+    //setWindowFlags(Qt::Popup /* | Qt::FramelessWindowHint */);
 
     QObject::connect(app::g_movies, SIGNAL(lookupReady(const QString&)),
         this, SLOT(lookupReady(const QString&)));
@@ -54,26 +57,65 @@ DlgMovie::~DlgMovie()
 void DlgMovie::lookupMovie(const QString& movieTitle)
 {
     title_ = movieTitle;
-    
+
     const auto* movie = app::g_movies->getMovie(movieTitle);
     if (!movie)
     {
-        app::g_movies->beginLookup(movieTitle);
-        loader_.start();
-        ui_.lblPoster->setMovie(&loader_);
-        ui_.lblPoster->setFixedSize(100, 100); // todo: fix this, the label shrinks and doesn't properly update its geometry
-        ui_.lblPoster->updateGeometry();
-        ui_.textEdit->clear();
+        if (app::g_movies->beginLookup(movieTitle))
+        {
+            loader_.start();
+            ui_.lblPoster->setMovie(&loader_);
+            ui_.lblPoster->setFixedSize(100, 100); // todo: fix this, the label shrinks and doesn't properly update its geometry
+            ui_.lblPoster->updateGeometry();
+            ui_.textEdit->clear();
+            ui_.btnCredentials->setVisible(false);
+            ui_.lblMessage->setVisible(false);
+        }
+        else
+        {
+            ui_.lblPoster->setMovie(nullptr);
+            ui_.lblPoster->setVisible(false);
+            ui_.lblMessage->setVisible(true);
+            ui_.btnCredentials->setVisible(true);
+
+        }
     }
     else
     {
         lookupReady(movieTitle);
         posterReady(movieTitle);
     }
-    reposition();    
+    reposition();
     show();
     activateWindow();
     setWindowTitle(QString("%1 (Click to Close Window)").arg(movieTitle));
+}
+
+void DlgMovie::testLookupMovie(const QString& apikey)
+{
+    title_ = "Terminator 2";
+
+    if (app::g_movies->testLookup(apikey, title_))
+    {
+        loader_.start();
+        ui_.lblPoster->setMovie(&loader_);
+        ui_.lblPoster->setFixedSize(100, 100);
+        ui_.lblPoster->updateGeometry();
+        ui_.textEdit->clear();
+        ui_.btnCredentials->setVisible(false);
+        ui_.lblMessage->setVisible(false);
+    }
+    else
+    {
+        ui_.lblPoster->setMovie(nullptr);
+        ui_.lblPoster->setVisible(false);
+        ui_.lblMessage->setText("An error occurred :(");
+        ui_.lblMessage->setVisible(true);
+    }
+    reposition();
+    show();
+    activateWindow();
+    setWindowTitle(QString("%1 (Click to Close Window)").arg(title_));
 }
 
 void DlgMovie::lookupSeries(const QString& seriesTitle)
@@ -81,6 +123,15 @@ void DlgMovie::lookupSeries(const QString& seriesTitle)
     // this is a simple forward for now. maybe in the future
     // we want Season and Episode here as well.
     lookupMovie(seriesTitle);
+}
+
+void DlgMovie::on_btnCredentials_clicked()
+{
+    g_win->showSetting("Omdb");
+    if (app::g_movies->hasApiKey())
+    {
+        lookupMovie(title_);
+    }
 }
 
 void DlgMovie::lookupReady(const QString& title)
@@ -118,6 +169,8 @@ void DlgMovie::posterReady(const QString& title)
 
     ui_.lblPoster->setFixedSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX);
     ui_.lblPoster->setPixmap(pix);
+    ui_.lblPoster->updateGeometry();
+    ui_.lblPoster->setVisible(true);
 
     QTimer::singleShot(0, this, SLOT(reposition()));
 }

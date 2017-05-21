@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -48,20 +48,46 @@ MovieDatabase::~MovieDatabase()
     DEBUG("MovieDatabase deleted");
 }
 
-void MovieDatabase::beginLookup(const QString& title)
+bool MovieDatabase::beginLookup(const QString& title)
 {
+    if (apikey_.isEmpty())
+    {
+        WARN("No apikey set. Can't use omdbapi.com.");
+        return false;
+    }
+
     QUrl url("http://www.omdbapi.com/");
     url.addQueryItem("t", title);
     url.addQueryItem("y", "");
     url.addQueryItem("plot", "short");
     url.addQueryItem("r", "json");
+    url.addQueryItem("apikey", apikey_);
 
     WebQuery query(url);
     query.OnReply = std::bind(&MovieDatabase::onLookupFinished, this,
         std::placeholders::_1, title);
     g_web->submit(query);
-    
+
     DEBUG("Lookup movie '%1'", title);
+    return true;
+}
+
+bool MovieDatabase::testLookup(const QString& testKey, const QString& testTitle)
+{
+    QUrl url("http://www.omdbapi.com/");
+    url.addQueryItem("t", testTitle);
+    url.addQueryItem("y", "");
+    url.addQueryItem("plot", "short");
+    url.addQueryItem("r", "json");
+    url.addQueryItem("apikey", testKey);
+
+    WebQuery query(url);
+    query.OnReply = std::bind(&MovieDatabase::onLookupFinished, this,
+        std::placeholders::_1, testTitle);
+    g_web->submit(query);
+
+    DEBUG("Lookup test movie '%1'", testTitle);
+    return true;
 }
 
 void MovieDatabase::abortLookup(const QString& title)

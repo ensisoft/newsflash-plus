@@ -58,6 +58,7 @@
 #include "notify.h"
 #include "searchmodule.h"
 #include "historydb.h"
+#include "omdb.h"
 #include "app/debug.h"
 #include "app/format.h"
 #include "app/distdir.h"
@@ -314,6 +315,9 @@ int run(QtSingleApplication& qtinstance)
     {
         WARN("System tray is not available. Notifications are disabled.");
     }
+
+    gui::Omdb omdbgui(&omdb);
+    win.attach(&omdbgui);
 
     app::g_accounts->loadState(settings);
     app::g_tools->loadState(settings);

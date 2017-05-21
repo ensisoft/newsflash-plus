@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -57,8 +57,19 @@ namespace app
         MovieDatabase();
        ~MovieDatabase();
 
-        void beginLookup(const QString& title);
+        bool beginLookup(const QString& title);
         void abortLookup(const QString& title);
+
+        bool testLookup(const QString& testKey, const QString& testTitle);
+
+        void setApikey(const QString& apikey)
+        { apikey_   = apikey; }
+
+        QString apikey() const
+        { return apikey_; }
+
+        bool hasApiKey() const
+        { return !apikey_.isEmpty(); }
 
         const Movie* getMovie(const QString& title) const;
 
@@ -71,9 +82,11 @@ namespace app
     private:
         void onLookupFinished(QNetworkReply& reply, const QString& title);
         void onPosterFinished(QNetworkReply& reply, const QString& title);
-        
+
     private:
         std::map<QString, Movie> db_;
+    private:
+        QString apikey_;
     };
 
     extern MovieDatabase* g_movies;

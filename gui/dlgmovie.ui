@@ -40,6 +40,26 @@
       </spacer>
      </item>
      <item>
+      <widget class="QLabel" name="lblMessage">
+       <property name="text">
+        <string>&lt;html&gt;
+&lt;head/&gt;
+&lt;body&gt;
+
+&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;OMDB - The Open Movie Database&lt;/span&gt;&lt;/p&gt;&lt;p&gt;OMDB is an excellent database for movies and movie details. Unfortunately as we all understand bandwidth costs money. So in order to use this excellent service you need an account. &lt;/p&gt;
+
+&lt;/body&gt;
+&lt;/html&gt;</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignJustify|Qt::AlignVCenter</set>
+       </property>
+       <property name="wordWrap">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
       <layout class="QHBoxLayout" name="horizontalLayout">
        <item>
         <spacer name="horizontalSpacer_2">
@@ -93,6 +113,13 @@
         </spacer>
        </item>
       </layout>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btnCredentials">
+       <property name="text">
+        <string>Setup your account</string>
+       </property>
+      </widget>
      </item>
      <item>
       <spacer name="verticalSpacer">

@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -40,13 +40,17 @@ namespace gui
         DlgMovie(QWidget* parent);
        ~DlgMovie();
 
-        // show the dialog and initiate lookup for the Movie 
+        // show the dialog and initiate lookup for the Movie
         void lookupMovie(const QString& movieTitle);
+
+        void testLookupMovie(const QString& apikey);
 
         // show the dialog and initite lookup for the TV Series
         void lookupSeries(const QString& seriesTitle);
 
     private slots:
+        void on_btnCredentials_clicked();
+
         void lookupReady(const QString& title);
         void posterReady(const QString& title);
         void lookupError(const QString& title, const QString& errorStr);
