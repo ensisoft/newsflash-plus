@@ -17,9 +17,12 @@
 
 
 
+// RAR2 service header extra records.
 #ifndef SFX_MODULE
 void SetExtraInfo20(CommandData *Cmd,Archive &Arc,wchar *Name)
 {
+  if (Cmd->Test)
+    return;
   switch(Arc.SubBlockHead.SubType)
   {
 #ifdef _UNIX
@@ -42,18 +45,29 @@ void SetExtraInfo20(CommandData *Cmd,Archive &Arc,wchar *Name)
 #endif
 
 
+// RAR3 and RAR5 service header extra records.
 void SetExtraInfo(CommandData *Cmd,Archive &Arc,wchar *Name)
 {
 #ifdef _UNIX
-  if (Cmd->ProcessOwners && Arc.Format==RARFMT15 &&
+  if (!Cmd->Test && Cmd->ProcessOwners && Arc.Format==RARFMT15 &&
       Arc.SubHead.CmpName(SUBHEAD_TYPE_UOWNER))
     ExtractUnixOwner30(Arc,Name);
 #endif
 #ifdef _WIN_ALL
-  if (Cmd->ProcessOwners && Arc.SubHead.CmpName(SUBHEAD_TYPE_ACL))
+  if (!Cmd->Test && Cmd->ProcessOwners && Arc.SubHead.CmpName(SUBHEAD_TYPE_ACL))
     ExtractACL(Arc,Name);
   if (Arc.SubHead.CmpName(SUBHEAD_TYPE_STREAM))
-    ExtractStreams(Arc,Name);
+    ExtractStreams(Arc,Name,Cmd->Test);
+#endif
+}
+
+
+// Extra data stored directly in file header.
+void SetFileHeaderExtra(CommandData *Cmd,Archive &Arc,wchar *Name)
+{
+#ifdef _UNIX
+   if (Cmd->ProcessOwners && Arc.Format==RARFMT50 && Arc.FileHead.UnixOwnerSet)
+     SetUnixOwner(Arc,Name);
 #endif
 }
 

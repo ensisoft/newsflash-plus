@@ -62,7 +62,11 @@ bool CreateReparsePoint(CommandData *Cmd,const wchar *Name,FileHeader *hd)
   size_t PrintLength=wcslen(PrintName);
 
   bool AbsPath=WinPrefix;
-  if (!Cmd->AbsoluteLinks && (AbsPath || !IsRelativeSymlinkSafe(hd->FileName,hd->RedirName)))
+  // IsFullPath is not really needed here, AbsPath check is enough.
+  // We added it just for extra safety, in case some Windows version would
+  // allow to create absolute targets with SYMLINK_FLAG_RELATIVE.
+  if (!Cmd->AbsoluteLinks && (AbsPath || IsFullPath(hd->RedirName) ||
+      !IsRelativeSymlinkSafe(hd->FileName,hd->RedirName)))
     return false;
 
   CreatePath(Name,true);
@@ -141,7 +145,10 @@ bool CreateReparsePoint(CommandData *Cmd,const wchar *Name,FileHeader *hd)
   { 
     CloseHandle(hFile);
     uiMsg(UIERROR_SLINKCREATE,UINULL,Name);
-    if (GetLastError()==ERROR_PRIVILEGE_NOT_HELD)
+
+    DWORD LastError=GetLastError();
+    if ((LastError==ERROR_ACCESS_DENIED || LastError==ERROR_PRIVILEGE_NOT_HELD) &&
+        !IsUserAdmin())
       uiMsg(UIERROR_NEEDADMIN);
     ErrHandler.SysErrMsg();
     ErrHandler.SetErrorCode(RARX_CREATE);

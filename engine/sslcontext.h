@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -21,6 +21,7 @@
 #pragma once
 
 #include <boost/noncopyable.hpp>
+#include <sys/types.h>
 #include <openssl/ssl.h>
 #include <mutex>
 
@@ -33,13 +34,13 @@ namespace newsflash
         sslcontext();
        ~sslcontext();
 
-        sslcontext(const sslcontext& other);        
+        sslcontext(const sslcontext& other);
 
-        SSL_CTX* ssl();        
+        SSL_CTX* ssl();
     protected:
     private:
     };
-    
+
     void openssl_init();
-    
+
 } // newsflash

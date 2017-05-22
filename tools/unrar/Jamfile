@@ -1,7 +1,0 @@
-
-
-install media : unrar LICENSE_UNRAR.txt
-: 
-   <variant>debug:<location>$(NEWSFLASH_INSTALL_DBG)"/tools"
-   <variant>release:<location>$(NEWSFLASH_INSTALL_REL)"/tools"
-;
