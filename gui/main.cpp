@@ -29,6 +29,7 @@
 #  include <QDir>
 #  include <QFile>
 #  include <QUrl>
+#  include <QImageReader>
 #include "newsflash/warnpop.h"
 #include <iostream>
 #include <exception>
@@ -118,6 +119,12 @@ int run(QtSingleApplication& qtinstance)
     // if icons and their sizes need to be adjusted at runtime on 4k displays
     // for example...
     QDir::setSearchPaths("icons", QStringList(":/resource/16x16_ico_png"));
+
+    const auto& formats = QImageReader::supportedImageFormats();
+    for (const auto& format : formats)
+    {
+        DEBUG("ImageFormat: %1", format);
+    }
 
     // settings is that everything depends on so we must load settings first.
     app::Settings settings;
