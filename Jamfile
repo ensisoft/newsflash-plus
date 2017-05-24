@@ -121,14 +121,15 @@ if [ os.name ] = NT
   # instead of statically link it.
   lib qjson : : <variant>release <name>qjson <search>"third_party/qjson/lib/Release" ;
   lib qjson : : <variant>debug   <name>qjson <search>"third_party/qjson/lib/Debug" ;
+
 }
 
 if [ os.name ] = LINUX
 {
   # on linux openssl is just *there* (only dev-package needs to be installed)
   # so only got to name the libraries here
-  lib openssl : : <name>ssl    <search>$(/usr/lib) ;
-  lib crypto  : : <name>crypto <search>$(/usr/lib) ;
+  lib openssl : : <name>ssl    <search>$(OPENSSL_PATH)/lib ;
+  lib crypto  : : <name>crypto <search>$(OPENSSL_PATH)/lib ;
 
   # protobuf
   lib protobuf : : <name>protobuf <search>"third_party/protobuf/src/.libs" ;

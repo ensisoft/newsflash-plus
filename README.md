@@ -83,7 +83,7 @@ Use the protoc to compile the .proto files in the project.
 
 third_party/openssl
 ------------------------
-Secure Socket Layer & Cryptography. Current version is 1.0.1g
+Secure Socket Layer & Cryptography. Current version is 1.0.2k
 https://www.openssl.org/source/
 
 
@@ -113,7 +113,10 @@ Download and extract boost package boost_1_51_0, then build and install boost.bu
 Build openssl.
 
 ```
-    nothing to be done for now since we're using the system openssl
+    $ cd third_party/openssl
+    $ ./config --openssldir=`pwd`/sdk shared
+    $ make
+    $ make install
 ```
 
 
@@ -136,8 +139,8 @@ Install these packages.
     qt4-qmake
 
 ```
-    $ cd third_party/qt-4.8.6
-    $ ./configure --prefix=~coding/qt-4.8.6 --no-qt3support --no-webkit
+    $ cd qt-everywhere-opensource-src-4.8.6
+    $ ./configure --prefix=<newsflash_plus>/third_party/qt-4.8.6 --no-qt3support --no-webkit --openssl -I<newsflash_plus>/third_party/openssl/sdk/include -L<newsflash_plus>/third_party/openssl/sdk/lib
     $ make
     $ make install
 ```
@@ -284,12 +287,9 @@ even to minor versions. I.e. openssl 1.0.2 is source compatible with openssl 1.0
 Qt seems to want the 1.0.1x series.
 
 ```
-    $ set PATH=%PATH%;"c:\Program Files (x86)\NASM\"
     $ set PATH=%PATH%;"c:\Perl64\bin"
     $ cd third_party/openssl
-    $ ~~perl configure VC-WIN32 --prefix="%cd%\sdk"~~
     $ perl configure VC-WIN64A no-asm --prefix="%cd%\sdk"
-    $ ~~ms\do_nasm~~
     $ ms\do_win64a
     $ notepad ms\ntdll.mak
       * replace LFLAGS /debug with /release
@@ -306,8 +306,8 @@ inside the source folder mkspecs folder to see what is available.
 Also 64bit build is cleverly supported by the 32bit spec. Just make sure to use x64 native tools command prompt.
 
 ```
-    $ cd third_party/qt-4.8.6
-    $ configure.exe -platform win32-msvc2013 -no-qt3support -no-webkit -debug-and-release -openssl -I "%cd%\..\openssl\sdk\include" -L "%cd%\..\openssl\sdk\lib"
+    $ cd qt-everywhere-opensource-src-4.8.6
+    $ configure.exe -platform win32-msvc2013 -no-qt3support -no-webkit -debug-and-release -openssl -I "<newsflash_plus>\third_party\openssl\sdk\include" -L "<newsflash_plus>\third_party\openssl\sdk\lib" -prefix "<newsflash_plus>\third_party\qt-4.8.6"
     $ nmake
     $ nmake install
 ```
