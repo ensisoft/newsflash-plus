@@ -259,8 +259,8 @@ void test_decoding()
     {
         std::ifstream ref;
         std::ifstream src;
-        ref.open("test_data/vip.part4.yenc.bin");
-        src.open("test_data/vip.part4.yenc.txt");
+        ref.open("test_data/vip.part4.yenc.bin", std::ios::binary);
+        src.open("test_data/vip.part4.yenc.txt", std::ios::binary);
 
         BOOST_REQUIRE(ref.is_open());
         BOOST_REQUIRE(src.is_open());
@@ -294,8 +294,8 @@ void test_decoding()
     {
         std::ifstream ref;
         std::ifstream src;
-        ref.open("test_data/vip.part4.yenc.bin");
-        src.open("test_data/vip.part4.yenc.txt");
+        ref.open("test_data/vip.part4.yenc.bin", std::ios::binary);
+        src.open("test_data/vip.part4.yenc.txt", std::ios::binary);
 
         BOOST_REQUIRE(ref.is_open());
         BOOST_REQUIRE(src.is_open());
@@ -305,8 +305,10 @@ void test_decoding()
         std::copy(std::istreambuf_iterator<char>(src), std::istreambuf_iterator<char>(), std::back_inserter(temp));
         std::copy(std::istreambuf_iterator<char>(ref), std::istreambuf_iterator<char>(), std::back_inserter(orig));
 
-        nntp::bodyiter beg(&temp[0], temp.size());
-        nntp::bodyiter end(&temp[temp.size()], 0);
+        const char* ptr = temp.data();
+
+        nntp::bodyiter beg(ptr, temp.size());
+        nntp::bodyiter end(ptr + temp.size(), 0);
 
         const auto& header = yenc::parse_header(beg, end);
         BOOST_REQUIRE(header.first);
