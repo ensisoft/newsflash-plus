@@ -317,27 +317,26 @@ namespace utf8
     #undef READBITS
     }
 
+    template<typename CharT = wchar_t>
     inline std::wstring decode(const std::string& utf8, bool* success = nullptr)
     {
-        std::wstring ret;
-        const auto pos = decode<wchar_t>(utf8.begin(), utf8.end(), std::back_inserter(ret));
-
+        std::basic_string<CharT> ret;
+        const auto pos = decode<CharT>(utf8.begin(), utf8.end(), std::back_inserter(ret));
         if (success)
             *success = (pos == utf8.end());
-
         return ret;
     }
 
-    inline std::wstring decode(const char* utf8, bool* success = nullptr)
+
+    template<typename CharT = wchar_t>
+    inline std::basic_string<CharT> decode(const char* utf8, bool* success = nullptr)
     {
-        std::wstring ret;
+        std::basic_string<CharT> ret;
         const auto beg = utf8;
         const auto end = utf8 + std::strlen(utf8);
-        const auto pos = decode<wchar_t>(beg, end, std::back_inserter(ret));
-
-        if (success)
+        const auto pos = decode<CharT>(beg, end, std::back_inserter(ret));
+        if (success) 
             *success = (pos == end);
-
         return ret;
     }
 

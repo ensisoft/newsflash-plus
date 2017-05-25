@@ -133,6 +133,8 @@ void test_success()
 void test_failure()
 {
     // invalid bytes
+    typedef uint32_t CharT;
+
     {
         // this is a 5 byte sequence that would decode to a value higher than 0x10ffff
         const unsigned char utf8[] = {
@@ -141,7 +143,7 @@ void test_failure()
         BOOST_REQUIRE(!utf8::is_well_formed(std::begin(utf8), std::end(utf8)));
 
         bool success = true;
-        utf8::decode((const char*)utf8, &success);
+        utf8::decode<CharT>((const char*)utf8, &success);
         BOOST_REQUIRE(success == false);
     }
 
@@ -153,9 +155,8 @@ void test_failure()
         };
         BOOST_REQUIRE(!utf8::is_well_formed(std::begin(utf8), std::end(utf8)));
 
-
         bool success = true;
-        utf8::decode((const char*)utf8, &success);
+        utf8::decode<CharT>((const char*)utf8, &success);
         BOOST_REQUIRE(success == false);
     }
 
@@ -168,7 +169,7 @@ void test_failure()
         BOOST_REQUIRE(!utf8::is_well_formed(std::begin(utf8), std::end(utf8)));
 
         bool success = true;
-        utf8::decode((const char*)utf8, &success);
+        utf8::decode<CharT>((const char*)utf8, &success);
         BOOST_REQUIRE(success == false);
     }
 
@@ -179,7 +180,7 @@ void test_failure()
         BOOST_REQUIRE(!utf8::is_well_formed(str,str + std::strlen(str)));
 
         bool success = true;
-        utf8::decode(str, &success);
+        utf8::decode<CharT>(str, &success);
         BOOST_REQUIRE(success == false);
     }
 }
