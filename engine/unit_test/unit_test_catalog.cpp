@@ -43,10 +43,11 @@ void unit_test_create_new()
 
     // create a new database
     {
-        catalog db;
-        db.open("file");
+        // don't create on the stack since the header is large.'
+        auto  db = std::make_unique<catalog>();
+        db->open("file");
 
-        BOOST_REQUIRE(db.size() == 0);
+        BOOST_REQUIRE(db->size() == 0);
 
         article a;
         a.set_author("John Doe");
@@ -54,8 +55,8 @@ void unit_test_create_new()
         a.set_bytes(1024);
         a.set_number(666);
         a.set_bits(fileflag::broken, true);
-        db.append(a);
-        BOOST_REQUIRE(db.size() == 1);
+        db->append(a);
+        BOOST_REQUIRE(db->size() == 1);
 
         a.clear();
         a.set_author("Mickey Mouse");
@@ -63,33 +64,33 @@ void unit_test_create_new()
         a.set_bits(fileflag::downloaded, true);
         a.set_bytes(456);
         a.set_number(500);
-        db.append(a);
-        BOOST_REQUIRE(db.size() == 2);
+        db->append(a);
+        BOOST_REQUIRE(db->size() == 2);
 
         a.clear();
         a.set_subject("Leiah - Kings and Queens \"Foobar.mp3\" (01/10)");
         a.set_author("foo@acme.com");
         a.set_number(45);
-        db.append(a);
-        BOOST_REQUIRE(db.size() == 3);
+        db->append(a);
+        BOOST_REQUIRE(db->size() == 3);
 
-        db.flush();
+        db->flush();
     }
 
     // open an existing
     {
-        catalog db;
-        db.open("file");
-        BOOST_REQUIRE(db.size() == 3);
+        auto db = std::make_unique<catalog>();
+        db->open("file");
+        BOOST_REQUIRE(db->size() == 3);
 
         // iterators
-        auto beg = db.begin();
-        auto end = db.end();
+        auto beg = db->begin();
+        auto end = db->end();
         BOOST_REQUIRE(beg != end);
 
         catalog::offset_t offset(0);
 
-        auto a = db.load(offset);
+        auto a = db->load(offset);
         BOOST_REQUIRE(a.test(fileflag::broken));
         BOOST_REQUIRE(a.author()  == "John Doe");
         BOOST_REQUIRE(a.subject() == "[#scnzb@efnet][529762] Automata.2014.BRrip.x264.Ac3-MiLLENiUM [1/4] - \"Automata.2014.BRrip.x264.Ac3-MiLLENiUM.mkv\" yEnc (1/1513)");
@@ -100,7 +101,7 @@ void unit_test_create_new()
         BOOST_REQUIRE(beg->bytes()  == 1024);
 
         offset += a.size_on_disk();
-        a = db.load(offset);
+        a = db->load(offset);
         BOOST_REQUIRE(a.test(fileflag::downloaded));
         BOOST_REQUIRE(a.author()  == "Mickey Mouse");
         BOOST_REQUIRE(a.subject() == "Mickey and Goofy in Disneyland");
@@ -112,7 +113,7 @@ void unit_test_create_new()
         BOOST_REQUIRE(beg->bytes() == 456);
 
         offset += a.size_on_disk();
-        a = db.load(offset);
+        a = db->load(offset);
         BOOST_REQUIRE(a.author() == "foo@acme.com");
         BOOST_REQUIRE(a.subject() == "Leiah - Kings and Queens \"Foobar.mp3\" (01/10)");
         BOOST_REQUIRE(a.number() == 45);
@@ -130,16 +131,16 @@ void unit_test_create_new()
         using catalog = newsflash::catalog<newsflash::filemap>;
         using article = newsflash::catalog<newsflash::filemap>;
 
-        catalog db;
-        db.open("file");
-        BOOST_REQUIRE(db.size() == 3);
+        auto db = std::make_unique<catalog>();
+        db->open("file");
+        BOOST_REQUIRE(db->size() == 3);
 
-        auto beg = db.begin();
-        auto end = db.end();
+        auto beg = db->begin();
+        auto end = db->end();
 
         catalog::offset_t offset(0);
 
-        auto a = db.load(offset);
+        auto a = db->load(offset);
         BOOST_REQUIRE(a.test(fileflag::broken));
         BOOST_REQUIRE(a.author() == "John Doe");
         BOOST_REQUIRE(a.subject() == "[#scnzb@efnet][529762] Automata.2014.BRrip.x264.Ac3-MiLLENiUM [1/4] - \"Automata.2014.BRrip.x264.Ac3-MiLLENiUM.mkv\" yEnc (1/1513)");
@@ -147,7 +148,7 @@ void unit_test_create_new()
         BOOST_REQUIRE(a.number() == 666);
 
         offset += a.size_on_disk();
-        a = db.load(offset);
+        a = db->load(offset);
         BOOST_REQUIRE(a.test(fileflag::downloaded));
         BOOST_REQUIRE(a.author() == "Mickey Mouse");
         BOOST_REQUIRE(a.subject() == "Mickey and Goofy in Disneyland");
@@ -155,7 +156,7 @@ void unit_test_create_new()
         BOOST_REQUIRE(a.number() == 500);
 
         offset += a.size_on_disk();
-        a = db.load(offset);
+        a = db->load(offset);
         BOOST_REQUIRE(a.author() == "foo@acme.com");
         BOOST_REQUIRE(a.subject() == "Leiah - Kings and Queens \"Foobar.mp3\" (01/10)");
         BOOST_REQUIRE(a.number() == 45);
