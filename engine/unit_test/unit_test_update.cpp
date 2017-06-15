@@ -79,9 +79,16 @@ void unit_test_ranges()
     //out << "1045" << std::endl;
     //out << "2048" << std::endl;
     std::uint64_t val;
-    val = 1045;
+    std::uint8_t val8;
+    val8 = 1; // version
+    out.write((const char*)&val8, sizeof(val8));
+    val = 1045; // local first
     out.write((const char*)&val, sizeof(val));
-    val = 2048;
+    val = 2048; // local last
+    out.write((const char*)&val, sizeof(val));
+    val = 0; // landmark, positive and negative offset
+    out.write((const char*)&val, sizeof(val));
+    out.write((const char*)&val, sizeof(val));
     out.write((const char*)&val, sizeof(val));
     out.close();
 
@@ -614,6 +621,9 @@ void unit_test_data()
         BOOST_REQUIRE(a.is_broken() == false);
         BOOST_REQUIRE(a.bytes() == 2430);
     }
+    delete_file("alt.binaries.test/vol000000000000000.dat");
+    delete_file("alt.binaries.test/alt.binaries.test.nfo");
+    delete_file("alt.binaries.test/alt.binaries.test.idb");
 }
 
 
@@ -622,7 +632,6 @@ void unit_test_index()
     std::vector<std::unique_ptr<newsflash::action>> actions;
 
     fs::createpath("alt.binaries.test");
-    delete_file("alt.binaries.test/vol000000000033653.dat");
     delete_file("alt.binaries.test/vol000000000033654.dat");
     delete_file("alt.binaries.test/alt.binaries.test.nfo");
     delete_file("alt.binaries.test/alt.binaries.test.idb");
@@ -671,9 +680,9 @@ void unit_test_index()
         using index   = newsflash::index<newsflash::filemap>;
         using article = newsflash::article<newsflash::filemap>;
 
-        catalog dbs[2];
+        catalog dbs[1];
         dbs[0].open("alt.binaries.test/vol000000000033654.dat");
-        dbs[1].open("alt.binaries.test/vol000000000033653.dat");
+        //dbs[1].open("alt.binaries.test/vol000000000033653.dat");
 
         index idx;
         idx.on_load = [&](std::size_t key, std::size_t idx) {
@@ -683,25 +692,15 @@ void unit_test_index()
             return true;
         };
 
+        for (int i=0; i<1; ++i) 
         {
-            auto& db = dbs[0];
+            auto& db = dbs[i];
             auto beg = db.begin();
             auto end = db.end();
             for (; beg != end; ++beg)
             {
                 const auto& article = *beg;
-                idx.insert(article, 0, article.index());
-            }
-        }
-
-        {
-            auto& db = dbs[1];
-            auto beg = db.begin();
-            auto end = db.end();
-            for (; beg != end; ++beg)
-            {
-                const auto& article = *beg;
-                idx.insert(article, 1, article.index());
+                idx.insert(article, i, article.index());
             }
         }
 
@@ -716,9 +715,10 @@ void unit_test_index()
         }
     }
 
-    delete_file("alt.binaries.test/vol33653.dat");
-    delete_file("alt.binaries.test/vol33654.dat");
-    delete_file("alt.binaries.test.nfo");
+    delete_file("alt.binaries.test/vol000000000033654.dat");
+    delete_file("alt.binaries.test/alt.binaries.test.nfo");
+    delete_file("alt.binaries.test/alt.binaries.test.idb");
+
 }
 
 

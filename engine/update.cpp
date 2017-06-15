@@ -38,6 +38,7 @@
 #include "catalog.h"
 #include "idlist.h"
 #include "filesys.h"
+#include "assert.h"
 
 namespace newsflash
 {
@@ -46,6 +47,29 @@ using catalog_t   = catalog<filebuf>;
 using article_t   = article<filebuf>;
 using idlist_t = idlist<filebuf>;
 
+#pragma pack(push, 1)
+// these are just an internal helper structure that we use to read 
+// and write the hash structure to file
+struct FileHash {
+    std::uint32_t article_hash = 0;
+    std::uint64_t article_number_internal = 0;
+};
+
+enum {
+    CurrentVersion = 1
+};
+
+struct FileHeader {
+    std::uint8_t  version = 0;
+    std::uint64_t local_first = 0;
+    std::uint64_t local_last  = 0;
+    std::uint64_t landmark_article_number = 0;
+    std::int64_t  positive_offset = 0;
+    std::int64_t  negative_offset = 0;
+};
+
+#pragma pack(pop)
+
 struct update::state {
     std::string folder;
     std::string group;
@@ -53,13 +77,53 @@ struct update::state {
     // maps a volume index to a file.
     std::map<std::uint32_t, std::unique_ptr<catalog_t>> files;
 
-    // maps a hash value to a volume index
-    std::map<std::uint32_t, std::uint32_t> hashmap;
+    // maps a hash value to a *internal* article number
+    // we use a multimap so that we can resolve hash collisions
+    std::multimap<std::uint32_t, std::uint64_t> hashmap;
 
     // message id db
     idlist_t idb;
 
-    std::string file_volume_name(std::size_t index)
+    // these variables track our internal article numbering.
+    // landmark defines the very first article number we have
+    // received and internally it maps to itself. 
+    // articles newer (bigger) than landmark are given internal number landmark + positive_offset
+    // while articles older (smaller) are given landmark + negative_ offset
+    //
+    // these variables are in the state object since each store action
+    // needs to access the latest data, i.e. the state is global
+    // and not something each task can replicate on it's own_
+    // these are not procted by a mutex since the store 
+    // actions execute sequentially. 
+    // if store actions are multithreaded then these need to be mutexed.
+    std::uint64_t landmark_article_number = 0;
+    std::int64_t  positive_offset = 0;
+    std::int64_t  negative_offset = 0;
+
+    // allocate a new internal article id.
+    std::uint64_t allocate_internal(const article_t& article)
+    {
+        if (!landmark_article_number)
+        {
+            landmark_article_number = article.number();
+            return landmark_article_number;
+        }
+        std::uint64_t external_number = article.number();
+        std::uint64_t internal_number = 0;
+        if (external_number > landmark_article_number) 
+        {
+            positive_offset++; 
+            internal_number = landmark_article_number + positive_offset;
+        }
+        else if (external_number < landmark_article_number)
+        {
+            negative_offset--;
+            internal_number = landmark_article_number + negative_offset;
+        }
+        return internal_number;
+    }
+
+    std::string file_volume_name(std::size_t index) const 
     {
         const auto max_index = std::numeric_limits<std::uint64_t>::max() / std::uint64_t(CATALOG_SIZE);
 
@@ -134,29 +198,63 @@ public:
             last_  = std::max(last_, article.number());
             first_ = std::min(first_, article.number());
 
-            auto hit = hmap.find(article.hash());
-            if (hit == std::end(hmap))
+            std::uint64_t internal_article_number = 0;
+
+            if (article.has_parts())
             {
-                const auto index = std::uint32_t(article.number() / CATALOG_SIZE);
-                hit = hmap.insert(std::make_pair(article.hash(), index)).first;
-            }
+                const auto hash = article.hash();
+                // if it's a multipart see if we know the hash value
+                // already and can map it to a article number that way
+                // but since it's possible that there are hash collisions
+                // we need to go over the potential hash matches and check 
+                // that they actually match. 
+                auto beg = hmap.lower_bound(hash);
+                auto end = hmap.upper_bound(hash);
+                for (; beg != end; ++beg)
+                {
+                    const auto number = beg->second;
+                    const auto file_index  = number / CATALOG_SIZE;
+                    const auto file_bucket = number % CATALOG_SIZE; 
+                    const auto file_name   = state_->file_volume_name(file_index);
+                    if (!fs::exists(file_name))
+                    {
+                        // if the file doesn't exist anymore then whole volume 
+                        // has probably been purged in which case we just discard the hash
+                        beg = hmap.erase(beg);
+                        continue;
+                    }
+                    auto it = files.find(file_index);
+                    if (it == std::end(files))
+                    {
+                        std::unique_ptr<catalog_t> db(new catalog_t);
+                        db->open(file_name);
+                        it = files.insert(std::make_pair(file_index, std::move(db))).first;
+                    }
+                    const auto& db    = it->second;
+                    const auto index  = catalog_t::index_t(file_bucket);
+                    const auto& other = db->load(index);
+                    if (other.is_match(article))
+                    {
+                        internal_article_number = number;
+                        break;
+                    }
+                }
+                if (!internal_article_number)
+                {
+                    internal_article_number = state_->allocate_internal(article);
+                    hmap.insert(std::make_pair(article.hash(), internal_article_number));
+                } 
+            } 
             else
             {
-                // if we have a previous hash entry but the datafile
-                // is not to be found, it has propably been purged.
-                // in this case we're just going to ignore the entry and
-                // throw it away.
-                const auto file_index = hit->second;
-                const auto file_name  = state_->file_volume_name(file_index);
-                if (!fs::exists(file_name))
-                {
-                    hmap.erase(hit);
-                    continue;
-                }
+                internal_article_number = state_->allocate_internal(article);
             }
 
-            const auto file_index  = hit->second;
-            const auto file_bucket = article.hash() % CATALOG_SIZE;
+
+            ASSERT(internal_article_number  && "Article number is undefined.");
+
+            const auto file_index  = internal_article_number / CATALOG_SIZE;
+            const auto file_bucket = internal_article_number % CATALOG_SIZE;
             auto it = files.find(file_index);
             if (it == std::end(files))
             {
@@ -166,64 +264,52 @@ public:
             }
             auto& db = it->second;
 
-            std::size_t slot;
-            for (slot=0; slot<CATALOG_SIZE; ++slot)
+            const auto index = catalog_t::index_t(file_bucket);
+            if (!db->is_empty(index))
             {
-                const auto index = catalog_t::index_t((slot * 3 + file_bucket) % CATALOG_SIZE);
+                auto a = db->load(index);
+                ASSERT(a.is_match(article));
+                ASSERT(a.has_parts());
+                
+                const auto max_parts = a.num_parts_total();
+                const auto num_part  = article.partno();
+                if (max_parts == 1)
+                    continue;
+                if (num_part > max_parts)
+                    continue;
 
-                if (!db->is_empty(index))
-                {
-                    auto a = db->load(index);
-                    if (!a.is_match(article))
-                        continue;
+                const auto base = a.number();
+                const auto num  = article.number();
+                std::int16_t diff = 0;
+                if (base > num)
+                    diff -= (std::int16_t)(base - num);
+                else diff = (std::int16_t)(num - base);
+                idb[a.idbkey() + num_part] = diff;
 
-                    if (!a.has_parts())
-                        break;
-
-                    const auto max_parts = a.num_parts_total();
-                    const auto num_part  = article.partno();
-                    if (max_parts == 1)
-                        break;
-                    if (num_part > max_parts)
-                        break;
-
-                    const auto base = a.number();
-                    const auto num  = article.number();
-                    std::int16_t diff = 0;
-                    if (base > num)
-                        diff -= (std::int16_t)(base - num);
-                    else diff = (std::int16_t)(num - base);
-                    idb[a.idbkey() + num_part] = diff;
-
-                    a.combine(article);
-                    db->update(a, index);
-                    break;
-                }
-                else
-                {
-                    article.set_index(index.value );
-                    // we store one complete 64bit article number for the whole pack
-                    // and then for the additional parts we store a 16 bit delta value.
-                    // note that while yenc generally uses 1 based part indexing some
-                    // posters use 0 based instead. Hence we just add + 1 to cater for
-                    // both cases safely.
-                    if (article.has_parts())
-                    {
-                        const auto key = idb.size();
-
-                        article.set_idbkey(key);
-                        idb.resize(idb.size() + article.num_parts_total() + 1);
-                        idb[key + article.partno()] = 0; // 0 difference to the message id stored with the article.
-                    }
-                    db->insert(article, index);
-                    break;
-                }
+                a.combine(article);
+                db->update(a, index);
             }
-            if (slot == CATALOG_SIZE)
-                throw std::runtime_error("hashmap overflow");
+            else
+            {
+                article.set_index(index.value );
+                // we store one complete 64bit article number for the whole pack
+                // and then for the additional parts we store a 16 bit delta value.
+                // note that while yenc generally uses 1 based part indexing some
+                // posters use 0 based instead. Hence we just add + 1 to cater for
+                // both cases safely.
+                if (article.has_parts())
+                {
+                    const auto key = idb.size();
 
+                    article.set_idbkey(key);
+                    idb.resize(idb.size() + article.num_parts_total() + 1);
+                    idb[key + article.partno()] = 0; // 0 difference to the message id stored with the article.
+                }
+                db->insert(article, index);
+            }
             updates_.insert(db.get());
         }
+
         for (auto* db : updates_)
             db->flush();
     }
@@ -239,10 +325,10 @@ private:
     std::vector<article_t> articles_;
     std::set<catalog_t*> updates_;
 private:
-    std::uint64_t first_;
-    std::uint64_t last_;
+    std::uint64_t first_ = 0;
+    std::uint64_t last_  = 0;
 private:
-    std::size_t bytes_;
+    std::size_t bytes_ = 0;
 };
 
 update::update(std::string path, std::string group) : local_last_(0), local_first_(0)
@@ -263,22 +349,44 @@ update::update(std::string path, std::string group) : local_last_(0), local_firs
     if (in.is_open())
     {
         in.seekg(0, std::ios::end);
-        const auto size = (unsigned long)in.tellg();
+        const auto total_size   = (unsigned long)in.tellg();
+        const auto header_size  = sizeof(FileHeader);
+        const auto payload_size = total_size - header_size;
+        const auto num_hashes   = payload_size / sizeof(FileHash);
         in.seekg(0, std::ios::beg);
 
-        in.read((char*)&local_first_, sizeof(local_first_));
-        in.read((char*)&local_last_, sizeof(local_last_));
+        // previously there was no versioning of the meta database file
+        // but if there was a need to change the structure the catalog
+        // version would change and then in update task an exception
+        // would occur when opening a catalog object.
+        // now we're adding a header here. the version check is a bit iffy
+        // since in case of an older data file we're just reading a "junk" 
+        // version value. However in practice this might not be such a big deal
+        // since the UI has implicitly done a version check through the catalog
+        // version when opening the group and has (thus) failed.  
+        FileHeader header;
+        in.read((char*)&header, sizeof(header));
+        if (header.version != CurrentVersion)
+            throw std::runtime_error("unsupported file version");
 
-        const auto num_items = (size - (sizeof(local_first_) + sizeof(local_last_))) / sizeof(uint32_t);
-        if (num_items)
+        assert((payload_size % sizeof(FileHash)) == 0);
+
+        local_first_ = header.local_first;
+        local_last_  = header.local_last;
+        state_->landmark_article_number = header.landmark_article_number;
+        state_->positive_offset = header.positive_offset;
+        state_->negative_offset = header.negative_offset;
+        
+        if (num_hashes)
         {
-            std::vector<std::uint32_t> vec;
-            vec.resize(num_items);
-            in.read((char*)&vec[0], num_items * sizeof(std::uint32_t));
-            for (std::size_t i=0; i<vec.size(); i+=2)
+            // read back the hashes
+            std::vector<FileHash> vec;
+            vec.resize(num_hashes);
+            in.read((char*)&vec[0], num_hashes * sizeof(FileHash));
+            for (std::size_t i=0; i<vec.size(); ++i)
             {
-                const auto key = vec[i];
-                const auto val = vec[i+1];
+                const auto key = vec[i].article_hash;
+                const auto val = vec[i].article_number_internal;
                 state_->hashmap.insert(std::make_pair(key, val));
             }
         }
@@ -389,8 +497,15 @@ void update::commit()
     if (!out.is_open())
         throw std::runtime_error("unable to open: " + file);
 
-    out.write((const char*)&local_first_, sizeof(local_first_));
-    out.write((const char*)&local_last_, sizeof(local_last_));
+    FileHeader header;
+    header.version = CurrentVersion;
+    header.local_first = local_first_;
+    header.local_last  = local_last_;
+    header.landmark_article_number = state_->landmark_article_number;
+    header.positive_offset = state_->positive_offset;
+    header.negative_offset = state_->negative_offset;
+
+    out.write((const char*)&header, sizeof(header));
 
     auto& files = state_->files;
     for (auto& p : files)
@@ -399,15 +514,17 @@ void update::commit()
         db->flush();
     }
 
-    std::vector<std::uint32_t> vec;
+    std::vector<FileHash> vec;
     const auto& hashmap = state_->hashmap;
-    vec.reserve(hashmap.size() * 2);
+    vec.resize(hashmap.size());
+    size_t i=0;
     for (const auto& pair : hashmap)
     {
-        vec.push_back(pair.first);
-        vec.push_back(pair.second);
+        vec[i].article_hash = pair.first;
+        vec[i].article_number_internal = pair.second;
+        ++i;
     }
-    out.write((const char*)&vec[0], vec.size() * sizeof(std::uint32_t));
+    out.write((const char*)&vec[0], vec.size() * sizeof(FileHash));
     out.close();
 }
 

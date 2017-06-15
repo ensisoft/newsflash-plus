@@ -74,12 +74,13 @@ namespace newsflash
 
     private:
         std::shared_ptr<state> state_;
-        std::uint64_t remote_last_;
-        std::uint64_t remote_first_;
-        std::uint64_t local_last_;
-        std::uint64_t local_first_;
-        std::uint64_t xover_last_;
-        std::uint64_t xover_first_;
+        std::uint64_t remote_last_ = 0;
+        std::uint64_t remote_first_ = 0;
+        std::uint64_t local_last_ = 0;
+        std::uint64_t local_first_ = 0;
+        std::uint64_t xover_last_ = 0;
+        std::uint64_t xover_first_ = 0;
+
     };
 
 } // newsflash

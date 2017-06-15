@@ -266,8 +266,13 @@ namespace newsflash
         }
 
     private:
-        static const std::uint32_t MAGIC   {0xdeadbabe};
-        static const std::uint32_t VERSION {2};
+        static const std::uint32_t MAGIC = 0xdeadbabe;
+        // version 3. refactoring the way how to we store the data 
+        // in the data files. instead of using the article hash
+        // to index into the catalog file we use a local article
+        // number that is derived from the very first article number
+        // received from the server + local article offset. 
+        static const std::uint32_t VERSION = 3; 
 
         struct header {
             std::uint32_t cookie;
