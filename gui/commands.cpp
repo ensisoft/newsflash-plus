@@ -47,20 +47,11 @@ public:
         {
             switch ((Columns)section)
             {
-                case Columns::Enabled: return "";
+                case Columns::Enabled: return "Enabled";
                 case Columns::Exec:    return "Executable";
                 case Columns::Comment: return "Comment";                
                 case Columns::LAST:    Q_ASSERT(0);
             }
-        }
-        if (role == Qt::DecorationRole)
-        {
-            if ((Columns)section == Columns::Enabled)
-            {
-                static const QIcon bullet(app::toGrayScale("icons:ico_bullet_green.png"));
-                return bullet;
-            }
-
         }
         return {};
     }
@@ -76,7 +67,7 @@ public:
         {
             switch ((Columns)col)
             {
-                case Columns::Enabled: return "";
+                case Columns::Enabled: return script.isEnabled() ? "Yes" : "No";
                 case Columns::Exec:    return script.exec();
                 case Columns::Comment: return script.comment();
                 case Columns::LAST:    Q_ASSERT(0);

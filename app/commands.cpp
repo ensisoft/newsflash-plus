@@ -371,10 +371,14 @@ void Commands::firstLaunch()
 {
 
 #if defined(LINUX_OS)
+    // on linux the choice of "what is the de-facto" media/audio player is a bit trickier
+    // VLC is more or less ubiquituous, however another alternative might be the 
+    // Ubuntus default video player (totem?)
     Command vlc("/usr/bin/vlc", "${file.file}", "Play video files in a video player.",
         Condition("file.type", "equals", toString(FileType::Video)));
     vlc.setWhen(Command::When::OnFileDownload);
 
+    // Eye of Gnome, simple picture viewer
     Command eog("/usr/bin/eog", "${file.file}", "Open images in an image viewer.",
         Condition("file.type", "equals", toString(FileType::Image)));
     eog.setWhen(Command::When::OnFileDownload);
@@ -393,6 +397,7 @@ void Commands::firstLaunch()
         Condition("file.type", "equals", toString(FileType::Image)));
     imgView.setWhen(Command::When::OnFileDownload);
 
+    // windows media player is the default player for audio and video files.
     Command wmPlayerVideo("C:\\Program Files\\Windows Media Player\\wmplayer.exe", "${file.file}", "Play video files in a video player.",
         Condition("file.type", "equals", toString(FileType::Video)));
     wmPlayerVideo.setWhen(Command::When::OnFileDownload);
@@ -406,20 +411,38 @@ void Commands::firstLaunch()
     commands_.push_back(wmPlayerVideo);
     commands_.push_back(wmPlayerAudio);    
 
+    // these are additional applications that we can probe for, but they're by default disabled.
+
     SYSTEM_INFO sys;
     GetNativeSystemInfo(&sys);
     if (sys.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_INTEL) // x86
     {
-        Command foobar("C:\\program files\\foobar2000\\foobar2000.exe", "/add ${file.file}", "Enqueue music files in an audio player.",
+        Command foobar("C:\\program files\\foobar2000\\foobar2000.exe", "/add ${file.file}", "Enqueue music files in foobar2000 audio player.",
             Condition("file.type", "equals", toString(FileType::Audio)));
         foobar.setWhen(Command::When::OnFileDownload);
+        foobar.setEnableCommand(false);
         commands_.push_back(foobar);
+
+        Command vlc("C:\\Program Files\\VideoLAN\\VLC\\vlc.exe", "${file.file}", "Play video files with VLC",
+            Condition("file.type", "equals", toString(FileType::Video)));
+        vlc.setWhen(Command::When::OnFileDownload);
+        vlc.appendCondition(Condition("file.name", "not contains", ".wmv"));
+        vlc.setEnableCommand(false);
+        commands_.push_back(vlc);        
     }
     else
     {
-        Command foobar("C:\\program files (x86)\\foobar2000\\foobar2000.exe", "/add ${file.file}", "Enqueue music files in an audio player.",
+        Command vlc("C:\\Program Files (x86)\\VideoLAN\\VLC\\vlc.exe", "${file.file}", "Play video files with VLC",
+            Condition("file.type", "equals", toString(FileType::Video)));
+        vlc.setWhen(Command::When::OnFileDownload);
+        vlc.appendCondition(Condition("file.name", "not contains", ".wmv"));
+        vlc.setEnableCommand(false);
+        commands_.push_back(vlc);
+
+        Command foobar("C:\\program files (x86)\\foobar2000\\foobar2000.exe", "/add ${file.file}", "Enqueue music files in foobar2000 audio player.",
             Condition("file.type", "equals", toString(FileType::Audio)));
         foobar.setWhen(Command::When::OnFileDownload);
+        foobar.setEnableCommand(false);
         commands_.push_back(foobar);
     }
 
