@@ -88,6 +88,8 @@ namespace gui
         // load previously stored application/gui state.
         void loadState();
 
+        void startup();
+
         void focusWidget(const MainWidget* widget);
 
         // show message in the window's message area

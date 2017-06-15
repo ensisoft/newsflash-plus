@@ -336,6 +336,7 @@ int run(QtSingleApplication& qtinstance)
     win.prepareFileMenu();
     win.prepareWindowMenu();
     win.prepareMainTab();
+    win.startup();
     win.show();
 
     auto ret = qtinstance.exec();

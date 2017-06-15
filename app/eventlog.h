@@ -58,13 +58,31 @@ namespace app
         // abstractlistmodel data accessor
         virtual QVariant data(const QModelIndex& index, int role) const override;
 
-        std::size_t numEvents() const
-        { return events_.size(); }
+        struct Filtering {
+            bool ShowModuleEng = true;
+            bool ShowModuleApp = true;
+            bool ShowModuleGui = true;
+            bool ShowModuleOther = true;
+            bool ShowInfos = true;
+            bool ShowWarnings = true;
+            bool ShowErrors = true;
+        };
+
+        void filter(const Filtering& filtering);
+
+        std::size_t numUnfilteredEvents() const
+        { return unfiltered_events_.size(); }
+
+        std::size_t numFilteredEvents() const
+        { return filtered_events_.size(); }
+         
     signals:
         void newEvent(const app::Event& event);
 
     private:
-        boost::circular_buffer<Event> events_;
+        boost::circular_buffer<Event> unfiltered_events_;
+        boost::circular_buffer<Event> filtered_events_;
+        Filtering filter_;
     };
 
 // we want every log event to be tracable back to where it came from

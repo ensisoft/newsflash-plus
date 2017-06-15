@@ -43,13 +43,25 @@ namespace gui
 
         virtual void addActions(QMenu& menu) override;
         virtual void addActions(QToolBar& bar) override;
-        virtual void activate(QWidget*);
+        virtual void loadState(app::Settings& settings) override;
+        virtual void saveState(app::Settings& settings) override;
+        virtual void activate(QWidget*) override;
+        virtual void startup() override;
         info getInformation() const override;
 
     private slots:
         void on_actionClearLog_triggered();
         void on_listLog_customContextMenuRequested(QPoint pos);
+        void on_chkEng_clicked();
+        void on_chkApp_clicked();
+        void on_chkGui_clicked();
+        void on_chkOther_clicked();
+        void on_chkInfo_clicked();
+        void on_chkWarn_clicked();
+        void on_chkError_clicked();
         void newEvent(const app::Event& event);
+    private:
+        void filter();
 
     private:
         Ui::Eventlog ui_;

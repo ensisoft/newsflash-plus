@@ -30,7 +30,13 @@
 namespace app
 {
 
-EventLog::EventLog() : events_(200)
+enum {
+    EventLogBufferSize = 200
+};
+
+EventLog::EventLog() 
+  : unfiltered_events_(EventLogBufferSize)
+  , filtered_events_(EventLogBufferSize)
 {}
 
 EventLog::~EventLog()
@@ -44,38 +50,80 @@ void EventLog::write(Event::Type type, const QString& msg, const QString& tag)
     emit newEvent(event);    
     if (type == Event::Type::Note)
         return;
+    
+    // this is the buffer of all events.
+    unfiltered_events_.push_front(event);
 
-    if (events_.full())
+    // then we maintain another buffer which is the currently visible events
+    if (type == Event::Type::Info) 
+    {
+        if (!filter_.ShowInfos) 
+            return;
+    }
+    else if (type == Event::Type::Warning) 
+    {
+        if (!filter_.ShowWarnings) 
+            return;
+    }
+    else if (type == Event::Type::Error) 
+    {
+        if (!filter_.ShowErrors) 
+            return;
+    }
+
+    if (tag == "engine") 
+    {
+        if (!filter_.ShowModuleEng) 
+            return;
+    }
+    else if (tag == "app") 
+    { 
+        if (!filter_.ShowModuleApp) 
+            return;
+    }
+    else if (tag == "gui") 
+    { 
+        if (!filter_.ShowModuleGui) 
+            return;
+    }
+    else 
+    { 
+        if (!filter_.ShowModuleOther) 
+            return;
+    } 
+    
+    if (filtered_events_.full())
     {
         const auto first = index(0, 0);
-        const auto last  = index((int)events_.size(), 1);
-        events_.push_front(event);
+        const auto last  = index((int)filtered_events_.size(), 1);
+        filtered_events_.push_front(event);
         emit dataChanged(first, last);
     }
     else
     {
         beginInsertRows(QModelIndex(), 0, 0);
-        events_.push_front(event);
+        filtered_events_.push_front(event);
         endInsertRows();
     }    
 }
 
 void EventLog::clear()
 {
-    beginRemoveRows(QModelIndex(), 0, events_.size());
-    events_.clear();
+    beginRemoveRows(QModelIndex(), 0, filtered_events_.size());
+    unfiltered_events_.clear();
+    filtered_events_.clear();
     endRemoveRows();
 }
 
 int EventLog::rowCount(const QModelIndex&) const
 {
-    return static_cast<int>(events_.size());
+    return static_cast<int>(filtered_events_.size());
 }
 
 QVariant EventLog::data(const QModelIndex& index, int role) const
 {
     const auto row = index.row();
-    const auto& ev = events_[row];
+    const auto& ev = filtered_events_[row];
 
     if (role == Qt::DecorationRole)
     {
@@ -102,6 +150,56 @@ EventLog& EventLog::get()
 {
     static EventLog log;
     return log;
+}
+
+void EventLog::filter(const Filtering& filtering)
+{
+    boost::circular_buffer<Event> events(EventLogBufferSize);
+
+    for (const auto& event : unfiltered_events_)
+    {
+        if (event.type == Event::Type::Info)
+        {
+            if (!filtering.ShowInfos) 
+                continue;
+        }
+        else if (event.type == Event::Type::Warning)
+        {
+            if (!filtering.ShowWarnings) 
+                continue;
+        }
+        else if (event.type == Event::Type::Error)
+        {
+            if (!filtering.ShowErrors)
+                continue;
+        }
+        
+        if (event.logtag == "engine") 
+        {
+            if (!filtering.ShowModuleEng) 
+                continue;
+        }
+        else if (event.logtag == "app")
+        { 
+            if (!filtering.ShowModuleApp)
+                continue;
+        }
+        else if (event.logtag == "gui")
+        { 
+            if (!filtering.ShowModuleGui) 
+                continue;
+        }
+        else 
+        {
+            if (!filtering.ShowModuleOther) 
+                continue;
+        }   
+        events.push_back(event);
+    }
+    QAbstractListModel::beginResetModel();
+    filtered_events_ = std::move(events);
+    QAbstractListModel::endResetModel();
+    filter_ = filtering;
 }
 
 } // app

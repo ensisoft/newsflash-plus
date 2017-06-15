@@ -292,6 +292,14 @@ void MainWindow::loadState()
     app::g_engine->loadSession();
 }
 
+void MainWindow::startup()
+{
+    for (auto* widget : widgets_)
+    {
+        widget->startup();
+    }
+}
+
 void MainWindow::focusWidget(const MainWidget* widget)
 {
     focus(const_cast<MainWidget*>(widget));

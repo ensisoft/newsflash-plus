@@ -85,6 +85,10 @@ namespace gui
         // prepare the widget/component for shutdown
         virtual void shutdown() {}
 
+        // startup up the widget after application has loaded
+        // all the settings & data.
+        virtual void startup() {}
+
         // refresh the widget contents
         virtual void refresh(bool isActive) {}
 

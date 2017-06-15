@@ -28,6 +28,8 @@
 #include "eventlog.h"
 #include "app/eventlog.h"
 #include "app/debug.h"
+#include "app/settings.h"
+#include "app/utility.h"
 
 namespace gui
 {
@@ -61,11 +63,38 @@ void EventLog::addActions(QToolBar& bar)
     bar.addAction(ui_.actionClearLog);
 }
 
+void EventLog::loadState(app::Settings& settings)
+{
+    app::loadState("eventlog", ui_.chkEng, settings);
+    app::loadState("eventlog", ui_.chkApp, settings);
+    app::loadState("eventlog", ui_.chkGui, settings);
+    app::loadState("eventlog", ui_.chkOther, settings);
+    app::loadState("eventlog", ui_.chkInfo, settings);
+    app::loadState("eventlog", ui_.chkWarn, settings);
+    app::loadState("eventlog", ui_.chkError, settings);
+}
+
+void EventLog::saveState(app::Settings& settings)
+{
+    app::saveState("eventlog", ui_.chkEng, settings);
+    app::saveState("eventlog", ui_.chkApp, settings);
+    app::saveState("eventlog", ui_.chkGui, settings);
+    app::saveState("eventlog", ui_.chkOther, settings);
+    app::saveState("eventlog", ui_.chkInfo, settings);
+    app::saveState("eventlog", ui_.chkWarn, settings);
+    app::saveState("eventlog", ui_.chkError, settings);
+}
+
 void EventLog::activate(QWidget*)
 {
     numEvents_ = 0;
     setWindowIcon(QIcon("icons:ico_info.png"));
     setWindowTitle("Log");
+}
+
+void EventLog::startup()
+{
+    filter();
 }
 
 MainWidget::info EventLog::getInformation() const 
@@ -89,6 +118,41 @@ void EventLog::on_listLog_customContextMenuRequested(QPoint pos)
     menu.exec(QCursor::pos());
 }
 
+void EventLog::on_chkEng_clicked()
+{
+    filter();
+}
+
+void EventLog::on_chkApp_clicked()
+{
+    filter();
+}
+
+void EventLog::on_chkGui_clicked()
+{
+    filter();
+}
+
+void EventLog::on_chkOther_clicked()
+{
+    filter();
+}
+
+void EventLog::on_chkInfo_clicked()
+{
+    filter();
+}
+
+void EventLog::on_chkWarn_clicked()
+{
+    filter();
+}
+
+void EventLog::on_chkError_clicked()
+{
+    filter();
+}
+
 void EventLog::newEvent(const app::Event& event)
 {
     if (event.type == app::Event::Type::Note)
@@ -108,6 +172,21 @@ void EventLog::newEvent(const app::Event& event)
 
     ui_.actionClearLog->setEnabled(true);
 
+}
+
+void EventLog::filter()
+{
+    app::EventLog::Filtering filtering;
+    filtering.ShowModuleEng   = ui_.chkEng->isChecked();
+    filtering.ShowModuleApp   = ui_.chkApp->isChecked();
+    filtering.ShowModuleGui   = ui_.chkGui->isChecked();
+    filtering.ShowModuleOther = ui_.chkOther->isChecked();
+    filtering.ShowInfos       = ui_.chkInfo->isChecked();
+    filtering.ShowWarnings    = ui_.chkWarn->isChecked();
+    filtering.ShowErrors      = ui_.chkError->isChecked();
+    
+    auto& model = app::EventLog::get();
+    model.filter(filtering);
 }
 
 } // gui
