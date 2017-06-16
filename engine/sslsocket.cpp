@@ -41,6 +41,7 @@
 #include <string>
 #include <cassert>
 #include <cstring>
+#include <chrono>
 #include "sslsocket.h"
 #include "sslcontext.h"
 #include "socketapi.h"
@@ -347,14 +348,56 @@ sslsocket& sslsocket::operator=(sslsocket&& other)
 
 void sslsocket::ssl_wait_write()
 {
-    auto can_write = wait(false, true);
-    newsflash::wait(can_write);
+    // the problem with the SSL socket is that 
+    // because of the underlying SSL protocol 
+    // libssl can ask us to do reads/writes that are 
+    // outside of the reads/writes that  the client has asked us to do. 
+    // the problem with this is that the cancellation and timeout 
+    // logic is currently handled by the connection class
+    // and it expects that the socket then just works, i.e. 
+    // when handle has signaled writeable recvsome is then 
+    // able to read data. but this doesn't apply for the 
+    // SSL socket because the SSL protocol might ask us to 
+    // for example write. 
+    // so what can happen is something like this:
+    // 
+    // 1. client calls wait for cancel + socket objects
+    // 2. socket signals read
+    // 3. client calls socket::recvsome
+    // 4. SSL indicates want to write
+    // 5. socket::ssl_wait_write is called
+    // 6. connection has dropped    
+    // 7. ssl_wait_write uses infinite wait 
+    // 8. connection is now HUNG
+    // 
+    // this means that these waits really need to have a timeout value.
+    // however the arbitrary timeout value here is a problem, cause
+    // in case that the connection is just super slow a short timeout 
+    // can can timeout too fast. But then on the other hand if don't 
+    // have a timeout value we have a bug here and it's possible that the 
+    // application ends up waiting infinitely.
+    //
+    // Having a long timeout then on the other hand has the problem 
+    // that if the connection object is closed, we end up waiting 
+    // and blocking excessively long here, and also creating an error
+    // when we could just continue in "cancellation" code path. 
+    //
+    // A way to fix this would be to move the cancellation mechanism
+    // into the socket object and reflect this in the socket class's API.
+    // if we had this then we could wait here for the socket and the
+    // cancellation object, and quickly stop waiting if cancellation occurs
+    auto writeable = wait(false, true);
+    if (!newsflash::wait_for(writeable, std::chrono::seconds(10)))
+        throw std::runtime_error("SSL socket write timeout");
 }
 
 void sslsocket::ssl_wait_read()
 {
-    auto can_read = wait(true, false);
-    newsflash::wait(can_read);
+    // see the comment in ssl_wait_write
+
+    auto readable = wait(true, false);
+    if (!newsflash::wait_for(readable, std::chrono::seconds(10)))
+        throw std::runtime_error("SSL socket read timeout"); 
 }
 
 void sslsocket::complete_secure_connect()
