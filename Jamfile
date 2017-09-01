@@ -132,7 +132,7 @@ if [ os.name ] = LINUX
   lib crypto  : : <name>crypto <search>$(OPENSSL_PATH)/lib ;
 
   # protobuf
-  lib protobuf : : <name>protobuf <search>"third_party/protobuf/src/.libs" ;
+  lib protobuf : : <name>protobuf <search>"third_party/protobuf/lib" ;
 
   # this library is LGPL license, so must use as a shared library
   # instead of statically link it.
