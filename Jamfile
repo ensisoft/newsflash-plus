@@ -117,6 +117,9 @@ if [ os.name ] = NT
   lib protobuf : : <variant>debug   <name>libprotobuf <search>"third_party/protobuf/vsprojects/x64/Debug" ;
   lib protobuf : : <variant>release <name>libprotobuf <search>"third_party/protobuf/vsprojects/x64/Release" ;
 
+  # zlib compression library
+  lib zlib : : <name>zlib <search>"third_party/zlib/Release" ;
+
   # this library is LGPL license, so must use as a shared library
   # instead of statically link it.
   lib qjson : : <variant>release <name>qjson <search>"third_party/qjson/lib/Release" ;
@@ -134,6 +137,9 @@ if [ os.name ] = LINUX
   # protobuf
   lib protobuf : : <name>protobuf <search>"third_party/protobuf/lib" ;
 
+  # zlib compression library
+  lib zlib   : : <name>z <search>"third_party/zlib/lib" ;
+
   # this library is LGPL license, so must use as a shared library
   # instead of statically link it.
   lib qjson  : : <name>qjson <search>"third_party/qjson/lib/" ;
@@ -141,8 +147,7 @@ if [ os.name ] = LINUX
 }
 
 
-# compression library
-lib zlib   : : <name>zlib <search>"third_party/zlib/lib" ;
+
 
 # engine library
 lib engine :

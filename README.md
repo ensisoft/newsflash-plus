@@ -69,7 +69,7 @@ https://github.com/flavio/qjson
 
 third_party/zlib
 -------------------------
-The zlib compression library. The current version is 1.2.5
+The zlib compression library. The current version is 1.2.11
 http://www.zlib.net/
 
 
@@ -119,6 +119,14 @@ Build openssl.
     $ make install
 ```
 
+Build zlib
+
+```
+    $ cd third_party/zlib
+    $ cmake -G "Unix Makefiles"
+    $ make
+```
+
 
 Build Qt
 
@@ -140,7 +148,19 @@ Install these packages.
 
 ```
     $ cd qt-everywhere-opensource-src-4.8.6
-    $ ./configure --prefix=<newsflash_plus>/third_party/qt-4.8.6 --no-qt3support --no-webkit --openssl -I<newsflash_plus>/third_party/openssl/sdk/include -L<newsflash_plus>/third_party/openssl/sdk/lib
+    $ ./configure \ 
+      --prefix=<newsflash_plus>/third_party/qt-4.8.6 \
+      --no-accessibility \
+      --release \
+      --no-script \ 
+      --no-scripttools \
+      --no-qt3support \
+      --no-webkit \
+      --openssl \
+      -I<newsflash_plus>/third_party/openssl/sdk/include \ 
+      -L<newsflash_plus>/third_party/openssl/sdk/lib \
+      -I<newsflash_plus>/third_party/zlib \
+      -L<newsflash_plus>/third_party/zlib 
     $ make
     $ make install
 ```
@@ -151,12 +171,7 @@ it means that the script interpreter is shitting itself on windows style line en
 the .zip file instead of the .tar.gz  (you can fix this with dos2unix, but then also the executable bits are not set
 and configure will fail with some other cryptic error such as "no make or gmake was found bla bla".
 
-Build zlib
 
-```
-    $ cd third_party/zlib
-    $ bjam release
-```
 
 Build protobuf
 
@@ -204,14 +219,6 @@ NOTE: I have edited the CMakeList.txt to have a custom Qt path.
     $ cd third_party/qjson
     $ cmake -G "Unix Makefiles"
     $ make
-```
-
-Build zlib
-
-```
-    $ cd third_party/zlib
-    $ bjam release
-
 ```
 
 Build par2cmdline
@@ -298,6 +305,14 @@ Qt seems to want the 1.0.1x series.
     $ nmake -f ms\ntdll.mak install
 ```
 
+Build zlib
+
+```
+    $ cd third_party/zlib
+    $ cmake -G "Visual Studio 12 2013 Win64" 
+    $ msbuild zlib.sln /p:Configuration=Release
+```
+
 Build Qt
 
 The -platform parameter can be used to define the platform "spec". Qt don't bother documenting the available specs, so just have a look
@@ -307,18 +322,21 @@ Also 64bit build is cleverly supported by the 32bit spec. Just make sure to use 
 
 ```
     $ cd qt-everywhere-opensource-src-4.8.6
-    $ configure.exe -platform win32-msvc2013 -no-qt3support -no-webkit -debug-and-release -openssl -I "<newsflash_plus>\third_party\openssl\sdk\include" -L "<newsflash_plus>\third_party\openssl\sdk\lib" -prefix "<newsflash_plus>\third_party\qt-4.8.6"
+    $ configure.exe
+      -platform win32-msvc2013    
+      -prefix "<newsflash_plus>\third_party\qt-4.8.6"
+      -no-accessibility 
+      -release 
+      -no-script 
+      -no-scripttools      
+      -no-qt3support 
+      -no-webkit 
+      -openssl 
+      -I "<newsflash_plus>\third_party\openssl\sdk\include" 
+      -L "<newsflash_plus>\third_party\openssl\sdk\lib"
     $ nmake
     $ nmake install
 ```
-
-Build zlib
-
-```
-    $ cd third_party/zlib
-    $ bjam release address-model=64
-```
-
 
 Build protobuf library
 
@@ -342,15 +360,6 @@ NOTE: I have edited the CMakeList.txt to have a custom Qt path.
     $ msbuild qjson.sln /p:Configuration=Release /p:Platform=x64
     $ msbuild qjson.sln /p:Configuration=Debug /p:Platform=x64
 ```
-
-Build zlib
-
-```
-    $ cd third_party/zlib
-    $ bjam release
-
-```
-
 
 Build Par2cmdline
 
