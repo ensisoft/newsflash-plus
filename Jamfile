@@ -56,9 +56,9 @@ project newsflash
 
     <threading>multi
 
-    <toolset>gcc:<cflags>-std=c++11
+    <toolset>gcc:<cflags>-std=c++14
     <toolset>gcc:<cflags>-Wno-unused-local-typedefs
-    <toolset>clang:<cflags>-std=c++11
+    <toolset>clang:<cflags>-std=c++14
 
     # if this is not defined linking problems ensue on msvc
     <define>BOOST_ALL_NO_LIB
