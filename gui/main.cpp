@@ -287,6 +287,7 @@ int run(QtSingleApplication& qtinstance)
     win.attach(&cmdsGui);
 
 #if defined(LINUX_OS)
+    #undef linux
     gui::LinuxModule linux;
     win.attach(&linux);
 #endif
