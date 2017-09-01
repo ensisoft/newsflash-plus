@@ -14,6 +14,11 @@ A C++11 compliant compiler is required.
 
 Only 32bit building is currently supported.
 
+A new version of CMake is required (currently works with CMake >= 3.9.1). 
+If you get an error about automoc producing files by the same name your CMake version is too old.
+See this link for more information: 
+https://public.kitware.com/Bug/view.php?id=12873
+
 
 Description of Modules
 -------------------------
@@ -103,11 +108,9 @@ Start by cloning the source
 Download and extract boost package boost_1_51_0, then build and install boost.build
 
 ```
-    $ cd third_party/boost_1_51_0/tools/build/v2/
-    $ ./bootstrap.sh
-    $ sudo ./b2 install
-    $ bjam --version
-    Boost.Build 2011.12-svn
+  $ cd third_party/boost_1_51_0/
+  $ ./bootstrap.sh --prefix=`pwd`/sdk
+  $ ./b2 install
 ```
 
 Build openssl.
@@ -148,19 +151,19 @@ Install these packages.
 
 ```
     $ cd qt-everywhere-opensource-src-4.8.6
-    $ ./configure \ 
+    $ ./configure \
       --prefix=<newsflash_plus>/third_party/qt-4.8.6 \
       --no-accessibility \
       --release \
-      --no-script \ 
+      --no-script \
       --no-scripttools \
       --no-qt3support \
       --no-webkit \
       --openssl \
-      -I<newsflash_plus>/third_party/openssl/sdk/include \ 
+      -I<newsflash_plus>/third_party/openssl/sdk/include \
       -L<newsflash_plus>/third_party/openssl/sdk/lib \
       -I<newsflash_plus>/third_party/zlib \
-      -L<newsflash_plus>/third_party/zlib 
+      -L<newsflash_plus>/third_party/zlib
     $ make
     $ make install
 ```
@@ -198,7 +201,8 @@ WARNING: This might shit itself if aclocal has been updated to another version.
     Makefile:641: recipe for target 'aclocal.m4' failed
  ```
 
-You can try to fix it by opening and editing protobuf/Makefile
+You can try to fix it by opening and editing protobuf/Makefile. Sometimes this works sometimes it doesn't. Seriously I can't f* understand why if I extract the .tar.gz to another folder it builds there
+but the checkout in third_party won't build. Yet these two folders compare similar (with Meld). So WTF!?
 
 ```
 L240: ACLOCAL = ${SHELL} /home/enska/coding/newsflash/protobuf/missing <del>aclocal-1.14</del>
@@ -208,7 +212,8 @@ L246: AUTOMAKE = ${SHELL} /home/enska/coding/newsflash/protobuf/missing <del>aut
 L246: AUTOMAKE = ${SHELL} /home/enska/coding/newsflash/protobuf/missing automake-1.15
 
 ```
-
+If the above fails then Download and extract the protobuf-2.6.1 lib into some other folder and build it there,
+and then copy the libs over. That usually works.
 
 
 Build qjson
@@ -244,6 +249,23 @@ Build  unrar
     $ cp unrar ~/coding/newsflash/dist_d
 ```
 
+Build newsflash
+
+```
+  $ cd newsflash_plus
+  $ mkdir build_d
+  $ cd build_d
+  $ cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug ..
+  $ make
+  $ make install
+  $ cd ..
+  $ mkdir build
+  $ cd build
+  $ cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release ..
+  $ make
+  $ make install
+
+```
 
 
 Comments about ICU.
@@ -275,13 +297,9 @@ Start by cloning the source
 Download and extract boost package boost_1_51_0, then build and install boost.build
 
 ```
-    $ cd third_party/boost_1_51_0/tools/build/v2/
+    $ cd third_party/boost_1_51_0
     $ bootstrap.bat
-    $ b2
-    $ set BOOST_BUILD_PATH=c:\boost-build\share\boost-build
-    $ set PATH=%PATH%;c:\boost-build-engine\bin
-    $ bjam --version
-    Boost.Build 2011.12-svn
+    $ b2 install --prefix=%cd%/sdk
 ```
 
 Build openssl. Install ~~NASM and~~ ActivePerl.
@@ -309,7 +327,7 @@ Build zlib
 
 ```
     $ cd third_party/zlib
-    $ cmake -G "Visual Studio 12 2013 Win64" 
+    $ cmake -G "Visual Studio 12 2013 Win64"
     $ msbuild zlib.sln /p:Configuration=Release
 ```
 
@@ -323,16 +341,16 @@ Also 64bit build is cleverly supported by the 32bit spec. Just make sure to use 
 ```
     $ cd qt-everywhere-opensource-src-4.8.6
     $ configure.exe
-      -platform win32-msvc2013    
+      -platform win32-msvc2013
       -prefix "<newsflash_plus>\third_party\qt-4.8.6"
-      -no-accessibility 
-      -release 
-      -no-script 
-      -no-scripttools      
-      -no-qt3support 
-      -no-webkit 
-      -openssl 
-      -I "<newsflash_plus>\third_party\openssl\sdk\include" 
+      -no-accessibility
+      -release
+      -no-script
+      -no-scripttools
+      -no-qt3support
+      -no-webkit
+      -openssl
+      -I "<newsflash_plus>\third_party\openssl\sdk\include"
       -L "<newsflash_plus>\third_party\openssl\sdk\lib"
     $ nmake
     $ nmake install
@@ -375,6 +393,18 @@ Build Unrar
     $ msbuild UnRAR.vcxproj /p:Configuration=Release /p:Platform=x64
 ```
 
+Build Newsflash
+
+```
+    $ cd newsflash_plus
+    $ mkdir build
+    $ cd build 
+    $ cmake -G "Visual Studio 12 2013 Win64" -DCMAKE_BUILD_TYPE=Release ..
+    $ msbuild NewsflashPlus.sln /p:Configuration=Release /p:Platform=x64
+    $ mkdir build_d
+    $ cmake -G "Visual Studio 12 2013 Win64" -DCMAKE_BUILD_TYPE=Debug ..
+    $ msbuild NewsflashPlus.sln /p:Configuration=Debug /p:Platform:x64
+```
 
 UX Guidelines
 ========================

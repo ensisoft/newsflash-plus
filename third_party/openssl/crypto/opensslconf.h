@@ -53,8 +53,11 @@ extern "C" {
 
 #endif /* OPENSSL_DOING_MAKEDEPEND */
 
-#ifndef OPENSSL_NO_DYNAMIC_ENGINE
-# define OPENSSL_NO_DYNAMIC_ENGINE
+#ifndef OPENSSL_THREADS
+# define OPENSSL_THREADS
+#endif
+#ifndef OPENSSL_NO_STATIC_ENGINE
+# define OPENSSL_NO_STATIC_ENGINE
 #endif
 
 /* The OPENSSL_NO_* macros are also defined as NO_* if the application
@@ -106,6 +109,8 @@ extern "C" {
 # endif
 #endif
 
+#define OPENSSL_CPUID_OBJ
+
 /* crypto/opensslconf.h.in */
 
 /* Generate 80386 code? */
@@ -113,8 +118,8 @@ extern "C" {
 
 #if !(defined(VMS) || defined(__VMS)) /* VMS uses logical names instead */
 #if defined(HEADER_CRYPTLIB_H) && !defined(OPENSSLDIR)
-#define ENGINESDIR "/usr/local/ssl/lib/engines"
-#define OPENSSLDIR "/usr/local/ssl"
+#define ENGINESDIR "/home/enska/coding/newsflash/third_party/openssl/sdk/lib/engines"
+#define OPENSSLDIR "/home/enska/coding/newsflash/third_party/openssl/sdk"
 #endif
 #endif
 
@@ -152,7 +157,7 @@ extern "C" {
  * This enables code handling data aligned at natural CPU word
  * boundary. See crypto/rc4/rc4_enc.c for further details.
  */
-#undef RC4_CHUNK
+#define RC4_CHUNK unsigned long
 #endif
 #endif
 
@@ -160,7 +165,7 @@ extern "C" {
 /* If this is set to 'unsigned int' on a DEC Alpha, this gives about a
  * %20 speed up (longs are 8 bytes, int's are 4). */
 #ifndef DES_LONG
-#define DES_LONG unsigned long
+#define DES_LONG unsigned int
 #endif
 #endif
 
@@ -171,9 +176,9 @@ extern "C" {
 /* Should we define BN_DIV2W here? */
 
 /* Only one for the following should be defined */
-#undef SIXTY_FOUR_BIT_LONG
+#define SIXTY_FOUR_BIT_LONG
 #undef SIXTY_FOUR_BIT
-#define THIRTY_TWO_BIT
+#undef THIRTY_TWO_BIT
 #endif
 
 #if defined(HEADER_RC4_LOCL_H) && !defined(CONFIG_HEADER_RC4_LOCL_H)
@@ -215,7 +220,7 @@ extern "C" {
 /* Unroll the inner loop, this sometimes helps, sometimes hinders.
  * Very mucy CPU dependant */
 #ifndef DES_UNROLL
-#undef DES_UNROLL
+#define DES_UNROLL
 #endif
 
 /* These default values were supplied by
