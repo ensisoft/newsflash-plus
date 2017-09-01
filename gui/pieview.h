@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -18,9 +18,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+#pragma once
+
 #include "newsflash/config.h"
 #include "newsflash/warnpush.h"
-#  include <QtGui/QWidget> 
+#  include <QtGui/QWidget>
 #include "newsflash/warnpop.h"
 
 namespace gui
@@ -34,7 +36,7 @@ namespace gui
 
           // should be between 0.0 and 1.0
           void setAvailSlice(double value)
-          { 
+          {
                m_avail = value;
                update();
           }
@@ -46,7 +48,7 @@ namespace gui
 
      private:
           virtual void paintEvent(QPaintEvent* event) override;
-          
+
 
      private:
           double m_avail;
