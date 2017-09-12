@@ -148,20 +148,6 @@ elseif(MSVC)
         set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /DEBUG")
         set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /OPT:REF")
         set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /OPT:ICF")
-
-        # https://msdn.microsoft.com/en-us/library/fcc1zstk.aspx
-        # https://msdn.microsoft.com/en-us/library/windows/desktop/ms724832(v=vs.85).aspx
-        #
-        # this option is needed starting with msvc2012(?) to allow the binary run on WinXP.
-        # NOTE: that it seems to be enough to have this on the executable, so theres
-        # no need to dick around with Qt, json, zlib settings.
-        #
-        # WINDOWS, creates a win32 application that uses WinMain, no console.
-        # CONSOLE, creates a console application that uses main(), system created console.
-        # 5.2 = Win XP 64bit version 
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS,5.2")
-    elseif (CMAKE_BUILD_TYPE MATCHES "Release")        
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:CONSOLE,5.2")
     endif()
 
     # if this is not defined linking problems will happen on msvc
@@ -185,6 +171,24 @@ add_executable(newsflash
     gui/qtsingleapplication/qtlocalpeer.cpp
     tools/keygen/keygen.cpp
     stringlib/string.cpp)
+
+if (MSVC)
+    # https://msdn.microsoft.com/en-us/library/fcc1zstk.aspx
+    # https://msdn.microsoft.com/en-us/library/windows/desktop/ms724832(v=vs.85).aspx
+    #
+    # this option is needed starting with msvc2012(?) to allow the binary run on WinXP.
+    # NOTE: that it seems to be enough to have this on the executable, so theres
+    # no need to dick around with Qt, json, zlib settings.
+    #
+    # WINDOWS, creates a win32 application that uses WinMain, no console.
+    # CONSOLE, creates a console application that uses main(), system created console.
+    # 5.2 = Win XP 64bit version
+    if (CMAKE_BUILD_TYPE MATCHES "Release")
+        set_target_properties(newsflash PROPERTIES LINK_FLAGS "/SUBSYSTEM:WINDOWS,5.2")
+    elseif(CMAKE_BUILD_TYPE MATCHES "Debug")
+        set_target_properties(newsflash PROPERTIES LINK_FLAGS "/SUBSYSTEM:CONSOLE,5.2")
+    endif()
+endif()
 
 target_link_libraries(newsflash engine)
 target_link_libraries(newsflash 
