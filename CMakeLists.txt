@@ -15,7 +15,7 @@ https://github.com/ensisoft/newsflash-plus
 
 if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Debug)
-    message("         
+    message("
 This is the Debug build (by default)
 For Release build use the following:
 
@@ -38,7 +38,7 @@ set(BOOST_INCLUDEDIR "${CMAKE_CURRENT_LIST_DIR}/third_party/boost_1_51_0/sdk/inc
 set(BOOST_LIBRARYDIR "${CMAKE_CURRENT_LIST_DIR}/third_party/boost_1_51_0/sdk/lib")
 
 
-find_package(Boost REQUIRED COMPONENTS filesystem system thread regex)
+find_package(Boost REQUIRED COMPONENTS filesystem thread regex system)
 if(NOT Boost_FOUND)
     message(FATAL_ERROR
 "Shit. Couldn't find Boost third_party/boost_1_51_0"
@@ -68,7 +68,7 @@ include_directories(BEFORE "${CMAKE_CURRENT_LIST_DIR}/third_party/openssl/sdk/in
 include_directories(BEFORE "${CMAKE_CURRENT_LIST_DIR}/third_party/protobuf/src")
 include_directories(BEFORE "${CMAKE_CURRENT_LIST_DIR}/third_party/zlib")
 include_directories(BEFORE "${Boost_INCLUDE_DIRS}")
-# UI generated files do a global include for custom widgets such as the pieview. 
+# UI generated files do a global include for custom widgets such as the pieview.
 # so we need to add the gui folder to the include list.
 include_directories(BEFORE "${CMAKE_CURRENT_LIST_DIR}/gui")
 # this tells cmake to include our *current* directory which is our build directory
@@ -95,13 +95,13 @@ if (WIN32)
         link_directories("${CMAKE_CURRENT_LIST_DIR}/third_party/protobuf/vsprojects/x64/Release")
     elseif(CMAKE_BUILD_TYPE MATCHES "Debug")
         link_directories("${CMAKE_CURRENT_LIST_DIR}/third_party/protobuf/vsprojects/x64/Debug")
-    endif()    
-    link_directories("${CMAKE_CURRENT_LIST_DIR}/third_party/qjson/lib/Release")    
-    link_directories("${CMAKE_CURRENT_LIST_DIR}/third_party/zlib/Release")            
+    endif()
+    link_directories("${CMAKE_CURRENT_LIST_DIR}/third_party/qjson/lib/Release")
+    link_directories("${CMAKE_CURRENT_LIST_DIR}/third_party/zlib/Release")
 elseif(UNIX)
-    link_directories("${CMAKE_CURRENT_LIST_DIR}/third_party/protobuf/lib")    
+    link_directories("${CMAKE_CURRENT_LIST_DIR}/third_party/protobuf/lib")
     link_directories("${CMAKE_CURRENT_LIST_DIR}/third_party/qjson/lib")
-    link_directories("${CMAKE_CURRENT_LIST_DIR}/third_party/zlib/")    
+    link_directories("${CMAKE_CURRENT_LIST_DIR}/third_party/zlib/")
 endif()
 
 if (WIN32)
@@ -113,7 +113,7 @@ elseif(UNIX)
     set(LIB_OPENSSL  "ssl")
     set(LIB_CRYPTO   "crypto")
     set(LIB_Z        "z")
-    set(LIB_PROTOBUF "protobuf")    
+    set(LIB_PROTOBUF "protobuf")
 endif()
 
 # compiler specific compiler & linker flags
@@ -126,7 +126,7 @@ if (CMAKE_COMPILER_IS_GNUCC)
 elseif(MSVC)
     # /Zc:wchar_t  treats wchar_t as a native type
     # /Zc:wchar_t- treats wchar_t as a typedef for unsigned short.
-    # Qt requires wchar_t- otherwise the types don't match. 
+    # Qt requires wchar_t- otherwise the types don't match.
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:wchar_t-")
 
     if (CMAKE_BUILD_TYPE MATCHES "Release")
@@ -139,7 +139,7 @@ elseif(MSVC)
         # the version number. So for example vc120.pdb
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zi")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /FS")
-    
+
         # http://www.wintellect.com/devcenter/jrobbins/correctly-creating-native-c-release-build-pdbs
         # need to tell the linker also about the debug data.
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /DEBUG")
@@ -157,12 +157,19 @@ endif()
 # build the engine lib
 file(GLOB ENGINE_SOURCE engine/*.cpp engine/*.cc)
 add_library(engine STATIC ${ENGINE_SOURCE})
+target_link_libraries(engine INTERFACE
+    ${Boost_LIBRARIES}
+    ${LIB_PROTOBUF}
+    ${LIB_Z}
+    ${LIB_OPENSSL}
+    ${LIB_CRYPTO})
 
 file(GLOB APP_SOURCE  app/*.h app/*.cpp)
 file(GLOB GUI_SOURCE  gui/*.h gui/*.cpp gui/*.ui)
 
-add_executable(newsflash 
-    ${APP_SOURCE} 
+# build the main application
+add_executable(newsflash
+    ${APP_SOURCE}
     ${GUI_SOURCE}
     gui/resource.qrc
     gui/qtsingleapplication/qtsingleapplication.h
@@ -189,25 +196,134 @@ if (MSVC)
         set_target_properties(newsflash PROPERTIES LINK_FLAGS "/SUBSYSTEM:CONSOLE,5.2")
     endif()
 endif()
-
-target_link_libraries(newsflash engine)
-target_link_libraries(newsflash 
+target_link_libraries(newsflash
+    engine
+    qjson
     Qt4::QtCore
-    Qt4::QtGui 
+    Qt4::QtGui
     Qt4::QtNetwork
     Qt4::QtXml)
-target_link_libraries(newsflash ${Boost_LIBRARIES})
-target_link_libraries(newsflash 
-    ${LIB_PROTOBUF} 
-    qjson
-    ${LIB_Z}
-    ${LIB_OPENSSL}
-    ${LIB_CRYPTO})
 
-# todo: build tools and unit tests
+# build the keygen
+add_executable(keygen
+    tools/keygen/main.cpp
+    tools/keygen/keygen.cpp
+    app/webengine.h
+    app/webengine.cpp
+    app/webquery.h
+    app/webquery.cpp
+    app/debug.h
+    app/debug.cpp
+    engine/assert.cpp)
+target_link_libraries(keygen
+    Qt4::QtCore
+    Qt4::QtNetwork)
+
+# build the join tool for joining .001, .002 ... files
+add_executable(join
+    tools/joiner/main.cpp)
+target_link_libraries(join
+    Qt4::QtCore)
+
+# this is a dummy test server used by some of the test cases.
+# it must be built and running before tests can be run.
+add_executable(test_server
+    engine/unit_test/server.cpp)
+target_link_libraries(test_server
+    engine)
+
+# build unit test.
+enable_testing()
+
+add_executable(unit_test_utf8        engine/unit_test/unit_test_utf8.cpp)
+add_executable(unit_test_uuencode    engine/unit_test/unit_test_uuencode.cpp)
+add_executable(unit_test_yenc        engine/unit_test/unit_test_yenc.cpp)
+add_executable(unit_test_session     engine/unit_test/unit_test_session.cpp)
+add_executable(unit_test_buffer      engine/unit_test/unit_test_buffer.cpp)
+add_executable(unit_test_threadpool  engine/unit_test/unit_test_threadpool.cpp)
+add_executable(unit_test_event       engine/unit_test/unit_test_event.cpp)
+add_executable(unit_test_tcpsocket   engine/unit_test/unit_test_tcpsocket.cpp)
+add_executable(unit_test_sslsocket   engine/unit_test/unit_test_sslsocket.cpp)
+add_executable(unit_test_listing     engine/unit_test/unit_test_listing.cpp)
+add_executable(unit_test_download    engine/unit_test/unit_test_download.cpp)
+add_executable(unit_test_update      engine/unit_test/unit_test_update.cpp)
+add_executable(unit_test_stringtable engine/unit_test/unit_test_stringtable.cpp)
+add_executable(unit_test_datafile    engine/unit_test/unit_test_datafile.cpp)
+add_executable(unit_test_catalog     engine/unit_test/unit_test_catalog.cpp)
+add_executable(unit_test_index       engine/unit_test/unit_test_index.cpp)
+add_executable(unit_test_cmdlist     engine/unit_test/unit_test_cmdlist.cpp)
+add_executable(unit_test_nntp        engine/unit_test/unit_test_nntp.cpp)
+add_executable(unit_test_linebuffer  engine/unit_test/unit_test_linebuffer.cpp)
+add_executable(unit_test_bigfile     engine/unit_test/unit_test_bigfile.cpp)
+add_executable(unit_test_filemap     engine/unit_test/unit_test_filemap.cpp)
+add_executable(unit_test_filebuf     engine/unit_test/unit_test_filebuf.cpp)
+add_executable(unit_test_bodyiter    engine/unit_test/unit_test_bodyiter.cpp)
+add_executable(unit_test_decode      engine/unit_test/unit_test_decode.cpp)
+add_executable(unit_test_filetype    engine/unit_test/unit_test_filetype.cpp)
+add_executable(unit_test_throttle    engine/unit_test/unit_test_throttle.cpp)
+add_executable(unit_test_engine      engine/unit_test/unit_test_engine.cpp)
+add_executable(unit_test_connection  engine/unit_test/unit_test_connection.cpp)
+
+target_link_libraries(unit_test_utf8        engine)
+target_link_libraries(unit_test_uuencode    engine)
+target_link_libraries(unit_test_yenc        engine)
+target_link_libraries(unit_test_session     engine)
+target_link_libraries(unit_test_buffer      engine)
+target_link_libraries(unit_test_threadpool  engine)
+target_link_libraries(unit_test_event       engine)
+target_link_libraries(unit_test_tcpsocket   engine)
+target_link_libraries(unit_test_sslsocket   engine)
+target_link_libraries(unit_test_listing     engine)
+target_link_libraries(unit_test_download    engine)
+target_link_libraries(unit_test_update      engine)
+target_link_libraries(unit_test_stringtable engine)
+target_link_libraries(unit_test_datafile    engine)
+target_link_libraries(unit_test_catalog     engine)
+target_link_libraries(unit_test_index       engine)
+target_link_libraries(unit_test_cmdlist     engine)
+target_link_libraries(unit_test_nntp        engine)
+target_link_libraries(unit_test_linebuffer  engine)
+target_link_libraries(unit_test_bigfile     engine)
+target_link_libraries(unit_test_filemap     engine)
+target_link_libraries(unit_test_filebuf     engine)
+target_link_libraries(unit_test_bodyiter    engine)
+target_link_libraries(unit_test_decode      engine)
+target_link_libraries(unit_test_filetype    engine)
+target_link_libraries(unit_test_throttle    engine)
+target_link_libraries(unit_test_engine      engine)
+target_link_libraries(unit_test_connection  engine)
+
+add_test(NAME unit_test_utf8        COMMAND unit_test_utf8)
+add_test(NAME unit_test_uuencode    COMMAND unit_test_uuencode)
+add_test(NAME unit_test_yenc        COMMAND unit_test_yenc)
+add_test(NAME unit_test_session     COMMAND unit_test_session)
+add_test(NAME unit_test_buffer      COMMAND unit_test_buffer)
+add_test(NAME unit_test_threadpool  COMMAND unit_test_threadpool)
+add_test(NAME unit_test_event       COMMAND unit_test_event)
+add_test(NAME unit_test_tcpsocket   COMMAND unit_test_tcpsocket)
+add_test(NAME unit_test_sslsocket   COMMAND unit_test_sslsocket)
+add_test(NAME unit_test_listing     COMMAND unit_test_listing)
+add_test(NAME unit_test_download    COMMAND unit_test_download)
+add_test(NAME unit_test_update      COMMAND unit_test_update)
+add_test(NAME unit_test_stringtable COMMAND unit_test_stringtable)
+add_test(NAME unit_test_datafile    COMMAND unit_test_datafile)
+add_test(NAME unit_test_catalog     COMMAND unit_test_catalog)
+add_test(NAME unit_test_index       COMMAND unit_test_index)
+add_test(NAME unit_test_cmdlist     COMMAND unit_test_cmdlist)
+add_test(NAME unit_test_nntp        COMMAND unit_test_nntp)
+add_test(NAME unit_test_linebuffer  COMMAND unit_test_linebuffer)
+add_test(NAME unit_test_bigfile     COMMAND unit_test_bigfile)
+add_test(NAME unit_test_filemap     COMMAND unit_test_filemap)
+add_test(NAME unit_test_filebuf     COMMAND unit_test_filebuf)
+add_test(NAME unit_test_bodyiter    COMMAND unit_test_bodyiter)
+add_test(NAME unit_test_decode      COMMAND unit_test_decode)
+add_test(NAME unit_test_filetype    COMMAND unit_test_filetype)
+add_test(NAME unit_test_throttle    COMMAND unit_test_throttle)
+add_test(NAME unit_test_engine      COMMAND unit_test_engine)
+add_test(NAME unit_test_connection  COMMAND unit_test_connection)
 
 if (CMAKE_BUILD_TYPE MATCHES "Release")
-    install(TARGETS newsflash DESTINATION "${CMAKE_CURRENT_LIST_DIR}/dist")
+    install(TARGETS newsflash join DESTINATION "${CMAKE_CURRENT_LIST_DIR}/dist")
 elseif(CMAKE_BUILD_TYPE MATCHES "Debug")
-    install(TARGETS newsflash DESTINATION "${CMAKE_CURRENT_LIST_DIR}/dist_d")
+    install(TARGETS newsflash join DESTINATION "${CMAKE_CURRENT_LIST_DIR}/dist_d")
 endif()

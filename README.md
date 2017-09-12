@@ -14,9 +14,9 @@ A C++11 compliant compiler is required.
 
 Only 32bit building is currently supported.
 
-A new version of CMake is required (currently works with CMake >= 3.9.1). 
+A new version of CMake is required (currently works with CMake >= 3.9.1).
 If you get an error about automoc producing files by the same name your CMake version is too old.
-See this link for more information: 
+See this link for more information:
 https://public.kitware.com/Bug/view.php?id=12873
 
 
@@ -267,6 +267,14 @@ Build newsflash
 
 ```
 
+Run testcases
+```
+  $ cd build_d
+  $ cp -r ../test_data .
+  $ ./test_server &
+  $ ctest
+  $ killall test_server
+```
 
 Comments about ICU.
 Both Qt and boost.regex depend on ICU. So if ICU updates both Qt and boost.regex needs to be rebuilt.
@@ -398,12 +406,13 @@ Build Newsflash
 ```
     $ cd newsflash_plus
     $ mkdir build
-    $ cd build 
+    $ cd build
     $ cmake -G "Visual Studio 12 2013 Win64" -DCMAKE_BUILD_TYPE=Release ..
     $ msbuild NewsflashPlus.sln /p:Configuration=Release /p:Platform=x64
     $ mkdir build_d
     $ cmake -G "Visual Studio 12 2013 Win64" -DCMAKE_BUILD_TYPE=Debug ..
     $ msbuild NewsflashPlus.sln /p:Configuration=Debug /p:Platform:x64
+
 ```
 
 UX Guidelines
