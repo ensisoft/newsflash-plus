@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -63,14 +63,14 @@ namespace newsflash
             std::size_t value;
         };
 
-        class iterator : public 
+        class iterator : public
             std::iterator<std::input_iterator_tag, article<Storage>>
         {
         public:
             iterator() : offset_(0), length_(0)
             {}
 
-            const article<Storage>& operator*() 
+            const article<Storage>& operator*()
             {
                 if (length_ == 0) {
                     article_ = catalog_->load(offset_t{offset_});
@@ -78,7 +78,7 @@ namespace newsflash
                 }
                 return article_;
             }
-            const article<Storage>* operator->() 
+            const article<Storage>* operator->()
             {
                 if (length_ == 0) {
                     article_ = catalog_->load(offset_t{offset_});
@@ -86,11 +86,11 @@ namespace newsflash
                 }
                 return &article_;
             }
-            bool operator!=(const iterator& other) const 
+            bool operator!=(const iterator& other) const
             {
                 return offset_ != other.offset_;
             }
-            bool operator==(const iterator& other) const 
+            bool operator==(const iterator& other) const
             {
                 return offset_ == other.offset_;
             }
@@ -111,11 +111,11 @@ namespace newsflash
                 ++(*this);
                 return i;
             }
-            std::size_t offset() const 
+            std::size_t offset() const
             { return offset_; }
         private:
             friend class catalog;
-            iterator(std::size_t offset, catalog* catalog) 
+            iterator(std::size_t offset, catalog* catalog)
                : offset_(offset), length_(0), catalog_(catalog)
             {}
 
@@ -125,7 +125,7 @@ namespace newsflash
             catalog* catalog_;
             article<Storage> article_;
         };
- 
+
         catalog()
         {
             header_.cookie  = MAGIC;
@@ -134,7 +134,7 @@ namespace newsflash
             header_.size    = 0;
             header_.last    = std::numeric_limits<std::time_t>::min();
             header_.first   = std::numeric_limits<std::time_t>::max();
-            std::memset(header_.table, 0, sizeof(header_.table));            
+            std::memset(header_.table, 0, sizeof(header_.table));
         }
 
         // open existing catalog for reading and writing
@@ -154,7 +154,7 @@ namespace newsflash
             }
         }
 
-        iterator begin(offset_t offset) 
+        iterator begin(offset_t offset)
         {
             return {offset.value, this};
         }
@@ -169,7 +169,7 @@ namespace newsflash
         }
 
         // get article at the specific offset in the file.
-        // the first article is at offset 0. 
+        // the first article is at offset 0.
         // In general article N+1 is at N.offset + N.length
         article<Storage> load(offset_t offset)
         {
@@ -194,9 +194,9 @@ namespace newsflash
             return a;
         }
 
-        // append an article into the catalog.      
+        // append an article into the catalog.
         void append(const article<Storage>& a)
-        {            
+        {
             ASSERT(header_.size < CATALOG_SIZE);
 
             const auto off = header_.offset;
@@ -218,12 +218,12 @@ namespace newsflash
             ASSERT(header_.table[i.value] == 0);
 
             a.save(header_.offset, *this);
-            
+
             header_.table[i.value] = header_.offset;
             header_.offset += a.size_on_disk();
             header_.size++;
             header_.first = std::min(a.pubdate(), header_.first);
-            header_.last  = std::max(a.pubdate(), header_.last);            
+            header_.last  = std::max(a.pubdate(), header_.last);
             assert(header_.size < CATALOG_SIZE);
         }
 
@@ -244,22 +244,22 @@ namespace newsflash
             buff.flush();
         }
 
-        std::uint32_t size() const 
+        std::uint32_t size() const
         {
             return header_.size;
         }
 
-        std::time_t first_date() const 
+        std::time_t first_date() const
         {
             return header_.first;
         }
 
-        std::time_t last_date() const 
+        std::time_t last_date() const
         {
             return header_.last;
         }
 
-        bool is_empty(index_t i) const 
+        bool is_empty(index_t i) const
         {
             ASSERT(i.value < CATALOG_SIZE);
             return header_.table[i.value] == 0;
@@ -267,12 +267,17 @@ namespace newsflash
 
     private:
         static const std::uint32_t MAGIC = 0xdeadbabe;
-        // version 3. refactoring the way how to we store the data 
+        // version 3. refactoring the way how to we store the data
         // in the data files. instead of using the article hash
         // to index into the catalog file we use a local article
         // number that is derived from the very first article number
-        // received from the server + local article offset. 
-        static const std::uint32_t VERSION = 3; 
+        // received from the server + local article offset.
+        //
+        // version 4. bumping the version number because (stupidly)
+        // the idlist didn't have a proper versioning schema of it's own.
+        // so we're relying on the catalog version.
+        // also the article's datatype for idlist key has been changed to 64bit
+        static const std::uint32_t VERSION = 4;
 
         struct header {
             std::uint32_t cookie;

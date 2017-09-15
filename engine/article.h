@@ -222,7 +222,7 @@ namespace newsflash
         std::uint32_t bytes() const
         { return m_bytes; }
 
-        std::uint32_t idbkey() const
+        std::uint64_t idbkey() const
         { return m_idbkey; }
 
         std::uint16_t num_parts_total() const
@@ -294,7 +294,7 @@ namespace newsflash
         {
             m_bits.set(flag, on_off);
         }
-        void set_idbkey(std::uint32_t key)
+        void set_idbkey(std::uint64_t key)
         {
             m_idbkey = key;
         }
@@ -411,7 +411,7 @@ namespace newsflash
 
         std::uint32_t m_index;
         std::uint32_t m_bytes;
-        std::uint32_t m_idbkey;
+        std::uint64_t m_idbkey;
         std::uint16_t m_parts_avail;
         std::uint16_t m_parts_total;
         std::uint64_t m_number;
@@ -500,7 +500,7 @@ namespace newsflash
         std::uint32_t num_parts_avail() const
         { return m_ptr->parts_avail; }
 
-        std::uint32_t idbkey() const
+        std::uint64_t idbkey() const
         { return m_ptr->idbkey; }
 
         std::uint64_t number() const
@@ -561,7 +561,7 @@ namespace newsflash
 #endif
             std::uint32_t index;
             std::uint32_t bytes;
-            std::uint32_t idbkey;
+            std::uint64_t idbkey;
             std::uint16_t parts_avail;
             std::uint16_t parts_total;
             std::uint64_t number;
