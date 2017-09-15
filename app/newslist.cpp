@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -66,7 +66,7 @@ NewsList::~NewsList()
 }
 
 
-QVariant NewsList::headerData(int section, Qt::Orientation orietantation, int role) const 
+QVariant NewsList::headerData(int section, Qt::Orientation orietantation, int role) const
 {
     if (orietantation != Qt::Horizontal)
         return QVariant();
@@ -75,8 +75,8 @@ QVariant NewsList::headerData(int section, Qt::Orientation orietantation, int ro
     {
         switch ((NewsList::Columns)section)
         {
-            case Columns::Messages:   return "Messages";        
-            case Columns::Category:   return "Category";    
+            case Columns::Messages:   return "Messages";
+            case Columns::Category:   return "Category";
             case Columns::SizeOnDisk: return "Size";
             case Columns::Subscribed: return "";
             case Columns::Name:       return "Name";
@@ -103,30 +103,30 @@ QVariant NewsList::data(const QModelIndex& index, int role) const
         const auto& group = groups_[row];
         switch ((NewsList::Columns)col)
         {
-            case Columns::Messages:  
+            case Columns::Messages:
                 return toString(app::count{group.numMessages});
 
-            case Columns::Category:  
+            case Columns::Category:
                 return toString(group.type);
 
-            case Columns::SizeOnDisk:  
+            case Columns::SizeOnDisk:
                 if (group.sizeOnDisk == 0)
                     break;
                 return toString(app::size{group.sizeOnDisk});
 
-            case Columns::Name:        
+            case Columns::Name:
                 return group.name;
-            case Columns::Subscribed:  
+            case Columns::Subscribed:
                 break;
 
-            case Columns::LAST: 
-                Q_ASSERT(0); 
+            case Columns::LAST:
+                Q_ASSERT(0);
                 break;
         }
     }
     else if (role == Qt::DecorationRole)
     {
-        const auto& group = groups_[row];        
+        const auto& group = groups_[row];
         switch ((NewsList::Columns)col)
         {
             case Columns::Messages:
@@ -149,7 +149,7 @@ QVariant NewsList::data(const QModelIndex& index, int role) const
     return {};
 }
 
-void NewsList::sort(int column, Qt::SortOrder order) 
+void NewsList::sort(int column, Qt::SortOrder order)
 {
     if ((Columns)column == Columns::Subscribed)
         return;
@@ -162,7 +162,7 @@ void NewsList::sort(int column, Qt::SortOrder order)
     auto end = std::begin(groups_) + size_;
     switch ((Columns)column)
     {
-        case Columns::Messages:  
+        case Columns::Messages:
             app::sort(beg, end, order, &NewsGroup::numMessages);
             break;
 
@@ -174,8 +174,8 @@ void NewsList::sort(int column, Qt::SortOrder order)
             app::sort(beg, end, order, &NewsGroup::sizeOnDisk);
             break;
 
-        case Columns::Name:      
-            app::sort(beg, end, order, &NewsGroup::name); 
+        case Columns::Name:
+            app::sort(beg, end, order, &NewsGroup::name);
             break;
 
         default: Q_ASSERT("wut"); break;
@@ -184,9 +184,9 @@ void NewsList::sort(int column, Qt::SortOrder order)
     // and put the subscribed items at the top.
     auto it = std::stable_partition(beg, end, [&](const NewsGroup& group) {
             return ((group.flags & Flags::Subscribed) != 0);
-        });    
+        });
 
-    DEBUG("Found %1 favs", std::distance(beg, it)); 
+    DEBUG("Found %1 favs", std::distance(beg, it));
     Q_UNUSED(it);
 
     emit layoutChanged();
@@ -194,7 +194,7 @@ void NewsList::sort(int column, Qt::SortOrder order)
     order_ = order;
 }
 
-int NewsList::rowCount(const QModelIndex&) const 
+int NewsList::rowCount(const QModelIndex&) const
 {
     return (int)size_;
 }
@@ -220,7 +220,7 @@ void NewsList::stop(quint32 account)
 {
     auto it = pending_.find(account);
     if (it == std::end(pending_))
-        return;    
+        return;
 
     auto& op = it->second;
     g_engine->killAction(op.taskId);
@@ -377,7 +377,7 @@ void NewsList::unsubscribe(QModelIndexList& list, quint32 accountId)
     auto last  = QAbstractTableModel::index(maxIndex, (int)Columns::LAST);
     emit dataChanged(first, last);
 
-    setAccountSubscriptions(accountId);    
+    setAccountSubscriptions(accountId);
 }
 
 void NewsList::clearSize(const QModelIndex& index)
@@ -392,17 +392,22 @@ void NewsList::clearSize(const QModelIndex& index)
     emit dataChanged(first, last);
 }
 
-QString NewsList::getName(const QModelIndex& index) const 
+QString NewsList::getName(const QModelIndex& index) const
 {
     return groups_[index.row()].name;
 }
 
-QString NewsList::getName(std::size_t index) const 
+QString NewsList::getName(std::size_t index) const
 {
     return groups_[index].name;
 }
 
-std::size_t NewsList::numItems() const 
+MediaType NewsList::getMediaType(const QModelIndex& index) const
+{
+    return groups_[index.row()].type;
+}
+
+std::size_t NewsList::numItems() const
 {
     return size_;
 }
@@ -417,7 +422,7 @@ void NewsList::filter(const QString& str, newsflash::bitflag<FilterFlags> option
     QAbstractTableModel::beginResetModel();
 
     auto beg = std::begin(groups_);
-    auto end = std::partition(std::begin(groups_), std::end(groups_), 
+    auto end = std::partition(std::begin(groups_), std::end(groups_),
         [&](const NewsGroup& group) {
 
         if (isMusic(group.type) && !options.test(FilterFlags::ShowMusic))
@@ -457,7 +462,7 @@ void NewsList::filter(const QString& str, newsflash::bitflag<FilterFlags> option
     });
 
     size_ = std::distance(beg, end);
-    
+
     switch (sort_)
     {
         case Columns::Messages:
@@ -481,9 +486,9 @@ void NewsList::filter(const QString& str, newsflash::bitflag<FilterFlags> option
     end = std::begin(groups_) + size_;
     auto it = std::stable_partition(beg, end, [&](const NewsGroup& group) {
             return ((group.flags & Flags::Subscribed) != 0);
-        });   
+        });
 
-    DEBUG("Found %1 matching items...", size_);    
+    DEBUG("Found %1 matching items...", size_);
     DEBUG("Found %1 favs", std::distance(beg, it));
     Q_UNUSED(it);
 

@@ -56,40 +56,7 @@ CoreSettings::~CoreSettings()
 
 bool CoreSettings::validate() const
 {
-    const auto& logs = ui_.editLogFiles->text();
-    if (logs.isEmpty())
-    {
-        ui_.editLogFiles->setFocus();
-        return false;
-    }
-
-    const auto& downloads = ui_.editDownloads->text();
-    if (downloads.isEmpty())
-    {
-        ui_.editDownloads->setFocus();
-        return false;
-    }
     return true;
-}
-
-void CoreSettings::on_btnBrowseLog_clicked()
-{
-    auto dir = QFileDialog::getExistingDirectory(this,
-        tr("Select Log Folder"));
-    if (dir.isEmpty())
-        return;
-
-    ui_.editLogFiles->setText(dir);
-}
-
-void CoreSettings::on_btnBrowseDownloads_clicked()
-{
-    auto dir = QFileDialog::getExistingDirectory(this,
-        tr("Select Default Download Directory"));
-    if (dir.isEmpty())
-        return;
-
-    ui_.editDownloads->setText(dir);
 }
 
 void CoreSettings::on_sliderThrottle_valueChanged(int val)
@@ -132,19 +99,9 @@ SettingsWidget* CoreModule::getSettings()
     auto* ptr = new CoreSettings;
     auto& ui = ptr->ui_;
 
-    const auto overwrite = app::g_engine->getOverwriteExistingFiles();
-    const auto discard   = app::g_engine->getDiscardTextContent();
-    const auto logfiles  = app::g_engine->getLogfilesPath();
-    const auto downloads = app::g_engine->getDownloadPath();
-    const auto lowdisk   = app::g_engine->getCheckLowDisk();
-    const auto updates   = check_for_updates_; //s.get("settings", "check_for_software_updates", true);
+    const auto updates = check_for_updates_; //s.get("settings", "check_for_software_updates", true);
 
-    ui.chkOverwriteExisting->setChecked(overwrite);
-    ui.chkDiscardText->setChecked(discard);
     ui.chkUpdates->setChecked(updates);
-    ui.chkCheckLowDisk->setChecked(lowdisk);
-    ui.editLogFiles->setText(logfiles);
-    ui.editDownloads->setText(downloads);
 
     const auto num_acc = app::g_accounts->numAccounts();
     for (std::size_t i=0; i<num_acc; ++i)
@@ -200,12 +157,7 @@ void CoreModule::applySettings(SettingsWidget* gui)
     auto* ptr = dynamic_cast<CoreSettings*>(gui);
     auto& ui = ptr->ui_;
 
-    const bool overwrite = ui.chkOverwriteExisting->isChecked();
-    const bool discard   = ui.chkDiscardText->isChecked();
-    const bool updates   = ui.chkUpdates->isChecked();
-    const bool lowdisk   = ui.chkCheckLowDisk->isChecked();
-    const auto logfiles  = ui.editLogFiles->text();
-    const auto download  = ui.editDownloads->text();
+    const bool updates = ui.chkUpdates->isChecked();
 
     const auto ask_for_account = ui.rdbAskAccount->isChecked();
     //const auto use_one_account = ui.rdbUseAccount->isChecked();
@@ -248,11 +200,7 @@ void CoreModule::applySettings(SettingsWidget* gui)
         }
     }
 
-    app::g_engine->setDownloadPath(download);
-    app::g_engine->setLogfilesPath(logfiles);
-    app::g_engine->setOverwriteExistingFiles(overwrite);
-    app::g_engine->setDiscardTextContent(discard);
-    app::g_engine->setCheckLowDisk(lowdisk);
+
 
     const auto tick  = ui.sliderThrottle->value();
     const auto ticks = ui.sliderThrottle->maximum();

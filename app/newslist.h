@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -71,6 +71,7 @@ namespace app
 
         QString getName(const QModelIndex& index) const;
         QString getName(std::size_t index) const;
+        MediaType getMediaType(const QModelIndex& index) const;
 
         std::size_t numItems() const;
 
@@ -84,13 +85,13 @@ namespace app
             ShowApps,
             ShowAdult,
             ShowImages,
-            ShowOther           
+            ShowOther
         };
 
         void filter(const QString& str, newsflash::bitflag<FilterFlags> options);
 
     signals:
-        void progressUpdated(quint32 acc, quint32 maxValue, quint32 curValue);   
+        void progressUpdated(quint32 acc, quint32 maxValue, quint32 curValue);
         void loadComplete(quint32 acc);
         void makeComplete(quint32 acc);
 

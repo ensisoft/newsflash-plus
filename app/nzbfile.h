@@ -31,6 +31,7 @@
 #include <vector>
 #include <functional>
 #include "nzbparse.h"
+#include "media.h"
 
 namespace app
 {
@@ -45,6 +46,7 @@ namespace app
             Type, Size, File, LAST
         };
 
+        NZBFile(MediaType mediaType);
         NZBFile();
        ~NZBFile();
 
@@ -69,9 +71,9 @@ namespace app
         const NZBContent& getItem(std::size_t index) const;
 
         std::size_t numItems() const
-        {
-            return data_.size();
-        }
+        { return data_.size(); }
+
+        MediaType findMediaType() const;
 
         // QAbstractTableModel
         virtual int rowCount(const QModelIndex&) const override;
@@ -89,7 +91,8 @@ namespace app
     private:
         QString file_;
         QByteArray buffer_;
-        bool show_filename_only_;
+        bool show_filename_only_ = false;
+        mutable MediaType mediatype_ = MediaType::SENTINEL;
     };
 
 } // app

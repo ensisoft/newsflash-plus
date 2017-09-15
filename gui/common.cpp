@@ -20,6 +20,10 @@
 
 #include "newsflash/config.h"
 
+#include "newsflash/warnpush.h"
+#  include <QtGui/QLineEdit>
+#include "newsflash/warnpop.h"
+
 #include <deque>
 
 #include "engine/ui/task.h"
@@ -144,12 +148,13 @@ bool passSpaceCheck(QWidget* parent,
     const QString& downloadDesc,
     const QString& downloadPath,
     quint64 expectedFinalBinarySize,
-    quint64 expectedBatchSize)
+    quint64 expectedBatchSize,
+    app::MediaType mediatype)
 {
     if (!app::g_engine->getCheckLowDisk())
         return true;
 
-    const auto& location   = app::g_engine->resolveDownloadPath(downloadPath);
+    const auto& location   = app::g_engine->resolveDownloadPath(downloadPath, app::toMainType(mediatype));
     const auto& mountPoint = app::resolveMountPoint(location);
     const auto freeSpace   = app::getFreeDiskSpace(mountPoint);
     const auto queuedBytes = app::g_engine->getBytesQueued(mountPoint);
@@ -179,6 +184,17 @@ bool passSpaceCheck(QWidget* parent,
 
     app::g_engine->setCheckLowDisk(onOff);
 
+    return true;
+}
+
+bool validate(QLineEdit* edit)
+{
+    const auto& text = edit->text();
+    if (text.isEmpty())
+    {
+        edit->setFocus();
+        return false;
+    }
     return true;
 }
 

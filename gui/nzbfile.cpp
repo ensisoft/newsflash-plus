@@ -40,7 +40,7 @@
 namespace gui
 {
 
-NZBFile::NZBFile()
+NZBFile::NZBFile(app::MediaType type) : model_(type)
 {
     ui_.setupUi(this);
     ui_.progressBar->setVisible(false);
@@ -52,6 +52,9 @@ NZBFile::NZBFile()
 
     DEBUG("NZBFile UI created");
 }
+
+NZBFile::NZBFile() : NZBFile(app::MediaType::SENTINEL)
+{}
 
 NZBFile::~NZBFile()
 {
@@ -234,9 +237,9 @@ void NZBFile::downloadSelected(const QString& folder)
 
     // todo: should we do duplicate checking here somehow?
 
-    const auto byteSize = model_.sumDataSizes(indices);
-    if (!passSpaceCheck(this, basename, folder,
-        byteSize, byteSize))
+    const auto mediatype = model_.findMediaType();
+    const auto byteSize  = model_.sumDataSizes(indices);
+    if (!passSpaceCheck(this, basename, folder, byteSize, byteSize, mediatype))
         return;
 
     const auto acc = selectAccount(this, basename);

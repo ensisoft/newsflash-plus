@@ -28,6 +28,7 @@
 // common UI functions.
 
 class QWidget;
+class QLineEdit;
 
 namespace gui
 {
@@ -53,6 +54,9 @@ bool passSpaceCheck(QWidget* parent,
     const QString& desc,
     const QString& downloadPath,
     quint64 expectedFinalBinarySize,
-    quint64 expectedBatchSize);
+    quint64 expectedBatchSize,
+    app::MediaType mediatype);
+
+bool validate(QLineEdit* edit);
 
 } // gui

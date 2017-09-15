@@ -84,10 +84,11 @@ MainWindow::MainWindow(app::Settings& s) : QMainWindow(nullptr), current_(nullpt
 
     // put the various little widgets in their correct places
     ui_.statusBar->insertPermanentWidget(0, ui_.frmProgress);
-    ui_.statusBar->insertPermanentWidget(1, ui_.frmFreeSpace);
-    ui_.statusBar->insertPermanentWidget(2, ui_.frmDiskWrite);
-    ui_.statusBar->insertPermanentWidget(3, ui_.frmGraph);
-    ui_.statusBar->insertPermanentWidget(4, ui_.frmKbs);
+    //ui_.statusBar->insertPermanentWidget(1, ui_.frmFreeSpace);
+    ui_.frmFreeSpace->setVisible(false);
+    ui_.statusBar->insertPermanentWidget(1, ui_.frmDiskWrite);
+    ui_.statusBar->insertPermanentWidget(2, ui_.frmGraph);
+    ui_.statusBar->insertPermanentWidget(3, ui_.frmKbs);
     ui_.mainToolBar->setVisible(true);
     ui_.statusBar->setVisible(true);
     ui_.actionViewToolbar->setChecked(true);
@@ -1228,9 +1229,6 @@ void MainWindow::timerRefresh_timeout()
         ui_.mainTab->setTabIcon(i, icon);
     }
 
-
-    const auto freespace        = app::g_engine->getFreeDiskSpace();
-    const auto downloads        = app::g_engine->getDownloadPath();
     const auto netspeed         = app::g_engine->getDownloadSpeed();
     const auto bytes_downloaded = app::g_engine->getBytesDownloaded();
     const auto bytes_queued     = app::g_engine->getBytesQueued();
@@ -1247,8 +1245,6 @@ void MainWindow::timerRefresh_timeout()
         ui_.progressBar->setValue((int)done);
     }
     ui_.progressBar->setTextVisible(bytes_remaining != 0);
-
-    ui_.lblDiskFree->setText(app::toString("%1 %2", downloads, app::size{freespace}));
     ui_.lblNetIO->setText(app::toString("%1 %2",  app::speed { netspeed }, app::size {bytes_downloaded}));
     ui_.lblDiskIO->setText(app::toString("%1", app::size { bytes_written }));
     ui_.lblQueue->setText(app::toString("%1", app::size { bytes_remaining }));

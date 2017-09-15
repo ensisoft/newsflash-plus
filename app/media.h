@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -46,7 +46,7 @@ namespace app
 
     // todo: media types should be ideally be defined as a type
     // and a bunch of "tags" so that a movie can be tagged for example
-    // can be tagged with the appropriate tags such as 
+    // can be tagged with the appropriate tags such as
     // "hd, 1080, mkv, x264, french" for a High definition x264 encoded french movie.
     // unfortunately this is not the reality with the indexers.
 
@@ -60,59 +60,70 @@ namespace app
         MediaTypeVersion = 2
     };
 
+    // This is a parent category enum for the MediaType below.
+    enum class MainMediaType {
+        Adult,
+        Apps,
+        Music,
+        Games,
+        Images,
+        Movies,
+        Television,
+        Other
+    };
 
     enum class MediaType {
         // adult content
         AdultDVD,
         AdultHD,
         AdultSD,
-        AdultImg,        
+        AdultImg,
         AdultOther,
 
         //apps,
-        AppsAndroid,        
-        AppsMac,   
-        AppsIos,           
-        AppsISO,           
-        AppsPC,    
-        AppsOther, 
+        AppsAndroid,
+        AppsMac,
+        AppsIos,
+        AppsISO,
+        AppsPC,
+        AppsOther,
 
-        MusicLossless,        
+        MusicLossless,
         MusicMp3,
         MusicVideo,
         MusicOther,
 
         //console (games)
-        GamesNDS,    
-        GamesPSP, 
-        GamesPS1,   
-        GamesPS2,    
-        GamesPS3,   
-        GamesPS4,   
-        GamesWii,            
-        GamesXbox,   
-        GamesXbox360,        
+        GamesNDS,
+        GamesPSP,
+        GamesPS1,
+        GamesPS2,
+        GamesPS3,
+        GamesPS4,
+        GamesWii,
+        GamesXbox,
+        GamesXbox360,
         GamesOther,
 
         Images,
 
         //movies,
         MoviesInt,
-        MoviesSD, 
+        MoviesSD,
         MoviesHD,
         MoviesWMV,
         MoviesOther,
 
         //tv,
         TvInt,
-        TvSD, 
-        TvHD, 
-        TvSport, 
-        TvOther,        
+        TvSD,
+        TvHD,
+        TvSport,
+        TvOther,
 
         //other
         Ebook,
-        Audiobook,                
+        Audiobook,
         Other,
 
         // needs to be the last value.
@@ -120,7 +131,7 @@ namespace app
     };
 
     inline
-    bool isMovie(MediaType type) 
+    bool isMovie(MediaType type)
     {
         return type == MediaType::MoviesInt ||
             type == MediaType::MoviesSD ||
@@ -129,7 +140,7 @@ namespace app
             type == MediaType::MoviesOther;
     }
 
-    inline 
+    inline
     bool isTelevision(MediaType type)
     {
         return type == MediaType::TvInt ||
@@ -194,11 +205,11 @@ namespace app
     bool isOther(MediaType type)
     {
         return type == MediaType::Ebook ||
-            type == MediaType::Audiobook || 
+            type == MediaType::Audiobook ||
             type == MediaType::Other;
     }
 
-    
+
     // media item. these items are retrieved from RSS feeds/newznab etc. searches.
     struct MediaItem {
 
@@ -246,18 +257,18 @@ namespace app
             ++value_;
             return *this;
         }
-        MediaType operator*() const 
+        MediaType operator*() const
         {
             return (MediaType)value_;
         }
 
-        static 
-        MediaIterator begin() 
+        static
+        MediaIterator begin()
         {
             return MediaIterator((unsigned)MediaType::AdultDVD);
         }
         static
-        MediaIterator end() 
+        MediaIterator end()
         {
             return MediaIterator((unsigned)MediaType::SENTINEL);
         }
@@ -273,13 +284,13 @@ namespace app
     {
         return lhs.value_ == rhs.value_;
     }
-    inline 
+    inline
     bool operator!=(const MediaIterator& lhs, const MediaIterator& rhs)
     {
         return !(lhs == rhs);
     }
 
-    
+
     QString findAdultTitle(const QString& subject);
     QString findMovieTitle(const QString& subject);
     QString findTVSeriesTitle(const QString& subject, QString* season = nullptr, QString* episode =  nullptr);
@@ -291,5 +302,7 @@ namespace app
     QIcon toIcon(MediaSource source);
 
     MediaType findMediaType(const QString& newsgroup);
+
+    MainMediaType toMainType(MediaType type);
 
 } // app

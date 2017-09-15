@@ -45,6 +45,7 @@
 #include "debug.h"
 #include "format.h"
 #include "types.h"
+#include "media.h"
 
 //#include <valgrind/callgrind.h>
 
@@ -169,6 +170,11 @@ namespace app
         }
 
         QAbstractTableModel* getVolumeList();
+
+        MediaType findMediaType() const
+        {
+            return app::findMediaType(name_);
+        }
 
         static
         void deleteData(quint32 account, QString path, QString group);

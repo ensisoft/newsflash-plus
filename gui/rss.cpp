@@ -430,7 +430,7 @@ void RSS::downloadSelected(const QString& folder)
         if (!passDuplicateCheck(this, desc, item.type))
             continue;
 
-        if (!passSpaceCheck(this, desc, folder, item.size, item.size))
+        if (!passSpaceCheck(this, desc, folder, item.size, item.size, item.type))
             continue;
 
         const auto acc = selectAccount(this, desc);
@@ -593,8 +593,8 @@ void RSS::on_actionOpen_triggered()
     if (indices.isEmpty())
         return;
 
-    static auto callback = [=](const QByteArray& bytes, const QString& desc) {
-        auto* view = new NZBFile();
+    static auto callback = [=](const QByteArray& bytes, const QString& desc, app::MediaType type) {
+        auto* view = new NZBFile(type);
         view->setProperty("parent-object", QVariant::fromValue(static_cast<QObject*>(this)));
         g_win->attach(view, false);
         view->open(bytes, desc);
@@ -605,8 +605,8 @@ void RSS::on_actionOpen_triggered()
         const auto  row  = indices[i].row();
         const auto& item = model_.getItem(row);
         const auto& desc = item.title;
-        model_.downloadNzbFile(row, std::bind(callback,
-            std::placeholders::_1, desc));
+        const auto type  = item.type;
+        model_.downloadNzbFile(row, std::bind(callback, std::placeholders::_1, desc, type));
     }
 
     ui_.progressBar->setVisible(true);

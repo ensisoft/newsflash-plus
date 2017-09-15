@@ -238,9 +238,11 @@ void Search::on_actionOpen_triggered()
 
     for (const auto& index : indices)
     {
+        const auto& item = model_.getItem(index);
+        const auto type  = item.type;
         model_.loadItem(index,
             [=](const QByteArray& bytes, const QString& desc) {
-                auto* view = new NZBFile();
+                auto* view = new NZBFile(type);
                 view->setProperty("parent-object", QVariant::fromValue(static_cast<QObject*>(this)));
                 g_win->attach(view, false, true);
                 view->open(bytes, desc);
@@ -465,7 +467,7 @@ void Search::downloadSelected(const QString& folder)
         if (!passDuplicateCheck(this, desc, item.type))
             continue;
 
-        if (!passSpaceCheck(this, desc, folder, item.size, item.size))
+        if (!passSpaceCheck(this, desc, folder, item.size, item.size, item.type))
             continue;
 
         const auto acc = selectAccount(this, desc);

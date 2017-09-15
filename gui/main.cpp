@@ -60,6 +60,7 @@
 #include "searchmodule.h"
 #include "historydb.h"
 #include "omdb.h"
+#include "filesystem.h"
 #include "app/debug.h"
 #include "app/format.h"
 #include "app/distdir.h"
@@ -326,6 +327,9 @@ int run(QtSingleApplication& qtinstance)
 
     gui::Omdb omdbgui(&omdb);
     win.attach(&omdbgui);
+
+    gui::FileSystemModule fileSysMod;
+    win.attach(&fileSysMod);
 
     app::g_accounts->loadState(settings);
     app::g_tools->loadState(settings);

@@ -713,10 +713,10 @@ void NewsGroup::downloadSelected(const QString& folder)
     // selected items into batches with well defined names.
     //
     // However we need to and should do the space checking.
+    const auto media    = model_.findMediaType();
     const auto byteSize = model_.sumDataSizes(indices);
     const auto desc = model_.suggestName(indices);
-    if (!passSpaceCheck(this, desc, folder,
-        byteSize, byteSize))
+    if (!passSpaceCheck(this, desc, folder, byteSize, byteSize, media))
         return;
 
     model_.download(indices, account_, folder);

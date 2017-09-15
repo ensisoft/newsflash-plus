@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -59,7 +59,7 @@ QString findMovieTitle(const QString& subject)
 {
     QString ret;
 
-    // Two.Girls.And.a.Guy.1997.1080p.BluRay.x264-BARC0DE    
+    // Two.Girls.And.a.Guy.1997.1080p.BluRay.x264-BARC0DE
     if (tryCapture(subject, "(^\\S*)\\.(\\d{4})\\.", 1, ret))
         return ret;
 
@@ -69,7 +69,7 @@ QString findMovieTitle(const QString& subject)
     if (tryCapture(subject, "(^\\S*)\\.(DVDRip)", 1, ret))
         return ret;
 
-    return ret;    
+    return ret;
 }
 
 QString findTVSeriesTitle(const QString& subject, QString* season, QString* episode)
@@ -90,7 +90,7 @@ QString findTVSeriesTitle(const QString& subject, QString* season, QString* epis
 
 }
 
-QString toString(MediaType m) 
+QString toString(MediaType m)
 {
     using Media = MediaType;
     switch (m)
@@ -128,7 +128,7 @@ QString toString(MediaType m)
         case Media::TvSD:              return "TV SD";
         case Media::TvHD:              return "TV HD";
         case Media::TvSport:           return "TV Sports";
-        case Media::TvOther:           return "TV";        
+        case Media::TvOther:           return "TV";
 
         case Media::AdultDVD:          return "Adult DVD";
         case Media::AdultHD:           return "Adult HD";
@@ -254,28 +254,28 @@ MediaType findMediaType(const QString& newsgroup)
         {MediaType::GamesWii, "nintendo.wii."},
         {MediaType::GamesPS2, "playstation2"},
         {MediaType::GamesPS3, "playstation3"},
-        {MediaType::GamesPS1, "playstation"},        
+        {MediaType::GamesPS1, "playstation"},
         {MediaType::GamesPS3, "console.ps3"},
         {MediaType::GamesPSP, "console.psp"},
         {MediaType::GamesXbox360, "games.xbox360"},
         {MediaType::GamesXbox360, "binaries.xbox360"},
         {MediaType::GamesXbox, "games.xbox"},
         {MediaType::GamesXbox, "binaries.xbox"},
-        {MediaType::GamesOther, ".console."},        
-        {MediaType::GamesOther, ".consoles."},                
+        {MediaType::GamesOther, ".console."},
+        {MediaType::GamesOther, ".consoles."},
 
         {MediaType::MoviesInt, "movies.french"},
-        {MediaType::MoviesInt, "movies.divx.french"},        
+        {MediaType::MoviesInt, "movies.divx.french"},
         {MediaType::MoviesInt, "movies.german"},
-        {MediaType::MoviesInt, "movies.divx.german"},        
+        {MediaType::MoviesInt, "movies.divx.german"},
         {MediaType::MoviesInt, "movies.spanish"},
         {MediaType::MoviesInt, "movies.divx.spanish"},
         {MediaType::MoviesInt, "movies.italian"},
-        {MediaType::MoviesInt, "movies.divx.italian"},        
-        {MediaType::MoviesInt, "movies.divx.turkish"},                
-        {MediaType::MoviesInt, "movies.divx.russian"},                        
+        {MediaType::MoviesInt, "movies.divx.italian"},
+        {MediaType::MoviesInt, "movies.divx.turkish"},
+        {MediaType::MoviesInt, "movies.divx.russian"},
         {MediaType::MoviesSD, "movies.divx"},
-        {MediaType::MoviesSD, "movies.xvid"},        
+        {MediaType::MoviesSD, "movies.xvid"},
         {MediaType::MoviesSD, "movies.dvd"},
         {MediaType::MoviesHD, "movies.x264"},
         {MediaType::MoviesHD, "movies.mkv"},
@@ -296,28 +296,28 @@ MediaType findMediaType(const QString& newsgroup)
         {MediaType::MusicVideo, "dvd.music"},
         {MediaType::MusicVideo, "music.dvd"},
         {MediaType::MusicLossless, "music.flac"},
-        {MediaType::MusicLossless, "sounds.flac"},        
+        {MediaType::MusicLossless, "sounds.flac"},
         {MediaType::MusicLossless, "music.lossless"},
         {MediaType::MusicLossless, "sounds.lossless"},
         {MediaType::MusicLossless, "binaries.lossless"},
         {MediaType::MusicOther, "binaries.music"},
         {MediaType::MusicOther, ".audio."},
         {MediaType::MusicOther, ".sound."},
-        {MediaType::MusicOther, ".sounds."},        
+        {MediaType::MusicOther, ".sounds."},
 
 
         {MediaType::AppsPC, "win95-apps"},
         {MediaType::AppsPC, "cd.image.winapps"},
         {MediaType::AppsPC, "osx.apps"},
-        {MediaType::AppsISO, "binaries.iso"},        
+        {MediaType::AppsISO, "binaries.iso"},
         {MediaType::AppsISO, "binaries.cd.images"},
-        {MediaType::AppsISO, "linux.iso"},        
+        {MediaType::AppsISO, "linux.iso"},
         {MediaType::AppsISO, "image.iso"},
-        {MediaType::AppsISO, "german.iso"},        
+        {MediaType::AppsISO, "german.iso"},
         {MediaType::AppsAndroid, "alt.binaries.android"},
         {MediaType::AppsMac, "alt.binaries.mac"},
         {MediaType::AppsMac, ".mac.applications"},
-        {MediaType::AppsMac, ".mac.apps"},        
+        {MediaType::AppsMac, ".mac.apps"},
         {MediaType::AppsMac, ".mac.osx"},
         {MediaType::AppsMac, ".max.games"},
         {MediaType::Other, "binaries.applications"},
@@ -326,14 +326,14 @@ MediaType findMediaType(const QString& newsgroup)
         {MediaType::TvInt, ".tv.deutsch"},
         {MediaType::TvInt, ".tv.french"},
         {MediaType::TvInt, ".tv.swedish"},
-        {MediaType::TvInt, ".hdtv.swedish"},        
-        {MediaType::TvInt, ".hdtv.german"},                
-        {MediaType::TvInt, ".hdtv.french"},                
-        {MediaType::TvInt, ".hdtv.spanish"},                        
+        {MediaType::TvInt, ".hdtv.swedish"},
+        {MediaType::TvInt, ".hdtv.german"},
+        {MediaType::TvInt, ".hdtv.french"},
+        {MediaType::TvInt, ".hdtv.spanish"},
         {MediaType::TvSD, ".tv.divx"},
         {MediaType::TvHD, "binaries.hdtv"},
         {MediaType::TvHD, ".hdtv."},
-        {MediaType::TvSport, "multimedia.sports"},        
+        {MediaType::TvSport, "multimedia.sports"},
         {MediaType::TvOther, "binaries.appletv"},
         {MediaType::TvOther, "binaries.teevee"},
         {MediaType::TvOther, "tvshows"},
@@ -351,7 +351,7 @@ MediaType findMediaType(const QString& newsgroup)
         {MediaType::AdultImg, "pictures.nude"},
         {MediaType::AdultImg, "pictures.female"},
         {MediaType::AdultOther, ".binaries.erotica"},
-        {MediaType::AdultOther, ".multimedia.erotica"},                
+        {MediaType::AdultOther, ".multimedia.erotica"},
         {MediaType::AdultOther, ".erotica."},
 
         {MediaType::Ebook, ".ebook."},
@@ -370,6 +370,71 @@ MediaType findMediaType(const QString& newsgroup)
     }
 
     return MediaType::Other;
+}
+
+MainMediaType toMainType(MediaType type)
+{
+    switch (type)
+    {
+        case MediaType::AdultDVD:
+        case MediaType::AdultHD:
+        case MediaType::AdultSD:
+        case MediaType::AdultImg:
+        case MediaType::AdultOther:
+            return MainMediaType::Adult;
+
+        case MediaType::AppsAndroid:
+        case MediaType::AppsMac:
+        case MediaType::AppsIos:
+        case MediaType::AppsISO:
+        case MediaType::AppsPC:
+        case MediaType::AppsOther:
+            return MainMediaType::Apps;
+
+        case MediaType::MusicLossless:
+        case MediaType::MusicMp3:
+        case MediaType::MusicVideo:
+        case MediaType::MusicOther:
+            return MainMediaType::Music;
+
+        case MediaType::GamesNDS:
+        case MediaType::GamesPSP:
+        case MediaType::GamesPS1:
+        case MediaType::GamesPS2:
+        case MediaType::GamesPS3:
+        case MediaType::GamesPS4:
+        case MediaType::GamesWii:
+        case MediaType::GamesXbox:
+        case MediaType::GamesXbox360:
+        case MediaType::GamesOther:
+            return MainMediaType::Games;
+
+        case MediaType::Images:
+            return MainMediaType::Images;
+
+        case MediaType::MoviesInt:
+        case MediaType::MoviesSD:
+        case MediaType::MoviesHD:
+        case MediaType::MoviesWMV:
+        case MediaType::MoviesOther:
+            return MainMediaType::Movies;
+
+        case MediaType::TvInt:
+        case MediaType::TvSD:
+        case MediaType::TvHD:
+        case MediaType::TvSport:
+        case MediaType::TvOther:
+            return MainMediaType::Television;
+
+        case MediaType::Ebook:
+        case MediaType::Audiobook:
+        case MediaType::Other:
+            return MainMediaType::Other;
+
+        case MediaType::SENTINEL: Q_ASSERT(false);
+    }
+
+    return MainMediaType::Other;
 }
 
 } // app

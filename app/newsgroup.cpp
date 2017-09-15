@@ -778,7 +778,7 @@ void NewsGroup::download(const QModelIndexList& list, quint32 acc, const QString
     DEBUG("Suggest batch name '%1' and folder '%2'", name, path);
 
     Download download;
-    download.type     = findMediaType(name_);
+    download.type     = app::findMediaType(name_);
     download.source   = MediaSource::Headers;
     download.account  = acc;
     download.basepath = folder;

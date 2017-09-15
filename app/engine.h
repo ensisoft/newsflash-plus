@@ -31,6 +31,7 @@
 #include <memory>
 #include <vector>
 #include <string>
+#include <map>
 
 #include "engine/ui/connection.h"
 #include "engine/ui/task.h"
@@ -38,6 +39,7 @@
 #include "platform.h"
 #include "format.h"
 #include "accounts.h"
+#include "media.h"
 
 class QEvent;
 
@@ -62,7 +64,7 @@ namespace app
         Engine();
        ~Engine();
 
-        QString resolveDownloadPath(const QString& basePath) const;
+        QString resolveDownloadPath(const QString& path, MainMediaType media) const;
 
         void testAccount(const Accounts::Account& acc);
 
@@ -122,17 +124,10 @@ namespace app
                 totalspeed_ += ui.bps;
         }
 
-        // get the free disk space at the default download location.
-        quint64 getFreeDiskSpace() const
-        {
-            return diskspace_;
-        }
-
         // get the free disk space on the disk where the downloadPath points to.
         quint64 getFreeDiskSpace(const QString& downloadPath) const
         {
-            const auto& location   = resolveDownloadPath(downloadPath);
-            const auto& mountPoint = app::resolveMountPoint(location);
+            const auto& mountPoint = app::resolveMountPoint(downloadPath);
             const auto  freeSpace  = app::getFreeDiskSpace(mountPoint);
             return freeSpace;
         }
@@ -186,15 +181,22 @@ namespace app
             logifiles_ = path;
         }
 
-        const QString& getDownloadPath() const
+        QString getDownloadPath(MainMediaType media) const
         {
-            return downloads_;
+            //return downloads_;
+            auto it = downloads_.find(media);
+            if (it == std::end(downloads_))
+                return "";
+            return it->second;
         }
 
-        void setDownloadPath(const QString& path)
+        // Set the default download path associated with a specific
+        // type of media. When download happens if no path is given
+        // then the default path associated with the media type
+        // is used instead.
+        void setDownloadPath(MainMediaType media, const QString& path)
         {
-            downloads_  = path;
-            mountpoint_ = resolveMountPoint(downloads_);
+            downloads_[media] = path;
         }
 
         bool getOverwriteExistingFiles() const
@@ -352,16 +354,26 @@ namespace app
         void onConnectionTestLogMsg(const std::string& msg);
 
     private:
-        QString logifiles_;
-        QString downloads_;
-        QString mountpoint_;
-        quint64 diskspace_;
-        quint32 totalspeed_;
-        int ticktimer_;
+        // the actual lower level engine instance.
         std::unique_ptr<newsflash::engine> engine_;
-        bool connect_;
-        bool shutdown_;
-        bool checkLowDisk_;
+
+        // where engine log files are written.
+        QString logifiles_;
+
+        // current total download speed
+        quint32 totalspeed_ = 0;
+
+        // handle to tick timer which pumps the low level engine
+        int ticktimer_ = 0;
+
+        // mapping of media types to download paths.
+        // todo: this should move away from here, but ok..
+        std::map<MainMediaType, QString> downloads_;
+
+        // some flags.
+        bool connect_ = true;
+        bool shutdown_ = false;
+        bool checkLowDisk_ = true;
     };
 
     extern Engine* g_engine;

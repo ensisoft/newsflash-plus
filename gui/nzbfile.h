@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -28,6 +28,7 @@
 #include "mainwidget.h"
 #include "finder.h"
 #include "app/nzbfile.h"
+#include "app/media.h"
 
 namespace gui
 {
@@ -38,6 +39,7 @@ namespace gui
 
     public:
         NZBFile();
+        NZBFile(app::MediaType type);
        ~NZBFile();
 
         // MainWidget implementation

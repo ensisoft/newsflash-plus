@@ -43,7 +43,12 @@
 namespace app
 {
 
-NZBFile::NZBFile() : show_filename_only_(false)
+NZBFile::NZBFile(MediaType mediaType) : mediatype_(mediaType)
+{
+    DEBUG("NZBFile created");
+}
+
+NZBFile::NZBFile()
 {
     DEBUG("NZBFile created");
 }
@@ -117,7 +122,7 @@ void NZBFile::download(const QModelIndexList& list, quint32 account, const QStri
         selected.push_back(data_[i.row()]);
 
     Download download;
-    download.type     = MediaType::Other;
+    download.type     = findMediaType();
     download.source   = MediaSource::File;
     download.account  = account;
     download.basepath = folder;
@@ -155,6 +160,36 @@ const NZBContent& NZBFile::getItem(std::size_t index) const
     return data_[index];
 }
 
+MediaType NZBFile::findMediaType() const
+{
+    if (mediatype_ != MediaType::SENTINEL)
+        return mediatype_;
+
+    // we're going to speculate for the media type the
+    // based on the items that we have.
+
+    for (const auto& item : data_)
+    {
+        for (const auto& newsgroup : item.groups)
+        {
+            const auto type = app::findMediaType(fromUtf8(newsgroup));
+            if (type != MediaType::Other)
+            {
+                if (mediatype_ == MediaType::SENTINEL)
+                    mediatype_ = type;
+                else if (mediatype_ != type)
+                {
+                    mediatype_ = MediaType::Other;
+                    return mediatype_;
+                }
+            }
+        }
+    }
+    if (mediatype_ == MediaType::SENTINEL)
+        mediatype_ = MediaType::Other;
+
+    return mediatype_;
+}
 
 int NZBFile::rowCount(const QModelIndex&) const
 {

@@ -1,4 +1,4 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
+// Copyright (c) 2010-2017 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
 //
@@ -24,47 +24,48 @@
 
 #include "newsflash/warnpush.h"
 #  include <QObject>
-#  include "ui_coresettings.h"
+#  include "ui_filesystem.h"
 #include "newsflash/warnpop.h"
-#include <memory>
+
 #include "mainmodule.h"
 #include "settings.h"
 
-namespace app {
-    class Telephone;
-} // app
-
 namespace gui
 {
-    // have to be namespace scope class because MOC doesnt support
-    // shitty signals and slots for nested classes...
-    class CoreSettings  : public SettingsWidget
+    class FileSystemSettings : public SettingsWidget
     {
         Q_OBJECT
 
     public:
-        CoreSettings();
-       ~CoreSettings();
+        FileSystemSettings();
+       ~FileSystemSettings();
 
         virtual bool validate() const override;
+
     private slots:
-        void on_sliderThrottle_valueChanged(int val);
+        void on_btnAdult_clicked();
+        void on_btnApps_clicked();
+        void on_btnMusic_clicked();
+        void on_btnGames_clicked();
+        void on_btnImages_clicked();
+        void on_btnMovies_clicked();
+        void on_btnTelevision_clicked();
+        void on_btnOther_clicked();
+        void on_btnLog_clicked();
 
     private:
-        Ui::CoreSettings ui_;
+        Ui::FileSystem mUI;
     private:
-        friend class CoreModule;
+        friend class FileSystemModule;
     };
 
-    // glue code for general application settings and engine + feedback system
-    // translates settings data to UI state and vice versa.
-    class CoreModule : public QObject, public MainModule
+    class FileSystemModule : public QObject, public MainModule
     {
         Q_OBJECT
 
     public:
-        CoreModule();
-       ~CoreModule();
+        FileSystemModule();
+       ~FileSystemModule();
 
         virtual void loadState(app::Settings& s) override;
         virtual void saveState(app::Settings& s) override;
@@ -73,14 +74,9 @@ namespace gui
         virtual void freeSettings(SettingsWidget* gui) override;
 
         virtual info getInformation() const override
-        { return {"coremodule", ""}; }
-
-    private slots:
-        void calledHome(bool new_version_available, QString latest);
-
+        { return {"FileSystemModule", ""}; }
     private:
-        std::unique_ptr<app::Telephone> et_;
-    private:
-        bool check_for_updates_;
+
     };
-} // gui
+
+} // namespace

@@ -79,11 +79,6 @@ namespace app
 
 Engine::Engine()
 {
-    diskspace_  = 0;
-    totalspeed_ = 0;
-    shutdown_  = false;
-    checkLowDisk_ = true;
-
     engine_.reset(new newsflash::engine);
     engine_->set_error_callback(std::bind(&Engine::onError, this,
         std::placeholders::_1));
@@ -130,11 +125,14 @@ Engine::~Engine()
     DEBUG("Engine destroyed");
 }
 
-QString Engine::resolveDownloadPath(const QString& basePath) const
+QString Engine::resolveDownloadPath(const QString& path, MainMediaType media) const
 {
-    if (basePath.isEmpty())
-        return downloads_;
-    return basePath;
+    if (!path.isEmpty())
+        return path;
+    auto it = downloads_.find(media);
+    if (it == std::end(downloads_))
+        return "";
+    return it->second;
 }
 
 void Engine::testAccount(const Accounts::Account& acc)
@@ -222,7 +220,11 @@ bool Engine::downloadNzbContents(const Download& download, std::vector<NZBConten
 
     QString location = download.basepath;
     if (location.isEmpty())
-        location = downloads_;
+    {
+        auto it = downloads_.find(toMainType(download.type));
+        if (it != std::end(downloads_))
+            location = it->second;
+    }
 
     location = joinPath(location, download.folder);
 
@@ -307,18 +309,37 @@ void Engine::loadState(Settings& s)
 {
     logifiles_ = s.get("engine", "logfiles",
         QDir::toNativeSeparators(QDir::tempPath() + "/Newsflash"));
-    downloads_ = s.get("engine", "downloads",
-        QDir::toNativeSeparators(QDir::homePath() + "/Downloads"));
-    checkLowDisk_ = s.get("engine", "check_low_disk", checkLowDisk_);
 
-    mountpoint_ = resolveMountPoint(downloads_);
+    // Before we had only one generic file path setting for all downloads
+    // So if the user is migrating to a newer version we'll use this setting
+    // for all the media type specific download paths.
+    // if this setting doesn't exist then this is a new user without any previous
+    // setting and then we default to the home path downloads.
+    const QString& oldDownloadPath = s.get("engine", "downloads",
+        QDir::toNativeSeparators(QDir::homePath() + "/Downloads"));
+    if (!s.contains("engine", "download_path_for_adult"))
+    {
+        INFO("Updated download paths in the settings. Please review.");
+        NOTE("Please review your settings.");
+    }
+
+    // initialize the media type specific paths.
+    downloads_[MainMediaType::Adult]      = s.get("engine", "download_path_for_adult", oldDownloadPath);
+    downloads_[MainMediaType::Apps]       = s.get("engine", "download_path_for_apps", oldDownloadPath);
+    downloads_[MainMediaType::Music]      = s.get("engine", "download_path_for_music", oldDownloadPath);
+    downloads_[MainMediaType::Games]      = s.get("engine", "download_path_for_games", oldDownloadPath);
+    downloads_[MainMediaType::Images]     = s.get("engine", "download_path_for_images", oldDownloadPath);
+    downloads_[MainMediaType::Movies]     = s.get("engine", "download_path_for_movies", oldDownloadPath);
+    downloads_[MainMediaType::Television] = s.get("engine", "download_path_for_telly", oldDownloadPath);
+    downloads_[MainMediaType::Other]      = s.get("engine", "download_path_for_other", oldDownloadPath);
 
     const auto overwrite = s.get("engine", "overwrite_existing_files", false);
     const auto discard   = s.get("engine", "discard_text", true);
     const auto secure    = s.get("engine", "prefer_secure", true);
     const auto throttle  = s.get("engine", "throttle", false);
     const auto throttleval = s.get("engine", "throttle_value", 5 * 1024);
-    connect_ = s.get("engine", "connect", true);
+    checkLowDisk_ = s.get("engine", "check_low_disk", checkLowDisk_);
+    connect_      = s.get("engine", "connect", true);
 
     engine_->set_overwrite_existing_files(overwrite);
     engine_->set_discard_text_content(discard);
@@ -336,13 +357,21 @@ void Engine::saveState(Settings& s)
     const auto throttle  = engine_->get_throttle();
     const auto throttleval = engine_->get_throttle_value();
 
+    s.set("engine", "download_path_for_adult", getDownloadPath(MainMediaType::Adult));
+    s.set("engine", "download_path_for_apps",  getDownloadPath(MainMediaType::Apps));
+    s.set("engine", "download_path_for_music", getDownloadPath(MainMediaType::Music));
+    s.set("engine", "download_path_for_games", getDownloadPath(MainMediaType::Games));
+    s.set("engine", "download_path_for_images", getDownloadPath(MainMediaType::Images));
+    s.set("engine", "download_path_for_movies", getDownloadPath(MainMediaType::Movies));
+    s.set("engine", "download_path_for_telly", getDownloadPath(MainMediaType::Television));
+    s.set("engine", "download_path_for_other", getDownloadPath(MainMediaType::Other));
+
     s.set("engine", "throttle", throttle);
     s.set("engine", "throttle_value", throttleval);
     s.set("engine", "overwrite_existing_files", overwrite);
     s.set("engine", "discard_text", discard);
     s.set("engine", "prefer_secure", secure);
     s.set("engine", "logfiles", logifiles_);
-    s.set("engine", "downloads", downloads_);
     s.set("engine", "connect", connect_);
     s.set("engine", "check_low_disk", checkLowDisk_);
 }
@@ -397,7 +426,6 @@ void Engine::refresh()
     // point to a folder that doesn't yet exist..
     // so traverse the path towards the root untill
     // an existing path is found.
-    diskspace_ = app::getFreeDiskSpace(mountpoint_);
     if (checkLowDisk_)
     {
         // todo:
