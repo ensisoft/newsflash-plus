@@ -38,9 +38,8 @@
 namespace newsflash
 {
     enum {
-        CATALOG_SIZE = 100000
+        CATALOG_SIZE = 0x20000
     };
-
 
     template<typename Storage>
     class catalog : public Storage
@@ -277,7 +276,11 @@ namespace newsflash
         // the idlist didn't have a proper versioning schema of it's own.
         // so we're relying on the catalog version.
         // also the article's datatype for idlist key has been changed to 64bit
-        static const std::uint32_t VERSION = 4;
+        //
+        // version 5. change the catalog size to a power of 2.
+        // this allows the the update operation to get rid of the modulo operator and replace it
+        // with a bitwise and.
+        static const std::uint32_t VERSION = 5;
 
         struct header {
             std::uint32_t cookie;

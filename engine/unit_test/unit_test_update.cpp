@@ -632,7 +632,7 @@ void unit_test_index()
     std::vector<std::unique_ptr<newsflash::action>> actions;
 
     fs::createpath("alt.binaries.test");
-    delete_file("alt.binaries.test/vol000000000033654.dat");
+    delete_file("alt.binaries.test/vol000000000025676.dat");
     delete_file("alt.binaries.test/alt.binaries.test.nfo");
     delete_file("alt.binaries.test/alt.binaries.test.idb");
 
@@ -681,7 +681,7 @@ void unit_test_index()
         using article = newsflash::article<newsflash::filemap>;
 
         catalog dbs[1];
-        dbs[0].open("alt.binaries.test/vol000000000033654.dat");
+        dbs[0].open("alt.binaries.test/vol000000000025676.dat");
         //dbs[1].open("alt.binaries.test/vol000000000033653.dat");
 
         index idx;
@@ -692,7 +692,7 @@ void unit_test_index()
             return true;
         };
 
-        for (int i=0; i<1; ++i) 
+        for (int i=0; i<1; ++i)
         {
             auto& db = dbs[i];
             auto beg = db.begin();
@@ -715,7 +715,7 @@ void unit_test_index()
         }
     }
 
-    delete_file("alt.binaries.test/vol000000000033654.dat");
+    delete_file("alt.binaries.test/vol000000000025676.dat");
     delete_file("alt.binaries.test/alt.binaries.test.nfo");
     delete_file("alt.binaries.test/alt.binaries.test.idb");
 

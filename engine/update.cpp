@@ -48,7 +48,7 @@ using article_t   = article<filebuf>;
 using idlist_t = idlist<filebuf>;
 
 #pragma pack(push, 1)
-// these are just an internal helper structure that we use to read 
+// these are just an internal helper structure that we use to read
 // and write the hash structure to file
 struct FileHash {
     std::uint32_t article_hash = 0;
@@ -86,15 +86,15 @@ struct update::state {
 
     // these variables track our internal article numbering.
     // landmark defines the very first article number we have
-    // received and internally it maps to itself. 
+    // received and internally it maps to itself.
     // articles newer (bigger) than landmark are given internal number landmark + positive_offset
     // while articles older (smaller) are given landmark + negative_ offset
     //
     // these variables are in the state object since each store action
     // needs to access the latest data, i.e. the state is global
     // and not something each task can replicate on it's own_
-    // these are not procted by a mutex since the store 
-    // actions execute sequentially. 
+    // these are not procted by a mutex since the store
+    // actions execute sequentially.
     // if store actions are multithreaded then these need to be mutexed.
     std::uint64_t landmark_article_number = 0;
     std::int64_t  positive_offset = 0;
@@ -110,9 +110,9 @@ struct update::state {
         }
         std::uint64_t external_number = article.number();
         std::uint64_t internal_number = 0;
-        if (external_number > landmark_article_number) 
+        if (external_number > landmark_article_number)
         {
-            positive_offset++; 
+            positive_offset++;
             internal_number = landmark_article_number + positive_offset;
         }
         else if (external_number < landmark_article_number)
@@ -123,7 +123,7 @@ struct update::state {
         return internal_number;
     }
 
-    std::string file_volume_name(std::size_t index) const 
+    std::string file_volume_name(std::size_t index) const
     {
         const auto max_index = std::numeric_limits<std::uint64_t>::max() / std::uint64_t(CATALOG_SIZE);
 
@@ -206,19 +206,19 @@ public:
                 // if it's a multipart see if we know the hash value
                 // already and can map it to a article number that way
                 // but since it's possible that there are hash collisions
-                // we need to go over the potential hash matches and check 
-                // that they actually match. 
+                // we need to go over the potential hash matches and check
+                // that they actually match.
                 auto beg = hmap.lower_bound(hash);
                 auto end = hmap.upper_bound(hash);
                 for (; beg != end; ++beg)
                 {
                     const auto number = beg->second;
                     const auto file_index  = number / CATALOG_SIZE;
-                    const auto file_bucket = number % CATALOG_SIZE; 
+                    const auto file_bucket = number & (CATALOG_SIZE-1);
                     const auto file_name   = state_->file_volume_name(file_index);
                     if (!fs::exists(file_name))
                     {
-                        // if the file doesn't exist anymore then whole volume 
+                        // if the file doesn't exist anymore then whole volume
                         // has probably been purged in which case we just discard the hash
                         beg = hmap.erase(beg);
                         continue;
@@ -243,8 +243,8 @@ public:
                 {
                     internal_article_number = state_->allocate_internal(article);
                     hmap.insert(std::make_pair(article.hash(), internal_article_number));
-                } 
-            } 
+                }
+            }
             else
             {
                 internal_article_number = state_->allocate_internal(article);
@@ -254,7 +254,7 @@ public:
             ASSERT(internal_article_number  && "Article number is undefined.");
 
             const auto file_index  = internal_article_number / CATALOG_SIZE;
-            const auto file_bucket = internal_article_number % CATALOG_SIZE;
+            const auto file_bucket = internal_article_number & (CATALOG_SIZE-1);
             auto it = files.find(file_index);
             if (it == std::end(files))
             {
@@ -270,7 +270,7 @@ public:
                 auto a = db->load(index);
                 ASSERT(a.is_match(article));
                 ASSERT(a.has_parts());
-                
+
                 const auto max_parts = a.num_parts_total();
                 const auto num_part  = article.partno();
                 if (max_parts == 1)
@@ -360,10 +360,10 @@ update::update(std::string path, std::string group) : local_last_(0), local_firs
         // version would change and then in update task an exception
         // would occur when opening a catalog object.
         // now we're adding a header here. the version check is a bit iffy
-        // since in case of an older data file we're just reading a "junk" 
+        // since in case of an older data file we're just reading a "junk"
         // version value. However in practice this might not be such a big deal
         // since the UI has implicitly done a version check through the catalog
-        // version when opening the group and has (thus) failed.  
+        // version when opening the group and has (thus) failed.
         FileHeader header;
         in.read((char*)&header, sizeof(header));
         if (header.version != CurrentVersion)
@@ -376,7 +376,7 @@ update::update(std::string path, std::string group) : local_last_(0), local_firs
         state_->landmark_article_number = header.landmark_article_number;
         state_->positive_offset = header.positive_offset;
         state_->negative_offset = header.negative_offset;
-        
+
         if (num_hashes)
         {
             // read back the hashes
