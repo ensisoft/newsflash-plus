@@ -224,7 +224,7 @@ namespace newsflash
             header_.size++;
             header_.first = std::min(a.pubdate(), header_.first);
             header_.last  = std::max(a.pubdate(), header_.last);
-            assert(header_.size < CATALOG_SIZE);
+            ASSERT(header_.size <= CATALOG_SIZE);
         }
 
         // update the article at the specified index.
