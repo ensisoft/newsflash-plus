@@ -25,6 +25,7 @@
 #include "newsflash/warnpush.h"
 #  include <QRegExp>
 #  include <QtDebug>
+#  include <QEventLoop>
 #include "newsflash/warnpop.h"
 
 #include <string>
@@ -345,6 +346,30 @@ QStringList Unrar::findVolumes(const QStringList& files)
         ret << p.second;
 
     return ret;
+}
+
+QString Unrar::getCopyright(const QString& executable)
+{
+    QProcess process;
+    process.start(executable, QStringList());
+    // a bit ugly but ok..
+    QEventLoop loop;
+    QObject::connect(&process, SIGNAL(finished(int, QProcess::ExitStatus)),
+        &loop, SLOT(quit()));
+    loop.exec();
+
+    QByteArray data = process.readAllStandardOutput();
+    if (data.isEmpty())
+        return "";
+
+    QString str = QString::fromLatin1(data);
+    QStringList lines = str.split("\n");
+    for (const auto& line : lines)
+    {
+        if (line.toUpper().contains("COPYRIGHT"))
+            return line;
+    }
+    return "";
 }
 
 void Unrar::processStdOut()

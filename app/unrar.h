@@ -44,30 +44,21 @@ namespace app
         Unrar(const QString& executable);
        ~Unrar();
 
+        // Archiever implementation.
         virtual void extract(const Archive& arc, const Settings& settings) override;
-
         virtual void stop() override;
-
         virtual bool isRunning() const override;
-
         virtual QStringList findArchives(const QStringList& fileNames) const override;
-
         virtual bool isSupportedFormat(const QString& filePath, const QString& fileName) const override;
 
-        static
-        bool parseMessage(const QString& line, QString& msg);
+        // public static parse functions for easy unit testing.
+        static bool parseMessage(const QString& line, QString& msg);
+        static bool parseVolume(const QString& line, QString& volume);
+        static bool parseProgress(const QString& line, QString& file, int& done);
+        static bool parseTermination(const QString& line);
 
-        static
-        bool parseVolume(const QString& line, QString& volume);
-
-        static
-        bool parseProgress(const QString& line, QString& file, int& done);
-
-        static
-        bool parseTermination(const QString& line);
-
-        static
-        QStringList findVolumes(const QStringList& files);
+        static QStringList findVolumes(const QStringList& files);
+        static QString getCopyright(const QString& executable);
 
     private slots:
         void processStdOut();

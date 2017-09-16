@@ -30,6 +30,8 @@
 #include <zlib/zlib.h>
 #include "eventlog.h"
 #include "format.h"
+#include "unrar.h"
+#include "distdir.h"
 
 namespace app
 {
@@ -123,6 +125,7 @@ void logCopyright()
     INFO("Zlib compression library " ZLIB_VERSION);
     INFO("Copyright (c) 1995-2010 Jean-Loup Gailly & Mark Adler");
     INFO("http://zlib.net");
+    INFO(Unrar::getCopyright(app::distdir::file("unrar")));
 }
 
 } // app
