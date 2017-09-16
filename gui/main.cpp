@@ -223,9 +223,8 @@ int run(QtSingleApplication& qtinstance)
     gui::Repair repairGui(repairer);
 
     //  unpack
-    std::unique_ptr<app::Archiver> extractEngine(new app::Unrar(
-        app::distdir::file("unrar")));
-    app::Unpacker unpacker(std::move(extractEngine));
+    app::Unpacker unpacker;
+    unpacker.addEngine(std::make_unique<app::Unrar>(app::distdir::file("unrar")));
     QObject::connect(&unpacker, SIGNAL(unpackEnqueue(const app::Archive&)),
         &power, SLOT(unpackEnqueue()));
     QObject::connect(&unpacker, SIGNAL(unpackReady(const app::Archive&)),

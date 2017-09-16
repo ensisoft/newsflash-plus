@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -52,16 +52,18 @@ namespace app
 
         virtual QStringList findArchives(const QStringList& fileNames) const override;
 
+        virtual bool isSupportedFormat(const QString& filePath, const QString& fileName) const override;
+
         static
         bool parseMessage(const QString& line, QString& msg);
 
-        static 
+        static
         bool parseVolume(const QString& line, QString& volume);
 
-        static 
+        static
         bool parseProgress(const QString& line, QString& file, int& done);
 
-        static 
+        static
         bool parseTermination(const QString& line);
 
         static

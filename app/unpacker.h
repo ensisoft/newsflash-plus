@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -30,6 +30,7 @@
 #  include <QStringList>
 #include <newsflash/warnpop.h>
 #include <memory>
+#include <vector>
 #include "archiver.h"
 
 namespace app
@@ -37,13 +38,13 @@ namespace app
     struct Archive;
     class Archiver;
 
-    // unpacker unpacks archive files such as .rar. 
+    // unpacker unpacks archive files such as .rar.
     class Unpacker : public QObject
     {
         Q_OBJECT
 
     public:
-        Unpacker(std::unique_ptr<Archiver> archiver);
+        Unpacker();
        ~Unpacker();
 
         // get unpack list data model
@@ -51,7 +52,11 @@ namespace app
 
         QAbstractTableModel* getUnpackData();
 
-        // add a new unpack operation to be performed. 
+        // add a new extraction engine that can be used to
+        // select and extract archives.
+        void addEngine(std::unique_ptr<Archiver> engine);
+
+        // add a new unpack operation to be performed.
         void addUnpack(const Archive& arc);
 
         // stop current unpack operation.
@@ -72,26 +77,26 @@ namespace app
         void openLog(QModelIndexList& list);
 
         void setEnabled(bool onOff)
-        { 
-            enabled_ = onOff; 
-            if (enabled_)
+        {
+            mEnabled = onOff;
+            if (mEnabled)
                 startNextUnpack();
         }
 
         void setPurgeOnSuccess(bool onOff)
-        { cleanup_ = onOff; }
+        { mCleanup = onOff; }
 
         void setKeepBroken(bool onOff)
-        { keepBroken_ = onOff; }
+        { mKeepBroken = onOff; }
 
         void setOverwriteExisting(bool onOff)
-        { overwrite_ = onOff; }
+        { mOverwrite = onOff; }
 
         void setWriteLog(bool onOff)
-        { writeLog_ = onOff; }
+        { mWriteLog = onOff; }
 
-        bool isEnabled() const 
-        { return enabled_; }
+        bool isEnabled() const
+        { return mEnabled; }
 
         QStringList findUnpackVolumes(const QStringList& fileEntries);
 
@@ -111,15 +116,16 @@ namespace app
     private:
         class UnpackList;
         class UnpackData;
-        std::unique_ptr<UnpackList> list_;
-        std::unique_ptr<UnpackData> data_;
-        std::unique_ptr<Archiver> engine_;
+        std::unique_ptr<UnpackList> mUnpackList;
+        std::unique_ptr<UnpackData> mUnpackData;
+        std::vector<std::unique_ptr<Archiver>> mEngines;
+        Archiver* mCurrentEngine = nullptr;
     private:
-        bool enabled_;
-        bool cleanup_;
-        bool overwrite_;
-        bool keepBroken_;
-        bool writeLog_;
+        bool mEnabled    = true;
+        bool mCleanup    = false;
+        bool mOverwrite  = false;
+        bool mKeepBroken = true;
+        bool mWriteLog   = true;
     };
 
 } // app

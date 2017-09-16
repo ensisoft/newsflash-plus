@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -72,7 +72,7 @@ namespace app
 
 Unrar::Unrar(const QString& executable) : unrar_(executable)
 {
-    QObject::connect(&process_, SIGNAL(finished(int, QProcess::ExitStatus)), 
+    QObject::connect(&process_, SIGNAL(finished(int, QProcess::ExitStatus)),
         this, SLOT(processFinished(int, QProcess::ExitStatus)));
     QObject::connect(&process_, SIGNAL(error(QProcess::ProcessError)),
         this, SLOT(processError(QProcess::ProcessError)));
@@ -81,7 +81,7 @@ Unrar::Unrar(const QString& executable) : unrar_(executable)
     QObject::connect(&process_, SIGNAL(readyReadStandardOutput()),
         this, SLOT(processStdOut()));
     QObject::connect(&process_, SIGNAL(readyReadStandardError()),
-        this, SLOT(processStdErr()));        
+        this, SLOT(processStdErr()));
 }
 
 Unrar::~Unrar()
@@ -89,7 +89,7 @@ Unrar::~Unrar()
     const auto state = process_.state();
     Q_ASSERT(state == QProcess::NotRunning &&
         "Current archive is still being processed."
-        "We should either wait for its completion or stop it");        
+        "We should either wait for its completion or stop it");
     Q_UNUSED(state);
 }
 
@@ -103,7 +103,7 @@ void Unrar::extract(const Archive& arc, const Settings& settings)
     stdout_.clear();
     stderr_.clear();
     message_.clear();
-    errors_.clear();        
+    errors_.clear();
     files_.clear();
     success_  = true;
     cleanup_  = settings.purgeOnSuccess;
@@ -140,7 +140,7 @@ void Unrar::extract(const Archive& arc, const Settings& settings)
     process_.setWorkingDirectory(arc.path);
     process_.setProcessChannelMode(QProcess::SeparateChannels);
     process_.start(unrar_, args);
-    
+
     DEBUG("Started unrar for %1", arc.file);
 }
 
@@ -157,7 +157,7 @@ void Unrar::stop()
     // terminate will ask the process nicely to exit
     // QProcess::kill will just kill it forcefully.
     // looks like terminate will send sigint and unrar obliges and exits cleanly.
-    // however this means that process's return state is normal exit. 
+    // however this means that process's return state is normal exit.
     // whereas unrar just dies.
     process_.kill();
 
@@ -170,7 +170,7 @@ void Unrar::stop()
     }
 }
 
-bool Unrar::isRunning() const 
+bool Unrar::isRunning() const
 {
     const auto state = process_.state();
     if (state == QProcess::NotRunning)
@@ -179,9 +179,24 @@ bool Unrar::isRunning() const
     return true;
 }
 
-QStringList Unrar::findArchives(const QStringList& fileNames) const 
+QStringList Unrar::findArchives(const QStringList& fileNames) const
 {
     return Unrar::findVolumes(fileNames);
+}
+
+bool Unrar::isSupportedFormat(const QString& filePath, const QString& fileName) const
+{
+    static const char* patterns[] = {
+        ".part01.rar",
+        ".part001.rar",
+        ".r00",
+    };
+    for (const char* p : patterns)
+    {
+        if (fileName.contains(QString::fromLatin1(p)))
+            return true;
+    }
+    return false;
 }
 
     // \D matches a non-digit
@@ -299,7 +314,7 @@ QStringList Unrar::findVolumes(const QStringList& files)
 
     for (auto it = std::begin(files); it != std::end(files);)
     {
-        it = std::find_if(it, std::end(files), 
+        it = std::find_if(it, std::end(files),
             [](QString f) {
                 if (!f.endsWith(".rar"))
                     return false;
@@ -343,7 +358,7 @@ void Unrar::processStdOut()
     std::string temp;
     for (int i=0; i<stdout_.size(); ++i)
     {
-        const auto byte = stdout_.at(i); 
+        const auto byte = stdout_.at(i);
         if (byte == '\n')
         {
             const auto line = widen(temp);
@@ -357,7 +372,7 @@ void Unrar::processStdOut()
             if (parseVolume(line, str))
             {
                 onExtract(archive_, str);
-                files_.insert(str);                
+                files_.insert(str);
             }
             else if (parseProgress(line, str, done))
             {
@@ -382,7 +397,7 @@ void Unrar::processStdOut()
             temp.push_back('.');
         }
         else
-        {         
+        {
             if (!std::iscntrl((unsigned)byte))
                 temp.push_back(byte);
         }
@@ -429,7 +444,7 @@ void Unrar::processStdErr()
 
 void Unrar::processFinished(int exitCode, QProcess::ExitStatus status)
 {
-    DEBUG("unrar %1 finished. ExitCode %2, ExitStatus %3", 
+    DEBUG("unrar %1 finished. ExitCode %2, ExitStatus %3",
         unrar_, exitCode, status);
 
     if (archive_.state != Archive::Status::Stopped)

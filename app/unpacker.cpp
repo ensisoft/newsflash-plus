@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -57,7 +57,7 @@ public:
             case Columns::Name:   return "Name";
             case Columns::Error:  return "Message";
             case Columns::Path:   return "Location";
-            case Columns::LAST:   Q_ASSERT(0); 
+            case Columns::LAST:   Q_ASSERT(0);
         }
 
         return {};
@@ -97,7 +97,7 @@ public:
     virtual int columnCount(const QModelIndex&) const override
     {
         return (int)Columns::LAST;
-    }    
+    }
 
     void addUnpack(const Archive& arc)
     {
@@ -116,7 +116,7 @@ public:
 
     static const std::size_t NoSuchUnpack; // = std::numeric_limits<std::size_t>::max();
 
-    std::size_t findNextPending() const 
+    std::size_t findNextPending() const
     {
         auto it = std::find_if(std::begin(list_), std::end(list_),
             [](const Archive& arc) {
@@ -128,7 +128,7 @@ public:
         return std::distance(std::begin(list_), it);
     }
 
-    std::size_t findActive() const 
+    std::size_t findActive() const
     {
         auto it = std::find_if(std::begin(list_), std::end(list_),
             [](const Archive& arc) {
@@ -140,8 +140,8 @@ public:
         return std::distance(std::begin(list_), it);
     }
 
-    Archive& getArchive(std::size_t index) 
-    { 
+    Archive& getArchive(std::size_t index)
+    {
         BOUNDSCHECK(list_, index);
         return list_[index];
     }
@@ -209,7 +209,7 @@ public:
         QAbstractTableModel::reset();
     }
 
-    std::size_t numUnpacks() const 
+    std::size_t numUnpacks() const
     { return list_.size(); }
 
 private:
@@ -273,7 +273,7 @@ public:
     virtual int columnCount(const QModelIndex&) const override
     {
         return (int)Columns::LAST;
-    }    
+    }
 
     void update(const app::Archive& arc, const QString& file)
     {
@@ -303,21 +303,34 @@ private:
 };
 
 
-Unpacker::Unpacker(std::unique_ptr<Archiver> archiver) : engine_(std::move(archiver))
+Unpacker::Unpacker()
 {
     DEBUG("Unpacker created");
+    mUnpackList.reset(new UnpackList);
+    mUnpackData.reset(new UnpackData);
+}
 
-    list_.reset(new UnpackList);    
-    data_.reset(new UnpackData);
+Unpacker::~Unpacker()
+{
+    DEBUG("Unpacker deleted");
+}
 
-    engine_->onExtract = std::bind(&UnpackData::update, data_.get(),
+QAbstractTableModel* Unpacker::getUnpackList()
+{ return mUnpackList.get(); }
+
+QAbstractTableModel* Unpacker::getUnpackData()
+{ return mUnpackData.get(); }
+
+void Unpacker::addEngine(std::unique_ptr<Archiver> engine)
+{
+    engine->onExtract = std::bind(&UnpackData::update, mUnpackData.get(),
         std::placeholders::_1, std::placeholders::_2);
 
-    engine_->onProgress = [=](const app::Archive& arc, const QString& target, int done) {
+    engine->onProgress = [=](const app::Archive& arc, const QString& target, int done) {
         emit unpackProgress(target, done);
     };
 
-    engine_->onReady = [=](const app::Archive& arc) {
+    engine->onReady = [=](const app::Archive& arc) {
         DEBUG("Archive %1 unpack ready with status %2", arc.file, toString(arc.state));
 
         if (arc.state == Archive::Status::Success)
@@ -336,38 +349,22 @@ Unpacker::Unpacker(std::unique_ptr<Archiver> archiver) : engine_(std::move(archi
 
         emit unpackReady(arc);
 
-        const auto index = list_->findActive();
+        const auto index = mUnpackList->findActive();
         if (index != UnpackList::NoSuchUnpack)
         {
-            auto& active = list_->getArchive(index);
+            auto& active = mUnpackList->getArchive(index);
             active = arc;
-            list_->refresh(index);
+            mUnpackList->refresh(index);
         }
 
         startNextUnpack();
     };
-
-    enabled_    = true;
-    cleanup_    = false;
-    overwrite_  = false;
-    keepBroken_ = true;
-    writeLog_   = true;
+    mEngines.push_back(std::move(engine));
 }
-
-Unpacker::~Unpacker()
-{
-    DEBUG("Unpacker deleted");
-}
-
-QAbstractTableModel* Unpacker::getUnpackList()
-{ return list_.get(); }
-
-QAbstractTableModel* Unpacker::getUnpackData()
-{ return data_.get(); }
 
 void Unpacker::addUnpack(const Archive& arc)
 {
-    list_->addUnpack(arc);
+    mUnpackList->addUnpack(arc);
 
     emit unpackEnqueue(arc);
 
@@ -376,21 +373,23 @@ void Unpacker::addUnpack(const Archive& arc)
 
 void Unpacker::stopUnpack()
 {
-    engine_->stop();
+    if (!mCurrentEngine)
+        return;
+    mCurrentEngine->stop();
 }
 
 void Unpacker::moveUp(QModelIndexList& list)
 {
     sortAscending(list);
 
-    list_->moveItems(list, -1, 1);
+    mUnpackList->moveItems(list, -1, 1);
 }
 
 void Unpacker::moveDown(QModelIndexList& list)
 {
     sortDescending(list);
 
-    list_->moveItems(list, 1, 1);
+    mUnpackList->moveItems(list, 1, 1);
 }
 
 void Unpacker::moveToTop(QModelIndexList& list)
@@ -399,18 +398,18 @@ void Unpacker::moveToTop(QModelIndexList& list)
 
     const auto dist = list.front().row();
 
-    list_->moveItems(list, -1, dist);
+    mUnpackList->moveItems(list, -1, dist);
 }
 
 void Unpacker::moveToBottom(QModelIndexList& list)
 {
     sortDescending(list);
 
-    const auto numRows = (int)list_->numUnpacks();
+    const auto numRows = (int)mUnpackList->numUnpacks();
     const auto lastRow = list.first().row();
     const auto dist    = numRows - lastRow - 1;
 
-    list_->moveItems(list, 1, dist);
+    mUnpackList->moveItems(list, 1, dist);
 }
 
 void Unpacker::kill(QModelIndexList& list)
@@ -418,26 +417,26 @@ void Unpacker::kill(QModelIndexList& list)
     for (const auto& index : list)
     {
         const auto row  = index.row();
-        const auto& arc = list_->getArchive(row);
+        const auto& arc = mUnpackList->getArchive(row);
         if (arc.state == Archive::Status::Active)
         {
-            engine_->stop();
-            data_->clear();
+            mCurrentEngine->stop();
+            mUnpackData->clear();
         }
     }
-    list_->killItems(list);
+    mUnpackList->killItems(list);
 }
 
 void Unpacker::killComplete()
 {
-    list_->killComplete();
+    mUnpackList->killComplete();
 }
 
 void Unpacker::openLog(QModelIndexList& list)
 {
     for (const auto& i : list)
     {
-        const auto& arc = list_->getArchive(i.row());
+        const auto& arc = mUnpackList->getArchive(i.row());
         if (arc.state == Archive::Status::Queued)
             continue;
         QFileInfo info(arc.path + "/extract.log");
@@ -448,12 +447,15 @@ void Unpacker::openLog(QModelIndexList& list)
 
 void Unpacker::startNextUnpack()
 {
-    if (engine_->isRunning())
-        return;
-    if (!enabled_)
+    if (mCurrentEngine && mCurrentEngine->isRunning())
         return;
 
-    const auto index = list_->findNextPending();
+    mCurrentEngine = nullptr;
+
+    if (!mEnabled)
+        return;
+
+    const auto index = mUnpackList->findNextPending();
     if (index == UnpackList::NoSuchUnpack)
     {
         DEBUG("Unpacking all done!");
@@ -461,38 +463,58 @@ void Unpacker::startNextUnpack()
     }
 
     Archiver::Settings settings;
-    settings.keepBroken        = keepBroken_;
-    settings.purgeOnSuccess    = cleanup_;
-    settings.overWriteExisting = overwrite_;
-    settings.writeLog          = writeLog_;
+    settings.keepBroken        = mKeepBroken;
+    settings.purgeOnSuccess    = mCleanup;
+    settings.overWriteExisting = mOverwrite;
+    settings.writeLog          = mWriteLog;
 
-    auto& unpack = list_->getArchive(index);
+    auto& unpack = mUnpackList->getArchive(index);
     unpack.state = Archive::Status::Active;
+
+    for (auto& engine : mEngines)
+    {
+        if (engine->isSupportedFormat(unpack.path, unpack.file))
+        {
+            mCurrentEngine = engine.get();
+            break;
+        }
+    }
+    if (!mCurrentEngine)
+    {
+        WARN("Didn't find an extraction engine capable of extracting the file %1", unpack.file);
+        return;
+    }
 
     // note the stupid QProcess can invoke the signals synchronously while
     // QProcess::start() is in the *callstack* when the fucking .exe is not found...
     emit unpackStart(unpack);
     DEBUG("Start unpack for %1", unpack.file);
 
-    engine_->extract(unpack, settings);
+    mCurrentEngine->extract(unpack, settings);
 
-    data_->clear();
-    list_->refresh(index);
+    mUnpackData->clear();
+    mUnpackList->refresh(index);
 }
 
 QStringList Unpacker::findUnpackVolumes(const QStringList& fileEntries)
 {
-    return engine_->findArchives(fileEntries);
+    QStringList ret;
+    for (const auto& engine : mEngines)
+    {
+        const QStringList& list = engine->findArchives(fileEntries);
+        ret.append(list);
+    }
+    return ret;
 }
 
-const Archive& Unpacker::getUnpack(const QModelIndex& index) const 
+const Archive& Unpacker::getUnpack(const QModelIndex& index) const
 {
-    return list_->getArchive(index.row());
+    return mUnpackList->getArchive(index.row());
 }
 
-std::size_t Unpacker::numUnpacks() const 
+std::size_t Unpacker::numUnpacks() const
 {
-    return list_->numUnpacks();
+    return mUnpackList->numUnpacks();
 }
 
 } // app
