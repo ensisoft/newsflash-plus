@@ -469,7 +469,6 @@ void Unpacker::startNextUnpack()
     settings.writeLog          = mWriteLog;
 
     auto& unpack = mUnpackList->getArchive(index);
-    unpack.state = Archive::Status::Active;
 
     for (auto& engine : mEngines)
     {
@@ -482,8 +481,13 @@ void Unpacker::startNextUnpack()
     if (!mCurrentEngine)
     {
         WARN("Didn't find an extraction engine capable of extracting the file %1", unpack.file);
+        unpack.state   = Archive::Status::Failed;
+        unpack.message = "Unsupported format.";
+        mUnpackList->refresh(index);
         return;
     }
+
+    unpack.state = Archive::Status::Active;
 
     // note the stupid QProcess can invoke the signals synchronously while
     // QProcess::start() is in the *callstack* when the fucking .exe is not found...
