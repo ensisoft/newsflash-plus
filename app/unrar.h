@@ -20,29 +20,26 @@
 
 #pragma once
 
-#include <newsflash/config.h>
-#include <newsflash/warnpush.h>
-#  include <QObject>
-#  include <QProcess>
-#  include <QByteArray>
-#  include <QStringList>
+#include "newsflash/config.h"
+
+#include "newsflash/warnpush.h"
 #  include <QString>
-#  include <QFile>
-#include <newsflash/warnpop.h>
+#include "newsflash/warnpop.h"
+
+#include <functional>
 #include <set>
+
 #include "archive.h"
 #include "archiver.h"
+#include "process.h"
 
 namespace app
 {
     // implement extraction of .rar archives using unrar command line utility.
-    class Unrar : public QObject, public Archiver
+    class Unrar : public Archiver
     {
-        Q_OBJECT
-
     public:
         Unrar(const QString& executable);
-       ~Unrar();
 
         // Archiever implementation.
         virtual void extract(const Archive& arc, const Settings& settings) override;
@@ -60,27 +57,21 @@ namespace app
         static QStringList findVolumes(const QStringList& files);
         static QString getCopyright(const QString& executable);
 
-    private slots:
-        void processStdOut();
-        void processStdErr();
-        void processFinished(int exitCode, QProcess::ExitStatus status);
-        void processError(QProcess::ProcessError error);
-        void processState(QProcess::ProcessState state);
+    private:
+        void onFinished();
+        void onStdErr(const QString& line);
+        void onStdOut(const QString& line);
 
     private:
-        std::set<QString> files_;
-        QString unrar_;
-        QProcess process_;
-        QByteArray stdout_;
-        QByteArray stderr_;
-        QFile logFile_;
+        Process mProcess;
+        QString mUnrarExecutable;
     private:
-        Archive archive_;
+        Archive mCurrentArchive;
+        QString mMessage;
+        QString mErrors;
     private:
-        bool success_;
-        bool cleanup_;
-        QString message_;
-        QString errors_;
+        std::set<QString> mCleanupSet;
+        bool mDoCleanup = false;
     };
 
 } // ap
