@@ -92,7 +92,8 @@ namespace app
         // or encountered an error) so use cautiously.
         static bool runAndCapture(const QString& executable,
             QStringList& stdout,
-            QStringList& stderr);
+            QStringList& stderr,
+            const QStringList& args = QStringList());
 
     private slots:
         void processStdOut();

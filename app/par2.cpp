@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -20,64 +20,40 @@
 
 #define LOGTAG "par2"
 
-#include <newsflash/config.h>
-#include <newsflash/warnpush.h>
+#include "newsflash/config.h"
+
+#include "newsflash/warnpush.h"
 #  include <QStringList>
-#include <newsflash/warnpop.h>
+#include "newsflash/warnpop.h"
+
 #include <string>
+
 #include "eventlog.h"
 #include "format.h"
 #include "debug.h"
 #include "par2.h"
+#include "utility.h"
 
 namespace app
 {
 
-Par2::Par2(const QString& executable) : par2_(executable)
+Par2::Par2(const QString& executable) : mPar2Executable(executable)
 {
-    QObject::connect(&process_, SIGNAL(finished(int, QProcess::ExitStatus)), 
-        this, SLOT(processFinished(int, QProcess::ExitStatus)));
-    QObject::connect(&process_, SIGNAL(error(QProcess::ProcessError)),
-        this, SLOT(processError(QProcess::ProcessError)));
-    QObject::connect(&process_, SIGNAL(stateChanged(QProcess::ProcessState)),
-        this, SLOT(processState(QProcess::ProcessState)));
-    QObject::connect(&process_, SIGNAL(readyReadStandardOutput()),
-        this, SLOT(processStdOut()));
-    QObject::connect(&process_, SIGNAL(readyReadStandardError()),
-        this, SLOT(processStdErr()));        
+    mProcess.onFinished = std::bind(&Par2::onFinished, this);
+    mProcess.onStdErr   = std::bind(&Par2::onStdErr, this,
+        std::placeholders::_1);
+    mProcess.onStdOut   = std::bind(&Par2::onStdOut, this,
+        std::placeholders::_1);
 }
 
-Par2::~Par2()
-{
-    const auto state = process_.state();
-    Q_ASSERT(state == QProcess::NotRunning && 
-        "Current archive is still being processed."
-        "We should either wait for its completion or stop it.");
-    Q_UNUSED(state);
-}
 
 void Par2::recover(const Archive& arc, const Settings& s)
 {
-    const auto state = process_.state();
-    Q_ASSERT(state == QProcess::NotRunning &&
-        "we already have a current recovery being processed.");
-    Q_UNUSED(state);
 
-    stdout_.clear();
-    stderr_.clear();
-    state_.clear();
-
-    if (s.writeLogFile)
-    {
-        const auto path = arc.path;
-        const auto file = path + "/repair.log";
-        logFile_.setFileName(file);
-        logFile_.open(QIODevice::Append | QIODevice::WriteOnly);
-        if (!logFile_.isOpen())
-        {
-            WARN("Unable to write par2 log file %1, %2", file, logFile_.error());
-        }
-    }
+    const QString& logFile = s.writeLogFile
+        ? app::joinPath(arc.path, "repair.log")
+        : "";
+    const QString& workingDir = arc.path;
 
     QStringList args;
     args << "r";
@@ -90,168 +66,122 @@ void Par2::recover(const Archive& arc, const Settings& s)
     // important. we must set the current_ *before* calling start()
     // since start can emit signals synchronously from the call to start
     // when the executable fails to launch. Nice semantic change there!
-    current_ = arc;
-    process_.setWorkingDirectory(arc.path);
-    process_.setProcessChannelMode(QProcess::MergedChannels);
-    process_.start(par2_, args);
+    mCurrentArchive = arc;
+    mProcess.start(mPar2Executable, args, logFile, workingDir);
 
-    DEBUG("Started par2 %1, %2", par2_, arc.file);
+    DEBUG("Started par2 for %1", arc.file);
 }
 
 void Par2::stop()
 {
-    const auto state = process_.state();
-    if (state == QProcess::NotRunning)
-        return;
+    DEBUG("Killing par2 of archive %1", mCurrentArchive.file);
 
-    DEBUG("Killing par2 %1, pid %2", par2_, process_.pid());
+    mCurrentArchive.state = Archive::Status::Stopped;
 
-    current_.state = Archive::Status::Stopped;
-
-    // this will ask the process to terminate nicely
-    // QProcess::kill will just terminate it right away.
-    process_.terminate();
-
-    logFile_.write(stdout_);
-    logFile_.write("*** Terminated by user. ***");
-    logFile_.close();        
+    mProcess.kill();
 }
 
-bool Par2::isRunning() const 
+bool Par2::isRunning() const
 {
-    const auto state = process_.state();
-    if (state == QProcess::NotRunning)
-        return false;
-    return true;
+    return mProcess.isRunning();
 }
 
-void Par2::processStdOut()
+void Par2::onStdOut(const QString& line)
 {
-    const auto buff = process_.readAllStandardOutput();
-    //const auto size = buff.size();
-    //DEBUG("par2 %1 wrote %2 bytes", par2_, size);
+    const auto exec = mParState.getState();
 
-    stdout_.append(buff);
-
-    std::string temp;
-    for (int i=0; i<stdout_.size(); ++i)
+    ParityChecker::File file;
+    if (mParState.update(line, file))
     {
-        const auto byte = stdout_.at(i);
-        if (byte == '\r' || byte == '\n')
-        {
-            const auto line = widen(temp);
-            if (byte == '\n')
-            {
-                if (logFile_.isOpen())
-                {
-                    logFile_.write(temp.data());
-                    logFile_.write("\n");
-                }
-            }
-
-            const auto exec = state_.getState();
-            ParityChecker::File file;
-            if (state_.update(line, file))
-            {
-                onUpdateFile(current_, std::move(file));
-            }
-            if (exec == ParState::ExecState::Scan)
-            {
-                QString file;
-                float done;
-                if (ParState::parseScanProgress(line, file, done))
-                    onScanProgress(current_, file, done);
-            }
-            else if (exec == ParState::ExecState::Repair)
-            {
-                QString step;
-                float done;
-                if (ParState::parseRepairProgress(line, step, done))
-                    onRepairProgress(current_, step, done);
-            }
-            temp.clear();
-        }
-        else temp.push_back(byte);
+        onUpdateFile(mCurrentArchive, std::move(file));
     }
-    const auto leftOvers = (int)temp.size();
-    stdout_ = stdout_.right(leftOvers);
-}
 
-void Par2::processStdErr()
-{
-    Q_ASSERT(!"We should be using merged IO channels for stdout and stderr.");
-}
-
-void Par2::processFinished(int exitCode, QProcess::ExitStatus status)
-{
-    DEBUG("par2 %1 finished. Exitcode %2, ExitStatus %3", 
-        par2_, exitCode, status);
-
-    if (current_.state != Archive::Status::Stopped)
+    if (exec == ParState::ExecState::Scan)
     {
-        if (status == QProcess::CrashExit)
+        QString file;
+        float done = 0.0f;
+        if (ParState::parseScanProgress(line, file, done))
         {
-            current_.message = toString(status);
-            current_.state   = Archive::Status::Error;
-            if(logFile_.isOpen())
+            onScanProgress(mCurrentArchive, file, done);
+        }
+    }
+    else if (exec == ParState::ExecState::Repair)
+    {
+        QString step;
+        float done = 0.0f;
+        if (ParState::parseRepairProgress(line, step, done))
+        {
+            onRepairProgress(mCurrentArchive, step, done);
+        }
+    }
+}
+
+void Par2::onStdErr(const QString& line)
+{
+    // currently all handling is intentionally in the stdOut handler.
+    onStdOut(line);
+}
+
+void Par2::onFinished()
+{
+    DEBUG("par2 finished. Archive %1", mCurrentArchive.file);
+
+    if (mCurrentArchive.state != Archive::Status::Stopped)
+    {
+        const auto error = mProcess.error();
+        if (error == Process::Error::None)
+        {
+            const auto message = mParState.getMessage();
+            const auto success = mParState.getSuccess();
+            mCurrentArchive.message = message;
+            if (success)
             {
-                logFile_.write("*** Crash Exit ***");
-                logFile_.flush();
-                logFile_.close();
+                INFO("Par2 %1 success", mCurrentArchive.file);
+                mCurrentArchive.state = Archive::Status::Success;
             }
+            else
+            {
+                WARN("Par2 %1 failed", mCurrentArchive.file);
+                mCurrentArchive.state = Archive::Status::Failed;
+            }
+        }
+        else if (error == Process::Error::Crashed)
+        {
+            ERROR("Par2 process crashed when repairing %1", mCurrentArchive.file);
+            mCurrentArchive.message = "Crashed :(";
+            mCurrentArchive.state   = Archive::Status::Error;
         }
         else
         {
-            // deal with any remaining output 
-            processStdOut();
-        
-            //const auto state   = state_.getState();
-            const auto message = state_.getMessage();
-            const auto success = state_.getSuccess();
-            DEBUG("par2 result %1 message %2", success, message);
-
-            current_.message = message;
-            current_.state   = success ? Archive::Status::Success : 
-                Archive::Status::Failed;
-
-            if (logFile_.isOpen())
-            {
-                const auto msg = toLatin(message);
-                logFile_.write(msg.data());
-                logFile_.write("\n");
-            }
+            ERROR("Par2 process failed to run on %1", mCurrentArchive.file);
+            mCurrentArchive.message = "Unknown process error :(";
+            mCurrentArchive.state   = Archive::Status::Error;
         }
     }
-    if (logFile_.isOpen())
-    {
-        logFile_.flush();
-        logFile_.close();
-    }
-    onReady(current_);
+    onReady(mCurrentArchive);
 }
 
-
-void Par2::processError(QProcess::ProcessError error)
+// static
+QStringList Par2::getCopyright(const QString& executable)
 {
-    DEBUG("par2 %1 process error. %2", par2_, error);
+    QStringList ret;
+    QStringList stdout;
+    QStringList stderr;
 
-    current_.message = toString(error);
-    current_.state   = Archive::Status::Error;
-
-    if  (logFile_.isOpen())
+    QStringList args;
+    args << "-VV"; // for version and copyright
+    if (Process::runAndCapture(executable, stdout, stderr, args))
     {
-        logFile_.write(stdout_);
-        logFile_.write("*** Process Error ***");
-        logFile_.flush();
-        logFile_.close();
+        for (const auto& line : stdout)
+        {
+            const auto& LINE = line.toUpper();
+            if (LINE.contains("COPYRIGHT"))
+                ret << line;
+            else if (LINE.contains("VERSION") && LINE.contains("PAR2CMDLINE"))
+                ret << line;
+        }
     }
-
-    onReady(current_);
-}
-
-void Par2::processState(QProcess::ProcessState state)
-{
-    DEBUG("par2 state %1 pid %2", state, process_.pid());
+    return ret;
 }
 
 } // app

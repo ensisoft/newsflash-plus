@@ -45,7 +45,7 @@ void parseLines(QByteArray& buff, QStringList& lines)
     for (int i=0; i<buff.size(); ++i)
     {
         const auto byte = buff.at(i);
-        if (byte == '\n')
+        if (byte == '\n' || byte == '\r')
         {
             const auto line = QString::fromStdString(temp);
             lines << line;
@@ -148,7 +148,8 @@ void Process::kill()
 // static
 bool Process::runAndCapture(const QString& executable,
     QStringList& stdout,
-    QStringList& stderr)
+    QStringList& stderr,
+    const QStringList& args)
 {
     Process process;
     process.onStdErr = [&](const QString& line) {
@@ -160,7 +161,7 @@ bool Process::runAndCapture(const QString& executable,
 
     const auto& logFile    = QString("");
     const auto& workingDir = QString("");
-    process.start(executable, QStringList(), logFile, workingDir);
+    process.start(executable, args, logFile, workingDir);
 
     const auto NeverTimeout = -1;
     process.mProcess.waitForFinished(NeverTimeout);

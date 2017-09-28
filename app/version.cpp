@@ -32,6 +32,7 @@
 #include "format.h"
 #include "unrar.h"
 #include "unzip.h"
+#include "par2.h"
 #include "distdir.h"
 
 namespace app
@@ -128,6 +129,13 @@ void logCopyright()
     INFO("http://zlib.net");
     INFO(Unrar::getCopyright(app::distdir::file("unrar")));
     INFO(Unzip::getCopyright(app::distdir::file("7za")));
+
+    QStringList str;
+    str = Par2::getCopyright(app::distdir::file("par2"));
+    for (const auto& s : str)
+    {
+        INFO(s);
+    }
 }
 
 } // app

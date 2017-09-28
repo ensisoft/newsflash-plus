@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -20,48 +20,44 @@
 
 #pragma once
 
-#include <newsflash/config.h>
-#include <newsflash/warnpush.h>
-#  include <QObject>
-#  include <QProcess>
-#  include <QByteArray>
-#  include <QFile>
-#include <newsflash/warnpop.h>
+#include "newsflash/config.h"
+
+#include "newsflash/warnpush.h"
+#  include <QString>
+#include "newsflash/warnpop.h"
+
 #include "paritychecker.h"
 #include "parstate.h"
 #include "archive.h"
+#include "process.h"
 
 namespace app
 {
     // implementation of parity checking using par2 command line utiliy.
-    class Par2 : public QObject, public ParityChecker
+    class Par2 : public ParityChecker
     {
-        Q_OBJECT
-
     public:
         Par2(const QString& executable);
-       ~Par2();
 
+        // ParityChecker implementation
         virtual void recover(const Archive& arc, const Settings& s);
         virtual void stop();
         virtual bool isRunning() const;
 
-    private slots:
-        void processStdOut();
-        void processStdErr();
-        void processFinished(int exitCode, QProcess::ExitStatus status);
-        void processError(QProcess::ProcessError error);
-        void processState(QProcess::ProcessState state);
+        static QStringList getCopyright(const QString& executable);
 
     private:
-        QString par2_;
-        QProcess process_;
-        QByteArray stdout_;
-        QByteArray stderr_;
-        QFile logFile_;
+        void onFinished();
+        void onStdErr(const QString& line);
+        void onStdOut(const QString& line);
+
     private:
-        Archive current_;
+        Process mProcess;
+        QString mPar2Executable;
     private:
-        ParState state_;
+        Archive mCurrentArchive;
+    private:
+        ParState mParState;
+        QString  mErrors;
     };
 } // app
