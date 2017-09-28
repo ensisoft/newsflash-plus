@@ -109,10 +109,10 @@ void logCopyright()
     const auto boost_revision = BOOST_VERSION % 100;
 
     INFO(NEWSFLASH_TITLE " " NEWSFLASH_VERSION " " NEWSFLASH_ARCH);
-    INFO(QString::fromUtf8(NEWSFLASH_COPYRIGHT));
-    INFO(NEWSFLASH_WEBSITE);
     INFO("Compiled: " __DATE__ ", " __TIME__);
     INFO("Compiler: %1 %2", COMPILER_NAME , COMPILER_VERSION);
+    INFO(QString::fromUtf8(NEWSFLASH_COPYRIGHT));
+    INFO(NEWSFLASH_WEBSITE);
     INFO("Boost software library %1.%2.%3", boost_major, boost_minor, boost_revision);
     INFO("http://www.boost.org");
     INFO("16x16 Free Application Icons");
