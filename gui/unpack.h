@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -36,7 +36,7 @@ namespace gui
     class Unpack : public MainWidget
     {
         Q_OBJECT
-        
+
     public:
         Unpack(app::Unpacker& unpacker);
        ~Unpack();
@@ -54,14 +54,14 @@ namespace gui
         { return {"archives.html", true}; }
 
         void setUnpackEnabled(bool onOff);
-        
-        std::size_t numNewUnpacks() const 
+
+        std::size_t numNewUnpacks() const
         { return numUnpacks_; }
 
     private slots:
         void on_unpackList_customContextMenuRequested(QPoint);
         void unpackList_selectionChanged();
-        void on_actionUnpack_triggered();    
+        void on_actionUnpack_triggered();
         void on_actionStop_triggered();
         void on_actionOpenFolder_triggered();
         void on_actionTop_triggered();
@@ -75,7 +75,7 @@ namespace gui
         void on_chkOverwriteExisting_stateChanged(int);
         void on_chkPurge_stateChanged(int);
         void on_chkKeepBroken_stateChanged(int);
-        void unpackStart(const app::Archive& arc);
+        void unpackStart(const app::Archive& arc, bool hasProgressInfo);
         void unpackReady(const app::Archive& arc);
         void unpackProgress(const QString& target, int done);
 

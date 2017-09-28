@@ -167,17 +167,27 @@ target_link_libraries(engine INTERFACE
 file(GLOB APP_SOURCE  app/*.h app/*.cpp)
 file(GLOB GUI_SOURCE  gui/*.h gui/*.cpp gui/*.ui)
 
+add_library(appcore STATIC
+    ${APP_SOURCE}
+    tools/keygen/keygen.cpp
+    stringlib/string.cpp)
+
+target_link_libraries(appcore PUBLIC
+    engine
+    qjson
+    Qt4::QtCore
+    Qt4::QtGui
+    Qt4::QtXml
+    Qt4::QtNetwork)
+
 # build the main application
 add_executable(newsflash
-    ${APP_SOURCE}
     ${GUI_SOURCE}
     gui/resource.qrc
     gui/qtsingleapplication/qtsingleapplication.h
     gui/qtsingleapplication/qtsingleapplication.cpp
     gui/qtsingleapplication/qtlocalpeer.h
-    gui/qtsingleapplication/qtlocalpeer.cpp
-    tools/keygen/keygen.cpp
-    stringlib/string.cpp)
+    gui/qtsingleapplication/qtlocalpeer.cpp)
 
 if (MSVC)
     # https://msdn.microsoft.com/en-us/library/fcc1zstk.aspx
@@ -196,13 +206,7 @@ if (MSVC)
         set_target_properties(newsflash PROPERTIES LINK_FLAGS "/SUBSYSTEM:CONSOLE,5.2")
     endif()
 endif()
-target_link_libraries(newsflash
-    engine
-    qjson
-    Qt4::QtCore
-    Qt4::QtGui
-    Qt4::QtNetwork
-    Qt4::QtXml)
+target_link_libraries(newsflash appcore)
 
 # build the keygen
 add_executable(keygen
@@ -220,17 +224,13 @@ target_link_libraries(keygen
     Qt4::QtNetwork)
 
 # build the join tool for joining .001, .002 ... files
-add_executable(join
-    tools/joiner/main.cpp)
-target_link_libraries(join
-    Qt4::QtCore)
+add_executable(join tools/joiner/main.cpp)
+target_link_libraries(join Qt4::QtCore)
 
 # this is a dummy test server used by some of the test cases.
 # it must be built and running before tests can be run.
-add_executable(test_server
-    engine/unit_test/server.cpp)
-target_link_libraries(test_server
-    engine)
+add_executable(test_server engine/unit_test/server.cpp)
+target_link_libraries(test_server engine)
 
 # build unit test.
 enable_testing()
@@ -321,6 +321,15 @@ add_test(NAME unit_test_filetype    COMMAND unit_test_filetype)
 add_test(NAME unit_test_throttle    COMMAND unit_test_throttle)
 add_test(NAME unit_test_engine      COMMAND unit_test_engine)
 add_test(NAME unit_test_connection  COMMAND unit_test_connection)
+
+add_executable(unit_test_unrar  app/unit_test/unit_test_unrar.cpp)
+add_executable(unit_test_unzip  app/unit_test/unit_test_unzip.cpp)
+
+target_link_libraries(unit_test_unrar appcore)
+target_link_libraries(unit_test_unzip appcore)
+
+add_test(NAME unit_test_unrar       COMMAND unit_test_unrar)
+add_test(NAME unit_test_unzip       COMMAND unit_test_unzip)
 
 if (CMAKE_BUILD_TYPE MATCHES "Release")
     install(TARGETS newsflash join DESTINATION "${CMAKE_CURRENT_LIST_DIR}/dist")

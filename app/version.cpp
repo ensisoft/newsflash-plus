@@ -31,6 +31,7 @@
 #include "eventlog.h"
 #include "format.h"
 #include "unrar.h"
+#include "unzip.h"
 #include "distdir.h"
 
 namespace app
@@ -126,6 +127,7 @@ void logCopyright()
     INFO("Copyright (c) 1995-2010 Jean-Loup Gailly & Mark Adler");
     INFO("http://zlib.net");
     INFO(Unrar::getCopyright(app::distdir::file("unrar")));
+    INFO(Unzip::getCopyright(app::distdir::file("7za")));
 }
 
 } // app

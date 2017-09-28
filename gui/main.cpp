@@ -80,6 +80,7 @@
 #include "app/files.h"
 #include "app/par2.h"
 #include "app/unrar.h"
+#include "app/unzip.h"
 #include "app/arcman.h"
 #include "app/webengine.h"
 #include "app/poweroff.h"
@@ -225,6 +226,7 @@ int run(QtSingleApplication& qtinstance)
     //  unpack
     app::Unpacker unpacker;
     unpacker.addEngine(std::make_unique<app::Unrar>(app::distdir::file("unrar")));
+    unpacker.addEngine(std::make_unique<app::Unzip>(app::distdir::file("7za")));
     QObject::connect(&unpacker, SIGNAL(unpackEnqueue(const app::Archive&)),
         &power, SLOT(unpackEnqueue()));
     QObject::connect(&unpacker, SIGNAL(unpackReady(const app::Archive&)),

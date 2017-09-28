@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -34,7 +34,7 @@
 #include "app/utility.h"
 #include "app/platform.h"
 
-namespace gui 
+namespace gui
 {
 
 Unpack::Unpack(app::Unpacker& unpacker) : model_(unpacker), numUnpacks_(0)
@@ -49,8 +49,8 @@ Unpack::Unpack(app::Unpacker& unpacker) : model_(unpacker), numUnpacks_(0)
     ui_.actionStop->setEnabled(false);
     ui_.lblStatus->clear();
 
-    QObject::connect(&model_, SIGNAL(unpackStart(const app::Archive&)),
-        this, SLOT(unpackStart(const app::Archive&)));
+    QObject::connect(&model_, SIGNAL(unpackStart(const app::Archive&, bool)),
+        this, SLOT(unpackStart(const app::Archive&, bool)));
     QObject::connect(&model_, SIGNAL(unpackReady(const app::Archive&)),
         this, SLOT(unpackReady(const app::Archive&)));
     QObject::connect(&model_, SIGNAL(unpackProgress(const QString&, int)),
@@ -73,7 +73,7 @@ Unpack::~Unpack()
 void Unpack::addActions(QToolBar& bar)
 {
     bar.addAction(ui_.actionUnpack);
-    bar.addSeparator();    
+    bar.addSeparator();
     bar.addAction(ui_.actionOpenFolder);
     bar.addSeparator();
     bar.addAction(ui_.actionTop);
@@ -92,7 +92,7 @@ void Unpack::addActions(QMenu& menu)
     // no menu actions.
 }
 
-void Unpack::activate(QWidget*) 
+void Unpack::activate(QWidget*)
 {
     numUnpacks_ = 0;
     setWindowTitle("Extract");
@@ -123,7 +123,7 @@ void Unpack::loadState(app::Settings& settings)
 
     ui_.chkKeepBroken->setChecked(keepBroken);
     ui_.chkOverwriteExisting->setChecked(keepBroken);
-    ui_.chkPurge->setChecked(purge);    
+    ui_.chkPurge->setChecked(purge);
     ui_.chkWriteLog->setChecked(writeLog);
 
     model_.setPurgeOnSuccess(purge);
@@ -182,7 +182,7 @@ void Unpack::unpackList_selectionChanged()
     auto indices = ui_.unpackList->selectionModel()->selectedRows();
 
     ui_.actionOpenFolder->setEnabled(false);
-    ui_.actionOpenLog->setEnabled(false);    
+    ui_.actionOpenLog->setEnabled(false);
     ui_.actionTop->setEnabled(false);
     ui_.actionMoveUp->setEnabled(false);
     ui_.actionMoveDown->setEnabled(false);
@@ -222,7 +222,7 @@ void Unpack::unpackList_selectionChanged()
 void Unpack::on_actionUnpack_triggered()
 {
     const auto& file = QFileDialog::getOpenFileName(this,
-        tr("Select Archive File"), QString(), "(Archive FIles ) *.rar");
+        tr("Select Archive File"), QString(), "Archive Files (*.rar *.zip *.7z)");
     if (file.isEmpty())
         return;
 
@@ -318,9 +318,21 @@ void Unpack::on_chkKeepBroken_stateChanged(int)
     model_.setKeepBroken(ui_.chkKeepBroken->isChecked());
 }
 
-void Unpack::unpackStart(const app::Archive& arc)
+void Unpack::unpackStart(const app::Archive& arc, bool hasProgressInfo)
 {
     ui_.progressBar->setVisible(true);
+    if (hasProgressInfo)
+    {
+        ui_.progressBar->setValue(0);
+        ui_.progressBar->setMaximum(100);
+        ui_.progressBar->setMinimum(0);
+    }
+    else
+    {
+        ui_.progressBar->setValue(0);
+        ui_.progressBar->setMaximum(0);
+        ui_.progressBar->setMinimum(0);
+    }
     ui_.actionStop->setEnabled(true);
     ui_.lblStatus->setVisible(true);
 
@@ -337,7 +349,7 @@ void Unpack::unpackReady(const app::Archive& arc)
 
 void Unpack::unpackProgress(const QString& target, int done)
 {
-    ui_.progressBar->setValue(done);    
+    ui_.progressBar->setValue(done);
     ui_.lblStatus->setText(target);
     ui_.unpackData->scrollToBottom();
 }

@@ -1,4 +1,4 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
+// Copyright (c) 2010-2017 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
 //
@@ -26,38 +26,30 @@
 #  include <QString>
 #include "newsflash/warnpop.h"
 
-#include <functional>
-#include <set>
-
 #include "archive.h"
 #include "archiver.h"
 #include "process.h"
 
 namespace app
 {
-    // implement extraction of .rar archives using unrar command line utility.
-    class Unrar : public Archiver
+    // Implement extraction of .zip and .7z files archives.
+    class Unzip : public Archiver
     {
     public:
-        Unrar(const QString& executable);
+        Unzip(const QString& executable);
 
-        // Archiever implementation.
+        // Archiver implementation
         virtual void extract(const Archive& arc, const Settings& settings) override;
         virtual void stop() override;
         virtual bool isRunning() const override;
-        virtual QStringList findArchives(const QStringList& fileNames) const override;
         virtual bool isSupportedFormat(const QString& filePath, const QString& fileName) const override;
-        virtual bool hasProgressInfo() const override
-        { return true; }
+        virtual QStringList findArchives(const QStringList& fileNames) const override;
+        virtual bool hasProgressInfo() const override;
 
-        // public static parse functions for easy unit testing.
-        static bool parseMessage(const QString& line, QString& msg);
-        static bool parseVolume(const QString& line, QString& volume);
-        static bool parseProgress(const QString& line, QString& file, int& done);
-        static bool parseTermination(const QString& line);
-
-        static QStringList findVolumes(const QStringList& files);
         static QString getCopyright(const QString& executable);
+        static bool parseVolume(const QString& line, QString& file);
+        static bool parseProgress(const QString& line, QString& file, int& done);
+        static bool parseMessage(const QString& line, QString& msg);
 
     private:
         void onFinished();
@@ -66,14 +58,13 @@ namespace app
 
     private:
         Process mProcess;
-        QString mUnrarExecutable;
+        QString mUnzipExecutable;
     private:
         Archive mCurrentArchive;
         QString mMessage;
         QString mErrors;
-    private:
-        std::set<QString> mCleanupSet;
         bool mDoCleanup = false;
+        bool mHasProgress = false;
+    private:
     };
-
-} // ap
+} // namespace

@@ -106,7 +106,7 @@ namespace app
 
     signals:
         void unpackEnqueue(const app::Archive& arc);
-        void unpackStart(const app::Archive& arc);
+        void unpackStart(const app::Archive& arc, bool hasProgress);
         void unpackReady(const app::Archive& arc);
         void unpackProgress(const QString& file, int done);
 

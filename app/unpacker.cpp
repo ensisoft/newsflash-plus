@@ -489,9 +489,11 @@ void Unpacker::startNextUnpack()
 
     unpack.state = Archive::Status::Active;
 
+    const bool hasProgressInfo = mCurrentEngine->hasProgressInfo();
+
     // note the stupid QProcess can invoke the signals synchronously while
     // QProcess::start() is in the *callstack* when the fucking .exe is not found...
-    emit unpackStart(unpack);
+    emit unpackStart(unpack, hasProgressInfo);
     DEBUG("Start unpack for %1", unpack.file);
 
     mCurrentEngine->extract(unpack, settings);

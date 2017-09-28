@@ -70,6 +70,9 @@ namespace app
         // Returns true if the engine supports the archive format for the given filename.
         virtual bool isSupportedFormat(const QString& filePath, const QString& fileName) const = 0;
 
+        // Returns true if the engine supports reporting progress information.
+        virtual bool hasProgressInfo() const = 0;
+
     protected:
     private:
     };
