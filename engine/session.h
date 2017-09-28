@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -34,7 +34,7 @@ namespace newsflash
 
     // session encapsulates the details of nntp. it provides a simple
     // api to request data and state changes in the session.
-    // each such request might result in multiple pending commands in the 
+    // each such request might result in multiple pending commands in the
     // session pipeline. thus the client should call parse_next repeatedly
     // while there are pending commands in the session and fill the input
     // buffer with more data between calls to parse_next
@@ -42,34 +42,34 @@ namespace newsflash
     {
     public:
         enum class error {
-            none, 
+            none,
 
-            // possibly incorrect username/password pair            
-            authentication_rejected, 
+            // possibly incorrect username/password pair
+            authentication_rejected,
 
-            // possibly out of quota 
-            no_permission 
+            // possibly out of quota
+            no_permission
         };
 
         enum class state {
-            // initial state            
-            none, 
+            // initial state
+            none,
 
             // session is initializing with initial greeting etc.
-            init, 
+            init,
 
-            // session is authenticating 
-            authenticate, 
+            // session is authenticating
+            authenticate,
 
             // session is ready and there are no pending commands
-            ready, 
+            ready,
 
-            // session is performing data transfer 
+            // session is performing data transfer
             // such as getting article data, overview data or group (listing) data
-            transfer, 
+            transfer,
 
             // session is quitting
-            quitting, 
+            quitting,
 
             // an error has occurred. see error enum for details
             error
@@ -89,12 +89,12 @@ namespace newsflash
 
         // start new session. this prepares the session pipeline
         // with initial session start commands.
-        void start();
+        void start(bool authenticate_immediately = false);
 
-        // quit the session. prepares a quit command 
+        // quit the session. prepares a quit command
         void quit();
 
-        // request to change the currently selected newsgroup to the new group 
+        // request to change the currently selected newsgroup to the new group
         void change_group(std::string name);
 
         // retrive group information. the result will be a groupinfo buffer
@@ -120,12 +120,12 @@ namespace newsflash
         bool send_next();
 
         // parse the buff for input data and try to complete
-        // currently pending session command. 
+        // currently pending session command.
         // if the command is succesfully completed returns true
         // in which case the session state should be inspected
         // next for possible errors. Also if the current command
         // is transferring content data the contents are placed
-        // into the given out buffer. 
+        // into the given out buffer.
         // otherwise if the current command could not be completed
         // the function returns false.
         bool recv_next(buffer& buff, buffer& out);
@@ -133,7 +133,7 @@ namespace newsflash
         // clear pending commands.
         void clear();
 
-        // returns true if there are pending commands. i.e. 
+        // returns true if there are pending commands. i.e.
         // more calls to parse_next are required to complete
         // the session state changes.
         bool pending() const;
@@ -174,7 +174,7 @@ namespace newsflash
 
     private:
         std::deque<std::unique_ptr<command>> send_;
-        std::deque<std::unique_ptr<command>> recv_;        
+        std::deque<std::unique_ptr<command>> recv_;
         std::unique_ptr<impl> state_;
     };
 

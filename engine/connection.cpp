@@ -59,6 +59,7 @@ struct connection::state {
     bool ssl;
     bool pipelining;
     bool compression;
+    bool authenticate_immediately = false;
     double bps;
     throttle* pthrottle;
     boost::random::mt19937 random; // std::rand is not MT safe.
@@ -202,7 +203,7 @@ void connection::initialize::xperform()
     auto& cancel  = state_->cancel;
 
     // begin new session
-    session->start();
+    session->start(state_->authenticate_immediately);
 
     newsflash::buffer buff(1024);
     newsflash::buffer temp;
@@ -536,7 +537,7 @@ std::string connection::ping::describe() const
     return "Ping";
 }
 
-std::unique_ptr<action> connection::connect(spec s)
+std::unique_ptr<action> connection::connect(const spec& s)
 {
     state_ = std::make_shared<state>();
     state_->username = s.username;
@@ -548,6 +549,7 @@ std::unique_ptr<action> connection::connect(spec s)
     state_->ssl      = s.use_ssl;
     state_->compression = s.enable_compression;
     state_->pipelining = s.enable_pipelining;
+    state_->authenticate_immediately = s.authenticate_immediately;
     state_->bps = 0;
     state_->cancel.reset(new event);
     state_->cancel->reset();

@@ -121,6 +121,7 @@ int run(QtSingleApplication& qtinstance)
     // if icons and their sizes need to be adjusted at runtime on 4k displays
     // for example...
     QDir::setSearchPaths("icons", QStringList(":/resource/16x16_ico_png"));
+    QDir::setSearchPaths("pixmaps",  QStringList(":/resource/png"));
 
     const auto& formats = QImageReader::supportedImageFormats();
     for (const auto& format : formats)

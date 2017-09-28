@@ -12,55 +12,55 @@
     <file>resource/16x16_ico_png/ico_open_nzb.png</file>
     <file>resource/16x16_ico_png/ico_save_nzb.png</file>
     <file>resource/16x16_ico_png/ico_download.png</file>
-    <file>resource/16x16_ico_png/ico_stop.png</file>    
-    <file>resource/16x16_ico_png/ico_refresh.png</file>    
+    <file>resource/16x16_ico_png/ico_stop.png</file>
+    <file>resource/16x16_ico_png/ico_refresh.png</file>
     <file>resource/16x16_ico_png/ico_browse.png</file>
-    <file>resource/16x16_ico_png/ico_close.png</file>    
-    <file>resource/16x16_ico_png/ico_filter.png</file>    
+    <file>resource/16x16_ico_png/ico_close.png</file>
+    <file>resource/16x16_ico_png/ico_filter.png</file>
     <file>resource/16x16_ico_png/ico_move_up.png</file>
     <file>resource/16x16_ico_png/ico_move_down.png</file>
-    <file>resource/16x16_ico_png/ico_next.png</file>    
-    <file>resource/16x16_ico_png/ico_prev.png</file>        
+    <file>resource/16x16_ico_png/ico_next.png</file>
+    <file>resource/16x16_ico_png/ico_prev.png</file>
 
     <!-- data flag icons -->
     <file>resource/16x16_ico_png/ico_flag_binary.png</file>
     <file>resource/16x16_ico_png/ico_flag_text.png</file>
-    <file>resource/16x16_ico_png/ico_flag_new.png</file>    
+    <file>resource/16x16_ico_png/ico_flag_new.png</file>
     <file>resource/16x16_ico_png/ico_flag_download.png</file>
     <file>resource/16x16_ico_png/ico_flag_broken.png</file>
     <file>resource/16x16_ico_png/ico_flag_bookmark.png</file>
 
     <!-- common/uncategorized item icons -->
     <file>resource/16x16_ico_png/ico_folder.png</file>
-    <file>resource/16x16_ico_png/ico_rss.png</file>    
+    <file>resource/16x16_ico_png/ico_rss.png</file>
     <file>resource/16x16_ico_png/ico_news.png</file>
     <file>resource/16x16_ico_png/ico_favourite.png</file>
     <file>resource/16x16_ico_png/ico_unfavourite.png</file>
-    <file>resource/16x16_ico_png/ico_throttle.png</file>    
+    <file>resource/16x16_ico_png/ico_throttle.png</file>
     <file>resource/16x16_ico_png/ico_details.png</file>
     <file>resource/16x16_ico_png/ico_extract.png</file>
     <file>resource/16x16_ico_png/ico_info.png</file>
-    <file>resource/16x16_ico_png/ico_warning.png</file>    
-    <file>resource/16x16_ico_png/ico_error.png</file>    
-    <file>resource/16x16_ico_png/ico_password.png</file>    
+    <file>resource/16x16_ico_png/ico_warning.png</file>
+    <file>resource/16x16_ico_png/ico_error.png</file>
+    <file>resource/16x16_ico_png/ico_password.png</file>
     <file>resource/16x16_ico_png/ico_disk.png</file>
-    <file>resource/16x16_ico_png/ico_disk_write.png</file>    
+    <file>resource/16x16_ico_png/ico_disk_write.png</file>
     <file>resource/16x16_ico_png/ico_bullet_green.png</file>
     <file>resource/16x16_ico_png/ico_bullet_red.png</file>
-    <file>resource/16x16_ico_png/ico_bullet_blue.png</file>    
-    <file>resource/16x16_ico_png/ico_bullet_grey.png</file>    
-    <file>resource/16x16_ico_png/ico_bullet_yellow.png</file> 
-    <file>resource/16x16_ico_png/ico_search.png</file>    
+    <file>resource/16x16_ico_png/ico_bullet_blue.png</file>
+    <file>resource/16x16_ico_png/ico_bullet_grey.png</file>
+    <file>resource/16x16_ico_png/ico_bullet_yellow.png</file>
+    <file>resource/16x16_ico_png/ico_search.png</file>
     <file>resource/16x16_ico_png/ico_headers.png</file>
     <file>resource/16x16_ico_png/ico_bookmark_next.png</file>
     <file>resource/16x16_ico_png/ico_bookmark_prev.png</file>
     <file>resource/16x16_ico_png/ico_bookmark.png</file>
 
     <!-- application icons -->
-    <file>resource/16x16_ico_png/ico_application.png</file>    
+    <file>resource/16x16_ico_png/ico_application.png</file>
     <file>resource/16x16_ico_png/ico_application_add.png</file>
-    <file>resource/16x16_ico_png/ico_application_del.png</file>    
-    <file>resource/16x16_ico_png/ico_application_edit.png</file>    
+    <file>resource/16x16_ico_png/ico_application_del.png</file>
+    <file>resource/16x16_ico_png/ico_application_edit.png</file>
 
 
     <!-- application/mainwindow icons -->
@@ -81,20 +81,20 @@
     <!-- filetype icons -->
     <file>resource/16x16_ico_png/ico_filetype_audio.png</file>
     <file>resource/16x16_ico_png/ico_filetype_video.png</file>
-    <file>resource/16x16_ico_png/ico_filetype_image.png</file>    
-    <file>resource/16x16_ico_png/ico_filetype_archive.png</file>    
+    <file>resource/16x16_ico_png/ico_filetype_image.png</file>
+    <file>resource/16x16_ico_png/ico_filetype_archive.png</file>
     <file>resource/16x16_ico_png/ico_filetype_parity.png</file>
-    <file>resource/16x16_ico_png/ico_filetype_document.png</file>        
-    <file>resource/16x16_ico_png/ico_filetype_other.png</file>    
-    <file>resource/16x16_ico_png/ico_filetype_text.png</file>    
+    <file>resource/16x16_ico_png/ico_filetype_document.png</file>
+    <file>resource/16x16_ico_png/ico_filetype_other.png</file>
+    <file>resource/16x16_ico_png/ico_filetype_text.png</file>
 
     <!-- media icons -->
     <file>resource/16x16_ico_png/ico_media_tv.png</file>
     <file>resource/16x16_ico_png/ico_media_xxx.png</file>
-    <file>resource/16x16_ico_png/ico_media_other.png</file>    
-    <file>resource/16x16_ico_png/ico_media_audio.png</file>        
-    <file>resource/16x16_ico_png/ico_media_movie.png</file>            
-    <file>resource/16x16_ico_png/ico_media_console.png</file>                
+    <file>resource/16x16_ico_png/ico_media_other.png</file>
+    <file>resource/16x16_ico_png/ico_media_audio.png</file>
+    <file>resource/16x16_ico_png/ico_media_movie.png</file>
+    <file>resource/16x16_ico_png/ico_media_console.png</file>
     <file>resource/16x16_ico_png/ico_media_apps.png</file>
     <file>resource/16x16_ico_png/ico_media_image.png</file>
 
@@ -108,9 +108,9 @@
     <file>resource/16x16_ico_png/ico_files.png</file>
 
     <!-- recovery icons -->
-    <file>resource/16x16_ico_png/ico_recovery.png</file>    
-    <file>resource/16x16_ico_png/ico_recovery_add.png</file>        
-    <file>resource/16x16_ico_png/ico_recovery_del.png</file>    
+    <file>resource/16x16_ico_png/ico_recovery.png</file>
+    <file>resource/16x16_ico_png/ico_recovery_add.png</file>
+    <file>resource/16x16_ico_png/ico_recovery_del.png</file>
     <file>resource/16x16_ico_png/ico_recovery_queued.png</file>
     <file>resource/16x16_ico_png/ico_recovery_active.png</file>
     <file>resource/16x16_ico_png/ico_recovery_success.png</file>
@@ -120,18 +120,18 @@
 
     <!-- task state icons -->
     <file>resource/16x16_ico_png/ico_task_queued.png</file>
-    <file>resource/16x16_ico_png/ico_task_waiting.png</file>    
-    <file>resource/16x16_ico_png/ico_task_active.png</file>    
-    <file>resource/16x16_ico_png/ico_task_paused.png</file>    
-    <file>resource/16x16_ico_png/ico_task_finalize.png</file>    
-    <file>resource/16x16_ico_png/ico_task_damaged.png</file>    
+    <file>resource/16x16_ico_png/ico_task_waiting.png</file>
+    <file>resource/16x16_ico_png/ico_task_active.png</file>
+    <file>resource/16x16_ico_png/ico_task_paused.png</file>
+    <file>resource/16x16_ico_png/ico_task_finalize.png</file>
+    <file>resource/16x16_ico_png/ico_task_damaged.png</file>
     <file>resource/16x16_ico_png/ico_task_complete.png</file>
     <file>resource/16x16_ico_png/ico_task_error.png</file>
     <file>resource/16x16_ico_png/ico_task_crunching.png</file>
 
     <!-- task action icons -->
     <file>resource/16x16_ico_png/ico_task_pause.png</file>
-    <file>resource/16x16_ico_png/ico_task_resume.png</file>    
+    <file>resource/16x16_ico_png/ico_task_resume.png</file>
     <file>resource/16x16_ico_png/ico_task_moveup.png</file>
     <file>resource/16x16_ico_png/ico_task_movetop.png</file>
     <file>resource/16x16_ico_png/ico_task_movebottom.png</file>
@@ -143,7 +143,7 @@
     <file>resource/16x16_ico_png/ico_conn_connected.png</file>
     <file>resource/16x16_ico_png/ico_conn_active.png</file>
     <file>resource/16x16_ico_png/ico_conn_error.png</file>
-    <file>resource/16x16_ico_png/ico_conn_clone.png</file>    
+    <file>resource/16x16_ico_png/ico_conn_clone.png</file>
 
 
     <file>resource/16x16_ico_png/ico_nzb.png</file>
@@ -175,6 +175,8 @@
 
 
 
+    <file>resource/png/failure.png</file>
+    <file>resource/png/success.png</file>
     <file>resource/png/logo_black.png</file>
     <file>resource/png/python-logo.png</file>
     <file>resource/png/speed_kmh.png</file>
@@ -185,6 +187,6 @@
     <file>resource/uns-special-2.gif</file>
     <file>resource/ajax-loader.gif</file>
     <file>resource/usenext-1.gif</file>
-    <file>resource/usenext-2.gif</file>    
+    <file>resource/usenext-2.gif</file>
   </qresource>
 </RCC>

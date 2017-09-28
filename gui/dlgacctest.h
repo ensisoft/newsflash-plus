@@ -21,11 +21,14 @@
 #pragma once
 
 #include "newsflash/config.h"
+
 #include "newsflash/warnpush.h"
 #  include <QtGui/QDialog>
+#  include <QtGui/QPixmap>
 #  include <QString>
 #  include "ui_dlgacctest.h"
 #include "newsflash/warnpop.h"
+
 #include "app/engine.h"
 
 namespace gui
@@ -52,6 +55,8 @@ namespace gui
             m_ui.progressBar->setValue(0);
             m_ui.progressBar->setVisible(true);
             m_ui.textEdit->clear();
+            m_ui.lblMessage->setVisible(false);
+            m_ui.lblIcon->setVisible(false);
         }
 
     private slots:
@@ -63,6 +68,19 @@ namespace gui
         void testAccountComplete(bool success)
         {
             m_ui.progressBar->setVisible(false);
+            m_ui.lblMessage->setVisible(true);
+            m_ui.lblIcon->setVisible(true);
+            if (success)
+            {
+                m_ui.lblMessage->setText(tr("Good to go!"));
+                m_ui.lblIcon->setPixmap(QPixmap("pixmaps:success.png"));
+            }
+            else
+            {
+                m_ui.lblMessage->setText(tr("Sorry, something went wrong.\r\n"
+                    "See the log for details."));
+                m_ui.lblIcon->setPixmap(QPixmap("pixmaps:failure.png"));
+            }
         }
         void testAccountLogMsg(const QString& msg)
         {

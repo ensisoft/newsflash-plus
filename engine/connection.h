@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -49,7 +49,7 @@ namespace newsflash
         class exception : public std::exception
         {
         public:
-            exception(connection::error err, std::string what) 
+            exception(connection::error err, std::string what)
                 : error_(err), what_(std::move(what))
             {}
 
@@ -73,12 +73,12 @@ namespace newsflash
 
             virtual void xperform() override;
 
-            virtual std::string describe() const override;            
+            virtual std::string describe() const override;
         private:
             std::shared_ptr<state> state_;
         };
 
-        // perform socket connect 
+        // perform socket connect
         class connect : public action
         {
         public:
@@ -86,7 +86,7 @@ namespace newsflash
 
             virtual void xperform() override;
 
-            virtual std::string describe() const override;            
+            virtual std::string describe() const override;
         private:
             std::shared_ptr<state> state_;
         };
@@ -104,7 +104,7 @@ namespace newsflash
             std::shared_ptr<state> state_;
         };
 
-        // execute cmdlist 
+        // execute cmdlist
         class execute : public action
         {
         public:
@@ -117,7 +117,7 @@ namespace newsflash
             std::shared_ptr<cmdlist> get_cmdlist() const
             { return cmds_; }
 
-            std::size_t get_tid() const 
+            std::size_t get_tid() const
             { return tid_; }
 
             // get the total number of data bytes transferred (downloaded)
@@ -127,7 +127,7 @@ namespace newsflash
 
             // get the total number of content bytes transferred (downloaded)
             // from the server. this is only the payload data.
-            std::size_t get_content_transferred() const 
+            std::size_t get_content_transferred() const
             { return content_; }
 
         private:
@@ -146,7 +146,7 @@ namespace newsflash
             virtual void xperform() override;
 
             virtual std::string describe() const override;
-            
+
         private:
             std::shared_ptr<state> state_;
         };
@@ -168,17 +168,18 @@ namespace newsflash
             std::string username;
             std::string password;
             std::string hostname;
-            std::uint16_t hostport;         
-            bool use_ssl;
-            bool enable_pipelining;
-            bool enable_compression;
-            throttle* pthrottle;
+            std::uint16_t hostport = 563;
+            bool use_ssl = true;
+            bool enable_pipelining = false;
+            bool enable_compression = false;
+            throttle* pthrottle = nullptr;
+            bool authenticate_immediately = false;
         };
 
         // begin connecting to the given host specification.
-        std::unique_ptr<action> connect(spec s);
+        std::unique_ptr<action> connect(const spec& s);
 
-        // perform disconnect from the host. 
+        // perform disconnect from the host.
         std::unique_ptr<action> disconnect();
 
         // perform ping
@@ -208,7 +209,7 @@ namespace newsflash
 
     };
 
-    
+
 
 
 } // newsflash

@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -78,7 +78,7 @@ public:
         if (len == 0)
             return false;
 
-        // i have never seen these actually being used so we're just 
+        // i have never seen these actually being used so we're just
         // going to pretend they dont exist.
         // 400 service temporarily unavailable
         // 502 service permantly unavailable
@@ -282,7 +282,7 @@ public:
         {
             out = buff.split(len);
             out.set_content_length(len);
-            out.set_content_start(0);                        
+            out.set_content_start(0);
             out.set_status(buffer::status::success);
         }
         out.set_content_type(buffer::type::groupinfo);
@@ -416,7 +416,7 @@ public:
         out.set_content_length(blen);
         out.set_content_start(len);
         out.set_status(buffer::status::success);
-        
+
         LOG_I("Read xover data ", newsflash::size{blen});
         return true;
     }
@@ -470,8 +470,8 @@ public:
 
         // 412 no news group selected
         // 420 no article(s) selected
-        // 502 no permssion 
-        nntp::scan_response({224}, buff.head(), len);        
+        // 502 no permssion
+        nntp::scan_response({224}, buff.head(), len);
 
         if (out.size() == 0)
             out.allocate(MB(1));
@@ -511,8 +511,8 @@ public:
 
         if (err != Z_STREAM_END)
         {
-            LOG_E("Inflate failed zlib error: ", err);        
-            out.set_status(buffer::status::error);       
+            LOG_E("Inflate failed zlib error: ", err);
+            out.set_status(buffer::status::error);
             return true;
         }
         LOG_I("Inflated header data from ", kb(ibytes_), " to ", kb(obytes_));
@@ -524,7 +524,7 @@ public:
 
         const auto head = buff.head() + ibytes_ + len;
         const auto size = buff.size() - ibytes_ - len;
-        if (size >= 3) 
+        if (size >= 3)
         {
             if (!std::strncmp(head, ".\r\n", 3))
             {
@@ -600,11 +600,11 @@ public:
         return true;
     }
     virtual bool can_pipeline() const override
-    { 
+    {
         return false;
     }
     virtual session::state state() const override
-    { 
+    {
         return session::state::transfer;
     }
     virtual std::string str() const override
@@ -624,7 +624,7 @@ public:
             return false;
 
         // XFEATURE ENABLE COMPRESS is not standard feature
-        // specific by the NNTP specs, so im not sure what are the 
+        // specific by the NNTP specs, so im not sure what are the
         // potential response codes to be used here. hence we just
         // check the initial digit for success/failure.
         // also XSUsenet wants to do a challenge here.
@@ -638,7 +638,7 @@ public:
         }
 
         const auto beg = buff.head();
-        if (beg[0] != '2') 
+        if (beg[0] != '2')
         {
             LOG_W("Compression not supported.");
             st.enable_compression = false;
@@ -683,13 +683,22 @@ void session::reset()
     state_->enable_compression = false;
 }
 
-void session::start()
+void session::start(bool authenticate_immediately)
 {
     send_.emplace_back(new welcome);
     send_.emplace_back(new getcaps);
-    send_.emplace_back(new modereader);  
+    send_.emplace_back(new modereader);
     if (state_->enable_compression)
         send_.emplace_back(new xfeature_compress_gzip);
+
+    // it's useful for account testing purposes to try perform
+    // authentication immediately to see if the user credentials
+    // are working or not.
+    // ufortunatately there's no *real* way of doing it so instead
+    // we'll try to just change the group to something that should
+    // exist on the server.
+    if (authenticate_immediately)
+        send_.emplace_back(new group("alt.binaries.test"));
 }
 
 void session::quit()
@@ -746,14 +755,14 @@ bool session::send_next()
 
     // command pipelining is a mechanism which allows us to send
     // multiple commands back-to-back and then receive multiple responses
-    // back to back. 
+    // back to back.
     // so instead of sending BODY 1 and then receiving the article data for body1
     // and then sending BODY 2 and receiving data we can do
     // BODY 1\r\n BODY 2\r\n ... BODY N\r\n
     // and then read body1, body2 ... bodyN article datas
 
     // however in case of commands that may not be pipelined
-    // we may not send any commands before the response for the 
+    // we may not send any commands before the response for the
     // non-pipelined command has been received.
 
     if (!recv_.empty())
@@ -842,7 +851,7 @@ bool session::recv_next(buffer& buff, buffer& out)
         if (!state_->have_caps)
             send_.emplace_front(new getcaps);
 
-        send_.emplace_front(new authpass(password));                
+        send_.emplace_front(new authpass(password));
         send_.emplace_front(new authuser(username));
 
         recv_.pop_front();
@@ -879,10 +888,10 @@ session::error session::get_error() const
 session::state session::get_state() const
 { return state_->state; }
 
-bool session::has_gzip_compress() const 
+bool session::has_gzip_compress() const
 { return state_->has_gzip; }
 
-bool session::has_xzver() const 
+bool session::has_xzver() const
 { return state_->has_xzver; }
 
 } // newsflash

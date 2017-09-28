@@ -600,6 +600,7 @@ public:
         spec.username = account.username;
         spec.enable_compression = account.enable_compression;
         spec.enable_pipelining = account.enable_pipelining;
+        spec.authenticate_immediately = true;
         if (account.enable_secure_server)
         {
             spec.hostname = account.secure_host;
