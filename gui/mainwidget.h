@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -40,7 +40,7 @@ namespace gui
     class SettingsWidget;
     class Finder;
 
-    // mainwidget objects sit in the mainwindow's main tab 
+    // mainwidget objects sit in the mainwindow's main tab
     // and provides GUI and features to the application.
     // the different between mainwidget and mainmodule is that
     // mainmodules are simpler headless versions that no not provide
@@ -53,7 +53,7 @@ namespace gui
         struct info {
             // this is the URL to the help (file). If it specifies a filename
             // it is considered to be a help file in the application's help installation
-            // folder. Otherwise an absolute path or URL can be specified.            
+            // folder. Otherwise an absolute path or URL can be specified.
             QString helpurl;
 
             // Whether the component should be visible by default (on first launch).
@@ -61,17 +61,17 @@ namespace gui
         };
 
         virtual ~MainWidget() = default;
-        
+
         // Add the component specific menu actions to a menu inside the host application
         virtual void addActions(QMenu& menu) {}
-        
+
         // Add the component specific toolbar actions to a toolbar in the host application
         virtual void addActions(QToolBar& bar) {}
 
         // This function is invoked when this ui component is getting activated (becomes visible)
         // in the host GUI.
         virtual void activate(QWidget* parent) {}
-        
+
         // This function is invoked when this ui component is hidden in the host GUI.
         virtual void deactivate() {}
 
@@ -98,18 +98,20 @@ namespace gui
         // get information about the widget/component.
         virtual info getInformation() const { return {"", false}; }
 
-        // get a settings widget if any. the object ownership is 
+        // get a settings widget if any. the object ownership is
         // transferred to the caller.
         virtual SettingsWidget* getSettings() { return nullptr; }
 
         virtual void applySettings(SettingsWidget* gui) {}
 
-        // notify that application settings have changed. 
+        // notify that application settings have changed.
         virtual void freeSettings(SettingsWidget* s) {}
 
         virtual Finder* getFinder() { return nullptr; }
 
         virtual void updateRegistration(bool success) {};
+
+        virtual bool dropFile(const QString& name) { return false; }
 
     signals:
         // request the widget to have it's toolbar updated.

@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -35,7 +35,7 @@ namespace gui
     class Archives : public MainWidget
     {
         Q_OBJECT
-        
+
     public:
         Archives(Unpack& unpack, Repair& repair);
        ~Archives();
@@ -51,6 +51,8 @@ namespace gui
 
         virtual info getInformation() const override
         { return {"archives.html", true}; }
+
+        virtual bool dropFile(const QString& file) override;
 
     private slots:
         void on_actionRepair_triggered();

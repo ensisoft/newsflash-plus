@@ -53,6 +53,8 @@ namespace gui
         virtual info getInformation() const override
         { return {"archives.html", true}; }
 
+        virtual bool dropFile(const QString& file) override;
+
         void setUnpackEnabled(bool onOff);
 
         std::size_t numNewUnpacks() const

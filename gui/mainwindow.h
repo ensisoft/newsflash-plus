@@ -177,23 +177,27 @@ namespace gui
         void showSettings(MainWidget* widget);
 
     private:
-        Ui::MainWindow ui_;
+        // main UI object
+        Ui::MainWindow mUI;
 
     private:
-        std::vector<MainModule*> modules_;
-        std::vector<MainWidget*> widgets_;
-        std::vector<QAction*> actions_;
+        app::Settings& mSettings;
+        std::vector<app::Settings> mTransientSettings;
 
-        MainWidget* current_;
     private:
-        QStringList recents_;
-        QString recent_save_nzb_path_;
-        QString recent_load_nzb_path_;
-        QTimer  refresh_timer_;
-        QString keyCode_;
+        std::vector<MainModule*> mModules;
+        std::vector<MainWidget*> mWidgets;
+        std::vector<QAction*>    mActions;
+        MainWidget* mCurrentWidget = nullptr;
+
     private:
-        app::Settings& settings_;
-        std::vector<app::Settings> transient_;
+        QStringList mRecents;
+        QString mRecentSaveNZBPath;
+        QString mRecentLoadNZBPath;
+        QString mKeyCode;
+    private:
+        QTimer  mRefreshTimer;
+
     };
 
     extern MainWindow* g_win;

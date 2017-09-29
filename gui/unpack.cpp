@@ -151,6 +151,28 @@ void Unpack::shutdown()
     model_.stopUnpack();
 }
 
+bool Unpack::dropFile(const QString& file)
+{
+    QFileInfo info(file);
+    const auto& suffix = info.suffix();
+
+    // todo: obtain the file suffixes from app::Unpacker
+    if (!(suffix == "rar" || suffix == "zip" || suffix == "7z"))
+        return false;
+
+    //const auto& base = info.completeBaseName();
+    auto name = info.fileName();
+    auto path = info.filePath().remove(name);
+
+    app::Archive arc;
+    arc.state = app::Archive::Status::Queued;
+    arc.desc  = name;
+    arc.file  = name;
+    arc.path  = path;
+    model_.addUnpack(arc);
+    return true;
+}
+
 void Unpack::setUnpackEnabled(bool onOff)
 {
     model_.setEnabled(onOff);

@@ -70,9 +70,9 @@ namespace gui
 
 MainWindow* g_win;
 
-MainWindow::MainWindow(app::Settings& s) : QMainWindow(nullptr), current_(nullptr), settings_(s)
+MainWindow::MainWindow(app::Settings& s) : QMainWindow(nullptr), mSettings(s)
 {
-    ui_.setupUi(this);
+    mUI.setupUi(this);
 
     // set network monitor colors
     TinyGraph::colors greenish = {};
@@ -80,36 +80,36 @@ MainWindow::MainWindow(app::Settings& s) : QMainWindow(nullptr), current_(nullpt
     greenish.grad1   = QColor(232, 232, 232);
     greenish.grad2   = QColor(200, 200, 200);
     greenish.outline = QColor(97, 212, 55);
-    ui_.netGraph->setColors(greenish);
+    mUI.netGraph->setColors(greenish);
 
     // put the various little widgets in their correct places
-    ui_.statusBar->insertPermanentWidget(0, ui_.frmProgress);
-    //ui_.statusBar->insertPermanentWidget(1, ui_.frmFreeSpace);
-    ui_.frmFreeSpace->setVisible(false);
-    ui_.statusBar->insertPermanentWidget(1, ui_.frmDiskWrite);
-    ui_.statusBar->insertPermanentWidget(2, ui_.frmGraph);
-    ui_.statusBar->insertPermanentWidget(3, ui_.frmKbs);
-    ui_.mainToolBar->setVisible(true);
-    ui_.statusBar->setVisible(true);
-    ui_.actionViewToolbar->setChecked(true);
-    ui_.actionViewStatusbar->setChecked(true);
-    ui_.progressBar->setTextVisible(false);
+    mUI.statusBar->insertPermanentWidget(0, mUI.frmProgress);
+    //mUI.statusBar->insertPermanentWidget(1, mUI.frmFreeSpace);
+    mUI.frmFreeSpace->setVisible(false);
+    mUI.statusBar->insertPermanentWidget(1, mUI.frmDiskWrite);
+    mUI.statusBar->insertPermanentWidget(2, mUI.frmGraph);
+    mUI.statusBar->insertPermanentWidget(3, mUI.frmKbs);
+    mUI.mainToolBar->setVisible(true);
+    mUI.statusBar->setVisible(true);
+    mUI.actionViewToolbar->setChecked(true);
+    mUI.actionViewStatusbar->setChecked(true);
+    mUI.progressBar->setTextVisible(false);
 
-    ui_.actionOpen->setShortcut(QKeySequence::Open);
-    ui_.actionExit->setShortcut(QKeySequence::Quit);
-    ui_.actionSearch->setShortcut(QKeySequence::New);
-    ui_.actionWindowClose->setShortcut(QKeySequence::Close);
-    ui_.actionWindowNext->setShortcut(QKeySequence::Forward);
-    ui_.actionWindowPrev->setShortcut(QKeySequence::Back);
+    mUI.actionOpen->setShortcut(QKeySequence::Open);
+    mUI.actionExit->setShortcut(QKeySequence::Quit);
+    mUI.actionSearch->setShortcut(QKeySequence::New);
+    mUI.actionWindowClose->setShortcut(QKeySequence::Close);
+    mUI.actionWindowNext->setShortcut(QKeySequence::Forward);
+    mUI.actionWindowPrev->setShortcut(QKeySequence::Back);
 
-    ui_.actionFind->setShortcut(QKeySequence::Find);
-    ui_.actionFindNext->setShortcut(QKeySequence::FindNext);
-    ui_.actionFindPrev->setShortcut(QKeySequence::FindPrevious);
+    mUI.actionFind->setShortcut(QKeySequence::Find);
+    mUI.actionFindNext->setShortcut(QKeySequence::FindNext);
+    mUI.actionFindPrev->setShortcut(QKeySequence::FindPrevious);
 
-    QObject::connect(&refresh_timer_, SIGNAL(timeout()),
+    QObject::connect(&mRefreshTimer, SIGNAL(timeout()),
         this, SLOT(timerRefresh_timeout()));
-    refresh_timer_.setInterval(500);
-    refresh_timer_.start();
+    mRefreshTimer.setInterval(500);
+    mRefreshTimer.start();
 
     auto& eventLog = app::EventLog::get();
     QObject::connect(&eventLog, SIGNAL(newEvent(const app::Event&)),
@@ -138,9 +138,9 @@ void MainWindow::attach(MainWidget* widget, bool permanent, bool loadstate)
 {
     Q_ASSERT(!widget->parent());
 
-    int index = widgets_.size();
+    int index = mWidgets.size();
 
-    widgets_.push_back(widget);
+    mWidgets.push_back(widget);
 
     const auto& text = widget->windowTitle();
     const auto& icon = widget->windowIcon();
@@ -151,32 +151,32 @@ void MainWindow::attach(MainWidget* widget, bool permanent, bool loadstate)
     // are just hidden and toggled in the View menu.
     if (permanent)
     {
-        QAction* action = ui_.menuView->addAction(text);
+        QAction* action = mUI.menuView->addAction(text);
         action->setCheckable(true);
         action->setChecked(true);
         action->setProperty("index", index);
         QObject::connect(action, SIGNAL(triggered()), this,
             SLOT(actionWindowToggleView_triggered()));
 
-        actions_.push_back(action);
+        mActions.push_back(action);
         widget->setProperty("permanent", true);
         if (loadstate)
-            widget->loadState(settings_);
+            widget->loadState(mSettings);
     }
     else
     {
-        const auto count = ui_.mainTab->count();
-        ui_.mainTab->addTab(widget, icon, text);
-        ui_.mainTab->setCurrentIndex(count);
+        const auto count = mUI.mainTab->count();
+        mUI.mainTab->addTab(widget, icon, text);
+        mUI.mainTab->setCurrentIndex(count);
         widget->setProperty("permanent", false);
         if (loadstate)
         {
-            auto it = std::find_if(std::begin(transient_), std::end(transient_),
+            auto it = std::find_if(std::begin(mTransientSettings), std::end(mTransientSettings),
                 [=](const app::Settings& s) {
                     return s.name() == widget->objectName();
                 });
-            if (it == std::end(transient_))
-                widget->loadState(settings_);
+            if (it == std::end(mTransientSettings))
+                widget->loadState(mSettings);
             else {
                 auto& settings = *it;
                 widget->loadState(settings);
@@ -192,22 +192,22 @@ void MainWindow::attach(MainWidget* widget, bool permanent, bool loadstate)
 
 void MainWindow::attach(MainModule* module, bool loadstate)
 {
-    modules_.push_back(module);
+    mModules.push_back(module);
 }
 
 void MainWindow::detachAllWidgets()
 {
-    ui_.mainTab->clear();
+    mUI.mainTab->clear();
 
-    for (auto* w : widgets_)
+    for (auto* w : mWidgets)
         w->setParent(nullptr);
 
-    widgets_.clear();
+    mWidgets.clear();
 }
 
 void MainWindow::closeWidget(MainWidget* widget)
 {
-    const auto index = ui_.mainTab->indexOf(widget);
+    const auto index = mUI.mainTab->indexOf(widget);
     if (index == -1)
         return;
     on_mainTab_tabCloseRequested(index);
@@ -215,7 +215,7 @@ void MainWindow::closeWidget(MainWidget* widget)
 
 void MainWindow::loadState()
 {
-    if (!settings_.contains("window", "width"))
+    if (!mSettings.contains("window", "width"))
     {
         // if the settings file doesn't exist then we assume that this is the
         // first launch of the application and just setup for the user welcome
@@ -223,8 +223,8 @@ void MainWindow::loadState()
     }
     else
     {
-        const auto MediaTypeVersion = settings_.get("version", "mediatype").toInt();
-        const auto FileTypeVersion  = settings_.get("version", "filetype").toInt();
+        const auto MediaTypeVersion = mSettings.get("version", "mediatype").toInt();
+        const auto FileTypeVersion  = mSettings.get("version", "filetype").toInt();
         if (MediaTypeVersion != app::MediaTypeVersion ||
             FileTypeVersion  != app::FileTypeVersion)
         {
@@ -232,16 +232,16 @@ void MainWindow::loadState()
         }
     }
 
-    const auto width  = settings_.get("window", "width", 0);
-    const auto height = settings_.get("window", "height", 0);
+    const auto width  = mSettings.get("window", "width", 0);
+    const auto height = mSettings.get("window", "height", 0);
     if (width && height)
     {
         DEBUG("MainWindow dimensions %1 x %2", width, height);
         resize(width, height);
     }
 
-    const auto x = settings_.get("window", "x", 0);
-    const auto y = settings_.get("window", "y", 0);
+    const auto x = mSettings.get("window", "x", 0);
+    const auto y = mSettings.get("window", "y", 0);
 
     QDesktopWidget desktop;
     auto screen = desktop.availableGeometry(desktop.primaryScreen());
@@ -251,42 +251,42 @@ void MainWindow::loadState()
         move(x, y);
     }
 
-    const auto show_statbar = settings_.get("window", "show_statusbar", true);
-    const auto show_toolbar = settings_.get("window", "show_toolbar", true);
-    ui_.mainToolBar->setVisible(show_toolbar);
-    ui_.statusBar->setVisible(show_statbar);
-    ui_.actionViewToolbar->setChecked(show_toolbar);
-    ui_.actionViewStatusbar->setChecked(show_statbar);
+    const auto show_statbar = mSettings.get("window", "show_statusbar", true);
+    const auto show_toolbar = mSettings.get("window", "show_toolbar", true);
+    mUI.mainToolBar->setVisible(show_toolbar);
+    mUI.statusBar->setVisible(show_statbar);
+    mUI.actionViewToolbar->setChecked(show_toolbar);
+    mUI.actionViewStatusbar->setChecked(show_statbar);
 
-    recents_ = settings_.get("paths", "recents").toStringList();
-    recent_save_nzb_path_ = settings_.get("paths", "save_nzb").toString();
-    recent_load_nzb_path_ = settings_.get("paths", "load_nzb").toString();
-    keyCode_ = settings_.get("license", "keycode").toString();
+    mRecents = mSettings.get("paths", "recents").toStringList();
+    mRecentSaveNZBPath = mSettings.get("paths", "save_nzb").toString();
+    mRecentLoadNZBPath = mSettings.get("paths", "load_nzb").toString();
+    mKeyCode = mSettings.get("license", "keycode").toString();
 
-    const auto success = keygen::verify_code(keyCode_);
+    const auto success = keygen::verify_code(mKeyCode);
 
-    for (std::size_t i=0; i<widgets_.size(); ++i)
+    for (std::size_t i=0; i<mWidgets.size(); ++i)
     {
-        const auto text = widgets_[i]->objectName();
+        const auto text = mWidgets[i]->objectName();
         Q_ASSERT(!text.isEmpty());
-        const auto icon = widgets_[i]->windowIcon();
-        const auto info = widgets_[i]->getInformation();
-        const auto show = settings_.get("window_visible_tabs", text, info.initiallyVisible);
+        const auto icon = mWidgets[i]->windowIcon();
+        const auto info = mWidgets[i]->getInformation();
+        const auto show = mSettings.get("window_visible_tabs", text, info.initiallyVisible);
         if (show)
         {
-            const auto title = widgets_[i]->windowTitle();
-            ui_.mainTab->insertTab(i, widgets_[i], icon, title);
+            const auto title = mWidgets[i]->windowTitle();
+            mUI.mainTab->insertTab(i, mWidgets[i], icon, title);
         }
-        if (i < actions_.size())
-            actions_[i]->setChecked(show);
+        if (i < mActions.size())
+            mActions[i]->setChecked(show);
 
-        widgets_[i]->loadState(settings_);
-        widgets_[i]->updateRegistration(success);
+        mWidgets[i]->loadState(mSettings);
+        mWidgets[i]->updateRegistration(success);
     }
 
-    for (auto* m : modules_)
+    for (auto* m : mModules)
     {
-        m->loadState(settings_);
+        m->loadState(mSettings);
         m->updateRegistration(success);
     }
 
@@ -295,7 +295,7 @@ void MainWindow::loadState()
 
 void MainWindow::startup()
 {
-    for (auto* widget : widgets_)
+    for (auto* widget : mWidgets)
     {
         widget->startup();
     }
@@ -313,7 +313,7 @@ void MainWindow::showSetting(const QString& name)
     std::vector<SettingsWidget*> w_tabs;
     std::vector<SettingsWidget*> m_tabs;
 
-    for (auto* w : widgets_)
+    for (auto* w : mWidgets)
     {
         auto* tab = w->getSettings();
         if (tab)
@@ -322,7 +322,7 @@ void MainWindow::showSetting(const QString& name)
         w_tabs.push_back(tab);
     }
 
-    for (auto* m : modules_)
+    for (auto* m : mModules)
     {
         auto* tab = m->getSettings();
         if (tab)
@@ -338,9 +338,9 @@ void MainWindow::showSetting(const QString& name)
     const bool apply =
        (dlg.result() == QDialog::Accepted);
 
-    for (std::size_t i=0; i<widgets_.size(); ++i)
+    for (std::size_t i=0; i<mWidgets.size(); ++i)
     {
-        auto* widget = widgets_[i];
+        auto* widget = mWidgets[i];
         auto* tab = w_tabs[i];
         if (apply && tab)
             widget->applySettings(tab);
@@ -349,9 +349,9 @@ void MainWindow::showSetting(const QString& name)
             widget->freeSettings(tab);
     }
 
-    for (std::size_t i=0; i<modules_.size(); ++i)
+    for (std::size_t i=0; i<mModules.size(); ++i)
     {
-        auto* module = modules_[i];
+        auto* module = mModules[i];
         auto* tab = m_tabs[i];
         if (apply && tab)
             module->applySettings(tab);
@@ -363,31 +363,31 @@ void MainWindow::showSetting(const QString& name)
 
 void MainWindow::prepareFileMenu()
 {
-    ui_.menuFile->addAction(ui_.actionOpen);
-    ui_.menuFile->addSeparator();
-    ui_.menuFile->addAction(ui_.actionSearch);
-    ui_.menuFile->addSeparator();
+    mUI.menuFile->addAction(mUI.actionOpen);
+    mUI.menuFile->addSeparator();
+    mUI.menuFile->addAction(mUI.actionSearch);
+    mUI.menuFile->addSeparator();
 
-    for (auto* m : modules_)
-        if (m->addActions(*ui_.menuFile))
-            ui_.menuFile->addSeparator();
+    for (auto* m : mModules)
+        if (m->addActions(*mUI.menuFile))
+            mUI.menuFile->addSeparator();
 
-    ui_.menuFile->addSeparator();
-    ui_.menuFile->addAction(ui_.actionPoweroff);
-    ui_.menuFile->addSeparator();
-    ui_.menuFile->addAction(ui_.actionExit);
+    mUI.menuFile->addSeparator();
+    mUI.menuFile->addAction(mUI.actionPoweroff);
+    mUI.menuFile->addSeparator();
+    mUI.menuFile->addAction(mUI.actionExit);
 }
 
 void MainWindow::prepareMainTab()
 {
-    ui_.mainTab->setCurrentIndex(0);
+    mUI.mainTab->setCurrentIndex(0);
 }
 
 QString MainWindow::selectDownloadFolder()
 {
     QString latest;
-    if (!recents_.isEmpty())
-        latest = recents_.back();
+    if (!mRecents.isEmpty())
+        latest = mRecents.back();
 
     QFileDialog dlg(this);
     dlg.setFileMode(QFileDialog::Directory);
@@ -400,11 +400,11 @@ QString MainWindow::selectDownloadFolder()
     dir = QDir(dir).absolutePath();
     dir = QDir::toNativeSeparators(dir);
 
-    if (!recents_.contains(dir))
-        recents_.push_back(dir);
+    if (!mRecents.contains(dir))
+        mRecents.push_back(dir);
 
-    if (recents_.size() > 10)
-        recents_.pop_front();
+    if (mRecents.size() > 10)
+        mRecents.pop_front();
 
     return dir;
 }
@@ -414,13 +414,13 @@ QString MainWindow::selectSaveNzbFolder()
     QFileDialog dlg(this);
     dlg.setFileMode(QFileDialog::Directory);
     dlg.setWindowTitle(tr("Select save NZB folder"));
-    dlg.setDirectory(recent_save_nzb_path_);
+    dlg.setDirectory(mRecentSaveNZBPath);
     if (dlg.exec() == QDialog::Rejected)
         return QString();
 
     auto dir = dlg.selectedFiles().first();
 
-    recent_save_nzb_path_ = dir;
+    mRecentSaveNZBPath = dir;
 
     return QDir::toNativeSeparators(dir);
 }
@@ -428,11 +428,11 @@ QString MainWindow::selectSaveNzbFolder()
 QString MainWindow::selectNzbOpenFile()
 {
     const auto& file = QFileDialog::getOpenFileName(this,
-        tr("Select Newzbin file"), recent_load_nzb_path_, "Newzbin Files (*.nzb)");
+        tr("Select Newzbin file"), mRecentLoadNZBPath, "Newzbin Files (*.nzb)");
     if (file.isEmpty())
         return "";
 
-    recent_load_nzb_path_ = QFileInfo(file).absolutePath();
+    mRecentLoadNZBPath = QFileInfo(file).absolutePath();
     return QDir::toNativeSeparators(file);
 }
 
@@ -441,7 +441,7 @@ QString MainWindow::selectNzbSaveFile(const QString& filename)
     QFileDialog dlg(this);
     dlg.setFileMode(QFileDialog::AnyFile);
     dlg.setWindowTitle(tr("Save Newzbin File As ..."));
-    dlg.setDirectory(recent_save_nzb_path_);
+    dlg.setDirectory(mRecentSaveNZBPath);
     dlg.selectFile(filename);
     dlg.setAcceptMode(QFileDialog::AcceptSave);
     if (dlg.exec() == QDialog::Rejected)
@@ -451,24 +451,24 @@ QString MainWindow::selectNzbSaveFile(const QString& filename)
     const auto& file  = files.first();
 
     QFileInfo info(file);
-    recent_save_nzb_path_ = info.absolutePath();
+    mRecentSaveNZBPath = info.absolutePath();
     return QDir::toNativeSeparators(file);
 }
 
 QStringList MainWindow::getRecentPaths() const
 {
-    return recents_;
+    return mRecents;
 }
 
 std::size_t MainWindow::numWidgets() const
 {
-    return widgets_.size();
+    return mWidgets.size();
 }
 
 MainWidget* MainWindow::getWidget(std::size_t i)
 {
-    BOUNDSCHECK(widgets_, i);
-    return widgets_[i];
+    BOUNDSCHECK(mWidgets, i);
+    return mWidgets[i];
 }
 
 void MainWindow::messageReceived(const QString& message)
@@ -479,7 +479,7 @@ void MainWindow::messageReceived(const QString& message)
 
     DEBUG("Message received as a file path %1", message);
 
-    for (auto* m : modules_)
+    for (auto* m : mModules)
     {
         MainWidget* widget = m->dropFile(message);
         if (widget)
@@ -489,17 +489,17 @@ void MainWindow::messageReceived(const QString& message)
 
 void MainWindow::updateMenu(MainWidget* widget)
 {
-    if (widget != current_)
+    if (widget != mCurrentWidget)
         return;
 
-    ui_.mainToolBar->clear();
-    ui_.menuTemp->clear();
+    mUI.mainToolBar->clear();
+    mUI.menuTemp->clear();
 
-    widget->addActions(*ui_.mainToolBar);
-    widget->addActions(*ui_.menuTemp);
+    widget->addActions(*mUI.mainToolBar);
+    widget->addActions(*mUI.menuTemp);
 
-    ui_.mainToolBar->addSeparator();
-    ui_.mainToolBar->addAction(ui_.actionContextHelp);
+    mUI.mainToolBar->addSeparator();
+    mUI.mainToolBar->addAction(mUI.actionContextHelp);
 }
 
 void MainWindow::showSettings(MainWidget* widget)
@@ -509,32 +509,34 @@ void MainWindow::showSettings(MainWidget* widget)
 
 void MainWindow::show(const QString& title)
 {
-    const auto it = std::find_if(std::begin(widgets_), std::end(widgets_),
+    const auto it = std::find_if(std::begin(mWidgets), std::end(mWidgets),
         [&](const MainWidget* widget) {
             return widget->windowTitle() == title;
         });
-    if (it == std::end(widgets_))
+    if (it == std::end(mWidgets))
         return;
 
-    show(std::distance(std::begin(widgets_), it));
+    show(std::distance(std::begin(mWidgets), it));
 }
 
 void MainWindow::show(MainWidget* widget)
 {
-    auto it = std::find(std::begin(widgets_), std::end(widgets_), widget);
-    if (it == std::end(widgets_))
+    auto it = std::find(std::begin(mWidgets), std::end(mWidgets), widget);
+    if (it == std::end(mWidgets))
         return;
 
-    show(std::distance(std::begin(widgets_), it));
+    show(std::distance(std::begin(mWidgets), it));
 }
 
 void MainWindow::show(std::size_t index)
 {
-    auto* widget = widgets_[index];
-    auto* action = actions_[index];
+    BOUNDSCHECK(mWidgets, index);
+    BOUNDSCHECK(mActions, index);
+    auto* widget = mWidgets[index];
+    auto* action = mActions[index];
 
     // if already show, then do nothing
-    auto pos = ui_.mainTab->indexOf(widget);
+    auto pos = mUI.mainTab->indexOf(widget);
     if (pos != -1)
         return;
 
@@ -542,18 +544,18 @@ void MainWindow::show(std::size_t index)
 
     const auto& icon = widget->windowIcon();
     const auto& text = widget->windowTitle();
-    ui_.mainTab->insertTab(index, widget, icon, text);
+    mUI.mainTab->insertTab(index, widget, icon, text);
     prepareWindowMenu();
 
 }
 
 void MainWindow::hide(MainWidget* widget)
 {
-    auto it = std::find(std::begin(widgets_), std::end(widgets_), widget);
+    auto it = std::find(std::begin(mWidgets), std::end(mWidgets), widget);
 
-    Q_ASSERT(it != std::end(widgets_));
+    Q_ASSERT(it != std::end(mWidgets));
 
-    auto index = std::distance(std::begin(widgets_), it);
+    auto index = std::distance(std::begin(mWidgets), it);
 
     hide(index);
 
@@ -561,35 +563,35 @@ void MainWindow::hide(MainWidget* widget)
 
 void MainWindow::hide(std::size_t index)
 {
-    auto* widget = widgets_[index];
-    auto* action = actions_[index];
+    auto* widget = mWidgets[index];
+    auto* action = mActions[index];
 
     // if already not shown then do nothing
-    auto pos = ui_.mainTab->indexOf(widget);
+    auto pos = mUI.mainTab->indexOf(widget);
     if (pos == -1)
         return;
 
     action->setChecked(false);
 
-    ui_.mainTab->removeTab(pos);
+    mUI.mainTab->removeTab(pos);
 
     prepareWindowMenu();
 }
 
 void MainWindow::focus(MainWidget* ui)
 {
-    const auto index = ui_.mainTab->indexOf(ui);
+    const auto index = mUI.mainTab->indexOf(ui);
     if (index == -1)
         return;
 
-    ui_.mainTab->setCurrentIndex(index);
+    mUI.mainTab->setCurrentIndex(index);
 }
 
 void MainWindow::closeEvent(QCloseEvent* event)
 {
     DEBUG("Block signals");
-    refresh_timer_.stop();
-    refresh_timer_.blockSignals(true);
+    mRefreshTimer.stop();
+    mRefreshTimer.blockSignals(true);
 
     // try to perform orderly engine shutdown.
     DlgExit dialog(this);
@@ -613,8 +615,8 @@ void MainWindow::closeEvent(QCloseEvent* event)
     // if it does fail, then ask the user if he wants to continue quitting
     if (!saveState(&dialog))
     {
-        refresh_timer_.start();
-        refresh_timer_.blockSignals(false);
+        mRefreshTimer.start();
+        mRefreshTimer.blockSignals(false);
         dialog.close();
         event->ignore();
         return;
@@ -624,13 +626,13 @@ void MainWindow::closeEvent(QCloseEvent* event)
 
     DEBUG("Begin shutdown modules...");
 
-    for (auto* w : widgets_)
+    for (auto* w : mWidgets)
     {
         DEBUG("Shutdown %1", w->windowTitle());
         w->shutdown();
     }
 
-    for (auto* m : modules_)
+    for (auto* m : mModules)
     {
         DEBUG("Shutdown %1", m->getInformation().name);
         m->shutdown();
@@ -640,10 +642,10 @@ void MainWindow::closeEvent(QCloseEvent* event)
 
     // important. block signals, we're shutting down and don't want to
     // run the normal widget activation/deactivation code anymore.
-    ui_.mainTab->blockSignals(true);
-    ui_.mainToolBar->blockSignals(true);
-    ui_.menuBar->blockSignals(true);
-    ui_.mainTab->clear();
+    mUI.mainTab->blockSignals(true);
+    mUI.mainToolBar->blockSignals(true);
+    mUI.menuBar->blockSignals(true);
+    mUI.mainTab->clear();
 
     event->accept();
     DEBUG("Shutdown complete!");
@@ -676,18 +678,32 @@ void MainWindow::dropEvent(QDropEvent* event)
 
         DEBUG("processing %1 file", name);
 
-        for (auto* m : modules_)
+        for (auto* m : mModules)
         {
             MainWidget* widget = m->dropFile(name);
             if (widget)
                 attach(widget, false, true);
+        }
+
+        for (size_t i=0; i<mWidgets.size(); ++i)
+        {
+            auto* widget = mWidgets[i];
+            if (widget->dropFile(name))
+            {
+                bool permanent = widget->property("permanent").toBool();
+                if (permanent)
+                {
+                    show(i);
+                    focusWidget(widget);
+                }
+            }
         }
     }
 }
 
 FindWidget* MainWindow::getFindWidget()
 {
-    auto* main = static_cast<MainWidget*>(ui_.mainTab->currentWidget());
+    auto* main = static_cast<MainWidget*>(mUI.mainTab->currentWidget());
     if (main == nullptr)
         return nullptr;
 
@@ -726,15 +742,15 @@ void MainWindow::openHelp(const QString& page)
 
 void MainWindow::prepareWindowMenu()
 {
-    ui_.menuWindow->clear();
+    mUI.menuWindow->clear();
 
-    const auto count = ui_.mainTab->count();
-    const auto curr  = ui_.mainTab->currentIndex();
+    const auto count = mUI.mainTab->count();
+    const auto curr  = mUI.mainTab->currentIndex();
     for (int i=0; i<count; ++i)
     {
-        const auto& text = ui_.mainTab->tabText(i);
-        const auto& icon = ui_.mainTab->tabIcon(i);
-        QAction* action  = ui_.menuWindow->addAction(icon, text);
+        const auto& text = mUI.mainTab->tabText(i);
+        const auto& icon = mUI.mainTab->tabIcon(i);
+        QAction* action  = mUI.menuWindow->addAction(icon, text);
         action->setCheckable(true);
         action->setChecked(i == curr);
         action->setProperty("tab-index", i);
@@ -745,10 +761,10 @@ void MainWindow::prepareWindowMenu()
             this, SLOT(actionWindowFocus_triggered()));
     }
     // and this is in the window menu
-    ui_.menuWindow->addSeparator();
-    ui_.menuWindow->addAction(ui_.actionWindowClose);
-    ui_.menuWindow->addAction(ui_.actionWindowNext);
-    ui_.menuWindow->addAction(ui_.actionWindowPrev);
+    mUI.menuWindow->addSeparator();
+    mUI.menuWindow->addAction(mUI.actionWindowClose);
+    mUI.menuWindow->addAction(mUI.actionWindowNext);
+    mUI.menuWindow->addAction(mUI.actionWindowPrev);
 }
 
 bool MainWindow::saveState(DlgExit* dlg)
@@ -759,57 +775,57 @@ bool MainWindow::saveState(DlgExit* dlg)
         // we clear the settings here completely. this makes it easy to purge all stale
         // data from the settings. for example if tools are modified and removed the state
         // is kept in memory and then persisted cleanly into the settings object on save.
-        settings_.clear();
-        for (const auto& a : transient_)
-            settings_.merge(a);
+        mSettings.clear();
+        for (const auto& a : mTransientSettings)
+            mSettings.merge(a);
 
         // todo: refactor this
-        app::g_accounts->saveState(settings_);
-        app::g_engine->saveState(settings_);
-        app::g_tools->saveState(settings_);
-        app::g_history->saveState(settings_);
+        app::g_accounts->saveState(mSettings);
+        app::g_engine->saveState(mSettings);
+        app::g_tools->saveState(mSettings);
+        app::g_history->saveState(mSettings);
 
 
-        settings_.set("window", "width", width());
-        settings_.set("window", "height", height());
-        settings_.set("window", "x", x());
-        settings_.set("window", "y", y());
-        settings_.set("window", "show_toolbar", ui_.mainToolBar->isVisible());
-        settings_.set("window", "show_statusbar", ui_.statusBar->isVisible());
-        settings_.set("paths", "recents", recents_);
-        settings_.set("paths", "save_nzb", recent_save_nzb_path_);
-        settings_.set("paths", "load_nzb", recent_load_nzb_path_);
-        settings_.set("license", "keycode", keyCode_);
+        mSettings.set("window", "width", width());
+        mSettings.set("window", "height", height());
+        mSettings.set("window", "x", x());
+        mSettings.set("window", "y", y());
+        mSettings.set("window", "show_toolbar", mUI.mainToolBar->isVisible());
+        mSettings.set("window", "show_statusbar", mUI.statusBar->isVisible());
+        mSettings.set("paths", "recents", mRecents);
+        mSettings.set("paths", "save_nzb", mRecentSaveNZBPath);
+        mSettings.set("paths", "load_nzb", mRecentLoadNZBPath);
+        mSettings.set("license", "keycode", mKeyCode);
 
-        settings_.set("version", "mediatype", app::MediaTypeVersion);
-        settings_.set("version", "filetype", app::FileTypeVersion);
+        mSettings.set("version", "mediatype", app::MediaTypeVersion);
+        mSettings.set("version", "filetype", app::FileTypeVersion);
 
         // save tab visibility values
         // but only for permanent widgets, i.e. those that have actions.
-        for (std::size_t i=0; i<actions_.size(); ++i)
+        for (std::size_t i=0; i<mActions.size(); ++i)
         {
-            const auto& text = widgets_[i]->objectName();
+            const auto& text = mWidgets[i]->objectName();
             Q_ASSERT(!text.isEmpty());
-            const auto show  = actions_[i]->isChecked();
-            settings_.set("window_visible_tabs", text, show);
+            const auto show  = mActions[i]->isChecked();
+            mSettings.set("window_visible_tabs", text, show);
         }
 
         // save widget states
-        for (auto* w : widgets_)
+        for (auto* w : mWidgets)
         {
             DEBUG("Saving widget %1", w->windowTitle());
-            w->saveState(settings_);
+            w->saveState(mSettings);
         }
 
         // save module state
-        for (auto* m : modules_)
+        for (auto* m : mModules)
         {
             DEBUG("Saving module %1", m->getInformation().name);
-            m->saveState(settings_);
+            m->saveState(mSettings);
         }
 
         const auto file = app::homedir::file("settings.json");
-        const auto err  = settings_.save(file);
+        const auto err  = mSettings.save(file);
         if (err != QFile::NoError)
             throw std::runtime_error("failed to save settings in settings.json");
 
@@ -830,60 +846,60 @@ bool MainWindow::saveState(DlgExit* dlg)
 
 void MainWindow::on_mainTab_currentChanged(int index)
 {
-    if (current_)
-        current_->deactivate();
+    if (mCurrentWidget)
+        mCurrentWidget->deactivate();
 
-    ui_.mainToolBar->clear();
-    ui_.menuTemp->clear();
+    mUI.mainToolBar->clear();
+    mUI.menuTemp->clear();
 
     if (index != -1)
     {
-        auto* widget = static_cast<MainWidget*>(ui_.mainTab->widget(index));
+        auto* widget = static_cast<MainWidget*>(mUI.mainTab->widget(index));
 
-        widget->activate(ui_.mainTab);
-        widget->addActions(*ui_.mainToolBar);
-        widget->addActions(*ui_.menuTemp);
+        widget->activate(mUI.mainTab);
+        widget->addActions(*mUI.mainToolBar);
+        widget->addActions(*mUI.menuTemp);
 
         auto* finder = widget->getFinder();
-        ui_.menuEdit->setEnabled(finder != nullptr);
+        mUI.menuEdit->setEnabled(finder != nullptr);
 
         auto title = widget->windowTitle();
         auto space = title.indexOf(" ");
         if (space != -1)
             title.resize(space);
 
-        ui_.menuTemp->setTitle(title);
-        current_ = widget;
+        mUI.menuTemp->setTitle(title);
+        mCurrentWidget = widget;
     }
 
     // add the stuff that is always in the edit menu
-    ui_.mainToolBar->addSeparator();
-    ui_.mainToolBar->addAction(ui_.actionContextHelp);
+    mUI.mainToolBar->addSeparator();
+    mUI.mainToolBar->addAction(mUI.actionContextHelp);
 
     prepareWindowMenu();
 }
 
 void MainWindow::on_mainTab_tabCloseRequested(int tab)
 {
-    auto* widget = static_cast<MainWidget*>(ui_.mainTab->widget(tab));
+    auto* widget = static_cast<MainWidget*>(mUI.mainTab->widget(tab));
     auto parent  = widget->property("parent-object");
 
-    ui_.mainTab->removeTab(tab);
+    mUI.mainTab->removeTab(tab);
 
     // find in the array
-    auto it = std::find(std::begin(widgets_), std::end(widgets_), widget);
+    auto it = std::find(std::begin(mWidgets), std::end(mWidgets), widget);
 
-    Q_ASSERT(it != std::end(widgets_));
+    Q_ASSERT(it != std::end(mWidgets));
     Q_ASSERT(*it == widget);
 
     auto permanent = widget->property("permanent").toBool();
 
     if (permanent)
     {
-        const auto index = std::distance(std::begin(widgets_), it);
-        BOUNDSCHECK(actions_, index);
+        const auto index = std::distance(std::begin(mWidgets), it);
+        BOUNDSCHECK(mActions, index);
 
-        auto* action = actions_[index];
+        auto* action = mActions[index];
         action->setChecked(false);
     }
     else
@@ -904,15 +920,15 @@ void MainWindow::on_mainTab_tabCloseRequested(int tab)
         // which we then combine with the permanent settings to create the
         // final settings object saved to the file
 
-        auto sit = std::find_if(std::begin(transient_), std::end(transient_),
+        auto sit = std::find_if(std::begin(mTransientSettings), std::end(mTransientSettings),
             [=](const app::Settings& s) {
                 return s.name() == widget->objectName();
             });
-        if (sit == std::end(transient_))
+        if (sit == std::end(mTransientSettings))
         {
             app::Settings s;
             s.setName(widget->objectName());
-            sit = transient_.insert(transient_.end(), s);
+            sit = mTransientSettings.insert(mTransientSettings.end(), s);
         }
         auto& settings = *sit;
         settings.clear();
@@ -920,7 +936,7 @@ void MainWindow::on_mainTab_tabCloseRequested(int tab)
         widget->saveState(settings);
 
         delete widget;
-        widgets_.erase(it);
+        mWidgets.erase(it);
     }
     prepareWindowMenu();
 
@@ -929,18 +945,18 @@ void MainWindow::on_mainTab_tabCloseRequested(int tab)
     {
         auto* p = parent.value<QObject*>();
 
-        auto it = std::find_if(std::begin(widgets_), std::end(widgets_),
+        auto it = std::find_if(std::begin(mWidgets), std::end(mWidgets),
             [&](MainWidget* w) {
                 return static_cast<QObject*>(w) == p;
             });
-        if (it != std::end(widgets_))
+        if (it != std::end(mWidgets))
             focusWidget(*it);
     }
 }
 
 void MainWindow::on_actionWindowClose_triggered()
 {
-    const auto cur = ui_.mainTab->currentIndex();
+    const auto cur = mUI.mainTab->currentIndex();
     if (cur == -1)
         return;
 
@@ -951,38 +967,38 @@ void MainWindow::on_actionWindowNext_triggered()
 {
     // cycle to next tab in the maintab
 
-    const auto cur = ui_.mainTab->currentIndex();
+    const auto cur = mUI.mainTab->currentIndex();
     if (cur == -1)
         return;
 
-    const auto size = ui_.mainTab->count();
+    const auto size = mUI.mainTab->count();
     const auto next = (cur + 1) % size;
-    ui_.mainTab->setCurrentIndex(next);
+    mUI.mainTab->setCurrentIndex(next);
 }
 
 void MainWindow::on_actionWindowPrev_triggered()
 {
     // cycle to previous tab in the maintab
 
-    const auto cur = ui_.mainTab->currentIndex();
+    const auto cur = mUI.mainTab->currentIndex();
     if (cur == -1)
         return;
 
-    const auto size = ui_.mainTab->count();
+    const auto size = mUI.mainTab->count();
     const auto prev = (cur == 0) ? size - 1 : cur - 1;
-    ui_.mainTab->setCurrentIndex(prev);
+    mUI.mainTab->setCurrentIndex(prev);
 }
 
 void MainWindow::on_actionOpen_triggered()
 {
     const auto& file = QFileDialog::getOpenFileName(this,
-        tr("Select Newzbin file"), recent_load_nzb_path_, "Newzbin Files (*.nzb)");
+        tr("Select Newzbin file"), mRecentLoadNZBPath, "Newzbin Files (*.nzb)");
     if (file.isEmpty())
         return;
 
-    recent_load_nzb_path_ = QFileInfo(file).absolutePath();
+    mRecentLoadNZBPath = QFileInfo(file).absolutePath();
 
-    for (auto* m : modules_)
+    for (auto* m : mModules)
     {
         MainWidget* widget = m->openFile(file);
         if (widget)
@@ -1012,18 +1028,18 @@ void MainWindow::on_actionRegister_triggered()
         return;
     }
 
-    for (auto& m : modules_)
+    for (auto& m : mModules)
         m->updateRegistration(success);
 
-    for (auto& w : widgets_)
+    for (auto& w : mWidgets)
         w->updateRegistration(success);
 
-    keyCode_ = keycode;
+    mKeyCode = keycode;
 }
 
 void MainWindow::on_actionContextHelp_triggered()
 {
-    const auto* widget = static_cast<MainWidget*>(ui_.mainTab->currentWidget());
+    const auto* widget = static_cast<MainWidget*>(mUI.mainTab->currentWidget());
     if (widget == nullptr)
         return;
 
@@ -1070,7 +1086,7 @@ void MainWindow::on_actionFindClose_triggered()
 
 void MainWindow::on_actionSearch_triggered()
 {
-    for (auto* m : modules_)
+    for (auto* m : mModules)
     {
         MainWidget* widget = m->openSearch();
         if (widget)
@@ -1086,7 +1102,7 @@ void MainWindow::on_actionSettings_triggered()
 
 void MainWindow::showMessage(const QString& message)
 {
-    ui_.statusBar->showMessage(message, 5000);
+    mUI.statusBar->showMessage(message, 5000);
 }
 
 void MainWindow::updateLicense()
@@ -1149,8 +1165,8 @@ void MainWindow::actionWindowToggleView_triggered()
     const auto index   = action->property("index").toInt();
     const bool visible = action->isChecked();
 
-    BOUNDSCHECK(widgets_, index);
-    BOUNDSCHECK(actions_, index);
+    BOUNDSCHECK(mWidgets, index);
+    BOUNDSCHECK(mActions, index);
 
     if (visible)
     {
@@ -1174,7 +1190,7 @@ void MainWindow::actionWindowFocus_triggered()
 
     action->setChecked(true);
 
-    ui_.mainTab->setCurrentIndex(tab_index);
+    mUI.mainTab->setCurrentIndex(tab_index);
 }
 
 void MainWindow::timerWelcome_timeout()
@@ -1198,10 +1214,10 @@ void MainWindow::timerWelcome_timeout()
             app::g_accounts->setAccount(account);
     }
 
-    for (auto* w : widgets_)
+    for (auto* w : mWidgets)
         w->firstLaunch();
 
-    for (auto* m : modules_)
+    for (auto* m : mModules)
         m->firstLaunch();
 }
 
@@ -1210,23 +1226,23 @@ void MainWindow::timerRefresh_timeout()
     //DEBUG("refresh view timer!");
     app::g_engine->refresh();
 
-    for (auto* w : widgets_)
+    for (auto* w : mWidgets)
     {
-        const auto isActive = (w == current_);
+        const auto isActive = (w == mCurrentWidget);
         w->refresh(isActive);
     }
 
     // this is the easiest way to allow tabs to indicate new status.
     // by letting them change their window title/icon and then we periodidcally
     // update the main tab window.
-    const auto numVisibleTabs = ui_.mainTab->count();
+    const auto numVisibleTabs = mUI.mainTab->count();
     for (int i=0; i<numVisibleTabs; ++i)
     {
-        const auto* widget = static_cast<MainWidget*>(ui_.mainTab->widget(i));
+        const auto* widget = static_cast<MainWidget*>(mUI.mainTab->widget(i));
         const auto& icon = widget->windowIcon();
         const auto& text = widget->windowTitle();
-        ui_.mainTab->setTabText(i, text);
-        ui_.mainTab->setTabIcon(i, icon);
+        mUI.mainTab->setTabText(i, text);
+        mUI.mainTab->setTabIcon(i, icon);
     }
 
     const auto netspeed         = app::g_engine->getDownloadSpeed();
@@ -1236,20 +1252,20 @@ void MainWindow::timerRefresh_timeout()
     const auto bytes_written    = app::g_engine->getBytesWritten();
     const auto bytes_remaining  = bytes_queued - bytes_ready;
 
-    ui_.progressBar->setMinimum(0);
-    ui_.progressBar->setMaximum(100);
-    ui_.progressBar->setValue(0);
+    mUI.progressBar->setMinimum(0);
+    mUI.progressBar->setMaximum(100);
+    mUI.progressBar->setValue(0);
     if (bytes_remaining)
     {
         const double done = ((double)bytes_ready / (double)bytes_queued) * 100.0;
-        ui_.progressBar->setValue((int)done);
+        mUI.progressBar->setValue((int)done);
     }
-    ui_.progressBar->setTextVisible(bytes_remaining != 0);
-    ui_.lblNetIO->setText(app::toString("%1 %2",  app::speed { netspeed }, app::size {bytes_downloaded}));
-    ui_.lblDiskIO->setText(app::toString("%1", app::size { bytes_written }));
-    ui_.lblQueue->setText(app::toString("%1", app::size { bytes_remaining }));
+    mUI.progressBar->setTextVisible(bytes_remaining != 0);
+    mUI.lblNetIO->setText(app::toString("%1 %2",  app::speed { netspeed }, app::size {bytes_downloaded}));
+    mUI.lblDiskIO->setText(app::toString("%1", app::size { bytes_written }));
+    mUI.lblQueue->setText(app::toString("%1", app::size { bytes_remaining }));
 
-    ui_.netGraph->addSample(netspeed);
+    mUI.netGraph->addSample(netspeed);
 }
 
 void MainWindow::timerMigrate_timeout()

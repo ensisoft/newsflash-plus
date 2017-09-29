@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -43,7 +43,7 @@ namespace gui
 
         virtual void addActions(QToolBar& bar) override;
         virtual void addActions(QMenu& menu) override;
-        virtual void activate(QWidget*) override;        
+        virtual void activate(QWidget*) override;
         virtual void deactivate() override;
         virtual void refresh(bool isActive) override;
         virtual void loadState(app::Settings& settings) override;
@@ -53,14 +53,16 @@ namespace gui
         virtual info getInformation() const override
         { return {"repairs.html", true}; }
 
+        virtual bool dropFile(const QString& file) override;
+
         void setRepairEnabled(bool onOff);
 
-        std::size_t numNewRepairs() const 
+        std::size_t numNewRepairs() const
         { return numRepairs_; }
 
     private slots:
         void on_repairList_customContextMenuRequested(QPoint);
-        void repairList_selectionChanged();                
+        void repairList_selectionChanged();
         void on_actionRepair_triggered();
         void on_actionDelete_triggered();
         void on_actionMoveUp_triggered();
@@ -76,12 +78,12 @@ namespace gui
         void on_chkPurgePars_stateChanged(int);
         void repairStart(const app::Archive& arc);
         void repairReady(const app::Archive& arc);
-        void repairProgress(const QString& step, int done);        
+        void repairProgress(const QString& step, int done);
         void scanProgress(const QString& file, int val);
 
     private:
         enum class TaskDirection {
-            Up, Down, Top, Bottom    
+            Up, Down, Top, Bottom
         };
         void moveTasks(TaskDirection dir);
 

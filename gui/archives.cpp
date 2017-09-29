@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -32,7 +32,7 @@
 #include "app/debug.h"
 #include "app/settings.h"
 
-namespace gui 
+namespace gui
 {
 
 Archives::Archives(Unpack& unpack, Repair& repair) : unpack_(unpack), repair_(repair)
@@ -42,13 +42,13 @@ Archives::Archives(Unpack& unpack, Repair& repair) : unpack_(unpack), repair_(re
     ui_.tabWidget->blockSignals(true);
     {
         const auto text = repair.windowTitle();
-        const auto icon = repair.windowIcon();        
+        const auto icon = repair.windowIcon();
         ui_.tabWidget->addTab(&repair, icon, text);
         current_ = &repair_;
     }
     {
         const auto text = unpack.windowTitle();
-        const auto icon = unpack.windowIcon();     
+        const auto icon = unpack.windowIcon();
         ui_.tabWidget->addTab(&unpack, icon, text);
     }
 
@@ -159,6 +159,23 @@ void Archives::refresh(bool isActive)
         if (numEvents)
             setWindowTitle(QString("Archives (%1)").arg(numEvents));
     }
+}
+
+bool Archives::dropFile(const QString& file)
+{
+    if (unpack_.dropFile(file))
+    {
+        auto index = ui_.tabWidget->indexOf(&unpack_);
+        ui_.tabWidget->setCurrentIndex(index);
+        return true;
+    }
+    else if (repair_.dropFile(file))
+    {
+        auto index = ui_.tabWidget->indexOf(&repair_);
+        ui_.tabWidget->setCurrentIndex(index);
+        return true;
+    }
+    return false;
 }
 
 void Archives::on_tabWidget_currentChanged(int index)

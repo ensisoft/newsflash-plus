@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -35,7 +35,7 @@
 #include "app/utility.h"
 #include "app/platform.h"
 
-namespace gui 
+namespace gui
 {
 
 Repair::Repair(app::Repairer& repairer) : model_(repairer), numRepairs_(0)
@@ -45,10 +45,10 @@ Repair::Repair(app::Repairer& repairer) : model_(repairer), numRepairs_(0)
     ui_.repairData->setModel(model_.getRecoveryData());
     ui_.progressList->setVisible(false);
     ui_.progressList->setMinimum(0);
-    ui_.progressList->setMaximum(100);    
+    ui_.progressList->setMaximum(100);
     ui_.actionStop->setEnabled(false);
     ui_.actionClear->setEnabled(false);
-    ui_.lblStatus->clear();    
+    ui_.lblStatus->clear();
 
     QObject::connect(&model_, SIGNAL(repairStart(const app::Archive&)),
         this, SLOT(repairStart(const app::Archive&)));
@@ -77,16 +77,16 @@ Repair::~Repair()
 void Repair::addActions(QToolBar& bar)
 {
     bar.addAction(ui_.actionRepair);
-    bar.addSeparator();    
+    bar.addSeparator();
     bar.addAction(ui_.actionOpenFolder);
     bar.addSeparator();
     bar.addAction(ui_.actionTop);
     bar.addAction(ui_.actionMoveUp);
     bar.addAction(ui_.actionMoveDown);
     bar.addAction(ui_.actionBottom);
-    bar.addSeparator();                
-    bar.addAction(ui_.actionDelete);    
-    bar.addAction(ui_.actionClear);    
+    bar.addSeparator();
+    bar.addAction(ui_.actionDelete);
+    bar.addAction(ui_.actionClear);
     bar.addSeparator();
     bar.addAction(ui_.actionStop);
 }
@@ -112,7 +112,7 @@ void Repair::deactivate()
 void Repair::refresh(bool isActive)
 {
     if (!isActive && numRepairs_)
-        setWindowTitle(QString("Repairs (%1)").arg(numRepairs_));    
+        setWindowTitle(QString("Repairs (%1)").arg(numRepairs_));
 }
 
 void Repair::loadState(app::Settings& settings)
@@ -145,6 +145,25 @@ void Repair::shutdown()
     model_.stopRecovery();
 }
 
+bool Repair::dropFile(const QString& file)
+{
+    QFileInfo info(file);
+    const auto& suffix = info.suffix();
+    if (!(suffix == "par2"))
+        return false;
+
+    auto name = info.fileName();
+    auto path = info.filePath().remove(name);
+
+    app::Archive arc;
+    arc.state = app::Archive::Status::Queued;
+    arc.desc  = name;
+    arc.file  = name;
+    arc.path  = path;
+    model_.addRecovery(arc);
+    return true;
+}
+
 void Repair::setRepairEnabled(bool onOff)
 {
     model_.setEnabled(onOff);
@@ -161,8 +180,8 @@ void Repair::on_repairList_customContextMenuRequested(QPoint)
     menu.addAction(ui_.actionMoveUp);
     menu.addAction(ui_.actionMoveDown);
     menu.addAction(ui_.actionBottom);
-    menu.addSeparator();    
-    menu.addAction(ui_.actionDelete);    
+    menu.addSeparator();
+    menu.addAction(ui_.actionDelete);
     menu.addSeparator();
     menu.addAction(ui_.actionStop);
     menu.addSeparator();
@@ -197,7 +216,7 @@ void Repair::on_actionDelete_triggered()
 
     model_.kill(indices);
 
-    repairList_selectionChanged();    
+    repairList_selectionChanged();
 }
 
 void Repair::on_actionMoveUp_triggered()
@@ -298,7 +317,7 @@ void Repair::repairList_selectionChanged()
     const auto last  = indices.last();
     const auto firstRow = first.row();
     const auto lastRow  = last.row();
-    const auto numRows = (int)model_.numRepairs();    
+    const auto numRows = (int)model_.numRepairs();
 
     ui_.actionTop->setEnabled(firstRow > 0);
     ui_.actionMoveUp->setEnabled(firstRow > 0);
