@@ -232,6 +232,7 @@ bool Unrar::parseTermination(const QString& line)
 QStringList Unrar::findVolumes(const QStringList& files)
 {
     static const char* patterns[] = {
+        ".part1.rar",
         ".part01.rar",
         ".part001.rar",
         ".r00",
