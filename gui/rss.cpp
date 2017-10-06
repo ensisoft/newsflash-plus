@@ -652,8 +652,10 @@ void RSS::on_actionInformation_triggered()
         if (!movie_)
         {
             movie_.reset(new DlgMovie(this));
+            QObject::connect(movie_.get(), SIGNAL(startMovieDownload(const QString&)),
+                this, SLOT(startMovieDownload(const QString&)));
         }
-        movie_->lookupMovie(title);
+        movie_->lookupMovie(title, item.guid);
     }
     else if (isTelevision(item.type))
     {
@@ -662,9 +664,12 @@ void RSS::on_actionInformation_triggered()
             return;
         // the same dialog + api can be used for TV series.
         if (!movie_)
+        {
             movie_.reset(new DlgMovie(this));
-
-        movie_->lookupSeries(title);
+            QObject::connect(movie_.get(), SIGNAL(startMovieDownload(const QString&)),
+                this, SLOT(startMovieDownload(const QString&)));
+        }
+        movie_->lookupSeries(title, item.guid);
     }
 
     if (show_popup_hint_)
@@ -785,8 +790,10 @@ void RSS::popupDetails()
         if (!movie_)
         {
             movie_.reset(new DlgMovie(this));
+            QObject::connect(movie_.get(), SIGNAL(startMovieDownload(const QString&)),
+                this, SLOT(startMovieDownload(const QString&)));
         }
-        movie_->lookupMovie(title);
+        movie_->lookupMovie(title, item.guid);
     }
     else if (isTelevision(item.type))
     {
@@ -795,11 +802,21 @@ void RSS::popupDetails()
             return;
 
         if (!movie_)
+        {
             movie_.reset(new DlgMovie(this));
-
-        movie_->lookupSeries(title);
+            QObject::connect(movie_.get(), SIGNAL(startMovieDownload(const QString&)),
+                this, SLOT(startMovieDownload(const QString&)));
+        }
+        movie_->lookupSeries(title, item.guid);
     }
+}
 
+void RSS::startMovieDownload(const QString& guid)
+{
+    // todo: should actually find the item based on the guid.
+    // but for now we assume that the selection cannot change
+    // underneath us.
+    downloadSelected("");
 }
 
 } // gui

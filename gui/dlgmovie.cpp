@@ -31,9 +31,10 @@ namespace gui
 
 DlgMovie::DlgMovie(QWidget* parent) : QDialog(parent)
 {
-    ui_.setupUi(this);
-    ui_.btnCredentials->setVisible(false);
-    ui_.lblMessage->setVisible(false);
+    mUI.setupUi(this);
+    mUI.btnDownload->setEnabled(false);
+    mUI.btnCredentials->setVisible(false);
+    mUI.lblMessage->setVisible(false);
 
     setMouseTracking(true);
     //setWindowFlags(Qt::Popup /* | Qt::FramelessWindowHint */);
@@ -48,35 +49,36 @@ DlgMovie::DlgMovie(QWidget* parent) : QDialog(parent)
     QObject::connect(app::g_movies, SIGNAL(posterError(const QString&, const QString&)),
         this, SLOT(posterError(const QString&, const QString&)));
 
-    loader_.setFileName(":/resource/ajax-loader.gif");
+    mLoader.setFileName(":/resource/ajax-loader.gif");
 }
 
 DlgMovie::~DlgMovie()
 {}
 
-void DlgMovie::lookupMovie(const QString& movieTitle)
+void DlgMovie::lookupMovie(const QString& movieTitle, const QString& guid)
 {
-    title_ = movieTitle;
+    mTitle = movieTitle;
+    mGuid  = guid;
 
     const auto* movie = app::g_movies->getMovie(movieTitle);
     if (!movie)
     {
         if (app::g_movies->beginLookup(movieTitle))
         {
-            loader_.start();
-            ui_.lblPoster->setMovie(&loader_);
-            ui_.lblPoster->setFixedSize(100, 100); // todo: fix this, the label shrinks and doesn't properly update its geometry
-            ui_.lblPoster->updateGeometry();
-            ui_.textEdit->clear();
-            ui_.btnCredentials->setVisible(false);
-            ui_.lblMessage->setVisible(false);
+            mLoader.start();
+            mUI.lblPoster->setMovie(&mLoader);
+            mUI.lblPoster->setFixedSize(100, 100); // todo: fix this, the label shrinks and doesn't properly update its geometry
+            mUI.lblPoster->updateGeometry();
+            mUI.textEdit->clear();
+            mUI.btnCredentials->setVisible(false);
+            mUI.lblMessage->setVisible(false);
         }
         else
         {
-            ui_.lblPoster->setMovie(nullptr);
-            ui_.lblPoster->setVisible(false);
-            ui_.lblMessage->setVisible(true);
-            ui_.btnCredentials->setVisible(true);
+            mUI.lblPoster->setMovie(nullptr);
+            mUI.lblPoster->setVisible(false);
+            mUI.lblMessage->setVisible(true);
+            mUI.btnCredentials->setVisible(true);
 
         }
     }
@@ -93,36 +95,38 @@ void DlgMovie::lookupMovie(const QString& movieTitle)
 
 void DlgMovie::testLookupMovie(const QString& apikey)
 {
-    title_ = "Terminator 2";
+    mTitle = "Terminator 2";
 
-    if (app::g_movies->testLookup(apikey, title_))
+    mUI.btnDownload->setVisible(false);
+
+    if (app::g_movies->testLookup(apikey, mTitle))
     {
-        loader_.start();
-        ui_.lblPoster->setMovie(&loader_);
-        ui_.lblPoster->setFixedSize(100, 100);
-        ui_.lblPoster->updateGeometry();
-        ui_.textEdit->clear();
-        ui_.btnCredentials->setVisible(false);
-        ui_.lblMessage->setVisible(false);
+        mLoader.start();
+        mUI.lblPoster->setMovie(&mLoader);
+        mUI.lblPoster->setFixedSize(100, 100);
+        mUI.lblPoster->updateGeometry();
+        mUI.textEdit->clear();
+        mUI.btnCredentials->setVisible(false);
+        mUI.lblMessage->setVisible(false);
     }
     else
     {
-        ui_.lblPoster->setMovie(nullptr);
-        ui_.lblPoster->setVisible(false);
-        ui_.lblMessage->setText("An error occurred :(");
-        ui_.lblMessage->setVisible(true);
+        mUI.lblPoster->setMovie(nullptr);
+        mUI.lblPoster->setVisible(false);
+        mUI.lblMessage->setText("An error occurred :(");
+        mUI.lblMessage->setVisible(true);
     }
     reposition();
     show();
     activateWindow();
-    setWindowTitle(QString("%1 (Click to Close Window)").arg(title_));
+    setWindowTitle(QString("%1 (Click to Close Window)").arg(mTitle));
 }
 
-void DlgMovie::lookupSeries(const QString& seriesTitle)
+void DlgMovie::lookupSeries(const QString& seriesTitle, const QString& guid)
 {
     // this is a simple forward for now. maybe in the future
     // we want Season and Episode here as well.
-    lookupMovie(seriesTitle);
+    lookupMovie(seriesTitle, guid);
 }
 
 void DlgMovie::on_btnCredentials_clicked()
@@ -130,13 +134,19 @@ void DlgMovie::on_btnCredentials_clicked()
     g_win->showSetting("Omdb");
     if (app::g_movies->hasApiKey())
     {
-        lookupMovie(title_);
+        lookupMovie(mTitle, mGuid);
     }
+}
+
+void DlgMovie::on_btnDownload_clicked()
+{
+    emit startMovieDownload(mGuid);
+    close();
 }
 
 void DlgMovie::lookupReady(const QString& title)
 {
-    if (title != title_)
+    if (title != mTitle)
         return;
 
     const auto* movie = app::g_movies->getMovie(title);
@@ -153,12 +163,13 @@ void DlgMovie::lookupReady(const QString& title)
     ss << "<br>";
     ss << movie->plot;
     ss << QString("<br><a href=http://www.imdb.com/title/%1>more ...</a>").arg(movie->imdbid);
-    ui_.textEdit->setText(ss.join(""));
+    mUI.textEdit->setText(ss.join(""));
+    mUI.btnDownload->setEnabled(true);
 }
 
 void DlgMovie::posterReady(const QString& title)
 {
-    if (title_ != title)
+    if (mTitle != title)
         return;
 
     const auto* movie = app::g_movies->getMovie(title);
@@ -167,24 +178,25 @@ void DlgMovie::posterReady(const QString& title)
     if (pix.height() > 600)
         pix = pix.scaledToHeight(600);
 
-    ui_.lblPoster->setFixedSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX);
-    ui_.lblPoster->setPixmap(pix);
-    ui_.lblPoster->updateGeometry();
-    ui_.lblPoster->setVisible(true);
+    mUI.lblPoster->setFixedSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX);
+    mUI.lblPoster->setPixmap(pix);
+    mUI.lblPoster->updateGeometry();
+    mUI.lblPoster->setVisible(true);
 
     QTimer::singleShot(0, this, SLOT(reposition()));
 }
 
 void DlgMovie::lookupError(const QString& title, const QString& errorStr)
 {
-    ui_.lblPoster->setMovie(nullptr);
-    ui_.lblPoster->setText(errorStr);
+    mUI.lblPoster->setMovie(nullptr);
+    mUI.lblPoster->setText(errorStr);
+    mUI.btnDownload->setEnabled(false);
 }
 
 void DlgMovie::posterError(const QString& title, const QString& errorStr)
 {
-    ui_.lblPoster->setMovie(nullptr);
-    ui_.lblPoster->setText("Poster not available");
+    mUI.lblPoster->setMovie(nullptr);
+    mUI.lblPoster->setText("Poster not available");
 }
 
 void DlgMovie::reposition()

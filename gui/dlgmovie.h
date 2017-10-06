@@ -41,15 +41,19 @@ namespace gui
        ~DlgMovie();
 
         // show the dialog and initiate lookup for the Movie
-        void lookupMovie(const QString& movieTitle);
+        void lookupMovie(const QString& movieTitle, const QString& guid);
 
         void testLookupMovie(const QString& apikey);
 
         // show the dialog and initite lookup for the TV Series
-        void lookupSeries(const QString& seriesTitle);
+        void lookupSeries(const QString& seriesTitle, const QString& guid);
+
+    signals:
+        void startMovieDownload(const QString& guid);
 
     private slots:
         void on_btnCredentials_clicked();
+        void on_btnDownload_clicked();
 
         void lookupReady(const QString& title);
         void posterReady(const QString& title);
@@ -60,10 +64,12 @@ namespace gui
         void mousePressEvent(QMouseEvent* mickey);
 
     private:
-        Ui::Movie ui_;
+        Ui::Movie mUI;
     private:
-        QMovie  loader_;
-        QPixmap poster_;
-        QString title_;
+        QMovie  mLoader;
+        QPixmap mPoster;
+        QString mTitle;
+    private:
+        QString mGuid;
     };
 }

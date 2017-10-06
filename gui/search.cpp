@@ -421,8 +421,12 @@ void Search::popupDetails()
         if (title.isEmpty())
             return;
         if (!movie_)
+        {
             movie_.reset(new DlgMovie(this));
-        movie_->lookupMovie(title);
+            QObject::connect(movie_.get(), SIGNAL(startMovieDownload(const QString&)),
+                this, SLOT(startMovieDownload(const QString&)));
+        }
+        movie_->lookupMovie(title, item.guid);
     }
     else if (isTelevision(item.type))
     {
@@ -431,9 +435,13 @@ void Search::popupDetails()
             return;
 
         if (!movie_)
+        {
             movie_.reset(new DlgMovie(this));
+            QObject::connect(movie_.get(), SIGNAL(startMovieDownload(const QString&)),
+                this, SLOT(startMovieDownload(const QString&)));
+        }
 
-        movie_->lookupSeries(title);
+        movie_->lookupSeries(title, item.guid);
     }
 }
 
@@ -566,6 +574,10 @@ void Search::beginSearch(quint32 queryOffset, quint32 querySize)
     ui_.btnSearch->setEnabled(false);
 }
 
+void Search::startMovieDownload(const QString& guid)
+{
+    downloadSelected("");
+}
 
 
 } // gui

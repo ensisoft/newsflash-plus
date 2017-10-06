@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -72,6 +72,7 @@ namespace gui
         void tableview_selectionChanged();
         void downloadToPrevious();
         void popupDetails();
+        void startMovieDownload(const QString& guid);
     private:
         virtual bool eventFilter(QObject* obj, QEvent* event) override;
         void downloadSelected(const QString& folder);

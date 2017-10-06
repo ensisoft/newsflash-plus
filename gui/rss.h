@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -92,11 +92,12 @@ namespace gui
         void rowChanged();
         void downloadToPrevious();
         void popupDetails();
+        void startMovieDownload(const QString& guid);
 
     private:
         Ui::RSS ui_;
     private:
-        app::RSSReader model_;        
+        app::RSSReader model_;
     private:
         newsflash::bitflag<app::MediaType,
             std::uint64_t> streams_;
