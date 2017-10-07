@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>462</width>
-    <height>533</height>
+    <height>558</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -346,7 +346,7 @@
        </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="btnBrowseLog">
+       <widget class="QPushButton" name="btnLog">
         <property name="maximumSize">
          <size>
           <width>77</width>
@@ -397,7 +397,7 @@
   <tabstop>chkDiscardText</tabstop>
   <tabstop>chkCheckLowDisk</tabstop>
   <tabstop>edtLog</tabstop>
-  <tabstop>btnBrowseLog</tabstop>
+  <tabstop>btnLog</tabstop>
  </tabstops>
  <resources>
   <include location="resource.qrc"/>
