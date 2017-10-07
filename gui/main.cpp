@@ -61,6 +61,7 @@
 #include "historydb.h"
 #include "omdb.h"
 #include "filesystem.h"
+#include "smtpclient.h"
 #include "app/debug.h"
 #include "app/format.h"
 #include "app/distdir.h"
@@ -88,6 +89,7 @@
 #include "app/historydb.h"
 #include "app/media.h"
 #include "app/filetype.h"
+#include "app/smtpclient.h"
 
 namespace gui
 {
@@ -186,6 +188,10 @@ int run(QtSingleApplication& qtinstance)
     QObject::connect(&power, SIGNAL(initPoweroff()), &win, SLOT(close()));
     QObject::connect(&win, SIGNAL(closed()), &qtinstance, SLOT(quit()));
 
+    app::SmtpClient smtp;
+    gui::SmtpClient smtpGui(smtp);
+    win.attach(&smtpGui);
+
     // accounts widget
     gui::Accounts gacc;
     win.attach(&gacc);
@@ -201,6 +207,7 @@ int run(QtSingleApplication& qtinstance)
     // downloads widget
     gui::Downloads downloads;
     win.attach(&downloads);
+
 
     // files component
     app::Files files;

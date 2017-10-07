@@ -154,6 +154,19 @@ elseif(MSVC)
     add_definitions(-DBOOST_ALL_NO_LIB)
 endif()
 
+# build the smtpclient library
+# it's in third_party but doesn't have a build file so we build it here.
+# note that it's LGPL'ed so it needs to be a shared library.
+file(GLOB SMTPCLIENT_SOURCE third_party/smtpclient/*.cpp)
+add_library(smtpclient SHARED ${SMTPCLIENT_SOURCE})
+target_link_libraries(smtpclient
+    Qt4::QtCore
+    Qt4::QtNetwork)
+add_executable(smtpclient_test third_party/smtpclient/example/main.cpp)
+target_link_libraries(smtpclient_test smtpclient Qt4::QtCore Qt4::QtGui)
+
+
+
 # build the engine lib
 file(GLOB ENGINE_SOURCE engine/*.cpp engine/*.cc)
 add_library(engine STATIC ${ENGINE_SOURCE})
@@ -162,7 +175,8 @@ target_link_libraries(engine INTERFACE
     ${LIB_PROTOBUF}
     ${LIB_Z}
     ${LIB_OPENSSL}
-    ${LIB_CRYPTO})
+    ${LIB_CRYPTO}
+    smtpclient)
 
 file(GLOB APP_SOURCE  app/*.h app/*.cpp)
 file(GLOB GUI_SOURCE  gui/*.h gui/*.cpp gui/*.ui)
@@ -332,7 +346,7 @@ add_test(NAME unit_test_unrar       COMMAND unit_test_unrar)
 add_test(NAME unit_test_unzip       COMMAND unit_test_unzip)
 
 if (CMAKE_BUILD_TYPE MATCHES "Release")
-    install(TARGETS newsflash join DESTINATION "${CMAKE_CURRENT_LIST_DIR}/dist")
+    install(TARGETS newsflash join smtpclient DESTINATION "${CMAKE_CURRENT_LIST_DIR}/dist")
 elseif(CMAKE_BUILD_TYPE MATCHES "Debug")
-    install(TARGETS newsflash join DESTINATION "${CMAKE_CURRENT_LIST_DIR}/dist_d")
+    install(TARGETS newsflash join smtpclient DESTINATION "${CMAKE_CURRENT_LIST_DIR}/dist_d")
 endif()

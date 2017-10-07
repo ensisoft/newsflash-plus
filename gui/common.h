@@ -57,6 +57,13 @@ bool passSpaceCheck(QWidget* parent,
     quint64 expectedBatchSize,
     app::MediaType mediatype);
 
-bool validate(QLineEdit* edit);
+enum class EditValidationType {
+    AcceptString,
+    AcceptNumber
+};
+
+
+bool validate(QLineEdit* edit,
+    EditValidationType validateAs = EditValidationType::AcceptString);
 
 } // gui

@@ -119,8 +119,7 @@ void logCopyright()
     INFO("Copyright (c) 2009 Aha-Soft");
     INFO("http://www.small-icons.com/stock-icons/16x16-free-application-icons.htm");
     INFO("http://www.aha-soft.com");
-    INFO("Silk Icon Set 1.3");
-    INFO("Copyright (c) Mark James");
+    INFO("Silk Icon Set 1.3 Copyright (c) Mark James");
     INFO("http://www.famfamfam.com/lab/icons/silk/");
     INFO("Qt cross-platform application and UI framework %1", QT_VERSION_STR);
     INFO("http://qt.nokia.com");
@@ -130,6 +129,9 @@ void logCopyright()
     INFO("Zlib compression library " ZLIB_VERSION);
     INFO("Copyright (c) 1995-2010 Jean-Loup Gailly & Mark Adler");
     INFO("http://zlib.net");
+    INFO("SMTP Client");
+    INFO(QString::fromUtf8("Copyright (c) 2011 \x54\xC5\x91\x6B\xC3\xA9\x73\x20\x41\x74\x74\x69\x6C\x61"));
+    INFO("https://github.com/bluetiger9/SmtpClient-for-Qt");
     INFO(Unrar::getCopyright(app::distdir::file("unrar")));
     INFO(Unzip::getCopyright(app::distdir::file("7za")));
 

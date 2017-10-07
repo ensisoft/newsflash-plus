@@ -36,6 +36,7 @@
 #include "app/platform.h"
 #include "app/engine.h"
 #include "app/debug.h"
+#include "common.h"
 
 namespace gui
 {
@@ -187,7 +188,7 @@ bool passSpaceCheck(QWidget* parent,
     return true;
 }
 
-bool validate(QLineEdit* edit)
+bool validate(QLineEdit* edit, EditValidationType validateAs)
 {
     const auto& text = edit->text();
     if (text.isEmpty())
@@ -195,6 +196,18 @@ bool validate(QLineEdit* edit)
         edit->setFocus();
         return false;
     }
+
+    if (validateAs == EditValidationType::AcceptNumber)
+    {
+        bool ok = false;
+        text.toInt(&ok);
+        if (!ok)
+        {
+            edit->setFocus();
+            return false;
+        }
+    }
+
     return true;
 }
 
