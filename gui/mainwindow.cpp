@@ -83,12 +83,12 @@ MainWindow::MainWindow(app::Settings& s) : QMainWindow(nullptr), mSettings(s)
     mUI.netGraph->setColors(greenish);
 
     // put the various little widgets in their correct places
-    mUI.statusBar->insertPermanentWidget(0, mUI.frmProgress);
-    //mUI.statusBar->insertPermanentWidget(1, mUI.frmFreeSpace);
-    mUI.frmFreeSpace->setVisible(false);
-    mUI.statusBar->insertPermanentWidget(1, mUI.frmDiskWrite);
-    mUI.statusBar->insertPermanentWidget(2, mUI.frmGraph);
-    mUI.statusBar->insertPermanentWidget(3, mUI.frmKbs);
+    mUI.statusBar->insertPermanentWidget(0, mUI.frmPoweroff);
+    mUI.statusBar->insertPermanentWidget(1, mUI.frmProgress);
+    mUI.statusBar->insertPermanentWidget(2, mUI.frmDiskWrite);
+    mUI.statusBar->insertPermanentWidget(3, mUI.frmGraph);
+    mUI.statusBar->insertPermanentWidget(4, mUI.frmKbs);
+    mUI.frmPoweroff->setVisible(false);
     mUI.mainToolBar->setVisible(true);
     mUI.statusBar->setVisible(true);
     mUI.actionViewToolbar->setChecked(true);
@@ -1148,6 +1148,8 @@ void MainWindow::on_actionPoweroff_triggered()
 {
     DlgPoweroff dlg(this);
     dlg.exec();
+
+    mUI.frmPoweroff->setVisible(dlg.isPoweroffEnabled());
 }
 
 void MainWindow::on_actionDonate_triggered()

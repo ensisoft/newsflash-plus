@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -31,28 +31,36 @@ namespace app
         Q_OBJECT
 
     public:
-        Poweroff();
-
         void waitDownloads(bool onOff)
-        { waitDownloads_ = onOff; }
+        { mWaitDownloads = onOff; }
 
         void waitRepairs(bool onOff)
-        { waitRepairs_ = onOff; }
+        { mWaitRepairs = onOff; }
 
         void waitUnpacks(bool onOff)
-        { waitUnpacks_ = onOff; }
+        { mWaitUnpacks = onOff; }
 
-        bool waitDownloads() const 
-        { return waitDownloads_; }
+        bool waitDownloads() const
+        { return mWaitDownloads; }
 
         bool waitRepairs() const
-        { return waitRepairs_; }
+        { return mWaitRepairs; }
 
-        bool waitUnpacks() const 
-        { return waitUnpacks_; }
+        bool waitUnpacks() const
+        { return mWaitUnpacks; }
+
+        bool shouldPowerOff() const
+        { return mShouldPowerOff; }
 
         bool isPoweroffEnabled() const
-        { return powerOff_; }
+        {
+            // if any of these is enabled then we're powering off
+            // at some point.
+            return mWaitDownloads ||
+                   mWaitRepairs   ||
+                   mWaitUnpacks;
+
+        }
 
     signals:
         void initPoweroff();
@@ -68,15 +76,15 @@ namespace app
         void evaluate();
 
     private:
-        std::size_t numRepairs_;
-        std::size_t numUnpacks_;
-        std::size_t numArchives_;
-        std::size_t numTasks_;
+        std::size_t mNumPendingRepairs  = 0;
+        std::size_t mNumPendingUnpacks  = 0;
+        std::size_t mNumPendingArchives = 0;
+        std::size_t mNumPendingTasks    = 0;
     private:
-        bool waitDownloads_;
-        bool waitRepairs_;
-        bool waitUnpacks_;
-        bool powerOff_;
+        bool mWaitDownloads  = false;
+        bool mWaitRepairs    = false;
+        bool mWaitUnpacks    = false;
+        bool mShouldPowerOff = false;
     };
 
     extern Poweroff* g_poweroff;

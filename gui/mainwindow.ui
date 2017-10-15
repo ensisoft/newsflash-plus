@@ -87,45 +87,6 @@
       </layout>
      </widget>
     </item>
-    <item row="2" column="0">
-     <widget class="QFrame" name="frmFreeSpace">
-      <property name="frameShape">
-       <enum>QFrame::StyledPanel</enum>
-      </property>
-      <property name="frameShadow">
-       <enum>QFrame::Sunken</enum>
-      </property>
-      <layout class="QGridLayout" name="gridLayout_3">
-       <property name="margin">
-        <number>0</number>
-       </property>
-       <item row="0" column="0">
-        <layout class="QHBoxLayout" name="horizontalLayout_3">
-         <item>
-          <widget class="QLabel" name="lblDiskIco">
-           <property name="text">
-            <string/>
-           </property>
-           <property name="pixmap">
-            <pixmap resource="resource.qrc">:/resource/16x16_ico_png/ico_disk.png</pixmap>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLabel" name="lblDiskFree">
-           <property name="toolTip">
-            <string>Free space available at default download location</string>
-           </property>
-           <property name="text">
-            <string>/ 2.5 GB Free</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </item>
-      </layout>
-     </widget>
-    </item>
     <item row="3" column="0">
      <widget class="QFrame" name="frmDiskWrite">
       <property name="sizePolicy">
@@ -358,6 +319,38 @@
       </layout>
      </widget>
     </item>
+    <item row="2" column="0">
+     <widget class="QFrame" name="frmPoweroff">
+      <property name="frameShape">
+       <enum>QFrame::StyledPanel</enum>
+      </property>
+      <property name="frameShadow">
+       <enum>QFrame::Sunken</enum>
+      </property>
+      <layout class="QGridLayout" name="gridLayout_6">
+       <property name="margin">
+        <number>0</number>
+       </property>
+       <item row="0" column="0">
+        <layout class="QHBoxLayout" name="horizontalLayout_6">
+         <item>
+          <widget class="QLabel" name="lblPoweroffIco">
+           <property name="toolTip">
+            <string>Poweroff is enabled</string>
+           </property>
+           <property name="text">
+            <string/>
+           </property>
+           <property name="pixmap">
+            <pixmap resource="resource.qrc">:/resource/16x16_ico_png/ico_poweroff.png</pixmap>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </widget>
+    </item>
    </layout>
   </widget>
   <widget class="QMenuBar" name="menuBar">
@@ -366,7 +359,7 @@
      <x>0</x>
      <y>0</y>
      <width>785</width>
-     <height>21</height>
+     <height>27</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -722,7 +715,7 @@
   <action name="actionPoweroff">
    <property name="icon">
     <iconset resource="resource.qrc">
-     <normaloff>:/resource/png/shutdown.png</normaloff>:/resource/png/shutdown.png</iconset>
+     <normaloff>:/resource/16x16_ico_png/ico_poweroff.png</normaloff>:/resource/16x16_ico_png/ico_poweroff.png</iconset>
    </property>
    <property name="text">
     <string>Poweroff ...</string>

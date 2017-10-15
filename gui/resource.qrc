@@ -55,6 +55,7 @@
     <file>resource/16x16_ico_png/ico_bookmark_next.png</file>
     <file>resource/16x16_ico_png/ico_bookmark_prev.png</file>
     <file>resource/16x16_ico_png/ico_bookmark.png</file>
+    <file>resource/16x16_ico_png/ico_poweroff.png</file>
 
     <!-- application icons -->
     <file>resource/16x16_ico_png/ico_application.png</file>
@@ -180,7 +181,6 @@
     <file>resource/png/logo_black.png</file>
     <file>resource/png/python-logo.png</file>
     <file>resource/png/speed_kmh.png</file>
-    <file>resource/png/shutdown.png</file>
 
     <file>resource/flash.ico</file>
     <file>resource/nh-special.gif</file>

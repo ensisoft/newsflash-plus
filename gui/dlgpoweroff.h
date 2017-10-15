@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -40,6 +40,11 @@ namespace gui
             ui_.btnDownloads->setChecked(app::g_poweroff->waitDownloads());
             ui_.btnRepairs->setChecked(app::g_poweroff->waitRepairs());
             ui_.btnUnpacks->setChecked(app::g_poweroff->waitUnpacks());
+        }
+
+        bool isPoweroffEnabled() const
+        {
+            return app::g_poweroff->isPoweroffEnabled();
         }
 
     private slots:

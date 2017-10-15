@@ -362,7 +362,7 @@ int run(QtSingleApplication& qtinstance)
     // all the references to those in the mainwindow.
     win.detachAllWidgets();
 
-    if (power.isPoweroffEnabled())
+    if (power.shouldPowerOff())
     {
         DEBUG("Powering off... G'bye");
         app::shutdownComputer();

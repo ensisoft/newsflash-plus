@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -32,71 +32,63 @@
 namespace app
 {
 
-Poweroff::Poweroff() : numRepairs_(0), numUnpacks_(0), numArchives_(0), numTasks_(0)
-{
-   waitDownloads_ = false;
-   waitRepairs_   = false;
-   waitUnpacks_   = false;
-   powerOff_      = false;
-}
-
 void Poweroff::repairEnqueue()
 {
-    ++numRepairs_;
+    ++mNumPendingRepairs;
 }
 
 void Poweroff::repairReady()
 {
-    --numRepairs_;    
+    --mNumPendingRepairs;
 
     evaluate();
 }
 
 void Poweroff::unpackEnqueue()
 {
-    ++numUnpacks_;
+    ++mNumPendingUnpacks;
 }
 
 void Poweroff::unpackReady()
 {
-    --numUnpacks_;
+    --mNumPendingUnpacks;
 
     evaluate();
 }
 
 void Poweroff::numPendingArchives(std::size_t num)
 {
-    numArchives_ = num;
+    mNumPendingArchives = num;
 
     evaluate();
 }
 
 void Poweroff::numPendingTasks(std::size_t num)
 {
-    numTasks_ = num;
+    mNumPendingTasks = num;
 
     evaluate();
 }
 
 void Poweroff::evaluate()
 {
-    if (!waitDownloads_ && !waitRepairs_ && !waitUnpacks_)
+    if (!mWaitDownloads && !mWaitRepairs && !mWaitUnpacks)
         return;
 
-    if (waitDownloads_ && numTasks_)
+    if (mWaitDownloads && mNumPendingTasks)
         return;
-    if (waitRepairs_ || waitUnpacks_)
+    if (mWaitRepairs || mWaitUnpacks)
     {
-        if (numArchives_)
+        if (mNumPendingArchives)
             return;
     }
 
-    if (waitRepairs_ && numRepairs_)
+    if (mWaitRepairs && mNumPendingRepairs)
         return;
-    if (waitUnpacks_ && numUnpacks_)
+    if (mWaitUnpacks && mNumPendingUnpacks)
         return;
 
-    powerOff_ = true;
+    mShouldPowerOff = true;
     emit initPoweroff();
 }
 
