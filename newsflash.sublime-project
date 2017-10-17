@@ -3,7 +3,7 @@
     {
         "sublimeclang_options":
         [
-            "-std=c++11",
+            "-std=c++14",
             "-stdlib=libc++",
             "-Wno-unknown-pragmas",
             "-Wno-inconsistent-missing-override",
