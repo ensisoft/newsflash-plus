@@ -28,6 +28,8 @@
 #  include <third_party/smtpclient/mimemessage.h>
 #include "newsflash/warnpop.h"
 
+#include <functional>
+
 #include "debug.h"
 #include "smtpclient.h"
 #include "settings.h"
@@ -36,17 +38,15 @@
 namespace app
 {
 
-SmtpClient::SmtpClient()
+SmtpClient* g_smtp;
+
+void SmtpTask::cancel()
 {
-    DEBUG("SmtpClient created");
+    // we don't actually support this currently properly.
+    mCancelled = true;
 }
 
-SmtpClient::~SmtpClient()
-{
-    DEBUG("SmtpClient destroyed");
-}
-
-SmtpClient::Error SmtpClient::sendEmailNow(const QString& subject, const QString& message)
+SmtpTask::Error SmtpTask::run()
 {
     ::SmtpClient smtp;
     smtp.setHost(mHost);
@@ -58,23 +58,85 @@ SmtpClient::Error SmtpClient::sendEmailNow(const QString& subject, const QString
         : ::SmtpClient::TcpConnection);
 
     ::MimeText text;
-    text.setText(message);
+    text.setText(mMessage);
 
     ::MimeMessage mime;
     mime.setSender(new ::EmailAddress(mRecipient, NEWSFLASH_TITLE));
     mime.addRecipient(new ::EmailAddress(mRecipient, NEWSFLASH_TITLE));
-    mime.setSubject(subject);
+    mime.setSubject(mSubject);
     mime.addPart(&text);
 
-    if (auto error = smtp.connectToHost())
+    auto error = smtp.connectToHost();
+    if (error || mCancelled)
         return error;
-    if (auto error = smtp.loginToServer())
+
+    error = smtp.loginToServer();
+    if (error || mCancelled)
         return error;
-    if (auto error = smtp.sendMail(mime))
+
+    error = smtp.sendMail(mime);
+    if (error || mCancelled)
         return error;
     smtp.quit();
+    return error;
+}
 
-    return SmtpClient::Error::None;
+void SmtpTask::signal(SmtpTask::Error result)
+{
+    mError = result;
+
+    emit done();
+}
+
+SmtpClient::SmtpClient()
+{
+    DEBUG("SmtpClient created");
+}
+
+SmtpClient::~SmtpClient()
+{
+    DEBUG("SmtpClient destroyed");
+}
+
+void SmtpClient::startup()
+{
+    std::lock_guard<std::mutex> lock(mQueueMutex);
+    mRunThread  = true;
+    mMailThread = std::make_unique<std::thread>(std::bind(&SmtpClient::mailThreadMain, this));
+    DEBUG("Started SmtpClient thread");
+}
+
+void SmtpClient::startShutdown()
+{
+   std::lock_guard<std::mutex> lock(mQueueMutex);
+   mRunThread = false;
+   mQueueCondition.notify_one();
+}
+
+void SmtpClient::shutdown()
+{
+    mMailThread->join();
+    mMailThread.reset();
+    DEBUG("Shutdown (joined) SmtpClient thread");
+}
+
+std::shared_ptr<SmtpTask> SmtpClient::sendEmailNow(const Email& email)
+{
+    auto sendMail = std::make_shared<SmtpTask>();
+    sendMail->mSSL  = email.ssl;
+    sendMail->mPort = email.port;
+    sendMail->mHost = email.host;
+    sendMail->mUsername = email.username;
+    sendMail->mPassword = email.password;
+    sendMail->mRecipient = email.recipient;
+    sendMail->mSubject = email.subject;
+    sendMail->mMessage = email.message;
+
+    std::lock_guard<std::mutex> lock(mQueueMutex);
+    mTaskQueue.push(sendMail);
+    mQueueCondition.notify_one();
+
+    return sendMail;
 }
 
 void SmtpClient::saveState(Settings& settings) const
@@ -104,10 +166,48 @@ void SmtpClient::sendEmail(const QString& subject, const QString& message)
     if (!mEnabled)
         return;
 
-    if (const auto error = sendEmailNow(subject, message))
+    auto sendMail = std::make_shared<SmtpTask>();
+    sendMail->mSSL  = mSSL,
+    sendMail->mPort = mPort;
+    sendMail->mHost = mHost;
+    sendMail->mUsername = mUsername;
+    sendMail->mPassword = mPassword;
+    sendMail->mRecipient = mRecipient;
+    sendMail->mSubject = subject;
+    sendMail->mMessage = message;
+
     {
-        ERROR("Failed to send email to %1", mRecipient);
+        std::lock_guard<std::mutex> lock(mQueueMutex);
+        mTaskQueue.push(std::move(sendMail));
+        mQueueCondition.notify_one();
     }
+}
+
+void SmtpClient::mailThreadMain()
+{
+    for (;;)
+    {
+        std::unique_lock<std::mutex> lock(mQueueMutex);
+        if (!mRunThread)
+            break;
+        else if (mTaskQueue.empty())
+        {
+            mQueueCondition.wait(lock);
+            // handle spurious wakeup
+            continue;
+        }
+
+        std::shared_ptr<SmtpTask> task = std::move(mTaskQueue.front());
+        mTaskQueue.pop();
+        lock.unlock();
+
+        DEBUG("SmtpClient thread running task");
+
+        const auto result = task->run();
+        task->signal(result);
+    }
+
+    emit shutdownComplete();
 }
 
 } // namespace

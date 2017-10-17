@@ -24,6 +24,7 @@
 
 #include "newsflash/warnpush.h"
 #  include <QtGui/QMessageBox>
+#  include <QEventLoop>
 #include "newsflash/warnpop.h"
 
 #include "smtpclient.h"
@@ -36,10 +37,17 @@
 namespace gui
 {
 
-SmtpSettings::SmtpSettings()
+SmtpSettings::SmtpSettings(app::SmtpClient& smtp)
+    : mSmtp(smtp)
 {
     mUI.setupUi(this);
     mUI.testIndicator->setVisible(false);
+}
+
+SmtpSettings::~SmtpSettings()
+{
+    if (mSendTestEmail)
+        mSendTestEmail->cancel();
 }
 
 bool SmtpSettings::validate() const
@@ -62,23 +70,31 @@ void SmtpSettings::on_btnTest_clicked()
     if (!validate())
         return;
 
-    app::SmtpClient smtp;
-    smtp.setEnabled(true);
-    smtp.setPort(mUI.edtPort->text().toInt());
-    smtp.setHost(mUI.edtHost->text());
-    smtp.setSSL(mUI.chkSSL->isChecked());
-    smtp.setUsername(mUI.edtUsername->text());
-    smtp.setPassword(mUI.edtPassword->text());
-    smtp.setRecipient(mUI.edtRecipient->text());
-
     mUI.testIndicator->setVisible(true);
     mUI.btnTest->setEnabled(false);
 
-    const auto ret = smtp.sendEmailNow(tr("Test email from %1").arg(NEWSFLASH_TITLE),
-        tr("Test email from %1. If you received this your email settings are working!").arg(NEWSFLASH_TITLE));
+    app::SmtpClient::Email test;
+    test.ssl  = mUI.chkSSL->isChecked();
+    test.port = mUI.edtPort->text().toInt();
+    test.host = mUI.edtHost->text();
+    test.username = mUI.edtUsername->text();
+    test.password = mUI.edtPassword->text();
+    test.recipient = mUI.edtRecipient->text();
+    test.subject = tr("Test email from %1").arg(NEWSFLASH_TITLE);
+    test.message = tr("Test email from %1. If you received this your email settings are working!").arg(NEWSFLASH_TITLE);
 
+    mSendTestEmail = mSmtp.sendEmailNow(test);
+
+    QObject::connect(mSendTestEmail.get(), SIGNAL(done()),
+        this, SLOT(doneSendTestEmail()));
+}
+
+void SmtpSettings::doneSendTestEmail()
+{
     mUI.testIndicator->setVisible(false);
     mUI.btnTest->setEnabled(true);
+
+    const auto ret = mSendTestEmail->getError();
 
     if (ret == app::SmtpClient::Error::None)
     {
@@ -97,6 +113,7 @@ void SmtpSettings::on_btnTest_clicked()
         msg.exec();
     }
 
+    mSendTestEmail.reset();
 }
 
 
@@ -115,7 +132,7 @@ void SmtpClient::saveState(app::Settings& settings)
 
 SettingsWidget* SmtpClient::getSettings()
 {
-    SmtpSettings* settings = new SmtpSettings();
+    SmtpSettings* settings = new SmtpSettings(mSmtp);
 
     auto& ui = settings->mUI;
     ui.grpEmail->setChecked(mSmtp.enabled());

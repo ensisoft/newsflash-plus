@@ -64,6 +64,7 @@
 #include "app/media.h"
 #include "app/filetype.h"
 #include "app/historydb.h"
+#include "app/smtpclient.h"
 
 namespace gui
 {
@@ -598,16 +599,28 @@ void MainWindow::closeEvent(QCloseEvent* event)
     dialog.setText(tr("Disconnecting..."));
     dialog.show();
 
-    // first shutdown the engine, and cease all event processing.
-    // once that is done we can take a snapshot of the current engine state
-    // and save it somewhere in order to continue from the same state on the
-    // next application run. secondly we save all the other application data.
-    DEBUG("Begin engine shutdown...");
+    {
+        // first shutdown the engine, and cease all event processing.
+        // once that is done we can take a snapshot of the current engine state
+        // and save it somewhere in order to continue from the same state on the
+        // next application run. secondly we save all the other application data.
+        DEBUG("Begin engine shutdown...");
+        QEventLoop loop;
+        QObject::connect(app::g_engine, SIGNAL(shutdownComplete()), &loop, SLOT(quit()));
+        if (!app::g_engine->shutdown())
+            loop.exec();
+    }
 
-    QEventLoop loop;
-    QObject::connect(app::g_engine, SIGNAL(shutdownComplete()), &loop, SLOT(quit()));
-    if (!app::g_engine->shutdown())
-       loop.exec();
+    {
+        DEBUG("Begin smtp client shutdown ...");
+        dialog.setText(tr("Shutting down SMTP client"));
+        QEventLoop loop;
+        QObject::connect(app::g_smtp, SIGNAL(shutdownComplete()), &loop, SLOT(quit()));
+        app::g_smtp->startShutdown();
+        loop.exec();
+        app::g_smtp->shutdown();
+    }
+
 
     dialog.setText(tr("Saving application data..."));
 

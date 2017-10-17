@@ -38,15 +38,20 @@ namespace gui
         Q_OBJECT
 
     public:
-        SmtpSettings();
+        SmtpSettings(app::SmtpClient& smtp);
+       ~SmtpSettings();
 
         virtual bool validate() const override;
 
     private slots:
         void on_btnTest_clicked();
+        void doneSendTestEmail();
 
     private:
         Ui::Smtp mUI;
+    private:
+        app::SmtpClient& mSmtp;
+        std::shared_ptr<app::SmtpTask> mSendTestEmail;
     private:
         friend class SmtpClient;
     };
@@ -67,5 +72,6 @@ namespace gui
 
     private:
         app::SmtpClient& mSmtp;
+
     };
 } // namespace

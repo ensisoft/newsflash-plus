@@ -190,6 +190,8 @@ int run(QtSingleApplication& qtinstance)
 
     app::SmtpClient smtp;
     gui::SmtpClient smtpGui(smtp);
+    app::g_smtp = &smtp;
+    smtp.startup();
     win.attach(&smtpGui);
 
     // accounts widget
