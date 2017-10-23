@@ -52,16 +52,19 @@ SmtpSettings::~SmtpSettings()
 
 bool SmtpSettings::validate() const
 {
-    if (!gui::validate(mUI.edtHost))
-        return false;
-    if (!gui::validate(mUI.edtPort, EditValidationType::AcceptNumber))
-        return false;
-    if (!gui::validate(mUI.edtUsername))
-        return false;
-    if (!gui::validate(mUI.edtPassword))
-        return false;
-    if (!gui::validate(mUI.edtRecipient))
-        return false;
+    if (mUI.grpEmail->isChecked())
+    {
+        if (!gui::validate(mUI.edtHost))
+            return false;
+        if (!gui::validate(mUI.edtPort, EditValidationType::AcceptNumber))
+            return false;
+        if (!gui::validate(mUI.edtUsername))
+            return false;
+        if (!gui::validate(mUI.edtPassword))
+            return false;
+        if (!gui::validate(mUI.edtRecipient))
+            return false;
+    }
     return true;
 }
 
