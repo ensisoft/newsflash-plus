@@ -30,10 +30,7 @@
 #include "ui/connection.h"
 #include "ui/download.h"
 #include "ui/error.h"
-#include "ui/file.h"
-#include "ui/batch.h"
-#include "ui/listing.h"
-#include "ui/update.h"
+#include "ui/result.h"
 
 namespace newsflash
 {
@@ -43,22 +40,22 @@ namespace newsflash
         // this callback is invoked when an error has occurred.
         // the error object carries information and details about
         // what happened.
-        using on_error = std::function<void (const ui::error& error)>;
+        using on_error = std::function<void (const ui::SystemError& error)>;
 
         // this callback is invoked when a new file has been completed.
-        using on_file = std::function<void (const ui::file& file)>;
+        using on_file = std::function<void (const ui::FileResult& file)>;
 
         // this callback is invoked when a batch is complete
-        using on_batch = std::function<void (const ui::batch& batch)>;
+        using on_batch = std::function<void (const ui::FileBatchResult& batch)>;
 
         // this callback is invoked when a listing is complete.
-        using on_list  = std::function<void (const ui::listing& listing)>;
+        using on_list  = std::function<void (const ui::GroupListResult& listing)>;
 
         // this callback is invoked when a update is complete
-        using on_update = std::function<void(const ui::update& update)>;
+        using on_update = std::function<void(const ui::HeaderResult& update)>;
 
         // this callback is invoked when a task is complete.
-        using on_task = std::function<void(const ui::task& task)>;
+        using on_task = std::function<void(const ui::TaskDesc& task)>;
 
         // this callback is invoked when new data has been written to a
         // data file belonging to the specified news group.
@@ -91,23 +88,30 @@ namespace newsflash
         engine();
        ~engine();
 
-        void test_account(const ui::account& acc);
+        // Perform an account testing to see if the setup is working.
+        void test_account(const ui::Account& account);
 
-        // set or modify an account.
-        void set_account(const ui::account& acc);
+        // Set or modify an account. If the account by the same
+        // id already exists then the existing account is modified
+        // and connections (if any) might be restarted.
+        void set_account(const ui::Account& account);
 
-        // delete the account identified by the id.
+        // Delete the account identified by the id.
         void del_account(std::size_t id);
 
+        // Specify the account id to be used as fill account.
+        // The account should have been set through to a call to set_account.
+        // The fill account is used (if it's set) to fill tasks which are
+        // fillable and which have unavailable content on the main server.
         void set_fill_account(std::size_t id);
 
         // download the files included in the dowload.
         // all the files are grouped together into a single batch.
-        action_id_t download_files(ui::batch batch, bool priority = false);
+        action_id_t download_files(const ui::FileBatchDownload& batch, bool priority = false);
 
-        action_id_t download_listing(ui::listing list);
+        action_id_t download_listing(const ui::GroupListDownload& listing);
 
-        action_id_t download_headers(ui::update update);
+        action_id_t download_headers(const ui::HeaderDownload& update);
 
         action_id_t get_action_id(std::size_t task_index);
 
@@ -220,11 +224,11 @@ namespace newsflash
 
         // update the tasklist to contain the latest UI states
         // of all the tasks in the engine.
-        void update(std::deque<ui::task>& tasklist);
+        void update(std::deque<ui::TaskDesc>& tasklist);
 
         // update the connlist to contain the latest UI states
         // of all the connections in the engine.
-        void update(std::deque<ui::connection>& connlist);
+        void update(std::deque<ui::Connection>& connlist);
 
         // kill the connection at the given index.
         void kill_connection(std::size_t index);

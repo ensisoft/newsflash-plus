@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -20,7 +20,8 @@
 
 #pragma once
 
-#include <newsflash/config.h>
+#include "newsflash/config.h"
+
 #include <cstdint>
 #include <cstddef>
 #include <string>
@@ -30,94 +31,97 @@ namespace newsflash
     namespace ui {
 
     // a connection managed by the engine.
-    struct connection
+    struct Connection
     {
         // possible connection errors.
-        enum class errors {
+        enum class Errors {
             // no error
-            none,
+            None,
 
             // could not resolve host. this could because the theres a DNS problem
-            // in the network, or the network itself is down or the hostname 
+            // in the network, or the network itself is down or the hostname
             // is not known by the DNS resolver.
-            resolve,
+            Resolve,
 
             // connection was refused by the remote party.
-            refused,
+            Refused,
+
+            // network problem, for example network is down.
+            Network,
 
             // connection was made to the server but the server
             // denied access based on incorrect authentication.
             // possibly username/password is wrong
-            authentication_rejected,
+            AuthenticationRejected,
 
             // connection was made to the server but the server
             // denied access. possibly the account is locked/out of quota.
-            no_permission,
-
-            // network problem, for example network is down.
-            network,
+            NoPermission,
 
             // active timeout, usully preceeds a network problem.
-            timeout,
+            Timeout,
 
-            other
-        }; 
+            // some other error. details are not known.
+            Other
+        };
 
-        enum class states {
+        enum class States {
             // disconnected state
-            disconnected,
+            Disconnected,
 
-            // connection is resolving the host address 
-            resolving,
+            // connection is resolving the host address
+            Resolving,
 
             // connection is connecting to the remote host.
-            connecting,
+            Connecting,
 
             // connection is initializing the protocol stack
-            initializing,
+            Initializing,
 
             // connection is connected, idle and ready.
-            connected,
+            Connected,
 
             // connection is transferring data.
-            active,
+            Active,
 
-            error
+            // connection has encountered an error.
+            Error
         };
 
         // current error if any.
-        errors error;
+        Errors error = Errors::None;
 
         // current state.
-        states state;
+        States state = States::Disconnected;
 
         // unique connection id
-        std::size_t id;
+        std::size_t id = 0;
 
-        // the task id currently being processed.
-        std::size_t task;
+        // the task id currently being processed. 0 if no task.
+        std::size_t task = 0;
 
         // the account to which this connection is connected to.
-        std::size_t account;
+        std::size_t account = 0;
 
         // total bytes downloaded.
-        std::uint64_t down;
+        std::uint64_t down = 0;
 
         // current host
         std::string host;
 
+        // path to the log file
         std::string logfile;
 
-        std::uint16_t port;
+        std::uint16_t port = 563;
 
         // current description.
         std::string desc;
 
         // secure or not
-        bool secure;
+        bool secure = true;
 
         // current speed in bytes per second.
-        std::uint32_t bps;
+        std::uint32_t bps = 0;
     };
 
 } // ui

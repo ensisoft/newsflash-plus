@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -81,13 +81,13 @@ void Downloads::addActions(QMenu& menu)
     menu.addAction(ui_.actionTaskPause);
     menu.addAction(ui_.actionTaskResume);
     menu.addSeparator();
-    menu.addAction(ui_.actionTaskMoveTop);    
+    menu.addAction(ui_.actionTaskMoveTop);
     menu.addAction(ui_.actionTaskMoveUp);
     menu.addAction(ui_.actionTaskMoveDown);
     menu.addAction(ui_.actionTaskMoveBottom);
     menu.addSeparator();
     menu.addAction(ui_.actionTaskDelete);
-    menu.addAction(ui_.actionTaskClear);    
+    menu.addAction(ui_.actionTaskClear);
 }
 
 void Downloads::addActions(QToolBar& bar)
@@ -99,16 +99,16 @@ void Downloads::addActions(QToolBar& bar)
     bar.addAction(ui_.actionTaskPause);
     bar.addAction(ui_.actionTaskResume);
     bar.addSeparator();
-    bar.addAction(ui_.actionTaskMoveTop);    
+    bar.addAction(ui_.actionTaskMoveTop);
     bar.addAction(ui_.actionTaskMoveUp);
     bar.addAction(ui_.actionTaskMoveDown);
     bar.addAction(ui_.actionTaskMoveBottom);
     bar.addSeparator();
     bar.addAction(ui_.actionTaskDelete);
-    bar.addAction(ui_.actionTaskClear);    
+    bar.addAction(ui_.actionTaskClear);
 }
 
-void Downloads::loadState(app::Settings& s) 
+void Downloads::loadState(app::Settings& s)
 {
     const auto task_list_height = s.get("downloads", "task_list_height", 0);
     if (task_list_height)
@@ -196,7 +196,7 @@ void Downloads::on_actionTaskPause_triggered()
 
     tasks_.pause(indices);
 
-    tableTasks_selectionChanged();    
+    tableTasks_selectionChanged();
 }
 
 void Downloads::on_actionTaskResume_triggered()
@@ -205,9 +205,9 @@ void Downloads::on_actionTaskResume_triggered()
     if (indices.isEmpty())
         return;
 
-    tasks_.resume(indices);    
+    tasks_.resume(indices);
 
-    tableTasks_selectionChanged();    
+    tableTasks_selectionChanged();
 }
 
 void Downloads::on_actionTaskMoveUp_triggered()
@@ -223,9 +223,9 @@ void Downloads::on_actionTaskMoveUp_triggered()
         selection.select(indices[i], indices[i]);
 
     auto* model = ui_.tableTasks->selectionModel();
-    model->setCurrentIndex(selection.indexes()[0], 
+    model->setCurrentIndex(selection.indexes()[0],
         QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
-    model->select(selection, 
+    model->select(selection,
         QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
 }
 
@@ -297,7 +297,7 @@ void Downloads::on_actionTaskDelete_triggered()
 
 void Downloads::on_actionTaskClear_triggered()
 {
-    tasks_.clear();    
+    tasks_.clear();
 }
 
 void Downloads::on_actionTaskOpenLog_triggered()
@@ -377,7 +377,7 @@ void Downloads::on_tableTasks_customContextMenuRequested(QPoint point)
     menu.addAction(ui_.actionTaskPause);
     menu.addAction(ui_.actionTaskResume);
     menu.addSeparator();
-    menu.addAction(ui_.actionTaskMoveTop);    
+    menu.addAction(ui_.actionTaskMoveTop);
     menu.addAction(ui_.actionTaskMoveUp);
     menu.addAction(ui_.actionTaskMoveDown);
     menu.addAction(ui_.actionTaskMoveBottom);
@@ -441,9 +441,9 @@ void Downloads::tableTasks_selectionChanged()
     ui_.actionTaskMoveDown->setEnabled(true);
     ui_.actionTaskDelete->setEnabled(true);
     ui_.actionTaskOpenFolder->setEnabled(true);
-    //ui_.actionTaskClear->setEnabled(true);    
+    //ui_.actionTaskClear->setEnabled(true);
 
-    using state = newsflash::ui::task::states;
+    using state = newsflash::ui::TaskDesc::States;
 
     const auto num_tasks = tasks_.rowCount(QModelIndex());
 
@@ -453,15 +453,15 @@ void Downloads::tableTasks_selectionChanged()
         const auto& ui = tasks_.getItem(row);
 
         // completed tasks cannot be paused.
-        if (ui.state == state::complete || ui.state == state::error)
+        if (ui.state == state::Complete || ui.state == state::Error)
             ui_.actionTaskPause->setEnabled(false);
 
         // paused tasks cannot be paused again
-        if (ui.state == state::paused)
+        if (ui.state == state::Paused)
             ui_.actionTaskPause->setEnabled(false);
 
         // only paused tasks can be resumed, so if anything else but paused resume is not possible.
-        if (ui.state != state::paused)
+        if (ui.state != state::Paused)
             ui_.actionTaskResume->setEnabled(false);
 
         // if we're already at the top moving up is not possible
@@ -494,7 +494,7 @@ void Downloads::tableConns_selectionChanged()
     {
         ui_.actionConnClone->setEnabled(true);
         ui_.actionConnDelete->setEnabled(true);
-        ui_.actionConnOpenLog->setEnabled(true);        
+        ui_.actionConnOpenLog->setEnabled(true);
     }
 }
 

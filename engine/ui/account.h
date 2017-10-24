@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -20,7 +20,7 @@
 
 #pragma once
 
-#include <newsflash/config.h>
+#include "newsflash/config.h"
 
 #include <string>
 #include <cstddef>
@@ -31,11 +31,11 @@ namespace newsflash
     namespace ui {
 
     // news account
-    struct account 
+    struct Account
     {
         // unique id for the account. used to refer to the
         // account in the newsflash api.
-        std::size_t id;
+        std::size_t id = 0;
 
         // name for the account
         std::string name;
@@ -52,27 +52,37 @@ namespace newsflash
         // with 2 servers. one for the general unecrypted use
         // and the secure server that uses encryption.
 
+        // encrypted host for SSL over TCP connection.
         std::string secure_host;
 
+        // unencrypted host for TCP connection.
         std::string general_host;
 
-        std::uint16_t secure_port;
+        // encrypted host port for SSL over TCP connection.
+        std::uint16_t secure_port = 563;
 
-        std::uint16_t general_port;
+        // unencrypted host port for TCP connection.
+        std::uint16_t general_port = 119;
 
         // maximum number of connections to be opened
         // to the servers under this account.
-        std::uint16_t connections;
+        std::uint16_t connections = 1;
 
-        bool enable_secure_server;
+        // true if the secure server setting is enabled.
+        bool enable_secure_server = true;
 
-        bool enable_general_server;
+        // true if the non-secure server setting is enabled.
+        bool enable_general_server = false;
 
-        // todo:
-        bool enable_compression;
+        // try to enable and use compressed headers.
+        // note that not all servers support this.
+        bool enable_compression = false;
 
-        // todo:
-        bool enable_pipelining;
+        // enable command pipelining. some NNTP commands
+        // can be sent in a pipeline and then multiple reponses read
+        // instead of executing each command as a request/response pair.
+        // on some hosts command pipelining *may* improve performance.
+        bool enable_pipelining = false;
     };
 
     } // ui

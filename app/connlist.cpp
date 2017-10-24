@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -16,7 +16,7 @@
 // AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.        
+// THE SOFTWARE.
 
 #define LOGTAG "conns"
 
@@ -32,10 +32,10 @@
 #include "types.h"
 
 namespace {
-    using states = newsflash::ui::connection::states;
-    using errors = newsflash::ui::connection::errors;
+    using states = newsflash::ui::Connection::States;
+    using errors = newsflash::ui::Connection::Errors;
 
-    enum class Columns { 
+    enum class Columns {
         Status, Server, Data, Kbs, Desc, LAST
     };
 
@@ -43,13 +43,13 @@ namespace {
     {
         switch (s)
         {
-            case states::disconnected: return "Disconnected";
-            case states::resolving:    return "Resolving";
-            case states::connecting:   return "Connecting";
-            case states::initializing: return "Authenticating";
-            case states::connected:    return "Connected";
-            case states::active:       return "Active";
-            case states::error:        return "Error";
+            case states::Disconnected: return "Disconnected";
+            case states::Resolving:    return "Resolving";
+            case states::Connecting:   return "Connecting";
+            case states::Initializing: return "Authenticating";
+            case states::Connected:    return "Connected";
+            case states::Active:       return "Active";
+            case states::Error:        return "Error";
         }
         return "???";
     }
@@ -58,17 +58,17 @@ namespace {
     {
         switch (e)
         {
-            case errors::none:                    return "None";
-            case errors::resolve:                 return "Resolve";
-            case errors::refused:                 return "Refused";
-            case errors::authentication_rejected: return "Authentication Rejected";
-            case errors::no_permission:           return "No Permission";
-            case errors::network:                 return "Network Error";
-            case errors::timeout:                 return "Timeout";
-            case errors::other:                   return "Error";
+            case errors::None:                    return "None";
+            case errors::Resolve:                 return "Resolve";
+            case errors::Refused:                 return "Refused";
+            case errors::AuthenticationRejected:  return "Authentication Rejected";
+            case errors::NoPermission:            return "No Permission";
+            case errors::Network:                 return "Network Error";
+            case errors::Timeout:                 return "Timeout";
+            case errors::Other:                   return "Error";
         }
         return "???";
-    }    
+    }
 } // namespace
 
 namespace app
@@ -92,7 +92,7 @@ QVariant ConnList::data(const QModelIndex& index, int role) const
         switch ((Columns)col)
         {
             case Columns::Status:
-                if (ui.state == states::error)
+                if (ui.state == states::Error)
                     return str(ui.error);
                 return str(ui.state);
 
@@ -107,18 +107,18 @@ QVariant ConnList::data(const QModelIndex& index, int role) const
     {
         switch (ui.state)
         {
-            case states::disconnected:  return QIcon("icons:ico_conn_disconnected.png");
-            case states::resolving:     return QIcon("icons:ico_conn_connecting.png");
-            case states::connecting:    return QIcon("icons:ico_conn_connecting.png");
-            case states::initializing:  return QIcon("icons:ico_conn_connecting.png");
-            case states::connected:     return QIcon("icons:ico_conn_connected.png");
-            case states::active:        return QIcon("icons:ico_conn_active.png");                                                                
-            case states::error:         return QIcon("icons:ico_conn_error.png");                                                                                
+            case states::Disconnected:  return QIcon("icons:ico_conn_disconnected.png");
+            case states::Resolving:     return QIcon("icons:ico_conn_connecting.png");
+            case states::Connecting:    return QIcon("icons:ico_conn_connecting.png");
+            case states::Initializing:  return QIcon("icons:ico_conn_connecting.png");
+            case states::Connected:     return QIcon("icons:ico_conn_connected.png");
+            case states::Active:        return QIcon("icons:ico_conn_active.png");
+            case states::Error:         return QIcon("icons:ico_conn_error.png");
         }
     }
     else if (role == Qt::DecorationRole && col == (int)Columns::Server)
     {
-       return ui.secure ? 
+       return ui.secure ?
             QIcon("icons:ico_lock.png") :
             QIcon("icons:ico_unlock.png");
     }

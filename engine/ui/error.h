@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -20,7 +20,7 @@
 
 #pragma once
 
-#include <newsflash/config.h>
+#include "newsflash/config.h"
 
 #include <system_error>
 #include <string>
@@ -28,8 +28,9 @@
 namespace newsflash
 {
     namespace ui {
+
     // a system error, for example when file cannot be created, network error etc.
-    struct error
+    struct SystemError
     {
         // description of the error.
         std::string what;
@@ -40,6 +41,6 @@ namespace newsflash
         // system specific error code.
         std::error_code code;
     };
-    
+
 } // ui
 } // engine

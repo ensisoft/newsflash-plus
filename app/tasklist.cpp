@@ -33,9 +33,9 @@
 
 namespace {
 
-using states  = newsflash::ui::task::states;
-using flags   = newsflash::ui::task::errors;
-using bitflag = newsflash::bitflag<newsflash::ui::task::errors>;
+using states  = newsflash::ui::TaskDesc::States;
+using errors  = newsflash::ui::TaskDesc::Errors;
+using bitflag = newsflash::bitflag<newsflash::ui::TaskDesc::Errors>;
 
 enum class columns { status, done, time, eta, size, desc, sentinel };
 
@@ -43,24 +43,24 @@ const char* str(states s)
 {
     switch (s)
     {
-        case states::queued:    return "Queued";
-        case states::waiting:   return "Waiting";
-        case states::active:    return "Active";
-        case states::crunching: return "Crunching";
-        case states::paused:    return "Paused";
-        case states::complete:  return "Complete";
-        case states::error:     return "Error";
+        case states::Queued:    return "Queued";
+        case states::Waiting:   return "Waiting";
+        case states::Active:    return "Active";
+        case states::Crunching: return "Crunching";
+        case states::Paused:    return "Paused";
+        case states::Complete:  return "Complete";
+        case states::Error:     return "Error";
     }
     return "???";
 }
 
 const char* str(bitflag f)
 {
-    if (f.test(flags::dmca))
+    if (f.test(errors::Dmca))
         return "DMCA";
-    else if (f.test(flags::damaged))
+    else if (f.test(errors::Damaged))
         return "Damaged";
-    else if (f.test(flags::incomplete))
+    else if (f.test(errors::Incomplete))
         return "Incomplete";
 
     return "Complete";
@@ -90,12 +90,12 @@ QVariant TaskList::data(const QModelIndex& index, int role) const
         switch ((columns)col)
         {
             case columns::status:
-                if (ui.state == states::complete)
+                if (ui.state == states::Complete)
                 {
                     if (ui.completion > 0.0)
                         return str(ui.error);
 
-                    if (ui.error.test(newsflash::ui::task::errors::dmca))
+                    if (ui.error.test(errors::Dmca))
                         return "DMCA";
                     return "Unavailable";
                 }
@@ -108,11 +108,11 @@ QVariant TaskList::data(const QModelIndex& index, int role) const
                 return toString(runtime{ui.runtime});
 
             case columns::eta:
-                if (ui.state == states::waiting ||
-                    ui.state == states::paused ||
-                    ui.state == states::queued)
+                if (ui.state == states::Waiting ||
+                    ui.state == states::Paused ||
+                    ui.state == states::Queued)
                     return QString("  %1  ").arg(infinity);
-                else if (ui.state == states::complete)
+                else if (ui.state == states::Complete)
                     return "";
                 else if (ui.runtime < 10 || !(ui.completion > 0))
                     return " hmm...";
@@ -137,23 +137,23 @@ QVariant TaskList::data(const QModelIndex& index, int role) const
 
         switch (ui.state)
         {
-            case states::queued:
+            case states::Queued:
                 return QIcon("icons:ico_task_queued.png");
-            case states::waiting:
+            case states::Waiting:
                 return QIcon("icons:ico_task_waiting.png");
-            case states::active:
+            case states::Active:
                 return QIcon("icons:ico_task_active.png");
-            case states::crunching:
+            case states::Crunching:
                 return QIcon("icons:ico_task_crunching.png");
-            case states::paused:
+            case states::Paused:
                 return QIcon("icons:ico_task_paused.png");
-            case states::complete:
+            case states::Complete:
                 if (ui.error.any_bit())
                     return QIcon("icons:ico_task_damaged.png");
 
                 return QIcon("icons:ico_task_complete.png");
 
-            case states::error:
+            case states::Error:
                 return QIcon("icons:ico_task_error.png");
         }
     }
@@ -211,7 +211,7 @@ void TaskList::refresh(bool remove_complete)
         {
             const auto& row  = i - removed;
             const auto& task = tasks_[row];
-            if (task.state == states::complete || task.state == states::error)
+            if (task.state == states::Complete || task.state == states::Error)
             {
                 QAbstractTableModel::beginRemoveRows(QModelIndex(), row, row);
                 g_engine->killTask(row);
@@ -348,7 +348,7 @@ void TaskList::clear()
     {
         const auto& item = tasks_[i];
         const auto row   = i - removed;
-        if (item.state == states::complete || item.state == states::error)
+        if (item.state == states::Complete || item.state == states::Error)
         {
             QAbstractTableModel::beginRemoveRows(QModelIndex(), row, row);
             g_engine->killTask(row);

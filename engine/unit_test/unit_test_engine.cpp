@@ -30,7 +30,7 @@
 
 void test_connections()
 {
-    newsflash::ui::account account;
+    newsflash::ui::Account account;
     account.connections = 1;
     account.general_host = "localhost";
     account.general_port  = 1919;

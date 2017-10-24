@@ -73,35 +73,35 @@ const char* str(buffer::status s)
     return nullptr;
 }
 
-const char* str(ui::task::states s)
+const char* str(ui::TaskDesc::States s)
 {
-    using state = ui::task::states;
+    using State = ui::TaskDesc::States;
     switch (s)
     {
-        CASE(state::queued);
-        CASE(state::waiting);
-        CASE(state::active);
-        CASE(state::paused);
-        CASE(state::complete);
-        CASE(state::error);
-        CASE(state::crunching);
+        CASE(State::Queued);
+        CASE(State::Waiting);
+        CASE(State::Active);
+        CASE(State::Paused);
+        CASE(State::Complete);
+        CASE(State::Error);
+        CASE(State::Crunching);
     }
     assert(0);
     return nullptr;
 }
 
-const char* str(ui::connection::states s)
+const char* str(ui::Connection::States s)
 {
-    using state = ui::connection::states;
+    using state = ui::Connection::States;
     switch (s)
     {
-        CASE(state::disconnected);
-        CASE(state::resolving);
-        CASE(state::connecting);
-        CASE(state::initializing);
-        CASE(state::connected);
-        CASE(state::active);
-        CASE(state::error);
+        CASE(state::Disconnected);
+        CASE(state::Resolving);
+        CASE(state::Connecting);
+        CASE(state::Initializing);
+        CASE(state::Connected);
+        CASE(state::Active);
+        CASE(state::Error);
     }
     assert(0);
     return nullptr;
@@ -115,7 +115,7 @@ struct engine::state {
     std::deque<std::unique_ptr<engine::conn>> conns;
     std::deque<std::unique_ptr<engine::batch>> batches;
 
-    std::vector<ui::account> accounts;
+    std::vector<ui::Account> accounts;
     std::list<std::shared_ptr<cmdlist>> cmds;
     std::uint64_t bytes_downloaded;
     std::uint64_t bytes_queued;
@@ -166,10 +166,10 @@ struct engine::state {
         set_thread_log(nullptr);
     }
 
-    const ui::account& find_account(std::size_t id) const
+    const ui::Account& find_account(std::size_t id) const
     {
         auto it = std::find_if(accounts.begin(), accounts.end(),
-            [=](const ui::account& a) {
+            [=](const ui::Account& a) {
                 return a.id == id;
             });
         ASSERT(it != std::end(accounts));
@@ -236,7 +236,7 @@ struct engine::state {
 
         LOG_D("Action ", act->get_id(), " (", act->describe(), ") is complete");
         LOG_D("Action ", act->get_id(), " has exception: ", act->has_exception());
-        return std::move(act);
+        return act;
     }
 
     engine::batch& find_batch(std::size_t id);
@@ -265,8 +265,8 @@ private:
                 break;
         }
 
-        ui_.error      = errors::none;
-        ui_.state      = states::disconnected;
+        ui_.error      = errors::None;
+        ui_.state      = states::Disconnected;
         ui_.id         = cid;
         ui_.task       = 0;
         ui_.account    = 0;
@@ -280,8 +280,8 @@ private:
         LOG_D("Connection ", ui_.id, " log file: ", file);
     }
 
-    using states = ui::connection::states;
-    using errors = ui::connection::errors;
+    using states = ui::Connection::States;
+    using errors = ui::Connection::Errors;
 
 public:
 
@@ -353,24 +353,24 @@ public:
 
     void tick(engine::state& state, const std::chrono::milliseconds& elapsed)
     {
-        if (ui_.state == states::connected)
+        if (ui_.state == states::Connected)
         {
             if (--ticks_to_ping_ == 0)
                 do_action(state, conn_.ping());
 
         }
-        else if (ui_.state == states::error)
+        else if (ui_.state == states::Error)
         {
-            if (ui_.error == errors::authentication_rejected ||
-                ui_.error == errors::no_permission)
+            if (ui_.error == errors::AuthenticationRejected ||
+                ui_.error == errors::NoPermission)
                 return;
 
             if (--ticks_to_conn_)
                 return;
 
             LOG_D("Connection ", ui_.id, " reconnecting...");
-            ui_.error = errors::none;
-            ui_.state = states::disconnected;
+            ui_.error = errors::None;
+            ui_.state = states::Disconnected;
 
             const auto& acc = state.find_account(ui_.account);
             connection::spec s;
@@ -388,12 +388,12 @@ public:
 
     void stop(engine::state& state)
     {
-        if (ui_.state == states::disconnected)
+        if (ui_.state == states::Disconnected)
             return;
 
         conn_.cancel();
-        if (ui_.state == states::connected ||
-            ui_.state == states::active)
+        if (ui_.state == states::Connected ||
+            ui_.state == states::Active)
         {
             do_action(state, conn_.disconnect());
         }
@@ -405,17 +405,17 @@ public:
     {
         ui_.task  = tid;
         ui_.desc  = std::move(desc);
-        ui_.state = states::active;
+        ui_.state = states::Active;
         LOG_I("Connection ", ui_.id, " executing cmdlist ", cmds->id());
 
         do_action(state, conn_.execute(cmds, tid));
     }
 
-    void update(ui::connection& ui)
+    void update(ui::Connection& ui)
     {
         ui = ui_;
         ui.bps = 0;
-        if (ui_.state == states::active)
+        if (ui_.state == states::Active)
         {
             // if the bytes value hasn't increased since the last
             // read then the bps value cannot be valid but has become
@@ -441,13 +441,14 @@ public:
 
         if (act->has_exception())
         {
-            ui_.state = states::error;
+            ui_.state = states::Error;
             ui_.bps   = 0;
             ui_.task  = 0;
             ui_.desc  = "";
-            ui::error err;
-            err.resource = ui_.host;
+            ui::SystemError error;
+            error.resource = ui_.host;
 
+            // todo: refactor the connection errors to non-exceptions.
             try
             {
                 act->rethrow();
@@ -457,46 +458,46 @@ public:
                 switch (e.error())
                 {
                     case connection::error::resolve:
-                        ui_.error = ui::connection::errors::resolve;
+                        ui_.error = ui::Connection::Errors::Resolve;
                         break;
                     case connection::error::authentication_rejected:
-                        ui_.error = ui::connection::errors::authentication_rejected;
+                        ui_.error = ui::Connection::Errors::AuthenticationRejected;
                         break;
                     case connection::error::no_permission:
-                        ui_.error = ui::connection::errors::no_permission;
+                        ui_.error = ui::Connection::Errors::NoPermission;
                         break;
                     case connection::error::network:
-                        ui_.error = ui::connection::errors::network;
+                        ui_.error = ui::Connection::Errors::Network;
                         break;
                     case connection::error::timeout:
-                        ui_.error = ui::connection::errors::timeout;
+                        ui_.error = ui::Connection::Errors::Timeout;
                         break;
                     case connection::error::pipeline_reset:
-                        ui_.error = ui::connection::errors::other;
+                        ui_.error = ui::Connection::Errors::Other;
                         break;
                 }
-                err.what = e.what();
+                error.what = e.what();
             }
             catch (const std::system_error& e)
             {
                 const auto code = e.code();
                 if (code == std::errc::connection_refused)
-                    ui_.error = ui::connection::errors::refused;
-                else ui_.error = ui::connection::errors::other;
+                    ui_.error = ui::Connection::Errors::Refused;
+                else ui_.error = ui::Connection::Errors::Other;
 
-                err.code = code;
-                err.what = e.what();
+                error.code = code;
+                error.what = e.what();
             }
             catch (const std::exception &e)
             {
-                ui_.error = errors::other;
-                err.what  = e.what();
+                ui_.error = errors::Other;
+                error.what  = e.what();
             }
 
-            LOG_E("Connection ", ui_.id, " (", err.code.value(), ") ", err.code.message());
-            LOG_E("Connection ", ui_.id, " ", err.what);
+            LOG_E("Connection ", ui_.id, " (", error.code.value(), ") ", error.code.message());
+            LOG_E("Connection ", ui_.id, " ", error.what);
 
-            state.on_error_callback(err);
+            state.on_error_callback(error);
             state.logger->flush();
             logger_->flush();
             return;
@@ -505,11 +506,11 @@ public:
         auto next = conn_.complete(std::move(act));
         if (next)
             do_action(state, std::move(next));
-        else if (ui_.state == states::initializing)
-            ui_.state = states::connected;
-        else if (ui_.state == states::active)
+        else if (ui_.state == states::Initializing)
+            ui_.state = states::Connected;
+        else if (ui_.state == states::Active)
         {
-           ui_.state = states::connected;
+           ui_.state = states::Connected;
            ui_.bps   = 0;
            ui_.task  = 0;
            ui_.desc  = "";
@@ -520,12 +521,12 @@ public:
     }
     bool is_ready() const
     {
-        return ui_.state == states::connected;
+        return ui_.state == states::Connected;
     }
 
     double bps() const
     {
-        if (ui_.state == states::active)
+        if (ui_.state == states::Active)
             return ui_.bps;
         return 0.0;
     }
@@ -558,15 +559,15 @@ private:
         auto* ptr = a.get();
 
         if (dynamic_cast<class connection::resolve*>(ptr))
-            ui_.state = states::resolving;
+            ui_.state = states::Resolving;
         else if (dynamic_cast<class connection::connect*>(ptr))
-            ui_.state = states::connecting;
+            ui_.state = states::Connecting;
         else if (dynamic_cast<class connection::initialize*>(ptr))
-            ui_.state = states::initializing;
+            ui_.state = states::Initializing;
         else if (dynamic_cast<class connection::execute*>(ptr))
-            ui_.state = states::active;
+            ui_.state = states::Active;
         else if (dynamic_cast<class connection::disconnect*>(ptr))
-            ui_.state = states::disconnected;
+            ui_.state = states::Disconnected;
 
         LOG_D("Connection ", ui_.id,  " => ", str(ui_.state));
         LOG_D("Connection ", ui_.id, " current task ", ui_.task, " (", ui_.desc, ")");
@@ -578,7 +579,7 @@ private:
     }
 
 private:
-    ui::connection ui_;
+    ui::Connection ui_;
     connection conn_;
     std::shared_ptr<logger> logger_;
     threadpool::worker* thread_;
@@ -592,7 +593,7 @@ private:
 class engine::conntest
 {
 public:
-    conntest(const ui::account& account, std::size_t id, engine::state& state)
+    conntest(const ui::Account& account, std::size_t id, engine::state& state)
     {
         connection::spec spec;
         spec.pthrottle = nullptr;
@@ -698,7 +699,7 @@ class engine::task
     }
 
 public:
-    using states = ui::task::states;
+    using states = ui::TaskDesc::States;
     using clock  = std::chrono::steady_clock;
 
     struct transition {
@@ -714,19 +715,18 @@ public:
     //constexpr static auto no_transition = transition{states::queued, states::queued};
     const static transition no_transition;
 
-    task(std::size_t id, ui::download spec) : task(id)
+    task(std::size_t id, const ui::FileDownload& file) : task(id)
     {
-        ui_.state      = states::queued;
-        ui_.desc       = spec.name;
-        ui_.size       = spec.size;
-        ui_.path       = spec.path;
-        is_fillable_   = ui::is_fillable(spec);
+        ui_.state      = states::Queued;
+        ui_.desc       = file.name;
+        ui_.size       = file.size;
+        ui_.path       = file.path;
+        is_fillable_   = ui::is_fillable(file);
 
-        LOG_D("Task: download has ", spec.articles.size(), " articles");
-        LOG_D("Task: download path: '", spec.path, "'");
+        LOG_D("Task: download has ", file.articles.size(), " articles");
+        LOG_D("Task: download path: '", file.path, "'");
 
-        task_.reset(new download(std::move(spec.groups), std::move(spec.articles),
-            std::move(spec.path), std::move(spec.name)));
+        task_.reset(new download(file.groups, file.articles, file.path, file.name));
 
         num_actions_total_ = task_->max_num_actions();
 
@@ -735,9 +735,9 @@ public:
         LOG_I("Task ", ui_.task_id, " (", ui_.desc, ") created");
     }
 
-    task(std::size_t id, const ui::listing& spec) : task(id)
+    task(std::size_t id, const ui::GroupListDownload& list) : task(id)
     {
-        ui_.desc = spec.desc;
+        ui_.desc = list.desc;
 
         task_.reset(new listing);
 
@@ -747,12 +747,11 @@ public:
         LOG_I("Task ", ui_.task_id, " (", ui_.desc, ") created");
     }
 
-    task(engine::state& s, std::size_t id, const ui::update& spec) : task(id)
+    task(engine::state& s, std::size_t id, const ui::HeaderDownload& download) : task(id)
     {
-        ui_.desc = spec.desc;
+        ui_.desc = download.desc;
 
-        std::unique_ptr<newsflash::update> task(new newsflash::update(spec.path,
-            spec.name));
+        std::unique_ptr<newsflash::update> task(new newsflash::update(download.path, download.group));
         task->on_write = s.on_header_data_callback;
         task->on_info  = s.on_header_info_callback;
         task_ = std::move(task);
@@ -806,7 +805,7 @@ public:
 
     void serialize(data::TaskList& list)
     {
-        if (ui_.state == states::error || ui_.state == states::complete)
+        if (ui_.state == states::Error || ui_.state == states::Complete)
             return;
 
         // this I guess shouldn't really matter.
@@ -850,7 +849,7 @@ public:
     {
         LOG_D("Task ", ui_.task_id, " kill");
 
-        if (ui_.state != states::complete)
+        if (ui_.state != states::Complete)
         {
             for (auto i=std::begin(state.cmds); i != std::end(state.cmds);)
             {
@@ -871,7 +870,7 @@ public:
 
             state.bytes_queued -= ui_.size;
         }
-        if (!(ui_.state == states::complete || ui_.state == states::error))
+        if (!(ui_.state == states::Complete || ui_.state == states::Error))
         {
             state.num_pending_tasks--;
             if (state.num_pending_tasks == 0)
@@ -892,15 +891,15 @@ public:
     void tick(engine::state& state, const std::chrono::milliseconds& elapsed)
     {
         // todo: actually measure the time
-        if (ui_.state == states::active || ui_.state == states::crunching)
+        if (ui_.state == states::Active || ui_.state == states::Crunching)
             ui_.runtime++;
     }
 
     bool eligible_for_run() const
     {
-        if (ui_.state == states::waiting ||
-            ui_.state == states::queued ||
-            ui_.state == states::active)
+        if (ui_.state == states::Waiting ||
+            ui_.state == states::Queued ||
+            ui_.state == states::Active)
         {
             return task_->has_commands();
         }
@@ -909,9 +908,9 @@ public:
 
     transition run(engine::state& state)
     {
-        if (ui_.state == states::complete ||
-            ui_.state == states::error ||
-            ui_.state == states::paused)
+        if (ui_.state == states::Complete ||
+            ui_.state == states::Error ||
+            ui_.state == states::Paused)
             return no_transition;
 
         auto cmds = task_->create_commands();
@@ -924,7 +923,7 @@ public:
 
         num_active_cmdlists_++;
 
-        return goto_state(state, states::active);
+        return goto_state(state, states::Active);
     }
 
     transition complete(engine::state& state, std::shared_ptr<cmdlist> cmds)
@@ -939,7 +938,7 @@ public:
 
         LOG_D("Task ", ui_.task_id, " receiving cmdlist ", cmds->id());
 
-        if (ui_.state == states::error)
+        if (ui_.state == states::Error)
             return no_transition;
 
         if (!cmds->is_good())
@@ -956,7 +955,7 @@ public:
             }
             else
             {
-                ui_.error.set(ui::task::errors::incomplete);
+                ui_.error.set(ui::TaskDesc::Errors::Incomplete);
                 return no_transition;
             }
         }
@@ -979,13 +978,13 @@ public:
                 {
                     if (state.on_error_callback)
                     {
-                        ui::error err;
-                        err.resource = ui_.desc;
-                        err.what     = "Data buffer error";
-                        state.on_error_callback(err);
+                        ui::SystemError error;
+                        error.resource = ui_.desc;
+                        error.what     = "Data buffer error";
+                        state.on_error_callback(error);
                     }
                     LOG_E("Task ", ui_.task_id, " Error: data buffer error");
-                    return goto_state(state, states::error);
+                    return goto_state(state, states::Error);
                 }
 
                 if (is_fillable_ && state.fill_account && (state.fill_account != cmds->account()))
@@ -998,16 +997,16 @@ public:
                 }
 
                 if (status == buffer::status::unavailable)
-                    ui_.error.set(ui::task::errors::incomplete);
+                    ui_.error.set(ui::TaskDesc::Errors::Incomplete);
                 else if (status == buffer::status::dmca)
-                    ui_.error.set(ui::task::errors::dmca);
+                    ui_.error.set(ui::TaskDesc::Errors::Dmca);
             }
         }
 
         std::vector<std::unique_ptr<action>> actions;
 
-        ui::error err;
-        err.resource = ui_.desc;
+        ui::SystemError error;
+        error.resource = ui_.desc;
         try
         {
             task_->complete(*cmds, actions);
@@ -1019,29 +1018,29 @@ public:
         }
         catch (const std::system_error& e)
         {
-            err.code = e.code();
-            err.what = e.what();
+            error.code = e.code();
+            error.what = e.what();
         }
         catch (const std::exception& e)
         {
-            err.what = e.what();
+            error.what = e.what();
         }
 
         if (state.on_error_callback)
         {
-            state.on_error_callback(err);
+            state.on_error_callback(error);
         }
-        LOG_E("Task ", ui_.task_id, " Error: ", err.what);
-        return goto_state(state, states::error);
+        LOG_E("Task ", ui_.task_id, " Error: ", error.what);
+        return goto_state(state, states::Error);
     }
 
     transition pause(engine::state& state)
     {
         LOG_D("Task ", ui_.task_id, " pause");
 
-        if (ui_.state == states::paused ||
-            ui_.state == states::error ||
-            ui_.state == states::complete)
+        if (ui_.state == states::Paused ||
+            ui_.state == states::Error ||
+            ui_.state == states::Complete)
             return no_transition;
 
         for (auto it = std::begin(state.cmds); it != std::end(state.cmds); )
@@ -1060,14 +1059,14 @@ public:
             }
         }
 
-        return goto_state(state, states::paused);
+        return goto_state(state, states::Paused);
     }
 
     transition resume(engine::state& state)
     {
         LOG_D("Task ", ui_.task_id, " resume");
 
-        if (ui_.state != states::paused)
+        if (ui_.state != states::Paused)
             return no_transition;
 
         // it's possible that user paused the task but all
@@ -1082,18 +1081,18 @@ public:
 
         // if we were started before we go to waiting state.
         if (ui_.runtime)
-            return goto_state(state, states::waiting);
+            return goto_state(state, states::Waiting);
 
         // go back into queued state.
-        return goto_state(state, states::queued);
+        return goto_state(state, states::Queued);
     }
 
-    void update(engine::state& state, ui::task& ui)
+    void update(engine::state& state, ui::TaskDesc& ui)
     {
         ui = ui_;
         ui.etatime = 0;
 
-        if (ui_.state == states::active || ui_.state == states::waiting || ui_.state == states::crunching)
+        if (ui_.state == states::Active || ui_.state == states::Waiting || ui_.state == states::Crunching)
         {
             if (ui_.runtime >= 10 && ui_.completion > 0.0)
             {
@@ -1125,11 +1124,11 @@ public:
         LOG_D("Task ", ui_.task_id, " num_active_cmdlists ", num_active_cmdlists_);
         LOG_D("Task ", ui_.task_id, " has ", num_bytes_queued_ / (1024.0*1024.0), " Mb queued");
 
-        if (ui_.state == states::error)
+        if (ui_.state == states::Error)
             return no_transition;
 
-        ui::error err;
-        err.resource = ui_.desc;
+        ui::SystemError error;
+        error.resource = ui_.desc;
         try
         {
             if (act->has_exception())
@@ -1139,9 +1138,9 @@ public:
             {
                 const auto err = dec->get_errors();
                 if (err.test(decode::error::crc_mismatch))
-                    ui_.error.set(ui::task::errors::damaged);
+                    ui_.error.set(ui::TaskDesc::Errors::Damaged);
                 if (err.test(decode::error::size_mismatch))
-                    ui_.error.set(ui::task::errors::damaged);
+                    ui_.error.set(ui::TaskDesc::Errors::Damaged);
             }
 
             std::vector<std::unique_ptr<action>> actions;
@@ -1156,21 +1155,21 @@ public:
         }
         catch (const std::system_error& e)
         {
-            err.code = e.code();
-            err.what = e.what();
+            error.code = e.code();
+            error.what = e.what();
         }
         catch (const std::exception& e)
         {
-            err.what = e.what();
+            error.what = e.what();
         }
 
         if (state.on_error_callback)
         {
-            state.on_error_callback(err);
+            state.on_error_callback(error);
         }
 
-        LOG_E("Task ", ui_.task_id, " Error: ", err.what);
-        return goto_state(state, states::error);
+        LOG_E("Task ", ui_.task_id, " Error: ", error.what);
+        return goto_state(state, states::Error);
     }
 
     void set_account(std::size_t acc)
@@ -1200,7 +1199,7 @@ public:
     double done() const
     { return ui_.completion; }
 
-    bitflag<ui::task::errors> errors() const
+    bitflag<ui::TaskDesc::Errors> errors() const
     { return ui_.error; }
 
     bool is_valid() const
@@ -1237,8 +1236,8 @@ private:
         {
             if (num_bytes_queued_ >= MB(8))
             {
-                if (ui_.state == states::active)
-                    return goto_state(state, states::crunching);
+                if (ui_.state == states::Active)
+                    return goto_state(state, states::Crunching);
             }
             return no_transition;
         }
@@ -1254,13 +1253,13 @@ private:
         // we'll transition into waiting state.
         if (task_->has_commands())
         {
-            if (ui_.state == states::active ||
-                ui_.state == states::crunching)
-                return goto_state(state, states::waiting);
+            if (ui_.state == states::Active ||
+                ui_.state == states::Crunching)
+                return goto_state(state, states::Waiting);
         }
         else
         {
-            return goto_state(state, states::complete);
+            return goto_state(state, states::Complete);
         }
         return no_transition;
     }
@@ -1287,25 +1286,25 @@ private:
 
         switch (new_state)
         {
-            case states::queued:
+            case states::Queued:
                 ui_.state   = new_state;
                 ui_.etatime = 0;
                 break;
 
-            case states::waiting:
+            case states::Waiting:
                 ui_.state = new_state;
                 break;
 
-            case states::active:
+            case states::Active:
                 ui_.state = new_state;
                 break;
 
-            case states::paused:
+            case states::Paused:
                 ui_.state   = new_state;
                 ui_.etatime = 0;
                 break;
 
-            case states::crunching:
+            case states::Crunching:
                 ui_.state   = new_state;
                 for (auto it = std::begin(state.cmds); it != std::end(state.cmds);)
                 {
@@ -1325,7 +1324,7 @@ private:
                 }
                 break;
 
-            case states::complete:
+            case states::Complete:
                 ASSERT(task_);
                 ASSERT(task_->has_commands() == false);
                 ASSERT(num_active_cmdlists_ == 0);
@@ -1344,46 +1343,47 @@ private:
                     const auto& files = ptr->files();
                     for (const auto& file : files)
                     {
-                        ui::file ui;
-                        ui.binary  = file->is_binary();
-                        ui.name    = file->filename();
-                        ui.path    = file->filepath();
-                        ui.size    = file->size();
-                        ui.damaged = ui_.error.any_bit();
-                        state.on_file_callback(ui);
+                        ui::FileResult result;
+                        result.binary  = file->is_binary();
+                        result.name    = file->filename();
+                        result.path    = file->filepath();
+                        result.size    = file->size();
+                        result.damaged = ui_.error.any_bit();
+                        state.on_file_callback(result);
                     }
                 }
                 else if (auto* ptr = dynamic_cast<class listing*>(task_.get()))
                 {
-                    ui::listing listing;
-                    listing.account = ui_.account;
+                    ui::GroupListResult result;
+                    result.account = ui_.account;
+                    result.desc    = ui_.desc;
 
                     const auto& groups = ptr->group_list();
                     for (const auto& g : groups)
                     {
-                        ui::listing::group ui;
-                        ui.name = g.name;
-                        ui.first = g.first;
-                        ui.last  = g.last;
-                        ui.size  = g.size;
-                        listing.groups.push_back(ui);
+                        ui::GroupListResult::Newsgroup group;
+                        group.name = g.name;
+                        group.first = g.first;
+                        group.last  = g.last;
+                        group.size  = g.size;
+                        result.groups.push_back(group);
                     }
-                    state.on_list_callback(listing);
+                    state.on_list_callback(result);
                 }
                 else if (auto* ptr = dynamic_cast<class update*>(task_.get()))
                 {
-                    ui::update update;
-                    update.account = ui_.account;
-                    update.desc    = ui_.desc;
-                    update.name    = ptr->group();
-                    update.path    = ptr->path();
-                    update.num_local_articles  = ptr->num_local_articles();
-                    update.num_remote_articles = ptr->num_remote_articles();
-                    state.on_update_callback(update);
+                    ui::HeaderResult result;
+                    result.account = ui_.account;
+                    result.desc    = ui_.desc;
+                    result.group   = ptr->group();
+                    result.path    = ptr->path();
+                    result.num_local_articles  = ptr->num_local_articles();
+                    result.num_remote_articles = ptr->num_remote_articles();
+                    state.on_update_callback(result);
                 }
                 break;
 
-            case states::error:
+            case states::Error:
                 ui_.state   = new_state;
                 ui_.etatime = 0;
                 if (state.on_task_callback)
@@ -1404,7 +1404,7 @@ private:
         LOG_D("Task ", ui_.task_id, " has ", num_active_actions_, " active actions");
         LOG_FLUSH();
 
-        if (new_state == states::error || new_state == states::complete)
+        if (new_state == states::Error || new_state == states::Complete)
         {
             state.num_pending_tasks--;
             if (state.num_pending_tasks == 0)
@@ -1419,7 +1419,7 @@ private:
     }
 
 private:
-    ui::task ui_;
+    ui::TaskDesc ui_;
 private:
     std::unique_ptr<newsflash::task> task_;
     std::size_t num_active_cmdlists_;
@@ -1432,7 +1432,7 @@ private:
 };
 
 // for msvc...
-const engine::task::transition engine::task::no_transition {engine::task::states::queued, engine::task::states::queued};
+const engine::task::transition engine::task::no_transition {engine::task::states::Queued, engine::task::states::Queued};
 
 class engine::batch
 {
@@ -1447,28 +1447,28 @@ class engine::batch
     }
 
 public:
-    using states = ui::task::states;
+    using states = ui::TaskDesc::States;
 
-    batch(std::size_t id, const ui::batch& spec) : batch(id)
+    batch(std::size_t id, const ui::FileBatchDownload& files) : batch(id)
     {
-        ui_.account    = spec.account;
-        ui_.desc       = spec.desc;
-        ui_.path       = spec.path;
-        ui_.size       = std::accumulate(std::begin(spec.files), std::end(spec.files), std::uint64_t(0),
-            [](std::uint64_t val, const ui::download& next) {
+        ui_.account    = files.account;
+        ui_.desc       = files.desc;
+        ui_.path       = files.path;
+        ui_.size       = std::accumulate(std::begin(files.files), std::end(files.files), std::uint64_t(0),
+            [](std::uint64_t val, const ui::FileDownload& next) {
                 return val + next.size;
             });
-        num_tasks_  = spec.files.size();
-        num_slices_ = spec.files.size();
+        num_tasks_  = files.files.size();
+        num_slices_ = files.files.size();
         filebatch_  = true;
 
         LOG_I("Batch ", ui_.batch_id, " (", ui_.desc, ") created");
         LOG_D("Batch has ", num_tasks_, " tasks");
 
-        statesets_[(int)states::queued] = num_tasks_;
+        statesets_[(int)states::Queued] = num_tasks_;
     }
 
-    batch(std::size_t id, const ui::listing& list) : batch(id)
+    batch(std::size_t id, const ui::GroupListDownload& list) : batch(id)
     {
         ui_.account  = list.account;
         ui_.desc     = list.desc;
@@ -1478,19 +1478,19 @@ public:
         LOG_I("Batch ", ui_.batch_id, " (", ui_.desc, ") created");
         LOG_D("Batch has 1 task");
 
-        statesets_[(int)states::queued] = num_tasks_;
+        statesets_[(int)states::Queued] = num_tasks_;
     }
 
-    batch(std::size_t id, const ui::update& update) : batch(id)
+    batch(std::size_t id, const ui::HeaderDownload& download) : batch(id)
     {
-        ui_.account = update.account;
-        ui_.desc    = update.desc;
+        ui_.account = download.account;
+        ui_.desc    = download.desc;
         num_tasks_  = 1;
         num_slices_ = 1;
 
         LOG_I("Batch ", ui_.batch_id, " (", ui_.desc, ") created");
         LOG_D("Batch has 1 tasks");
-        statesets_[(int)states::queued] = num_tasks_;
+        statesets_[(int)states::Queued] = num_tasks_;
     }
 
     batch(const data::Batch& data) : batch(0)
@@ -1505,7 +1505,7 @@ public:
         num_tasks_     = data.num_tasks();
         filebatch_     = true;
 
-        statesets_[(int)states::queued] = num_tasks_;
+        statesets_[(int)states::Queued] = num_tasks_;
     }
 
    ~batch()
@@ -1515,7 +1515,7 @@ public:
 
     void serialize(data::TaskList& list)
     {
-        if (ui_.state == states::complete || ui_.state == states::error)
+        if (ui_.state == states::Complete || ui_.state == states::Error)
             return;
         if (!filebatch_)
             return;
@@ -1568,11 +1568,11 @@ public:
         update(state);
     }
 
-    void update(engine::state& state, ui::task& ui)
+    void update(engine::state& state, ui::TaskDesc& ui)
     {
         ui = ui_;
         ui.etatime = 0;
-        if (ui_.state == states::waiting || ui_.state == states::active)
+        if (ui_.state == states::Waiting || ui_.state == states::Active)
         {
             if (ui_.runtime >= 10)
             {
@@ -1623,21 +1623,21 @@ public:
         if (!filebatch_)
             return;
 
-        if (s.current == states::complete || s.current == states::error)
+        if (s.current == states::Complete || s.current == states::Error)
         {
-            if (ui_.state == states::complete)
+            if (ui_.state == states::Complete)
             {
-                ui::batch batch;
-                batch.path = ui_.path;
-                batch.desc = ui_.desc;
-                state.on_batch_callback(batch);
+                ui::FileBatchResult result;
+                result.path = ui_.path;
+                result.desc = ui_.desc;
+                state.on_batch_callback(result);
             }
         }
     }
 
     void tick(engine::state& state, const std::chrono::milliseconds& elapsed)
     {
-        if (ui_.state == states::active)
+        if (ui_.state == states::Active)
             ui_.runtime++;
 
         double total = 0.0;
@@ -1693,25 +1693,25 @@ private:
         assert(num_states == num_tasks_);
         (void)num_states;
 
-        if (!is_empty_set(states::active))
-            goto_state(state, states::active);
-        else if (!is_empty_set(states::waiting))
-            goto_state(state, states::waiting);
-        else if (is_full_set(states::crunching))
-            goto_state(state, states::crunching);
+        if (!is_empty_set(states::Active))
+            goto_state(state, states::Active);
+        else if (!is_empty_set(states::Waiting))
+            goto_state(state, states::Waiting);
+        else if (is_full_set(states::Crunching))
+            goto_state(state, states::Crunching);
 
-        if (!is_empty_set(states::paused))
-            goto_state(state, states::paused);
-        else if (is_full_set(states::complete, states::error))
+        if (!is_empty_set(states::Paused))
+            goto_state(state, states::Paused);
+        else if (is_full_set(states::Complete, states::Error))
         {
-            if (is_full_set(states::error))
-                goto_state(state, states::error);
-            else goto_state(state, states::complete);
+            if (is_full_set(states::Error))
+                goto_state(state, states::Error);
+            else goto_state(state, states::Complete);
         }
-        else if (is_full_set(states::error))
-            goto_state(state, states::error);
-        else if (is_full_set(states::queued))
-            goto_state(state, states::queued);
+        else if (is_full_set(states::Error))
+            goto_state(state, states::Error);
+        else if (is_full_set(states::Queued))
+            goto_state(state, states::Queued);
     }
 
     void goto_state(engine::state& state, states new_state)
@@ -1719,7 +1719,7 @@ private:
         ui_.state = new_state;
         switch (new_state)
         {
-            case states::complete:
+            case states::Complete:
                 ui_.completion = 100.0;
                 ui_.etatime    = 0;
                 break;
@@ -1730,17 +1730,17 @@ private:
 
         LOG_D("Batch has ", num_tasks_, " tasks");
         LOG_D("Batch tasks"
-              " Queued: ", statesets_[(int)states::queued],
-              " Waiting: ", statesets_[(int)states::waiting],
-              " Active: ", statesets_[(int)states::active],
-              " Crunching: ", statesets_[(int)states::crunching],
-              " Paused: ", statesets_[(int)states::paused],
-              " Complete: ", statesets_[(int)states::complete],
-              " Errored: ", statesets_[(int)states::error]);
+              " Queued: ", statesets_[(int)states::Queued],
+              " Waiting: ", statesets_[(int)states::Waiting],
+              " Active: ", statesets_[(int)states::Active],
+              " Crunching: ", statesets_[(int)states::Crunching],
+              " Paused: ", statesets_[(int)states::Paused],
+              " Complete: ", statesets_[(int)states::Complete],
+              " Errored: ", statesets_[(int)states::Error]);
         LOG_D("Batch ", ui_.batch_id, " => ", str(new_state));
     }
 private:
-    ui::task ui_;
+    ui::TaskDesc ui_;
 private:
     std::size_t num_slices_;
     std::size_t num_tasks_;
@@ -1878,17 +1878,17 @@ engine::~engine()
     state_->threads.reset();
 }
 
-void engine::test_account(const ui::account& acc)
+void engine::test_account(const ui::Account& account)
 {
     const auto id = state_->oid++;
 
-    state_->current_connection_test.reset(new conntest(acc, id, *state_));
+    state_->current_connection_test.reset(new conntest(account, id, *state_));
 }
 
-void engine::set_account(const ui::account& acc)
+void engine::set_account(const ui::Account& acc)
 {
     auto it = std::find_if(std::begin(state_->accounts), std::end(state_->accounts),
-        [&](const ui::account& a) {
+        [&](const ui::Account& a) {
             return a.id == acc.id;
         });
     if (it == std::end(state_->accounts))
@@ -1984,7 +1984,7 @@ void engine::del_account(std::size_t id)
     state_->conns.erase(end, std::end(state_->conns));
 
     auto it = std::find_if(std::begin(state_->accounts), std::end(state_->accounts),
-        [&](const ui::account& a) {
+        [&](const ui::Account& a) {
             return a.id == id;
         });
     ASSERT(it != std::end(state_->accounts));
@@ -1997,7 +1997,7 @@ void engine::set_fill_account(std::size_t id)
     state_->fill_account = id;
 }
 
-engine::action_id_t engine::download_files(ui::batch batch, bool priority)
+engine::action_id_t engine::download_files(const ui::FileBatchDownload& batch, bool priority)
 {
     const auto batchid = state_->oid++;
     std::unique_ptr<engine::batch> b(new class engine::batch(batchid, batch));
@@ -2010,7 +2010,8 @@ engine::action_id_t engine::download_files(ui::batch batch, bool priority)
     {
         const auto taskid = state_->oid++;
 
-        file.path = batch.path;
+        assert(file.path == batch.path);
+
         std::unique_ptr<engine::task> job(new class engine::task(taskid, std::move(file)));
         job->configure(s);
         job->set_account(batch.account);
@@ -2032,7 +2033,7 @@ engine::action_id_t engine::download_files(ui::batch batch, bool priority)
     return batchid;
 }
 
-engine::action_id_t engine::download_listing(ui::listing list)
+engine::action_id_t engine::download_listing(const ui::GroupListDownload& list)
 {
     const auto batchid = state_->oid++;
     std::unique_ptr<engine::batch> batch(new class engine::batch(batchid, list));
@@ -2051,14 +2052,14 @@ engine::action_id_t engine::download_listing(ui::listing list)
     return batchid;
 }
 
-engine::action_id_t engine::download_headers(ui::update update)
+engine::action_id_t engine::download_headers(const ui::HeaderDownload& download)
 {
     const auto batchid = state_->oid++;
-    std::unique_ptr<engine::batch> batch(new class engine::batch(batchid, update));
+    std::unique_ptr<engine::batch> batch(new class engine::batch(batchid, download));
 
     const auto taskid = state_->oid++;
-    std::unique_ptr<engine::task> task(new class engine::task(*state_, taskid, update));
-    task->set_account(update.account);
+    std::unique_ptr<engine::task> task(new class engine::task(*state_, taskid, download));
+    task->set_account(download.account);
     task->set_batch(batchid);
 
     assert(task->is_valid());
@@ -2414,7 +2415,7 @@ void engine::load_session(const std::string& file)
     for (int i=0; i<list.account_size(); ++i)
     {
         const auto& p = list.account(i);
-        ui::account a;
+        ui::Account a;
         a.id                    = p.id();
         a.name                  = p.name();
         a.username              = p.user();
@@ -2647,7 +2648,7 @@ bool engine::is_started() const
     return state_->started;
 }
 
-void engine::update(std::deque<ui::task>& tasklist)
+void engine::update(std::deque<ui::TaskDesc>& tasklist)
 {
     if (state_->group_items)
     {
@@ -2669,7 +2670,7 @@ void engine::update(std::deque<ui::task>& tasklist)
     }
 }
 
-void engine::update(std::deque<ui::connection>& connlist)
+void engine::update(std::deque<ui::Connection>& connlist)
 {
     const auto& conns = state_->conns;
 

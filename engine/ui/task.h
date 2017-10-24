@@ -32,62 +32,63 @@ namespace newsflash
 
     // a single task that the engine is performing, such as download
     // or header update.
-    struct task
+    struct TaskDesc
     {
         // content errors.
-        enum class errors {
+        enum class Errors {
 
             // some of the requested data was not available
-            unavailable,
+            Unavailable,
 
             // some the requested data was taken down
-            dmca,
+            Dmca,
 
             // some data appears to be damaged
-            damaged,
+            Damaged,
 
-            incomplete
+            Incomplete
         };
 
-        enum class states {
-            queued,
+        enum class States {
+            // initial state
+            Queued,
 
-            // waiting in the queue
-            waiting,
+            // was running before but now waiting in the queue
+            Waiting,
 
             // currently being downloaded.
-            active,
+            Active,
 
             // active but draining queued buffers.
-            crunching,
+            Crunching,
 
             // paused by the user
-            paused,
-
+            Paused,
 
             // task is done. see damaged and error flags for details
-            complete,
+            // since there might be content errors.
+            Complete,
 
             // some error occurred making it impossible for the task
             // to continue. examples could be inability to create
             // files in the filesystem.
-            error
+            Error
         };
 
         // content error flags if any
-        bitflag<errors> error;
+        bitflag<Errors> error;
 
         // current task execution state.
-        states state;
+        States state = States::Queued;
 
         // unique task id.
-        std::size_t task_id;
+        std::size_t task_id = 0;
 
         // the batch id of the task
-        std::size_t batch_id;
+        std::size_t batch_id = 0;
 
-        // account id
-        std::size_t account;
+        // account id that is used for the task
+        std::size_t account = 0;
 
         // the human readable description of the task.
         std::string desc;
@@ -96,30 +97,19 @@ namespace newsflash
         std::string path;
 
         // download/transfer size in bytes (if known)
-        std::uint64_t size;
+        std::uint64_t size = 0;
 
         // the time elapsed running the task (in seconds)
-        std::uint32_t runtime;
+        std::uint32_t runtime = 0;
 
         // the estimated completion time (in seconds),
         // will be set to WHO_KNOWS when eta cannot be calculated
         // for example when task has been paused by the user
         // or is waiting for input.
-        std::uint32_t etatime;
+        std::uint32_t etatime = 0;
 
         // the current completion %  (range 0.0 - 100.0)
-        double completion;
-
-        task() :
-            state(states::queued),
-            task_id(0),
-            batch_id(0),
-            account(0),
-            size(0),
-            runtime(0),
-            etatime(0),
-            completion(0.0)
-        {}
+        double completion = 0.0;
     };
 
 } // ui

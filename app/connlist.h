@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -16,7 +16,7 @@
 // AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.        
+// THE SOFTWARE.
 
 #pragma once
 
@@ -42,7 +42,7 @@ namespace app
         virtual QVariant data(const QModelIndex& index, int role) const override;
         virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
         virtual int rowCount(const QModelIndex&) const override;
-        virtual int columnCount(const QModelIndex&) const override;        
+        virtual int columnCount(const QModelIndex&) const override;
 
         void refresh();
 
@@ -51,10 +51,10 @@ namespace app
         void clone(QModelIndexList& list);
 
         const
-        newsflash::ui::connection& getItem(std::size_t index) const 
+        newsflash::ui::Connection& getItem(std::size_t index) const
         { return conns_[index]; }
 
     private:
-        std::deque<newsflash::ui::connection> conns_;
+        std::deque<newsflash::ui::Connection> conns_;
     };
 } // app

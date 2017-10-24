@@ -137,7 +137,7 @@ QString Engine::resolveDownloadPath(const QString& path, MainMediaType media) co
 
 void Engine::testAccount(const Accounts::Account& acc)
 {
-    newsflash::ui::account a;
+    newsflash::ui::Account a;
     a.id                    = acc.id;
     a.name                  = toUtf8(acc.name);
     a.username              = toUtf8(acc.username);
@@ -156,7 +156,7 @@ void Engine::testAccount(const Accounts::Account& acc)
 
 void Engine::setAccount(const Accounts::Account& acc)
 {
-    newsflash::ui::account a;
+    newsflash::ui::Account a;
     a.id                    = acc.id;
     a.name                  = toUtf8(acc.name);
     a.username              = toUtf8(acc.username);
@@ -235,16 +235,17 @@ bool Engine::downloadNzbContents(const Download& download, std::vector<NZBConten
         return false;
     }
 
-    newsflash::ui::batch batch;
+    newsflash::ui::FileBatchDownload batch;
     batch.account = download.account;
     batch.path    = narrow(location);
     batch.desc    = toUtf8(download.desc);
     for (auto& item : nzb)
     {
-        newsflash::ui::download file;
+        newsflash::ui::FileDownload file;
         file.articles = std::move(item.segments);
         file.groups   = std::move(item.groups);
         file.size     = item.bytes;
+        file.path     = batch.path;
         file.name     = nntp::find_filename(toUtf8(item.subject));
         if (file.name.size() < 5)
             file.name = toUtf8(item.subject);
@@ -264,9 +265,9 @@ bool Engine::downloadNzbContents(const Download& download, std::vector<NZBConten
 
 quint32 Engine::retrieveNewsgroupListing(quint32 acc)
 {
-    newsflash::ui::listing listing;
+    newsflash::ui::GroupListDownload listing;
     listing.account = acc;
-    listing.desc    = toUtf8(tr("Newsgroup Listing"));
+    listing.desc    = toUtf8(tr("Download and update the list of available newsgroups"));
 
     const auto action = engine_->download_listing(listing);
 
@@ -288,11 +289,11 @@ quint32 Engine::retrieveHeaders(quint32 acc, const QString& path, const QString&
         return 0;
     }
 
-    newsflash::ui::update update;
+    newsflash::ui::HeaderDownload update;
     update.account = acc;
-    update.desc = toUtf8(tr("Get headers for %1").arg(name));
-    update.path = narrow(path);
-    update.name = toUtf8(name);
+    update.desc  = toUtf8(tr("Download and update headers for %1").arg(name));
+    update.path  = narrow(path);
+    update.group = toUtf8(name);
 
     const auto batchid = engine_->download_headers(update);
 
@@ -451,7 +452,7 @@ quint64 Engine::getBytesQueued(const QString& mountPoint)
 {
     quint64 ret = 0;
 
-    std::deque<newsflash::ui::task> tasks;
+    std::deque<newsflash::ui::TaskDesc> tasks;
 
     engine_->update(tasks);
 
@@ -516,69 +517,68 @@ void Engine::start()
     }
 }
 
-void Engine::onError(const newsflash::ui::error& e)
+void Engine::onError(const newsflash::ui::SystemError& error)
 {
     //const auto resource = from_utf8(e.resource);
     //const auto code = e.code;
-    ERROR("%1: %2", fromUtf8(e.resource), fromUtf8(e.what));
+    ERROR("%1: %2", fromUtf8(error.resource), fromUtf8(error.what));
 }
 
-void Engine::onTaskComplete(const newsflash::ui::task& t)
+void Engine::onTaskComplete(const newsflash::ui::TaskDesc& task)
 {
-    using States = newsflash::ui::task::states;
-    Q_ASSERT(t.state == States::error ||
-             t.state == States::complete);
+    using States = newsflash::ui::TaskDesc::States;
+    Q_ASSERT(task.state == States::Error ||
+             task.state == States::Complete);
 
-    const auto& desc = widen(t.desc);
+    const auto& desc = widen(task.desc);
 
-    DEBUG("Task \"%1\" completion %2", desc, t.completion);
+    DEBUG("Task \"%1\" completion %2", desc, task.completion);
 
-    if (t.state == ui::task::states::error)
+    if (task.state == States::Error)
     {
         ERROR("\"%1\" encountered an error.", desc);
     }
-    else
+    else if (task.error.any_bit())
     {
-        if (t.error.any_bit())
+        if (task.completion > 0.0)
         {
-            if (t.completion > 0.0) {
-                WARN("\"%1\" is incomplete.", desc);
-                NOTE("\"%1\" is incomplete.", desc);
-            }
-            else {
-                WARN("\"%1\" is no longer available.", desc);
-                NOTE("\"%1\" is no longer available.", desc);
-            }
+            WARN("\"%1\" is incomplete.", desc);
+            NOTE("\"%1\" is incomplete.", desc);
         }
         else
         {
-            INFO("\"%1\" is complete.", desc);
-            NOTE("\"%1\" is complete.", desc);
+            WARN("\"%1\" is no longer available.", desc);
+            NOTE("\"%1\" is no longer available.", desc);
         }
+    }
+    else
+    {
+        INFO("\"%1\" is complete.", desc);
+        NOTE("\"%1\" is complete.", desc);
     }
 }
 
-void Engine::onFileComplete(const newsflash::ui::file& f)
+void Engine::onFileComplete(const newsflash::ui::FileResult& file)
 {
-    QString name = widen(f.name);
-    QString path = widen(f.path);
+    QString name = widen(file.name);
+    QString path = widen(file.path);
     if (path.isEmpty())
         path = QDir::currentPath();
 
     path = QDir(path).absolutePath();
     path = QDir::toNativeSeparators(path);
     DEBUG("File complete \"%1/%2\" damaged: %3 binary: %4",
-        path, name, f.damaged, f.binary);
+        path, name, file.damaged, file.binary);
 
-    app::FileInfo file;
-    file.binary  = f.binary;
-    file.damaged = f.damaged;
-    file.name    = name;
-    file.path    = path;
-    file.size    = f.size;
-    file.type    = findFileType(file.name);
+    app::FileInfo info;
+    info.binary  = file.binary;
+    info.damaged = file.damaged;
+    info.name    = name;
+    info.path    = path;
+    info.size    = file.size;
+    info.type    = findFileType(info.name);
 
-    if (f.damaged)
+    if (file.damaged)
     {
         WARN("File \"%1\" is damaged.", file.name);
         NOTE("File \"%1\" is damaged.", file.name);
@@ -589,12 +589,12 @@ void Engine::onFileComplete(const newsflash::ui::file& f)
         NOTE("File \"%1\" is complete.", file.name);
     }
 
-    emit fileCompleted(file);
+    emit fileCompleted(info);
 }
 
-void Engine::onBatchComplete(const newsflash::ui::batch& b)
+void Engine::onBatchComplete(const newsflash::ui::FileBatchResult& batch)
 {
-    QString path = widen(b.path);
+    QString path = widen(batch.path);
 
     DEBUG("Batch complete \"%1\"", path);
 
@@ -602,38 +602,38 @@ void Engine::onBatchComplete(const newsflash::ui::batch& b)
     path = QDir::toNativeSeparators(path);
 
     FilePackInfo pack;
-    pack.desc = fromUtf8(b.desc);
+    pack.desc = fromUtf8(batch.desc);
     pack.path = path;
 
     emit packCompleted(pack);
 }
 
-void Engine::onListComplete(const newsflash::ui::listing& l)
+void Engine::onListComplete(const newsflash::ui::GroupListResult& list)
 {
     DEBUG("Listing complete");
 
-    QList<NewsGroupInfo> list;
+    QList<NewsGroupInfo> infoList;
 
-    for (const auto& ui : l.groups)
+    for (const auto& group : list.groups)
     {
-        NewsGroupInfo group;
-        group.first = ui.first;
-        group.last  = ui.last;
-        group.size  = ui.size;
-        group.name  = fromUtf8(ui.name);
-        list.append(group);
+        NewsGroupInfo groupInfo;
+        groupInfo.first = group.first;
+        groupInfo.last  = group.last;
+        groupInfo.size  = group.size;
+        groupInfo.name  = fromUtf8(group.name);
+        infoList.append(groupInfo);
     }
 
-    emit listCompleted(l.account, list);
+    emit listCompleted(list.account, infoList);
 }
 
-void Engine::onUpdateComplete(const newsflash::ui::update& u)
+void Engine::onUpdateComplete(const newsflash::ui::HeaderResult& result)
 {
     HeaderInfo info;
-    info.groupName = fromUtf8(u.name);
-    info.groupPath = fromUtf8(u.path);
-    info.numLocalArticles = u.num_local_articles;
-    info.numRemoteArticles = u.num_remote_articles;
+    info.groupName = fromUtf8(result.group);
+    info.groupPath = fromUtf8(result.path);
+    info.numLocalArticles = result.num_local_articles;
+    info.numRemoteArticles = result.num_remote_articles;
     DEBUG("%1 Update complete at %2", info.groupName, info.groupPath);
 
     INFO("%1 updated with %2 articles of %3 available", info.groupName,

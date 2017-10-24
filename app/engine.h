@@ -103,13 +103,13 @@ namespace app
         bool shutdown();
 
         // refresh the list of UI task states.
-        void refreshTaskList(std::deque<newsflash::ui::task>& list)
+        void refreshTaskList(std::deque<newsflash::ui::TaskDesc>& list)
         {
             engine_->update(list);
         }
 
         // refresh the list of UI connection states
-        void refreshConnList(std::deque<newsflash::ui::connection>& list)
+        void refreshConnList(std::deque<newsflash::ui::Connection>& list)
         {
             engine_->update(list);
 
@@ -338,12 +338,12 @@ namespace app
         void start();
 
     private:
-        void onError(const newsflash::ui::error& e);
-        void onTaskComplete(const newsflash::ui::task& t);
-        void onFileComplete(const newsflash::ui::file& f);
-        void onBatchComplete(const newsflash::ui::batch& b);
-        void onListComplete(const newsflash::ui::listing& l);
-        void onUpdateComplete(const newsflash::ui::update& u);
+        void onError(const newsflash::ui::SystemError& error);
+        void onTaskComplete(const newsflash::ui::TaskDesc& task);
+        void onFileComplete(const newsflash::ui::FileResult& file);
+        void onBatchComplete(const newsflash::ui::FileBatchResult& batch);
+        void onListComplete(const newsflash::ui::GroupListResult& list);
+        void onUpdateComplete(const newsflash::ui::HeaderResult& result);
         void onHeaderDataAvailable(const std::string& group,
             const std::string& file);
         void onHeaderInfoAvailable(const std::string& group,

@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -16,7 +16,7 @@
 // AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.        
+// THE SOFTWARE.
 
 #pragma once
 
@@ -64,12 +64,12 @@ namespace app
 
         void clear();
 
-        const 
-        newsflash::ui::task& getItem(std::size_t i) const 
+        const
+        newsflash::ui::TaskDesc& getItem(std::size_t i) const
         { return tasks_[i]; }
 
         const
-        newsflash::ui::task& getItem(const QModelIndex& i) const 
+        newsflash::ui::TaskDesc& getItem(const QModelIndex& i) const
         { return tasks_[i.row()]; }
 
     private:
@@ -79,7 +79,7 @@ namespace app
         void manageTasks(QModelIndexList& list, Action a);
 
     private:
-        std::deque<newsflash::ui::task> tasks_;
+        std::deque<newsflash::ui::TaskDesc> tasks_;
     };
 
 } // app
