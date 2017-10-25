@@ -14,7 +14,7 @@
    <string>Shutdown Computer</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="resource.qrc">
+   <iconset>
     <normaloff>:/resource/png/shutdown.png</normaloff>:/resource/png/shutdown.png</iconset>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -130,6 +130,16 @@
    </item>
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <item>
+      <widget class="QCheckBox" name="chkSendEmail">
+       <property name="toolTip">
+        <string>Send an email report (summary) about the pending work</string>
+       </property>
+       <property name="text">
+        <string>Send me an email report</string>
+       </property>
+      </widget>
+     </item>
      <item>
       <spacer name="horizontalSpacer">
        <property name="orientation">

@@ -90,9 +90,12 @@
 #include "app/media.h"
 #include "app/filetype.h"
 #include "app/smtpclient.h"
+#include "app/reporter.h"
 
 namespace gui
 {
+
+bool gShouldPoweroff = false;
 
 int run(QtSingleApplication& qtinstance)
 {
@@ -181,10 +184,20 @@ int run(QtSingleApplication& qtinstance)
     QObject::connect(&qtinstance, SIGNAL(messageReceived(const QString&)),
         &win, SLOT(messageReceived(const QString&)));
 
+    app::Reporter reporter;
+    app::g_reporter = &reporter;
 
-    // first power module sends initPoweroff signal
-    // we ask the MainWindow to close.
-    // After mainwindow is closed.. exit the loop
+    // important. beginning with Qt 4.6 or so the slots are executed in the order
+    // they are connected to the signal.
+    // http://doc.qt.io/qt-4.8/signalsandslots.html#signals
+    //
+    // first power module sends initPoweroff signal to compileReport
+    // which might enqueue a SMTP task to the SMTP  client.
+    // then the poweroff signal initiates the window close which should
+    // now pump all the pending tasks, such as the SMTP client if a report was
+    // scheduled for email sending.
+    // finally after the mainwindow closes we exit the application loop
+    QObject::connect(&power, SIGNAL(initPoweroff()), &reporter, SLOT(compileReport()));
     QObject::connect(&power, SIGNAL(initPoweroff()), &win, SLOT(close()));
     QObject::connect(&win, SIGNAL(closed()), &qtinstance, SLOT(quit()));
 
@@ -193,6 +206,9 @@ int run(QtSingleApplication& qtinstance)
     app::g_smtp = &smtp;
     smtp.startup();
     win.attach(&smtpGui);
+
+    QObject::connect(&reporter, SIGNAL(sendTextReport(const QString&, const QString&)),
+        &smtp, SLOT(sendEmail(const QString&, const QString&)));
 
     // accounts widget
     gui::Accounts gacc;
@@ -364,11 +380,7 @@ int run(QtSingleApplication& qtinstance)
     // all the references to those in the mainwindow.
     win.detachAllWidgets();
 
-    if (power.shouldPowerOff())
-    {
-        DEBUG("Powering off... G'bye");
-        app::shutdownComputer();
-    }
+    gShouldPoweroff = power.shouldPowerOff();
 
     return ret;
 }
@@ -411,8 +423,15 @@ int main(int argc, char* argv[])
     try
     {
         int ret = seh_main(qtinstance);
-
-        DEBUG("Goodbye...(exitcode: %1)", ret);
+        if (gui::gShouldPoweroff)
+        {
+            DEBUG("Powering off... G'bye");
+            app::shutdownComputer();
+        }
+        else
+        {
+            DEBUG("Goodbye...(exitcode: %1)", ret);
+        }
         return ret;
     }
     catch (const std::exception& e)

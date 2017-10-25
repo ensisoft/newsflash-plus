@@ -21,11 +21,16 @@
 #pragma once
 
 #include "newsflash/config.h"
+
 #include "newsflash/warnpush.h"
 #  include <QtGui/QDialog>
+#  include <QtGui/QMessageBox>
 #  include "ui_dlgpoweroff.h"
 #include "newsflash/warnpop.h"
+
 #include "app/poweroff.h"
+#include "app/smtpclient.h"
+#include "app/reporter.h"
 
 namespace gui
 {
@@ -34,12 +39,20 @@ namespace gui
         Q_OBJECT
 
     public:
-        DlgPoweroff(QWidget* parent) : QDialog(parent)
+        DlgPoweroff(QWidget* parent, bool sendReport) : QDialog(parent)
         {
-            ui_.setupUi(this);
-            ui_.btnDownloads->setChecked(app::g_poweroff->waitDownloads());
-            ui_.btnRepairs->setChecked(app::g_poweroff->waitRepairs());
-            ui_.btnUnpacks->setChecked(app::g_poweroff->waitUnpacks());
+            mUI.setupUi(this);
+            mUI.btnDownloads->setChecked(app::g_poweroff->waitDownloads());
+            mUI.btnRepairs->setChecked(app::g_poweroff->waitRepairs());
+            mUI.btnUnpacks->setChecked(app::g_poweroff->waitUnpacks());
+            if (sendReport)
+            {
+                mUI.chkSendEmail->setChecked(true);
+            }
+            else
+            {
+                mUI.chkSendEmail->setChecked(app::g_reporter->isJournaling());
+            }
         }
 
         bool isPoweroffEnabled() const
@@ -47,16 +60,58 @@ namespace gui
             return app::g_poweroff->isPoweroffEnabled();
         }
 
+        bool configureSmtp() const
+        { return mConfigureSmtp; }
+
+        bool sendReport() const
+        { return mUI.chkSendEmail->isChecked(); }
+
     private slots:
         void on_btnClose_clicked()
         {
-            app::g_poweroff->waitDownloads(ui_.btnDownloads->isChecked());
-            app::g_poweroff->waitRepairs(ui_.btnRepairs->isChecked());
-            app::g_poweroff->waitUnpacks(ui_.btnUnpacks->isChecked());
+
+            bool sendReport = mUI.chkSendEmail->isChecked();
+            if (sendReport)
+            {
+                if (!app::g_smtp->configured())
+                {
+                    QMessageBox msg(this);
+                    msg.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+                    msg.setIcon(QMessageBox::Question);
+                    msg.setText(tr("In order to send email you need to configure your email server.\r\n"
+                        "Would you like to do this now?"));
+                    const auto ret = msg.exec();
+                    if (ret == QMessageBox::Yes)
+                    {
+                        mConfigureSmtp = true;
+                        close();
+                        return;
+                    }
+                    else
+                    {
+                        sendReport = false;
+                    }
+                }
+            }
+
+            app::g_poweroff->waitDownloads(mUI.btnDownloads->isChecked());
+            app::g_poweroff->waitRepairs(mUI.btnRepairs->isChecked());
+            app::g_poweroff->waitUnpacks(mUI.btnUnpacks->isChecked());
+            if (sendReport)
+            {
+                app::g_reporter->enableJournal();
+            }
+            else
+            {
+                app::g_reporter->cancelJournal();
+            }
             close();
         }
 
     private:
-        Ui::Poweroff ui_;
+        Ui::Poweroff mUI;
+
+    private:
+        bool mConfigureSmtp = false;
     };
 } // gui

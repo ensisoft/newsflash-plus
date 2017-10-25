@@ -1159,10 +1159,26 @@ void MainWindow::on_actionRequestLicense_triggered()
 }
 void MainWindow::on_actionPoweroff_triggered()
 {
-    DlgPoweroff dlg(this);
-    dlg.exec();
+    bool shouldPoweroff = false;
+    bool sendReport = false;
 
-    mUI.frmPoweroff->setVisible(dlg.isPoweroffEnabled());
+    for (;;)
+    {
+        DlgPoweroff dlg(this, sendReport);
+        dlg.exec();
+        sendReport = dlg.sendReport();
+        if (dlg.configureSmtp())
+        {
+            showSetting("Email");
+        }
+        else
+        {
+            shouldPoweroff = dlg.isPoweroffEnabled();
+            break;
+        }
+    }
+
+    mUI.frmPoweroff->setVisible(shouldPoweroff);
 }
 
 void MainWindow::on_actionDonate_triggered()

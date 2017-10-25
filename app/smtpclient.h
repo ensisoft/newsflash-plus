@@ -129,6 +129,11 @@ namespace app
         bool enabled() const
         { return mEnabled; }
 
+        bool configured() const
+        {
+            return !mHost.isEmpty();
+        }
+
         QString recipient() const
         { return mRecipient; }
 
