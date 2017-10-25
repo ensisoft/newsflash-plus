@@ -105,13 +105,13 @@ namespace app
         // refresh the list of UI task states.
         void refreshTaskList(std::deque<newsflash::ui::TaskDesc>& list)
         {
-            engine_->update(list);
+            engine_->GetTasks(&list);
         }
 
         // refresh the list of UI connection states
         void refreshConnList(std::deque<newsflash::ui::Connection>& list)
         {
-            engine_->update(list);
+            engine_->GetConns(&list);
 
             totalspeed_ = 0;
 
@@ -141,13 +141,13 @@ namespace app
         // get the number of bytes downloaded from all servers/accounts.
         quint64 getBytesDownloaded() const
         {
-            return engine_->get_bytes_downloaded();
+            return engine_->GetTotalBytesDownloaded();
         }
 
         // get the bytes currently queued in engine for downloading.
         quint64 getBytesQueued() const
         {
-            return engine_->get_bytes_queued();
+            return engine_->GetCurrentQueueSize();
         }
 
         quint64 getBytesQueued(const QString& mountPoint);
@@ -157,13 +157,13 @@ namespace app
         // so if bytesQueued is zero then bytesReady is also zero.
         quint64 getBytesReady() const
         {
-            return engine_->get_bytes_ready();
+            return engine_->GetBytesReady();
         }
 
         // get the number of bytes written to the disk
         quint64 getBytesWritten() const
         {
-            return engine_->get_bytes_written();
+            return engine_->GetTotalBytesWritten();
         }
 
         const QString& getLogfilesPath() const
@@ -173,7 +173,7 @@ namespace app
 
         QString getEngineLogfile() const
         {
-            return fromUtf8(engine_->get_logfile());
+            return fromUtf8(engine_->GetLogfileName());
         }
 
         void setLogfilesPath(const QString& path)
@@ -201,22 +201,22 @@ namespace app
 
         bool getOverwriteExistingFiles() const
         {
-            return engine_->get_overwrite_existing_files();
+            return engine_->GetOverwriteExistingFiles();
         }
 
         bool getDiscardTextContent() const
         {
-            return engine_->get_discard_text_content();
+            return engine_->GetDiscardTextContent();
         }
 
         bool getPreferSecure() const
         {
-            return engine_->get_prefer_secure();
+            return engine_->GetPreferSecure();
         }
 
         bool isStarted() const
         {
-            return engine_->is_started();
+            return engine_->IsStarted();
         }
 
         bool getConnect() const
@@ -226,12 +226,12 @@ namespace app
 
         bool getThrottle() const
         {
-            return engine_->get_throttle();
+            return engine_->GetEnableThrottle();
         }
 
         unsigned getThrottleValue() const
         {
-            return engine_->get_throttle_value();
+            return engine_->GetThrottleValue();
         }
 
         bool getCheckLowDisk() const
@@ -242,76 +242,76 @@ namespace app
 
         void setOverwriteExistingFiles(bool on_off)
         {
-            engine_->set_overwrite_existing_files(on_off);
+            engine_->SetOverwriteExistingFiles(on_off);
         }
 
         void setDiscardTextContent(bool on_off)
         {
-            engine_->set_discard_text_content(on_off);
+            engine_->SetDiscardTextContent(on_off);
         }
 
         void setPreferSecure(bool on_off)
         {
-            engine_->set_prefer_secure(on_off);
+            engine_->SetPreferSecure(on_off);
         }
 
         void setGroupSimilar(bool on_off)
         {
-            engine_->set_group_items(on_off);
+            engine_->SetGroupItems(on_off);
         }
 
         void setThrottle(bool on_off)
         {
-            engine_->set_throttle(on_off);
+            engine_->SetEnableThrottle(on_off);
         }
 
         void setThrottleValue(unsigned val)
         {
-            engine_->set_throttle_value(val);
+            engine_->SetThrottleValue(val);
         }
 
         void killConnection(std::size_t index)
         {
-            engine_->kill_connection(index);
+            engine_->KillConnection(index);
         }
 
         void cloneConnection(std::size_t index)
         {
-            engine_->clone_connection(index);
+            engine_->CloneConnection(index);
         }
 
         void killAction(quint32 id)
         {
-            engine_->kill_action(id);
+            engine_->KillAction(id);
         }
 
         void killTask(std::size_t index)
         {
-            const auto action = engine_->get_action_id(index);
+            const auto action = engine_->GetActionId(index);
 
-            engine_->kill_task(index);
+            engine_->KillTask(index);
 
             emit actionKilled(action);
         }
 
         void pauseTask(std::size_t index)
         {
-            engine_->pause_task(index);
+            engine_->PauseTask(index);
         }
 
         void resumeTask(std::size_t index)
         {
-            engine_->resume_task(index);
+            engine_->ResumeTask(index);
         }
 
         void moveTaskUp(std::size_t index)
         {
-            engine_->move_task_up(index);
+            engine_->MoveTaskUp(index);
         }
 
         void moveTaskDown(std::size_t index)
         {
-            engine_->move_task_down(index);
+            engine_->MoveTaskDown(index);
         }
 
     signals:
@@ -355,7 +355,7 @@ namespace app
 
     private:
         // the actual lower level engine instance.
-        std::unique_ptr<newsflash::engine> engine_;
+        std::unique_ptr<newsflash::Engine> engine_;
 
         // where engine log files are written.
         QString logifiles_;

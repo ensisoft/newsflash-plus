@@ -79,36 +79,36 @@ namespace app
 
 Engine::Engine()
 {
-    engine_.reset(new newsflash::engine);
-    engine_->set_error_callback(std::bind(&Engine::onError, this,
+    engine_.reset(new newsflash::Engine);
+    engine_->SetErrorCallback(std::bind(&Engine::onError, this,
         std::placeholders::_1));
-    engine_->set_file_callback(std::bind(&Engine::onFileComplete, this,
+    engine_->SetFileCallback(std::bind(&Engine::onFileComplete, this,
          std::placeholders::_1));
-    engine_->set_task_callback(std::bind(&Engine::onTaskComplete, this,
+    engine_->SetTaskCallback(std::bind(&Engine::onTaskComplete, this,
         std::placeholders::_1));
-    engine_->set_batch_callback(std::bind(&Engine::onBatchComplete, this,
+    engine_->SetBatchCallback(std::bind(&Engine::onBatchComplete, this,
         std::placeholders::_1));
-    engine_->set_update_callback(std::bind(&Engine::onUpdateComplete, this,
+    engine_->SetUpdateCallback(std::bind(&Engine::onUpdateComplete, this,
         std::placeholders::_1));
-    engine_->set_list_callback(std::bind(&Engine::onListComplete, this,
+    engine_->SetListCallback(std::bind(&Engine::onListComplete, this,
         std::placeholders::_1));
-    engine_->set_header_data_callback(std::bind(&Engine::onHeaderDataAvailable, this,
+    engine_->SetHeaderDataCallback(std::bind(&Engine::onHeaderDataAvailable, this,
         std::placeholders::_1, std::placeholders::_2));
-    engine_->set_header_info_callback(std::bind(&Engine::onHeaderInfoAvailable, this,
+    engine_->SetHeaderInfoCallback(std::bind(&Engine::onHeaderInfoAvailable, this,
         std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-    engine_->set_finish_callback(std::bind(&Engine::onAllComplete, this));
-    engine_->set_quota_callback(std::bind(&Engine::onQuota, this,
+    engine_->SetFinishCallback(std::bind(&Engine::onAllComplete, this));
+    engine_->SetQuotaCallback(std::bind(&Engine::onQuota, this,
         std::placeholders::_1, std::placeholders::_2));
-    engine_->set_test_callback(std::bind(&Engine::onConnectionTestComplete, this,
+    engine_->SetTestCallback(std::bind(&Engine::onConnectionTestComplete, this,
         std::placeholders::_1));
-    engine_->set_test_log_callback(std::bind(&Engine::onConnectionTestLogMsg, this,
+    engine_->SetTestLogCallback(std::bind(&Engine::onConnectionTestLogMsg, this,
         std::placeholders::_1));
 
     // remember that the notify callback can come from any thread
     // within the engine and it has to be thread safe.
     // so we simply post a notification to the main threads
     // event queue and then handle it in the eventFilter
-    engine_->set_notify_callback([=]() {
+    engine_->SetNotifyCallback([=]() {
         QCoreApplication::postEvent(this, new AsyncNotifyEvent);
     });
 
@@ -151,7 +151,7 @@ void Engine::testAccount(const Accounts::Account& acc)
     a.enable_compression    = acc.enableCompression;
     a.enable_pipelining     = acc.enablePipelining;
     a.connections = 1;
-    engine_->test_account(a);
+    engine_->TryAccount(a);
 }
 
 void Engine::setAccount(const Accounts::Account& acc)
@@ -171,7 +171,7 @@ void Engine::setAccount(const Accounts::Account& acc)
     a.enable_secure_server  = acc.enableSecureServer;
     a.connections           = acc.maxConnections;
 
-    engine_->set_account(a);
+    engine_->SetAccount(a);
 }
 
 void Engine::delAccount(const Accounts::Account& acc)
@@ -182,7 +182,7 @@ void Engine::delAccount(const Accounts::Account& acc)
 
 void Engine::setFillAccount(quint32 id)
 {
-    engine_->set_fill_account(id);
+    engine_->SetFillAccount(id);
 }
 
 bool Engine::downloadNzbContents(const Download& download, const QByteArray& nzb)
@@ -251,7 +251,7 @@ bool Engine::downloadNzbContents(const Download& download, std::vector<NZBConten
             file.name = toUtf8(item.subject);
         batch.files.push_back(std::move(file));
     }
-    engine_->download_files(std::move(batch), download.priority);
+    engine_->DownloadFiles(std::move(batch), download.priority);
 
     start();
 
@@ -269,7 +269,7 @@ quint32 Engine::retrieveNewsgroupListing(quint32 acc)
     listing.account = acc;
     listing.desc    = toUtf8(tr("Download and update the list of available newsgroups"));
 
-    const auto action = engine_->download_listing(listing);
+    const auto action = engine_->DownloadListing(listing);
 
     start();
 
@@ -295,7 +295,7 @@ quint32 Engine::retrieveHeaders(quint32 acc, const QString& path, const QString&
     update.path  = narrow(path);
     update.group = toUtf8(name);
 
-    const auto batchid = engine_->download_headers(update);
+    const auto batchid = engine_->DownloadHeaders(update);
 
     start();
 
@@ -342,21 +342,21 @@ void Engine::loadState(Settings& s)
     checkLowDisk_ = s.get("engine", "check_low_disk", checkLowDisk_);
     connect_      = s.get("engine", "connect", true);
 
-    engine_->set_overwrite_existing_files(overwrite);
-    engine_->set_discard_text_content(discard);
-    engine_->set_throttle(throttle);
-    engine_->set_throttle_value(throttleval);
-    engine_->set_prefer_secure(secure);
+    engine_->SetOverwriteExistingFiles(overwrite);
+    engine_->SetDiscardTextContent(discard);
+    engine_->SetEnableThrottle(throttle);
+    engine_->SetThrottleValue(throttleval);
+    engine_->SetPreferSecure(secure);
 
 }
 
 void Engine::saveState(Settings& s)
 {
-    const auto overwrite = engine_->get_overwrite_existing_files();
-    const auto discard   = engine_->get_discard_text_content();
-    const auto secure    = engine_->get_prefer_secure();
-    const auto throttle  = engine_->get_throttle();
-    const auto throttleval = engine_->get_throttle_value();
+    const auto overwrite = engine_->GetOverwriteExistingFiles();
+    const auto discard   = engine_->GetDiscardTextContent();
+    const auto secure    = engine_->GetPreferSecure();
+    const auto throttle  = engine_->GetEnableThrottle();
+    const auto throttleval = engine_->GetThrottleValue();
 
     s.set("engine", "download_path_for_adult", getDownloadPath(MainMediaType::Adult));
     s.set("engine", "download_path_for_apps",  getDownloadPath(MainMediaType::Apps));
@@ -386,11 +386,11 @@ void Engine::loadSession()
         {
             DEBUG("Loading engine session %1 ...", file);
 
-            engine_->load_session(toUtf8(file));
-            if (engine_->num_tasks())
+            engine_->LoadSession(toUtf8(file));
+            if (engine_->GetNumTasks())
                 connect(connect_);
         }
-        DEBUG("Engine session loaded. Engine has %1 tasks", engine_->num_tasks());
+        DEBUG("Engine session loaded. Engine has %1 tasks", engine_->GetNumTasks());
     }
     catch (const std::exception& e)
     {
@@ -404,7 +404,7 @@ void Engine::saveSession()
 
     DEBUG("Saving engine session in %1", file);
 
-    engine_->save_session(toUtf8(file));
+    engine_->SaveSession(toUtf8(file));
 }
 
 void Engine::connect(bool on_off)
@@ -412,7 +412,7 @@ void Engine::connect(bool on_off)
     connect_ = on_off;
     if (!connect_)
     {
-        engine_->stop();
+        engine_->Stop();
     }
     else
     {
@@ -439,9 +439,9 @@ bool Engine::shutdown()
     shutdown_  = true;
     ticktimer_ = 0;
 
-    engine_->stop();
+    engine_->Stop();
 
-    if (!engine_->pump())
+    if (!engine_->Pump())
         return true;
 
     DEBUG("Engine has pending actions");
@@ -454,7 +454,7 @@ quint64 Engine::getBytesQueued(const QString& mountPoint)
 
     std::deque<newsflash::ui::TaskDesc> tasks;
 
-    engine_->update(tasks);
+    engine_->GetTasks(&tasks);
 
     for (const auto& task : tasks)
     {
@@ -473,7 +473,7 @@ bool Engine::eventFilter(QObject* object, QEvent* event)
 {
     if (object == this && event->type() == AsyncNotifyEvent::identity())
     {
-        if (!engine_->pump())
+        if (!engine_->Pump())
         {
             if (shutdown_)
             {
@@ -485,7 +485,7 @@ bool Engine::eventFilter(QObject* object, QEvent* event)
                 emit shutdownComplete();
             }
         }
-        const auto numPending = engine_->num_pending_tasks();
+        const auto numPending = engine_->GetNumPendingTasks();
 
         //DEBUG("Num pending tasks %1", numPending);
 
@@ -500,7 +500,7 @@ void Engine::timerEvent(QTimerEvent* event)
     if (shutdown_)
         return;
     // service the engine periodically
-    engine_->tick();
+    engine_->Tick();
 }
 
 void Engine::start()
@@ -513,7 +513,7 @@ void Engine::start()
             WARN("Error creating log path %1", logifiles_);
             WARN("Engine log files will not be available.");
         }
-        engine_->start(toUtf8(logifiles_));
+        engine_->Start(toUtf8(logifiles_));
     }
 }
 

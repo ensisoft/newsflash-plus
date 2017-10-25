@@ -36,8 +36,8 @@ void test_connections()
     account.general_port  = 1919;
     account.enable_general_server = true;
 
-    newsflash::engine engine;
-    engine.set_account(account);
+    newsflash::Engine engine;
+    engine.SetAccount(account);
 
 
 }

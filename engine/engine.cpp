@@ -110,10 +110,10 @@ const char* str(ui::Connection::States s)
 #undef CASE
 
 
-struct engine::state {
-    std::deque<std::unique_ptr<engine::task>> tasks;
-    std::deque<std::unique_ptr<engine::conn>> conns;
-    std::deque<std::unique_ptr<engine::batch>> batches;
+struct Engine::State {
+    std::deque<std::unique_ptr<TaskState>> tasks;
+    std::deque<std::unique_ptr<ConnState>> conns;
+    std::deque<std::unique_ptr<BatchState>> batches;
 
     std::vector<ui::Account> accounts;
     std::list<std::shared_ptr<cmdlist>> cmds;
@@ -126,7 +126,7 @@ struct engine::state {
     std::string logpath;
 
     std::unique_ptr<class logger> logger;
-    std::unique_ptr<conntest> current_connection_test;
+    std::unique_ptr<ConnTestState> current_connection_test;
 
     std::mutex  mutex;
     std::queue<std::unique_ptr<action>> actions;
@@ -142,23 +142,23 @@ struct engine::state {
     bool repartition_task_list;
     bool quit_pump_loop;
 
-    engine::on_error on_error_callback;
-    engine::on_file  on_file_callback;
-    engine::on_batch on_batch_callback;
-    engine::on_list  on_list_callback;
-    engine::on_task  on_task_callback;
-    engine::on_update on_update_callback;
-    engine::on_header_data on_header_data_callback;
-    engine::on_header_info on_header_info_callback;
-    engine::on_async_notify on_notify_callback;
-    engine::on_finish on_finish_callback;
-    engine::on_quota on_quota_callback;
-    engine::on_conn_test on_test_callback;
-    engine::on_conn_test_log on_test_log_callback;
+    Engine::on_error on_error_callback;
+    Engine::on_file  on_file_callback;
+    Engine::on_batch on_batch_callback;
+    Engine::on_list  on_list_callback;
+    Engine::on_task  on_task_callback;
+    Engine::on_update on_update_callback;
+    Engine::on_header_data on_header_data_callback;
+    Engine::on_header_info on_header_info_callback;
+    Engine::on_async_notify on_notify_callback;
+    Engine::on_finish on_finish_callback;
+    Engine::on_quota on_quota_callback;
+    Engine::on_conn_test on_test_callback;
+    Engine::on_conn_test_log on_test_log_callback;
 
     throttle ratecontrol;
 
-   ~state()
+   ~State()
     {
         tasks.clear();
         conns.clear();
@@ -239,17 +239,17 @@ struct engine::state {
         return act;
     }
 
-    engine::batch& find_batch(std::size_t id);
+    Engine::BatchState& find_batch(std::size_t id);
 
     void execute();
-    void enqueue(const task& t, std::shared_ptr<cmdlist> cmd);
+    void enqueue(const TaskState& t, std::shared_ptr<cmdlist> cmd);
 };
 
 
-class engine::conn
+class Engine::ConnState
 {
 private:
-    conn(engine::state& state, std::size_t cid)
+    ConnState(Engine::State& state, std::size_t cid)
     {
         std::string file;
         std::string name;
@@ -258,7 +258,7 @@ private:
             name = str("connection", i, ".log");
             file = fs::joinpath(state.logpath, name);
             auto it = std::find_if(std::begin(state.conns), std::end(state.conns),
-                [&](const std::unique_ptr<conn>& c) {
+                [&](const std::unique_ptr<ConnState>& c) {
                     return c->ui_.logfile == file;
                 });
             if (it == std::end(state.conns))
@@ -284,8 +284,7 @@ private:
     using errors = ui::Connection::Errors;
 
 public:
-
-    conn(std::size_t aid, std::size_t cid, engine::state& state) : conn(state, cid)
+    ConnState(std::size_t aid, std::size_t cid, Engine::State& state) : ConnState(state, cid)
     {
         const auto& acc = state.find_account(aid);
 
@@ -321,7 +320,7 @@ public:
         LOG_I("Connection ", ui_.id, " ", ui_.host, ":", ui_.port);
     }
 
-    conn(std::size_t cid, engine::state& state, const conn& dna) : conn(state, cid)
+    ConnState(std::size_t cid, Engine::State& state, const ConnState& dna) : ConnState(state, cid)
     {
         ui_.account = dna.ui_.account;
         ui_.host    = dna.ui_.host;
@@ -346,12 +345,12 @@ public:
         LOG_I("Connection ", ui_.id, " ", ui_.host, ":", ui_.port);
     }
 
-   ~conn()
+   ~ConnState()
     {
         LOG_I("Connection ", ui_.id, " deleted");
     }
 
-    void tick(engine::state& state, const std::chrono::milliseconds& elapsed)
+    void tick(Engine::State& state, const std::chrono::milliseconds& elapsed)
     {
         if (ui_.state == states::Connected)
         {
@@ -386,7 +385,7 @@ public:
         }
     }
 
-    void stop(engine::state& state)
+    void stop(Engine::State& state)
     {
         if (ui_.state == states::Disconnected)
             return;
@@ -401,7 +400,7 @@ public:
         state.threads->detach(thread_);
     }
 
-    void execute(engine::state& state, std::shared_ptr<cmdlist> cmds, std::size_t tid, std::string desc)
+    void execute(Engine::State& state, std::shared_ptr<cmdlist> cmds, std::size_t tid, std::string desc)
     {
         ui_.task  = tid;
         ui_.desc  = std::move(desc);
@@ -430,7 +429,7 @@ public:
         }
     }
 
-    void on_action(engine::state& state, std::unique_ptr<action> act)
+    void on_action(Engine::State& state, std::unique_ptr<action> act)
     {
         LOG_D("Connection ", ui_.id, " action ", act->get_id(), "(", act->describe(), ") complete");
 
@@ -554,7 +553,7 @@ public:
     { return conn_.password(); }
 
 private:
-    void do_action(engine::state& state, std::unique_ptr<action> a)
+    void do_action(Engine::State& state, std::unique_ptr<action> a)
     {
         auto* ptr = a.get();
 
@@ -590,10 +589,10 @@ private:
 
 // similar to engine::conn but one shot only.
 // used for connection tests only.
-class engine::conntest
+class Engine::ConnTestState
 {
 public:
-    conntest(const ui::Account& account, std::size_t id, engine::state& state)
+    ConnTestState(const ui::Account& account, std::size_t id, Engine::State& state)
     {
         connection::spec spec;
         spec.pthrottle = nullptr;
@@ -621,7 +620,7 @@ public:
 
         do_action(state, conn_.connect(spec));
     }
-    void on_action(engine::state& state, std::unique_ptr<action> act)
+    void on_action(Engine::State& state, std::unique_ptr<action> act)
     {
         assert(act->get_owner() == id_);
 
@@ -672,7 +671,7 @@ public:
     { return id_; }
 
 private:
-    void do_action(engine::state& state, std::unique_ptr<action> act)
+    void do_action(Engine::State& state, std::unique_ptr<action> act)
     {
         act->set_owner(id_);
         act->set_log(logger_);
@@ -688,9 +687,9 @@ private:
     bool finished_;
 };
 
-class engine::task
+class Engine::TaskState
 {
-    task(std::size_t id) : num_active_cmdlists_(0), num_active_actions_(0), num_actions_ready_(0), num_actions_total_(0)
+    TaskState(std::size_t id) : num_active_cmdlists_(0), num_active_actions_(0), num_actions_ready_(0), num_actions_total_(0)
     {
         ui_.task_id  = id;
         ui_.size     = 0;
@@ -715,7 +714,7 @@ public:
     //constexpr static auto no_transition = transition{states::queued, states::queued};
     const static transition no_transition;
 
-    task(std::size_t id, const ui::FileDownload& file) : task(id)
+    TaskState(std::size_t id, const ui::FileDownload& file) : TaskState(id)
     {
         ui_.state      = states::Queued;
         ui_.desc       = file.name;
@@ -735,7 +734,7 @@ public:
         LOG_I("Task ", ui_.task_id, " (", ui_.desc, ") created");
     }
 
-    task(std::size_t id, const ui::GroupListDownload& list) : task(id)
+    TaskState(std::size_t id, const ui::GroupListDownload& list) : TaskState(id)
     {
         ui_.desc = list.desc;
 
@@ -747,7 +746,7 @@ public:
         LOG_I("Task ", ui_.task_id, " (", ui_.desc, ") created");
     }
 
-    task(engine::state& s, std::size_t id, const ui::HeaderDownload& download) : task(id)
+    TaskState(Engine::State& s, std::size_t id, const ui::HeaderDownload& download) : TaskState(id)
     {
         ui_.desc = download.desc;
 
@@ -761,7 +760,7 @@ public:
         LOG_I("Task ", ui_.task_id, "( ", ui_.desc, ") created");
     }
 
-    task(const data::Download& spec) : task(spec.task_id())
+    TaskState(const data::Download& spec) : TaskState(spec.task_id())
     {
         ui_.batch_id   = spec.batch_id();
         ui_.account    = spec.account_id();
@@ -798,7 +797,7 @@ public:
         LOG_I("Task ", ui_.task_id, "( ", ui_.desc, ") restored");
     }
 
-   ~task()
+   ~TaskState()
     {
         LOG_I("Task ", ui_.task_id, " deleted");
     }
@@ -845,7 +844,7 @@ public:
         }
     }
 
-    void kill(engine::state& state)
+    void kill(Engine::State& state)
     {
         LOG_D("Task ", ui_.task_id, " kill");
 
@@ -888,7 +887,7 @@ public:
             task_->configure(s);
     }
 
-    void tick(engine::state& state, const std::chrono::milliseconds& elapsed)
+    void tick(Engine::State& state, const std::chrono::milliseconds& elapsed)
     {
         // todo: actually measure the time
         if (ui_.state == states::Active || ui_.state == states::Crunching)
@@ -906,7 +905,7 @@ public:
         return false;
     }
 
-    transition run(engine::state& state)
+    transition run(Engine::State& state)
     {
         if (ui_.state == states::Complete ||
             ui_.state == states::Error ||
@@ -926,7 +925,7 @@ public:
         return goto_state(state, states::Active);
     }
 
-    transition complete(engine::state& state, std::shared_ptr<cmdlist> cmds)
+    transition complete(Engine::State& state, std::shared_ptr<cmdlist> cmds)
     {
         assert(cmds->task() == ui_.task_id);
 
@@ -1034,7 +1033,7 @@ public:
         return goto_state(state, states::Error);
     }
 
-    transition pause(engine::state& state)
+    transition pause(Engine::State& state)
     {
         LOG_D("Task ", ui_.task_id, " pause");
 
@@ -1062,7 +1061,7 @@ public:
         return goto_state(state, states::Paused);
     }
 
-    transition resume(engine::state& state)
+    transition resume(Engine::State& state)
     {
         LOG_D("Task ", ui_.task_id, " resume");
 
@@ -1087,7 +1086,7 @@ public:
         return goto_state(state, states::Queued);
     }
 
-    void update(engine::state& state, ui::TaskDesc& ui)
+    void update(Engine::State& state, ui::TaskDesc& ui)
     {
         ui = ui_;
         ui.etatime = 0;
@@ -1106,7 +1105,7 @@ public:
         }
     }
 
-    transition on_action(engine::state& state, std::unique_ptr<action> act)
+    transition on_action(Engine::State& state, std::unique_ptr<action> act)
     {
         const auto size = act->size();
 
@@ -1212,7 +1211,7 @@ public:
 
 
 private:
-    transition update_completion(engine::state& state)
+    transition update_completion(Engine::State& state)
     {
         // completion calculation needs to be done in the task because
         // only the task knows how many actions are to be performed per buffer.
@@ -1264,7 +1263,7 @@ private:
         return no_transition;
     }
 
-    void do_action(engine::state& state, std::unique_ptr<action> a)
+    void do_action(Engine::State& state, std::unique_ptr<action> a)
     {
         if (!a) return;
 
@@ -1280,7 +1279,7 @@ private:
         state.submit(a.release());
     }
 
-    transition goto_state(engine::state& state, states new_state)
+    transition goto_state(Engine::State& state, states new_state)
     {
         const auto old_state = ui_.state;
 
@@ -1432,11 +1431,11 @@ private:
 };
 
 // for msvc...
-const engine::task::transition engine::task::no_transition {engine::task::states::Queued, engine::task::states::Queued};
+const Engine::TaskState::transition Engine::TaskState::no_transition {Engine::TaskState::states::Queued, Engine::TaskState::states::Queued};
 
-class engine::batch
+class Engine::BatchState
 {
-    batch(std::size_t id)
+    BatchState(std::size_t id)
     {
         ui_.batch_id = id;
         ui_.task_id  = id;
@@ -1449,7 +1448,7 @@ class engine::batch
 public:
     using states = ui::TaskDesc::States;
 
-    batch(std::size_t id, const ui::FileBatchDownload& files) : batch(id)
+    BatchState(std::size_t id, const ui::FileBatchDownload& files) : BatchState(id)
     {
         ui_.account    = files.account;
         ui_.desc       = files.desc;
@@ -1468,7 +1467,7 @@ public:
         statesets_[(int)states::Queued] = num_tasks_;
     }
 
-    batch(std::size_t id, const ui::GroupListDownload& list) : batch(id)
+    BatchState(std::size_t id, const ui::GroupListDownload& list) : BatchState(id)
     {
         ui_.account  = list.account;
         ui_.desc     = list.desc;
@@ -1481,7 +1480,7 @@ public:
         statesets_[(int)states::Queued] = num_tasks_;
     }
 
-    batch(std::size_t id, const ui::HeaderDownload& download) : batch(id)
+    BatchState(std::size_t id, const ui::HeaderDownload& download) : BatchState(id)
     {
         ui_.account = download.account;
         ui_.desc    = download.desc;
@@ -1493,7 +1492,7 @@ public:
         statesets_[(int)states::Queued] = num_tasks_;
     }
 
-    batch(const data::Batch& data) : batch(0)
+    BatchState(const data::Batch& data) : BatchState(0)
     {
         ui_.batch_id   = data.batch_id();
         ui_.task_id    = data.batch_id();
@@ -1508,7 +1507,7 @@ public:
         statesets_[(int)states::Queued] = num_tasks_;
     }
 
-   ~batch()
+   ~BatchState()
     {
         LOG_I("Batch ", ui_.batch_id, " deleted");
     }
@@ -1530,7 +1529,7 @@ public:
         data->set_num_slices(num_slices_);
     }
 
-    void pause(engine::state& state)
+    void pause(Engine::State& state)
     {
         LOG_D("Batch pause ", ui_.batch_id);
 
@@ -1549,7 +1548,7 @@ public:
         update(state);
     }
 
-    void resume(engine::state& state)
+    void resume(Engine::State& state)
     {
         LOG_D("Batch resume ", ui_.batch_id);
 
@@ -1568,7 +1567,7 @@ public:
         update(state);
     }
 
-    void update(engine::state& state, ui::TaskDesc& ui)
+    void update(Engine::State& state, ui::TaskDesc& ui)
     {
         ui = ui_;
         ui.etatime = 0;
@@ -1586,14 +1585,14 @@ public:
         }
     }
 
-    void kill(engine::state& state)
+    void kill(Engine::State& state)
     {
         LOG_D("Batch kill ", ui_.batch_id);
 
         // partition tasks so that the tasks that belong to this batch
         // are at the end of the the task list.
         auto it = std::stable_partition(std::begin(state.tasks), std::end(state.tasks),
-            [&](const std::unique_ptr<task>& t) {
+            [&](const std::unique_ptr<TaskState>& t) {
                 return t->bid() != ui_.batch_id;
             });
 
@@ -1603,7 +1602,7 @@ public:
         state.tasks.erase(it, std::end(state.tasks));
     }
 
-    bool kill(engine::state& state, const task& t)
+    bool kill(Engine::State& state, const TaskState& t)
     {
         leave_state(t, t.state());
         num_tasks_--;
@@ -1612,7 +1611,7 @@ public:
         return num_tasks_ == 0;
     }
 
-    void update(engine::state& state, const task& t, const task::transition& s)
+    void update(Engine::State& state, const TaskState& t, const TaskState::transition& s)
     {
         ui_.error |= t.errors();
 
@@ -1635,7 +1634,7 @@ public:
         }
     }
 
-    void tick(engine::state& state, const std::chrono::milliseconds& elapsed)
+    void tick(Engine::State& state, const std::chrono::milliseconds& elapsed)
     {
         if (ui_.state == states::Active)
             ui_.runtime++;
@@ -1659,11 +1658,11 @@ public:
     { return ui_.batch_id; }
 
 private:
-    void enter_state(const task& t, states s)
+    void enter_state(const TaskState& t, states s)
     {
         statesets_[(int)s]++;
     }
-    void leave_state(const task& t, states s)
+    void leave_state(const TaskState& t, states s)
     {
         assert(statesets_[(int)s]);
 
@@ -1686,7 +1685,7 @@ private:
         return num_a + num_b == num_tasks_;
     }
 
-    void update(engine::state& state)
+    void update(Engine::State& state)
     {
         const std::size_t num_states = std::accumulate(std::begin(statesets_),
             std::end(statesets_), 0);
@@ -1714,7 +1713,7 @@ private:
             goto_state(state, states::Queued);
     }
 
-    void goto_state(engine::state& state, states new_state)
+    void goto_state(Engine::State& state, states new_state)
     {
         ui_.state = new_state;
         switch (new_state)
@@ -1748,17 +1747,17 @@ private:
     bool filebatch_;
 };
 
-engine::batch& engine::state::find_batch(std::size_t id)
+Engine::BatchState& Engine::State::find_batch(std::size_t id)
 {
     auto it = std::find_if(std::begin(batches), std::end(batches),
-        [&](const std::unique_ptr<batch>& b) {
+        [&](const std::unique_ptr<BatchState>& b) {
             return b->id() == id;
         });
     assert(it != std::end(batches));
     return *(*it);
 }
 
-void engine::state::execute()
+void Engine::State::execute()
 {
     if (!started)
         return;
@@ -1770,18 +1769,18 @@ void engine::state::execute()
             continue;
 
         std::size_t num_conns = std::count_if(std::begin(conns), std::end(conns),
-            [&](const std::unique_ptr<engine::conn>& c) {
+            [&](const std::unique_ptr<ConnState>& c) {
                 return c->account() == task->account();
             });
 
         const auto& acc = find_account(task->account());
         for (auto i=num_conns; i<acc.connections; ++i)
-            conns.emplace_back(new engine::conn(acc.id, oid++, *this));
+            conns.emplace_back(new ConnState(acc.id, oid++, *this));
 
         while (task->eligible_for_run())
         {
             auto it = std::find_if(std::begin(conns), std::end(conns),
-                [&](const std::unique_ptr<engine::conn>& c) {
+                [&](const std::unique_ptr<ConnState>& c) {
                     return c->is_ready() && (c->account() == task->account());
                 });
             if (it == std::end(conns))
@@ -1797,7 +1796,7 @@ void engine::state::execute()
     }
 }
 
-void engine::state::enqueue(const task& t, std::shared_ptr<cmdlist> cmd)
+void Engine::State::enqueue(const TaskState& t, std::shared_ptr<cmdlist> cmd)
 {
     cmd->set_conn(0);
     cmds.push_back(cmd);
@@ -1835,13 +1834,13 @@ void engine::state::enqueue(const task& t, std::shared_ptr<cmdlist> cmd)
         //     return;
 
         const auto id = oid++;
-        conns.emplace_back(new engine::conn(acc.id, id, *this));
+        conns.emplace_back(new ConnState(acc.id, id, *this));
     }
 
 }
 
 
-engine::engine() : state_(new state)
+Engine::Engine() : state_(new State)
 {
     state_->threads.reset(new threadpool(4));
 
@@ -1868,7 +1867,7 @@ engine::engine() : state_(new state)
 
 }
 
-engine::~engine()
+Engine::~Engine()
 {
     assert(state_->num_pending_actions == 0);
     assert(state_->conns.empty());
@@ -1878,14 +1877,14 @@ engine::~engine()
     state_->threads.reset();
 }
 
-void engine::test_account(const ui::Account& account)
+void Engine::TryAccount(const ui::Account& account)
 {
     const auto id = state_->oid++;
 
-    state_->current_connection_test.reset(new conntest(account, id, *state_));
+    state_->current_connection_test.reset(new ConnTestState(account, id, *state_));
 }
 
-void engine::set_account(const ui::Account& acc)
+void Engine::SetAccount(const ui::Account& acc)
 {
     auto it = std::find_if(std::begin(state_->accounts), std::end(state_->accounts),
         [&](const ui::Account& a) {
@@ -1911,7 +1910,7 @@ void engine::set_account(const ui::Account& acc)
 
     // remove connections whose matching properties have been modified.
     auto end = std::remove_if(std::begin(state_->conns), std::end(state_->conns),
-        [&](const std::unique_ptr<conn>& c)
+        [&](const std::unique_ptr<ConnState>& c)
         {
             if (c->account() != acc.id)
                 return false;
@@ -1953,7 +1952,7 @@ void engine::set_account(const ui::Account& acc)
     // new connections, otherwise the shrink the connection list down
     // to the max allowed.
     const auto num_conns = std::count_if(std::begin(state_->conns), std::end(state_->conns),
-        [&](const std::unique_ptr<conn>& c) {
+        [&](const std::unique_ptr<ConnState>& c) {
             return c->account() == acc.id;
         });
 
@@ -1965,7 +1964,7 @@ void engine::set_account(const ui::Account& acc)
         for (auto i = num_conns; i<acc.connections; ++i)
         {
             const auto cid = state_->oid++;
-            state_->conns.emplace_back(new engine::conn(acc.id, cid, *state_));
+            state_->conns.emplace_back(new ConnState(acc.id, cid, *state_));
         }
     }
     else if (num_conns > acc.connections)
@@ -1974,10 +1973,10 @@ void engine::set_account(const ui::Account& acc)
     }
 }
 
-void engine::del_account(std::size_t id)
+void Engine::DelAccount(std::size_t id)
 {
     auto end = std::remove_if(std::begin(state_->conns), std::end(state_->conns),
-        [&](const std::unique_ptr<conn>& c) {
+        [&](const std::unique_ptr<ConnState>& c) {
             return c->account() == id;
         });
 
@@ -1992,15 +1991,15 @@ void engine::del_account(std::size_t id)
     state_->accounts.erase(it);
 }
 
-void engine::set_fill_account(std::size_t id)
+void Engine::SetFillAccount(std::size_t id)
 {
     state_->fill_account = id;
 }
 
-engine::action_id_t engine::download_files(const ui::FileBatchDownload& batch, bool priority)
+Engine::action_id_t Engine::DownloadFiles(const ui::FileBatchDownload& batch, bool priority)
 {
     const auto batchid = state_->oid++;
-    std::unique_ptr<engine::batch> b(new class engine::batch(batchid, batch));
+    std::unique_ptr<BatchState> b(new BatchState(batchid, batch));
 
     settings s;
     s.discard_text_content = state_->discard_text;
@@ -2012,7 +2011,7 @@ engine::action_id_t engine::download_files(const ui::FileBatchDownload& batch, b
 
         assert(file.path == batch.path);
 
-        std::unique_ptr<engine::task> job(new class engine::task(taskid, std::move(file)));
+        std::unique_ptr<TaskState> job(new TaskState(taskid, std::move(file)));
         job->configure(s);
         job->set_account(batch.account);
         job->set_batch(batchid);
@@ -2033,13 +2032,13 @@ engine::action_id_t engine::download_files(const ui::FileBatchDownload& batch, b
     return batchid;
 }
 
-engine::action_id_t engine::download_listing(const ui::GroupListDownload& list)
+Engine::action_id_t Engine::DownloadListing(const ui::GroupListDownload& list)
 {
     const auto batchid = state_->oid++;
-    std::unique_ptr<engine::batch> batch(new class engine::batch(batchid, list));
+    std::unique_ptr<BatchState> batch(new BatchState(batchid, list));
 
     const auto taskid = state_->oid++;
-    std::unique_ptr<engine::task> job(new class engine::task(taskid, list));
+    std::unique_ptr<TaskState> job(new TaskState(taskid, list));
     job->set_account(list.account);
     job->set_batch(batchid);
 
@@ -2052,13 +2051,13 @@ engine::action_id_t engine::download_listing(const ui::GroupListDownload& list)
     return batchid;
 }
 
-engine::action_id_t engine::download_headers(const ui::HeaderDownload& download)
+Engine::action_id_t Engine::DownloadHeaders(const ui::HeaderDownload& download)
 {
     const auto batchid = state_->oid++;
-    std::unique_ptr<engine::batch> batch(new class engine::batch(batchid, download));
+    std::unique_ptr<BatchState> batch(new BatchState(batchid, download));
 
     const auto taskid = state_->oid++;
-    std::unique_ptr<engine::task> task(new class engine::task(*state_, taskid, download));
+    std::unique_ptr<TaskState> task(new TaskState(*state_, taskid, download));
     task->set_account(download.account);
     task->set_batch(batchid);
 
@@ -2071,22 +2070,22 @@ engine::action_id_t engine::download_headers(const ui::HeaderDownload& download)
     return batchid;
 }
 
-engine::action_id_t engine::get_action_id(std::size_t index)
+Engine::action_id_t Engine::GetActionId(std::size_t task_index)
 {
     if (state_->group_items)
     {
-        ASSERT(index < state_->batches.size());
-        return state_->batches[index]->id();
+        ASSERT(task_index < state_->batches.size());
+        return state_->batches[task_index]->id();
     }
 
-    ASSERT(index < state_->tasks.size());
-    const auto& task = state_->tasks[index];
+    ASSERT(task_index < state_->tasks.size());
+    const auto& task = state_->tasks[task_index];
     const auto bid = task->bid();
     const auto& batch = state_->find_batch(bid);
     return batch.id();
 }
 
-bool engine::pump()
+bool Engine::Pump()
 {
 // #ifdef NEWSFLASH_DEBUG
 //     {
@@ -2150,7 +2149,7 @@ bool engine::pump()
             #endif
 
             auto tit  = std::find_if(std::begin(state_->tasks), std::end(state_->tasks),
-                [&](const std::unique_ptr<engine::task>& t) {
+                [&](const std::unique_ptr<TaskState>& t) {
                     return t->tid() == tid;
                 });
             if (tit != std::end(state_->tasks))
@@ -2187,7 +2186,7 @@ bool engine::pump()
 
         const auto id = action->get_owner();
         auto it = std::find_if(std::begin(state_->conns), std::end(state_->conns),
-            [&](const std::unique_ptr<engine::conn>& c) {
+            [&](const std::unique_ptr<ConnState>& c) {
                 return c->id() == id;
             });
         if (it != std::end(state_->conns))
@@ -2206,7 +2205,7 @@ bool engine::pump()
                 {
                     auto cmd = *it;
                     auto tit = std::find_if(std::begin(state_->tasks), std::end(state_->tasks),
-                        [&](const std::unique_ptr<task>& t) {
+                        [&](const std::unique_ptr<TaskState>& t) {
                             return t->tid() == cmd->task();
                         });
                     ASSERT(tit != std::end(state_->tasks));
@@ -2218,7 +2217,7 @@ bool engine::pump()
                 else
                 {
                     auto it = std::find_if(std::begin(state_->tasks), std::end(state_->tasks),
-                        [&](const std::unique_ptr<engine::task>& t) {
+                        [&](const std::unique_ptr<TaskState>& t) {
                             return t->account() == conn->account() &&
                                    t->eligible_for_run();
                                });
@@ -2276,7 +2275,7 @@ bool engine::pump()
     return state_->num_pending_actions != 0;
 }
 
-void engine::tick()
+void Engine::Tick()
 {
     if (state_->repartition_task_list)
     {
@@ -2285,7 +2284,7 @@ void engine::tick()
         for (auto& batch : state_->batches)
         {
             tit = std::stable_partition(tit, std::end(state_->tasks),
-                [&](const std::unique_ptr<task>& t) {
+                [&](const std::unique_ptr<TaskState>& t) {
                     return t->bid() == batch->id();
                 });
         }
@@ -2314,7 +2313,7 @@ void engine::tick()
 }
 
 
-void engine::start(std::string logs)
+void Engine::Start(std::string logs)
 {
     if (state_->start(logs))
     {
@@ -2328,7 +2327,7 @@ void engine::start(std::string logs)
     }
 }
 
-void engine::stop()
+void Engine::Stop()
 {
     if (!state_->started)
         return;
@@ -2344,7 +2343,7 @@ void engine::stop()
     state_->logger->flush();
 }
 
-void engine::save_session(const std::string& file)
+void Engine::SaveSession(const std::string& file)
 {
     GOOGLE_PROTOBUF_VERIFY_VERSION;
 
@@ -2395,7 +2394,7 @@ void engine::save_session(const std::string& file)
         throw std::runtime_error("engine serialize to stream failed");
 }
 
-void engine::load_session(const std::string& file)
+void Engine::LoadSession(const std::string& file)
 {
     GOOGLE_PROTOBUF_VERIFY_VERSION;
 
@@ -2429,13 +2428,13 @@ void engine::load_session(const std::string& file)
         a.enable_general_server = p.enable_general_server();
         a.enable_pipelining     = p.enable_pipelining();
         a.enable_compression    = p.enable_compression();
-        set_account(a);
+        SetAccount(a);
     }
 
     for (int i=0; i<list.batch_size(); ++i)
     {
         const auto& data = list.batch(i);
-        std::unique_ptr<engine::batch> batch(new class engine::batch(data));
+        std::unique_ptr<BatchState> batch(new BatchState(data));
         state_->batches.push_back(std::move(batch));
     }
 
@@ -2446,7 +2445,7 @@ void engine::load_session(const std::string& file)
     for (int i=0; i<list.download_size();++i)
     {
         const auto& data = list.download(i);
-        std::unique_ptr<engine::task> task(new class engine::task(data));
+        std::unique_ptr<TaskState> task(new TaskState(data));
         task->configure(s);
 
         assert(task->is_valid());
@@ -2462,72 +2461,72 @@ void engine::load_session(const std::string& file)
 }
 
 
-void engine::set_error_callback(on_error error_callback)
+void Engine::SetErrorCallback(on_error error_callback)
 {
     state_->on_error_callback = std::move(error_callback);
 }
 
-void engine::set_file_callback(on_file file_callback)
+void Engine::SetFileCallback(on_file file_callback)
 {
     state_->on_file_callback = std::move(file_callback);
 }
 
-void engine::set_notify_callback(on_async_notify notify_callback)
+void Engine::SetNotifyCallback(on_async_notify notify_callback)
 {
     state_->on_notify_callback = std::move(notify_callback);
 }
 
-void engine::set_header_data_callback(on_header_data callback)
+void Engine::SetHeaderDataCallback(on_header_data callback)
 {
     state_->on_header_data_callback = std::move(callback);
 }
 
-void engine::set_header_info_callback(on_header_info callback)
+void Engine::SetHeaderInfoCallback(on_header_info callback)
 {
     state_->on_header_info_callback = std::move(callback);
 }
 
-void engine::set_batch_callback(on_batch batch_callback)
+void Engine::SetBatchCallback(on_batch batch_callback)
 {
     state_->on_batch_callback = std::move(batch_callback);
 }
 
-void engine::set_list_callback(on_list list_callback)
+void Engine::SetListCallback(on_list list_callback)
 {
     state_->on_list_callback = std::move(list_callback);
 }
 
-void engine::set_task_callback(on_task task_callback)
+void Engine::SetTaskCallback(on_task task_callback)
 {
     state_->on_task_callback = std::move(task_callback);
 }
 
-void engine::set_update_callback(on_update update_callback)
+void Engine::SetUpdateCallback(on_update update_callback)
 {
     state_->on_update_callback = std::move(update_callback);
 }
 
-void engine::set_finish_callback(on_finish callback)
+void Engine::SetFinishCallback(on_finish callback)
 {
     state_->on_finish_callback = std::move(callback);
 }
 
-void engine::set_quota_callback(on_quota callback)
+void Engine::SetQuotaCallback(on_quota callback)
 {
     state_->on_quota_callback = std::move(callback);
 }
 
-void engine::set_test_callback(on_conn_test callback)
+void Engine::SetTestCallback(on_conn_test callback)
 {
     state_->on_test_callback = std::move(callback);
 }
 
-void engine::set_test_log_callback(on_conn_test_log callback)
+void Engine::SetTestLogCallback(on_conn_test_log callback)
 {
     state_->on_test_log_callback = std::move(callback);
 }
 
-void engine::set_overwrite_existing_files(bool on_off)
+void Engine::SetOverwriteExistingFiles(bool on_off)
 {
     state_->overwrite_existing = on_off;
 
@@ -2539,7 +2538,7 @@ void engine::set_overwrite_existing_files(bool on_off)
         t->configure(s);
 }
 
-void engine::set_discard_text_content(bool on_off)
+void Engine::SetDiscardTextContent(bool on_off)
 {
     state_->discard_text = on_off;
 
@@ -2551,74 +2550,25 @@ void engine::set_discard_text_content(bool on_off)
         t->configure(s);
 }
 
-void engine::set_prefer_secure(bool on_off)
+void Engine::SetPreferSecure(bool on_off)
 {
     state_->prefer_secure = on_off;
 }
 
-void engine::set_throttle(bool on_off)
+void Engine::SetEnableThrottle(bool on_off)
 {
     state_->ratecontrol.enable(on_off);
     LOG_D("Throttle is now ", on_off);
 }
 
-void engine::set_throttle_value(unsigned value)
+void Engine::SetThrottleValue(unsigned value)
 {
     state_->ratecontrol.set_quota(value);
     LOG_D("Throttle value ", value, " bytes per second.");
 }
 
-bool engine::get_overwrite_existing_files() const
-{
-    return state_->overwrite_existing;
-}
 
-bool engine::get_discard_text_content() const
-{
-    return state_->discard_text;
-}
-
-bool engine::get_prefer_secure() const
-{
-    return state_->prefer_secure;
-}
-
-bool engine::get_throttle() const
-{
-    return state_->ratecontrol.is_enabled();
-}
-
-unsigned engine::get_throttle_value() const
-{
-    return state_->ratecontrol.get_quota();
-}
-
-std::uint64_t engine::get_bytes_queued() const
-{
-    return state_->bytes_queued;
-}
-
-std::uint64_t engine::get_bytes_ready() const
-{
-    return state_->bytes_ready;
-}
-
-std::uint64_t engine::get_bytes_written() const
-{
-    return state_->bytes_written;
-}
-
-std::uint64_t engine::get_bytes_downloaded() const
-{
-    return state_->bytes_downloaded;
-}
-
-std::string engine::get_logfile() const
-{
-    return fs::joinpath(state_->logpath, "engine.log");
-}
-
-void engine::set_group_items(bool on_off)
+void Engine::SetGroupItems(bool on_off)
 {
     state_->group_items = on_off;
 
@@ -2629,7 +2579,7 @@ void engine::set_group_items(bool on_off)
         for (auto& batch : state_->batches)
         {
             tit = std::stable_partition(tit, std::end(state_->tasks),
-                [&](const std::unique_ptr<task>& t) {
+                [&](const std::unique_ptr<TaskState>& t) {
                     return t->bid() == batch->id();
                 });
         }
@@ -2638,51 +2588,102 @@ void engine::set_group_items(bool on_off)
     }
 }
 
-bool engine::get_group_items() const
+bool Engine::GetGroupItems() const
 {
     return state_->group_items;
 }
 
-bool engine::is_started() const
+bool Engine::GetOverwriteExistingFiles() const
+{
+    return state_->overwrite_existing;
+}
+
+bool Engine::GetDiscardTextContent() const
+{
+    return state_->discard_text;
+}
+
+bool Engine::GetPreferSecure() const
+{
+    return state_->prefer_secure;
+}
+
+bool Engine::GetEnableThrottle() const
+{
+    return state_->ratecontrol.is_enabled();
+}
+
+unsigned Engine::GetThrottleValue() const
+{
+    return state_->ratecontrol.get_quota();
+}
+
+std::uint64_t Engine::GetCurrentQueueSize() const
+{
+    return state_->bytes_queued;
+}
+
+std::uint64_t Engine::GetBytesReady() const
+{
+    return state_->bytes_ready;
+}
+
+std::uint64_t Engine::GetTotalBytesWritten() const
+{
+    return state_->bytes_written;
+}
+
+std::uint64_t Engine::GetTotalBytesDownloaded() const
+{
+    return state_->bytes_downloaded;
+}
+
+std::string Engine::GetLogfileName() const
+{
+    return fs::joinpath(state_->logpath, "engine.log");
+}
+
+
+bool Engine::IsStarted() const
 {
     return state_->started;
 }
 
-void engine::update(std::deque<ui::TaskDesc>& tasklist)
+void Engine::GetTasks(std::deque<ui::TaskDesc>* tasklist)
 {
     if (state_->group_items)
     {
         const auto& batches = state_->batches;
 
-        tasklist.resize(batches.size());
+        tasklist->resize(batches.size());
 
         for (std::size_t i=0; i<batches.size(); ++i)
-            batches[i]->update(*state_, tasklist[i]);
+            batches[i]->update(*state_, (*tasklist)[i]);
     }
     else
     {
         const auto& tasks = state_->tasks;
 
-        tasklist.resize(tasks.size());
+        tasklist->resize(tasks.size());
 
         for (std::size_t i=0; i<tasks.size(); ++i)
-            tasks[i]->update(*state_, tasklist[i]);
+            tasks[i]->update(*state_, (*tasklist)[i]);
     }
 }
 
-void engine::update(std::deque<ui::Connection>& connlist)
+void Engine::GetConns(std::deque<ui::Connection>* connlist)
 {
     const auto& conns = state_->conns;
 
-    connlist.resize(conns.size());
+    connlist->resize(conns.size());
 
     for (std::size_t i=0; i<conns.size(); ++i)
     {
-        conns[i]->update(connlist[i]);
+        conns[i]->update((*connlist)[i]);
     }
 }
 
-void engine::kill_connection(std::size_t i)
+void Engine::KillConnection(std::size_t i)
 {
     LOG_D("Kill connection ", i);
 
@@ -2694,7 +2695,7 @@ void engine::kill_connection(std::size_t i)
     state_->conns.erase(it);
 }
 
-void engine::clone_connection(std::size_t i)
+void Engine::CloneConnection(std::size_t i)
 {
     LOG_D("Clone connection ", i);
 
@@ -2703,11 +2704,11 @@ void engine::clone_connection(std::size_t i)
     const auto cid = state_->oid++;
 
     auto& dna  = state_->conns[i];
-    auto dolly = std::unique_ptr<conn>(new conn(cid, *state_, *dna));
+    auto dolly = std::unique_ptr<ConnState>(new ConnState(cid, *state_, *dna));
     state_->conns.push_back(std::move(dolly));
 }
 
-void engine::kill_task(std::size_t i)
+void Engine::KillTask(std::size_t i)
 {
     if (state_->group_items)
     {
@@ -2726,7 +2727,7 @@ void engine::kill_task(std::size_t i)
         tit += i;
 
         auto bit = std::find_if(std::begin(state_->batches), std::end(state_->batches),
-            [&](const std::unique_ptr<batch>& b) {
+            [&](const std::unique_ptr<BatchState>& b) {
                 return b->id() == (*tit)->bid();
             });
         ASSERT(bit != std::end(state_->batches));
@@ -2749,7 +2750,7 @@ void engine::kill_task(std::size_t i)
     }
 }
 
-void engine::pause_task(std::size_t index)
+void Engine::PauseTask(std::size_t index)
 {
     if (state_->group_items)
     {
@@ -2772,7 +2773,7 @@ void engine::pause_task(std::size_t index)
     }
 }
 
-void engine::resume_task(std::size_t index)
+void Engine::ResumeTask(std::size_t index)
 {
     if (state_->group_items)
     {
@@ -2798,7 +2799,7 @@ void engine::resume_task(std::size_t index)
     state_->execute();
 }
 
-void engine::move_task_up(std::size_t index)
+void Engine::MoveTaskUp(std::size_t index)
 {
     if (state_->group_items)
     {
@@ -2818,7 +2819,7 @@ void engine::move_task_up(std::size_t index)
     }
 }
 
-void engine::move_task_down(std::size_t index)
+void Engine::MoveTaskDown(std::size_t index)
 {
     if (state_->group_items)
     {
@@ -2836,10 +2837,10 @@ void engine::move_task_down(std::size_t index)
     }
 }
 
-void engine::kill_action(engine::action_id_t id)
+void Engine::KillAction(Engine::action_id_t id)
 {
     auto it = std::find_if(std::begin(state_->batches), std::end(state_->batches),
-        [&](const std::unique_ptr<batch>& b) {
+        [&](const std::unique_ptr<BatchState>& b) {
             return b->id() == id;
         });
 
@@ -2856,12 +2857,12 @@ void engine::kill_action(engine::action_id_t id)
     state_->batches.erase(it);
 }
 
-std::size_t engine::num_tasks() const
+std::size_t Engine::GetNumTasks() const
 {
     return state_->tasks.size();
 }
 
-std::size_t engine::num_pending_tasks() const
+std::size_t Engine::GetNumPendingTasks() const
 {
     return state_->num_pending_tasks;
 }

@@ -34,7 +34,7 @@
 
 namespace newsflash
 {
-    class engine
+    class Engine
     {
     public:
         // this callback is invoked when an error has occurred.
@@ -85,188 +85,207 @@ namespace newsflash
 
         using action_id_t = std::size_t;
 
-        engine();
-       ~engine();
+        Engine();
+       ~Engine();
 
         // Perform an account testing to see if the setup is working.
-        void test_account(const ui::Account& account);
+        void TryAccount(const ui::Account& account);
 
         // Set or modify an account. If the account by the same
         // id already exists then the existing account is modified
         // and connections (if any) might be restarted.
-        void set_account(const ui::Account& account);
+        void SetAccount(const ui::Account& account);
 
         // Delete the account identified by the id.
-        void del_account(std::size_t id);
+        void DelAccount(std::size_t id);
 
         // Specify the account id to be used as fill account.
         // The account should have been set through to a call to set_account.
         // The fill account is used (if it's set) to fill tasks which are
         // fillable and which have unavailable content on the main server.
-        void set_fill_account(std::size_t id);
+        void SetFillAccount(std::size_t id);
 
         // download the files included in the dowload.
         // all the files are grouped together into a single batch.
-        action_id_t download_files(const ui::FileBatchDownload& batch, bool priority = false);
+        action_id_t DownloadFiles(const ui::FileBatchDownload& batch, bool priority = false);
 
-        action_id_t download_listing(const ui::GroupListDownload& listing);
+        // Download newsgroup listing.
+        action_id_t DownloadListing(const ui::GroupListDownload& listing);
 
-        action_id_t download_headers(const ui::HeaderDownload& update);
+        // Download newsgroup headers.
+        // If the newsgroup already exists then the headers are updated
+        // by downloading the newest headers since the latest update.
+        // if there are older headers that have not yet been downloaded
+        // then proceed to download those after the newest.
+        action_id_t DownloadHeaders(const ui::HeaderDownload& update);
 
-        action_id_t get_action_id(std::size_t task_index);
+        action_id_t GetActionId(std::size_t task_index);
 
         // process pending actions in the engine. You should call this function
         // as a response to to the async_notify.
         // returns true if there are still pending actions to be completed later
         // or false if the pending action queue is empty.
-        bool pump();
+        bool Pump();
 
         // service engine periodically to perform activities such as
         // reconnect after a specific timeout period.
         // the client should call this function at some steady interval
         // such as 1s or so.
-        void tick();
+        void Tick();
 
         // start engine. this will start connections and being processing the
         // tasks currently queued in the tasklist.
-        void start(std::string logs);
+        void Start(std::string logs);
 
         // stop the engine. kill all connections and stop all processing.
-        void stop();
+        void Stop();
 
-        void save_session(const std::string& file);
+        // Load existing engine session from the given file.
+        void SaveSession(const std::string& file);
 
-        void load_session(const std::string& file);
+        // Save the current engine session into the given file.
+        void LoadSession(const std::string& file);
 
-        // set the error callback.
-        void set_error_callback(on_error error_callback);
+        // Set the error callback. Invoked on SystemError.
+        void SetErrorCallback(on_error error_callback);
 
-        // set the file callback.
-        void set_file_callback(on_file file_callback);
+        // Set the file callback. Invoked when FileDownloadResult is ready.
+        void SetFileCallback(on_file file_callback);
 
-        void set_batch_callback(on_batch batch_callback);
+        // Set the batch callback. Invoked when FileBatchResult is ready.
+        void SetBatchCallback(on_batch batch_callback);
 
-        void set_list_callback(on_list list_callback);
+        // Set the list callback. Invoked when GroupListResult is ready.
+        void SetListCallback(on_list list_callback);
 
-        void set_task_callback(on_task task_callback);
+        // Set the task callback. Invoked when a task is ready.
+        void SetTaskCallback(on_task task_callback);
 
-        void set_update_callback(on_update update_callback);
+        // todo
+        void SetUpdateCallback(on_update update_callback);
 
         // set the notify callback. this
-        void set_notify_callback(on_async_notify notify_callback);
+        void SetNotifyCallback(on_async_notify notify_callback);
 
-        void set_header_data_callback(on_header_data callback);
-        void set_header_info_callback(on_header_info callback);
+        // todo
+        void SetHeaderDataCallback(on_header_data callback);
 
-        void set_finish_callback(on_finish callback);
+        // todo
+        void SetHeaderInfoCallback(on_header_info callback);
 
-        void set_quota_callback(on_quota callback);
+        // Set the finish callback. Invoked when all previously pending tasks are complete.
+        void SetFinishCallback(on_finish callback);
 
-        void set_test_callback(on_conn_test callback);
-        void set_test_log_callback(on_conn_test_log callback);
+        // Set the quota callback. Invoked when downloads progress and data
+        // is downloaded from the server defined by the account.
+        // The callback can be used to track the account quota changes.
+        void SetQuotaCallback(on_quota callback);
+
+        // todo:
+        void SetTestCallback(on_conn_test callback);
+        void SetTestLogCallback(on_conn_test_log callback);
 
         // if set to true engine will overwrite files that already exist in the filesystem.
         // otherwise file name collisions are resolved by some naming scheme
-        void set_overwrite_existing_files(bool on_off);
+        void SetOverwriteExistingFiles(bool on_off);
 
         // if set engine discards any textual data and only keeps binary content.
-        void set_discard_text_content(bool on_off);
+        void SetDiscardTextContent(bool on_off);
 
         // if set engine will prefer secure SSL/TCP connections
         // instead of basic TCP connections whenever secure servers
         // are enabled for the given account.
-        void set_prefer_secure(bool on_off);
+        void SetPreferSecure(bool on_off);
 
         // set throttle. If throttle is true then download speed is capped
         // at the given throttle value. (see set_throttle_value)
-        void set_throttle(bool on_off);
+        void SetEnableThrottle(bool on_off);
 
         // set the maximum number of bytes to be tranferred in seconds
         // by all engine connections.
-        void set_throttle_value(unsigned value);
+        void SetThrottleValue(unsigned value);
 
         // if set to true tasklist actions perform actions on batches
         // instead of individual tasks. this includes kill/pause/resume
         // and update_task_list
-        void set_group_items(bool on_off);
+        void SetGroupItems(bool on_off);
 
         // getters
-        bool get_group_items() const;
-        bool get_overwrite_existing_files() const;
-        bool get_discard_text_content() const;
-        bool get_prefer_secure() const;
-        bool get_throttle() const;
+        bool GetGroupItems() const;
+        bool GetOverwriteExistingFiles() const;
+        bool GetDiscardTextContent() const;
+        bool GetPreferSecure() const;
+        bool GetEnableThrottle() const;
 
         // get current throttle value.
-        unsigned get_throttle_value() const;
+        unsigned GetThrottleValue() const;
 
         // get how many bytes are currently queued in the engine for downloading.
         // if there are no items this will be 0.
-        std::uint64_t get_bytes_queued() const;
+        std::uint64_t GetCurrentQueueSize() const;
 
         // get how many bytes have been completed of the items that were queued.
         // note that this is a historical value and the items may be removed
         // from the queue. once the queue becomes empty this value drops to 0 as well.
-        std::uint64_t get_bytes_ready() const;
+        std::uint64_t GetBytesReady() const;
 
         // get the total number of bytes written to disk.
-        std::uint64_t get_bytes_written() const;
+        std::uint64_t GetTotalBytesWritten() const;
 
         // get the total number of bytes downloaded from all the servers/accounts.
         // this value is the number of bytes coming accross the TPC/SSL transport layer
         // and includes a few bytes of protocol data per transaction.
-        std::uint64_t get_bytes_downloaded() const;
+        std::uint64_t GetTotalBytesDownloaded() const;
 
-        std::string get_logfile() const;
+        // Get the complete path (including the file name) to the engine's log file.
+        std::string GetLogfileName() const;
 
         // get whether engine is started or not.
-        bool is_started() const;
+        bool IsStarted() const;
 
         // update the tasklist to contain the latest UI states
         // of all the tasks in the engine.
-        void update(std::deque<ui::TaskDesc>& tasklist);
+        void GetTasks(std::deque<ui::TaskDesc>* tasklist);
 
         // update the connlist to contain the latest UI states
         // of all the connections in the engine.
-        void update(std::deque<ui::Connection>& connlist);
+        void GetConns(std::deque<ui::Connection>* connlist);
 
         // kill the connection at the given index.
-        void kill_connection(std::size_t index);
+        void KillConnection(std::size_t index);
 
         // clone the connection at the given connection list index.
-        void clone_connection(std::size_t index);
+        void CloneConnection(std::size_t index);
 
         // kill the task at the given task list index
-        void kill_task(std::size_t index);
+        void KillTask(std::size_t index);
 
         // pause the task at the given taks list index.
-        void pause_task(std::size_t index);
+        void PauseTask(std::size_t index);
 
         // resume the task at the given task list index.
-        void resume_task(std::size_t index);
+        void ResumeTask(std::size_t index);
 
-        void move_task_top(action_id_t task);
+        void MoveTaskUp(std::size_t index);
 
-        void move_task_up(std::size_t index);
+        void MoveTaskDown(std::size_t index);
 
-        void move_task_down(std::size_t index);
-
-        void kill_action(action_id_t id);
+        void KillAction(action_id_t id);
 
         // get the number of tasks.
-        std::size_t num_tasks() const;
+        std::size_t GetNumTasks() const;
 
-        std::size_t num_pending_tasks() const;
-
-    private:
-        class task;
-        class conn;
-        class conntest;
-        class batch;
-        struct state;
+        std::size_t GetNumPendingTasks() const;
 
     private:
-        std::shared_ptr<state> state_;
+        class TaskState;
+        class ConnState;
+        class ConnTestState;
+        class BatchState;
+        struct State;
+
+    private:
+        std::shared_ptr<State> state_;
     };
 
     void initialize();
