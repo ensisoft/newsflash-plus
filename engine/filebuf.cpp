@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -45,7 +45,7 @@ public:
     fileio(const std::string& file)
     {
         const auto str = utf8::decode(file);
-        
+
         file_ = CreateFile(
             str.c_str(),
             GENERIC_READ | GENERIC_WRITE,
@@ -74,7 +74,7 @@ public:
         }
         DWORD out;
         if (ReadFile(file_, buff, bytes, &out, NULL) == 0)
-            throw std::runtime_error("file read failed"); 
+            throw std::runtime_error("file read failed");
     }
 
     void write(const void* buff, std::size_t bytes, std::uint64_t offset)
@@ -85,13 +85,13 @@ public:
         {
             if (GetLastError() != NO_ERROR)
                 throw std::runtime_error("file seek failed");
-        }        
+        }
         DWORD out;
         if (WriteFile(file_, buff, bytes, &out, NULL) == 0)
-            throw std::runtime_error("file write failed");        
+            throw std::runtime_error("file write failed");
     }
 
-    std::size_t size() const 
+    std::size_t size() const
     {
         LARGE_INTEGER size;
         if (!GetFileSizeEx(file_, &size))
@@ -101,7 +101,7 @@ public:
     }
 
 private:
-    HANDLE file_;
+    HANDLE file_ = INVALID_HANDLE_VALUE;
 };
 
 #endif
@@ -113,7 +113,7 @@ class filebuf::fileio
 public:
     fileio(const std::string& file)
     {
-        int fd = ::open(file.c_str(), O_RDWR | O_LARGEFILE | O_CREAT, 
+        int fd = ::open(file.c_str(), O_RDWR | O_LARGEFILE | O_CREAT,
             S_IRWXU | S_IRGRP | S_IROTH);
         if (fd == -1)
             throw std::system_error(std::error_code(errno,
@@ -151,7 +151,7 @@ public:
         return st.st_size;
     }
 private:
-    int file_;
+    int file_ = 0;
 };
 
 #endif
@@ -163,12 +163,18 @@ void filebuf::buffer::flush()
     fileio_->write(&data_[0], data_.size(), offset_);
 }
 
-void filebuf::open(std::string file)
+void filebuf::open(const std::string& filename)
 {
-    auto io = std::make_shared<fileio>(file);
+    auto io = std::make_shared<fileio>(filename);
 
     fileio_ = io;
-    filename_ = std::move(file);
+    filename_ = filename;
+}
+
+void filebuf::close()
+{
+    fileio_.reset();
+    filename_.clear();
 }
 
 filebuf::buffer filebuf::load(std::size_t offset, std::size_t size, unsigned flags)
@@ -184,17 +190,17 @@ filebuf::buffer filebuf::load(std::size_t offset, std::size_t size, unsigned fla
     return {fileio_, std::move(vec), offset, write_data};
 }
 
-std::size_t filebuf::size() const 
+std::size_t filebuf::size() const
 {
     return fileio_->size();
 }
 
-std::string filebuf::filename() const 
+std::string filebuf::filename() const
 {
     return filename_;
 }
 
-bool filebuf::is_open() const 
+bool filebuf::is_open() const
 {
     return !!fileio_;
 }

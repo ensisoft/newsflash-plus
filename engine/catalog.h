@@ -41,8 +41,8 @@ namespace newsflash
         CATALOG_SIZE = 0x20000
     };
 
-    template<typename Storage>
-    class catalog : public Storage
+    template<typename StorageDevice>
+    class catalog
     {
     public:
         struct offset_t {
@@ -63,13 +63,13 @@ namespace newsflash
         };
 
         class iterator : public
-            std::iterator<std::input_iterator_tag, article<Storage>>
+            std::iterator<std::input_iterator_tag, article<StorageDevice>>
         {
         public:
             iterator() : offset_(0), length_(0)
             {}
 
-            const article<Storage>& operator*()
+            const article<StorageDevice>& operator*()
             {
                 if (length_ == 0) {
                     article_ = catalog_->load(offset_t{offset_});
@@ -77,7 +77,7 @@ namespace newsflash
                 }
                 return article_;
             }
-            const article<Storage>* operator->()
+            const article<StorageDevice>* operator->()
             {
                 if (length_ == 0) {
                     article_ = catalog_->load(offset_t{offset_});
@@ -122,7 +122,7 @@ namespace newsflash
             std::size_t offset_;
             std::size_t length_;
             catalog* catalog_;
-            article<Storage> article_;
+            article<StorageDevice> article_;
         };
 
         catalog()
@@ -138,19 +138,24 @@ namespace newsflash
 
         // open existing catalog for reading and writing
         // or create a new one if it doesn't yet exist.
-        void open(std::string file)
+        void open(const std::string& file)
         {
-            Storage::open(file);
-            if (Storage::size())
+            device_.open(file);
+            if (device_.size())
             {
-                const auto buff = Storage::load(0, sizeof(header_),Storage::buf_read);
-                std::copy(buff.begin(), buff.end(), (typename Storage::byte*)&header_);
+                const auto buff = device_.load(0, sizeof(header_), StorageDevice::buf_read);
+                std::copy(buff.begin(), buff.end(), (typename StorageDevice::byte*)&header_);
 
                 if (header_.cookie != MAGIC)
                     throw std::runtime_error("incorrect catalog header");
                 if (header_.version != VERSION)
                     throw std::runtime_error("incorrect catalog version");
             }
+        }
+
+        void close()
+        {
+            device_.close();
         }
 
         iterator begin(offset_t offset)
@@ -170,38 +175,38 @@ namespace newsflash
         // get article at the specific offset in the file.
         // the first article is at offset 0.
         // In general article N+1 is at N.offset + N.length
-        article<Storage> load(offset_t offset)
+        article<StorageDevice> load(offset_t offset)
         {
             ASSERT(offset.value < header_.offset);
 
             const auto off = offset.value + sizeof(header_);
 
-            article<Storage> a;
-            a.load(off, *this);
+            article<StorageDevice> a;
+            a.load(off, device_);
             return a;
         }
 
         // get the article at the specific index.
-        article<Storage> load(index_t index)
+        article<StorageDevice> load(index_t index)
         {
             ASSERT(index.value < CATALOG_SIZE);
 
             const auto off = header_.table[index.value];
 
-            article<Storage> a;
-            a.load(off, *this);
+            article<StorageDevice> a;
+            a.load(off, device_);
             return a;
         }
 
         // append an article into the catalog.
-        void append(const article<Storage>& a)
+        void append(const article<StorageDevice>& a)
         {
             ASSERT(header_.size < CATALOG_SIZE);
 
             const auto off = header_.offset;
             const auto idx = header_.size;
 
-            a.save(off, *this);
+            a.save(off, device_);
 
             header_.table[idx] = off;
             header_.size++;
@@ -211,12 +216,12 @@ namespace newsflash
         }
 
         // insert article at the specified index.
-        void insert(const article<Storage>& a, index_t i)
+        void insert(const article<StorageDevice>& a, index_t i)
         {
             ASSERT(i.value < CATALOG_SIZE);
             ASSERT(header_.table[i.value] == 0);
 
-            a.save(header_.offset, *this);
+            a.save(header_.offset, device_);
 
             header_.table[i.value] = header_.offset;
             header_.offset += a.size_on_disk();
@@ -227,17 +232,17 @@ namespace newsflash
         }
 
         // update the article at the specified index.
-        void update(const article<Storage>& a, index_t i)
+        void update(const article<StorageDevice>& a, index_t i)
         {
             ASSERT(i.value < CATALOG_SIZE);
             ASSERT(header_.table[i.value] != 0);
-            a.save(header_.table[i.value], *this);
+            a.save(header_.table[i.value], device_);
         }
 
         void flush()
         {
-            auto buff = Storage::load(0, sizeof(header_), Storage::buf_write);
-            auto beg  = (const typename Storage::byte*)&header_;
+            auto buff = device_.load(0, sizeof(header_), StorageDevice::buf_write);
+            auto beg  = (const typename StorageDevice::byte*)&header_;
             auto end  = beg + sizeof(header_);
             std::copy(beg, end, buff.begin());
             buff.flush();
@@ -263,6 +268,9 @@ namespace newsflash
             ASSERT(i.value < CATALOG_SIZE);
             return header_.table[i.value] == 0;
         }
+
+        const StorageDevice& device() const
+        { return device_; }
 
     private:
         static const std::uint32_t MAGIC = 0xdeadbabe;
@@ -292,5 +300,7 @@ namespace newsflash
             std::uint32_t table[CATALOG_SIZE];
         };
         header header_;
+
+        StorageDevice device_;
     };
 } // newsflash

@@ -598,10 +598,10 @@ void update::complete(action& a, std::vector<std::unique_ptr<action>>& next)
         {
             // remember that db might be accessed at the same time through
             // another thread via another store task
-            for (auto* file : p->updates_)
+            for (auto* catalog : p->updates_)
             {
                 const auto& groupname = state_->group;
-                const auto& filename  = file->filename();
+                const auto& filename  = catalog->device().filename();
                 on_write(groupname, filename);
             }
         }
