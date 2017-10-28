@@ -331,14 +331,14 @@ private:
     std::size_t bytes_ = 0;
 };
 
-update::update(std::string path, std::string group) : local_last_(0), local_first_(0)
+update::update(const std::string& path, const std::string& group)
 {
     const auto nfo = fs::joinpath(fs::joinpath(path, group), group + ".nfo");
     const auto idb = fs::joinpath(fs::joinpath(path, group), group + ".idb");
 
     state_ = std::make_shared<state>();
-    state_->folder = std::move(path);
-    state_->group  = std::move(group);
+    state_->folder = path;
+    state_->group  = group;
 
 #if defined(LINUX_OS)
     std::ifstream in(nfo, std::ios::in | std::ios::binary);
@@ -407,7 +407,26 @@ update::update(std::string path, std::string group) : local_last_(0), local_firs
 }
 
 update::~update()
-{}
+{
+    // so unless the data is flushed out and written
+    // to the disk we end up with inconsistent state.
+    // a simple "solution" for now is to make sure that
+    // we always perform the commit, i.e. we'll do it
+    // in the ctor. this however has the problem that if
+    // something goes wrong (and an exception is thrown)
+    // we have to catch it and there's no way to tell
+    // the user about the problem.
+    //
+    // we really need to refactor the engine shutdown
+    // sequence so that the tasks are shutdown
+    // and any problems can be propagated up to the UI layer.
+    try
+    {
+        commit();
+    }
+    catch (const std::exception& e)
+    {}
+}
 
 std::shared_ptr<cmdlist> update::create_commands()
 {
@@ -481,6 +500,9 @@ void update::cancel()
 
 void update::commit()
 {
+    if (commit_done_)
+        return;
+
     const auto& path  = state_->folder;
     const auto& group = state_->group;
     const auto file = fs::joinpath(fs::joinpath(path, group), group + ".nfo");
@@ -526,6 +548,8 @@ void update::commit()
     }
     out.write((const char*)&vec[0], vec.size() * sizeof(FileHash));
     out.close();
+
+    commit_done_ = true;
 }
 
 void update::complete(cmdlist& cmd, std::vector<std::unique_ptr<action>>& next)

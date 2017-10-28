@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -42,7 +42,7 @@ namespace newsflash
         std::function<void(const std::string& group,
             std::uint64_t local, std::uint64_t remote)> on_info;
 
-        update(std::string path, std::string group);
+        update(const std::string& path, const std::string& group);
        ~update();
 
         virtual std::shared_ptr<cmdlist> create_commands() override;
@@ -50,10 +50,10 @@ namespace newsflash
         virtual void cancel() override;
         virtual void commit() override;
 
-        virtual void complete(cmdlist& cmd, 
+        virtual void complete(cmdlist& cmd,
             std::vector<std::unique_ptr<action>>& next) override;
 
-        virtual void complete(action& a, 
+        virtual void complete(action& a,
             std::vector<std::unique_ptr<action>>& next) override;
 
         virtual bool has_commands() const override;
@@ -80,7 +80,8 @@ namespace newsflash
         std::uint64_t local_first_ = 0;
         std::uint64_t xover_last_ = 0;
         std::uint64_t xover_first_ = 0;
-
+    private:
+        bool commit_done_ = false;
     };
 
 } // newsflash
