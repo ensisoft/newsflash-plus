@@ -147,16 +147,16 @@ void Process::kill()
 
 // static
 bool Process::runAndCapture(const QString& executable,
-    QStringList& stdout,
-    QStringList& stderr,
+    QStringList& stdoutLines,
+    QStringList& stderrLines,
     const QStringList& args)
 {
     Process process;
     process.onStdErr = [&](const QString& line) {
-        stderr.append(line);
+        stderrLines.append(line);
     };
     process.onStdOut = [&](const QString& line) {
-        stdout.append(line);
+        stdoutLines.append(line);
     };
 
     const auto& logFile    = QString("");

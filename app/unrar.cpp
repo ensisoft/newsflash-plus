@@ -299,12 +299,12 @@ QStringList Unrar::findVolumes(const QStringList& files)
 
 QString Unrar::getCopyright(const QString& executable)
 {
-    QStringList stdout;
-    QStringList stderr;
+    QStringList stdoutLines;
+    QStringList stderrLines;
 
-    if (Process::runAndCapture(executable, stdout, stderr))
+    if (Process::runAndCapture(executable, stdoutLines, stderrLines))
     {
-        for (const auto& line : stdout)
+        for (const auto& line : stdoutLines)
         {
             if (line.toUpper().contains("COPYRIGHT"))
                 return line;

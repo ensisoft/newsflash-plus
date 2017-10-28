@@ -165,14 +165,14 @@ void Par2::onFinished()
 QStringList Par2::getCopyright(const QString& executable)
 {
     QStringList ret;
-    QStringList stdout;
-    QStringList stderr;
+    QStringList stdoutLines;
+    QStringList stderrLines;
 
     QStringList args;
     args << "-VV"; // for version and copyright
-    if (Process::runAndCapture(executable, stdout, stderr, args))
+    if (Process::runAndCapture(executable, stdoutLines, stderrLines, args))
     {
-        for (const auto& line : stdout)
+        for (const auto& line : stdoutLines)
         {
             const auto& LINE = line.toUpper();
             if (LINE.contains("COPYRIGHT"))

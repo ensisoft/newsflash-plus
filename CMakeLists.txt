@@ -162,6 +162,7 @@ add_library(smtpclient SHARED ${SMTPCLIENT_SOURCE})
 target_link_libraries(smtpclient
     Qt4::QtCore
     Qt4::QtNetwork)
+target_compile_definitions(smtpclient PRIVATE SMTP_BUILD)
 add_executable(smtpclient_test third_party/smtpclient/example/main.cpp)
 target_link_libraries(smtpclient_test smtpclient Qt4::QtCore Qt4::QtGui)
 

@@ -336,7 +336,7 @@ Build zlib
 ```
     $ cd third_party/zlib
     $ cmake -G "Visual Studio 12 2013 Win64"
-    $ msbuild zlib.sln /p:Configuration=Release
+    $ msbuild zlib.sln /p:Configuration=Release /p:Platform=x64
 ```
 
 Build Qt

@@ -33,6 +33,8 @@
 
 namespace gui
 {
+    class SmtpClient;
+
     class SmtpSettings : public SettingsWidget
     {
         Q_OBJECT
@@ -53,7 +55,7 @@ namespace gui
         app::SmtpClient& mSmtp;
         std::shared_ptr<app::SmtpTask> mSendTestEmail;
     private:
-        friend class SmtpClient;
+        friend class gui::SmtpClient;
     };
 
 

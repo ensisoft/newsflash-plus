@@ -38,6 +38,7 @@
 namespace app
 {
     class Settings;
+    class SmtpClient;
 
     class SmtpTask : public QObject
     {
@@ -71,7 +72,7 @@ namespace app
     private:
         void signal(Error result);
         Error run();
-        friend class SmtpClient;
+        friend class app::SmtpClient;
     };
 
     class SmtpClient  : public QObject
