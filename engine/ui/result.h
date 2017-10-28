@@ -30,8 +30,16 @@ namespace newsflash
 {
     namespace ui {
 
+    struct Result
+    {
+        virtual ~Result() = default;
+
+        // the account where the result came from.
+        std::size_t account = 0;
+    };
+
     // a new file produced by downloading and decoding content
-    struct FileResult
+    struct FileResult : public Result
     {
         // complete path to the file location.
         std::string path;
@@ -49,7 +57,7 @@ namespace newsflash
         bool binary = false;
     };
 
-    struct FileBatchResult
+    struct FileBatchResult : public Result
     {
         // complete path to the batch location
         std::string path;
@@ -59,10 +67,8 @@ namespace newsflash
 
     };
 
-    struct GroupListResult
+    struct GroupListResult : public Result
     {
-        std::size_t account = 0;
-
         std::string desc;
 
         struct Newsgroup {
@@ -81,11 +87,8 @@ namespace newsflash
         std::vector<Newsgroup> groups;
     };
 
-    struct HeaderResult
+    struct HeaderResult : public Result
     {
-        // the account to be used to download the headers from.
-        std::size_t account = 0;
-
         // path in the filesystem where to place the data files.
         std::string path;
 

@@ -25,6 +25,7 @@
 #include <functional>
 #include <memory>
 #include <deque>
+#include <vector>
 #include "ui/account.h"
 #include "ui/task.h"
 #include "ui/connection.h"
@@ -34,9 +35,24 @@
 
 namespace newsflash
 {
+    class connection;
+    class task;
+
     class Engine
     {
     public:
+        class Factory
+        {
+        public:
+            virtual ~Factory() = default;
+            virtual std::unique_ptr<task> AllocateTask(const ui::FileDownload& file) = 0;
+            virtual std::unique_ptr<task> AllocateTask(const ui::HeaderDownload& download) = 0;
+            virtual std::unique_ptr<task> AllocateTask(const ui::GroupListDownload& list) = 0;
+            virtual std::unique_ptr<connection> AllocateConnection() = 0;
+            virtual std::vector<std::unique_ptr<ui::Result>> MakeResult(const task& task, const ui::TaskDesc& desc) const = 0;
+        private:
+        };
+
         // this callback is invoked when an error has occurred.
         // the error object carries information and details about
         // what happened.
@@ -85,6 +101,7 @@ namespace newsflash
 
         using action_id_t = std::size_t;
 
+        Engine(std::unique_ptr<Factory> factory);
         Engine();
        ~Engine();
 
@@ -285,7 +302,7 @@ namespace newsflash
         struct State;
 
     private:
-        std::shared_ptr<State> state_;
+        std::unique_ptr<State> state_;
     };
 
     void initialize();

@@ -117,30 +117,32 @@ struct Engine::State {
 
     std::vector<ui::Account> accounts;
     std::list<std::shared_ptr<cmdlist>> cmds;
-    std::uint64_t bytes_downloaded;
-    std::uint64_t bytes_queued;
-    std::uint64_t bytes_ready;
-    std::uint64_t bytes_written;
-    std::size_t oid; // object id for tasks/connections
-    std::size_t fill_account;
+    std::uint64_t bytes_downloaded = 0;
+    std::uint64_t bytes_queued = 0;
+    std::uint64_t bytes_ready = 0;
+    std::uint64_t bytes_written = 0;
+    std::size_t oid = 1; // object id for tasks/connections
+    std::size_t fill_account = 0;
     std::string logpath;
+
+    std::unique_ptr<Engine::Factory> factory;
 
     std::unique_ptr<class logger> logger;
     std::unique_ptr<ConnTestState> current_connection_test;
 
-    std::mutex  mutex;
+    std::mutex mutex;
     std::queue<std::unique_ptr<action>> actions;
     std::unique_ptr<threadpool> threads;
-    std::size_t num_pending_actions;
-    std::size_t num_pending_tasks;
+    std::size_t num_pending_actions = 0;
+    std::size_t num_pending_tasks = 0;
 
-    bool prefer_secure;
-    bool overwrite_existing;
-    bool discard_text;
-    bool started;
-    bool group_items;
-    bool repartition_task_list;
-    bool quit_pump_loop;
+    bool prefer_secure = true;
+    bool overwrite_existing = false;
+    bool discard_text = false;
+    bool started = false;
+    bool group_items = false;
+    bool repartition_task_list = false;
+    bool quit_pump_loop = false;
 
     Engine::on_error on_error_callback;
     Engine::on_file  on_file_callback;
@@ -157,6 +159,18 @@ struct Engine::State {
     Engine::on_conn_test_log on_test_log_callback;
 
     throttle ratecontrol;
+
+    State()
+    {
+        ratecontrol.set_quota(std::numeric_limits<std::size_t>::max());
+        threads.reset(new threadpool(4));
+        threads->on_complete = [&](action* a)
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            actions.emplace(a);
+            on_notify_callback();
+        };
+    }
 
    ~State()
     {
@@ -284,7 +298,7 @@ private:
     using errors = ui::Connection::Errors;
 
 public:
-    ConnState(std::size_t aid, std::size_t cid, Engine::State& state) : ConnState(state, cid)
+    ConnState(Engine::State& state, std::size_t aid, std::size_t cid) : ConnState(state, cid)
     {
         const auto& acc = state.find_account(aid);
 
@@ -315,12 +329,14 @@ public:
         }
         ui_.account = aid;
 
-        do_action(state, conn_.connect(spec));
+        conn_ = state.factory->AllocateConnection();
+
+        do_action(state, conn_->connect(spec));
 
         LOG_I("Connection ", ui_.id, " ", ui_.host, ":", ui_.port);
     }
 
-    ConnState(std::size_t cid, Engine::State& state, const ConnState& dna) : ConnState(state, cid)
+    ConnState(Engine::State& state, std::size_t cid, const ConnState& dna) : ConnState(state, cid)
     {
         ui_.account = dna.ui_.account;
         ui_.host    = dna.ui_.host;
@@ -340,7 +356,8 @@ public:
         spec.hostport = dna.ui_.port;
         spec.use_ssl  = dna.ui_.secure;
 
-        do_action(state, conn_.connect(spec));
+        conn_ = state.factory->AllocateConnection();
+        do_action(state, conn_->connect(spec));
 
         LOG_I("Connection ", ui_.id, " ", ui_.host, ":", ui_.port);
     }
@@ -355,7 +372,7 @@ public:
         if (ui_.state == states::Connected)
         {
             if (--ticks_to_ping_ == 0)
-                do_action(state, conn_.ping());
+                do_action(state, conn_->ping());
 
         }
         else if (ui_.state == states::Error)
@@ -381,7 +398,7 @@ public:
             s.hostport = ui_.port;
             s.enable_compression = acc.enable_compression;
             s.enable_pipelining  = acc.enable_pipelining;
-            do_action(state, conn_.connect(s));
+            do_action(state, conn_->connect(s));
         }
     }
 
@@ -390,11 +407,11 @@ public:
         if (ui_.state == states::Disconnected)
             return;
 
-        conn_.cancel();
+        conn_->cancel();
         if (ui_.state == states::Connected ||
             ui_.state == states::Active)
         {
-            do_action(state, conn_.disconnect());
+            do_action(state, conn_->disconnect());
         }
 
         state.threads->detach(thread_);
@@ -407,7 +424,7 @@ public:
         ui_.state = states::Active;
         LOG_I("Connection ", ui_.id, " executing cmdlist ", cmds->id());
 
-        do_action(state, conn_.execute(cmds, tid));
+        do_action(state, conn_->execute(cmds, tid));
     }
 
     void update(ui::Connection& ui)
@@ -420,10 +437,10 @@ public:
             // read then the bps value cannot be valid but has become
             // stale since the connection has not ready any data. (i.e. it's stalled)
             const auto bytes_before  = ui_.down;
-            const auto bytes_current = conn_.num_bytes_transferred();
+            const auto bytes_current = conn_->num_bytes_transferred();
             if (bytes_current != bytes_before)
             {
-                ui_.bps  = ui.bps  = conn_.current_speed_bps();
+                ui_.bps  = ui.bps  = conn_->current_speed_bps();
                 ui_.down = ui.down = bytes_current;
             }
         }
@@ -502,7 +519,7 @@ public:
             return;
         }
 
-        auto next = conn_.complete(std::move(act));
+        auto next = conn_->complete(std::move(act));
         if (next)
             do_action(state, std::move(next));
         else if (ui_.state == states::Initializing)
@@ -547,10 +564,10 @@ public:
     { return ui_.host; }
 
     const std::string& username() const
-    { return conn_.username(); }
+    { return conn_->username(); }
 
     const std::string& password() const
-    { return conn_.password(); }
+    { return conn_->password(); }
 
 private:
     void do_action(Engine::State& state, std::unique_ptr<action> a)
@@ -579,11 +596,11 @@ private:
 
 private:
     ui::Connection ui_;
-    connection conn_;
+    std::unique_ptr<connection> conn_;
     std::shared_ptr<logger> logger_;
     threadpool::worker* thread_;
-    unsigned ticks_to_ping_;
-    unsigned ticks_to_conn_;
+    unsigned ticks_to_ping_ = 0;
+    unsigned ticks_to_conn_ = 0;
 };
 
 
@@ -714,7 +731,7 @@ public:
     //constexpr static auto no_transition = transition{states::queued, states::queued};
     const static transition no_transition;
 
-    TaskState(std::size_t id, const ui::FileDownload& file) : TaskState(id)
+    TaskState(Engine::State& s, std::size_t id, const ui::FileDownload& file) : TaskState(id)
     {
         ui_.state      = states::Queued;
         ui_.desc       = file.name;
@@ -725,7 +742,7 @@ public:
         LOG_D("Task: download has ", file.articles.size(), " articles");
         LOG_D("Task: download path: '", file.path, "'");
 
-        task_.reset(new download(file.groups, file.articles, file.path, file.name));
+        task_ = s.factory->AllocateTask(file);
 
         num_actions_total_ = task_->max_num_actions();
 
@@ -734,11 +751,11 @@ public:
         LOG_I("Task ", ui_.task_id, " (", ui_.desc, ") created");
     }
 
-    TaskState(std::size_t id, const ui::GroupListDownload& list) : TaskState(id)
+    TaskState(Engine::State& s, std::size_t id, const ui::GroupListDownload& list) : TaskState(id)
     {
         ui_.desc = list.desc;
 
-        task_.reset(new listing);
+        task_ = s.factory->AllocateTask(list);
 
         num_actions_total_ = task_->max_num_actions();
 
@@ -750,9 +767,13 @@ public:
     {
         ui_.desc = download.desc;
 
-        std::unique_ptr<newsflash::update> task(new newsflash::update(download.path, download.group));
-        task->on_write = s.on_header_data_callback;
-        task->on_info  = s.on_header_info_callback;
+        auto task = s.factory->AllocateTask(download);
+        if (auto* ptr = dynamic_cast<class update*>(task.get()))
+        {
+            // todo: refactor this.
+            ptr->on_write = s.on_header_data_callback;
+            ptr->on_info  = s.on_header_info_callback;
+        }
         task_ = std::move(task);
 
         num_actions_total_ = task_->max_num_actions();
@@ -760,7 +781,7 @@ public:
         LOG_I("Task ", ui_.task_id, "( ", ui_.desc, ") created");
     }
 
-    TaskState(const data::Download& spec) : TaskState(spec.task_id())
+    TaskState(Engine::State& s, const data::Download& spec) : TaskState(spec.task_id())
     {
         ui_.batch_id   = spec.batch_id();
         ui_.account    = spec.account_id();
@@ -769,17 +790,17 @@ public:
         ui_.path       = spec.path();
         is_fillable_   = spec.enable_fill();
 
-        std::vector<std::string> groups;
-        std::vector<std::string> articles;
+        ui::FileDownload file;
+        file.path = spec.path();
+        file.name = spec.desc();
         for (int i=0; i<spec.group_size(); ++i)
-            groups.push_back(spec.group(i));
+            file.groups.push_back(spec.group(i));
         for (int i=0; i<spec.article_size(); ++i)
-            articles.push_back(spec.article(i));
+            file.articles.push_back(spec.article(i));
 
-        task_.reset(new download(std::move(groups), std::move(articles),
-            spec.path(), spec.desc()));
+        task_ = s.factory->AllocateTask(file);
 
-        auto* ptr = static_cast<download*>(task_.get());
+        auto* ptr = dynamic_cast<download*>(task_.get());
         for (int i=0; i<spec.file_size(); ++i)
         {
             const auto& data = spec.file(i);
@@ -1324,6 +1345,7 @@ private:
                 break;
 
             case states::Complete:
+            {
                 ASSERT(task_);
                 ASSERT(task_->has_commands() == false);
                 ASSERT(num_active_cmdlists_ == 0);
@@ -1337,50 +1359,27 @@ private:
                     state.on_task_callback(ui_);
 
                 state.bytes_ready += ui_.size;
-                if (auto* ptr = dynamic_cast<class download*>(task_.get()))
-                {
-                    const auto& files = ptr->files();
-                    for (const auto& file : files)
-                    {
-                        ui::FileResult result;
-                        result.binary  = file->is_binary();
-                        result.name    = file->filename();
-                        result.path    = file->filepath();
-                        result.size    = file->size();
-                        result.damaged = ui_.error.any_bit();
-                        state.on_file_callback(result);
-                    }
-                }
-                else if (auto* ptr = dynamic_cast<class listing*>(task_.get()))
-                {
-                    ui::GroupListResult result;
-                    result.account = ui_.account;
-                    result.desc    = ui_.desc;
 
-                    const auto& groups = ptr->group_list();
-                    for (const auto& g : groups)
-                    {
-                        ui::GroupListResult::Newsgroup group;
-                        group.name = g.name;
-                        group.first = g.first;
-                        group.last  = g.last;
-                        group.size  = g.size;
-                        result.groups.push_back(group);
-                    }
-                    state.on_list_callback(result);
-                }
-                else if (auto* ptr = dynamic_cast<class update*>(task_.get()))
+                auto results = state.factory->MakeResult(*task_, ui_);
+                for (auto& result : results)
                 {
-                    ui::HeaderResult result;
-                    result.account = ui_.account;
-                    result.desc    = ui_.desc;
-                    result.group   = ptr->group();
-                    result.path    = ptr->path();
-                    result.num_local_articles  = ptr->num_local_articles();
-                    result.num_remote_articles = ptr->num_remote_articles();
-                    state.on_update_callback(result);
+                    ui::Result* result_ptr = result.get();
+
+                    if (auto* ptr = dynamic_cast<ui::FileResult*>(result_ptr))
+                    {
+                        state.on_file_callback(*ptr);
+                    }
+                    else if (auto* ptr = dynamic_cast<ui::GroupListResult*>(result_ptr))
+                    {
+                        state.on_list_callback(*ptr);
+                    }
+                    else if (auto* ptr = dynamic_cast<ui::HeaderResult*>(result_ptr))
+                    {
+                        state.on_update_callback(*ptr);
+                    }
                 }
-                break;
+            }
+            break;
 
             case states::Error:
                 ui_.state   = new_state;
@@ -1627,8 +1626,9 @@ public:
             if (ui_.state == states::Complete)
             {
                 ui::FileBatchResult result;
-                result.path = ui_.path;
-                result.desc = ui_.desc;
+                result.account = ui_.account;
+                result.path    = ui_.path;
+                result.desc    = ui_.desc;
                 state.on_batch_callback(result);
             }
         }
@@ -1775,7 +1775,7 @@ void Engine::State::execute()
 
         const auto& acc = find_account(task->account());
         for (auto i=num_conns; i<acc.connections; ++i)
-            conns.emplace_back(new ConnState(acc.id, oid++, *this));
+            conns.emplace_back(new ConnState(*this, acc.id, oid++));
 
         while (task->eligible_for_run())
         {
@@ -1834,37 +1834,90 @@ void Engine::State::enqueue(const TaskState& t, std::shared_ptr<cmdlist> cmd)
         //     return;
 
         const auto id = oid++;
-        conns.emplace_back(new ConnState(acc.id, id, *this));
+        conns.emplace_back(new ConnState(*this, acc.id, id));
     }
 
 }
 
 
+Engine::Engine(std::unique_ptr<Factory> factory) : state_(new State)
+{
+    state_->factory = std::move(factory);
+}
+
 Engine::Engine() : state_(new State)
 {
-    state_->threads.reset(new threadpool(4));
-
-    state_->threads->on_complete = [&](action* a)
+    class DefaultFactory : public Factory
     {
-        std::lock_guard<std::mutex> lock(state_->mutex);
-        state_->actions.emplace(a);
-        state_->on_notify_callback();
+    public:
+        std::unique_ptr<task> AllocateTask(const ui::FileDownload& file) override
+        {
+            return std::make_unique<download>(file.groups, file.articles, file.path, file.name);
+        }
+
+        std::unique_ptr<task> AllocateTask(const ui::HeaderDownload& download) override
+        {
+            return std::make_unique<update>(download.path, download.group);
+        }
+
+        std::unique_ptr<task> AllocateTask(const ui::GroupListDownload& list) override
+        {
+            return std::make_unique<listing>();
+        }
+        std::unique_ptr<connection> AllocateConnection()
+        {
+            return std::make_unique<connection>();
+        }
+        std::vector<std::unique_ptr<ui::Result>> MakeResult(const task& task, const ui::TaskDesc& desc) const override
+        {
+            std::vector<std::unique_ptr<ui::Result>> ret;
+            if (const auto* ptr = dynamic_cast<const download*>(&task))
+            {
+                const auto& files = ptr->files();
+                for (const auto& file : files)
+                {
+                    auto result = std::make_unique<ui::FileResult>();
+                    result->account = desc.account;
+                    result->damaged = desc.error.any_bit();
+                    result->binary  = file->is_binary();
+                    result->name    = file->filename();
+                    result->path    = file->filepath();
+                    result->size    = file->size();
+                    ret.push_back(std::move(result));
+                }
+            }
+            else if (const auto* ptr = dynamic_cast<const listing*>(&task))
+            {
+                auto result = std::make_unique<ui::GroupListResult>();
+                result->account = desc.account;
+                result->desc    = desc.desc;
+
+                const auto& groups = ptr->group_list();
+                for (const auto& g : groups)
+                {
+                    ui::GroupListResult::Newsgroup group;
+                    group.name  = g.name;
+                    group.first = g.first;
+                    group.last  = g.last;
+                    group.size  = g.size;
+                    result->groups.push_back(group);
+                }
+                ret.push_back(std::move(result));
+            }
+            else if (const auto* ptr = dynamic_cast<const update*>(&task))
+            {
+                auto result = std::make_unique<ui::HeaderResult>();
+                result->account = desc.account;
+                result->desc    = desc.desc;
+                result->group   = ptr->group();
+                result->path    = ptr->path();
+                result->num_local_articles  = ptr->num_local_articles();
+                result->num_remote_articles = ptr->num_remote_articles();
+            }
+            return ret;
+        }
     };
-
-    state_->oid                   = 1;
-    state_->fill_account          = 0;
-    state_->bytes_downloaded      = 0;
-    state_->bytes_queued          = 0;
-    state_->bytes_ready           = 0;
-    state_->bytes_written         = 0;
-    state_->num_pending_actions   = 0;
-    state_->num_pending_tasks     = 0;
-    state_->prefer_secure         = true;
-    state_->started               = false;
-    state_->group_items           = false;
-    state_->repartition_task_list = false;
-    state_->ratecontrol.set_quota(std::numeric_limits<std::size_t>::max());
-
+    state_->factory = std::make_unique<DefaultFactory>();
 }
 
 Engine::~Engine()
@@ -1964,7 +2017,7 @@ void Engine::SetAccount(const ui::Account& acc)
         for (auto i = num_conns; i<acc.connections; ++i)
         {
             const auto cid = state_->oid++;
-            state_->conns.emplace_back(new ConnState(acc.id, cid, *state_));
+            state_->conns.emplace_back(new ConnState(*state_, acc.id, cid));
         }
     }
     else if (num_conns > acc.connections)
@@ -2011,7 +2064,7 @@ Engine::action_id_t Engine::DownloadFiles(const ui::FileBatchDownload& batch, bo
 
         assert(file.path == batch.path);
 
-        std::unique_ptr<TaskState> job(new TaskState(taskid, std::move(file)));
+        std::unique_ptr<TaskState> job(new TaskState(*state_, taskid, std::move(file)));
         job->configure(s);
         job->set_account(batch.account);
         job->set_batch(batchid);
@@ -2038,7 +2091,7 @@ Engine::action_id_t Engine::DownloadListing(const ui::GroupListDownload& list)
     std::unique_ptr<BatchState> batch(new BatchState(batchid, list));
 
     const auto taskid = state_->oid++;
-    std::unique_ptr<TaskState> job(new TaskState(taskid, list));
+    std::unique_ptr<TaskState> job(new TaskState(*state_, taskid, list));
     job->set_account(list.account);
     job->set_batch(batchid);
 
@@ -2445,7 +2498,7 @@ void Engine::LoadSession(const std::string& file)
     for (int i=0; i<list.download_size();++i)
     {
         const auto& data = list.download(i);
-        std::unique_ptr<TaskState> task(new TaskState(data));
+        std::unique_ptr<TaskState> task(new TaskState(*state_, data));
         task->configure(s);
 
         assert(task->is_valid());
@@ -2704,7 +2757,7 @@ void Engine::CloneConnection(std::size_t i)
     const auto cid = state_->oid++;
 
     auto& dna  = state_->conns[i];
-    auto dolly = std::unique_ptr<ConnState>(new ConnState(cid, *state_, *dna));
+    auto dolly = std::unique_ptr<ConnState>(new ConnState(*state_, cid, *dna));
     state_->conns.push_back(std::move(dolly));
 }
 
