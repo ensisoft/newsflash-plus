@@ -281,8 +281,10 @@ MediaType findMediaType(const QString& newsgroup)
         {MediaType::MoviesInt, "movies.divx.russian"},
         {MediaType::MoviesInt, "german.movies"},
         {MediaType::MoviesSD, "movies.divx"},
+        {MediaType::MoviesSD, "binaries.divx"},
         {MediaType::MoviesSD, "movies.xvid"},
         {MediaType::MoviesSD, "movies.dvd"},
+        {MediaType::MoviesSD, "binaries.dvd"},
         {MediaType::MoviesHD, "movies.x264"},
         {MediaType::MoviesHD, "movies.mkv"},
         {MediaType::MoviesHD, "binaries.bluray"},
@@ -364,6 +366,12 @@ MediaType findMediaType(const QString& newsgroup)
         {MediaType::AdultOther, ".binaries.erotica"},
         {MediaType::AdultOther, ".multimedia.erotica"},
         {MediaType::AdultOther, ".erotica."},
+        {MediaType::AdultOther, "alt.sex."},
+        {MediaType::AdultOther, "sex.fetish"},
+        {MediaType::AdultOther, "erotica.fetish"},
+        {MediaType::AdultOther, "erotica.multimedia"},
+        {MediaType::AdultOther, ".porn"},
+
 
         {MediaType::Ebook, ".ebook."},
         {MediaType::Ebook, ".ebooks."},
