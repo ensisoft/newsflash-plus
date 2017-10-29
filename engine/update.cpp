@@ -310,6 +310,9 @@ public:
             updates_.insert(db.get());
         }
 
+        // write out changes to the disk
+        idb.flush();
+
         for (auto* db : updates_)
             db->flush();
     }

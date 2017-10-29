@@ -56,12 +56,16 @@ namespace newsflash
             typename StorageDevice::buffer buff_;
         };
 
-        void resize(std::uint64_t s)
+        void resize(std::uint64_t size)
         {
-            header_.size = s;
+            header_.size = size;
+        }
+
+        void flush()
+        {
             auto buff = device_.load(0, sizeof(header_), StorageDevice::buf_write);
             std::memcpy(buff.address(), &header_, sizeof(header_));
-            buff.flush();
+            buff.flush();            
         }
 
         void open(const std::string& file)
