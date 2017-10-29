@@ -99,7 +99,7 @@ namespace newsflash
 
         using on_conn_test_log  = std::function<void (const std::string& msgline)>;
 
-        using action_id_t = std::size_t;
+        using TaskId = std::size_t;
 
         Engine(std::unique_ptr<Factory> factory);
         Engine();
@@ -124,19 +124,20 @@ namespace newsflash
 
         // download the files included in the dowload.
         // all the files are grouped together into a single batch.
-        action_id_t DownloadFiles(const ui::FileBatchDownload& batch, bool priority = false);
+        TaskId DownloadFiles(const ui::FileBatchDownload& batch, bool priority = false);
 
         // Download newsgroup listing.
-        action_id_t DownloadListing(const ui::GroupListDownload& listing);
+        TaskId DownloadListing(const ui::GroupListDownload& listing);
 
         // Download newsgroup headers.
         // If the newsgroup already exists then the headers are updated
         // by downloading the newest headers since the latest update.
         // if there are older headers that have not yet been downloaded
         // then proceed to download those after the newest.
-        action_id_t DownloadHeaders(const ui::HeaderDownload& update);
+        TaskId DownloadHeaders(const ui::HeaderDownload& update);
 
-        action_id_t GetActionId(std::size_t task_index);
+        // get the TaskId for the item in the list.
+        TaskId GetActionId(std::size_t task_index);
 
         // process pending actions in the engine. You should call this function
         // as a response to to the async_notify.
@@ -287,7 +288,7 @@ namespace newsflash
 
         void MoveTaskDown(std::size_t index);
 
-        void KillAction(action_id_t id);
+        void KillTaskById(TaskId id);
 
         // get the number of tasks.
         std::size_t GetNumTasks() const;

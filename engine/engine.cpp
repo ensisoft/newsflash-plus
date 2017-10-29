@@ -2049,7 +2049,7 @@ void Engine::SetFillAccount(std::size_t id)
     state_->fill_account = id;
 }
 
-Engine::action_id_t Engine::DownloadFiles(const ui::FileBatchDownload& batch, bool priority)
+Engine::TaskId Engine::DownloadFiles(const ui::FileBatchDownload& batch, bool priority)
 {
     const auto batchid = state_->oid++;
     std::unique_ptr<BatchState> b(new BatchState(batchid, batch));
@@ -2085,7 +2085,7 @@ Engine::action_id_t Engine::DownloadFiles(const ui::FileBatchDownload& batch, bo
     return batchid;
 }
 
-Engine::action_id_t Engine::DownloadListing(const ui::GroupListDownload& list)
+Engine::TaskId Engine::DownloadListing(const ui::GroupListDownload& list)
 {
     const auto batchid = state_->oid++;
     std::unique_ptr<BatchState> batch(new BatchState(batchid, list));
@@ -2104,7 +2104,7 @@ Engine::action_id_t Engine::DownloadListing(const ui::GroupListDownload& list)
     return batchid;
 }
 
-Engine::action_id_t Engine::DownloadHeaders(const ui::HeaderDownload& download)
+Engine::TaskId Engine::DownloadHeaders(const ui::HeaderDownload& download)
 {
     const auto batchid = state_->oid++;
     std::unique_ptr<BatchState> batch(new BatchState(batchid, download));
@@ -2123,7 +2123,7 @@ Engine::action_id_t Engine::DownloadHeaders(const ui::HeaderDownload& download)
     return batchid;
 }
 
-Engine::action_id_t Engine::GetActionId(std::size_t task_index)
+Engine::TaskId Engine::GetActionId(std::size_t task_index)
 {
     if (state_->group_items)
     {
@@ -2890,7 +2890,7 @@ void Engine::MoveTaskDown(std::size_t index)
     }
 }
 
-void Engine::KillAction(Engine::action_id_t id)
+void Engine::KillTaskById(Engine::TaskId id)
 {
     auto it = std::find_if(std::begin(state_->batches), std::end(state_->batches),
         [&](const std::unique_ptr<BatchState>& b) {

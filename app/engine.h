@@ -280,9 +280,9 @@ namespace app
             engine_->CloneConnection(index);
         }
 
-        void killAction(quint32 id)
+        void killTaskById(quint32 id)
         {
-            engine_->KillAction(id);
+            engine_->KillTaskById(id);
         }
 
         void killTask(std::size_t index)

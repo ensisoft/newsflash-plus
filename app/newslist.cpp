@@ -223,7 +223,7 @@ void NewsList::stop(quint32 account)
         return;
 
     auto& op = it->second;
-    g_engine->killAction(op.taskId);
+    g_engine->killTaskById(op.taskId);
 
     pending_.erase(it);
 }

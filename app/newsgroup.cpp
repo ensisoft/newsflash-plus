@@ -258,7 +258,7 @@ NewsGroup::~NewsGroup()
 {
     if (task_)
     {
-        g_engine->killAction(task_);
+        g_engine->killTaskById(task_);
     }
 
     for (auto& cat : catalogs_)
@@ -601,7 +601,7 @@ void NewsGroup::stop()
 {
     Q_ASSERT(task_ != 0);
 
-    g_engine->killAction(task_);
+    g_engine->killTaskById(task_);
 
     task_ = 0;
 }
