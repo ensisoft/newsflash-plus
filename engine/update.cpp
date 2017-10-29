@@ -18,12 +18,14 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <newsflash/config.h>
+#include "newsflash/config.h"
+
 #include <limits>
 #include <fstream>
 #include <map>
 #include <set>
 #include <mutex>
+
 #include "filesys.h"
 #include "linebuffer.h"
 #include "filemap.h"
@@ -73,6 +75,8 @@ struct FileHeader {
 struct update::state {
     std::string folder;
     std::string group;
+
+    std::mutex mutex; 
 
     // maps a volume index to a file.
     std::map<std::uint32_t, std::unique_ptr<catalog_t>> files;
@@ -145,7 +149,7 @@ struct update::state {
 class update::parse : public action
 {
 public:
-    parse(std::shared_ptr<state> s, buffer buff) : buffer_(std::move(buff))
+    parse(buffer buff) : buffer_(std::move(buff))
     {}
 
     virtual void xperform() override
@@ -309,6 +313,13 @@ public:
             }
             updates_.insert(db.get());
         }
+
+        // important: we take the mutex here to acquire exclusive access to the 
+        // files. when we hold the lock the UI should *not* be reloading the 
+        // catalog files since their state may be inconsistent. 
+        // instead the UI *must* only do that in a response to on_write callback
+        // since during the execution of that callback the UI holds this mutex.
+        std::lock_guard<std::mutex> lock(state_->mutex);
 
         // write out changes to the disk
         idb.flush();
@@ -587,7 +598,7 @@ void update::complete(cmdlist& cmd, std::vector<std::unique_ptr<action>>& next)
             if (content.content_status() != buffer::status::success)
                 continue;
 
-            std::unique_ptr<action> p(new parse(state_, std::move(content)));
+            std::unique_ptr<action> p(new parse(std::move(content)));
             p->set_affinity(action::affinity::any_thread);
             next.push_back(std::move(p));
         }
@@ -601,14 +612,19 @@ void update::complete(action& a, std::vector<std::unique_ptr<action>>& next)
         std::unique_ptr<store> s(new store(state_));
         s->articles_ = std::move(p->articles_);
         s->bytes_ = p->size();
-        //s->buffer_ = std::move(p->buffer_);
-
-        //s->set_affinity(action::affinity::single_thread);
-        s->set_affinity(action::affinity::gui_thread);
+        s->set_affinity(action::affinity::single_thread);
         next.push_back(std::move(s));
     }
     if (auto* p = dynamic_cast<store*>(&a))
     {
+        NEWSFLASH_NO_RECURSION_GUARD(this);
+
+        // this thread (which is expected to be the UI thread)
+        // will acquire the mutex.. the mutex makes sure that
+        // that this thread can have a consistent view of the 
+        // current data files.
+        std::lock_guard<std::mutex> lock(state_->mutex);
+
         const auto first = p->first_;
         const auto last  = p->last_;
         local_first_ = std::min(local_first_, first);
@@ -623,8 +639,6 @@ void update::complete(action& a, std::vector<std::unique_ptr<action>>& next)
 
         if (on_write)
         {
-            // remember that db might be accessed at the same time through
-            // another thread via another store task
             for (auto* catalog : p->updates_)
             {
                 const auto& groupname = state_->group;

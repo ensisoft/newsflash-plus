@@ -64,12 +64,19 @@ public:
             throw std::system_error(std::error_code(GetLastError(), std::system_category()),
                 "filemap open failed: " + filename);
 
+        LARGE_INTEGER size;
+        if (!GetFileSizeEx(file_, &size)) {
+            CloseHandle(file_);
+            throw std::runtime_error("get file size failed");
+        }
+        size_ = size.QuadPart;
+
         mmap_ = CreateFileMapping(
             file_, 
             NULL, // default security
             PAGE_READWRITE,
-            0, // high size word
-            0, // low size word  (when the mapping size is 0 the current maximum size of the file mapping equals the file size)
+            size.HighPart,
+            size.LowPart,
             NULL); 
         if (mmap_ == NULL)
         {
@@ -82,14 +89,7 @@ public:
         // that this process creates do not inherit the handles.
         SetHandleInformation(file_, HANDLE_FLAG_INHERIT, 0);
         SetHandleInformation(mmap_, HANDLE_FLAG_INHERIT, 0);
-
-        LARGE_INTEGER size;
-        if (!GetFileSizeEx(file_, &size)) {
-            CloseHandle(file_);
-            throw std::runtime_error("get file size failed");
-        }
-        size_ = size.QuadPart;        
-
+        
         base_ = MapViewOfFile(mmap_,
             FILE_MAP_READ | FILE_MAP_WRITE,
             0, 0, size_);

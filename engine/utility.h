@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -20,15 +20,19 @@
 
 #pragma once
 
-#include <newsflash/config.h>
+#include "newsflash/config.h"
+
 #include <memory>
+#include <map>
+
+#include "assert.h"
 
 // collection of generic usable utility functions
 
 namespace newsflash
 {
 
-    class noncopyable 
+    class noncopyable
     {
         noncopyable(const noncopyable&) = delete;
 
@@ -40,14 +44,14 @@ namespace newsflash
 
 
     template<typename Handle, typename Deleter>
-    class unique_handle 
+    class unique_handle
     {
     public:
-        unique_handle(Handle handle, const Deleter& deleter) 
+        unique_handle(Handle handle, const Deleter& deleter)
             : handle_(handle), deleter_(deleter)
         {}
 
-        unique_handle(unique_handle&& other) 
+        unique_handle(unique_handle&& other)
             : handle_(other.handle_), deleter_(other.deleter_)
         {
             other.handle_ = Handle();
@@ -85,8 +89,8 @@ namespace newsflash
         unique_handle& operator=(unique_handle&) = delete;
 
     private:
-        Handle handle_;                
-        const Deleter deleter_;        
+        Handle handle_;
+        const Deleter deleter_;
     };
 
     template<typename Handle, typename Deleter>
@@ -118,8 +122,33 @@ namespace newsflash
     std::size_t MB(std::size_t megs)
     { return megs * 1024 * 1024; }
 
-    inline 
+    inline
     std::size_t KB(std::size_t kbs)
     { return kbs * 1024; }
 
+    struct recursion_detector
+    {
+        std::map<void*, bool> instance_entry_map;
+        struct method_entry {
+            method_entry(recursion_detector* detector, void* instance) : detector(detector), instance(instance)
+            {
+                auto it = detector->instance_entry_map.find(instance);
+                ASSERT(it == std::end(detector->instance_entry_map));
+                detector->instance_entry_map.insert(std::make_pair(instance, true));
+            }
+           ~method_entry()
+            {
+                detector->instance_entry_map.erase(instance);
+            }
+            recursion_detector* detector = nullptr;
+            void* instance = nullptr;
+            method_entry(const method_entry&) = delete;
+            method_entry& operator=(const method_entry&) = delete;
+        };
+    };
+
 } // namespace
+
+#define NEWSFLASH_NO_RECURSION_GUARD(instance)    \
+    static recursion_detector rd; \
+    recursion_detector::method_entry recursion_entry(&rd, instance)
