@@ -76,7 +76,11 @@ struct update::state {
     std::string folder;
     std::string group;
 
-    std::mutex mutex; 
+    // this mutex is acquired by any thread to get an
+    // exclusive view to the the underlying data files.
+    // i.e. holding this mutex makes sure that the files
+    // will stay in a consistent state.
+    std::mutex file_io_mutex;
 
     // maps a volume index to a file.
     std::map<std::uint32_t, std::unique_ptr<catalog_t>> files;
@@ -87,6 +91,13 @@ struct update::state {
 
     // message id db
     idlist_t idb;
+
+    // this mutex is to eliminate the possible race condition
+    // between the tasks's commit operation and some possible
+    // enqueued operations that would like to modify the data files.
+    std::mutex cancel_operation_mutex;
+    // cancel rest of the enqueued operations.
+    bool cancel_operation = false;
 
     // these variables track our internal article numbering.
     // landmark defines the very first article number we have
@@ -189,6 +200,10 @@ public:
 
     virtual void xperform() override
     {
+        std::lock_guard<std::mutex> cancel_lock(state_->cancel_operation_mutex);
+        if (state_->cancel_operation)
+            return;
+
         first_ = std::numeric_limits<decltype(first_)>::max();
 
         auto& files = state_->files;
@@ -314,12 +329,12 @@ public:
             updates_.insert(db.get());
         }
 
-        // important: we take the mutex here to acquire exclusive access to the 
-        // files. when we hold the lock the UI should *not* be reloading the 
-        // catalog files since their state may be inconsistent. 
+        // important: we take the mutex here to acquire exclusive access to the
+        // files. when we hold the lock the UI should *not* be reloading the
+        // catalog files since their state may be inconsistent.
         // instead the UI *must* only do that in a response to on_write callback
         // since during the execution of that callback the UI holds this mutex.
-        std::lock_guard<std::mutex> lock(state_->mutex);
+        std::lock_guard<std::mutex> lock(state_->file_io_mutex);
 
         // write out changes to the disk
         idb.flush();
@@ -517,6 +532,11 @@ void update::commit()
     if (commit_done_)
         return;
 
+    // there might be pending operations to write more data to the
+    // data files, but we're just going to turn them into non-ops
+    std::lock_guard<std::mutex> lock(state_->cancel_operation_mutex);
+    state_->cancel_operation = true;
+
     const auto& path  = state_->folder;
     const auto& group = state_->group;
     const auto file = fs::joinpath(fs::joinpath(path, group), group + ".nfo");
@@ -621,9 +641,9 @@ void update::complete(action& a, std::vector<std::unique_ptr<action>>& next)
 
         // this thread (which is expected to be the UI thread)
         // will acquire the mutex.. the mutex makes sure that
-        // that this thread can have a consistent view of the 
+        // that this thread can have a consistent view of the
         // current data files.
-        std::lock_guard<std::mutex> lock(state_->mutex);
+        std::lock_guard<std::mutex> lock(state_->file_io_mutex);
 
         const auto first = p->first_;
         const auto last  = p->last_;
