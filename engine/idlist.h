@@ -45,7 +45,7 @@ namespace newsflash
             proxy& operator=(std::int16_t value)
             {
                 std::memcpy(buff_.address(), &value, sizeof(value));
-                buff_.flush();
+                buff_.write();
                 return *this;
             }
         private:
@@ -65,7 +65,8 @@ namespace newsflash
         {
             auto buff = device_.load(0, sizeof(header_), StorageDevice::buf_write);
             std::memcpy(buff.address(), &header_, sizeof(header_));
-            buff.flush();            
+            buff.write();
+            device_.flush();
         }
 
         void open(const std::string& file)
@@ -89,7 +90,7 @@ namespace newsflash
             return {std::move(buff)};
         }
 
-        bool is_open() const 
+        bool is_open() const
         { return device_.is_open(); }
 
         std::uint32_t size() const

@@ -56,7 +56,7 @@ void test_read_write()
         {MB(5), 0xff}
     };
 
-    // create and write
+    // create and write blocks of data.
     {
         newsflash::filebuf buf;
         buf.open("file");
@@ -69,8 +69,9 @@ void test_read_write()
 
             offset += b->size;
             std::cout << "wrote: " <<  b->size << " bytes" << std::endl;
-            r.flush();
+            r.write();
         }
+        buf.flush();
     }
 
     // open and read

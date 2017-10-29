@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -28,7 +28,7 @@
 
 namespace newsflash
 {
-    // filemap maps the contents of a file on the disk into system ram in variable size chunks. 
+    // filemap maps the contents of a file on the disk into system ram in variable size chunks.
     class filemap
     {
         class mapper;
@@ -36,11 +36,11 @@ namespace newsflash
     public:
         using byte = unsigned char;
 
-        class buffer 
+        class buffer
         {
         public:
         #ifdef NEWSFLASH_DEBUG
-           template<typename T> 
+           template<typename T>
            class iterator_t : public std::iterator<std::random_access_iterator_tag, T>
            {
            public:
@@ -50,7 +50,7 @@ namespace newsflash
                 iterator_t()
                 {}
 
-                T& operator*() 
+                T& operator*()
                 {
                     ASSERT(pos_ < len_);
                     return base_[pos_];
@@ -113,12 +113,12 @@ namespace newsflash
                     return i;
                 }
 
-                std::size_t operator - (const iterator_t& other) const 
+                std::size_t operator - (const iterator_t& other) const
                 {
                     return pos_ - other.pos_;
                 }
 
-                bool operator==(const iterator_t& other) const 
+                bool operator==(const iterator_t& other) const
                 {
                     return pos_ == other.pos_;
                 }
@@ -126,15 +126,15 @@ namespace newsflash
                 {
                     return pos_ != other.pos_;
                 }
-                bool operator<(const iterator_t& other) const 
+                bool operator<(const iterator_t& other) const
                 {
                     return pos_ < other.pos_;
                 }
-                bool operator<=(const iterator_t& other) const 
+                bool operator<=(const iterator_t& other) const
                 {
                     return pos_ <= other.pos_;
                 }
-                bool operator>(const iterator_t& other) const 
+                bool operator>(const iterator_t& other) const
                 {
                     return pos_ > other.pos_;
                 }
@@ -150,7 +150,7 @@ namespace newsflash
             private:
                 byte* base_;
             private:
-                std::size_t len_;                
+                std::size_t len_;
                 std::size_t pos_;
            };
 
@@ -166,11 +166,11 @@ namespace newsflash
                return {(byte*)base_, length_, length_ };
            }
 
-           const_iterator begin() const 
+           const_iterator begin() const
            {
                return {(byte*)base_, length_, 0};
            }
-           const_iterator end() const 
+           const_iterator end() const
            {
                return {(byte*)base_, length_, length_};
            }
@@ -179,11 +179,11 @@ namespace newsflash
            using iterator = byte*;
            using const_iterator = const byte*;
 
-           iterator begin() 
+           iterator begin()
            {
                 return (iterator)base_;
            }
-           iterator end() 
+           iterator end()
            {
                 return begin() + length_;
            }
@@ -205,38 +205,42 @@ namespace newsflash
 
            void* address()
            {
-               return (byte*)base_; 
+               return (byte*)base_;
            }
 
-           const void* address() const 
+           const void* address() const
            {
                return (const byte*)base_;
            }
 
-           std::size_t length() const 
-           { 
-               return length_; 
+           std::size_t length() const
+           {
+               return length_;
            }
 
-           void flush()
+           void write()
            { /* this is a no-op */ }
 
         private:
-            buffer(std::shared_ptr<mapper> m, std::size_t len, void* b) : 
+            buffer(std::shared_ptr<mapper> m, std::size_t len, void* b) :
                 mapper_(m), length_(len), base_(b)
             {}
             friend class filemap;
         private:
             std::shared_ptr<mapper> mapper_;
-            std::size_t length_;
+            std::size_t length_ = 0;
         private:
-            void* base_;
+            void* base_ = nullptr;
         };
 
         // open a filemap to the given file.
-        void open(std::string file);
+        void open(const std::string& file);
 
+        // close the filemap.
         void close();
+
+        // flush pending changes to the underlying file.
+        void flush();
 
         enum buffer_flags {
             buf_read  = 1 << 0,

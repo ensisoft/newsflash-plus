@@ -91,6 +91,12 @@ public:
             throw std::runtime_error("file write failed");
     }
 
+    void flush()
+    {
+        if (FlushFileBuffers(file_) == 0)
+            throw std::runtime_error("file flush failed");
+    }
+
     std::size_t size() const
     {
         LARGE_INTEGER size;
@@ -139,8 +145,12 @@ public:
             throw std::runtime_error("file seek failed");
         if (::write(file_, buff, bytes) == -1)
             throw std::runtime_error("file write failed");
+    }
 
-        //::fdatasync(file_); // todo: ??
+    void flush()
+    {
+        if (::syncfs(file_) == -1)
+            throw std::runtime_error("syncfs failed");
     }
 
     std::size_t size() const
@@ -156,7 +166,7 @@ private:
 
 #endif
 
-void filebuf::buffer::flush()
+void filebuf::buffer::write()
 {
     if (!write_) return;
 
@@ -175,6 +185,11 @@ void filebuf::close()
 {
     fileio_.reset();
     filename_.clear();
+}
+
+void filebuf::flush()
+{
+    fileio_->flush();
 }
 
 filebuf::buffer filebuf::load(std::size_t offset, std::size_t size, unsigned flags)

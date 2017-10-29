@@ -166,7 +166,7 @@ namespace newsflash
             write(out, m_subject);
             write(out, m_author);
             write(out, MAGIC);
-            buffer.flush();
+            buffer.write();
         }
 
         void combine(const article& other)

@@ -56,7 +56,7 @@ void test_create_open()
         {MB(1.5), 0xee}
     };
 
-    // create
+    // create and write blocks of data
     {
         newsflash::filemap map;
         map.open("file");
@@ -70,8 +70,9 @@ void test_create_open()
 
             offset += b->size;
             std::cout << "wrote: " <<  b->size << " bytes" << std::endl;
-            r.flush();
+            r.write();
         }
+        map.flush();
     }
 
     // open existing

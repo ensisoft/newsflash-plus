@@ -75,7 +75,7 @@ namespace newsflash
             {
                 return data_.size();
             }
-            void flush();
+            void write();
 
         private:
             buffer(std::shared_ptr<fileio> io, std::vector<byte> data,
@@ -97,6 +97,9 @@ namespace newsflash
 
         // close the current filebuf.
         void close();
+
+        // flush pending changes to the underlying file.
+        void flush();
 
         enum buffer_flags {
             buf_read  = 1 << 0,

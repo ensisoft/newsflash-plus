@@ -245,7 +245,8 @@ namespace newsflash
             auto beg  = (const typename StorageDevice::byte*)&header_;
             auto end  = beg + sizeof(header_);
             std::copy(beg, end, buff.begin());
-            buff.flush();
+            buff.write();
+            device_.flush();
         }
 
         std::uint32_t size() const

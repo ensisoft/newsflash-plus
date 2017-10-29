@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -72,12 +72,12 @@ public:
         size_ = size.QuadPart;
 
         mmap_ = CreateFileMapping(
-            file_, 
+            file_,
             NULL, // default security
             PAGE_READWRITE,
             size.HighPart,
             size.LowPart,
-            NULL); 
+            NULL);
         if (mmap_ == NULL)
         {
             CloseHandle(file_);
@@ -89,7 +89,7 @@ public:
         // that this process creates do not inherit the handles.
         SetHandleInformation(file_, HANDLE_FLAG_INHERIT, 0);
         SetHandleInformation(mmap_, HANDLE_FLAG_INHERIT, 0);
-        
+
         base_ = MapViewOfFile(mmap_,
             FILE_MAP_READ | FILE_MAP_WRITE,
             0, 0, size_);
@@ -102,30 +102,36 @@ public:
 
    ~mapper()
     {
-        ASSERT(UnmapViewOfFile(base_) == TRUE);        
+        ASSERT(UnmapViewOfFile(base_) == TRUE);
         ASSERT(CloseHandle(mmap_) == TRUE);
         ASSERT(CloseHandle(file_) == TRUE);
-    }    
+    }
 
     void* map(std::size_t offset /*, std::size_t size,  unsigned flags*/)
     {
         return (char*)base_ + offset;
     }
 
-    std::size_t size() const 
+    void flush()
+    {
+        if (FlushViewOfFile(base_, 0) == 0)
+            throw std::runtime_error("flush memory map failed");
+    }
+
+    std::size_t size() const
     {
         return size_;
     }
 private:
-    HANDLE file_;
-    HANDLE mmap_;    
-    void* base_;
-    std::size_t size_;
+    HANDLE file_ = INVALID_HANDLE;
+    HANDLE mmap_ = INVALID_HANDLE;
+    void* base_  = nullptr;
+    std::size_t size_ = 0;
 };
 
 #endif
 
-#if defined(LINUX_OS)    
+#if defined(LINUX_OS)
 
 class filemap::mapper
 {
@@ -152,22 +158,29 @@ public:
 
    ~mapper()
     {
-        ASSERT(::munmap(base_, size_) == 0);        
+        ASSERT(::munmap(base_, size_) == 0);
         ASSERT(::close(file_) == 0);
     }
     void* map(std::size_t offset /*, std::size_t size, unsigned flags*/)
     {
         return (char*)base_ + offset;
     }
-    std::size_t size() const 
+
+    void flush()
+    {
+        if (::msync(base_, size_, MS_INVALIDATE) == -1)
+            throw std::runtime_error("flush memory map failed");
+    }
+
+    std::size_t size() const
     {
         return size_;
     }
 
 private:
-    int file_;        
-    void* base_;    
-    std::size_t size_;
+    int file_ = -1;
+    void* base_ = nullptr;
+    std::size_t size_ = 0;
 };
 
 #endif
@@ -175,7 +188,7 @@ private:
 filemap::buffer::~buffer()
 {}
 
-void filemap::open(std::string file)
+void filemap::open(const std::string& file)
 {
     auto map = std::make_shared<mapper>(file);
 
@@ -185,8 +198,13 @@ void filemap::open(std::string file)
 
 void filemap::close()
 {
-    mapper_.reset(); 
+    mapper_.reset();
     filename_.clear();
+}
+
+void filemap::flush()
+{
+    mapper_->flush();
 }
 
 void* filemap::map_ptr(std::size_t offset, std::size_t size)
@@ -214,7 +232,7 @@ std::size_t filemap::size() const
     return mapper_->size();
 }
 
-std::string filemap::filename() const 
+std::string filemap::filename() const
 {
     return filename_;
 }
