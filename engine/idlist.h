@@ -20,17 +20,19 @@
 
 #pragma once
 
-#include <newsflash/config.h>
+#include "newsflash/config.h"
+
 #include <cstdint>
 #include <cstring>
 #include <string>
+
 #include "assert.h"
 
 namespace newsflash
 {
     // an array message ids
-    template<typename Storage>
-    class idlist : public Storage
+    template<typename StorageDevice>
+    class idlist
     {
     public:
         class proxy
@@ -48,26 +50,26 @@ namespace newsflash
             }
         private:
             friend class idlist;
-            proxy(typename Storage::buffer b) : buff_(std::move(b))
+            proxy(typename StorageDevice::buffer b) : buff_(std::move(b))
             {}
         private:
-            typename Storage::buffer buff_;
+            typename StorageDevice::buffer buff_;
         };
 
         void resize(std::uint64_t s)
         {
             header_.size = s;
-            auto buff = Storage::load(0, sizeof(header_), Storage::buf_write);
+            auto buff = device_.load(0, sizeof(header_), StorageDevice::buf_write);
             std::memcpy(buff.address(), &header_, sizeof(header_));
             buff.flush();
         }
 
-        void open(std::string file)
+        void open(const std::string& file)
         {
-            Storage::open(file);
-            if (Storage::size())
+            device_.open(file);
+            if (device_.size())
             {
-                const auto buff = Storage::load(0, sizeof(header_), Storage::buf_read);
+                const auto buff = device_.load(0, sizeof(header_), StorageDevice::buf_read);
                 std::memcpy(&header_, buff.address(), sizeof(header_));
                 if (header_.cookie != COOKIE)
                     throw std::runtime_error("incorrect idlist header");
@@ -79,9 +81,12 @@ namespace newsflash
         {
             ASSERT(i < header_.size);
             const auto offset = sizeof(header_) + i * sizeof(std::int16_t);
-            auto buff = Storage::load(offset, sizeof(std::int16_t), Storage::buf_read | Storage::buf_write);
+            auto buff = device_.load(offset, sizeof(std::int16_t), StorageDevice::buf_read | StorageDevice::buf_write);
             return {std::move(buff)};
         }
+
+        bool is_open() const 
+        { return device_.is_open(); }
 
         std::uint32_t size() const
         { return header_.size; }
@@ -111,8 +116,8 @@ namespace newsflash
             std::uint32_t version = VERSION;
             std::uint64_t size    = 0;
         };
-
-
         header header_;
+
+        StorageDevice device_;
     };
 } // newsflash
