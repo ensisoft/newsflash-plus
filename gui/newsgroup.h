@@ -110,6 +110,7 @@ namespace gui
     private:
         DlgFilter::Params filter_;
     private:
-        QModelIndexList selection_;
+        QModelIndexList selected_rows_;
+        QModelIndex     current_index_;
     };
 } // gui

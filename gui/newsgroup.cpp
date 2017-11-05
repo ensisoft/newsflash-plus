@@ -586,22 +586,18 @@ void NewsGroup::selectionChanged(const QItemSelection& selected, const QItemSele
     // update the selection bits in the index items.
 
     // current selection is deselected.
-    model_.select(selection_, false);
+    model_.select(selected_rows_, false);
+
+    auto* selectionModel = ui_.tableView->selectionModel();
 
     // grab new items.
-    selection_ = ui_.tableView->selectionModel()->selectedRows();
+    selected_rows_ = selectionModel->selectedRows();
+    current_index_ = selectionModel->currentIndex();
 
     // update (store) the item bits.
-    model_.select(selection_, true);
+    model_.select(selected_rows_, true);
 
-
-    // store the currently selected list of items
-    // so we can restore it later.
-    //model_.select(deselected.indexes(), false);
-    //model_.select(selected.indexes(), true);
-    //const auto empty = deselected.empty();
-
-    const auto empty = selection_.empty();
+    const auto empty = selected_rows_.empty();
 
     ui_.actionDownload->setEnabled(!empty);
     ui_.actionBookmark->setEnabled(!empty);
@@ -621,30 +617,28 @@ void NewsGroup::modelEndReset()
     QModelIndexList list;
     model_.scanSelected(list);
 
+    auto* selectionModel = ui_.tableView->selectionModel();
+    selectionModel->blockSignals(true);
+
     if (!list.empty())
     {
         QItemSelection sel;
         for (const auto& i : list)
             sel.select(i, i);
 
-        auto* model = ui_.tableView->selectionModel();
-        model->blockSignals(true);
-        model->select(sel,
+        selectionModel->select(sel,
             QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
-        model->blockSignals(false);
     }
 
-    selection_ = list;
+    selectionModel->setCurrentIndex(current_index_,
+        QItemSelectionModel::NoUpdate);
+    selectionModel->blockSignals(false);
+
+    selected_rows_ = list;
 
     const auto numShown = model_.numShown();
     const auto numItems = model_.numItems();
     ui_.grpView->setTitle(app::toString("%1 (%2 / %3)", name_, app::count{numShown}, app::count{numItems}));
-
-    if (!selection_.empty())
-    {
-        const auto first = selection_[0];
-        ui_.tableView->scrollTo(first);
-    }
 }
 
 void NewsGroup::modelLayoutChanged()
