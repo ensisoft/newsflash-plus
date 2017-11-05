@@ -724,6 +724,20 @@ void NewsGroup::download(const QModelIndexList& list, quint32 acc, const QString
                 {
                     const auto& path = joinPath(path_, name_);
                     const auto& file = joinPath(path, name_ + ".idb");
+
+                    struct TaskLockGuard {
+                        ~TaskLockGuard() {
+                            if (locked_task)
+                                g_engine->unlockTaskById(locked_task);
+                        }
+                        void lock(quint32 locked_task) {
+                            if (g_engine->lockTaskById(locked_task))
+                                this->locked_task = locked_task;
+                        }
+                        quint32 locked_task = 0;
+                    };
+                    TaskLockGuard task_lock;
+                    task_lock.lock(task_);
                     idlist_.open(narrow(file));
                 }
 
@@ -994,6 +1008,25 @@ void NewsGroup::actionKilled(quint32 action)
 
 void NewsGroup::loadData(Block& block, bool guiLoad)
 {
+    struct TaskLockGuard {
+        ~TaskLockGuard() {
+            if (locked_task)
+                g_engine->unlockTaskById(locked_task);
+        }
+        void lock(quint32 locked_task) {
+            if (g_engine->lockTaskById(locked_task))
+                this->locked_task = locked_task;
+        }
+        quint32 locked_task = 0;
+    };
+
+    TaskLockGuard task_lock;
+
+    if (guiLoad)
+    {
+        task_lock.lock(task_);
+    }
+
     // resetting the model will make it forget the current selection.
     // however using beginInsertRows and endInsertRows would need to be
     // done for each row because the insertions into the index are not

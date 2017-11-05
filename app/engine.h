@@ -285,6 +285,16 @@ namespace app
             engine_->KillTaskById(id);
         }
 
+        bool lockTaskById(quint32 id)
+        {
+            return engine_->LockTaskById(id);
+        }
+
+        bool unlockTaskById(quint32 id)
+        {
+            return engine_->UnlockTaskById(id);
+        }
+
         void killTask(std::size_t index)
         {
             const auto id = engine_->KillTask(index);
