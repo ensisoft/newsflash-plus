@@ -136,6 +136,40 @@ namespace newsflash
             std::memset(header_.table, 0, sizeof(header_.table));
         }
 
+        struct snapshot_t {
+            std::uint32_t offset = 0;
+            std::uint32_t size   = 0;
+            std::uint32_t first  = 0;
+            std::uint32_t last   = 0;
+            std::uint32_t table[CATALOG_SIZE];
+            std::string   file;
+        };
+
+        std::unique_ptr<snapshot_t> snapshot() const
+        {
+            auto ret = std::make_unique<snapshot_t>();
+            ret->offset = header_.offset;
+            ret->size   = header_.size;
+            ret->first  = header_.first;
+            ret->last   = header_.last;
+            ret->file   = device_.filename();
+            std::memcpy(ret->table, header_.table, sizeof(header_.table));
+            return ret;
+        }
+
+        // open an existing catalog for reading based on a the given snapshot
+        // the snapshot contains enough data that allows a consistent
+        // view of the catalog to be opened.
+        void open(const snapshot_t& snapshot)
+        {
+            device_.open(snapshot.file);
+            header_.offset = snapshot.offset;
+            header_.size   = snapshot.size;
+            header_.first  = snapshot.first;
+            header_.last   = snapshot.last;
+            std::memcpy(header_.table, snapshot.table, sizeof(header_.table));
+        }
+
         // open existing catalog for reading and writing
         // or create a new one if it doesn't yet exist.
         void open(const std::string& file)

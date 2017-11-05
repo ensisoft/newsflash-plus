@@ -135,8 +135,44 @@ void unit_test_create_new()
         db->open("file");
         BOOST_REQUIRE(db->size() == 3);
 
-        auto beg = db->begin();
-        auto end = db->end();
+        catalog::offset_t offset(0);
+
+        auto a = db->load(offset);
+        BOOST_REQUIRE(a.test(fileflag::broken));
+        BOOST_REQUIRE(a.author() == "John Doe");
+        BOOST_REQUIRE(a.subject() == "[#scnzb@efnet][529762] Automata.2014.BRrip.x264.Ac3-MiLLENiUM [1/4] - \"Automata.2014.BRrip.x264.Ac3-MiLLENiUM.mkv\" yEnc (1/1513)");
+        BOOST_REQUIRE(a.bytes() == 1024);
+        BOOST_REQUIRE(a.number() == 666);
+
+        offset += a.size_on_disk();
+        a = db->load(offset);
+        BOOST_REQUIRE(a.test(fileflag::downloaded));
+        BOOST_REQUIRE(a.author() == "Mickey Mouse");
+        BOOST_REQUIRE(a.subject() == "Mickey and Goofy in Disneyland");
+        BOOST_REQUIRE(a.bytes() == 456);
+        BOOST_REQUIRE(a.number() == 500);
+
+        offset += a.size_on_disk();
+        a = db->load(offset);
+        BOOST_REQUIRE(a.author() == "foo@acme.com");
+        BOOST_REQUIRE(a.subject() == "Leiah - Kings and Queens \"Foobar.mp3\" (01/10)");
+        BOOST_REQUIRE(a.number() == 45);
+
+    }
+
+    // open from a snapshot
+    {
+        using catalog = newsflash::catalog<newsflash::filemap>;
+        using article = newsflash::catalog<newsflash::filemap>;
+
+        auto cat = std::make_unique<catalog>();
+        cat->open("file");
+        BOOST_REQUIRE(cat->size() == 3);
+
+        auto snapshot = cat->snapshot();
+
+        auto db = std::make_unique<catalog>();
+        db->open(*snapshot);
 
         catalog::offset_t offset(0);
 
