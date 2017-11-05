@@ -1963,6 +1963,7 @@ Engine::Engine() : state_(new State)
                 result->path    = ptr->path();
                 result->num_local_articles  = ptr->num_local_articles();
                 result->num_remote_articles = ptr->num_remote_articles();
+                ret.push_back(std::move(result));
             }
             return ret;
         }
