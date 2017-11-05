@@ -78,10 +78,8 @@ NewsGroup::NewsGroup(quint32 acc, QString path, QString name) : account_(acc), p
     ui_.actionShowBroken->setChecked(true);
     ui_.actionShowDeleted->setChecked(true);
 
-    QObject::connect(app::g_engine, SIGNAL(newHeaderInfoAvailable(const QString&, quint64, quint64)),
-        this, SLOT(newHeaderInfoAvailable(const QString&, quint64, quint64)));
-    QObject::connect(app::g_engine, SIGNAL(newHeaderDataAvailable(const QString&, const QString&)),
-        this, SLOT(newHeaderDataAvailable(const QString&, const QString&)));
+    QObject::connect(app::g_engine, SIGNAL(newHeaderInfoAvailable(const app::HeaderUpdateInfo&)),
+        this, SLOT(newHeaderInfoAvailable(const app::HeaderUpdateInfo&)));
     QObject::connect(app::g_engine, SIGNAL(updateCompleted(const app::HeaderInfo&)),
         this, SLOT(updateCompleted(const app::HeaderInfo&)));
 
@@ -647,9 +645,15 @@ void NewsGroup::modelLayoutChanged()
     modelEndReset();
 }
 
-void NewsGroup::newHeaderInfoAvailable(const QString& group, quint64 numLocal, quint64 numRemote)
+void NewsGroup::newHeaderInfoAvailable(const app::HeaderUpdateInfo& info)
 {
-    if (group != name_) return;
+    const QString& file = info.groupFile;
+    const QString& name = info.groupName;
+    const auto numRemote = info.numRemoteArticles;
+    const auto numLocal  = info.numLocalArticles;
+
+    if (file.indexOf(app::joinPath(path_, name_)) != 0)
+        return;
 
     const auto max = std::numeric_limits<int>::max();
     if(numRemote < max)
@@ -663,19 +667,12 @@ void NewsGroup::newHeaderInfoAvailable(const QString& group, quint64 numLocal, q
         ui_.progressBar->setMaximum(max);
         ui_.progressBar->setValue(d * max);
     }
-}
-
-void NewsGroup::newHeaderDataAvailable(const QString& group, const QString& file)
-{
-    if (file.indexOf(app::joinPath(path_, name_)) != 0)
-        return;
 
     const auto numAvail  = model_.numBlocksAvail();
     const auto numLoaded = model_.numBlocksLoaded();
     ui_.btnLoadMore->setEnabled(numAvail != numLoaded);
     ui_.btnLoadMore->setVisible(true);
-    ui_.btnLoadMore->setText(
-        tr("Load more headers ... (%1/%2)").arg(numLoaded).arg(numAvail));
+    ui_.btnLoadMore->setText(tr("Load more headers ... (%1/%2)").arg(numLoaded).arg(numAvail));
 }
 
 void NewsGroup::updateCompleted(const app::HeaderInfo& info)

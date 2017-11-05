@@ -92,10 +92,8 @@ Engine::Engine()
         std::placeholders::_1));
     engine_->SetListCallback(std::bind(&Engine::onListComplete, this,
         std::placeholders::_1));
-    engine_->SetHeaderDataCallback(std::bind(&Engine::onHeaderDataAvailable, this,
-        std::placeholders::_1, std::placeholders::_2));
     engine_->SetHeaderInfoCallback(std::bind(&Engine::onHeaderInfoAvailable, this,
-        std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+        std::placeholders::_1));
     engine_->SetFinishCallback(std::bind(&Engine::onAllComplete, this));
     engine_->SetQuotaCallback(std::bind(&Engine::onQuota, this,
         std::placeholders::_1, std::placeholders::_2));
@@ -643,15 +641,17 @@ void Engine::onUpdateComplete(const newsflash::ui::HeaderResult& result)
     emit updateCompleted(info);
 }
 
-void Engine::onHeaderDataAvailable(const std::string& group, const std::string& file)
+void Engine::onHeaderInfoAvailable(const newsflash::ui::HeaderUpdate& update)
 {
-    emit newHeaderDataAvailable(fromUtf8(group), widen(file));
-}
-
-void Engine::onHeaderInfoAvailable(const std::string& group,
-    std::uint64_t numLocal, std::uint64_t numRemote)
-{
-    emit newHeaderInfoAvailable(fromUtf8(group), numLocal, numRemote);
+    for (const auto& file : update.updated_catalog_files)
+    {
+        HeaderUpdateInfo info;
+        info.groupName = fromUtf8(update.group_name);
+        info.groupFile = fromUtf8(file);
+        info.numLocalArticles  = update.num_local_articles;
+        info.numRemoteArticles = update.num_remote_articles;
+        emit newHeaderInfoAvailable(info);
+    }
 }
 
 void Engine::onAllComplete()

@@ -38,6 +38,7 @@
 namespace app
 {
     struct NewsGroupInfo;
+    struct HeaderUpdateInfo;
     class Settings;
 
     class NewsList : public QAbstractTableModel
@@ -97,7 +98,7 @@ namespace app
 
     private slots:
         void listCompleted(quint32 acc, const QList<app::NewsGroupInfo>& list);
-        void newHeaderDataAvailable(const QString& group, const QString& file);
+        void newHeaderDataAvailable(const app::HeaderUpdateInfo& info);
 
     private:
         void setAccountSubscriptions(quint32 accountId);

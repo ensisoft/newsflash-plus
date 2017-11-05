@@ -32,6 +32,7 @@
 #include "ui/download.h"
 #include "ui/error.h"
 #include "ui/result.h"
+#include "ui/update.h"
 
 namespace newsflash
 {
@@ -50,6 +51,7 @@ namespace newsflash
             virtual std::unique_ptr<task> AllocateTask(const ui::GroupListDownload& list) = 0;
             virtual std::unique_ptr<connection> AllocateConnection() = 0;
             virtual std::vector<std::unique_ptr<ui::Result>> MakeResult(const task& task, const ui::TaskDesc& desc) const = 0;
+            virtual std::unique_ptr<ui::Update> MakeUpdate(const task& task, const ui::TaskDesc& desc) const = 0;
         private:
         };
 
@@ -73,13 +75,10 @@ namespace newsflash
         // this callback is invoked when a task is complete.
         using on_task = std::function<void(const ui::TaskDesc& task)>;
 
-        // this callback is invoked when new data has been written to a
-        // data file belonging to the specified news group.
-        using on_header_data = std::function<void(const std::string& group,
-            const std::string& file)>;
+        // this callback is invoked when there's new information regarding
+        // an ongoing header update task.
+        using on_header_update = std::function<void(const ui::HeaderUpdate& update)>;
 
-        using on_header_info = std::function<void(const std::string& group,
-            std::uint64_t num_articles_local, std::uint64_t num_articles_remote)>;
 
         // this callback is invoked when there are pending events inside the engine
         // the handler function should organize for a call into engine::pump()
@@ -179,14 +178,11 @@ namespace newsflash
         // todo
         void SetUpdateCallback(on_update update_callback);
 
-        // set the notify callback. this
+        // set the notify callback.
         void SetNotifyCallback(on_async_notify notify_callback);
 
-        // todo
-        void SetHeaderDataCallback(on_header_data callback);
-
-        // todo
-        void SetHeaderInfoCallback(on_header_info callback);
+        // set the header update callback.
+        void SetHeaderInfoCallback(on_header_update callback);
 
         // Set the finish callback. Invoked when all previously pending tasks are complete.
         void SetFinishCallback(on_finish callback);

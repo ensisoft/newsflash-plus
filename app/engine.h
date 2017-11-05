@@ -53,6 +53,7 @@ namespace app
     struct FilePackInfo;
     struct NewsGroupInfo;
     struct HeaderInfo;
+    struct HeaderUpdateInfo;
 
     // manager class around newsflash engine + engine state
     // translate between native c++ and Qt types and events.
@@ -327,8 +328,7 @@ namespace app
     signals:
         void shutdownComplete();
         void newDownloadQueued(const Download& download);
-        void newHeaderDataAvailable(const QString& group, const QString& file);
-        void newHeaderInfoAvailable(const QString& group, quint64 numLocal, quint64 numRemote);
+        void newHeaderInfoAvailable(const app::HeaderUpdateInfo& info);
         void fileCompleted(const app::FileInfo& file);
         void packCompleted(const app::FilePackInfo& pack);
         void listCompleted(quint32 account, const QList<app::NewsGroupInfo>& list);
@@ -354,10 +354,7 @@ namespace app
         void onBatchComplete(const newsflash::ui::FileBatchResult& batch);
         void onListComplete(const newsflash::ui::GroupListResult& list);
         void onUpdateComplete(const newsflash::ui::HeaderResult& result);
-        void onHeaderDataAvailable(const std::string& group,
-            const std::string& file);
-        void onHeaderInfoAvailable(const std::string& group,
-            std::uint64_t numLocal, std::uint64_t numRemote);
+        void onHeaderInfoAvailable(const newsflash::ui::HeaderUpdate& info);
         void onAllComplete();
         void onQuota(std::size_t bytes, std::size_t account);
         void onConnectionTestComplete(bool success);

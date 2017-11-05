@@ -197,10 +197,8 @@ NewsGroup::NewsGroup() : task_(0)
 {
     DEBUG("NewsGroup created");
 
-    QObject::connect(g_engine, SIGNAL(newHeaderDataAvailable(const QString&, const QString&)),
-        this, SLOT(newHeaderDataAvailable(const QString&, const QString&)));
-    QObject::connect(g_engine, SIGNAL(newHeaderInfoAvailable(const QString&, quint64, quint64)),
-        this, SLOT(newHeaderInfoAvailable(const QString&, quint64, quint64)));
+    QObject::connect(g_engine, SIGNAL(newHeaderInfoAvailable(const app::HeaderUpdateInfo&)),
+        this, SLOT(newHeaderDataAvailable(const app::HeaderUpdateInfo&)));
     QObject::connect(g_engine, SIGNAL(updateCompleted(const app::HeaderInfo&)),
         this, SLOT(updateCompleted(const app::HeaderInfo&)));
     QObject::connect(g_engine, SIGNAL(actionKilled(quint32)),
@@ -897,8 +895,11 @@ void NewsGroup::deleteData(quint32 account, QString path, QString group)
     INFO("Deleted data directory %1", dataDir);
 }
 
-void NewsGroup::newHeaderDataAvailable(const QString& group, const QString& file)
+void NewsGroup::newHeaderDataAvailable(const app::HeaderUpdateInfo& info)
 {
+    const QString& name = info.groupName;
+    const QString& file = info.groupFile;
+
     DEBUG("New headers available in %1", file);
 
     // see if this data file is of interest to us. if it isn't just ignore the signal
@@ -979,11 +980,6 @@ void NewsGroup::newHeaderDataAvailable(const QString& group, const QString& file
 #endif
 
     DEBUG("Loaded new headers from %1", file);
-}
-
-void NewsGroup::newHeaderInfoAvailable(const QString& group, quint64 numLocal, quint64 numRemote)
-{
-    // nothing to do for now
 }
 
 void NewsGroup::updateCompleted(const app::HeaderInfo& info)

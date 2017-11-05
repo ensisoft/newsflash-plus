@@ -54,6 +54,7 @@ class QEventLoop;
 namespace app
 {
     struct HeaderInfo;
+    struct HeaderUpdateInfo;
 
     class NewsGroup : public QAbstractTableModel
     {
@@ -180,8 +181,7 @@ namespace app
         void deleteData(quint32 account, QString path, QString group);
 
     public slots:
-        void newHeaderDataAvailable(const QString& group, const QString& file);
-        void newHeaderInfoAvailable(const QString& group, quint64 numLocal, quint64 numRemote);
+        void newHeaderDataAvailable(const app::HeaderUpdateInfo& info);
         void updateCompleted(const app::HeaderInfo& info);
         void actionKilled(quint32 action);
 

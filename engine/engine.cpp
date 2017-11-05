@@ -150,8 +150,7 @@ struct Engine::State {
     Engine::on_list  on_list_callback;
     Engine::on_task  on_task_callback;
     Engine::on_update on_update_callback;
-    Engine::on_header_data on_header_data_callback;
-    Engine::on_header_info on_header_info_callback;
+    Engine::on_header_update on_header_update_callback;
     Engine::on_async_notify on_notify_callback;
     Engine::on_finish on_finish_callback;
     Engine::on_quota on_quota_callback;
@@ -767,14 +766,7 @@ public:
     {
         ui_.desc = download.desc;
 
-        auto task = s.factory->AllocateTask(download);
-        if (auto* ptr = dynamic_cast<class update*>(task.get()))
-        {
-            // todo: refactor this.
-            ptr->on_write = s.on_header_data_callback;
-            ptr->on_info  = s.on_header_info_callback;
-        }
-        task_ = std::move(task);
+        task_ = s.factory->AllocateTask(download);
 
         num_actions_total_ = task_->max_num_actions();
         LOG_D("Task: update");
@@ -1179,9 +1171,21 @@ public:
             }
 
             std::vector<std::unique_ptr<action>> actions;
+            std::unique_ptr<ui::Update> update;
 
             task_->complete(*act, actions);
             act.reset();
+
+            update = state.factory->MakeUpdate(*task_, ui_);
+            if (update)
+            {
+                task_->lock();
+                if (const auto* ptr = dynamic_cast<const ui::HeaderUpdate*>(update.get()))
+                {
+                    state.on_header_update_callback(*ptr);
+                }
+                task_->unlock();
+            }
 
             for (auto& a : actions)
                 do_action(state, std::move(a));
@@ -1964,6 +1968,22 @@ Engine::Engine() : state_(new State)
             }
             return ret;
         }
+
+        std::unique_ptr<ui::Update> MakeUpdate(const task& task, const ui::TaskDesc& desc) const override
+        {
+            std::unique_ptr<ui::Update> ret;
+            if (const auto* ptr = dynamic_cast<const update*>(&task))
+            {
+                auto result = std::make_unique<ui::HeaderUpdate>();
+                result->account    = desc.account;
+                result->group_name = ptr->group();
+                result->num_local_articles = ptr->num_local_articles();
+                result->num_remote_articles = ptr->num_remote_articles();
+                result->updated_catalog_files = ptr->lastly_updated_catalogs();
+                ret = std::move(result);
+            }
+            return ret;
+        }
     };
     state_->factory = std::make_unique<DefaultFactory>();
 }
@@ -2562,14 +2582,9 @@ void Engine::SetNotifyCallback(on_async_notify notify_callback)
     state_->on_notify_callback = std::move(notify_callback);
 }
 
-void Engine::SetHeaderDataCallback(on_header_data callback)
+void Engine::SetHeaderInfoCallback(on_header_update callback)
 {
-    state_->on_header_data_callback = std::move(callback);
-}
-
-void Engine::SetHeaderInfoCallback(on_header_info callback)
-{
-    state_->on_header_info_callback = std::move(callback);
+    state_->on_header_update_callback = std::move(callback);
 }
 
 void Engine::SetBatchCallback(on_batch batch_callback)

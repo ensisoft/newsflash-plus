@@ -20,8 +20,8 @@
 
 #pragma once
 
-#include <newsflash/config.h>
-#include <functional>
+#include "newsflash/config.h"
+
 #include <memory>
 #include <string>
 #include <cstdint>
@@ -32,16 +32,6 @@ namespace newsflash
     class update : public task
     {
     public:
-        // callback that is fired when new data has been written
-        // to some of the data files belonging to the group.
-        std::function<void(const std::string& group,
-            const std::string& file)> on_write;
-
-        // callback that is fired when information about the
-        // group is discovered.
-        std::function<void(const std::string& group,
-            std::uint64_t local, std::uint64_t remote)> on_info;
-
         update(const std::string& path, const std::string& group);
        ~update();
 
@@ -70,6 +60,9 @@ namespace newsflash
         std::uint64_t num_local_articles() const;
 
         std::uint64_t num_remote_articles() const;
+
+        const std::vector<std::string>& lastly_updated_catalogs() const
+        { return updated_catalogs_; }
     private:
         class parse;
         class store;
@@ -85,6 +78,8 @@ namespace newsflash
         std::uint64_t xover_first_ = 0;
     private:
         bool commit_done_ = false;
+    private:
+        std::vector<std::string> updated_catalogs_;
     };
 
 } // newsflash

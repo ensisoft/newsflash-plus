@@ -637,34 +637,17 @@ void update::complete(action& a, std::vector<std::unique_ptr<action>>& next)
     }
     if (auto* p = dynamic_cast<store*>(&a))
     {
-        NEWSFLASH_NO_RECURSION_GUARD(this);
-
-        // this thread (which is expected to be the UI thread)
-        // will acquire the mutex.. the mutex makes sure that
-        // that this thread can have a consistent view of the
-        // current data files.
-        std::lock_guard<std::mutex> lock(state_->file_io_mutex);
-
         const auto first = p->first_;
         const auto last  = p->last_;
         local_first_ = std::min(local_first_, first);
         local_last_  = std::max(local_last_, last);
 
-        if (on_info)
-        {
-            const auto num_remote = remote_last_ - remote_first_ + 1;
-            const auto num_local  = local_last_ - local_first_ + 1;
-            on_info(state_->group, num_local, num_remote);
-        }
+        updated_catalogs_.clear();
 
-        if (on_write)
+        for (auto* catalog : p->updates_)
         {
-            for (auto* catalog : p->updates_)
-            {
-                const auto& groupname = state_->group;
-                const auto& filename  = catalog->device().filename();
-                on_write(groupname, filename);
-            }
+            const auto& filename  = catalog->device().filename();
+            updated_catalogs_.push_back(filename);
         }
     }
 }

@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -69,10 +69,21 @@ namespace app
         quint64 numRemoteArticles;
     };
 
+    struct HeaderUpdateInfo {
+        QString groupName;
+
+        QString groupFile;
+
+        quint64 numLocalArticles = 0;
+
+        quint64 numRemoteArticles = 0;
+    };
+
 } // app
 
     Q_DECLARE_METATYPE(app::FileInfo);
-    Q_DECLARE_METATYPE(app::FilePackInfo);    
+    Q_DECLARE_METATYPE(app::FilePackInfo);
     Q_DECLARE_METATYPE(app::HeaderInfo);
+    Q_DECLARE_METATYPE(app::HeaderUpdateInfo);
 
 
