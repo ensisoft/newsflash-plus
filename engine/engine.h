@@ -136,9 +136,6 @@ namespace newsflash
         // then proceed to download those after the newest.
         TaskId DownloadHeaders(const ui::HeaderDownload& update);
 
-        // get the TaskId for the item in the list.
-        TaskId GetActionId(std::size_t task_index);
-
         // process pending actions in the engine. You should call this function
         // as a response to to the async_notify.
         // returns true if there are still pending actions to be completed later
@@ -276,13 +273,13 @@ namespace newsflash
         void CloneConnection(std::size_t index);
 
         // kill the task at the given task list index
-        void KillTask(std::size_t index);
+        TaskId KillTask(std::size_t index);
 
         // pause the task at the given taks list index.
-        void PauseTask(std::size_t index);
+        TaskId PauseTask(std::size_t index);
 
         // resume the task at the given task list index.
-        void ResumeTask(std::size_t index);
+        TaskId ResumeTask(std::size_t index);
 
         void MoveTaskUp(std::size_t index);
 

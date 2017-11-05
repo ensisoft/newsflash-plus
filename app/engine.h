@@ -287,11 +287,11 @@ namespace app
 
         void killTask(std::size_t index)
         {
-            const auto action = engine_->GetActionId(index);
-
-            engine_->KillTask(index);
-
-            emit actionKilled(action);
+            const auto id = engine_->KillTask(index);
+            if (id)
+            {
+                emit actionKilled(id);
+            }
         }
 
         void pauseTask(std::size_t index)

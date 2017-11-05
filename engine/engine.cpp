@@ -2123,21 +2123,6 @@ Engine::TaskId Engine::DownloadHeaders(const ui::HeaderDownload& download)
     return batchid;
 }
 
-Engine::TaskId Engine::GetActionId(std::size_t task_index)
-{
-    if (state_->group_items)
-    {
-        ASSERT(task_index < state_->batches.size());
-        return state_->batches[task_index]->id();
-    }
-
-    ASSERT(task_index < state_->tasks.size());
-    const auto& task = state_->tasks[task_index];
-    const auto bid = task->bid();
-    const auto& batch = state_->find_batch(bid);
-    return batch.id();
-}
-
 bool Engine::Pump()
 {
 // #ifdef NEWSFLASH_DEBUG
@@ -2761,14 +2746,17 @@ void Engine::CloneConnection(std::size_t i)
     state_->conns.push_back(std::move(dolly));
 }
 
-void Engine::KillTask(std::size_t i)
+Engine::TaskId Engine::KillTask(std::size_t i)
 {
+    TaskId killed = 0;
+
     if (state_->group_items)
     {
         ASSERT(i < state_->batches.size());
 
         auto it = state_->batches.begin();
         it += i;
+        killed = (*it)->id();
         (*it)->kill(*state_);
         state_->batches.erase(it);
     }
@@ -2801,15 +2789,21 @@ void Engine::KillTask(std::size_t i)
         state_->bytes_queued = 0;
         state_->bytes_ready  = 0;
     }
+
+    return killed;
 }
 
-void Engine::PauseTask(std::size_t index)
+Engine::TaskId Engine::PauseTask(std::size_t index)
 {
+    TaskId paused = 0;
+
     if (state_->group_items)
     {
         ASSERT(index < state_->batches.size());
 
         state_->batches[index]->pause(*state_);
+
+        paused = state_->batches[index]->id();
     }
     else
     {
@@ -2824,15 +2818,21 @@ void Engine::PauseTask(std::size_t index)
             batch.update(*state_, *task, transition);
         }
     }
+
+    return paused;
 }
 
-void Engine::ResumeTask(std::size_t index)
+Engine::TaskId Engine::ResumeTask(std::size_t index)
 {
+    TaskId resumed = 0;
+
     if (state_->group_items)
     {
         assert(index < state_->batches.size());
 
         state_->batches[index]->resume(*state_);
+
+        resumed = state_->batches[index]->id();
     }
     else
     {
@@ -2850,6 +2850,8 @@ void Engine::ResumeTask(std::size_t index)
 
     }
     state_->execute();
+
+    return resumed;
 }
 
 void Engine::MoveTaskUp(std::size_t index)
