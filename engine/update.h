@@ -60,6 +60,9 @@ namespace newsflash
 
         virtual std::size_t max_num_actions() const override;
 
+        virtual void lock() override;
+        virtual void unlock() override;
+
         std::string group() const;
 
         std::string path() const;

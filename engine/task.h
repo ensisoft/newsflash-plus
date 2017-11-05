@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#pragma once 
+#pragma once
 
 #include <newsflash/config.h>
 
@@ -34,7 +34,7 @@ namespace newsflash
 
     // tasks implement some nntp data based activity in the engine, for
     // example extracting binary content from article data.
-    class task 
+    class task
     {
     public:
         virtual ~task() = default;
@@ -44,7 +44,7 @@ namespace newsflash
         // cancel the task. if the task is not complete then this has the effect
         // of canceling all the work that has been done, for example removing
         // any files created on the filesystem etc. if task is complete then
-        // simply the non-persistent data is cleaned away. 
+        // simply the non-persistent data is cleaned away.
         // after this call returns the object can be deleted.
         virtual void cancel() {}
 
@@ -67,6 +67,10 @@ namespace newsflash
         virtual bool has_commands() const = 0;
 
         virtual std::size_t max_num_actions() const = 0;
+
+        virtual void lock() {}
+
+        virtual void unlock() {}
 
     protected:
     private:

@@ -688,6 +688,16 @@ std::size_t update::max_num_actions() const
     return std::size_t(num_buffers) * 2;
 }
 
+void update::lock()
+{
+    state_->file_io_mutex.lock();
+}
+
+void update::unlock()
+{
+    state_->file_io_mutex.unlock();
+}
+
 std::string update::group() const
 {
     return state_->group;

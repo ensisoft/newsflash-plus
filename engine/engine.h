@@ -285,7 +285,11 @@ namespace newsflash
 
         void MoveTaskDown(std::size_t index);
 
-        void KillTaskById(TaskId id);
+        bool KillTaskById(TaskId id);
+
+        bool LockTaskById(TaskId id);
+
+        bool UnlockTaskById(TaskId id);
 
         // get the number of tasks.
         std::size_t GetNumTasks() const;

@@ -253,7 +253,7 @@ struct Engine::State {
         return act;
     }
 
-    Engine::BatchState& find_batch(std::size_t id);
+    Engine::BatchState* find_batch(std::size_t id);
 
     void execute();
     void enqueue(const TaskState& t, std::shared_ptr<cmdlist> cmd);
@@ -820,7 +820,22 @@ public:
 
    ~TaskState()
     {
+        ASSERT(locking_ == LockState::Unlocked);
         LOG_I("Task ", ui_.task_id, " deleted");
+    }
+
+    void lock(Engine::State& state)
+    {
+        ASSERT(locking_ == LockState::Unlocked);
+        task_->lock();
+        locking_ = LockState::Locked;
+    }
+
+    void unlock(Engine::State& state)
+    {
+        ASSERT(locking_ == LockState::Locked);
+        task_->unlock();
+        locking_ = LockState::Unlocked;
     }
 
     void serialize(data::TaskList& list)
@@ -1420,13 +1435,18 @@ private:
     ui::TaskDesc ui_;
 private:
     std::unique_ptr<newsflash::task> task_;
-    std::size_t num_active_cmdlists_;
-    std::size_t num_active_actions_;
-    std::size_t num_actions_ready_;
-    std::size_t num_actions_total_;
-    std::size_t num_bytes_queued_;
+    std::size_t num_active_cmdlists_ = 0;
+    std::size_t num_active_actions_  = 0;
+    std::size_t num_actions_ready_   = 0;
+    std::size_t num_actions_total_   = 0;
+    std::size_t num_bytes_queued_    = 0;
 private:
-    bool is_fillable_;
+    bool is_fillable_ = false;
+private:
+    enum class LockState {
+        Locked, Unlocked
+    };
+    LockState locking_ = LockState::Unlocked;
 };
 
 // for msvc...
@@ -1526,6 +1546,32 @@ public:
         data->set_path(ui_.path);
         data->set_num_tasks(num_tasks_);
         data->set_num_slices(num_slices_);
+    }
+
+    void lock(Engine::State& state)
+    {
+        LOG_D("Batch lock ", ui_.batch_id);
+
+        for (auto& task : state.tasks)
+        {
+            if (task->bid() != ui_.batch_id)
+                continue;
+
+            task->lock(state);
+        }
+    }
+
+    void unlock(Engine::State& state)
+    {
+        LOG_D("Batch unlock ", ui_.batch_id);
+
+        for (auto& task : state.tasks)
+        {
+            if (task->bid() != ui_.batch_id)
+                continue;
+
+            task->unlock(state);
+        }
     }
 
     void pause(Engine::State& state)
@@ -1747,14 +1793,16 @@ private:
     bool filebatch_;
 };
 
-Engine::BatchState& Engine::State::find_batch(std::size_t id)
+Engine::BatchState* Engine::State::find_batch(std::size_t id)
 {
     auto it = std::find_if(std::begin(batches), std::end(batches),
         [&](const std::unique_ptr<BatchState>& b) {
             return b->id() == id;
         });
-    assert(it != std::end(batches));
-    return *(*it);
+    if (it == std::end(batches))
+        return nullptr;
+
+    return (*it).get();
 }
 
 void Engine::State::execute()
@@ -1789,8 +1837,8 @@ void Engine::State::execute()
             const auto transition = task->run(*this);
             if (transition)
             {
-                auto& batch = find_batch(task->bid());
-                batch.update(*this, *task, transition);
+                auto* batch = find_batch(task->bid());
+                batch->update(*this, *task, transition);
             }
         }
     }
@@ -2208,8 +2256,8 @@ bool Engine::Pump()
                     const auto transition = task->complete(*state_, cmds);
                     if (transition)
                     {
-                        auto& batch = state_->find_batch(task->bid());
-                        batch.update(*state_, *task, transition);
+                        auto* batch = state_->find_batch(task->bid());
+                        batch->update(*state_, *task, transition);
                     }
                 }
             }
@@ -2265,8 +2313,8 @@ bool Engine::Pump()
                         const auto transition = task->run(*state_);
                         if (transition)
                         {
-                            auto& batch = state_->find_batch(task->bid());
-                            batch.update(*state_, *task, transition);
+                            auto* batch = state_->find_batch(task->bid());
+                            batch->update(*state_, *task, transition);
                         }
                     }
                 }
@@ -2289,8 +2337,8 @@ bool Engine::Pump()
                 const auto transition = task->on_action(*state_, std::move(action));
                 if (transition)
                 {
-                    auto& batch = state_->find_batch(task->bid());
-                    batch.update(*state_, *task, transition);
+                    auto* batch = state_->find_batch(task->bid());
+                    batch->update(*state_, *task, transition);
                 }
                 // if (task->eligible_for_run())
                 // {
@@ -2814,8 +2862,8 @@ Engine::TaskId Engine::PauseTask(std::size_t index)
         const auto transition = task->pause(*state_);
         if (transition)
         {
-            auto& batch = state_->find_batch(task->bid());
-            batch.update(*state_, *task, transition);
+            auto* batch = state_->find_batch(task->bid());
+            batch->update(*state_, *task, transition);
         }
     }
 
@@ -2844,8 +2892,8 @@ Engine::TaskId Engine::ResumeTask(std::size_t index)
         const auto transition = task->resume(*state_);
         if (transition)
         {
-            auto& batch = state_->find_batch(task->bid());
-            batch.update(*state_, *task, transition);
+            auto* batch = state_->find_batch(task->bid());
+            batch->update(*state_, *task, transition);
         }
 
     }
@@ -2892,7 +2940,7 @@ void Engine::MoveTaskDown(std::size_t index)
     }
 }
 
-void Engine::KillTaskById(Engine::TaskId id)
+bool Engine::KillTaskById(Engine::TaskId id)
 {
     auto it = std::find_if(std::begin(state_->batches), std::end(state_->batches),
         [&](const std::unique_ptr<BatchState>& b) {
@@ -2905,11 +2953,32 @@ void Engine::KillTaskById(Engine::TaskId id)
     // call us to kill the action
     //ASSERT(it != std::end(state_->batches));
     if (it == std::end(state_->batches))
-        return;
+        return false;
 
     (*it)->kill(*state_);
 
     state_->batches.erase(it);
+    return true;
+}
+
+bool Engine::LockTaskById(TaskId id)
+{
+    auto* batch = state_->find_batch(id);
+    if (!batch)
+        return false;
+
+    batch->lock(*state_);
+    return true;
+}
+
+bool Engine::UnlockTaskById(TaskId id)
+{
+    auto* batch = state_->find_batch(id);
+    if (!batch)
+        return false;
+
+    batch->unlock(*state_);
+    return true;
 }
 
 std::size_t Engine::GetNumTasks() const
