@@ -959,7 +959,7 @@ void NewsGroup::newHeaderDataAvailable(const app::HeaderUpdateInfo& info)
     if (block.state != State::Loaded)
         return;
 
-    loadData(block, false);
+    loadData(block, false, info.snapshot);
 
     if (volumeList_)
     {
@@ -1002,7 +1002,7 @@ void NewsGroup::actionKilled(quint32 action)
     }
 }
 
-void NewsGroup::loadData(Block& block, bool guiLoad)
+void NewsGroup::loadData(Block& block, bool guiLoad, const void* snapshot)
 {
     struct TaskLockGuard {
         ~TaskLockGuard() {
@@ -1038,7 +1038,16 @@ void NewsGroup::loadData(Block& block, bool guiLoad)
     // see scanSelected and select and the GUI code for modelReset
 
     auto& db = catalogs_[block.index];
-    db.open(narrow(block.file));
+    if (snapshot)
+    {
+        DEBUG("Opening catalog from snapshot");
+        db.open(*static_cast<const newsflash::Snapshot*>(snapshot));
+    }
+    else
+    {
+        db.open(narrow(block.file));
+    }
+
     if (db.size() == block.prevSize)
         return;
 

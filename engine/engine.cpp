@@ -1179,12 +1179,10 @@ public:
             update = state.factory->MakeUpdate(*task_, ui_);
             if (update)
             {
-                task_->lock();
                 if (const auto* ptr = dynamic_cast<const ui::HeaderUpdate*>(update.get()))
                 {
                     state.on_header_update_callback(*ptr);
                 }
-                task_->unlock();
             }
 
             for (auto& a : actions)
@@ -1979,7 +1977,12 @@ Engine::Engine() : state_(new State)
                 result->group_name = ptr->group();
                 result->num_local_articles = ptr->num_local_articles();
                 result->num_remote_articles = ptr->num_remote_articles();
-                result->updated_catalog_files = ptr->lastly_updated_catalogs();
+
+                for (size_t i=0; i<ptr->num_snapshots(); ++i)
+                {
+                    result->catalogs.push_back(ptr->catalog(i));
+                    result->snapshots.push_back(ptr->snapshot(i));
+                }
                 ret = std::move(result);
             }
             return ret;

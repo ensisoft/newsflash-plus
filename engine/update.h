@@ -29,6 +29,8 @@
 
 namespace newsflash
 {
+    struct Snapshot;
+
     class update : public task
     {
     public:
@@ -61,8 +63,15 @@ namespace newsflash
 
         std::uint64_t num_remote_articles() const;
 
-        const std::vector<std::string>& lastly_updated_catalogs() const
-        { return updated_catalogs_; }
+        std::size_t num_snapshots() const
+        { return snapshots_.size(); }
+
+        std::string catalog(size_t i) const
+        { return catalogs_[i]; }
+
+        const Snapshot* snapshot(size_t i) const
+        { return snapshots_[i].get(); }
+
     private:
         class parse;
         class store;
@@ -79,7 +88,8 @@ namespace newsflash
     private:
         bool commit_done_ = false;
     private:
-        std::vector<std::string> updated_catalogs_;
+        std::vector<std::unique_ptr<Snapshot>> snapshots_;
+        std::vector<std::string> catalogs_;
     };
 
 } // newsflash

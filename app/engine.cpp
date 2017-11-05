@@ -643,13 +643,14 @@ void Engine::onUpdateComplete(const newsflash::ui::HeaderResult& result)
 
 void Engine::onHeaderInfoAvailable(const newsflash::ui::HeaderUpdate& update)
 {
-    for (const auto& file : update.updated_catalog_files)
+    for (size_t i=0; i<update.catalogs.size(); ++i)
     {
         HeaderUpdateInfo info;
         info.groupName = fromUtf8(update.group_name);
-        info.groupFile = fromUtf8(file);
+        info.groupFile = fromUtf8(update.catalogs[i]);
         info.numLocalArticles  = update.num_local_articles;
         info.numRemoteArticles = update.num_remote_articles;
+        info.snapshot = update.snapshots[i];
         emit newHeaderInfoAvailable(info);
     }
 }

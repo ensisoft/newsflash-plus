@@ -642,12 +642,14 @@ void update::complete(action& a, std::vector<std::unique_ptr<action>>& next)
         local_first_ = std::min(local_first_, first);
         local_last_  = std::max(local_last_, last);
 
-        updated_catalogs_.clear();
+        snapshots_.clear();
+        catalogs_.clear();
 
         for (auto* catalog : p->updates_)
         {
-            const auto& filename  = catalog->device().filename();
-            updated_catalogs_.push_back(filename);
+            std::unique_ptr<Snapshot> snapshot = catalog->snapshot();
+            catalogs_.push_back(catalog->device().filename());
+            snapshots_.push_back(std::move(snapshot));
         }
     }
 }

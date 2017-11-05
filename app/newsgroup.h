@@ -187,7 +187,7 @@ namespace app
 
     private:
         struct Block;
-        void loadData(Block& block, bool guiLoad);
+        void loadData(Block& block, bool guiLoad, const void* snapshot = nullptr);
 
         bool showDeleted() const {
             return show_these_fileflags_.test(newsflash::fileflag::deleted);

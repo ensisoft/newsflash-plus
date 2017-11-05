@@ -41,6 +41,15 @@ namespace newsflash
         CATALOG_SIZE = 0x20000
     };
 
+    struct Snapshot {
+        std::uint32_t offset = 0;
+        std::uint32_t size   = 0;
+        std::uint32_t first  = 0;
+        std::uint32_t last   = 0;
+        std::uint32_t table[CATALOG_SIZE];
+        std::string   file;
+    };
+
     template<typename StorageDevice>
     class catalog
     {
@@ -136,18 +145,9 @@ namespace newsflash
             std::memset(header_.table, 0, sizeof(header_.table));
         }
 
-        struct snapshot_t {
-            std::uint32_t offset = 0;
-            std::uint32_t size   = 0;
-            std::uint32_t first  = 0;
-            std::uint32_t last   = 0;
-            std::uint32_t table[CATALOG_SIZE];
-            std::string   file;
-        };
-
-        std::unique_ptr<snapshot_t> snapshot() const
+        std::unique_ptr<Snapshot> snapshot() const
         {
-            auto ret = std::make_unique<snapshot_t>();
+            auto ret = std::make_unique<Snapshot>();
             ret->offset = header_.offset;
             ret->size   = header_.size;
             ret->first  = header_.first;
@@ -160,7 +160,7 @@ namespace newsflash
         // open an existing catalog for reading based on a the given snapshot
         // the snapshot contains enough data that allows a consistent
         // view of the catalog to be opened.
-        void open(const snapshot_t& snapshot)
+        void open(const Snapshot& snapshot)
         {
             device_.open(snapshot.file);
             header_.offset = snapshot.offset;

@@ -77,6 +77,8 @@ namespace app
         quint64 numLocalArticles = 0;
 
         quint64 numRemoteArticles = 0;
+
+        const void* snapshot = nullptr;
     };
 
 } // app
