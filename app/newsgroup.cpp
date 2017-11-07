@@ -52,6 +52,18 @@
 namespace app
 {
 
+struct TaskLockGuard {
+    ~TaskLockGuard() {
+        if (locked_task)
+            g_engine->unlockTaskById(locked_task);
+    }
+    void lock(quint32 locked_task) {
+        if (g_engine->lockTaskById(locked_task))
+            this->locked_task = locked_task;
+    }
+    quint32 locked_task = 0;
+};
+
 // Starting with RFC-3977 the default encoding used should be UTF-8
 // so we're going to assume that the subject lines are UTF-8 encoded.
 QString toString(const str::string_view& str, bool utf8_enabled)
@@ -723,17 +735,6 @@ void NewsGroup::download(const QModelIndexList& list, quint32 acc, const QString
                     const auto& path = joinPath(path_, name_);
                     const auto& file = joinPath(path, name_ + ".idb");
 
-                    struct TaskLockGuard {
-                        ~TaskLockGuard() {
-                            if (locked_task)
-                                g_engine->unlockTaskById(locked_task);
-                        }
-                        void lock(quint32 locked_task) {
-                            if (g_engine->lockTaskById(locked_task))
-                                this->locked_task = locked_task;
-                        }
-                        quint32 locked_task = 0;
-                    };
                     TaskLockGuard task_lock;
                     task_lock.lock(task_);
                     idlist_.open(narrow(file));
@@ -1004,17 +1005,7 @@ void NewsGroup::actionKilled(quint32 action)
 
 void NewsGroup::loadData(Block& block, bool guiLoad, const void* snapshot)
 {
-    struct TaskLockGuard {
-        ~TaskLockGuard() {
-            if (locked_task)
-                g_engine->unlockTaskById(locked_task);
-        }
-        void lock(quint32 locked_task) {
-            if (g_engine->lockTaskById(locked_task))
-                this->locked_task = locked_task;
-        }
-        quint32 locked_task = 0;
-    };
+
 
     TaskLockGuard task_lock;
 

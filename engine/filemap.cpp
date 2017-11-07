@@ -123,8 +123,8 @@ public:
         return size_;
     }
 private:
-    HANDLE file_ = INVALID_HANDLE;
-    HANDLE mmap_ = INVALID_HANDLE;
+    HANDLE file_ = INVALID_HANDLE_VALUE;
+    HANDLE mmap_ = INVALID_HANDLE_VALUE;
     void* base_  = nullptr;
     std::size_t size_ = 0;
 };
