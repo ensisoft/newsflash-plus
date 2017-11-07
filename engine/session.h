@@ -44,6 +44,9 @@ namespace newsflash
         enum class error {
             none,
 
+            // incorrect protocol, maybe the other end is not NNTP?
+            protocol,
+
             // possibly incorrect username/password pair
             authentication_rejected,
 

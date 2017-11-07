@@ -32,18 +32,18 @@ namespace newsflash
 {
 
 struct session::impl {
-    bool has_gzip;
-    bool has_xzver;
-    bool has_modereader;
-    bool auth_required;
-    bool enable_pipelining;
-    bool enable_compression;
-    bool have_caps;
+    bool has_gzip = false;
+    bool has_xzver = false;
+    bool has_modereader = false;
+    bool auth_required = false;
+    bool enable_pipelining = false;
+    bool enable_compression = false;
+    bool have_caps = false;
     std::string user;
     std::string pass;
     std::string group;
-    session::error error;
-    session::state state;
+    session::error error = session::error::none;
+    session::state state = session::state::none;
 };
 
 // command encapsulates a request/response transaction.
@@ -823,8 +823,19 @@ bool session::recv_next(buffer& buff, buffer& out)
     if (len != 0)
         response.append(buff.head(), len-2);
 
-    if (!next->parse(buff, out, *state_))
-        return false;
+    try
+    {
+        if (!next->parse(buff, out, *state_))
+            return false;
+    }
+    catch (const nntp::exception& e)
+    {
+        state_->state = state::error;
+        state_->error = error::protocol;
+        recv_.clear();
+        send_.clear();
+        return true;
+    }
 
     if (response[0] == '5')
         LOG_E(response);

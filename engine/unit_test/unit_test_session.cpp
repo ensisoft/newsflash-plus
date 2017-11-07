@@ -41,6 +41,8 @@ void append(nf::buffer& buff, const char* str)
     buff.append(std::strlen(str));
 }
 
+
+
 void unit_test_init_session_success()
 {
     nf::session session;
@@ -151,6 +153,51 @@ void unit_test_init_session_success_caps()
     BOOST_REQUIRE(!session.pending()); // done;
     BOOST_REQUIRE(session.has_gzip_compress() == false);
     BOOST_REQUIRE(session.has_xzver() == true);
+
+}
+
+void unit_test_init_session_garbage()
+{
+    nf::session session;
+    BOOST_REQUIRE(session.get_error() == nf::session::error::none);
+    BOOST_REQUIRE(session.get_state() == nf::session::state::none);
+
+    session.on_send = [&](const std::string& cmd) {
+    };
+    session.on_auth = [](std::string& user, std::string& pass) {
+        user = "foo";
+        pass = "bar";
+    };
+
+    // junk on welcome
+    {
+        nf::buffer incoming(1024);
+        nf::buffer tmp(1);
+
+        session.start();
+        session.send_next();
+
+        set(incoming, "bla bhal bahsgaa\r\n");
+        session.recv_next(incoming, tmp);
+
+        BOOST_REQUIRE(session.get_state() == nf::session::state::error);
+        BOOST_REQUIRE(session.get_error() == nf::session::error::protocol);
+    }
+
+    // junk (unexpected return value) command
+    {
+        nf::buffer incoming(1024);
+        nf::buffer tmp(1);
+
+        session.start();
+        session.send_next();
+
+        set(incoming, "999 welcome posting allowed\r\n");
+        session.recv_next(incoming, tmp);
+
+        BOOST_REQUIRE(session.get_state() == nf::session::state::error);
+        BOOST_REQUIRE(session.get_error() == nf::session::error::protocol);
+    }
 
 }
 
@@ -380,6 +427,7 @@ int test_main(int, char*[])
 {
     unit_test_init_session_success();
     unit_test_init_session_success_caps();
+    unit_test_init_session_garbage();
     unit_test_init_session_failure_authenticate();
     unit_test_change_group();
     unit_test_retrieve_article();
