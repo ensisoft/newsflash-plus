@@ -31,18 +31,11 @@ namespace newsflash
 {
     namespace ui {
 
-    // a download job details for downloading single item of content (a file)
-    struct FileDownload
-    {
-        // list of message id's or message numbers.
-        // note that message numbers are specific to a server
-        // while message-ids are portable across servers.
-        std::vector<std::string> articles;
+    struct Download {
+        // the account used to perform the download
+        std::size_t account = 0;
 
-        // the list of groups into which look for the messge ids.
-        std::vector<std::string> groups;
-
-        // the esimated size of the file to be downloaded in bytes.
+        // the estimated size of the file to be downloaded in bytes.
         // 0 if not known.
         std::uint64_t size = 0;
 
@@ -51,8 +44,20 @@ namespace newsflash
         std::string path;
 
         // the human readable description that will appear in task::description.
-        // usually the expected name of the file.
-        std::string name;
+        // usually the expected name of the file or some other descriptive text.
+        std::string desc;
+    };
+
+    // a download job details for downloading single item of content (a file)
+    struct FileDownload : public Download
+    {
+        // list of message id's or message numbers.
+        // note that message numbers are specific to a server
+        // while message-ids are portable across servers.
+        std::vector<std::string> articles;
+
+        // the list of groups into which look for the messge ids.
+        std::vector<std::string> groups;
     };
 
     // message-id's are unique across all Usenet servers and have are variable
@@ -71,45 +76,23 @@ namespace newsflash
     }
 
     // A set of FileDownloads grouped together into a "batch"
-    struct FileBatchDownload
+    struct FileBatchDownload : public Download
     {
-        // the account to be used to download the files in the batch.
-        std::size_t account = 0;
-
-        // the path on the local file system where the files are to be placed
-        std::string path;
-
-        // the human readable description for the whole batch
-        std::string desc;
-
         // the descriptions for the files to be downloaded.
         std::vector<FileDownload> files;
     };
 
     // download news group listing
-    struct GroupListDownload
+    struct GroupListDownload : public Download
     {
-        // the account to be used to download the listing from
-        std::size_t account = 0;
-
-        // human readable description for the job to be done.
-        std::string desc;
+        // no special parameters here.
     };
 
     // details for downloading the headers for some particular news group
-    struct HeaderDownload
+    struct HeaderDownload : public Download
     {
-        // the account to be used to download the headers from.
-        std::size_t account = 0;
-
-        // path in the filesystem where to place the data files.
-        std::string path;
-
         // name of the newsgroup to update.
         std::string group;
-
-        // human readable descripton for the task list.
-        std::string desc;
     };
 
 } // ui

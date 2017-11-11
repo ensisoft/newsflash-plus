@@ -754,7 +754,7 @@ public:
     TaskState(Engine::State& s, std::size_t id, const ui::FileDownload& file) : TaskState(id)
     {
         ui_.state      = states::Queued;
-        ui_.desc       = file.name;
+        ui_.desc       = file.desc;
         ui_.size       = file.size;
         ui_.path       = file.path;
         is_fillable_   = ui::is_fillable(file);
@@ -805,7 +805,7 @@ public:
 
         ui::FileDownload file;
         file.path = spec.path();
-        file.name = spec.desc();
+        file.desc = spec.desc();
         for (int i=0; i<spec.group_size(); ++i)
             file.groups.push_back(spec.group(i));
         for (int i=0; i<spec.article_size(); ++i)
@@ -1997,7 +1997,7 @@ Engine::Engine() : state_(new State)
     public:
         std::unique_ptr<Task> AllocateTask(const ui::FileDownload& file) override
         {
-            return std::make_unique<Download>(file.groups, file.articles, file.path, file.name);
+            return std::make_unique<Download>(file.groups, file.articles, file.path, file.desc);
         }
 
         std::unique_ptr<Task> AllocateTask(const ui::HeaderDownload& download) override

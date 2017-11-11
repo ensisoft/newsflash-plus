@@ -244,9 +244,9 @@ bool Engine::downloadNzbContents(const Download& download, std::vector<NZBConten
         file.groups   = std::move(item.groups);
         file.size     = item.bytes;
         file.path     = batch.path;
-        file.name     = nntp::find_filename(toUtf8(item.subject));
-        if (file.name.size() < 5)
-            file.name = toUtf8(item.subject);
+        file.desc     = nntp::find_filename(toUtf8(item.subject));
+        if (file.desc.size() < 5)
+            file.desc = toUtf8(item.subject);
         batch.files.push_back(std::move(file));
     }
     engine_->DownloadFiles(std::move(batch), download.priority);
