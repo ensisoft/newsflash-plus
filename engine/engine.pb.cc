@@ -91,7 +91,7 @@ void protobuf_AssignDesc_engine_2eproto() {
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(File));
   Download_descriptor_ = file->message_type(2);
-  static const int Download_offsets_[12] = {
+  static const int Download_offsets_[11] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Download, account_id_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Download, batch_id_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Download, task_id_),
@@ -103,7 +103,6 @@ void protobuf_AssignDesc_engine_2eproto() {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Download, article_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Download, group_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Download, file_),
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Download, enable_fill_),
   };
   Download_reflection_ =
     new ::google::protobuf::internal::GeneratedMessageReflection(
@@ -212,21 +211,20 @@ void protobuf_AddDesc_engine_2eproto() {
     "neral_server\030\013 \002(\010\022\031\n\021enable_pipelining\030"
     "\014 \002(\010\022\032\n\022enable_compression\030\r \002(\010\"O\n\004Fil"
     "e\022\020\n\010filename\030\001 \002(\t\022\020\n\010filepath\030\002 \002(\t\022\020\n"
-    "\010dataname\030\003 \002(\t\022\021\n\tis_binary\030\004 \002(\010\"\360\001\n\010D"
+    "\010dataname\030\003 \002(\t\022\021\n\tis_binary\030\004 \002(\010\"\333\001\n\010D"
     "ownload\022\022\n\naccount_id\030\001 \002(\r\022\020\n\010batch_id\030"
     "\002 \002(\r\022\017\n\007task_id\030\003 \002(\r\022\014\n\004desc\030\004 \002(\t\022\014\n\004"
     "path\030\005 \002(\t\022\014\n\004size\030\006 \002(\004\022\031\n\021num_actions_"
     "ready\030\007 \002(\r\022\031\n\021num_actions_total\030\010 \002(\r\022\017"
     "\n\007article\030\t \003(\t\022\r\n\005group\030\n \003(\t\022\030\n\004file\030\013"
-    " \003(\0132\n.data.File\022\023\n\013enable_fill\030\014 \002(\010\"\203\001"
-    "\n\005Batch\022\022\n\naccount_id\030\001 \002(\r\022\020\n\010batch_id\030"
-    "\002 \002(\r\022\014\n\004path\030\003 \002(\t\022\014\n\004desc\030\004 \002(\t\022\021\n\tbyt"
-    "e_size\030\005 \002(\004\022\021\n\tnum_tasks\030\006 \002(\r\022\022\n\nnum_s"
-    "lices\030\007 \002(\r\"\247\001\n\010TaskList\022\022\n\ncurrent_id\030\001"
-    " \002(\r\022\024\n\014bytes_queued\030\002 \002(\004\022\023\n\013bytes_read"
-    "y\030\003 \002(\004\022\036\n\007account\030\004 \003(\0132\r.data.Account\022"
-    "\032\n\005batch\030\005 \003(\0132\013.data.Batch\022 \n\010download\030"
-    "\006 \003(\0132\016.data.Download", 941);
+    " \003(\0132\n.data.File\"\203\001\n\005Batch\022\022\n\naccount_id"
+    "\030\001 \002(\r\022\020\n\010batch_id\030\002 \002(\r\022\014\n\004path\030\003 \002(\t\022\014"
+    "\n\004desc\030\004 \002(\t\022\021\n\tbyte_size\030\005 \002(\004\022\021\n\tnum_t"
+    "asks\030\006 \002(\r\022\022\n\nnum_slices\030\007 \002(\r\"\247\001\n\010TaskL"
+    "ist\022\022\n\ncurrent_id\030\001 \002(\r\022\024\n\014bytes_queued\030"
+    "\002 \002(\004\022\023\n\013bytes_ready\030\003 \002(\004\022\036\n\007account\030\004 "
+    "\003(\0132\r.data.Account\022\032\n\005batch\030\005 \003(\0132\013.data"
+    ".Batch\022 \n\010download\030\006 \003(\0132\016.data.Download", 920);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "engine.proto", &protobuf_RegisterTypes);
   Account::default_instance_ = new Account();
@@ -1465,7 +1463,6 @@ const int Download::kNumActionsTotalFieldNumber;
 const int Download::kArticleFieldNumber;
 const int Download::kGroupFieldNumber;
 const int Download::kFileFieldNumber;
-const int Download::kEnableFillFieldNumber;
 #endif  // !_MSC_VER
 
 Download::Download()
@@ -1495,7 +1492,6 @@ void Download::SharedCtor() {
   size_ = GOOGLE_ULONGLONG(0);
   num_actions_ready_ = 0u;
   num_actions_total_ = 0u;
-  enable_fill_ = false;
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
 
@@ -1562,7 +1558,6 @@ void Download::Clear() {
     }
     num_actions_total_ = 0u;
   }
-  enable_fill_ = false;
 
 #undef OFFSET_OF_FIELD_
 #undef ZR_
@@ -1755,21 +1750,6 @@ bool Download::MergePartialFromCodedStream(
           goto handle_unusual;
         }
         if (input->ExpectTag(90)) goto parse_file;
-        if (input->ExpectTag(96)) goto parse_enable_fill;
-        break;
-      }
-
-      // required bool enable_fill = 12;
-      case 12: {
-        if (tag == 96) {
-         parse_enable_fill:
-          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
-                   bool, ::google::protobuf::internal::WireFormatLite::TYPE_BOOL>(
-                 input, &enable_fill_)));
-          set_has_enable_fill();
-        } else {
-          goto handle_unusual;
-        }
         if (input->ExpectAtEnd()) goto success;
         break;
       }
@@ -1875,11 +1855,6 @@ void Download::SerializeWithCachedSizes(
       11, this->file(i), output);
   }
 
-  // required bool enable_fill = 12;
-  if (has_enable_fill()) {
-    ::google::protobuf::internal::WireFormatLite::WriteBool(12, this->enable_fill(), output);
-  }
-
   if (!unknown_fields().empty()) {
     ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
         unknown_fields(), output);
@@ -1969,11 +1944,6 @@ void Download::SerializeWithCachedSizes(
         11, this->file(i), target);
   }
 
-  // required bool enable_fill = 12;
-  if (has_enable_fill()) {
-    target = ::google::protobuf::internal::WireFormatLite::WriteBoolToArray(12, this->enable_fill(), target);
-  }
-
   if (!unknown_fields().empty()) {
     target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
         unknown_fields(), target);
@@ -2040,13 +2010,6 @@ int Download::ByteSize() const {
       total_size += 1 +
         ::google::protobuf::internal::WireFormatLite::UInt32Size(
           this->num_actions_total());
-    }
-
-  }
-  if (_has_bits_[11 / 32] & (0xffu << (11 % 32))) {
-    // required bool enable_fill = 12;
-    if (has_enable_fill()) {
-      total_size += 1 + 1;
     }
 
   }
@@ -2126,11 +2089,6 @@ void Download::MergeFrom(const Download& from) {
       set_num_actions_total(from.num_actions_total());
     }
   }
-  if (from._has_bits_[11 / 32] & (0xffu << (11 % 32))) {
-    if (from.has_enable_fill()) {
-      set_enable_fill(from.enable_fill());
-    }
-  }
   mutable_unknown_fields()->MergeFrom(from.unknown_fields());
 }
 
@@ -2147,7 +2105,7 @@ void Download::CopyFrom(const Download& from) {
 }
 
 bool Download::IsInitialized() const {
-  if ((_has_bits_[0] & 0x000008ff) != 0x000008ff) return false;
+  if ((_has_bits_[0] & 0x000000ff) != 0x000000ff) return false;
 
   if (!::google::protobuf::internal::AllAreInitialized(this->file())) return false;
   return true;
@@ -2166,7 +2124,6 @@ void Download::Swap(Download* other) {
     article_.Swap(&other->article_);
     group_.Swap(&other->group_);
     file_.Swap(&other->file_);
-    std::swap(enable_fill_, other->enable_fill_);
     std::swap(_has_bits_[0], other->_has_bits_[0]);
     _unknown_fields_.Swap(&other->_unknown_fields_);
     std::swap(_cached_size_, other->_cached_size_);

@@ -552,13 +552,6 @@ class Download : public ::google::protobuf::Message {
   inline ::google::protobuf::RepeatedPtrField< ::data::File >*
       mutable_file();
 
-  // required bool enable_fill = 12;
-  inline bool has_enable_fill() const;
-  inline void clear_enable_fill();
-  static const int kEnableFillFieldNumber = 12;
-  inline bool enable_fill() const;
-  inline void set_enable_fill(bool value);
-
   // @@protoc_insertion_point(class_scope:data.Download)
  private:
   inline void set_has_account_id();
@@ -577,8 +570,6 @@ class Download : public ::google::protobuf::Message {
   inline void clear_has_num_actions_ready();
   inline void set_has_num_actions_total();
   inline void clear_has_num_actions_total();
-  inline void set_has_enable_fill();
-  inline void clear_has_enable_fill();
 
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
 
@@ -593,9 +584,8 @@ class Download : public ::google::protobuf::Message {
   ::google::protobuf::uint64 size_;
   ::google::protobuf::RepeatedPtrField< ::std::string> article_;
   ::google::protobuf::RepeatedPtrField< ::std::string> group_;
-  ::google::protobuf::uint32 num_actions_total_;
-  bool enable_fill_;
   ::google::protobuf::RepeatedPtrField< ::data::File > file_;
+  ::google::protobuf::uint32 num_actions_total_;
   friend void  protobuf_AddDesc_engine_2eproto();
   friend void protobuf_AssignDesc_engine_2eproto();
   friend void protobuf_ShutdownFile_engine_2eproto();
@@ -2161,30 +2151,6 @@ inline ::google::protobuf::RepeatedPtrField< ::data::File >*
 Download::mutable_file() {
   // @@protoc_insertion_point(field_mutable_list:data.Download.file)
   return &file_;
-}
-
-// required bool enable_fill = 12;
-inline bool Download::has_enable_fill() const {
-  return (_has_bits_[0] & 0x00000800u) != 0;
-}
-inline void Download::set_has_enable_fill() {
-  _has_bits_[0] |= 0x00000800u;
-}
-inline void Download::clear_has_enable_fill() {
-  _has_bits_[0] &= ~0x00000800u;
-}
-inline void Download::clear_enable_fill() {
-  enable_fill_ = false;
-  clear_has_enable_fill();
-}
-inline bool Download::enable_fill() const {
-  // @@protoc_insertion_point(field_get:data.Download.enable_fill)
-  return enable_fill_;
-}
-inline void Download::set_enable_fill(bool value) {
-  set_has_enable_fill();
-  enable_fill_ = value;
-  // @@protoc_insertion_point(field_set:data.Download.enable_fill)
 }
 
 // -------------------------------------------------------------------
