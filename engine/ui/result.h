@@ -41,20 +41,25 @@ namespace newsflash
     // a new file produced by downloading and decoding content
     struct FileResult : public Result
     {
-        // complete path to the file location.
-        std::string path;
+        std::string desc;
 
-        // the name of the file.
-        std::string name;
+        struct File {
+            // complete path to the file location.
+            std::string path;
 
-        // the size of the file that was produced.
-        std::uint64_t size = 0;
+            // the name of the file.
+            std::string name;
 
-        // this is set to true if contents are suspected to be damaged
-        bool damaged = false;
+            // the size of the file that was produced.
+            std::uint64_t size = 0;
 
-        // this is set to true if the file is binary data
-        bool binary = false;
+            // this is set to true if contents are suspected to be damaged
+            bool damaged = false;
+
+            // this is set to true if the file is binary data
+            bool binary = false;
+        };
+        std::vector<File> files;
     };
 
     struct FileBatchResult : public Result

@@ -50,7 +50,7 @@ namespace newsflash
             virtual std::unique_ptr<task> AllocateTask(const ui::HeaderDownload& download) = 0;
             virtual std::unique_ptr<task> AllocateTask(const ui::GroupListDownload& list) = 0;
             virtual std::unique_ptr<connection> AllocateConnection() = 0;
-            virtual std::vector<std::unique_ptr<ui::Result>> MakeResult(const task& task, const ui::TaskDesc& desc) const = 0;
+            virtual std::unique_ptr<ui::Result> MakeResult(const task& task, const ui::TaskDesc& desc) const = 0;
             virtual std::unique_ptr<ui::Update> MakeUpdate(const task& task, const ui::TaskDesc& desc) const = 0;
         private:
         };

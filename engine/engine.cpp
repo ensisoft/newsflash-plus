@@ -1399,8 +1399,8 @@ private:
 
                 state.bytes_ready += ui_.size;
 
-                auto results = state.factory->MakeResult(*task_, ui_);
-                for (auto& result : results)
+                auto result = state.factory->MakeResult(*task_, ui_);
+                if (result)
                 {
                     ui::Result* result_ptr = result.get();
 
@@ -2013,23 +2013,27 @@ Engine::Engine() : state_(new State)
         {
             return std::make_unique<connection>();
         }
-        std::vector<std::unique_ptr<ui::Result>> MakeResult(const task& task, const ui::TaskDesc& desc) const override
+        std::unique_ptr<ui::Result> MakeResult(const task& task, const ui::TaskDesc& desc) const override
         {
-            std::vector<std::unique_ptr<ui::Result>> ret;
+            std::unique_ptr<ui::Result> ret;
             if (const auto* ptr = dynamic_cast<const download*>(&task))
             {
+                auto result = std::make_unique<ui::FileResult>();
+                result->account = desc.account;
+                result->desc    = desc.desc;
+
                 const auto& files = ptr->files();
                 for (const auto& file : files)
                 {
-                    auto result = std::make_unique<ui::FileResult>();
-                    result->account = desc.account;
-                    result->damaged = desc.error.any_bit();
-                    result->binary  = file->is_binary();
-                    result->name    = file->filename();
-                    result->path    = file->filepath();
-                    result->size    = file->size();
-                    ret.push_back(std::move(result));
+                    ui::FileResult::File f;
+                    f.damaged = desc.error.any_bit();
+                    f.binary  = file->is_binary();
+                    f.name    = file->filename();
+                    f.path    = file->filepath();
+                    f.size    = file->size();
+                    result->files.push_back(std::move(f));
                 }
+                ret = std::move(result);
             }
             else if (const auto* ptr = dynamic_cast<const listing*>(&task))
             {
@@ -2047,7 +2051,7 @@ Engine::Engine() : state_(new State)
                     group.size  = g.size;
                     result->groups.push_back(group);
                 }
-                ret.push_back(std::move(result));
+                ret = std::move(result);
             }
             else if (const auto* ptr = dynamic_cast<const update*>(&task))
             {
@@ -2058,7 +2062,7 @@ Engine::Engine() : state_(new State)
                 result->path    = ptr->path();
                 result->num_local_articles  = ptr->num_local_articles();
                 result->num_remote_articles = ptr->num_remote_articles();
-                ret.push_back(std::move(result));
+                ret = std::move(result);
             }
             return ret;
         }

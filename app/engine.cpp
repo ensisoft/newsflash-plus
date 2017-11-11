@@ -556,38 +556,41 @@ void Engine::onTaskComplete(const newsflash::ui::TaskDesc& task)
     }
 }
 
-void Engine::onFileComplete(const newsflash::ui::FileResult& file)
+void Engine::onFileComplete(const newsflash::ui::FileResult& result)
 {
-    QString name = widen(file.name);
-    QString path = widen(file.path);
-    if (path.isEmpty())
-        path = QDir::currentPath();
-
-    path = QDir(path).absolutePath();
-    path = QDir::toNativeSeparators(path);
-    DEBUG("File complete \"%1/%2\" damaged: %3 binary: %4",
-        path, name, file.damaged, file.binary);
-
-    app::FileInfo info;
-    info.binary  = file.binary;
-    info.damaged = file.damaged;
-    info.name    = name;
-    info.path    = path;
-    info.size    = file.size;
-    info.type    = findFileType(info.name);
-
-    if (file.damaged)
+    for (const auto& file : result.files)
     {
-        WARN("File \"%1\" is damaged.", file.name);
-        NOTE("File \"%1\" is damaged.", file.name);
-    }
-    else
-    {
-        INFO("File \"%1\" is complete.", file.name);
-        NOTE("File \"%1\" is complete.", file.name);
-    }
+        QString name = widen(file.name);
+        QString path = widen(file.path);
+        if (path.isEmpty())
+            path = QDir::currentPath();
 
-    emit fileCompleted(info);
+        path = QDir(path).absolutePath();
+        path = QDir::toNativeSeparators(path);
+        DEBUG("File complete \"%1/%2\" damaged: %3 binary: %4",
+            path, name, file.damaged, file.binary);
+
+        app::FileInfo info;
+        info.binary  = file.binary;
+        info.damaged = file.damaged;
+        info.name    = name;
+        info.path    = path;
+        info.size    = file.size;
+        info.type    = findFileType(info.name);
+
+        if (file.damaged)
+        {
+            WARN("File \"%1\" is damaged.", file.name);
+            NOTE("File \"%1\" is damaged.", file.name);
+        }
+        else
+        {
+            INFO("File \"%1\" is complete.", file.name);
+            NOTE("File \"%1\" is complete.", file.name);
+        }
+
+        emit fileCompleted(info);
+    }
 }
 
 void Engine::onBatchComplete(const newsflash::ui::FileBatchResult& batch)
