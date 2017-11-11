@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -20,11 +20,13 @@
 
 #pragma once
 
-#include <newsflash/config.h>
+#include "newsflash/config.h"
+
 #include <cstddef>
 #include <atomic>
 #include <vector>
 #include <string>
+
 #include "session.h"
 #include "buffer.h"
 #include "assert.h"
@@ -34,9 +36,9 @@ namespace newsflash
     // cmdlist encapsulates a sequence of nntp operations to be performed
     // for example downloading articles or header overview data.
     // the cmdlist operation is divided into 2 steps, session configuration
-    // and then the actual data transfer. 
+    // and then the actual data transfer.
     // session configuration is performed step-by-step (without pipelining)
-    // where as the data transfer can be pipelined.     
+    // where as the data transfer can be pipelined.
     class cmdlist
     {
     public:
@@ -57,31 +59,29 @@ namespace newsflash
             std::string group;
         };
 
-        cmdlist(listing) : cmdlist()
+        cmdlist(const listing&) : cmdlist()
         {
             cmdtype_ = type::listing;
         }
-        cmdlist(messages m) : cmdlist()
+        cmdlist(const messages& m) : cmdlist()
         {
-            groups_   = std::move(m.groups);
-            commands_ = std::move(m.numbers);
+            groups_   = m.groups;
+            commands_ = m.numbers;
             cmdtype_  = type::body;
         }
-        cmdlist(overviews o) : cmdlist()
+        cmdlist(const overviews& o) : cmdlist()
         {
-            groups_.push_back(std::move(o.group));
-            commands_  = std::move(o.ranges);
+            groups_.push_back(o.group);
+            commands_  = o.ranges;
             cmdtype_   = type::xover;
         }
-        cmdlist(groupinfo g) : cmdlist()
+        cmdlist(const groupinfo& g) : cmdlist()
         {
-            groups_.push_back(std::move(g.group));
+            groups_.push_back(g.group);
             cmdtype_ = type::groupinfo;
         }
-       ~cmdlist()
-        {}
 
-        bool needs_to_configure() const 
+        bool needs_to_configure() const
         {
             if (cmdtype_ == type::xover || cmdtype_ == type::body)
                 return true;
@@ -117,7 +117,7 @@ namespace newsflash
         }
 
         // submit the data transfer commands as a single batch.
-        void submit_data_commands(session& ses) 
+        void submit_data_commands(session& ses)
         {
             if (cmdtype_ == type::listing)
             {
@@ -162,43 +162,50 @@ namespace newsflash
         }
 
         std::size_t num_data_commands() const
-        {
-            return commands_.size();
-        }
+        { return commands_.size(); }
 
-        std::vector<buffer>& get_buffers() 
+        std::size_t num_buffers() const
+        { return buffers_.size(); }
+
+        std::vector<buffer>& get_buffers()
         { return buffers_; }
+
+        buffer& get_buffer(std::size_t i)
+        { return buffers_[i]; }
+
+        const buffer& get_buffer(std::size_t i) const
+        { return buffers_[i]; }
 
         std::vector<std::string>& get_commands()
         { return commands_; }
 
-        std::size_t account() const 
+        std::size_t account() const
         { return account_; }
 
-        std::size_t task() const 
+        std::size_t task() const
         { return task_; }
 
-        std::size_t conn() const 
+        std::size_t conn() const
         { return conn_; }
 
-        std::size_t id() const 
+        std::size_t id() const
         { return id_; }
 
-        type cmdtype() const 
+        type cmdtype() const
         { return cmdtype_; }
 
         // cancel the cmdlist. the cmdlist is to be discarded.
         // i.e. the task has been cancelled.
         void cancel()
         { cancelbit_ = true; }
-        
+
         bool is_canceled() const
         { return cancelbit_;}
 
-        bool is_good() const 
+        bool is_good() const
         { return !failbit_; }
 
-        bool is_empty() const 
+        bool is_empty() const
         { return buffers_.empty(); }
 
         void set_account(std::size_t aid)
@@ -217,20 +224,23 @@ namespace newsflash
             static std::atomic<std::size_t> id(1);
             id_ = id++;
         }
-
     private:
-        type cmdtype_;
-        
-    private:
+        // cmdlist data
+        type cmdtype_ = type::xover;
         std::atomic<bool> cancelbit_;
         std::atomic<bool> failbit_;
-        std::size_t account_;
-        std::size_t task_;
-        std::size_t conn_;
-        std::size_t id_;
+    private:
+        // owner account, task and connection
+        std::size_t account_ = 0;
+        std::size_t task_ = 0;
+        std::size_t conn_ = 0;
+        std::size_t id_   = 0;
+    private:
+        // nntp data
         std::vector<buffer> buffers_;
         std::vector<std::string> groups_;
         std::vector<std::string> commands_;
+    private:
     };
 
 } // newsflash
