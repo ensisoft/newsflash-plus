@@ -248,6 +248,28 @@ namespace newsflash
         void SetConnId(std::size_t cid)
         { conn_ = cid; }
 
+        // returns whether the CmdList can be filled from another
+        // account, i.e. whether the content's are available on any server
+        bool IsFillable() const
+        {
+            // only article downloads using global message ids can be
+            // filled, i.e. obtained from any server.
+            if (cmdtype_ != Type::Article)
+                return false;
+
+            // check the article identifcation strings.
+            // articles can be using either article number
+            // or a message id. The message ids are unique
+            // across all servers and are enclosed in angle brackets
+            // for example <foboar@keke.boo.blah>
+            for (const auto& cmd : commands_)
+            {
+                if (cmd.front() != '<' || cmd.back() != '>')
+                    return false;
+            }
+            return true;
+        }
+
     private:
         CmdList() : cancelbit_(false), failbit_(false), account_(0), task_(0), conn_(0)
         {

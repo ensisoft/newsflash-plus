@@ -730,7 +730,6 @@ class Engine::TaskState
     {
         ui_.task_id  = id;
         ui_.size     = 0;
-        is_fillable_ = false;
         num_bytes_queued_ = 0;
     }
 
@@ -757,7 +756,6 @@ public:
         ui_.desc       = file.desc;
         ui_.size       = file.size;
         ui_.path       = file.path;
-        is_fillable_   = ui::is_fillable(file);
 
         LOG_D("Task: download has ", file.articles.size(), " articles");
         LOG_D("Task: download path: '", file.path, "'");
@@ -767,7 +765,6 @@ public:
         num_actions_total_ = task_->MaxNumActions();
 
         LOG_D("Task: download");
-        LOG_D("Task: is_fillable: ", is_fillable_);
         LOG_I("Task ", ui_.task_id, " (", ui_.desc, ") created");
     }
 
@@ -801,7 +798,6 @@ public:
         ui_.desc       = spec.desc();
         ui_.size       = spec.size();
         ui_.path       = spec.path();
-        is_fillable_   = spec.enable_fill();
 
         ui::FileDownload file;
         file.path = spec.path();
@@ -871,7 +867,6 @@ public:
             spec->set_path(ptr->path());
             spec->set_num_actions_total(num_actions_total_);
             spec->set_num_actions_ready(num_actions_ready_);
-            spec->set_enable_fill(is_fillable_);
 
             const auto& grouplist = ptr->groups();
             const auto& articles  = ptr->articles();
@@ -993,7 +988,9 @@ public:
         {
             LOG_W("Task ", ui_.task_id, " cmdlist ", cmds->GetCmdListId(),  " failbit is on.");
 
-            if (is_fillable_ && state.fill_account && (state.fill_account != cmds->GetAccountId()))
+            const bool is_fillable = cmds->IsFillable();
+
+            if (is_fillable && state.fill_account && (state.fill_account != cmds->GetAccountId()))
             {
                 LOG_I("Task ", ui_.task_id, " cmdlist ", cmds->GetCmdListId(), " set for refill");
                 cmds->SetAccountId(state.fill_account);
@@ -1035,7 +1032,9 @@ public:
                     return goto_state(state, states::Error);
                 }
 
-                if (is_fillable_ && state.fill_account && (state.fill_account != cmds->GetAccountId()))
+                const bool is_fillable = cmds->IsFillable();
+
+                if (is_fillable && state.fill_account && (state.fill_account != cmds->GetAccountId()))
                 {
                     LOG_I("Task ", ui_.task_id, " cmdlist ", cmds->GetCmdListId(), " set for refill.");
                     cmds->SetAccountId(state.fill_account);
@@ -1463,8 +1462,7 @@ private:
     std::size_t num_actions_ready_   = 0;
     std::size_t num_actions_total_   = 0;
     std::size_t num_bytes_queued_    = 0;
-private:
-    bool is_fillable_ = false;
+
 private:
     enum class LockState {
         Locked, Unlocked

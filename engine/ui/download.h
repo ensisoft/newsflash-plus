@@ -60,21 +60,6 @@ namespace newsflash
         std::vector<std::string> groups;
     };
 
-    // message-id's are unique across all Usenet servers and have are variable
-    // length strings enclosed in angle brackets '<' and '>'.
-    // if the articles in the download are message-ids we the download is
-    // "fillable", i.e. another server can queried for the messages in case
-    // they are missing from the primary server.
-    inline bool is_fillable(const FileDownload& d)
-    {
-        for (const auto& a : d.articles)
-        {
-            if (a.front() != '<' || a.back() != '>')
-                return false;
-        }
-        return true;
-    }
-
     // A set of FileDownloads grouped together into a "batch"
     struct FileBatchDownload : public Download
     {
