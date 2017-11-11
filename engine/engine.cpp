@@ -726,13 +726,6 @@ private:
 
 class Engine::TaskState
 {
-    TaskState(std::size_t id) : num_active_cmdlists_(0), num_active_actions_(0), num_actions_ready_(0), num_actions_total_(0)
-    {
-        ui_.task_id  = id;
-        ui_.size     = 0;
-        num_bytes_queued_ = 0;
-    }
-
 public:
     using states = ui::TaskDesc::States;
     using clock  = std::chrono::steady_clock;
@@ -750,49 +743,22 @@ public:
     //constexpr static auto no_transition = transition{states::queued, states::queued};
     const static transition no_transition;
 
-    TaskState(Engine::State& s, std::size_t id, const ui::FileDownload& file) : TaskState(id)
+    TaskState(std::size_t id, std::unique_ptr<Task> task, const ui::Download& desc)
     {
-        ui_.state      = states::Queued;
-        ui_.desc       = file.desc;
-        ui_.size       = file.size;
-        ui_.path       = file.path;
-
-        LOG_D("Task: download has ", file.articles.size(), " articles");
-        LOG_D("Task: download path: '", file.path, "'");
-
-        task_ = s.factory->AllocateTask(file);
-
+        ui_.task_id = id;
+        ui_.account = desc.account;
+        ui_.state   = states::Queued;
+        ui_.size    = desc.size;
+        ui_.desc    = desc.desc;
+        ui_.path    = desc.path;
+        task_       = std::move(task);
         num_actions_total_ = task_->MaxNumActions();
-
-        LOG_D("Task: download");
         LOG_I("Task ", ui_.task_id, " (", ui_.desc, ") created");
     }
 
-    TaskState(Engine::State& s, std::size_t id, const ui::GroupListDownload& list) : TaskState(id)
+    TaskState(Engine::State& s, const data::Download& spec)
     {
-        ui_.desc = list.desc;
-
-        task_ = s.factory->AllocateTask(list);
-
-        num_actions_total_ = task_->MaxNumActions();
-
-        LOG_D("Task: listing");
-        LOG_I("Task ", ui_.task_id, " (", ui_.desc, ") created");
-    }
-
-    TaskState(Engine::State& s, std::size_t id, const ui::HeaderDownload& download) : TaskState(id)
-    {
-        ui_.desc = download.desc;
-
-        task_ = s.factory->AllocateTask(download);
-
-        num_actions_total_ = task_->MaxNumActions();
-        LOG_D("Task: update");
-        LOG_I("Task ", ui_.task_id, "( ", ui_.desc, ") created");
-    }
-
-    TaskState(Engine::State& s, const data::Download& spec) : TaskState(spec.task_id())
-    {
+        ui_.task_id    = spec.task_id();
         ui_.batch_id   = spec.batch_id();
         ui_.account    = spec.account_id();
         ui_.desc       = spec.desc();
@@ -2227,22 +2193,23 @@ Engine::TaskId Engine::DownloadFiles(const ui::FileBatchDownload& batch, bool pr
     settings.discard_text_content     = state_->discard_text;
     settings.overwrite_existing_files = state_->overwrite_existing;
 
-    for (auto& file : batch.files)
+    for (const auto& file : batch.files)
     {
-        const auto taskid = state_->oid++;
-
         assert(file.path == batch.path);
 
-        std::unique_ptr<TaskState> job(new TaskState(*state_, taskid, std::move(file)));
-        job->configure(settings);
-        job->set_account(batch.account);
-        job->set_batch(batchid);
+        const auto taskid = state_->oid++;
 
-        assert(job->is_valid());
+        std::unique_ptr<Task> task(state_->factory->AllocateTask(file));
+        std::unique_ptr<TaskState> state(new TaskState(taskid, std::move(task), file));
+        state->configure(settings);
+        state->set_account(batch.account);
+        state->set_batch(batchid);
+
+        assert(state->is_valid());
 
         if (priority)
-            state_->tasks.push_front(std::move(job));
-        else state_->tasks.push_back(std::move(job));
+            state_->tasks.push_front(std::move(state));
+        else state_->tasks.push_back(std::move(state));
 
         state_->bytes_queued += file.size;
         state_->num_pending_tasks++;
@@ -2260,13 +2227,14 @@ Engine::TaskId Engine::DownloadListing(const ui::GroupListDownload& list)
     std::unique_ptr<BatchState> batch(new BatchState(batchid, list));
 
     const auto taskid = state_->oid++;
-    std::unique_ptr<TaskState> job(new TaskState(*state_, taskid, list));
-    job->set_account(list.account);
-    job->set_batch(batchid);
+    std::unique_ptr<Task> task(state_->factory->AllocateTask(list));
+    std::unique_ptr<TaskState> state(new TaskState(taskid, std::move(task), list));
+    state->set_account(list.account);
+    state->set_batch(batchid);
 
-    assert(job->is_valid());
+    assert(state->is_valid());
 
-    state_->tasks.push_back(std::move(job));
+    state_->tasks.push_back(std::move(state));
     state_->batches.push_back(std::move(batch));
     state_->num_pending_tasks++;
     state_->execute();
@@ -2279,13 +2247,14 @@ Engine::TaskId Engine::DownloadHeaders(const ui::HeaderDownload& download)
     std::unique_ptr<BatchState> batch(new BatchState(batchid, download));
 
     const auto taskid = state_->oid++;
-    std::unique_ptr<TaskState> task(new TaskState(*state_, taskid, download));
-    task->set_account(download.account);
-    task->set_batch(batchid);
+    std::unique_ptr<Task> task(state_->factory->AllocateTask(download));
+    std::unique_ptr<TaskState> state(new TaskState(taskid, std::move(task), download));
+    state->set_account(download.account);
+    state->set_batch(batchid);
 
-    assert(task->is_valid());
+    assert(state->is_valid());
 
-    state_->tasks.push_back(std::move(task));
+    state_->tasks.push_back(std::move(state));
     state_->batches.push_back(std::move(batch));
     state_->num_pending_tasks++;
     state_->execute();
