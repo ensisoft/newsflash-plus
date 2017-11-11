@@ -32,7 +32,6 @@
 #include "engine/action.h"
 #include "engine/session.h"
 #include "engine/cmdlist.h"
-#include "engine/settings.h"
 #include "unit_test_common.h"
 
 namespace nf = newsflash;
@@ -47,7 +46,7 @@ void unit_test_create_cmds()
 
     std::size_t cmd_number = 0;
 
-    nf::download download({"alt.binaries.foobar"}, articles, "", "test");
+    nf::Download download({"alt.binaries.foobar"}, articles, "", "test");
     nf::session session;
     session.on_send = [&](const std::string& cmd) {
         BOOST_REQUIRE(cmd == "BODY " +
@@ -59,11 +58,11 @@ void unit_test_create_cmds()
 
     for (;;)
     {
-        auto cmds = download.create_commands();
+        auto cmds = download.CreateCommands();
         if (!cmds)
             break;
 
-        cmds->submit_data_commands(session);
+        cmds->SubmitDataCommands(session);
         session.send_next();
     }
     BOOST_REQUIRE(cmd_number == articles.size());
@@ -74,33 +73,33 @@ void unit_test_decode_yenc()
 {
     delete_file("1489406.jpg");
 
-    nf::download download({"alt.binaries.foobar"}, {"1", "2", "3"}, "", "test");
+    nf::Download download({"alt.binaries.foobar"}, {"1", "2", "3"}, "", "test");
     nf::session session;
     session.on_send = [&](const std::string&) {};
 
-    auto cmdlist = download.create_commands();
+    auto cmdlist = download.CreateCommands();
 
-    cmdlist->submit_data_commands(session);
-    cmdlist->receive_data_buffer(read_file_buffer("test_data/1489406.jpg-001.ync"));
-    cmdlist->receive_data_buffer(read_file_buffer("test_data/1489406.jpg-002.ync"));
-    cmdlist->receive_data_buffer(read_file_buffer("test_data/1489406.jpg-003.ync"));
+    cmdlist->SubmitDataCommands(session);
+    cmdlist->ReceiveDataBuffer(read_file_buffer("test_data/1489406.jpg-001.ync"));
+    cmdlist->ReceiveDataBuffer(read_file_buffer("test_data/1489406.jpg-002.ync"));
+    cmdlist->ReceiveDataBuffer(read_file_buffer("test_data/1489406.jpg-003.ync"));
 
     std::vector<std::unique_ptr<nf::action>> actions1;
     std::vector<std::unique_ptr<nf::action>> actions2;
-    download.complete(*cmdlist, actions1);
+    download.Complete(*cmdlist, actions1);
 
     while (!actions1.empty())
     {
         for (auto& it : actions1)
         {
             it->perform();
-            download.complete(*it, actions2);
+            download.Complete(*it, actions2);
         }
         actions1 = std::move(actions2);
         actions2 = std::vector<std::unique_ptr<nf::action>>();
     }
 
-    download.commit();
+    download.Commit();
 
     const auto& jpg = read_file_contents("1489406.jpg");
     const auto& ref = read_file_contents("test_data/1489406.jpg");
@@ -114,32 +113,32 @@ void unit_test_decode_yenc_bug_32()
 {
     delete_file("02252012paul-10w(WallPaperByPaul)[1280X800].jpg");
 
-    nf::download download({"alt.binaries.wallpaper"}, {"1", "2"}, "", "test");
+    nf::Download download({"alt.binaries.wallpaper"}, {"1", "2"}, "", "test");
     nf::session session;
     session.on_send = [&](const std::string&) {};
 
-    auto cmdlist = download.create_commands();
+    auto cmdlist = download.CreateCommands();
 
-    cmdlist->submit_data_commands(session);
-    cmdlist->receive_data_buffer(read_file_buffer("test_data/wallpaper.jpg-002.yenc"));
-    cmdlist->receive_data_buffer(read_file_buffer("test_data/wallpaper.jpg-001.yenc"));
+    cmdlist->SubmitDataCommands(session);
+    cmdlist->ReceiveDataBuffer(read_file_buffer("test_data/wallpaper.jpg-002.yenc"));
+    cmdlist->ReceiveDataBuffer(read_file_buffer("test_data/wallpaper.jpg-001.yenc"));
 
     std::vector<std::unique_ptr<nf::action>> actions1;
     std::vector<std::unique_ptr<nf::action>> actions2;
-    download.complete(*cmdlist, actions1);
+    download.Complete(*cmdlist, actions1);
 
     while (!actions1.empty())
     {
         for (auto& it : actions1)
         {
             it->perform();
-            download.complete(*it, actions2);
+            download.Complete(*it, actions2);
         }
         actions1 = std::move(actions2);
         actions2 = std::vector<std::unique_ptr<nf::action>>();
     }
 
-    download.commit();
+    download.Commit();
 
     const auto& jpg = read_file_contents("02252012paul-10w(WallPaperByPaul)[1280X800].jpg");
     const auto& ref = read_file_contents("test_data/wallpaper.jpg");
@@ -152,33 +151,33 @@ void unit_test_decode_uuencode()
 {
     delete_file("1489406.jpg");
 
-    nf::download download({"alt.binaries.foobar"}, {"1", "2", "3"}, "", "test");
+    nf::Download download({"alt.binaries.foobar"}, {"1", "2", "3"}, "", "test");
     nf::session session;
     session.on_send = [&](const std::string&) {};
 
-    auto cmdlist = download.create_commands();
+    auto cmdlist = download.CreateCommands();
 
-    cmdlist->submit_data_commands(session);
-    cmdlist->receive_data_buffer(read_file_buffer("test_data/1489406.jpg-003.uuencode"));
-    cmdlist->receive_data_buffer(read_file_buffer("test_data/1489406.jpg-001.uuencode"));
-    cmdlist->receive_data_buffer(read_file_buffer("test_data/1489406.jpg-002.uuencode"));
+    cmdlist->SubmitDataCommands(session);
+    cmdlist->ReceiveDataBuffer(read_file_buffer("test_data/1489406.jpg-003.uuencode"));
+    cmdlist->ReceiveDataBuffer(read_file_buffer("test_data/1489406.jpg-001.uuencode"));
+    cmdlist->ReceiveDataBuffer(read_file_buffer("test_data/1489406.jpg-002.uuencode"));
 
     std::vector<std::unique_ptr<nf::action>> actions1;
     std::vector<std::unique_ptr<nf::action>> actions2;
-    download.complete(*cmdlist, actions1);
+    download.Complete(*cmdlist, actions1);
 
     while (!actions1.empty())
     {
         for (auto& it : actions1)
         {
             it->perform();
-            download.complete(*it, actions2);
+            download.Complete(*it, actions2);
         }
         actions1 = std::move(actions2);
         actions2 = std::vector<std::unique_ptr<nf::action>>();
     }
 
-    download.commit();
+    download.Commit();
 
     const auto& jpg = read_file_contents("1489406.jpg");
     const auto& ref = read_file_contents("test_data/1489406.jpg");
@@ -208,31 +207,31 @@ void unit_test_decode_from_files()
             continue;
         articles.push_back(file);
     }
-    nf::download download({"alt.binaries.foo"}, articles, "", "test");
-    nf::settings settings;
+    nf::Download download({"alt.binaries.foo"}, articles, "", "test");
+    nf::Task::Settings settings;
     settings.discard_text_content = true;
     settings.overwrite_existing_files = true;
-    download.configure(settings);
+    download.Configure(settings);
     nf::session ses;
     ses.on_send = [&](const std::string&) {};
 
     for (std::size_t i=0; i<articles.size();)
     {
-        auto cmds = download.create_commands();
+        auto cmds = download.CreateCommands();
         if (!cmds)
             break;
-        for (std::size_t j=0; j<cmds->num_data_commands(); ++j, ++i)
+        for (std::size_t j=0; j<cmds->NumDataCommands(); ++j, ++i)
         {
             nf::buffer buff = read_file_buffer(articles[i].c_str());
-            cmds->receive_data_buffer(std::move(buff));
+            cmds->ReceiveDataBuffer(std::move(buff));
         }
         std::vector<std::unique_ptr<nf::action>> decodes;
-        download.complete(*cmds, decodes);
+        download.Complete(*cmds, decodes);
         for (auto& dec : decodes)
         {
             dec->perform();
             std::vector<std::unique_ptr<nf::action>> writes;
-            download.complete(*dec, writes);
+            download.Complete(*dec, writes);
             for (auto& io : writes)
                 io->perform();
         }

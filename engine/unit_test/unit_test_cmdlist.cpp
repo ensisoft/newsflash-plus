@@ -33,11 +33,11 @@ void unit_test_bodylist()
 {
     // no such group
     {
-        nf::cmdlist::messages m;
+        nf::CmdList::Messages m;
         m.groups  = {"alt.binaries.foo", "alt.binaries.bar"};
         m.numbers = {"123", "234", "345"};
 
-        nf::cmdlist list(std::move(m));
+        nf::CmdList list(std::move(m));
 
         std::string command;
         nf::session session;
@@ -45,7 +45,7 @@ void unit_test_bodylist()
             command = cmd;
         };
 
-        BOOST_REQUIRE(list.submit_configure_command(0, session));
+        BOOST_REQUIRE(list.SubmitConfigureCommand(0, session));
         session.send_next();
         BOOST_REQUIRE(command == "GROUP alt.binaries.foo\r\n");
 
@@ -54,10 +54,10 @@ void unit_test_bodylist()
             nf::buffer conf;
             recv.append("411 no such group\r\n");
             session.recv_next(recv, conf);
-            BOOST_REQUIRE(!list.receive_configure_buffer(0, std::move(conf)));
+            BOOST_REQUIRE(!list.ReceiveConfigureBuffer(0, std::move(conf)));
         }
 
-        BOOST_REQUIRE(list.submit_configure_command(1, session));
+        BOOST_REQUIRE(list.SubmitConfigureCommand(1, session));
         session.send_next();
         BOOST_REQUIRE(command == "GROUP alt.binaries.bar\r\n");
 
@@ -66,20 +66,20 @@ void unit_test_bodylist()
             nf::buffer conf;
             recv.append("411 no such group\r\n");
             session.recv_next(recv, conf);
-            BOOST_REQUIRE(!list.receive_configure_buffer(1, std::move(conf)));
+            BOOST_REQUIRE(!list.ReceiveConfigureBuffer(1, std::move(conf)));
         }
 
-        BOOST_REQUIRE(!list.submit_configure_command(2, session));
-        BOOST_REQUIRE(!list.is_canceled());
+        BOOST_REQUIRE(!list.SubmitConfigureCommand(2, session));
+        BOOST_REQUIRE(!list.IsCancelled());
     }
 
     {
 
-        nf::cmdlist::messages m;
+        nf::CmdList::Messages m;
         m.groups  = {"alt.binaries.foo", "alt.binaries.bar"};
         m.numbers = {"123", "234", "345"};
 
-        nf::cmdlist list(std::move(m));
+        nf::CmdList list(std::move(m));
 
         std::string command;
         nf::session session;
@@ -90,7 +90,7 @@ void unit_test_bodylist()
 
         // configure
         {
-            list.submit_configure_command(0, session);
+            list.SubmitConfigureCommand(0, session);
             session.send_next();
 
             nf::buffer recv(1024);
@@ -98,7 +98,7 @@ void unit_test_bodylist()
             recv.append("211 4 1 4 alt.binaries.foo group succesfully selected\r\n");
 
             session.recv_next(recv, conf);
-            BOOST_REQUIRE(list.receive_configure_buffer(0, std::move(conf)));
+            BOOST_REQUIRE(list.ReceiveConfigureBuffer(0, std::move(conf)));
         }
 
         command = "";
@@ -107,7 +107,7 @@ void unit_test_bodylist()
 
         // send data commands
         {
-            list.submit_data_commands(session);
+            list.SubmitDataCommands(session);
             session.send_next();
             BOOST_REQUIRE(command == "BODY 123\r\nBODY 234\r\nBODY 345\r\n");
 
@@ -118,15 +118,15 @@ void unit_test_bodylist()
                 "420 no article with that message\r\n");
 
             session.recv_next(recv, body1);
-            list.receive_data_buffer(std::move(body1));
+            list.ReceiveDataBuffer(std::move(body1));
 
             session.recv_next(recv, body2);
-            list.receive_data_buffer(std::move(body2));
+            list.ReceiveDataBuffer(std::move(body2));
 
             session.recv_next(recv, body3);
-            list.receive_data_buffer(std::move(body3));
+            list.ReceiveDataBuffer(std::move(body3));
 
-            const auto& buffers = list.get_buffers();
+            const auto& buffers = list.GetBuffers();
             BOOST_REQUIRE(buffers.size() == 3);
 
             BOOST_REQUIRE(buffers[0].content_status() == nf::buffer::status::unavailable);
@@ -147,11 +147,11 @@ bool operator==(const nf::buffer& buff, const char* str)
 
 void unit_test_refill()
 {
-    nf::cmdlist::messages m;
+    nf::CmdList::Messages m;
     m.groups  = {"alt.binaries.foo"};
     m.numbers = {"1", "2", "3", "4"};
 
-    nf::cmdlist list(std::move(m));
+    nf::CmdList list(std::move(m));
 
     std::string command;
     nf::session session;
@@ -161,7 +161,7 @@ void unit_test_refill()
 
     session.enable_pipelining(true);
 
-    list.submit_data_commands(session);
+    list.SubmitDataCommands(session);
     session.send_next();
     BOOST_REQUIRE(command == "BODY 1\r\nBODY 2\r\nBODY 3\r\nBODY 4\r\n");
 
@@ -179,15 +179,15 @@ void unit_test_refill()
     session.recv_next(recv, b3);
     session.recv_next(recv, b4);
 
-    list.receive_data_buffer(std::move(b1));
-    list.receive_data_buffer(std::move(b2));
-    list.receive_data_buffer(std::move(b3));
-    list.receive_data_buffer(std::move(b4));
+    list.ReceiveDataBuffer(std::move(b1));
+    list.ReceiveDataBuffer(std::move(b2));
+    list.ReceiveDataBuffer(std::move(b3));
+    list.ReceiveDataBuffer(std::move(b4));
 
     using status = nf::buffer::status;
 
     {
-        const auto& buffers = list.get_buffers();
+        const auto& buffers = list.GetBuffers();
         BOOST_REQUIRE(buffers[0].content_status() == status::success);
         BOOST_REQUIRE(buffers[1].content_status() == status::success);
         BOOST_REQUIRE(buffers[2].content_status() == status::unavailable);
@@ -195,7 +195,7 @@ void unit_test_refill()
     }
 
     command = "";
-    list.submit_data_commands(session);
+    list.SubmitDataCommands(session);
     session.send_next();
     BOOST_REQUIRE(command == "BODY 3\r\nBODY 4\r\n");
 
@@ -208,11 +208,11 @@ void unit_test_refill()
     session.recv_next(recv, b3);
     session.recv_next(recv, b4);
 
-    list.receive_data_buffer(std::move(b3));
-    list.receive_data_buffer(std::move(b4));
+    list.ReceiveDataBuffer(std::move(b3));
+    list.ReceiveDataBuffer(std::move(b4));
 
     {
-        const auto& buffers = list.get_buffers();
+        const auto& buffers = list.GetBuffers();
         BOOST_REQUIRE(buffers.size() == 4);
         BOOST_REQUIRE(buffers[0].content_status() == status::success);
         BOOST_REQUIRE(buffers[1].content_status() == status::success);
@@ -228,7 +228,7 @@ void unit_test_refill()
 
 void unit_test_listing()
 {
-    nf::cmdlist listing(nf::cmdlist::listing{});
+    nf::CmdList listing(nf::CmdList::Listing{});
 
     std::string command;
     nf::session session;
@@ -236,7 +236,7 @@ void unit_test_listing()
         command = cmd;
     };
 
-    listing.submit_data_commands(session);
+    listing.SubmitDataCommands(session);
 
     session.send_next();
     BOOST_REQUIRE(command == "LIST\r\n");
@@ -250,9 +250,9 @@ void unit_test_listing()
     session.recv_next(i, o);
     BOOST_REQUIRE(o.content_status() == nf::buffer::status::success);
 
-    listing.receive_data_buffer(std::move(o));
+    listing.ReceiveDataBuffer(std::move(o));
 
-    const auto& buffers = listing.get_buffers();
+    const auto& buffers = listing.GetBuffers();
     BOOST_REQUIRE(buffers.size() == 1);
     BOOST_REQUIRE(buffers[0].content_status() == nf::buffer::status::success);
 
@@ -262,7 +262,7 @@ void unit_test_groupinfo()
 {
     // success
     {
-        nf::cmdlist list(nf::cmdlist::groupinfo{"alt.binaries.foo"});
+        nf::CmdList list(nf::CmdList::GroupInfo{"alt.binaries.foo"});
 
         std::string command;
         nf::session session;
@@ -270,9 +270,9 @@ void unit_test_groupinfo()
             command = cmd;
         };
 
-        BOOST_REQUIRE(list.needs_to_configure() == false);
+        BOOST_REQUIRE(list.NeedsToConfigure() == false);
 
-        list.submit_data_commands(session);
+        list.SubmitDataCommands(session);
         session.send_next();
 
         BOOST_REQUIRE(command == "GROUP alt.binaries.foo\r\n");
@@ -284,16 +284,16 @@ void unit_test_groupinfo()
         session.recv_next(i, o);
         BOOST_REQUIRE(o.content_status() == nf::buffer::status::success);
 
-        list.receive_data_buffer(std::move(o));
+        list.ReceiveDataBuffer(std::move(o));
 
-        const auto& buffers = list.get_buffers();
+        const auto& buffers = list.GetBuffers();
         BOOST_REQUIRE(buffers.size() == 1);
         BOOST_REQUIRE(buffers[0].content_status() == nf::buffer::status::success);
     }
 
     // failure
     {
-        nf::cmdlist list(nf::cmdlist::groupinfo{"alt.binaries.foo"});
+        nf::CmdList list(nf::CmdList::GroupInfo{"alt.binaries.foo"});
 
         std::string command;
         nf::session session;
@@ -301,7 +301,7 @@ void unit_test_groupinfo()
             command = cmd;
         };
 
-        list.submit_data_commands(session);
+        list.SubmitDataCommands(session);
 
         session.send_next();
 
@@ -310,9 +310,9 @@ void unit_test_groupinfo()
         i.append("411 no such newsgroup\r\n");
         session.recv_next(i, o);
 
-        list.receive_data_buffer(std::move(o));
+        list.ReceiveDataBuffer(std::move(o));
 
-        const auto& buffers = list.get_buffers();
+        const auto& buffers = list.GetBuffers();
         BOOST_REQUIRE(buffers.size() == 1);
         BOOST_REQUIRE(buffers[0].content_status() == nf::buffer::status::unavailable);
 

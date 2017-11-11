@@ -32,7 +32,7 @@
 
 namespace newsflash
 {
-    class cmdlist;
+    class CmdList;
     class throttle;
 
     class connection
@@ -62,7 +62,7 @@ namespace newsflash
         };
 
         struct cmdlist_completion_data {
-            std::shared_ptr<cmdlist> cmds;
+            std::shared_ptr<CmdList> cmds;
             std::size_t task_owner_id = 0;
             std::uint64_t total_bytes = 0;
             std::uint64_t content_bytes = 0;
@@ -98,7 +98,7 @@ namespace newsflash
         std::unique_ptr<action> complete(std::unique_ptr<action> a);
 
         // execute the given cmdlist
-        std::unique_ptr<action> execute(std::shared_ptr<cmdlist> cmd, std::size_t tid);
+        std::unique_ptr<action> execute(std::shared_ptr<CmdList> cmd, std::size_t tid);
 
         // cancel a pending operation in the connection such as connecting
         // or executing a cmdlist. note that if the operation is excute

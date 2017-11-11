@@ -69,21 +69,21 @@ void unit_test_success()
         cmd = c;
     };
 
-    newsflash::listing listing;
-    BOOST_REQUIRE(listing.has_commands());
-    auto cmds = listing.create_commands();
-    BOOST_REQUIRE(listing.has_commands() == false);
-    BOOST_REQUIRE(cmds->needs_to_configure() == false);
-    BOOST_REQUIRE(cmds->cmdtype() == newsflash::cmdlist::type::listing);
+    newsflash::Listing listing;
+    BOOST_REQUIRE(listing.HasCommands());
+    auto cmds = listing.CreateCommands();
+    BOOST_REQUIRE(listing.HasCommands() == false);
+    BOOST_REQUIRE(cmds->NeedsToConfigure() == false);
+    BOOST_REQUIRE(cmds->GetType() == newsflash::CmdList::Type::Listing);
 
-    cmds->submit_data_commands(session);
+    cmds->SubmitDataCommands(session);
     session.send_next();
     session.recv_next(i, o);
 
-    cmds->receive_data_buffer(std::move(o));
+    cmds->ReceiveDataBuffer(std::move(o));
 
     std::vector<std::unique_ptr<newsflash::action>> actions;
-    listing.complete(*cmds, actions);
+    listing.Complete(*cmds, actions);
 
     BOOST_REQUIRE(listing.is_ready());
 

@@ -305,7 +305,7 @@ private:
 class connection::execute : public action
 {
 public:
-    execute(std::shared_ptr<impl> s, std::shared_ptr<cmdlist> cmd, std::size_t tid) : state_(s), cmds_(cmd), taskid_(tid)
+    execute(std::shared_ptr<impl> s, std::shared_ptr<CmdList> cmd, std::size_t tid) : state_(s), cmds_(cmd), taskid_(tid)
     {}
 
     virtual void xperform() override
@@ -318,8 +318,8 @@ public:
         auto* throttle = state_->pthrottle;
         auto& cmdlist  = cmds_;
 
-        LOG_D("Execute cmdlist ", cmdlist->id());
-        LOG_D("Cmdlist has ", cmdlist->num_data_commands(), " data commands");
+        LOG_D("Execute cmdlist ", cmdlist->GetCmdListId());
+        LOG_D("Cmdlist has ", cmdlist->NumDataCommands(), " data commands");
 
         newsflash::buffer recvbuf(MB(4));
 
@@ -331,19 +331,19 @@ public:
         // it into the session in order to update the session state.
         // once a command is completed we pass the output buffer
         // to the cmdlist so that it can update its own state.
-        if (cmdlist->is_canceled())
+        if (cmdlist->IsCancelled())
         {
             LOG_D("Cmdlist was canceled");
             return;
         }
 
-        if (cmdlist->needs_to_configure())
+        if (cmdlist->NeedsToConfigure())
         {
             bool configure_success = false;
 
             for (std::size_t i=0; ; ++i)
             {
-                if (!cmdlist->submit_configure_command(i, *session))
+                if (!cmdlist->SubmitConfigureCommand(i, *session))
                     break;
 
                 if (!session->pending()) {
@@ -381,7 +381,7 @@ public:
                 else if (err == session::error::protocol)
                     throw exception(connection::error::protocol, "protocol error");
 
-                if (cmdlist->receive_configure_buffer(i, std::move(config)))
+                if (cmdlist->ReceiveConfigureBuffer(i, std::move(config)))
                 {
                     configure_success = true;
                     break;
@@ -394,7 +394,7 @@ public:
             }
         } // needs to configure
 
-        if (cmdlist->is_canceled())
+        if (cmdlist->IsCancelled())
         {
             LOG_D("Cmdlist was canceled");
             return;
@@ -402,7 +402,7 @@ public:
 
         LOG_I("Submit data commands");
 
-        cmdlist->submit_data_commands(*session);
+        cmdlist->SubmitDataCommands(*session);
 
         LOG_FLUSH();
 
@@ -474,13 +474,13 @@ public:
             if (err != session::error::none)
                 throw exception(connection::error::no_permission, "no permission");
 
-            cmdlist->receive_data_buffer(std::move(content));
+            cmdlist->ReceiveDataBuffer(std::move(content));
 
             // if the session is pipelined there's no way to stop the data transmission
             // of already pipelined commands other than by doing a hard socket reset.
             // if the session is not pipelined we can just exit the reading loop after
             // a complete command is completed and we can maintain the socket/session.
-            if (cmdlist->is_canceled())
+            if (cmdlist->IsCancelled())
             {
                 LOG_D("Cmdlist was canceled");
 
@@ -512,7 +512,7 @@ public:
     }
 private:
     std::shared_ptr<impl> state_;
-    std::shared_ptr<cmdlist> cmds_;
+    std::shared_ptr<CmdList> cmds_;
     std::size_t taskid_ = 0;
     std::size_t total_bytes_ = 0;
     std::size_t content_bytes_ = 0;
@@ -728,7 +728,7 @@ std::unique_ptr<action> connection::complete(std::unique_ptr<action> a)
     return next;
 }
 
-std::unique_ptr<action> connection::execute(std::shared_ptr<cmdlist> cmd, std::size_t tid)
+std::unique_ptr<action> connection::execute(std::shared_ptr<CmdList> cmd, std::size_t tid)
 {
     state_->cancel->reset();
 

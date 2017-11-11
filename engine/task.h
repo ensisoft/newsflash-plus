@@ -29,48 +29,69 @@
 
 namespace newsflash
 {
-    class cmdlist;
-    struct settings;
+    class CmdList;
 
     // tasks implement some nntp data based activity in the engine, for
     // example extracting binary content from article data.
-    class task
+    class Task
     {
     public:
-        virtual ~task() = default;
+        struct Settings {
+            // if set to true engine will overwrite files
+            // that already exist in the filesystem.
+            // if set to false, new files will be renamed
+            // to avoid collisions.
+            bool overwrite_existing_files = false;
 
-        virtual std::shared_ptr<cmdlist> create_commands() = 0;
+            // set to true to discard any textual data
+            // that is downloaded as a part of downloading
+            // some binary content.
+            // set to false to have the text data stored to the disk.
+            bool discard_text_content = true;
+        };
+
+        virtual ~Task() = default;
+
+        // Create a command list object with details about
+        // what data to read from the remote host.
+        virtual std::shared_ptr<CmdList> CreateCommands() = 0;
 
         // cancel the task. if the task is not complete then this has the effect
         // of canceling all the work that has been done, for example removing
         // any files created on the filesystem etc. if task is complete then
         // simply the non-persistent data is cleaned away.
         // after this call returns the object can be deleted.
-        virtual void cancel() {}
+        virtual void Cancel() {}
 
         // commit our completed task.
-        virtual void commit() {}
+        virtual void Commit() {}
 
         // complete the action. create actions (if any) and store
         // them in the next list
-        virtual void complete(action& act,
+        virtual void Complete(action& act,
             std::vector<std::unique_ptr<action>>& next) {}
 
         // complete the cmdlist. create actions (if any) and store
         // them in the next list
-        virtual void complete(cmdlist& cmd,
+        virtual void Complete(CmdList& cmd,
             std::vector<std::unique_ptr<action>>& next) {}
 
         // update task settings
-        virtual void configure(const settings& s) {}
+        virtual void Configure(const Settings& settings) {}
 
-        virtual bool has_commands() const = 0;
+        virtual bool HasCommands() const = 0;
 
-        virtual std::size_t max_num_actions() const = 0;
+        virtual std::size_t MaxNumActions() const = 0;
 
-        virtual void lock() {}
+        // Lock the task for the calling thread.
+        // Locking allows the calling thread to acquire a consistent
+        // view of the current task state by preventing any other
+        // thread from making modifications to the task object.
+        // The calling thread must call Unlock when done.
+        virtual void Lock() {}
 
-        virtual void unlock() {}
+        // Unlock the task lock. see Lock
+        virtual void Unlock() {}
 
     protected:
     private:

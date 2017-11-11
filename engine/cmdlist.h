@@ -39,58 +39,70 @@ namespace newsflash
     // and then the actual data transfer.
     // session configuration is performed step-by-step (without pipelining)
     // where as the data transfer can be pipelined.
-    class cmdlist
+    class CmdList
     {
     public:
-        enum class type {
-            xover, body, listing, groupinfo
+        // the type of data that the cmdlist will get.
+        enum class Type {
+            // buffer(s) are XOVER header data.
+            Header,
+
+            // buffer(s) are BODY article data
+            Article,
+
+            // buffer(s) are LIST news group listing data
+            Listing,
+
+            // buffer(s) are GROUP information
+            GroupInfo
         };
 
-        struct listing {};
-        struct messages {
+        struct Listing {};
+
+        struct Messages {
             std::vector<std::string> groups;  // groups in which to look for the messages
             std::vector<std::string> numbers; // either article numbers or IDs
         };
-        struct overviews {
+        struct Overviews {
             std::string group;
             std::vector<std::string> ranges;
         };
-        struct groupinfo {
+        struct GroupInfo {
             std::string group;
         };
 
-        cmdlist(const listing&) : cmdlist()
+        CmdList(const Listing&) : CmdList()
         {
-            cmdtype_ = type::listing;
+            cmdtype_ = Type::Listing;
         }
-        cmdlist(const messages& m) : cmdlist()
+        CmdList(const Messages& m) : CmdList()
         {
             groups_   = m.groups;
             commands_ = m.numbers;
-            cmdtype_  = type::body;
+            cmdtype_  = Type::Article;
         }
-        cmdlist(const overviews& o) : cmdlist()
+        CmdList(const Overviews& o) : CmdList()
         {
             groups_.push_back(o.group);
             commands_  = o.ranges;
-            cmdtype_   = type::xover;
+            cmdtype_   = Type::Header;
         }
-        cmdlist(const groupinfo& g) : cmdlist()
+        CmdList(const GroupInfo& g) : CmdList()
         {
             groups_.push_back(g.group);
-            cmdtype_ = type::groupinfo;
+            cmdtype_ = Type::GroupInfo;
         }
 
-        bool needs_to_configure() const
+        bool NeedsToConfigure() const
         {
-            if (cmdtype_ == type::xover || cmdtype_ == type::body)
+            if (cmdtype_ == Type::Header || cmdtype_ == Type::Article)
                 return true;
 
             return false;
         }
 
         // try the ith step to configure the session state
-        bool submit_configure_command(std::size_t i, session& ses)
+        bool SubmitConfigureCommand(std::size_t i, session& ses)
         {
             if (i == groups_.size())
                 return false;
@@ -103,7 +115,7 @@ namespace newsflash
         }
 
         // receive and handle ith response to ith configure command.
-        bool receive_configure_buffer(std::size_t i, const buffer& buff)
+        bool ReceiveConfigureBuffer(std::size_t i, const buffer& buff)
         {
             // if the group exists, it's good enough for us.
             if (buff.content_status() == buffer::status::success)
@@ -117,13 +129,13 @@ namespace newsflash
         }
 
         // submit the data transfer commands as a single batch.
-        void submit_data_commands(session& ses)
+        void SubmitDataCommands(session& ses)
         {
-            if (cmdtype_ == type::listing)
+            if (cmdtype_ == Type::Listing)
             {
                 ses.retrieve_list();
             }
-            else if (cmdtype_ == type::groupinfo)
+            else if (cmdtype_ == Type::GroupInfo)
             {
                 assert(!groups_.empty());
                 ses.retrieve_group_info(groups_[0]);
@@ -136,9 +148,9 @@ namespace newsflash
                         buffers_[i].content_status() == buffer::status::success)
                         continue;
 
-                    if (cmdtype_ == type::body)
+                    if (cmdtype_ == Type::Article)
                         ses.retrieve_article(commands_[i]);
-                    else if (cmdtype_ == type::xover)
+                    else if (cmdtype_ == Type::Header)
                         ses.retrieve_headers(commands_[i]);
 
                     if (i < buffers_.size())
@@ -148,7 +160,20 @@ namespace newsflash
         }
 
         // receive a data buffer response to submit_data_commands
-        void receive_data_buffer(buffer buff)
+        void ReceiveDataBuffer(const buffer& buff)
+        {
+            for (auto& old : buffers_)
+            {
+                if (old.content_status() == buffer::status::none)
+                {
+                    old = buff;
+                    return;
+                }
+            }
+            buffers_.push_back(buff);
+        }
+
+        void ReceiveDataBuffer(buffer&& buff)
         {
             for (auto& old : buffers_)
             {
@@ -158,75 +183,80 @@ namespace newsflash
                     return;
                 }
             }
-            buffers_.push_back(std::move(buff));
+            buffers_.emplace_back(std::move(buff));
         }
 
-        std::size_t num_data_commands() const
+        std::size_t NumDataCommands() const
         { return commands_.size(); }
 
-        std::size_t num_buffers() const
+        std::size_t NumBuffers() const
         { return buffers_.size(); }
 
-        std::vector<buffer>& get_buffers()
+        std::vector<buffer>& GetBuffers()
         { return buffers_; }
 
-        buffer& get_buffer(std::size_t i)
-        { return buffers_[i]; }
+        buffer& GetBuffer(std::size_t i)
+        {
+            ASSERT(i < buffers_.size());
+            return buffers_[i];
+        }
 
-        const buffer& get_buffer(std::size_t i) const
-        { return buffers_[i]; }
+        const buffer& GetBuffer(std::size_t i) const
+        {
+            ASSERT(i < buffers_.size());
+            return buffers_[i];
+        }
 
-        std::vector<std::string>& get_commands()
+        std::vector<std::string>& GetCommands()
         { return commands_; }
 
-        std::size_t account() const
+        std::size_t GetAccountId() const
         { return account_; }
 
-        std::size_t task() const
+        std::size_t GetTaskId() const
         { return task_; }
 
-        std::size_t conn() const
+        std::size_t GetConnId() const
         { return conn_; }
 
-        std::size_t id() const
+        std::size_t GetCmdListId() const
         { return id_; }
 
-        type cmdtype() const
+        Type GetType() const
         { return cmdtype_; }
 
         // cancel the cmdlist. the cmdlist is to be discarded.
         // i.e. the task has been cancelled.
-        void cancel()
+        void Cancel()
         { cancelbit_ = true; }
 
-        bool is_canceled() const
+        bool IsCancelled() const
         { return cancelbit_;}
 
-        bool is_good() const
+        bool IsGood() const
         { return !failbit_; }
 
-        bool is_empty() const
+        bool IsEmpty() const
         { return buffers_.empty(); }
 
-        void set_account(std::size_t aid)
+        void SetAccountId(std::size_t aid)
         { account_ = aid; }
 
-        void set_task(std::size_t tid)
+        void SetTaskId(std::size_t tid)
         { task_ = tid; }
 
-        void set_conn(std::size_t cid)
+        void SetConnId(std::size_t cid)
         { conn_ = cid; }
 
-
     private:
-        cmdlist() : cancelbit_(false), failbit_(false), account_(0), task_(0), conn_(0)
+        CmdList() : cancelbit_(false), failbit_(false), account_(0), task_(0), conn_(0)
         {
             static std::atomic<std::size_t> id(1);
             id_ = id++;
         }
     private:
         // cmdlist data
-        type cmdtype_ = type::xover;
+        Type cmdtype_ = Type::Header;
         std::atomic<bool> cancelbit_;
         std::atomic<bool> failbit_;
     private:

@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -20,10 +20,12 @@
 
 #pragma once
 
-#include <newsflash/config.h>
+#include "newsflash/config.h"
+
 #include <memory>
 #include <string>
 #include <vector>
+
 #include "task.h"
 
 namespace newsflash
@@ -32,44 +34,45 @@ namespace newsflash
     class decode;
 
     // extract encoded content from the buffers
-    class download : public task
+    class Download : public Task
     {
     public:
-        download(std::vector<std::string> groups, std::vector<std::string> articles,
-            std::string path, std::string name);
-       ~download();
+        Download(const std::vector<std::string>& groups,
+            const std::vector<std::string>& articles,
+            const std::string& path,
+            const std::string& name);
+       ~Download();
 
-        virtual std::shared_ptr<cmdlist> create_commands() override;
-
-        virtual void cancel() override;
-        virtual void commit() override;
-        virtual void complete(action& act,
+        // Task implementation
+        virtual std::shared_ptr<CmdList> CreateCommands() override;
+        virtual void Cancel() override;
+        virtual void Commit() override;
+        virtual void Complete(action& act,
             std::vector<std::unique_ptr<action>>& next) override;
-        virtual void complete(cmdlist& cmd,
+        virtual void Complete(CmdList& cmd,
             std::vector<std::unique_ptr<action>>& next) override;
-        virtual void configure(const settings& s) override;
-        virtual bool has_commands() const override;
-        //virtual bool is_ready() const override;
-        virtual std::size_t max_num_actions() const override;
+        virtual void Configure(const Settings& settings) override;
+        virtual bool HasCommands() const override;
+        virtual std::size_t MaxNumActions() const override;
 
         void add_file(std::shared_ptr<datafile> file)
         {
-            files_.push_back(file);           
+            files_.push_back(file);
         }
 
-        const 
-        std::vector<std::shared_ptr<datafile>>& files() const 
+        const
+        std::vector<std::shared_ptr<datafile>>& files() const
         { return files_; }
 
-        const 
-        std::vector<std::string>& groups() const 
+        const
+        std::vector<std::string>& groups() const
         { return groups_; }
 
-        const 
-        std::vector<std::string>& articles() const 
+        const
+        std::vector<std::string>& articles() const
         { return articles_; }
 
-        const std::string& path() const 
+        const std::string& path() const
         { return path_; }
 
     private:
@@ -85,11 +88,11 @@ namespace newsflash
         std::string path_;
         std::string name_;
         std::string stash_name_;
-        std::size_t decode_jobs_;
+        std::size_t decode_jobs_ = 0;
     private:
-        bool overwrite_;
-        bool discardtext_;
-        bool yenc_;
+        bool overwrite_ = false;
+        bool discardtext_ = false;
+        bool yenc_ = false;
     };
 
 } // newsflash

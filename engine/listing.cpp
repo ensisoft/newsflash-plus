@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -18,9 +18,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <newsflash/config.h>
+#include "newsflash/config.h"
+
 #include <string>
 #include <fstream>
+
 #include "nntp.h"
 #include "linebuffer.h"
 #include "listing.h"
@@ -31,22 +33,19 @@
 namespace newsflash
 {
 
-
-std::shared_ptr<cmdlist> listing::create_commands()
+std::shared_ptr<CmdList> Listing::CreateCommands()
 {
-    std::shared_ptr<cmdlist> cmd(new cmdlist(cmdlist::listing{}));
+    std::shared_ptr<CmdList> cmd(new CmdList(CmdList::Listing{}));
     ready_ = true;
     return cmd;
 }
 
-void listing::complete(cmdlist& cmd, std::vector<std::unique_ptr<action>>& actions)
+void Listing::Complete(CmdList& cmd, std::vector<std::unique_ptr<action>>& actions)
 {
-    if (cmd.is_canceled() || cmd.is_empty())
+    if (cmd.IsCancelled() || cmd.IsEmpty())
         return;
 
-    auto& contents = cmd.get_buffers();
-    ASSERT(!contents.empty());
-    auto& listing  = contents[0];
+    auto& listing  = cmd.GetBuffer(0);
 
     nntp::linebuffer lines(listing.content(), listing.content_length());
 

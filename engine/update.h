@@ -31,29 +31,24 @@ namespace newsflash
 {
     struct Snapshot;
 
-    class update : public task
+    class Update : public Task
     {
     public:
-        update(const std::string& path, const std::string& group);
-       ~update();
+        Update(const std::string& path, const std::string& group);
+       ~Update();
 
-        virtual std::shared_ptr<cmdlist> create_commands() override;
-
-        virtual void cancel() override;
-        virtual void commit() override;
-
-        virtual void complete(cmdlist& cmd,
+        // Task implementation
+        virtual std::shared_ptr<CmdList> CreateCommands() override;
+        virtual void Cancel() override;
+        virtual void Commit() override;
+        virtual void Complete(CmdList& cmd,
             std::vector<std::unique_ptr<action>>& next) override;
-
-        virtual void complete(action& a,
+        virtual void Complete(action& a,
             std::vector<std::unique_ptr<action>>& next) override;
-
-        virtual bool has_commands() const override;
-
-        virtual std::size_t max_num_actions() const override;
-
-        virtual void lock() override;
-        virtual void unlock() override;
+        virtual bool HasCommands() const override;
+        virtual std::size_t MaxNumActions() const override;
+        virtual void Lock() override;
+        virtual void Unlock() override;
 
         std::string group() const;
 

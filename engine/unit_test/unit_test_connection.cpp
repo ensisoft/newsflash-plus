@@ -327,11 +327,11 @@ void test_execute_success()
 
     // successful body retrieval
     {
-        nf::cmdlist::messages m;
+        nf::CmdList::Messages m;
         m.groups  = {"alt.binaries.foo"};
         m.numbers = {"3"};
 
-        auto cmds = std::make_shared<nf::cmdlist>(m);
+        auto cmds = std::make_shared<nf::CmdList>(m);
 
         // execute
         act = conn.execute(cmds, 123);
@@ -349,18 +349,18 @@ void test_execute_success()
         BOOST_REQUIRE(completion.total_bytes != 0); // todo:
         BOOST_REQUIRE(completion.content_bytes != 0); // todo:
 
-        BOOST_REQUIRE(cmds->num_buffers() == 1);
-        BOOST_REQUIRE(cmds->get_buffer(0).content_type() == nf::buffer::type::article);
-        BOOST_REQUIRE(cmds->get_buffer(0).content_status()== nf::buffer::status::success);
+        BOOST_REQUIRE(cmds->NumBuffers() == 1);
+        BOOST_REQUIRE(cmds->GetBuffer(0).content_type() == nf::buffer::type::article);
+        BOOST_REQUIRE(cmds->GetBuffer(0).content_status()== nf::buffer::status::success);
     }
 
     // no such body
     {
-        nf::cmdlist::messages m;
+        nf::CmdList::Messages m;
         m.groups  = {"alt.binaries.foo"};
         m.numbers = {"1"};
 
-        auto cmds = std::make_shared<nf::cmdlist>(m);
+        auto cmds = std::make_shared<nf::CmdList>(m);
 
         act = conn.execute(cmds, 123);
         act->perform();
@@ -375,9 +375,9 @@ void test_execute_success()
         BOOST_REQUIRE(completion.total_bytes != 0); // todo:
         BOOST_REQUIRE(completion.content_bytes == 0);
 
-        BOOST_REQUIRE(cmds->num_buffers() == 1);
-        BOOST_REQUIRE(cmds->get_buffer(0).content_type() == nf::buffer::type::article);
-        BOOST_REQUIRE(cmds->get_buffer(0).content_status()== nf::buffer::status::unavailable);
+        BOOST_REQUIRE(cmds->NumBuffers() == 1);
+        BOOST_REQUIRE(cmds->GetBuffer(0).content_type() == nf::buffer::type::article);
+        BOOST_REQUIRE(cmds->GetBuffer(0).content_status()== nf::buffer::status::unavailable);
 
     }
 }

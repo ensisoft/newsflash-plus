@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -18,13 +18,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <newsflash/config.h>
+#include "newsflash/config.h"
 
 #include <functional>
 #include <algorithm>
 #include <atomic>
 
-#include "ui/download.h"
 #include "download.h"
 #include "buffer.h"
 #include "filesys.h"
@@ -33,31 +32,33 @@
 #include "bitflag.h"
 #include "decode.h"
 #include "format.h"
-#include "settings.h"
 #include "datafile.h"
 #include "cmdlist.h"
 
 namespace newsflash
 {
 
-download::download(std::vector<std::string> groups, std::vector<std::string> articles, std::string path, std::string name) : 
-    groups_(std::move(groups)), articles_(std::move(articles)),  path_(std::move(path))
+Download::Download(
+    const std::vector<std::string>& groups,
+    const std::vector<std::string>& articles,
+    const std::string& path,
+    const std::string& name)
+    : groups_(groups)
+    , articles_(articles)
+    , path_(path)
 {
     name_         = fs::remove_illegal_filename_chars(name);
-    overwrite_    = false;
-    discardtext_  = false;
-    yenc_         = false;
     decode_jobs_  = articles_.size();
 
-    const auto pos = name.find("yEnc");
+    const auto pos = name_.find("yEnc");
     if (pos != std::string::npos)
         yenc_ = true;
 }
 
-download::~download()
+Download::~Download()
 {}
 
-std::shared_ptr<cmdlist> download::create_commands()
+std::shared_ptr<CmdList> Download::CreateCommands()
 {
     if (articles_.empty())
         return nullptr;
@@ -69,7 +70,7 @@ std::shared_ptr<cmdlist> download::create_commands()
     //const std::size_t num_articles_per_cmdlist = 10;
 
     const std::size_t num_articles_per_cmdlist = 10;
-    const std::size_t num_articles = std::min(articles_.size(), 
+    const std::size_t num_articles = std::min(articles_.size(),
         num_articles_per_cmdlist);
 
     auto beg = std::begin(articles_);
@@ -81,18 +82,18 @@ std::shared_ptr<cmdlist> download::create_commands()
 
     articles_.erase(beg, end);
 
-    cmdlist::messages m;
+    CmdList::Messages m;
     m.groups  = groups_;
     m.numbers = std::move(next);
 
-    auto cmd = std::make_shared<cmdlist>(std::move(m));
+    auto cmd = std::make_shared<CmdList>(std::move(m));
     return cmd;
 }
 
-void download::cancel()
+void Download::Cancel()
 {
     // there might be pending operations on the files (writes)
-    // but if the task is being killed we simply reduce those 
+    // but if the task is being killed we simply reduce those
     // operations to no-ops and then delete any files we created
     // once all the operations go away.
     for (auto& f : files_)
@@ -101,7 +102,7 @@ void download::cancel()
     files_.clear();
 }
 
-void download::commit()
+void Download::Commit()
 {
     if (!stash_.empty())
     {
@@ -126,7 +127,7 @@ void download::commit()
         f->close();
 }
 
-void download::complete(action& act, std::vector<std::unique_ptr<action>>& next)
+void Download::Complete(action& act, std::vector<std::unique_ptr<action>>& next)
 {
     // the action is either a decoding action or a datafile::write action.
     // for the write there's nothing we need to do.
@@ -158,13 +159,13 @@ void download::complete(action& act, std::vector<std::unique_ptr<action>>& next)
             // uuencode is a cumbersome encoding scheme. it's used mostly for pictures
             // and large pictures are split into multiple posts. however the encoding itself
             // provides no means for identifying the order of chunks. so basically we can
-            // only encoding a maximum of 3 part binary properly since we can identify 
+            // only encoding a maximum of 3 part binary properly since we can identify
             // the beginning and ending chunks. if a post has more parts than that the
             // ordering of the parts between begin and end is unknown and we have to hope
-            // that the subject line convention has given us the ordering. 
+            // that the subject line convention has given us the ordering.
             // the subject line based ordering is then implied here through the order
             // of the article ids and by queuing the decoding actions to a single thread
-            // so that the same ordering is maintained throughout. 
+            // so that the same ordering is maintained throughout.
 
             if (dec->is_multipart())
             {
@@ -180,9 +181,9 @@ void download::complete(action& act, std::vector<std::unique_ptr<action>>& next)
                 else if (dec->is_last_part())
                 {
                     std::unique_ptr<stash> s(new stash(std::move(binary)));
-                    stash_[decode_jobs_ - 1] = std::move(s);                    
+                    stash_[decode_jobs_ - 1] = std::move(s);
                 }
-                else 
+                else
                 {
                     std::size_t index;
                     for (index=1; index<decode_jobs_ - 1; ++index)
@@ -192,8 +193,8 @@ void download::complete(action& act, std::vector<std::unique_ptr<action>>& next)
                             break;
                     }
                     std::unique_ptr<stash> s(new stash(std::move(binary)));
-                    stash_[index] = std::move(s);                    
-                } 
+                    stash_[index] = std::move(s);
+                }
             }
             else
             {
@@ -230,12 +231,12 @@ void download::complete(action& act, std::vector<std::unique_ptr<action>>& next)
     }
 }
 
-void download::complete(cmdlist& cmd, std::vector<std::unique_ptr<action>>& next)
+void Download::Complete(CmdList& cmd, std::vector<std::unique_ptr<action>>& next)
 {
-    auto& messages = cmd.get_commands();
-    auto& contents = cmd.get_buffers();    
+    auto& messages = cmd.GetCommands();
+    auto& contents = cmd.GetBuffers();
 
-    const auto affinity = yenc_ ? 
+    const auto affinity = yenc_ ?
         action::affinity::any_thread :
         action::affinity::single_thread;
 
@@ -261,24 +262,24 @@ void download::complete(cmdlist& cmd, std::vector<std::unique_ptr<action>>& next
 }
 
 
-void download::configure(const settings& s) 
+void Download::Configure(const Settings& settings)
 {
-    overwrite_   = s.overwrite_existing_files;
-    discardtext_ = s.discard_text_content;
+    overwrite_   = settings.overwrite_existing_files;
+    discardtext_ = settings.discard_text_content;
 }
 
-bool download::has_commands() const
+bool Download::HasCommands() const
 {
-    return !articles_.empty(); 
+    return !articles_.empty();
 }
 
-std::size_t download::max_num_actions() const 
+std::size_t Download::MaxNumActions() const
 {
     // 2 actions per each article. decode and write.
     return articles_.size() * 2;
 }
 
-std::shared_ptr<datafile> download::create_file(const std::string& name, std::size_t assumed_size)
+std::shared_ptr<datafile> Download::create_file(const std::string& name, std::size_t assumed_size)
 {
     if (name.empty())
         throw std::runtime_error("binary has no name");
@@ -293,12 +294,12 @@ std::shared_ptr<datafile> download::create_file(const std::string& name, std::si
     {
         file = std::make_shared<datafile>(path_, name, assumed_size, true, overwrite_);
         files_.push_back(file);
-    } 
-    else 
+    }
+    else
     {
         file = *it;
         assert(file->is_open());
-    }    
+    }
     return file;
 }
 

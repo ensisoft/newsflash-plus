@@ -20,15 +20,18 @@
 
 #pragma once
 
+#include "newsflash/config.h"
+
 #include <string>
 #include <cstdint>
 #include <vector>
+
 #include "task.h"
 
 namespace newsflash
 {
     // produce a listing of available newsgroups
-    class listing : public task
+    class Listing : public Task
     {
     public:
         struct group {
@@ -38,18 +41,13 @@ namespace newsflash
             std::uint64_t size;
         };
 
-        listing() : ready_(false)
-        {}
-
-        virtual std::shared_ptr<cmdlist> create_commands() override;
-
-        virtual void complete(cmdlist& cmd,
+        // Task implementation
+        virtual std::shared_ptr<CmdList> CreateCommands() override;
+        virtual void Complete(CmdList& cmd,
             std::vector<std::unique_ptr<action>>& actions) override;
-
-        virtual bool has_commands() const override
+        virtual bool HasCommands() const override
         { return !ready_;}
-
-        virtual std::size_t max_num_actions() const override
+        virtual std::size_t MaxNumActions() const override
         { return 1; }
 
         const std::vector<group>& group_list() const
@@ -60,7 +58,7 @@ namespace newsflash
 
     private:
         std::vector<group> groups_;
-        bool ready_;
+        bool ready_ = false;
     };
 
 } // newsflash

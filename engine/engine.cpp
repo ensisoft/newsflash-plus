@@ -44,7 +44,6 @@
 #include "utf8.h"
 #include "threadpool.h"
 #include "cmdlist.h"
-#include "settings.h"
 #include "datafile.h"
 #include "listing.h"
 #include "update.h"
@@ -116,7 +115,7 @@ struct Engine::State {
     std::deque<std::unique_ptr<BatchState>> batches;
 
     std::vector<ui::Account> accounts;
-    std::list<std::shared_ptr<cmdlist>> cmds;
+    std::list<std::shared_ptr<CmdList>> cmds;
     std::uint64_t bytes_downloaded = 0;
     std::uint64_t bytes_queued = 0;
     std::uint64_t bytes_ready = 0;
@@ -256,7 +255,7 @@ struct Engine::State {
     Engine::BatchState* find_batch(std::size_t id);
 
     void execute();
-    void enqueue(const TaskState& t, std::shared_ptr<cmdlist> cmd);
+    void enqueue(const TaskState& t, std::shared_ptr<CmdList> cmd);
     void on_cmdlist_done(const connection::cmdlist_completion_data&);
 };
 
@@ -422,12 +421,12 @@ public:
         state.threads->detach(thread_);
     }
 
-    void execute(Engine::State& state, std::shared_ptr<cmdlist> cmds, std::size_t tid, std::string desc)
+    void execute(Engine::State& state, std::shared_ptr<CmdList> cmds, std::size_t tid, std::string desc)
     {
         ui_.task  = tid;
         ui_.desc  = std::move(desc);
         ui_.state = states::Active;
-        LOG_I("Connection ", ui_.id, " executing cmdlist ", cmds->id());
+        LOG_I("Connection ", ui_.id, " executing cmdlist ", cmds->GetCmdListId());
 
         do_action(state, conn_->execute(cmds, tid));
     }
@@ -765,7 +764,7 @@ public:
 
         task_ = s.factory->AllocateTask(file);
 
-        num_actions_total_ = task_->max_num_actions();
+        num_actions_total_ = task_->MaxNumActions();
 
         LOG_D("Task: download");
         LOG_D("Task: is_fillable: ", is_fillable_);
@@ -778,7 +777,7 @@ public:
 
         task_ = s.factory->AllocateTask(list);
 
-        num_actions_total_ = task_->max_num_actions();
+        num_actions_total_ = task_->MaxNumActions();
 
         LOG_D("Task: listing");
         LOG_I("Task ", ui_.task_id, " (", ui_.desc, ") created");
@@ -790,7 +789,7 @@ public:
 
         task_ = s.factory->AllocateTask(download);
 
-        num_actions_total_ = task_->max_num_actions();
+        num_actions_total_ = task_->MaxNumActions();
         LOG_D("Task: update");
         LOG_I("Task ", ui_.task_id, "( ", ui_.desc, ") created");
     }
@@ -814,7 +813,7 @@ public:
 
         task_ = s.factory->AllocateTask(file);
 
-        auto* ptr = dynamic_cast<download*>(task_.get());
+        auto* ptr = dynamic_cast<Download*>(task_.get());
         for (int i=0; i<spec.file_size(); ++i)
         {
             const auto& data = spec.file(i);
@@ -841,14 +840,14 @@ public:
     void lock(Engine::State& state)
     {
         ASSERT(locking_ == LockState::Unlocked);
-        task_->lock();
+        task_->Lock();
         locking_ = LockState::Locked;
     }
 
     void unlock(Engine::State& state)
     {
         ASSERT(locking_ == LockState::Locked);
-        task_->unlock();
+        task_->Unlock();
         locking_ = LockState::Unlocked;
     }
 
@@ -861,7 +860,7 @@ public:
         //assert(num_active_cmdlists_ == 0);
         assert(num_active_actions_  == 0);
 
-        if (auto* ptr = dynamic_cast<download*>(task_.get()))
+        if (auto* ptr = dynamic_cast<Download*>(task_.get()))
         {
             auto* spec = list.add_download();
             spec->set_account_id(ui_.account);
@@ -903,9 +902,9 @@ public:
             for (auto i=std::begin(state.cmds); i != std::end(state.cmds);)
             {
                 auto cmd = *i;
-                if (cmd->task() == ui_.task_id)
+                if (cmd->GetTaskId() == ui_.task_id)
                 {
-                    cmd->cancel();
+                    cmd->Cancel();
                     i = state.cmds.erase(i);
                 }
                 else
@@ -915,7 +914,7 @@ public:
             }
 
             assert(task_);
-            task_->cancel();
+            task_->Cancel();
 
             state.bytes_queued -= ui_.size;
         }
@@ -931,10 +930,10 @@ public:
         }
     }
 
-    void configure(const settings& s)
+    void configure(const Task::Settings& settings)
     {
         if (task_)
-            task_->configure(s);
+            task_->Configure(settings);
     }
 
     void tick(Engine::State& state, const std::chrono::milliseconds& elapsed)
@@ -950,7 +949,7 @@ public:
             ui_.state == states::Queued ||
             ui_.state == states::Active)
         {
-            return task_->has_commands();
+            return task_->HasCommands();
         }
         return false;
     }
@@ -962,12 +961,12 @@ public:
             ui_.state == states::Paused)
             return no_transition;
 
-        auto cmds = task_->create_commands();
+        auto cmds = task_->CreateCommands();
 
-        LOG_I("Task ", ui_.task_id, " new cmdlist ", cmds->id());
+        LOG_I("Task ", ui_.task_id, " new cmdlist ", cmds->GetCmdListId());
 
-        cmds->set_account(ui_.account);
-        cmds->set_task(ui_.task_id);
+        cmds->SetAccountId(ui_.account);
+        cmds->SetTaskId(ui_.task_id);
         state.enqueue(*this, cmds);
 
         num_active_cmdlists_++;
@@ -975,29 +974,29 @@ public:
         return goto_state(state, states::Active);
     }
 
-    transition complete(Engine::State& state, std::shared_ptr<cmdlist> cmds)
+    transition complete(Engine::State& state, std::shared_ptr<CmdList> cmds)
     {
-        assert(cmds->task() == ui_.task_id);
+        assert(cmds->GetTaskId() == ui_.task_id);
 
-        if (!cmds->is_canceled())
+        if (!cmds->IsCancelled())
         {
             assert(num_active_cmdlists_ > 0);
             num_active_cmdlists_--;
         }
 
-        LOG_D("Task ", ui_.task_id, " receiving cmdlist ", cmds->id());
+        LOG_D("Task ", ui_.task_id, " receiving cmdlist ", cmds->GetCmdListId());
 
         if (ui_.state == states::Error)
             return no_transition;
 
-        if (!cmds->is_good())
+        if (!cmds->IsGood())
         {
-            LOG_W("Task ", ui_.task_id, " cmdlist ", cmds->id(),  " failbit is on.");
+            LOG_W("Task ", ui_.task_id, " cmdlist ", cmds->GetCmdListId(),  " failbit is on.");
 
-            if (is_fillable_ && state.fill_account && (state.fill_account != cmds->account()))
+            if (is_fillable_ && state.fill_account && (state.fill_account != cmds->GetAccountId()))
             {
-                LOG_I("Task ", ui_.task_id, " cmdlist ", cmds->id(), " set for refill");
-                cmds->set_account(state.fill_account);
+                LOG_I("Task ", ui_.task_id, " cmdlist ", cmds->GetCmdListId(), " set for refill");
+                cmds->SetAccountId(state.fill_account);
                 state.enqueue(*this, cmds);
                 ++num_active_cmdlists_;
                 return no_transition;
@@ -1008,10 +1007,10 @@ public:
                 return no_transition;
             }
         }
-        else if (cmds->cmdtype() != cmdlist::type::groupinfo)
+        else if (cmds->GetType() != CmdList::Type::GroupInfo)
         {
-            const auto& buffers  = cmds->get_buffers();
-            const auto& commands = cmds->get_commands();
+            const auto& buffers  = cmds->GetBuffers();
+            const auto& commands = cmds->GetCommands();
             //assert(commands.size() >= buffers.size());
 
             for (std::size_t i=0; i<buffers.size(); ++i)
@@ -1036,10 +1035,10 @@ public:
                     return goto_state(state, states::Error);
                 }
 
-                if (is_fillable_ && state.fill_account && (state.fill_account != cmds->account()))
+                if (is_fillable_ && state.fill_account && (state.fill_account != cmds->GetAccountId()))
                 {
-                    LOG_I("Task ", ui_.task_id, " cmdlist ", cmds->id(), " set for refill.");
-                    cmds->set_account(state.fill_account);
+                    LOG_I("Task ", ui_.task_id, " cmdlist ", cmds->GetCmdListId(), " set for refill.");
+                    cmds->SetAccountId(state.fill_account);
                     state.enqueue(*this, cmds);
                     ++num_active_cmdlists_;
                     return no_transition;
@@ -1058,7 +1057,7 @@ public:
         error.resource = ui_.desc;
         try
         {
-            task_->complete(*cmds, actions);
+            task_->Complete(*cmds, actions);
 
             for (auto& a : actions)
                 do_action(state, std::move(a));
@@ -1095,9 +1094,9 @@ public:
         for (auto it = std::begin(state.cmds); it != std::end(state.cmds); )
         {
             auto cmd = *it;
-            if (cmd->task() == ui_.task_id)
+            if (cmd->GetTaskId() == ui_.task_id)
             {
-                cmd->cancel();
+                cmd->Cancel();
                 it = state.cmds.erase(it);
                 assert(num_active_cmdlists_ > 0);
                 --num_active_cmdlists_;
@@ -1195,7 +1194,7 @@ public:
             std::vector<std::unique_ptr<action>> actions;
             std::unique_ptr<ui::Update> update;
 
-            task_->complete(*act, actions);
+            task_->Complete(*act, actions);
             act.reset();
 
             update = state.factory->MakeUpdate(*task_, ui_);
@@ -1280,7 +1279,7 @@ private:
         //assert(num_actions_total_);
         //assert(num_actions_ready_ <= num_actions_total_);
         if (num_actions_total_ == 0)
-            num_actions_total_ = task_->max_num_actions();
+            num_actions_total_ = task_->MaxNumActions();
 
         if (num_actions_total_)
         {
@@ -1310,7 +1309,7 @@ private:
         // if task list has more commands and there are no currently
         // executing cmdlists or actions and we're not paused
         // we'll transition into waiting state.
-        if (task_->has_commands())
+        if (task_->HasCommands())
         {
             if (ui_.state == states::Active ||
                 ui_.state == states::Crunching)
@@ -1368,9 +1367,9 @@ private:
                 for (auto it = std::begin(state.cmds); it != std::end(state.cmds);)
                 {
                     auto cmd = *it;
-                    if (cmd->task() == ui_.task_id)
+                    if (cmd->GetTaskId() == ui_.task_id)
                     {
-                        cmd->cancel();
+                        cmd->Cancel();
                         it = state.cmds.erase(it);
                         assert(num_active_cmdlists_ > 0);
                         --num_active_cmdlists_;
@@ -1386,11 +1385,11 @@ private:
             case states::Complete:
             {
                 ASSERT(task_);
-                ASSERT(task_->has_commands() == false);
+                ASSERT(task_->HasCommands() == false);
                 ASSERT(num_active_cmdlists_ == 0);
                 ASSERT(num_active_actions_ == 0);
 
-                task_->commit();
+                task_->Commit();
 
                 ui_.state   = new_state;
                 ui_.etatime = 0;
@@ -1429,9 +1428,9 @@ private:
                 for (auto i=std::begin(state.cmds); i != std::end(state.cmds); ++i)
                 {
                     auto cmd = *i;
-                    if (cmd->task() != ui_.task_id)
+                    if (cmd->GetTaskId() != ui_.task_id)
                         continue;
-                    cmd->cancel();
+                    cmd->Cancel();
                 }
                 break;
         }
@@ -1458,7 +1457,7 @@ private:
 private:
     ui::TaskDesc ui_;
 private:
-    std::unique_ptr<newsflash::task> task_;
+    std::unique_ptr<newsflash::Task> task_;
     std::size_t num_active_cmdlists_ = 0;
     std::size_t num_active_actions_  = 0;
     std::size_t num_actions_ready_   = 0;
@@ -1822,25 +1821,26 @@ void Engine::State::on_cmdlist_done(const connection::cmdlist_completion_data& c
     auto cmds = completion.cmds;
     const auto tid   = completion.task_owner_id;
     const auto bytes = completion.content_bytes;
+    const auto id    = cmds->GetCmdListId();
 
     bytes_downloaded += bytes;
 
-    if (cmds->cmdtype() == cmdlist::type::body)
+    if (cmds->GetType() == CmdList::Type::Article)
     {
         if (on_quota_callback && bytes)
-            on_quota_callback(bytes, cmds->account());
+            on_quota_callback(bytes, cmds->GetAccountId());
     }
-    LOG_D("Cmdlist ", cmds->id(), " executed");
-    LOG_D("Cmdlist ", cmds->id(), " belongs to task ", cmds->task());
-    LOG_D("Cmdlist ", cmds->id(), " goodbit: ", cmds->is_good());
-    LOG_D("Cmdlist ", cmds->id(), " cancelbit: ", cmds->is_canceled());
-    LOG_D("Cmdlist ", cmds->id(), " success: ", completion.success);
+    LOG_D("Cmdlist ", id, " executed");
+    LOG_D("Cmdlist ", id, " belongs to task ", cmds->GetTaskId());
+    LOG_D("Cmdlist ", id, " goodbit: ", cmds->IsGood());
+    LOG_D("Cmdlist ", id, " cancelbit: ", cmds->IsCancelled());
+    LOG_D("Cmdlist ", id, " success: ", completion.success);
 
     #ifdef NEWSFLASH_DEBUG
     if (std::getenv("NEWSFLASH_DUMP_DATA"))
     {
-        const auto& buffers  = cmds->get_buffers();
-        const auto& commands = cmds->get_commands();
+        const auto& buffers  = cmds->GetBuffers();
+        const auto& commands = cmds->GetCommands();
         for (std::size_t i=0; i<buffers.size(); ++i)
         {
             if (i >= commands.size())
@@ -1941,9 +1941,9 @@ void Engine::State::execute()
     }
 }
 
-void Engine::State::enqueue(const TaskState& t, std::shared_ptr<cmdlist> cmd)
+void Engine::State::enqueue(const TaskState& t, std::shared_ptr<CmdList> cmd)
 {
-    cmd->set_conn(0);
+    cmd->SetConnId(0);
     cmds.push_back(cmd);
 
     if (!started)
@@ -1953,7 +1953,7 @@ void Engine::State::enqueue(const TaskState& t, std::shared_ptr<cmdlist> cmd)
 
     for (auto& conn : conns)
     {
-        if (conn->account() != cmd->account())
+        if (conn->account() != cmd->GetAccountId())
             continue;
 
         ++num_conns;
@@ -1961,13 +1961,13 @@ void Engine::State::enqueue(const TaskState& t, std::shared_ptr<cmdlist> cmd)
         if (!conn->is_ready())
             continue;
 
-        cmd->set_conn(conn->id());
+        cmd->SetConnId(conn->id());
         conn->execute(*this, cmd, t.tid(), t.desc());
         return;
     }
 
 
-    const auto& acc = find_account(cmd->account());
+    const auto& acc = find_account(cmd->GetAccountId());
     if (num_conns < acc.connections)
     {
         // const auto num_acc   = cmd->account();
@@ -1995,28 +1995,28 @@ Engine::Engine() : state_(new State)
     class DefaultFactory : public Factory
     {
     public:
-        std::unique_ptr<task> AllocateTask(const ui::FileDownload& file) override
+        std::unique_ptr<Task> AllocateTask(const ui::FileDownload& file) override
         {
-            return std::make_unique<download>(file.groups, file.articles, file.path, file.name);
+            return std::make_unique<Download>(file.groups, file.articles, file.path, file.name);
         }
 
-        std::unique_ptr<task> AllocateTask(const ui::HeaderDownload& download) override
+        std::unique_ptr<Task> AllocateTask(const ui::HeaderDownload& download) override
         {
-            return std::make_unique<update>(download.path, download.group);
+            return std::make_unique<Update>(download.path, download.group);
         }
 
-        std::unique_ptr<task> AllocateTask(const ui::GroupListDownload& list) override
+        std::unique_ptr<Task> AllocateTask(const ui::GroupListDownload& list) override
         {
-            return std::make_unique<listing>();
+            return std::make_unique<Listing>();
         }
         std::unique_ptr<connection> AllocateConnection()
         {
             return std::make_unique<connection>();
         }
-        std::unique_ptr<ui::Result> MakeResult(const task& task, const ui::TaskDesc& desc) const override
+        std::unique_ptr<ui::Result> MakeResult(const Task& task, const ui::TaskDesc& desc) const override
         {
             std::unique_ptr<ui::Result> ret;
-            if (const auto* ptr = dynamic_cast<const download*>(&task))
+            if (const auto* ptr = dynamic_cast<const Download*>(&task))
             {
                 auto result = std::make_unique<ui::FileResult>();
                 result->account = desc.account;
@@ -2035,7 +2035,7 @@ Engine::Engine() : state_(new State)
                 }
                 ret = std::move(result);
             }
-            else if (const auto* ptr = dynamic_cast<const listing*>(&task))
+            else if (const auto* ptr = dynamic_cast<const Listing*>(&task))
             {
                 auto result = std::make_unique<ui::GroupListResult>();
                 result->account = desc.account;
@@ -2053,7 +2053,7 @@ Engine::Engine() : state_(new State)
                 }
                 ret = std::move(result);
             }
-            else if (const auto* ptr = dynamic_cast<const update*>(&task))
+            else if (const auto* ptr = dynamic_cast<const Update*>(&task))
             {
                 auto result = std::make_unique<ui::HeaderResult>();
                 result->account = desc.account;
@@ -2067,10 +2067,10 @@ Engine::Engine() : state_(new State)
             return ret;
         }
 
-        std::unique_ptr<ui::Update> MakeUpdate(const task& task, const ui::TaskDesc& desc) const override
+        std::unique_ptr<ui::Update> MakeUpdate(const Task& task, const ui::TaskDesc& desc) const override
         {
             std::unique_ptr<ui::Update> ret;
-            if (const auto* ptr = dynamic_cast<const update*>(&task))
+            if (const auto* ptr = dynamic_cast<const Update*>(&task))
             {
                 auto result = std::make_unique<ui::HeaderUpdate>();
                 result->account    = desc.account;
@@ -2225,9 +2225,9 @@ Engine::TaskId Engine::DownloadFiles(const ui::FileBatchDownload& batch, bool pr
     const auto batchid = state_->oid++;
     std::unique_ptr<BatchState> b(new BatchState(batchid, batch));
 
-    settings s;
-    s.discard_text_content = state_->discard_text;
-    s.overwrite_existing_files = state_->overwrite_existing;
+    Task::Settings settings;
+    settings.discard_text_content     = state_->discard_text;
+    settings.overwrite_existing_files = state_->overwrite_existing;
 
     for (auto& file : batch.files)
     {
@@ -2236,7 +2236,7 @@ Engine::TaskId Engine::DownloadFiles(const ui::FileBatchDownload& batch, bool pr
         assert(file.path == batch.path);
 
         std::unique_ptr<TaskState> job(new TaskState(*state_, taskid, std::move(file)));
-        job->configure(s);
+        job->configure(settings);
         job->set_account(batch.account);
         job->set_batch(batchid);
 
@@ -2340,23 +2340,23 @@ bool Engine::Pump()
             if (conn->is_ready())
             {
                 auto it = std::find_if(std::begin(state_->cmds), std::end(state_->cmds),
-                    [&](const std::shared_ptr<cmdlist>& c) {
-                        return c->conn() == 0 &&
-                               c->account() == conn->account() &&
-                               c->is_canceled() == false;
+                    [&](const std::shared_ptr<CmdList>& c) {
+                        return c->GetConnId() == 0 &&
+                               c->GetAccountId() == conn->account() &&
+                               c->IsCancelled() == false;
                            });
                 if (it != std::end(state_->cmds))
                 {
                     auto cmd = *it;
                     auto tit = std::find_if(std::begin(state_->tasks), std::end(state_->tasks),
                         [&](const std::unique_ptr<TaskState>& t) {
-                            return t->tid() == cmd->task();
+                            return t->tid() == cmd->GetTaskId();
                         });
                     ASSERT(tit != std::end(state_->tasks));
                     auto& task = *tit;
 
                     conn->execute(*state_, cmd, task->tid(), task->desc());
-                    cmd->set_conn(conn->id());
+                    cmd->SetConnId(conn->id());
                 }
                 else
                 {
@@ -2573,15 +2573,15 @@ void Engine::LoadSession(const std::string& file)
         state_->batches.push_back(std::move(batch));
     }
 
-    settings s;
-    s.discard_text_content = state_->discard_text;
-    s.overwrite_existing_files = state_->overwrite_existing;
+    Task::Settings settings;
+    settings.discard_text_content = state_->discard_text;
+    settings.overwrite_existing_files = state_->overwrite_existing;
 
     for (int i=0; i<list.download_size();++i)
     {
         const auto& data = list.download(i);
         std::unique_ptr<TaskState> task(new TaskState(*state_, data));
-        task->configure(s);
+        task->configure(settings);
 
         assert(task->is_valid());
 
@@ -2660,24 +2660,24 @@ void Engine::SetOverwriteExistingFiles(bool on_off)
 {
     state_->overwrite_existing = on_off;
 
-    settings s;
-    s.overwrite_existing_files = on_off;
-    s.discard_text_content = state_->discard_text;
+    Task::Settings settings;
+    settings.overwrite_existing_files = on_off;
+    settings.discard_text_content = state_->discard_text;
 
     for (auto& t: state_->tasks)
-        t->configure(s);
+        t->configure(settings);
 }
 
 void Engine::SetDiscardTextContent(bool on_off)
 {
     state_->discard_text = on_off;
 
-    settings s;
-    s.discard_text_content = on_off;
-    s.overwrite_existing_files = state_->overwrite_existing;
+    Task::Settings settings;
+    settings.discard_text_content = on_off;
+    settings.overwrite_existing_files = state_->overwrite_existing;
 
     for (auto& t : state_->tasks)
-        t->configure(s);
+        t->configure(settings);
 }
 
 void Engine::SetPreferSecure(bool on_off)

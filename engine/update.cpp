@@ -72,7 +72,7 @@ struct FileHeader {
 
 #pragma pack(pop)
 
-struct update::state {
+struct Update::state {
     std::string folder;
     std::string group;
 
@@ -157,7 +157,7 @@ struct update::state {
 };
 
 // parse NNTP overview data
-class update::parse : public action
+class Update::parse : public action
 {
 public:
     parse(buffer buff) : buffer_(std::move(buff))
@@ -185,14 +185,14 @@ public:
 	virtual std::string describe() const override
 	{ return "Parse XOVER"; }
 private:
-    friend class update;
+    friend class Update;
     std::shared_ptr<state> state_;
     std::vector<article_t> articles_;
 private:
     buffer buffer_;
 };
 
-class update::store : public action
+class Update::store : public action
 {
 public:
     store(std::shared_ptr<state> s) : state_(s), first_(0), last_(0)
@@ -349,7 +349,7 @@ public:
     virtual std::size_t size() const override
     { return bytes_; }
 private:
-    friend class update;
+    friend class Update;
     std::shared_ptr<state> state_;
     std::vector<article_t> articles_;
     std::set<catalog_t*> updates_;
@@ -360,7 +360,7 @@ private:
     std::size_t bytes_ = 0;
 };
 
-update::update(const std::string& path, const std::string& group)
+Update::Update(const std::string& path, const std::string& group)
 {
     const auto nfo = fs::joinpath(fs::joinpath(path, group), group + ".nfo");
     const auto idb = fs::joinpath(fs::joinpath(path, group), group + ".idb");
@@ -435,7 +435,7 @@ update::update(const std::string& path, const std::string& group)
     state_->idb.open(idb);
 }
 
-update::~update()
+Update::~Update()
 {
     // so unless the data is flushed out and written
     // to the disk we end up with inconsistent state.
@@ -451,25 +451,25 @@ update::~update()
     // and any problems can be propagated up to the UI layer.
     try
     {
-        commit();
+        Commit();
     }
     catch (const std::exception& e)
     {}
 }
 
-std::shared_ptr<cmdlist> update::create_commands()
+std::shared_ptr<CmdList> Update::CreateCommands()
 {
-    std::shared_ptr<cmdlist> ret;
+    std::shared_ptr<CmdList> ret;
 
     if (remote_last_ == 0)
     {
         // get group information for retrieving the first and last
         // article numbers on the remote server.
-        ret.reset(new cmdlist(cmdlist::groupinfo{state_->group}));
+        ret.reset(new CmdList(CmdList::GroupInfo{state_->group}));
     }
     else if (xover_last_ < remote_last_)
     {
-        cmdlist::overviews ov;
+        CmdList::Overviews ov;
         ov.group = state_->group;
 
         // while there are newer messages on the remote host we generate
@@ -489,11 +489,11 @@ std::shared_ptr<cmdlist> update::create_commands()
             if (last == remote_last_)
                 break;
         }
-        ret.reset(new cmdlist(ov));
+        ret.reset(new CmdList(ov));
     }
     else if (xover_first_ > remote_first_)
     {
-        cmdlist::overviews ov;
+        CmdList::Overviews ov;
         ov.group = state_->group;
 
         // while there are older messages older on the remote host we generate
@@ -513,21 +513,21 @@ std::shared_ptr<cmdlist> update::create_commands()
             if (first == remote_first_)
                 break;
         }
-        ret.reset(new cmdlist(ov));
+        ret.reset(new CmdList(ov));
     }
 
     return ret;
 }
 
-void update::cancel()
+void Update::Cancel()
 {
     // the update is a little bit special.
     // we always want to retain the headers that've we grabbed
     // instead of having to wait untill the end of data before committing.
-    commit();
+    Commit();
 }
 
-void update::commit()
+void Update::Commit()
 {
     if (commit_done_)
         return;
@@ -586,12 +586,11 @@ void update::commit()
     commit_done_ = true;
 }
 
-void update::complete(cmdlist& cmd, std::vector<std::unique_ptr<action>>& next)
+void Update::Complete(CmdList& cmd, std::vector<std::unique_ptr<action>>& next)
 {
-    if (cmd.cmdtype() == cmdlist::type::groupinfo)
+    if (cmd.GetType() == CmdList::Type::GroupInfo)
     {
-        const auto& contents = cmd.get_buffers();
-        const auto& buffer   = contents.at(0);
+        const auto& buffer   = cmd.GetBuffer(0);
         const auto& pair = nntp::parse_group(buffer.content(), buffer.content_length());
         if (!pair.first)
             throw std::runtime_error("parse group information failed");
@@ -610,22 +609,20 @@ void update::complete(cmdlist& cmd, std::vector<std::unique_ptr<action>>& next)
     }
     else
     {
-        auto& contents = cmd.get_buffers();
-        //auto& ranges   = cmd.get_commands();
-        for (std::size_t i=0; i<contents.size(); ++i)
+        for (std::size_t i=0; i<cmd.NumBuffers(); ++i)
         {
-            auto& content = contents[i];
-            if (content.content_status() != buffer::status::success)
+            auto& buffer = cmd.GetBuffer(i);
+            if (buffer.content_status() != buffer::status::success)
                 continue;
 
-            std::unique_ptr<action> p(new parse(std::move(content)));
+            std::unique_ptr<action> p(new parse(std::move(buffer)));
             p->set_affinity(action::affinity::any_thread);
             next.push_back(std::move(p));
         }
     }
 }
 
-void update::complete(action& a, std::vector<std::unique_ptr<action>>& next)
+void Update::Complete(action& a, std::vector<std::unique_ptr<action>>& next)
 {
     if (auto* p = dynamic_cast<parse*>(&a))
     {
@@ -654,7 +651,7 @@ void update::complete(action& a, std::vector<std::unique_ptr<action>>& next)
     }
 }
 
-bool update::has_commands() const
+bool Update::HasCommands() const
 {
     if (remote_first_ == 0 && remote_last_  == 0)
         return true;
@@ -662,7 +659,7 @@ bool update::has_commands() const
     return xover_last_ < remote_last_ || xover_first_ > remote_first_;
 }
 
-std::size_t update::max_num_actions() const
+std::size_t Update::MaxNumActions() const
 {
     if (remote_last_ == 0)
         return 0;
@@ -673,33 +670,33 @@ std::size_t update::max_num_actions() const
     return std::size_t(num_buffers) * 2;
 }
 
-void update::lock()
+void Update::Lock()
 {
     state_->file_io_mutex.lock();
 }
 
-void update::unlock()
+void Update::Unlock()
 {
     state_->file_io_mutex.unlock();
 }
 
-std::string update::group() const
+std::string Update::group() const
 {
     return state_->group;
 }
 
-std::string update::path() const
+std::string Update::path() const
 {
     return state_->folder;
 }
 
-std::uint64_t update::num_local_articles() const
+std::uint64_t Update::num_local_articles() const
 {
     const auto num_local = local_last_ - local_first_ + 1;
     return num_local;
 }
 
-std::uint64_t update::num_remote_articles() const
+std::uint64_t Update::num_remote_articles() const
 {
     const auto num_remote = remote_last_ - remote_first_ + 1;
     return num_remote;
