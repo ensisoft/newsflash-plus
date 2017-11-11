@@ -252,10 +252,12 @@ struct Engine::State {
         return act;
     }
 
+
     Engine::BatchState* find_batch(std::size_t id);
 
     void execute();
     void enqueue(const TaskState& t, std::shared_ptr<cmdlist> cmd);
+    void on_cmdlist_done(const connection::cmdlist_completion_data&);
 };
 
 
@@ -329,6 +331,8 @@ public:
         ui_.account = aid;
 
         conn_ = state.factory->AllocateConnection();
+        conn_->set_callback(std::bind(&Engine::State::on_cmdlist_done, &state,
+            std::placeholders::_1));
 
         do_action(state, conn_->connect(spec));
 
@@ -356,6 +360,9 @@ public:
         spec.use_ssl  = dna.ui_.secure;
 
         conn_ = state.factory->AllocateConnection();
+        conn_->set_callback(std::bind(&Engine::State::on_cmdlist_done, &state,
+            std::placeholders::_1));
+
         do_action(state, conn_->connect(spec));
 
         LOG_I("Connection ", ui_.id, " ", ui_.host, ":", ui_.port);
@@ -407,8 +414,7 @@ public:
             return;
 
         conn_->cancel();
-        if (ui_.state == states::Connected ||
-            ui_.state == states::Active)
+        if (ui_.state == states::Connected || ui_.state == states::Active)
         {
             do_action(state, conn_->disconnect());
         }
@@ -445,7 +451,7 @@ public:
         }
     }
 
-    void on_action(Engine::State& state, std::unique_ptr<action> act)
+    void on_action(Engine::State& engine_state, std::unique_ptr<action> act)
     {
         LOG_D("Connection ", ui_.id, " action ", act->get_id(), "(", act->describe(), ") complete");
 
@@ -454,26 +460,27 @@ public:
         ticks_to_ping_ = 30;
         ticks_to_conn_ = 5;
 
-        if (act->has_exception())
+        try
         {
-            ui_.state = states::Error;
-            ui_.bps   = 0;
-            ui_.task  = 0;
-            ui_.desc  = "";
-            ui::SystemError error;
-            error.resource = ui_.host;
-
-            // todo: refactor the connection errors to non-exceptions.
-            try
+            auto next  = conn_->complete(std::move(act));
+            auto state = conn_->get_state();
+            if (state == connection::state::error)
             {
-                act->rethrow();
-            }
-            catch (const connection::exception& e)
-            {
-                switch (e.error())
+                const auto err = conn_->get_error();
+                ui_.state = states::Error;
+                ui_.bps   = 0;
+                ui_.task  = 0;
+                ui_.desc  = "";
+                switch (err)
                 {
+                    case connection::error::none:
+                        ASSERT("???");
+                        break;
                     case connection::error::resolve:
                         ui_.error = ui::Connection::Errors::Resolve;
+                        break;
+                    case connection::error::refused:
+                        ui_.error = ui::Connection::Errors::Refused;
                         break;
                     case connection::error::authentication_rejected:
                         ui_.error = ui::Connection::Errors::AuthenticationRejected;
@@ -490,47 +497,76 @@ public:
                     case connection::error::pipeline_reset:
                         ui_.error = ui::Connection::Errors::Other;
                         break;
+                    case connection::error::reset:
+                        ui_.error = ui::Connection::Errors::Other;
+                        break;
+                    case connection::error::protocol:
+                        ui_.error = ui::Connection::Errors::Other;
+                        break;
                 }
-                error.what = e.what();
             }
-            catch (const std::system_error& e)
+            else
             {
-                const auto code = e.code();
-                if (code == std::errc::connection_refused)
-                    ui_.error = ui::Connection::Errors::Refused;
-                else ui_.error = ui::Connection::Errors::Other;
+                if (state != connection::state::active)
+                {
+                    ui_.bps  = 0;
+                    ui_.task = 0;
+                    ui_.desc = "";
+                }
+                switch (state)
+                {
+                    case connection::state::disconnected:
+                        ui_.state = states::Disconnected;
+                        break;
+                    case connection::state::resolving:
+                        ui_.state = states::Resolving;
+                        break;
+                    case connection::state::connecting:
+                        ui_.state = states::Connecting;
+                        break;
+                    case connection::state::initializing:
+                        ui_.state = states::Initializing;
+                        break;
+                    case connection::state::connected:
+                        ui_.state = states::Connected;
+                        break;
+                    case connection::state::active:
+                        ui_.state = states::Active;
+                        break;
+                    case connection::state::error:
+                        ASSERT("???"); // handled above.
+                        break;
 
-                error.code = code;
-                error.what = e.what();
+                }
+                LOG_D("Connection ", ui_.id,  " => ", str(ui_.state));
+
+                do_action(engine_state, std::move(next));
             }
-            catch (const std::exception &e)
-            {
-                ui_.error = errors::Other;
-                error.what  = e.what();
-            }
-
-            LOG_E("Connection ", ui_.id, " (", error.code.value(), ") ", error.code.message());
-            LOG_E("Connection ", ui_.id, " ", error.what);
-
-            state.on_error_callback(error);
-            state.logger->flush();
-            logger_->flush();
-            return;
         }
-
-        auto next = conn_->complete(std::move(act));
-        if (next)
-            do_action(state, std::move(next));
-        else if (ui_.state == states::Initializing)
-            ui_.state = states::Connected;
-        else if (ui_.state == states::Active)
+        catch (const std::system_error& e)
         {
-           ui_.state = states::Connected;
-           ui_.bps   = 0;
-           ui_.task  = 0;
-           ui_.desc  = "";
-           LOG_D("Connection ", ui_.id, " completed execute!");
-           LOG_D("Connection ", ui_.id, " => state::connected");
+            ui_.state = states::Error;
+            ui_.bps   = 0;
+            ui_.task  = 0;
+            ui_.desc  = "";
+            ui::SystemError error;
+            error.resource = ui_.host;
+            error.code     = e.code();
+            error.what     = e.what();
+            engine_state.on_error_callback(error);
+            LOG_E("Connection ", ui_.id, " (", error.code.value(), ") ", error.code.message());
+        }
+        catch (const std::exception& e)
+        {
+            ui_.state = states::Error;
+            ui_.bps   = 0;
+            ui_.task  = 0;
+            ui_.desc  = "";
+            ui::SystemError error;
+            error.resource = ui_.host;
+            error.what     = e.what();
+            engine_state.on_error_callback(error);
+            LOG_E("Connection ", ui_.id, " ", error.what);
         }
         logger_->flush();
     }
@@ -545,7 +581,6 @@ public:
             return ui_.bps;
         return 0.0;
     }
-
 
     std::size_t task() const
     { return ui_.task; }
@@ -562,32 +597,19 @@ public:
     const std::string& host() const
     { return ui_.host; }
 
-    const std::string& username() const
+    std::string username() const
     { return conn_->username(); }
 
-    const std::string& password() const
+    std::string password() const
     { return conn_->password(); }
 
 private:
     void do_action(Engine::State& state, std::unique_ptr<action> a)
     {
-        auto* ptr = a.get();
+        if (!a) return;
 
-        if (dynamic_cast<class connection::resolve*>(ptr))
-            ui_.state = states::Resolving;
-        else if (dynamic_cast<class connection::connect*>(ptr))
-            ui_.state = states::Connecting;
-        else if (dynamic_cast<class connection::initialize*>(ptr))
-            ui_.state = states::Initializing;
-        else if (dynamic_cast<class connection::execute*>(ptr))
-            ui_.state = states::Active;
-        else if (dynamic_cast<class connection::disconnect*>(ptr))
-            ui_.state = states::Disconnected;
-
-        LOG_D("Connection ", ui_.id,  " => ", str(ui_.state));
         LOG_D("Connection ", ui_.id, " current task ", ui_.task, " (", ui_.desc, ")");
         LOG_D("Connection ", ui_.id, " new action ", a->get_id(), "(", a->describe(), ")");
-
         a->set_owner(ui_.id);
         a->set_log(logger_);
         state.submit(a.release(), thread_);
@@ -1795,6 +1817,79 @@ private:
     bool filebatch_;
 };
 
+void Engine::State::on_cmdlist_done(const connection::cmdlist_completion_data& completion)
+{
+    auto cmds = completion.cmds;
+    const auto tid   = completion.task_owner_id;
+    const auto bytes = completion.content_bytes;
+
+    bytes_downloaded += bytes;
+
+    if (cmds->cmdtype() == cmdlist::type::body)
+    {
+        if (on_quota_callback && bytes)
+            on_quota_callback(bytes, cmds->account());
+    }
+    LOG_D("Cmdlist ", cmds->id(), " executed");
+    LOG_D("Cmdlist ", cmds->id(), " belongs to task ", cmds->task());
+    LOG_D("Cmdlist ", cmds->id(), " goodbit: ", cmds->is_good());
+    LOG_D("Cmdlist ", cmds->id(), " cancelbit: ", cmds->is_canceled());
+    LOG_D("Cmdlist ", cmds->id(), " success: ", completion.success);
+
+    #ifdef NEWSFLASH_DEBUG
+    if (std::getenv("NEWSFLASH_DUMP_DATA"))
+    {
+        const auto& buffers  = cmds->get_buffers();
+        const auto& commands = cmds->get_commands();
+        for (std::size_t i=0; i<buffers.size(); ++i)
+        {
+            if (i >= commands.size())
+                break;
+            const auto& buff = buffers[i];
+            std::ofstream out;
+            std::stringstream ss;
+            ss << "/tmp/Newsflash/" << commands[i] << ".txt";
+            std::string file;
+            ss >> file;
+            out.open(file, std::ios::binary | std::ios::app);
+            if (buff.content_status() == buffer::status::success)
+                out.write(buff.content(), buff.content_length()-3);
+            out.flush();
+        }
+    }
+    #endif
+
+    // remove the cmdlist from the list of command lists to execute.
+    auto& current_cmdlists = this->cmds;
+    current_cmdlists.erase(std::remove(std::begin(current_cmdlists), std::end(current_cmdlists), cmds),
+        std::end(current_cmdlists));
+
+    // find the task that the cmdlist belongs to, note that it could have been deleted.
+    auto it  = std::find_if(std::begin(tasks), std::end(tasks),
+        [&](const std::unique_ptr<TaskState>& t) {
+            return t->tid() == tid;
+        });
+    if (it == std::end(tasks))
+        return;
+
+    auto& task = *it;
+
+    if (completion.success)
+    {
+        const auto transition = task->complete(*this, cmds);
+        if (transition)
+        {
+            auto* batch = find_batch(task->bid());
+            batch->update(*this, *task, transition);
+        }
+    }
+    else
+    {
+        enqueue(*task, cmds);
+    }
+}
+
+
 Engine::BatchState* Engine::State::find_batch(std::size_t id)
 {
     auto it = std::find_if(std::begin(batches), std::end(batches),
@@ -2219,75 +2314,10 @@ bool Engine::Pump()
         if (!action)
             break;
 
-        if (auto* e = dynamic_cast<class connection::execute*>(action.get()))
-        {
-            auto cmds  = e->get_cmdlist();
-            auto tid   = e->get_tid();
-            auto bytes = e->get_content_transferred(); //e->get_bytes_transferred();
-            if (cmds->cmdtype() == cmdlist::type::body)
-            {
-                if (state_->on_quota_callback && bytes)
-                    state_->on_quota_callback(bytes, cmds->account());
-            }
+        action->run_completion_callbacks();
 
-            LOG_D("Cmdlist ", cmds->id(), " executed");
-            LOG_D("Cmdlist ", cmds->id(), " belongs to task ", cmds->task());
-            LOG_D("Cmdlist ", cmds->id(), " goodbit: ", cmds->is_good());
-            LOG_D("Cmdlist ", cmds->id(), " cancelbit: ", cmds->is_canceled());
-
-            #ifdef NEWSFLASH_DEBUG
-            if (std::getenv("NEWSFLASH_DUMP_DATA"))
-            {
-                const auto& buffers  = cmds->get_buffers();
-                const auto& commands = cmds->get_commands();
-                for (std::size_t i=0; i<buffers.size(); ++i)
-                {
-                    if (i >= commands.size())
-                        break;
-                    const auto& buff = buffers[i];
-                    std::ofstream out;
-                    std::stringstream ss;
-                    ss << "/tmp/Newsflash/" << commands[i] << ".txt";
-                    std::string file;
-                    ss >> file;
-                    out.open(file, std::ios::binary | std::ios::app);
-                    if (buff.content_status() == buffer::status::success)
-                        out.write(buff.content(), buff.content_length()-3);
-                    out.flush();
-                }
-            }
-            #endif
-
-            auto tit  = std::find_if(std::begin(state_->tasks), std::end(state_->tasks),
-                [&](const std::unique_ptr<TaskState>& t) {
-                    return t->tid() == tid;
-                });
-            if (tit != std::end(state_->tasks))
-            {
-                auto& task = *tit;
-
-                if (e->has_exception())
-                {
-                    LOG_E("Action ", e->get_id(), " (", e->describe(), " ) has an exception. Cmdlist ", cmds->id(), " not ready.");
-                    state_->enqueue(*task, cmds);
-                }
-                else
-                {
-                    auto it = std::find(std::begin(state_->cmds), std::end(state_->cmds), cmds);
-                    if (it != std::end(state_->cmds))
-                        state_->cmds.erase(it);
-
-                    const auto transition = task->complete(*state_, cmds);
-                    if (transition)
-                    {
-                        auto* batch = state_->find_batch(task->bid());
-                        batch->update(*state_, *task, transition);
-                    }
-                }
-            }
-            state_->bytes_downloaded += bytes;
-        }
-        else if (auto* w = dynamic_cast<class datafile::write*>(action.get()))
+        // todo: refactor this away.
+        if (auto* w = dynamic_cast<class datafile::write*>(action.get()))
         {
             auto bytes = w->get_write_size();
             if (!w->has_exception())
@@ -2364,15 +2394,6 @@ bool Engine::Pump()
                     auto* batch = state_->find_batch(task->bid());
                     batch->update(*state_, *task, transition);
                 }
-                // if (task->eligible_for_run())
-                // {
-                //     const auto transition = task->run(*state_);
-                //     if (transition)
-                //     {
-                //         auto& batch = state_->find_batch(task->bid());
-                //         batch.update(*state_, *task, transition);
-                //     }
-                // }
                 break;
             }
             state_->execute();

@@ -44,6 +44,15 @@
 
 namespace nf = newsflash;
 
+void test_initial_state()
+{
+    nf::connection conn;
+    BOOST_REQUIRE(conn.num_bytes_transferred() == 0);
+    BOOST_REQUIRE(conn.current_speed_bps() == 0);
+    BOOST_REQUIRE(conn.get_state() == nf::connection::state::disconnected);
+    BOOST_REQUIRE(conn.get_error() == nf::connection::error::none);
+}
+
 void test_connect()
 {
     auto log = std::make_shared<nf::stdlog>(std::cout);
@@ -62,7 +71,10 @@ void test_connect()
         act = conn.connect(s);
         act->set_log(log);
         act->perform();
-        BOOST_REQUIRE(act->has_exception());
+        BOOST_REQUIRE(conn.get_state() == nf::connection::state::resolving);
+        act = conn.complete(std::move(act));
+        BOOST_REQUIRE(conn.get_state() == nf::connection::state::error);
+        BOOST_REQUIRE(conn.get_error() == nf::connection::error::resolve);
     }
 
     // connect fails
@@ -78,43 +90,53 @@ void test_connect()
         act = conn.connect(s);
         act->set_log(log);
         act->perform();
-        BOOST_REQUIRE(!act->has_exception());
 
         // connect
         act = conn.complete(std::move(act));
+        BOOST_REQUIRE(conn.get_state() == nf::connection::state::connecting);
+        BOOST_REQUIRE(conn.get_error() == nf::connection::error::none);
         act->set_log(log);
         act->perform();
-        BOOST_REQUIRE(act->has_exception());
+
+        // initialize
+        act = conn.complete(std::move(act));
+        BOOST_REQUIRE(conn.get_state() == nf::connection::state::error);
+        BOOST_REQUIRE(conn.get_error() == nf::connection::error::refused);
     }
 
     // nntp init fails
-    // {
+    {
 
-    //     nf::connection::spec s;
-    //     s.hostname = "www.google.com";
-    //     s.hostport = 80;
-    //     s.use_ssl  = false;
+        nf::connection::spec s;
+        s.hostname = "www.google.com";
+        s.hostport = 80;
+        s.use_ssl  = false;
 
-    //     nf::connection conn;
+        nf::connection conn;
 
-    //     // resolve
-    //     act = conn.connect(s);
-    //     act->set_log(log);
-    //     act->perform(); // resolve
-    //     act = conn.complete(std::move(act));
+        // resolve
+        act = conn.connect(s);
+        act->set_log(log);
+        act->perform(); // resolve
+        act = conn.complete(std::move(act));
 
-    //     // connect
-    //     act->set_log(log);
-    //     act->perform(); // connect
-    //     act = conn.complete(std::move(act));
+        // connect
+        act->set_log(log);
+        act->perform(); // connect
+        act = conn.complete(std::move(act));
 
-    //     // initialize
-    //     act->set_log(log);
-    //     act->perform();
-    //     BOOST_REQUIRE(act->has_exception());
-    // }
+        // initialize
+        act->set_log(log);
+        act->perform();
+        BOOST_REQUIRE(conn.get_state() == nf::connection::state::initializing);
+        BOOST_REQUIRE(conn.get_error() == nf::connection::error::none);
 
-    // authentication fails
+        act = conn.complete(std::move(act));
+        BOOST_REQUIRE(conn.get_state() == nf::connection::state::error);
+        BOOST_REQUIRE(conn.get_error() == nf::connection::error::timeout);
+    }
+
+    // authentication fails (no such user at the server)
     {
         nf::connection::spec s;
         s.hostname = "localhost";
@@ -141,7 +163,18 @@ void test_connect()
         // initialize
         act->set_log(log);
         act->perform();
-        BOOST_REQUIRE(act->has_exception());
+        BOOST_REQUIRE(conn.get_state() == nf::connection::state::initializing);
+        BOOST_REQUIRE(conn.get_error() == nf::connection::error::none);
+
+        act = conn.complete(std::move(act));
+        BOOST_REQUIRE(conn.get_state() == nf::connection::state::error);
+        BOOST_REQUIRE(conn.get_error() == nf::connection::error::authentication_rejected);
+
+    }
+
+    // no permission (user exists, but out of quota/account locked etc)
+    {
+        // todo:
     }
 
     // succesful connect
@@ -172,8 +205,9 @@ void test_connect()
         // initialize
         act->set_log(log);
         act->perform();
-        BOOST_REQUIRE(!act->has_exception());
-
+        act = conn.complete(std::move(act));
+        BOOST_REQUIRE(conn.get_state() == nf::connection::state::connected);
+        BOOST_REQUIRE(conn.get_error() == nf::connection::error::none);
     }
 
     // disconnect
@@ -206,11 +240,13 @@ void test_connect()
         act->perform();
         act = conn.complete(std::move(act));
 
-
+        // disconnect
         act = conn.disconnect();
         act->set_log(log);
         act->perform();
-        BOOST_REQUIRE(!act->has_exception());
+        act = conn.complete(std::move(act));
+        BOOST_REQUIRE(conn.get_state() == nf::connection::state::disconnected);
+        BOOST_REQUIRE(conn.get_error() == nf::connection::error::none);
     }
 
     // discard the connection object while connecting
@@ -249,7 +285,7 @@ void test_connect()
     nf::set_thread_log(nullptr);
 }
 
-void test_execute()
+void test_execute_success()
 {
     auto log = std::make_shared<nf::stdlog>(std::cout);
 
@@ -267,8 +303,12 @@ void test_execute()
     s.password  = "pass";
     s.pthrottle = &throttle;
 
+    nf::connection::cmdlist_completion_data completion;
 
     nf::connection conn;
+    conn.set_callback([&](const nf::connection::cmdlist_completion_data& data) {
+        completion = data;
+    });
 
     // resolve
     act = conn.connect(s);
@@ -285,17 +325,66 @@ void test_execute()
     act->set_log(log);
     act->perform();
 
-    nf::cmdlist::messages m;
-    m.groups  = {"alt.binaries.foo"};
-    m.numbers = {"3"};
+    // successful body retrieval
+    {
+        nf::cmdlist::messages m;
+        m.groups  = {"alt.binaries.foo"};
+        m.numbers = {"3"};
 
-    auto cmds = std::make_shared<nf::cmdlist>(m);
+        auto cmds = std::make_shared<nf::cmdlist>(m);
 
-    // execute
-    act = conn.execute(cmds, 123);
-    act->perform();
-    act = conn.complete(std::move(act));
-    BOOST_REQUIRE(!act);
+        // execute
+        act = conn.execute(cmds, 123);
+        BOOST_REQUIRE(conn.get_state() == nf::connection::state::active);
+        act->perform();
+        act->run_completion_callbacks();
+        act = conn.complete(std::move(act));
+        BOOST_REQUIRE(conn.get_state() == nf::connection::state::connected);
+        BOOST_REQUIRE(conn.get_error() == nf::connection::error::none);
+        BOOST_REQUIRE(!act);
+
+        BOOST_REQUIRE(completion.success);
+        BOOST_REQUIRE(completion.cmds == cmds);
+        BOOST_REQUIRE(completion.task_owner_id == 123);
+        BOOST_REQUIRE(completion.total_bytes != 0); // todo:
+        BOOST_REQUIRE(completion.content_bytes != 0); // todo:
+
+        BOOST_REQUIRE(cmds->num_buffers() == 1);
+        BOOST_REQUIRE(cmds->get_buffer(0).content_type() == nf::buffer::type::article);
+        BOOST_REQUIRE(cmds->get_buffer(0).content_status()== nf::buffer::status::success);
+    }
+
+    // no such body
+    {
+        nf::cmdlist::messages m;
+        m.groups  = {"alt.binaries.foo"};
+        m.numbers = {"1"};
+
+        auto cmds = std::make_shared<nf::cmdlist>(m);
+
+        act = conn.execute(cmds, 123);
+        act->perform();
+        act->run_completion_callbacks();
+        act = conn.complete(std::move(act));
+        BOOST_REQUIRE(conn.get_state() == nf::connection::state::connected);
+        BOOST_REQUIRE(conn.get_error() == nf::connection::error::none);
+
+        BOOST_REQUIRE(completion.success);
+        BOOST_REQUIRE(completion.cmds == cmds);
+        BOOST_REQUIRE(completion.task_owner_id == 123);
+        BOOST_REQUIRE(completion.total_bytes != 0); // todo:
+        BOOST_REQUIRE(completion.content_bytes == 0);
+
+        BOOST_REQUIRE(cmds->num_buffers() == 1);
+        BOOST_REQUIRE(cmds->get_buffer(0).content_type() == nf::buffer::type::article);
+        BOOST_REQUIRE(cmds->get_buffer(0).content_status()== nf::buffer::status::unavailable);
+
+    }
+}
+
+void test_execute_failure()
+{
+    // todo:
 }
 
 void test_cancel_execute()
@@ -307,8 +396,10 @@ void test_cancel_execute()
 
 int test_main(int argc, char* argv[])
 {
+    test_initial_state();
     test_connect();
-    test_execute();
+    test_execute_success();
+    test_execute_failure();
     test_cancel_execute();
     return 0;
 }
