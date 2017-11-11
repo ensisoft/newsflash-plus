@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -20,17 +20,19 @@
 
 #pragma once
 
-#include <newsflash/config.h>
+#include "newsflash/config.h"
+
 #include <exception>
 #include <memory>
 #include <atomic>
 #include <string>
+
 #include "logging.h"
 
 namespace newsflash
 {
     // action class encapsulates a single state transition
-    // when the action completes successfully and is returned 
+    // when the action completes successfully and is returned
     // to the originating object the object is expected to complete
     // a state transition to another state succesfully.
     class action
@@ -42,7 +44,7 @@ namespace newsflash
             // dispatch the action to any available thread
             // this means that multiple actions from the same originating
             // object may complete in any order.
-            any_thread, 
+            any_thread,
 
             // dispatch the action to a single thread with affinity to the
             // action id. this means that all actions with single_thread
@@ -59,15 +61,16 @@ namespace newsflash
         }
 
         // return wheather an exception happened in perform()
-        bool has_exception() const 
-        { 
-            return exptr_ != std::exception_ptr(); 
+        bool has_exception() const
+        {
+            return exptr_ != std::exception_ptr();
         }
 
         // if theres a captured exception throw it
-        void rethrow() const 
+        void rethrow() const
         {
-            std::rethrow_exception(exptr_);
+            if (exptr_)
+                std::rethrow_exception(exptr_);
         }
 
         // perform the action
@@ -88,24 +91,32 @@ namespace newsflash
             set_thread_log(prev);
         }
 
+        // if the action has any completion callbacks run them now.
+        // this is a separate function from perform() so that
+        // it's possible that the action is executed on a separate
+        // thread and when it's done the completion callbacks are invoked
+        // on another (main/gui/engine) thread.
+        virtual void run_completion_callbacks()
+        {}
+
         virtual std::string describe() const
         { return {}; }
 
-        virtual std::size_t size() const 
+        virtual std::size_t size() const
         { return 0; }
 
-        affinity get_affinity() const 
+        affinity get_affinity() const
         { return affinity_; }
 
         // get action object id.
-        std::size_t get_owner() const 
+        std::size_t get_owner() const
         { return owner_; }
 
         std::size_t get_id() const
         { return id_; }
 
-        // set the action id
-        void set_owner(std::size_t id) 
+        // set the owner id of the action.
+        void set_owner(std::size_t id)
         { owner_ = id;}
 
         // set the thread affinity.
@@ -117,15 +128,15 @@ namespace newsflash
         { log_ = out; }
 
     protected:
-        virtual void xperform() = 0;        
+        virtual void xperform() = 0;
 
     private:
         std::exception_ptr exptr_;
-        std::size_t owner_;
-        std::size_t id_;        
+        std::size_t owner_ = 0;
+        std::size_t id_    = 0;
         std::shared_ptr<logger> log_;
     private:
-        affinity affinity_;
+        affinity affinity_ = affinity::any_thread;
     };
-    
+
 } // newsflash
