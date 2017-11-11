@@ -49,10 +49,6 @@ Download::Download(
 {
     name_         = fs::remove_illegal_filename_chars(name);
     decode_jobs_  = articles_.size();
-
-    const auto pos = name_.find("yEnc");
-    if (pos != std::string::npos)
-        yenc_ = true;
 }
 
 Download::~Download()
@@ -236,7 +232,11 @@ void Download::Complete(CmdList& cmd, std::vector<std::unique_ptr<action>>& next
     auto& messages = cmd.GetCommands();
     auto& contents = cmd.GetBuffers();
 
-    const auto affinity = yenc_ ?
+    // yenc encoding based files have offsets so they can
+    // run in parallel and complete in any order and then write
+    // in any order to the file.
+    const bool yenc = name_.find("yEnc") != std::string::npos;
+    const auto affinity = yenc ?
         action::affinity::any_thread :
         action::affinity::single_thread;
 
