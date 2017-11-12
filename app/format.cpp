@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -95,7 +95,7 @@ QString toString(QNetworkReply::NetworkError error)
         case e::ProxyConnectionClosedError:         return "Proxy server closed the connection prematurely.";
         case e::ProxyNotFoundError:                 return "The proxy host name was not found.";
         case e::ProxyTimeoutError:                  return "The connection to the proxy timed out.";
-        case e::ProxyAuthenticationRequiredError:   return "The proxy requires authentication.";        
+        case e::ProxyAuthenticationRequiredError:   return "The proxy requires authentication.";
         case e::ContentAccessDenied:                return "Access to the remote content was denied.";
         case e::ContentNotFoundError:               return "Content was not found.";
         case e::AuthenticationRequiredError:        return "Authentication required.";
@@ -110,7 +110,7 @@ QString toString(QProcess::ProcessError error)
     using e = QProcess::ProcessError;
     switch (error)
     {
-        case e::FailedToStart: return 
+        case e::FailedToStart: return
            "The process failed to start. Either the program is missing "
            "or you have insufficient permissions.";
         case e::Crashed:      return "The process crashed.";
@@ -203,7 +203,7 @@ QString toString(const app::event& event)
 
     QString str;
 
-    // todo: fix this. dddd is *localized* but we have hardcoded english here 
+    // todo: fix this. dddd is *localized* but we have hardcoded english here
 
 
     const auto date = event.datetime();
@@ -231,7 +231,7 @@ QString toString(const app::event& event)
         break;
 
         case app::event::when::before:
-        str = date.toString("dddd dd MMM hh:mm");
+        str = date.toString("dddd dd MMM yyyy");
         break;
     }
     return str;
@@ -272,7 +272,7 @@ QString toString(const app::etatime& eta)
         return QString("%1 min").arg(eta.value / MINUTE);
 
     const auto hour = eta.value / HOUR;
-    const auto min  = eta.value % MINUTE;    
+    const auto min  = eta.value % MINUTE;
     if (hour >= 24)
         return QString("%1 days").arg(hour / 24);
 
@@ -296,7 +296,7 @@ std::string narrow(const QString& str)
 }
 
 QString widen(const std::string& s)
-{ 
+{
 #if defined(WINDOWS_OS)
     return QString::fromUtf8(s.c_str());
 
@@ -311,10 +311,10 @@ QString widen(const std::string& s)
 
 // QString widen(const wchar_t* str)
 // {
-//     // windows uses UTF-16 (UCS-2 with surrogate pairs for non BMP characters)    
+//     // windows uses UTF-16 (UCS-2 with surrogate pairs for non BMP characters)
 //     // if this gives a compiler error it means that wchar_t is treated
 //     // as a native type by msvc. In order to compile wchar_t needs to be
-//     // unsigned short. Doing a cast will help but then a linker error will 
+//     // unsigned short. Doing a cast will help but then a linker error will
 //     // follow since Qt build assumes that wchar_t = unsigned short
 // #if defined(WINDOWS_OS)
 //     return QString::fromUtf16(str);
