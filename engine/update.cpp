@@ -76,6 +76,8 @@ struct Update::state {
     std::string folder;
     std::string group;
 
+    HeaderTask::OnProgress callback;
+
     // this mutex is acquired by any thread to get an
     // exclusive view to the the underlying data files.
     // i.e. holding this mutex makes sure that the files
@@ -639,14 +641,20 @@ void Update::Complete(action& a, std::vector<std::unique_ptr<action>>& next)
         local_first_ = std::min(local_first_, first);
         local_last_  = std::max(local_last_, last);
 
-        snapshots_.clear();
-        catalogs_.clear();
-
-        for (auto* catalog : p->updates_)
+        if (state_->callback)
         {
-            std::unique_ptr<Snapshot> snapshot = catalog->snapshot();
-            catalogs_.push_back(catalog->device().filename());
-            snapshots_.push_back(std::move(snapshot));
+            HeaderTask::Progress progress;
+            progress.group = state_->group;
+            progress.path  = state_->folder;
+            progress.num_local_articles  = local_last_ - local_first_ + 1;
+            progress.num_remote_articles = remote_last_ - remote_first_ + 1;
+            for (auto* catalog : p->updates_)
+            {
+                std::unique_ptr<Snapshot> snapshot = catalog->snapshot();
+                progress.catalogs.push_back(catalog->device().filename());
+                progress.snapshots.push_back(std::move(snapshot));
+            }
+            state_->callback(progress);
         }
     }
 }
@@ -678,6 +686,11 @@ void Update::Lock()
 void Update::Unlock()
 {
     state_->file_io_mutex.unlock();
+}
+
+void Update::SetProgressCallback(const HeaderTask::OnProgress& callback)
+{
+    state_->callback = callback;
 }
 
 std::string Update::group() const

@@ -31,7 +31,24 @@ namespace newsflash
 {
     struct Snapshot;
 
-    class Update : public Task
+    class HeaderTask : public Task
+    {
+    public:
+        struct Progress {
+            std::string group;
+            std::string path;
+            std::uint64_t num_local_articles  = 0;
+            std::uint64_t num_remote_articles = 0;
+            std::vector<std::unique_ptr<Snapshot>> snapshots;
+            std::vector<std::string> catalogs;
+        };
+        using OnProgress = std::function<void (const Progress&)>;
+
+        virtual void SetProgressCallback(const OnProgress& callback) = 0;
+    private:
+    };
+
+    class Update : public HeaderTask
     {
     public:
         Update(const std::string& path, const std::string& group);
@@ -50,6 +67,9 @@ namespace newsflash
         virtual void Lock() override;
         virtual void Unlock() override;
 
+        // HeaderTask implementation
+        virtual void SetProgressCallback(const HeaderTask::OnProgress& callback) override;
+
         std::string group() const;
 
         std::string path() const;
@@ -57,15 +77,6 @@ namespace newsflash
         std::uint64_t num_local_articles() const;
 
         std::uint64_t num_remote_articles() const;
-
-        std::size_t num_snapshots() const
-        { return snapshots_.size(); }
-
-        std::string catalog(size_t i) const
-        { return catalogs_[i]; }
-
-        const Snapshot* snapshot(size_t i) const
-        { return snapshots_[i].get(); }
 
     private:
         class parse;
@@ -83,8 +94,6 @@ namespace newsflash
     private:
         bool commit_done_ = false;
     private:
-        std::vector<std::unique_ptr<Snapshot>> snapshots_;
-        std::vector<std::string> catalogs_;
     };
 
 } // newsflash

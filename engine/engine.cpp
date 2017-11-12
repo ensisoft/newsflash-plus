@@ -257,6 +257,7 @@ struct Engine::State {
     void execute();
     void enqueue(const TaskState& t, std::shared_ptr<CmdList> cmd);
     void on_cmdlist_done(const connection::cmdlist_completion_data&);
+    void on_update_progress(const HeaderTask::Progress&, std::size_t account);
 };
 
 
@@ -1162,15 +1163,6 @@ public:
             task_->Complete(*act, actions);
             act.reset();
 
-            update = state.factory->MakeUpdate(*task_, ui_);
-            if (update)
-            {
-                if (const auto* ptr = dynamic_cast<const ui::HeaderUpdate*>(update.get()))
-                {
-                    state.on_header_update_callback(*ptr);
-                }
-            }
-
             for (auto& a : actions)
                 do_action(state, std::move(a));
 
@@ -1853,6 +1845,24 @@ void Engine::State::on_cmdlist_done(const connection::cmdlist_completion_data& c
     }
 }
 
+void Engine::State::on_update_progress(const HeaderTask::Progress& progress, std::size_t account)
+{
+    if (!on_header_update_callback)
+        return;
+
+    ui::HeaderUpdate update;
+    update.account    = account;
+    update.group_name = progress.group;
+    update.num_local_articles  = progress.num_local_articles;
+    update.num_remote_articles = progress.num_remote_articles;
+    update.catalogs = progress.catalogs;
+
+    for (auto& snapshot : progress.snapshots)
+    {
+        update.snapshots.push_back(snapshot.get());
+    }
+    on_header_update_callback(update);
+}
 
 Engine::BatchState* Engine::State::find_batch(std::size_t id)
 {
@@ -2026,27 +2036,6 @@ Engine::Engine() : state_(new State)
                 result->path    = ptr->path();
                 result->num_local_articles  = ptr->num_local_articles();
                 result->num_remote_articles = ptr->num_remote_articles();
-                ret = std::move(result);
-            }
-            return ret;
-        }
-
-        std::unique_ptr<ui::Update> MakeUpdate(const Task& task, const ui::TaskDesc& desc) const override
-        {
-            std::unique_ptr<ui::Update> ret;
-            if (const auto* ptr = dynamic_cast<const Update*>(&task))
-            {
-                auto result = std::make_unique<ui::HeaderUpdate>();
-                result->account    = desc.account;
-                result->group_name = ptr->group();
-                result->num_local_articles = ptr->num_local_articles();
-                result->num_remote_articles = ptr->num_remote_articles();
-
-                for (size_t i=0; i<ptr->num_snapshots(); ++i)
-                {
-                    result->catalogs.push_back(ptr->catalog(i));
-                    result->snapshots.push_back(ptr->snapshot(i));
-                }
                 ret = std::move(result);
             }
             return ret;
@@ -2248,6 +2237,12 @@ Engine::TaskId Engine::DownloadHeaders(const ui::HeaderDownload& download)
 
     const auto taskid = state_->oid++;
     std::unique_ptr<Task> task(state_->factory->AllocateTask(download));
+    if (auto* ptr = static_cast<HeaderTask*>(task.get()))
+    {
+        ptr->SetProgressCallback(std::bind(&Engine::State::on_update_progress, state_.get(),
+            std::placeholders::_1, download.account));
+    }
+
     std::unique_ptr<TaskState> state(new TaskState(taskid, std::move(task), download));
     state->set_account(download.account);
     state->set_batch(batchid);
