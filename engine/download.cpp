@@ -127,30 +127,30 @@ void Download::Complete(action& act, std::vector<std::unique_ptr<action>>& next)
 {
     // the action is either a decoding action or a datafile::write action.
     // for the write there's nothing we need to do.
-    auto* dec = dynamic_cast<decode*>(&act);
+    auto* dec = dynamic_cast<DecodeJob*>(&act);
     if (dec == nullptr)
         return;
 
-    auto binary = dec->get_binary_data_move(); //std::move(*dec).get_binary_data();
-    auto text   = dec->get_text_data_move(); //std::move(*dec).get_text_data();
-    auto name   = dec->get_binary_name();
+    auto binary = dec->GetBinaryDataMove(); //std::move(*dec).get_binary_data();
+    auto text   = dec->GetTextDataMove(); //std::move(*dec).get_text_data();
+    auto name   = dec->GetBinaryName();
 
     // process the binary data.
     if (!binary.empty())
     {
-        const auto enc = dec->get_encoding();
-        if (enc == decode::encoding::yenc)
+        const auto enc = dec->GetEncoding();
+        if (enc == DecodeJob::Encoding::yEnc)
         {
             // see comment in datafile about the +1 for offset
-            const auto offset = dec->has_offset() ?
-                dec->get_binary_offset() + 1 : 0;
-            const auto size = dec->get_binary_size();
+            const auto offset = dec->HasOffset() ?
+                dec->GetBinaryOffset() + 1 : 0;
+            const auto size = dec->GetBinarySize();
 
             std::shared_ptr<datafile> file = create_file(name, size);
             std::unique_ptr<action> write(new datafile::write(offset, std::move(binary), file));
             next.push_back(std::move(write));
         }
-        else if (enc == decode::encoding::uuencode)
+        else if (enc == DecodeJob::Encoding::UUEncode)
         {
             // uuencode is a cumbersome encoding scheme. it's used mostly for pictures
             // and large pictures are split into multiple posts. however the encoding itself
@@ -163,18 +163,18 @@ void Download::Complete(action& act, std::vector<std::unique_ptr<action>>& next)
             // of the article ids and by queuing the decoding actions to a single thread
             // so that the same ordering is maintained throughout.
 
-            if (dec->is_multipart())
+            if (dec->IsMultipart())
             {
                 if (stash_.empty())
                     stash_.resize(decode_jobs_);
 
-                if (dec->is_first_part())
+                if (dec->IsFirstPart())
                 {
                     std::unique_ptr<stash> s(new stash(std::move(binary)));
                     stash_[0]   = std::move(s);
                     stash_name_ = name;
                 }
-                else if (dec->is_last_part())
+                else if (dec->IsLastPart())
                 {
                     std::unique_ptr<stash> s(new stash(std::move(binary)));
                     stash_[decode_jobs_ - 1] = std::move(s);
@@ -249,7 +249,7 @@ void Download::Complete(CmdList& cmd, std::vector<std::unique_ptr<action>>& next
         // create a decoding job and push into the output queue
         if (status == buffer::status::success)
         {
-            std::unique_ptr<decode> dec(new decode(std::move(content)));
+            std::unique_ptr<DecodeJob> dec(new DecodeJob(std::move(content)));
             dec->set_affinity(affinity);
             //dec->set_decoding_id(decode_index_);
             next.push_back(std::move(dec));

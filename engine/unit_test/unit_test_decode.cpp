@@ -31,21 +31,21 @@ namespace nf = newsflash;
 
 void unit_test_yenc_single()
 {
-    // successful decode
+    // successful DecodeJob
     {
-        nf::decode dec(read_file_buffer("test_data/newsflash_2_0_0.yenc"));
+        nf::DecodeJob dec(read_file_buffer("test_data/newsflash_2_0_0.yenc"));
         dec.perform();
 
         const auto png = read_file_contents("test_data/newsflash_2_0_0.png");
 
-        BOOST_REQUIRE(dec.get_binary_offset() == 0);
-        BOOST_REQUIRE(dec.get_binary_size() == png.size());
-        BOOST_REQUIRE(dec.get_binary_name() == "test.png");
-        BOOST_REQUIRE(dec.get_errors().any_bit() == false);
-        BOOST_REQUIRE(dec.get_encoding() == nf::decode::encoding::yenc);
+        BOOST_REQUIRE(dec.GetBinaryOffset() == 0);
+        BOOST_REQUIRE(dec.GetBinarySize() == png.size());
+        BOOST_REQUIRE(dec.GetBinaryName() == "test.png");
+        BOOST_REQUIRE(dec.GetErrors().any_bit() == false);
+        BOOST_REQUIRE(dec.GetEncoding() == nf::DecodeJob::Encoding::yEnc);
 
-        const auto& bin = dec.get_binary_data();
-        const auto& txt = dec.get_text_data();
+        const auto& bin = dec.GetBinaryData();
+        const auto& txt = dec.GetTextData();
         BOOST_REQUIRE(txt.empty() == true);
         BOOST_REQUIRE(bin.empty() == false);
 
@@ -54,25 +54,25 @@ void unit_test_yenc_single()
 
     // error (throws an exception)
     {
-        nf::decode dec(read_file_buffer("test_data/newsflash_2_0_0.broken.yenc"));
+        nf::DecodeJob dec(read_file_buffer("test_data/newsflash_2_0_0.broken.yenc"));
         dec.perform();
         BOOST_REQUIRE(dec.has_exception());
     }
 
     // damaged
     {
-        nf::decode dec(read_file_buffer("test_data/newsflash_2_0_0.damaged.yenc"));
+        nf::DecodeJob dec(read_file_buffer("test_data/newsflash_2_0_0.damaged.yenc"));
         dec.perform();
 
-        const auto err = dec.get_errors();
-        BOOST_REQUIRE(err.test(nf::decode::error::crc_mismatch));
-        BOOST_REQUIRE(err.test(nf::decode::error::size_mismatch));
+        const auto err = dec.GetErrors();
+        BOOST_REQUIRE(err.test(nf::DecodeJob::Error::CrcMismatch));
+        BOOST_REQUIRE(err.test(nf::DecodeJob::Error::SizeMismatch));
     }
 }
 
 void unit_test_yenc_multi()
 {
-    // successful decode
+    // successful DecodeJob
     {
         const auto jpg = read_file_contents("test_data/1489406.jpg");
 
@@ -82,45 +82,45 @@ void unit_test_yenc_multi()
         std::size_t offset = 0;
         // first part
         {
-            nf::decode dec(read_file_buffer("test_data/1489406.jpg-001.ync"));
+            nf::DecodeJob dec(read_file_buffer("test_data/1489406.jpg-001.ync"));
             dec.perform();
 
-            BOOST_REQUIRE(dec.get_binary_offset() == offset);
-            BOOST_REQUIRE(dec.get_binary_size() == jpg.size());
-            BOOST_REQUIRE(dec.get_binary_name() == "1489406.jpg");
-            BOOST_REQUIRE(dec.get_errors().any_bit() == false);
+            BOOST_REQUIRE(dec.GetBinaryOffset() == offset);
+            BOOST_REQUIRE(dec.GetBinarySize() == jpg.size());
+            BOOST_REQUIRE(dec.GetBinaryName() == "1489406.jpg");
+            BOOST_REQUIRE(dec.GetErrors().any_bit() == false);
 
-            const auto& bin = dec.get_binary_data();
+            const auto& bin = dec.GetBinaryData();
             std::memcpy(&out[offset], bin.data(), bin.size());
             offset = bin.size();
         }
 
         // second part
         {
-            nf::decode dec(read_file_buffer("test_data/1489406.jpg-002.ync"));
+            nf::DecodeJob dec(read_file_buffer("test_data/1489406.jpg-002.ync"));
             dec.perform();
 
-            BOOST_REQUIRE(dec.get_binary_offset() == offset);
-            BOOST_REQUIRE(dec.get_binary_size() == jpg.size());
-            BOOST_REQUIRE(dec.get_binary_name() == "1489406.jpg");
-            BOOST_REQUIRE(dec.get_errors().any_bit() == false);
+            BOOST_REQUIRE(dec.GetBinaryOffset() == offset);
+            BOOST_REQUIRE(dec.GetBinarySize() == jpg.size());
+            BOOST_REQUIRE(dec.GetBinaryName() == "1489406.jpg");
+            BOOST_REQUIRE(dec.GetErrors().any_bit() == false);
 
-            const auto& bin = dec.get_binary_data();
+            const auto& bin = dec.GetBinaryData();
             std::memcpy(&out[offset], bin.data(), bin.size());
             offset += bin.size();
         }
 
         // third part
         {
-            nf::decode dec(read_file_buffer("test_data/1489406.jpg-003.ync"));
+            nf::DecodeJob dec(read_file_buffer("test_data/1489406.jpg-003.ync"));
             dec.perform();
 
-            BOOST_REQUIRE(dec.get_binary_offset() == offset);
-            BOOST_REQUIRE(dec.get_binary_size() == jpg.size());
-            BOOST_REQUIRE(dec.get_binary_name() == "1489406.jpg");
-            BOOST_REQUIRE(dec.get_errors().any_bit() == false);
+            BOOST_REQUIRE(dec.GetBinaryOffset() == offset);
+            BOOST_REQUIRE(dec.GetBinarySize() == jpg.size());
+            BOOST_REQUIRE(dec.GetBinaryName() == "1489406.jpg");
+            BOOST_REQUIRE(dec.GetErrors().any_bit() == false);
 
-            const auto& bin = dec.get_binary_data();
+            const auto& bin = dec.GetBinaryData();
             std::memcpy(&out[offset], bin.data(), bin.size());
             offset += bin.size();
         }
@@ -130,37 +130,37 @@ void unit_test_yenc_multi()
 
     // error (throws an exception)
     {
-        nf::decode dec(read_file_buffer("test_data/1489406.jpg-001.broken.ync"));
+        nf::DecodeJob dec(read_file_buffer("test_data/1489406.jpg-001.broken.ync"));
         dec.perform();
         BOOST_REQUIRE(dec.has_exception());
     }
 
     // damaged
     {
-        nf::decode dec(read_file_buffer("test_data/1489406.jpg-001.damaged.ync"));
+        nf::DecodeJob dec(read_file_buffer("test_data/1489406.jpg-001.damaged.ync"));
         dec.perform();
 
-        const auto flags = dec.get_errors();
+        const auto flags = dec.GetErrors();
         BOOST_REQUIRE(flags.any_bit());
     }
 }
 
 void unit_test_uuencode_single()
 {
-    // successful decode
+    // successful DecodeJob
     {
-        nf::decode dec(read_file_buffer("test_data/newsflash_2_0_0.uuencode"));
+        nf::DecodeJob dec(read_file_buffer("test_data/newsflash_2_0_0.uuencode"));
         dec.perform();
 
         const auto png = read_file_contents("test_data/newsflash_2_0_0.png");
-        BOOST_REQUIRE(dec.get_binary_offset() == 0);
-        BOOST_REQUIRE(dec.get_binary_size() == 0);
-        BOOST_REQUIRE(dec.get_binary_name() == "test");
-        BOOST_REQUIRE(dec.is_multipart() == false);
-        BOOST_REQUIRE(dec.is_first_part() == true);
-        BOOST_REQUIRE(dec.is_last_part() == true);
+        BOOST_REQUIRE(dec.GetBinaryOffset() == 0);
+        BOOST_REQUIRE(dec.GetBinarySize() == 0);
+        BOOST_REQUIRE(dec.GetBinaryName() == "test");
+        BOOST_REQUIRE(dec.IsMultipart() == false);
+        BOOST_REQUIRE(dec.IsFirstPart() == true);
+        BOOST_REQUIRE(dec.IsLastPart() == true);
 
-        const auto& bin = dec.get_binary_data();
+        const auto& bin = dec.GetBinaryData();
         BOOST_REQUIRE(bin == png);
     }
 
@@ -170,57 +170,57 @@ void unit_test_uuencode_single()
 
 void unit_test_uuencode_multi()
 {
-    // succesful decode
+    // succesful DecodeJob
     {
         std::vector<char> out;
 
         // first part
         {
-            nf::decode dec(read_file_buffer("test_data/1489406.jpg-001.uuencode"));
+            nf::DecodeJob dec(read_file_buffer("test_data/1489406.jpg-001.uuencode"));
             dec.perform();
 
-            BOOST_REQUIRE(dec.get_binary_offset() == 0);
-            BOOST_REQUIRE(dec.get_binary_size() == 0);
-            BOOST_REQUIRE(dec.get_binary_name() == "1489406.jpg");
-            BOOST_REQUIRE(dec.is_multipart() == true);
-            BOOST_REQUIRE(dec.is_first_part() == true);
-            BOOST_REQUIRE(dec.is_last_part() == false);
+            BOOST_REQUIRE(dec.GetBinaryOffset() == 0);
+            BOOST_REQUIRE(dec.GetBinarySize() == 0);
+            BOOST_REQUIRE(dec.GetBinaryName() == "1489406.jpg");
+            BOOST_REQUIRE(dec.IsMultipart() == true);
+            BOOST_REQUIRE(dec.IsFirstPart() == true);
+            BOOST_REQUIRE(dec.IsLastPart() == false);
 
-            const auto& bin = dec.get_binary_data();
+            const auto& bin = dec.GetBinaryData();
             std::copy(bin.begin(), bin.end(), std::back_inserter(out));
 
         }
 
         // second part
         {
-            nf::decode dec(read_file_buffer("test_data/1489406.jpg-002.uuencode"));
+            nf::DecodeJob dec(read_file_buffer("test_data/1489406.jpg-002.uuencode"));
             dec.perform();
 
-            BOOST_REQUIRE(dec.get_binary_offset() == 0);
-            BOOST_REQUIRE(dec.get_binary_size() == 0);
-            BOOST_REQUIRE(dec.get_binary_name() == "");
-            BOOST_REQUIRE(dec.is_multipart() == true);
-            BOOST_REQUIRE(dec.is_first_part() == false);
-            BOOST_REQUIRE(dec.is_last_part() == false);
+            BOOST_REQUIRE(dec.GetBinaryOffset() == 0);
+            BOOST_REQUIRE(dec.GetBinarySize() == 0);
+            BOOST_REQUIRE(dec.GetBinaryName() == "");
+            BOOST_REQUIRE(dec.IsMultipart() == true);
+            BOOST_REQUIRE(dec.IsFirstPart() == false);
+            BOOST_REQUIRE(dec.IsLastPart() == false);
 
-            const auto& bin = dec.get_binary_data();
+            const auto& bin = dec.GetBinaryData();
             std::copy(bin.begin(), bin.end(), std::back_inserter(out));
 
         }
 
         // third part
         {
-            nf::decode dec(read_file_buffer("test_data/1489406.jpg-003.uuencode"));
+            nf::DecodeJob dec(read_file_buffer("test_data/1489406.jpg-003.uuencode"));
             dec.perform();
 
-            BOOST_REQUIRE(dec.get_binary_offset() == 0);
-            BOOST_REQUIRE(dec.get_binary_size() == 0);
-            BOOST_REQUIRE(dec.get_binary_name() == "");
-            BOOST_REQUIRE(dec.is_multipart() == true);
-            BOOST_REQUIRE(dec.is_first_part() == false);
-            BOOST_REQUIRE(dec.is_last_part() == true);
+            BOOST_REQUIRE(dec.GetBinaryOffset() == 0);
+            BOOST_REQUIRE(dec.GetBinarySize() == 0);
+            BOOST_REQUIRE(dec.GetBinaryName() == "");
+            BOOST_REQUIRE(dec.IsMultipart() == true);
+            BOOST_REQUIRE(dec.IsFirstPart() == false);
+            BOOST_REQUIRE(dec.IsLastPart() == true);
 
-            const auto& bin = dec.get_binary_data();
+            const auto& bin = dec.GetBinaryData();
             std::copy(bin.begin(), bin.end(), std::back_inserter(out));
         }
 

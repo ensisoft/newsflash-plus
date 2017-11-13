@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -20,7 +20,8 @@
 
 #pragma once
 
-#include <newsflash/config.h>
+#include "newsflash/config.h"
+
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -32,21 +33,23 @@
 
 namespace newsflash
 {
-    // implement data decoding action. I.e. read input NNTP data and extract and decode
+    // implement data decoding action. I.e. read input NNTP data and extract and decode it.
     // any ascii armored binary
-    class decode : public action
+    class DecodeJob : public action
     {
     public:
-        enum class encoding {
-            yenc, uuencode, unknown
+        enum class Encoding {
+            yEnc,
+            UUEncode,
+            Unknown
         };
 
         // gets throw when decoding has encountered
         // an unrecoverable error and to continue is impossible
-        class exception : public std::exception
+        class Exception : public std::exception
         {
         public:
-            exception(std::string what) : what_(std::move(what))
+            Exception(const std::string& what) : what_(what)
             {}
 
             const char* what() const NOTHROW // noexcept
@@ -54,15 +57,16 @@ namespace newsflash
 
         private:
             std::string what_;
-        };       
-
-        // a soft error. the binary might be unsable
-        enum class error {
-            crc_mismatch, size_mismatch
         };
 
-        decode(buffer&& data);
-       ~decode();
+        // a soft error. the binary might be unsable
+        enum class Error {
+            CrcMismatch,
+            SizeMismatch
+        };
+
+        DecodeJob(const buffer& data);
+        DecodeJob(buffer&& data);
 
         virtual std::string describe() const override;
 
@@ -71,60 +75,57 @@ namespace newsflash
         // doesn't work with msvc!
         // std::vector<char>&& get_text_data() &&
 
-        std::vector<char>&& get_text_data_move() 
+        std::vector<char>&& GetTextDataMove()
         { return std::move(text_); }
 
         // get the binary content (if any)
         //std::vector<char>&& get_binary_data() &&
 
-        std::vector<char>&& get_binary_data_move()
+        std::vector<char>&& GetBinaryDataMove()
         { return std::move(binary_); }
 
-        const 
-        std::vector<char>& get_text_data() const //&
+        const std::vector<char>& GetTextData() const //&
         { return text_; }
 
-        const 
-        std::vector<char>& get_binary_data() const //&
+        const std::vector<char>& GetBinaryData() const //&
         { return binary_; }
 
-
-        // if binary is part of a multipart binary then 
+        // if binary is part of a multipart binary then
         // it might have a specific offset in the final output binary.
         // the caller should use this value only with encodings that
         // support such a scheme. (i.e. yenc multi)
-        std::size_t get_binary_offset() const
+        std::size_t GetBinaryOffset() const
         { return binary_offset_; }
 
         // get the binary size. note that in case of a multipart binary
         // that supports this, the value reported is the *whole* binary
         // size, not the size of the current part.
-        std::size_t get_binary_size() const 
+        std::size_t GetBinarySize() const
         { return binary_size_; }
 
         // get the binary file name in UTF-8
-        std::string get_binary_name() const 
+        std::string GetBinaryName() const
         { return binary_name_; }
 
         // get error flags set after the decoding.
-        bitflag<error> get_errors() const 
+        bitflag<Error> GetErrors() const
         { return errors_; }
 
         // get the identified encoding. see comments in get_binary_offset
-        encoding get_encoding() const
+        Encoding GetEncoding() const
         { return encoding_; }
 
-        bool is_multipart() const
-        { return multipart_; }
+        bool IsMultipart() const
+        { return flags_.test(Flags::Multipart); }
 
-        bool is_first_part() const 
-        { return first_part_; }
+        bool IsFirstPart() const
+        { return flags_.test(Flags::FirstPart); }
 
-        bool is_last_part() const 
-        { return last_part_; }
+        bool IsLastPart() const
+        { return flags_.test(Flags::LastPart); }
 
-        bool has_offset() const
-        { return has_offset_; }
+        bool HasOffset() const
+        { return flags_.test(Flags::HasOffset); }
 
     private:
         virtual void xperform() override;
@@ -137,18 +138,21 @@ namespace newsflash
         buffer data_;
         std::vector<char> text_;
         std::vector<char> binary_;
-        std::size_t binary_offset_;
-        std::size_t binary_size_;
+        std::size_t binary_offset_ = 0;
+        std::size_t binary_size_   = 0;
         std::string binary_name_;
     private:
-        encoding encoding_;
+        Encoding encoding_ = Encoding::Unknown;
     private:
-        bitflag<error> errors_;
+        enum class Flags {
+            Multipart,
+            FirstPart,
+            LastPart,
+            HasOffset
+        };
+        bitflag<Flags> flags_;
+        bitflag<Error> errors_;
     private:
-        bool multipart_;
-        bool first_part_;
-        bool last_part_;
-        bool has_offset_;
     };
 
 } // newsflash

@@ -18,11 +18,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <newsflash/config.h>
+#include "newsflash/config.h"
 
-#include <newsflash/warnpush.h>
+#include "newsflash/warnpush.h"
 #  include <boost/crc.hpp>
-#include <newsflash/warnpop.h>
+#include "newsflash/warnpop.h"
 
 #include "decode.h"
 #include "linebuffer.h"
@@ -55,26 +55,18 @@ std::string to_utf8(const std::string& str)
 namespace newsflash
 {
 
-decode::decode(buffer&& data) : data_(std::move(data))
-{
-    binary_offset_ = 0;
-    binary_size_   = 0;
-    encoding_      = encoding::unknown;
-    multipart_     = false;
-    first_part_    = false;
-    last_part_     = false;
-    has_offset_    = false;
-}
-
-decode::~decode()
+DecodeJob::DecodeJob(const buffer& data) : data_(data)
 {}
 
-std::string decode::describe() const
+DecodeJob::DecodeJob(buffer&& data) : data_(std::move(data))
+{}
+
+std::string DecodeJob::describe() const
 {
-    return "Decode";
+    return "DecodeJob";
 }
 
-void decode::xperform()
+void DecodeJob::xperform()
 {
     // iterate over the content line by line and inspect
     // every line untill we can identify a binary encoding.
@@ -111,7 +103,7 @@ void decode::xperform()
     std::stringstream ss;
     ss << "\r\n";
 
-    // decode the binary
+    // DecodeJob the binary
     switch (enc)
     {
         // a simple case, a yenc encoded binary in that is only a single part
@@ -159,14 +151,14 @@ void decode::xperform()
     std::copy(textptr, textend, std::back_inserter(text_));
 }
 
-std::size_t decode::decode_yenc_single(const char* data, std::size_t len)
+std::size_t DecodeJob::decode_yenc_single(const char* data, std::size_t len)
 {
     nntp::bodyiter beg(data, len);
     nntp::bodyiter end(data + len, 0);
 
     const auto header = yenc::parse_header(beg, end);
     if (!header.first)
-        throw exception("broken or missing yenc header");
+        throw Exception("broken or missing yenc header");
 
     std::vector<char> buff;
     buff.reserve(header.second.size);
@@ -174,45 +166,45 @@ std::size_t decode::decode_yenc_single(const char* data, std::size_t len)
 
     const auto footer = yenc::parse_footer(beg, end);
     if (!footer.first)
-        throw exception("broken or missing yenc footer");
+        throw Exception("broken or missing yenc footer");
 
     binary_        = std::move(buff);
     binary_name_   = to_utf8(header.second.name);
     binary_offset_ = 0;
     binary_size_   = binary_.size();
-    multipart_     = false;
-    first_part_    = true;
-    last_part_     = true;
-    has_offset_    = false;
-    encoding_      = encoding::yenc;
+    flags_.set(Flags::Multipart, false);
+    flags_.set(Flags::FirstPart, true);
+    flags_.set(Flags::LastPart, true);
+    flags_.set(Flags::HasOffset, false);
+    encoding_ = Encoding::yEnc;
 
     if (footer.second.crc32)
     {
         boost::crc_32_type crc;
         crc.process_bytes(binary_.data(), binary_.size());
         if (footer.second.crc32 != crc.checksum())
-            errors_.set(error::crc_mismatch);
+            errors_.set(Error::CrcMismatch);
 
         if (footer.second.size != header.second.size)
-            errors_.set(error::size_mismatch);
+            errors_.set(Error::SizeMismatch);
         if (footer.second.size != binary_.size())
-            errors_.set(error::size_mismatch);
+            errors_.set(Error::SizeMismatch);
     }
     return beg.position();
 }
 
-std::size_t decode::decode_yenc_multi(const char* data, std::size_t len)
+std::size_t DecodeJob::decode_yenc_multi(const char* data, std::size_t len)
 {
     nntp::bodyiter beg(data, len);
     nntp::bodyiter end(data + len, 0);
 
     const auto header = yenc::parse_header(beg, end);
     if (!header.first)
-        throw exception("broken or missing yenc header");
+        throw Exception("broken or missing yenc header");
 
     const auto part = yenc::parse_part(beg, end);
     if (!part.first)
-        throw exception("broken or missing yenc part header");
+        throw Exception("broken or missing yenc part header");
 
     // yenc uses 1 based offsets
     const auto offset = part.second.begin - 1;
@@ -224,17 +216,17 @@ std::size_t decode::decode_yenc_multi(const char* data, std::size_t len)
 
     const auto footer = yenc::parse_footer(beg, end);
     if (!footer.first)
-        throw exception("broken or missing yenc footer");
+        throw Exception("broken or missing yenc footer");
 
     binary_        = std::move(buff);
     binary_name_   = to_utf8(header.second.name);
     binary_offset_ = offset;
     binary_size_   = header.second.size;
-    multipart_     = true;
-    first_part_    = header.second.part == 1;
-    last_part_     = (header.second.part == header.second.total);
-    has_offset_    = true;
-    encoding_      = encoding::yenc;
+    flags_.set(Flags::Multipart, true);
+    flags_.set(Flags::FirstPart, header.second.part == 1);
+    flags_.set(Flags::LastPart, header.second.part == header.second.total);
+    flags_.set(Flags::HasOffset, true);
+    encoding_ = Encoding::yEnc;
 
     if (footer.second.pcrc32)
     {
@@ -242,23 +234,23 @@ std::size_t decode::decode_yenc_multi(const char* data, std::size_t len)
         crc.process_bytes(binary_.data(), binary_.size());
 
         if (footer.second.pcrc32 != crc.checksum())
-            errors_.set(error::crc_mismatch);
+            errors_.set(Error::CrcMismatch);
 
         if (size != binary_.size())
-            errors_.set(error::size_mismatch);
+            errors_.set(Error::SizeMismatch);
     }
 
     return beg.position();
 }
 
-std::size_t decode::decode_uuencode_single(const char* data, std::size_t len)
+std::size_t DecodeJob::decode_uuencode_single(const char* data, std::size_t len)
 {
     nntp::bodyiter beg(data, len);
     nntp::bodyiter end(data + len, 0);
 
     const auto header = uuencode::parse_begin(beg, end);
     if (!header.first)
-        throw exception("broken or missing uuencode header");
+        throw Exception("broken or missing uuencode header");
 
     std::vector<char> buff;
     uuencode::decode(beg, end, std::back_inserter(buff));
@@ -272,24 +264,24 @@ std::size_t decode::decode_uuencode_single(const char* data, std::size_t len)
     binary_name_   = to_utf8(header.second.file);
     binary_offset_ = 0;
     binary_size_   = 0;
-    first_part_    = true;
-    has_offset_    = false;
-    encoding_      = encoding::uuencode;
+    flags_.set(Flags::FirstPart, true);
+    flags_.set(Flags::HasOffset, false);
+    encoding_ = Encoding::UUEncode;
     if (parse_end_success)
     {
-        last_part_ = true;
-        multipart_ = false;
+        flags_.set(Flags::LastPart, true);
+        flags_.set(Flags::Multipart, false);
     }
     else
     {
-        last_part_ = false;
-        multipart_ = true;
+        flags_.set(Flags::LastPart, false);
+        flags_.set(Flags::Multipart, true);
     }
 
     return beg.position();
 }
 
-std::size_t decode::decode_uuencode_multi(const char* data, std::size_t len)
+std::size_t DecodeJob::decode_uuencode_multi(const char* data, std::size_t len)
 {
     nntp::bodyiter beg(data, len);
     nntp::bodyiter end(data + len, 0);
@@ -303,12 +295,11 @@ std::size_t decode::decode_uuencode_multi(const char* data, std::size_t len)
     binary_        = std::move(buff);
     binary_offset_ = 0; // we have no idea about the offset, uuencode doesn't have it.
     binary_size_   = 0;
-    multipart_     = true;
-    first_part_    = false;
-    has_offset_    = false;
-    last_part_     = parse_end_success;
-    encoding_      = encoding::uuencode;
-
+    flags_.set(Flags::Multipart, true);
+    flags_.set(Flags::FirstPart, false);
+    flags_.set(Flags::HasOffset, false);
+    flags_.set(Flags::LastPart, parse_end_success);
+    encoding_ = Encoding::UUEncode;
     return beg.position();
 }
 

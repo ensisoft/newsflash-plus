@@ -1148,12 +1148,12 @@ public:
             if (act->has_exception())
                 act->rethrow();
 
-            if (auto* dec = dynamic_cast<decode*>(act.get()))
+            if (auto* dec = dynamic_cast<DecodeJob*>(act.get()))
             {
-                const auto err = dec->get_errors();
-                if (err.test(decode::error::crc_mismatch))
+                const auto err = dec->GetErrors();
+                if (err.test(DecodeJob::Error::CrcMismatch))
                     ui_.error.set(ui::TaskDesc::Errors::Damaged);
-                if (err.test(decode::error::size_mismatch))
+                if (err.test(DecodeJob::Error::SizeMismatch))
                     ui_.error.set(ui::TaskDesc::Errors::Damaged);
             }
 
