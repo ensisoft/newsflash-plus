@@ -26,6 +26,7 @@
 #include <string>
 #include <vector>
 
+#include "bitflag.h"
 #include "task.h"
 
 namespace newsflash
@@ -54,6 +55,7 @@ namespace newsflash
         virtual void Configure(const Settings& settings) override;
         virtual bool HasCommands() const override;
         virtual std::size_t MaxNumActions() const override;
+        virtual bitflag<Error> GetErrors() const override;
 
         void add_file(std::shared_ptr<datafile> file)
         {
@@ -89,6 +91,8 @@ namespace newsflash
         std::string name_;
         std::string stash_name_;
         std::size_t decode_jobs_ = 0;
+    private:
+        bitflag<Error> errors_;
     private:
         bool overwrite_ = false;
         bool discardtext_ = false;

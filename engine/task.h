@@ -20,12 +20,14 @@
 
 #pragma once
 
-#include <newsflash/config.h>
+#include "newsflash/config.h"
 
 #include <functional>
 #include <memory>
 #include <vector>
+
 #include "action.h"
+#include "bitflag.h"
 
 namespace newsflash
 {
@@ -48,6 +50,11 @@ namespace newsflash
             // some binary content.
             // set to false to have the text data stored to the disk.
             bool discard_text_content = true;
+        };
+
+        enum class Error {
+            CrcMismatch,
+            SizeMismatch
         };
 
         virtual ~Task() = default;
@@ -92,6 +99,12 @@ namespace newsflash
 
         // Unlock the task lock. see Lock
         virtual void Unlock() {}
+
+        // get any (content) errors encountered by the task so far.
+        virtual bitflag<Error> GetErrors() const
+        {
+            return bitflag<Error>();
+        }
 
     protected:
     private:

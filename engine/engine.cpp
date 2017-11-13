@@ -1148,20 +1148,17 @@ public:
             if (act->has_exception())
                 act->rethrow();
 
-            if (auto* dec = dynamic_cast<DecodeJob*>(act.get()))
-            {
-                const auto err = dec->GetErrors();
-                if (err.test(DecodeJob::Error::CrcMismatch))
-                    ui_.error.set(ui::TaskDesc::Errors::Damaged);
-                if (err.test(DecodeJob::Error::SizeMismatch))
-                    ui_.error.set(ui::TaskDesc::Errors::Damaged);
-            }
-
             std::vector<std::unique_ptr<action>> actions;
             std::unique_ptr<ui::Update> update;
 
             task_->Complete(*act, actions);
             act.reset();
+
+            const auto err = task_->GetErrors();
+            if (err.test(Task::Error::CrcMismatch))
+                ui_.error.set(ui::TaskDesc::Errors::Damaged);
+            if (err.test(Task::Error::SizeMismatch))
+                ui_.error.set(ui::TaskDesc::Errors::Damaged);
 
             for (auto& a : actions)
                 do_action(state, std::move(a));

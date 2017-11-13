@@ -131,6 +131,12 @@ void Download::Complete(action& act, std::vector<std::unique_ptr<action>>& next)
     if (dec == nullptr)
         return;
 
+    const auto err = dec->GetErrors();
+    if (err.test(DecodeJob::Error::CrcMismatch))
+        errors_.set(Task::Error::CrcMismatch);
+    if (err.test(DecodeJob::Error::SizeMismatch))
+        errors_.set(Task::Error::SizeMismatch);
+
     auto binary = dec->GetBinaryDataMove(); //std::move(*dec).get_binary_data();
     auto text   = dec->GetTextDataMove(); //std::move(*dec).get_text_data();
     auto name   = dec->GetBinaryName();
@@ -279,6 +285,11 @@ std::size_t Download::MaxNumActions() const
     return articles_.size() * 2;
 }
 
+bitflag<Task::Error> Download::GetErrors() const
+{
+    return errors_;
+}
+
 std::shared_ptr<datafile> Download::create_file(const std::string& name, std::size_t assumed_size)
 {
     if (name.empty())
@@ -302,6 +313,8 @@ std::shared_ptr<datafile> Download::create_file(const std::string& name, std::si
     }
     return file;
 }
+
+
 
 
 } // newsflash
