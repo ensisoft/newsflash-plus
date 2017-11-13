@@ -43,11 +43,11 @@ void unit_test_ranges()
     fs::createpath("alt.binaries.test");
 
     std::string str;
-    newsflash::session session;
+    newsflash::Session session;
     session.on_send = [&](const std::string& c) {
         str += c;
     };
-    session.enable_pipelining(true);
+    session.SetEnablePipelining(true);
 
     std::vector<std::unique_ptr<newsflash::action>> actions;
 
@@ -70,7 +70,7 @@ void unit_test_ranges()
 
         cmd = u.CreateCommands();
         cmd->SubmitDataCommands(session);
-        session.send_next();
+        session.SendNext();
         BOOST_REQUIRE(str == "XOVER 501-1500\r\nXOVER 1-500\r\n");
 
     }
@@ -111,7 +111,7 @@ void unit_test_ranges()
 
         cmd = u.CreateCommands();
         cmd->SubmitDataCommands(session);
-        session.send_next();
+        session.SendNext();
         BOOST_REQUIRE(str == "XOVER 2049-3048\r\nXOVER 3049-3052\r\n");
 
     }
@@ -135,7 +135,7 @@ void unit_test_ranges()
 
         cmd = u.CreateCommands();
         cmd->SubmitDataCommands(session);
-        session.send_next();
+        session.SendNext();
         BOOST_REQUIRE(str == "XOVER 348-1044\r\n");
     }
 

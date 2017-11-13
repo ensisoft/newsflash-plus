@@ -40,32 +40,32 @@ void unit_test_bodylist()
         nf::CmdList list(std::move(m));
 
         std::string command;
-        nf::session session;
+        nf::Session session;
         session.on_send = [&](const std::string& cmd) {
             command = cmd;
         };
 
         BOOST_REQUIRE(list.SubmitConfigureCommand(0, session));
-        session.send_next();
+        session.SendNext();
         BOOST_REQUIRE(command == "GROUP alt.binaries.foo\r\n");
 
         {
             nf::buffer recv(1024);
             nf::buffer conf;
             recv.append("411 no such group\r\n");
-            session.recv_next(recv, conf);
+            session.RecvNext(recv, conf);
             BOOST_REQUIRE(!list.ReceiveConfigureBuffer(0, std::move(conf)));
         }
 
         BOOST_REQUIRE(list.SubmitConfigureCommand(1, session));
-        session.send_next();
+        session.SendNext();
         BOOST_REQUIRE(command == "GROUP alt.binaries.bar\r\n");
 
         {
             nf::buffer recv(1024);
             nf::buffer conf;
             recv.append("411 no such group\r\n");
-            session.recv_next(recv, conf);
+            session.RecvNext(recv, conf);
             BOOST_REQUIRE(!list.ReceiveConfigureBuffer(1, std::move(conf)));
         }
 
@@ -82,7 +82,7 @@ void unit_test_bodylist()
         nf::CmdList list(std::move(m));
 
         std::string command;
-        nf::session session;
+        nf::Session session;
         session.on_send = [&](const std::string& cmd) {
             command += cmd;
         };
@@ -91,24 +91,24 @@ void unit_test_bodylist()
         // configure
         {
             list.SubmitConfigureCommand(0, session);
-            session.send_next();
+            session.SendNext();
 
             nf::buffer recv(1024);
             nf::buffer conf;
             recv.append("211 4 1 4 alt.binaries.foo group succesfully selected\r\n");
 
-            session.recv_next(recv, conf);
+            session.RecvNext(recv, conf);
             BOOST_REQUIRE(list.ReceiveConfigureBuffer(0, std::move(conf)));
         }
 
         command = "";
 
-        session.enable_pipelining(true);
+        session.SetEnablePipelining(true);
 
         // send data commands
         {
             list.SubmitDataCommands(session);
-            session.send_next();
+            session.SendNext();
             BOOST_REQUIRE(command == "BODY 123\r\nBODY 234\r\nBODY 345\r\n");
 
             nf::buffer recv(1024);
@@ -117,13 +117,13 @@ void unit_test_bodylist()
                 "222 body follows\r\nhello\r\n.\r\n"
                 "420 no article with that message\r\n");
 
-            session.recv_next(recv, body1);
+            session.RecvNext(recv, body1);
             list.ReceiveDataBuffer(std::move(body1));
 
-            session.recv_next(recv, body2);
+            session.RecvNext(recv, body2);
             list.ReceiveDataBuffer(std::move(body2));
 
-            session.recv_next(recv, body3);
+            session.RecvNext(recv, body3);
             list.ReceiveDataBuffer(std::move(body3));
 
             const auto& buffers = list.GetBuffers();
@@ -154,15 +154,15 @@ void unit_test_refill()
     nf::CmdList list(std::move(m));
 
     std::string command;
-    nf::session session;
+    nf::Session session;
     session.on_send = [&](const std::string& cmd) {
         command += cmd;
     };
 
-    session.enable_pipelining(true);
+    session.SetEnablePipelining(true);
 
     list.SubmitDataCommands(session);
-    session.send_next();
+    session.SendNext();
     BOOST_REQUIRE(command == "BODY 1\r\nBODY 2\r\nBODY 3\r\nBODY 4\r\n");
 
     nf::buffer recv(1024);
@@ -174,10 +174,10 @@ void unit_test_refill()
                 "foo\r\n.\r\n"
                 "420 no article with that message\r\n"
                 "420 no article with that message\r\n");
-    session.recv_next(recv, b1);
-    session.recv_next(recv, b2);
-    session.recv_next(recv, b3);
-    session.recv_next(recv, b4);
+    session.RecvNext(recv, b1);
+    session.RecvNext(recv, b2);
+    session.RecvNext(recv, b3);
+    session.RecvNext(recv, b4);
 
     list.ReceiveDataBuffer(std::move(b1));
     list.ReceiveDataBuffer(std::move(b2));
@@ -196,7 +196,7 @@ void unit_test_refill()
 
     command = "";
     list.SubmitDataCommands(session);
-    session.send_next();
+    session.SendNext();
     BOOST_REQUIRE(command == "BODY 3\r\nBODY 4\r\n");
 
     recv.clear();
@@ -205,8 +205,8 @@ void unit_test_refill()
                 "420 no article with that message dmca\r\n");
     b3 = nf::buffer();
     b4 = nf::buffer();
-    session.recv_next(recv, b3);
-    session.recv_next(recv, b4);
+    session.RecvNext(recv, b3);
+    session.RecvNext(recv, b4);
 
     list.ReceiveDataBuffer(std::move(b3));
     list.ReceiveDataBuffer(std::move(b4));
@@ -231,14 +231,14 @@ void unit_test_listing()
     nf::CmdList listing(nf::CmdList::Listing{});
 
     std::string command;
-    nf::session session;
+    nf::Session session;
     session.on_send = [&](const std::string& cmd) {
         command = cmd;
     };
 
     listing.SubmitDataCommands(session);
 
-    session.send_next();
+    session.SendNext();
     BOOST_REQUIRE(command == "LIST\r\n");
 
     nf::buffer i(1024);
@@ -247,7 +247,7 @@ void unit_test_listing()
         "alt.binaries.foo 1 0 y\r\n"
         "alt.binaries.bar 2 1 n\r\n"
         ".\r\n");
-    session.recv_next(i, o);
+    session.RecvNext(i, o);
     BOOST_REQUIRE(o.content_status() == nf::buffer::status::success);
 
     listing.ReceiveDataBuffer(std::move(o));
@@ -265,7 +265,7 @@ void unit_test_groupinfo()
         nf::CmdList list(nf::CmdList::GroupInfo{"alt.binaries.foo"});
 
         std::string command;
-        nf::session session;
+        nf::Session session;
         session.on_send = [&](const std::string& cmd) {
             command = cmd;
         };
@@ -273,7 +273,7 @@ void unit_test_groupinfo()
         BOOST_REQUIRE(list.NeedsToConfigure() == false);
 
         list.SubmitDataCommands(session);
-        session.send_next();
+        session.SendNext();
 
         BOOST_REQUIRE(command == "GROUP alt.binaries.foo\r\n");
 
@@ -281,7 +281,7 @@ void unit_test_groupinfo()
         nf::buffer o(64);
         i.append("211 3 0 2 alt.binaries.foo\r\n");
 
-        session.recv_next(i, o);
+        session.RecvNext(i, o);
         BOOST_REQUIRE(o.content_status() == nf::buffer::status::success);
 
         list.ReceiveDataBuffer(std::move(o));
@@ -296,19 +296,19 @@ void unit_test_groupinfo()
         nf::CmdList list(nf::CmdList::GroupInfo{"alt.binaries.foo"});
 
         std::string command;
-        nf::session session;
+        nf::Session session;
         session.on_send = [&](const std::string& cmd) {
             command = cmd;
         };
 
         list.SubmitDataCommands(session);
 
-        session.send_next();
+        session.SendNext();
 
         nf::buffer i(64);
         nf::buffer o(64);
         i.append("411 no such newsgroup\r\n");
-        session.recv_next(i, o);
+        session.RecvNext(i, o);
 
         list.ReceiveDataBuffer(std::move(o));
 

@@ -47,14 +47,14 @@ void unit_test_create_cmds()
     std::size_t cmd_number = 0;
 
     nf::Download download({"alt.binaries.foobar"}, articles, "", "test");
-    nf::session session;
+    nf::Session session;
     session.on_send = [&](const std::string& cmd) {
         BOOST_REQUIRE(cmd == "BODY " +
             boost::lexical_cast<std::string>(cmd_number) + "\r\n");
         ++cmd_number;
     };
 
-    session.enable_pipelining(true);
+    session.SetEnablePipelining(true);
 
     for (;;)
     {
@@ -63,7 +63,7 @@ void unit_test_create_cmds()
             break;
 
         cmds->SubmitDataCommands(session);
-        session.send_next();
+        session.SendNext();
     }
     BOOST_REQUIRE(cmd_number == articles.size());
 
@@ -74,7 +74,7 @@ void unit_test_decode_yenc()
     delete_file("1489406.jpg");
 
     nf::Download download({"alt.binaries.foobar"}, {"1", "2", "3"}, "", "test");
-    nf::session session;
+    nf::Session session;
     session.on_send = [&](const std::string&) {};
 
     auto cmdlist = download.CreateCommands();
@@ -114,7 +114,7 @@ void unit_test_decode_yenc_bug_32()
     delete_file("02252012paul-10w(WallPaperByPaul)[1280X800].jpg");
 
     nf::Download download({"alt.binaries.wallpaper"}, {"1", "2"}, "", "test");
-    nf::session session;
+    nf::Session session;
     session.on_send = [&](const std::string&) {};
 
     auto cmdlist = download.CreateCommands();
@@ -152,7 +152,7 @@ void unit_test_decode_uuencode()
     delete_file("1489406.jpg");
 
     nf::Download download({"alt.binaries.foobar"}, {"1", "2", "3"}, "", "test");
-    nf::session session;
+    nf::Session session;
     session.on_send = [&](const std::string&) {};
 
     auto cmdlist = download.CreateCommands();
@@ -212,7 +212,7 @@ void unit_test_decode_from_files()
     settings.discard_text_content = true;
     settings.overwrite_existing_files = true;
     download.Configure(settings);
-    nf::session ses;
+    nf::Session ses;
     ses.on_send = [&](const std::string&) {};
 
     for (std::size_t i=0; i<articles.size();)

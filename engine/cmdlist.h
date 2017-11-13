@@ -102,7 +102,7 @@ namespace newsflash
         }
 
         // try the ith step to configure the session state
-        bool SubmitConfigureCommand(std::size_t i, session& ses)
+        bool SubmitConfigureCommand(std::size_t i, Session& ses)
         {
             if (i == groups_.size())
                 return false;
@@ -110,7 +110,7 @@ namespace newsflash
             // try the ith group in the list of newsgroups that are supposed
             // to carry the articles. we stop after being able to succesfully
             // select whatever group comes first.
-            ses.change_group(groups_[i]);
+            ses.ChangeGroup(groups_[i]);
             return true;
         }
 
@@ -129,16 +129,16 @@ namespace newsflash
         }
 
         // submit the data transfer commands as a single batch.
-        void SubmitDataCommands(session& ses)
+        void SubmitDataCommands(Session& ses)
         {
             if (cmdtype_ == Type::Listing)
             {
-                ses.retrieve_list();
+                ses.RetrieveList();
             }
             else if (cmdtype_ == Type::GroupInfo)
             {
                 assert(!groups_.empty());
-                ses.retrieve_group_info(groups_[0]);
+                ses.RetrieveGroupInfo(groups_[0]);
             }
             else
             {
@@ -149,9 +149,9 @@ namespace newsflash
                         continue;
 
                     if (cmdtype_ == Type::Article)
-                        ses.retrieve_article(commands_[i]);
+                        ses.RetrieveArticle(commands_[i]);
                     else if (cmdtype_ == Type::Header)
-                        ses.retrieve_headers(commands_[i]);
+                        ses.RetrieveHeaders(commands_[i]);
 
                     if (i < buffers_.size())
                         buffers_[i].clear();

@@ -20,7 +20,7 @@
 
 #pragma once
 
-#include <newsflash/config.h>
+#include "newsflash/config.h"
 
 #include <functional>
 #include <string>
@@ -38,44 +38,44 @@ namespace newsflash
     // session pipeline. thus the client should call parse_next repeatedly
     // while there are pending commands in the session and fill the input
     // buffer with more data between calls to parse_next
-    class session
+    class Session
     {
     public:
-        enum class error {
-            none,
+        enum class Error {
+            None,
 
             // incorrect protocol, maybe the other end is not NNTP?
-            protocol,
+            Protocol,
 
             // possibly incorrect username/password pair
-            authentication_rejected,
+            AuthenticationRejected,
 
             // possibly out of quota
-            no_permission
+            NoPermission
         };
 
-        enum class state {
+        enum class State {
             // initial state
-            none,
+            None,
 
             // session is initializing with initial greeting etc.
-            init,
+            Init,
 
             // session is authenticating
-            authenticate,
+            Authenticate,
 
             // session is ready and there are no pending commands
-            ready,
+            Ready,
 
             // session is performing data transfer
             // such as getting article data, overview data or group (listing) data
-            transfer,
+            Transfer,
 
             // session is quitting
-            quitting,
+            Quitting,
 
             // an error has occurred. see error enum for details
-            error
+            Error
         };
 
         // called when session wants to send data
@@ -84,43 +84,43 @@ namespace newsflash
         // called when session wants to authenticate
         std::function<void (std::string& user, std::string& pass)> on_auth;
 
-        session();
-       ~session();
+        Session();
+       ~Session();
 
         // reset session state to none
-        void reset();
+        void Reset();
 
         // start new session. this prepares the session pipeline
         // with initial session start commands.
-        void start(bool authenticate_immediately = false);
+        void Start(bool authenticate_immediately = false);
 
         // quit the session. prepares a quit command
-        void quit();
+        void Quit();
 
         // request to change the currently selected newsgroup to the new group
-        void change_group(std::string name);
+        void ChangeGroup(const std::string& name);
 
         // retrive group information. the result will be a groupinfo buffer
         // with high and low water marks for article numbers.
-        void retrieve_group_info(std::string name);
+        void RetrieveGroupInfo(const std::string& name);
 
         // retrieve the article identified by the given messageid.
         // the result will be an article buffer with content carrying
         // the article body.
-        void retrieve_article(std::string messageid);
+        void RetrieveArticle(const std::string& messageid);
 
         // retrieve the headers in the specified range [start - end]
-        void retrieve_headers(std::string range);
+        void RetrieveHeaders(const std::string& range);
 
         // retrieve newsgroup listing
-        void retrieve_list();
+        void RetrieveList();
 
         // do a ping to keep the session alive.
-        void ping();
+        void Ping();
 
         // send next queued command.
         // returns true if next command was sent otherwise false.
-        bool send_next();
+        bool SendNext();
 
         // parse the buff for input data and try to complete
         // currently pending session command.
@@ -131,33 +131,33 @@ namespace newsflash
         // into the given out buffer.
         // otherwise if the current command could not be completed
         // the function returns false.
-        bool recv_next(buffer& buff, buffer& out);
+        bool RecvNext(buffer& buff, buffer& out);
 
         // clear pending commands.
-        void clear();
+        void Clear();
 
         // returns true if there are pending commands. i.e.
         // more calls to parse_next are required to complete
         // the session state changes.
-        bool pending() const;
+        bool HasPending() const;
 
         // turn on/off command pipelining where applicable.
-        void enable_pipelining(bool on_off);
+        void SetEnablePipelining(bool on_off);
 
         // turn on/off header compression.
-        void enable_compression(bool on_off);
+        void SetEnableCompression(bool on_off);
 
         // get current error
-        error get_error() const;
+        Error GetError() const;
 
         // get current state
-        state get_state() const;
+        State GetState() const;
 
         // true if server supports zlib compression
-        bool has_gzip_compress() const;
+        bool HasGzipCompress() const;
 
         // true if server supports xzver i.e. compressed headers.
-        bool has_xzver() const;
+        bool HasXzver() const;
 
     private:
         struct impl;

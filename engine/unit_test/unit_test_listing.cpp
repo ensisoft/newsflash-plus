@@ -64,7 +64,7 @@ void unit_test_success()
 
     std::string cmd;
 
-    newsflash::session session;
+    newsflash::Session session;
     session.on_send = [&](const std::string& c) {
         cmd = c;
     };
@@ -77,8 +77,8 @@ void unit_test_success()
     BOOST_REQUIRE(cmds->GetType() == newsflash::CmdList::Type::Listing);
 
     cmds->SubmitDataCommands(session);
-    session.send_next();
-    session.recv_next(i, o);
+    session.SendNext();
+    session.RecvNext(i, o);
 
     cmds->ReceiveDataBuffer(std::move(o));
 

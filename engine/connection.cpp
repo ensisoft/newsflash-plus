@@ -18,16 +18,19 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <newsflash/config.h>
-#include <newsflash/warnpush.h>
+#include "newsflash/config.h"
+
+#include "newsflash/warnpush.h"
 #  include <boost/random/mersenne_twister.hpp>
-#include <newsflash/warnpop.h>
+#include "newsflash/warnpop.h"
+
 #include <thread>
 #include <mutex>
 #include <fstream>
 #include <cassert>
 #include <atomic>
 #include <map>
+
 #include "connection.h"
 #include "tcpsocket.h"
 #include "sslsocket.h"
@@ -76,7 +79,7 @@ struct connection::impl {
     std::uint32_t addr = 0;
     std::atomic<std::uint64_t> bytes;
     std::unique_ptr<class socket> socket;
-    std::unique_ptr<class session> session;
+    std::unique_ptr<Session> session;
     std::unique_ptr<event> cancel;
     bool ssl = true;
     bool pipelining = false;
@@ -216,7 +219,7 @@ class connection::initialize : public action
 public:
     initialize(std::shared_ptr<impl> s) : state_(s)
     {
-        state_->session.reset(new session);
+        state_->session.reset(new Session);
 
         // there was a lambda here before but the lambda took the state
         // object by a shared_ptr and created a circular depedency.
@@ -229,8 +232,8 @@ public:
         state_->session->on_send = std::bind(&impl::do_send, state_.get(),
             std::placeholders::_1);
 
-        state_->session->enable_pipelining(s->pipelining);
-        state_->session->enable_compression(s->compression);
+        state_->session->SetEnablePipelining(s->pipelining);
+        state_->session->SetEnableCompression(s->compression);
     }
     virtual std::string describe() const override
     {
@@ -250,7 +253,7 @@ public:
         auto& cancel  = state_->cancel;
 
         // begin new session
-        session->start(state_->authenticate_immediately);
+        session->Start(state_->authenticate_immediately);
 
         newsflash::buffer buff(1024);
         newsflash::buffer temp;
@@ -258,7 +261,7 @@ public:
         // while there are pending commands in the session we read
         // data from the socket into the buffer and then feed the buffer
         // into the session to update the session state.
-        while (session->send_next())
+        while (session->SendNext())
         {
             do
             {
@@ -281,17 +284,17 @@ public:
                 // commit
                 buff.append(bytes);
             }
-            while (!session->recv_next(buff, temp));
+            while (!session->RecvNext(buff, temp));
         }
 
         // check for errors
-        const auto err = session->get_error();
+        const auto err = session->GetError();
 
-        if (err == session::error::authentication_rejected)
+        if (err == Session::Error::AuthenticationRejected)
             throw exception(connection::error::authentication_rejected, "authentication rejected");
-        else if (err == session::error::no_permission)
+        else if (err == Session::Error::NoPermission)
             throw exception(connection::error::no_permission, "no permission");
-        else if (err == session::error::protocol)
+        else if (err == Session::Error::Protocol)
             throw exception(connection::error::protocol, "protocol error");
 
         LOG_I("NNTP Session ready");
@@ -346,14 +349,14 @@ public:
                 if (!cmdlist->SubmitConfigureCommand(i, *session))
                     break;
 
-                if (!session->pending()) {
+                if (!session->HasPending()) {
                     configure_success = true;
                     break;
                 }
 
                 newsflash::buffer config(KB(1));
 
-                while (session->send_next())
+                while (session->SendNext())
                 {
                     do
                     {
@@ -370,15 +373,15 @@ public:
 
                         recvbuf.append(bytes);
                     }
-                    while (!session->recv_next(recvbuf, config));
+                    while (!session->RecvNext(recvbuf, config));
                 }
 
-                const auto err = session->get_error();
-                if (err == session::error::authentication_rejected)
+                const auto err = session->GetError();
+                if (err == Session::Error::AuthenticationRejected)
                     throw exception(connection::error::authentication_rejected, "authentication rejected");
-                else if (err == session::error::no_permission)
+                else if (err == Session::Error::NoPermission)
                     throw exception(connection::error::no_permission, "no permission");
-                else if (err == session::error::protocol)
+                else if (err == Session::Error::Protocol)
                     throw exception(connection::error::protocol, "protocol error");
 
                 if (cmdlist->ReceiveConfigureBuffer(i, std::move(config)))
@@ -414,11 +417,11 @@ public:
 
         std::uint64_t accum = 0;
 
-        while (session->pending())
+        while (session->HasPending())
         {
             newsflash::buffer content(MB(4));
 
-            session->send_next();
+            session->SendNext();
             do
             {
                 auto canceled = cancel->wait();
@@ -465,13 +468,13 @@ public:
                 state_->bytes += bytes;
                 total_bytes_ += bytes;
             }
-            while (!session->recv_next(recvbuf, content));
+            while (!session->RecvNext(recvbuf, content));
 
             content_bytes_ += content.content_length();
 
             // todo: is this oK? (in case when quota finishes..??)
-            const auto err = session->get_error();
-            if (err != session::error::none)
+            const auto err = session->GetError();
+            if (err != Session::Error::None)
                 throw exception(connection::error::no_permission, "no permission");
 
             cmdlist->ReceiveDataBuffer(std::move(content));
@@ -487,7 +490,7 @@ public:
                 if (state_->pipelining)
                     throw exception(connection::error::pipeline_reset, "pipeline reset");
 
-                session->clear();
+                session->Clear();
                 return;
             }
         }
@@ -537,13 +540,13 @@ public:
         // if the connection is disconnecting while there are pending
         // transactions in the session we're just simply going to close the socket
         // and not perform a clean protocol shutdown.
-        if (!session->pending())
+        if (!session->HasPending())
         {
             newsflash::buffer buff(64);
             newsflash::buffer temp;
 
-            session->quit();
-            session->send_next();
+            session->Quit();
+            session->SendNext();
             do
             {
             // wait for data, if no response then khtx bye whatever, we're done anyway
@@ -561,7 +564,7 @@ public:
                 }
                 buff.append(bytes);
             }
-            while (!session->recv_next(buff, temp));
+            while (!session->RecvNext(buff, temp));
         }
 
         socket->close();
@@ -595,10 +598,10 @@ public:
         newsflash::buffer buff(64);
         newsflash::buffer temp;
 
-        session->ping();
-        while (session->pending())
+        session->Ping();
+        while (session->HasPending())
         {
-            session->send_next();
+            session->SendNext();
             do
             {
                 auto received = socket->wait(true, false);
@@ -611,7 +614,7 @@ public:
 
                 buff.append(bytes);
             }
-            while (!session->recv_next(buff, temp));
+            while (!session->RecvNext(buff, temp));
         }
     }
 

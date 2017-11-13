@@ -18,8 +18,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <newsflash/config.h>
-#include <zlib/zlib.h>
+#include "newsflash/config.h"
+
+#include "newsflash/warnpush.h"
+#  include <zlib/zlib.h>
+#include "newsflash/warnpop.h"
+
 #include "session.h"
 #include "buffer.h"
 #include "nntp.h"
@@ -31,7 +35,7 @@
 namespace newsflash
 {
 
-struct session::impl {
+struct Session::impl {
     bool has_gzip = false;
     bool has_xzver = false;
     bool has_modereader = false;
@@ -42,12 +46,12 @@ struct session::impl {
     std::string user;
     std::string pass;
     std::string group;
-    session::error error = session::error::none;
-    session::state state = session::state::none;
+    Session::Error error = Session::Error::None;
+    Session::State state = Session::State::None;
 };
 
 // command encapsulates a request/response transaction.
-class session::command
+class Session::command
 {
 public:
     virtual ~command() = default;
@@ -59,7 +63,7 @@ public:
     virtual bool can_pipeline() const = 0;
 
     // get the state represented by this command
-    virtual session::state state() const = 0;
+    virtual Session::State state() const = 0;
 
     // get the nntp command string
     virtual std::string str() const = 0;
@@ -69,10 +73,10 @@ private:
 
 
 // read initial greeting from the server
-class session::welcome : public session::command
+class Session::welcome : public Session::command
 {
 public:
-    virtual bool parse(buffer& buff, buffer& out, session::impl& st) override
+    virtual bool parse(buffer& buff, buffer& out, Session::impl& st) override
     {
         const auto len = nntp::find_response(buff.head(), buff.size());
         if (len == 0)
@@ -89,8 +93,8 @@ public:
     virtual bool can_pipeline() const override
     { return false; }
 
-    virtual session::state state() const override
-    { return session::state::init; }
+    virtual Session::State state() const override
+    { return Session::State::Init; }
 
     virtual std::string str() const override
     { return ""; }
@@ -98,10 +102,10 @@ private:
 };
 
 // query server for supported capabilities
-class session::getcaps : public session::command
+class Session::getcaps : public Session::command
 {
 public:
-    virtual bool parse(buffer& buff, buffer& out, session::impl& st) override
+    virtual bool parse(buffer& buff, buffer& out, Session::impl& st) override
     {
         const auto res = nntp::find_response(buff.head(), buff.size());
         if (res == 0)
@@ -145,8 +149,8 @@ public:
     virtual bool can_pipeline() const override
     { return false; }
 
-    virtual session::state state() const override
-    { return session::state::init; }
+    virtual Session::State state() const override
+    { return Session::State::Init; }
 
     virtual std::string str() const override
     { return "CAPABILITIES"; }
@@ -154,10 +158,10 @@ private:
 };
 
 // perform user authentication (username)
-class session::authuser : public session::command
+class Session::authuser : public Session::command
 {
 public:
-    authuser(std::string username) : username_(std::move(username))
+    authuser(const std::string& username) : username_(username)
     {}
 
     virtual bool parse(buffer& buff, buffer& out, impl& st) override
@@ -173,9 +177,9 @@ public:
 
         const auto code = nntp::scan_response({281, 381, 482, 502}, buff.head(), len);
         if (code == 482)
-            st.error = error::authentication_rejected;
+            st.error = Error::AuthenticationRejected;
         else if (code == 502)
-            st.error = error::no_permission;
+            st.error = Error::NoPermission;
 
         buff.clear();
         return true;
@@ -184,8 +188,8 @@ public:
     virtual bool can_pipeline() const override
     { return false; }
 
-    virtual session::state state() const override
-    { return session::state::authenticate; }
+    virtual Session::State state() const override
+    { return Session::State::Authenticate; }
 
     virtual std::string str() const override
     { return "AUTHINFO USER " + username_; }
@@ -194,10 +198,10 @@ private:
 };
 
 // perform user authenticaton (password)
-class session::authpass : public session::command
+class Session::authpass : public Session::command
 {
 public:
-    authpass(std::string password) : password_(std::move(password))
+    authpass(const std::string& password) : password_(password)
     {}
 
     virtual bool parse(buffer& buff, buffer& out, impl& st) override
@@ -208,9 +212,9 @@ public:
 
         const auto code = nntp::scan_response({281, 482, 502}, buff.head(), len);
         if (code == 482)
-            st.error = error::authentication_rejected;
+            st.error = Error::AuthenticationRejected;
         else if (code == 502)
-            st.error = error::no_permission;
+            st.error = Error::NoPermission;
 
         buff.clear();
         return true;
@@ -218,8 +222,8 @@ public:
     virtual bool can_pipeline() const override
     { return false; }
 
-    virtual session::state state() const override
-    { return session::state::authenticate; }
+    virtual Session::State state() const override
+    { return Session::State::Authenticate; }
 
     virtual std::string str() const override
     { return "AUTHINFO PASS " + password_; }
@@ -228,7 +232,7 @@ private:
 };
 
 // set mode reader for server
-class session::modereader : public session::command
+class Session::modereader : public Session::command
 {
 public:
     virtual bool parse(buffer& buff, buffer& out, impl& st) override
@@ -246,8 +250,8 @@ public:
     virtual bool can_pipeline() const override
     { return false; }
 
-    virtual session::state state() const override
-    { return session::state::init; }
+    virtual Session::State state() const override
+    { return Session::State::Init; }
 
     virtual std::string str() const override
     { return "MODE READER"; }
@@ -255,10 +259,10 @@ private:
 };
 
 // change group/store group information into data buffer
-class session::group : public session::command
+class Session::group : public Session::command
 {
 public:
-    group(std::string name) : group_(std::move(name)), count_(0), low_(0), high_(0)
+    group(const std::string& name) : group_(name)
     {}
 
     virtual bool parse(buffer& buff, buffer& out, impl& st) override
@@ -293,8 +297,8 @@ public:
     virtual bool can_pipeline() const override
     { return false; }
 
-    virtual session::state state() const override
-    { return session::state::transfer; }
+    virtual Session::State state() const override
+    { return Session::State::Transfer; }
 
     virtual std::string str() const override
     { return "GROUP " + group_; }
@@ -302,16 +306,16 @@ public:
 private:
     std::string group_;
 private:
-    std::size_t count_;
-    std::size_t low_;
-    std::size_t high_;
+    std::size_t count_ = 0;
+    std::size_t low_   = 0;
+    std::size_t high_  = 0;
 };
 
 // request article data from the server. store into output buffer
-class session::body : public session::command
+class Session::body : public Session::command
 {
 public:
-    body(std::string messageid) : messageid_(std::move(messageid))
+    body(const std::string& messageid) : messageid_(messageid)
     {}
 
     virtual bool parse(buffer& buff, buffer& out, impl& st) override
@@ -356,8 +360,8 @@ public:
     virtual bool can_pipeline() const override
     { return true; }
 
-    virtual session::state state() const override
-    { return session::state::transfer; }
+    virtual Session::State state() const override
+    { return Session::State::Transfer; }
 
     virtual std::string str() const override
     { return "BODY " + messageid_; }
@@ -366,8 +370,8 @@ private:
 };
 
 
-// quit session.
-class session::quit : public session::command
+// quit Session.
+class Session::quit : public Session::command
 {
 public:
 
@@ -384,8 +388,8 @@ public:
     virtual bool can_pipeline() const override
     { return false; }
 
-    virtual session::state state() const override
-    { return session::state::quitting; }
+    virtual Session::State state() const override
+    { return Session::State::Quitting; }
 
     virtual std::string str() const override
     { return "QUIT"; }
@@ -393,10 +397,10 @@ private:
 
 };
 
-class session::xover : public session::command
+class Session::xover : public Session::command
 {
 public:
-    xover(std::string range) : range_(std::move(range))
+    xover(const std::string& range) : range_(range)
     {}
     virtual bool parse(buffer& buff, buffer& out, impl& st) override
     {
@@ -424,8 +428,8 @@ public:
     virtual bool can_pipeline() const override
     { return true; }
 
-    virtual session::state state() const override
-    { return session::state::transfer; }
+    virtual Session::State state() const override
+    { return Session::State::Transfer; }
 
     virtual std::string str() const override
     { return "XOVER " + range_; }
@@ -433,14 +437,13 @@ private:
     std::string range_;
 };
 
-class session::xovergzip : public session::command
+class Session::xovergzip : public Session::command
 {
 public:
-    xovergzip(std::string range) : range_(std::move(range)), obytes_(0), ibytes_(0)
+    xovergzip(const std::string& range) : range_(range)
     {
         std::memset(&z_, 0, sizeof(z_));
         inflateInit(&z_);
-        inflate_done_ = false;
     }
    ~xovergzip()
     {
@@ -543,8 +546,8 @@ public:
     virtual bool can_pipeline() const override
     { return true; }
 
-    virtual session::state state() const override
-    { return session::state::transfer; }
+    virtual Session::State state() const override
+    { return Session::State::Transfer; }
 
     virtual std::string str() const override
     { return "XOVER " + range_; }
@@ -553,21 +556,18 @@ private:
     std::string range_;
 private:
     z_stream z_;
-    uLong obytes_;
-    uLong ibytes_;
+    uLong obytes_ = 0;
+    uLong ibytes_ = 0;
 private:
-    bool inflate_done_;
+    bool inflate_done_ = false;
 };
 
 
 // the LIST command obtains a valid list of newsgroups on the server
 // and information about each group (last, first and count)
-class session::list : public session::command
+class Session::list : public Session::command
 {
 public:
-    list()
-    {}
-
     virtual bool parse(buffer& buff, buffer& out, impl& st) override
     {
         const auto len = nntp::find_response(buff.head(), buff.size());
@@ -603,9 +603,9 @@ public:
     {
         return false;
     }
-    virtual session::state state() const override
+    virtual Session::State state() const override
     {
-        return session::state::transfer;
+        return Session::State::Transfer;
     }
     virtual std::string str() const override
     {
@@ -614,7 +614,7 @@ public:
 private:
 };
 
-class session::xfeature_compress_gzip : public session::command
+class Session::xfeature_compress_gzip : public Session::command
 {
 public:
     virtual bool parse(buffer& buff, buffer& out, impl& st) override
@@ -649,8 +649,8 @@ public:
     virtual bool can_pipeline() const override
     { return false; }
 
-    virtual session::state state() const override
-    { return session::state::init; }
+    virtual Session::State state() const override
+    { return Session::State::Init; }
 
     virtual std::string str() const override
     { return "XFEATURE COMPRESS GZIP"; }
@@ -659,15 +659,15 @@ private:
 
 };
 
-session::session() : state_(new impl)
+Session::Session() : state_(new impl)
 {
-    reset();
+    Reset();
 }
 
-session::~session()
+Session::~Session()
 {}
 
-void session::reset()
+void Session::Reset()
 {
     recv_.clear();
     send_.clear();
@@ -676,14 +676,14 @@ void session::reset()
     state_->has_modereader = false;
     state_->has_xzver      = false;
     state_->have_caps      = false;
-    state_->error          = error::none;
-    state_->state          = state::none;
+    state_->error          = Error::None;
+    state_->state          = State::None;
     state_->group          = "";
     state_->enable_pipelining = false;
     state_->enable_compression = false;
 }
 
-void session::start(bool authenticate_immediately)
+void Session::Start(bool authenticate_immediately)
 {
     send_.emplace_back(new welcome);
     send_.emplace_back(new getcaps);
@@ -701,54 +701,54 @@ void session::start(bool authenticate_immediately)
         send_.emplace_back(new group("alt.binaries.test"));
 }
 
-void session::quit()
+void Session::Quit()
 {
     send_.emplace_back(new class quit);
 }
 
-void session::change_group(std::string name)
+void Session::ChangeGroup(const std::string& name)
 {
     if (name == state_->group)
         return;
-    send_.emplace_back(new group(std::move(name)));
+    send_.emplace_back(new group(name));
 }
 
-void session::retrieve_group_info(std::string name)
+void Session::RetrieveGroupInfo(const std::string& name)
 {
-    send_.emplace_back(new group(std::move(name)));
+    send_.emplace_back(new group(name));
 }
 
-void session::retrieve_article(std::string messageid)
+void Session::RetrieveArticle(const std::string& messageid)
 {
-    send_.emplace_back(new body(std::move(messageid)));
+    send_.emplace_back(new body(messageid));
 }
 
-void session::retrieve_headers(std::string range)
+void Session::RetrieveHeaders(const std::string& range)
 {
     if (state_->enable_compression)
     {
-        send_.emplace_back(new xovergzip(std::move(range)));
+        send_.emplace_back(new xovergzip(range));
     }
     else
     {
-        send_.emplace_back(new xover(std::move(range)));
+        send_.emplace_back(new xover(range));
     }
 }
 
-void session::retrieve_list()
+void Session::RetrieveList()
 {
     send_.emplace_back(new list);
 }
 
-void session::ping()
+void Session::Ping()
 {
     // NNTP doesn't have a "real" ping built into it
     // so we simply send a mundane command (change group)
     // to perform some activity on the transmission line.
-    send_.emplace_back(new group("keeping.session.alive"));
+    send_.emplace_back(new group("keeping.Session.alive"));
 }
 
-bool session::send_next()
+bool Session::SendNext()
 {
     if (send_.empty())
         return false;
@@ -812,7 +812,7 @@ bool session::send_next()
 }
 
 
-bool session::recv_next(buffer& buff, buffer& out)
+bool Session::RecvNext(buffer& buff, buffer& out)
 {
     assert(!recv_.empty());
 
@@ -830,8 +830,8 @@ bool session::recv_next(buffer& buff, buffer& out)
     }
     catch (const nntp::exception& e)
     {
-        state_->state = state::error;
-        state_->error = error::protocol;
+        state_->state = State::Error;
+        state_->error = Error::Protocol;
         recv_.clear();
         send_.clear();
         return true;
@@ -843,9 +843,9 @@ bool session::recv_next(buffer& buff, buffer& out)
         LOG_W(response);
     else LOG_I(response);
 
-    if (state_->error != error::none)
+    if (state_->error != Error::None)
     {
-        state_->state = state::error;
+        state_->state = State::Error;
         recv_.clear();
         send_.clear();
         return true;
@@ -873,36 +873,36 @@ bool session::recv_next(buffer& buff, buffer& out)
         recv_.pop_front();
     }
     if (recv_.empty())
-        state_->state = state::ready;
+        state_->state = State::Ready;
 
     return true;
 }
 
-void session::clear()
+void Session::Clear()
 {
     recv_.clear();
     send_.clear();
 }
 
-bool session::pending() const
+bool Session::HasPending() const
 { return !send_.empty() || !recv_.empty(); }
 
-void session::enable_pipelining(bool on_off)
+void Session::SetEnablePipelining(bool on_off)
 { state_->enable_pipelining = on_off; }
 
-void session::enable_compression(bool on_off)
+void Session::SetEnableCompression(bool on_off)
 { state_->enable_compression = on_off; }
 
-session::error session::get_error() const
+Session::Error Session::GetError() const
 { return state_->error; }
 
-session::state session::get_state() const
+Session::State Session::GetState() const
 { return state_->state; }
 
-bool session::has_gzip_compress() const
+bool Session::HasGzipCompress() const
 { return state_->has_gzip; }
 
-bool session::has_xzver() const
+bool Session::HasXzver() const
 { return state_->has_xzver; }
 
 } // newsflash
