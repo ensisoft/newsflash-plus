@@ -754,43 +754,22 @@ public:
         ui_.path    = desc.path;
         task_       = std::move(task);
         num_actions_total_ = task_->MaxNumActions();
+        num_actions_ready_ = 0;
         LOG_I("Task ", ui_.task_id, " (", ui_.desc, ") created");
     }
 
-    TaskState(Engine::State& s, const data::Download& spec)
+    TaskState(std::unique_ptr<Task> task, const data::TaskState& state)
     {
-        ui_.task_id    = spec.task_id();
-        ui_.batch_id   = spec.batch_id();
-        ui_.account    = spec.account_id();
-        ui_.desc       = spec.desc();
-        ui_.size       = spec.size();
-        ui_.path       = spec.path();
-
-        ui::FileDownload file;
-        file.path = spec.path();
-        file.desc = spec.desc();
-        for (int i=0; i<spec.group_size(); ++i)
-            file.groups.push_back(spec.group(i));
-        for (int i=0; i<spec.article_size(); ++i)
-            file.articles.push_back(spec.article(i));
-
-        task_ = s.factory->AllocateTask(file);
-
-        auto* ptr = dynamic_cast<Download*>(task_.get());
-        for (int i=0; i<spec.file_size(); ++i)
-        {
-            const auto& data = spec.file(i);
-            const auto& path = data.filepath();
-            const auto& name = data.filename();
-            auto file = std::make_shared<datafile>(path, name,
-                data.dataname(), data.is_binary());
-            ptr->add_file(file);
-            LOG_D("Task: Continue downloading file: '", fs::joinpath(path, name), "'");
-        }
-
-        num_actions_total_ = spec.num_actions_total();
-        num_actions_ready_ = spec.num_actions_ready();
-        ui_.completion = (double)num_actions_ready_ / (double)num_actions_total_ * 100.0;
+        task_              = std::move(task);
+        num_actions_total_ = state.num_actions_total();
+        num_actions_ready_ = state.num_actions_ready();
+        ui_.task_id        = state.task_id();
+        ui_.batch_id       = state.batch_id();
+        ui_.account        = state.account_id();
+        ui_.desc           = state.desc();
+        ui_.size           = state.size();
+        ui_.path           = state.path();
+        ui_.completion     = (double)num_actions_ready_ / (double)num_actions_total_ * 100.0;
         LOG_I("Task ", ui_.task_id, "( ", ui_.desc, ") restored");
     }
 
@@ -819,40 +798,19 @@ public:
         if (ui_.state == states::Error || ui_.state == states::Complete)
             return;
 
-        // this I guess shouldn't really matter.
-        //assert(num_active_cmdlists_ == 0);
-        assert(num_active_actions_  == 0);
+        ASSERT(num_active_actions_ = 0);
+        ASSERT(locking_ == LockState::Unlocked);
 
-        if (auto* ptr = dynamic_cast<Download*>(task_.get()))
-        {
-            auto* spec = list.add_download();
-            spec->set_account_id(ui_.account);
-            spec->set_batch_id(ui_.batch_id);
-            spec->set_task_id(ui_.task_id);
-            spec->set_desc(ui_.desc);
-            spec->set_size(ui_.size);
-            spec->set_path(ptr->path());
-            spec->set_num_actions_total(num_actions_total_);
-            spec->set_num_actions_ready(num_actions_ready_);
-
-            const auto& grouplist = ptr->groups();
-            const auto& articles  = ptr->articles();
-            for (const auto& g : grouplist)
-                spec->add_group(g);
-
-            for (const auto& a : articles)
-                spec->add_article(a);
-
-            const auto& files = ptr->files();
-            for (const auto& f : files)
-            {
-                auto* file_data = spec->add_file();
-                file_data->set_filename(f->filename());
-                file_data->set_filepath(f->filepath());
-                file_data->set_dataname(f->binary_name());
-                file_data->set_is_binary(f->is_binary());
-            }
-        }
+        auto* ptr = list.add_tasks();
+        ptr->set_account_id(ui_.account);
+        ptr->set_batch_id(ui_.batch_id);
+        ptr->set_task_id(ui_.task_id);
+        ptr->set_desc(ui_.desc);
+        ptr->set_size(ui_.size);
+        ptr->set_path(ui_.path);
+        ptr->set_num_actions_total(num_actions_total_);
+        ptr->set_num_actions_ready(num_actions_ready_);
+        task_->Pack(*ptr);
     }
 
     void kill(Engine::State& state)
@@ -1980,6 +1938,16 @@ Engine::Engine() : state_(new State)
         {
             return std::make_unique<Listing>();
         }
+        std::unique_ptr<Task> AllocateTask(const data::TaskState& data) override
+        {
+            std::unique_ptr<Task> ret;
+            if (data.has_download())
+            {
+                ret.reset(new Download);
+            }
+            return ret;
+        }
+
         std::unique_ptr<connection> AllocateConnection()
         {
             return std::make_unique<connection>();
@@ -1993,9 +1961,9 @@ Engine::Engine() : state_(new State)
                 result->account = desc.account;
                 result->desc    = desc.desc;
 
-                const auto& files = ptr->files();
-                for (const auto& file : files)
+                for (size_t i=0; i<ptr->GetNumFiles(); ++i)
                 {
+                    const auto* file = ptr->GetFile(i);
                     ui::FileResult::File f;
                     f.damaged = desc.error.any_bit();
                     f.binary  = file->is_binary();
@@ -2536,21 +2504,20 @@ void Engine::LoadSession(const std::string& file)
     settings.discard_text_content = state_->discard_text;
     settings.overwrite_existing_files = state_->overwrite_existing;
 
-    for (int i=0; i<list.download_size();++i)
+    for (int i=0; i<list.tasks_size(); ++i)
     {
-        const auto& data = list.download(i);
-        std::unique_ptr<TaskState> task(new TaskState(*state_, data));
-        task->configure(settings);
-
-        assert(task->is_valid());
-
-        state_->tasks.push_back(std::move(task));
+        const auto& state_data = list.tasks(i);
+        std::unique_ptr<Task> task(state_->factory->AllocateTask(state_data));
+        task->Load(state_data);
+        std::unique_ptr<TaskState> state(new TaskState(std::move(task), state_data));
+        state->configure(settings);
+        state_->tasks.push_back(std::move(state));
     }
 
     state_->oid = list.current_id();
     state_->bytes_queued = list.bytes_queued();
     state_->bytes_ready  = list.bytes_ready();
-    if (list.download_size() == 0)
+    if (list.tasks_size() == 0)
         state_->oid = 1;
 }
 

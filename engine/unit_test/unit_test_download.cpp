@@ -24,10 +24,12 @@
 #  include <boost/test/minimal.hpp>
 #  include <boost/lexical_cast.hpp>
 #  include <boost/filesystem.hpp>
+#  include "engine/engine.pb.h"
 #include "newsflash/warnpop.h"
 
 #include <thread>
 
+#include "engine/datafile.h"
 #include "engine/download.h"
 #include "engine/action.h"
 #include "engine/session.h"
@@ -238,7 +240,136 @@ void unit_test_decode_from_files()
     }
 }
 
+void unit_test_pack_load()
+{
+    delete_file("1489406.jpg");
 
+    // nothing downloaded yet.
+    {
+
+        data::TaskList list;
+        auto* ptr = list.add_tasks();
+
+        // pack
+        {
+            nf::Download download(
+                {"alt.binaries.foo","alt.binaries.bar"},
+                {"1", "2", "3"},
+                "",
+                "test");
+
+            download.Pack(*ptr);
+        }
+
+        // load
+        {
+            nf::Download download;
+            download.Load(*ptr);
+
+            BOOST_REQUIRE(download.GetNumArticles() == 3);
+            BOOST_REQUIRE(download.GetNumGroups() == 2);
+            BOOST_REQUIRE(download.GetGroup(0) == "alt.binaries.foo");
+            BOOST_REQUIRE(download.GetGroup(1) == "alt.binaries.bar");
+            BOOST_REQUIRE(download.GetArticle(0) == "1");
+            BOOST_REQUIRE(download.GetArticle(1) == "2");
+            BOOST_REQUIRE(download.GetArticle(2) == "3");
+        }
+    }
+
+    // load and unpack while we have a file that we need to continue
+    // working on
+    {
+        data::TaskList list;
+        auto* ptr = list.add_tasks();
+
+        nf::Session session;
+        session.on_send = [&](const std::string&) {};
+
+        // pack
+        {
+            nf::Download download(
+                {"alt.binaries.foo","alt.binaries.bar"},
+                {"1", "2", "3"},
+                "",
+                "test");
+
+            auto cmdlist = download.CreateCommands();
+            cmdlist->SubmitDataCommands(session);
+            cmdlist->ReceiveDataBuffer(read_file_buffer("test_data/1489406.jpg-001.ync"));
+
+            std::vector<std::unique_ptr<nf::action>> actions1;
+            std::vector<std::unique_ptr<nf::action>> actions2;
+            download.Complete(*cmdlist, actions1);
+
+            while (!actions1.empty())
+            {
+                for (auto& it : actions1)
+                {
+                    it->perform();
+                    download.Complete(*it, actions2);
+                }
+                actions1 = std::move(actions2);
+                actions2 = std::vector<std::unique_ptr<nf::action>>();
+            }
+
+            BOOST_REQUIRE(download.GetNumFiles() == 1);
+            BOOST_REQUIRE(download.GetFile(0)->filename() == "1489406.jpg");
+            BOOST_REQUIRE(download.GetFile(0)->binary_name() == "1489406.jpg");
+            BOOST_REQUIRE(download.GetFile(0)->is_binary() == true);
+
+            download.Pack(*ptr);
+        }
+
+        // load
+        {
+            nf::Download download;
+            download.Load(*ptr);
+
+            BOOST_REQUIRE(download.GetNumArticles() == 2);
+            BOOST_REQUIRE(download.GetNumGroups() == 2);
+            BOOST_REQUIRE(download.GetNumFiles() == 1);
+            BOOST_REQUIRE(download.GetGroup(0) == "alt.binaries.foo");
+            BOOST_REQUIRE(download.GetGroup(1) == "alt.binaries.bar");
+            BOOST_REQUIRE(download.GetArticle(0) == "2");
+            BOOST_REQUIRE(download.GetArticle(1) == "3");
+            BOOST_REQUIRE(download.GetFile(0)->filename() == "1489406.jpg");
+            BOOST_REQUIRE(download.GetFile(0)->binary_name() == "1489406.jpg");
+            BOOST_REQUIRE(download.GetFile(0)->is_binary() == true);
+
+            auto cmdlist = download.CreateCommands();
+            cmdlist->SubmitDataCommands(session);
+            cmdlist->ReceiveDataBuffer(read_file_buffer("test_data/1489406.jpg-002.ync"));
+            cmdlist->ReceiveDataBuffer(read_file_buffer("test_data/1489406.jpg-003.ync"));
+
+            std::vector<std::unique_ptr<nf::action>> actions1;
+            std::vector<std::unique_ptr<nf::action>> actions2;
+            download.Complete(*cmdlist, actions1);
+
+            while (!actions1.empty())
+            {
+                for (auto& it : actions1)
+                {
+                    it->perform();
+                    download.Complete(*it, actions2);
+                }
+                actions1 = std::move(actions2);
+                actions2 = std::vector<std::unique_ptr<nf::action>>();
+            }
+
+            download.Commit();
+
+            const auto& jpg = read_file_contents("1489406.jpg");
+            const auto& ref = read_file_contents("test_data/1489406.jpg");
+            BOOST_REQUIRE(jpg == ref);
+        }
+    }
+    delete_file("1489406.jpg");
+}
+
+void unit_test_pack_load_with_stash()
+{
+    // todo:
+}
 
 int test_main(int, char*[])
 {
@@ -248,5 +379,7 @@ int test_main(int, char*[])
     unit_test_decode_uuencode();
     unit_test_decode_text();
     unit_test_decode_from_files();
+    unit_test_pack_load();
+    unit_test_pack_load_with_stash();
     return 0;
 }

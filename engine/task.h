@@ -29,6 +29,10 @@
 #include "action.h"
 #include "bitflag.h"
 
+namespace data {
+    class TaskState;
+}
+
 namespace newsflash
 {
     class CmdList;
@@ -105,6 +109,14 @@ namespace newsflash
         {
             return bitflag<Error>();
         }
+
+        // pack the task state into protobuf tasklist
+        virtual void Pack(data::TaskState& data) const
+        {}
+
+        // unpack the task state from the protobuf task
+        virtual void Load(const data::TaskState& data)
+        {}
 
     protected:
     private:

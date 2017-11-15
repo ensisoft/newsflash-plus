@@ -34,6 +34,10 @@
 #include "ui/result.h"
 #include "ui/update.h"
 
+namespace data {
+    class TaskState;
+}
+
 namespace newsflash
 {
     class connection;
@@ -49,6 +53,7 @@ namespace newsflash
             virtual std::unique_ptr<Task> AllocateTask(const ui::FileDownload& file) = 0;
             virtual std::unique_ptr<Task> AllocateTask(const ui::HeaderDownload& download) = 0;
             virtual std::unique_ptr<Task> AllocateTask(const ui::GroupListDownload& list) = 0;
+            virtual std::unique_ptr<Task> AllocateTask(const data::TaskState& data) = 0;
             virtual std::unique_ptr<connection> AllocateConnection() = 0;
             virtual std::unique_ptr<ui::Result> MakeResult(const Task& task, const ui::TaskDesc& desc) const = 0;
         private:

@@ -42,7 +42,7 @@ namespace newsflash
             const std::vector<std::string>& articles,
             const std::string& path,
             const std::string& name);
-       ~Download();
+        Download();
 
         // Task implementation
         virtual std::shared_ptr<CmdList> CreateCommands() override;
@@ -56,26 +56,24 @@ namespace newsflash
         virtual bool HasCommands() const override;
         virtual std::size_t MaxNumActions() const override;
         virtual bitflag<Error> GetErrors() const override;
+        virtual void Pack(data::TaskState& data) const override;
+        virtual void Load(const data::TaskState& data) override;
 
-        void add_file(std::shared_ptr<datafile> file)
-        {
-            files_.push_back(file);
-        }
+        // allow read only accessors mostly for convenience in
+        //  unit testing.
+        std::string GetGroup(size_t i) const
+        { return groups_[i]; }
+        std::string GetArticle(size_t i) const
+        { return articles_[i]; }
+        std::size_t GetNumArticles() const
+        { return articles_.size(); }
+        std::size_t GetNumGroups() const
+        { return groups_.size(); }
 
-        const
-        std::vector<std::shared_ptr<datafile>>& files() const
-        { return files_; }
-
-        const
-        std::vector<std::string>& groups() const
-        { return groups_; }
-
-        const
-        std::vector<std::string>& articles() const
-        { return articles_; }
-
-        const std::string& path() const
-        { return path_; }
+        std::size_t GetNumFiles() const
+        { return files_.size(); }
+        const datafile* GetFile(size_t i) const
+        { return files_[i].get(); }
 
     private:
         std::shared_ptr<datafile> create_file(const std::string& name, std::size_t assumed_size);

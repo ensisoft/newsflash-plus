@@ -20,10 +20,15 @@
 
 #include "newsflash/config.h"
 
+#include "newsflash/warnpush.h"
+#  include "engine.pb.h"
+#include "newsflash/warnpop.h"
+
 #include <functional>
 #include <algorithm>
 #include <atomic>
 
+#include "assert.h"
 #include "download.h"
 #include "buffer.h"
 #include "filesys.h"
@@ -51,7 +56,7 @@ Download::Download(
     decode_jobs_  = articles_.size();
 }
 
-Download::~Download()
+Download::Download()
 {}
 
 std::shared_ptr<CmdList> Download::CreateCommands()
@@ -290,6 +295,85 @@ bitflag<Task::Error> Download::GetErrors() const
     return errors_;
 }
 
+void Download::Pack(data::TaskState& data) const
+{
+    auto* ptr = data.mutable_download();
+
+    ptr->set_num_decode_jobs(decode_jobs_);
+
+    for (const auto& group : groups_)
+    {
+        ptr->add_group(group);
+    }
+    for (const auto& article : articles_)
+    {
+        ptr->add_article(article);
+    }
+    for (const auto& file : files_)
+    {
+        auto* file_data = ptr->add_file();
+        file_data->set_filename(file->filename());
+        file_data->set_filepath(file->filepath());
+        file_data->set_dataname(file->binary_name());
+        file_data->set_is_binary(file->is_binary());
+    }
+
+    for (size_t i=0; i<stash_.size(); ++i)
+    {
+        const auto& stash = *stash_[i];
+        std::string str;
+        std::copy(std::begin(stash), std::end(stash),
+            std::back_inserter(str));
+        auto* stash_data = ptr->add_stash();
+        stash_data->set_sequence(i);
+        stash_data->set_data(str);
+    }
+}
+
+void Download::Load(const data::TaskState& data)
+{
+    ASSERT(data.has_download());
+
+    const auto& ptr = data.download();
+
+    decode_jobs_ = ptr.num_decode_jobs();
+
+    // load the groups and article / message names
+    for (int i=0; i<ptr.group_size(); ++i)
+        groups_.push_back(ptr.group(i));
+    for (int i=0; i<ptr.article_size(); ++i)
+        articles_.push_back(ptr.article(i));
+
+    // load the files that we're working on.
+    for (int i=0; i<ptr.file_size(); ++i)
+    {
+        const auto& file_data = ptr.file(i);
+        const auto& path = file_data.filepath();
+        const auto& name = file_data.filename();
+        const auto& binary_name = file_data.dataname();
+        const bool is_binary = file_data.is_binary();
+        auto file = std::make_shared<datafile>(path, name, binary_name,
+            is_binary);
+        files_.push_back(file);
+    }
+
+    if (ptr.stash_size())
+    {
+        stash_.resize(decode_jobs_);
+    }
+
+    for (int i=0; i<ptr.stash_size(); ++i)
+    {
+        const auto& stash_data = ptr.stash(i);
+        const auto index = stash_data.sequence();
+        const auto& str  = stash_data.data();
+        std::unique_ptr<stash> s(new stash);
+        std::copy(std::begin(str), std::end(str),
+            std::back_inserter(*s));
+        stash_[index] = std::move(s);
+    }
+}
+
 std::shared_ptr<datafile> Download::create_file(const std::string& name, std::size_t assumed_size)
 {
     if (name.empty())
@@ -313,9 +397,6 @@ std::shared_ptr<datafile> Download::create_file(const std::string& name, std::si
     }
     return file;
 }
-
-
-
 
 } // newsflash
 
