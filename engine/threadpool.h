@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -47,6 +47,12 @@ namespace newsflash
         // precondition: num_threads > 0
         threadpool(std::size_t num_threads);
        ~threadpool();
+
+        void submit(std::unique_ptr<action> act)
+        {
+            submit(act.get());
+            act.release();
+        }
 
         // submit an action to the threadpool for any thread to execute specific
         // the thread affinity constraint set on the action.

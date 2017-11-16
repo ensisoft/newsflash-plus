@@ -258,6 +258,7 @@ struct Engine::State {
     void enqueue(const TaskState& t, std::shared_ptr<CmdList> cmd);
     void on_cmdlist_done(const connection::cmdlist_completion_data&);
     void on_update_progress(const HeaderTask::Progress&, std::size_t account);
+    void on_write_done(const ContentTask::WriteComplete&);
 };
 
 
@@ -1819,6 +1820,11 @@ void Engine::State::on_update_progress(const HeaderTask::Progress& progress, std
     on_header_update_callback(update);
 }
 
+void Engine::State::on_write_done(const ContentTask::WriteComplete& write)
+{
+    bytes_written += write.size;
+}
+
 Engine::BatchState* Engine::State::find_batch(std::size_t id)
 {
     auto it = std::find_if(std::begin(batches), std::end(batches),
@@ -1966,10 +1972,10 @@ Engine::Engine() : state_(new State)
                     const auto* file = ptr->GetFile(i);
                     ui::FileResult::File f;
                     f.damaged = desc.error.any_bit();
-                    f.binary  = file->is_binary();
-                    f.name    = file->filename();
-                    f.path    = file->filepath();
-                    f.size    = file->size();
+                    f.binary  = file->IsBinary();
+                    f.name    = file->GetFileName();
+                    f.path    = file->GetFilePath();
+                    f.size    = file->GetFileSize();
                     result->files.push_back(std::move(f));
                 }
                 ret = std::move(result);
@@ -2154,6 +2160,11 @@ Engine::TaskId Engine::DownloadFiles(const ui::FileBatchDownload& batch, bool pr
         const auto taskid = state_->oid++;
 
         std::unique_ptr<Task> task(state_->factory->AllocateTask(file));
+        if (auto* ptr = dynamic_cast<ContentTask*>(task.get()))
+        {
+            ptr->SetWriteCallback(std::bind(&Engine::State::on_write_done, state_.get(),
+                std::placeholders::_1));
+        }
         std::unique_ptr<TaskState> state(new TaskState(taskid, std::move(task), file));
         state->configure(settings);
         state->set_account(batch.account);
@@ -2246,14 +2257,6 @@ bool Engine::Pump()
             break;
 
         action->run_completion_callbacks();
-
-        // todo: refactor this away.
-        if (auto* w = dynamic_cast<class datafile::write*>(action.get()))
-        {
-            auto bytes = w->get_write_size();
-            if (!w->has_exception())
-                state_->bytes_written += bytes;
-        }
 
         const auto id = action->get_owner();
         auto it = std::find_if(std::begin(state_->conns), std::end(state_->conns),
@@ -2509,6 +2512,11 @@ void Engine::LoadSession(const std::string& file)
         const auto& state_data = list.tasks(i);
         std::unique_ptr<Task> task(state_->factory->AllocateTask(state_data));
         task->Load(state_data);
+        if (auto* ptr = dynamic_cast<ContentTask*>(task.get()))
+        {
+            ptr->SetWriteCallback(std::bind(&Engine::State::on_write_done, state_.get(),
+                std::placeholders::_1));
+        }
         std::unique_ptr<TaskState> state(new TaskState(std::move(task), state_data));
         state->configure(settings);
         state_->tasks.push_back(std::move(state));

@@ -98,7 +98,7 @@ void Download::Cancel()
     // operations to no-ops and then delete any files we created
     // once all the operations go away.
     for (auto& f : files_)
-        f->discard_on_close();
+        f->DiscardOnClose();
 
     files_.clear();
 }
@@ -107,14 +107,14 @@ void Download::Commit()
 {
     if (!stash_.empty())
     {
-        std::shared_ptr<datafile> file = create_file(stash_name_, 0);
+        std::shared_ptr<DataFile> file = create_file(stash_name_, 0);
 
         // collect the stuff from the stash.
         for (auto& p : stash_)
         {
             if (!p) continue;
 
-            std::unique_ptr<action> write(new datafile::write(0, std::move(*p), file));
+            std::unique_ptr<action> write = file->Write(0, std::move(*p), callback_);
             write->perform();
             p.reset();
         }
@@ -125,7 +125,7 @@ void Download::Commit()
     // open anymore needlessly. yet we keep the file objects around
     // since our other data is stored there.
     for (auto& f : files_)
-        f->close();
+        f->Close();
 }
 
 void Download::Complete(action& act, std::vector<std::unique_ptr<action>>& next)
@@ -157,8 +157,8 @@ void Download::Complete(action& act, std::vector<std::unique_ptr<action>>& next)
                 dec->GetBinaryOffset() + 1 : 0;
             const auto size = dec->GetBinarySize();
 
-            std::shared_ptr<datafile> file = create_file(name, size);
-            std::unique_ptr<action> write(new datafile::write(offset, std::move(binary), file));
+            std::shared_ptr<DataFile> file = create_file(name, size);
+            std::unique_ptr<action> write  = file->Write(offset, std::move(binary), callback_);
             next.push_back(std::move(write));
         }
         else if (enc == DecodeJob::Encoding::UUEncode)
@@ -205,8 +205,8 @@ void Download::Complete(action& act, std::vector<std::unique_ptr<action>>& next)
             }
             else
             {
-                std::shared_ptr<datafile> file= create_file(name, 0);
-                std::unique_ptr<action> write(new datafile::write(0, std::move(binary), file));
+                std::shared_ptr<DataFile> file = create_file(name, 0);
+                std::unique_ptr<action> write  = file->Write(0, std::move(binary), callback_);
                 next.push_back(std::move(write));
             }
         }
@@ -219,21 +219,21 @@ void Download::Complete(action& act, std::vector<std::unique_ptr<action>>& next)
     // process the text data unless it's to be discarded.
     if (!text.empty() && !discardtext_)
     {
-        std::shared_ptr<datafile> file;
+        std::shared_ptr<DataFile> file;
 
         auto it = std::find_if(std::begin(files_), std::end(files_),
-            [=](const std::shared_ptr<datafile>& f) {
-                return !f->is_binary();
+            [=](const std::shared_ptr<DataFile>& f) {
+                return !f->IsBinary();
             });
 
         if (it == std::end(files_))
         {
-            file = std::make_shared<datafile>(path_, name_ + ".txt", 0, false, overwrite_);
+            file = std::make_shared<DataFile>(path_, name_ + ".txt", 0, false, overwrite_);
             files_.push_back(file);
         }
         else file = *it;
 
-        std::unique_ptr<action> write(new datafile::write(0, std::move(text), file));
+        std::unique_ptr<action> write = file->Write(0, std::move(text), callback_);
         next.push_back(std::move(write));
     }
 }
@@ -312,18 +312,17 @@ void Download::Pack(data::TaskState& data) const
     for (const auto& file : files_)
     {
         auto* file_data = ptr->add_file();
-        file_data->set_filename(file->filename());
-        file_data->set_filepath(file->filepath());
-        file_data->set_dataname(file->binary_name());
-        file_data->set_is_binary(file->is_binary());
+        file_data->set_filename(file->GetFileName());
+        file_data->set_filepath(file->GetFilePath());
+        file_data->set_dataname(file->GetBinaryName());
+        file_data->set_is_binary(file->IsBinary());
     }
 
     for (size_t i=0; i<stash_.size(); ++i)
     {
         const auto& stash = *stash_[i];
         std::string str;
-        std::copy(std::begin(stash), std::end(stash),
-            std::back_inserter(str));
+        std::copy(std::begin(stash), std::end(stash), std::back_inserter(str));
         auto* stash_data = ptr->add_stash();
         stash_data->set_sequence(i);
         stash_data->set_data(str);
@@ -352,8 +351,7 @@ void Download::Load(const data::TaskState& data)
         const auto& name = file_data.filename();
         const auto& binary_name = file_data.dataname();
         const bool is_binary = file_data.is_binary();
-        auto file = std::make_shared<datafile>(path, name, binary_name,
-            is_binary);
+        auto file = std::make_shared<DataFile>(path, name, binary_name, is_binary);
         files_.push_back(file);
     }
 
@@ -368,32 +366,31 @@ void Download::Load(const data::TaskState& data)
         const auto index = stash_data.sequence();
         const auto& str  = stash_data.data();
         std::unique_ptr<stash> s(new stash);
-        std::copy(std::begin(str), std::end(str),
-            std::back_inserter(*s));
+        std::copy(std::begin(str), std::end(str), std::back_inserter(*s));
         stash_[index] = std::move(s);
     }
 }
 
-std::shared_ptr<datafile> Download::create_file(const std::string& name, std::size_t assumed_size)
+std::shared_ptr<DataFile> Download::create_file(const std::string& name, std::size_t assumed_size)
 {
     if (name.empty())
         throw std::runtime_error("binary has no name");
 
-    std::shared_ptr<datafile> file;
+    std::shared_ptr<DataFile> file;
 
     auto it = std::find_if(std::begin(files_), std::end(files_),
-        [=](const std::shared_ptr<datafile>& f) {
-            return f->is_binary() && f->binary_name() == name;
+        [=](const std::shared_ptr<DataFile>& f) {
+            return f->IsBinary() && f->GetBinaryName() == name;
         });
     if (it == std::end(files_))
     {
-        file = std::make_shared<datafile>(path_, name, assumed_size, true, overwrite_);
+        file = std::make_shared<DataFile>(path_, name, assumed_size, true, overwrite_);
         files_.push_back(file);
     }
     else
     {
         file = *it;
-        assert(file->is_open());
+        assert(file->IsOpen());
     }
     return file;
 }

@@ -313,9 +313,9 @@ void unit_test_pack_load()
             }
 
             BOOST_REQUIRE(download.GetNumFiles() == 1);
-            BOOST_REQUIRE(download.GetFile(0)->filename() == "1489406.jpg");
-            BOOST_REQUIRE(download.GetFile(0)->binary_name() == "1489406.jpg");
-            BOOST_REQUIRE(download.GetFile(0)->is_binary() == true);
+            BOOST_REQUIRE(download.GetFile(0)->GetFileName() == "1489406.jpg");
+            BOOST_REQUIRE(download.GetFile(0)->GetBinaryName() == "1489406.jpg");
+            BOOST_REQUIRE(download.GetFile(0)->IsBinary() == true);
 
             download.Pack(*ptr);
         }
@@ -332,9 +332,9 @@ void unit_test_pack_load()
             BOOST_REQUIRE(download.GetGroup(1) == "alt.binaries.bar");
             BOOST_REQUIRE(download.GetArticle(0) == "2");
             BOOST_REQUIRE(download.GetArticle(1) == "3");
-            BOOST_REQUIRE(download.GetFile(0)->filename() == "1489406.jpg");
-            BOOST_REQUIRE(download.GetFile(0)->binary_name() == "1489406.jpg");
-            BOOST_REQUIRE(download.GetFile(0)->is_binary() == true);
+            BOOST_REQUIRE(download.GetFile(0)->GetFileName() == "1489406.jpg");
+            BOOST_REQUIRE(download.GetFile(0)->GetBinaryName() == "1489406.jpg");
+            BOOST_REQUIRE(download.GetFile(0)->IsBinary() == true);
 
             auto cmdlist = download.CreateCommands();
             cmdlist->SubmitDataCommands(session);

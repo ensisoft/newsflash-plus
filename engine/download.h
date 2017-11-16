@@ -27,15 +27,24 @@
 #include <vector>
 
 #include "bitflag.h"
+#include "datafile.h"
 #include "task.h"
 
 namespace newsflash
 {
-    class datafile;
-    class decode;
+    class DecodeJob;
+
+    class ContentTask : public Task
+    {
+    public:
+        using WriteComplete = DataFile::WriteComplete;
+        using OnWriteDone = DataFile::OnWriteDone;
+
+        virtual void SetWriteCallback(const OnWriteDone& callback) = 0;
+    };
 
     // extract encoded content from the buffers
-    class Download : public Task
+    class Download : public ContentTask
     {
     public:
         Download(const std::vector<std::string>& groups,
@@ -59,6 +68,10 @@ namespace newsflash
         virtual void Pack(data::TaskState& data) const override;
         virtual void Load(const data::TaskState& data) override;
 
+        // ContentTask implementation
+        virtual void SetWriteCallback(const OnWriteDone& callback) override
+        { callback_ = callback; }
+
         // allow read only accessors mostly for convenience in
         //  unit testing.
         std::string GetGroup(size_t i) const
@@ -72,18 +85,18 @@ namespace newsflash
 
         std::size_t GetNumFiles() const
         { return files_.size(); }
-        const datafile* GetFile(size_t i) const
+        const DataFile* GetFile(size_t i) const
         { return files_[i].get(); }
 
     private:
-        std::shared_ptr<datafile> create_file(const std::string& name, std::size_t assumed_size);
+        std::shared_ptr<DataFile> create_file(const std::string& name, std::size_t assumed_size);
 
     private:
         using stash = std::vector<char>;
 
         std::vector<std::string> groups_;
         std::vector<std::string> articles_;
-        std::vector<std::shared_ptr<datafile>> files_;
+        std::vector<std::shared_ptr<DataFile>> files_;
         std::vector<std::unique_ptr<stash>> stash_;
         std::string path_;
         std::string name_;
@@ -94,6 +107,8 @@ namespace newsflash
     private:
         bool overwrite_ = false;
         bool discardtext_ = false;
+    private:
+        OnWriteDone callback_;
     };
 
 } // newsflash
