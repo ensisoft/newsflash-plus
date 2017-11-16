@@ -392,7 +392,7 @@ void Engine::loadSession()
     }
     catch (const std::exception& e)
     {
-        WARN("Failed to load previous session: '%1'", e.what());
+        ERROR("Failed to load previous session: '%1'", e.what());
     }
 }
 
