@@ -256,7 +256,7 @@ struct Engine::State {
 
     void execute();
     void enqueue(const TaskState& t, std::shared_ptr<CmdList> cmd);
-    void on_cmdlist_done(const connection::cmdlist_completion_data&);
+    void on_cmdlist_done(const Connection::CmdListCompletionData&);
     void on_update_progress(const HeaderTask::Progress&, std::size_t account);
     void on_write_done(const ContentTask::WriteComplete&);
 };
@@ -304,7 +304,7 @@ public:
     {
         const auto& acc = state.find_account(aid);
 
-        connection::spec spec;
+        Connection::HostDetails spec;
         spec.pthrottle = &state.ratecontrol;
         spec.password  = acc.password;
         spec.username  = acc.username;
@@ -332,10 +332,10 @@ public:
         ui_.account = aid;
 
         conn_ = state.factory->AllocateConnection();
-        conn_->set_callback(std::bind(&Engine::State::on_cmdlist_done, &state,
+        conn_->SetCallback(std::bind(&Engine::State::on_cmdlist_done, &state,
             std::placeholders::_1));
 
-        do_action(state, conn_->connect(spec));
+        do_action(state, conn_->Connect(spec));
 
         LOG_I("Connection ", ui_.id, " ", ui_.host, ":", ui_.port);
     }
@@ -350,7 +350,7 @@ public:
 
         const auto& acc = state.find_account(dna.ui_.account);
 
-        connection::spec spec;
+        Connection::HostDetails spec;
         spec.pthrottle = &state.ratecontrol;
         spec.password  = acc.password;
         spec.username  = acc.username;
@@ -361,10 +361,10 @@ public:
         spec.use_ssl  = dna.ui_.secure;
 
         conn_ = state.factory->AllocateConnection();
-        conn_->set_callback(std::bind(&Engine::State::on_cmdlist_done, &state,
+        conn_->SetCallback(std::bind(&Engine::State::on_cmdlist_done, &state,
             std::placeholders::_1));
 
-        do_action(state, conn_->connect(spec));
+        do_action(state, conn_->Connect(spec));
 
         LOG_I("Connection ", ui_.id, " ", ui_.host, ":", ui_.port);
     }
@@ -379,7 +379,7 @@ public:
         if (ui_.state == states::Connected)
         {
             if (--ticks_to_ping_ == 0)
-                do_action(state, conn_->ping());
+                do_action(state, conn_->Ping());
 
         }
         else if (ui_.state == states::Error)
@@ -396,16 +396,16 @@ public:
             ui_.state = states::Disconnected;
 
             const auto& acc = state.find_account(ui_.account);
-            connection::spec s;
-            s.pthrottle = &state.ratecontrol;
-            s.password = acc.password;
-            s.username = acc.username;
-            s.use_ssl  = ui_.secure;
-            s.hostname = ui_.host;
-            s.hostport = ui_.port;
-            s.enable_compression = acc.enable_compression;
-            s.enable_pipelining  = acc.enable_pipelining;
-            do_action(state, conn_->connect(s));
+            Connection::HostDetails host;
+            host.pthrottle = &state.ratecontrol;
+            host.password = acc.password;
+            host.username = acc.username;
+            host.use_ssl  = ui_.secure;
+            host.hostname = ui_.host;
+            host.hostport = ui_.port;
+            host.enable_compression = acc.enable_compression;
+            host.enable_pipelining  = acc.enable_pipelining;
+            do_action(state, conn_->Connect(host));
         }
     }
 
@@ -414,10 +414,10 @@ public:
         if (ui_.state == states::Disconnected)
             return;
 
-        conn_->cancel();
+        conn_->Cancel();
         if (ui_.state == states::Connected || ui_.state == states::Active)
         {
-            do_action(state, conn_->disconnect());
+            do_action(state, conn_->Disconnect());
         }
 
         state.threads->detach(thread_);
@@ -430,7 +430,7 @@ public:
         ui_.state = states::Active;
         LOG_I("Connection ", ui_.id, " executing cmdlist ", cmds->GetCmdListId());
 
-        do_action(state, conn_->execute(cmds, tid));
+        do_action(state, conn_->Execute(cmds, tid));
     }
 
     void update(ui::Connection& ui)
@@ -443,10 +443,10 @@ public:
             // read then the bps value cannot be valid but has become
             // stale since the connection has not ready any data. (i.e. it's stalled)
             const auto bytes_before  = ui_.down;
-            const auto bytes_current = conn_->num_bytes_transferred();
+            const auto bytes_current = conn_->GetNumBytesTransferred();
             if (bytes_current != bytes_before)
             {
-                ui_.bps  = ui.bps  = conn_->current_speed_bps();
+                ui_.bps  = ui.bps  = conn_->GetCurrentSpeedBps();
                 ui_.down = ui.down = bytes_current;
             }
         }
@@ -463,52 +463,52 @@ public:
 
         try
         {
-            auto next  = conn_->complete(std::move(act));
-            auto state = conn_->get_state();
-            if (state == connection::state::error)
+            auto next  = conn_->Complete(std::move(act));
+            auto state = conn_->GetState();
+            if (state == Connection::State::Error)
             {
-                const auto err = conn_->get_error();
+                const auto err = conn_->GetError();
                 ui_.state = states::Error;
                 ui_.bps   = 0;
                 ui_.task  = 0;
                 ui_.desc  = "";
                 switch (err)
                 {
-                    case connection::error::none:
+                    case Connection::Error::None:
                         ASSERT("???");
                         break;
-                    case connection::error::resolve:
+                    case Connection::Error::Resolve:
                         ui_.error = ui::Connection::Errors::Resolve;
                         break;
-                    case connection::error::refused:
+                    case Connection::Error::Refused:
                         ui_.error = ui::Connection::Errors::Refused;
                         break;
-                    case connection::error::authentication_rejected:
+                    case Connection::Error::AuthenticationRejected:
                         ui_.error = ui::Connection::Errors::AuthenticationRejected;
                         break;
-                    case connection::error::no_permission:
+                    case Connection::Error::PermissionDenied:
                         ui_.error = ui::Connection::Errors::NoPermission;
                         break;
-                    case connection::error::network:
+                    case Connection::Error::Network:
                         ui_.error = ui::Connection::Errors::Network;
                         break;
-                    case connection::error::timeout:
+                    case Connection::Error::Timeout:
                         ui_.error = ui::Connection::Errors::Timeout;
                         break;
-                    case connection::error::pipeline_reset:
+                    case Connection::Error::PipelineReset:
                         ui_.error = ui::Connection::Errors::Other;
                         break;
-                    case connection::error::reset:
+                    case Connection::Error::Reset:
                         ui_.error = ui::Connection::Errors::Other;
                         break;
-                    case connection::error::protocol:
+                    case Connection::Error::Protocol:
                         ui_.error = ui::Connection::Errors::Other;
                         break;
                 }
             }
             else
             {
-                if (state != connection::state::active)
+                if (state != Connection::State::Active)
                 {
                     ui_.bps  = 0;
                     ui_.task = 0;
@@ -516,25 +516,25 @@ public:
                 }
                 switch (state)
                 {
-                    case connection::state::disconnected:
+                    case Connection::State::Disconnected:
                         ui_.state = states::Disconnected;
                         break;
-                    case connection::state::resolving:
+                    case Connection::State::Resolving:
                         ui_.state = states::Resolving;
                         break;
-                    case connection::state::connecting:
+                    case Connection::State::Connecting:
                         ui_.state = states::Connecting;
                         break;
-                    case connection::state::initializing:
+                    case Connection::State::Initializing:
                         ui_.state = states::Initializing;
                         break;
-                    case connection::state::connected:
+                    case Connection::State::Connected:
                         ui_.state = states::Connected;
                         break;
-                    case connection::state::active:
+                    case Connection::State::Active:
                         ui_.state = states::Active;
                         break;
-                    case connection::state::error:
+                    case Connection::State::Error:
                         ASSERT("???"); // handled above.
                         break;
 
@@ -599,10 +599,10 @@ public:
     { return ui_.host; }
 
     std::string username() const
-    { return conn_->username(); }
+    { return conn_->GetUsername(); }
 
     std::string password() const
-    { return conn_->password(); }
+    { return conn_->GetPassword(); }
 
 private:
     void do_action(Engine::State& state, std::unique_ptr<action> a)
@@ -618,7 +618,7 @@ private:
 
 private:
     ui::Connection ui_;
-    std::unique_ptr<connection> conn_;
+    std::unique_ptr<Connection> conn_;
     std::shared_ptr<logger> logger_;
     threadpool::worker* thread_;
     unsigned ticks_to_ping_ = 0;
@@ -633,7 +633,7 @@ class Engine::ConnTestState
 public:
     ConnTestState(const ui::Account& account, std::size_t id, Engine::State& state)
     {
-        connection::spec spec;
+        Connection::HostDetails spec;
         spec.pthrottle = nullptr;
         spec.password = account.password;
         spec.username = account.username;
@@ -657,7 +657,7 @@ public:
         success_ = false;
         finished_ = false;
 
-        do_action(state, conn_.connect(spec));
+        do_action(state, conn_.Connect(spec));
     }
     void on_action(Engine::State& state, std::unique_ptr<action> act)
     {
@@ -686,7 +686,7 @@ public:
             return;
         }
 
-        auto next = conn_.complete(std::move(act));
+        auto next = conn_.Complete(std::move(act));
         if (next)
         {
             do_action(state, std::move(next));
@@ -718,7 +718,7 @@ private:
     }
 
 private:
-    connection conn_;
+    ConnectionImpl conn_;
     std::shared_ptr<buffer_logger> logger_;
     std::size_t id_;
 private:
@@ -1728,7 +1728,7 @@ private:
     bool filebatch_;
 };
 
-void Engine::State::on_cmdlist_done(const connection::cmdlist_completion_data& completion)
+void Engine::State::on_cmdlist_done(const Connection::CmdListCompletionData& completion)
 {
     auto cmds = completion.cmds;
     const auto tid   = completion.task_owner_id;
@@ -1954,9 +1954,9 @@ Engine::Engine() : state_(new State)
             return ret;
         }
 
-        std::unique_ptr<connection> AllocateConnection()
+        std::unique_ptr<Connection> AllocateConnection()
         {
-            return std::make_unique<connection>();
+            return std::make_unique<ConnectionImpl>();
         }
         std::unique_ptr<ui::Result> MakeResult(const Task& task, const ui::TaskDesc& desc) const override
         {

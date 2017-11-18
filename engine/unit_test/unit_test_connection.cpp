@@ -46,11 +46,11 @@ namespace nf = newsflash;
 
 void test_initial_state()
 {
-    nf::connection conn;
-    BOOST_REQUIRE(conn.num_bytes_transferred() == 0);
-    BOOST_REQUIRE(conn.current_speed_bps() == 0);
-    BOOST_REQUIRE(conn.get_state() == nf::connection::state::disconnected);
-    BOOST_REQUIRE(conn.get_error() == nf::connection::error::none);
+    nf::ConnectionImpl conn;
+    BOOST_REQUIRE(conn.GetNumBytesTransferred() == 0);
+    BOOST_REQUIRE(conn.GetCurrentSpeedBps() == 0);
+    BOOST_REQUIRE(conn.GetState() == nf::Connection::State::Disconnected);
+    BOOST_REQUIRE(conn.GetError() == nf::Connection::Error::None);
 }
 
 void test_connect()
@@ -61,84 +61,84 @@ void test_connect()
 
     // resolve fails
     {
-        nf::connection::spec s;
+        nf::Connection::HostDetails s;
         s.hostname = "foobar";
         s.hostport = 1818;
         s.use_ssl  = false;
 
-        nf::connection conn;
+        nf::ConnectionImpl conn;
 
-        act = conn.connect(s);
+        act = conn.Connect(s);
         act->set_log(log);
         act->perform();
-        BOOST_REQUIRE(conn.get_state() == nf::connection::state::resolving);
-        act = conn.complete(std::move(act));
-        BOOST_REQUIRE(conn.get_state() == nf::connection::state::error);
-        BOOST_REQUIRE(conn.get_error() == nf::connection::error::resolve);
+        BOOST_REQUIRE(conn.GetState() == nf::Connection::State::Resolving);
+        act = conn.Complete(std::move(act));
+        BOOST_REQUIRE(conn.GetState() == nf::Connection::State::Error);
+        BOOST_REQUIRE(conn.GetError() == nf::Connection::Error::Resolve);
     }
 
-    // connect fails
+    // Connect fails
     {
-        nf::connection::spec s;
+        nf::Connection::HostDetails s;
         s.hostname = "localhost";
         s.hostport = 1818;
         s.use_ssl  = false;
 
-        nf::connection conn;
+        nf::ConnectionImpl conn;
 
         // resolve
-        act = conn.connect(s);
+        act = conn.Connect(s);
         act->set_log(log);
         act->perform();
 
-        // connect
-        act = conn.complete(std::move(act));
-        BOOST_REQUIRE(conn.get_state() == nf::connection::state::connecting);
-        BOOST_REQUIRE(conn.get_error() == nf::connection::error::none);
+        // Connect
+        act = conn.Complete(std::move(act));
+        BOOST_REQUIRE(conn.GetState() == nf::Connection::State::Connecting);
+        BOOST_REQUIRE(conn.GetError() == nf::Connection::Error::None);
         act->set_log(log);
         act->perform();
 
         // initialize
-        act = conn.complete(std::move(act));
-        BOOST_REQUIRE(conn.get_state() == nf::connection::state::error);
-        BOOST_REQUIRE(conn.get_error() == nf::connection::error::refused);
+        act = conn.Complete(std::move(act));
+        BOOST_REQUIRE(conn.GetState() == nf::Connection::State::Error);
+        BOOST_REQUIRE(conn.GetError() == nf::Connection::Error::Refused);
     }
 
     // nntp init fails
     {
 
-        nf::connection::spec s;
+        nf::Connection::HostDetails s;
         s.hostname = "www.google.com";
         s.hostport = 80;
         s.use_ssl  = false;
 
-        nf::connection conn;
+        nf::ConnectionImpl conn;
 
         // resolve
-        act = conn.connect(s);
+        act = conn.Connect(s);
         act->set_log(log);
         act->perform(); // resolve
-        act = conn.complete(std::move(act));
+        act = conn.Complete(std::move(act));
 
-        // connect
+        // Connect
         act->set_log(log);
-        act->perform(); // connect
-        act = conn.complete(std::move(act));
+        act->perform(); // Connect
+        act = conn.Complete(std::move(act));
 
         // initialize
         act->set_log(log);
         act->perform();
-        BOOST_REQUIRE(conn.get_state() == nf::connection::state::initializing);
-        BOOST_REQUIRE(conn.get_error() == nf::connection::error::none);
+        BOOST_REQUIRE(conn.GetState() == nf::Connection::State::Initializing);
+        BOOST_REQUIRE(conn.GetError() == nf::Connection::Error::None);
 
-        act = conn.complete(std::move(act));
-        BOOST_REQUIRE(conn.get_state() == nf::connection::state::error);
-        BOOST_REQUIRE(conn.get_error() == nf::connection::error::timeout);
+        act = conn.Complete(std::move(act));
+        BOOST_REQUIRE(conn.GetState() == nf::Connection::State::Error);
+        BOOST_REQUIRE(conn.GetError() == nf::Connection::Error::Timeout);
     }
 
     // authentication fails (no such user at the server)
     {
-        nf::connection::spec s;
+        nf::Connection::HostDetails s;
         s.hostname = "localhost";
         s.hostport = 1919;
         s.use_ssl  = false;
@@ -147,28 +147,28 @@ void test_connect()
         s.enable_compression = false;
         s.enable_pipelining = false;
 
-        nf::connection conn;
+        nf::ConnectionImpl conn;
 
         // resolve
-        act = conn.connect(s);
+        act = conn.Connect(s);
         act->set_log(log);
         act->perform();
-        act = conn.complete(std::move(act));
+        act = conn.Complete(std::move(act));
 
-        // connect
+        // Connect
         act->set_log(log);
         act->perform();
-        act = conn.complete(std::move(act));
+        act = conn.Complete(std::move(act));
 
         // initialize
         act->set_log(log);
         act->perform();
-        BOOST_REQUIRE(conn.get_state() == nf::connection::state::initializing);
-        BOOST_REQUIRE(conn.get_error() == nf::connection::error::none);
+        BOOST_REQUIRE(conn.GetState() == nf::Connection::State::Initializing);
+        BOOST_REQUIRE(conn.GetError() == nf::Connection::Error::None);
 
-        act = conn.complete(std::move(act));
-        BOOST_REQUIRE(conn.get_state() == nf::connection::state::error);
-        BOOST_REQUIRE(conn.get_error() == nf::connection::error::authentication_rejected);
+        act = conn.Complete(std::move(act));
+        BOOST_REQUIRE(conn.GetState() == nf::Connection::State::Error);
+        BOOST_REQUIRE(conn.GetError() == nf::Connection::Error::AuthenticationRejected);
 
     }
 
@@ -176,10 +176,9 @@ void test_connect()
     {
         // todo:
     }
-
-    // succesful connect
+    // succesful Connect
     {
-        nf::connection::spec s;
+        nf::Connection::HostDetails s;
         s.hostname = "localhost";
         s.hostport = 1919;
         s.use_ssl  = false;
@@ -189,30 +188,30 @@ void test_connect()
         s.enable_pipelining  = false;
         s.pthrottle = nullptr;
 
-        nf::connection conn;
+        nf::ConnectionImpl conn;
 
         // resolve
-        act = conn.connect(s);
+        act = conn.Connect(s);
         act->set_log(log);
         act->perform();
-        act = conn.complete(std::move(act)); // resolve
+        act = conn.Complete(std::move(act)); // resolve
 
-        // connect
+        // Connect
         act->set_log(log);
         act->perform();
-        act = conn.complete(std::move(act));
+        act = conn.Complete(std::move(act));
 
         // initialize
         act->set_log(log);
         act->perform();
-        act = conn.complete(std::move(act));
-        BOOST_REQUIRE(conn.get_state() == nf::connection::state::connected);
-        BOOST_REQUIRE(conn.get_error() == nf::connection::error::none);
+        act = conn.Complete(std::move(act));
+        BOOST_REQUIRE(conn.GetState() == nf::Connection::State::Connected);
+        BOOST_REQUIRE(conn.GetError() == nf::Connection::Error::None);
     }
 
     // disconnect
     {
-        nf::connection::spec s;
+        nf::Connection::HostDetails s;
         s.hostname = "localhost";
         s.hostport     = 1919;
         s.use_ssl  = false;
@@ -222,36 +221,36 @@ void test_connect()
         s.enable_compression = false;
         s.pthrottle = nullptr;
 
-        nf::connection conn;
+        nf::ConnectionImpl conn;
 
         // resolve
-        act = conn.connect(s);
+        act = conn.Connect(s);
         act->set_log(log);
         act->perform();
-        act = conn.complete(std::move(act));
+        act = conn.Complete(std::move(act));
 
-        // connect
+        // Connect
         act->set_log(log);
         act->perform();
-        act = conn.complete(std::move(act));
+        act = conn.Complete(std::move(act));
 
         // initialize
         act->set_log(log);
         act->perform();
-        act = conn.complete(std::move(act));
+        act = conn.Complete(std::move(act));
 
         // disconnect
-        act = conn.disconnect();
+        act = conn.Disconnect();
         act->set_log(log);
         act->perform();
-        act = conn.complete(std::move(act));
-        BOOST_REQUIRE(conn.get_state() == nf::connection::state::disconnected);
-        BOOST_REQUIRE(conn.get_error() == nf::connection::error::none);
+        act = conn.Complete(std::move(act));
+        BOOST_REQUIRE(conn.GetState() == nf::Connection::State::Disconnected);
+        BOOST_REQUIRE(conn.GetError() == nf::Connection::Error::None);
     }
 
-    // discard the connection object while connecting
+    // discard the Connection object while connecting
     {
-        nf::connection::spec s;
+        nf::Connection::HostDetails s;
         s.hostname = "localhost";
         s.hostport = 1919;
         s.use_ssl  = false;
@@ -261,16 +260,16 @@ void test_connect()
         s.enable_compression = false;
         s.pthrottle = nullptr;
 
-        std::unique_ptr<nf::connection> conn(new nf::connection);
+        std::unique_ptr<nf::Connection> conn(new nf::ConnectionImpl);
 
         // resolve.
-        act = conn->connect(s);
+        act = conn->Connect(s);
         act->set_log(log);
         act->perform();
-        act = conn->complete(std::move(act));
+        act = conn->Complete(std::move(act));
 
         act->set_log(log);
-        // for the connect action,
+        // for the Connect action,
         // spawn a new thread that executes the action the background
         // meanwhile the main thread destroys the object.
         std::thread thread([&]() {
@@ -293,7 +292,7 @@ void test_execute_success()
 
     nf::throttle throttle;
 
-    nf::connection::spec s;
+    nf::Connection::HostDetails s;
     s.hostname = "localhost";
     s.hostport = 1919;
     s.use_ssl  = false;
@@ -303,25 +302,25 @@ void test_execute_success()
     s.password  = "pass";
     s.pthrottle = &throttle;
 
-    nf::connection::cmdlist_completion_data completion;
+    nf::Connection::CmdListCompletionData completion;
 
-    nf::connection conn;
-    conn.set_callback([&](const nf::connection::cmdlist_completion_data& data) {
+    nf::ConnectionImpl conn;
+    conn.SetCallback([&](const nf::Connection::CmdListCompletionData& data) {
         completion = data;
     });
 
     // resolve
-    act = conn.connect(s);
+    act = conn.Connect(s);
     act->set_log(log);
     act->perform();
 
-    // connect
-    act = conn.complete(std::move(act));
+    // Connect
+    act = conn.Complete(std::move(act));
     act->set_log(log);
     act->perform();
 
     // initialize
-    act = conn.complete(std::move(act));
+    act = conn.Complete(std::move(act));
     act->set_log(log);
     act->perform();
 
@@ -334,13 +333,13 @@ void test_execute_success()
         auto cmds = std::make_shared<nf::CmdList>(m);
 
         // execute
-        act = conn.execute(cmds, 123);
-        BOOST_REQUIRE(conn.get_state() == nf::connection::state::active);
+        act = conn.Execute(cmds, 123);
+        BOOST_REQUIRE(conn.GetState() == nf::Connection::State::Active);
         act->perform();
         act->run_completion_callbacks();
-        act = conn.complete(std::move(act));
-        BOOST_REQUIRE(conn.get_state() == nf::connection::state::connected);
-        BOOST_REQUIRE(conn.get_error() == nf::connection::error::none);
+        act = conn.Complete(std::move(act));
+        BOOST_REQUIRE(conn.GetState() == nf::Connection::State::Connected);
+        BOOST_REQUIRE(conn.GetError() == nf::Connection::Error::None);
         BOOST_REQUIRE(!act);
 
         BOOST_REQUIRE(completion.success);
@@ -362,12 +361,12 @@ void test_execute_success()
 
         auto cmds = std::make_shared<nf::CmdList>(m);
 
-        act = conn.execute(cmds, 123);
+        act = conn.Execute(cmds, 123);
         act->perform();
         act->run_completion_callbacks();
-        act = conn.complete(std::move(act));
-        BOOST_REQUIRE(conn.get_state() == nf::connection::state::connected);
-        BOOST_REQUIRE(conn.get_error() == nf::connection::error::none);
+        act = conn.Complete(std::move(act));
+        BOOST_REQUIRE(conn.GetState() == nf::Connection::State::Connected);
+        BOOST_REQUIRE(conn.GetError() == nf::Connection::Error::None);
 
         BOOST_REQUIRE(completion.success);
         BOOST_REQUIRE(completion.cmds == cmds);

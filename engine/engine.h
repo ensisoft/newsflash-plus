@@ -40,7 +40,7 @@ namespace data {
 
 namespace newsflash
 {
-    class connection;
+    class Connection;
     class Task;
 
     class Engine
@@ -54,7 +54,7 @@ namespace newsflash
             virtual std::unique_ptr<Task> AllocateTask(const ui::HeaderDownload& download) = 0;
             virtual std::unique_ptr<Task> AllocateTask(const ui::GroupListDownload& list) = 0;
             virtual std::unique_ptr<Task> AllocateTask(const data::TaskState& data) = 0;
-            virtual std::unique_ptr<connection> AllocateConnection() = 0;
+            virtual std::unique_ptr<Connection> AllocateConnection() = 0;
             virtual std::unique_ptr<ui::Result> MakeResult(const Task& task, const ui::TaskDesc& desc) const = 0;
         private:
         };

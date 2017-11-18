@@ -48,18 +48,18 @@ namespace {
     class exception : public std::exception
     {
     public:
-        exception(newsflash::connection::error err, const std::string& what)
+        exception(newsflash::Connection::Error err, const std::string& what)
             : error_(err), what_(std::move(what))
         {}
 
         const char* what() const NOTHROW // noexcept
         { return what_.c_str(); }
 
-        newsflash::connection::error error() const NOTHROW // noexcept
+        newsflash::Connection::Error error() const NOTHROW // noexcept
         { return error_; }
 
     private:
-        newsflash::connection::error error_;
+        newsflash::Connection::Error error_ = newsflash::Connection::Error::None;
         std::string what_;
     };
 }
@@ -70,7 +70,7 @@ namespace newsflash
 std::map<std::string, std::uint32_t> g_addr_cache;
 std::mutex g_addr_cache_mutex;
 
-struct connection::impl {
+struct ConnectionImpl::impl {
     std::mutex  mutex;
     std::string username;
     std::string password;
@@ -89,15 +89,15 @@ struct connection::impl {
     throttle* pthrottle = nullptr;
     boost::random::mt19937 random; // std::rand is not MT safe.
 
-    connection::state state = state::disconnected;
-    connection::error error = error::none;
+    ConnectionImpl::State state = State::Disconnected;
+    ConnectionImpl::Error error = Error::None;
 
-    on_cmdlist_done on_cmdlist_done_callback;
+    OnCmdlistDone on_cmdlist_done_callback;
 
     void do_auth(std::string& user, std::string& pass) const
     {
         if (username.empty() || password.empty())
-            throw exception(error::no_permission, "authentication requried but no credentials provided");
+            throw exception(Error::PermissionDenied, "authentication requried but no credentials provided");
         user = username;
         pass = password;
     }
@@ -108,7 +108,7 @@ struct connection::impl {
 };
 
 // perform host resolution
-class connection::resolve : public action
+class ConnectionImpl::resolve : public action
 {
 public:
     resolve(std::shared_ptr<impl> s) : state_(s)
@@ -141,7 +141,7 @@ public:
             if (err)
             {
                 LOG_E("Failed to resolve host (", err.value(), ") ", err.message());
-                throw exception(error::resolve, "resolve failed");
+                throw exception(Error::Resolve, "resolve failed");
             }
 
             {
@@ -163,7 +163,7 @@ private:
 };
 
 // perform socket connect
-class connection::connect : public action
+class ConnectionImpl::connect : public action
 {
 public:
     connect(std::shared_ptr<impl> s) : state_(s)
@@ -184,25 +184,25 @@ public:
         const auto addr = state_->addr;
         const auto port = state_->port;
 
-        // first begin connection (async)
+        // first begin ConnectionImpl (async)
         socket->begin_connect(addr, port);
 
         // wait for completion or cancellation event.
         // when an async socket connect is performed the socket will become writeable
-        // once the connection is established.
+        // once the ConnectionImpl is established.
         auto connected = socket->wait(false, true);
         auto canceled  = cancel->wait();
         if (!newsflash::wait_for(connected, canceled, std::chrono::seconds(10)))
-            throw exception(error::timeout, "connection attempt timed out");
+            throw exception(Error::Timeout, "ConnectionImpl attempt timed out");
         if (canceled)
         {
-            LOG_D("Connection was canceled");
+            LOG_D("ConnectionImpl was canceled");
             return;
         }
 
         socket->complete_connect();
 
-        LOG_I("Socket connection ready!");
+        LOG_I("Socket ConnectionImpl ready!");
     }
 
     virtual std::string describe() const override
@@ -214,7 +214,7 @@ private:
 };
 
 // perform nntp init
-class connection::initialize : public action
+class ConnectionImpl::initialize : public action
 {
 public:
     initialize(std::shared_ptr<impl> s) : state_(s)
@@ -269,7 +269,7 @@ public:
                 auto received = socket->wait(true, false);
                 auto canceled = cancel->wait();
                 if (!newsflash::wait_for(received, canceled, std::chrono::seconds(5)))
-                    throw exception(connection::error::timeout, "connection timeout");
+                    throw exception(Connection::Error::Timeout, "ConnectionImpl timeout");
                 if (canceled)
                 {
                     LOG_D("Initialize was canceled");
@@ -279,7 +279,7 @@ public:
                 // readsome data
                 const auto bytes = socket->recvsome(buff.back(), buff.available());
                 if (bytes == 0)
-                    throw exception(connection::error::network, "socket was closed unexpectedly");
+                    throw exception(Connection::Error::Network, "socket was closed unexpectedly");
 
                 // commit
                 buff.append(bytes);
@@ -291,11 +291,11 @@ public:
         const auto err = session->GetError();
 
         if (err == Session::Error::AuthenticationRejected)
-            throw exception(connection::error::authentication_rejected, "authentication rejected");
+            throw exception(Connection::Error::AuthenticationRejected, "authentication rejected");
         else if (err == Session::Error::NoPermission)
-            throw exception(connection::error::no_permission, "no permission");
+            throw exception(Connection::Error::PermissionDenied, "no permission");
         else if (err == Session::Error::Protocol)
-            throw exception(connection::error::protocol, "protocol error");
+            throw exception(Connection::Error::Protocol, "protocol error");
 
         LOG_I("NNTP Session ready");
 
@@ -305,7 +305,7 @@ private:
 };
 
 // execute cmdlist
-class connection::execute : public action
+class ConnectionImpl::execute : public action
 {
 public:
     execute(std::shared_ptr<impl> s, std::shared_ptr<CmdList> cmd, std::size_t tid) : state_(s), cmds_(cmd), taskid_(tid)
@@ -363,13 +363,13 @@ public:
                         auto received = socket->wait(true, false);
                         auto canceled = cancel->wait();
                         if (!newsflash::wait_for(received, canceled, std::chrono::seconds(10)))
-                            throw exception(connection::error::timeout, "connection timeout");
+                            throw exception(Connection::Error::Timeout, "ConnectionImpl timeout");
                         else if (canceled)
                             return;
 
                         const auto bytes = socket->recvsome(recvbuf.back(), recvbuf.available());
                         if (bytes == 0)
-                            throw exception(connection::error::network, "connection was closed unexpectedly");
+                            throw exception(Connection::Error::Network, "ConnectionImpl was closed unexpectedly");
 
                         recvbuf.append(bytes);
                     }
@@ -378,11 +378,11 @@ public:
 
                 const auto err = session->GetError();
                 if (err == Session::Error::AuthenticationRejected)
-                    throw exception(connection::error::authentication_rejected, "authentication rejected");
+                    throw exception(Connection::Error::AuthenticationRejected, "authentication rejected");
                 else if (err == Session::Error::NoPermission)
-                    throw exception(connection::error::no_permission, "no permission");
+                    throw exception(Connection::Error::PermissionDenied, "no permission");
                 else if (err == Session::Error::Protocol)
-                    throw exception(connection::error::protocol, "protocol error");
+                    throw exception(Connection::Error::Protocol, "protocol error");
 
                 if (cmdlist->ReceiveConfigureBuffer(i, std::move(config)))
                 {
@@ -434,7 +434,7 @@ public:
                     auto received = socket->wait(true, false);
                     auto canceled = cancel->wait();
                     if (!newsflash::wait_for(received, canceled, std::chrono::seconds(30)))
-                        throw exception(connection::error::timeout, "connection timeout");
+                        throw exception(Connection::Error::Timeout, "ConnectionImpl timeout");
                     else if (canceled)
                         return;
                 }
@@ -452,7 +452,7 @@ public:
                 // readsome
                 const auto bytes = socket->recvsome(recvbuf.back(), avail);
                 if (bytes == 0)
-                    throw exception(connection::error::network, "connection was closed unexpectedly");
+                    throw exception(Connection::Error::Network, "ConnectionImpl was closed unexpectedly");
 
                 //LOG_D("Quota ", quota, " avail ", recvbuf.available(), " recvd ", bytes);
 
@@ -475,7 +475,7 @@ public:
             // todo: is this oK? (in case when quota finishes..??)
             const auto err = session->GetError();
             if (err != Session::Error::None)
-                throw exception(connection::error::no_permission, "no permission");
+                throw exception(Connection::Error::PermissionDenied, "no permission");
 
             cmdlist->ReceiveDataBuffer(std::move(content));
 
@@ -488,7 +488,7 @@ public:
                 LOG_D("Cmdlist was canceled");
 
                 if (state_->pipelining)
-                    throw exception(connection::error::pipeline_reset, "pipeline reset");
+                    throw exception(Connection::Error::PipelineReset, "pipeline reset");
 
                 session->Clear();
                 return;
@@ -500,7 +500,7 @@ public:
 
     virtual void run_completion_callbacks() override
     {
-        connection::cmdlist_completion_data completion;
+        Connection::CmdListCompletionData completion;
         completion.cmds          = cmds_;
         completion.task_owner_id = taskid_;
         completion.total_bytes   = total_bytes_;
@@ -522,7 +522,7 @@ private:
 private:
 };
 
-class connection::disconnect : public action
+class ConnectionImpl::disconnect : public action
 {
 public:
     disconnect(std::shared_ptr<impl> s) : state_(s)
@@ -537,7 +537,7 @@ public:
         auto& session = state_->session;
         auto& socket  = state_->socket;
 
-        // if the connection is disconnecting while there are pending
+        // if the ConnectionImpl is disconnecting while there are pending
         // transactions in the session we're just simply going to close the socket
         // and not perform a clean protocol shutdown.
         if (!session->HasPending())
@@ -580,7 +580,7 @@ private:
     std::shared_ptr<impl> state_;
 };
 
-class connection::ping : public action
+class ConnectionImpl::ping : public action
 {
 public:
     ping(std::shared_ptr<impl> s) : state_(s)
@@ -606,11 +606,11 @@ public:
             {
                 auto received = socket->wait(true, false);
                 if (!newsflash::wait_for(received, std::chrono::seconds(4)))
-                    throw exception(connection::error::timeout, "connection timeout (no ping)");
+                    throw exception(Connection::Error::Timeout, "ConnectionImpl timeout (no ping)");
 
                 const auto bytes = socket->recvsome(buff.back(), buff.available());
                 if (bytes == 0)
-                    throw exception(connection::error::network, "connection was closed unexpectedly");
+                    throw exception(Connection::Error::Network, "ConnectionImpl was closed unexpectedly");
 
                 buff.append(bytes);
             }
@@ -626,12 +626,12 @@ private:
     std::shared_ptr<impl> state_;
 };
 
-connection::connection()
+ConnectionImpl::ConnectionImpl()
 {
     state_ = std::make_shared<impl>();
 }
 
-std::unique_ptr<action> connection::connect(const spec& s)
+std::unique_ptr<action> ConnectionImpl::Connect(const HostDetails& s)
 {
     state_->username = s.username;
     state_->password = s.password;
@@ -649,28 +649,28 @@ std::unique_ptr<action> connection::connect(const spec& s)
     state_->cancel->reset();
     state_->pthrottle = s.pthrottle;
     state_->random.seed((std::size_t)this);
-    state_->state = state::resolving;
-    state_->error = error::none;
+    state_->state = State::Resolving;
+    state_->error = Error::None;
     std::unique_ptr<action> act(new resolve(state_));
 
     return act;
 }
 
-std::unique_ptr<action> connection::disconnect()
+std::unique_ptr<action> ConnectionImpl::Disconnect()
 {
     std::unique_ptr<action> a(new class disconnect(state_));
 
     return a;
 }
 
-std::unique_ptr<action> connection::ping()
+std::unique_ptr<action> ConnectionImpl::Ping()
 {
     std::unique_ptr<action> a(new class ping(state_));
 
     return a;
 }
 
-std::unique_ptr<action> connection::complete(std::unique_ptr<action> a)
+std::unique_ptr<action> ConnectionImpl::Complete(std::unique_ptr<action> a)
 {
     std::unique_ptr<action> next;
     try
@@ -685,29 +685,29 @@ std::unique_ptr<action> connection::complete(std::unique_ptr<action> a)
         if (dynamic_cast<resolve*>(ptr))
         {
             next.reset(new class connect(state_));
-            state_->state = state::connecting;
+            state_->state = State::Connecting;
         }
         else if (dynamic_cast<class connect*>(ptr))
         {
             next.reset(new class initialize(state_));
-            state_->state = state::initializing;
+            state_->state = State::Initializing;
         }
         else if (dynamic_cast<class initialize*>(ptr))
         {
-            state_->state = state::connected;
+            state_->state = State::Connected;
         }
         else if (dynamic_cast<class disconnect*>(ptr))
         {
-            state_->state = state::disconnected;
+            state_->state = State::Disconnected;
         }
         else if (auto* p = dynamic_cast<class execute*>(ptr))
         {
-            state_->state = state::connected;
+            state_->state = State::Connected;
         }
     }
     catch (const exception& e)
     {
-        state_->state = state::error;
+        state_->state = State::Error;
         state_->error = e.error();
     }
     catch (const std::system_error& e)
@@ -715,13 +715,13 @@ std::unique_ptr<action> connection::complete(std::unique_ptr<action> a)
         const auto code = e.code();
         if (code == std::errc::connection_refused)
         {
-            state_->state = state::error;
-            state_->error = error::refused;
+            state_->state = State::Error;
+            state_->error = Error::Refused;
         }
         else if (code == std::errc::connection_reset)
         {
-            state_->state = state::error;
-            state_->error = error::reset;
+            state_->state = State::Error;
+            state_->error = Error::Reset;
         }
         else
         {
@@ -731,41 +731,41 @@ std::unique_ptr<action> connection::complete(std::unique_ptr<action> a)
     return next;
 }
 
-std::unique_ptr<action> connection::execute(std::shared_ptr<CmdList> cmd, std::size_t tid)
+std::unique_ptr<action> ConnectionImpl::Execute(std::shared_ptr<CmdList> cmd, std::size_t tid)
 {
     state_->cancel->reset();
 
     std::unique_ptr<action> act(new class execute(state_, std::move(cmd), tid));
 
-    state_->state = state::active;
+    state_->state = State::Active;
 
     return act;
 }
 
-void connection::cancel()
+void ConnectionImpl::Cancel()
 {
     state_->cancel->set();
 }
 
-std::string connection::username() const
+std::string ConnectionImpl::GetUsername() const
 { return state_->username; }
 
-std::string connection::password() const
+std::string ConnectionImpl::GetPassword() const
 { return state_->password; }
 
-std::uint32_t connection::current_speed_bps() const
+std::uint32_t ConnectionImpl::GetCurrentSpeedBps() const
 { return (std::uint32_t)state_->bps; }
 
-std::uint64_t connection::num_bytes_transferred() const
+std::uint64_t ConnectionImpl::GetNumBytesTransferred() const
 { return (std::uint64_t)state_->bytes; }
 
-connection::state connection::get_state() const
+Connection::State ConnectionImpl::GetState() const
 { return state_->state; }
 
-connection::error connection::get_error() const
+Connection::Error ConnectionImpl::GetError() const
 { return state_->error; }
 
-void connection::set_callback(const on_cmdlist_done& callback)
+void ConnectionImpl::SetCallback(const OnCmdlistDone& callback)
 {
     state_->on_cmdlist_done_callback = callback;
 }
