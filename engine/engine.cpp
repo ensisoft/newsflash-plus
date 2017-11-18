@@ -652,12 +652,13 @@ public:
             spec.hostport = account.general_port;
             spec.use_ssl  = false;
         }
+        conn_   = state.factory->AllocateConnection();
         logger_ = std::make_shared<buffer_logger>();
         id_     = id;
         success_ = false;
         finished_ = false;
 
-        do_action(state, conn_.Connect(spec));
+        do_action(state, conn_->Connect(spec));
     }
     void on_action(Engine::State& state, std::unique_ptr<action> act)
     {
@@ -686,7 +687,7 @@ public:
             return;
         }
 
-        auto next = conn_.Complete(std::move(act));
+        auto next = conn_->Complete(std::move(act));
         if (next)
         {
             do_action(state, std::move(next));
@@ -718,12 +719,12 @@ private:
     }
 
 private:
-    ConnectionImpl conn_;
+    std::unique_ptr<Connection> conn_;
     std::shared_ptr<buffer_logger> logger_;
     std::size_t id_;
 private:
-    bool success_;
-    bool finished_;
+    bool success_  = false;
+    bool finished_ = false;
 };
 
 class Engine::TaskState
