@@ -262,6 +262,8 @@ namespace newsflash
         // of all the tasks in the engine.
         void GetTasks(std::deque<ui::TaskDesc>* tasklist);
 
+        void GetTask(std::size_t index, ui::TaskDesc* task) const;
+
         // update the connlist to contain the latest UI states
         // of all the connections in the engine.
         void GetConns(std::deque<ui::Connection>* connlist);

@@ -2736,6 +2736,20 @@ void Engine::GetTasks(std::deque<ui::TaskDesc>* tasklist)
     }
 }
 
+void Engine::GetTask(std::size_t index, ui::TaskDesc* task) const
+{
+    if (state_->group_items)
+    {
+        ASSERT(index < state_->batches.size());
+        state_->batches[index]->update(*state_, *task);
+    }
+    else
+    {
+        ASSERT(index < state_->tasks.size());
+        state_->tasks[index]->update(*state_, *task);
+    }
+}
+
 void Engine::GetConns(std::deque<ui::Connection>* connlist)
 {
     const auto& conns = state_->conns;
