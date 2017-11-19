@@ -153,7 +153,7 @@ namespace newsflash
 
         // start engine. this will start connections and being processing the
         // tasks currently queued in the tasklist.
-        void Start(std::string logs);
+        void Start(const std::string& logpath);
 
         // stop the engine. kill all connections and stop all processing.
         void Stop();

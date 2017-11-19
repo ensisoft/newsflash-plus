@@ -2379,9 +2379,9 @@ void Engine::Tick()
 }
 
 
-void Engine::Start(std::string logs)
+void Engine::Start(const std::string& logpath)
 {
-    if (state_->start(logs))
+    if (state_->start(logpath))
     {
         LOG_I("Engine starting");
         LOG_D("Current settings:");
@@ -2899,19 +2899,20 @@ void Engine::MoveTaskUp(std::size_t index)
 {
     if (state_->group_items)
     {
-        assert(state_->batches.size() > 1);
-        assert(index < state_->batches.size());
-        assert(index > 0);
-        std::swap(state_->batches[index], state_->batches[index-1]);
-
-        state_->repartition_task_list = true;
+        if (index > 0 && index < state_->batches.size()
+            && state_->batches.size() > 1)
+        {
+            std::swap(state_->batches[index], state_->batches[index-1]);
+            state_->repartition_task_list = true;
+        }
     }
     else
     {
-        assert(state_->tasks.size() > 1);
-        assert(index < state_->tasks.size());
-        assert(index > 0);
-        std::swap(state_->tasks[index], state_->tasks[index - 1]);
+        if (index > 0 && index < state_->tasks.size()
+            && state_->tasks.size() > 1)
+        {
+            std::swap(state_->tasks[index], state_->tasks[index - 1]);
+        }
     }
 }
 
@@ -2919,17 +2920,20 @@ void Engine::MoveTaskDown(std::size_t index)
 {
     if (state_->group_items)
     {
-        assert(state_->batches.size() > 1);
-        assert(index < state_->batches.size()-1);
-        std::swap(state_->batches[index], state_->batches[index + 1]);
-
-        state_->repartition_task_list = true;
+        if (state_->batches.size() > 1
+            && index < state_->batches.size() - 1)
+        {
+            std::swap(state_->batches[index], state_->batches[index + 1]);
+            state_->repartition_task_list = true;
+        }
     }
     else
     {
-        assert(state_->tasks.size() > 1);
-        assert(index < state_->tasks.size()-1);
-        std::swap(state_->tasks[index], state_->tasks[index + 1]);
+        if (state_->tasks.size() > 1
+            && index < state_->tasks.size() - 1)
+        {
+            std::swap(state_->tasks[index], state_->tasks[index + 1]);
+        }
     }
 }
 
@@ -2976,6 +2980,9 @@ bool Engine::UnlockTaskById(TaskId id)
 
 std::size_t Engine::GetNumTasks() const
 {
+    if (state_->group_items)
+        return state_->batches.size();
+
     return state_->tasks.size();
 }
 
