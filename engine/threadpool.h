@@ -20,12 +20,10 @@
 
 #pragma once
 
-#include <newsflash/config.h>
+#include "newsflash/config.h"
 
-#include <condition_variable>
 #include <functional>
 #include <memory>
-#include <mutex>
 #include <queue>
 #include <atomic>
 #include <cstddef>
@@ -34,62 +32,63 @@ namespace newsflash
 {
     class action;
 
-    class threadpool
+    class ThreadPool
     {
-
     public:
-        struct worker;
-
-        // callback to be invoked when an action has been completed
-        std::function<void (action*)> on_complete;
+        class Thread;
 
         // initialize the pool with num_threads.
-        // precondition: num_threads > 0
-        threadpool(std::size_t num_threads);
-       ~threadpool();
+        ThreadPool(std::size_t initial_pool_size);
+       ~ThreadPool();
 
-        void submit(std::unique_ptr<action> act)
+        void AddMainThread(bool pooled, bool private_thread);
+
+        void Submit(std::unique_ptr<action> act)
         {
-            submit(act.get());
+            Submit(act.get());
             act.release();
         }
 
-        // submit an action to the threadpool for any thread to execute specific
+        // submit an action to the ThreadPool for any thread to execute specific
         // the thread affinity constraint set on the action.
-        void submit(action* act);
+        void Submit(action* act);
 
         // submit work to the specific thread
-        void submit(action* act, worker* t);
+        void Submit(action* act, Thread* thread);
 
         // wait for all actions to be completed before returning.
-        void wait_all_actions();
+        void WaitAllActions();
 
-        // shutdown the threadpool. will block and join all the threads.
-        void shutdown();
+        // shutdown the ThreadPool. will block and join all the threads.
+        void Shutdown();
 
         // allocate a private thread.
         // returns a handle to the private thread.
-        worker* allocate();
+        Thread* AllocatePrivateThread();
 
-        // detach and return the thread to the threadpool.
+        // detach and return the thread to the ThreadPool.
         // the thread will continue to perform all the actions queued
         // in it's queue and then become eligible for using again
-        void detach(worker* t);
+        void DetachPrivateThread(Thread* thread);
 
-        std::size_t num_pending_actions() const
-        { return queue_size_; }
+        std::size_t GetNumPendingActions() const;
 
-   private:
-        void thread_main(threadpool::worker* self);
-        void thread_seh(threadpool::worker* self);
+        // callback to be invoked when an action has been completed
+        using OnActionDone = std::function<void (action*)>;
+        void SetCallback(const OnActionDone& callback);
+
+        void RunMainThreads();
 
     private:
-        std::condition_variable cond_;
-        std::mutex mutex_;
-        std::vector<std::unique_ptr<worker>> threads_;
-        std::size_t round_robin_;
-        std::size_t pool_size_;
-        std::atomic<std::size_t> queue_size_;
+        struct State;
+        class RealThread;
+        class MainThread;
+
+    private:
+        std::shared_ptr<State> state_;
+        std::vector<std::unique_ptr<Thread>> pooled_threads_;
+        std::vector<std::unique_ptr<Thread>> private_threads_;
+        std::size_t round_robin_ = 0;
     };
 
 } // newsflash

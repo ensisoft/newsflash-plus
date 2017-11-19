@@ -57,18 +57,21 @@ void unit_test_pool()
         std::atomic_int& counter_;
     };
 
-    newsflash::threadpool threads(4);
-    threads.on_complete = [](newsflash::action* a) { delete a; };
+    newsflash::ThreadPool threads(4);
+    threads.SetCallback(
+        [](newsflash::action* a) {
+            delete a;
+        });
 
     for (int i=0; i<10000; ++i)
     {
         auto* a = new action(counter);
         a->set_affinity(newsflash::action::affinity::any_thread);
         a->set_owner(i);
-        threads.submit(a);
+        threads.Submit(a);
     }
-    threads.wait_all_actions();
-    threads.shutdown();
+    threads.WaitAllActions();
+    threads.Shutdown();
 
     BOOST_REQUIRE(counter == 10000);
 }
@@ -108,11 +111,14 @@ void unit_test_private_thread()
         std::atomic_int& counter_;
     };
 
-    newsflash::threadpool threads(4);
+    newsflash::ThreadPool threads(4);
 
-    threads.on_complete = [](newsflash::action* a) { delete a; };
+    threads.SetCallback(
+        [](newsflash::action* a) {
+            delete a;
+        });
 
-    auto* handle = threads.allocate();
+    auto* handle = threads.AllocatePrivateThread();
     BOOST_REQUIRE(handle);
 
     for (int i=0; i<10000; ++i)
@@ -120,23 +126,59 @@ void unit_test_private_thread()
         auto* a = new generic_counter_action(generic_counter);
         a->set_affinity(newsflash::action::affinity::any_thread);
         a->set_owner(i);
-        threads.submit(a);
+        threads.Submit(a);
 
         auto* b = new private_counter_action(private_counter);
-        threads.submit(b, handle);
+        threads.Submit(b, handle);
     }
-    threads.detach(handle);
-    threads.wait_all_actions();
-    threads.shutdown();
+    threads.DetachPrivateThread(handle);
+    threads.WaitAllActions();
+    threads.Shutdown();
 
     BOOST_REQUIRE(generic_counter == 10000);
     BOOST_REQUIRE(private_counter == 10000);
+}
+
+void unit_test_main_thread()
+{
+    struct action : public newsflash::action
+    {
+    public:
+        action(std::atomic_int& c) : counter_(c)
+        {}
+
+        virtual void xperform()
+        {
+            counter_++;
+        }
+    private:
+        std::atomic_int& counter_;
+    };
+
+    newsflash::ThreadPool threads(0);
+    threads.AddMainThread(true, false);
+    threads.SetCallback(
+        [](newsflash::action* a) {
+            delete a;
+        });
+
+    std::atomic_int counter {0};
+
+    for (int i=0; i<10000; ++i)
+    {
+        auto* a = new action(counter);
+        a->set_affinity(newsflash::action::affinity::any_thread);
+        a->set_owner(i);
+        threads.Submit(a);
+        threads.RunMainThreads();
+    }
 }
 
 int test_main(int, char*[])
 {
     unit_test_pool();
     unit_test_private_thread();
+    unit_test_main_thread();
 
     return 0;
 }

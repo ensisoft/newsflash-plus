@@ -98,12 +98,14 @@ void unit_test_discard()
     // discard while pending actions
     {
         // prepare some write actions
-        nf::threadpool threads(4);
+        nf::ThreadPool threads(4);
 
-        threads.on_complete = [&](nf::action* a) {
-            BOOST_REQUIRE(a->has_exception() == false);
-            delete a;
-        };
+        threads.SetCallback(
+            [&](nf::action* a)
+            {
+                BOOST_REQUIRE(a->has_exception() == false);
+                delete a;
+            });
 
         for (int i=0; i<1000; ++i)
         {
@@ -113,19 +115,19 @@ void unit_test_discard()
             buff.resize(1024);
             fill_random(&buff[0], buff.size());
 
-            threads.submit(file->Write(0, buff));
-            threads.submit(file->Write(0, buff));
-            threads.submit(file->Write(0, buff));
+            threads.Submit(file->Write(0, buff));
+            threads.Submit(file->Write(0, buff));
+            threads.Submit(file->Write(0, buff));
             file->DiscardOnClose();
-            threads.submit(file->Write(0, buff));
-            threads.submit(file->Write(0, buff));
+            threads.Submit(file->Write(0, buff));
+            threads.Submit(file->Write(0, buff));
             file.reset();
 
-            threads.wait_all_actions();
+            threads.WaitAllActions();
             BOOST_REQUIRE(!file_exists("DataFile"));
         }
 
-        threads.shutdown();
+        threads.Shutdown();
     }
 }
 

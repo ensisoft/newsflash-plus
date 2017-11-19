@@ -131,7 +131,7 @@ struct Engine::State {
 
     std::mutex mutex;
     std::queue<std::unique_ptr<action>> actions;
-    std::unique_ptr<threadpool> threads;
+    std::unique_ptr<ThreadPool> threads;
     std::size_t num_pending_actions = 0;
     std::size_t num_pending_tasks = 0;
 
@@ -161,13 +161,16 @@ struct Engine::State {
     State()
     {
         ratecontrol.set_quota(std::numeric_limits<std::size_t>::max());
-        threads.reset(new threadpool(4));
-        threads->on_complete = [&](action* a)
-        {
-            std::lock_guard<std::mutex> lock(mutex);
-            actions.emplace(a);
-            on_notify_callback();
-        };
+        const auto max_pooled_threads  = std::size_t(4);
+        threads.reset(new ThreadPool(max_pooled_threads));
+        threads->SetCallback(
+            [&](action* a)
+            {
+                std::lock_guard<std::mutex> lock(mutex);
+                actions.emplace(a);
+                on_notify_callback();
+            }
+        );
     }
 
    ~State()
@@ -227,14 +230,14 @@ struct Engine::State {
         {
             LOG_D("Action ", a->get_id(), " (", a->describe(), ") submitted to the threadpool.");
 
-            threads->submit(a);
+            threads->Submit(a);
         }
         num_pending_actions++;
     }
 
-    void submit(action* a, threadpool::worker* thread)
+    void submit(action* a, ThreadPool::Thread* thread)
     {
-        threads->submit(a, thread);
+        threads->Submit(a, thread);
         num_pending_actions++;
     }
 
@@ -292,7 +295,7 @@ private:
         ticks_to_ping_ = 30;
         ticks_to_conn_ = 5;
         logger_        = std::make_shared<filelogger>(file, true);
-        thread_        = state.threads->allocate();
+        thread_        = state.threads->AllocatePrivateThread();
         LOG_D("Connection ", ui_.id, " log file: ", file);
     }
 
@@ -420,7 +423,7 @@ public:
             do_action(state, conn_->Disconnect());
         }
 
-        state.threads->detach(thread_);
+        state.threads->DetachPrivateThread(thread_);
     }
 
     void execute(Engine::State& state, std::shared_ptr<CmdList> cmds, std::size_t tid, std::string desc)
@@ -620,7 +623,7 @@ private:
     ui::Connection ui_;
     std::unique_ptr<Connection> conn_;
     std::shared_ptr<logger> logger_;
-    threadpool::worker* thread_;
+    ThreadPool::Thread* thread_ = nullptr;
     unsigned ticks_to_ping_ = 0;
     unsigned ticks_to_conn_ = 0;
 };
@@ -2022,7 +2025,7 @@ Engine::~Engine()
     assert(state_->conns.empty());
     assert(state_->started == false);
 
-    state_->threads->shutdown();
+    state_->threads->Shutdown();
     state_->threads.reset();
 }
 
