@@ -158,17 +158,28 @@ struct Engine::State {
 
     throttle ratecontrol;
 
-    State()
+    State(bool enable_single_thread_debug)
     {
         ratecontrol.set_quota(std::numeric_limits<std::size_t>::max());
-        const auto max_pooled_threads  = std::size_t(4);
-        threads.reset(new ThreadPool(max_pooled_threads));
+        if (enable_single_thread_debug)
+        {
+            threads.reset(new ThreadPool(0));
+            const auto AddToPool = true;
+            const auto AddAsPrivate = true;
+            threads->AddMainThread(AddToPool, AddAsPrivate);
+        }
+        else
+        {
+            const auto max_pooled_threads  = std::size_t(4);
+            threads.reset(new ThreadPool(max_pooled_threads));
+        }
         threads->SetCallback(
             [&](action* a)
             {
                 std::lock_guard<std::mutex> lock(mutex);
                 actions.emplace(a);
-                on_notify_callback();
+                if (on_notify_callback)
+                    on_notify_callback();
             }
         );
     }
@@ -192,23 +203,19 @@ struct Engine::State {
         return *it;
     }
 
-    bool start(std::string logs)
+    bool start(const std::string& logs)
     {
         if (started)
             return false;
 
-        if (logs != logpath)
-        {
-            const auto logfile = fs::joinpath(logs, "engine.log");
+        const auto& logfile = fs::joinpath(logs, "engine.log");
 
-            std::unique_ptr<class logger> log(new filelogger(logfile, true));
-            if (log->is_open())
-                set_thread_log(log.get());
-            else set_thread_log(nullptr);
+        std::unique_ptr<class logger> log(new filelogger(logfile, true));
+        if (log->is_open())
+            set_thread_log(log.get());
+        else set_thread_log(nullptr);
 
-            logger = std::move(log);
-        }
-
+        logger  = std::move(log);
         logpath = logs;
         started = true;
         return true;
@@ -333,6 +340,7 @@ public:
             ui_.port      = acc.general_port;
         }
         ui_.account = aid;
+        ui_.state   = ui::Connection::States::Resolving;
 
         conn_ = state.factory->AllocateConnection();
         conn_->SetCallback(std::bind(&Engine::State::on_cmdlist_done, &state,
@@ -350,6 +358,7 @@ public:
         ui_.port    = dna.ui_.port;
         ui_.secure  = dna.ui_.secure;
         ui_.account = dna.ui_.account;
+        ui_.state   = ui::Connection::States::Resolving;
 
         const auto& acc = state.find_account(dna.ui_.account);
 
@@ -1924,12 +1933,13 @@ void Engine::State::enqueue(const TaskState& t, std::shared_ptr<CmdList> cmd)
 }
 
 
-Engine::Engine(std::unique_ptr<Factory> factory) : state_(new State)
+Engine::Engine(std::unique_ptr<Factory> factory,
+    bool enable_single_thread_debug) : state_(new State(enable_single_thread_debug))
 {
     state_->factory = std::move(factory);
 }
 
-Engine::Engine() : state_(new State)
+Engine::Engine() : state_(new State(false))
 {
     class DefaultFactory : public Factory
     {
@@ -2036,7 +2046,7 @@ void Engine::TryAccount(const ui::Account& account)
     state_->current_connection_test.reset(new ConnTestState(account, id, *state_));
 }
 
-void Engine::SetAccount(const ui::Account& acc)
+void Engine::SetAccount(const ui::Account& acc, bool spawn_connections_immediately)
 {
     auto it = std::find_if(std::begin(state_->accounts), std::end(state_->accounts),
         [&](const ui::Account& a) {
@@ -2045,6 +2055,14 @@ void Engine::SetAccount(const ui::Account& acc)
     if (it == std::end(state_->accounts))
     {
         state_->accounts.push_back(acc);
+        if (spawn_connections_immediately)
+        {
+            for (size_t i=0; i<acc.connections; ++i)
+            {
+                const auto id = state_->oid++;
+                state_->conns.emplace_back(new ConnState(*state_, acc.id, id));
+            }
+        }
         return;
     }
 
@@ -2381,6 +2399,10 @@ void Engine::Tick()
         state_->logger->flush();
 }
 
+void Engine::RunMainThread()
+{
+    state_->threads->RunMainThreads();
+}
 
 void Engine::Start(const std::string& logpath)
 {

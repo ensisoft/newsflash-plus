@@ -104,7 +104,8 @@ namespace newsflash
 
         using TaskId = std::size_t;
 
-        Engine(std::unique_ptr<Factory> factory);
+        Engine(std::unique_ptr<Factory> factory,
+            bool enable_single_thread_debug);
         Engine();
        ~Engine();
 
@@ -114,7 +115,7 @@ namespace newsflash
         // Set or modify an account. If the account by the same
         // id already exists then the existing account is modified
         // and connections (if any) might be restarted.
-        void SetAccount(const ui::Account& account);
+        void SetAccount(const ui::Account& account, bool spawn_connections_immediately = false);
 
         // Delete the account identified by the id.
         void DelAccount(std::size_t id);
@@ -150,6 +151,10 @@ namespace newsflash
         // the client should call this function at some steady interval
         // such as 1s or so.
         void Tick();
+
+        // Run main thread actions. This is mostly for supporting
+        // single threaded debugging.
+        void RunMainThread();
 
         // start engine. this will start connections and being processing the
         // tasks currently queued in the tasklist.
