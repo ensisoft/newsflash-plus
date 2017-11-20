@@ -279,6 +279,16 @@ public:
         {}
     };
 
+    TestConnection()
+    {
+        std::memset(errors_, 0, sizeof(errors_));
+    }
+
+    void SetError(Connection::State when, Connection::Error what)
+    {
+        errors_[(int)when] = what;
+    }
+
     virtual std::unique_ptr<action> Connect(const HostDetails& host) override
     {
         state_ = Connection::State::Resolving;
@@ -300,6 +310,13 @@ public:
         auto* ptr = a.get();
 
         std::unique_ptr<action> next;
+
+        if (errors_[(int)state_] != Connection::Error::None)
+        {
+            error_ = errors_[(int)state_];
+            state_ = Connection::State::Error;
+            return next;
+        }
 
         if (dynamic_cast<Resolve*>(ptr))
         {
@@ -369,6 +386,8 @@ public:
 private:
     Connection::State state_ = Connection::State::Disconnected;
     Connection::Error error_ = Connection::Error::None;
+    Connection::Error errors_[7];
+
 };
 
 class ConnShell : public Connection
@@ -468,6 +487,8 @@ private:
 
 struct Factory : public Engine::Factory
 {
+    std::shared_ptr<TestConnection> NextConn;
+
     virtual std::unique_ptr<Task> AllocateTask(const ui::FileDownload& file) override
     {
         auto task = std::make_shared<TestFileTask>();
@@ -494,9 +515,13 @@ struct Factory : public Engine::Factory
     }
     virtual std::unique_ptr<Connection> AllocateConnection() override
     {
-        auto conn = std::make_shared<TestConnection>();
-        conns_.push_back(conn);
-        return std::make_unique<ConnShell>(conn);
+        std::shared_ptr<TestConnection> ret;
+        if (NextConn)
+            ret = NextConn;
+        else ret = std::make_shared<TestConnection>();
+        conns_.push_back(ret);
+        NextConn.reset();
+        return std::make_unique<ConnShell>(ret);
     }
     virtual std::unique_ptr<ui::Result> MakeResult(const Task& task, const ui::TaskDesc& desc) const override
     {
@@ -550,12 +575,127 @@ private:
     std::shared_ptr<Factory> factory_;
 };
 
+void test_connection_establish()
+{
+    struct TestCase {
+        ui::Connection::Errors error = ui::Connection::Errors::None;
+        Connection::Error what = Connection::Error::None;
+        Connection::State when = Connection::State::Connecting;
+    };
+    TestCase tests[8];
+    // tests[0] is a success case
+    tests[0].what  = Connection::Error::None;
+    tests[0].when  = Connection::State::Resolving;
+    tests[0].error = ui::Connection::Errors::None;
+
+    tests[1].what  = Connection::Error::Resolve;
+    tests[1].when  = Connection::State::Resolving;
+    tests[1].error = ui::Connection::Errors::Resolve;
+
+    tests[2].what  = Connection::Error::Refused;
+    tests[2].when  = Connection::State::Connecting;
+    tests[2].error = ui::Connection::Errors::Refused;
+
+    tests[3].what  = Connection::Error::Timeout;
+    tests[3].when  = Connection::State::Connecting;
+    tests[3].error = ui::Connection::Errors::Timeout;
+
+    tests[4].what  = Connection::Error::Network;
+    tests[4].when  = Connection::State::Connecting;
+    tests[4].error = ui::Connection::Errors::Network;
+
+    tests[5].what  = Connection::Error::Protocol;
+    tests[5].when  = Connection::State::Initializing;
+    tests[5].error = ui::Connection::Errors::Other;
+
+    tests[6].what  = Connection::Error::PermissionDenied;
+    tests[6].when  = Connection::State::Initializing;
+    tests[6].error = ui::Connection::Errors::NoPermission;
+
+    tests[7].what  = Connection::Error::Reset;
+    tests[7].when  = Connection::State::Initializing;
+    tests[7].error = ui::Connection::Errors::Other;
+
+    for (size_t i=0; i < 8; ++i)
+    {
+        ui::Account account;
+        account.id = 123;
+        account.name = "test";
+        account.username = "user";
+        account.password = "pass";
+        account.secure_host = "test.host.com";
+        account.secure_port = 1000;
+        account.connections = 1;
+        account.enable_secure_server = true;
+        account.enable_general_server = false;
+        account.enable_compression = false;
+        account.enable_pipelining = false;
+
+        auto factory = std::make_shared<Factory>();
+        factory->NextConn = std::make_shared<TestConnection>();
+        factory->NextConn->SetError(tests[i].when, tests[i].what);
+
+        const bool spawn_immediately = true;
+        const bool debug_single_thread = true;
+        Engine eng(std::make_unique<FactoryShell>(factory), debug_single_thread);
+
+        std::deque<ui::Connection> conns;
+
+        eng.Start("");
+        eng.SetAccount(account, spawn_immediately);
+
+        // note that the the initial state is Resolving.
+        const ui::Connection::States ExpectedStates[4] = {
+            ui::Connection::States::Resolving,
+            ui::Connection::States::Connecting,
+            ui::Connection::States::Initializing,
+            ui::Connection::States::Connected,
+        };
+
+        for (int j=0; j<4; ++j)
+        {
+            eng.GetConns(&conns);
+            BOOST_REQUIRE(conns.size() == 1);
+            if (conns[0].state != ExpectedStates[j])
+            {
+                // if there's an error we check that the error is
+                // what the test case expected to fail
+                BOOST_REQUIRE(conns[0].error == tests[i].error);
+            }
+            BOOST_REQUIRE(conns[0].id != 0);
+            BOOST_REQUIRE(conns[0].task == 0);
+            BOOST_REQUIRE(conns[0].account == 123);
+            BOOST_REQUIRE(conns[0].down == 0);
+            BOOST_REQUIRE(conns[0].host == "test.host.com");
+            BOOST_REQUIRE(conns[0].port == 1000);
+            BOOST_REQUIRE(conns[0].desc == "");
+            BOOST_REQUIRE(conns[0].secure == true);
+            BOOST_REQUIRE(conns[0].bps == 0);
+
+            eng.RunMainThread();
+            eng.Pump();
+            if (conns[0].error != ui::Connection::Errors::None)
+                break;
+        }
+        eng.KillConnection(0);
+        eng.Stop();
+        do
+        {
+            eng.RunMainThread();
+        }
+        while (eng.Pump());
+        eng.GetConns(&conns);
+        BOOST_REQUIRE(conns.empty());
+    }
+
+}
+
 void test_task_entry_and_delete()
 {
 
     auto factory = std::make_shared<Factory>();
 
-    Engine eng(std::make_unique<FactoryShell>(factory));
+    Engine eng(std::make_unique<FactoryShell>(factory), true);
 
     ui::GroupListDownload listing;
     listing.account = 123;
@@ -620,7 +760,7 @@ void test_task_move()
 {
     auto factory = std::make_shared<Factory>();
 
-    Engine eng(std::make_unique<FactoryShell>(factory));
+    Engine eng(std::make_unique<FactoryShell>(factory), true);
     eng.SetGroupItems(false);
 
     ui::FileBatchDownload batch;
@@ -783,6 +923,7 @@ int test_main(int argc, char*[])
 {
     newsflash::initialize();
 
+    test_connection_establish();
     test_task_entry_and_delete();
     test_task_move();
 
