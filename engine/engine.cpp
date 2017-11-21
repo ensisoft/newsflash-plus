@@ -126,7 +126,7 @@ struct Engine::State {
 
     std::unique_ptr<Engine::Factory> factory;
 
-    std::unique_ptr<class logger> logger;
+    std::unique_ptr<Logger> logger;
     std::unique_ptr<ConnTestState> current_connection_test;
 
     std::mutex mutex;
@@ -189,7 +189,7 @@ struct Engine::State {
         tasks.clear();
         conns.clear();
         batches.clear();
-        set_thread_log(nullptr);
+        SetThreadLog(nullptr);
     }
 
     const ui::Account& find_account(std::size_t id) const
@@ -210,10 +210,10 @@ struct Engine::State {
 
         const auto& logfile = fs::joinpath(logs, "engine.log");
 
-        std::unique_ptr<class logger> log(new filelogger(logfile, true));
-        if (log->is_open())
-            set_thread_log(log.get());
-        else set_thread_log(nullptr);
+        std::unique_ptr<Logger> log(new FileLogger(logfile, true));
+        if (log->IsOpen())
+            SetThreadLog(log.get());
+        else SetThreadLog(nullptr);
 
         logger  = std::move(log);
         logpath = logs;
@@ -301,7 +301,7 @@ private:
         ui_.logfile    = file;
         ticks_to_ping_ = 30;
         ticks_to_conn_ = 5;
-        logger_        = std::make_shared<filelogger>(file, true);
+        logger_        = std::make_shared<FileLogger>(file, true);
         thread_        = state.threads->AllocatePrivateThread();
         LOG_D("Connection ", ui_.id, " log file: ", file);
     }
@@ -581,7 +581,7 @@ public:
             engine_state.on_error_callback(error);
             LOG_E("Connection ", ui_.id, " ", error.what);
         }
-        logger_->flush();
+        logger_->Flush();
     }
     bool is_ready() const
     {
@@ -631,7 +631,7 @@ private:
 private:
     ui::Connection ui_;
     std::unique_ptr<Connection> conn_;
-    std::shared_ptr<logger> logger_;
+    std::shared_ptr<Logger> logger_;
     ThreadPool::Thread* thread_ = nullptr;
     unsigned ticks_to_ping_ = 0;
     unsigned ticks_to_conn_ = 0;
@@ -665,7 +665,7 @@ public:
             spec.use_ssl  = false;
         }
         conn_   = state.factory->AllocateConnection();
-        logger_ = std::make_shared<buffer_logger>();
+        logger_ = std::make_shared<BufferLogger>();
         id_     = id;
         success_ = false;
         finished_ = false;
@@ -678,11 +678,13 @@ public:
 
         if (state.on_test_log_callback)
         {
-            const auto& msgs = logger_->lines();
-            for (const auto& msg : msgs)
+            for (size_t i=0; i<logger_->GetNumLines(); ++i)
+            {
+                const auto& msg = logger_->GetLine(i);
                 state.on_test_log_callback(msg);
+            }
         }
-        logger_->clear();
+        logger_->Clear();
 
         if (act->has_exception())
         {
@@ -732,7 +734,7 @@ private:
 
 private:
     std::unique_ptr<Connection> conn_;
-    std::shared_ptr<buffer_logger> logger_;
+    std::shared_ptr<BufferLogger> logger_;
     std::size_t id_;
 private:
     bool success_  = false;
@@ -2267,7 +2269,7 @@ bool Engine::Pump()
 // #endif
     state_->quit_pump_loop = false;
 
-    set_thread_log(state_->logger.get());
+    SetThreadLog(state_->logger.get());
 
     for (;;)
     {
@@ -2396,7 +2398,7 @@ void Engine::Tick()
     }
 
     if (state_->logger)
-        state_->logger->flush();
+        state_->logger->Flush();
 }
 
 void Engine::RunMainThread()
@@ -2431,7 +2433,7 @@ void Engine::Stop()
     }
     state_->conns.clear();
     state_->started = false;
-    state_->logger->flush();
+    state_->logger->Flush();
 }
 
 void Engine::SaveSession(const std::string& file)

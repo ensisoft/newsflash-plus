@@ -55,7 +55,7 @@ void test_initial_state()
 
 void test_connect()
 {
-    auto log = std::make_shared<nf::stdlog>(std::cout);
+    auto log = std::make_shared<nf::StdLogger>(std::cout);
 
     std::unique_ptr<nf::action> act;
 
@@ -281,12 +281,12 @@ void test_connect()
         thread.join();
     }
 
-    nf::set_thread_log(nullptr);
+    nf::SetThreadLog(nullptr);
 }
 
 void test_execute_success()
 {
-    auto log = std::make_shared<nf::stdlog>(std::cout);
+    auto log = std::make_shared<nf::StdLogger>(std::cout);
 
     std::unique_ptr<nf::action> act;
 

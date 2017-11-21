@@ -111,7 +111,7 @@ int run(QtSingleApplication& qtinstance)
     {
         if (arg == "--debug")
         {
-            newsflash::enable_debug_log(true);
+            newsflash::EnableDebugLog(true);
             INFO("Debug log enabled");
             break;
         }

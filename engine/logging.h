@@ -20,22 +20,24 @@
 
 #pragma once
 
-#include <newsflash/config.h>
+#include "newsflash/config.h"
+
 #include <system_error>
 #include <fstream>
 #include <ostream>
 #include <cerrno>
 #include <mutex>
 #include <vector>
+
 #include "format.h"
 #include "utf8.h"
 
 #ifdef NEWSFLASH_ENABLE_LOG
-#  define LOG_E(...) write_log(newsflash::logevent::error,   __FILE__, __LINE__, ## __VA_ARGS__)
-#  define LOG_W(...) write_log(newsflash::logevent::warning, __FILE__, __LINE__, ## __VA_ARGS__)
-#  define LOG_I(...) write_log(newsflash::logevent::info,    __FILE__, __LINE__, ## __VA_ARGS__)
-#  define LOG_D(...) write_log(newsflash::logevent::debug,   __FILE__, __LINE__, ## __VA_ARGS__)
-#  define LOG_FLUSH() flush_log()
+#  define LOG_E(...) WriteLog(newsflash::logevent::error,   __FILE__, __LINE__, ## __VA_ARGS__)
+#  define LOG_W(...) WriteLog(newsflash::logevent::warning, __FILE__, __LINE__, ## __VA_ARGS__)
+#  define LOG_I(...) WriteLog(newsflash::logevent::info,    __FILE__, __LINE__, ## __VA_ARGS__)
+#  define LOG_D(...) WriteLog(newsflash::logevent::debug,   __FILE__, __LINE__, ## __VA_ARGS__)
+#  define LOG_FLUSH() FlushThreadLog()
 #else
 #  define LOG_E(...)  while(false)
 #  define LOG_W(...)  while(false)
@@ -78,73 +80,87 @@ namespace newsflash
 
     } // detail
 
-    class logger
+    // Logger interface for writing log messages to an object
+    // such as stdout or file depending on the implementation.
+    class Logger
     {
     public:
-        virtual ~logger() = default;
+        virtual ~Logger() = default;
 
-        virtual void write(const std::string& msg) = 0;
+        // write the string message.
+        virtual void Write(const std::string& msg) = 0;
 
-        virtual void flush() = 0;
+        // flush pending changes (if) any.
+        virtual void Flush() = 0;
 
-        virtual bool is_open() const = 0;
+        // returns true if the output stream is open
+        virtual bool IsOpen() const = 0;
 
-        virtual std::string name() const = 0;
+        // get the log output name
+        virtual std::string GetName() const = 0;
     protected:
     private:
     };
 
-    class buffer_logger : public logger
+    // this logger implementation saves all the log messages into
+    // an internal buffer.
+    class BufferLogger : public Logger
     {
     public:
-        virtual void write(const std::string& msg) override
+        virtual void Write(const std::string& msg) override
         {
             lines_.push_back(msg);
         }
-        virtual void flush() override
-        {}
-        virtual bool is_open() const override
+        virtual void Flush() override
+        {
+            // this is no-op
+        }
+        virtual bool IsOpen() const override
         { return true; }
-        virtual std::string name() const override
-        { return "buffer_logger"; }
 
-        const std::vector<std::string>& lines() const
-        { return lines_; }
+        virtual std::string GetName() const override
+        { return "BufferLogger"; }
 
-        void clear()
+        std::size_t GetNumLines() const
+        { return lines_.size(); }
+
+        std::string GetLine(std::size_t i) const
+        { return lines_[i]; }
+
+        void Clear()
         { lines_.clear(); }
     private:
         std::vector<std::string> lines_;
     };
 
-    class filelogger : public logger
+    class FileLogger : public Logger
     {
     public:
-        filelogger(std::string file, bool ignore_failures)
+        FileLogger(const std::string& file, bool ignore_failures)
         {
             out_.open(file, std::ios::trunc);
             if (!out_.is_open() && !ignore_failures)
                 throw std::system_error(std::error_code(errno,
                     std::system_category()), "failed to open log file: " + file);
 
-            file_ = std::move(file);
+            file_ = file;
         }
-        virtual void write(const std::string& msg) override
+        virtual void Write(const std::string& msg) override
         {
             std::lock_guard<std::mutex> lock(mutex_);
             out_ << msg;
         }
 
-        virtual void flush() override
+        virtual void Flush() override
         {
             std::lock_guard<std::mutex> lock(mutex_);
             out_.flush();
         }
 
-        virtual bool is_open() const override
+        virtual bool IsOpen() const override
         { return out_.is_open(); }
 
-        virtual std::string name() const override
+        virtual std::string GetName() const override
         { return file_; }
     private:
         std::ofstream out_;
@@ -152,59 +168,58 @@ namespace newsflash
         std::mutex mutex_;
     };
 
-    class stdlog : public logger
+    class StdLogger : public Logger
     {
     public:
-        stdlog(std::ostream& out) : out_(out)
+        StdLogger(std::ostream& out) : out_(out)
         {}
-        virtual void write(const std::string& msg) override
+        virtual void Write(const std::string& msg) override
         {
             std::lock_guard<std::mutex> lock(mutex_);
             out_ << msg;
         }
-        virtual void flush() override
+        virtual void Flush() override
         {
             std::lock_guard<std::mutex> lock(mutex_);
             out_.flush();
         }
 
-        virtual bool is_open() const override
+        virtual bool IsOpen() const override
         { return true; }
 
-        virtual std::string name() const override
-        { return "stdlog"; }
+        virtual std::string GetName() const override
+        { return "StdLogger"; }
     private:
         std::ostream& out_;
         std::mutex mutex_;
     };
 
-    logger* get_thread_log();
-    logger* set_thread_log(logger* log);
+    Logger* GetThreadLog();
+    Logger* SetThreadLog(Logger* logger);
 
-    void enable_debug_log(bool on_off);
+    void FlushThreadLog();
+    void EnableDebugLog(bool on_off);
 
-    bool is_debug_log_enabled();
+    bool IsDebugLogEnabled();
 
     template<typename... Args>
-    void write_log(logevent type, const char* file, int line, const Args&... args)
+    void WriteLog(logevent type, const char* file, int line, const Args&... args)
     {
         if (type == logevent::debug)
         {
-            if (!is_debug_log_enabled())
+            if (!IsDebugLogEnabled())
                 return;
         }
 
-        auto* log = get_thread_log();
-        if (log == nullptr)
+        auto* logger = GetThreadLog();
+        if (logger == nullptr)
             return;
 
         std::stringstream ss;
         detail::beg_log_event(ss, type, file, line);
         detail::write_log_args(ss, args...);
         detail::end_log_event(ss);
-        log->write(ss.str());
+        logger->Write(ss.str());
     }
-
-    void flush_log();
 
 } // newsflash

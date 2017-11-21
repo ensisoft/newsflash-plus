@@ -76,7 +76,7 @@ namespace newsflash
         // perform the action
         void perform()
         {
-            logger* prev = set_thread_log(log_.get());
+            Logger* prev = SetThreadLog(logger_.get());
             try
             {
                 xperform();
@@ -85,10 +85,10 @@ namespace newsflash
             {
                 exptr_ = std::current_exception();
                 LOG_E(e.what());
-                if (log_)
-                    log_->flush();
+                if (logger_)
+                    logger_->Flush();
             }
-            set_thread_log(prev);
+            SetThreadLog(prev);
         }
 
         // if the action has any completion callbacks run them now.
@@ -124,8 +124,8 @@ namespace newsflash
         { affinity_ = aff; }
 
         // set the logger object to be used for this action.
-        void set_log(std::shared_ptr<logger> out)
-        { log_ = out; }
+        void set_log(std::shared_ptr<Logger> out)
+        { logger_ = out; }
 
     protected:
         virtual void xperform() = 0;
@@ -134,7 +134,7 @@ namespace newsflash
         std::exception_ptr exptr_;
         std::size_t owner_ = 0;
         std::size_t id_    = 0;
-        std::shared_ptr<logger> log_;
+        std::shared_ptr<Logger> logger_;
     private:
         affinity affinity_ = affinity::any_thread;
     };

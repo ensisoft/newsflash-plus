@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -18,7 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <newsflash/config.h>
+#include "newsflash/config.h"
+
 #include <newsflash/warnpush.h>
 #  include <boost/thread/tss.hpp>
 #include <newsflash/warnpop.h>
@@ -30,7 +31,7 @@
 
 namespace {
     struct TLS {
-        newsflash::logger* logger;
+        newsflash::Logger* logger;
     };
 
     boost::thread_specific_ptr<TLS> threadLogger;
@@ -63,7 +64,7 @@ namespace detail {
 
 } // detail
 
-logger* get_thread_log()
+Logger* GetThreadLog()
 {
     if (!threadLogger.get())
         return nullptr;
@@ -71,34 +72,34 @@ logger* get_thread_log()
     return threadLogger->logger;
 }
 
-logger* set_thread_log(logger* log)
+Logger* SetThreadLog(Logger* logger)
 {
-    logger* current = nullptr;
+    Logger* current = nullptr;
 
     if (!threadLogger.get())
         threadLogger.reset(new TLS);
     else current = threadLogger->logger;
 
-    threadLogger->logger = log;
+    threadLogger->logger = logger;
     return current;
 }
 
-void enable_debug_log(bool on_off)
+void EnableDebugLog(bool on_off)
 {
     debugLog = on_off;
 }
 
-bool is_debug_log_enabled()
+bool IsDebugLogEnabled()
 {
     return debugLog;
 }
 
-void flush_log()
+void FlushThreadLog()
 {
-    auto* log = get_thread_log();
-    if (!log) return;
+    auto* logger = GetThreadLog();
+    if (!logger) return;
 
-    log->flush();
+    logger->Flush();
 }
 
 } // newsflash
