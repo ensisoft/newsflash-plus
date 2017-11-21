@@ -137,7 +137,6 @@ namespace newsflash
             }
             else if (cmdtype_ == Type::GroupInfo)
             {
-                assert(!groups_.empty());
                 ses.RetrieveGroupInfo(groups_[0]);
             }
             else
@@ -158,6 +157,38 @@ namespace newsflash
                 }
             }
         }
+
+        // a single command version of SubmitDataCommands.
+        // this is mostly to simplify testing.
+        void SubmitDataCommand(std::size_t i, Session& session)
+        {
+            if (cmdtype_ == Type::Listing)
+            {
+                ASSERT(i == 0);
+                session.RetrieveList();
+            }
+            else if (cmdtype_ == Type::GroupInfo)
+            {
+                ASSERT(i == 0);
+                session.RetrieveGroupInfo(groups_[0]);
+            }
+            else
+            {
+                ASSERT(i < commands_.size());
+
+                if (i < buffers_.size() &&
+                    buffers_[i].content_status() == buffer::status::success)
+                    return;
+
+                if (cmdtype_ == Type::Article)
+                    session.RetrieveArticle(commands_[i]);
+                else if (cmdtype_ == Type::Header)
+                    session.RetrieveHeaders(commands_[i]);
+                if (i < buffers_.size())
+                    buffers_[i].clear();
+            }
+        }
+
 
         // receive a data buffer response to submit_data_commands
         void ReceiveDataBuffer(const buffer& buff)
