@@ -194,6 +194,25 @@ namespace newsflash
         std::mutex mutex_;
     };
 
+    // logger implementation that does nothing.
+    // can be convenient for testing purposes.
+    class NullLogger : public Logger
+    {
+    public:
+        virtual void Write(const std::string&) override
+        {}
+
+        virtual void Flush() override
+        {}
+
+        virtual bool IsOpen() const
+        { return true; }
+
+        virtual std::string GetName() const override
+        { return "NullLogger"; }
+    private:
+    };
+
     Logger* GetThreadLog();
     Logger* SetThreadLog(Logger* logger);
 
