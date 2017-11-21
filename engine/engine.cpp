@@ -2787,6 +2787,13 @@ void Engine::GetConns(std::deque<ui::Connection>* connlist) const
     }
 }
 
+void Engine::GetConn(std::size_t index, ui::Connection* conn) const
+{
+    ASSERT(index < state_->conns.size());
+
+    state_->conns[index]->update(*conn);
+}
+
 void Engine::KillConnection(std::size_t i)
 {
     LOG_D("Kill connection ", i);

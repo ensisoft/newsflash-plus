@@ -274,6 +274,9 @@ namespace newsflash
         // of all the connections in the engine.
         void GetConns(std::deque<ui::Connection>* connlist) const;
 
+        // get the connection status of a single connection at the given index.
+        void GetConn(std::size_t index, ui::Connection* conn) const;
+
         // kill the connection at the given index.
         void KillConnection(std::size_t index);
 
