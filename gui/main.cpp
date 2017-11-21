@@ -358,9 +358,15 @@ int run(QtSingleApplication& qtinstance)
     gui::FileSystemModule fileSysMod;
     win.attach(&fileSysMod);
 
+    // note that this order is currently a bit important
+    // since the engine needs to load it's state before
+    // it can properly initialize and create the engine instance
+    // and some other things (such as account) then assume
+    // that the engine already exists.
+    app::g_engine->loadState(settings);
+
     app::g_accounts->loadState(settings);
     app::g_tools->loadState(settings);
-    app::g_engine->loadState(settings);
     app::g_history->loadState(settings);
     app::g_history->loadHistory();
 

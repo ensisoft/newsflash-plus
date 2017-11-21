@@ -42,6 +42,7 @@ namespace newsflash
 {
     class Connection;
     class Task;
+    class Logger;
 
     class Engine
     {
@@ -56,6 +57,8 @@ namespace newsflash
             virtual std::unique_ptr<Task> AllocateTask(const data::TaskState& data) = 0;
             virtual std::unique_ptr<Connection> AllocateConnection() = 0;
             virtual std::unique_ptr<ui::Result> MakeResult(const Task& task, const ui::TaskDesc& desc) const = 0;
+            virtual std::unique_ptr<Logger> AllocateEngineLogger() = 0;
+            virtual std::unique_ptr<Logger> AllocateConnectionLogger() = 0;
         private:
         };
 
@@ -104,9 +107,14 @@ namespace newsflash
 
         using TaskId = std::size_t;
 
+        // create the engine with a specific factory implementation,
+        // that allows alternative task/connection implementations to be
+        // created. This is mostly for testing purposes.
         Engine(std::unique_ptr<Factory> factory,
             bool enable_single_thread_debug);
-        Engine();
+
+        // create the engine using internal default factory.
+        Engine(const std::string& logpath);
        ~Engine();
 
         // Perform an account testing to see if the setup is working.
@@ -158,7 +166,7 @@ namespace newsflash
 
         // start engine. this will start connections and being processing the
         // tasks currently queued in the tasklist.
-        void Start(const std::string& logpath);
+        void Start();
 
         // stop the engine. kill all connections and stop all processing.
         void Stop();

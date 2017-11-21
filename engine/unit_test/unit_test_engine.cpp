@@ -527,6 +527,14 @@ struct Factory : public Engine::Factory
     {
         return nullptr;
     }
+    virtual std::unique_ptr<Logger> AllocateEngineLogger()
+    {
+        return std::make_unique<StdLogger>(std::cout);
+    }
+    virtual std::unique_ptr<Logger> AllocateConnectionLogger()
+    {
+        return std::make_unique<NullLogger>();
+    }
 
     const Task* GetTask(size_t i) const
     {
@@ -571,6 +579,13 @@ public:
 
     virtual std::unique_ptr<ui::Result> MakeResult(const Task& task, const ui::TaskDesc& desc) const override
     { return factory_->MakeResult(task, desc); }
+
+    virtual std::unique_ptr<Logger> AllocateEngineLogger()
+    { return factory_->AllocateEngineLogger(); }
+
+    virtual std::unique_ptr<Logger> AllocateConnectionLogger()
+    { return factory_->AllocateConnectionLogger(); }
+
 private:
     std::shared_ptr<Factory> factory_;
 };
@@ -641,7 +656,7 @@ void test_connection_establish()
 
         std::deque<ui::Connection> conns;
 
-        eng.Start("");
+        eng.Start();
         eng.SetAccount(account, spawn_immediately);
 
         // note that the the initial state is Resolving.

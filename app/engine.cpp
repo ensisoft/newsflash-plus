@@ -79,37 +79,6 @@ namespace app
 
 Engine::Engine()
 {
-    engine_.reset(new newsflash::Engine);
-    engine_->SetErrorCallback(std::bind(&Engine::onError, this,
-        std::placeholders::_1));
-    engine_->SetFileCallback(std::bind(&Engine::onFileComplete, this,
-         std::placeholders::_1));
-    engine_->SetTaskCallback(std::bind(&Engine::onTaskComplete, this,
-        std::placeholders::_1));
-    engine_->SetBatchCallback(std::bind(&Engine::onBatchComplete, this,
-        std::placeholders::_1));
-    engine_->SetUpdateCallback(std::bind(&Engine::onUpdateComplete, this,
-        std::placeholders::_1));
-    engine_->SetListCallback(std::bind(&Engine::onListComplete, this,
-        std::placeholders::_1));
-    engine_->SetHeaderInfoCallback(std::bind(&Engine::onHeaderInfoAvailable, this,
-        std::placeholders::_1));
-    engine_->SetFinishCallback(std::bind(&Engine::onAllComplete, this));
-    engine_->SetQuotaCallback(std::bind(&Engine::onQuota, this,
-        std::placeholders::_1, std::placeholders::_2));
-    engine_->SetTestCallback(std::bind(&Engine::onConnectionTestComplete, this,
-        std::placeholders::_1));
-    engine_->SetTestLogCallback(std::bind(&Engine::onConnectionTestLogMsg, this,
-        std::placeholders::_1));
-
-    // remember that the notify callback can come from any thread
-    // within the engine and it has to be thread safe.
-    // so we simply post a notification to the main threads
-    // event queue and then handle it in the eventFilter
-    engine_->SetNotifyCallback([=]() {
-        QCoreApplication::postEvent(this, new AsyncNotifyEvent);
-    });
-
     installEventFilter(this);
     ticktimer_ = startTimer(1000);
 
@@ -340,12 +309,55 @@ void Engine::loadState(Settings& s)
     checkLowDisk_ = s.get("engine", "check_low_disk", checkLowDisk_);
     connect_      = s.get("engine", "connect", true);
 
+    std::string logpath;
+
+    QDir dir;
+    if (!dir.mkpath(logifiles_))
+    {
+        ERROR("Error creating log path %1", logifiles_);
+        WARN("Engine log files will may not be available.");
+    }
+    else
+    {
+        logpath = toUtf8(logifiles_);
+    }
+
+    engine_.reset(new newsflash::Engine(logpath));
+    engine_->SetErrorCallback(std::bind(&Engine::onError, this,
+        std::placeholders::_1));
+    engine_->SetFileCallback(std::bind(&Engine::onFileComplete, this,
+         std::placeholders::_1));
+    engine_->SetTaskCallback(std::bind(&Engine::onTaskComplete, this,
+        std::placeholders::_1));
+    engine_->SetBatchCallback(std::bind(&Engine::onBatchComplete, this,
+        std::placeholders::_1));
+    engine_->SetUpdateCallback(std::bind(&Engine::onUpdateComplete, this,
+        std::placeholders::_1));
+    engine_->SetListCallback(std::bind(&Engine::onListComplete, this,
+        std::placeholders::_1));
+    engine_->SetHeaderInfoCallback(std::bind(&Engine::onHeaderInfoAvailable, this,
+        std::placeholders::_1));
+    engine_->SetFinishCallback(std::bind(&Engine::onAllComplete, this));
+    engine_->SetQuotaCallback(std::bind(&Engine::onQuota, this,
+        std::placeholders::_1, std::placeholders::_2));
+    engine_->SetTestCallback(std::bind(&Engine::onConnectionTestComplete, this,
+        std::placeholders::_1));
+    engine_->SetTestLogCallback(std::bind(&Engine::onConnectionTestLogMsg, this,
+        std::placeholders::_1));
+
+    // remember that the notify callback can come from any thread
+    // within the engine and it has to be thread safe.
+    // so we simply post a notification to the main threads
+    // event queue and then handle it in the eventFilter
+    engine_->SetNotifyCallback([=]() {
+        QCoreApplication::postEvent(this, new AsyncNotifyEvent);
+    });
+
     engine_->SetOverwriteExistingFiles(overwrite);
     engine_->SetDiscardTextContent(discard);
     engine_->SetEnableThrottle(throttle);
     engine_->SetThrottleValue(throttleval);
     engine_->SetPreferSecure(secure);
-
 }
 
 void Engine::saveState(Settings& s)
@@ -498,20 +510,15 @@ void Engine::timerEvent(QTimerEvent* event)
     if (shutdown_)
         return;
     // service the engine periodically
-    engine_->Tick();
+    if (engine_)
+        engine_->Tick();
 }
 
 void Engine::start()
 {
-    if  (connect_)
+    if (connect_)
     {
-        QDir dir;
-        if (!dir.mkpath(logifiles_))
-        {
-            WARN("Error creating log path %1", logifiles_);
-            WARN("Engine log files will not be available.");
-        }
-        engine_->Start(toUtf8(logifiles_));
+        engine_->Start();
     }
 }
 

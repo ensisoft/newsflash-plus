@@ -122,8 +122,7 @@ struct Engine::State {
     std::uint64_t bytes_written = 0;
     std::size_t oid = 1; // object id for tasks/connections
     std::size_t fill_account = 0;
-    std::string logpath;
-
+    
     std::unique_ptr<Engine::Factory> factory;
 
     std::unique_ptr<Logger> logger;
@@ -203,24 +202,6 @@ struct Engine::State {
         return *it;
     }
 
-    bool start(const std::string& logs)
-    {
-        if (started)
-            return false;
-
-        const auto& logfile = fs::joinpath(logs, "engine.log");
-
-        std::unique_ptr<Logger> log(new FileLogger(logfile, true));
-        if (log->IsOpen())
-            SetThreadLog(log.get());
-        else SetThreadLog(nullptr);
-
-        logger  = std::move(log);
-        logpath = logs;
-        started = true;
-        return true;
-    }
-
     void submit(action* a)
     {
         if (a->get_affinity() == action::affinity::gui_thread)
@@ -277,20 +258,8 @@ class Engine::ConnState
 private:
     ConnState(Engine::State& state, std::size_t cid)
     {
-        std::string file;
-        std::string name;
-        for (int i=0; i<1000; ++i)
-        {
-            name = str("connection", i, ".log");
-            file = fs::joinpath(state.logpath, name);
-            auto it = std::find_if(std::begin(state.conns), std::end(state.conns),
-                [&](const std::unique_ptr<ConnState>& c) {
-                    return c->ui_.logfile == file;
-                });
-            if (it == std::end(state.conns))
-                break;
-        }
-
+        logger_        = state.factory->AllocateConnectionLogger();
+        thread_        = state.threads->AllocatePrivateThread();
         ui_.error      = errors::None;
         ui_.state      = states::Disconnected;
         ui_.id         = cid;
@@ -298,12 +267,10 @@ private:
         ui_.account    = 0;
         ui_.down       = 0;
         ui_.bps        = 0;
-        ui_.logfile    = file;
+        ui_.logfile    = logger_->GetName();
         ticks_to_ping_ = 30;
         ticks_to_conn_ = 5;
-        logger_        = std::make_shared<FileLogger>(file, true);
-        thread_        = state.threads->AllocatePrivateThread();
-        LOG_D("Connection ", ui_.id, " log file: ", file);
+        LOG_D("Connection ", ui_.id);
     }
 
     using states = ui::Connection::States;
@@ -1939,13 +1906,30 @@ Engine::Engine(std::unique_ptr<Factory> factory,
     bool enable_single_thread_debug) : state_(new State(enable_single_thread_debug))
 {
     state_->factory = std::move(factory);
+    state_->logger  = state_->factory->AllocateEngineLogger();
+
+    // todo: we should really set the logger on every entry point
+    // (i.e. set the log to our log and then restore on return)
+    // theoretically the client could use different threads to call
+    // into the engine.
+    if (state_->logger->IsOpen())
+    {
+        SetThreadLog(state_->logger.get());
+    }
+    else
+    {
+        SetThreadLog(nullptr);
+    }
 }
 
-Engine::Engine() : state_(new State(false))
+Engine::Engine(const std::string& logpath) : state_(new State(false))
 {
     class DefaultFactory : public Factory
     {
     public:
+        DefaultFactory(const std::string& logpath) : logpath_(logpath)
+        {}
+
         std::unique_ptr<Task> AllocateTask(const ui::FileDownload& file) override
         {
             return std::make_unique<Download>(file.groups, file.articles, file.path, file.desc);
@@ -2027,8 +2011,40 @@ Engine::Engine() : state_(new State(false))
             }
             return ret;
         }
+        std::unique_ptr<Logger> AllocateEngineLogger()
+        {
+            const auto& logfile = fs::joinpath(logpath_, "engine.log");
+
+            std::unique_ptr<Logger> logger(new FileLogger(logfile, true));
+            return logger;
+        }
+        std::unique_ptr<Logger> AllocateConnectionLogger()
+        {
+            const auto& name = str("connection", lognum_, ".log");
+            const auto& file = fs::joinpath(logpath_, name);
+            lognum_++;
+            std::unique_ptr<Logger> logger(new FileLogger(file, true));
+            return logger;
+        }
+    private:
+        std::string logpath_;
+        std::size_t lognum_ = 1;
     };
-    state_->factory = std::make_unique<DefaultFactory>();
+    state_->factory = std::make_unique<DefaultFactory>(logpath);
+    state_->logger  = state_->factory->AllocateEngineLogger();
+
+    // todo: we should really set the logger on every entry point
+    // (i.e. set the log to our log and then restore on return)
+    // theoretically the client could use different threads to call
+    // into the engine.
+    if (state_->logger->IsOpen())
+    {
+        SetThreadLog(state_->logger.get());
+    }
+    else
+    {
+        SetThreadLog(nullptr);
+    }
 }
 
 Engine::~Engine()
@@ -2406,9 +2422,9 @@ void Engine::RunMainThread()
     state_->threads->RunMainThreads();
 }
 
-void Engine::Start(const std::string& logpath)
+void Engine::Start()
 {
-    if (state_->start(logpath))
+    if (!state_->started)
     {
         LOG_I("Engine starting");
         LOG_D("Current settings:");
@@ -2416,6 +2432,7 @@ void Engine::Start(const std::string& logpath)
         LOG_D("Discard text content: ", state_->discard_text);
         LOG_D("Prefer secure:", state_->prefer_secure);
 
+        state_->started = true;
         state_->execute();
     }
 }
@@ -2732,7 +2749,7 @@ std::uint64_t Engine::GetTotalBytesDownloaded() const
 
 std::string Engine::GetLogfileName() const
 {
-    return fs::joinpath(state_->logpath, "engine.log");
+    return state_->logger->GetName();
 }
 
 
