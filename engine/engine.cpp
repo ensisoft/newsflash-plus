@@ -2739,7 +2739,7 @@ bool Engine::IsStarted() const
     return state_->started;
 }
 
-void Engine::GetTasks(std::deque<ui::TaskDesc>* tasklist)
+void Engine::GetTasks(std::deque<ui::TaskDesc>* tasklist) const
 {
     if (state_->group_items)
     {
@@ -2775,7 +2775,7 @@ void Engine::GetTask(std::size_t index, ui::TaskDesc* task) const
     }
 }
 
-void Engine::GetConns(std::deque<ui::Connection>* connlist)
+void Engine::GetConns(std::deque<ui::Connection>* connlist) const
 {
     const auto& conns = state_->conns;
 
