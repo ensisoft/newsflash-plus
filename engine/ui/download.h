@@ -46,6 +46,14 @@ namespace newsflash
         // the human readable description that will appear in task::description.
         // usually the expected name of the file or some other descriptive text.
         std::string desc;
+
+        // user specific opaque data object that will be associated
+        // with the task object created from this download.
+        // the client can get the same pointer back from the TaskDesc object.
+        // note that there's absolutely no lifetime management related done
+        // by the engine related to this data, so the caller is responsible
+        // making sure that the object stays valid etc.
+        void* user_data = nullptr;
     };
 
     // a download job details for downloading single item of content (a file)

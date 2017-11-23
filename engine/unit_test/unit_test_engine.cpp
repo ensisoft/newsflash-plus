@@ -32,11 +32,21 @@
 
 using namespace newsflash;
 
+struct TaskParams {
+    bool should_cancel = false;
+    bool should_commit = false;
+};
+
 class TestFileTask : public ContentTask
 {
 public:
+    TestFileTask(const TaskParams& state) : state_(state)
+    {}
+
    ~TestFileTask()
     {
+        BOOST_REQUIRE(state_.should_cancel == cancelled_ ||
+                      state_.should_commit == committed_);
     }
 
     virtual std::shared_ptr<CmdList> CreateCommands() override
@@ -48,19 +58,16 @@ public:
 
     virtual void Cancel() override
     {
-        BOOST_REQUIRE(!Cancelled);
-        BOOST_REQUIRE(!Committed);
-
-        Cancelled = true;
-
+        BOOST_REQUIRE(!cancelled_);
+        BOOST_REQUIRE(!committed_);
+        cancelled_ = true;
     }
 
     virtual void Commit() override
     {
-        BOOST_REQUIRE(!Cancelled);
-        BOOST_REQUIRE(!Committed);
-
-        Committed = true;
+        BOOST_REQUIRE(!cancelled_);
+        BOOST_REQUIRE(!committed_);
+        committed_ = true;
     }
 
     virtual void Complete(action& act,
@@ -97,15 +104,24 @@ public:
     virtual void SetWriteCallback(const OnWriteDone& callback)
     {}
 
-    bool Cancelled = false;
-    bool Committed = false;
+private:
+    bool cancelled_ = false;
+    bool committed_ = false;
+private:
+    TaskParams state_;
+
 };
 
 class TestHeadersTask : public ContentTask
 {
 public:
+    TestHeadersTask(const TaskParams& params) : state_(params)
+    {}
+
    ~TestHeadersTask()
     {
+        BOOST_REQUIRE(state_.should_cancel == cancelled_ ||
+                      state_.should_commit == committed_);
     }
 
     virtual std::shared_ptr<CmdList> CreateCommands() override
@@ -117,19 +133,19 @@ public:
 
     virtual void Cancel() override
     {
-        BOOST_REQUIRE(!Cancelled);
-        BOOST_REQUIRE(!Committed);
+        BOOST_REQUIRE(!cancelled_);
+        BOOST_REQUIRE(!committed_);
 
-        Cancelled = true;
+        cancelled_ = true;
 
     }
 
     virtual void Commit() override
     {
-        BOOST_REQUIRE(!Cancelled);
-        BOOST_REQUIRE(!Committed);
+        BOOST_REQUIRE(!cancelled_);
+        BOOST_REQUIRE(!committed_);
 
-        Committed = true;
+        committed_ = true;
     }
 
     virtual void Complete(action& act,
@@ -165,17 +181,24 @@ public:
 
     virtual void SetWriteCallback(const OnWriteDone& callback)
     {}
-
-    bool Cancelled = false;
-    bool Committed = false;
+private:
+    bool cancelled_ = false;
+    bool committed_ = false;
+private:
+    TaskParams state_;
 };
 
 
 class TestListingTask : public ContentTask
 {
 public:
+    TestListingTask(const TaskParams& state) : state_(state)
+    {}
+
    ~TestListingTask()
     {
+        BOOST_REQUIRE(state_.should_cancel == cancelled_ ||
+                      state_.should_commit == committed_);
     }
 
     virtual std::shared_ptr<CmdList> CreateCommands() override
@@ -187,19 +210,18 @@ public:
 
     virtual void Cancel() override
     {
-        BOOST_REQUIRE(!Cancelled);
-        BOOST_REQUIRE(!Committed);
+        BOOST_REQUIRE(!cancelled_);
+        BOOST_REQUIRE(!committed_);
 
-        Cancelled = true;
-
+        cancelled_ = true;
     }
 
     virtual void Commit() override
     {
-        BOOST_REQUIRE(!Cancelled);
-        BOOST_REQUIRE(!Committed);
+        BOOST_REQUIRE(!cancelled_);
+        BOOST_REQUIRE(!committed_);
 
-        Committed = true;
+        committed_ = true;
     }
 
     virtual void Complete(action& act,
@@ -235,9 +257,25 @@ public:
 
     virtual void SetWriteCallback(const OnWriteDone& callback)
     {}
+private:
+    bool cancelled_ = false;
+    bool committed_ = false;
+private:
+    TaskParams state_;
+};
 
-    bool Cancelled = false;
-    bool Committed = false;
+struct ConnState {
+    Connection::Error errors_[7];
+
+    ConnState()
+    {
+        std::memset(&errors_, 0, sizeof(errors_));
+    }
+
+    void SetError(Connection::State when, Connection::Error what)
+    {
+        errors_[(int)when] = what;
+    }
 };
 
 class TestConnection : public Connection
@@ -279,15 +317,8 @@ public:
         {}
     };
 
-    TestConnection()
-    {
-        std::memset(errors_, 0, sizeof(errors_));
-    }
-
-    void SetError(Connection::State when, Connection::Error what)
-    {
-        errors_[(int)when] = what;
-    }
+    TestConnection(const ConnState& state) : conn_state_(state)
+    {}
 
     virtual std::unique_ptr<action> Connect(const HostDetails& host) override
     {
@@ -311,9 +342,9 @@ public:
 
         std::unique_ptr<action> next;
 
-        if (errors_[(int)state_] != Connection::Error::None)
+        if (conn_state_.errors_[(int)state_] != Connection::Error::None)
         {
-            error_ = errors_[(int)state_];
+            error_ = conn_state_.errors_[(int)state_];
             state_ = Connection::State::Error;
             return next;
         }
@@ -386,142 +417,43 @@ public:
 private:
     Connection::State state_ = Connection::State::Disconnected;
     Connection::Error error_ = Connection::Error::None;
-    Connection::Error errors_[7];
+
+    ConnState conn_state_;
 
 };
 
-class ConnShell : public Connection
-{
-public:
-    ConnShell(const std::shared_ptr<Connection>& conn) : conn_(conn)
-    {}
-
-    virtual std::unique_ptr<action> Connect(const HostDetails& host) override
-    { return conn_->Connect(host);}
-
-    virtual std::unique_ptr<action> Disconnect() override
-    { return conn_->Disconnect(); }
-
-    virtual std::unique_ptr<action> Ping() override
-    { return conn_->Ping(); }
-
-    virtual std::unique_ptr<action> Complete(std::unique_ptr<action> a) override
-    { return conn_->Complete(std::move(a)); }
-
-    virtual std::unique_ptr<action> Execute(std::shared_ptr<CmdList> cmd, std::size_t tid) override
-    { return conn_->Execute(cmd, tid); }
-
-    virtual void Cancel() override
-    { conn_->Cancel(); }
-
-    virtual std::string GetUsername() const
-    { return conn_->GetUsername(); }
-
-    virtual std::string GetPassword() const override
-    { return conn_->GetPassword(); }
-
-    virtual std::uint32_t GetCurrentSpeedBps() const override
-    { return conn_->GetCurrentSpeedBps(); }
-
-    virtual std::uint64_t GetNumBytesTransferred() const override
-    { return conn_->GetNumBytesTransferred(); }
-
-    virtual State GetState() const override
-    { return conn_->GetState(); }
-
-    virtual Error GetError() const override
-    { return conn_->GetError(); }
-
-    virtual void SetCallback(const OnCmdlistDone& callback) override
-    { conn_->SetCallback(callback); }
-
-private:
-    std::shared_ptr<Connection> conn_;
-};
-
-class TaskShell : public ContentTask
-{
-public:
-    TaskShell(std::shared_ptr<Task> task) : task_(task)
-    {}
-    virtual std::shared_ptr<CmdList> CreateCommands() override
-    { return task_->CreateCommands(); }
-
-    virtual void Cancel() override
-    { task_->Cancel(); }
-
-    virtual void Commit() override
-    { task_->Commit(); }
-
-    virtual void Complete(action& act,
-        std::vector<std::unique_ptr<action>>& next) override
-    { task_->Complete(act, next); }
-
-    virtual void Complete(CmdList& cmd,
-        std::vector<std::unique_ptr<action>>& next) override
-    { task_->Complete(cmd, next); }
-
-    virtual void Configure(const Settings& settings) override
-    { task_->Configure(settings); }
-
-    virtual bool HasCommands() const override
-    { return task_->HasCommands(); }
-
-    virtual std::size_t MaxNumActions() const override
-    { return task_->MaxNumActions(); }
-
-    virtual bitflag<Error> GetErrors() const override
-    { return task_->GetErrors(); }
-
-    virtual void Pack(data::TaskState& data) const override
-    { task_->Pack(data); }
-
-    virtual void Load(const data::TaskState& data) override
-    { task_->Load(data); }
-
-    virtual void SetWriteCallback(const OnWriteDone& callback)
-    {}
-private:
-    std::shared_ptr<Task> task_;
-};
 
 struct Factory : public Engine::Factory
 {
-    std::shared_ptr<TestConnection> NextConn;
-
     virtual std::unique_ptr<Task> AllocateTask(const ui::FileDownload& file) override
     {
-        auto task = std::make_shared<TestFileTask>();
-        tasks_.push_back(task);
-        return std::make_unique<TaskShell>(task);
+        auto* params = static_cast<TaskParams*>(file.user_data);
+
+        return std::make_unique<TestFileTask>(*params);
     }
     virtual std::unique_ptr<Task> AllocateTask(const ui::HeaderDownload& download) override
     {
-        auto task = std::make_shared<TestHeadersTask>();
-        tasks_.push_back(task);
-        return std::make_unique<TaskShell>(task);
+        auto* params = static_cast<TaskParams*>(download.user_data);
+
+        return std::make_unique<TestHeadersTask>(*params);
     }
     virtual std::unique_ptr<Task> AllocateTask(const ui::GroupListDownload& list) override
     {
-        auto task = std::make_shared<TestListingTask>();
-        tasks_.push_back(task);
-        return std::make_unique<TaskShell>(task);
+        auto* params = static_cast<TaskParams*>(list.user_data);
+
+        return std::make_unique<TestListingTask>(*params);
     }
     virtual std::unique_ptr<Task> AllocateTask(const data::TaskState& data) override
     {
-        auto task = std::make_shared<TestFileTask>();
-        tasks_.push_back(task);
-        return std::make_unique<TaskShell>(task);
+        TaskParams params;
+
+        return std::make_unique<TestFileTask>(params);
     }
-    virtual std::unique_ptr<Connection> AllocateConnection() override
+    virtual std::unique_ptr<Connection> AllocateConnection(const ui::Account& acc) override
     {
-        std::shared_ptr<TestConnection> ret;
-        if (NextConn)
-            ret = NextConn;
-        else ret = std::make_shared<TestConnection>();
-        conns_.push_back(ret);
-        NextConn.reset();
-        return std::make_unique<ConnShell>(ret);
+        auto* params = static_cast<ConnState*>(acc.user_data);
+
+        return std::make_unique<TestConnection>(*params);
     }
     virtual std::unique_ptr<ui::Result> MakeResult(const Task& task, const ui::TaskDesc& desc) const override
     {
@@ -535,59 +467,8 @@ struct Factory : public Engine::Factory
     {
         return std::make_unique<NullLogger>();
     }
-
-    const Task* GetTask(size_t i) const
-    {
-        BOOST_REQUIRE(i < tasks_.size());
-        return tasks_[i].get();
-    }
-
-    template<typename T>
-    const T* GetTask(size_t i) const
-    {
-        BOOST_REQUIRE(i < tasks_.size());
-        const auto* p = dynamic_cast<const T*>(tasks_[i].get());
-        BOOST_REQUIRE(p);
-        return p;
-    }
-
 private:
-    std::vector<std::shared_ptr<Task>> tasks_;
-    std::vector<std::shared_ptr<Connection>> conns_;
-};
 
-class FactoryShell : public Engine::Factory
-{
-public:
-    FactoryShell(std::shared_ptr<Factory> factory) : factory_(factory)
-    {}
-
-    virtual std::unique_ptr<Task> AllocateTask(const ui::FileDownload& file) override
-    { return factory_->AllocateTask(file); }
-
-    virtual std::unique_ptr<Task> AllocateTask(const ui::HeaderDownload& download) override
-    { return factory_->AllocateTask(download); }
-
-    virtual std::unique_ptr<Task> AllocateTask(const ui::GroupListDownload& list) override
-    { return factory_->AllocateTask(list); }
-
-    virtual std::unique_ptr<Task> AllocateTask(const data::TaskState& data) override
-    { return factory_->AllocateTask(data); }
-
-    virtual std::unique_ptr<Connection> AllocateConnection() override
-    { return factory_->AllocateConnection(); }
-
-    virtual std::unique_ptr<ui::Result> MakeResult(const Task& task, const ui::TaskDesc& desc) const override
-    { return factory_->MakeResult(task, desc); }
-
-    virtual std::unique_ptr<Logger> AllocateEngineLogger()
-    { return factory_->AllocateEngineLogger(); }
-
-    virtual std::unique_ptr<Logger> AllocateConnectionLogger()
-    { return factory_->AllocateConnectionLogger(); }
-
-private:
-    std::shared_ptr<Factory> factory_;
 };
 
 void test_connection_establish()
@@ -633,6 +514,9 @@ void test_connection_establish()
 
     for (size_t i=0; i < 8; ++i)
     {
+        ConnState state;
+        state.SetError(tests[i].when, tests[i].what);
+
         ui::Account account;
         account.id = 123;
         account.name = "test";
@@ -645,14 +529,11 @@ void test_connection_establish()
         account.enable_general_server = false;
         account.enable_compression = false;
         account.enable_pipelining = false;
-
-        auto factory = std::make_shared<Factory>();
-        factory->NextConn = std::make_shared<TestConnection>();
-        factory->NextConn->SetError(tests[i].when, tests[i].what);
+        account.user_data = &state;
 
         const bool spawn_immediately = true;
         const bool debug_single_thread = true;
-        Engine eng(std::make_unique<FactoryShell>(factory), debug_single_thread);
+        Engine eng(std::make_unique<Factory>(), debug_single_thread);
 
         std::deque<ui::Connection> conns;
 
@@ -707,83 +588,95 @@ void test_connection_establish()
 
 void test_task_entry_and_delete()
 {
+    Engine eng(std::make_unique<Factory>(), true);
 
-    auto factory = std::make_shared<Factory>();
+    {
+        TaskParams params;
+        params.should_cancel = true;
 
-    Engine eng(std::make_unique<FactoryShell>(factory), true);
+        ui::GroupListDownload listing;
+        listing.account   = 123;
+        listing.size      = 321;
+        listing.path      = "test/foo/bar";
+        listing.desc      = "test test";
+        listing.user_data = &params;
+        eng.SetGroupItems(false);
+        eng.DownloadListing(listing);
 
-    ui::GroupListDownload listing;
-    listing.account = 123;
-    listing.size    = 321;
-    listing.path    = "test/foo/bar";
-    listing.desc    = "test test";
-    eng.SetGroupItems(false);
-    eng.DownloadListing(listing);
+        BOOST_REQUIRE(eng.GetNumTasks() == 1);
+        ui::TaskDesc task;
+        eng.GetTask(0, &task);
+        BOOST_REQUIRE(task.error.any_bit() == false);
+        BOOST_REQUIRE(task.state == ui::TaskDesc::States::Queued);
+        BOOST_REQUIRE(task.task_id != 0);
+        BOOST_REQUIRE(task.batch_id != 0);
+        BOOST_REQUIRE(task.account == 123);
+        BOOST_REQUIRE(task.desc == "test test");
+        BOOST_REQUIRE(task.path == "test/foo/bar");
+        BOOST_REQUIRE(task.size == 321);
+        BOOST_REQUIRE(task.runtime == 0);
+        BOOST_REQUIRE(task.etatime == 0);
+        eng.KillTask(0);
+        BOOST_REQUIRE(eng.GetNumTasks() == 0);
+    }
 
-    BOOST_REQUIRE(eng.GetNumTasks() == 1);
-    ui::TaskDesc task;
-    eng.GetTask(0, &task);
-    BOOST_REQUIRE(task.error.any_bit() == false);
-    BOOST_REQUIRE(task.state == ui::TaskDesc::States::Queued);
-    BOOST_REQUIRE(task.task_id != 0);
-    BOOST_REQUIRE(task.batch_id != 0);
-    BOOST_REQUIRE(task.account == 123);
-    BOOST_REQUIRE(task.desc == "test test");
-    BOOST_REQUIRE(task.path == "test/foo/bar");
-    BOOST_REQUIRE(task.size == 321);
-    BOOST_REQUIRE(task.runtime == 0);
-    BOOST_REQUIRE(task.etatime == 0);
-    eng.KillTask(0);
-    BOOST_REQUIRE(eng.GetNumTasks() == 0);
-    BOOST_REQUIRE(factory->GetTask<TestListingTask>(0)->Cancelled == true);
+    {
+        TaskParams params;
+        params.should_cancel = true;
 
-    ui::FileDownload download;
-    download.account = 123;
-    download.size    = 666;
-    download.path    = "test/foo/bar";
-    download.desc    = "download";
-    download.articles.push_back("1");
-    download.articles.push_back("2");
-    download.groups.push_back("alt.binaries.foo");
-    ui::FileBatchDownload batch;
-    batch.account = 123;
-    batch.size    = 666;
-    batch.path    = "test/foo/bar";
-    batch.desc    = "download";
-    batch.files.push_back(download);
-    eng.DownloadFiles(batch);
+        ui::FileDownload download;
+        download.account   = 123;
+        download.size      = 666;
+        download.path      = "test/foo/bar";
+        download.desc      = "download";
+        download.user_data = &params;
+        download.articles.push_back("1");
+        download.articles.push_back("2");
+        download.groups.push_back("alt.binaries.foo");
 
-    BOOST_REQUIRE(eng.GetNumTasks() == 1);
-    eng.GetTask(0, &task);
-    BOOST_REQUIRE(task.error.any_bit() == false);
-    BOOST_REQUIRE(task.state == ui::TaskDesc::States::Queued);
-    BOOST_REQUIRE(task.task_id != 0);
-    BOOST_REQUIRE(task.batch_id != 0);
-    BOOST_REQUIRE(task.account == 123);
-    BOOST_REQUIRE(task.desc == "download");
-    BOOST_REQUIRE(task.path == "test/foo/bar");
-    BOOST_REQUIRE(task.size == 666);
-    BOOST_REQUIRE(task.runtime == 0);
-    BOOST_REQUIRE(task.etatime == 0);
-    eng.KillTask(0);
-    BOOST_REQUIRE(eng.GetNumTasks() == 0);
-    BOOST_REQUIRE(factory->GetTask<TestFileTask>(1)->Cancelled == true);
+        ui::FileBatchDownload batch;
+        batch.account = 123;
+        batch.size    = 666;
+        batch.path    = "test/foo/bar";
+        batch.desc    = "download";
+        batch.files.push_back(download);
+        eng.DownloadFiles(batch);
 
+        ui::TaskDesc task;
+
+        BOOST_REQUIRE(eng.GetNumTasks() == 1);
+        eng.GetTask(0, &task);
+        BOOST_REQUIRE(task.error.any_bit() == false);
+        BOOST_REQUIRE(task.state == ui::TaskDesc::States::Queued);
+        BOOST_REQUIRE(task.task_id != 0);
+        BOOST_REQUIRE(task.batch_id != 0);
+        BOOST_REQUIRE(task.account == 123);
+        BOOST_REQUIRE(task.desc == "download");
+        BOOST_REQUIRE(task.path == "test/foo/bar");
+        BOOST_REQUIRE(task.size == 666);
+        BOOST_REQUIRE(task.runtime == 0);
+        BOOST_REQUIRE(task.etatime == 0);
+        eng.KillTask(0);
+        BOOST_REQUIRE(eng.GetNumTasks() == 0);
+    }
 }
 
 void test_task_move()
 {
-    auto factory = std::make_shared<Factory>();
-
-    Engine eng(std::make_unique<FactoryShell>(factory), true);
+    Engine eng(std::make_unique<Factory>(), true);
     eng.SetGroupItems(false);
+
+    const auto NumTestFiles = 3;
+
+    std::vector<TaskParams> params;
+    params.resize(NumTestFiles);
 
     ui::FileBatchDownload batch;
     batch.account = 123;
     batch.size    = 666;
     batch.path    = "test/foo/bar";
     batch.desc    = "batch 1";
-    for (int i=0; i<3; ++i)
+    for (int i=0; i<NumTestFiles; ++i)
     {
         ui::FileDownload download;
         download.account = 123;
@@ -793,6 +686,8 @@ void test_task_move()
         download.articles.push_back("1");
         download.articles.push_back("2");
         download.groups.push_back("alt.binaries.foo");
+        download.user_data = &params[i];
+
         batch.files.push_back(download);
     }
     eng.DownloadFiles(batch);

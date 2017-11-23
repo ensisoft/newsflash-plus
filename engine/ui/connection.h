@@ -122,6 +122,7 @@ namespace newsflash
 
         // current speed in bytes per second.
         std::uint32_t bps = 0;
+
     };
 
 } // ui

@@ -122,7 +122,7 @@ struct Engine::State {
     std::uint64_t bytes_written = 0;
     std::size_t oid = 1; // object id for tasks/connections
     std::size_t fill_account = 0;
-    
+
     std::unique_ptr<Engine::Factory> factory;
 
     std::unique_ptr<Logger> logger;
@@ -306,10 +306,10 @@ public:
             ui_.host      = acc.general_host;
             ui_.port      = acc.general_port;
         }
-        ui_.account = aid;
-        ui_.state   = ui::Connection::States::Resolving;
+        ui_.account   = aid;
+        ui_.state     = ui::Connection::States::Resolving;
 
-        conn_ = state.factory->AllocateConnection();
+        conn_ = state.factory->AllocateConnection(acc);
         conn_->SetCallback(std::bind(&Engine::State::on_cmdlist_done, &state,
             std::placeholders::_1));
 
@@ -320,12 +320,12 @@ public:
 
     ConnState(Engine::State& state, std::size_t cid, const ConnState& dna) : ConnState(state, cid)
     {
-        ui_.account = dna.ui_.account;
-        ui_.host    = dna.ui_.host;
-        ui_.port    = dna.ui_.port;
-        ui_.secure  = dna.ui_.secure;
-        ui_.account = dna.ui_.account;
-        ui_.state   = ui::Connection::States::Resolving;
+        ui_.account   = dna.ui_.account;
+        ui_.host      = dna.ui_.host;
+        ui_.port      = dna.ui_.port;
+        ui_.secure    = dna.ui_.secure;
+        ui_.account   = dna.ui_.account;
+        ui_.state     = ui::Connection::States::Resolving;
 
         const auto& acc = state.find_account(dna.ui_.account);
 
@@ -339,7 +339,7 @@ public:
         spec.hostport = dna.ui_.port;
         spec.use_ssl  = dna.ui_.secure;
 
-        conn_ = state.factory->AllocateConnection();
+        conn_ = state.factory->AllocateConnection(acc);
         conn_->SetCallback(std::bind(&Engine::State::on_cmdlist_done, &state,
             std::placeholders::_1));
 
@@ -631,7 +631,7 @@ public:
             spec.hostport = account.general_port;
             spec.use_ssl  = false;
         }
-        conn_   = state.factory->AllocateConnection();
+        conn_   = state.factory->AllocateConnection(account);
         logger_ = std::make_shared<BufferLogger>();
         id_     = id;
         success_ = false;
@@ -1954,7 +1954,7 @@ Engine::Engine(const std::string& logpath) : state_(new State(false))
             return ret;
         }
 
-        std::unique_ptr<Connection> AllocateConnection()
+        std::unique_ptr<Connection> AllocateConnection(const ui::Account& acc)
         {
             return std::make_unique<ConnectionImpl>();
         }

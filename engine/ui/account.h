@@ -83,6 +83,12 @@ namespace newsflash
         // instead of executing each command as a request/response pair.
         // on some hosts command pipelining *may* improve performance.
         bool enable_pipelining = false;
+
+        // user specific opaque data object that will be associated
+        // with *all* the connection objects created for this account.
+        // the client is responsinble for managin the lifetime of this
+        // data object.
+        void* user_data = nullptr;
     };
 
     } // ui
