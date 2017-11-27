@@ -238,6 +238,12 @@ namespace newsflash
             return buffers_[i];
         }
 
+        const std::string& GetCommand(std::size_t i) const
+        {
+            ASSERT(i < commands_.size());
+            return commands_[i];
+        }
+
         std::vector<std::string>& GetCommands()
         { return commands_; }
 

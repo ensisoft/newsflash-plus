@@ -1588,11 +1588,14 @@ public:
         {
             if (ui_.state == states::Complete)
             {
-                ui::FileBatchResult result;
-                result.account = ui_.account;
-                result.path    = ui_.path;
-                result.desc    = ui_.desc;
-                state.on_batch_callback(result);
+                if (state.on_batch_callback)
+                {
+                    ui::FileBatchResult result;
+                    result.account = ui_.account;
+                    result.path    = ui_.path;
+                    result.desc    = ui_.desc;
+                    state.on_batch_callback(result);
+                }
             }
         }
     }
@@ -2756,6 +2759,11 @@ std::string Engine::GetLogfileName() const
 bool Engine::IsStarted() const
 {
     return state_->started;
+}
+
+bool Engine::HasPendingActions() const
+{
+    return state_->num_pending_actions != 0;
 }
 
 void Engine::GetTasks(std::deque<ui::TaskDesc>* tasklist) const

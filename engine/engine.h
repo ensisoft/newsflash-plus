@@ -271,6 +271,10 @@ namespace newsflash
         // get whether engine is started or not.
         bool IsStarted() const;
 
+        // get whether there are pending actions and more calls
+        // to Pump are required.
+        bool HasPendingActions() const;
+
         // update the tasklist to contain the latest UI states
         // of all the tasks in the engine.
         void GetTasks(std::deque<ui::TaskDesc>* tasklist) const;

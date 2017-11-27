@@ -37,15 +37,18 @@ namespace newsflash
         // content errors.
         enum class Errors {
 
-            // some of the requested data was not available
+            // none of the requested data was available
             Unavailable,
 
-            // some the requested data was taken down
+            // some the requested data was taken down.
+            // similar to Incomplete but more specific.
             Dmca,
 
             // some data appears to be damaged
             Damaged,
 
+            // some of the data was not available, i.e. some
+            // parts are missing.g
             Incomplete
         };
 

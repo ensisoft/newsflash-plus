@@ -24,36 +24,49 @@
 #  include <boost/test/minimal.hpp>
 #include "newsflash/warnpop.h"
 
+#include <string>
+#include <vector>
+
 #include "engine/ui/account.h"
 #include "engine/ui/task.h"
 #include "engine/engine.h"
 #include "engine/download.h"
 #include "engine/connection.h"
+#include "engine/session.h"
+#include "engine/cmdlist.h"
 
 using namespace newsflash;
 
 struct TaskParams {
     bool should_cancel = false;
     bool should_commit = false;
+    bool expect_cmdlist = false;
+    size_t num_buffers = 0;
 };
 
 class TestFileTask : public ContentTask
 {
 public:
-    TestFileTask(const TaskParams& state) : state_(state)
-    {}
+    TestFileTask(const ui::FileDownload& file, const TaskParams& state) : state_(state)
+    {
+        articles_ = file.articles;
+        groups_   = file.groups;
+    }
 
    ~TestFileTask()
     {
         BOOST_REQUIRE(state_.should_cancel == cancelled_ ||
                       state_.should_commit == committed_);
+        BOOST_REQUIRE(state_.expect_cmdlist == received_cmdlist_);
     }
 
     virtual std::shared_ptr<CmdList> CreateCommands() override
     {
-        std::shared_ptr<CmdList> ret;
-
-        return ret;
+        CmdList::Messages m;
+        m.groups = groups_;
+        m.numbers = articles_;
+        articles_.clear();
+        return std::make_shared<CmdList>(m);
     }
 
     virtual void Cancel() override
@@ -74,21 +87,43 @@ public:
         std::vector<std::unique_ptr<action>>& next) override
     {}
 
-    virtual void Complete(CmdList& cmd,
+    virtual void Complete(CmdList& cmdlist,
         std::vector<std::unique_ptr<action>>& next) override
-    {}
+    {
+        BOOST_REQUIRE(cmdlist.NumBuffers() == cmdlist.NumDataCommands());
+        BOOST_REQUIRE(cmdlist.NumBuffers() == state_.num_buffers);
+
+        for (size_t i=0; i<cmdlist.NumDataCommands(); ++i)
+        {
+            const auto& buff = cmdlist.GetBuffer(i);
+            const auto& cmd  = cmdlist.GetCommand(i);
+            if (cmd == "<success>")
+            {
+                BOOST_REQUIRE(buff.content_status() == buffer::status::success);
+            }
+            else if (cmd == "<failure>")
+            {
+                BOOST_REQUIRE(buff.content_status() == buffer::status::unavailable);
+            }
+            else if (cmd == "<dmca>")
+            {
+                BOOST_REQUIRE(buff.content_status() == buffer::status::dmca);
+            }
+        }
+        received_cmdlist_ = true;
+    }
 
     virtual void Configure(const Settings& settings) override
     {}
 
     virtual bool HasCommands() const override
     {
-        return true;
+        return !articles_.empty();
     }
 
     virtual std::size_t MaxNumActions() const override
     {
-        return 1;
+        return articles_.size();
     }
     virtual bitflag<Error> GetErrors() const override
     {
@@ -107,9 +142,12 @@ public:
 private:
     bool cancelled_ = false;
     bool committed_ = false;
+    bool received_cmdlist_ = false;
 private:
     TaskParams state_;
-
+private:
+    std::vector<std::string> articles_;
+    std::vector<std::string> groups_;
 };
 
 class TestHeadersTask : public ContentTask
@@ -278,6 +316,19 @@ struct ConnState {
     }
 };
 
+void set(buffer& buff, const char* str)
+{
+    buff.clear();
+    std::strcpy(buff.back(), str);
+    buff.append(std::strlen(str));
+}
+
+void append(buffer& buff, const char* str)
+{
+    std::strcpy(buff.back(), str);
+    buff.append(std::strlen(str));
+}
+
 class TestConnection : public Connection
 {
 public:
@@ -295,8 +346,50 @@ public:
 
     struct Initialize : public action
     {
-        virtual void xperform() override
+        Initialize(std::shared_ptr<Session> session) : session_(session)
         {}
+
+        virtual void xperform() override
+        {
+            std::string command;
+            session_->on_send = [&](const std::string& cmd) {
+                command = cmd;
+            };
+            session_->on_auth = [](std::string& user, std::string& pass) {
+                user = "user";
+                pass = "pass";
+            };
+
+            const bool authenticate_immediately = false;
+            session_->Start(authenticate_immediately);
+
+            newsflash::buffer incoming(1024);
+            newsflash::buffer tmp;
+
+            // we don't really check any proper session errors
+            // since we're faking error conditions from connection
+            // instead we just setup the session so that it's in a "good state"
+            // for later testing
+
+            session_->SendNext();
+            set(incoming, "200 welcome posting allowed\r\n");
+            session_->RecvNext(incoming, tmp);
+            session_->SendNext();
+            set(incoming, "101 capabilities list follows\r\n"
+                "MODE-READER\r\n"
+                "XZVER\r\n"
+                "IHAVE\r\n"
+                "\r\n"
+                ".\r\n");
+            session_->RecvNext(incoming, tmp);
+            session_->SendNext();
+            set(incoming, "200 posting allowed\r\n");
+            session_->RecvNext(incoming, tmp);
+            BOOST_REQUIRE(session_->HasPending() == false);
+            BOOST_REQUIRE(session_->GetError() == Session::Error::None);
+        }
+
+        std::shared_ptr<Session> session_;
     };
 
     struct Disconnect : public action
@@ -314,15 +407,90 @@ public:
     struct Execute : public action
     {
         virtual void xperform() override
-        {}
+        {
+            std::string command;
+            session->on_send = [&](const std::string& out) {
+                command = out;
+            };
+            session->on_auth = [](std::string& user, std::string& pass) {
+                user = "user";
+                pass = "pass";
+            };
+
+            if (cmdlist->NeedsToConfigure())
+            {
+                buffer incoming(1024);
+                buffer out;
+
+                cmdlist->SubmitConfigureCommand(0, *session);
+                session->SendNext();
+                if (command == "GROUP alt.binaries.success\r\n")
+                {
+                    set(incoming, "211 4 1 4 alt.binaries.success ok\r\n");
+                }
+                else if (command == "GROUP alt.binaries.failure\r\n")
+                {
+                    set(incoming, "411 no such group");
+                }
+                session->RecvNext(incoming, out);
+                cmdlist->ReceiveConfigureBuffer(0, out);
+            }
+            if (!cmdlist->IsGood())
+            {
+                return;
+            }
+
+            for (size_t i=0; i<cmdlist->NumDataCommands(); ++i)
+            {
+                buffer incoming(1024);
+                buffer out;
+
+                cmdlist->SubmitDataCommand(i, *session);
+                session->SendNext();
+                if (command == "BODY <success>\r\n")
+                {
+                    set(incoming, "222 body follows\r\n"
+                        "here's some content\r\n"
+                        ".\r\n");
+                }
+                else if (command == "BODY <failure>\r\n")
+                {
+                    set(incoming, "420 no such article\r\n");
+                }
+                else if (command == "BODY <dmca>\r\n")
+                {
+                    set(incoming, "420 DMCA takedown\r\n");
+                }
+                session->RecvNext(incoming, out);
+                cmdlist->ReceiveDataBuffer(std::move(out));
+            }
+        }
+        virtual void run_completion_callbacks() override
+        {
+            Connection::CmdListCompletionData completion;
+            completion.cmds          = cmdlist;
+            completion.task_owner_id = taskid;
+            completion.total_bytes   = 300;
+            completion.content_bytes = 200;
+            completion.success       = has_exception() == false;
+            callback(completion);
+        }
+        std::size_t taskid = 0;
+        std::shared_ptr<CmdList> cmdlist;
+        std::shared_ptr<Session> session;
+        Connection::OnCmdlistDone callback;
     };
 
     TestConnection(const ConnState& state) : conn_state_(state)
-    {}
+    {
+        session_ = std::make_shared<Session>();
+    }
 
     virtual std::unique_ptr<action> Connect(const HostDetails& host) override
     {
         state_ = Connection::State::Resolving;
+        session_->Reset();
+
         return std::make_unique<Resolve>();
     }
 
@@ -356,7 +524,7 @@ public:
         }
         else if (dynamic_cast<struct Connect*>(ptr))
         {
-            next.reset(new Initialize());
+            next.reset(new Initialize(session_));
             state_ = Connection::State::Initializing;
         }
         else if (dynamic_cast<struct Initialize*>(ptr))
@@ -376,7 +544,13 @@ public:
 
     virtual std::unique_ptr<action> Execute(std::shared_ptr<CmdList> cmd, std::size_t tid) override
     {
-        return nullptr;
+        auto ret = std::make_unique<struct Execute>();
+        ret->session = session_;
+        ret->taskid = tid;
+        ret->callback = callback_;
+        ret->cmdlist = cmd;
+        state_ = Connection::State::Active;
+        return ret;
     }
 
     virtual void Cancel() override
@@ -413,24 +587,31 @@ public:
         return error_;
     }
     virtual void SetCallback(const OnCmdlistDone& callback) override
-    {}
+    {
+        callback_ = callback;
+    }
 private:
     Connection::State state_ = Connection::State::Disconnected;
     Connection::Error error_ = Connection::Error::None;
-
     ConnState conn_state_;
+
+private:
+    std::shared_ptr<Session> session_;
+    OnCmdlistDone callback_;
 
 };
 
 
 struct Factory : public Engine::Factory
 {
+
     virtual std::unique_ptr<Task> AllocateTask(const ui::FileDownload& file) override
     {
         auto* params = static_cast<TaskParams*>(file.user_data);
 
-        return std::make_unique<TestFileTask>(*params);
+        return std::make_unique<TestFileTask>(file, *params);
     }
+
     virtual std::unique_ptr<Task> AllocateTask(const ui::HeaderDownload& download) override
     {
         auto* params = static_cast<TaskParams*>(download.user_data);
@@ -445,9 +626,12 @@ struct Factory : public Engine::Factory
     }
     virtual std::unique_ptr<Task> AllocateTask(const data::TaskState& data) override
     {
+        // todo:
         TaskParams params;
 
-        return std::make_unique<TestFileTask>(params);
+        ui::FileDownload file;
+
+        return std::make_unique<TestFileTask>(file, params);
     }
     virtual std::unique_ptr<Connection> AllocateConnection(const ui::Account& acc) override
     {
@@ -818,24 +1002,140 @@ void test_task_move()
     }
 }
 
-void test_task_pause()
-{}
+void test_task_execute_succesfully()
+{
+    struct TestCase {
+        std::vector<std::string> articles;
+        std::vector<std::string> groups;
+        bitflag<ui::TaskDesc::Errors> errors;
+    };
 
-void test_save_load_session()
-{}
+    std::vector<TestCase> tests;
+
+    tests.emplace_back();
+    tests[0].articles.push_back("<success>");
+    tests[0].articles.push_back("<success>");
+    tests[0].groups.push_back("alt.binaries.success");
+
+    tests.emplace_back();
+    tests[1].articles.push_back("<success>");
+    tests[1].articles.push_back("<dmca>");
+    tests[1].groups.push_back("alt.binaries.success");
+    tests[1].errors.set(ui::TaskDesc::Errors::Dmca, true);
+
+    tests.emplace_back();
+    tests[2].articles.push_back("<dmca>");
+    tests[2].articles.push_back("<dmca>");
+    tests[2].groups.push_back("alt.binaries.success");
+    tests[2].errors.set(ui::TaskDesc::Errors::Dmca, true);
+
+    tests.emplace_back();
+    tests[3].articles.push_back("<failure>");
+    tests[3].articles.push_back("<dmca>");
+    tests[3].groups.push_back("alt.binaries.success");
+    tests[3].errors.set(ui::TaskDesc::Errors::Dmca, true);
+    tests[3].errors.set(ui::TaskDesc::Errors::Incomplete, true);
 
 
+    for (size_t i=0; i < tests.size(); ++i)
+    {
+        const bool spawn_immediately = true;
+        const bool debug_single_thread = true;
+
+        ConnState test_conn_params;
+
+        Engine eng(std::make_unique<Factory>(), debug_single_thread);
+        ui::Account account;
+        account.id = 123;
+        account.name = "test";
+        account.username = "user";
+        account.password = "pass";
+        account.secure_host = "test.host.com";
+        account.secure_port = 1000;
+        account.connections = 1;
+        account.enable_secure_server = true;
+        account.enable_general_server = false;
+        account.enable_compression = false;
+        account.enable_pipelining = false;
+        account.user_data = &test_conn_params;
+        eng.Start();
+        eng.SetAccount(account, spawn_immediately);
+        do
+        {
+            eng.RunMainThread();
+            eng.Pump();
+
+            ui::Connection conn;
+            eng.GetConn(0, &conn);
+            if (conn.state == ui::Connection::States::Connected)
+                break;
+
+        } while(true);
 
 
+        TaskParams params;
+        params.should_commit = true;
+        params.expect_cmdlist = true;
+        params.num_buffers = 2;
+
+        ui::FileDownload download;
+        download.account   = 123;
+        download.size      = 666;
+        download.path      = "test/foo/bar";
+        download.desc      = "download";
+        download.articles  = tests[i].articles;
+        download.groups    = tests[i].groups;
+        download.user_data = &params;
+        ui::FileBatchDownload batch;
+        batch.account = 123;
+        batch.size    = 666;
+        batch.path    = "test/foo/bar";
+        batch.desc    = "download";
+        batch.files.push_back(download);
+        eng.DownloadFiles(batch);
+
+        ui::TaskDesc task;
+        eng.GetTask(0, &task);
+        BOOST_REQUIRE(task.state == ui::TaskDesc::States::Active);
+
+        ui::Connection conn;
+        eng.GetConn(0, &conn);
+        BOOST_REQUIRE(conn.state == ui::Connection::States::Active);
+        BOOST_REQUIRE(conn.task == task.task_id);
+
+        eng.RunMainThread();
+        eng.Pump();
+
+        eng.GetConn(0, &conn);
+        BOOST_REQUIRE(conn.state == ui::Connection::States::Connected);
+        BOOST_REQUIRE(conn.task == 0);
+
+        eng.GetTask(0, &task);
+        BOOST_REQUIRE(task.state == ui::TaskDesc::States::Complete);
+        BOOST_REQUIRE(task.error == tests[i].errors);
+
+        eng.KillConnection(0);
+        eng.Stop();
+        do
+        {
+            eng.RunMainThread();
+            eng.Pump();
+        }
+        while (eng.HasPendingActions());
+    }
+}
 
 
 int test_main(int argc, char*[])
 {
     newsflash::initialize();
+    newsflash::EnableDebugLog(true);
 
     test_connection_establish();
     test_task_entry_and_delete();
     test_task_move();
+    test_task_execute_succesfully();
+
 
     return 0;
 }
