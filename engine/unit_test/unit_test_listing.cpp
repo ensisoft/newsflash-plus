@@ -58,9 +58,9 @@ void unit_test_success()
         "alt.binaries.sounds.mp3    8523443434535555 80 n\r\n"
         ".\r\n";
 
-    newsflash::buffer i(1024);
-    newsflash::buffer o;
-    i.append(body);
+    newsflash::Buffer i(1024);
+    newsflash::Buffer o;
+    i.Append(body);
 
     std::string cmd;
 

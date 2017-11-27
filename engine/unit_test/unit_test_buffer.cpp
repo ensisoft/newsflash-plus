@@ -30,23 +30,24 @@
 
 int test_main(int, char*[])
 {
-    newsflash::buffer buff(1024);
-    BOOST_REQUIRE(buff.size() == 0);
-    BOOST_REQUIRE(buff.available() == 1024);
+    newsflash::Buffer buff(1024);
+    BOOST_REQUIRE(buff.GetCapacity() == 1024);
+    BOOST_REQUIRE(buff.GetSize() == 0);
+    BOOST_REQUIRE(buff.GetAvailableBytes() == 1024);
 
     const char* str = "jeesus ajaa mopolla";
 
-    std::strcpy(buff.back(), str);
-    buff.append(std::strlen(str));
+    std::strcpy(buff.Back(), str);
+    buff.Append(std::strlen(str));
 
-    BOOST_REQUIRE(buff.size() == std::strlen(str));
+    BOOST_REQUIRE(buff.GetSize() == std::strlen(str));
 
-    auto other = buff.split(6);
+    auto other = buff.Split(6);
 
-    BOOST_REQUIRE(other.size() == 6);
-    BOOST_REQUIRE(buff.size() == std::strlen(str) - 6);
-    BOOST_REQUIRE(!std::memcmp(buff.head(), &str[6], buff.size()));
-    BOOST_REQUIRE(!std::memcmp(other.head(), "jeesus", 6));
+    BOOST_REQUIRE(other.GetSize() == 6);
+    BOOST_REQUIRE(buff.GetSize() == std::strlen(str) - 6);
+    BOOST_REQUIRE(!std::memcmp(buff.Head(), &str[6], buff.GetSize()));
+    BOOST_REQUIRE(!std::memcmp(other.Head(), "jeesus", 6));
 
     return 0;
 }

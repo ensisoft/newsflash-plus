@@ -56,9 +56,9 @@ class Session::command
 public:
     virtual ~command() = default;
 
-    // parse the input buffer and store the possible data contents
-    // into output buffer.
-    virtual bool parse(buffer& buff, buffer& out, impl& st) = 0;
+    // parse the input Buffer and store the possible data contents
+    // into output Buffer.
+    virtual bool parse(Buffer& buff, Buffer& out, impl& st) = 0;
 
     virtual bool can_pipeline() const = 0;
 
@@ -76,9 +76,9 @@ private:
 class Session::welcome : public Session::command
 {
 public:
-    virtual bool parse(buffer& buff, buffer& out, Session::impl& st) override
+    virtual bool parse(Buffer& buff, Buffer& out, Session::impl& st) override
     {
-        const auto len = nntp::find_response(buff.head(), buff.size());
+        const auto len = nntp::find_response(buff.Head(), buff.GetSize());
         if (len == 0)
             return false;
 
@@ -86,8 +86,8 @@ public:
         // going to pretend they dont exist.
         // 400 service temporarily unavailable
         // 502 service permantly unavailable
-        nntp::scan_response({200, 201}, buff.head(), len);
-        buff.clear();
+        nntp::scan_response({200, 201}, buff.Head(), len);
+        buff.Clear();
         return true;
     }
     virtual bool can_pipeline() const override
@@ -105,26 +105,26 @@ private:
 class Session::getcaps : public Session::command
 {
 public:
-    virtual bool parse(buffer& buff, buffer& out, Session::impl& st) override
+    virtual bool parse(Buffer& buff, Buffer& out, Session::impl& st) override
     {
-        const auto res = nntp::find_response(buff.head(), buff.size());
+        const auto res = nntp::find_response(buff.Head(), buff.GetSize());
         if (res == 0)
             return false;
 
         // usenet.premiumize.me responds to CAPABILITIES with 400 instead of 500.
         // https://github.com/ensisoft/newsflash-plus/issues/29
-        const auto code = nntp::to_int<int>(buff.head(), 3);
-        //const auto code = nntp::scan_response({101, 480, 500}, buff.head(), res);
+        const auto code = nntp::to_int<int>(buff.Head(), 3);
+        //const auto code = nntp::scan_response({101, 480, 500}, buff.Head(), res);
         if (code != 101)
         {
             if (code == 480)
                 st.auth_required = true;
-            buff.clear();
+            buff.Clear();
             return true;
         }
 
-        const auto ptr = buff.head() + res;
-        const auto len = nntp::find_body(ptr, buff.size() - res);
+        const auto ptr = buff.Head() + res;
+        const auto len = nntp::find_body(ptr, buff.GetSize() - res);
         if (len == 0)
             return false;
 
@@ -141,7 +141,7 @@ public:
                 line.find("GZIP") != std::string::npos)
                 st.has_gzip = true;
         }
-        buff.clear();
+        buff.Clear();
         st.have_caps = true;
         return true;
     }
@@ -164,9 +164,9 @@ public:
     authuser(const std::string& username) : username_(username)
     {}
 
-    virtual bool parse(buffer& buff, buffer& out, impl& st) override
+    virtual bool parse(Buffer& buff, Buffer& out, impl& st) override
     {
-        const auto len = nntp::find_response(buff.head(), buff.size());
+        const auto len = nntp::find_response(buff.Head(), buff.GetSize());
         if (len == 0)
             return false;
 
@@ -175,13 +175,13 @@ public:
         // 482 authentication command issued out of sequence
         // 502 command unavailable
 
-        const auto code = nntp::scan_response({281, 381, 482, 502}, buff.head(), len);
+        const auto code = nntp::scan_response({281, 381, 482, 502}, buff.Head(), len);
         if (code == 482)
             st.error = Error::AuthenticationRejected;
         else if (code == 502)
             st.error = Error::NoPermission;
 
-        buff.clear();
+        buff.Clear();
         return true;
     }
 
@@ -204,19 +204,19 @@ public:
     authpass(const std::string& password) : password_(password)
     {}
 
-    virtual bool parse(buffer& buff, buffer& out, impl& st) override
+    virtual bool parse(Buffer& buff, Buffer& out, impl& st) override
     {
-        const auto len = nntp::find_response(buff.head(), buff.size());
+        const auto len = nntp::find_response(buff.Head(), buff.GetSize());
         if ( len== 0)
             return false;
 
-        const auto code = nntp::scan_response({281, 482, 502}, buff.head(), len);
+        const auto code = nntp::scan_response({281, 482, 502}, buff.Head(), len);
         if (code == 482)
             st.error = Error::AuthenticationRejected;
         else if (code == 502)
             st.error = Error::NoPermission;
 
-        buff.clear();
+        buff.Clear();
         return true;
     }
     virtual bool can_pipeline() const override
@@ -235,16 +235,16 @@ private:
 class Session::modereader : public Session::command
 {
 public:
-    virtual bool parse(buffer& buff, buffer& out, impl& st) override
+    virtual bool parse(Buffer& buff, Buffer& out, impl& st) override
     {
-        const auto len = nntp::find_response(buff.head(), buff.size());
+        const auto len = nntp::find_response(buff.Head(), buff.GetSize());
         if (len == 0)
             return false;
-        const auto code = nntp::scan_response({200, 201, 480}, buff.head(), len);
+        const auto code = nntp::scan_response({200, 201, 480}, buff.Head(), len);
         if (code == 480)
             st.auth_required = true;
 
-        buff.clear();
+        buff.Clear();
         return true;
     }
     virtual bool can_pipeline() const override
@@ -258,38 +258,38 @@ public:
 private:
 };
 
-// change group/store group information into data buffer
+// change group/store group information into data Buffer
 class Session::group : public Session::command
 {
 public:
     group(const std::string& name) : group_(name)
     {}
 
-    virtual bool parse(buffer& buff, buffer& out, impl& st) override
+    virtual bool parse(Buffer& buff, Buffer& out, impl& st) override
     {
-        const auto len = nntp::find_response(buff.head(), buff.size());
+        const auto len = nntp::find_response(buff.Head(), buff.GetSize());
         if (len == 0)
             return false;
 
-        const auto code = nntp::scan_response({211, 411, 480}, buff.head(), len);
+        const auto code = nntp::scan_response({211, 411, 480}, buff.Head(), len);
         if (code == 480)
         {
             st.auth_required = true;
-            buff.clear();
+            buff.Clear();
             return true;
         }
         else if (code == 411)
         {
-            out.set_status(buffer::status::unavailable);
+            out.SetStatus(Buffer::Status::Unavailable);
         }
         else
         {
-            out = buff.split(len);
-            out.set_content_length(len);
-            out.set_content_start(0);
-            out.set_status(buffer::status::success);
+            out = buff.Split(len);
+            out.SetContentLength(len);
+            out.SetContentStart(0);
+            out.SetStatus(Buffer::Status::Success);
         }
-        out.set_content_type(buffer::type::groupinfo);
+        out.SetContentType(Buffer::Type::GroupInfo);
         st.group = group_;
         return true;
     }
@@ -311,47 +311,47 @@ private:
     std::size_t high_  = 0;
 };
 
-// request article data from the server. store into output buffer
+// request article data from the server. store into output Buffer
 class Session::body : public Session::command
 {
 public:
     body(const std::string& messageid) : messageid_(messageid)
     {}
 
-    virtual bool parse(buffer& buff, buffer& out, impl& st) override
+    virtual bool parse(Buffer& buff, Buffer& out, impl& st) override
     {
-        const auto len = nntp::find_response(buff.head(), buff.size());
+        const auto len = nntp::find_response(buff.Head(), buff.GetSize());
         if (len == 0)
             return false;
 
         nntp::trailing_comment comment;
-        const auto code = nntp::scan_response({222, 423, 420, 430}, buff.head(), len, comment);
+        const auto code = nntp::scan_response({222, 423, 420, 430}, buff.Head(), len, comment);
         if (code == 423 || code == 420 || code == 430)
         {
-            // the output buffer only carries meta information
+            // the output Buffer only carries meta information
             // i.e. that there was no content data available.
             if (comment.str.find("dmca") != std::string::npos ||
                 comment.str.find("DMCA") != std::string::npos)
-                out.set_status(buffer::status::dmca);
-            else out.set_status(buffer::status::unavailable);
+                out.SetStatus(Buffer::Status::Dmca);
+            else out.SetStatus(Buffer::Status::Unavailable);
 
-            out.set_content_type(buffer::type::article);
+            out.SetContentType(Buffer::Type::Article);
 
             // throw away the response line
-            buff.split(len);
+            buff.Split(len);
             return true;
         }
 
-        const auto blen = nntp::find_body(buff.head() + len, buff.size() - len);
+        const auto blen = nntp::find_body(buff.Head() + len, buff.GetSize() - len);
         if (blen == 0)
             return false;
 
-        const auto size = len + blen;
-        out = buff.split(size);
-        out.set_content_type(buffer::type::article);
-        out.set_content_length(blen);
-        out.set_content_start(len);
-        out.set_status(buffer::status::success);
+        const auto GetSize = len + blen;
+        out = buff.Split(GetSize);
+        out.SetContentType(Buffer::Type::Article);
+        out.SetContentLength(blen);
+        out.SetContentStart(len);
+        out.SetStatus(Buffer::Status::Success);
 
         LOG_I("Read body data ", newsflash::size{blen});
         return true;
@@ -375,13 +375,13 @@ class Session::quit : public Session::command
 {
 public:
 
-    virtual bool parse(buffer& buff, buffer& out, impl& st) override
+    virtual bool parse(Buffer& buff, Buffer& out, impl& st) override
     {
-        const auto len = nntp::find_response(buff.head(), buff.size());
+        const auto len = nntp::find_response(buff.Head(), buff.GetSize());
         if (len == 0)
             return false;
 
-        nntp::scan_response({205}, buff.head(), len);
+        nntp::scan_response({205}, buff.Head(), len);
         return true;
     }
 
@@ -402,24 +402,24 @@ class Session::xover : public Session::command
 public:
     xover(const std::string& range) : range_(range)
     {}
-    virtual bool parse(buffer& buff, buffer& out, impl& st) override
+    virtual bool parse(Buffer& buff, Buffer& out, impl& st) override
     {
-        const auto len = nntp::find_response(buff.head(), buff.size());
+        const auto len = nntp::find_response(buff.Head(), buff.GetSize());
         if (len == 0)
             return false;
 
-        nntp::scan_response({224}, buff.head(), len);
+        nntp::scan_response({224}, buff.Head(), len);
 
-        const auto blen = nntp::find_body(buff.head() + len, buff.size() - len);
+        const auto blen = nntp::find_body(buff.Head() + len, buff.GetSize() - len);
         if (blen == 0)
             return false;
 
         const auto size = len + blen;
-        out = buff.split(size);
-        out.set_content_type(buffer::type::overview);
-        out.set_content_length(blen);
-        out.set_content_start(len);
-        out.set_status(buffer::status::success);
+        out = buff.Split(size);
+        out.SetContentType(Buffer::Type::Overview);
+        out.SetContentLength(blen);
+        out.SetContentStart(len);
+        out.SetStatus(Buffer::Status::Success);
 
         LOG_I("Read xover data ", newsflash::size{blen});
         return true;
@@ -450,34 +450,34 @@ public:
         inflateEnd(&z_);
     }
 
-    virtual bool parse(buffer& buff, buffer& out, impl& st) override
+    virtual bool parse(Buffer& buff, Buffer& out, impl& st) override
     {
         if (inflate_done_)
         {
             LOG_D("Rescanning....");
-            if (buff.size() >= 3)
+            if (buff.GetSize() >= 3)
             {
-                if (!std::strncmp(buff.head(), ".\r\n", 3))
+                if (!std::strncmp(buff.Head(), ".\r\n", 3))
                 {
                     LOG_D("Found end of body marker!");
-                    buff.pop(3);
+                    buff.Pop(3);
                     return true;
                 }
             }
         }
 
 
-        const auto len = nntp::find_response(buff.head(), buff.size());
+        const auto len = nntp::find_response(buff.Head(), buff.GetSize());
         if (len == 0)
             return false;
 
         // 412 no news group selected
         // 420 no article(s) selected
         // 502 no permssion
-        nntp::scan_response({224}, buff.head(), len);
+        nntp::scan_response({224}, buff.Head(), len);
 
-        if (out.size() == 0)
-            out.allocate(MB(1));
+        if (out.GetCapacity())
+            out.Allocate(MB(1));
 
         // astraweb supposedly uses a scheme where the zlib deflate'd data is yenc encoded.
         // http://helpdesk.astraweb.com/index.php?_m=news&_a=viewnews&newsid=9
@@ -488,25 +488,25 @@ public:
         int err = Z_OK;
         for (;;)
         {
-            const auto head = buff.head() + len + ibytes_;
-            const auto size = buff.size() - len - ibytes_;
+            const auto head = buff.Head() + len + ibytes_;
+            const auto size = buff.GetSize() - len - ibytes_;
             if (size == 0)
                 return false;
 
             z_.next_in   = (Bytef*)head;
             z_.avail_in  = size;
-            z_.next_out  = (Bytef*)out.back();
-            z_.avail_out = out.available();
+            z_.next_out  = (Bytef*)out.Back();
+            z_.avail_out = out.GetAvailableBytes();
             err = inflate(&z_, Z_NO_FLUSH);
 
-            out.append(z_.total_out - obytes_);
+            out.Append(z_.total_out - obytes_);
             obytes_ = z_.total_out;
             ibytes_ = z_.total_in;
 
             if (err < 0)
                 break;
             else if (err == Z_BUF_ERROR)
-                out.allocate(out.size() * 2);
+                out.Allocate(out.GetSize() * 2);
             else if (err == Z_STREAM_END)
                 break;
         }
@@ -515,29 +515,29 @@ public:
         if (err != Z_STREAM_END)
         {
             LOG_E("Inflate failed zlib error: ", err);
-            out.set_status(buffer::status::error);
+            out.SetStatus(Buffer::Status::Error);
             return true;
         }
         LOG_I("Inflated header data from ", kb(ibytes_), " to ", kb(obytes_));
 
-        out.set_content_start(0);
-        out.set_content_type(buffer::type::overview);
-        out.set_status(buffer::status::success);
-        out.set_content_length(obytes_);
+        out.SetContentStart(0);
+        out.SetContentType(Buffer::Type::Overview);
+        out.SetStatus(Buffer::Status::Success);
+        out.SetContentLength(obytes_);
 
-        const auto head = buff.head() + ibytes_ + len;
-        const auto size = buff.size() - ibytes_ - len;
+        const auto head = buff.Head() + ibytes_ + len;
+        const auto size = buff.GetSize() - ibytes_ - len;
         if (size >= 3)
         {
             if (!std::strncmp(head, ".\r\n", 3))
             {
                 LOG_D("Found end of body marker!");
-                buff.pop(ibytes_ + len + 3);
+                buff.Pop(ibytes_ + len + 3);
                 return true;
             }
         }
 
-        buff.pop(ibytes_ + len);
+        buff.Pop(ibytes_ + len);
         // we're still missing the .\r\n that supposedly comes at the end of
         // deflated data. therefore we return false.
         return false;
@@ -568,33 +568,33 @@ private:
 class Session::list : public Session::command
 {
 public:
-    virtual bool parse(buffer& buff, buffer& out, impl& st) override
+    virtual bool parse(Buffer& buff, Buffer& out, impl& st) override
     {
-        const auto len = nntp::find_response(buff.head(), buff.size());
+        const auto len = nntp::find_response(buff.Head(), buff.GetSize());
         if (len == 0)
             return false;
 
         // this is only valid response, but check it nevertheless
         // XSUsenet wants to do authentication at LIST command.
         // http://www.xsusenet.com
-        const auto code = nntp::scan_response({215, 480}, buff.head(), len);
+        const auto code = nntp::scan_response({215, 480}, buff.Head(), len);
         if (code == 480)
         {
             st.auth_required = true;
-            buff.clear();
+            buff.Clear();
             return true;
         }
 
-        const auto blen = nntp::find_body(buff.head() + len, buff.size() - len);
+        const auto blen = nntp::find_body(buff.Head() + len, buff.GetSize() - len);
         if (blen == 0)
             return false;
 
         const auto size = len + blen;
-        out = buff.split(size);
-        out.set_content_type(buffer::type::grouplist);
-        out.set_content_length(blen);
-        out.set_content_start(len);
-        out.set_status(buffer::status::success);
+        out = buff.Split(size);
+        out.SetContentType(Buffer::Type::GroupList);
+        out.SetContentLength(blen);
+        out.SetContentStart(len);
+        out.SetStatus(Buffer::Status::Success);
 
         LOG_I("Read listing data ", newsflash::size{blen});
         return true;
@@ -617,9 +617,9 @@ private:
 class Session::xfeature_compress_gzip : public Session::command
 {
 public:
-    virtual bool parse(buffer& buff, buffer& out, impl& st) override
+    virtual bool parse(Buffer& buff, Buffer& out, impl& st) override
     {
-        const auto len = nntp::find_response(buff.head(), buff.size());
+        const auto len = nntp::find_response(buff.Head(), buff.GetSize());
         if (len == 0)
             return false;
 
@@ -629,21 +629,21 @@ public:
         // check the initial digit for success/failure.
         // also XSUsenet wants to do a challenge here.
 
-        const auto code = nntp::to_int<int>(buff.head(), 3);
+        const auto code = nntp::to_int<int>(buff.Head(), 3);
         if (code == 480)
         {
             st.auth_required = true;
-            buff.clear();
+            buff.Clear();
             return true;
         }
 
-        const auto beg = buff.head();
+        const auto beg = buff.Head();
         if (beg[0] != '2')
         {
             LOG_W("Compression not supported.");
             st.enable_compression = false;
         }
-        buff.clear();
+        buff.Clear();
         return true;
     }
     virtual bool can_pipeline() const override
@@ -812,16 +812,16 @@ bool Session::SendNext()
 }
 
 
-bool Session::RecvNext(buffer& buff, buffer& out)
+bool Session::RecvNext(Buffer& buff, Buffer& out)
 {
     assert(!recv_.empty());
 
     auto& next = recv_.front();
 
     std::string response;
-    const auto len = nntp::find_response(buff.head(), buff.size());
+    const auto len = nntp::find_response(buff.Head(), buff.GetSize());
     if (len != 0)
-        response.append(buff.head(), len-2);
+        response.append(buff.Head(), len-2);
 
     try
     {

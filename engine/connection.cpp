@@ -255,8 +255,8 @@ public:
         // begin new session
         session->Start(state_->authenticate_immediately);
 
-        newsflash::buffer buff(1024);
-        newsflash::buffer temp;
+        Buffer buff(1024);
+        Buffer temp;
 
         // while there are pending commands in the session we read
         // data from the socket into the buffer and then feed the buffer
@@ -277,12 +277,12 @@ public:
                 }
 
                 // readsome data
-                const auto bytes = socket->recvsome(buff.back(), buff.available());
+                const auto bytes = socket->recvsome(buff.Back(), buff.GetAvailableBytes());
                 if (bytes == 0)
                     throw exception(Connection::Error::Network, "socket was closed unexpectedly");
 
                 // commit
-                buff.append(bytes);
+                buff.Append(bytes);
             }
             while (!session->RecvNext(buff, temp));
         }
@@ -324,7 +324,7 @@ public:
         LOG_D("Execute cmdlist ", cmdlist->GetCmdListId());
         LOG_D("Cmdlist has ", cmdlist->NumDataCommands(), " data commands");
 
-        newsflash::buffer recvbuf(MB(4));
+        Buffer recvbuf(MB(4));
 
         // the cmdlist contains a list of commands
         // we pass the session object to the cmdlist to allow
@@ -354,7 +354,7 @@ public:
                     break;
                 }
 
-                newsflash::buffer config(KB(1));
+                Buffer config(KB(1));
 
                 while (session->SendNext())
                 {
@@ -367,11 +367,11 @@ public:
                         else if (canceled)
                             return;
 
-                        const auto bytes = socket->recvsome(recvbuf.back(), recvbuf.available());
+                        const auto bytes = socket->recvsome(recvbuf.Back(), recvbuf.GetAvailableBytes());
                         if (bytes == 0)
                             throw exception(Connection::Error::Network, "ConnectionImpl was closed unexpectedly");
 
-                        recvbuf.append(bytes);
+                        recvbuf.Append(bytes);
                     }
                     while (!session->RecvNext(recvbuf, config));
                 }
@@ -419,7 +419,7 @@ public:
 
         while (session->HasPending())
         {
-            newsflash::buffer content(MB(4));
+            Buffer content(MB(4));
 
             session->SendNext();
             do
@@ -447,10 +447,10 @@ public:
                     quota = throttle->give_quota();
                 }
 
-                std::size_t avail = std::min(recvbuf.available(), quota);
+                std::size_t avail = std::min(recvbuf.GetAvailableBytes(), quota);
 
                 // readsome
-                const auto bytes = socket->recvsome(recvbuf.back(), avail);
+                const auto bytes = socket->recvsome(recvbuf.Back(), avail);
                 if (bytes == 0)
                     throw exception(Connection::Error::Network, "ConnectionImpl was closed unexpectedly");
 
@@ -458,7 +458,7 @@ public:
 
                 throttle->accumulate(bytes, quota);
 
-                recvbuf.append(bytes);
+                recvbuf.Append(bytes);
                 accum += bytes;
 
                 const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() - start);
@@ -470,7 +470,7 @@ public:
             }
             while (!session->RecvNext(recvbuf, content));
 
-            content_bytes_ += content.content_length();
+            content_bytes_ += content.GetContentLength();
 
             // todo: is this oK? (in case when quota finishes..??)
             const auto err = session->GetError();
@@ -542,8 +542,8 @@ public:
         // and not perform a clean protocol shutdown.
         if (!session->HasPending())
         {
-            newsflash::buffer buff(64);
-            newsflash::buffer temp;
+            Buffer buff(64);
+            Buffer temp;
 
             session->Quit();
             session->SendNext();
@@ -553,16 +553,16 @@ public:
                 auto received = socket->wait(true, false);
                 if (!newsflash::wait_for(received, std::chrono::seconds(1)))
                     break;
-                if (buff.available() == 0)
-                    buff.allocate(buff.size() + 64);
+                if (buff.IsFull())
+                    buff.Grow(+64);
 
-                const auto bytes = socket->recvsome(buff.back(), buff.available());
+                const auto bytes = socket->recvsome(buff.Back(), buff.GetAvailableBytes());
                 if (bytes == 0)
                 {
                     LOG_D("Received socket close");
                     break;
                 }
-                buff.append(bytes);
+                buff.Append(bytes);
             }
             while (!session->RecvNext(buff, temp));
         }
@@ -595,8 +595,8 @@ public:
         auto& session = state_->session;
         auto& socket  = state_->socket;
 
-        newsflash::buffer buff(64);
-        newsflash::buffer temp;
+        Buffer buff(64);
+        Buffer temp;
 
         session->Ping();
         while (session->HasPending())
@@ -608,11 +608,11 @@ public:
                 if (!newsflash::wait_for(received, std::chrono::seconds(4)))
                     throw exception(Connection::Error::Timeout, "ConnectionImpl timeout (no ping)");
 
-                const auto bytes = socket->recvsome(buff.back(), buff.available());
+                const auto bytes = socket->recvsome(buff.Back(), buff.GetAvailableBytes());
                 if (bytes == 0)
                     throw exception(Connection::Error::Network, "ConnectionImpl was closed unexpectedly");
 
-                buff.append(bytes);
+                buff.Append(bytes);
             }
             while (!session->RecvNext(buff, temp));
         }

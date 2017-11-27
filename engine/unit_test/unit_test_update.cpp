@@ -56,11 +56,11 @@ void unit_test_ranges()
 
         auto cmd = u.CreateCommands();
 
-        newsflash::buffer buff(1024);
-        buff.append("211 10 1 1500 alt.binaries.test group selected\r\n");
-        buff.set_content_length(std::strlen("211 10 1 1500 alt.binaries.test group selected\r\n"));
-        buff.set_content_start(0);
-        buff.set_content_type(newsflash::buffer::type::groupinfo);
+        newsflash::Buffer buff(1024);
+        buff.Append("211 10 1 1500 alt.binaries.test group selected\r\n");
+        buff.SetContentLength(std::strlen("211 10 1 1500 alt.binaries.test group selected\r\n"));
+        buff.SetContentStart(0);
+        buff.SetContentType(newsflash::Buffer::Type::GroupInfo);
         cmd->ReceiveDataBuffer(buff);
 
         u.Complete(*cmd, actions);
@@ -98,11 +98,11 @@ void unit_test_ranges()
 
         auto cmd = u.CreateCommands();
 
-        newsflash::buffer buff(1024);
-        buff.append("211 3500 1045 3052 alt.binaries.test group selected\r\n");
-        buff.set_content_length(std::strlen("211 3500 1045 3052 alt.binaries.test group selected\r\n"));
-        buff.set_content_start(0);
-        buff.set_content_type(newsflash::buffer::type::groupinfo);
+        newsflash::Buffer buff(1024);
+        buff.Append("211 3500 1045 3052 alt.binaries.test group selected\r\n");
+        buff.SetContentLength(std::strlen("211 3500 1045 3052 alt.binaries.test group selected\r\n"));
+        buff.SetContentStart(0);
+        buff.SetContentType(newsflash::Buffer::Type::GroupInfo);
         cmd->ReceiveDataBuffer(buff);
 
         u.Complete(*cmd, actions);
@@ -123,11 +123,11 @@ void unit_test_ranges()
 
         auto cmd = u.CreateCommands();
 
-        newsflash::buffer buff(1024);
-        buff.append("211 3500 348 2048 alt.binaries.test group selected\r\n");
-        buff.set_content_length(std::strlen("211 3500 348 2048 alt.binaries.test group selected\r\n"));
-        buff.set_content_start(0);
-        buff.set_content_type(newsflash::buffer::type::groupinfo);
+        newsflash::Buffer buff(1024);
+        buff.Append("211 3500 348 2048 alt.binaries.test group selected\r\n");
+        buff.SetContentLength(std::strlen("211 3500 348 2048 alt.binaries.test group selected\r\n"));
+        buff.SetContentStart(0);
+        buff.SetContentType(newsflash::Buffer::Type::GroupInfo);
         cmd->ReceiveDataBuffer(buff);
 
         u.Complete(*cmd, actions);
@@ -145,11 +145,11 @@ void unit_test_ranges()
 
         auto cmd = u.CreateCommands();
 
-        newsflash::buffer buff(1024);
-        buff.append("211 3500 1045 2048 alt.binaries.test group selected\r\n");
-        buff.set_content_length(std::strlen("211 3500 1045 2048 alt.binaries.test group selected\r\n"));
-        buff.set_content_start(0);
-        buff.set_content_type(newsflash::buffer::type::groupinfo);
+        newsflash::Buffer buff(1024);
+        buff.Append("211 3500 1045 2048 alt.binaries.test group selected\r\n");
+        buff.SetContentLength(std::strlen("211 3500 1045 2048 alt.binaries.test group selected\r\n"));
+        buff.SetContentStart(0);
+        buff.SetContentType(newsflash::Buffer::Type::GroupInfo);
         cmd->ReceiveDataBuffer(buff);
 
         u.Complete(*cmd, actions);
@@ -177,11 +177,11 @@ void unit_test_data()
 
         auto cmd = u.CreateCommands();
 
-        newsflash::buffer buff(1024 * 10);
-        buff.append("211 49999 1 500000 alt.binaries.test group selected\r\n");
-        buff.set_content_length(std::strlen("211 49999 1 500000 alt.binaries.test group selected\r\n"));
-        buff.set_content_start(0);
-        buff.set_content_type(newsflash::buffer::type::groupinfo);
+        newsflash::Buffer buff(1024 * 10);
+        buff.Append("211 49999 1 500000 alt.binaries.test group selected\r\n");
+        buff.SetContentLength(std::strlen("211 49999 1 500000 alt.binaries.test group selected\r\n"));
+        buff.SetContentStart(0);
+        buff.SetContentType(newsflash::Buffer::Type::GroupInfo);
         cmd->ReceiveDataBuffer(buff);
 
         u.Complete(*cmd, actions);
@@ -322,12 +322,12 @@ void unit_test_data()
         str += nntp::make_overview(ov);
 
 
-        buff.clear();
-        buff.append(str);
-        buff.set_content_length(str.size());
-        buff.set_content_start(0);
-        buff.set_content_type(newsflash::buffer::type::overview);
-        buff.set_status(newsflash::buffer::status::success);
+        buff.Clear();
+        buff.Append(str);
+        buff.SetContentLength(str.size());
+        buff.SetContentStart(0);
+        buff.SetContentType(newsflash::Buffer::Type::Overview);
+        buff.SetStatus(newsflash::Buffer::Status::Success);
         cmd->ReceiveDataBuffer(buff);
 
         u.Complete(*cmd, actions);
@@ -431,11 +431,11 @@ void unit_test_data()
 
         auto cmd = u.CreateCommands();
 
-        newsflash::buffer buff(1024 * 5);
-        buff.append("211 49999 1 500000 alt.binaries.test group selected\r\n");
-        buff.set_content_length(std::strlen("211 49999 1 500000 alt.binaries.test group selected\r\n"));
-        buff.set_content_start(0);
-        buff.set_content_type(newsflash::buffer::type::groupinfo);
+        newsflash::Buffer buff(1024 * 5);
+        buff.Append("211 49999 1 500000 alt.binaries.test group selected\r\n");
+        buff.SetContentLength(std::strlen("211 49999 1 500000 alt.binaries.test group selected\r\n"));
+        buff.SetContentStart(0);
+        buff.SetContentType(newsflash::Buffer::Type::GroupInfo);
         cmd->ReceiveDataBuffer(buff);
 
         u.Complete(*cmd, actions);
@@ -504,12 +504,12 @@ void unit_test_data()
 
 
 
-        buff.clear();
-        buff.append(str);
-        buff.set_content_length(str.size());
-        buff.set_content_start(0);
-        buff.set_content_type(newsflash::buffer::type::overview);
-        buff.set_status(newsflash::buffer::status::success);
+        buff.Clear();
+        buff.Append(str);
+        buff.SetContentLength(str.size());
+        buff.SetContentStart(0);
+        buff.SetContentType(newsflash::Buffer::Type::Overview);
+        buff.SetStatus(newsflash::Buffer::Status::Success);
         cmd->ReceiveDataBuffer(buff);
 
         u.Complete(*cmd, actions);
@@ -641,11 +641,11 @@ void unit_test_index()
         newsflash::Update u("", "alt.binaries.test");
 
         auto cmd = u.CreateCommands();
-        newsflash::buffer buff(1024);
-        buff.append("211 10 1 5 alt.binaries.test group selected\r\n");
-        buff.set_content_type(newsflash::buffer::type::groupinfo);
-        buff.set_content_start(0),
-        buff.set_content_length(std::strlen("211 10 1 5 alt.binaries.test group selected\r\n"));
+        newsflash::Buffer buff(1024);
+        buff.Append("211 10 1 5 alt.binaries.test group selected\r\n");
+        buff.SetContentType(newsflash::Buffer::Type::GroupInfo);
+        buff.SetContentStart(0),
+        buff.SetContentLength(std::strlen("211 10 1 5 alt.binaries.test group selected\r\n"));
         cmd->ReceiveDataBuffer(buff);
 
         u.Complete(*cmd, actions);
@@ -654,7 +654,7 @@ void unit_test_index()
 
         auto data = read_file_buffer("test_data/xover.nntp.txt");
         //auto data = read_file_buffer("/tmp/nntp.txt");
-        data.set_content_type(newsflash::buffer::type::overview);
+        data.SetContentType(newsflash::Buffer::Type::Overview);
         cmd->ReceiveDataBuffer(data);
 
         u.Complete(*cmd, actions);

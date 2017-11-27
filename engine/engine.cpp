@@ -57,16 +57,16 @@ namespace newsflash
 
 #define CASE(x) case x: return #x
 
-const char* str(buffer::status s)
+const char* str(Buffer::Status status)
 {
-    using state = buffer::status;
-    switch (s)
+    using state = Buffer::Status;
+    switch (status)
     {
-        CASE(state::none);
-        CASE(state::success);
-        CASE(state::unavailable);
-        CASE(state::dmca);
-        CASE(state::error);
+        CASE(state::None);
+        CASE(state::Success);
+        CASE(state::Unavailable);
+        CASE(state::Dmca);
+        CASE(state::Error);
     }
     assert(0);
     return nullptr;
@@ -921,13 +921,13 @@ public:
             for (std::size_t i=0; i<buffers.size(); ++i)
             {
                 const auto& buff = buffers[i];
-                const auto status = buff.content_status();
+                const auto status = buff.GetContentStatus();
                 const auto& cmd   = (i < commands.size()) ? commands[i] : str("cmd", i);
                 LOG_D("Task ", ui_.task_id, " command ", cmd, " status ", str(status));
 
-                if (status == buffer::status::success)
+                if (status == Buffer::Status::Success)
                     continue;
-                else if (status == buffer::status::error)
+                else if (status == Buffer::Status::Error)
                 {
                     if (state.on_error_callback)
                     {
@@ -951,9 +951,9 @@ public:
                     return no_transition;
                 }
 
-                if (status == buffer::status::unavailable)
+                if (status == Buffer::Status::Unavailable)
                     ui_.error.set(ui::TaskDesc::Errors::Incomplete);
-                else if (status == buffer::status::dmca)
+                else if (status == Buffer::Status::Dmca)
                     ui_.error.set(ui::TaskDesc::Errors::Dmca);
             }
         }
@@ -1749,8 +1749,8 @@ void Engine::State::on_cmdlist_done(const Connection::CmdListCompletionData& com
             std::string file;
             ss >> file;
             out.open(file, std::ios::binary | std::ios::app);
-            if (buff.content_status() == buffer::status::success)
-                out.write(buff.content(), buff.content_length()-3);
+            if (buff.GetContentStatus() == Buffer::Status::Success)
+                out.write(buff.Content(), buff.GetContentLength()-3);
             out.flush();
         }
     }

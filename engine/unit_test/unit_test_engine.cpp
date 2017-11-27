@@ -99,15 +99,15 @@ public:
             const auto& cmd  = cmdlist.GetCommand(i);
             if (cmd == "<success>")
             {
-                BOOST_REQUIRE(buff.content_status() == buffer::status::success);
+                BOOST_REQUIRE(buff.GetContentStatus() == Buffer::Status::Success);
             }
             else if (cmd == "<failure>")
             {
-                BOOST_REQUIRE(buff.content_status() == buffer::status::unavailable);
+                BOOST_REQUIRE(buff.GetContentStatus() == Buffer::Status::Unavailable);
             }
             else if (cmd == "<dmca>")
             {
-                BOOST_REQUIRE(buff.content_status() == buffer::status::dmca);
+                BOOST_REQUIRE(buff.GetContentStatus() == Buffer::Status::Dmca);
             }
         }
         received_cmdlist_ = true;
@@ -316,17 +316,17 @@ struct ConnState {
     }
 };
 
-void set(buffer& buff, const char* str)
+void set(Buffer& buff, const char* str)
 {
-    buff.clear();
-    std::strcpy(buff.back(), str);
-    buff.append(std::strlen(str));
+    buff.Clear();
+    std::strcpy(buff.Back(), str);
+    buff.Append(std::strlen(str));
 }
 
-void append(buffer& buff, const char* str)
+void append(Buffer& buff, const char* str)
 {
-    std::strcpy(buff.back(), str);
-    buff.append(std::strlen(str));
+    std::strcpy(buff.Back(), str);
+    buff.Append(std::strlen(str));
 }
 
 class TestConnection : public Connection
@@ -363,8 +363,8 @@ public:
             const bool authenticate_immediately = false;
             session_->Start(authenticate_immediately);
 
-            newsflash::buffer incoming(1024);
-            newsflash::buffer tmp;
+            newsflash::Buffer incoming(1024);
+            newsflash::Buffer tmp;
 
             // we don't really check any proper session errors
             // since we're faking error conditions from connection
@@ -419,8 +419,8 @@ public:
 
             if (cmdlist->NeedsToConfigure())
             {
-                buffer incoming(1024);
-                buffer out;
+                Buffer incoming(1024);
+                Buffer out;
 
                 cmdlist->SubmitConfigureCommand(0, *session);
                 session->SendNext();
@@ -442,8 +442,8 @@ public:
 
             for (size_t i=0; i<cmdlist->NumDataCommands(); ++i)
             {
-                buffer incoming(1024);
-                buffer out;
+                Buffer incoming(1024);
+                Buffer out;
 
                 cmdlist->SubmitDataCommand(i, *session);
                 session->SendNext();
@@ -1035,6 +1035,7 @@ void test_task_execute_succesfully()
     tests[3].groups.push_back("alt.binaries.success");
     tests[3].errors.set(ui::TaskDesc::Errors::Dmca, true);
     tests[3].errors.set(ui::TaskDesc::Errors::Incomplete, true);
+
 
 
     for (size_t i=0; i < tests.size(); ++i)

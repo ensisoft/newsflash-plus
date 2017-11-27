@@ -30,7 +30,7 @@
 
 namespace newsflash
 {
-    class buffer;
+    class Buffer;
 
     // session encapsulates the details of nntp. it provides a simple
     // api to request data and state changes in the session.
@@ -131,7 +131,7 @@ namespace newsflash
         // into the given out buffer.
         // otherwise if the current command could not be completed
         // the function returns false.
-        bool RecvNext(buffer& buff, buffer& out);
+        bool RecvNext(Buffer& buff, Buffer& out);
 
         // clear pending commands.
         void Clear();

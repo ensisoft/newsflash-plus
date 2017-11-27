@@ -65,8 +65,8 @@ namespace newsflash
             SizeMismatch
         };
 
-        DecodeJob(const buffer& data);
-        DecodeJob(buffer&& data);
+        DecodeJob(const Buffer& data);
+        DecodeJob(Buffer&& data);
 
         virtual std::string describe() const override;
 
@@ -135,7 +135,7 @@ namespace newsflash
         std::size_t decode_uuencode_multi(const char* data, std::size_t len);
 
     private:
-        buffer data_;
+        Buffer data_;
         std::vector<char> text_;
         std::vector<char> binary_;
         std::size_t binary_offset_ = 0;

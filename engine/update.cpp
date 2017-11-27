@@ -162,12 +162,12 @@ struct Update::state {
 class Update::parse : public action
 {
 public:
-    parse(buffer buff) : buffer_(std::move(buff))
+    parse(Buffer&& buff) : buffer_(std::move(buff))
     {}
 
     virtual void xperform() override
     {
-        nntp::linebuffer lines(buffer_.content(), buffer_.content_length());
+        nntp::linebuffer lines(buffer_.Content(), buffer_.GetContentLength());
         auto beg = lines.begin();
         auto end = lines.end();
         for (; beg != end; ++beg)
@@ -182,7 +182,7 @@ public:
         }
     }
     virtual std::size_t size() const override
-    { return buffer_.content_length(); }
+    { return buffer_.GetContentLength(); }
 
 	virtual std::string describe() const override
 	{ return "Parse XOVER"; }
@@ -191,7 +191,7 @@ private:
     std::shared_ptr<state> state_;
     std::vector<article_t> articles_;
 private:
-    buffer buffer_;
+    Buffer buffer_;
 };
 
 class Update::store : public action
@@ -593,7 +593,7 @@ void Update::Complete(CmdList& cmd, std::vector<std::unique_ptr<action>>& next)
     if (cmd.GetType() == CmdList::Type::GroupInfo)
     {
         const auto& buffer   = cmd.GetBuffer(0);
-        const auto& pair = nntp::parse_group(buffer.content(), buffer.content_length());
+        const auto& pair = nntp::parse_group(buffer.Content(), buffer.GetContentLength());
         if (!pair.first)
             throw std::runtime_error("parse group information failed");
 
@@ -614,7 +614,7 @@ void Update::Complete(CmdList& cmd, std::vector<std::unique_ptr<action>>& next)
         for (std::size_t i=0; i<cmd.NumBuffers(); ++i)
         {
             auto& buffer = cmd.GetBuffer(i);
-            if (buffer.content_status() != buffer::status::success)
+            if (buffer.GetContentStatus() != Buffer::Status::Success)
                 continue;
 
             std::unique_ptr<action> p(new parse(std::move(buffer)));

@@ -254,11 +254,11 @@ void Download::Complete(CmdList& cmd, std::vector<std::unique_ptr<action>>& next
     for (std::size_t i=0; i<contents.size(); ++i)
     {
         auto& content = contents[i];
-        auto status   = content.content_status();
+        auto status   = content.GetContentStatus();
 
         // if the article content was succesfully retrieved
         // create a decoding job and push into the output queue
-        if (status == buffer::status::success)
+        if (status == Buffer::Status::Success)
         {
             std::unique_ptr<DecodeJob> dec(new DecodeJob(std::move(content)));
             dec->set_affinity(affinity);

@@ -47,7 +47,7 @@ void Listing::Complete(CmdList& cmd, std::vector<std::unique_ptr<action>>& actio
 
     auto& listing  = cmd.GetBuffer(0);
 
-    nntp::linebuffer lines(listing.content(), listing.content_length());
+    nntp::linebuffer lines(listing.Content(), listing.GetContentLength());
 
     auto beg = lines.begin();
     auto end = lines.end();

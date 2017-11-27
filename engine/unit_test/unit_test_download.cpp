@@ -224,7 +224,7 @@ void unit_test_decode_from_files()
             break;
         for (std::size_t j=0; j<cmds->NumDataCommands(); ++j, ++i)
         {
-            nf::buffer buff = read_file_buffer(articles[i].c_str());
+            nf::Buffer buff = read_file_buffer(articles[i].c_str());
             cmds->ReceiveDataBuffer(std::move(buff));
         }
         std::vector<std::unique_ptr<nf::action>> decodes;

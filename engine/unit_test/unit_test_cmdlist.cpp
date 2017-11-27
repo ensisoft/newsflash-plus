@@ -50,9 +50,9 @@ void unit_test_bodylist()
         BOOST_REQUIRE(command == "GROUP alt.binaries.foo\r\n");
 
         {
-            nf::buffer recv(1024);
-            nf::buffer conf;
-            recv.append("411 no such group\r\n");
+            nf::Buffer recv(1024);
+            nf::Buffer conf;
+            recv.Append("411 no such group\r\n");
             session.RecvNext(recv, conf);
             BOOST_REQUIRE(!list.ReceiveConfigureBuffer(0, std::move(conf)));
         }
@@ -62,9 +62,9 @@ void unit_test_bodylist()
         BOOST_REQUIRE(command == "GROUP alt.binaries.bar\r\n");
 
         {
-            nf::buffer recv(1024);
-            nf::buffer conf;
-            recv.append("411 no such group\r\n");
+            nf::Buffer recv(1024);
+            nf::Buffer conf;
+            recv.Append("411 no such group\r\n");
             session.RecvNext(recv, conf);
             BOOST_REQUIRE(!list.ReceiveConfigureBuffer(1, std::move(conf)));
         }
@@ -93,9 +93,9 @@ void unit_test_bodylist()
             list.SubmitConfigureCommand(0, session);
             session.SendNext();
 
-            nf::buffer recv(1024);
-            nf::buffer conf;
-            recv.append("211 4 1 4 alt.binaries.foo group succesfully selected\r\n");
+            nf::Buffer recv(1024);
+            nf::Buffer conf;
+            recv.Append("211 4 1 4 alt.binaries.foo group succesfully selected\r\n");
 
             session.RecvNext(recv, conf);
             BOOST_REQUIRE(list.ReceiveConfigureBuffer(0, std::move(conf)));
@@ -111,9 +111,9 @@ void unit_test_bodylist()
             session.SendNext();
             BOOST_REQUIRE(command == "BODY 123\r\nBODY 234\r\nBODY 345\r\n");
 
-            nf::buffer recv(1024);
-            nf::buffer body1, body2, body3;
-            recv.append("420 no article with that message\r\n"
+            nf::Buffer recv(1024);
+            nf::Buffer body1, body2, body3;
+            recv.Append("420 no article with that message\r\n"
                 "222 body follows\r\nhello\r\n.\r\n"
                 "420 no article with that message\r\n");
 
@@ -129,20 +129,20 @@ void unit_test_bodylist()
             const auto& buffers = list.GetBuffers();
             BOOST_REQUIRE(buffers.size() == 3);
 
-            BOOST_REQUIRE(buffers[0].content_status() == nf::buffer::status::unavailable);
-            BOOST_REQUIRE(buffers[2].content_status() == nf::buffer::status::unavailable);
-            BOOST_REQUIRE(buffers[1].content_status() == nf::buffer::status::success);
-            BOOST_REQUIRE(buffers[1].content_length() == std::strlen("hello\r\n.\r\n"));
+            BOOST_REQUIRE(buffers[0].GetContentStatus() == nf::Buffer::Status::Unavailable);
+            BOOST_REQUIRE(buffers[2].GetContentStatus() == nf::Buffer::Status::Unavailable);
+            BOOST_REQUIRE(buffers[1].GetContentStatus() == nf::Buffer::Status::Success);
+            BOOST_REQUIRE(buffers[1].GetContentLength() == std::strlen("hello\r\n.\r\n"));
         }
     }
 }
 
-bool operator==(const nf::buffer& buff, const char* str)
+bool operator==(const nf::Buffer& buff, const char* str)
 {
-    BOOST_REQUIRE(buff.content_length() == std::strlen(str));
+   BOOST_REQUIRE(buff.GetContentLength() == std::strlen(str));
 
-    return !std::strncmp(buff.content(), str,
-        buff.content_length());
+   return !std::strncmp(buff.Content(), str,
+        buff.GetContentLength());
 }
 
 void unit_test_refill()
@@ -165,10 +165,10 @@ void unit_test_refill()
     session.SendNext();
     BOOST_REQUIRE(command == "BODY 1\r\nBODY 2\r\nBODY 3\r\nBODY 4\r\n");
 
-    nf::buffer recv(1024);
-    nf::buffer b1, b2, b3, b4;
+    nf::Buffer recv(1024);
+    nf::Buffer b1, b2, b3, b4;
 
-    recv.append("222 body follows\r\n"
+    recv.Append("222 body follows\r\n"
                 "hello\r\n.\r\n"
                 "222 body follows\r\n"
                 "foo\r\n.\r\n"
@@ -184,14 +184,14 @@ void unit_test_refill()
     list.ReceiveDataBuffer(std::move(b3));
     list.ReceiveDataBuffer(std::move(b4));
 
-    using status = nf::buffer::status;
+    using status = nf::Buffer::Status;
 
     {
         const auto& buffers = list.GetBuffers();
-        BOOST_REQUIRE(buffers[0].content_status() == status::success);
-        BOOST_REQUIRE(buffers[1].content_status() == status::success);
-        BOOST_REQUIRE(buffers[2].content_status() == status::unavailable);
-        BOOST_REQUIRE(buffers[3].content_status() == status::unavailable);
+        BOOST_REQUIRE(buffers[0].GetContentStatus() == status::Success);
+        BOOST_REQUIRE(buffers[1].GetContentStatus() == status::Success);
+        BOOST_REQUIRE(buffers[2].GetContentStatus() == status::Unavailable);
+        BOOST_REQUIRE(buffers[3].GetContentStatus() == status::Unavailable);
     }
 
     command = "";
@@ -199,12 +199,12 @@ void unit_test_refill()
     session.SendNext();
     BOOST_REQUIRE(command == "BODY 3\r\nBODY 4\r\n");
 
-    recv.clear();
-    recv.append("222 body follows\r\n"
+    recv.Clear();
+    recv.Append("222 body follows\r\n"
                 "adrvardk\r\n.\r\n"
                 "420 no article with that message dmca\r\n");
-    b3 = nf::buffer();
-    b4 = nf::buffer();
+    b3 = nf::Buffer();
+    b4 = nf::Buffer();
     session.RecvNext(recv, b3);
     session.RecvNext(recv, b4);
 
@@ -214,10 +214,10 @@ void unit_test_refill()
     {
         const auto& buffers = list.GetBuffers();
         BOOST_REQUIRE(buffers.size() == 4);
-        BOOST_REQUIRE(buffers[0].content_status() == status::success);
-        BOOST_REQUIRE(buffers[1].content_status() == status::success);
-        BOOST_REQUIRE(buffers[2].content_status() == status::success);
-        BOOST_REQUIRE(buffers[3].content_status() == status::dmca);
+        BOOST_REQUIRE(buffers[0].GetContentStatus() == status::Success);
+        BOOST_REQUIRE(buffers[1].GetContentStatus() == status::Success);
+        BOOST_REQUIRE(buffers[2].GetContentStatus() == status::Success);
+        BOOST_REQUIRE(buffers[3].GetContentStatus() == status::Dmca);
 
         BOOST_REQUIRE(buffers[0] == "hello\r\n.\r\n");
         BOOST_REQUIRE(buffers[1] == "foo\r\n.\r\n");
@@ -241,20 +241,20 @@ void unit_test_listing()
     session.SendNext();
     BOOST_REQUIRE(command == "LIST\r\n");
 
-    nf::buffer i(1024);
-    nf::buffer o(1024);
-    i.append("215 listing follows\r\n"
+    nf::Buffer i(1024);
+    nf::Buffer o(1024);
+    i.Append("215 listing follows\r\n"
         "alt.binaries.foo 1 0 y\r\n"
         "alt.binaries.bar 2 1 n\r\n"
         ".\r\n");
     session.RecvNext(i, o);
-    BOOST_REQUIRE(o.content_status() == nf::buffer::status::success);
+    BOOST_REQUIRE(o.GetContentStatus() == nf::Buffer::Status::Success);
 
     listing.ReceiveDataBuffer(std::move(o));
 
     const auto& buffers = listing.GetBuffers();
     BOOST_REQUIRE(buffers.size() == 1);
-    BOOST_REQUIRE(buffers[0].content_status() == nf::buffer::status::success);
+    BOOST_REQUIRE(buffers[0].GetContentStatus() == nf::Buffer::Status::Success);
 
 }
 
@@ -277,18 +277,18 @@ void unit_test_groupinfo()
 
         BOOST_REQUIRE(command == "GROUP alt.binaries.foo\r\n");
 
-        nf::buffer i(64);
-        nf::buffer o(64);
-        i.append("211 3 0 2 alt.binaries.foo\r\n");
+        nf::Buffer i(64);
+        nf::Buffer o(64);
+        i.Append("211 3 0 2 alt.binaries.foo\r\n");
 
         session.RecvNext(i, o);
-        BOOST_REQUIRE(o.content_status() == nf::buffer::status::success);
+        BOOST_REQUIRE(o.GetContentStatus() == nf::Buffer::Status::Success);
 
         list.ReceiveDataBuffer(std::move(o));
 
         const auto& buffers = list.GetBuffers();
         BOOST_REQUIRE(buffers.size() == 1);
-        BOOST_REQUIRE(buffers[0].content_status() == nf::buffer::status::success);
+        BOOST_REQUIRE(buffers[0].GetContentStatus() == nf::Buffer::Status::Success);
     }
 
     // failure
@@ -305,16 +305,16 @@ void unit_test_groupinfo()
 
         session.SendNext();
 
-        nf::buffer i(64);
-        nf::buffer o(64);
-        i.append("411 no such newsgroup\r\n");
+        nf::Buffer i(64);
+        nf::Buffer o(64);
+        i.Append("411 no such newsgroup\r\n");
         session.RecvNext(i, o);
 
         list.ReceiveDataBuffer(std::move(o));
 
         const auto& buffers = list.GetBuffers();
         BOOST_REQUIRE(buffers.size() == 1);
-        BOOST_REQUIRE(buffers[0].content_status() == nf::buffer::status::unavailable);
+        BOOST_REQUIRE(buffers[0].GetContentStatus() == nf::Buffer::Status::Unavailable);
 
     }
 }

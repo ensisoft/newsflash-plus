@@ -349,8 +349,8 @@ void test_execute_success()
         BOOST_REQUIRE(completion.content_bytes != 0); // todo:
 
         BOOST_REQUIRE(cmds->NumBuffers() == 1);
-        BOOST_REQUIRE(cmds->GetBuffer(0).content_type() == nf::buffer::type::article);
-        BOOST_REQUIRE(cmds->GetBuffer(0).content_status()== nf::buffer::status::success);
+        BOOST_REQUIRE(cmds->GetBuffer(0).GetContentType() == nf::Buffer::Type::Article);
+        BOOST_REQUIRE(cmds->GetBuffer(0).GetContentStatus()== nf::Buffer::Status::Success);
     }
 
     // no such body
@@ -375,8 +375,8 @@ void test_execute_success()
         BOOST_REQUIRE(completion.content_bytes == 0);
 
         BOOST_REQUIRE(cmds->NumBuffers() == 1);
-        BOOST_REQUIRE(cmds->GetBuffer(0).content_type() == nf::buffer::type::article);
-        BOOST_REQUIRE(cmds->GetBuffer(0).content_status()== nf::buffer::status::unavailable);
+        BOOST_REQUIRE(cmds->GetBuffer(0).GetContentType() == nf::Buffer::Type::Article);
+        BOOST_REQUIRE(cmds->GetBuffer(0).GetContentStatus()== nf::Buffer::Status::Unavailable);
 
     }
 }

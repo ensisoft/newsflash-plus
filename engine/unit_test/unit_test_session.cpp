@@ -28,17 +28,17 @@
 
 namespace nf = newsflash;
 
-void set(nf::buffer& buff, const char* str)
+void set(nf::Buffer& buff, const char* str)
 {
-    buff.clear();
-    std::strcpy(buff.back(), str);
-    buff.append(std::strlen(str));
+    buff.Clear();
+    std::strcpy(buff.Back(), str);
+    buff.Append(std::strlen(str));
 }
 
-void append(nf::buffer& buff, const char* str)
+void append(nf::Buffer& buff, const char* str)
 {
-    std::strcpy(buff.back(), str);
-    buff.append(std::strlen(str));
+    std::strcpy(buff.Back(), str);
+    buff.Append(std::strlen(str));
 }
 
 
@@ -58,8 +58,8 @@ void unit_test_init_session_success()
         pass = "bar";
     };
 
-    nf::buffer incoming(1024);
-    nf::buffer tmp(1);
+    nf::Buffer incoming(1024);
+    nf::Buffer tmp(1);
     BOOST_REQUIRE(session.GetError() == nf::Session::Error::None);
     BOOST_REQUIRE(session.GetState() == nf::Session::State::None);
 
@@ -124,8 +124,8 @@ void unit_test_init_session_success_caps()
         pass = "bar";
     };
 
-    nf::buffer incoming(1024);
-    nf::buffer tmp(1);
+    nf::Buffer incoming(1024);
+    nf::Buffer tmp(1);
 
     session.Start();
 
@@ -171,8 +171,8 @@ void unit_test_init_session_garbage()
 
     // junk on welcome
     {
-        nf::buffer incoming(1024);
-        nf::buffer tmp(1);
+        nf::Buffer incoming(1024);
+        nf::Buffer tmp(1);
 
         session.Start();
         session.SendNext();
@@ -186,8 +186,8 @@ void unit_test_init_session_garbage()
 
     // junk (unexpected return value) command
     {
-        nf::buffer incoming(1024);
-        nf::buffer tmp(1);
+        nf::Buffer incoming(1024);
+        nf::Buffer tmp(1);
 
         session.Start();
         session.SendNext();
@@ -216,8 +216,8 @@ void unit_test_init_session_failure_authenticate()
         pass = "bar";
     };
 
-    nf::buffer incoming(1024);
-    nf::buffer tmp(1);
+    nf::Buffer incoming(1024);
+    nf::Buffer tmp(1);
 
     session.Start();
 
@@ -261,8 +261,8 @@ void unit_test_change_group()
         output = cmd;
     };
 
-    nf::buffer incoming(1024);
-    nf::buffer tmp(1024);
+    nf::Buffer incoming(1024);
+    nf::Buffer tmp(1024);
 
     session.ChangeGroup("alt.binaries.foo");
     session.SendNext();
@@ -274,11 +274,11 @@ void unit_test_change_group()
     BOOST_REQUIRE(session.GetState() == nf::Session::State::Ready);
     BOOST_REQUIRE(session.GetError() == nf::Session::Error::None);
 
-    BOOST_REQUIRE(tmp.content_type() == nf::buffer::type::groupinfo);
-    BOOST_REQUIRE(tmp.content_status() == nf::buffer::status::success);
-    BOOST_REQUIRE(tmp.content_length() == std::strlen("211 4 1 4 alt.binaries.foo group succesfully selected\r\n"));
-    BOOST_REQUIRE(!std::strncmp(tmp.content(),
-        "211 4 1 4 alt.binaries.foo group succesfully selected\r\n", tmp.content_length()));
+    BOOST_REQUIRE(tmp.GetContentType() == nf::Buffer::Type::GroupInfo);
+    BOOST_REQUIRE(tmp.GetContentStatus() == nf::Buffer::Status::Success);
+    BOOST_REQUIRE(tmp.GetContentLength() == std::strlen("211 4 1 4 alt.binaries.foo group succesfully selected\r\n"));
+    BOOST_REQUIRE(!std::strncmp(tmp.Content(),
+        "211 4 1 4 alt.binaries.foo group succesfully selected\r\n", tmp.GetContentLength()));
 }
 
 void unit_test_retrieve_article()
@@ -292,8 +292,8 @@ void unit_test_retrieve_article()
 
     // single command
     {
-        nf::buffer incoming(1024);
-        nf::buffer content(1024);
+        nf::Buffer incoming(1024);
+        nf::Buffer content(1024);
 
         session.RetrieveArticle("1234");
         session.SendNext();
@@ -307,17 +307,17 @@ void unit_test_retrieve_article()
         BOOST_REQUIRE(session.GetState() == nf::Session::State::Ready);
         BOOST_REQUIRE(session.GetError() == nf::Session::Error::None);
 
-        BOOST_REQUIRE(content.content_type() == nf::buffer::type::article);
-        BOOST_REQUIRE(content.content_start() == std::strlen("222 body follows\r\n"));
-        BOOST_REQUIRE(content.content_length() == std::strlen("here's some text data\r\n.\r\n"));
-        BOOST_REQUIRE(!std::strncmp(content.content(),
-            "here's some text data\r\n.\r\n", content.content_length()));
+        BOOST_REQUIRE(content.GetContentType() == nf::Buffer::Type::Article);
+        BOOST_REQUIRE(content.GetContentStart() == std::strlen("222 body follows\r\n"));
+        BOOST_REQUIRE(content.GetContentLength() == std::strlen("here's some text data\r\n.\r\n"));
+        BOOST_REQUIRE(!std::strncmp(content.Content(),
+            "here's some text data\r\n.\r\n", content.GetContentLength()));
     }
 
     // multiple enqueued commands, no pipelining
     {
-        nf::buffer incoming(1024);
-        nf::buffer content(1024);
+        nf::Buffer incoming(1024);
+        nf::Buffer content(1024);
 
         session.RetrieveArticle("1234");
         session.RetrieveArticle("2345");
@@ -327,32 +327,32 @@ void unit_test_retrieve_article()
         BOOST_REQUIRE(output == "BODY 1234\r\n");
         set(incoming, "222 body follows\r\nthis is first content\r\n.\r\n");
         session.RecvNext(incoming, content);
-        BOOST_REQUIRE(content.content_type() == nf::buffer::type::article);
-        BOOST_REQUIRE(content.content_status() == nf::buffer::status::success);
-        BOOST_REQUIRE(!std::strncmp(content.content(),
-            "this is first content\r\n.\r\n", content.content_length()));
+        BOOST_REQUIRE(content.GetContentType() == nf::Buffer::Type::Article);
+        BOOST_REQUIRE(content.GetContentStatus() == nf::Buffer::Status::Success);
+        BOOST_REQUIRE(!std::strncmp(content.Content(),
+            "this is first content\r\n.\r\n", content.GetContentLength()));
 
         session.SendNext();
         BOOST_REQUIRE(output == "BODY 2345\r\n");
         set(incoming, "420 no article with that message id dmca takedown\r\n");
         session.RecvNext(incoming, content);
-        BOOST_REQUIRE(content.content_type() == nf::buffer::type::article);
-        BOOST_REQUIRE(content.content_status() == nf::buffer::status::dmca);
+        BOOST_REQUIRE(content.GetContentType() == nf::Buffer::Type::Article);
+        BOOST_REQUIRE(content.GetContentStatus() == nf::Buffer::Status::Dmca);
 
         session.SendNext();
         BOOST_REQUIRE(output == "BODY 3456\r\n");
         set(incoming, "423 no article with that number\r\n");
         session.RecvNext(incoming, content);
-        BOOST_REQUIRE(content.content_type() == nf::buffer::type::article);
-        BOOST_REQUIRE(content.content_status() == nf::buffer::status::unavailable);
+        BOOST_REQUIRE(content.GetContentType() == nf::Buffer::Type::Article);
+        BOOST_REQUIRE(content.GetContentStatus() == nf::Buffer::Status::Unavailable);
 
         BOOST_REQUIRE(!session.HasPending());
     }
 
     // pipelining
     {
-        nf::buffer incoming(1024);
-        nf::buffer content(1024);
+        nf::Buffer incoming(1024);
+        nf::Buffer content(1024);
 
 
         session.on_send = [&](const std::string& cmd) {
@@ -374,19 +374,19 @@ void unit_test_retrieve_article()
             "222 body fol");
 
         BOOST_REQUIRE(session.RecvNext(incoming, content));
-        BOOST_REQUIRE(content.content_type() == nf::buffer::type::article);
-        BOOST_REQUIRE(!std::strncmp(content.content(),
-            "this is first content\r\n.\r\n", content.content_length()));
+        BOOST_REQUIRE(content.GetContentType() == nf::Buffer::Type::Article);
+        BOOST_REQUIRE(!std::strncmp(content.Content(),
+            "this is first content\r\n.\r\n", content.GetContentLength()));
 
         append(incoming, "lows\r\nsecond content\r\n.\r\n"
             "423 no such article with that number\r\n");
 
         BOOST_REQUIRE(session.RecvNext(incoming, content));
-        BOOST_REQUIRE(!std::strncmp(content.content(),
-            "second content\r\n.\r\n", content.content_length()));
+        BOOST_REQUIRE(!std::strncmp(content.Content(),
+            "second content\r\n.\r\n", content.GetContentLength()));
 
         BOOST_REQUIRE(session.RecvNext(incoming, content));
-        BOOST_REQUIRE(content.content_status() == nf::buffer::status::unavailable);
+        BOOST_REQUIRE(content.GetContentStatus() == nf::Buffer::Status::Unavailable);
 
         BOOST_REQUIRE(!session.HasPending());
     }
@@ -402,8 +402,8 @@ void unit_test_retrieve_listing()
         output = cmd;
     };
 
-    nf::buffer i(1024);
-    nf::buffer o(1024);
+    nf::Buffer i(1024);
+    nf::Buffer o(1024);
 
     session.RetrieveList();
     session.SendNext();
@@ -416,10 +416,10 @@ void unit_test_retrieve_listing()
     session.RecvNext(i, o);
 
     BOOST_REQUIRE(session.HasPending() == false);
-    BOOST_REQUIRE(o.content_status() == nf::buffer::status::success);
-    BOOST_REQUIRE(o.content_type() == nf::buffer::type::grouplist);
-    BOOST_REQUIRE(o.content_start() == strlen("215 listing follows\r\n"));
-    BOOST_REQUIRE(o.content_length() == strlen("alt.binaries.foo 1 0 y\r\n"
+    BOOST_REQUIRE(o.GetContentStatus() == nf::Buffer::Status::Success);
+    BOOST_REQUIRE(o.GetContentType() == nf::Buffer::Type::GroupList);
+    BOOST_REQUIRE(o.GetContentStart() == strlen("215 listing follows\r\n"));
+    BOOST_REQUIRE(o.GetContentLength() == strlen("alt.binaries.foo 1 0 y\r\n"
         "alt.binaries.bar 2 1 n\r\n.\r\n"));
 }
 

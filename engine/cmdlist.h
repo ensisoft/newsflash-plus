@@ -115,10 +115,10 @@ namespace newsflash
         }
 
         // receive and handle ith response to ith configure command.
-        bool ReceiveConfigureBuffer(std::size_t i, const buffer& buff)
+        bool ReceiveConfigureBuffer(std::size_t i, const Buffer& buff)
         {
             // if the group exists, it's good enough for us.
-            if (buff.content_status() == buffer::status::success)
+            if (buff.GetContentStatus() == Buffer::Status::Success)
                 return true;
 
             // if we have no more groups to check, we're done.
@@ -144,7 +144,7 @@ namespace newsflash
                 for (std::size_t i=0; i<commands_.size(); ++i)
                 {
                     if (i < buffers_.size() &&
-                        buffers_[i].content_status() == buffer::status::success)
+                        buffers_[i].GetContentStatus() == Buffer::Status::Success)
                         continue;
 
                     if (cmdtype_ == Type::Article)
@@ -153,7 +153,7 @@ namespace newsflash
                         ses.RetrieveHeaders(commands_[i]);
 
                     if (i < buffers_.size())
-                        buffers_[i].clear();
+                        buffers_[i].Clear();
                 }
             }
         }
@@ -177,7 +177,7 @@ namespace newsflash
                 ASSERT(i < commands_.size());
 
                 if (i < buffers_.size() &&
-                    buffers_[i].content_status() == buffer::status::success)
+                    buffers_[i].GetContentStatus() == Buffer::Status::Success)
                     return;
 
                 if (cmdtype_ == Type::Article)
@@ -185,17 +185,17 @@ namespace newsflash
                 else if (cmdtype_ == Type::Header)
                     session.RetrieveHeaders(commands_[i]);
                 if (i < buffers_.size())
-                    buffers_[i].clear();
+                    buffers_[i].Clear();
             }
         }
 
 
         // receive a data buffer response to submit_data_commands
-        void ReceiveDataBuffer(const buffer& buff)
+        void ReceiveDataBuffer(const Buffer& buff)
         {
             for (auto& old : buffers_)
             {
-                if (old.content_status() == buffer::status::none)
+                if (old.GetContentStatus() == Buffer::Status::None)
                 {
                     old = buff;
                     return;
@@ -204,11 +204,11 @@ namespace newsflash
             buffers_.push_back(buff);
         }
 
-        void ReceiveDataBuffer(buffer&& buff)
+        void ReceiveDataBuffer(Buffer&& buff)
         {
             for (auto& old : buffers_)
             {
-                if (old.content_status() == buffer::status::none)
+                if (old.GetContentStatus() == Buffer::Status::None)
                 {
                     old = std::move(buff);
                     return;
@@ -223,16 +223,16 @@ namespace newsflash
         std::size_t NumBuffers() const
         { return buffers_.size(); }
 
-        std::vector<buffer>& GetBuffers()
+        std::vector<Buffer>& GetBuffers()
         { return buffers_; }
 
-        buffer& GetBuffer(std::size_t i)
+        Buffer& GetBuffer(std::size_t i)
         {
             ASSERT(i < buffers_.size());
             return buffers_[i];
         }
 
-        const buffer& GetBuffer(std::size_t i) const
+        const Buffer& GetBuffer(std::size_t i) const
         {
             ASSERT(i < buffers_.size());
             return buffers_[i];
@@ -326,7 +326,7 @@ namespace newsflash
         std::size_t id_   = 0;
     private:
         // nntp data
-        std::vector<buffer> buffers_;
+        std::vector<Buffer> buffers_;
         std::vector<std::string> groups_;
         std::vector<std::string> commands_;
     private:

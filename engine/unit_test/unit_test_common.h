@@ -55,7 +55,7 @@
 #  include <unistd.h>
 #endif
 
-newsflash::buffer read_file_buffer(const char* file)
+newsflash::Buffer read_file_buffer(const char* file)
 {
     auto* f = std::fopen(file, "rb");
     BOOST_REQUIRE(f);
@@ -64,16 +64,16 @@ newsflash::buffer read_file_buffer(const char* file)
     const auto size = ftell(f);
     std::fseek(f, 0, SEEK_SET);
 
-    newsflash::buffer buff(size);
+    newsflash::Buffer buff(size);
 
-    std::fread(buff.back(), 1, size, f);
+    std::fread(buff.Back(), 1, size, f);
     std::fclose(f);
 
-    buff.append(size);
-    buff.set_content_type(newsflash::buffer::type::article);
-    buff.set_status(newsflash::buffer::status::success);
-    buff.set_content_length(size);
-    buff.set_content_start(0);
+    buff.Append(size);
+    buff.SetContentType(newsflash::Buffer::Type::Article);
+    buff.SetStatus(newsflash::Buffer::Status::Success);
+    buff.SetContentLength(size);
+    buff.SetContentStart(0);
     return buff;
 }
 

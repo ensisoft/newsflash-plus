@@ -55,10 +55,10 @@ std::string to_utf8(const std::string& str)
 namespace newsflash
 {
 
-DecodeJob::DecodeJob(const buffer& data) : data_(data)
+DecodeJob::DecodeJob(const Buffer& data) : data_(data)
 {}
 
-DecodeJob::DecodeJob(buffer&& data) : data_(std::move(data))
+DecodeJob::DecodeJob(Buffer&& data) : data_(std::move(data))
 {}
 
 std::string DecodeJob::describe() const
@@ -75,7 +75,7 @@ void DecodeJob::xperform()
     // for example uuencoded images embedded in a text.
     newsflash::encoding enc = newsflash::encoding::unknown;
 
-    nntp::linebuffer lines(data_.content(), data_.content_length());
+    nntp::linebuffer lines(data_.Content(), data_.GetContentLength());
     nntp::linebuffer::iterator beg = lines.begin();
     nntp::linebuffer::iterator end = lines.end();
 
@@ -97,8 +97,8 @@ void DecodeJob::xperform()
     }
 
     std::size_t consumed = 0;
-    const auto dataptr = data_.content() + binary_start_offset;
-    const auto datalen = data_.content_length() - binary_start_offset;
+    const auto dataptr = data_.Content() + binary_start_offset;
+    const auto datalen = data_.GetContentLength() - binary_start_offset;
 
     std::stringstream ss;
     ss << "\r\n";
@@ -147,7 +147,7 @@ void DecodeJob::xperform()
     std::copy(std::begin(s), std::end(s), std::back_inserter(text_));
 
     const auto textptr = dataptr + consumed;
-    const auto textend = data_.content() + data_.content_length();
+    const auto textend = data_.Content() + data_.GetContentLength();
     std::copy(textptr, textend, std::back_inserter(text_));
 }
 
