@@ -1,4 +1,4 @@
-// Copyright (c) 2013 Sami Väisänen, Ensisoft 
+// Copyright (c) 2013 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
 //
@@ -28,7 +28,7 @@
 
 namespace newsflash
 {
-    template<typename Enum, 
+    template<typename Enum,
         typename Bits = std::uint32_t>
     class bitflag
     {
@@ -46,7 +46,7 @@ namespace newsflash
         bitflag(Bits value) : bits_(value)
         {}
 
-        bitflag& set(Enum value, bool on = true) 
+        bitflag& set(Enum value, bool on = true)
         {
             const auto b = bittify(value);
 
@@ -63,43 +63,43 @@ namespace newsflash
         }
 
         bitflag& operator &= (bitflag other)
-        { 
+        {
             bits_ &= other.bits_;
             return *this;
         }
 
         // test a particular value.
         bool test(Enum value) const
-        { 
-            const auto b = bittify(value); 
+        {
+            const auto b = bittify(value);
             return (bits_ & b) == b;
         }
-        
+
         // test for any value.
-        bool test(bitflag values) const 
+        bool test(bitflag values) const
         { return bits_ & values.bits_; }
 
         // test of the nth bith.
-        bool test(unsigned index) const 
+        bool test(unsigned index) const
         {
             const auto b = bittify((Enum)index);
             return (bits_ & b);
         }
 
-        void clear() 
+        void clear()
         { bits_ = 0x0; }
 
-        bool any_bit() const 
+        bool any_bit() const
         { return bits_ != 0; }
 
-        Bits value() const 
-        { return bits_; }        
+        Bits value() const
+        { return bits_; }
 
         void set_from_value(Bits b)
         { bits_ = b; }
 
     private:
-        Bits bittify(Enum value) const 
+        Bits bittify(Enum value) const
         {
             assert((unsigned)value < BitCount &&
                 "The value of enum member is too large to fit in the bitset."
@@ -136,6 +136,18 @@ namespace newsflash
     auto operator & (bitflag<Enum, Bits> lhs, Enum e) -> decltype(lhs)
     {
         return lhs & bitflag<Enum, Bits>(e);
+    }
+
+    template<typename Enum, typename Bits>
+    bool operator == (const bitflag<Enum, Bits>& lhs, const bitflag<Enum, Bits>& rhs)
+    {
+        return lhs.value() == rhs.value();
+    }
+
+    template<typename Enum, typename Bits>
+    bool operator != (const bitflag<Enum, Bits>& lhs, const bitflag<Enum, Bits>& rhs)
+    {
+        return lhs.value() != rhs.value();
     }
 
 } // newsflash
