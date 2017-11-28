@@ -240,9 +240,6 @@ void Download::Complete(action& act, std::vector<std::unique_ptr<action>>& next)
 
 void Download::Complete(CmdList& cmd, std::vector<std::unique_ptr<action>>& next)
 {
-    auto& messages = cmd.GetCommands();
-    auto& contents = cmd.GetBuffers();
-
     // yenc encoding based files have offsets so they can
     // run in parallel and complete in any order and then write
     // in any order to the file.
@@ -251,25 +248,26 @@ void Download::Complete(CmdList& cmd, std::vector<std::unique_ptr<action>>& next
         action::affinity::any_thread :
         action::affinity::single_thread;
 
-    for (std::size_t i=0; i<contents.size(); ++i)
+    for (std::size_t i=0; i<cmd.NumBuffers(); ++i)
     {
-        auto& content = contents[i];
-        auto status   = content.GetContentStatus();
+        auto& buffer = cmd.GetBuffer(i);
+        const auto status  = buffer.GetContentStatus();
+        const auto command = cmd.GetCommand(i);
 
         // if the article content was succesfully retrieved
         // create a decoding job and push into the output queue
         if (status == Buffer::Status::Success)
         {
-            std::unique_ptr<DecodeJob> dec(new DecodeJob(std::move(content)));
+            std::unique_ptr<DecodeJob> dec(new DecodeJob(std::move(buffer)));
             dec->set_affinity(affinity);
             //dec->set_decoding_id(decode_index_);
             next.push_back(std::move(dec));
         }
+        else
+        {
+            articles_.push_back(command);
+        }
     }
-
-    // all not yet processed messages go back into pending list
-    std::copy(std::begin(messages) + contents.size(), std::end(messages),
-        std::back_inserter(articles_));
 }
 
 

@@ -130,8 +130,8 @@ void unit_test_bodylist()
             BOOST_REQUIRE(buffers.size() == 3);
 
             BOOST_REQUIRE(buffers[0].GetContentStatus() == nf::Buffer::Status::Unavailable);
-            BOOST_REQUIRE(buffers[2].GetContentStatus() == nf::Buffer::Status::Unavailable);
             BOOST_REQUIRE(buffers[1].GetContentStatus() == nf::Buffer::Status::Success);
+            BOOST_REQUIRE(buffers[2].GetContentStatus() == nf::Buffer::Status::Unavailable);
             BOOST_REQUIRE(buffers[1].GetContentLength() == std::strlen("hello\r\n.\r\n"));
         }
     }
@@ -183,6 +183,7 @@ void unit_test_refill()
     list.ReceiveDataBuffer(std::move(b2));
     list.ReceiveDataBuffer(std::move(b3));
     list.ReceiveDataBuffer(std::move(b4));
+    BOOST_REQUIRE(list.IsSuccess() == false);
 
     using status = nf::Buffer::Status;
 
@@ -210,6 +211,7 @@ void unit_test_refill()
 
     list.ReceiveDataBuffer(std::move(b3));
     list.ReceiveDataBuffer(std::move(b4));
+    BOOST_REQUIRE(list.IsSuccess() == false);
 
     {
         const auto& buffers = list.GetBuffers();
@@ -223,6 +225,35 @@ void unit_test_refill()
         BOOST_REQUIRE(buffers[1] == "foo\r\n.\r\n");
         BOOST_REQUIRE(buffers[2] == "adrvardk\r\n.\r\n");
     }
+
+    command = "";
+    list.SubmitDataCommands(session);
+    session.SendNext();
+    BOOST_REQUIRE(command == "BODY 4\r\n");
+
+    recv.Clear();
+    recv.Append("222 body follows\r\n"
+        "foobar\r\n.\r\n");
+    b4 = nf::Buffer();
+    session.RecvNext(recv, b4);
+
+    list.ReceiveDataBuffer(std::move(b4));
+    BOOST_REQUIRE(list.IsSuccess() == true);
+
+    {
+        const auto& buffers = list.GetBuffers();
+        BOOST_REQUIRE(buffers.size() == 4);
+        BOOST_REQUIRE(buffers[0].GetContentStatus() == status::Success);
+        BOOST_REQUIRE(buffers[1].GetContentStatus() == status::Success);
+        BOOST_REQUIRE(buffers[2].GetContentStatus() == status::Success);
+        BOOST_REQUIRE(buffers[3].GetContentStatus() == status::Success);
+
+        BOOST_REQUIRE(buffers[0] == "hello\r\n.\r\n");
+        BOOST_REQUIRE(buffers[1] == "foo\r\n.\r\n");
+        BOOST_REQUIRE(buffers[2] == "adrvardk\r\n.\r\n");
+        BOOST_REQUIRE(buffers[3] == "foobar\r\n.\r\n");
+    }
+
 
 }
 

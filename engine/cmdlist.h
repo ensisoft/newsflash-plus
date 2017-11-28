@@ -74,23 +74,29 @@ namespace newsflash
         CmdList(const Listing&) : CmdList()
         {
             cmdtype_ = Type::Listing;
+            buffers_.resize(1);
+            commands_.push_back("dummy");
         }
         CmdList(const Messages& m) : CmdList()
         {
             groups_   = m.groups;
             commands_ = m.numbers;
             cmdtype_  = Type::Article;
+            buffers_.resize(commands_.size());
         }
         CmdList(const Overviews& o) : CmdList()
         {
             groups_.push_back(o.group);
             commands_  = o.ranges;
             cmdtype_   = Type::Header;
+            buffers_.resize(commands_.size());
         }
         CmdList(const GroupInfo& g) : CmdList()
         {
             groups_.push_back(g.group);
             cmdtype_ = Type::GroupInfo;
+            buffers_.resize(1);
+            commands_.push_back(g.group);
         }
 
         bool NeedsToConfigure() const
@@ -131,30 +137,22 @@ namespace newsflash
         // submit the data transfer commands as a single batch.
         void SubmitDataCommands(Session& ses)
         {
-            if (cmdtype_ == Type::Listing)
+            ASSERT(commands_.size() == buffers_.size());
+            for (size_t i=0; i<commands_.size(); ++i)
             {
-                ses.RetrieveList();
-            }
-            else if (cmdtype_ == Type::GroupInfo)
-            {
-                ses.RetrieveGroupInfo(groups_[0]);
-            }
-            else
-            {
-                for (std::size_t i=0; i<commands_.size(); ++i)
-                {
-                    if (i < buffers_.size() &&
-                        buffers_[i].GetContentStatus() == Buffer::Status::Success)
-                        continue;
+                if (buffers_[i].GetContentStatus() == Buffer::Status::Success)
+                    continue;
 
-                    if (cmdtype_ == Type::Article)
-                        ses.RetrieveArticle(commands_[i]);
-                    else if (cmdtype_ == Type::Header)
-                        ses.RetrieveHeaders(commands_[i]);
+                if (cmdtype_ == Type::Listing)
+                    ses.RetrieveList();
+                else if (cmdtype_ == Type::GroupInfo)
+                    ses.RetrieveGroupInfo(commands_[i]);
+                else if (cmdtype_ == Type::Article)
+                    ses.RetrieveArticle(commands_[i]);
+                else if (cmdtype_ == Type::Header)
+                    ses.RetrieveHeaders(commands_[i]);
 
-                    if (i < buffers_.size())
-                        buffers_[i].Clear();
-                }
+                buffers_[i].Clear();
             }
         }
 
@@ -162,31 +160,22 @@ namespace newsflash
         // this is mostly to simplify testing.
         void SubmitDataCommand(std::size_t i, Session& session)
         {
+            ASSERT(i < commands_.size());
+            ASSERT(i < buffers_.size());
+
+            if (buffers_[i].GetContentStatus() == Buffer::Status::Success)
+                return;
+
             if (cmdtype_ == Type::Listing)
-            {
-                ASSERT(i == 0);
                 session.RetrieveList();
-            }
             else if (cmdtype_ == Type::GroupInfo)
-            {
-                ASSERT(i == 0);
-                session.RetrieveGroupInfo(groups_[0]);
-            }
-            else
-            {
-                ASSERT(i < commands_.size());
+                session.RetrieveGroupInfo(commands_[i]);
+            else if (cmdtype_ == Type::Article)
+                session.RetrieveArticle(commands_[i]);
+            else if (cmdtype_ == Type::Header)
+                session.RetrieveHeaders(commands_[i]);
 
-                if (i < buffers_.size() &&
-                    buffers_[i].GetContentStatus() == Buffer::Status::Success)
-                    return;
-
-                if (cmdtype_ == Type::Article)
-                    session.RetrieveArticle(commands_[i]);
-                else if (cmdtype_ == Type::Header)
-                    session.RetrieveHeaders(commands_[i]);
-                if (i < buffers_.size())
-                    buffers_[i].Clear();
-            }
+            buffers_[i].Clear();
         }
 
 
@@ -201,7 +190,7 @@ namespace newsflash
                     return;
                 }
             }
-            buffers_.push_back(buff);
+            ASSERT("No such buffer");
         }
 
         void ReceiveDataBuffer(Buffer&& buff)
@@ -214,7 +203,7 @@ namespace newsflash
                     return;
                 }
             }
-            buffers_.emplace_back(std::move(buff));
+            ASSERT("No such buffer");
         }
 
         std::size_t NumDataCommands() const
@@ -302,6 +291,18 @@ namespace newsflash
             for (const auto& cmd : commands_)
             {
                 if (cmd.front() != '<' || cmd.back() != '>')
+                    return false;
+            }
+            return true;
+        }
+
+
+        // returns true if all buffers are in success state.
+        bool IsSuccess() const
+        {
+            for (const auto& buff : buffers_)
+            {
+                if (buff.GetContentStatus() != Buffer::Status::Success)
                     return false;
             }
             return true;
