@@ -808,11 +808,6 @@ public:
                 if (cmd->GetTaskId() == ui_.task_id)
                 {
                     cmd->Cancel();
-                    i = state.cmds.erase(i);
-                }
-                else
-                {
-                    ++i;
                 }
             }
 
@@ -879,93 +874,28 @@ public:
 
     transition complete(Engine::State& state, std::shared_ptr<CmdList> cmds)
     {
-        assert(cmds->GetTaskId() == ui_.task_id);
-
-        if (!cmds->IsCancelled())
-        {
-            assert(num_active_cmdlists_ > 0);
-            num_active_cmdlists_--;
-        }
-
-        LOG_D("Task ", ui_.task_id, " receiving cmdlist ", cmds->GetCmdListId());
+        ASSERT(cmds->GetTaskId() == ui_.task_id);
+        ASSERT(num_active_cmdlists_ > 0);
+        num_active_cmdlists_--;
 
         if (ui_.state == states::Error)
             return no_transition;
 
-        if (!cmds->IsGood())
-        {
-            LOG_W("Task ", ui_.task_id, " cmdlist ", cmds->GetCmdListId(),  " failbit is on.");
-
-            const bool is_fillable = cmds->IsFillable();
-
-            if (is_fillable && state.fill_account && (state.fill_account != cmds->GetAccountId()))
-            {
-                LOG_I("Task ", ui_.task_id, " cmdlist ", cmds->GetCmdListId(), " set for refill");
-                cmds->SetAccountId(state.fill_account);
-                state.enqueue(*this, cmds);
-                ++num_active_cmdlists_;
-                return no_transition;
-            }
-            else
-            {
-                ui_.error.set(ui::TaskDesc::Errors::Incomplete);
-                return no_transition;
-            }
-        }
-        else if (cmds->GetType() != CmdList::Type::GroupInfo)
-        {
-            const auto& buffers  = cmds->GetBuffers();
-            const auto& commands = cmds->GetCommands();
-            //assert(commands.size() >= buffers.size());
-
-            for (std::size_t i=0; i<buffers.size(); ++i)
-            {
-                const auto& buff = buffers[i];
-                const auto status = buff.GetContentStatus();
-                const auto& cmd   = (i < commands.size()) ? commands[i] : str("cmd", i);
-                LOG_D("Task ", ui_.task_id, " command ", cmd, " status ", str(status));
-
-                if (status == Buffer::Status::Success)
-                    continue;
-                else if (status == Buffer::Status::Error)
-                {
-                    if (state.on_error_callback)
-                    {
-                        ui::SystemError error;
-                        error.resource = ui_.desc;
-                        error.what     = "Data buffer error";
-                        state.on_error_callback(error);
-                    }
-                    LOG_E("Task ", ui_.task_id, " Error: data buffer error");
-                    return goto_state(state, states::Error);
-                }
-
-                const bool is_fillable = cmds->IsFillable();
-
-                if (is_fillable && state.fill_account && (state.fill_account != cmds->GetAccountId()))
-                {
-                    LOG_I("Task ", ui_.task_id, " cmdlist ", cmds->GetCmdListId(), " set for refill.");
-                    cmds->SetAccountId(state.fill_account);
-                    state.enqueue(*this, cmds);
-                    ++num_active_cmdlists_;
-                    return no_transition;
-                }
-
-                if (status == Buffer::Status::Unavailable)
-                    ui_.error.set(ui::TaskDesc::Errors::Incomplete);
-                else if (status == Buffer::Status::Dmca)
-                    ui_.error.set(ui::TaskDesc::Errors::Dmca);
-            }
-        }
-
-        std::vector<std::unique_ptr<action>> actions;
-
-        ui::SystemError error;
-        error.resource = ui_.desc;
         try
         {
+            for (size_t i=0; i<cmds->NumBuffers(); ++i)
+            {
+                const auto& buff  = cmds->GetBuffer(i);
+                const auto status = buff.GetContentStatus();
+                if (status == Buffer::Status::Dmca)
+                    ui_.error.set(ui::TaskDesc::Errors::Dmca);
+                else if (status == Buffer::Status::Unavailable)
+                    ui_.error.set(ui::TaskDesc::Errors::Incomplete);
+                else if (status == Buffer::Status::Error)
+                    ui_.error.set(ui::TaskDesc::Errors::Other);
+            }
+            std::vector<std::unique_ptr<action>> actions;
             task_->Complete(*cmds, actions);
-
             for (auto& a : actions)
                 do_action(state, std::move(a));
 
@@ -973,20 +903,28 @@ public:
         }
         catch (const std::system_error& e)
         {
-            error.code = e.code();
-            error.what = e.what();
+            if (state.on_error_callback)
+            {
+                ui::SystemError error;
+                error.resource = ui_.desc;
+                error.code = e.code();
+                error.what = e.what();
+                state.on_error_callback(error);
+                return goto_state(state, states::Error);
+            }
         }
         catch (const std::exception& e)
         {
-            error.what = e.what();
+            if (state.on_error_callback)
+            {
+                ui::SystemError error;
+                error.resource = ui_.desc;
+                error.what = e.what();
+                state.on_error_callback(error);
+                return goto_state(state, states::Error);
+            }
         }
-
-        if (state.on_error_callback)
-        {
-            state.on_error_callback(error);
-        }
-        LOG_E("Task ", ui_.task_id, " Error: ", error.what);
-        return goto_state(state, states::Error);
+        return no_transition;
     }
 
     transition pause(Engine::State& state)
@@ -1004,13 +942,6 @@ public:
             if (cmd->GetTaskId() == ui_.task_id)
             {
                 cmd->Cancel();
-                it = state.cmds.erase(it);
-                assert(num_active_cmdlists_ > 0);
-                --num_active_cmdlists_;
-            }
-            else
-            {
-                ++it;
             }
         }
 
@@ -1265,15 +1196,7 @@ private:
                     if (cmd->GetTaskId() == ui_.task_id)
                     {
                         cmd->Cancel();
-                        it = state.cmds.erase(it);
-                        assert(num_active_cmdlists_ > 0);
-                        --num_active_cmdlists_;
                     }
-                    else
-                    {
-                        ++it;
-                    }
-
                 }
                 break;
 
@@ -1731,7 +1654,8 @@ void Engine::State::on_cmdlist_done(const Connection::CmdListCompletionData& com
     LOG_D("Cmdlist ", id, " belongs to task ", cmds->GetTaskId());
     LOG_D("Cmdlist ", id, " goodbit: ", cmds->IsGood());
     LOG_D("Cmdlist ", id, " cancelbit: ", cmds->IsCancelled());
-    LOG_D("Cmdlist ", id, " success: ", completion.success);
+    LOG_D("Cmdlist ", id, " exception: ", !completion.success);
+    LOG_D("Cmdlist ", id, " success: ", cmds->IsSuccess());
 
     #ifdef NEWSFLASH_DEBUG
     if (std::getenv("NEWSFLASH_DUMP_DATA"))
@@ -1773,6 +1697,21 @@ void Engine::State::on_cmdlist_done(const Connection::CmdListCompletionData& com
 
     if (completion.success)
     {
+        const auto success  = cmds->IsSuccess();
+        const auto fillable = cmds->IsFillable();
+        const auto filling_enabled = (this->fill_account != 0);
+        if (!success && fillable && filling_enabled)
+        {
+            const auto account = cmds->GetAccountId();
+            if (account != fill_account)
+            {
+                LOG_D("Cmdlist ", id, " set for refill");
+                cmds->SetAccountId(this->fill_account);
+                enqueue(*task, cmds);
+                return;
+            }
+        }
+
         const auto transition = task->complete(*this, cmds);
         if (transition)
         {

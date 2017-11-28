@@ -62,6 +62,8 @@ const char* str(bitflag f)
         return "Damaged";
     else if (f.test(errors::Incomplete))
         return "Incomplete";
+    else if (f.test(errors::Other))
+        return "Other";
 
     return "Complete";
 }

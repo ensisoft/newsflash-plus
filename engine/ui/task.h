@@ -36,10 +36,6 @@ namespace newsflash
     {
         // content errors.
         enum class Errors {
-
-            // none of the requested data was available
-            Unavailable,
-
             // some the requested data was taken down.
             // similar to Incomplete but more specific.
             Dmca,
@@ -49,7 +45,11 @@ namespace newsflash
 
             // some of the data was not available, i.e. some
             // parts are missing.g
-            Incomplete
+            Incomplete,
+
+            // some other error has happened, such as zlib deflate
+            // has failed.
+            Other
         };
 
         enum class States {
