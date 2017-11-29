@@ -83,9 +83,31 @@ public:
         committed_ = true;
     }
 
+    class DecodeJob : public action
+    {
+    public:
+        DecodeJob(const std::string& cmd) : cmd_(cmd)
+        {}
+
+        virtual void xperform() override
+        {}
+    private:
+        friend class TestFileTask;
+        std::string cmd_;
+    };
+
+
     virtual void Complete(action& act,
         std::vector<std::unique_ptr<action>>& next) override
-    {}
+    {
+        if (auto* job = dynamic_cast<DecodeJob*>(&act))
+        {
+            if (job->cmd_ == "<crc_mismatch>")
+                errors_.set(Task::Error::CrcMismatch, true);
+            else if (job->cmd_ == "<SizeMismatch>")
+                errors_.set(Task::Error::SizeMismatch, true);
+        }
+    }
 
     virtual void Complete(CmdList& cmdlist,
         std::vector<std::unique_ptr<action>>& next) override
@@ -100,6 +122,7 @@ public:
             if (cmd == "<success>")
             {
                 BOOST_REQUIRE(buff.GetContentStatus() == Buffer::Status::Success);
+                next.emplace_back(new DecodeJob(cmd));
             }
             else if (cmd == "<failure>")
             {
@@ -108,6 +131,16 @@ public:
             else if (cmd == "<dmca>")
             {
                 BOOST_REQUIRE(buff.GetContentStatus() == Buffer::Status::Dmca);
+            }
+            else if (cmd == "<crc_mismatch>")
+            {
+                errors_.set(Task::Error::CrcMismatch);
+                next.emplace_back(new DecodeJob(cmd));
+            }
+            else if (cmd == "<size_mismatch")
+            {
+                errors_.set(Task::Error::SizeMismatch);
+                next.emplace_back(new DecodeJob(cmd));
             }
         }
         received_cmdlist_ = true;
@@ -127,7 +160,7 @@ public:
     }
     virtual bitflag<Error> GetErrors() const override
     {
-        return bitflag<Error>();
+        return errors_;
     }
 
     virtual void Pack(data::TaskState& data) const override
@@ -143,6 +176,7 @@ private:
     bool cancelled_ = false;
     bool committed_ = false;
     bool received_cmdlist_ = false;
+    bitflag<Error> errors_;
 private:
     TaskParams state_;
 private:
@@ -451,6 +485,18 @@ public:
                 {
                     set(incoming, "222 body follows\r\n"
                         "here's some content\r\n"
+                        ".\r\n");
+                }
+                else if (command == "BODY <crc_mismatch>")
+                {
+                    set(incoming, "222 body follows\r\n"
+                        "crc_mismatch\r\n"
+                        ".\r\n");
+                }
+                else if (command == "BODY <size_mismatch>")
+                {
+                    set(incoming, "222 body follows\r\n"
+                        "size_mismatch\r\n"
                         ".\r\n");
                 }
                 else if (command == "BODY <failure>\r\n")
@@ -1036,7 +1082,18 @@ void test_task_execute_succesfully()
     tests[3].errors.set(ui::TaskDesc::Errors::Dmca, true);
     tests[3].errors.set(ui::TaskDesc::Errors::Incomplete, true);
 
+    tests.emplace_back();
+    tests[4].articles.push_back("<success>");
+    tests[4].articles.push_back("<crc_mismatch>");
+    tests[4].groups.push_back("alt.binaries.success");
+    tests[4].errors.set(ui::TaskDesc::Errors::Damaged, true);
 
+    tests.emplace_back();
+    tests[5].articles.push_back("<dmca>");
+    tests[5].articles.push_back("<crc_mismatch>");
+    tests[5].groups.push_back("alt.binaries.success");
+    tests[5].errors.set(ui::TaskDesc::Errors::Damaged, true);
+    tests[5].errors.set(ui::TaskDesc::Errors::Dmca, true);
 
     for (size_t i=0; i < tests.size(); ++i)
     {
@@ -1104,8 +1161,12 @@ void test_task_execute_succesfully()
         BOOST_REQUIRE(conn.state == ui::Connection::States::Active);
         BOOST_REQUIRE(conn.task == task.task_id);
 
-        eng.RunMainThread();
-        eng.Pump();
+        do
+        {
+            eng.RunMainThread();
+            eng.Pump();
+        }
+        while (eng.HasPendingActions());
 
         eng.GetConn(0, &conn);
         BOOST_REQUIRE(conn.state == ui::Connection::States::Connected);
