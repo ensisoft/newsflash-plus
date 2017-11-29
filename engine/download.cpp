@@ -260,11 +260,13 @@ void Download::Complete(CmdList& cmd, std::vector<std::unique_ptr<action>>& next
         {
             std::unique_ptr<DecodeJob> dec(new DecodeJob(std::move(buffer)));
             dec->set_affinity(affinity);
-            //dec->set_decoding_id(decode_index_);
             next.push_back(std::move(dec));
         }
-        else
+        else if (status == Buffer::Status::None)
         {
+            // if the article was not yet retrieved (perhaps the cmdlist was cancelled)
+            // put the article id back into the articles list so that
+            // we can pack state properly if needed.
             articles_.push_back(command);
         }
     }
