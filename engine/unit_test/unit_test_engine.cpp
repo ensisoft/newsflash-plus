@@ -119,7 +119,12 @@ public:
         {
             const auto& buff = cmdlist.GetBuffer(i);
             const auto& cmd  = cmdlist.GetCommand(i);
-            if (cmd == "<success>")
+            const auto status = buff.GetContentStatus();
+            if (cmd == "<none>")
+            {
+                BOOST_REQUIRE(buff.GetContentStatus() == Buffer::Status::None);
+            }
+            else if (cmd == "<success>")
             {
                 BOOST_REQUIRE(buff.GetContentStatus() == Buffer::Status::Success);
                 next.emplace_back(new DecodeJob(cmd));
@@ -134,12 +139,12 @@ public:
             }
             else if (cmd == "<crc_mismatch>")
             {
-                errors_.set(Task::Error::CrcMismatch);
+                BOOST_REQUIRE(buff.GetContentStatus() == Buffer::Status::Success);
                 next.emplace_back(new DecodeJob(cmd));
             }
             else if (cmd == "<size_mismatch")
             {
-                errors_.set(Task::Error::SizeMismatch);
+                BOOST_REQUIRE(buff.GetContentStatus() == Buffer::Status::Success);
                 next.emplace_back(new DecodeJob(cmd));
             }
         }
@@ -487,7 +492,7 @@ public:
                         "here's some content\r\n"
                         ".\r\n");
                 }
-                else if (command == "BODY <crc_mismatch>")
+                else if (command == "BODY <crc_mismatch>\r\n")
                 {
                     set(incoming, "222 body follows\r\n"
                         "crc_mismatch\r\n"
@@ -1074,6 +1079,7 @@ void test_task_execute_succesfully()
     tests[2].articles.push_back("<dmca>");
     tests[2].groups.push_back("alt.binaries.success");
     tests[2].errors.set(ui::TaskDesc::Errors::Dmca, true);
+    tests[2].errors.set(ui::TaskDesc::Errors::Unavailable, true);
 
     tests.emplace_back();
     tests[3].articles.push_back("<failure>");
@@ -1081,6 +1087,7 @@ void test_task_execute_succesfully()
     tests[3].groups.push_back("alt.binaries.success");
     tests[3].errors.set(ui::TaskDesc::Errors::Dmca, true);
     tests[3].errors.set(ui::TaskDesc::Errors::Incomplete, true);
+    tests[3].errors.set(ui::TaskDesc::Errors::Unavailable, true);
 
     tests.emplace_back();
     tests[4].articles.push_back("<success>");
@@ -1094,6 +1101,14 @@ void test_task_execute_succesfully()
     tests[5].groups.push_back("alt.binaries.success");
     tests[5].errors.set(ui::TaskDesc::Errors::Damaged, true);
     tests[5].errors.set(ui::TaskDesc::Errors::Dmca, true);
+
+    // no such group so all buffers are with None status
+    tests.emplace_back();
+    tests[6].articles.push_back("<none>");
+    tests[6].articles.push_back("<none>");
+    tests[6].groups.push_back("alt.binaries.failure");
+    tests[6].errors.set(ui::TaskDesc::Errors::Unavailable, true);
+
 
     for (size_t i=0; i < tests.size(); ++i)
     {
@@ -1173,6 +1188,7 @@ void test_task_execute_succesfully()
         BOOST_REQUIRE(conn.task == 0);
 
         eng.GetTask(0, &task);
+        //BOOST_REQUIRE(task.state == tests[i].result_state);
         BOOST_REQUIRE(task.state == ui::TaskDesc::States::Complete);
         BOOST_REQUIRE(task.error == tests[i].errors);
 

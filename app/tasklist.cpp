@@ -20,10 +20,11 @@
 
 #define LOGTAG "tasks"
 
-#include <newsflash/config.h>
-#include <newsflash/warnpush.h>
+#include "newsflash/config.h"
+
+#include "newsflash/warnpush.h"
 #  include <QtGui/QIcon>
-#include <newsflash/warnpop.h>
+#include "newsflash/warnpop.h"
 
 #include "tasklist.h"
 #include "engine.h"
@@ -54,20 +55,6 @@ const char* str(states s)
     return "???";
 }
 
-const char* str(bitflag f)
-{
-    if (f.test(errors::Dmca))
-        return "DMCA";
-    else if (f.test(errors::Damaged))
-        return "Damaged";
-    else if (f.test(errors::Incomplete))
-        return "Incomplete";
-    else if (f.test(errors::Other))
-        return "Other";
-
-    return "Complete";
-}
-
 } // namespace
 
 namespace app
@@ -94,12 +81,20 @@ QVariant TaskList::data(const QModelIndex& index, int role) const
             case columns::status:
                 if (ui.state == states::Complete)
                 {
-                    if (ui.completion > 0.0)
-                        return str(ui.error);
-
                     if (ui.error.test(errors::Dmca))
                         return "DMCA";
-                    return "Unavailable";
+                    else if (ui.error.test(errors::Damaged))
+                        return "Damaged";
+                    else if (ui.error.test(errors::Incomplete))
+                        return "Incomplete";
+                    else if (ui.error.test(errors::Other))
+                        return "Incomplete";
+                    else if (ui.error.test(errors::Unavailable))
+                        return "Expired";
+                    else if (ui.error.any_bit())
+                        return "???";
+
+                    return "Complete";
                 }
                 return str(ui.state);
 

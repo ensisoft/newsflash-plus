@@ -893,6 +893,9 @@ public:
                     ui_.error.set(ui::TaskDesc::Errors::Incomplete);
                 else if (status == Buffer::Status::Error)
                     ui_.error.set(ui::TaskDesc::Errors::Other);
+
+                if (status == Buffer::Status::Success)
+                    did_receive_content_ = true;
             }
             std::vector<std::unique_ptr<action>> actions;
             task_->Complete(*cmds, actions);
@@ -1209,6 +1212,7 @@ private:
 
                 task_->Commit();
 
+                ui_.error.set(ui::TaskDesc::Errors::Unavailable, !did_receive_content_);
                 ui_.state   = new_state;
                 ui_.etatime = 0;
                 if (state.on_task_callback)
@@ -1281,7 +1285,7 @@ private:
     std::size_t num_actions_ready_   = 0;
     std::size_t num_actions_total_   = 0;
     std::size_t num_bytes_queued_    = 0;
-
+    bool did_receive_content_ = false;
 private:
     enum class LockState {
         Locked, Unlocked

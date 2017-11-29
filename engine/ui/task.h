@@ -36,6 +36,9 @@ namespace newsflash
     {
         // content errors.
         enum class Errors {
+            // this bit means that none of the content was available.
+            Unavailable,
+
             // some the requested data was taken down.
             // similar to Incomplete but more specific.
             Dmca,
