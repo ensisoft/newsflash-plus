@@ -881,53 +881,26 @@ public:
         if (ui_.state == states::Error)
             return no_transition;
 
-        try
+        for (size_t i=0; i<cmds->NumBuffers(); ++i)
         {
-            for (size_t i=0; i<cmds->NumBuffers(); ++i)
-            {
-                const auto& buff  = cmds->GetBuffer(i);
-                const auto status = buff.GetContentStatus();
-                if (status == Buffer::Status::Dmca)
-                    ui_.error.set(ui::TaskDesc::Errors::Dmca);
-                else if (status == Buffer::Status::Unavailable)
-                    ui_.error.set(ui::TaskDesc::Errors::Incomplete);
-                else if (status == Buffer::Status::Error)
-                    ui_.error.set(ui::TaskDesc::Errors::Other);
+            const auto& buff  = cmds->GetBuffer(i);
+            const auto status = buff.GetContentStatus();
+            if (status == Buffer::Status::Dmca)
+                ui_.error.set(ui::TaskDesc::Errors::Dmca);
+            else if (status == Buffer::Status::Unavailable)
+                ui_.error.set(ui::TaskDesc::Errors::Incomplete);
+            else if (status == Buffer::Status::Error)
+                ui_.error.set(ui::TaskDesc::Errors::Other);
 
-                if (status == Buffer::Status::Success)
-                    did_receive_content_ = true;
-            }
-            std::vector<std::unique_ptr<action>> actions;
-            task_->Complete(*cmds, actions);
-            for (auto& a : actions)
-                do_action(state, std::move(a));
+            if (status == Buffer::Status::Success)
+                did_receive_content_ = true;
+        }
+        std::vector<std::unique_ptr<action>> actions;
+        task_->Complete(*cmds, actions);
+        for (auto& a : actions)
+            do_action(state, std::move(a));
 
-            return update_completion(state);
-        }
-        catch (const std::system_error& e)
-        {
-            if (state.on_error_callback)
-            {
-                ui::SystemError error;
-                error.resource = ui_.desc;
-                error.code = e.code();
-                error.what = e.what();
-                state.on_error_callback(error);
-                return goto_state(state, states::Error);
-            }
-        }
-        catch (const std::exception& e)
-        {
-            if (state.on_error_callback)
-            {
-                ui::SystemError error;
-                error.resource = ui_.desc;
-                error.what = e.what();
-                state.on_error_callback(error);
-                return goto_state(state, states::Error);
-            }
-        }
-        return no_transition;
+        return update_completion(state);
     }
 
     transition pause(Engine::State& state)
@@ -1042,21 +1015,33 @@ public:
         }
         catch (const std::system_error& e)
         {
-            error.code = e.code();
-            error.what = e.what();
+            LOG_E("Task ", ui_.task_id, " Error: ", error.what);
+
+            if (state.on_error_callback)
+            {
+                ui::SystemError error;
+                error.resource = ui_.desc;
+                error.code = e.code();
+                error.what = e.what();
+                state.on_error_callback(error);
+            }
+            return goto_state(state, states::Error);
         }
         catch (const std::exception& e)
         {
-            error.what = e.what();
+            LOG_E("Task ", ui_.task_id, " Error: ", error.what);
+
+            if (state.on_error_callback)
+            {
+                ui::SystemError error;
+                error.resource = ui_.desc;
+                error.what = e.what();
+                state.on_error_callback(error);
+            }
+            return goto_state(state, states::Error);
         }
 
-        if (state.on_error_callback)
-        {
-            state.on_error_callback(error);
-        }
-
-        LOG_E("Task ", ui_.task_id, " Error: ", error.what);
-        return goto_state(state, states::Error);
+        return no_transition;
     }
 
     void set_account(std::size_t acc)
@@ -1242,6 +1227,8 @@ private:
             break;
 
             case states::Error:
+                task_->Cancel();
+
                 ui_.state   = new_state;
                 ui_.etatime = 0;
                 if (state.on_task_callback)

@@ -90,7 +90,10 @@ public:
         {}
 
         virtual void xperform() override
-        {}
+        {
+            if (cmd_ == "<throw_exception_on_decode>")
+                throw std::runtime_error("some error");
+        }
     private:
         friend class TestFileTask;
         std::string cmd_;
@@ -137,13 +140,12 @@ public:
             {
                 BOOST_REQUIRE(buff.GetContentStatus() == Buffer::Status::Dmca);
             }
-            else if (cmd == "<crc_mismatch>")
+            else if (cmd == "<crc_mismatch>" ||
+                    cmd == "<size_mismatch>" ||
+                    cmd == "<throw_exception_on_decode>")
             {
-                BOOST_REQUIRE(buff.GetContentStatus() == Buffer::Status::Success);
-                next.emplace_back(new DecodeJob(cmd));
-            }
-            else if (cmd == "<size_mismatch")
-            {
+                // some special messages to aid in the testing process.
+                // these are considered succesful but have other properties.
                 BOOST_REQUIRE(buff.GetContentStatus() == Buffer::Status::Success);
                 next.emplace_back(new DecodeJob(cmd));
             }
@@ -498,10 +500,16 @@ public:
                         "crc_mismatch\r\n"
                         ".\r\n");
                 }
-                else if (command == "BODY <size_mismatch>")
+                else if (command == "BODY <size_mismatch>\r\n")
                 {
                     set(incoming, "222 body follows\r\n"
                         "size_mismatch\r\n"
+                        ".\r\n");
+                }
+                else if (command == "BODY <throw_exception_on_decode>\r\n")
+                {
+                    set(incoming, "222 body follows\r\n"
+                        "throw_exception_on_decode\r\n"
                         ".\r\n");
                 }
                 else if (command == "BODY <failure>\r\n")
@@ -1053,7 +1061,7 @@ void test_task_move()
     }
 }
 
-void test_task_execute_succesfully()
+void test_task_execute_success()
 {
     struct TestCase {
         std::vector<std::string> articles;
@@ -1203,6 +1211,89 @@ void test_task_execute_succesfully()
     }
 }
 
+// unexpected failure, i.e. an exception happens.
+// expected: task goes into error state.
+void test_task_execute_failure()
+{
+    const bool spawn_immediately = true;
+    const bool debug_single_thread = true;
+
+    ConnState test_conn_params;
+
+    Engine eng(std::make_unique<Factory>(), debug_single_thread);
+    ui::Account account;
+    account.id = 123;
+    account.name = "test";
+    account.username = "user";
+    account.password = "pass";
+    account.secure_host = "test.host.com";
+    account.secure_port = 1000;
+    account.connections = 1;
+    account.enable_secure_server = true;
+    account.enable_general_server = false;
+    account.enable_compression = false;
+    account.enable_pipelining = false;
+    account.user_data = &test_conn_params;
+    eng.Start();
+    eng.SetAccount(account, spawn_immediately);
+    do
+    {
+        eng.RunMainThread();
+        eng.Pump();
+
+        ui::Connection conn;
+        eng.GetConn(0, &conn);
+        if (conn.state == ui::Connection::States::Connected)
+            break;
+
+    } while(true);
+
+
+    TaskParams params;
+    params.should_commit = false;
+    params.expect_cmdlist = true;
+    params.should_cancel = true;
+    params.num_buffers = 1;
+
+    ui::FileDownload download;
+    download.account   = 123;
+    download.size      = 666;
+    download.path      = "test/foo/bar";
+    download.desc      = "download";
+    download.articles.push_back("<throw_exception_on_decode>");
+    download.groups.push_back("alt.binaries.success");
+    download.user_data = &params;
+    ui::FileBatchDownload batch;
+    batch.account = 123;
+    batch.size    = 666;
+    batch.path    = "test/foo/bar";
+    batch.desc    = "download";
+    batch.files.push_back(download);
+    eng.DownloadFiles(batch);
+
+    // execute the execute action.
+    eng.RunMainThread();
+    eng.Pump();
+
+    // run the decode job.
+    eng.RunMainThread();
+    eng.Pump();
+
+    ui::TaskDesc task;
+    eng.GetTask(0, &task);
+    BOOST_REQUIRE(task.state == ui::TaskDesc::States::Error);
+
+    eng.KillConnection(0);
+    eng.Stop();
+    do
+    {
+        eng.RunMainThread();
+        eng.Pump();
+    }
+    while (eng.HasPendingActions());
+}
+
+
 
 int test_main(int argc, char*[])
 {
@@ -1212,7 +1303,8 @@ int test_main(int argc, char*[])
     test_connection_establish();
     test_task_entry_and_delete();
     test_task_move();
-    test_task_execute_succesfully();
+    test_task_execute_success();
+    test_task_execute_failure();
 
 
     return 0;
