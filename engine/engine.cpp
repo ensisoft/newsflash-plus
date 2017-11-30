@@ -529,12 +529,15 @@ public:
             ui_.bps   = 0;
             ui_.task  = 0;
             ui_.desc  = "";
-            ui::SystemError error;
-            error.resource = ui_.host;
-            error.code     = e.code();
-            error.what     = e.what();
-            engine_state.on_error_callback(error);
-            LOG_E("Connection ", ui_.id, " (", error.code.value(), ") ", error.code.message());
+            if (engine_state.on_error_callback)
+            {
+                ui::SystemError error;
+                error.resource = ui_.host;
+                error.code     = e.code();
+                error.what     = e.what();
+                engine_state.on_error_callback(error);
+            }
+            LOG_E("Connection ", ui_.id, " (", e.code().value(), ") ", e.code().message());
         }
         catch (const std::exception& e)
         {
@@ -542,11 +545,14 @@ public:
             ui_.bps   = 0;
             ui_.task  = 0;
             ui_.desc  = "";
-            ui::SystemError error;
-            error.resource = ui_.host;
-            error.what     = e.what();
-            engine_state.on_error_callback(error);
-            LOG_E("Connection ", ui_.id, " ", error.what);
+            if (engine_state.on_error_callback)
+            {
+                ui::SystemError error;
+                error.resource = ui_.host;
+                error.what     = e.what();
+                engine_state.on_error_callback(error);
+            }
+            LOG_E("Connection ", ui_.id, " ", e.what());
         }
         logger_->Flush();
     }

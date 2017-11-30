@@ -20,12 +20,16 @@
 
 #include "newsflash/config.h"
 
-#include "newsflash/warnpush.h"
-#  include <boost/test/minimal.hpp>
-#include "newsflash/warnpop.h"
+#include "test_minimal.h"
+
+// use test_minimal instead because the boost.test is so retarded
+// that it throws an exception when the test fails
+// which unwinds the stack which then typically hits an assert in the engine's destructor.
+#define BOOST_REQUIRE TEST_REQUIRE
 
 #include <string>
 #include <vector>
+#include <iostream>
 
 #include "engine/ui/account.h"
 #include "engine/ui/task.h"
@@ -376,7 +380,9 @@ public:
     struct Resolve : public action
     {
         virtual void xperform() override
-        {}
+        {
+        }
+        std::string host_;
     };
 
     struct Connect : public action
@@ -550,7 +556,9 @@ public:
         state_ = Connection::State::Resolving;
         session_->Reset();
 
-        return std::make_unique<Resolve>();
+        auto ret = std::make_unique<Resolve>();
+        ret->host_ = host.hostname;
+        return ret;
     }
 
     virtual std::unique_ptr<action> Disconnect() override
@@ -576,8 +584,11 @@ public:
             return next;
         }
 
-        if (dynamic_cast<Resolve*>(ptr))
+        if (auto* p = dynamic_cast<Resolve*>(ptr))
         {
+            if (p->host_ == "test.exception.com")
+                throw std::runtime_error("surprise!");
+
             next.reset(new struct Connect);
             state_ = Connection::State::Connecting;
         }
@@ -714,7 +725,7 @@ private:
 
 };
 
-void test_connection_establish()
+void test_connection_establish_success()
 {
     struct TestCase {
         ui::Connection::Errors error = ui::Connection::Errors::None;
@@ -827,6 +838,165 @@ void test_connection_establish()
         BOOST_REQUIRE(conns.empty());
     }
 
+}
+
+// test unexpected exception during connection establish
+// expected: connection state is error
+void test_connection_establish_failure()
+{
+    ConnState state;
+
+    ui::Account account;
+    account.id = 123;
+    account.name = "test";
+    account.username = "user";
+    account.password = "pass";
+    account.secure_host = "test.exception.com";
+    account.secure_port = 1000;
+    account.connections = 1;
+    account.enable_secure_server = true;
+    account.enable_general_server = false;
+    account.enable_compression = false;
+    account.enable_pipelining = false;
+    account.user_data = &state;
+
+    const bool spawn_immediately = true;
+    const bool debug_single_thread = true;
+    Engine eng(std::make_unique<Factory>(), debug_single_thread);
+
+    std::deque<ui::Connection> conns;
+
+    eng.Start();
+    eng.SetAccount(account, spawn_immediately);
+
+    eng.RunMainThread();
+    eng.Pump();
+
+    ui::Connection conn;
+    eng.GetConn(0, &conn);
+    BOOST_REQUIRE(conn.state == ui::Connection::States::Error);
+
+    eng.KillConnection(0);
+    eng.Stop();
+    do
+    {
+        eng.RunMainThread();
+        eng.Pump();
+    }
+    while (eng.HasPendingActions());
+}
+
+// test connection reconnect on several error conditions:
+// expected result: connection is reconnected after a number of ticks.
+// precondtion: test_connection_establish_success and test_connection_establish_failure pass
+void test_connection_reconnect()
+{
+    struct TestCase {
+        ui::Connection::Errors error = ui::Connection::Errors::None;
+        Connection::Error what = Connection::Error::None;
+        Connection::State when = Connection::State::Connecting;
+        bool will_reconnect = true;
+    };
+    TestCase tests[7];
+
+
+    // all are error cases
+    tests[0].what  = Connection::Error::Resolve;
+    tests[0].when  = Connection::State::Resolving;
+    tests[0].error = ui::Connection::Errors::Resolve;
+
+    tests[1].what  = Connection::Error::Refused;
+    tests[1].when  = Connection::State::Connecting;
+    tests[1].error = ui::Connection::Errors::Refused;
+
+    tests[2].what  = Connection::Error::Timeout;
+    tests[2].when  = Connection::State::Connecting;
+    tests[2].error = ui::Connection::Errors::Timeout;
+
+    tests[3].what  = Connection::Error::Network;
+    tests[3].when  = Connection::State::Connecting;
+    tests[3].error = ui::Connection::Errors::Network;
+
+    tests[4].what  = Connection::Error::Protocol;
+    tests[4].when  = Connection::State::Initializing;
+    tests[4].error = ui::Connection::Errors::Other;
+
+    tests[5].what  = Connection::Error::PermissionDenied;
+    tests[5].when  = Connection::State::Initializing;
+    tests[5].error = ui::Connection::Errors::NoPermission;
+    tests[5].will_reconnect = false;
+
+    tests[6].what  = Connection::Error::Reset;
+    tests[6].when  = Connection::State::Initializing;
+    tests[6].error = ui::Connection::Errors::Other;
+
+    for (size_t i=0; i < 7; ++i)
+    {
+        ConnState state;
+        state.SetError(tests[i].when, tests[i].what);
+
+        ui::Account account;
+        account.id = 123;
+        account.name = "test";
+        account.username = "user";
+        account.password = "pass";
+        account.secure_host = "test.host.com";
+        account.secure_port = 1000;
+        account.connections = 1;
+        account.enable_secure_server = true;
+        account.enable_general_server = false;
+        account.enable_compression = false;
+        account.enable_pipelining = false;
+        account.user_data = &state;
+
+        const bool spawn_immediately = true;
+        const bool debug_single_thread = true;
+        Engine eng(std::make_unique<Factory>(), debug_single_thread);
+
+        eng.Start();
+        eng.SetAccount(account, spawn_immediately);
+
+        ui::Connection conn;
+        do
+        {
+            eng.RunMainThread();
+            eng.Pump();
+            eng.GetConn(0, &conn);
+        }
+        while (conn.state != ui::Connection::States::Error);
+
+        // todo: fix the tick parameters
+        const auto TicksUntilReconnect = 5;
+
+        for (int i=0; i<TicksUntilReconnect; ++i)
+        {
+            eng.Tick();
+        }
+
+        if (tests[i].will_reconnect)
+        {
+            eng.GetConn(0, &conn);
+            BOOST_REQUIRE(conn.state == ui::Connection::States::Disconnected);
+
+            eng.RunMainThread();
+            eng.Pump();
+            eng.GetConn(0, &conn);
+            BOOST_REQUIRE(conn.state != ui::Connection::States::Disconnected);
+        }
+        else
+        {
+            eng.GetConn(0, &conn);
+            BOOST_REQUIRE(conn.state == ui::Connection::States::Error);
+        }
+
+        eng.KillConnection(0);
+        eng.Stop();
+        do
+        {
+            eng.RunMainThread();
+        }
+        while (eng.Pump());
+    }
 }
 
 void test_task_entry_and_delete()
@@ -1300,7 +1470,9 @@ int test_main(int argc, char*[])
     newsflash::initialize();
     newsflash::EnableDebugLog(true);
 
-    test_connection_establish();
+    test_connection_establish_success();
+    test_connection_establish_failure();
+    test_connection_reconnect();
     test_task_entry_and_delete();
     test_task_move();
     test_task_execute_success();
