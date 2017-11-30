@@ -1,4 +1,4 @@
-// Copyright (c) 2014 Sami Väisänen, Ensisoft 
+// Copyright (c) 2014 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
 //
@@ -22,20 +22,28 @@
 
 #pragma once
 
-#include <cstdio> 
+#include <cstdio>
 #include <cstdlib>
 
 namespace test {
 
 static
-void blurb_failure(const char* expression, 
-    const char* file, 
-    const char* function, 
+void blurb_failure(const char* expression,
+    const char* file,
+    const char* function,
     int line, bool fatality)
 {
     std::printf("\n%s(%d): %s failed in function: '%s'\n", file, line, expression, function);
     if (fatality)
-        std::exit(1);
+    {
+#if defined(_MSC_VER)
+        DebugBreak();
+#elif defined(__GNUG__)
+        __builtin_trap();
+#endif
+        std::abort();
+    }
+
 }
 
 } // test
@@ -64,7 +72,7 @@ void blurb_failure(const char* expression,
     {}
 
 
-int test_main(int argc, char* argv[]); 
+int test_main(int argc, char* argv[]);
 
 int main(int argc, char* argv[])
 {
@@ -79,4 +87,4 @@ int main(int argc, char* argv[])
     std::fflush(stdout)
 
 
-#define TEST_CUSTOM 
+#define TEST_CUSTOM
