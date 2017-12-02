@@ -63,7 +63,7 @@ namespace newsflash
         virtual void Complete(action& a,
             std::vector<std::unique_ptr<action>>& next) override;
         virtual bool HasCommands() const override;
-        virtual std::size_t MaxNumActions() const override;
+        virtual float GetProgress() const override;
         virtual void Lock() override;
         virtual void Unlock() override;
 

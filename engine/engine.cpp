@@ -735,30 +735,25 @@ public:
 
     TaskState(std::size_t id, std::unique_ptr<Task> task, const ui::Download& desc)
     {
+        task_       = std::move(task);
         ui_.task_id = id;
         ui_.account = desc.account;
         ui_.state   = states::Queued;
         ui_.size    = desc.size;
         ui_.desc    = desc.desc;
         ui_.path    = desc.path;
-        task_       = std::move(task);
-        num_actions_total_ = task_->MaxNumActions();
-        num_actions_ready_ = 0;
         LOG_I("Task ", ui_.task_id, " (", ui_.desc, ") created");
     }
 
     TaskState(std::unique_ptr<Task> task, const data::TaskState& state)
     {
         task_              = std::move(task);
-        num_actions_total_ = state.num_actions_total();
-        num_actions_ready_ = state.num_actions_ready();
         ui_.task_id        = state.task_id();
         ui_.batch_id       = state.batch_id();
         ui_.account        = state.account_id();
         ui_.desc           = state.desc();
         ui_.size           = state.size();
         ui_.path           = state.path();
-        ui_.completion     = (double)num_actions_ready_ / (double)num_actions_total_ * 100.0;
         LOG_I("Task ", ui_.task_id, "( ", ui_.desc, ") restored");
     }
 
@@ -797,8 +792,6 @@ public:
         ptr->set_desc(ui_.desc);
         ptr->set_size(ui_.size);
         ptr->set_path(ui_.path);
-        ptr->set_num_actions_total(num_actions_total_);
-        ptr->set_num_actions_ready(num_actions_ready_);
         task_->Pack(*ptr);
     }
 
@@ -953,6 +946,9 @@ public:
     {
         ui = ui_;
         ui.etatime = 0;
+        ui.completion = task_->GetProgress();
+        if (ui.completion > 100.0f)
+            ui.completion = 100.0f;
 
         if (ui_.state == states::Active || ui_.state == states::Waiting || ui_.state == states::Crunching)
         {
@@ -977,13 +973,10 @@ public:
         assert(size <= num_bytes_queued_);
 
         num_active_actions_--;
-        num_actions_ready_++;
         num_bytes_queued_ -= size;
 
         LOG_D("Task ", ui_.task_id, " receiving action ", act->get_id(), " (", act->describe(), ")");
         LOG_D("Task ", ui_.task_id, " num_active_actions ", num_active_actions_);
-        LOG_D("Task ", ui_.task_id, " num_actions_ready ", num_actions_ready_);
-        LOG_D("Task ", ui_.task_id, " num_active_cmdlists ", num_active_cmdlists_);
         LOG_D("Task ", ui_.task_id, " has ", num_bytes_queued_ / (1024.0*1024.0), " Mb queued");
 
         if (ui_.state == states::Error)
@@ -1086,22 +1079,6 @@ public:
 private:
     transition update_completion(Engine::State& state)
     {
-        // completion calculation needs to be done in the task because
-        // only the task knows how many actions are to be performed per buffer.
-        // i.e. we can't here reliably count 1 buffer as 1 step towards completion
-        // since the completion updates only when the data is downloaded AND processed.
-        //assert(num_actions_total_);
-        //assert(num_actions_ready_ <= num_actions_total_);
-        if (num_actions_total_ == 0)
-            num_actions_total_ = task_->MaxNumActions();
-
-        if (num_actions_total_)
-        {
-            ui_.completion = (double)num_actions_ready_ / (double)num_actions_total_ * 100.0;
-            if (ui_.completion > 100.0)
-                ui_.completion = 100.0;
-        }
-
         // if we have pending actions our state should not change
         // i.e. we're active (or possibly paused)
         if (num_active_actions_)
@@ -1264,8 +1241,6 @@ private:
     std::unique_ptr<newsflash::Task> task_;
     std::size_t num_active_cmdlists_ = 0;
     std::size_t num_active_actions_  = 0;
-    std::size_t num_actions_ready_   = 0;
-    std::size_t num_actions_total_   = 0;
     std::size_t num_bytes_queued_    = 0;
     bool did_receive_content_ = false;
 private:

@@ -46,19 +46,21 @@ namespace newsflash
         virtual void Complete(CmdList& cmd,
             std::vector<std::unique_ptr<action>>& actions) override;
         virtual bool HasCommands() const override
-        { return !ready_;}
-        virtual std::size_t MaxNumActions() const override
-        { return 1; }
+        { return has_commands_;}
+
+        virtual float GetProgress() const override
+        { return is_ready_ ? 100.0f : 0.0f; }
 
         const std::vector<group>& group_list() const
         { return groups_; }
 
         bool is_ready() const
-        { return ready_; }
+        { return is_ready_; }
 
     private:
         std::vector<group> groups_;
-        bool ready_ = false;
+        bool has_commands_ = true;
+        bool is_ready_ = false;
     };
 
 } // newsflash

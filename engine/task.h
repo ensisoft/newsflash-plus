@@ -92,7 +92,9 @@ namespace newsflash
 
         virtual bool HasCommands() const = 0;
 
-        virtual std::size_t MaxNumActions() const = 0;
+        // return the current progress percentage (0.0f - 100.0f)
+        virtual float GetProgress() const
+        { return 0.0f; }
 
         // Lock the task for the calling thread.
         // Locking allows the calling thread to acquire a consistent

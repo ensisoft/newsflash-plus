@@ -164,11 +164,6 @@ public:
     {
         return !articles_.empty();
     }
-
-    virtual std::size_t MaxNumActions() const override
-    {
-        return articles_.size();
-    }
     virtual bitflag<Error> GetErrors() const override
     {
         return errors_;
@@ -247,10 +242,6 @@ public:
         return true;
     }
 
-    virtual std::size_t MaxNumActions() const override
-    {
-        return 1;
-    }
     virtual bitflag<Error> GetErrors() const override
     {
         return bitflag<Error>();
@@ -323,10 +314,6 @@ public:
         return true;
     }
 
-    virtual std::size_t MaxNumActions() const override
-    {
-        return 1;
-    }
     virtual bitflag<Error> GetErrors() const override
     {
         return bitflag<Error>();

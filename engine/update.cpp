@@ -667,15 +667,19 @@ bool Update::HasCommands() const
     return xover_last_ < remote_last_ || xover_first_ > remote_first_;
 }
 
-std::size_t Update::MaxNumActions() const
+float Update::GetProgress() const
 {
     if (remote_last_ == 0)
-        return 0;
+        return 100.0f;
 
     const auto remote_articles = remote_last_ - remote_first_ + 1;
     const auto local_articles = local_last_ - local_first_ + 1;
-    const auto num_buffers = (remote_articles - local_articles) / 1000;
-    return std::size_t(num_buffers) * 2;
+    if (remote_articles == 0)
+        return 100.0f;
+
+    return float(double(local_articles) /
+        double(remote_articles)) * 100.0f;
+
 }
 
 void Update::Lock()

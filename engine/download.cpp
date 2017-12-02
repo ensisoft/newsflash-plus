@@ -53,7 +53,8 @@ Download::Download(
     , path_(path)
 {
     name_         = fs::remove_illegal_filename_chars(name);
-    decode_jobs_  = articles_.size();
+    num_decode_jobs_   = articles_.size();
+    num_actions_total_ = articles_.size() * 2; // decode + write
 }
 
 Download::Download()
@@ -130,6 +131,8 @@ void Download::Commit()
 
 void Download::Complete(action& act, std::vector<std::unique_ptr<action>>& next)
 {
+    num_actions_ready_++;
+
     // the action is either a decoding action or a datafile::write action.
     // for the write there's nothing we need to do.
     auto* dec = dynamic_cast<DecodeJob*>(&act);
@@ -177,7 +180,7 @@ void Download::Complete(action& act, std::vector<std::unique_ptr<action>>& next)
             if (dec->IsMultipart())
             {
                 if (stash_.empty())
-                    stash_.resize(decode_jobs_);
+                    stash_.resize(num_decode_jobs_);
 
                 if (dec->IsFirstPart())
                 {
@@ -188,12 +191,12 @@ void Download::Complete(action& act, std::vector<std::unique_ptr<action>>& next)
                 else if (dec->IsLastPart())
                 {
                     std::unique_ptr<stash> s(new stash(std::move(binary)));
-                    stash_[decode_jobs_ - 1] = std::move(s);
+                    stash_[num_decode_jobs_ - 1] = std::move(s);
                 }
                 else
                 {
                     std::size_t index;
-                    for (index=1; index<decode_jobs_ - 1; ++index)
+                    for (index=1; index<num_decode_jobs_ - 1; ++index)
                     {
                         auto& p = stash_[index];
                         if (!p)
@@ -289,10 +292,10 @@ bool Download::HasCommands() const
     return !articles_.empty();
 }
 
-std::size_t Download::MaxNumActions() const
+float Download::GetProgress() const
 {
-    // 2 actions per each article. decode and write.
-    return articles_.size() * 2;
+    return float(num_actions_ready_) /
+        float(num_actions_total_) * 100.0f;
 }
 
 bitflag<Task::Error> Download::GetErrors() const
@@ -304,7 +307,9 @@ void Download::Pack(data::TaskState& data) const
 {
     auto* ptr = data.mutable_download();
 
-    ptr->set_num_decode_jobs(decode_jobs_);
+    ptr->set_num_decode_jobs(num_decode_jobs_);
+    ptr->set_num_actions_total(num_actions_total_);
+    ptr->set_num_actions_ready(num_actions_ready_);
 
     for (const auto& group : groups_)
     {
@@ -340,13 +345,15 @@ void Download::Load(const data::TaskState& data)
 
     const auto& ptr = data.download();
 
-    decode_jobs_ = ptr.num_decode_jobs();
-
     // load the groups and article / message names
     for (int i=0; i<ptr.group_size(); ++i)
         groups_.push_back(ptr.group(i));
     for (int i=0; i<ptr.article_size(); ++i)
         articles_.push_back(ptr.article(i));
+
+    num_decode_jobs_   = ptr.num_decode_jobs();
+    num_actions_total_ = ptr.num_actions_total();
+    num_actions_ready_ = ptr.num_actions_ready();
 
     // load the files that we're working on.
     for (int i=0; i<ptr.file_size(); ++i)
@@ -362,7 +369,7 @@ void Download::Load(const data::TaskState& data)
 
     if (ptr.stash_size())
     {
-        stash_.resize(decode_jobs_);
+        stash_.resize(num_decode_jobs_);
     }
 
     for (int i=0; i<ptr.stash_size(); ++i)

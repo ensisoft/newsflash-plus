@@ -63,7 +63,7 @@ namespace newsflash
             std::vector<std::unique_ptr<action>>& next) override;
         virtual void Configure(const Settings& settings) override;
         virtual bool HasCommands() const override;
-        virtual std::size_t MaxNumActions() const override;
+        virtual float GetProgress() const override;
         virtual bitflag<Error> GetErrors() const override;
         virtual void Pack(data::TaskState& data) const override;
         virtual void Load(const data::TaskState& data) override;
@@ -101,7 +101,9 @@ namespace newsflash
         std::string path_;
         std::string name_;
         std::string stash_name_;
-        std::size_t decode_jobs_ = 0;
+        std::size_t num_decode_jobs_   = 0;
+        std::size_t num_actions_total_ = 0;
+        std::size_t num_actions_ready_ = 0;
     private:
         bitflag<Error> errors_;
     private:

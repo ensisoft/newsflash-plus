@@ -570,17 +570,31 @@ class Download : public ::google::protobuf::Message {
   inline const ::google::protobuf::RepeatedPtrField< ::std::string>& group() const;
   inline ::google::protobuf::RepeatedPtrField< ::std::string>* mutable_group();
 
-  // required uint64 num_decode_jobs = 3;
+  // required uint32 num_decode_jobs = 3;
   inline bool has_num_decode_jobs() const;
   inline void clear_num_decode_jobs();
   static const int kNumDecodeJobsFieldNumber = 3;
-  inline ::google::protobuf::uint64 num_decode_jobs() const;
-  inline void set_num_decode_jobs(::google::protobuf::uint64 value);
+  inline ::google::protobuf::uint32 num_decode_jobs() const;
+  inline void set_num_decode_jobs(::google::protobuf::uint32 value);
 
-  // repeated .data.File file = 4;
+  // required uint32 num_actions_total = 4;
+  inline bool has_num_actions_total() const;
+  inline void clear_num_actions_total();
+  static const int kNumActionsTotalFieldNumber = 4;
+  inline ::google::protobuf::uint32 num_actions_total() const;
+  inline void set_num_actions_total(::google::protobuf::uint32 value);
+
+  // required uint32 num_actions_ready = 5;
+  inline bool has_num_actions_ready() const;
+  inline void clear_num_actions_ready();
+  static const int kNumActionsReadyFieldNumber = 5;
+  inline ::google::protobuf::uint32 num_actions_ready() const;
+  inline void set_num_actions_ready(::google::protobuf::uint32 value);
+
+  // repeated .data.File file = 6;
   inline int file_size() const;
   inline void clear_file();
-  static const int kFileFieldNumber = 4;
+  static const int kFileFieldNumber = 6;
   inline const ::data::File& file(int index) const;
   inline ::data::File* mutable_file(int index);
   inline ::data::File* add_file();
@@ -589,10 +603,10 @@ class Download : public ::google::protobuf::Message {
   inline ::google::protobuf::RepeatedPtrField< ::data::File >*
       mutable_file();
 
-  // repeated .data.Stash stash = 5;
+  // repeated .data.Stash stash = 7;
   inline int stash_size() const;
   inline void clear_stash();
-  static const int kStashFieldNumber = 5;
+  static const int kStashFieldNumber = 7;
   inline const ::data::Stash& stash(int index) const;
   inline ::data::Stash* mutable_stash(int index);
   inline ::data::Stash* add_stash();
@@ -605,6 +619,10 @@ class Download : public ::google::protobuf::Message {
  private:
   inline void set_has_num_decode_jobs();
   inline void clear_has_num_decode_jobs();
+  inline void set_has_num_actions_total();
+  inline void clear_has_num_actions_total();
+  inline void set_has_num_actions_ready();
+  inline void clear_has_num_actions_ready();
 
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
 
@@ -612,9 +630,11 @@ class Download : public ::google::protobuf::Message {
   mutable int _cached_size_;
   ::google::protobuf::RepeatedPtrField< ::std::string> article_;
   ::google::protobuf::RepeatedPtrField< ::std::string> group_;
-  ::google::protobuf::uint64 num_decode_jobs_;
+  ::google::protobuf::uint32 num_decode_jobs_;
+  ::google::protobuf::uint32 num_actions_total_;
   ::google::protobuf::RepeatedPtrField< ::data::File > file_;
   ::google::protobuf::RepeatedPtrField< ::data::Stash > stash_;
+  ::google::protobuf::uint32 num_actions_ready_;
   friend void  protobuf_AddDesc_engine_2eproto();
   friend void protobuf_AssignDesc_engine_2eproto();
   friend void protobuf_ShutdownFile_engine_2eproto();
@@ -729,24 +749,10 @@ class TaskState : public ::google::protobuf::Message {
   inline ::google::protobuf::uint64 size() const;
   inline void set_size(::google::protobuf::uint64 value);
 
-  // required uint32 num_actions_ready = 7;
-  inline bool has_num_actions_ready() const;
-  inline void clear_num_actions_ready();
-  static const int kNumActionsReadyFieldNumber = 7;
-  inline ::google::protobuf::uint32 num_actions_ready() const;
-  inline void set_num_actions_ready(::google::protobuf::uint32 value);
-
-  // required uint32 num_actions_total = 8;
-  inline bool has_num_actions_total() const;
-  inline void clear_num_actions_total();
-  static const int kNumActionsTotalFieldNumber = 8;
-  inline ::google::protobuf::uint32 num_actions_total() const;
-  inline void set_num_actions_total(::google::protobuf::uint32 value);
-
-  // optional .data.Download download = 9;
+  // optional .data.Download download = 7;
   inline bool has_download() const;
   inline void clear_download();
-  static const int kDownloadFieldNumber = 9;
+  static const int kDownloadFieldNumber = 7;
   inline const ::data::Download& download() const;
   inline ::data::Download* mutable_download();
   inline ::data::Download* release_download();
@@ -766,10 +772,6 @@ class TaskState : public ::google::protobuf::Message {
   inline void clear_has_path();
   inline void set_has_size();
   inline void clear_has_size();
-  inline void set_has_num_actions_ready();
-  inline void clear_has_num_actions_ready();
-  inline void set_has_num_actions_total();
-  inline void clear_has_num_actions_total();
   inline void set_has_download();
   inline void clear_has_download();
 
@@ -781,11 +783,9 @@ class TaskState : public ::google::protobuf::Message {
   ::google::protobuf::uint32 batch_id_;
   ::std::string* desc_;
   ::std::string* path_;
-  ::google::protobuf::uint32 task_id_;
-  ::google::protobuf::uint32 num_actions_ready_;
   ::google::protobuf::uint64 size_;
   ::data::Download* download_;
-  ::google::protobuf::uint32 num_actions_total_;
+  ::google::protobuf::uint32 task_id_;
   friend void  protobuf_AddDesc_engine_2eproto();
   friend void protobuf_AssignDesc_engine_2eproto();
   friend void protobuf_ShutdownFile_engine_2eproto();
@@ -2131,7 +2131,7 @@ Download::mutable_group() {
   return &group_;
 }
 
-// required uint64 num_decode_jobs = 3;
+// required uint32 num_decode_jobs = 3;
 inline bool Download::has_num_decode_jobs() const {
   return (_has_bits_[0] & 0x00000004u) != 0;
 }
@@ -2142,20 +2142,68 @@ inline void Download::clear_has_num_decode_jobs() {
   _has_bits_[0] &= ~0x00000004u;
 }
 inline void Download::clear_num_decode_jobs() {
-  num_decode_jobs_ = GOOGLE_ULONGLONG(0);
+  num_decode_jobs_ = 0u;
   clear_has_num_decode_jobs();
 }
-inline ::google::protobuf::uint64 Download::num_decode_jobs() const {
+inline ::google::protobuf::uint32 Download::num_decode_jobs() const {
   // @@protoc_insertion_point(field_get:data.Download.num_decode_jobs)
   return num_decode_jobs_;
 }
-inline void Download::set_num_decode_jobs(::google::protobuf::uint64 value) {
+inline void Download::set_num_decode_jobs(::google::protobuf::uint32 value) {
   set_has_num_decode_jobs();
   num_decode_jobs_ = value;
   // @@protoc_insertion_point(field_set:data.Download.num_decode_jobs)
 }
 
-// repeated .data.File file = 4;
+// required uint32 num_actions_total = 4;
+inline bool Download::has_num_actions_total() const {
+  return (_has_bits_[0] & 0x00000008u) != 0;
+}
+inline void Download::set_has_num_actions_total() {
+  _has_bits_[0] |= 0x00000008u;
+}
+inline void Download::clear_has_num_actions_total() {
+  _has_bits_[0] &= ~0x00000008u;
+}
+inline void Download::clear_num_actions_total() {
+  num_actions_total_ = 0u;
+  clear_has_num_actions_total();
+}
+inline ::google::protobuf::uint32 Download::num_actions_total() const {
+  // @@protoc_insertion_point(field_get:data.Download.num_actions_total)
+  return num_actions_total_;
+}
+inline void Download::set_num_actions_total(::google::protobuf::uint32 value) {
+  set_has_num_actions_total();
+  num_actions_total_ = value;
+  // @@protoc_insertion_point(field_set:data.Download.num_actions_total)
+}
+
+// required uint32 num_actions_ready = 5;
+inline bool Download::has_num_actions_ready() const {
+  return (_has_bits_[0] & 0x00000010u) != 0;
+}
+inline void Download::set_has_num_actions_ready() {
+  _has_bits_[0] |= 0x00000010u;
+}
+inline void Download::clear_has_num_actions_ready() {
+  _has_bits_[0] &= ~0x00000010u;
+}
+inline void Download::clear_num_actions_ready() {
+  num_actions_ready_ = 0u;
+  clear_has_num_actions_ready();
+}
+inline ::google::protobuf::uint32 Download::num_actions_ready() const {
+  // @@protoc_insertion_point(field_get:data.Download.num_actions_ready)
+  return num_actions_ready_;
+}
+inline void Download::set_num_actions_ready(::google::protobuf::uint32 value) {
+  set_has_num_actions_ready();
+  num_actions_ready_ = value;
+  // @@protoc_insertion_point(field_set:data.Download.num_actions_ready)
+}
+
+// repeated .data.File file = 6;
 inline int Download::file_size() const {
   return file_.size();
 }
@@ -2185,7 +2233,7 @@ Download::mutable_file() {
   return &file_;
 }
 
-// repeated .data.Stash stash = 5;
+// repeated .data.Stash stash = 7;
 inline int Download::stash_size() const {
   return stash_.size();
 }
@@ -2467,63 +2515,15 @@ inline void TaskState::set_size(::google::protobuf::uint64 value) {
   // @@protoc_insertion_point(field_set:data.TaskState.size)
 }
 
-// required uint32 num_actions_ready = 7;
-inline bool TaskState::has_num_actions_ready() const {
+// optional .data.Download download = 7;
+inline bool TaskState::has_download() const {
   return (_has_bits_[0] & 0x00000040u) != 0;
 }
-inline void TaskState::set_has_num_actions_ready() {
+inline void TaskState::set_has_download() {
   _has_bits_[0] |= 0x00000040u;
 }
-inline void TaskState::clear_has_num_actions_ready() {
-  _has_bits_[0] &= ~0x00000040u;
-}
-inline void TaskState::clear_num_actions_ready() {
-  num_actions_ready_ = 0u;
-  clear_has_num_actions_ready();
-}
-inline ::google::protobuf::uint32 TaskState::num_actions_ready() const {
-  // @@protoc_insertion_point(field_get:data.TaskState.num_actions_ready)
-  return num_actions_ready_;
-}
-inline void TaskState::set_num_actions_ready(::google::protobuf::uint32 value) {
-  set_has_num_actions_ready();
-  num_actions_ready_ = value;
-  // @@protoc_insertion_point(field_set:data.TaskState.num_actions_ready)
-}
-
-// required uint32 num_actions_total = 8;
-inline bool TaskState::has_num_actions_total() const {
-  return (_has_bits_[0] & 0x00000080u) != 0;
-}
-inline void TaskState::set_has_num_actions_total() {
-  _has_bits_[0] |= 0x00000080u;
-}
-inline void TaskState::clear_has_num_actions_total() {
-  _has_bits_[0] &= ~0x00000080u;
-}
-inline void TaskState::clear_num_actions_total() {
-  num_actions_total_ = 0u;
-  clear_has_num_actions_total();
-}
-inline ::google::protobuf::uint32 TaskState::num_actions_total() const {
-  // @@protoc_insertion_point(field_get:data.TaskState.num_actions_total)
-  return num_actions_total_;
-}
-inline void TaskState::set_num_actions_total(::google::protobuf::uint32 value) {
-  set_has_num_actions_total();
-  num_actions_total_ = value;
-  // @@protoc_insertion_point(field_set:data.TaskState.num_actions_total)
-}
-
-// optional .data.Download download = 9;
-inline bool TaskState::has_download() const {
-  return (_has_bits_[0] & 0x00000100u) != 0;
-}
-inline void TaskState::set_has_download() {
-  _has_bits_[0] |= 0x00000100u;
-}
 inline void TaskState::clear_has_download() {
-  _has_bits_[0] &= ~0x00000100u;
+  _has_bits_[0] &= ~0x00000040u;
 }
 inline void TaskState::clear_download() {
   if (download_ != NULL) download_->::data::Download::Clear();

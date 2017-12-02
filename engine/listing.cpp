@@ -36,12 +36,14 @@ namespace newsflash
 std::shared_ptr<CmdList> Listing::CreateCommands()
 {
     std::shared_ptr<CmdList> cmd(new CmdList(CmdList::Listing{}));
-    ready_ = true;
+    has_commands_ = false;
     return cmd;
 }
 
 void Listing::Complete(CmdList& cmd, std::vector<std::unique_ptr<action>>& actions)
 {
+    is_ready_ = true;
+
     if (!cmd.IsGood())
         return;
 
