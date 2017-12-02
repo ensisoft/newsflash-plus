@@ -206,6 +206,12 @@ namespace newsflash
             ASSERT("No such buffer");
         }
 
+        // useful for testing purposes
+        std::size_t NumGroups() const
+        { return groups_.size(); }
+        std::string GetGroup(std::size_t i) const
+        { return groups_[i]; }
+
         std::size_t NumDataCommands() const
         { return commands_.size(); }
 
@@ -261,9 +267,6 @@ namespace newsflash
 
         bool IsGood() const
         { return !failbit_; }
-
-        bool IsEmpty() const
-        { return buffers_.empty(); }
 
         void SetAccountId(std::size_t aid)
         { account_ = aid; }
