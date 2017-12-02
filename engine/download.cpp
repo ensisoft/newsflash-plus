@@ -240,6 +240,11 @@ void Download::Complete(action& act, std::vector<std::unique_ptr<action>>& next)
 
 void Download::Complete(CmdList& cmd, std::vector<std::unique_ptr<action>>& next)
 {
+    // if the cmdlist has failed there won't be any content
+    // we want to handle. all buffers have None statuses.
+    if (!cmd.IsGood())
+        return;
+
     // yenc encoding based files have offsets so they can
     // run in parallel and complete in any order and then write
     // in any order to the file.

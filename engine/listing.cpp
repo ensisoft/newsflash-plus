@@ -42,12 +42,14 @@ std::shared_ptr<CmdList> Listing::CreateCommands()
 
 void Listing::Complete(CmdList& cmd, std::vector<std::unique_ptr<action>>& actions)
 {
-    if (cmd.IsCancelled() || cmd.IsEmpty())
+    if (!cmd.IsGood())
         return;
 
-    auto& listing  = cmd.GetBuffer(0);
+    const auto& buffer = cmd.GetBuffer(0);
+    if (buffer.GetContentStatus() != Buffer::Status::Success)
+        return;
 
-    nntp::linebuffer lines(listing.Content(), listing.GetContentLength());
+    const nntp::linebuffer lines(buffer.Content(), buffer.GetContentLength());
 
     auto beg = lines.begin();
     auto end = lines.end();
