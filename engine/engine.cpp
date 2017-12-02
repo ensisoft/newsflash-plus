@@ -808,13 +808,10 @@ public:
 
         if (ui_.state != states::Complete)
         {
-            for (auto i=std::begin(state.cmds); i != std::end(state.cmds);)
+            for (auto& cmd : state.cmds)
             {
-                auto cmd = *i;
                 if (cmd->GetTaskId() == ui_.task_id)
-                {
                     cmd->Cancel();
-                }
             }
 
             assert(task_);
@@ -918,13 +915,10 @@ public:
             ui_.state == states::Complete)
             return no_transition;
 
-        for (auto it = std::begin(state.cmds); it != std::end(state.cmds); )
+        for (auto& cmd : state.cmds)
         {
-            auto cmd = *it;
             if (cmd->GetTaskId() == ui_.task_id)
-            {
                 cmd->Cancel();
-            }
         }
 
         return goto_state(state, states::Paused);
@@ -1184,13 +1178,10 @@ private:
 
             case states::Crunching:
                 ui_.state   = new_state;
-                for (auto it = std::begin(state.cmds); it != std::end(state.cmds);)
+                for (auto& cmd : state.cmds)
                 {
-                    auto cmd = *it;
                     if (cmd->GetTaskId() == ui_.task_id)
-                    {
                         cmd->Cancel();
-                    }
                 }
                 break;
 
@@ -1240,12 +1231,10 @@ private:
                 if (state.on_task_callback)
                     state.on_task_callback(ui_);
 
-                for (auto i=std::begin(state.cmds); i != std::end(state.cmds); ++i)
+                for (auto& cmd : state.cmds)
                 {
-                    auto cmd = *i;
-                    if (cmd->GetTaskId() != ui_.task_id)
-                        continue;
-                    cmd->Cancel();
+                    if (cmd->GetTaskId() == ui_.task_id)
+                        cmd->Cancel();
                 }
                 break;
         }
