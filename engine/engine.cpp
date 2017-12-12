@@ -763,21 +763,21 @@ public:
         LOG_I("Task ", ui_.task_id, " deleted");
     }
 
-    void lock(Engine::State& state)
+    void Lock(Engine::State& state)
     {
         ASSERT(locking_ == LockState::Unlocked);
         task_->Lock();
         locking_ = LockState::Locked;
     }
 
-    void unlock(Engine::State& state)
+    void Unlock(Engine::State& state)
     {
         ASSERT(locking_ == LockState::Locked);
         task_->Unlock();
         locking_ = LockState::Unlocked;
     }
 
-    void serialize(data::TaskList& list)
+    void Serialize(data::TaskList& list)
     {
         if (ui_.state == states::Error || ui_.state == states::Complete)
             return;
@@ -795,7 +795,7 @@ public:
         task_->Pack(*ptr);
     }
 
-    void kill(Engine::State& state)
+    void Kill(Engine::State& state)
     {
         LOG_D("Task ", ui_.task_id, " kill");
 
@@ -824,20 +824,20 @@ public:
         }
     }
 
-    void configure(const Task::Settings& settings)
+    void Configure(const Task::Settings& settings)
     {
         if (task_)
             task_->Configure(settings);
     }
 
-    void tick(Engine::State& state, const std::chrono::milliseconds& elapsed)
+    void Tick(Engine::State& state, const std::chrono::milliseconds& elapsed)
     {
         // todo: actually measure the time
         if (ui_.state == states::Active || ui_.state == states::Crunching)
             ui_.runtime++;
     }
 
-    bool eligible_for_run() const
+    bool CanRun() const
     {
         if (ui_.state == states::Waiting ||
             ui_.state == states::Queued ||
@@ -848,7 +848,7 @@ public:
         return false;
     }
 
-    transition run(Engine::State& state)
+    transition Run(Engine::State& state)
     {
         if (ui_.state == states::Complete ||
             ui_.state == states::Error ||
@@ -865,10 +865,10 @@ public:
 
         num_active_cmdlists_++;
 
-        return goto_state(state, states::Active);
+        return GotoState(state, states::Active);
     }
 
-    transition complete(Engine::State& state, std::shared_ptr<CmdList> cmds)
+    transition Complete(Engine::State& state, std::shared_ptr<CmdList> cmds)
     {
         ASSERT(cmds->GetTaskId() == ui_.task_id);
         ASSERT(num_active_cmdlists_ > 0);
@@ -894,15 +894,13 @@ public:
         std::vector<std::unique_ptr<action>> actions;
         task_->Complete(*cmds, actions);
         for (auto& a : actions)
-            do_action(state, std::move(a));
+            DoAction(state, std::move(a));
 
-        return update_completion(state);
+        return UpdateCompletion(state);
     }
 
-    transition pause(Engine::State& state)
+    transition Pause(Engine::State& state)
     {
-        LOG_D("Task ", ui_.task_id, " pause");
-
         if (ui_.state == states::Paused ||
             ui_.state == states::Error ||
             ui_.state == states::Complete)
@@ -914,13 +912,11 @@ public:
                 cmd->Cancel();
         }
 
-        return goto_state(state, states::Paused);
+        return GotoState(state, states::Paused);
     }
 
-    transition resume(Engine::State& state)
+    transition Resume(Engine::State& state)
     {
-        LOG_D("Task ", ui_.task_id, " resume");
-
         if (ui_.state != states::Paused)
             return no_transition;
 
@@ -930,19 +926,19 @@ public:
         // then the task completes while it's in the paused state.
         // hence we expect the completion on resume and possibly
         // transfer to complete stated instead of waiting/queued.
-        const auto transition = update_completion(state);
+        const auto transition = UpdateCompletion(state);
         if (transition)
             return transition;
 
         // if we were started before we go to waiting state.
         if (ui_.runtime)
-            return goto_state(state, states::Waiting);
+            return GotoState(state, states::Waiting);
 
         // go back into queued state.
-        return goto_state(state, states::Queued);
+        return GotoState(state, states::Queued);
     }
 
-    void update(Engine::State& state, ui::TaskDesc& ui)
+    void Update(Engine::State& state, ui::TaskDesc& ui)
     {
         ui = ui_;
         ui.etatime = 0;
@@ -964,7 +960,7 @@ public:
         }
     }
 
-    transition on_action(Engine::State& state, std::unique_ptr<action> act)
+    transition Complete(Engine::State& state, std::unique_ptr<action> act)
     {
         const auto size = act->size();
 
@@ -1002,9 +998,9 @@ public:
                 ui_.error.set(ui::TaskDesc::Errors::Damaged);
 
             for (auto& a : actions)
-                do_action(state, std::move(a));
+                DoAction(state, std::move(a));
 
-            return update_completion(state);
+            return UpdateCompletion(state);
         }
         catch (const std::system_error& e)
         {
@@ -1018,7 +1014,7 @@ public:
                 error.what = e.what();
                 state.on_error_callback(error);
             }
-            return goto_state(state, states::Error);
+            return GotoState(state, states::Error);
         }
         catch (const std::exception& e)
         {
@@ -1031,53 +1027,44 @@ public:
                 error.what = e.what();
                 state.on_error_callback(error);
             }
-            return goto_state(state, states::Error);
+            return GotoState(state, states::Error);
         }
 
         return no_transition;
     }
 
-    void set_account(std::size_t acc)
+    void SetAccountId(std::size_t acc)
     { ui_.account = acc; }
 
-    void set_batch(std::size_t batch)
+    void SetBatchId(std::size_t batch)
     { ui_.batch_id = batch; }
 
-    std::size_t account() const
+    std::size_t GetAccountId() const
     { return ui_.account; }
 
-    std::size_t tid() const
+    std::size_t GetTaskId() const
     { return ui_.task_id; }
 
-    std::size_t bid() const
+    std::size_t GetBatchId() const
     { return ui_.batch_id; }
 
-    states state() const
+    states GetState() const
     { return ui_.state; }
 
-    std::string desc() const
+    std::string GetDesc() const
     { return ui_.desc; }
 
-    std::uint64_t size() const
+    std::uint64_t GetSize() const
     { return ui_.size; }
 
-    double done() const
+    double GetCompletion() const
     { return ui_.completion; }
 
     bitflag<ui::TaskDesc::Errors> errors() const
     { return ui_.error; }
 
-    bool is_valid() const
-    {
-        return (ui_.account != 0) &&
-               (ui_.task_id != 0) &&
-               (ui_.batch_id != 0);
-    }
-
-
-
 private:
-    transition update_completion(Engine::State& state)
+    transition UpdateCompletion(Engine::State& state)
     {
         // if we have pending actions our state should not change
         // i.e. we're active (or possibly paused)
@@ -1086,7 +1073,7 @@ private:
             if (num_bytes_queued_ >= MB(8))
             {
                 if (ui_.state == states::Active)
-                    return goto_state(state, states::Crunching);
+                    return GotoState(state, states::Crunching);
             }
             return no_transition;
         }
@@ -1104,16 +1091,16 @@ private:
         {
             if (ui_.state == states::Active ||
                 ui_.state == states::Crunching)
-                return goto_state(state, states::Waiting);
+                return GotoState(state, states::Waiting);
         }
         else
         {
-            return goto_state(state, states::Complete);
+            return GotoState(state, states::Complete);
         }
         return no_transition;
     }
 
-    void do_action(Engine::State& state, std::unique_ptr<action> a)
+    void DoAction(Engine::State& state, std::unique_ptr<action> a)
     {
         if (!a) return;
 
@@ -1129,7 +1116,7 @@ private:
         state.submit(a.release());
     }
 
-    transition goto_state(Engine::State& state, states new_state)
+    transition GotoState(Engine::State& state, states new_state)
     {
         const auto old_state = ui_.state;
 
@@ -1355,10 +1342,10 @@ public:
 
         for (auto& task : state.tasks)
         {
-            if (task->bid() != ui_.batch_id)
+            if (task->GetBatchId() != ui_.batch_id)
                 continue;
 
-            task->lock(state);
+            task->Lock(state);
         }
     }
 
@@ -1368,10 +1355,10 @@ public:
 
         for (auto& task : state.tasks)
         {
-            if (task->bid() != ui_.batch_id)
+            if (task->GetBatchId() != ui_.batch_id)
                 continue;
 
-            task->unlock(state);
+            task->Unlock(state);
         }
     }
 
@@ -1381,10 +1368,10 @@ public:
 
         for (auto& task : state.tasks)
         {
-            if (task->bid() != ui_.batch_id)
+            if (task->GetBatchId() != ui_.batch_id)
                 continue;
 
-            const auto transition = task->pause(state);
+            const auto transition = task->Pause(state);
             if (transition)
             {
                 leave_state(*task, transition.previous);
@@ -1400,10 +1387,10 @@ public:
 
         for (auto& task : state.tasks)
         {
-            if (task->bid() != ui_.batch_id)
+            if (task->GetBatchId() != ui_.batch_id)
                 continue;
 
-            const auto transition = task->resume(state);
+            const auto transition = task->Resume(state);
             if (transition)
             {
                 leave_state(*task, transition.previous);
@@ -1439,18 +1426,18 @@ public:
         // are at the end of the the task list.
         auto it = std::stable_partition(std::begin(state.tasks), std::end(state.tasks),
             [&](const std::unique_ptr<TaskState>& t) {
-                return t->bid() != ui_.batch_id;
+                return t->GetBatchId() != ui_.batch_id;
             });
 
         for (auto i=it; i != std::end(state.tasks); ++i)
-            (*i)->kill(state);
+            (*i)->Kill(state);
 
         state.tasks.erase(it, std::end(state.tasks));
     }
 
-    bool kill(Engine::State& state, const TaskState& t)
+    bool kill(Engine::State& state, const TaskState& task)
     {
-        leave_state(t, t.state());
+        leave_state(task, task.GetState());
         num_tasks_--;
         update(state);
 
@@ -1495,9 +1482,9 @@ public:
         for (auto it = std::begin(state.tasks); it != std::end(state.tasks); ++it)
         {
             const auto& task = *it;
-            if (task->bid() != ui_.batch_id)
+            if (task->GetBatchId() != ui_.batch_id)
                 continue;
-            double done = task->done() / 100.0;
+            double done = task->GetCompletion() / 100.0;
             total += done * slice;
         }
         ui_.completion  = total * 100.0;
@@ -1649,7 +1636,7 @@ void Engine::State::on_cmdlist_done(const Connection::CmdListCompletionData& com
     // find the task that the cmdlist belongs to, note that it could have been deleted.
     auto it  = std::find_if(std::begin(tasks), std::end(tasks),
         [&](const std::unique_ptr<TaskState>& t) {
-            return t->tid() == tid;
+            return t->GetTaskId() == tid;
         });
     if (it == std::end(tasks))
         return;
@@ -1673,10 +1660,10 @@ void Engine::State::on_cmdlist_done(const Connection::CmdListCompletionData& com
             }
         }
 
-        const auto transition = task->complete(*this, cmds);
+        const auto transition = task->Complete(*this, cmds);
         if (transition)
         {
-            auto* batch = find_batch(task->bid());
+            auto* batch = find_batch(task->GetBatchId());
             batch->update(*this, *task, transition);
         }
     }
@@ -1730,38 +1717,38 @@ void Engine::State::execute()
     for (auto it = std::begin(tasks); it != std::end(tasks); ++it)
     {
         auto& task  = *it;
-        if (!task->eligible_for_run())
+        if (!task->CanRun())
             continue;
 
         std::size_t num_conns = std::count_if(std::begin(conns), std::end(conns),
             [&](const std::unique_ptr<ConnState>& c) {
-                return c->account() == task->account();
+                return c->account() == task->GetAccountId();
             });
 
-        const auto& acc = find_account(task->account());
+        const auto& acc = find_account(task->GetAccountId());
         for (auto i=num_conns; i<acc.connections; ++i)
             conns.emplace_back(new ConnState(*this, acc.id, oid++));
 
-        while (task->eligible_for_run())
+        while (task->CanRun())
         {
             auto it = std::find_if(std::begin(conns), std::end(conns),
                 [&](const std::unique_ptr<ConnState>& c) {
-                    return c->is_ready() && (c->account() == task->account());
+                    return c->is_ready() && (c->account() == task->GetAccountId());
                 });
             if (it == std::end(conns))
                 break;
 
-            const auto transition = task->run(*this);
+            const auto transition = task->Run(*this);
             if (transition)
             {
-                auto* batch = find_batch(task->bid());
+                auto* batch = find_batch(task->GetBatchId());
                 batch->update(*this, *task, transition);
             }
         }
     }
 }
 
-void Engine::State::enqueue(const TaskState& t, std::shared_ptr<CmdList> cmd)
+void Engine::State::enqueue(const TaskState& task, std::shared_ptr<CmdList> cmd)
 {
     cmd->SetConnId(0);
     cmds.push_back(cmd);
@@ -1782,7 +1769,7 @@ void Engine::State::enqueue(const TaskState& t, std::shared_ptr<CmdList> cmd)
             continue;
 
         cmd->SetConnId(conn->id());
-        conn->execute(*this, cmd, t.tid(), t.desc());
+        conn->execute(*this, cmd, task.GetTaskId(), task.GetDesc());
         return;
     }
 
@@ -2109,11 +2096,9 @@ Engine::TaskId Engine::DownloadFiles(const ui::FileBatchDownload& batch, bool pr
                 std::placeholders::_1));
         }
         std::unique_ptr<TaskState> state(new TaskState(taskid, std::move(task), file));
-        state->configure(settings);
-        state->set_account(batch.account);
-        state->set_batch(batchid);
-
-        assert(state->is_valid());
+        state->Configure(settings);
+        state->SetAccountId(batch.account);
+        state->SetBatchId(batchid);
 
         if (priority)
             state_->tasks.push_front(std::move(state));
@@ -2137,10 +2122,8 @@ Engine::TaskId Engine::DownloadListing(const ui::GroupListDownload& list)
     const auto taskid = state_->oid++;
     std::unique_ptr<Task> task(state_->factory->AllocateTask(list));
     std::unique_ptr<TaskState> state(new TaskState(taskid, std::move(task), list));
-    state->set_account(list.account);
-    state->set_batch(batchid);
-
-    assert(state->is_valid());
+    state->SetAccountId(list.account);
+    state->SetBatchId(batchid);
 
     state_->tasks.push_back(std::move(state));
     state_->batches.push_back(std::move(batch));
@@ -2163,10 +2146,8 @@ Engine::TaskId Engine::DownloadHeaders(const ui::HeaderDownload& download)
     }
 
     std::unique_ptr<TaskState> state(new TaskState(taskid, std::move(task), download));
-    state->set_account(download.account);
-    state->set_batch(batchid);
-
-    assert(state->is_valid());
+    state->SetAccountId(download.account);
+    state->SetBatchId(batchid);
 
     state_->tasks.push_back(std::move(state));
     state_->batches.push_back(std::move(batch));
@@ -2223,28 +2204,28 @@ bool Engine::Pump()
                     auto cmd = *it;
                     auto tit = std::find_if(std::begin(state_->tasks), std::end(state_->tasks),
                         [&](const std::unique_ptr<TaskState>& t) {
-                            return t->tid() == cmd->GetTaskId();
+                            return t->GetTaskId() == cmd->GetTaskId();
                         });
                     ASSERT(tit != std::end(state_->tasks));
                     auto& task = *tit;
 
-                    conn->execute(*state_, cmd, task->tid(), task->desc());
+                    conn->execute(*state_, cmd, task->GetTaskId(), task->GetDesc());
                     cmd->SetConnId(conn->id());
                 }
                 else
                 {
                     auto it = std::find_if(std::begin(state_->tasks), std::end(state_->tasks),
                         [&](const std::unique_ptr<TaskState>& t) {
-                            return t->account() == conn->account() &&
-                                   t->eligible_for_run();
+                            return t->GetAccountId() == conn->account() &&
+                                   t->CanRun();
                                });
                     if (it != std::end(state_->tasks))
                     {
                         auto& task = *it;
-                        const auto transition = task->run(*state_);
+                        const auto transition = task->Run(*state_);
                         if (transition)
                         {
-                            auto* batch = state_->find_batch(task->bid());
+                            auto* batch = state_->find_batch(task->GetBatchId());
                             batch->update(*state_, *task, transition);
                         }
                     }
@@ -2262,13 +2243,13 @@ bool Engine::Pump()
         {
             for (auto& task : state_->tasks)
             {
-                if (task->tid() != id)
+                if (task->GetTaskId() != id)
                     continue;
 
-                const auto transition = task->on_action(*state_, std::move(action));
+                const auto transition = task->Complete(*state_, std::move(action));
                 if (transition)
                 {
-                    auto* batch = state_->find_batch(task->bid());
+                    auto* batch = state_->find_batch(task->GetBatchId());
                     batch->update(*state_, *task, transition);
                 }
                 break;
@@ -2293,7 +2274,7 @@ void Engine::Tick()
         {
             tit = std::stable_partition(tit, std::end(state_->tasks),
                 [&](const std::unique_ptr<TaskState>& t) {
-                    return t->bid() == batch->id();
+                    return t->GetBatchId() == batch->id();
                 });
         }
 
@@ -2308,7 +2289,7 @@ void Engine::Tick()
 
     for (auto& task : state_->tasks)
     {
-        task->tick(*state_, std::chrono::seconds(1));
+        task->Tick(*state_, std::chrono::seconds(1));
     }
 
     for (auto& batch : state_->batches)
@@ -2396,7 +2377,7 @@ void Engine::SaveSession(const std::string& file)
 
     for (const auto& task : state_->tasks)
     {
-        task->serialize(list);
+        task->Serialize(list);
     }
 
     list.set_current_id(state_->oid);
@@ -2466,7 +2447,7 @@ void Engine::LoadSession(const std::string& file)
                 std::placeholders::_1));
         }
         std::unique_ptr<TaskState> state(new TaskState(std::move(task), state_data));
-        state->configure(settings);
+        state->Configure(settings);
         state_->tasks.push_back(std::move(state));
     }
 
@@ -2547,7 +2528,7 @@ void Engine::SetOverwriteExistingFiles(bool on_off)
     settings.discard_text_content = state_->discard_text;
 
     for (auto& t: state_->tasks)
-        t->configure(settings);
+        t->Configure(settings);
 }
 
 void Engine::SetDiscardTextContent(bool on_off)
@@ -2559,7 +2540,7 @@ void Engine::SetDiscardTextContent(bool on_off)
     settings.overwrite_existing_files = state_->overwrite_existing;
 
     for (auto& t : state_->tasks)
-        t->configure(settings);
+        t->Configure(settings);
 }
 
 void Engine::SetPreferSecure(bool on_off)
@@ -2592,7 +2573,7 @@ void Engine::SetGroupItems(bool on_off)
         {
             tit = std::stable_partition(tit, std::end(state_->tasks),
                 [&](const std::unique_ptr<TaskState>& t) {
-                    return t->bid() == batch->id();
+                    return t->GetBatchId() == batch->id();
                 });
         }
 
@@ -2684,7 +2665,7 @@ void Engine::GetTasks(std::deque<ui::TaskDesc>* tasklist) const
         tasklist->resize(tasks.size());
 
         for (std::size_t i=0; i<tasks.size(); ++i)
-            tasks[i]->update(*state_, (*tasklist)[i]);
+            tasks[i]->Update(*state_, (*tasklist)[i]);
     }
 }
 
@@ -2698,7 +2679,7 @@ void Engine::GetTask(std::size_t index, ui::TaskDesc* task) const
     else
     {
         ASSERT(index < state_->tasks.size());
-        state_->tasks[index]->update(*state_, *task);
+        state_->tasks[index]->Update(*state_, *task);
     }
 }
 
@@ -2769,7 +2750,7 @@ Engine::TaskId Engine::KillTask(std::size_t i)
 
         auto bit = std::find_if(std::begin(state_->batches), std::end(state_->batches),
             [&](const std::unique_ptr<BatchState>& b) {
-                return b->id() == (*tit)->bid();
+                return b->id() == (*tit)->GetBatchId();
             });
         ASSERT(bit != std::end(state_->batches));
 
@@ -2780,7 +2761,7 @@ Engine::TaskId Engine::KillTask(std::size_t i)
             state_->batches.erase(bit);
         }
 
-        task->kill(*state_);
+        task->Kill(*state_);
         state_->tasks.erase(tit);
     }
 
@@ -2811,10 +2792,10 @@ Engine::TaskId Engine::PauseTask(std::size_t index)
 
         auto& task  = state_->tasks[index];
 
-        const auto transition = task->pause(*state_);
+        const auto transition = task->Pause(*state_);
         if (transition)
         {
-            auto* batch = state_->find_batch(task->bid());
+            auto* batch = state_->find_batch(task->GetBatchId());
             batch->update(*state_, *task, transition);
         }
     }
@@ -2841,10 +2822,10 @@ Engine::TaskId Engine::ResumeTask(std::size_t index)
 
         auto& task  = state_->tasks[index];
 
-        const auto transition = task->resume(*state_);
+        const auto transition = task->Resume(*state_);
         if (transition)
         {
-            auto* batch = state_->find_batch(task->bid());
+            auto* batch = state_->find_batch(task->GetBatchId());
             batch->update(*state_, *task, transition);
         }
 
