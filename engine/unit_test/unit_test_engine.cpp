@@ -337,6 +337,9 @@ private:
 struct ConnState {
     Connection::Error errors_[7];
 
+    bool force_no_such_group = false;
+    bool force_no_such_body  = false;
+
     ConnState()
     {
         std::memset(&errors_, 0, sizeof(errors_));
@@ -460,7 +463,14 @@ public:
                 session->SendNext();
                 if (command == "GROUP alt.binaries.success\r\n")
                 {
-                    set(incoming, "211 4 1 4 alt.binaries.success ok\r\n");
+                    if (force_no_such_group)
+                    {
+                        set(incoming, "411 no such group");
+                    }
+                    else
+                    {
+                        set(incoming, "211 4 1 4 alt.binaries.success ok\r\n");
+                    }
                 }
                 else if (command == "GROUP alt.binaries.failure\r\n")
                 {
@@ -483,27 +493,55 @@ public:
                 session->SendNext();
                 if (command == "BODY <success>\r\n")
                 {
-                    set(incoming, "222 body follows\r\n"
-                        "here's some content\r\n"
-                        ".\r\n");
+                    if (force_no_such_body)
+                    {
+                        set(incoming, "420 no such article\r\n");
+                    }
+                    else
+                    {
+                        set(incoming, "222 body follows\r\n"
+                            "here's some content\r\n"
+                            ".\r\n");
+                    }
                 }
                 else if (command == "BODY <crc_mismatch>\r\n")
                 {
-                    set(incoming, "222 body follows\r\n"
-                        "crc_mismatch\r\n"
-                        ".\r\n");
+                    if (force_no_such_body)
+                    {
+                        set(incoming, "420 no such article\r\n");
+                    }
+                    else
+                    {
+                        set(incoming, "222 body follows\r\n"
+                            "crc_mismatch\r\n"
+                            ".\r\n");
+                    }
                 }
                 else if (command == "BODY <size_mismatch>\r\n")
                 {
-                    set(incoming, "222 body follows\r\n"
-                        "size_mismatch\r\n"
-                        ".\r\n");
+                    if (force_no_such_body)
+                    {
+                        set(incoming, "420 no such article\r\n");
+                    }
+                    else
+                    {
+                        set(incoming, "222 body follows\r\n"
+                            "size_mismatch\r\n"
+                            ".\r\n");
+                    }
                 }
                 else if (command == "BODY <throw_exception_on_decode>\r\n")
                 {
-                    set(incoming, "222 body follows\r\n"
-                        "throw_exception_on_decode\r\n"
-                        ".\r\n");
+                    if (force_no_such_body)
+                    {
+                        set(incoming, "420 no such article\r\n");
+                    }
+                    else
+                    {
+                        set(incoming, "222 body follows\r\n"
+                            "throw_exception_on_decode\r\n"
+                            ".\r\n");
+                    }
                 }
                 else if (command == "BODY <failure>\r\n")
                 {
@@ -531,6 +569,9 @@ public:
         std::shared_ptr<CmdList> cmdlist;
         std::shared_ptr<Session> session;
         Connection::OnCmdlistDone callback;
+
+        bool force_no_such_body = false;
+        bool force_no_such_group = false;
     };
 
     TestConnection(const ConnState& state) : conn_state_(state)
@@ -606,6 +647,8 @@ public:
         ret->taskid = tid;
         ret->callback = callback_;
         ret->cmdlist = cmd;
+        ret->force_no_such_body  = conn_state_.force_no_such_body;
+        ret->force_no_such_group = conn_state_.force_no_such_group;
         state_ = Connection::State::Active;
         return ret;
     }
@@ -1268,6 +1311,7 @@ void test_task_execute_success()
     tests[5].errors.set(ui::TaskDesc::Errors::Dmca, true);
 
     // no such group so all buffers are with None status
+    // # issue 66
     tests.emplace_back();
     tests[6].articles.push_back("<none>");
     tests[6].articles.push_back("<none>");
@@ -1450,6 +1494,186 @@ void test_task_execute_failure()
     while (eng.HasPendingActions());
 }
 
+// test that fill server account works.
+// expected: task is filled from the fill server account.
+void test_task_execute_fill_success()
+{
+    struct TestCase {
+        std::vector<std::string> articles;
+        std::vector<std::string> groups;
+        bitflag<ui::TaskDesc::Errors> errors;
+    };
+
+    std::vector<TestCase> tests;
+
+    tests.emplace_back();
+    tests[0].articles.push_back("<success>");
+    tests[0].articles.push_back("<success>");
+    tests[0].groups.push_back("alt.binaries.success");
+
+    tests.emplace_back();
+    tests[1].articles.push_back("<success>");
+    tests[1].articles.push_back("<dmca>");
+    tests[1].groups.push_back("alt.binaries.success");
+    tests[1].errors.set(ui::TaskDesc::Errors::Dmca, true);
+
+    tests.emplace_back();
+    tests[2].articles.push_back("<dmca>");
+    tests[2].articles.push_back("<dmca>");
+    tests[2].groups.push_back("alt.binaries.success");
+    tests[2].errors.set(ui::TaskDesc::Errors::Dmca, true);
+    tests[2].errors.set(ui::TaskDesc::Errors::Unavailable, true);
+
+    tests.emplace_back();
+    tests[3].articles.push_back("<failure>");
+    tests[3].articles.push_back("<dmca>");
+    tests[3].groups.push_back("alt.binaries.success");
+    tests[3].errors.set(ui::TaskDesc::Errors::Dmca, true);
+    tests[3].errors.set(ui::TaskDesc::Errors::Incomplete, true);
+    tests[3].errors.set(ui::TaskDesc::Errors::Unavailable, true);
+
+    tests.emplace_back();
+    tests[4].articles.push_back("<success>");
+    tests[4].articles.push_back("<crc_mismatch>");
+    tests[4].groups.push_back("alt.binaries.success");
+    tests[4].errors.set(ui::TaskDesc::Errors::Damaged, true);
+
+    tests.emplace_back();
+    tests[5].articles.push_back("<dmca>");
+    tests[5].articles.push_back("<crc_mismatch>");
+    tests[5].groups.push_back("alt.binaries.success");
+    tests[5].errors.set(ui::TaskDesc::Errors::Damaged, true);
+    tests[5].errors.set(ui::TaskDesc::Errors::Dmca, true);
+
+    // no such group so all buffers are with None status
+    // # issue 66
+    tests.emplace_back();
+    tests[6].articles.push_back("<none>");
+    tests[6].articles.push_back("<none>");
+    tests[6].groups.push_back("alt.binaries.failure");
+    tests[6].errors.set(ui::TaskDesc::Errors::Unavailable, true);
+
+    for (size_t i=0; i < tests.size(); ++i)
+    {
+        const bool spawn_immediately   = true;
+        const bool debug_single_thread = true;
+
+        Engine eng(std::make_unique<Factory>(), debug_single_thread);
+
+        ConnState test_main_params;
+        ConnState test_fill_params;
+        test_main_params.force_no_such_body = true;
+
+        ui::Account main_account;
+        main_account.id = 123;
+        main_account.name = "main";
+        main_account.username = "user";
+        main_account.password = "pass";
+        main_account.secure_host = "test.main.com";
+        main_account.secure_port = 1000;
+        main_account.connections = 1;
+        main_account.enable_secure_server = true;
+        main_account.enable_general_server = false;
+        main_account.enable_compression = false;
+        main_account.enable_pipelining = false;
+        main_account.user_data = &test_main_params;
+
+        ui::Account fill_account;
+        fill_account.id = 321;
+        fill_account.name = "fill";
+        fill_account.username = "user";
+        fill_account.password = "pass";
+        fill_account.secure_host = "test.fill.com";
+        fill_account.secure_port = 1000;
+        fill_account.connections = 1;
+        fill_account.enable_secure_server = true;
+        fill_account.enable_general_server = false;
+        fill_account.enable_compression = false;
+        fill_account.enable_pipelining = false;
+        fill_account.user_data = &test_fill_params;
+
+        eng.SetAccount(main_account, true);
+        eng.SetAccount(fill_account, false);
+        eng.SetFillAccount(321);
+        eng.Start();
+
+        do
+        {
+            eng.RunMainThread();
+            eng.Pump();
+
+            ui::Connection conn;
+            eng.GetConn(0, &conn);
+            if (conn.state == ui::Connection::States::Connected)
+                break;
+        }
+        while (true);
+
+        TaskParams params;
+        params.should_commit = true;
+        params.expect_cmdlist = true;
+        params.num_buffers = 2;
+
+        ui::FileDownload download;
+        download.account   = 123;
+        download.size      = 666;
+        download.path      = "test/foo/bar";
+        download.desc      = "download";
+        download.articles  = tests[i].articles;
+        download.groups    = tests[i].groups;
+        download.user_data = &params;
+
+        ui::FileBatchDownload batch;
+        batch.account = 123;
+        batch.size    = 666;
+        batch.path    = "test/foo/bar";
+        batch.desc    = "download";
+        batch.files.push_back(download);
+        eng.DownloadFiles(batch);
+
+        ui::TaskDesc task;
+        eng.GetTask(0, &task);
+        BOOST_REQUIRE(task.state == ui::TaskDesc::States::Active);
+
+        ui::Connection conn;
+        eng.GetConn(0, &conn);
+        BOOST_REQUIRE(conn.state == ui::Connection::States::Active);
+        BOOST_REQUIRE(conn.task == task.task_id);
+        BOOST_REQUIRE(conn.account == 123);
+
+        do
+        {
+            eng.RunMainThread();
+            eng.Pump();
+        }
+        while (eng.HasPendingActions());
+
+        eng.GetConn(0, &conn);
+        BOOST_REQUIRE(conn.state == ui::Connection::States::Connected);
+        BOOST_REQUIRE(conn.task == 0);
+        BOOST_REQUIRE(conn.account == 123);
+
+        eng.GetConn(1, &conn);
+        BOOST_REQUIRE(conn.state == ui::Connection::States::Connected);
+        BOOST_REQUIRE(conn.task == 0);
+        BOOST_REQUIRE(conn.account == 321);
+
+        eng.GetTask(0, &task);
+        BOOST_REQUIRE(task.state == ui::TaskDesc::States::Complete);
+        BOOST_REQUIRE(task.error == tests[i].errors);
+
+        eng.KillConnection(0);
+        eng.KillConnection(0);
+        eng.Stop();
+        do
+        {
+            eng.RunMainThread();
+            eng.Pump();
+        }
+        while (eng.HasPendingActions());
+    }
+}
+
 
 
 int test_main(int argc, char*[])
@@ -1464,7 +1688,7 @@ int test_main(int argc, char*[])
     test_task_move();
     test_task_execute_success();
     test_task_execute_failure();
-
+    test_task_execute_fill_success();
 
     return 0;
 }
