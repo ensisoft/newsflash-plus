@@ -858,9 +858,20 @@ bool Session::RecvNext(Buffer& buff, Buffer& out)
         if (recv_.size() != 1)
             throw std::runtime_error("authentication requested during pipelined commands");
 
+        const bool is_get_caps_command = (dynamic_cast<getcaps*>(next.get()) != nullptr);
+
+        // push for repeat
         send_.push_front(std::move(next));
-        if (!state_->have_caps)
+
+        if (!state_->have_caps && !is_get_caps_command)
+        {
+            // some servers don't respond to CAPABILITIES properly if we're not
+            // authenticated but just give some 4xx error.
+            // so if authentication is requested but we don't yet have caps
+            // then we'll try to repeat the CAPABILITIES command. (except if authentication
+            // was requested when doing CAPABILITIES in the first place).
             send_.emplace_front(new getcaps);
+        }
 
         send_.emplace_front(new authpass(password));
         send_.emplace_front(new authuser(username));
