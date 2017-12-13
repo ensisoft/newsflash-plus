@@ -41,8 +41,6 @@ void append(nf::Buffer& buff, const char* str)
     buff.Append(std::strlen(str));
 }
 
-
-
 void unit_test_init_session_success()
 {
     nf::Session session;
@@ -153,51 +151,6 @@ void unit_test_init_session_success_caps()
     BOOST_REQUIRE(!session.HasPending()); // done;
     BOOST_REQUIRE(session.HasGzipCompress() == false);
     BOOST_REQUIRE(session.HasXzver() == true);
-
-}
-
-void unit_test_init_session_garbage()
-{
-    nf::Session session;
-    BOOST_REQUIRE(session.GetError() == nf::Session::Error::None);
-    BOOST_REQUIRE(session.GetState() == nf::Session::State::None);
-
-    session.on_send = [&](const std::string& cmd) {
-    };
-    session.on_auth = [](std::string& user, std::string& pass) {
-        user = "foo";
-        pass = "bar";
-    };
-
-    // junk on welcome
-    {
-        nf::Buffer incoming(1024);
-        nf::Buffer tmp(1);
-
-        session.Start();
-        session.SendNext();
-
-        set(incoming, "bla bhal bahsgaa\r\n");
-        session.RecvNext(incoming, tmp);
-
-        BOOST_REQUIRE(session.GetState() == nf::Session::State::Error);
-        BOOST_REQUIRE(session.GetError() == nf::Session::Error::Protocol);
-    }
-
-    // junk (unexpected return value) command
-    {
-        nf::Buffer incoming(1024);
-        nf::Buffer tmp(1);
-
-        session.Start();
-        session.SendNext();
-
-        set(incoming, "999 welcome posting allowed\r\n");
-        session.RecvNext(incoming, tmp);
-
-        BOOST_REQUIRE(session.GetState() == nf::Session::State::Error);
-        BOOST_REQUIRE(session.GetError() == nf::Session::Error::Protocol);
-    }
 
 }
 
@@ -423,14 +376,96 @@ void unit_test_retrieve_listing()
         "alt.binaries.bar 2 1 n\r\n.\r\n"));
 }
 
+void unit_test_unexpected_response()
+{
+    nf::Session session;
+    BOOST_REQUIRE(session.GetError() == nf::Session::Error::None);
+    BOOST_REQUIRE(session.GetState() == nf::Session::State::None);
+
+    session.on_send = [&](const std::string& cmd) {
+    };
+    session.on_auth = [](std::string& user, std::string& pass) {
+        user = "foo";
+        pass = "bar";
+    };
+
+    // junk on welcome
+    {
+        nf::Buffer incoming(1024);
+        nf::Buffer tmp(1);
+
+        session.Reset();
+        session.Start();
+        session.SendNext();
+
+        set(incoming, "bla bhal bahsgaa\r\n");
+        session.RecvNext(incoming, tmp);
+
+        BOOST_REQUIRE(session.GetState() == nf::Session::State::Error);
+        BOOST_REQUIRE(session.GetError() == nf::Session::Error::Protocol);
+    }
+
+    // junk (unexpected return value) command
+    {
+        nf::Buffer incoming(1024);
+        nf::Buffer tmp(1);
+
+        session.Reset();
+        session.Start();
+        session.SendNext();
+
+        set(incoming, "999 welcome posting allowed\r\n");
+        session.RecvNext(incoming, tmp);
+
+        BOOST_REQUIRE(session.GetState() == nf::Session::State::Error);
+        BOOST_REQUIRE(session.GetError() == nf::Session::Error::Protocol);
+    }
+
+    // authentication during body command
+    // current expectation is that the authentication should not happen during
+    // the BODY command, thus rendering a protcol error.
+    {
+        nf::Buffer incoming(1024);
+        nf::Buffer tmp(1);
+
+        session.Reset();
+        session.Start();
+        session.SendNext();
+        set(incoming, "200 welcome posting allowed\r\n");
+        session.RecvNext(incoming, tmp);
+
+        session.SendNext();
+        set(incoming, "101 capabilities list follows\r\n"
+            "MODE-READER\r\n"
+            "XZVER\r\n"
+            "IHAVE\r\n"
+            "\r\n"
+            ".\r\n");
+        session.RecvNext(incoming, tmp);
+
+        session.SendNext();
+        set(incoming, "200 posting allowed\r\n");
+        session.RecvNext(incoming, tmp);
+
+        session.RetrieveArticle("<blah>");
+        session.SendNext();
+        set(incoming, "480 authentication required\r\n");
+        session.RecvNext(incoming, tmp);
+
+        BOOST_REQUIRE(session.GetState() == nf::Session::State::Error);
+        BOOST_REQUIRE(session.GetError() == nf::Session::Error::Protocol);
+    }
+}
+
 int test_main(int, char*[])
 {
     unit_test_init_session_success();
     unit_test_init_session_success_caps();
-    unit_test_init_session_garbage();
     unit_test_init_session_failure_authenticate();
     unit_test_change_group();
     unit_test_retrieve_article();
     unit_test_retrieve_listing();
+
+    unit_test_unexpected_response();
     return 0;
 }
