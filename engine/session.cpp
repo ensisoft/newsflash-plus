@@ -170,11 +170,11 @@ public:
         if (len == 0)
             return false;
 
-        // we also have 482 and 502 responses in the spec but
-        // consider these to be a "programmer error"
-        // 482 authentication command issued out of sequence
-        // 502 command unavailable
-
+        // 281 authentication accepted
+        // 381 more authentication required
+        // 480 authentication required  // what??
+        // 482 authentication rejected
+        // 502 no permission
         const auto code = nntp::scan_response({281, 381, 482, 502}, buff.Head(), len);
         if (code == 482)
             st.error = Error::AuthenticationRejected;
@@ -324,6 +324,18 @@ public:
         if (len == 0)
             return false;
 
+        //
+        // 3.1.3.
+        // Responses
+        // 220 n <a> article retrieved - head and body follow (n = article number, <a> = message-id)
+        // 221 n <a> article retrieved - head follows
+        // 222 n <a> article retrieved - body follows
+        // 223 n <a> article retrieved - request text separately
+        // 412 no newsgroup has been selected
+        // 420 no current article has been selected
+        // 423 no such article number in this group
+        // 430 no such article found
+        //
         nntp::trailing_comment comment;
         const auto code = nntp::scan_response({222, 423, 420, 430}, buff.Head(), len, comment);
         if (code == 423 || code == 420 || code == 430)
@@ -818,10 +830,39 @@ bool Session::RecvNext(Buffer& buff, Buffer& out)
 
     auto& next = recv_.front();
 
-    std::string response;
     const auto len = nntp::find_response(buff.Head(), buff.GetSize());
-    if (len != 0)
-        response.append(buff.Head(), len-2);
+    const auto ptr = buff.Head();
+    if (len == 0)
+        return false;
+    const std::string response(ptr, len-2);
+
+    // RFC 977/3977 specifies a list of general responses that can happen
+    // for any command.
+    // the complete list has responses in 1xx, 2xx, 4xx and 5xx category.
+    // we can handle them in general manner here instead of having
+    // each command check for those.
+    // however we're only interested in a few possible responses.
+    // the rest will either be handled case-by-case basis in the command
+    // implementations (if the command knows how to deal with it) or
+    // will trigger a nntp::exception which will become a protocol error.
+    //
+    // 400 service discontinued.
+    // - I haven't seen this in practice so let's not handle this for now.
+    //
+    // 502 access restriction
+    // - used to indicate out of quota / permission denied
+    //
+    const auto code = nntp::to_int<int>(buff.Head(), 3);
+    if (code == 502)
+    {
+        // access restriction or permission denied
+        LOG_E(response);
+        state_->state = State::Error;
+        state_->error = Error::NoPermission;
+        recv_.clear();
+        send_.clear();
+        return true;
+    }
 
     try
     {
@@ -830,6 +871,7 @@ bool Session::RecvNext(Buffer& buff, Buffer& out)
     }
     catch (const nntp::exception& e)
     {
+        LOG_E(response);
         state_->state = State::Error;
         state_->error = Error::Protocol;
         recv_.clear();

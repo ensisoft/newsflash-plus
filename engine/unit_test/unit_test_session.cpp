@@ -457,6 +457,50 @@ void unit_test_unexpected_response()
     }
 }
 
+void unit_test_no_permission()
+{
+    nf::Session session;
+    BOOST_REQUIRE(session.GetError() == nf::Session::Error::None);
+    BOOST_REQUIRE(session.GetState() == nf::Session::State::None);
+
+    session.on_send = [&](const std::string& cmd) {
+    };
+    session.on_auth = [](std::string& user, std::string& pass) {
+        user = "foo";
+        pass = "bar";
+    };
+
+    nf::Buffer incoming(1024);
+    nf::Buffer tmp(1);
+
+    session.Reset();
+    session.Start();
+    session.SendNext();
+    set(incoming, "200 welcome posting allowed\r\n");
+    session.RecvNext(incoming, tmp);
+
+    session.SendNext();
+    set(incoming, "101 capabilities list follows\r\n"
+        "MODE-READER\r\n"
+        "XZVER\r\n"
+        "IHAVE\r\n"
+        "\r\n"
+        ".\r\n");
+    session.RecvNext(incoming, tmp);
+
+    session.SendNext();
+    set(incoming, "200 posting allowed\r\n");
+    session.RecvNext(incoming, tmp);
+
+    session.RetrieveArticle("<blah>");
+    session.SendNext();
+    set(incoming, "502 no permission\r\n");
+    session.RecvNext(incoming, tmp);
+
+    BOOST_REQUIRE(session.GetState() == nf::Session::State::Error);
+    BOOST_REQUIRE(session.GetError() == nf::Session::Error::NoPermission);
+}
+
 int test_main(int, char*[])
 {
     unit_test_init_session_success();
@@ -467,5 +511,7 @@ int test_main(int, char*[])
     unit_test_retrieve_listing();
 
     unit_test_unexpected_response();
+
+    unit_test_no_permission();
     return 0;
 }
