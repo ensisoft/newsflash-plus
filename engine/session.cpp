@@ -24,6 +24,7 @@
 #  include <zlib/zlib.h>
 #include "newsflash/warnpop.h"
 
+#include "assert.h"
 #include "session.h"
 #include "buffer.h"
 #include "nntp.h"
@@ -64,6 +65,9 @@ public:
     // get the state represented by this command
     virtual Session::State state() const = 0;
 
+    // get the error if any
+    virtual Session::Error error() const = 0;
+
     // get the nntp command string
     virtual std::string str() const = 0;
 protected:
@@ -94,6 +98,9 @@ public:
 
     virtual Session::State state() const override
     { return Session::State::Init; }
+
+    virtual Session::Error error() const override
+    { return Session::Error::None; }
 
     virtual std::string str() const override
     { return ""; }
@@ -149,6 +156,9 @@ public:
     virtual Session::State state() const override
     { return Session::State::Init; }
 
+    virtual Session::Error error() const override
+    { return Session::Error::None; }
+
     virtual std::string str() const override
     { return "CAPABILITIES"; }
 private:
@@ -174,9 +184,9 @@ public:
         // 502 no permission
         const auto code = nntp::scan_response({281, 381, 482, 502}, buff.Head(), len);
         if (code == 482)
-            st.error = Error::AuthenticationRejected;
+            error_ = Error::AuthenticationRejected;
         else if (code == 502)
-            st.error = Error::NoPermission;
+            error_ = Error::NoPermission;
 
         buff.Clear();
         return true;
@@ -188,10 +198,14 @@ public:
     virtual Session::State state() const override
     { return Session::State::Authenticate; }
 
+    virtual Session::Error error() const override
+    { return error_; }
+
     virtual std::string str() const override
     { return "AUTHINFO USER " + username_; }
 private:
     std::string username_;
+    Session::Error error_ = Session::Error::None;
 };
 
 // perform user authenticaton (password)
@@ -209,9 +223,9 @@ public:
 
         const auto code = nntp::scan_response({281, 482, 502}, buff.Head(), len);
         if (code == 482)
-            st.error = Error::AuthenticationRejected;
+            error_ = Error::AuthenticationRejected;
         else if (code == 502)
-            st.error = Error::NoPermission;
+            error_ = Error::NoPermission;
 
         buff.Clear();
         return true;
@@ -222,10 +236,14 @@ public:
     virtual Session::State state() const override
     { return Session::State::Authenticate; }
 
+    virtual Session::Error error() const override
+    { return error_; }
+
     virtual std::string str() const override
     { return "AUTHINFO PASS " + password_; }
 private:
     std::string password_;
+    Session::Error error_ = Session::Error::None;
 };
 
 // set mode reader for server
@@ -237,7 +255,8 @@ public:
         const auto len = nntp::find_response(buff.Head(), buff.GetSize());
         if (len == 0)
             return false;
-        const auto code = nntp::scan_response({200, 201}, buff.Head(), len);
+
+        nntp::scan_response({200, 201}, buff.Head(), len);
 
         buff.Clear();
         return true;
@@ -247,6 +266,9 @@ public:
 
     virtual Session::State state() const override
     { return Session::State::Init; }
+
+    virtual Session::Error error() const override
+    { return Session::Error::None; }
 
     virtual std::string str() const override
     { return "MODE READER"; }
@@ -288,6 +310,9 @@ public:
 
     virtual Session::State state() const override
     { return Session::State::Transfer; }
+
+    virtual Session::Error error() const override
+    { return Session::Error::None; }
 
     virtual std::string str() const override
     { return "GROUP " + group_; }
@@ -364,6 +389,9 @@ public:
     virtual Session::State state() const override
     { return Session::State::Transfer; }
 
+    virtual Session::Error error() const override
+    { return Session::Error::None; }
+
     virtual std::string str() const override
     { return "BODY " + messageid_; }
 private:
@@ -391,6 +419,9 @@ public:
 
     virtual Session::State state() const override
     { return Session::State::Quitting; }
+
+    virtual Session::Error error() const override
+    { return Session::Error::None; }
 
     virtual std::string str() const override
     { return "QUIT"; }
@@ -431,6 +462,9 @@ public:
 
     virtual Session::State state() const override
     { return Session::State::Transfer; }
+
+    virtual Session::Error error() const override
+    { return Session::Error::None; }
 
     virtual std::string str() const override
     { return "XOVER " + range_; }
@@ -550,6 +584,9 @@ public:
     virtual Session::State state() const override
     { return Session::State::Transfer; }
 
+    virtual Session::Error error() const override
+    { return Session::Error::None; }
+
     virtual std::string str() const override
     { return "XOVER " + range_; }
 
@@ -594,17 +631,17 @@ public:
         return true;
     }
     virtual bool can_pipeline() const override
-    {
-        return false;
-    }
+    { return false; }
+
     virtual Session::State state() const override
-    {
-        return Session::State::Transfer;
-    }
+    { return Session::State::Transfer; }
+
+    virtual Session::Error error() const override
+    { return Session::Error::None; }
+
     virtual std::string str() const override
-    {
-        return "LIST";
-    }
+    { return "LIST"; }
+
 private:
 };
 
@@ -636,6 +673,9 @@ public:
 
     virtual Session::State state() const override
     { return Session::State::Init; }
+
+    virtual Session::Error error() const override
+    { return Session::Error::None; }
 
     virtual std::string str() const override
     { return "XFEATURE COMPRESS GZIP"; }
@@ -798,7 +838,7 @@ bool Session::SendNext()
 
 bool Session::RecvNext(Buffer& buff, Buffer& out)
 {
-    assert(!recv_.empty());
+    ASSERT(!recv_.empty());
 
     auto& next = recv_.front();
 
@@ -878,6 +918,16 @@ bool Session::RecvNext(Buffer& buff, Buffer& out)
     {
         if (!next->parse(buff, out, *state_))
             return false;
+
+        const auto err = next->error();
+        if (err != Session::Error::None)
+        {
+            state_->state = State::Error;
+            state_->error = err;
+            recv_.clear();
+            send_.clear();
+            return true;
+        }
     }
     catch (const nntp::exception& e)
     {
@@ -894,14 +944,6 @@ bool Session::RecvNext(Buffer& buff, Buffer& out)
     else if (response[0] == '4')
         LOG_W(response);
     else LOG_I(response);
-
-    if (state_->error != Error::None)
-    {
-        state_->state = State::Error;
-        recv_.clear();
-        send_.clear();
-        return true;
-    }
 
     recv_.pop_front();
 
