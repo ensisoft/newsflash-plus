@@ -421,9 +421,7 @@ void unit_test_unexpected_response()
         BOOST_REQUIRE(session.GetError() == nf::Session::Error::Protocol);
     }
 
-    // authentication during body command
-    // current expectation is that the authentication should not happen during
-    // the BODY command, thus rendering a protcol error.
+    // unexpected return value
     {
         nf::Buffer incoming(1024);
         nf::Buffer tmp(1);
@@ -449,7 +447,7 @@ void unit_test_unexpected_response()
 
         session.RetrieveArticle("<blah>");
         session.SendNext();
-        set(incoming, "480 authentication required\r\n");
+        set(incoming, "580 server error\r\n");
         session.RecvNext(incoming, tmp);
 
         BOOST_REQUIRE(session.GetState() == nf::Session::State::Error);

@@ -39,7 +39,6 @@ struct Session::impl {
     bool has_gzip = false;
     bool has_xzver = false;
     bool has_modereader = false;
-    bool auth_required = false;
     bool enable_pipelining = false;
     bool enable_compression = false;
     bool have_caps = false;
@@ -117,8 +116,6 @@ public:
         //const auto code = nntp::scan_response({101, 480, 500}, buff.Head(), res);
         if (code != 101)
         {
-            if (code == 480)
-                st.auth_required = true;
             buff.Clear();
             return true;
         }
@@ -240,9 +237,7 @@ public:
         const auto len = nntp::find_response(buff.Head(), buff.GetSize());
         if (len == 0)
             return false;
-        const auto code = nntp::scan_response({200, 201, 480}, buff.Head(), len);
-        if (code == 480)
-            st.auth_required = true;
+        const auto code = nntp::scan_response({200, 201}, buff.Head(), len);
 
         buff.Clear();
         return true;
@@ -271,14 +266,8 @@ public:
         if (len == 0)
             return false;
 
-        const auto code = nntp::scan_response({211, 411, 480}, buff.Head(), len);
-        if (code == 480)
-        {
-            st.auth_required = true;
-            buff.Clear();
-            return true;
-        }
-        else if (code == 411)
+        const auto code = nntp::scan_response({211, 411}, buff.Head(), len);
+        if (code == 411)
         {
             out.SetStatus(Buffer::Status::Unavailable);
         }
@@ -589,14 +578,7 @@ public:
         // this is only valid response, but check it nevertheless
         // XSUsenet wants to do authentication at LIST command.
         // http://www.xsusenet.com
-        const auto code = nntp::scan_response({215, 480}, buff.Head(), len);
-        if (code == 480)
-        {
-            st.auth_required = true;
-            buff.Clear();
-            return true;
-        }
-
+        const auto code = nntp::scan_response({215}, buff.Head(), len);
         const auto blen = nntp::find_body(buff.Head() + len, buff.GetSize() - len);
         if (blen == 0)
             return false;
@@ -640,15 +622,6 @@ public:
         // potential response codes to be used here. hence we just
         // check the initial digit for success/failure.
         // also XSUsenet wants to do a challenge here.
-
-        const auto code = nntp::to_int<int>(buff.Head(), 3);
-        if (code == 480)
-        {
-            st.auth_required = true;
-            buff.Clear();
-            return true;
-        }
-
         const auto beg = buff.Head();
         if (beg[0] != '2')
         {
@@ -683,7 +656,6 @@ void Session::Reset()
 {
     recv_.clear();
     send_.clear();
-    state_->auth_required  = false;
     state_->has_gzip       = false;
     state_->has_modereader = false;
     state_->has_xzver      = false;
@@ -853,7 +825,45 @@ bool Session::RecvNext(Buffer& buff, Buffer& out)
     // - used to indicate out of quota / permission denied
     //
     const auto code = nntp::to_int<int>(buff.Head(), 3);
-    if (code == 502)
+    if (code == 480)
+    {
+        LOG_I(response);
+
+        std::string username;
+        std::string password;
+        on_auth(username, password);
+        if (recv_.size() != 1)
+        {
+            LOG_E("Authentication requested during pipelined commands");
+            state_->state = State::Error;
+            state_->error = Error::Protocol;
+            recv_.clear();
+            send_.clear();
+            return true;
+        }
+
+        const bool is_get_caps_command = (dynamic_cast<getcaps*>(next.get()) != nullptr);
+
+        // push for repeat
+        send_.push_front(std::move(next));
+
+        if (!state_->have_caps && !is_get_caps_command)
+        {
+            // some servers don't respond to CAPABILITIES properly if we're not
+            // authenticated but just give some 4xx error.
+            // so if authentication is requested but we don't yet have caps
+            // then we'll try to repeat the CAPABILITIES command. (except if authentication
+            // was requested when doing CAPABILITIES in the first place).
+            send_.emplace_front(new getcaps);
+        }
+        // todo: only send password when 381 is received
+        send_.emplace_front(new authpass(password));
+        send_.emplace_front(new authuser(username));
+        recv_.pop_front();
+        buff.Clear();
+        return true;
+    }
+    else if (code == 502)
     {
         // access restriction or permission denied
         LOG_E(response);
@@ -892,39 +902,9 @@ bool Session::RecvNext(Buffer& buff, Buffer& out)
         send_.clear();
         return true;
     }
-    else if (state_->auth_required)
-    {
-        std::string username;
-        std::string password;
-        on_auth(username, password);
-        if (recv_.size() != 1)
-            throw std::runtime_error("authentication requested during pipelined commands");
 
-        const bool is_get_caps_command = (dynamic_cast<getcaps*>(next.get()) != nullptr);
+    recv_.pop_front();
 
-        // push for repeat
-        send_.push_front(std::move(next));
-
-        if (!state_->have_caps && !is_get_caps_command)
-        {
-            // some servers don't respond to CAPABILITIES properly if we're not
-            // authenticated but just give some 4xx error.
-            // so if authentication is requested but we don't yet have caps
-            // then we'll try to repeat the CAPABILITIES command. (except if authentication
-            // was requested when doing CAPABILITIES in the first place).
-            send_.emplace_front(new getcaps);
-        }
-
-        send_.emplace_front(new authpass(password));
-        send_.emplace_front(new authuser(username));
-
-        recv_.pop_front();
-        state_->auth_required = false;
-    }
-    else
-    {
-        recv_.pop_front();
-    }
     if (recv_.empty())
         state_->state = State::Ready;
 
