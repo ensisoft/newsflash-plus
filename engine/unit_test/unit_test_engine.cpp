@@ -153,6 +153,16 @@ public:
                 BOOST_REQUIRE(buff.GetContentStatus() == Buffer::Status::Success);
                 next.emplace_back(new DecodeJob(cmd));
             }
+            else if (cmd == "<maybe>")
+            {
+                BOOST_REQUIRE(status == Buffer::Status::Success ||
+                    status == Buffer::Status::None);
+                if (status == Buffer::Status::None)
+                {
+                    articles_.push_back(cmd);
+                }
+
+            }
         }
         received_cmdlist_ = true;
     }
@@ -441,6 +451,26 @@ public:
         {}
     };
 
+    struct DummyExecute : public action
+    {
+        virtual void xperform() override
+        {}
+
+        virtual void run_completion_callbacks() override
+        {
+            Connection::CmdListCompletionData completion;
+            completion.cmds          = cmdlist;
+            completion.task_owner_id = taskid;
+            completion.total_bytes   = 300;
+            completion.content_bytes = 200;
+            completion.success       = has_exception() == false;
+            callback(completion);
+        }
+        std::size_t taskid = 0;
+        std::shared_ptr<CmdList> cmdlist;
+        Connection::OnCmdlistDone callback;
+    };
+
     struct Execute : public action
     {
         virtual void xperform() override
@@ -543,6 +573,19 @@ public:
                             ".\r\n");
                     }
                 }
+                else if (command == "BODY <maybe>\r\n")
+                {
+                    if (force_no_such_body)
+                    {
+                        set(incoming, "420 no such article\r\n");
+                    }
+                    else
+                    {
+                        set(incoming, "222 body follows\r\n"
+                            "maybe\r\n"
+                            ".\r\n");
+                    }
+                }
                 else if (command == "BODY <failure>\r\n")
                 {
                     set(incoming, "420 no such article\r\n");
@@ -642,6 +685,16 @@ public:
 
     virtual std::unique_ptr<action> Execute(std::shared_ptr<CmdList> cmd, std::size_t tid) override
     {
+        if (conn_state_.errors_[(int)Connection::State::Active] != Connection::Error::None)
+        {
+            auto ret = std::make_unique<struct DummyExecute>();
+            ret->taskid = tid;
+            ret->cmdlist = cmd;
+            ret->callback = callback_;
+            state_ = Connection::State::Active;
+            return ret;
+        }
+
         auto ret = std::make_unique<struct Execute>();
         ret->session = session_;
         ret->taskid = tid;
@@ -1494,6 +1547,118 @@ void test_task_execute_failure()
     while (eng.HasPendingActions());
 }
 
+void test_task_execute_restart()
+{
+    const bool spawn_immediately = true;
+    const bool debug_single_thread = true;
+
+    Engine eng(std::make_unique<Factory>(), debug_single_thread);
+
+    {
+        ConnState test_conn_params;
+        test_conn_params.SetError(Connection::State::Active, Connection::Error::PermissionDenied);
+
+        ui::Account account;
+        account.id = 123;
+        account.name = "test";
+        account.username = "user";
+        account.password = "pass";
+        account.secure_host = "test.host.com";
+        account.secure_port = 1000;
+        account.connections = 1;
+        account.enable_secure_server = true;
+        account.enable_general_server = false;
+        account.enable_compression = false;
+        account.enable_pipelining = false;
+        account.user_data = &test_conn_params;
+        eng.SetAccount(account, false);
+    }
+
+    TaskParams params;
+    params.should_commit = true;
+    params.expect_cmdlist = true;
+    params.num_buffers = 2;
+
+    ui::FileDownload download;
+    download.account   = 123;
+    download.size      = 666;
+    download.path      = "test/foo/bar";
+    download.desc      = "download";
+    download.articles.push_back("<maybe>");
+    download.articles.push_back("<maybe>");
+    download.groups.push_back("alt.binaries.success");
+    download.user_data = &params;
+    ui::FileBatchDownload batch;
+    batch.account = 123;
+    batch.size    = 666;
+    batch.path    = "test/foo/bar";
+    batch.desc    = "download";
+    batch.files.push_back(download);
+    eng.DownloadFiles(batch);
+    eng.Start();
+
+    while (eng.HasPendingActions())
+    {
+        eng.RunMainThread();
+        eng.Pump();
+    }
+
+    ui::Connection conn;
+    eng.GetConn(0, &conn);
+    BOOST_REQUIRE(conn.state == ui::Connection::States::Error);
+    BOOST_REQUIRE(conn.error == ui::Connection::Errors::NoPermission);
+
+    ui::TaskDesc task;
+    eng.GetTask(0, &task);
+    BOOST_REQUIRE(task.state == ui::TaskDesc::States::Waiting);
+
+    // reset the connection
+    {
+        ConnState test_conn_params;
+
+        ui::Account account;
+        account.id = 123;
+        account.name = "test";
+        account.username = "user";
+        account.password = "pass";
+        account.secure_host = "test.host.com";
+        account.secure_port = 1000;
+        account.connections = 1;
+        account.enable_secure_server = true;
+        account.enable_general_server = false;
+        account.enable_compression = false;
+        account.enable_pipelining = false;
+        account.user_data = &test_conn_params;
+        eng.SetAccount(account, false);
+    }
+
+    eng.Stop();
+    eng.Start();
+
+    while (eng.HasPendingActions())
+    {
+        eng.RunMainThread();
+        eng.Pump();
+    }
+
+    eng.GetConn(0, &conn);
+    BOOST_REQUIRE(conn.state == ui::Connection::States::Connected);
+
+    eng.GetTask(0, &task),
+    BOOST_REQUIRE(task.state == ui::TaskDesc::States::Complete);
+
+    eng.KillTask(0);
+    eng.KillConnection(0);
+    eng.Stop();
+
+    while (eng.HasPendingActions())
+    {
+        eng.RunMainThread();
+        eng.Pump();
+    }
+
+}
+
 // test that fill server account works.
 // expected: task is filled from the fill server account.
 void test_task_execute_fill_success()
@@ -1675,7 +1840,6 @@ void test_task_execute_fill_success()
 }
 
 
-
 int test_main(int argc, char*[])
 {
     newsflash::initialize();
@@ -1688,7 +1852,7 @@ int test_main(int argc, char*[])
     test_task_move();
     test_task_execute_success();
     test_task_execute_failure();
+    test_task_execute_restart();
     test_task_execute_fill_success();
-
     return 0;
 }
