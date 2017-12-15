@@ -388,7 +388,7 @@ public:
         }
     }
 
-    void stop(Engine::State& state)
+    void Disconnect(Engine::State& state)
     {
         if (ui_.state == states::Disconnected)
             return;
@@ -2330,7 +2330,7 @@ void Engine::Stop()
 
     for (auto& conn : state_->conns)
     {
-        conn->stop(*state_);
+        conn->Disconnect(*state_);
     }
     state_->conns.clear();
     state_->started = false;
@@ -2710,7 +2710,7 @@ void Engine::KillConnection(std::size_t i)
 
     auto it = state_->conns.begin();
     it += i;
-    (*it)->stop(*state_);
+    (*it)->Disconnect(*state_);
     state_->conns.erase(it);
 }
 
