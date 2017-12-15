@@ -121,7 +121,7 @@ namespace newsflash
             std::size_t task_owner_id = 0;
             std::uint64_t total_bytes = 0;
             std::uint64_t content_bytes = 0;
-            bool success = false;
+            bool execution_did_complete = false;
         };
 
         using OnCmdlistDone = std::function<void (const CmdListCompletionData&)>;

@@ -463,7 +463,7 @@ public:
             completion.task_owner_id = taskid;
             completion.total_bytes   = 300;
             completion.content_bytes = 200;
-            completion.success       = has_exception() == false;
+            completion.execution_did_complete = !has_exception();
             callback(completion);
         }
         std::size_t taskid = 0;
@@ -605,7 +605,7 @@ public:
             completion.task_owner_id = taskid;
             completion.total_bytes   = 300;
             completion.content_bytes = 200;
-            completion.success       = has_exception() == false;
+            completion.execution_did_complete = !has_exception();
             callback(completion);
         }
         std::size_t taskid = 0;

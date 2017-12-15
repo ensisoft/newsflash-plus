@@ -342,7 +342,7 @@ void test_execute_success()
         BOOST_REQUIRE(conn.GetError() == nf::Connection::Error::None);
         BOOST_REQUIRE(!act);
 
-        BOOST_REQUIRE(completion.success);
+        BOOST_REQUIRE(completion.execution_did_complete);
         BOOST_REQUIRE(completion.cmds == cmds);
         BOOST_REQUIRE(completion.task_owner_id == 123);
         BOOST_REQUIRE(completion.total_bytes != 0); // todo:
@@ -368,7 +368,7 @@ void test_execute_success()
         BOOST_REQUIRE(conn.GetState() == nf::Connection::State::Connected);
         BOOST_REQUIRE(conn.GetError() == nf::Connection::Error::None);
 
-        BOOST_REQUIRE(completion.success);
+        BOOST_REQUIRE(completion.execution_did_complete);
         BOOST_REQUIRE(completion.cmds == cmds);
         BOOST_REQUIRE(completion.task_owner_id == 123);
         BOOST_REQUIRE(completion.total_bytes != 0); // todo:

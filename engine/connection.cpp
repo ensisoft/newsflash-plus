@@ -505,7 +505,7 @@ public:
         completion.task_owner_id = taskid_;
         completion.total_bytes   = total_bytes_;
         completion.content_bytes = content_bytes_;
-        completion.success       = has_exception() == false;
+        completion.execution_did_complete = !has_exception();
         state_->on_cmdlist_done_callback(completion);
     }
 

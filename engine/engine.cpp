@@ -1602,7 +1602,7 @@ void Engine::State::on_cmdlist_done(const Connection::CmdListCompletionData& com
     LOG_D("Cmdlist ", id, " belongs to task ", cmds->GetTaskId());
     LOG_D("Cmdlist ", id, " goodbit: ", cmds->IsGood());
     LOG_D("Cmdlist ", id, " cancelbit: ", cmds->IsCancelled());
-    LOG_D("Cmdlist ", id, " exception: ", !completion.success);
+    LOG_D("Cmdlist ", id, " completed: ", completion.execution_did_complete);
     LOG_D("Cmdlist ", id, " success: ", cmds->IsSuccess());
 
     #ifdef NEWSFLASH_DEBUG
@@ -1643,7 +1643,7 @@ void Engine::State::on_cmdlist_done(const Connection::CmdListCompletionData& com
 
     auto& task = *it;
 
-    if (completion.success)
+    if (completion.execution_did_complete)
     {
         const auto success  = cmds->IsSuccess();
         const auto fillable = cmds->IsFillable();
