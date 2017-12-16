@@ -527,24 +527,31 @@ class TaskState : public ::google::protobuf::Message {
 
   // accessors -------------------------------------------------------
 
-  // required uint32 account_id = 1;
+  // required uint32 task_id = 1;
+  inline bool has_task_id() const;
+  inline void clear_task_id();
+  static const int kTaskIdFieldNumber = 1;
+  inline ::google::protobuf::uint32 task_id() const;
+  inline void set_task_id(::google::protobuf::uint32 value);
+
+  // required uint32 account_id = 2;
   inline bool has_account_id() const;
   inline void clear_account_id();
-  static const int kAccountIdFieldNumber = 1;
+  static const int kAccountIdFieldNumber = 2;
   inline ::google::protobuf::uint32 account_id() const;
   inline void set_account_id(::google::protobuf::uint32 value);
 
-  // required uint32 batch_id = 2;
+  // required uint32 batch_id = 3;
   inline bool has_batch_id() const;
   inline void clear_batch_id();
-  static const int kBatchIdFieldNumber = 2;
+  static const int kBatchIdFieldNumber = 3;
   inline ::google::protobuf::uint32 batch_id() const;
   inline void set_batch_id(::google::protobuf::uint32 value);
 
-  // required string desc = 3;
+  // required string desc = 4;
   inline bool has_desc() const;
   inline void clear_desc();
-  static const int kDescFieldNumber = 3;
+  static const int kDescFieldNumber = 4;
   inline const ::std::string& desc() const;
   inline void set_desc(const ::std::string& value);
   inline void set_desc(const char* value);
@@ -553,10 +560,10 @@ class TaskState : public ::google::protobuf::Message {
   inline ::std::string* release_desc();
   inline void set_allocated_desc(::std::string* desc);
 
-  // required string path = 4;
+  // required string path = 5;
   inline bool has_path() const;
   inline void clear_path();
-  static const int kPathFieldNumber = 4;
+  static const int kPathFieldNumber = 5;
   inline const ::std::string& path() const;
   inline void set_path(const ::std::string& value);
   inline void set_path(const char* value);
@@ -565,24 +572,24 @@ class TaskState : public ::google::protobuf::Message {
   inline ::std::string* release_path();
   inline void set_allocated_path(::std::string* path);
 
-  // required uint64 size = 5;
+  // required uint64 size = 6;
   inline bool has_size() const;
   inline void clear_size();
-  static const int kSizeFieldNumber = 5;
+  static const int kSizeFieldNumber = 6;
   inline ::google::protobuf::uint64 size() const;
   inline void set_size(::google::protobuf::uint64 value);
 
-  // required uint32 type = 6;
+  // required uint32 type = 7;
   inline bool has_type() const;
   inline void clear_type();
-  static const int kTypeFieldNumber = 6;
+  static const int kTypeFieldNumber = 7;
   inline ::google::protobuf::uint32 type() const;
   inline void set_type(::google::protobuf::uint32 value);
 
-  // required bytes data = 7;
+  // required bytes data = 8;
   inline bool has_data() const;
   inline void clear_data();
-  static const int kDataFieldNumber = 7;
+  static const int kDataFieldNumber = 8;
   inline const ::std::string& data() const;
   inline void set_data(const ::std::string& value);
   inline void set_data(const char* value);
@@ -593,6 +600,8 @@ class TaskState : public ::google::protobuf::Message {
 
   // @@protoc_insertion_point(class_scope:data.TaskState)
  private:
+  inline void set_has_task_id();
+  inline void clear_has_task_id();
   inline void set_has_account_id();
   inline void clear_has_account_id();
   inline void set_has_batch_id();
@@ -612,13 +621,14 @@ class TaskState : public ::google::protobuf::Message {
 
   ::google::protobuf::uint32 _has_bits_[1];
   mutable int _cached_size_;
+  ::google::protobuf::uint32 task_id_;
   ::google::protobuf::uint32 account_id_;
-  ::google::protobuf::uint32 batch_id_;
   ::std::string* desc_;
   ::std::string* path_;
+  ::google::protobuf::uint32 batch_id_;
+  ::google::protobuf::uint32 type_;
   ::google::protobuf::uint64 size_;
   ::std::string* data_;
-  ::google::protobuf::uint32 type_;
   friend void  protobuf_AddDesc_engine_2eproto();
   friend void protobuf_AssignDesc_engine_2eproto();
   friend void protobuf_ShutdownFile_engine_2eproto();
@@ -688,10 +698,17 @@ class Batch : public ::google::protobuf::Message {
   inline ::google::protobuf::uint32 account_id() const;
   inline void set_account_id(::google::protobuf::uint32 value);
 
-  // required string path = 2;
+  // required uint32 batch_id = 2;
+  inline bool has_batch_id() const;
+  inline void clear_batch_id();
+  static const int kBatchIdFieldNumber = 2;
+  inline ::google::protobuf::uint32 batch_id() const;
+  inline void set_batch_id(::google::protobuf::uint32 value);
+
+  // required string path = 3;
   inline bool has_path() const;
   inline void clear_path();
-  static const int kPathFieldNumber = 2;
+  static const int kPathFieldNumber = 3;
   inline const ::std::string& path() const;
   inline void set_path(const ::std::string& value);
   inline void set_path(const char* value);
@@ -700,10 +717,10 @@ class Batch : public ::google::protobuf::Message {
   inline ::std::string* release_path();
   inline void set_allocated_path(::std::string* path);
 
-  // required string desc = 3;
+  // required string desc = 4;
   inline bool has_desc() const;
   inline void clear_desc();
-  static const int kDescFieldNumber = 3;
+  static const int kDescFieldNumber = 4;
   inline const ::std::string& desc() const;
   inline void set_desc(const ::std::string& value);
   inline void set_desc(const char* value);
@@ -712,24 +729,24 @@ class Batch : public ::google::protobuf::Message {
   inline ::std::string* release_desc();
   inline void set_allocated_desc(::std::string* desc);
 
-  // required uint64 byte_size = 4;
+  // required uint64 byte_size = 5;
   inline bool has_byte_size() const;
   inline void clear_byte_size();
-  static const int kByteSizeFieldNumber = 4;
+  static const int kByteSizeFieldNumber = 5;
   inline ::google::protobuf::uint64 byte_size() const;
   inline void set_byte_size(::google::protobuf::uint64 value);
 
-  // required uint32 num_tasks = 5;
+  // required uint32 num_tasks = 6;
   inline bool has_num_tasks() const;
   inline void clear_num_tasks();
-  static const int kNumTasksFieldNumber = 5;
+  static const int kNumTasksFieldNumber = 6;
   inline ::google::protobuf::uint32 num_tasks() const;
   inline void set_num_tasks(::google::protobuf::uint32 value);
 
-  // required uint32 num_slices = 6;
+  // required uint32 num_slices = 7;
   inline bool has_num_slices() const;
   inline void clear_num_slices();
-  static const int kNumSlicesFieldNumber = 6;
+  static const int kNumSlicesFieldNumber = 7;
   inline ::google::protobuf::uint32 num_slices() const;
   inline void set_num_slices(::google::protobuf::uint32 value);
 
@@ -737,6 +754,8 @@ class Batch : public ::google::protobuf::Message {
  private:
   inline void set_has_account_id();
   inline void clear_has_account_id();
+  inline void set_has_batch_id();
+  inline void clear_has_batch_id();
   inline void set_has_path();
   inline void clear_has_path();
   inline void set_has_desc();
@@ -752,11 +771,12 @@ class Batch : public ::google::protobuf::Message {
 
   ::google::protobuf::uint32 _has_bits_[1];
   mutable int _cached_size_;
+  ::google::protobuf::uint32 account_id_;
+  ::google::protobuf::uint32 batch_id_;
   ::std::string* path_;
   ::std::string* desc_;
-  ::google::protobuf::uint32 account_id_;
-  ::google::protobuf::uint32 num_tasks_;
   ::google::protobuf::uint64 byte_size_;
+  ::google::protobuf::uint32 num_tasks_;
   ::google::protobuf::uint32 num_slices_;
   friend void  protobuf_AddDesc_engine_2eproto();
   friend void protobuf_AssignDesc_engine_2eproto();
@@ -834,10 +854,17 @@ class TaskList : public ::google::protobuf::Message {
   inline ::google::protobuf::uint64 bytes_ready() const;
   inline void set_bytes_ready(::google::protobuf::uint64 value);
 
-  // repeated .data.Batch batch = 3;
+  // required uint64 object_id = 3;
+  inline bool has_object_id() const;
+  inline void clear_object_id();
+  static const int kObjectIdFieldNumber = 3;
+  inline ::google::protobuf::uint64 object_id() const;
+  inline void set_object_id(::google::protobuf::uint64 value);
+
+  // repeated .data.Batch batch = 4;
   inline int batch_size() const;
   inline void clear_batch();
-  static const int kBatchFieldNumber = 3;
+  static const int kBatchFieldNumber = 4;
   inline const ::data::Batch& batch(int index) const;
   inline ::data::Batch* mutable_batch(int index);
   inline ::data::Batch* add_batch();
@@ -846,10 +873,10 @@ class TaskList : public ::google::protobuf::Message {
   inline ::google::protobuf::RepeatedPtrField< ::data::Batch >*
       mutable_batch();
 
-  // repeated .data.TaskState tasks = 4;
+  // repeated .data.TaskState tasks = 5;
   inline int tasks_size() const;
   inline void clear_tasks();
-  static const int kTasksFieldNumber = 4;
+  static const int kTasksFieldNumber = 5;
   inline const ::data::TaskState& tasks(int index) const;
   inline ::data::TaskState* mutable_tasks(int index);
   inline ::data::TaskState* add_tasks();
@@ -864,6 +891,8 @@ class TaskList : public ::google::protobuf::Message {
   inline void clear_has_bytes_queued();
   inline void set_has_bytes_ready();
   inline void clear_has_bytes_ready();
+  inline void set_has_object_id();
+  inline void clear_has_object_id();
 
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
 
@@ -871,6 +900,7 @@ class TaskList : public ::google::protobuf::Message {
   mutable int _cached_size_;
   ::google::protobuf::uint64 bytes_queued_;
   ::google::protobuf::uint64 bytes_ready_;
+  ::google::protobuf::uint64 object_id_;
   ::google::protobuf::RepeatedPtrField< ::data::Batch > batch_;
   ::google::protobuf::RepeatedPtrField< ::data::TaskState > tasks_;
   friend void  protobuf_AddDesc_engine_2eproto();
@@ -1743,15 +1773,39 @@ Download::mutable_stash() {
 
 // TaskState
 
-// required uint32 account_id = 1;
-inline bool TaskState::has_account_id() const {
+// required uint32 task_id = 1;
+inline bool TaskState::has_task_id() const {
   return (_has_bits_[0] & 0x00000001u) != 0;
 }
-inline void TaskState::set_has_account_id() {
+inline void TaskState::set_has_task_id() {
   _has_bits_[0] |= 0x00000001u;
 }
-inline void TaskState::clear_has_account_id() {
+inline void TaskState::clear_has_task_id() {
   _has_bits_[0] &= ~0x00000001u;
+}
+inline void TaskState::clear_task_id() {
+  task_id_ = 0u;
+  clear_has_task_id();
+}
+inline ::google::protobuf::uint32 TaskState::task_id() const {
+  // @@protoc_insertion_point(field_get:data.TaskState.task_id)
+  return task_id_;
+}
+inline void TaskState::set_task_id(::google::protobuf::uint32 value) {
+  set_has_task_id();
+  task_id_ = value;
+  // @@protoc_insertion_point(field_set:data.TaskState.task_id)
+}
+
+// required uint32 account_id = 2;
+inline bool TaskState::has_account_id() const {
+  return (_has_bits_[0] & 0x00000002u) != 0;
+}
+inline void TaskState::set_has_account_id() {
+  _has_bits_[0] |= 0x00000002u;
+}
+inline void TaskState::clear_has_account_id() {
+  _has_bits_[0] &= ~0x00000002u;
 }
 inline void TaskState::clear_account_id() {
   account_id_ = 0u;
@@ -1767,15 +1821,15 @@ inline void TaskState::set_account_id(::google::protobuf::uint32 value) {
   // @@protoc_insertion_point(field_set:data.TaskState.account_id)
 }
 
-// required uint32 batch_id = 2;
+// required uint32 batch_id = 3;
 inline bool TaskState::has_batch_id() const {
-  return (_has_bits_[0] & 0x00000002u) != 0;
+  return (_has_bits_[0] & 0x00000004u) != 0;
 }
 inline void TaskState::set_has_batch_id() {
-  _has_bits_[0] |= 0x00000002u;
+  _has_bits_[0] |= 0x00000004u;
 }
 inline void TaskState::clear_has_batch_id() {
-  _has_bits_[0] &= ~0x00000002u;
+  _has_bits_[0] &= ~0x00000004u;
 }
 inline void TaskState::clear_batch_id() {
   batch_id_ = 0u;
@@ -1791,15 +1845,15 @@ inline void TaskState::set_batch_id(::google::protobuf::uint32 value) {
   // @@protoc_insertion_point(field_set:data.TaskState.batch_id)
 }
 
-// required string desc = 3;
+// required string desc = 4;
 inline bool TaskState::has_desc() const {
-  return (_has_bits_[0] & 0x00000004u) != 0;
+  return (_has_bits_[0] & 0x00000008u) != 0;
 }
 inline void TaskState::set_has_desc() {
-  _has_bits_[0] |= 0x00000004u;
+  _has_bits_[0] |= 0x00000008u;
 }
 inline void TaskState::clear_has_desc() {
-  _has_bits_[0] &= ~0x00000004u;
+  _has_bits_[0] &= ~0x00000008u;
 }
 inline void TaskState::clear_desc() {
   if (desc_ != &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
@@ -1867,15 +1921,15 @@ inline void TaskState::set_allocated_desc(::std::string* desc) {
   // @@protoc_insertion_point(field_set_allocated:data.TaskState.desc)
 }
 
-// required string path = 4;
+// required string path = 5;
 inline bool TaskState::has_path() const {
-  return (_has_bits_[0] & 0x00000008u) != 0;
+  return (_has_bits_[0] & 0x00000010u) != 0;
 }
 inline void TaskState::set_has_path() {
-  _has_bits_[0] |= 0x00000008u;
+  _has_bits_[0] |= 0x00000010u;
 }
 inline void TaskState::clear_has_path() {
-  _has_bits_[0] &= ~0x00000008u;
+  _has_bits_[0] &= ~0x00000010u;
 }
 inline void TaskState::clear_path() {
   if (path_ != &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
@@ -1943,15 +1997,15 @@ inline void TaskState::set_allocated_path(::std::string* path) {
   // @@protoc_insertion_point(field_set_allocated:data.TaskState.path)
 }
 
-// required uint64 size = 5;
+// required uint64 size = 6;
 inline bool TaskState::has_size() const {
-  return (_has_bits_[0] & 0x00000010u) != 0;
+  return (_has_bits_[0] & 0x00000020u) != 0;
 }
 inline void TaskState::set_has_size() {
-  _has_bits_[0] |= 0x00000010u;
+  _has_bits_[0] |= 0x00000020u;
 }
 inline void TaskState::clear_has_size() {
-  _has_bits_[0] &= ~0x00000010u;
+  _has_bits_[0] &= ~0x00000020u;
 }
 inline void TaskState::clear_size() {
   size_ = GOOGLE_ULONGLONG(0);
@@ -1967,15 +2021,15 @@ inline void TaskState::set_size(::google::protobuf::uint64 value) {
   // @@protoc_insertion_point(field_set:data.TaskState.size)
 }
 
-// required uint32 type = 6;
+// required uint32 type = 7;
 inline bool TaskState::has_type() const {
-  return (_has_bits_[0] & 0x00000020u) != 0;
+  return (_has_bits_[0] & 0x00000040u) != 0;
 }
 inline void TaskState::set_has_type() {
-  _has_bits_[0] |= 0x00000020u;
+  _has_bits_[0] |= 0x00000040u;
 }
 inline void TaskState::clear_has_type() {
-  _has_bits_[0] &= ~0x00000020u;
+  _has_bits_[0] &= ~0x00000040u;
 }
 inline void TaskState::clear_type() {
   type_ = 0u;
@@ -1991,15 +2045,15 @@ inline void TaskState::set_type(::google::protobuf::uint32 value) {
   // @@protoc_insertion_point(field_set:data.TaskState.type)
 }
 
-// required bytes data = 7;
+// required bytes data = 8;
 inline bool TaskState::has_data() const {
-  return (_has_bits_[0] & 0x00000040u) != 0;
+  return (_has_bits_[0] & 0x00000080u) != 0;
 }
 inline void TaskState::set_has_data() {
-  _has_bits_[0] |= 0x00000040u;
+  _has_bits_[0] |= 0x00000080u;
 }
 inline void TaskState::clear_has_data() {
-  _has_bits_[0] &= ~0x00000040u;
+  _has_bits_[0] &= ~0x00000080u;
 }
 inline void TaskState::clear_data() {
   if (data_ != &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
@@ -2095,15 +2149,39 @@ inline void Batch::set_account_id(::google::protobuf::uint32 value) {
   // @@protoc_insertion_point(field_set:data.Batch.account_id)
 }
 
-// required string path = 2;
-inline bool Batch::has_path() const {
+// required uint32 batch_id = 2;
+inline bool Batch::has_batch_id() const {
   return (_has_bits_[0] & 0x00000002u) != 0;
 }
-inline void Batch::set_has_path() {
+inline void Batch::set_has_batch_id() {
   _has_bits_[0] |= 0x00000002u;
 }
-inline void Batch::clear_has_path() {
+inline void Batch::clear_has_batch_id() {
   _has_bits_[0] &= ~0x00000002u;
+}
+inline void Batch::clear_batch_id() {
+  batch_id_ = 0u;
+  clear_has_batch_id();
+}
+inline ::google::protobuf::uint32 Batch::batch_id() const {
+  // @@protoc_insertion_point(field_get:data.Batch.batch_id)
+  return batch_id_;
+}
+inline void Batch::set_batch_id(::google::protobuf::uint32 value) {
+  set_has_batch_id();
+  batch_id_ = value;
+  // @@protoc_insertion_point(field_set:data.Batch.batch_id)
+}
+
+// required string path = 3;
+inline bool Batch::has_path() const {
+  return (_has_bits_[0] & 0x00000004u) != 0;
+}
+inline void Batch::set_has_path() {
+  _has_bits_[0] |= 0x00000004u;
+}
+inline void Batch::clear_has_path() {
+  _has_bits_[0] &= ~0x00000004u;
 }
 inline void Batch::clear_path() {
   if (path_ != &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
@@ -2171,15 +2249,15 @@ inline void Batch::set_allocated_path(::std::string* path) {
   // @@protoc_insertion_point(field_set_allocated:data.Batch.path)
 }
 
-// required string desc = 3;
+// required string desc = 4;
 inline bool Batch::has_desc() const {
-  return (_has_bits_[0] & 0x00000004u) != 0;
+  return (_has_bits_[0] & 0x00000008u) != 0;
 }
 inline void Batch::set_has_desc() {
-  _has_bits_[0] |= 0x00000004u;
+  _has_bits_[0] |= 0x00000008u;
 }
 inline void Batch::clear_has_desc() {
-  _has_bits_[0] &= ~0x00000004u;
+  _has_bits_[0] &= ~0x00000008u;
 }
 inline void Batch::clear_desc() {
   if (desc_ != &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
@@ -2247,15 +2325,15 @@ inline void Batch::set_allocated_desc(::std::string* desc) {
   // @@protoc_insertion_point(field_set_allocated:data.Batch.desc)
 }
 
-// required uint64 byte_size = 4;
+// required uint64 byte_size = 5;
 inline bool Batch::has_byte_size() const {
-  return (_has_bits_[0] & 0x00000008u) != 0;
+  return (_has_bits_[0] & 0x00000010u) != 0;
 }
 inline void Batch::set_has_byte_size() {
-  _has_bits_[0] |= 0x00000008u;
+  _has_bits_[0] |= 0x00000010u;
 }
 inline void Batch::clear_has_byte_size() {
-  _has_bits_[0] &= ~0x00000008u;
+  _has_bits_[0] &= ~0x00000010u;
 }
 inline void Batch::clear_byte_size() {
   byte_size_ = GOOGLE_ULONGLONG(0);
@@ -2271,15 +2349,15 @@ inline void Batch::set_byte_size(::google::protobuf::uint64 value) {
   // @@protoc_insertion_point(field_set:data.Batch.byte_size)
 }
 
-// required uint32 num_tasks = 5;
+// required uint32 num_tasks = 6;
 inline bool Batch::has_num_tasks() const {
-  return (_has_bits_[0] & 0x00000010u) != 0;
+  return (_has_bits_[0] & 0x00000020u) != 0;
 }
 inline void Batch::set_has_num_tasks() {
-  _has_bits_[0] |= 0x00000010u;
+  _has_bits_[0] |= 0x00000020u;
 }
 inline void Batch::clear_has_num_tasks() {
-  _has_bits_[0] &= ~0x00000010u;
+  _has_bits_[0] &= ~0x00000020u;
 }
 inline void Batch::clear_num_tasks() {
   num_tasks_ = 0u;
@@ -2295,15 +2373,15 @@ inline void Batch::set_num_tasks(::google::protobuf::uint32 value) {
   // @@protoc_insertion_point(field_set:data.Batch.num_tasks)
 }
 
-// required uint32 num_slices = 6;
+// required uint32 num_slices = 7;
 inline bool Batch::has_num_slices() const {
-  return (_has_bits_[0] & 0x00000020u) != 0;
+  return (_has_bits_[0] & 0x00000040u) != 0;
 }
 inline void Batch::set_has_num_slices() {
-  _has_bits_[0] |= 0x00000020u;
+  _has_bits_[0] |= 0x00000040u;
 }
 inline void Batch::clear_has_num_slices() {
-  _has_bits_[0] &= ~0x00000020u;
+  _has_bits_[0] &= ~0x00000040u;
 }
 inline void Batch::clear_num_slices() {
   num_slices_ = 0u;
@@ -2371,7 +2449,31 @@ inline void TaskList::set_bytes_ready(::google::protobuf::uint64 value) {
   // @@protoc_insertion_point(field_set:data.TaskList.bytes_ready)
 }
 
-// repeated .data.Batch batch = 3;
+// required uint64 object_id = 3;
+inline bool TaskList::has_object_id() const {
+  return (_has_bits_[0] & 0x00000004u) != 0;
+}
+inline void TaskList::set_has_object_id() {
+  _has_bits_[0] |= 0x00000004u;
+}
+inline void TaskList::clear_has_object_id() {
+  _has_bits_[0] &= ~0x00000004u;
+}
+inline void TaskList::clear_object_id() {
+  object_id_ = GOOGLE_ULONGLONG(0);
+  clear_has_object_id();
+}
+inline ::google::protobuf::uint64 TaskList::object_id() const {
+  // @@protoc_insertion_point(field_get:data.TaskList.object_id)
+  return object_id_;
+}
+inline void TaskList::set_object_id(::google::protobuf::uint64 value) {
+  set_has_object_id();
+  object_id_ = value;
+  // @@protoc_insertion_point(field_set:data.TaskList.object_id)
+}
+
+// repeated .data.Batch batch = 4;
 inline int TaskList::batch_size() const {
   return batch_.size();
 }
@@ -2401,7 +2503,7 @@ TaskList::mutable_batch() {
   return &batch_;
 }
 
-// repeated .data.TaskState tasks = 4;
+// repeated .data.TaskState tasks = 5;
 inline int TaskList::tasks_size() const {
   return tasks_.size();
 }

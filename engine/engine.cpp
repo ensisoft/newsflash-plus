@@ -854,10 +854,10 @@ public:
         LOG_I("Task ", ui_.task_id, " (", ui_.desc, ") created");
     }
 
-    TaskState(std::size_t id, std::unique_ptr<Task> task, const data::TaskState& state)
+    TaskState(std::unique_ptr<Task> task, const data::TaskState& state)
     {
         task_              = std::move(task);
-        ui_.task_id        = id;
+        ui_.task_id        = state.task_id();
         ui_.batch_id       = state.batch_id();
         ui_.account        = state.account_id();
         ui_.desc           = state.desc();
@@ -898,6 +898,7 @@ public:
         task_->Pack(&data);
 
         auto* ptr = list.add_tasks();
+        ptr->set_task_id(ui_.task_id);
         ptr->set_account_id(ui_.account);
         ptr->set_batch_id(ui_.batch_id);
         ptr->set_desc(ui_.desc);
@@ -1409,8 +1410,10 @@ public:
         statesets_[(int)states::Queued] = num_tasks_;
     }
 
-    BatchState(std::size_t id, const data::Batch& data) : BatchState(id)
+    BatchState(const data::Batch& data)
     {
+        ui_.batch_id   = data.batch_id();
+        ui_.task_id    = data.batch_id();
         ui_.account    = data.account_id();
         ui_.desc       = data.desc();
         ui_.path       = data.path();
@@ -1418,7 +1421,7 @@ public:
         num_slices_    = data.num_slices();
         num_tasks_     = data.num_tasks();
         filebatch_     = true;
-
+        std::fill(std::begin(statesets_), std::end(statesets_), 0);
         statesets_[(int)states::Queued] = num_tasks_;
     }
 
@@ -1435,6 +1438,7 @@ public:
             return;
 
         auto* data = list.add_batch();
+        data->set_batch_id(ui_.task_id);
         data->set_account_id(ui_.account);
         data->set_desc(ui_.desc);
         data->set_byte_size(ui_.size);
@@ -2396,6 +2400,7 @@ void Engine::SaveTasks(const std::string& file)
 
     list.set_bytes_queued(state_->bytes_queued);
     list.set_bytes_ready(state_->bytes_ready);
+    list.set_object_id(state_->oid);
 
     if (!list.SerializeToOstream(&out))
         throw std::runtime_error("engine serialize to stream failed");
@@ -2421,8 +2426,7 @@ void Engine::LoadTasks(const std::string& file)
     for (int i=0; i<list.batch_size(); ++i)
     {
         const auto& data   = list.batch(i);
-        const auto batchid = state_->oid++;
-        std::unique_ptr<BatchState> batch(new BatchState(batchid, data));
+        std::unique_ptr<BatchState> batch(new BatchState(data));
         state_->batches.push_back(std::move(batch));
     }
 
@@ -2442,14 +2446,14 @@ void Engine::LoadTasks(const std::string& file)
             ptr->SetWriteCallback(std::bind(&Engine::State::on_write_done, state_.get(),
                 std::placeholders::_1));
         }
-        const auto taskid = state_->oid++;
-        std::unique_ptr<TaskState> state(new TaskState(taskid, std::move(task), state_data));
+        std::unique_ptr<TaskState> state(new TaskState(std::move(task), state_data));
         state->Configure(settings);
         state_->tasks.push_back(std::move(state));
     }
 
     state_->bytes_queued = list.bytes_queued();
     state_->bytes_ready  = list.bytes_ready();
+    state_->oid          = list.object_id();
 }
 
 void Engine::Reset()
