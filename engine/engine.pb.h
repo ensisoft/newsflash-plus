@@ -33,7 +33,6 @@ void  protobuf_AddDesc_engine_2eproto();
 void protobuf_AssignDesc_engine_2eproto();
 void protobuf_ShutdownFile_engine_2eproto();
 
-class Account;
 class File;
 class Stash;
 class Download;
@@ -42,230 +41,6 @@ class Batch;
 class TaskList;
 
 // ===================================================================
-
-class Account : public ::google::protobuf::Message {
- public:
-  Account();
-  virtual ~Account();
-
-  Account(const Account& from);
-
-  inline Account& operator=(const Account& from) {
-    CopyFrom(from);
-    return *this;
-  }
-
-  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
-    return _unknown_fields_;
-  }
-
-  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
-    return &_unknown_fields_;
-  }
-
-  static const ::google::protobuf::Descriptor* descriptor();
-  static const Account& default_instance();
-
-  void Swap(Account* other);
-
-  // implements Message ----------------------------------------------
-
-  Account* New() const;
-  void CopyFrom(const ::google::protobuf::Message& from);
-  void MergeFrom(const ::google::protobuf::Message& from);
-  void CopyFrom(const Account& from);
-  void MergeFrom(const Account& from);
-  void Clear();
-  bool IsInitialized() const;
-
-  int ByteSize() const;
-  bool MergePartialFromCodedStream(
-      ::google::protobuf::io::CodedInputStream* input);
-  void SerializeWithCachedSizes(
-      ::google::protobuf::io::CodedOutputStream* output) const;
-  ::google::protobuf::uint8* SerializeWithCachedSizesToArray(::google::protobuf::uint8* output) const;
-  int GetCachedSize() const { return _cached_size_; }
-  private:
-  void SharedCtor();
-  void SharedDtor();
-  void SetCachedSize(int size) const;
-  public:
-  ::google::protobuf::Metadata GetMetadata() const;
-
-  // nested types ----------------------------------------------------
-
-  // accessors -------------------------------------------------------
-
-  // required uint32 id = 1;
-  inline bool has_id() const;
-  inline void clear_id();
-  static const int kIdFieldNumber = 1;
-  inline ::google::protobuf::uint32 id() const;
-  inline void set_id(::google::protobuf::uint32 value);
-
-  // required string name = 2;
-  inline bool has_name() const;
-  inline void clear_name();
-  static const int kNameFieldNumber = 2;
-  inline const ::std::string& name() const;
-  inline void set_name(const ::std::string& value);
-  inline void set_name(const char* value);
-  inline void set_name(const char* value, size_t size);
-  inline ::std::string* mutable_name();
-  inline ::std::string* release_name();
-  inline void set_allocated_name(::std::string* name);
-
-  // required string user = 3;
-  inline bool has_user() const;
-  inline void clear_user();
-  static const int kUserFieldNumber = 3;
-  inline const ::std::string& user() const;
-  inline void set_user(const ::std::string& value);
-  inline void set_user(const char* value);
-  inline void set_user(const char* value, size_t size);
-  inline ::std::string* mutable_user();
-  inline ::std::string* release_user();
-  inline void set_allocated_user(::std::string* user);
-
-  // required string pass = 4;
-  inline bool has_pass() const;
-  inline void clear_pass();
-  static const int kPassFieldNumber = 4;
-  inline const ::std::string& pass() const;
-  inline void set_pass(const ::std::string& value);
-  inline void set_pass(const char* value);
-  inline void set_pass(const char* value, size_t size);
-  inline ::std::string* mutable_pass();
-  inline ::std::string* release_pass();
-  inline void set_allocated_pass(::std::string* pass);
-
-  // required string secure_host = 5;
-  inline bool has_secure_host() const;
-  inline void clear_secure_host();
-  static const int kSecureHostFieldNumber = 5;
-  inline const ::std::string& secure_host() const;
-  inline void set_secure_host(const ::std::string& value);
-  inline void set_secure_host(const char* value);
-  inline void set_secure_host(const char* value, size_t size);
-  inline ::std::string* mutable_secure_host();
-  inline ::std::string* release_secure_host();
-  inline void set_allocated_secure_host(::std::string* secure_host);
-
-  // required uint32 secure_port = 6;
-  inline bool has_secure_port() const;
-  inline void clear_secure_port();
-  static const int kSecurePortFieldNumber = 6;
-  inline ::google::protobuf::uint32 secure_port() const;
-  inline void set_secure_port(::google::protobuf::uint32 value);
-
-  // required string general_host = 7;
-  inline bool has_general_host() const;
-  inline void clear_general_host();
-  static const int kGeneralHostFieldNumber = 7;
-  inline const ::std::string& general_host() const;
-  inline void set_general_host(const ::std::string& value);
-  inline void set_general_host(const char* value);
-  inline void set_general_host(const char* value, size_t size);
-  inline ::std::string* mutable_general_host();
-  inline ::std::string* release_general_host();
-  inline void set_allocated_general_host(::std::string* general_host);
-
-  // required uint32 general_port = 8;
-  inline bool has_general_port() const;
-  inline void clear_general_port();
-  static const int kGeneralPortFieldNumber = 8;
-  inline ::google::protobuf::uint32 general_port() const;
-  inline void set_general_port(::google::protobuf::uint32 value);
-
-  // required uint32 max_connections = 9;
-  inline bool has_max_connections() const;
-  inline void clear_max_connections();
-  static const int kMaxConnectionsFieldNumber = 9;
-  inline ::google::protobuf::uint32 max_connections() const;
-  inline void set_max_connections(::google::protobuf::uint32 value);
-
-  // required bool enable_secure_server = 10;
-  inline bool has_enable_secure_server() const;
-  inline void clear_enable_secure_server();
-  static const int kEnableSecureServerFieldNumber = 10;
-  inline bool enable_secure_server() const;
-  inline void set_enable_secure_server(bool value);
-
-  // required bool enable_general_server = 11;
-  inline bool has_enable_general_server() const;
-  inline void clear_enable_general_server();
-  static const int kEnableGeneralServerFieldNumber = 11;
-  inline bool enable_general_server() const;
-  inline void set_enable_general_server(bool value);
-
-  // required bool enable_pipelining = 12;
-  inline bool has_enable_pipelining() const;
-  inline void clear_enable_pipelining();
-  static const int kEnablePipeliningFieldNumber = 12;
-  inline bool enable_pipelining() const;
-  inline void set_enable_pipelining(bool value);
-
-  // required bool enable_compression = 13;
-  inline bool has_enable_compression() const;
-  inline void clear_enable_compression();
-  static const int kEnableCompressionFieldNumber = 13;
-  inline bool enable_compression() const;
-  inline void set_enable_compression(bool value);
-
-  // @@protoc_insertion_point(class_scope:data.Account)
- private:
-  inline void set_has_id();
-  inline void clear_has_id();
-  inline void set_has_name();
-  inline void clear_has_name();
-  inline void set_has_user();
-  inline void clear_has_user();
-  inline void set_has_pass();
-  inline void clear_has_pass();
-  inline void set_has_secure_host();
-  inline void clear_has_secure_host();
-  inline void set_has_secure_port();
-  inline void clear_has_secure_port();
-  inline void set_has_general_host();
-  inline void clear_has_general_host();
-  inline void set_has_general_port();
-  inline void clear_has_general_port();
-  inline void set_has_max_connections();
-  inline void clear_has_max_connections();
-  inline void set_has_enable_secure_server();
-  inline void clear_has_enable_secure_server();
-  inline void set_has_enable_general_server();
-  inline void clear_has_enable_general_server();
-  inline void set_has_enable_pipelining();
-  inline void clear_has_enable_pipelining();
-  inline void set_has_enable_compression();
-  inline void clear_has_enable_compression();
-
-  ::google::protobuf::UnknownFieldSet _unknown_fields_;
-
-  ::google::protobuf::uint32 _has_bits_[1];
-  mutable int _cached_size_;
-  ::std::string* name_;
-  ::std::string* user_;
-  ::google::protobuf::uint32 id_;
-  ::google::protobuf::uint32 secure_port_;
-  ::std::string* pass_;
-  ::std::string* secure_host_;
-  ::std::string* general_host_;
-  ::google::protobuf::uint32 general_port_;
-  ::google::protobuf::uint32 max_connections_;
-  bool enable_secure_server_;
-  bool enable_general_server_;
-  bool enable_pipelining_;
-  bool enable_compression_;
-  friend void  protobuf_AddDesc_engine_2eproto();
-  friend void protobuf_AssignDesc_engine_2eproto();
-  friend void protobuf_ShutdownFile_engine_2eproto();
-
-  void InitAsDefaultInstance();
-  static Account* default_instance_;
-};
-// -------------------------------------------------------------------
 
 class File : public ::google::protobuf::Message {
  public:
@@ -711,17 +486,10 @@ class TaskState : public ::google::protobuf::Message {
   inline ::google::protobuf::uint32 batch_id() const;
   inline void set_batch_id(::google::protobuf::uint32 value);
 
-  // required uint32 task_id = 3;
-  inline bool has_task_id() const;
-  inline void clear_task_id();
-  static const int kTaskIdFieldNumber = 3;
-  inline ::google::protobuf::uint32 task_id() const;
-  inline void set_task_id(::google::protobuf::uint32 value);
-
-  // required string desc = 4;
+  // required string desc = 3;
   inline bool has_desc() const;
   inline void clear_desc();
-  static const int kDescFieldNumber = 4;
+  static const int kDescFieldNumber = 3;
   inline const ::std::string& desc() const;
   inline void set_desc(const ::std::string& value);
   inline void set_desc(const char* value);
@@ -730,10 +498,10 @@ class TaskState : public ::google::protobuf::Message {
   inline ::std::string* release_desc();
   inline void set_allocated_desc(::std::string* desc);
 
-  // required string path = 5;
+  // required string path = 4;
   inline bool has_path() const;
   inline void clear_path();
-  static const int kPathFieldNumber = 5;
+  static const int kPathFieldNumber = 4;
   inline const ::std::string& path() const;
   inline void set_path(const ::std::string& value);
   inline void set_path(const char* value);
@@ -742,21 +510,31 @@ class TaskState : public ::google::protobuf::Message {
   inline ::std::string* release_path();
   inline void set_allocated_path(::std::string* path);
 
-  // required uint64 size = 6;
+  // required uint64 size = 5;
   inline bool has_size() const;
   inline void clear_size();
-  static const int kSizeFieldNumber = 6;
+  static const int kSizeFieldNumber = 5;
   inline ::google::protobuf::uint64 size() const;
   inline void set_size(::google::protobuf::uint64 value);
 
-  // optional .data.Download download = 7;
-  inline bool has_download() const;
-  inline void clear_download();
-  static const int kDownloadFieldNumber = 7;
-  inline const ::data::Download& download() const;
-  inline ::data::Download* mutable_download();
-  inline ::data::Download* release_download();
-  inline void set_allocated_download(::data::Download* download);
+  // required uint32 type = 6;
+  inline bool has_type() const;
+  inline void clear_type();
+  static const int kTypeFieldNumber = 6;
+  inline ::google::protobuf::uint32 type() const;
+  inline void set_type(::google::protobuf::uint32 value);
+
+  // required bytes data = 7;
+  inline bool has_data() const;
+  inline void clear_data();
+  static const int kDataFieldNumber = 7;
+  inline const ::std::string& data() const;
+  inline void set_data(const ::std::string& value);
+  inline void set_data(const char* value);
+  inline void set_data(const void* value, size_t size);
+  inline ::std::string* mutable_data();
+  inline ::std::string* release_data();
+  inline void set_allocated_data(::std::string* data);
 
   // @@protoc_insertion_point(class_scope:data.TaskState)
  private:
@@ -764,16 +542,16 @@ class TaskState : public ::google::protobuf::Message {
   inline void clear_has_account_id();
   inline void set_has_batch_id();
   inline void clear_has_batch_id();
-  inline void set_has_task_id();
-  inline void clear_has_task_id();
   inline void set_has_desc();
   inline void clear_has_desc();
   inline void set_has_path();
   inline void clear_has_path();
   inline void set_has_size();
   inline void clear_has_size();
-  inline void set_has_download();
-  inline void clear_has_download();
+  inline void set_has_type();
+  inline void clear_has_type();
+  inline void set_has_data();
+  inline void clear_has_data();
 
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
 
@@ -784,8 +562,8 @@ class TaskState : public ::google::protobuf::Message {
   ::std::string* desc_;
   ::std::string* path_;
   ::google::protobuf::uint64 size_;
-  ::data::Download* download_;
-  ::google::protobuf::uint32 task_id_;
+  ::std::string* data_;
+  ::google::protobuf::uint32 type_;
   friend void  protobuf_AddDesc_engine_2eproto();
   friend void protobuf_AssignDesc_engine_2eproto();
   friend void protobuf_ShutdownFile_engine_2eproto();
@@ -855,17 +633,10 @@ class Batch : public ::google::protobuf::Message {
   inline ::google::protobuf::uint32 account_id() const;
   inline void set_account_id(::google::protobuf::uint32 value);
 
-  // required uint32 batch_id = 2;
-  inline bool has_batch_id() const;
-  inline void clear_batch_id();
-  static const int kBatchIdFieldNumber = 2;
-  inline ::google::protobuf::uint32 batch_id() const;
-  inline void set_batch_id(::google::protobuf::uint32 value);
-
-  // required string path = 3;
+  // required string path = 2;
   inline bool has_path() const;
   inline void clear_path();
-  static const int kPathFieldNumber = 3;
+  static const int kPathFieldNumber = 2;
   inline const ::std::string& path() const;
   inline void set_path(const ::std::string& value);
   inline void set_path(const char* value);
@@ -874,10 +645,10 @@ class Batch : public ::google::protobuf::Message {
   inline ::std::string* release_path();
   inline void set_allocated_path(::std::string* path);
 
-  // required string desc = 4;
+  // required string desc = 3;
   inline bool has_desc() const;
   inline void clear_desc();
-  static const int kDescFieldNumber = 4;
+  static const int kDescFieldNumber = 3;
   inline const ::std::string& desc() const;
   inline void set_desc(const ::std::string& value);
   inline void set_desc(const char* value);
@@ -886,24 +657,24 @@ class Batch : public ::google::protobuf::Message {
   inline ::std::string* release_desc();
   inline void set_allocated_desc(::std::string* desc);
 
-  // required uint64 byte_size = 5;
+  // required uint64 byte_size = 4;
   inline bool has_byte_size() const;
   inline void clear_byte_size();
-  static const int kByteSizeFieldNumber = 5;
+  static const int kByteSizeFieldNumber = 4;
   inline ::google::protobuf::uint64 byte_size() const;
   inline void set_byte_size(::google::protobuf::uint64 value);
 
-  // required uint32 num_tasks = 6;
+  // required uint32 num_tasks = 5;
   inline bool has_num_tasks() const;
   inline void clear_num_tasks();
-  static const int kNumTasksFieldNumber = 6;
+  static const int kNumTasksFieldNumber = 5;
   inline ::google::protobuf::uint32 num_tasks() const;
   inline void set_num_tasks(::google::protobuf::uint32 value);
 
-  // required uint32 num_slices = 7;
+  // required uint32 num_slices = 6;
   inline bool has_num_slices() const;
   inline void clear_num_slices();
-  static const int kNumSlicesFieldNumber = 7;
+  static const int kNumSlicesFieldNumber = 6;
   inline ::google::protobuf::uint32 num_slices() const;
   inline void set_num_slices(::google::protobuf::uint32 value);
 
@@ -911,8 +682,6 @@ class Batch : public ::google::protobuf::Message {
  private:
   inline void set_has_account_id();
   inline void clear_has_account_id();
-  inline void set_has_batch_id();
-  inline void clear_has_batch_id();
   inline void set_has_path();
   inline void clear_has_path();
   inline void set_has_desc();
@@ -928,12 +697,11 @@ class Batch : public ::google::protobuf::Message {
 
   ::google::protobuf::uint32 _has_bits_[1];
   mutable int _cached_size_;
-  ::google::protobuf::uint32 account_id_;
-  ::google::protobuf::uint32 batch_id_;
   ::std::string* path_;
   ::std::string* desc_;
-  ::google::protobuf::uint64 byte_size_;
+  ::google::protobuf::uint32 account_id_;
   ::google::protobuf::uint32 num_tasks_;
+  ::google::protobuf::uint64 byte_size_;
   ::google::protobuf::uint32 num_slices_;
   friend void  protobuf_AddDesc_engine_2eproto();
   friend void protobuf_AssignDesc_engine_2eproto();
@@ -997,43 +765,24 @@ class TaskList : public ::google::protobuf::Message {
 
   // accessors -------------------------------------------------------
 
-  // required uint32 current_id = 1;
-  inline bool has_current_id() const;
-  inline void clear_current_id();
-  static const int kCurrentIdFieldNumber = 1;
-  inline ::google::protobuf::uint32 current_id() const;
-  inline void set_current_id(::google::protobuf::uint32 value);
-
-  // required uint64 bytes_queued = 2;
+  // required uint64 bytes_queued = 1;
   inline bool has_bytes_queued() const;
   inline void clear_bytes_queued();
-  static const int kBytesQueuedFieldNumber = 2;
+  static const int kBytesQueuedFieldNumber = 1;
   inline ::google::protobuf::uint64 bytes_queued() const;
   inline void set_bytes_queued(::google::protobuf::uint64 value);
 
-  // required uint64 bytes_ready = 3;
+  // required uint64 bytes_ready = 2;
   inline bool has_bytes_ready() const;
   inline void clear_bytes_ready();
-  static const int kBytesReadyFieldNumber = 3;
+  static const int kBytesReadyFieldNumber = 2;
   inline ::google::protobuf::uint64 bytes_ready() const;
   inline void set_bytes_ready(::google::protobuf::uint64 value);
 
-  // repeated .data.Account account = 4;
-  inline int account_size() const;
-  inline void clear_account();
-  static const int kAccountFieldNumber = 4;
-  inline const ::data::Account& account(int index) const;
-  inline ::data::Account* mutable_account(int index);
-  inline ::data::Account* add_account();
-  inline const ::google::protobuf::RepeatedPtrField< ::data::Account >&
-      account() const;
-  inline ::google::protobuf::RepeatedPtrField< ::data::Account >*
-      mutable_account();
-
-  // repeated .data.Batch batch = 5;
+  // repeated .data.Batch batch = 3;
   inline int batch_size() const;
   inline void clear_batch();
-  static const int kBatchFieldNumber = 5;
+  static const int kBatchFieldNumber = 3;
   inline const ::data::Batch& batch(int index) const;
   inline ::data::Batch* mutable_batch(int index);
   inline ::data::Batch* add_batch();
@@ -1042,10 +791,10 @@ class TaskList : public ::google::protobuf::Message {
   inline ::google::protobuf::RepeatedPtrField< ::data::Batch >*
       mutable_batch();
 
-  // repeated .data.TaskState tasks = 6;
+  // repeated .data.TaskState tasks = 4;
   inline int tasks_size() const;
   inline void clear_tasks();
-  static const int kTasksFieldNumber = 6;
+  static const int kTasksFieldNumber = 4;
   inline const ::data::TaskState& tasks(int index) const;
   inline ::data::TaskState* mutable_tasks(int index);
   inline ::data::TaskState* add_tasks();
@@ -1056,8 +805,6 @@ class TaskList : public ::google::protobuf::Message {
 
   // @@protoc_insertion_point(class_scope:data.TaskList)
  private:
-  inline void set_has_current_id();
-  inline void clear_has_current_id();
   inline void set_has_bytes_queued();
   inline void clear_has_bytes_queued();
   inline void set_has_bytes_ready();
@@ -1069,10 +816,8 @@ class TaskList : public ::google::protobuf::Message {
   mutable int _cached_size_;
   ::google::protobuf::uint64 bytes_queued_;
   ::google::protobuf::uint64 bytes_ready_;
-  ::google::protobuf::RepeatedPtrField< ::data::Account > account_;
   ::google::protobuf::RepeatedPtrField< ::data::Batch > batch_;
   ::google::protobuf::RepeatedPtrField< ::data::TaskState > tasks_;
-  ::google::protobuf::uint32 current_id_;
   friend void  protobuf_AddDesc_engine_2eproto();
   friend void protobuf_AssignDesc_engine_2eproto();
   friend void protobuf_ShutdownFile_engine_2eproto();
@@ -1084,582 +829,6 @@ class TaskList : public ::google::protobuf::Message {
 
 
 // ===================================================================
-
-// Account
-
-// required uint32 id = 1;
-inline bool Account::has_id() const {
-  return (_has_bits_[0] & 0x00000001u) != 0;
-}
-inline void Account::set_has_id() {
-  _has_bits_[0] |= 0x00000001u;
-}
-inline void Account::clear_has_id() {
-  _has_bits_[0] &= ~0x00000001u;
-}
-inline void Account::clear_id() {
-  id_ = 0u;
-  clear_has_id();
-}
-inline ::google::protobuf::uint32 Account::id() const {
-  // @@protoc_insertion_point(field_get:data.Account.id)
-  return id_;
-}
-inline void Account::set_id(::google::protobuf::uint32 value) {
-  set_has_id();
-  id_ = value;
-  // @@protoc_insertion_point(field_set:data.Account.id)
-}
-
-// required string name = 2;
-inline bool Account::has_name() const {
-  return (_has_bits_[0] & 0x00000002u) != 0;
-}
-inline void Account::set_has_name() {
-  _has_bits_[0] |= 0x00000002u;
-}
-inline void Account::clear_has_name() {
-  _has_bits_[0] &= ~0x00000002u;
-}
-inline void Account::clear_name() {
-  if (name_ != &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-    name_->clear();
-  }
-  clear_has_name();
-}
-inline const ::std::string& Account::name() const {
-  // @@protoc_insertion_point(field_get:data.Account.name)
-  return *name_;
-}
-inline void Account::set_name(const ::std::string& value) {
-  set_has_name();
-  if (name_ == &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-    name_ = new ::std::string;
-  }
-  name_->assign(value);
-  // @@protoc_insertion_point(field_set:data.Account.name)
-}
-inline void Account::set_name(const char* value) {
-  set_has_name();
-  if (name_ == &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-    name_ = new ::std::string;
-  }
-  name_->assign(value);
-  // @@protoc_insertion_point(field_set_char:data.Account.name)
-}
-inline void Account::set_name(const char* value, size_t size) {
-  set_has_name();
-  if (name_ == &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-    name_ = new ::std::string;
-  }
-  name_->assign(reinterpret_cast<const char*>(value), size);
-  // @@protoc_insertion_point(field_set_pointer:data.Account.name)
-}
-inline ::std::string* Account::mutable_name() {
-  set_has_name();
-  if (name_ == &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-    name_ = new ::std::string;
-  }
-  // @@protoc_insertion_point(field_mutable:data.Account.name)
-  return name_;
-}
-inline ::std::string* Account::release_name() {
-  clear_has_name();
-  if (name_ == &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-    return NULL;
-  } else {
-    ::std::string* temp = name_;
-    name_ = const_cast< ::std::string*>(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
-    return temp;
-  }
-}
-inline void Account::set_allocated_name(::std::string* name) {
-  if (name_ != &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-    delete name_;
-  }
-  if (name) {
-    set_has_name();
-    name_ = name;
-  } else {
-    clear_has_name();
-    name_ = const_cast< ::std::string*>(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
-  }
-  // @@protoc_insertion_point(field_set_allocated:data.Account.name)
-}
-
-// required string user = 3;
-inline bool Account::has_user() const {
-  return (_has_bits_[0] & 0x00000004u) != 0;
-}
-inline void Account::set_has_user() {
-  _has_bits_[0] |= 0x00000004u;
-}
-inline void Account::clear_has_user() {
-  _has_bits_[0] &= ~0x00000004u;
-}
-inline void Account::clear_user() {
-  if (user_ != &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-    user_->clear();
-  }
-  clear_has_user();
-}
-inline const ::std::string& Account::user() const {
-  // @@protoc_insertion_point(field_get:data.Account.user)
-  return *user_;
-}
-inline void Account::set_user(const ::std::string& value) {
-  set_has_user();
-  if (user_ == &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-    user_ = new ::std::string;
-  }
-  user_->assign(value);
-  // @@protoc_insertion_point(field_set:data.Account.user)
-}
-inline void Account::set_user(const char* value) {
-  set_has_user();
-  if (user_ == &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-    user_ = new ::std::string;
-  }
-  user_->assign(value);
-  // @@protoc_insertion_point(field_set_char:data.Account.user)
-}
-inline void Account::set_user(const char* value, size_t size) {
-  set_has_user();
-  if (user_ == &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-    user_ = new ::std::string;
-  }
-  user_->assign(reinterpret_cast<const char*>(value), size);
-  // @@protoc_insertion_point(field_set_pointer:data.Account.user)
-}
-inline ::std::string* Account::mutable_user() {
-  set_has_user();
-  if (user_ == &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-    user_ = new ::std::string;
-  }
-  // @@protoc_insertion_point(field_mutable:data.Account.user)
-  return user_;
-}
-inline ::std::string* Account::release_user() {
-  clear_has_user();
-  if (user_ == &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-    return NULL;
-  } else {
-    ::std::string* temp = user_;
-    user_ = const_cast< ::std::string*>(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
-    return temp;
-  }
-}
-inline void Account::set_allocated_user(::std::string* user) {
-  if (user_ != &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-    delete user_;
-  }
-  if (user) {
-    set_has_user();
-    user_ = user;
-  } else {
-    clear_has_user();
-    user_ = const_cast< ::std::string*>(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
-  }
-  // @@protoc_insertion_point(field_set_allocated:data.Account.user)
-}
-
-// required string pass = 4;
-inline bool Account::has_pass() const {
-  return (_has_bits_[0] & 0x00000008u) != 0;
-}
-inline void Account::set_has_pass() {
-  _has_bits_[0] |= 0x00000008u;
-}
-inline void Account::clear_has_pass() {
-  _has_bits_[0] &= ~0x00000008u;
-}
-inline void Account::clear_pass() {
-  if (pass_ != &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-    pass_->clear();
-  }
-  clear_has_pass();
-}
-inline const ::std::string& Account::pass() const {
-  // @@protoc_insertion_point(field_get:data.Account.pass)
-  return *pass_;
-}
-inline void Account::set_pass(const ::std::string& value) {
-  set_has_pass();
-  if (pass_ == &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-    pass_ = new ::std::string;
-  }
-  pass_->assign(value);
-  // @@protoc_insertion_point(field_set:data.Account.pass)
-}
-inline void Account::set_pass(const char* value) {
-  set_has_pass();
-  if (pass_ == &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-    pass_ = new ::std::string;
-  }
-  pass_->assign(value);
-  // @@protoc_insertion_point(field_set_char:data.Account.pass)
-}
-inline void Account::set_pass(const char* value, size_t size) {
-  set_has_pass();
-  if (pass_ == &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-    pass_ = new ::std::string;
-  }
-  pass_->assign(reinterpret_cast<const char*>(value), size);
-  // @@protoc_insertion_point(field_set_pointer:data.Account.pass)
-}
-inline ::std::string* Account::mutable_pass() {
-  set_has_pass();
-  if (pass_ == &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-    pass_ = new ::std::string;
-  }
-  // @@protoc_insertion_point(field_mutable:data.Account.pass)
-  return pass_;
-}
-inline ::std::string* Account::release_pass() {
-  clear_has_pass();
-  if (pass_ == &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-    return NULL;
-  } else {
-    ::std::string* temp = pass_;
-    pass_ = const_cast< ::std::string*>(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
-    return temp;
-  }
-}
-inline void Account::set_allocated_pass(::std::string* pass) {
-  if (pass_ != &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-    delete pass_;
-  }
-  if (pass) {
-    set_has_pass();
-    pass_ = pass;
-  } else {
-    clear_has_pass();
-    pass_ = const_cast< ::std::string*>(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
-  }
-  // @@protoc_insertion_point(field_set_allocated:data.Account.pass)
-}
-
-// required string secure_host = 5;
-inline bool Account::has_secure_host() const {
-  return (_has_bits_[0] & 0x00000010u) != 0;
-}
-inline void Account::set_has_secure_host() {
-  _has_bits_[0] |= 0x00000010u;
-}
-inline void Account::clear_has_secure_host() {
-  _has_bits_[0] &= ~0x00000010u;
-}
-inline void Account::clear_secure_host() {
-  if (secure_host_ != &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-    secure_host_->clear();
-  }
-  clear_has_secure_host();
-}
-inline const ::std::string& Account::secure_host() const {
-  // @@protoc_insertion_point(field_get:data.Account.secure_host)
-  return *secure_host_;
-}
-inline void Account::set_secure_host(const ::std::string& value) {
-  set_has_secure_host();
-  if (secure_host_ == &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-    secure_host_ = new ::std::string;
-  }
-  secure_host_->assign(value);
-  // @@protoc_insertion_point(field_set:data.Account.secure_host)
-}
-inline void Account::set_secure_host(const char* value) {
-  set_has_secure_host();
-  if (secure_host_ == &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-    secure_host_ = new ::std::string;
-  }
-  secure_host_->assign(value);
-  // @@protoc_insertion_point(field_set_char:data.Account.secure_host)
-}
-inline void Account::set_secure_host(const char* value, size_t size) {
-  set_has_secure_host();
-  if (secure_host_ == &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-    secure_host_ = new ::std::string;
-  }
-  secure_host_->assign(reinterpret_cast<const char*>(value), size);
-  // @@protoc_insertion_point(field_set_pointer:data.Account.secure_host)
-}
-inline ::std::string* Account::mutable_secure_host() {
-  set_has_secure_host();
-  if (secure_host_ == &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-    secure_host_ = new ::std::string;
-  }
-  // @@protoc_insertion_point(field_mutable:data.Account.secure_host)
-  return secure_host_;
-}
-inline ::std::string* Account::release_secure_host() {
-  clear_has_secure_host();
-  if (secure_host_ == &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-    return NULL;
-  } else {
-    ::std::string* temp = secure_host_;
-    secure_host_ = const_cast< ::std::string*>(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
-    return temp;
-  }
-}
-inline void Account::set_allocated_secure_host(::std::string* secure_host) {
-  if (secure_host_ != &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-    delete secure_host_;
-  }
-  if (secure_host) {
-    set_has_secure_host();
-    secure_host_ = secure_host;
-  } else {
-    clear_has_secure_host();
-    secure_host_ = const_cast< ::std::string*>(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
-  }
-  // @@protoc_insertion_point(field_set_allocated:data.Account.secure_host)
-}
-
-// required uint32 secure_port = 6;
-inline bool Account::has_secure_port() const {
-  return (_has_bits_[0] & 0x00000020u) != 0;
-}
-inline void Account::set_has_secure_port() {
-  _has_bits_[0] |= 0x00000020u;
-}
-inline void Account::clear_has_secure_port() {
-  _has_bits_[0] &= ~0x00000020u;
-}
-inline void Account::clear_secure_port() {
-  secure_port_ = 0u;
-  clear_has_secure_port();
-}
-inline ::google::protobuf::uint32 Account::secure_port() const {
-  // @@protoc_insertion_point(field_get:data.Account.secure_port)
-  return secure_port_;
-}
-inline void Account::set_secure_port(::google::protobuf::uint32 value) {
-  set_has_secure_port();
-  secure_port_ = value;
-  // @@protoc_insertion_point(field_set:data.Account.secure_port)
-}
-
-// required string general_host = 7;
-inline bool Account::has_general_host() const {
-  return (_has_bits_[0] & 0x00000040u) != 0;
-}
-inline void Account::set_has_general_host() {
-  _has_bits_[0] |= 0x00000040u;
-}
-inline void Account::clear_has_general_host() {
-  _has_bits_[0] &= ~0x00000040u;
-}
-inline void Account::clear_general_host() {
-  if (general_host_ != &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-    general_host_->clear();
-  }
-  clear_has_general_host();
-}
-inline const ::std::string& Account::general_host() const {
-  // @@protoc_insertion_point(field_get:data.Account.general_host)
-  return *general_host_;
-}
-inline void Account::set_general_host(const ::std::string& value) {
-  set_has_general_host();
-  if (general_host_ == &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-    general_host_ = new ::std::string;
-  }
-  general_host_->assign(value);
-  // @@protoc_insertion_point(field_set:data.Account.general_host)
-}
-inline void Account::set_general_host(const char* value) {
-  set_has_general_host();
-  if (general_host_ == &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-    general_host_ = new ::std::string;
-  }
-  general_host_->assign(value);
-  // @@protoc_insertion_point(field_set_char:data.Account.general_host)
-}
-inline void Account::set_general_host(const char* value, size_t size) {
-  set_has_general_host();
-  if (general_host_ == &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-    general_host_ = new ::std::string;
-  }
-  general_host_->assign(reinterpret_cast<const char*>(value), size);
-  // @@protoc_insertion_point(field_set_pointer:data.Account.general_host)
-}
-inline ::std::string* Account::mutable_general_host() {
-  set_has_general_host();
-  if (general_host_ == &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-    general_host_ = new ::std::string;
-  }
-  // @@protoc_insertion_point(field_mutable:data.Account.general_host)
-  return general_host_;
-}
-inline ::std::string* Account::release_general_host() {
-  clear_has_general_host();
-  if (general_host_ == &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-    return NULL;
-  } else {
-    ::std::string* temp = general_host_;
-    general_host_ = const_cast< ::std::string*>(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
-    return temp;
-  }
-}
-inline void Account::set_allocated_general_host(::std::string* general_host) {
-  if (general_host_ != &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-    delete general_host_;
-  }
-  if (general_host) {
-    set_has_general_host();
-    general_host_ = general_host;
-  } else {
-    clear_has_general_host();
-    general_host_ = const_cast< ::std::string*>(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
-  }
-  // @@protoc_insertion_point(field_set_allocated:data.Account.general_host)
-}
-
-// required uint32 general_port = 8;
-inline bool Account::has_general_port() const {
-  return (_has_bits_[0] & 0x00000080u) != 0;
-}
-inline void Account::set_has_general_port() {
-  _has_bits_[0] |= 0x00000080u;
-}
-inline void Account::clear_has_general_port() {
-  _has_bits_[0] &= ~0x00000080u;
-}
-inline void Account::clear_general_port() {
-  general_port_ = 0u;
-  clear_has_general_port();
-}
-inline ::google::protobuf::uint32 Account::general_port() const {
-  // @@protoc_insertion_point(field_get:data.Account.general_port)
-  return general_port_;
-}
-inline void Account::set_general_port(::google::protobuf::uint32 value) {
-  set_has_general_port();
-  general_port_ = value;
-  // @@protoc_insertion_point(field_set:data.Account.general_port)
-}
-
-// required uint32 max_connections = 9;
-inline bool Account::has_max_connections() const {
-  return (_has_bits_[0] & 0x00000100u) != 0;
-}
-inline void Account::set_has_max_connections() {
-  _has_bits_[0] |= 0x00000100u;
-}
-inline void Account::clear_has_max_connections() {
-  _has_bits_[0] &= ~0x00000100u;
-}
-inline void Account::clear_max_connections() {
-  max_connections_ = 0u;
-  clear_has_max_connections();
-}
-inline ::google::protobuf::uint32 Account::max_connections() const {
-  // @@protoc_insertion_point(field_get:data.Account.max_connections)
-  return max_connections_;
-}
-inline void Account::set_max_connections(::google::protobuf::uint32 value) {
-  set_has_max_connections();
-  max_connections_ = value;
-  // @@protoc_insertion_point(field_set:data.Account.max_connections)
-}
-
-// required bool enable_secure_server = 10;
-inline bool Account::has_enable_secure_server() const {
-  return (_has_bits_[0] & 0x00000200u) != 0;
-}
-inline void Account::set_has_enable_secure_server() {
-  _has_bits_[0] |= 0x00000200u;
-}
-inline void Account::clear_has_enable_secure_server() {
-  _has_bits_[0] &= ~0x00000200u;
-}
-inline void Account::clear_enable_secure_server() {
-  enable_secure_server_ = false;
-  clear_has_enable_secure_server();
-}
-inline bool Account::enable_secure_server() const {
-  // @@protoc_insertion_point(field_get:data.Account.enable_secure_server)
-  return enable_secure_server_;
-}
-inline void Account::set_enable_secure_server(bool value) {
-  set_has_enable_secure_server();
-  enable_secure_server_ = value;
-  // @@protoc_insertion_point(field_set:data.Account.enable_secure_server)
-}
-
-// required bool enable_general_server = 11;
-inline bool Account::has_enable_general_server() const {
-  return (_has_bits_[0] & 0x00000400u) != 0;
-}
-inline void Account::set_has_enable_general_server() {
-  _has_bits_[0] |= 0x00000400u;
-}
-inline void Account::clear_has_enable_general_server() {
-  _has_bits_[0] &= ~0x00000400u;
-}
-inline void Account::clear_enable_general_server() {
-  enable_general_server_ = false;
-  clear_has_enable_general_server();
-}
-inline bool Account::enable_general_server() const {
-  // @@protoc_insertion_point(field_get:data.Account.enable_general_server)
-  return enable_general_server_;
-}
-inline void Account::set_enable_general_server(bool value) {
-  set_has_enable_general_server();
-  enable_general_server_ = value;
-  // @@protoc_insertion_point(field_set:data.Account.enable_general_server)
-}
-
-// required bool enable_pipelining = 12;
-inline bool Account::has_enable_pipelining() const {
-  return (_has_bits_[0] & 0x00000800u) != 0;
-}
-inline void Account::set_has_enable_pipelining() {
-  _has_bits_[0] |= 0x00000800u;
-}
-inline void Account::clear_has_enable_pipelining() {
-  _has_bits_[0] &= ~0x00000800u;
-}
-inline void Account::clear_enable_pipelining() {
-  enable_pipelining_ = false;
-  clear_has_enable_pipelining();
-}
-inline bool Account::enable_pipelining() const {
-  // @@protoc_insertion_point(field_get:data.Account.enable_pipelining)
-  return enable_pipelining_;
-}
-inline void Account::set_enable_pipelining(bool value) {
-  set_has_enable_pipelining();
-  enable_pipelining_ = value;
-  // @@protoc_insertion_point(field_set:data.Account.enable_pipelining)
-}
-
-// required bool enable_compression = 13;
-inline bool Account::has_enable_compression() const {
-  return (_has_bits_[0] & 0x00001000u) != 0;
-}
-inline void Account::set_has_enable_compression() {
-  _has_bits_[0] |= 0x00001000u;
-}
-inline void Account::clear_has_enable_compression() {
-  _has_bits_[0] &= ~0x00001000u;
-}
-inline void Account::clear_enable_compression() {
-  enable_compression_ = false;
-  clear_has_enable_compression();
-}
-inline bool Account::enable_compression() const {
-  // @@protoc_insertion_point(field_get:data.Account.enable_compression)
-  return enable_compression_;
-}
-inline void Account::set_enable_compression(bool value) {
-  set_has_enable_compression();
-  enable_compression_ = value;
-  // @@protoc_insertion_point(field_set:data.Account.enable_compression)
-}
-
-// -------------------------------------------------------------------
 
 // File
 
@@ -2315,39 +1484,15 @@ inline void TaskState::set_batch_id(::google::protobuf::uint32 value) {
   // @@protoc_insertion_point(field_set:data.TaskState.batch_id)
 }
 
-// required uint32 task_id = 3;
-inline bool TaskState::has_task_id() const {
+// required string desc = 3;
+inline bool TaskState::has_desc() const {
   return (_has_bits_[0] & 0x00000004u) != 0;
 }
-inline void TaskState::set_has_task_id() {
+inline void TaskState::set_has_desc() {
   _has_bits_[0] |= 0x00000004u;
 }
-inline void TaskState::clear_has_task_id() {
-  _has_bits_[0] &= ~0x00000004u;
-}
-inline void TaskState::clear_task_id() {
-  task_id_ = 0u;
-  clear_has_task_id();
-}
-inline ::google::protobuf::uint32 TaskState::task_id() const {
-  // @@protoc_insertion_point(field_get:data.TaskState.task_id)
-  return task_id_;
-}
-inline void TaskState::set_task_id(::google::protobuf::uint32 value) {
-  set_has_task_id();
-  task_id_ = value;
-  // @@protoc_insertion_point(field_set:data.TaskState.task_id)
-}
-
-// required string desc = 4;
-inline bool TaskState::has_desc() const {
-  return (_has_bits_[0] & 0x00000008u) != 0;
-}
-inline void TaskState::set_has_desc() {
-  _has_bits_[0] |= 0x00000008u;
-}
 inline void TaskState::clear_has_desc() {
-  _has_bits_[0] &= ~0x00000008u;
+  _has_bits_[0] &= ~0x00000004u;
 }
 inline void TaskState::clear_desc() {
   if (desc_ != &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
@@ -2415,15 +1560,15 @@ inline void TaskState::set_allocated_desc(::std::string* desc) {
   // @@protoc_insertion_point(field_set_allocated:data.TaskState.desc)
 }
 
-// required string path = 5;
+// required string path = 4;
 inline bool TaskState::has_path() const {
-  return (_has_bits_[0] & 0x00000010u) != 0;
+  return (_has_bits_[0] & 0x00000008u) != 0;
 }
 inline void TaskState::set_has_path() {
-  _has_bits_[0] |= 0x00000010u;
+  _has_bits_[0] |= 0x00000008u;
 }
 inline void TaskState::clear_has_path() {
-  _has_bits_[0] &= ~0x00000010u;
+  _has_bits_[0] &= ~0x00000008u;
 }
 inline void TaskState::clear_path() {
   if (path_ != &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
@@ -2491,15 +1636,15 @@ inline void TaskState::set_allocated_path(::std::string* path) {
   // @@protoc_insertion_point(field_set_allocated:data.TaskState.path)
 }
 
-// required uint64 size = 6;
+// required uint64 size = 5;
 inline bool TaskState::has_size() const {
-  return (_has_bits_[0] & 0x00000020u) != 0;
+  return (_has_bits_[0] & 0x00000010u) != 0;
 }
 inline void TaskState::set_has_size() {
-  _has_bits_[0] |= 0x00000020u;
+  _has_bits_[0] |= 0x00000010u;
 }
 inline void TaskState::clear_has_size() {
-  _has_bits_[0] &= ~0x00000020u;
+  _has_bits_[0] &= ~0x00000010u;
 }
 inline void TaskState::clear_size() {
   size_ = GOOGLE_ULONGLONG(0);
@@ -2515,45 +1660,104 @@ inline void TaskState::set_size(::google::protobuf::uint64 value) {
   // @@protoc_insertion_point(field_set:data.TaskState.size)
 }
 
-// optional .data.Download download = 7;
-inline bool TaskState::has_download() const {
+// required uint32 type = 6;
+inline bool TaskState::has_type() const {
+  return (_has_bits_[0] & 0x00000020u) != 0;
+}
+inline void TaskState::set_has_type() {
+  _has_bits_[0] |= 0x00000020u;
+}
+inline void TaskState::clear_has_type() {
+  _has_bits_[0] &= ~0x00000020u;
+}
+inline void TaskState::clear_type() {
+  type_ = 0u;
+  clear_has_type();
+}
+inline ::google::protobuf::uint32 TaskState::type() const {
+  // @@protoc_insertion_point(field_get:data.TaskState.type)
+  return type_;
+}
+inline void TaskState::set_type(::google::protobuf::uint32 value) {
+  set_has_type();
+  type_ = value;
+  // @@protoc_insertion_point(field_set:data.TaskState.type)
+}
+
+// required bytes data = 7;
+inline bool TaskState::has_data() const {
   return (_has_bits_[0] & 0x00000040u) != 0;
 }
-inline void TaskState::set_has_download() {
+inline void TaskState::set_has_data() {
   _has_bits_[0] |= 0x00000040u;
 }
-inline void TaskState::clear_has_download() {
+inline void TaskState::clear_has_data() {
   _has_bits_[0] &= ~0x00000040u;
 }
-inline void TaskState::clear_download() {
-  if (download_ != NULL) download_->::data::Download::Clear();
-  clear_has_download();
-}
-inline const ::data::Download& TaskState::download() const {
-  // @@protoc_insertion_point(field_get:data.TaskState.download)
-  return download_ != NULL ? *download_ : *default_instance_->download_;
-}
-inline ::data::Download* TaskState::mutable_download() {
-  set_has_download();
-  if (download_ == NULL) download_ = new ::data::Download;
-  // @@protoc_insertion_point(field_mutable:data.TaskState.download)
-  return download_;
-}
-inline ::data::Download* TaskState::release_download() {
-  clear_has_download();
-  ::data::Download* temp = download_;
-  download_ = NULL;
-  return temp;
-}
-inline void TaskState::set_allocated_download(::data::Download* download) {
-  delete download_;
-  download_ = download;
-  if (download) {
-    set_has_download();
-  } else {
-    clear_has_download();
+inline void TaskState::clear_data() {
+  if (data_ != &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
+    data_->clear();
   }
-  // @@protoc_insertion_point(field_set_allocated:data.TaskState.download)
+  clear_has_data();
+}
+inline const ::std::string& TaskState::data() const {
+  // @@protoc_insertion_point(field_get:data.TaskState.data)
+  return *data_;
+}
+inline void TaskState::set_data(const ::std::string& value) {
+  set_has_data();
+  if (data_ == &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
+    data_ = new ::std::string;
+  }
+  data_->assign(value);
+  // @@protoc_insertion_point(field_set:data.TaskState.data)
+}
+inline void TaskState::set_data(const char* value) {
+  set_has_data();
+  if (data_ == &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
+    data_ = new ::std::string;
+  }
+  data_->assign(value);
+  // @@protoc_insertion_point(field_set_char:data.TaskState.data)
+}
+inline void TaskState::set_data(const void* value, size_t size) {
+  set_has_data();
+  if (data_ == &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
+    data_ = new ::std::string;
+  }
+  data_->assign(reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_set_pointer:data.TaskState.data)
+}
+inline ::std::string* TaskState::mutable_data() {
+  set_has_data();
+  if (data_ == &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
+    data_ = new ::std::string;
+  }
+  // @@protoc_insertion_point(field_mutable:data.TaskState.data)
+  return data_;
+}
+inline ::std::string* TaskState::release_data() {
+  clear_has_data();
+  if (data_ == &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
+    return NULL;
+  } else {
+    ::std::string* temp = data_;
+    data_ = const_cast< ::std::string*>(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+    return temp;
+  }
+}
+inline void TaskState::set_allocated_data(::std::string* data) {
+  if (data_ != &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
+    delete data_;
+  }
+  if (data) {
+    set_has_data();
+    data_ = data;
+  } else {
+    clear_has_data();
+    data_ = const_cast< ::std::string*>(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  }
+  // @@protoc_insertion_point(field_set_allocated:data.TaskState.data)
 }
 
 // -------------------------------------------------------------------
@@ -2584,39 +1788,15 @@ inline void Batch::set_account_id(::google::protobuf::uint32 value) {
   // @@protoc_insertion_point(field_set:data.Batch.account_id)
 }
 
-// required uint32 batch_id = 2;
-inline bool Batch::has_batch_id() const {
+// required string path = 2;
+inline bool Batch::has_path() const {
   return (_has_bits_[0] & 0x00000002u) != 0;
 }
-inline void Batch::set_has_batch_id() {
+inline void Batch::set_has_path() {
   _has_bits_[0] |= 0x00000002u;
 }
-inline void Batch::clear_has_batch_id() {
-  _has_bits_[0] &= ~0x00000002u;
-}
-inline void Batch::clear_batch_id() {
-  batch_id_ = 0u;
-  clear_has_batch_id();
-}
-inline ::google::protobuf::uint32 Batch::batch_id() const {
-  // @@protoc_insertion_point(field_get:data.Batch.batch_id)
-  return batch_id_;
-}
-inline void Batch::set_batch_id(::google::protobuf::uint32 value) {
-  set_has_batch_id();
-  batch_id_ = value;
-  // @@protoc_insertion_point(field_set:data.Batch.batch_id)
-}
-
-// required string path = 3;
-inline bool Batch::has_path() const {
-  return (_has_bits_[0] & 0x00000004u) != 0;
-}
-inline void Batch::set_has_path() {
-  _has_bits_[0] |= 0x00000004u;
-}
 inline void Batch::clear_has_path() {
-  _has_bits_[0] &= ~0x00000004u;
+  _has_bits_[0] &= ~0x00000002u;
 }
 inline void Batch::clear_path() {
   if (path_ != &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
@@ -2684,15 +1864,15 @@ inline void Batch::set_allocated_path(::std::string* path) {
   // @@protoc_insertion_point(field_set_allocated:data.Batch.path)
 }
 
-// required string desc = 4;
+// required string desc = 3;
 inline bool Batch::has_desc() const {
-  return (_has_bits_[0] & 0x00000008u) != 0;
+  return (_has_bits_[0] & 0x00000004u) != 0;
 }
 inline void Batch::set_has_desc() {
-  _has_bits_[0] |= 0x00000008u;
+  _has_bits_[0] |= 0x00000004u;
 }
 inline void Batch::clear_has_desc() {
-  _has_bits_[0] &= ~0x00000008u;
+  _has_bits_[0] &= ~0x00000004u;
 }
 inline void Batch::clear_desc() {
   if (desc_ != &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
@@ -2760,15 +1940,15 @@ inline void Batch::set_allocated_desc(::std::string* desc) {
   // @@protoc_insertion_point(field_set_allocated:data.Batch.desc)
 }
 
-// required uint64 byte_size = 5;
+// required uint64 byte_size = 4;
 inline bool Batch::has_byte_size() const {
-  return (_has_bits_[0] & 0x00000010u) != 0;
+  return (_has_bits_[0] & 0x00000008u) != 0;
 }
 inline void Batch::set_has_byte_size() {
-  _has_bits_[0] |= 0x00000010u;
+  _has_bits_[0] |= 0x00000008u;
 }
 inline void Batch::clear_has_byte_size() {
-  _has_bits_[0] &= ~0x00000010u;
+  _has_bits_[0] &= ~0x00000008u;
 }
 inline void Batch::clear_byte_size() {
   byte_size_ = GOOGLE_ULONGLONG(0);
@@ -2784,15 +1964,15 @@ inline void Batch::set_byte_size(::google::protobuf::uint64 value) {
   // @@protoc_insertion_point(field_set:data.Batch.byte_size)
 }
 
-// required uint32 num_tasks = 6;
+// required uint32 num_tasks = 5;
 inline bool Batch::has_num_tasks() const {
-  return (_has_bits_[0] & 0x00000020u) != 0;
+  return (_has_bits_[0] & 0x00000010u) != 0;
 }
 inline void Batch::set_has_num_tasks() {
-  _has_bits_[0] |= 0x00000020u;
+  _has_bits_[0] |= 0x00000010u;
 }
 inline void Batch::clear_has_num_tasks() {
-  _has_bits_[0] &= ~0x00000020u;
+  _has_bits_[0] &= ~0x00000010u;
 }
 inline void Batch::clear_num_tasks() {
   num_tasks_ = 0u;
@@ -2808,15 +1988,15 @@ inline void Batch::set_num_tasks(::google::protobuf::uint32 value) {
   // @@protoc_insertion_point(field_set:data.Batch.num_tasks)
 }
 
-// required uint32 num_slices = 7;
+// required uint32 num_slices = 6;
 inline bool Batch::has_num_slices() const {
-  return (_has_bits_[0] & 0x00000040u) != 0;
+  return (_has_bits_[0] & 0x00000020u) != 0;
 }
 inline void Batch::set_has_num_slices() {
-  _has_bits_[0] |= 0x00000040u;
+  _has_bits_[0] |= 0x00000020u;
 }
 inline void Batch::clear_has_num_slices() {
-  _has_bits_[0] &= ~0x00000040u;
+  _has_bits_[0] &= ~0x00000020u;
 }
 inline void Batch::clear_num_slices() {
   num_slices_ = 0u;
@@ -2836,39 +2016,15 @@ inline void Batch::set_num_slices(::google::protobuf::uint32 value) {
 
 // TaskList
 
-// required uint32 current_id = 1;
-inline bool TaskList::has_current_id() const {
+// required uint64 bytes_queued = 1;
+inline bool TaskList::has_bytes_queued() const {
   return (_has_bits_[0] & 0x00000001u) != 0;
 }
-inline void TaskList::set_has_current_id() {
+inline void TaskList::set_has_bytes_queued() {
   _has_bits_[0] |= 0x00000001u;
 }
-inline void TaskList::clear_has_current_id() {
-  _has_bits_[0] &= ~0x00000001u;
-}
-inline void TaskList::clear_current_id() {
-  current_id_ = 0u;
-  clear_has_current_id();
-}
-inline ::google::protobuf::uint32 TaskList::current_id() const {
-  // @@protoc_insertion_point(field_get:data.TaskList.current_id)
-  return current_id_;
-}
-inline void TaskList::set_current_id(::google::protobuf::uint32 value) {
-  set_has_current_id();
-  current_id_ = value;
-  // @@protoc_insertion_point(field_set:data.TaskList.current_id)
-}
-
-// required uint64 bytes_queued = 2;
-inline bool TaskList::has_bytes_queued() const {
-  return (_has_bits_[0] & 0x00000002u) != 0;
-}
-inline void TaskList::set_has_bytes_queued() {
-  _has_bits_[0] |= 0x00000002u;
-}
 inline void TaskList::clear_has_bytes_queued() {
-  _has_bits_[0] &= ~0x00000002u;
+  _has_bits_[0] &= ~0x00000001u;
 }
 inline void TaskList::clear_bytes_queued() {
   bytes_queued_ = GOOGLE_ULONGLONG(0);
@@ -2884,15 +2040,15 @@ inline void TaskList::set_bytes_queued(::google::protobuf::uint64 value) {
   // @@protoc_insertion_point(field_set:data.TaskList.bytes_queued)
 }
 
-// required uint64 bytes_ready = 3;
+// required uint64 bytes_ready = 2;
 inline bool TaskList::has_bytes_ready() const {
-  return (_has_bits_[0] & 0x00000004u) != 0;
+  return (_has_bits_[0] & 0x00000002u) != 0;
 }
 inline void TaskList::set_has_bytes_ready() {
-  _has_bits_[0] |= 0x00000004u;
+  _has_bits_[0] |= 0x00000002u;
 }
 inline void TaskList::clear_has_bytes_ready() {
-  _has_bits_[0] &= ~0x00000004u;
+  _has_bits_[0] &= ~0x00000002u;
 }
 inline void TaskList::clear_bytes_ready() {
   bytes_ready_ = GOOGLE_ULONGLONG(0);
@@ -2908,37 +2064,7 @@ inline void TaskList::set_bytes_ready(::google::protobuf::uint64 value) {
   // @@protoc_insertion_point(field_set:data.TaskList.bytes_ready)
 }
 
-// repeated .data.Account account = 4;
-inline int TaskList::account_size() const {
-  return account_.size();
-}
-inline void TaskList::clear_account() {
-  account_.Clear();
-}
-inline const ::data::Account& TaskList::account(int index) const {
-  // @@protoc_insertion_point(field_get:data.TaskList.account)
-  return account_.Get(index);
-}
-inline ::data::Account* TaskList::mutable_account(int index) {
-  // @@protoc_insertion_point(field_mutable:data.TaskList.account)
-  return account_.Mutable(index);
-}
-inline ::data::Account* TaskList::add_account() {
-  // @@protoc_insertion_point(field_add:data.TaskList.account)
-  return account_.Add();
-}
-inline const ::google::protobuf::RepeatedPtrField< ::data::Account >&
-TaskList::account() const {
-  // @@protoc_insertion_point(field_list:data.TaskList.account)
-  return account_;
-}
-inline ::google::protobuf::RepeatedPtrField< ::data::Account >*
-TaskList::mutable_account() {
-  // @@protoc_insertion_point(field_mutable_list:data.TaskList.account)
-  return &account_;
-}
-
-// repeated .data.Batch batch = 5;
+// repeated .data.Batch batch = 3;
 inline int TaskList::batch_size() const {
   return batch_.size();
 }
@@ -2968,7 +2094,7 @@ TaskList::mutable_batch() {
   return &batch_;
 }
 
-// repeated .data.TaskState tasks = 6;
+// repeated .data.TaskState tasks = 4;
 inline int TaskList::tasks_size() const {
   return tasks_.size();
 }

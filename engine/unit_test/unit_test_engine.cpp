@@ -51,6 +51,9 @@ struct TaskParams {
 class TestFileTask : public ContentTask
 {
 public:
+    TestFileTask()
+    {}
+
     TestFileTask(const ui::FileDownload& file, const TaskParams& state) : state_(state)
     {
         articles_ = file.articles;
@@ -180,11 +183,60 @@ public:
         return errors_;
     }
 
-    virtual void Pack(data::TaskState& data) const override
-    {}
+    virtual void Pack(std::string* data) const override
+    {
+        std::stringstream ss;
+        ss << std::to_string(articles_.size()) << "\n";
+        for (const auto& a : articles_)
+            ss << a << "\n";
+        ss << std::to_string(groups_.size()) << "\n";
+        for (const auto& g : groups_)
+            ss << g << "\n";
 
-    virtual void Load(const data::TaskState& data) override
-    {}
+        std::string bytes;
+        bytes.resize(sizeof(state_));
+        std::memcpy(&bytes[0], &state_, sizeof(state_));
+        ss << bytes;
+
+        *data = ss.str();
+    }
+
+    virtual void Load(const std::string& data) override
+    {
+        std::stringstream ss(data);
+
+        {
+            std::string line;
+            std::getline(ss, line);
+
+            std::stringstream tmp(line);
+            std::size_t num_articles = 0;
+            tmp >> num_articles;
+            for (size_t i=0; i<num_articles; ++i)
+            {
+                std::string a;
+                std::getline(ss, a);
+                articles_.push_back(a);
+            }
+        }
+
+        {
+            std::string line;
+            std::getline(ss, line);
+
+            std::stringstream tmp(line);
+            std::size_t num_groups = 0;
+            tmp >> num_groups;
+            for (size_t i=0; i<num_groups; ++i)
+            {
+                std::string a;
+                std::getline(ss, a);
+                groups_.push_back(a);
+            }
+        }
+
+        ss.read((char*)&state_, sizeof(state_));
+    }
 
     virtual void SetWriteCallback(const OnWriteDone& callback)
     {}
@@ -258,12 +310,6 @@ public:
         return bitflag<Error>();
     }
 
-    virtual void Pack(data::TaskState& data) const override
-    {}
-
-    virtual void Load(const data::TaskState& data) override
-    {}
-
     virtual void SetWriteCallback(const OnWriteDone& callback)
     {}
 private:
@@ -329,12 +375,6 @@ public:
     {
         return bitflag<Error>();
     }
-
-    virtual void Pack(data::TaskState& data) const override
-    {}
-
-    virtual void Load(const data::TaskState& data) override
-    {}
 
     virtual void SetWriteCallback(const OnWriteDone& callback)
     {}
@@ -778,14 +818,11 @@ struct Factory : public Engine::Factory
 
         return std::make_unique<TestListingTask>(*params);
     }
-    virtual std::unique_ptr<Task> AllocateTask(const data::TaskState& data) override
+    virtual std::unique_ptr<Task> AllocateTask(std::size_t type) override
     {
-        // todo:
-        TaskParams params;
+        BOOST_REQUIRE(type == 1);
 
-        ui::FileDownload file;
-
-        return std::make_unique<TestFileTask>(file, params);
+        return std::make_unique<TestFileTask>();
     }
     virtual std::unique_ptr<Connection> AllocateConnection(const ui::Account& acc) override
     {
@@ -1940,6 +1977,84 @@ void test_task_execute_fill_error()
     }
 }
 
+void test_save_load_tasks()
+{
+    // empty task list, empty state
+    {
+
+        Engine eng(std::make_unique<Factory>(), true);
+        eng.SaveTasks("tasks.bin");
+        eng.LoadTasks("tasks.bin");
+        BOOST_REQUIRE(eng.GetNumTasks() == 0);
+    }
+
+    // some tasks but no running yet.
+    {
+
+        const auto NumTestFiles = 300;
+
+        Engine eng(std::make_unique<Factory>(), true);
+
+        std::vector<TaskParams> params;
+        params.resize(NumTestFiles);
+
+        ui::FileBatchDownload batch;
+        batch.account = 123;
+        batch.size    = NumTestFiles * 100;
+        batch.path    = "test/foo/bar";
+        batch.desc    = "batch 1";
+        for (int i=0; i<NumTestFiles; ++i)
+        {
+            params[i].num_buffers = 2;
+
+            ui::FileDownload download;
+            download.account = 123;
+            download.size    = 100;
+            download.path    = "test/foo/bar";
+            download.desc    = "file " + std::to_string(i+1);
+            download.articles.push_back("1");
+            download.articles.push_back("2");
+            download.groups.push_back("alt.binaries.foo");
+            download.user_data = &params[i];
+            batch.files.push_back(download);
+        }
+        eng.DownloadFiles(batch);
+
+        std::deque<ui::TaskDesc> tasks;
+        eng.GetTasks(&tasks);
+        BOOST_REQUIRE(tasks.size() == NumTestFiles);
+        for (int i=0; i<NumTestFiles; ++i)
+        {
+            BOOST_REQUIRE(tasks[i].desc == "file " + std::to_string(i+1));
+            BOOST_REQUIRE(tasks[i].size == 100);
+            BOOST_REQUIRE(tasks[i].account == 123);
+            BOOST_REQUIRE(tasks[i].path == "test/foo/bar");
+        }
+
+        eng.SaveTasks("tasks.bin");
+        eng.Reset();
+        eng.LoadTasks("tasks.bin");
+
+        eng.GetTasks(&tasks);
+        BOOST_REQUIRE(tasks.size() == NumTestFiles);
+        for (int i=0; i<NumTestFiles; ++i)
+        {
+            BOOST_REQUIRE(tasks[i].desc == "file " + std::to_string(i+1));
+            BOOST_REQUIRE(tasks[i].size == 100);
+            BOOST_REQUIRE(tasks[i].account == 123);
+            BOOST_REQUIRE(tasks[i].path == "test/foo/bar");
+        }
+
+        eng.SetGroupItems(true);
+        eng.GetTasks(&tasks);
+        BOOST_REQUIRE(tasks.size() == 1);
+        BOOST_REQUIRE(tasks[0].account == 123);
+        BOOST_REQUIRE(tasks[0].size == NumTestFiles * 100);
+        BOOST_REQUIRE(tasks[0].path == "test/foo/bar");
+        BOOST_REQUIRE(tasks[0].desc == "batch 1");
+    }
+}
+
 
 int test_main(int argc, char*[])
 {
@@ -1955,7 +2070,8 @@ int test_main(int argc, char*[])
     test_task_execute_failure();
     test_task_execute_restart();
     test_task_execute_fill_success();
-
     test_task_execute_fill_error();
+
+    test_save_load_tasks();
     return 0;
 }

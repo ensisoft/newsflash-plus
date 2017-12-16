@@ -1,22 +1,6 @@
 
 package data;
 
-message Account {
-    required uint32 id = 1;
-    required string name = 2;
-    required string user = 3;
-    required string pass = 4;
-    required string secure_host = 5;
-    required uint32 secure_port = 6;
-    required string general_host = 7;
-    required uint32 general_port = 8;
-    required uint32 max_connections = 9;
-    required bool enable_secure_server = 10;
-    required bool enable_general_server = 11;
-    required bool enable_pipelining = 12;
-    required bool enable_compression = 13;
-}
-
 message File {
     required string filename = 1;
     required string filepath = 2;
@@ -41,29 +25,26 @@ message Download {
 message TaskState {
     required uint32 account_id        = 1;
     required uint32 batch_id          = 2;
-    required uint32 task_id           = 3;
-    required string desc              = 4;
-    required string path              = 5;
-    required uint64 size              = 6;
-    optional Download download        = 7;
+    required string desc              = 3;
+    required string path              = 4;
+    required uint64 size              = 5;
+    required uint32 type              = 6;
+    required bytes  data              = 7;
 }
 
 
 message Batch {
     required uint32 account_id = 1;
-    required uint32 batch_id   = 2;
-    required string path       = 3;
-    required string desc       = 4;
-    required uint64 byte_size  = 5;
-    required uint32 num_tasks  = 6;
-    required uint32 num_slices = 7;
+    required string path       = 2;
+    required string desc       = 3;
+    required uint64 byte_size  = 4;
+    required uint32 num_tasks  = 5;
+    required uint32 num_slices = 6;
 }
 
 message TaskList {
-    required uint32 current_id   = 1;
-    required uint64 bytes_queued = 2;
-    required uint64 bytes_ready  = 3;
-    repeated Account account     = 4;
-    repeated Batch batch         = 5;
-    repeated TaskState tasks     = 6;
+    required uint64 bytes_queued = 1;
+    required uint64 bytes_ready  = 2;
+    repeated Batch batch         = 3;
+    repeated TaskState tasks     = 4;
 }

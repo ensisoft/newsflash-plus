@@ -65,8 +65,8 @@ namespace newsflash
         virtual bool HasCommands() const override;
         virtual float GetProgress() const override;
         virtual bitflag<Error> GetErrors() const override;
-        virtual void Pack(data::TaskState& data) const override;
-        virtual void Load(const data::TaskState& data) override;
+        virtual void Pack(std::string* data) const override;
+        virtual void Load(const std::string& data) override;
 
         // ContentTask implementation
         virtual void SetWriteCallback(const OnWriteDone& callback) override

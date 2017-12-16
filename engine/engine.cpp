@@ -745,10 +745,10 @@ public:
         LOG_I("Task ", ui_.task_id, " (", ui_.desc, ") created");
     }
 
-    TaskState(std::unique_ptr<Task> task, const data::TaskState& state)
+    TaskState(std::size_t id, std::unique_ptr<Task> task, const data::TaskState& state)
     {
         task_              = std::move(task);
-        ui_.task_id        = state.task_id();
+        ui_.task_id        = id;
         ui_.batch_id       = state.batch_id();
         ui_.account        = state.account_id();
         ui_.desc           = state.desc();
@@ -782,17 +782,20 @@ public:
         if (ui_.state == states::Error || ui_.state == states::Complete)
             return;
 
-        ASSERT(num_active_actions_ = 0);
+        ASSERT(num_active_actions_ == 0);
         ASSERT(locking_ == LockState::Unlocked);
+
+        std::string data;
+        task_->Pack(&data);
 
         auto* ptr = list.add_tasks();
         ptr->set_account_id(ui_.account);
         ptr->set_batch_id(ui_.batch_id);
-        ptr->set_task_id(ui_.task_id);
         ptr->set_desc(ui_.desc);
         ptr->set_size(ui_.size);
         ptr->set_path(ui_.path);
-        task_->Pack(*ptr);
+        ptr->set_type(1); // TODO: put a dummy here for now since we're only saving downloads
+        ptr->set_data(data);
     }
 
     void Kill(Engine::State& state)
@@ -1299,10 +1302,8 @@ public:
         statesets_[(int)states::Queued] = num_tasks_;
     }
 
-    BatchState(const data::Batch& data) : BatchState(0)
+    BatchState(std::size_t id, const data::Batch& data) : BatchState(id)
     {
-        ui_.batch_id   = data.batch_id();
-        ui_.task_id    = data.batch_id();
         ui_.account    = data.account_id();
         ui_.desc       = data.desc();
         ui_.path       = data.path();
@@ -1327,7 +1328,6 @@ public:
             return;
 
         auto* data = list.add_batch();
-        data->set_batch_id(ui_.batch_id);
         data->set_account_id(ui_.account);
         data->set_desc(ui_.desc);
         data->set_byte_size(ui_.size);
@@ -1865,14 +1865,12 @@ Engine::Engine(const std::string& logpath) : state_(new State(false))
         {
             return std::make_unique<Listing>();
         }
-        std::unique_ptr<Task> AllocateTask(const data::TaskState& data) override
+        std::unique_ptr<Task> AllocateTask(std::size_t type) override
         {
-            std::unique_ptr<Task> ret;
-            if (data.has_download())
-            {
-                ret.reset(new Download);
-            }
-            return ret;
+            // todo: fix this.
+            ASSERT(type == 1);
+
+            return std::make_unique<Download>();
         }
 
         std::unique_ptr<Connection> AllocateConnection(const ui::Account& acc)
@@ -2368,7 +2366,7 @@ void Engine::Stop()
     state_->logger->Flush();
 }
 
-void Engine::SaveSession(const std::string& file)
+void Engine::SaveTasks(const std::string& file)
 {
     GOOGLE_PROTOBUF_VERIFY_VERSION;
 
@@ -2383,24 +2381,6 @@ void Engine::SaveSession(const std::string& file)
 
     data::TaskList list;
 
-    for (const auto& acc : state_->accounts)
-    {
-        auto* pa = list.add_account();
-        pa->set_id(acc.id);
-        pa->set_name(acc.name);
-        pa->set_user(acc.username);
-        pa->set_pass(acc.password);
-        pa->set_secure_host(acc.secure_host);
-        pa->set_secure_port(acc.secure_port);
-        pa->set_general_host(acc.general_host);
-        pa->set_general_port(acc.general_port);
-        pa->set_max_connections(acc.connections);
-        pa->set_enable_secure_server(acc.enable_secure_server);
-        pa->set_enable_general_server(acc.enable_general_server);
-        pa->set_enable_pipelining(acc.enable_pipelining);
-        pa->set_enable_compression(acc.enable_compression);
-    }
-
     for (const auto& batch : state_->batches)
     {
         batch->serialize(list);
@@ -2411,7 +2391,6 @@ void Engine::SaveSession(const std::string& file)
         task->Serialize(list);
     }
 
-    list.set_current_id(state_->oid);
     list.set_bytes_queued(state_->bytes_queued);
     list.set_bytes_ready(state_->bytes_ready);
 
@@ -2419,7 +2398,7 @@ void Engine::SaveSession(const std::string& file)
         throw std::runtime_error("engine serialize to stream failed");
 }
 
-void Engine::LoadSession(const std::string& file)
+void Engine::LoadTasks(const std::string& file)
 {
     GOOGLE_PROTOBUF_VERIFY_VERSION;
 
@@ -2436,30 +2415,11 @@ void Engine::LoadSession(const std::string& file)
     if (!list.ParseFromIstream(&in))
         throw std::runtime_error("engine parse from stream failed");
 
-    for (int i=0; i<list.account_size(); ++i)
-    {
-        const auto& p = list.account(i);
-        ui::Account a;
-        a.id                    = p.id();
-        a.name                  = p.name();
-        a.username              = p.user();
-        a.password              = p.pass();
-        a.secure_host           = p.secure_host();
-        a.secure_port           = p.secure_port();
-        a.general_host          = p.general_host();
-        a.general_port          = p.general_port();
-        a.connections           = p.max_connections();
-        a.enable_secure_server  = p.enable_secure_server();
-        a.enable_general_server = p.enable_general_server();
-        a.enable_pipelining     = p.enable_pipelining();
-        a.enable_compression    = p.enable_compression();
-        SetAccount(a);
-    }
-
     for (int i=0; i<list.batch_size(); ++i)
     {
-        const auto& data = list.batch(i);
-        std::unique_ptr<BatchState> batch(new BatchState(data));
+        const auto& data   = list.batch(i);
+        const auto batchid = state_->oid++;
+        std::unique_ptr<BatchState> batch(new BatchState(batchid, data));
         state_->batches.push_back(std::move(batch));
     }
 
@@ -2470,23 +2430,42 @@ void Engine::LoadSession(const std::string& file)
     for (int i=0; i<list.tasks_size(); ++i)
     {
         const auto& state_data = list.tasks(i);
-        std::unique_ptr<Task> task(state_->factory->AllocateTask(state_data));
-        task->Load(state_data);
+        const auto& type = state_data.type();
+        const auto& data = state_data.data();
+        std::unique_ptr<Task> task(state_->factory->AllocateTask(type));
+        task->Load(data);
         if (auto* ptr = dynamic_cast<ContentTask*>(task.get()))
         {
             ptr->SetWriteCallback(std::bind(&Engine::State::on_write_done, state_.get(),
                 std::placeholders::_1));
         }
-        std::unique_ptr<TaskState> state(new TaskState(std::move(task), state_data));
+        const auto taskid = state_->oid++;
+        std::unique_ptr<TaskState> state(new TaskState(taskid, std::move(task), state_data));
         state->Configure(settings);
         state_->tasks.push_back(std::move(state));
     }
 
-    state_->oid = list.current_id();
     state_->bytes_queued = list.bytes_queued();
     state_->bytes_ready  = list.bytes_ready();
-    if (list.tasks_size() == 0)
-        state_->oid = 1;
+}
+
+void Engine::Reset()
+{
+    state_->tasks.clear();
+    state_->batches.clear();
+    state_->accounts.clear();
+    state_->bytes_queued = 0;
+    state_->bytes_ready = 0;
+    state_->bytes_written = 0;
+    state_->oid = 1;
+    state_->fill_account = 0;
+    state_->prefer_secure = true;
+    state_->overwrite_existing = false;
+    state_->discard_text = false;
+    state_->started = false;
+    state_->group_items = false;
+    state_->repartition_task_list = false;
+    state_->quit_pump_loop = false;
 }
 
 

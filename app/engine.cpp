@@ -396,7 +396,7 @@ void Engine::loadSession()
         {
             DEBUG("Loading engine session %1 ...", file);
 
-            engine_->LoadSession(toUtf8(file));
+            engine_->LoadTasks(toUtf8(file));
             if (engine_->GetNumTasks())
                 connect(connect_);
         }
@@ -414,7 +414,7 @@ void Engine::saveSession()
 
     DEBUG("Saving engine session in %1", file);
 
-    engine_->SaveSession(toUtf8(file));
+    engine_->SaveTasks(toUtf8(file));
 }
 
 void Engine::connect(bool on_off)

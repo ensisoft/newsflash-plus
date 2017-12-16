@@ -24,7 +24,6 @@
 #  include <boost/test/minimal.hpp>
 #  include <boost/lexical_cast.hpp>
 #  include <boost/filesystem.hpp>
-#  include "engine/engine.pb.h"
 #include "newsflash/warnpop.h"
 
 #include <thread>
@@ -247,8 +246,7 @@ void unit_test_pack_load()
     // nothing downloaded yet.
     {
 
-        data::TaskList list;
-        auto* ptr = list.add_tasks();
+        std::string data;
 
         // pack
         {
@@ -258,13 +256,13 @@ void unit_test_pack_load()
                 "",
                 "test");
 
-            download.Pack(*ptr);
+            download.Pack(&data);
         }
 
         // load
         {
             nf::Download download;
-            download.Load(*ptr);
+            download.Load(data);
 
             BOOST_REQUIRE(download.GetNumArticles() == 3);
             BOOST_REQUIRE(download.GetNumGroups() == 2);
@@ -279,8 +277,7 @@ void unit_test_pack_load()
     // load and unpack while we have a file that we need to continue
     // working on
     {
-        data::TaskList list;
-        auto* ptr = list.add_tasks();
+        std::string data;
 
         nf::Session session;
         session.on_send = [&](const std::string&) {};
@@ -317,13 +314,13 @@ void unit_test_pack_load()
             BOOST_REQUIRE(download.GetFile(0)->GetBinaryName() == "1489406.jpg");
             BOOST_REQUIRE(download.GetFile(0)->IsBinary() == true);
 
-            download.Pack(*ptr);
+            download.Pack(&data);
         }
 
         // load
         {
             nf::Download download;
-            download.Load(*ptr);
+            download.Load(data);
 
             BOOST_REQUIRE(download.GetNumArticles() == 2);
             BOOST_REQUIRE(download.GetNumGroups() == 2);

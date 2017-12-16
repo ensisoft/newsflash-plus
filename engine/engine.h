@@ -34,10 +34,6 @@
 #include "ui/result.h"
 #include "ui/update.h"
 
-namespace data {
-    class TaskState;
-}
-
 namespace newsflash
 {
     class Connection;
@@ -54,7 +50,7 @@ namespace newsflash
             virtual std::unique_ptr<Task> AllocateTask(const ui::FileDownload& file) = 0;
             virtual std::unique_ptr<Task> AllocateTask(const ui::HeaderDownload& download) = 0;
             virtual std::unique_ptr<Task> AllocateTask(const ui::GroupListDownload& list) = 0;
-            virtual std::unique_ptr<Task> AllocateTask(const data::TaskState& data) = 0;
+            virtual std::unique_ptr<Task> AllocateTask(std::size_t type) = 0;
             virtual std::unique_ptr<Connection> AllocateConnection(const ui::Account& acc) = 0;
             virtual std::unique_ptr<ui::Result> MakeResult(const Task& task, const ui::TaskDesc& desc) const = 0;
             virtual std::unique_ptr<Logger> AllocateEngineLogger() = 0;
@@ -168,14 +164,26 @@ namespace newsflash
         // tasks currently queued in the tasklist.
         void Start();
 
-        // stop the engine. kill all connections and stop all processing.
+        // stop the engine. kill all connections and stop all new processing.
+        // When the stop returns the engine might still have pending work
+        // in the internal thread queues.
+        // Therefore the caller should call Pump while true is returned or while
+        // GetPendingActions returns true.
+        // After this the engine's state is stable and session can saved (optional)
+        // and then the engine can be destructed safely without losing any state.
         void Stop();
 
-        // Load existing engine session from the given file.
-        void SaveSession(const std::string& file);
+        // Load existing engine task list from the given file
+        void SaveTasks(const std::string& file);
 
-        // Save the current engine session into the given file.
-        void LoadSession(const std::string& file);
+        // Save the engine's current tasklist to the given file.
+        void LoadTasks(const std::string& file);
+
+        // Reset the engine state to initial state.
+        // This is mostly for testing.
+        // The engine should be stopped and there should
+        // not be any pending actions.
+        void Reset();
 
         // Set the error callback. Invoked on SystemError.
         void SetErrorCallback(on_error error_callback);

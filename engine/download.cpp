@@ -303,9 +303,13 @@ bitflag<Task::Error> Download::GetErrors() const
     return errors_;
 }
 
-void Download::Pack(data::TaskState& data) const
+void Download::Pack(std::string* data) const
 {
-    auto* ptr = data.mutable_download();
+    GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+    data::Download download;
+
+    auto* ptr = &download;
 
     ptr->set_num_decode_jobs(num_decode_jobs_);
     ptr->set_num_actions_total(num_actions_total_);
@@ -337,13 +341,19 @@ void Download::Pack(data::TaskState& data) const
         stash_data->set_sequence(i);
         stash_data->set_data(str);
     }
+    if (!download.SerializeToString(data))
+        throw std::runtime_error("protobuf SerializeToString failed");
 }
 
-void Download::Load(const data::TaskState& data)
+void Download::Load(const std::string& data)
 {
-    ASSERT(data.has_download());
+    GOOGLE_PROTOBUF_VERIFY_VERSION;
 
-    const auto& ptr = data.download();
+    data::Download download;
+    if (!download.ParseFromString(data))
+        throw std::runtime_error("protobuf ParseFromString failed");
+
+    auto& ptr = download;
 
     // load the groups and article / message names
     for (int i=0; i<ptr.group_size(); ++i)
