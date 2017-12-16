@@ -300,15 +300,17 @@ namespace newsflash
         }
 
 
-        // returns true if all buffers are in success state.
-        bool IsSuccess() const
+        // returns true if some content could not be retrieved.
+        bool HasFailedContent() const
         {
             for (const auto& buff : buffers_)
             {
-                if (buff.GetContentStatus() != Buffer::Status::Success)
-                    return false;
+                const auto status = buff.GetContentStatus();
+                if (status == Buffer::Status::Unavailable ||
+                    status == Buffer::Status::Dmca)
+                    return true;
             }
-            return true;
+            return false;
         }
 
     private:

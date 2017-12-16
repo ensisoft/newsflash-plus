@@ -1603,7 +1603,7 @@ void Engine::State::on_cmdlist_done(const Connection::CmdListCompletionData& com
     LOG_D("Cmdlist ", id, " goodbit: ", cmds->IsGood());
     LOG_D("Cmdlist ", id, " cancelbit: ", cmds->IsCancelled());
     LOG_D("Cmdlist ", id, " completed: ", completion.execution_did_complete);
-    LOG_D("Cmdlist ", id, " success: ", cmds->IsSuccess());
+    LOG_D("Cmdlist ", id, " has failed content: ", cmds->HasFailedContent());
 
     #ifdef NEWSFLASH_DEBUG
     if (std::getenv("NEWSFLASH_DUMP_DATA"))
@@ -1643,12 +1643,41 @@ void Engine::State::on_cmdlist_done(const Connection::CmdListCompletionData& com
 
     auto& task = *it;
 
+    // there are several ways a command list execution can go.
+    //
+    // - cmdlist could not run because the connection failed
+    //   completion data will indicate this by execution_did_complete == false
+    //
+    // - cmdlist was canceled because the task was for example paused.
+    //   cmdlist will contain buffers that have not yet run, i.e. their statuses are None
+    //
+    // - cmdlist failed to configure, i.e. the server didn't have the specified newsgroup
+    //   all buffers will not have run so their statuses are None
+    //
+    // - cmdlist ran to completion
+    //   all buffers have non None statuses
+
     if (completion.execution_did_complete)
     {
-        const auto success  = cmds->IsSuccess();
-        const auto fillable = cmds->IsFillable();
+        const auto cancelled  = cmds->IsCancelled();
+        const auto configured = cmds->IsGood();
+
+        // if the cmdlist failed to configure, i.e. the newsgroups were not available
+        // we're going to interpret this as being a condition where none of the buffers
+        // were available.
+        if (!cancelled && !configured)
+        {
+            for (size_t i=0; i<cmds->NumBuffers(); ++i)
+            {
+                auto& buffer = cmds->GetBuffer(i);
+                buffer.SetStatus(Buffer::Status::Unavailable);
+            }
+        }
+
+        const auto failed    = cmds->HasFailedContent();
+        const auto fillable  = cmds->IsFillable();
         const auto filling_enabled = (this->fill_account != 0);
-        if (!success && fillable && filling_enabled)
+        if (!cancelled && failed && fillable && filling_enabled)
         {
             const auto account = cmds->GetAccountId();
             if (account != fill_account)
@@ -1669,6 +1698,8 @@ void Engine::State::on_cmdlist_done(const Connection::CmdListCompletionData& com
     }
     else
     {
+        // the command list didn't run properly, enqueue it again
+        // to be run on some other connection.
         enqueue(*task, cmds);
     }
 }

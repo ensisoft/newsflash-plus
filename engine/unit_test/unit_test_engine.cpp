@@ -130,6 +130,7 @@ public:
             if (cmd == "<none>")
             {
                 BOOST_REQUIRE(buff.GetContentStatus() == Buffer::Status::None);
+                articles_.push_back(cmd);
             }
             else if (cmd == "<success>")
             {
@@ -1366,10 +1367,11 @@ void test_task_execute_success()
     // no such group so all buffers are with None status
     // # issue 66
     tests.emplace_back();
-    tests[6].articles.push_back("<none>");
-    tests[6].articles.push_back("<none>");
+    tests[6].articles.push_back("<failure>");
+    tests[6].articles.push_back("<failure>");
     tests[6].groups.push_back("alt.binaries.failure");
     tests[6].errors.set(ui::TaskDesc::Errors::Unavailable, true);
+    tests[6].errors.set(ui::TaskDesc::Errors::Incomplete, true);
 
 
     for (size_t i=0; i < tests.size(); ++i)
@@ -1713,10 +1715,11 @@ void test_task_execute_fill_success()
     // no such group so all buffers are with None status
     // # issue 66
     tests.emplace_back();
-    tests[6].articles.push_back("<none>");
-    tests[6].articles.push_back("<none>");
+    tests[6].articles.push_back("<failure>");
+    tests[6].articles.push_back("<failure>");
     tests[6].groups.push_back("alt.binaries.failure");
     tests[6].errors.set(ui::TaskDesc::Errors::Unavailable, true);
+    tests[6].errors.set(ui::TaskDesc::Errors::Incomplete, true);
 
     for (size_t i=0; i < tests.size(); ++i)
     {

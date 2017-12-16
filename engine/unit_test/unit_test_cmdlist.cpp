@@ -183,7 +183,7 @@ void unit_test_refill()
     list.ReceiveDataBuffer(std::move(b2));
     list.ReceiveDataBuffer(std::move(b3));
     list.ReceiveDataBuffer(std::move(b4));
-    BOOST_REQUIRE(list.IsSuccess() == false);
+    BOOST_REQUIRE(list.HasFailedContent());
 
     using status = nf::Buffer::Status;
 
@@ -211,7 +211,7 @@ void unit_test_refill()
 
     list.ReceiveDataBuffer(std::move(b3));
     list.ReceiveDataBuffer(std::move(b4));
-    BOOST_REQUIRE(list.IsSuccess() == false);
+    BOOST_REQUIRE(list.HasFailedContent());
 
     {
         const auto& buffers = list.GetBuffers();
@@ -238,7 +238,7 @@ void unit_test_refill()
     session.RecvNext(recv, b4);
 
     list.ReceiveDataBuffer(std::move(b4));
-    BOOST_REQUIRE(list.IsSuccess() == true);
+    BOOST_REQUIRE(list.HasFailedContent() == false);
 
     {
         const auto& buffers = list.GetBuffers();
