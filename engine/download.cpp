@@ -311,6 +311,10 @@ void Download::Pack(std::string* data) const
 
     auto* ptr = &download;
 
+    ptr->set_path(path_);
+    ptr->set_name(name_);
+    ptr->set_stash_name(stash_name_);
+    ptr->set_errors(errors_.value());
     ptr->set_num_decode_jobs(num_decode_jobs_);
     ptr->set_num_actions_total(num_actions_total_);
     ptr->set_num_actions_ready(num_actions_ready_);
@@ -360,6 +364,11 @@ void Download::Load(const std::string& data)
         groups_.push_back(ptr.group(i));
     for (int i=0; i<ptr.article_size(); ++i)
         articles_.push_back(ptr.article(i));
+
+    path_ = ptr.path();
+    name_ = ptr.name();
+    stash_name_ = ptr.stash_name();
+    errors_.set_from_value(ptr.errors());
 
     num_decode_jobs_   = ptr.num_decode_jobs();
     num_actions_total_ = ptr.num_actions_total();
