@@ -206,6 +206,7 @@ bool Engine::downloadNzbContents(const Download& download, std::vector<NZBConten
     batch.account = download.account;
     batch.path    = narrow(location);
     batch.desc    = toUtf8(download.desc);
+    batch.size    = 0;
     for (auto& item : nzb)
     {
         newsflash::ui::FileDownload file;
@@ -217,6 +218,7 @@ bool Engine::downloadNzbContents(const Download& download, std::vector<NZBConten
         if (file.desc.size() < 5)
             file.desc = toUtf8(item.subject);
         batch.files.push_back(std::move(file));
+        batch.size += item.bytes;
     }
     engine_->DownloadFiles(std::move(batch), download.priority);
 

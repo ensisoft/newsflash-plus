@@ -1263,13 +1263,10 @@ public:
         ui_.account    = files.account;
         ui_.desc       = files.desc;
         ui_.path       = files.path;
-        ui_.size       = std::accumulate(std::begin(files.files), std::end(files.files), std::uint64_t(0),
-            [](std::uint64_t val, const ui::FileDownload& next) {
-                return val + next.size;
-            });
-        num_tasks_  = files.files.size();
-        num_slices_ = files.files.size();
-        filebatch_  = true;
+        ui_.size       = files.size;
+        num_tasks_     = files.files.size();
+        num_slices_    = files.files.size();
+        filebatch_     = true;
 
         LOG_I("Batch ", ui_.batch_id, " (", ui_.desc, ") created");
         LOG_D("Batch has ", num_tasks_, " tasks");
