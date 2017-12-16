@@ -549,19 +549,19 @@ void Engine::onTaskComplete(const newsflash::ui::TaskDesc& task)
     {
         if (task.completion > 0.0)
         {
-            WARN("\"%1\" is incomplete.", desc);
-            NOTE("\"%1\" is incomplete.", desc);
+            WARN("Task \"%1\" is incomplete.", desc);
+            NOTE("Task \"%1\" is incomplete.", desc);
         }
         else
         {
-            WARN("\"%1\" is no longer available.", desc);
-            NOTE("\"%1\" is no longer available.", desc);
+            WARN("File \"%1\" is no longer available.", desc);
+            NOTE("File \"%1\" is no longer available.", desc);
         }
     }
     else
     {
-        INFO("\"%1\" is complete.", desc);
-        NOTE("\"%1\" is complete.", desc);
+        INFO("Task \"%1\" is complete.", desc);
+        NOTE("Task \"%1\" is complete.", desc);
     }
 }
 
