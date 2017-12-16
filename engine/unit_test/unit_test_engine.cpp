@@ -1842,6 +1842,104 @@ void test_task_execute_fill_success()
     }
 }
 
+// Synopsis:
+// Test that when content retrieval from fill server fails the task progresses
+// as if the content was not available.
+//
+// Expected outcome:
+// The task progresses, buffers are set to unavailable state.
+//
+// Issue: #3
+void test_task_execute_fill_error()
+{
+    const bool debug_single_thread = true;
+
+    Engine eng(std::make_unique<Factory>(), debug_single_thread);
+
+    ConnState test_main_params;
+    ConnState test_fill_params;
+    test_main_params.force_no_such_body = true;
+    test_fill_params.SetError(Connection::State::Active, Connection::Error::PermissionDenied);
+
+    ui::Account main_account;
+    main_account.id = 123;
+    main_account.name = "main";
+    main_account.username = "user";
+    main_account.password = "pass";
+    main_account.secure_host = "test.main.com";
+    main_account.secure_port = 1000;
+    main_account.connections = 1;
+    main_account.enable_secure_server = true;
+    main_account.enable_general_server = false;
+    main_account.enable_compression = false;
+    main_account.enable_pipelining = false;
+    main_account.user_data = &test_main_params;
+
+    ui::Account fill_account;
+    fill_account.id = 321;
+    fill_account.name = "fill";
+    fill_account.username = "user";
+    fill_account.password = "pass";
+    fill_account.secure_host = "test.fill.com";
+    fill_account.secure_port = 1000;
+    fill_account.connections = 1;
+    fill_account.enable_secure_server = true;
+    fill_account.enable_general_server = false;
+    fill_account.enable_compression = false;
+    fill_account.enable_pipelining = false;
+    fill_account.user_data = &test_fill_params;
+
+    eng.SetAccount(main_account, false);
+    eng.SetAccount(fill_account, false);
+    eng.SetFillAccount(321);
+
+
+    TaskParams params;
+    params.should_commit = true;
+    params.expect_cmdlist = true;
+    params.num_buffers = 2;
+
+    ui::FileDownload download;
+    download.account   = 123;
+    download.size      = 666;
+    download.path      = "test/foo/bar";
+    download.desc      = "download";
+    download.articles.push_back("<failure>");
+    download.articles.push_back("<failure>");
+    download.groups.push_back("alt.binaries.success");
+    download.user_data = &params;
+
+    ui::FileBatchDownload batch;
+    batch.account = 123;
+    batch.size    = 666;
+    batch.path    = "test/foo/bar";
+    batch.desc    = "download";
+    batch.files.push_back(download);
+    eng.DownloadFiles(batch);
+
+    eng.Start();
+
+    while (eng.HasPendingActions())
+    {
+        eng.RunMainThread();
+        eng.Pump();
+    }
+
+    ui::TaskDesc task;
+    eng.GetTask(0, &task);
+
+    BOOST_REQUIRE(task.state == ui::TaskDesc::States::Complete);
+    BOOST_REQUIRE(task.error.test(ui::TaskDesc::Errors::Unavailable));
+    BOOST_REQUIRE(task.error.test(ui::TaskDesc::Errors::Incomplete));
+
+    eng.Stop();
+    while (eng.HasPendingActions())
+    {
+        eng.RunMainThread();
+        eng.Pump();
+    }
+}
+
 
 int test_main(int argc, char*[])
 {
@@ -1857,5 +1955,7 @@ int test_main(int argc, char*[])
     test_task_execute_failure();
     test_task_execute_restart();
     test_task_execute_fill_success();
+
+    test_task_execute_fill_error();
     return 0;
 }
