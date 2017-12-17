@@ -670,7 +670,7 @@ public:
 
         auto ret = std::make_unique<Resolve>();
         ret->host_ = host.hostname;
-        return ret;
+        return std::move(ret);
     }
 
     virtual std::unique_ptr<action> Disconnect() override
@@ -733,7 +733,7 @@ public:
             ret->cmdlist = cmd;
             ret->callback = callback_;
             state_ = Connection::State::Active;
-            return ret;
+            return std::move(ret);
         }
 
         auto ret = std::make_unique<struct Execute>();
@@ -744,7 +744,7 @@ public:
         ret->force_no_such_body  = conn_state_.force_no_such_body;
         ret->force_no_such_group = conn_state_.force_no_such_group;
         state_ = Connection::State::Active;
-        return ret;
+        return std::move(ret);
     }
 
     virtual void Cancel() override

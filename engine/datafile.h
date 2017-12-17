@@ -73,7 +73,7 @@ namespace newsflash
             write->set_affinity(action::affinity::single_thread);
             write->set_callback(callback);
             impl_->AddPendingWrite();
-            return write;
+            return std::move(write);
         }
 
         void DiscardOnClose()
