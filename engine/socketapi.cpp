@@ -18,12 +18,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <newsflash/config.h>
+#include "newsflash/config.h"
 
 #include <sstream>
 #include <cassert>
 #include <memory>
 #include <stdexcept>
+
 #include "sockets.h"
 #include "socketapi.h"
 #include "platform.h"
@@ -110,8 +111,18 @@ void complete_socket_connect(native_handle_t handle, native_socket_t sock)
         throw std::runtime_error("getsockopt");
 
     if (connection_error)
-        throw std::system_error(connection_error, std::system_category(),
+    {
+        switch (connection_error)
+        {
+            case WSAECONNABORTED: throw std::system_error(ECONNABORTED, std::generic_category()); 
+            case WSAETIMEDOUT:    throw std::system_error(ETIMEDOUT, std::generic_category());
+            case WSAECONNRESET:   throw std::system_error(ECONNRESET, std::generic_category());
+            case WSAECONNREFUSED: throw std::system_error(ECONNREFUSED, std::generic_category());
+            case WSAEHOSTUNREACH: throw std::system_error(EHOSTUNREACH, std::generic_category());
+        }
+        throw std::system_error(connection_error, std::system_category(), 
             "complete socket connect failed");
+    }
 }
 
 std::error_code get_last_socket_error()
