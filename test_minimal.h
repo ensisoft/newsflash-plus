@@ -25,6 +25,10 @@
 #include <cstdio>
 #include <cstdlib>
 
+#if defined(_MSC_VER)
+#  include <Windows.h> // for DebugBreak
+#endif
+
 namespace test {
 
 static
