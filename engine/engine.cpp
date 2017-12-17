@@ -1054,9 +1054,6 @@ public:
     {
         ui = ui_;
         ui.etatime = 0;
-        ui.completion = task_->GetProgress();
-        if (ui.completion > 100.0f)
-            ui.completion = 100.0f;
 
         if (ui_.state == states::Active || ui_.state == states::Waiting || ui_.state == states::Crunching)
         {
@@ -1108,6 +1105,10 @@ public:
                 ui_.error.set(ui::TaskDesc::Errors::Damaged);
             if (err.test(Task::Error::SizeMismatch))
                 ui_.error.set(ui::TaskDesc::Errors::Damaged);
+
+            ui_.completion = task_->GetProgress();
+            if (ui_.completion > 100.0f)
+                ui_.completion = 100.0f;
 
             for (auto& a : actions)
                 DoAction(state, std::move(a));
