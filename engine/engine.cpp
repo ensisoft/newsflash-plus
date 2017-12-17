@@ -55,6 +55,115 @@
 namespace newsflash
 {
 
+// default factory that is used to construct the real task and connection
+// objects when no other factory is given to the engine.
+// Moved here instead of being the Engine's ctor since msvs2013 barfs
+// at this construct.
+class DefaultFactory : public Engine::Factory
+{
+public:
+    DefaultFactory(const std::string& logpath) : logpath_(logpath)
+    {}
+
+    std::unique_ptr<Task> AllocateTask(const ui::FileDownload& file) override
+    {
+        return std::make_unique<Download>(file.groups, file.articles, file.path, file.desc);
+    }
+
+    std::unique_ptr<Task> AllocateTask(const ui::HeaderDownload& download) override
+    {
+        return std::make_unique<Update>(download.path, download.group);
+    }
+
+    std::unique_ptr<Task> AllocateTask(const ui::GroupListDownload& list) override
+    {
+        return std::make_unique<Listing>();
+    }
+    std::unique_ptr<Task> AllocateTask(std::size_t type) override
+    {
+        // todo: fix this.
+        ASSERT(type == 1);
+
+        return std::make_unique<Download>();
+    }
+
+    std::unique_ptr<Connection> AllocateConnection(const ui::Account& acc)
+    {
+        return std::make_unique<ConnectionImpl>();
+    }
+    std::unique_ptr<ui::Result> MakeResult(const Task& task, const ui::TaskDesc& desc) const override
+    {
+        std::unique_ptr<ui::Result> ret;
+        if (const auto* ptr = dynamic_cast<const Download*>(&task))
+        {
+            auto result = std::make_unique<ui::FileResult>();
+            result->account = desc.account;
+            result->desc    = desc.desc;
+
+            for (size_t i=0; i<ptr->GetNumFiles(); ++i)
+            {
+                const auto* file = ptr->GetFile(i);
+                ui::FileResult::File f;
+                f.damaged = desc.error.any_bit();
+                f.binary  = file->IsBinary();
+                f.name    = file->GetFileName();
+                f.path    = file->GetFilePath();
+                f.size    = file->GetFileSize();
+                result->files.push_back(std::move(f));
+            }
+            ret = std::move(result);
+        }
+        else if (const auto* ptr = dynamic_cast<const Listing*>(&task))
+        {
+            auto result = std::make_unique<ui::GroupListResult>();
+            result->account = desc.account;
+            result->desc    = desc.desc;
+
+            const auto& groups = ptr->group_list();
+            for (const auto& g : groups)
+            {
+                ui::GroupListResult::Newsgroup group;
+                group.name  = g.name;
+                group.first = g.first;
+                group.last  = g.last;
+                group.size  = g.size;
+                result->groups.push_back(group);
+            }
+            ret = std::move(result);
+        }
+        else if (const auto* ptr = dynamic_cast<const Update*>(&task))
+        {
+            auto result = std::make_unique<ui::HeaderResult>();
+            result->account = desc.account;
+            result->desc    = desc.desc;
+            result->group   = ptr->group();
+            result->path    = ptr->path();
+            result->num_local_articles  = ptr->num_local_articles();
+            result->num_remote_articles = ptr->num_remote_articles();
+            ret = std::move(result);
+        }
+        return ret;
+    }
+    std::unique_ptr<Logger> AllocateEngineLogger()
+    {
+        const auto& logfile = fs::joinpath(logpath_, "engine.log");
+
+        std::unique_ptr<Logger> logger(new FileLogger(logfile, true));
+        return logger;
+    }
+    std::unique_ptr<Logger> AllocateConnectionLogger()
+    {
+        const auto& name = str("connection", lognum_, ".log");
+        const auto& file = fs::joinpath(logpath_, name);
+        lognum_++;
+        std::unique_ptr<Logger> logger(new FileLogger(file, true));
+        return logger;
+    }
+private:
+    std::string logpath_;
+    std::size_t lognum_ = 1;
+};
+
 #define CASE(x) case x: return #x
 
 const char* str(Buffer::Status status)
@@ -1842,110 +1951,6 @@ Engine::Engine(std::unique_ptr<Factory> factory,
 
 Engine::Engine(const std::string& logpath) : state_(new State(false))
 {
-    class DefaultFactory : public Factory
-    {
-    public:
-        DefaultFactory(const std::string& logpath) : logpath_(logpath)
-        {}
-
-        std::unique_ptr<Task> AllocateTask(const ui::FileDownload& file) override
-        {
-            return std::make_unique<Download>(file.groups, file.articles, file.path, file.desc);
-        }
-
-        std::unique_ptr<Task> AllocateTask(const ui::HeaderDownload& download) override
-        {
-            return std::make_unique<Update>(download.path, download.group);
-        }
-
-        std::unique_ptr<Task> AllocateTask(const ui::GroupListDownload& list) override
-        {
-            return std::make_unique<Listing>();
-        }
-        std::unique_ptr<Task> AllocateTask(std::size_t type) override
-        {
-            // todo: fix this.
-            ASSERT(type == 1);
-
-            return std::make_unique<Download>();
-        }
-
-        std::unique_ptr<Connection> AllocateConnection(const ui::Account& acc)
-        {
-            return std::make_unique<ConnectionImpl>();
-        }
-        std::unique_ptr<ui::Result> MakeResult(const Task& task, const ui::TaskDesc& desc) const override
-        {
-            std::unique_ptr<ui::Result> ret;
-            if (const auto* ptr = dynamic_cast<const Download*>(&task))
-            {
-                auto result = std::make_unique<ui::FileResult>();
-                result->account = desc.account;
-                result->desc    = desc.desc;
-
-                for (size_t i=0; i<ptr->GetNumFiles(); ++i)
-                {
-                    const auto* file = ptr->GetFile(i);
-                    ui::FileResult::File f;
-                    f.damaged = desc.error.any_bit();
-                    f.binary  = file->IsBinary();
-                    f.name    = file->GetFileName();
-                    f.path    = file->GetFilePath();
-                    f.size    = file->GetFileSize();
-                    result->files.push_back(std::move(f));
-                }
-                ret = std::move(result);
-            }
-            else if (const auto* ptr = dynamic_cast<const Listing*>(&task))
-            {
-                auto result = std::make_unique<ui::GroupListResult>();
-                result->account = desc.account;
-                result->desc    = desc.desc;
-
-                const auto& groups = ptr->group_list();
-                for (const auto& g : groups)
-                {
-                    ui::GroupListResult::Newsgroup group;
-                    group.name  = g.name;
-                    group.first = g.first;
-                    group.last  = g.last;
-                    group.size  = g.size;
-                    result->groups.push_back(group);
-                }
-                ret = std::move(result);
-            }
-            else if (const auto* ptr = dynamic_cast<const Update*>(&task))
-            {
-                auto result = std::make_unique<ui::HeaderResult>();
-                result->account = desc.account;
-                result->desc    = desc.desc;
-                result->group   = ptr->group();
-                result->path    = ptr->path();
-                result->num_local_articles  = ptr->num_local_articles();
-                result->num_remote_articles = ptr->num_remote_articles();
-                ret = std::move(result);
-            }
-            return ret;
-        }
-        std::unique_ptr<Logger> AllocateEngineLogger()
-        {
-            const auto& logfile = fs::joinpath(logpath_, "engine.log");
-
-            std::unique_ptr<Logger> logger(new FileLogger(logfile, true));
-            return logger;
-        }
-        std::unique_ptr<Logger> AllocateConnectionLogger()
-        {
-            const auto& name = str("connection", lognum_, ".log");
-            const auto& file = fs::joinpath(logpath_, name);
-            lognum_++;
-            std::unique_ptr<Logger> logger(new FileLogger(file, true));
-            return logger;
-        }
-    private:
-        std::string logpath_;
-        std::size_t lognum_ = 1;
-    };
     state_->factory = std::make_unique<DefaultFactory>(logpath);
     state_->logger  = state_->factory->AllocateEngineLogger();
 
