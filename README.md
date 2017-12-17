@@ -294,7 +294,6 @@ Currently only ~~32bit~~ 64bit build is supported. You'll need Microsoft Visual 
 Once you've installed visual studio open the VS2013 ~~x86~~ x64 Native Tools Commmand Prompt.
 
 Start by cloning the source
-
 ```
     $ git clone https://github.com/ensisoft/newslash-plus
     $ cd newsflash-plus
@@ -413,6 +412,14 @@ Build Newsflash
     $ cmake -G "Visual Studio 12 2013 Win64" -DCMAKE_BUILD_TYPE=Debug ..
     $ msbuild NewsflashPlus.sln /p:Configuration=Debug /p:Platform:x64
 
+```
+
+Run Unit Tests 
+```
+    $ cd newsflash_plus\build_d
+    $ copy ..\test_data .
+    $ start Debug\test_server.exe
+    $ ctest -C Debug
 ```
 
 UX Guidelines
