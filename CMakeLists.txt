@@ -195,9 +195,14 @@ target_link_libraries(appcore PUBLIC
     Qt4::QtXml
     Qt4::QtNetwork)
 
+if(WIN32)
+    set(ICO_SOURCE "gui/icon.rc")
+endif()
+
 # build the main application
 add_executable(newsflash
     ${GUI_SOURCE}
+    ${ICO_SOURCE}
     gui/resource.qrc
     gui/qtsingleapplication/qtsingleapplication.h
     gui/qtsingleapplication/qtsingleapplication.cpp
