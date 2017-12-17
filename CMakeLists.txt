@@ -337,6 +337,12 @@ add_test(NAME unit_test_throttle    COMMAND unit_test_throttle)
 add_test(NAME unit_test_engine      COMMAND unit_test_engine)
 add_test(NAME unit_test_connection  COMMAND unit_test_connection)
 
+# this test case fails on msvs with stack overflow 
+# set the stack size to 4mb
+if (MSVC)
+    set_target_properties(unit_test_update PROPERTIES LINK_FLAGS "/STACK:4194304")
+endif()
+
 add_executable(unit_test_unrar  app/unit_test/unit_test_unrar.cpp)
 add_executable(unit_test_unzip  app/unit_test/unit_test_unzip.cpp)
 
