@@ -582,7 +582,10 @@ void Update::Commit()
         vec[i].article_number_internal = pair.second;
         ++i;
     }
-    out.write((const char*)&vec[0], vec.size() * sizeof(FileHash));
+    if (!vec.empty())
+    {
+        out.write((const char*)&vec[0], vec.size() * sizeof(FileHash));
+    }
     out.close();
 
     commit_done_ = true;
