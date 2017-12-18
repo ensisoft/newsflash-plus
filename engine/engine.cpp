@@ -551,86 +551,12 @@ public:
 
         try
         {
-            auto next  = conn_->Complete(std::move(act));
-            auto state = conn_->GetState();
-            if (state == Connection::State::Error)
-            {
-                const auto err = conn_->GetError();
-                ui_.state = states::Error;
-                ui_.bps   = 0;
-                ui_.task  = 0;
-                ui_.desc  = "";
-                switch (err)
-                {
-                    case Connection::Error::None:
-                        ASSERT("???");
-                        break;
-                    case Connection::Error::Resolve:
-                        ui_.error = ui::Connection::Errors::Resolve;
-                        break;
-                    case Connection::Error::Refused:
-                        ui_.error = ui::Connection::Errors::Refused;
-                        break;
-                    case Connection::Error::AuthenticationRejected:
-                        ui_.error = ui::Connection::Errors::AuthenticationRejected;
-                        break;
-                    case Connection::Error::PermissionDenied:
-                        ui_.error = ui::Connection::Errors::NoPermission;
-                        break;
-                    case Connection::Error::Network:
-                        ui_.error = ui::Connection::Errors::Network;
-                        break;
-                    case Connection::Error::Timeout:
-                        ui_.error = ui::Connection::Errors::Timeout;
-                        break;
-                    case Connection::Error::PipelineReset:
-                    case Connection::Error::Reset:
-                    case Connection::Error::Protocol:
-                    case Connection::Error::Other:
-                        ui_.error = ui::Connection::Errors::Other;
-                        break;
-                }
-            }
-            else
-            {
-                if (state != Connection::State::Active)
-                {
-                    ui_.bps  = 0;
-                    ui_.task = 0;
-                    ui_.desc = "";
-                }
-                switch (state)
-                {
-                    case Connection::State::Disconnected:
-                        ui_.state = states::Disconnected;
-                        break;
-                    case Connection::State::Resolving:
-                        ui_.state = states::Resolving;
-                        break;
-                    case Connection::State::Connecting:
-                        ui_.state = states::Connecting;
-                        break;
-                    case Connection::State::Initializing:
-                        ui_.state = states::Initializing;
-                        break;
-                    case Connection::State::Connected:
-                        ui_.state = states::Connected;
-                        break;
-                    case Connection::State::Active:
-                        ui_.state = states::Active;
-                        break;
-                    case Connection::State::Error:
-                        ASSERT("???"); // handled above.
-                        break;
-
-                }
-                LOG_D("Connection ", ui_.id,  " => ", str(ui_.state));
-
-                do_action(engine_state, std::move(next));
-            }
+            if (act->has_exception())
+                act->rethrow();
         }
         catch (const std::system_error& e)
         {
+            LOG_E("Connection ", ui_.id, " (", e.code().value(), ") ", e.code().message());
             ui_.state = states::Error;
             ui_.bps   = 0;
             ui_.task  = 0;
@@ -643,10 +569,11 @@ public:
                 error.what     = e.what();
                 engine_state.on_error_callback(error);
             }
-            LOG_E("Connection ", ui_.id, " (", e.code().value(), ") ", e.code().message());
+            return;
         }
         catch (const std::exception& e)
         {
+            LOG_E("Connection ", ui_.id, " ", e.what());
             ui_.state = states::Error;
             ui_.bps   = 0;
             ui_.task  = 0;
@@ -658,8 +585,86 @@ public:
                 error.what     = e.what();
                 engine_state.on_error_callback(error);
             }
-            LOG_E("Connection ", ui_.id, " ", e.what());
+            return;
         }
+
+        auto next  = conn_->Complete(std::move(act));
+        auto state = conn_->GetState();
+        if (state == Connection::State::Error)
+        {
+            const auto err = conn_->GetError();
+            ui_.state = states::Error;
+            ui_.bps   = 0;
+            ui_.task  = 0;
+            ui_.desc  = "";
+            switch (err)
+            {
+                case Connection::Error::None:
+                    ASSERT("???");
+                    break;
+                case Connection::Error::Resolve:
+                    ui_.error = ui::Connection::Errors::Resolve;
+                    break;
+                case Connection::Error::Refused:
+                    ui_.error = ui::Connection::Errors::Refused;
+                    break;
+                case Connection::Error::AuthenticationRejected:
+                    ui_.error = ui::Connection::Errors::AuthenticationRejected;
+                    break;
+                case Connection::Error::PermissionDenied:
+                    ui_.error = ui::Connection::Errors::NoPermission;
+                    break;
+                case Connection::Error::Network:
+                    ui_.error = ui::Connection::Errors::Network;
+                    break;
+                case Connection::Error::Timeout:
+                    ui_.error = ui::Connection::Errors::Timeout;
+                    break;
+                case Connection::Error::PipelineReset:
+                case Connection::Error::Reset:
+                case Connection::Error::Protocol:
+                case Connection::Error::Other:
+                    ui_.error = ui::Connection::Errors::Other;
+                    break;
+            }
+        }
+        else
+        {
+            if (state != Connection::State::Active)
+            {
+                ui_.bps  = 0;
+                ui_.task = 0;
+                ui_.desc = "";
+            }
+            switch (state)
+            {
+                case Connection::State::Disconnected:
+                    ui_.state = states::Disconnected;
+                    break;
+                case Connection::State::Resolving:
+                    ui_.state = states::Resolving;
+                    break;
+                case Connection::State::Connecting:
+                    ui_.state = states::Connecting;
+                    break;
+                case Connection::State::Initializing:
+                    ui_.state = states::Initializing;
+                    break;
+                case Connection::State::Connected:
+                    ui_.state = states::Connected;
+                    break;
+                case Connection::State::Active:
+                    ui_.state = states::Active;
+                    break;
+                case Connection::State::Error:
+                    ASSERT("???"); // handled above.
+                    break;
+            }
+            LOG_D("Connection ", ui_.id,  " => ", str(ui_.state));
+
+            do_action(engine_state, std::move(next));
+        }
+
         logger_->Flush();
     }
     bool is_ready() const

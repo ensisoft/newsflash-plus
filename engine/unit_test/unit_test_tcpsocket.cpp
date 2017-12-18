@@ -92,7 +92,8 @@ void test_connection_failure()
         sock.BeginConnect(addr, 8000);
 
         newsflash::wait(sock);
-        const auto err = sock.CompleteConnect();
+        std::error_code err;
+        sock.CompleteConnect(&err);
         BOOST_REQUIRE(err != std::error_code());
     }
 }
@@ -112,7 +113,8 @@ void test_connection_success()
     tcp.BeginConnect(addr, port);
 
     TcpSocket client = ::accept(sock);
-    const auto err = client.CompleteConnect();
+    std::error_code err;
+    client.CompleteConnect(&err);
     BOOST_REQUIRE(err == std::error_code());
 
     newsflash::closesocket(sock);
@@ -153,8 +155,10 @@ void test_connection_success()
                 newsflash::wait(handle);
                 TEST_REQUIRE(handle.write());
 
-                int ret = client.SendSome(buff.data + sent, buff.len - sent);
+                std::error_code err;
+                int ret = client.SendSome(buff.data + sent, buff.len - sent, &err);
                 sent += ret;
+                BOOST_REQUIRE(err == std::error_code());
 
                 TEST_MESSAGE("sent %d bytes", sent);
             }
@@ -164,8 +168,10 @@ void test_connection_success()
                 newsflash::wait(handle);
                 TEST_REQUIRE(handle.read());
 
-                int ret = tcp.RecvSome(buff.buff + recv, buff.len - recv);
+                std::error_code err;
+                int ret = tcp.RecvSome(buff.buff + recv, buff.len - recv, &err);
                 recv += ret;
+                BOOST_REQUIRE(err == std::error_code());
 
                 TEST_MESSAGE("recv %d bytes", recv);
             }

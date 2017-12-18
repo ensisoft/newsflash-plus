@@ -43,12 +43,12 @@ void TcpSocket::BeginConnect(ipv4addr_t host, ipv4port_t port)
     handle_ = ret.second;
 }
 
-std::error_code TcpSocket::CompleteConnect()
+void TcpSocket::CompleteConnect(std::error_code* error)
 {
-    return complete_socket_connect(handle_, socket_);
+    *error = complete_socket_connect(handle_, socket_);
 }
 
-void TcpSocket::SendAll(const void* buff, int len)
+void TcpSocket::SendAll(const void* buff, int len, std::error_code* error)
 {
     assert(socket_);
 
@@ -69,7 +69,10 @@ void TcpSocket::SendAll(const void* buff, int len)
         {
             const auto err = get_last_socket_error();
             if (err != std::errc::operation_would_block)
-                throw std::system_error(err, "socket send");
+            {
+                *error = err;
+                return;
+            }
 
             auto handle = GetWaitHandle(false, true);
             newsflash::wait(handle);
@@ -80,7 +83,7 @@ void TcpSocket::SendAll(const void* buff, int len)
     while (sent < len);
 }
 
-int TcpSocket::SendSome(const void* buff, int len)
+int TcpSocket::SendSome(const void* buff, int len, std::error_code* error)
 {
     assert(socket_);
 
@@ -107,7 +110,7 @@ int TcpSocket::SendSome(const void* buff, int len)
     {
         const auto err = get_last_socket_error();
         if (err != std::errc::operation_would_block)
-            throw std::system_error(err, "socket send");
+            *error = err;
 
         // on windows writeability is edge triggered,
         // i.e. the event is signaled once when the socket is writeable and a call
@@ -126,7 +129,7 @@ int TcpSocket::SendSome(const void* buff, int len)
 }
 
 
-int TcpSocket::RecvSome(void* buff, int capacity)
+int TcpSocket::RecvSome(void* buff, int capacity, std::error_code* error)
 {
     assert(socket_);
 
@@ -137,7 +140,7 @@ int TcpSocket::RecvSome(void* buff, int capacity)
     {
         const auto err = get_last_socket_error();
         if (err != std::errc::operation_would_block)
-            throw std::system_error(err, "socket recv");
+            *error = err;
 
         return 0;
     }

@@ -121,32 +121,34 @@ void SslSocket::BeginConnect(ipv4addr_t host, ipv4port_t port)
     handle_ = ret.second;
 }
 
-std::error_code SslSocket::CompleteConnect()
+void SslSocket::CompleteConnect(std::error_code* error)
 {
     assert(socket_);
     assert(handle_);
 
     auto connection_error = complete_socket_connect(handle_, socket_);
     if (connection_error)
-        return connection_error;
+    {
+        *error = connection_error;
+        return;
+    }
     complete_secure_connect();
-    return std::error_code();
 }
 
 
-void SslSocket::SendAll(const void* buff, int len)
+void SslSocket::SendAll(const void* buff, int len, std::error_code* error)
 {
     const char* ptr = static_cast<const char*>(buff);
 
     int sent = 0;
     do
     {
-        sent += SendSome(ptr + sent, len - sent);
+        sent += SendSome(ptr + sent, len - sent, error);
     }
     while (sent != len);
 }
 
-int SslSocket::SendSome(const void* buff, int len)
+int SslSocket::SendSome(const void* buff, int len, std::error_code* error)
 {
     ERR_clear_error();
     // the SSL_read operation may fail because SSL handshake
@@ -189,7 +191,10 @@ int SslSocket::SendSome(const void* buff, int len)
 
                         const auto sock_err = get_last_socket_error();
                         if (sock_err != std::errc::operation_would_block)
-                            throw std::system_error(sock_err, "socket send");
+                        {
+                            *error = sock_err;
+                            return sent;
+                        }
                     }
                     else
                     {
@@ -220,7 +225,7 @@ int SslSocket::SendSome(const void* buff, int len)
     return sent;
 }
 
-int SslSocket::RecvSome(void* buff, int capacity)
+int SslSocket::RecvSome(void* buff, int capacity, std::error_code* error)
 {
     ERR_clear_error();
     // the SSL_read operation may fail because SSL handshake
@@ -264,7 +269,10 @@ int SslSocket::RecvSome(void* buff, int capacity)
 
                         const auto sock_err = get_last_socket_error();
                         if (sock_err != std::errc::operation_would_block)
-                            throw std::system_error(sock_err, "socket send");
+                        {
+                            *error = sock_err;
+                            return recv;
+                        }
                     }
                     else
                     {
@@ -441,8 +449,7 @@ void SslSocket::complete_secure_connect()
 
             case SSL_ERROR_SYSCALL:
                 if (ret == -1)
-                    throw std::system_error(get_last_socket_error(),
-                        "SSL socket I/O error");
+                    throw std::runtime_error("SSL socket I/O error");
                 // fallthrough intended
 
             default:

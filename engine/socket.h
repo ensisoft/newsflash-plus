@@ -46,20 +46,18 @@ namespace newsflash
 
         // Complete the connection attempt. On succesful return
         // the connection is ready to be used for sending and receiving data.
-        virtual std::error_code CompleteConnect() = 0;
+        virtual void CompleteConnect(std::error_code* error) = 0;
 
         // Write all of the input data to the socket.
-        virtual void SendAll(const void* buff, int len) = 0;
+        virtual void SendAll(const void* buff, int len, std::error_code* error) = 0;
 
         // Write some input data to the socket.
         // Returns numbers of bytes written.
-        // on error an exception is thrown.
-        virtual int SendSome(const void* buff, int len) = 0;
+        virtual int SendSome(const void* buff, int len, std::error_code* error) = 0;
 
         // Receive some data into the buffer.
         // Returns the number of bytes received (which can be 0).
-        // on error an exception is thrown.
-        virtual int RecvSome(void* buff, int capacity) = 0;
+        virtual int RecvSome(void* buff, int capacity, std::error_code* error) = 0;
 
         // Close the socket.
         virtual void Close() = 0;

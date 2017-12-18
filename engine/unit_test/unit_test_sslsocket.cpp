@@ -58,7 +58,8 @@ void test_connection_failure()
         sock.BeginConnect(addr, 8000);
 
         newsflash::wait(sock);
-        const auto err = sock.CompleteConnect();
+        std::error_code err;
+        sock.CompleteConnect(&err);
         BOOST_REQUIRE(err != std::error_code());
     }
 }
@@ -171,8 +172,11 @@ void ssl_server_main(int port)
         {
             auto can_read = sock.GetWaitHandle(true, false);
             newsflash::wait(can_read);
-            int ret = sock.RecvSome(buff.buff + recv, buff.len - recv);
+
+            std::error_code err;
+            int ret = sock.RecvSome(buff.buff + recv, buff.len - recv, &err);
             recv += ret;
+            BOOST_REQUIRE(err == std::error_code());
         }
         while (recv != buff.len);
 
@@ -210,7 +214,8 @@ void test_connection_success()
     SslSocket sock;
     sock.BeginConnect(addr, 8001);
     newsflash::wait(sock);
-    const auto err = sock.CompleteConnect();
+    std::error_code err;
+    sock.CompleteConnect(&err);
     BOOST_REQUIRE(err == std::error_code());
 
     // transfer data
@@ -223,8 +228,10 @@ void test_connection_success()
         {
             auto can_write = sock.GetWaitHandle(false, true);
             newsflash::wait(can_write);
-            int ret = sock.SendSome(buff.data + sent, buff.len - sent);
+            std::error_code err;
+            int ret = sock.SendSome(buff.data + sent, buff.len - sent, &err);
             sent += ret;
+            BOOST_REQUIRE(err == std::error_code());
         }
         while (sent != buff.len);
 

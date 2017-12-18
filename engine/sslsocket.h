@@ -54,10 +54,10 @@ namespace newsflash
        ~SslSocket();
 
         virtual void BeginConnect(ipv4addr_t host, ipv4port_t port) override;
-        virtual std::error_code CompleteConnect() override;
-        virtual void SendAll(const void* buff, int len) override;
-        virtual int SendSome(const void* buff, int len) override;
-        virtual int RecvSome(void* buff, int capacity) override;
+        virtual void CompleteConnect(std::error_code* error) override;
+        virtual void SendAll(const void* buff, int len, std::error_code* error) override;
+        virtual int SendSome(const void* buff, int len, std::error_code* error) override;
+        virtual int RecvSome(void* buff, int capacity, std::error_code* error) override;
         virtual void Close() override;
         virtual waithandle GetWaitHandle() const override;
         virtual waithandle GetWaitHandle(bool waitread, bool waitwrite) const override;

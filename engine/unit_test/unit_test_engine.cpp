@@ -422,6 +422,8 @@ public:
     {
         virtual void xperform() override
         {
+            if (host_ == "test.exception.com")
+                throw std::runtime_error("surprise!");
         }
         std::string host_;
     };
@@ -698,9 +700,6 @@ public:
 
         if (auto* p = dynamic_cast<Resolve*>(ptr))
         {
-            if (p->host_ == "test.exception.com")
-                throw std::runtime_error("surprise!");
-
             next.reset(new struct Connect);
             state_ = Connection::State::Connecting;
         }

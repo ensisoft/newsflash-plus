@@ -83,7 +83,12 @@ struct ConnectionImpl::impl {
     }
     void do_send(const std::string& cmd)
     {
-        socket->SendAll(&cmd[0], cmd.size());
+        std::error_code error;
+        socket->SendAll(&cmd[0], cmd.size(), &error);
+        if (error)
+        {
+            pending_socket_error = error;
+        }
     }
 };
 
@@ -183,7 +188,8 @@ public:
             return;
         }
 
-        const auto connection_error = socket->CompleteConnect();
+        std::error_code connection_error;
+        socket->CompleteConnect(&connection_error);
         if (connection_error)
         {
             state_->pending_socket_error = connection_error;
@@ -269,8 +275,14 @@ public:
                 }
 
                 // readsome data
-                const auto bytes = socket->RecvSome(buff.Back(), buff.GetAvailableBytes());
-                if (bytes == 0)
+                std::error_code recv_error;
+                const auto bytes = socket->RecvSome(buff.Back(), buff.GetAvailableBytes(), &recv_error);
+                if (recv_error)
+                {
+                    state_->pending_socket_error = recv_error;
+                    return;
+                }
+                else if (bytes == 0)
                 {
                     state_->pending_connection_error = Error::Network;
                     return;
@@ -361,8 +373,14 @@ public:
                         else if (canceled)
                             return;
 
-                        const auto bytes = socket->RecvSome(recvbuf.Back(), recvbuf.GetAvailableBytes());
-                        if (bytes == 0)
+                        std::error_code recv_error;
+                        const auto bytes = socket->RecvSome(recvbuf.Back(), recvbuf.GetAvailableBytes(), &recv_error);
+                        if (recv_error)
+                        {
+                            state_->pending_socket_error = recv_error;
+                            return;
+                        }
+                        else if (bytes == 0)
                         {
                             state_->pending_connection_error = Error::Network;
                             return;
@@ -448,8 +466,14 @@ public:
                 std::size_t avail = std::min(recvbuf.GetAvailableBytes(), quota);
 
                 // readsome
-                const auto bytes = socket->RecvSome(recvbuf.Back(), avail);
-                if (bytes == 0)
+                std::error_code recv_error;
+                const auto bytes = socket->RecvSome(recvbuf.Back(), avail, &recv_error);
+                if (recv_error)
+                {
+                    state_->pending_socket_error = recv_error;
+                    return;
+                }
+                else if (bytes == 0)
                 {
                     state_->pending_connection_error = Error::Network;
                     return;
@@ -562,8 +586,14 @@ public:
                 if (buff.IsFull())
                     buff.Grow(+64);
 
-                const auto bytes = socket->RecvSome(buff.Back(), buff.GetAvailableBytes());
-                if (bytes == 0)
+                std::error_code recv_error;
+                const auto bytes = socket->RecvSome(buff.Back(), buff.GetAvailableBytes(), &recv_error);
+                if (recv_error)
+                {
+                    state_->pending_socket_error = recv_error;
+                    return;
+                }
+                else if (bytes == 0)
                 {
                     LOG_D("Received socket close");
                     break;
@@ -616,8 +646,14 @@ public:
                     state_->pending_connection_error = Error::Timeout;
                     return;
                 }
-                const auto bytes = socket->RecvSome(buff.Back(), buff.GetAvailableBytes());
-                if (bytes == 0)
+                std::error_code recv_error;
+                const auto bytes = socket->RecvSome(buff.Back(), buff.GetAvailableBytes(), &recv_error);
+                if (recv_error)
+                {
+                    state_->pending_socket_error = recv_error;
+                    return;
+                }
+                else if (bytes == 0)
                 {
                     state_->pending_connection_error = Error::Network;
                     return;
@@ -698,7 +734,6 @@ std::unique_ptr<action> ConnectionImpl::Complete(std::unique_ptr<action> a)
         else state_->error = Error::Other;
 
         LOG_E("Socket error ", state_->pending_socket_error);
-        return next;
     }
     else if (state_->pending_session_error != Session::Error::None)
     {
@@ -706,82 +741,86 @@ std::unique_ptr<action> ConnectionImpl::Complete(std::unique_ptr<action> a)
         switch (state_->pending_session_error)
         {
             case Session::Error::None:
-            break;
+                break;
             case Session::Error::AuthenticationRejected:
-                LOG_E("Session authentication rejected");
                 state_->error = Error::AuthenticationRejected;
                 break;
             case Session::Error::NoPermission:
-                LOG_E("Session permission denied");
                 state_->error = Error::PermissionDenied;
                 break;
             case Session::Error::Protocol:
-                LOG_E("Session protocol error");
                 state_->error = Error::Protocol;
                 break;
         }
-        return next;
-
     }
     else if (state_->pending_connection_error != Connection::Error::None)
     {
         state_->state = State::Error;
         state_->error = state_->pending_connection_error;
+    }
+
+    if (state_->state == State::Error)
+    {
+        switch (state_->error)
+        {
+            case Error::None: break;
+            case Error::Resolve:
+                LOG_E("Failed to resolve host");
+                break;
+            case Error::Refused:
+                LOG_E("Connection was refused");
+                break;
+            case Error::Reset:
+                LOG_E("Connection was reset");
+                break;
+            case Error::Protocol:
+                LOG_E("NNTP protocol error");
+                break;
+            case Error::AuthenticationRejected:
+                LOG_E("Session authentication was rejected");
+                break;
+            case Error::PermissionDenied:
+                LOG_E("Session permission denied");
+                break;
+            case Error::Timeout:
+                LOG_E("Connection timed out");
+                break;
+            case Error::Network:
+                LOG_E("Connection was closed unexpectedly");
+                break;
+            case Error::PipelineReset:
+                LOG_E("Pipelined commands forced connection reset");
+                break;
+            case Error::Other:
+                LOG_E("Connection error not known");
+                break;
+        }
         return next;
     }
 
-    try
+    auto* ptr = a.get();
+
+    if (dynamic_cast<resolve*>(ptr))
     {
-        auto* ptr = a.get();
-
-        // rethrow an exception if any
-        // todo: we should refactor the socket api to use error codes instead of exceptions,
-        // since these are logical errors and leave the actual exceptions for real errors.
-        ptr->rethrow();
-
-        if (dynamic_cast<resolve*>(ptr))
-        {
-            next.reset(new class connect(state_));
-            state_->state = State::Connecting;
-        }
-        else if (dynamic_cast<class connect*>(ptr))
-        {
-            next.reset(new class initialize(state_));
-            state_->state = State::Initializing;
-        }
-        else if (dynamic_cast<class initialize*>(ptr))
-        {
-            state_->state = State::Connected;
-        }
-        else if (dynamic_cast<class disconnect*>(ptr))
-        {
-            state_->state = State::Disconnected;
-        }
-        else if (auto* p = dynamic_cast<class execute*>(ptr))
-        {
-            state_->state = State::Connected;
-        }
+        next.reset(new class connect(state_));
+        state_->state = State::Connecting;
     }
-    catch (const std::system_error& e)
+    else if (dynamic_cast<class connect*>(ptr))
     {
-        // todo: get rid of this once all the system_error
-        // throws have been refactored away.
-        const auto code = e.code();
-        if (code == std::errc::connection_refused)
-        {
-            state_->state = State::Error;
-            state_->error = Error::Refused;
-        }
-        else if (code == std::errc::connection_reset)
-        {
-            state_->state = State::Error;
-            state_->error = Error::Reset;
-        }
-        else
-        {
-            state_->state = State::Error;
-            state_->error = Error::Other;
-        }
+        next.reset(new class initialize(state_));
+        state_->state = State::Initializing;
+    }
+    else if (dynamic_cast<class initialize*>(ptr))
+    {
+        state_->state = State::Connected;
+    }
+    else if (dynamic_cast<class disconnect*>(ptr))
+    {
+        state_->state = State::Disconnected;
+    }
+    else if (auto* p = dynamic_cast<class execute*>(ptr))
+    {
+        state_->state = State::Connected;
     }
     return next;
 }
