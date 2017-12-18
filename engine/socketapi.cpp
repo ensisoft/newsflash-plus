@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -54,7 +54,7 @@ namespace newsflash
 {
 #if defined(WINDOWS_OS)
 
-std::error_code resolve_host_ipv4(const std::string& hostname, 
+std::error_code resolve_host_ipv4(const std::string& hostname,
     std::uint32_t& addr)
 {
     // gethostbyname allocates data from TLS so it's thread safe
@@ -98,7 +98,7 @@ std::pair<native_socket_t, native_handle_t> begin_socket_connect(ipv4addr_t host
     return {s, h};
 }
 
-void complete_socket_connect(native_handle_t handle, native_socket_t sock)
+std::error_code complete_socket_connect(native_handle_t handle, native_socket_t sock)
 {
     int len = sizeof(len);
     int connection_error = 0;
@@ -114,15 +114,16 @@ void complete_socket_connect(native_handle_t handle, native_socket_t sock)
     {
         switch (connection_error)
         {
-            case WSAECONNABORTED: throw std::system_error(ECONNABORTED, std::generic_category()); 
-            case WSAETIMEDOUT:    throw std::system_error(ETIMEDOUT, std::generic_category());
-            case WSAECONNRESET:   throw std::system_error(ECONNRESET, std::generic_category());
-            case WSAECONNREFUSED: throw std::system_error(ECONNREFUSED, std::generic_category());
-            case WSAEHOSTUNREACH: throw std::system_error(EHOSTUNREACH, std::generic_category());
+            case WSAECONNABORTED: return std::error_code(ECONNABORTED, std::generic_category());
+            case WSAETIMEDOUT:    return std::error_code(ETIMEDOUT, std::generic_category());
+            case WSAECONNRESET:   return std::error_code(ECONNRESET, std::generic_category());
+            case WSAECONNREFUSED: return std::error_code(ECONNREFUSED, std::generic_category());
+            case WSAEHOSTUNREACH: return std::error_code(EHOSTUNREACH, std::generic_category());
         }
-        throw std::system_error(connection_error, std::system_category(), 
+        return std::error_code(connection_error, std::system_category(),
             "complete socket connect failed");
     }
+    return std::error_code();
 }
 
 std::error_code get_last_socket_error()
@@ -168,7 +169,7 @@ void closesocket(native_socket_t sock)
 
 #elif defined(LINUX_OS)
 
-std::error_code resolve_host_ipv4(const std::string& hostname, 
+std::error_code resolve_host_ipv4(const std::string& hostname,
     std::uint32_t& addr)
 {
     struct addrinfo* addrs = nullptr;
@@ -223,7 +224,7 @@ std::pair<native_socket_t, native_handle_t> begin_socket_connect(ipv4addr_t host
     return {fd, fd};
 }
 
-void complete_socket_connect(native_handle_t handle, native_socket_t sock)
+std::error_code complete_socket_connect(native_handle_t handle, native_socket_t sock)
 {
     assert(handle == sock);
 
@@ -233,7 +234,8 @@ void complete_socket_connect(native_handle_t handle, native_socket_t sock)
         throw std::runtime_error("getsockopt failed");
 
     if (connection_error)
-        throw std::system_error(connection_error, std::generic_category());
+        return std::error_code(connection_error, std::generic_category());
+    return std::error_code();
 }
 
 std::error_code get_last_socket_error()

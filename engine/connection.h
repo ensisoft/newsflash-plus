@@ -60,7 +60,8 @@ namespace newsflash
             PermissionDenied,
             Timeout,
             Network,
-            PipelineReset
+            PipelineReset,
+            Other
         };
 
         enum class State {

@@ -584,12 +584,9 @@ public:
                         ui_.error = ui::Connection::Errors::Timeout;
                         break;
                     case Connection::Error::PipelineReset:
-                        ui_.error = ui::Connection::Errors::Other;
-                        break;
                     case Connection::Error::Reset:
-                        ui_.error = ui::Connection::Errors::Other;
-                        break;
                     case Connection::Error::Protocol:
+                    case Connection::Error::Other:
                         ui_.error = ui::Connection::Errors::Other;
                         break;
                 }

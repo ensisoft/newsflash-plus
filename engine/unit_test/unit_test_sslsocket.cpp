@@ -54,11 +54,12 @@ void test_connection_failure()
         uint32_t addr;
         resolve_host_ipv4("127.0.0.1", addr);
 
-        sslsocket sock;
-        sock.begin_connect(addr, 8000);
+        SslSocket sock;
+        sock.BeginConnect(addr, 8000);
 
         newsflash::wait(sock);
-        REQUIRE_EXCEPTION(sock.complete_connect());
+        const auto err = sock.CompleteConnect();
+        BOOST_REQUIRE(err != std::error_code());
     }
 }
 
@@ -158,7 +159,7 @@ void ssl_server_main(int port)
 
     BOOST_REQUIRE(SSL_accept(ssl) == 1);
 
-    sslsocket sock(fd, get_wait_handle(fd), ssl, bio);
+    SslSocket sock(fd, get_wait_handle(fd), ssl, bio);
 
 
     // receive data
@@ -168,9 +169,9 @@ void ssl_server_main(int port)
         int recv = 0;
         do
         {
-            auto can_read = sock.wait(true, false);
+            auto can_read = sock.GetWaitHandle(true, false);
             newsflash::wait(can_read);
-            int ret = sock.recvsome(buff.buff + recv, buff.len - recv);
+            int ret = sock.RecvSome(buff.buff + recv, buff.len - recv);
             recv += ret;
         }
         while (recv != buff.len);
@@ -180,7 +181,7 @@ void ssl_server_main(int port)
         send_buffer.mark();
     }
 
-    sock.close();
+    sock.Close();
 
     BIO_free(pem);
     SSL_CTX_free(ctx);
@@ -206,10 +207,11 @@ void test_connection_success()
     resolve_host_ipv4("127.0.0.1", addr);
 
     // connect the client socket
-    sslsocket sock;
-    sock.begin_connect(addr, 8001);
+    SslSocket sock;
+    sock.BeginConnect(addr, 8001);
     newsflash::wait(sock);
-    sock.complete_connect();
+    const auto err = sock.CompleteConnect();
+    BOOST_REQUIRE(err == std::error_code());
 
     // transfer data
     for (auto& buff : buffers)
@@ -219,9 +221,9 @@ void test_connection_success()
         int sent = 0;
         do
         {
-            auto can_write = sock.wait(false, true);
+            auto can_write = sock.GetWaitHandle(false, true);
             newsflash::wait(can_write);
-            int ret = sock.sendsome(buff.data + sent, buff.len - sent);
+            int ret = sock.SendSome(buff.data + sent, buff.len - sent);
             sent += ret;
         }
         while (sent != buff.len);

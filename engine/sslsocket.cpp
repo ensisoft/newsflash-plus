@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -20,7 +20,7 @@
 
 #define OPENSSL_THREAD_DEFINES
 
-#include <newsflash/config.h>
+#include "newsflash/config.h"
 
 #if defined(WINDOWS_OS)
 #  include <windows.h>
@@ -42,22 +42,23 @@
 #include <cassert>
 #include <cstring>
 #include <chrono>
+
 #include "sslsocket.h"
 #include "sslcontext.h"
 #include "socketapi.h"
 
 // openssl has cryptic meanings for the special error codes SSL_ERROR_WANT_READ and
 // SSL_ERROR_WANT_WRITE. Basically what these means the the SSL_read/SSL_read operation
-// could not be completed because an SSL transaction is taking place and is not complete yet. 
+// could not be completed because an SSL transaction is taking place and is not complete yet.
 // Thus SSL_ERROR_WANT_WRITE means that the SSL state machine wants to perform a write
-// and SSL_ERROR_WANT_READ means that the SSL state machine wants to perform a read. 
+// and SSL_ERROR_WANT_READ means that the SSL state machine wants to perform a read.
 // We should wait untill the socket can perform these operations and then retry the said operation again
 // with same parameters.
 //
 // It's also possible that with blocking sockets the code will block indefinitely in SSL_read.
 // If we use select to check if the socket is readable it doesnt mean that SSL_read will return
 // because the socket could be signalled readable but there's no application data arriving
-// only SSL data. Thus SSL_read will block. 
+// only SSL data. Thus SSL_read will block.
 //
 // references:
 // http://www.openssl.org/docs/ssl/SSL_read.html
@@ -83,21 +84,17 @@ std::string get_ssl_error(unsigned long code)
 namespace newsflash
 {
 
-sslsocket::sslsocket() : socket_(0), handle_(0), ssl_(nullptr), bio_(nullptr)
-{}
-
-
-sslsocket::sslsocket(native_socket_t sock, native_handle_t handle) : 
+SslSocket::SslSocket(native_socket_t sock, native_handle_t handle) :
     socket_(sock), handle_(handle), ssl_(nullptr), bio_(nullptr)
 {
     complete_secure_connect();
 }
 
-sslsocket::sslsocket(native_socket_t sock, native_handle_t handle, SSL* ssl, BIO* bio) : 
+SslSocket::SslSocket(native_socket_t sock, native_handle_t handle, SSL* ssl, BIO* bio) :
     socket_(sock), handle_(handle), ssl_(ssl), bio_(bio)
 {}
 
-sslsocket::sslsocket(sslsocket&& other) : 
+SslSocket::SslSocket(SslSocket&& other) :
     socket_(other.socket_), handle_(other.handle_), ssl_(other.ssl_), bio_(other.bio_)
 {
     other.socket_ = 0;
@@ -106,56 +103,59 @@ sslsocket::sslsocket(sslsocket&& other) :
     other.bio_    = nullptr;
 }
 
-sslsocket::~sslsocket()
+SslSocket::~SslSocket()
 {
-    close();
+    Close();
 }
 
-void sslsocket::begin_connect(ipv4addr_t host, ipv4port_t port)
+void SslSocket::BeginConnect(ipv4addr_t host, ipv4port_t port)
 {
     assert(!socket_);
     assert(!handle_);
 
     const auto& ret = begin_socket_connect(host, port);
     if (socket_)
-        close();
+        Close();
 
     socket_ = ret.first;
     handle_ = ret.second;
 }
 
-void sslsocket::complete_connect()
+std::error_code SslSocket::CompleteConnect()
 {
     assert(socket_);
     assert(handle_);
 
-    complete_socket_connect(handle_, socket_);
+    auto connection_error = complete_socket_connect(handle_, socket_);
+    if (connection_error)
+        return connection_error;
     complete_secure_connect();
+    return std::error_code();
 }
 
 
-void sslsocket::sendall(const void* buff, int len) 
+void SslSocket::SendAll(const void* buff, int len)
 {
-    const char* ptr = static_cast<const char*>(buff);      
+    const char* ptr = static_cast<const char*>(buff);
 
     int sent = 0;
-    do 
+    do
     {
-        sent += sendsome(ptr + sent, len - sent);
+        sent += SendSome(ptr + sent, len - sent);
     }
     while (sent != len);
 }
 
-int sslsocket::sendsome(const void* buff, int len)
+int SslSocket::SendSome(const void* buff, int len)
 {
     ERR_clear_error();
     // the SSL_read operation may fail because SSL handshake
     // is being done transparently and that requires IO on the socket
-    // which cannot be completed at the time. This is indicated by 
+    // which cannot be completed at the time. This is indicated by
     // SSL_ERROR_WANT_READ, SSL_ERROR_WANT_WRITE. When this happens
     // we need to wait utill the condition can be satisfied on the
     // underlying socket object (can read/write) and then restart
-    // the SSL operation with the *same* parameters.        
+    // the SSL operation with the *same* parameters.
     int sent = 0;
     do
     {
@@ -197,18 +197,18 @@ int sslsocket::sendsome(const void* buff, int len)
                     }
                 }
                 break;
-                
+
             default:
                 throw std::runtime_error("SSL_write");
         }
     }
     while (!sent);
 
-    // on windows writeability is edge triggered, 
+    // on windows writeability is edge triggered,
     // i.e. the event is signaled once when the socket is writeable and a call
     // to send clears the signal. the signal remains cleared
     // untill send fails with WSAEWOULDBLOCK which will schedule
-    // the event for signaling once the socket can write more.        
+    // the event for signaling once the socket can write more.
 
 #if defined(WINDOWS_OS)
     // set the signal manually since the socket can write more,
@@ -220,19 +220,19 @@ int sslsocket::sendsome(const void* buff, int len)
     return sent;
 }
 
-int sslsocket::recvsome(void* buff, int capacity)
+int SslSocket::RecvSome(void* buff, int capacity)
 {
     ERR_clear_error();
     // the SSL_read operation may fail because SSL handshake
     // is being done transparently and that requires IO on the socket
-    // which cannot be completed at the time. This is indicated by 
+    // which cannot be completed at the time. This is indicated by
     // SSL_ERROR_WANT_READ, SSL_ERROR_WANT_WRITE. When this happens
     // we need to wait utill the condition can be satisfied on the
     // underlying socket object (can read/write) and then restart
-    // the SSL operation with the *same* parameters.        
+    // the SSL operation with the *same* parameters.
 
     int recv = 0;
-    do 
+    do
     {
         const int ret = SSL_read(ssl_, buff, capacity);
         switch (SSL_get_error(ssl_, ret))
@@ -276,7 +276,7 @@ int sslsocket::recvsome(void* buff, int capacity)
 
             // socket was closed.
             case SSL_ERROR_ZERO_RETURN:
-                return 0;                
+                return 0;
 
             default:
                 throw std::runtime_error("SSL_read");
@@ -288,15 +288,15 @@ int sslsocket::recvsome(void* buff, int capacity)
 }
 
 
-void sslsocket::close()
+void SslSocket::Close()
 {
     if (ssl_)
     {
-        // SSL_free() also calls the free()ing procedures for indirectly 
+        // SSL_free() also calls the free()ing procedures for indirectly
         // affected items, if applicable: the buffering BIO, the read and
         // write BIOs, cipher lists specially created for this ssl, the
         // SSL_SESSION.
-         
+
         SSL_free(ssl_);
         ssl_ = nullptr;
     }
@@ -309,35 +309,35 @@ void sslsocket::close()
     }
 }
 
-waithandle sslsocket::wait() const
+waithandle SslSocket::GetWaitHandle() const
 {
     return { handle_, socket_, true, true };
 }
 
-waithandle sslsocket::wait(bool waitread, bool waitwrite) const
+waithandle SslSocket::GetWaitHandle(bool waitread, bool waitwrite) const
 {
     assert(waitread || waitwrite);
-    
+
     return { handle_, socket_, waitread, waitwrite };
 }
 
-bool sslsocket::can_recv() const 
+bool SslSocket::CanRecv() const
 {
     ERR_clear_error();
 
     if (SSL_pending(ssl_))
         return true;
 
-    auto handle = wait(true, false);
+    auto handle = GetWaitHandle(true, false);
     return wait_for(handle, std::chrono::milliseconds(0));
 }
 
-sslsocket& sslsocket::operator=(sslsocket&& other)
+SslSocket& SslSocket::operator=(SslSocket&& other)
 {
     if (&other == this)
         return *this;
 
-    sslsocket tmp(std::move(*this));
+    SslSocket tmp(std::move(*this));
 
     std::swap(socket_, other.socket_);
     std::swap(handle_, other.handle_);
@@ -346,61 +346,61 @@ sslsocket& sslsocket::operator=(sslsocket&& other)
     return *this;
 }
 
-void sslsocket::ssl_wait_write()
+void SslSocket::ssl_wait_write()
 {
-    // the problem with the SSL socket is that 
-    // because of the underlying SSL protocol 
-    // libssl can ask us to do reads/writes that are 
-    // outside of the reads/writes that  the client has asked us to do. 
-    // the problem with this is that the cancellation and timeout 
+    // the problem with the SSL socket is that
+    // because of the underlying SSL protocol
+    // libssl can ask us to do reads/writes that are
+    // outside of the reads/writes that  the client has asked us to do.
+    // the problem with this is that the cancellation and timeout
     // logic is currently handled by the connection class
-    // and it expects that the socket then just works, i.e. 
-    // when handle has signaled writeable recvsome is then 
-    // able to read data. but this doesn't apply for the 
-    // SSL socket because the SSL protocol might ask us to 
-    // for example write. 
+    // and it expects that the socket then just works, i.e.
+    // when handle has signaled writeable recvsome is then
+    // able to read data. but this doesn't apply for the
+    // SSL socket because the SSL protocol might ask us to
+    // for example write.
     // so what can happen is something like this:
-    // 
+    //
     // 1. client calls wait for cancel + socket objects
     // 2. socket signals read
     // 3. client calls socket::recvsome
     // 4. SSL indicates want to write
     // 5. socket::ssl_wait_write is called
-    // 6. connection has dropped    
-    // 7. ssl_wait_write uses infinite wait 
+    // 6. connection has dropped
+    // 7. ssl_wait_write uses infinite wait
     // 8. connection is now HUNG
-    // 
+    //
     // this means that these waits really need to have a timeout value.
     // however the arbitrary timeout value here is a problem, cause
-    // in case that the connection is just super slow a short timeout 
-    // can can timeout too fast. But then on the other hand if don't 
-    // have a timeout value we have a bug here and it's possible that the 
+    // in case that the connection is just super slow a short timeout
+    // can can timeout too fast. But then on the other hand if don't
+    // have a timeout value we have a bug here and it's possible that the
     // application ends up waiting infinitely.
     //
-    // Having a long timeout then on the other hand has the problem 
-    // that if the connection object is closed, we end up waiting 
+    // Having a long timeout then on the other hand has the problem
+    // that if the connection object is closed, we end up waiting
     // and blocking excessively long here, and also creating an error
-    // when we could just continue in "cancellation" code path. 
+    // when we could just continue in "cancellation" code path.
     //
     // A way to fix this would be to move the cancellation mechanism
     // into the socket object and reflect this in the socket class's API.
     // if we had this then we could wait here for the socket and the
     // cancellation object, and quickly stop waiting if cancellation occurs
-    auto writeable = wait(false, true);
+    auto writeable = GetWaitHandle(false, true);
     if (!newsflash::wait_for(writeable, std::chrono::seconds(10)))
         throw std::runtime_error("SSL socket write timeout");
 }
 
-void sslsocket::ssl_wait_read()
+void SslSocket::ssl_wait_read()
 {
     // see the comment in ssl_wait_write
 
-    auto readable = wait(true, false);
+    auto readable = GetWaitHandle(true, false);
     if (!newsflash::wait_for(readable, std::chrono::seconds(10)))
-        throw std::runtime_error("SSL socket read timeout"); 
+        throw std::runtime_error("SSL socket read timeout");
 }
 
-void sslsocket::complete_secure_connect()
+void SslSocket::complete_secure_connect()
 {
     // create SSL and BIO objects and then initialize ssl client mode.
     // setup SSL session now that we have TCP connection.
@@ -441,7 +441,7 @@ void sslsocket::complete_secure_connect()
 
             case SSL_ERROR_SYSCALL:
                 if (ret == -1)
-                    throw std::system_error(get_last_socket_error(), 
+                    throw std::system_error(get_last_socket_error(),
                         "SSL socket I/O error");
                 // fallthrough intended
 

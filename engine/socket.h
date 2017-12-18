@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -22,7 +22,10 @@
 
 #pragma once
 
-#include <newsflash/config.h>
+#include "newsflash/config.h"
+
+#include <system_error>
+
 #include "socketapi.h"
 #include "waithandle.h"
 
@@ -30,46 +33,45 @@ namespace newsflash
 {
     // socket represents a low level socket connection to the remote server
     // for sending and receiving data
-    class socket 
+    class Socket
     {
     public:
-        virtual ~socket() = default;
+        virtual ~Socket() = default;
+
         // Connect this socket to the specified host on the specified port.
         // This function is non-blocking and returns immediately.
         // To complete the connection attempt call complete connect
         // after the waithandle becomes signaled.
-        virtual void begin_connect(ipv4addr_t host, ipv4port_t port) = 0;
+        virtual void BeginConnect(ipv4addr_t host, ipv4port_t port) = 0;
 
         // Complete the connection attempt. On succesful return
         // the connection is ready to be used for sending and receiving data.
-        // on error an exception is thrown.
-        virtual void complete_connect() = 0;
-        
+        virtual std::error_code CompleteConnect() = 0;
+
         // Write all of the input data to the socket.
-        // On error an exception is thrown.
-        virtual void sendall(const void* buff, int len) = 0;
+        virtual void SendAll(const void* buff, int len) = 0;
 
         // Write some input data to the socket.
         // Returns numbers of bytes written.
         // on error an exception is thrown.
-        virtual int sendsome(const void* buff, int len) = 0;
+        virtual int SendSome(const void* buff, int len) = 0;
 
         // Receive some data into the buffer.
         // Returns the number of bytes received (which can be 0).
         // on error an exception is thrown.
-        virtual int recvsome(void* buff, int capacity) = 0;
+        virtual int RecvSome(void* buff, int capacity) = 0;
 
         // Close the socket.
-        virtual void close() = 0;
+        virtual void Close() = 0;
 
         // Get handle for waiting on the socket for writability/readability.
-        virtual waithandle wait() const = 0;
+        virtual waithandle GetWaitHandle() const = 0;
 
         // Get handle for waiting either writability or readability or both.
-        virtual waithandle wait(bool waitread, bool waitwrite) const = 0;
+        virtual waithandle GetWaitHandle(bool read, bool write) const = 0;
 
         // returns true if the socket buffer has more data for immediate read.
-        virtual bool can_recv() const = 0;
+        virtual bool CanRecv() const = 0;
     protected:
     private:
     };

@@ -33,36 +33,37 @@
 namespace newsflash
 {
     // transfer data over SSL over TCP socket.
-    class sslsocket : public socket, boost::noncopyable
+    class SslSocket : public Socket
     {
     public:
-        sslsocket();
+        SslSocket()
+        {}
 
         // take ownership of the existing socket and handle
         // objects and try to initialize SSL in client mode.
         // the socket is assumed to be already connected.
-        sslsocket(native_socket_t sock, native_handle_t handle);
+        SslSocket(native_socket_t sock, native_handle_t handle);
 
         // take ownership of the existing socket, handle
         // and SSL objects. The socket is assume to be already
         // connected and associated with the given SSL objects.
         // Also the SSL operation mode is presumed to be already set
         // (SSL_accept vs. SSL_connect).
-        sslsocket(native_socket_t sock, native_handle_t handle, SSL* ssl, BIO* bio);
-        sslsocket(sslsocket&& other);
-       ~sslsocket();
+        SslSocket(native_socket_t sock, native_handle_t handle, SSL* ssl, BIO* bio);
+        SslSocket(SslSocket&& other);
+       ~SslSocket();
 
-        virtual void begin_connect(ipv4addr_t host, ipv4port_t port) override;
-        virtual void complete_connect() override;
-        virtual void sendall(const void* buff, int len) override;
-        virtual int sendsome(const void* buff, int len) override;
-        virtual int recvsome(void* buff, int capacity) override;
-        virtual void close() override;
-        virtual waithandle wait() const override;
-        virtual waithandle wait(bool waitread, bool waitwrite) const override;
-        virtual bool can_recv() const override;
+        virtual void BeginConnect(ipv4addr_t host, ipv4port_t port) override;
+        virtual std::error_code CompleteConnect() override;
+        virtual void SendAll(const void* buff, int len) override;
+        virtual int SendSome(const void* buff, int len) override;
+        virtual int RecvSome(void* buff, int capacity) override;
+        virtual void Close() override;
+        virtual waithandle GetWaitHandle() const override;
+        virtual waithandle GetWaitHandle(bool waitread, bool waitwrite) const override;
+        virtual bool CanRecv() const override;
 
-       sslsocket& operator=(sslsocket&& other);
+       SslSocket& operator=(SslSocket&& other);
     private:
         void ssl_wait_write();
         void ssl_wait_read();
@@ -70,16 +71,16 @@ namespace newsflash
 
     private:
         // actual socket handle
-        native_socket_t socket_;
+        native_socket_t socket_ = 0;
 
         // wait handle for the socket
-        native_handle_t handle_;
+        native_handle_t handle_ = 0;
 
         // SSL state
-        SSL* ssl_;
+        SSL* ssl_ = nullptr;
 
         // SSL IO object
-        BIO* bio_;
+        BIO* bio_ = nullptr;
 
         sslcontext context_;
     };

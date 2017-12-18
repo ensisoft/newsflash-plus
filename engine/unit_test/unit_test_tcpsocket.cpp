@@ -68,7 +68,7 @@ native_socket_t openhost(int& port)
     return sock;
 }
 
-tcpsocket accept(native_socket_t fd)
+TcpSocket accept(native_socket_t fd)
 {
     struct sockaddr_in addr {0};
     socklen_t len = sizeof(addr);
@@ -88,11 +88,12 @@ void test_connection_failure()
         std::uint32_t addr;
         resolve_host_ipv4("127.0.0.1", addr);
 
-        tcpsocket sock;
-        sock.begin_connect(addr, 8000);
+        TcpSocket sock;
+        sock.BeginConnect(addr, 8000);
 
         newsflash::wait(sock);
-        REQUIRE_EXCEPTION(sock.complete_connect());
+        const auto err = sock.CompleteConnect();
+        BOOST_REQUIRE(err != std::error_code());
     }
 }
 
@@ -107,11 +108,12 @@ void test_connection_success()
     std::uint32_t addr;
     resolve_host_ipv4("127.0.0.1", addr);
 
-    tcpsocket tcp;
-    tcp.begin_connect(addr, port);
+    TcpSocket tcp;
+    tcp.BeginConnect(addr, port);
 
-    tcpsocket client = ::accept(sock);
-    tcp.complete_connect();
+    TcpSocket client = ::accept(sock);
+    const auto err = client.CompleteConnect();
+    BOOST_REQUIRE(err == std::error_code());
 
     newsflash::closesocket(sock);
 
@@ -147,22 +149,22 @@ void test_connection_success()
         {
             if (sent != buff.len)
             {
-                auto handle = client.wait(false, true);
+                auto handle = client.GetWaitHandle(false, true);
                 newsflash::wait(handle);
                 TEST_REQUIRE(handle.write());
 
-                int ret = client.sendsome(buff.data + sent, buff.len - sent);
+                int ret = client.SendSome(buff.data + sent, buff.len - sent);
                 sent += ret;
 
                 TEST_MESSAGE("sent %d bytes", sent);
             }
             if (recv != buff.len)
             {
-                auto handle = tcp.wait(true, false);
+                auto handle = tcp.GetWaitHandle(true, false);
                 newsflash::wait(handle);
                 TEST_REQUIRE(handle.read());
 
-                int ret = tcp.recvsome(buff.buff + recv, buff.len - recv);
+                int ret = tcp.RecvSome(buff.buff + recv, buff.len - recv);
                 recv += ret;
 
                 TEST_MESSAGE("recv %d bytes", recv);

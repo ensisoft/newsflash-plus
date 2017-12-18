@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -41,7 +41,7 @@ namespace newsflash
         waithandle(native_handle_t handle, type t, bool r, bool w)
             : handle_(handle), type_(t), read_(r), write_(w)
         {
-            assert(r || w); 
+            assert(r || w);
             extra.socket_ = 0;
         }
         waithandle(native_handle_t handle, native_socket_t sock, bool r, bool w)
@@ -57,7 +57,7 @@ namespace newsflash
             return read_;
         }
 
-        // check for writability. 
+        // check for writability.
         // this is only available when the handle refers to a socket.
         bool write() const
         {
@@ -72,8 +72,8 @@ namespace newsflash
 
 
         // wait indefinitely for the listed handles.
-        // returns when any handle becomes signaled. 
-        static 
+        // returns when any handle becomes signaled.
+        static
         void wait(const list& handles)
         {
             wait_handles(handles, nullptr);
@@ -84,13 +84,13 @@ namespace newsflash
         // if timeout occurs returns false, otherwise true
         // and the handles need to be checked which one is
         // in signaled state.
-        static 
+        static
         bool wait(const list& handles, const std::chrono::milliseconds& ms)
         {
             return wait_handles(handles, &ms);
         }
     private:
-        static 
+        static
         bool wait_handles(const list& handles, const std::chrono::milliseconds* ms);
 
         native_handle_t handle_;
@@ -105,8 +105,8 @@ namespace newsflash
     template<typename T>
     void wait(const T& obj)
     {
-        auto handle = obj.wait();
-        
+        auto handle = obj.GetWaitHandle();
+
         const waithandle::list handles {
             &handle
         };
@@ -127,23 +127,23 @@ namespace newsflash
     void wait(waithandle& h1)
     {
         const waithandle::list handles { &h1 };
-        
+
         waithandle::wait(handles);
     }
     inline
     void wait(waithandle& h1, waithandle& h2)
     {
         const waithandle::list handles { &h1, &h2 };
-        
+
         waithandle::wait(handles);
     }
     inline
     void wait(waithandle& h1, waithandle& h2, waithandle& h3)
     {
         const waithandle::list handles { &h1, &h2, &h3 };
-        
+
         waithandle::wait(handles);
-    }    
+    }
 
     inline
     void wait(waithandle& h1, waithandle& h2, waithandle& h3, waithandle& h4)
@@ -153,24 +153,24 @@ namespace newsflash
         waithandle::wait(handles);
     }
 
-    inline 
+    inline
     bool wait_for(waithandle& h1, const std::chrono::milliseconds& ms)
     {
         const waithandle::list handles { &h1 };
-        
+
         return waithandle::wait(handles, ms);
     }
-    inline 
+    inline
     bool wait_for(waithandle& h1, waithandle& h2, const std::chrono::milliseconds& ms)
     {
         const waithandle::list handles { &h1, &h2 };
 
         return waithandle::wait(handles, ms);
     }
-    inline 
+    inline
     bool wait_for(waithandle& h1, waithandle& h2, waithandle& h3, const std::chrono::milliseconds& ms)
     {
-        const waithandle::list handles { &h1, &h2, &h3 }; 
+        const waithandle::list handles { &h1, &h2, &h3 };
 
         return waithandle::wait(handles, ms);
     }

@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -18,10 +18,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <newsflash/config.h>
+#include "newsflash/config.h"
 
 #include <algorithm> // for min/max
 #include <cassert>
+
 #include "sockets.h"
 #include "tcpsocket.h"
 #include "socketapi.h"
@@ -31,41 +32,23 @@
 namespace newsflash
 {
 
-tcpsocket::tcpsocket() : socket_(0), handle_(0)
-{}
-
-tcpsocket::tcpsocket(native_socket_t sock, native_handle_t handle) : 
-    socket_(sock), handle_(handle)
-{}
-
-tcpsocket::tcpsocket(tcpsocket&& other) : socket_(other.socket_), handle_(other.handle_)
-{
-    other.socket_ = 0;
-    other.handle_ = 0;
-}
-
-tcpsocket::~tcpsocket()
-{
-    close();
-}
-
-void tcpsocket::begin_connect(ipv4addr_t host, ipv4port_t port) 
+void TcpSocket::BeginConnect(ipv4addr_t host, ipv4port_t port)
 {
     const auto& ret = begin_socket_connect(host, port);
 
     if (socket_)
-        close();
+        Close();
 
     socket_ = ret.first;
-    handle_ = ret.second;    
+    handle_ = ret.second;
 }
 
-void tcpsocket::complete_connect()
+std::error_code TcpSocket::CompleteConnect()
 {
-    complete_socket_connect(handle_, socket_);
+    return complete_socket_connect(handle_, socket_);
 }
 
-void tcpsocket::sendall(const void* buff, int len)
+void TcpSocket::SendAll(const void* buff, int len)
 {
     assert(socket_);
 
@@ -79,16 +62,16 @@ void tcpsocket::sendall(const void* buff, int len)
 
     const char* ptr = static_cast<const char*>(buff);
     int sent = 0;
-    do 
+    do
     {
         int ret = ::send(socket_, ptr + sent, len - sent, flags);
         if (ret == OS_SOCKET_ERROR)
-        { 
+        {
             const auto err = get_last_socket_error();
             if (err != std::errc::operation_would_block)
                 throw std::system_error(err, "socket send");
 
-            auto handle = wait(false, true);
+            auto handle = GetWaitHandle(false, true);
             newsflash::wait(handle);
             ret = 0;
         }
@@ -97,7 +80,7 @@ void tcpsocket::sendall(const void* buff, int len)
     while (sent < len);
 }
 
-int tcpsocket::sendsome(const void* buff, int len)
+int TcpSocket::SendSome(const void* buff, int len)
 {
     assert(socket_);
 
@@ -105,9 +88,9 @@ int tcpsocket::sendsome(const void* buff, int len)
 
 #if defined(LINUX_OS)
     flags = MSG_NOSIGNAL;
-    
+
     // on linux the the packet is silently dropped if the device queue overflows (ENOBUFS)
-    // so we check for the how much currently space is available 
+    // so we check for the how much currently space is available
     // in the sendbuf and then crop the len if needed.
     // todo: should this be done for winsock also?
     int sendbuf = 1024;
@@ -126,11 +109,11 @@ int tcpsocket::sendsome(const void* buff, int len)
         if (err != std::errc::operation_would_block)
             throw std::system_error(err, "socket send");
 
-        // on windows writeability is edge triggered, 
+        // on windows writeability is edge triggered,
         // i.e. the event is signaled once when the socket is writeable and a call
         // to send clears the signal. the signal remains cleared
         // untill send fails with WSAEWOULDBLOCK which will schedule
-        // the event for signaling once the socket can write more.        
+        // the event for signaling once the socket can write more.
         return 0;
     }
 #if defined(WINDOWS_OS)
@@ -143,7 +126,7 @@ int tcpsocket::sendsome(const void* buff, int len)
 }
 
 
-int tcpsocket::recvsome(void* buff, int capacity)
+int TcpSocket::RecvSome(void* buff, int capacity)
 {
     assert(socket_);
 
@@ -161,7 +144,7 @@ int tcpsocket::recvsome(void* buff, int capacity)
     return ret;
 }
 
-void tcpsocket::close()
+void TcpSocket::Close()
 {
     if (!socket_)
         return;
@@ -171,31 +154,31 @@ void tcpsocket::close()
     handle_ = 0;
 }
 
-waithandle tcpsocket::wait() const
+waithandle TcpSocket::GetWaitHandle() const
 {
     return { handle_, socket_, true, true };
 }
 
-waithandle tcpsocket::wait(bool waitread, bool waitwrite) const
+waithandle TcpSocket::GetWaitHandle(bool waitread, bool waitwrite) const
 {
     assert(waitread || waitwrite);
-    
+
     return { handle_, socket_, waitread, waitwrite };
 }
 
-bool tcpsocket::can_recv() const 
+bool TcpSocket::CanRecv() const
 {
-    auto handle = wait(true, false);
+    auto handle = GetWaitHandle(true, false);
     return wait_for(handle, std::chrono::milliseconds(0));
 
 }
 
-tcpsocket& tcpsocket::operator=(tcpsocket&& other)
+TcpSocket& TcpSocket::operator=(TcpSocket&& other)
 {
     if (&other == this)
         return *this;
 
-    tcpsocket tmp(std::move(*this));
+    TcpSocket tmp(std::move(*this));
 
     std::swap(socket_, other.socket_);
     std::swap(handle_, other.handle_);

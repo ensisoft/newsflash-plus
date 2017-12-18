@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -20,11 +20,13 @@
 
 #pragma once
 
-#include <newsflash/config.h>
+#include "newsflash/config.h"
+
 #include <system_error>
 #include <string>
 #include <cstdint>
 #include <utility> // for pair
+
 #include "native_types.h"
 
 namespace newsflash
@@ -40,14 +42,14 @@ namespace newsflash
     native_handle_t get_wait_handle(native_socket_t sock);
 
     // initiate a new stream (TCP) based connection to the given host.
-    // returns the new socket and wait object handles. The socket is 
+    // returns the new socket and wait object handles. The socket is
     // initially non-blocking. Check the wait handle for completion of the connection attempt.
     std::pair<native_socket_t, native_handle_t> begin_socket_connect(ipv4addr_t host, ipv4port_t port);
 
-    // complete the previously started connection attempt. 
+    // complete the previously started connection attempt.
     // if connection was succesful this also makes the socket blocking again.
     // on error an exception is thrown.
-    void complete_socket_connect(native_handle_t handle, native_socket_t sock);
+    std::error_code complete_socket_connect(native_handle_t handle, native_socket_t sock);
 
     // get the last occurred socket error.
     std::error_code get_last_socket_error();
