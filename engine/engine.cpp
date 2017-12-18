@@ -597,6 +597,7 @@ public:
             ui_.bps   = 0;
             ui_.task  = 0;
             ui_.desc  = "";
+            std::string what;
             switch (err)
             {
                 case Connection::Error::None:
@@ -604,28 +605,51 @@ public:
                     break;
                 case Connection::Error::Resolve:
                     ui_.error = ui::Connection::Errors::Resolve;
+                    what = "Failed to resolve host.";
                     break;
                 case Connection::Error::Refused:
                     ui_.error = ui::Connection::Errors::Refused;
+                    what = "Connection was refused.";
                     break;
                 case Connection::Error::AuthenticationRejected:
                     ui_.error = ui::Connection::Errors::AuthenticationRejected;
+                    what = "Session authentication was rejected.";
                     break;
                 case Connection::Error::PermissionDenied:
                     ui_.error = ui::Connection::Errors::NoPermission;
+                    what = "Session permission denied. Out of quota?";
                     break;
                 case Connection::Error::Network:
                     ui_.error = ui::Connection::Errors::Network;
+                    what = "Connection was closed unexpectedly.";
                     break;
                 case Connection::Error::Timeout:
                     ui_.error = ui::Connection::Errors::Timeout;
+                    what = "Connection timed out.";
                     break;
                 case Connection::Error::PipelineReset:
+                    ui_.error = ui::Connection::Errors::Other;
+                    what = "Pipelined commands forced connection reset.";
+                    break;
                 case Connection::Error::Reset:
+                    ui_.error = ui::Connection::Errors::Other;
+                    what = "Connection was reset.";
+                    break;
                 case Connection::Error::Protocol:
+                    ui_.error = ui::Connection::Errors::Other;
+                    what = "NNTP protocol error.";
+                    break;
                 case Connection::Error::Other:
                     ui_.error = ui::Connection::Errors::Other;
+                    what = "Unknown connection error.";
                     break;
+            }
+            if (engine_state.on_error_callback)
+            {
+                ui::SystemError error;
+                error.resource = ui_.host;
+                error.what     = what;
+                engine_state.on_error_callback(error);
             }
         }
         else
