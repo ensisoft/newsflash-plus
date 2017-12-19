@@ -25,4 +25,6 @@
 #  pragma clang diagnostic pop
 #elif defined(__GCC__)
 #  pragma GCC diagnostic pop
+#elif defined(__MSVC__)
+#  pragma warning( pop )
 #endif

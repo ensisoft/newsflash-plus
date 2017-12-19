@@ -39,5 +39,11 @@
 // GCC 5.1.0 with boost 1_51_0
 #  pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #  pragma GCC diagnostic ignored "-Wterminate" // boost.test.minimal
+#elif defined(__MSVC__)
+#  pragma warning( push )
+#  pragma warning(disable : 4244) //
+#  pragma warning(disable : 4535) // 
+#  pragma warning(disable : 4503) // boost spirit warning about decorated name length exceeding maximum
+#  pragma warning(disable : 4251) // Qt warning about internals not having dll interface
 #endif
 
