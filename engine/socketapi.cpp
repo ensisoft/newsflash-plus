@@ -120,8 +120,7 @@ std::error_code complete_socket_connect(native_handle_t handle, native_socket_t 
             case WSAECONNREFUSED: return std::error_code(ECONNREFUSED, std::generic_category());
             case WSAEHOSTUNREACH: return std::error_code(EHOSTUNREACH, std::generic_category());
         }
-        return std::error_code(connection_error, std::system_category(),
-            "complete socket connect failed");
+        return std::error_code(connection_error, std::system_category());
     }
     return std::error_code();
 }

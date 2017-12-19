@@ -87,7 +87,7 @@ void Event::ResetSignal()
 
 bool Event::IsSignalled() const
 {
-    const auto ret = WaitForSingleObject(pimpl_->handle, 0);
+    const auto ret = ::WaitForSingleObject(pimpl_->handle, 0);
     if (ret == WAIT_OBJECT_0)
         return true;
     else if (ret == WAIT_TIMEOUT)

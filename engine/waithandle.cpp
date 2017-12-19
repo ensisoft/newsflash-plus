@@ -95,7 +95,7 @@ bool WaitHandle::WaitForMultipleHandles(const WaitList& handles, const std::chro
         signaled = ret - WAIT_OBJECT_0;
 
         auto handle = handles[ret - WAIT_OBJECT_0];
-        if (handle->type_ == waithandle::type::socket)
+        if (handle->type_ == WaitHandle::Type::Socket)
         {
             // unfortunately WaitForMultipleObjects doesn't tell us what
             // is available when the wait handle is associated with a socket.
@@ -104,7 +104,7 @@ bool WaitHandle::WaitForMultipleHandles(const WaitList& handles, const std::chro
             // also if neither is set then we assume that the socket is in connecting state
             // and the result is now available  (FD_CONNECT in WSAEventSelect).
             // We translate this to "readability" to follow linux semantics.
-            const std::pair<bool, bool>& state = check_read_write(handle->extra.socket_);
+            const std::pair<bool, bool>& state = check_read_write(handle->socket_);
 
             if ((state.first && handle->read_) || (state.second && handle->write_))
             {
