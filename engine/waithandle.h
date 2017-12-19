@@ -20,168 +20,191 @@
 
 #pragma once
 
-#include <newsflash/config.h>
+#include "newsflash/config.h"
+
 #include <chrono>
 #include <vector>
 #include <cassert>
+
 #include "native_types.h"
 
 namespace newsflash
 {
     // waitable handle object. the handles are not resuable and should
-    // only be used in a single call to wait(...). after that a new
+    // only be used in a single call to WaitForMultipleHandles(...). after that a new
     // waitable handle needs to be queried from the object.
-    class waithandle
+    class WaitHandle
     {
     public:
-        typedef std::vector<waithandle*> list;
+        typedef std::vector<WaitHandle*> WaitList;
 
-        enum class type { socket, event, pipe };
+        enum class Type {
+            // handle is a socket
+            Socket,
+            // handle is an event object
+            Event,
+            // handle is a pipe
+            pipe
+        };
 
-        waithandle(native_handle_t handle, type t, bool r, bool w)
-            : handle_(handle), type_(t), read_(r), write_(w)
+        WaitHandle(native_handle_t handle, Type type, bool read, bool write)
+            : handle_(handle), type_(type), read_(read), write_(write)
         {
-            assert(r || w);
-            extra.socket_ = 0;
+            assert(read || write);
         }
-        waithandle(native_handle_t handle, native_socket_t sock, bool r, bool w)
-            : handle_(handle), type_(type::socket), read_(r), write_(w)
+        WaitHandle(native_handle_t handle, native_socket_t sock, bool read, bool write)
+            : handle_(handle), socket_(sock), type_(Type::Socket), read_(read), write_(write)
         {
-            assert(r || w);
-            extra.socket_ = sock;
+            assert(read || write);
         }
 
         // check for readability. this is always available.
-        bool read() const
+        bool CanRead() const
         {
             return read_;
         }
 
         // check for writability.
         // this is only available when the handle refers to a socket.
-        bool write() const
+        bool CanWrite() const
         {
-            assert(type_ == type::socket);
+            assert(type_ == Type::Socket);
             return write_;
         }
 
         operator bool() const
         {
-            return read();
+            return CanRead();
         }
 
 
-        // wait indefinitely for the listed handles.
+        // WaitForMultipleHandles indefinitely for the listed handles.
         // returns when any handle becomes signaled.
-        static
-        void wait(const list& handles)
+        static void WaitForMultipleHandles(const WaitList& handles)
         {
-            wait_handles(handles, nullptr);
+            WaitForMultipleHandles(handles, nullptr);
         }
 
-        // wait untill the specified milliseconds elapses
+        // WaitForMultipleHandles until the specified milliseconds elapses
         // or any of the listed handles becomes signaled.
         // if timeout occurs returns false, otherwise true
         // and the handles need to be checked which one is
         // in signaled state.
-        static
-        bool wait(const list& handles, const std::chrono::milliseconds& ms)
+        static bool WaitForMultipleHandles(const WaitList& handles, const std::chrono::milliseconds& ms)
         {
-            return wait_handles(handles, &ms);
+            return WaitForMultipleHandles(handles, &ms);
         }
     private:
-        static
-        bool wait_handles(const list& handles, const std::chrono::milliseconds* ms);
-
-        native_handle_t handle_;
-        type type_;
-        bool read_;
-        bool write_;
-        union {
-            native_socket_t socket_;
-        } extra ;
+        static bool WaitForMultipleHandles(const WaitList& handles, const std::chrono::milliseconds* ms);
+    private:
+        native_handle_t handle_ = 0;
+        native_socket_t socket_ = 0;
+        Type type_ = Type::Socket;
+        bool read_ = false;
+        bool write_ = false;
     };
 
     template<typename T>
-    void wait(const T& obj)
+    void WaitForSingleObject(const T& obj)
     {
         auto handle = obj.GetWaitHandle();
 
-        const waithandle::list handles {
+        const WaitHandle::WaitList handles {
             &handle
         };
-        waithandle::wait(handles);
+        WaitHandle::WaitForMultipleHandles(handles);
+    }
+
+    template<typename T, typename F>
+    void WaitForMultipleObjects(const T& obj1, const F& obj2)
+    {
+        auto h1 = obj1.GetWaitHandle();
+        auto h2 = obj2.GetWaitHandle();
+        const WaitHandle::WaitList handles {
+            &h1, &h2
+        };
+        WaitHandle::WaitForMultipleHandles(handles);
+    }
+    template<typename T, typename F, typename U>
+    void WaitForMultipleObjects(const T& obj1, const F& obj2, const U& obj3)
+    {
+        auto h1 = obj1.GetWaitHandle();
+        auto h2 = obj2.GetWaitHandle();
+        auto h3 = obj3.GetWaitHandle();
+        const WaitHandle::WaitList handles {
+            &h1, &h2, &h3
+        };
+        WaitHandle::WaitForMultipleHandles(handles);
     }
 
     template<typename T>
-    bool is_set(const T& obj)
+    bool IsSignaled(const T& obj)
     {
-        auto handle = obj.wait();
+        auto handle = obj.GetWaitHandle();
 
-        const waithandle::list handles { &handle };
+        const WaitHandle::WaitList handles { &handle };
 
-        return waithandle::wait(handles, std::chrono::milliseconds(0));
+        return WaitHandle::WaitForMultipleHandles(handles, std::chrono::milliseconds(0));
     }
 
     inline
-    void wait(waithandle& h1)
+    void WaitForSingleHandle(WaitHandle& h1)
     {
-        const waithandle::list handles { &h1 };
+        const WaitHandle::WaitList handles { &h1 };
 
-        waithandle::wait(handles);
+        WaitHandle::WaitForMultipleHandles(handles);
     }
     inline
-    void wait(waithandle& h1, waithandle& h2)
+    void WaitForMultipleHandles(WaitHandle& h1, WaitHandle& h2)
     {
-        const waithandle::list handles { &h1, &h2 };
+        const WaitHandle::WaitList handles { &h1, &h2 };
 
-        waithandle::wait(handles);
+        WaitHandle::WaitForMultipleHandles(handles);
     }
     inline
-    void wait(waithandle& h1, waithandle& h2, waithandle& h3)
+    void WaitForMultipleHandles(WaitHandle& h1, WaitHandle& h2, WaitHandle& h3)
     {
-        const waithandle::list handles { &h1, &h2, &h3 };
+        const WaitHandle::WaitList handles { &h1, &h2, &h3 };
 
-        waithandle::wait(handles);
-    }
-
-    inline
-    void wait(waithandle& h1, waithandle& h2, waithandle& h3, waithandle& h4)
-    {
-        const waithandle::list handles { &h1, &h2, &h3, &h4 };
-
-        waithandle::wait(handles);
+        WaitHandle::WaitForMultipleHandles(handles);
     }
 
     inline
-    bool wait_for(waithandle& h1, const std::chrono::milliseconds& ms)
+    void WaitForMultipleHandles(WaitHandle& h1, WaitHandle& h2, WaitHandle& h3, WaitHandle& h4)
     {
-        const waithandle::list handles { &h1 };
+        const WaitHandle::WaitList handles { &h1, &h2, &h3, &h4 };
 
-        return waithandle::wait(handles, ms);
-    }
-    inline
-    bool wait_for(waithandle& h1, waithandle& h2, const std::chrono::milliseconds& ms)
-    {
-        const waithandle::list handles { &h1, &h2 };
-
-        return waithandle::wait(handles, ms);
-    }
-    inline
-    bool wait_for(waithandle& h1, waithandle& h2, waithandle& h3, const std::chrono::milliseconds& ms)
-    {
-        const waithandle::list handles { &h1, &h2, &h3 };
-
-        return waithandle::wait(handles, ms);
+        WaitHandle::WaitForMultipleHandles(handles);
     }
 
     inline
-    bool wait_for(waithandle& h1, waithandle&h2, waithandle& h3, waithandle& h4,
-        const std::chrono::milliseconds& ms)
+    bool WaitForSingleHandle(WaitHandle& h1, const std::chrono::milliseconds& ms)
     {
-        const waithandle::list handles { &h1, &h2, &h3, &h4 };
+        const WaitHandle::WaitList handles { &h1 };
 
-        return waithandle::wait(handles, ms);
+        return WaitHandle::WaitForMultipleHandles(handles, ms);
+    }
+    inline
+    bool WaitForMultipleHandles(WaitHandle& h1, WaitHandle& h2, const std::chrono::milliseconds& ms)
+    {
+        const WaitHandle::WaitList handles { &h1, &h2 };
+
+        return WaitHandle::WaitForMultipleHandles(handles, ms);
+    }
+    inline
+    bool WaitForMultipleHandles(WaitHandle& h1, WaitHandle& h2, WaitHandle& h3, const std::chrono::milliseconds& ms)
+    {
+        const WaitHandle::WaitList handles { &h1, &h2, &h3 };
+
+        return WaitHandle::WaitForMultipleHandles(handles, ms);
+    }
+
+    inline
+    bool WaitForMultipleHandles(WaitHandle& h1, WaitHandle&h2, WaitHandle& h3, WaitHandle& h4, const std::chrono::milliseconds& ms)
+    {
+        const WaitHandle::WaitList handles { &h1, &h2, &h3, &h4 };
+
+        return WaitHandle::WaitForMultipleHandles(handles, ms);
     }
 
 } // newsflash

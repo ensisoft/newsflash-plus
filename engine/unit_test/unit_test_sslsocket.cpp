@@ -57,7 +57,7 @@ void test_connection_failure()
         SslSocket sock;
         sock.BeginConnect(addr, 8000);
 
-        newsflash::wait(sock);
+        newsflash::WaitForSingleObject(sock);
         std::error_code err;
         sock.CompleteConnect(&err);
         BOOST_REQUIRE(err != std::error_code());
@@ -171,7 +171,7 @@ void ssl_server_main(int port)
         do
         {
             auto can_read = sock.GetWaitHandle(true, false);
-            newsflash::wait(can_read);
+            newsflash::WaitForSingleHandle(can_read);
 
             std::error_code err;
             int ret = sock.RecvSome(buff.buff + recv, buff.len - recv, &err);
@@ -213,7 +213,7 @@ void test_connection_success()
     // connect the client socket
     SslSocket sock;
     sock.BeginConnect(addr, 8001);
-    newsflash::wait(sock);
+    newsflash::WaitForSingleObject(sock);
     std::error_code err;
     sock.CompleteConnect(&err);
     BOOST_REQUIRE(err == std::error_code());
@@ -227,7 +227,7 @@ void test_connection_success()
         do
         {
             auto can_write = sock.GetWaitHandle(false, true);
-            newsflash::wait(can_write);
+            newsflash::WaitForSingleHandle(can_write);
             std::error_code err;
             int ret = sock.SendSome(buff.data + sent, buff.len - sent, &err);
             sent += ret;

@@ -91,7 +91,7 @@ void test_connection_failure()
         TcpSocket sock;
         sock.BeginConnect(addr, 8000);
 
-        newsflash::wait(sock);
+        newsflash::WaitForSingleObject(sock);
         std::error_code err;
         sock.CompleteConnect(&err);
         BOOST_REQUIRE(err != std::error_code());
@@ -152,8 +152,8 @@ void test_connection_success()
             if (sent != buff.len)
             {
                 auto handle = client.GetWaitHandle(false, true);
-                newsflash::wait(handle);
-                TEST_REQUIRE(handle.write());
+                newsflash::WaitForSingleHandle(handle);
+                TEST_REQUIRE(handle.CanWrite());
 
                 std::error_code err;
                 int ret = client.SendSome(buff.data + sent, buff.len - sent, &err);
@@ -165,8 +165,8 @@ void test_connection_success()
             if (recv != buff.len)
             {
                 auto handle = tcp.GetWaitHandle(true, false);
-                newsflash::wait(handle);
-                TEST_REQUIRE(handle.read());
+                newsflash::WaitForSingleHandle(handle);
+                TEST_REQUIRE(handle.CanRead());
 
                 std::error_code err;
                 int ret = tcp.RecvSome(buff.buff + recv, buff.len - recv, &err);

@@ -58,7 +58,7 @@ struct ConnectionImpl::impl {
     std::atomic<std::uint64_t> bytes;
     std::unique_ptr<Socket> socket;
     std::unique_ptr<Session> session;
-    std::unique_ptr<event> cancel;
+    std::unique_ptr<Event> cancel;
     bool ssl = true;
     bool pipelining = false;
     bool compression = false;
@@ -176,13 +176,13 @@ public:
         // when an async socket connect is performed the socket will become writeable
         // once the ConnectionImpl is established.
         auto connected = socket->GetWaitHandle(false, true);
-        auto canceled  = cancel->wait();
-        if (!newsflash::wait_for(connected, canceled, std::chrono::seconds(10)))
+        auto cancelled = cancel->GetWaitHandle();
+        if (!newsflash::WaitForMultipleHandles(connected, cancelled, std::chrono::seconds(10)))
         {
             state_->pending_connection_error = Error::Timeout;
             return;
         }
-        if (canceled)
+        if (cancelled)
         {
             LOG_D("Connection was canceled");
             return;
@@ -260,17 +260,17 @@ public:
             do
             {
                 // wait for data or cancellation
-                auto received = socket->GetWaitHandle(true, false);
-                auto canceled = cancel->wait();
-                if (!newsflash::wait_for(received, canceled, std::chrono::seconds(5)))
+                auto received  = socket->GetWaitHandle(true, false);
+                auto cancelled = cancel->GetWaitHandle();
+                if (!newsflash::WaitForMultipleHandles(received, cancelled, std::chrono::seconds(5)))
                 {
                     state_->pending_connection_error = Error::Timeout;
                     return;
                 }
 
-                if (canceled)
+                if (cancelled)
                 {
-                    LOG_D("Initialize was canceled");
+                    LOG_D("Initialize was cancelled");
                     return;
                 }
 
@@ -363,14 +363,14 @@ public:
                 {
                     do
                     {
-                        auto received = socket->GetWaitHandle(true, false);
-                        auto canceled = cancel->wait();
-                        if (!newsflash::wait_for(received, canceled, std::chrono::seconds(10)))
+                        auto received  = socket->GetWaitHandle(true, false);
+                        auto cancelled = cancel->GetWaitHandle();
+                        if (!newsflash::WaitForMultipleHandles(received, cancelled, std::chrono::seconds(10)))
                         {
                             state_->pending_connection_error = Error::Timeout;
                             return;
                         }
-                        else if (canceled)
+                        else if (cancelled)
                             return;
 
                         std::error_code recv_error;
@@ -437,21 +437,21 @@ public:
             session->SendNext();
             do
             {
-                auto canceled = cancel->wait();
-                if (newsflash::wait_for(canceled, std::chrono::milliseconds(0)))
+                auto cancelled = cancel->GetWaitHandle();
+                if (newsflash::WaitForSingleHandle(cancelled, std::chrono::milliseconds(0)))
                     return;
 
                 if (!socket->CanRecv())
                 {
                     // wait for data or cancellation
-                    auto received = socket->GetWaitHandle(true, false);
-                    auto canceled = cancel->wait();
-                    if (!newsflash::wait_for(received, canceled, std::chrono::seconds(30)))
+                    auto received  = socket->GetWaitHandle(true, false);
+                    auto cancelled = cancel->GetWaitHandle();
+                    if (!newsflash::WaitForMultipleHandles(received, cancelled, std::chrono::seconds(30)))
                     {
                         state_->pending_connection_error = Error::Timeout;
                         return;
                     }
-                    else if (canceled)
+                    else if (cancelled)
                         return;
                 }
 
@@ -581,7 +581,7 @@ public:
             {
                 // wait for data, if no response then khtx bye whatever, we're done anyway
                 auto received = socket->GetWaitHandle(true, false);
-                if (!newsflash::wait_for(received, std::chrono::seconds(1)))
+                if (!newsflash::WaitForSingleHandle(received, std::chrono::seconds(1)))
                     break;
                 if (buff.IsFull())
                     buff.Grow(+64);
@@ -641,7 +641,7 @@ public:
             do
             {
                 auto received = socket->GetWaitHandle(true, false);
-                if (!newsflash::wait_for(received, std::chrono::seconds(4)))
+                if (!newsflash::WaitForSingleHandle(received, std::chrono::seconds(4)))
                 {
                     state_->pending_connection_error = Error::Timeout;
                     return;
@@ -691,8 +691,8 @@ std::unique_ptr<action> ConnectionImpl::Connect(const HostDetails& s)
     state_->authenticate_immediately = s.authenticate_immediately;
     state_->bps = 0;
     state_->socket.reset();
-    state_->cancel.reset(new event);
-    state_->cancel->reset();
+    state_->cancel.reset(new Event);
+    state_->cancel->ResetSignal();
     state_->pthrottle = s.pthrottle;
     state_->random.seed((std::size_t)this);
     state_->state = State::Resolving;
@@ -827,7 +827,7 @@ std::unique_ptr<action> ConnectionImpl::Complete(std::unique_ptr<action> a)
 
 std::unique_ptr<action> ConnectionImpl::Execute(std::shared_ptr<CmdList> cmd, std::size_t tid)
 {
-    state_->cancel->reset();
+    state_->cancel->ResetSignal();
 
     std::unique_ptr<action> act(new class execute(state_, std::move(cmd), tid));
 
@@ -838,7 +838,7 @@ std::unique_ptr<action> ConnectionImpl::Execute(std::shared_ptr<CmdList> cmd, st
 
 void ConnectionImpl::Cancel()
 {
-    state_->cancel->set();
+    state_->cancel->SetSignal();
 }
 
 std::string ConnectionImpl::GetUsername() const

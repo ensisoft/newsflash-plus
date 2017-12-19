@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -20,37 +20,39 @@
 
 #pragma once
 
-#include <boost/noncopyable.hpp>
+#include "newsflash/config.h"
+
 #include <memory>
+
 #include "waithandle.h"
 
 namespace newsflash
 {
     // event is a signaling object.
-    class event
+    class Event
     {
     public:
         // construct a new event object. the event is initially
         // not singnaled.
-        event();
+        Event();
 
-       ~event();
+       ~Event();
 
         // get wait handle
-        waithandle wait() const;
+        WaitHandle GetWaitHandle() const;
 
         // open the event
-        void set(); 
+        void SetSignal();
 
         // reset to closed state
-        void reset();
+        void ResetSignal();
 
-        bool is_set() const;
+        bool IsSignalled() const;
     private:
         struct impl;
 
         std::unique_ptr<impl> pimpl_;
-    }; 
+    };
 
 } // newsflash
 

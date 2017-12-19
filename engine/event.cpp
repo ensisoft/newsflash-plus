@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <newsflash/config.h>
+#include "newsflash/config.h"
 
 #if defined(WINDOWS_OS)
 #  include <windows.h>
@@ -37,15 +37,15 @@ namespace newsflash
 
 #if defined(WINDOWS_OS)
 
-struct event::impl {
+struct Event::impl {
     HANDLE handle;
     bool signaled;
 };
 
-event::event() : pimpl_(new impl)
+Event::Event() : pimpl_(new impl)
 {
     pimpl_->handle = CreateEvent(
-        NULL, 
+        NULL,
         TRUE, // manual reset
         FALSE, // initially not signaled
         NULL);
@@ -55,29 +55,29 @@ event::event() : pimpl_(new impl)
     pimpl_->signaled = false;
 }
 
-event::~event()
+Event::~Event()
 {
     ASSERT(CloseHandle(pimpl_->handle) == TRUE);
 }
 
-waithandle event::wait() const
+WaitHandle Event::GetWaitHandle() const
 {
-    return { pimpl_->handle, waithandle::type::event, true, false};
+    return { pimpl_->handle, WaitHandle::Type::Event, true, false};
 }
 
-void event::set()
+void Event::SetSignal()
 {
-    if (pimpl_->signaled) 
+    if (pimpl_->signaled)
         return;
 
     SetEvent(pimpl_->handle);
 
-    pimpl_->signaled = true;    
+    pimpl_->signaled = true;
 }
 
-void event::reset()
+void Event::ResetSignal()
 {
-    if (!pimpl_->signaled) 
+    if (!pimpl_->signaled)
         return;
 
     ResetEvent(pimpl_->handle);
@@ -85,7 +85,7 @@ void event::reset()
     pimpl_->signaled = false;
 }
 
-bool event::is_set() const 
+bool Event::IsSignalled() const
 {
     const auto ret = WaitForSingleObject(pimpl_->handle, 0);
     if (ret == WAIT_OBJECT_0)
@@ -99,13 +99,13 @@ bool event::is_set() const
 
 #elif defined(LINUX_OS)
 
-struct event::impl {
+struct Event::impl {
     int fd;
     bool signaled;
     std::mutex mutex;
 };
 
-event::event() : pimpl_(new impl)
+Event::Event() : pimpl_(new impl)
 {
     pimpl_->fd = eventfd(0, 0);
     if (pimpl_->fd == -1)
@@ -114,21 +114,21 @@ event::event() : pimpl_(new impl)
     pimpl_->signaled = false;
 }
 
-event::~event()
+Event::~Event()
 {
     ASSERT(close(pimpl_->fd) == 0);
 }
 
-waithandle event::wait() const
+WaitHandle Event::GetWaitHandle() const
 {
-    return {pimpl_->fd, waithandle::type::event, true, false};
+    return {pimpl_->fd, WaitHandle::Type::Event, true, false};
 }
 
-void event::set()
+void Event::SetSignal()
 {
     std::lock_guard<std::mutex> lock(pimpl_->mutex);
 
-    if (pimpl_->signaled) 
+    if (pimpl_->signaled)
         return;
 
     uint64_t c = 1;
@@ -138,11 +138,11 @@ void event::set()
     pimpl_->signaled = true;
 }
 
-void event::reset()
+void Event::ResetSignal()
 {
     std::lock_guard<std::mutex> lock(pimpl_->mutex);
 
-    if (!pimpl_->signaled) 
+    if (!pimpl_->signaled)
         return;
 
     uint64_t c = 0;
@@ -152,7 +152,7 @@ void event::reset()
     pimpl_->signaled = false;
 }
 
-bool event::is_set() const
+bool Event::IsSignalled() const
 {
     std::lock_guard<std::mutex> lock(pimpl_->mutex);
     return pimpl_->signaled;

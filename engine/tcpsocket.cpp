@@ -75,7 +75,7 @@ void TcpSocket::SendAll(const void* buff, int len, std::error_code* error)
             }
 
             auto handle = GetWaitHandle(false, true);
-            newsflash::wait(handle);
+            WaitForSingleHandle(handle);
             ret = 0;
         }
         sent += ret;
@@ -157,12 +157,12 @@ void TcpSocket::Close()
     handle_ = 0;
 }
 
-waithandle TcpSocket::GetWaitHandle() const
+WaitHandle TcpSocket::GetWaitHandle() const
 {
     return { handle_, socket_, true, true };
 }
 
-waithandle TcpSocket::GetWaitHandle(bool waitread, bool waitwrite) const
+WaitHandle TcpSocket::GetWaitHandle(bool waitread, bool waitwrite) const
 {
     assert(waitread || waitwrite);
 
@@ -172,7 +172,7 @@ waithandle TcpSocket::GetWaitHandle(bool waitread, bool waitwrite) const
 bool TcpSocket::CanRecv() const
 {
     auto handle = GetWaitHandle(true, false);
-    return wait_for(handle, std::chrono::milliseconds(0));
+    return WaitForSingleHandle(handle, std::chrono::milliseconds(0));
 
 }
 

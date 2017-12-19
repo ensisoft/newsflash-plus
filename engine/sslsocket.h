@@ -59,8 +59,8 @@ namespace newsflash
         virtual int SendSome(const void* buff, int len, std::error_code* error) override;
         virtual int RecvSome(void* buff, int capacity, std::error_code* error) override;
         virtual void Close() override;
-        virtual waithandle GetWaitHandle() const override;
-        virtual waithandle GetWaitHandle(bool waitread, bool waitwrite) const override;
+        virtual WaitHandle GetWaitHandle() const override;
+        virtual WaitHandle GetWaitHandle(bool waitread, bool waitwrite) const override;
         virtual bool CanRecv() const override;
 
        SslSocket& operator=(SslSocket&& other);

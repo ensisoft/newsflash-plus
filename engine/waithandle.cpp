@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -62,7 +62,7 @@ namespace newsflash
 
 #if defined(WINDOWS_OS)
 
-bool waithandle::wait_handles(const list& handles, const std::chrono::milliseconds* ms)
+bool WaitHandle::WaitForMultipleHandles(const WaitList& handles, const std::chrono::milliseconds* ms)
 {
     assert(std::distance(std::begin(handles), std::end(handles)) > 0);
 
@@ -75,17 +75,17 @@ bool waithandle::wait_handles(const list& handles, const std::chrono::millisecon
     const DWORD start  = GetTickCount();
     const DWORD span   = ms ? (DWORD)ms->count() : 0;
     const DWORD nCount = static_cast<DWORD>(vec.size());
-    
+
     DWORD now = start;
     DWORD signaled = -1;
-    
+
     while (true)
-    {      
+    {
         if ((now - start) > span)
             break;
-            
+
         const DWORD timeout = ms ? (span - (now - start)) : INFINITE;
-      
+
         const DWORD ret = WaitForMultipleObjectsEx(nCount, &vec[0], FALSE, timeout, FALSE);
         if (ret == WAIT_FAILED)
             throw std::runtime_error("wait failed");
@@ -146,9 +146,9 @@ bool waithandle::wait_handles(const list& handles, const std::chrono::millisecon
 
 #elif defined(LINUX_OS)
 
-bool waithandle::wait_handles(const list& handles, const std::chrono::milliseconds* ms)
+bool WaitHandle::WaitForMultipleHandles(const WaitList& handles, const std::chrono::milliseconds* ms)
 {
-    assert(std::distance(std::begin(handles), std::end(handles)) > 0);    
+    assert(std::distance(std::begin(handles), std::end(handles)) > 0);
 
     fd_set read;
     fd_set write;
@@ -168,9 +168,9 @@ bool waithandle::wait_handles(const list& handles, const std::chrono::millisecon
 
     if (ms)
     {
-        struct timeval tv {0};        
+        struct timeval tv {0};
         tv.tv_usec = ms->count() * 1000;
-        
+
         const int ret = select(maxfd + 1, &read, &write, nullptr, &tv);
         if (ret == -1)
             throw std::runtime_error("wait failed");

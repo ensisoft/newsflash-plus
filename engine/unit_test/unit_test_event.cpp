@@ -62,64 +62,64 @@ private:
 void unit_test_event()
 {
     {
-        newsflash::event event;
+        newsflash::Event event;
 
-        auto handle = event.wait();
-        BOOST_REQUIRE(!wait_for(handle, std::chrono::milliseconds(0)));
-        BOOST_REQUIRE(!handle.read());
+        auto handle = event.GetWaitHandle();
+        BOOST_REQUIRE(!WaitForSingleHandle(handle, std::chrono::milliseconds(0)));
+        BOOST_REQUIRE(!handle.CanRead());
 
-        event.set();
-        handle = event.wait();
-        BOOST_REQUIRE(wait_for(handle, std::chrono::milliseconds(0)));
-        BOOST_REQUIRE(handle.read());
+        event.SetSignal();
+        handle = event.GetWaitHandle();
+        BOOST_REQUIRE(WaitForSingleHandle(handle, std::chrono::milliseconds(0)));
+        BOOST_REQUIRE(handle.CanRead());
 
-        event.reset();
-        handle = event.wait();
-        BOOST_REQUIRE(!wait_for(handle, std::chrono::milliseconds(0)));
-        BOOST_REQUIRE(!handle.read());
+        event.ResetSignal();
+        handle = event.GetWaitHandle();
+        BOOST_REQUIRE(!WaitForSingleHandle(handle, std::chrono::milliseconds(0)));
+        BOOST_REQUIRE(!handle.CanRead());
 
     }
 
     {
-        newsflash::event event1, event2;
+        newsflash::Event event1, event2;
 
-        auto handle1 = event1.wait();
-        auto handle2 = event2.wait();
+        auto handle1 = event1.GetWaitHandle();
+        auto handle2 = event2.GetWaitHandle();
 
-        BOOST_REQUIRE(!wait_for(handle1, handle2, std::chrono::milliseconds(0)));
-        BOOST_REQUIRE(!handle1.read());
-        BOOST_REQUIRE(!handle2.read());
+        BOOST_REQUIRE(!WaitForMultipleHandles(handle1, handle2, std::chrono::milliseconds(0)));
+        BOOST_REQUIRE(!handle1.CanRead());
+        BOOST_REQUIRE(!handle2.CanRead());
 
-        event2.set();
+        event2.SetSignal();
 
-        handle1 = event1.wait();
-        handle2 = event2.wait();
-        BOOST_REQUIRE(wait_for(handle1, handle2, std::chrono::milliseconds(0)));
-        BOOST_REQUIRE(!handle1.read());
-        BOOST_REQUIRE(handle2.read());
+        handle1 = event1.GetWaitHandle();
+        handle2 = event2.GetWaitHandle();
+        BOOST_REQUIRE(WaitForMultipleHandles(handle1, handle2, std::chrono::milliseconds(0)));
+        BOOST_REQUIRE(!handle1.CanRead());
+        BOOST_REQUIRE(handle2.CanRead());
 
-        event2.reset();
-        event1.set();
+        event2.ResetSignal();
+        event1.SetSignal();
 
-        handle1 = event1.wait();
-        handle2 = event2.wait();
-        BOOST_REQUIRE(wait_for(handle1, handle2, std::chrono::milliseconds(0)));
-        BOOST_REQUIRE(handle1.read());
-        BOOST_REQUIRE(!handle2.read());
+        handle1 = event1.GetWaitHandle();
+        handle2 = event2.GetWaitHandle();
+        BOOST_REQUIRE(WaitForMultipleHandles(handle1, handle2, std::chrono::milliseconds(0)));
+        BOOST_REQUIRE(handle1.CanRead());
+        BOOST_REQUIRE(!handle2.CanRead());
 
 
     }
 
-    const auto& waiter = [](newsflash::event& event, barrier& bar, std::atomic_flag& flag)
+    const auto& waiter = [](newsflash::Event& event, barrier& bar, std::atomic_flag& flag)
     {
         // rendezvous
         bar.wait();
 
         // begin wait forever
-        auto handle = event.wait();
-        wait(handle);
+        auto handle = event.GetWaitHandle();
+        WaitForSingleHandle(handle);
 
-        BOOST_REQUIRE(handle.read());
+        BOOST_REQUIRE(handle.CanRead());
 
         // expected to be true after wait completes
         BOOST_REQUIRE(flag.test_and_set());
@@ -130,7 +130,7 @@ void unit_test_event()
     {
         for (int i=0; i<1000; ++i)
         {
-            newsflash::event event;
+            newsflash::Event event;
 
             barrier bar(2);
 
@@ -147,7 +147,7 @@ void unit_test_event()
             flag.test_and_set();
 
             // release the waiters
-            event.set();
+            event.SetSignal();
 
             th.join();
         }
@@ -157,7 +157,7 @@ void unit_test_event()
     {
         for (int i=0; i<1000; ++i)
         {
-            newsflash::event event;
+            newsflash::Event event;
 
             barrier bar(4);
 
@@ -174,7 +174,7 @@ void unit_test_event()
 
             flag.test_and_set();
 
-            event.set();
+            event.SetSignal();
 
             th1.join();
             th2.join();

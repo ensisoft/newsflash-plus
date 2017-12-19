@@ -63,10 +63,10 @@ namespace newsflash
         virtual void Close() = 0;
 
         // Get handle for waiting on the socket for writability/readability.
-        virtual waithandle GetWaitHandle() const = 0;
+        virtual WaitHandle GetWaitHandle() const = 0;
 
         // Get handle for waiting either writability or readability or both.
-        virtual waithandle GetWaitHandle(bool read, bool write) const = 0;
+        virtual WaitHandle GetWaitHandle(bool read, bool write) const = 0;
 
         // returns true if the socket buffer has more data for immediate read.
         virtual bool CanRecv() const = 0;

@@ -317,12 +317,12 @@ void SslSocket::Close()
     }
 }
 
-waithandle SslSocket::GetWaitHandle() const
+WaitHandle SslSocket::GetWaitHandle() const
 {
     return { handle_, socket_, true, true };
 }
 
-waithandle SslSocket::GetWaitHandle(bool waitread, bool waitwrite) const
+WaitHandle SslSocket::GetWaitHandle(bool waitread, bool waitwrite) const
 {
     assert(waitread || waitwrite);
 
@@ -337,7 +337,7 @@ bool SslSocket::CanRecv() const
         return true;
 
     auto handle = GetWaitHandle(true, false);
-    return wait_for(handle, std::chrono::milliseconds(0));
+    return WaitForSingleHandle(handle, std::chrono::milliseconds(0));
 }
 
 SslSocket& SslSocket::operator=(SslSocket&& other)
@@ -395,7 +395,7 @@ void SslSocket::ssl_wait_write()
     // if we had this then we could wait here for the socket and the
     // cancellation object, and quickly stop waiting if cancellation occurs
     auto writeable = GetWaitHandle(false, true);
-    if (!newsflash::wait_for(writeable, std::chrono::seconds(10)))
+    if (!newsflash::WaitForSingleHandle(writeable, std::chrono::seconds(10)))
         throw std::runtime_error("SSL socket write timeout");
 }
 
@@ -404,7 +404,7 @@ void SslSocket::ssl_wait_read()
     // see the comment in ssl_wait_write
 
     auto readable = GetWaitHandle(true, false);
-    if (!newsflash::wait_for(readable, std::chrono::seconds(10)))
+    if (!newsflash::WaitForSingleHandle(readable, std::chrono::seconds(10)))
         throw std::runtime_error("SSL socket read timeout");
 }
 
