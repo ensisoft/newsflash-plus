@@ -62,6 +62,12 @@
   #define  NOTHROW throw()
 
   #define NORETURN __declspec(noreturn)
+
+  // after careful consideration we're going to disable 
+  // msvs warning about conversion with possible loss of data
+  // these warnings are generated copiously since Qt uses ints
+  #pragma warning(disable : 4267)
+
 #elif defined(__clang__)
   #ifdef __LP64__
     #define X86_64
