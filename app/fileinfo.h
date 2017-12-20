@@ -18,11 +18,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <newsflash/config.h>
-#include <newsflash/warnpush.h>
+#pragma once
+
+#include "newsflash/config.h"
+
+#include "newsflash/warnpush.h"
 #  include <QString>
 #  include <QMetaType>
-#include <newsflash/warnpop.h>
+#include "newsflash/warnpop.h"
+
 #include "filetype.h"
 
 namespace app
