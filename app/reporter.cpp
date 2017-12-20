@@ -87,33 +87,36 @@ void Reporter::compileReport()
     for (const auto& pack : mFilePacks)
     {
         if (pack.damaged)
-            message << toString("The file batch (%1) (%2 files) completed succesfully.\r\n",
+            message << toString("The file batch (%1) (%2 files) completed succesfully.",
                 pack.path, pack.numFiles);
         else
-            message << toString("The file batch (%1) (%2 files) completed with errors.\r\n",
+            message << toString("The file batch (%1) (%2 files) completed with errors.",
                 pack.path, pack.numFiles);
     }
+    message << "\r\n";
 
     for (const auto& repair : mRepairs)
     {
         if (repair.state == Archive::Status::Success)
-            message << toString("The archive %1/%2 was repaired succesfully.\r\n",
+            message << toString("The archive %1/%2 was repaired succesfully.",
                 repair.path, repair.file);
         else if (repair.state == Archive::Status::Error)
-            message << toString("The archive %1/2 failed to repair. (%3).\r\n",
+            message << toString("The archive %1/2 failed to repair. (%3).",
                 repair.path, repair.file, repair.message);
     }
+    message << "\r\n";
 
     for (const auto& unpack : mUnpacks)
     {
         if (unpack.state == Archive::Status::Success)
-            message << toString("The archive %1/%2 was extracted succesfully.\r\n",
+            message << toString("The archive %1/%2 was extracted succesfully.",
                 unpack.path, unpack.file);
         else if (unpack.state == Archive::Status::Error)
-            message << toString("The archive %1/%2 failed to extra. (%3).\r\n",
+            message << toString("The archive %1/%2 failed to extra. (%3).",
                 unpack.path, unpack.file, unpack.message);
     }
 
+    message << "\r\n";
     message << "--";
     message << "That's all. Have a good day! :)";
 
