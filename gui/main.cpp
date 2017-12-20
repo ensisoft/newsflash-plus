@@ -275,6 +275,13 @@ int run(QtSingleApplication& qtinstance)
     QObject::connect(&arcMan, SIGNAL(numPendingArchives(std::size_t)),
         &power, SLOT(numPendingArchives(std::size_t)));
 
+    // reporter signals
+    QObject::connect(&unpacker, SIGNAL(unpackReady(const app::Archive&)),
+        &reporter, SLOT(unpackReady(const app::Archive&)));
+    QObject::connect(&repairer, SIGNAL(repairReady(const app::Archive&)),
+        &reporter, SLOT(repairReady(const app::Archive&)));
+    QObject::connect(&engine, SIGNAL(packCompleted(const app::FilePackInfo&)),
+        &reporter, SLOT(packCompleted(const app::FilePackInfo&)));
 
     // eventlog module. this is a bit special
     // because it is used literally from everywhere.
