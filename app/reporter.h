@@ -26,13 +26,13 @@
 #  include <QObject>
 #include "newsflash/warnpop.h"
 
+#include <vector>
+
+#include "fileinfo.h"
+#include "archive.h"
+
 namespace app
 {
-    struct FileInfo;
-    struct FilePackInfo;
-    struct Archive;
-    struct Report;
-
     class Reporter  : public QObject
     {
         Q_OBJECT
@@ -61,9 +61,11 @@ namespace app
         bool mReportDownloads = false;
         bool mReportRepairs = false;
         bool mReportUnpacks = false;
-        QString mDownloadsReport;
-        QString mRepairReport;
-        QString mUnpackReport;
+    private:
+        std::vector<FilePackInfo> mFilePacks;
+        std::vector<Archive> mRepairs;
+        std::vector<Archive> mUnpacks;
+
     };
 
     extern Reporter* g_reporter;
