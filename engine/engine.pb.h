@@ -750,6 +750,20 @@ class Batch : public ::google::protobuf::Message {
   inline ::google::protobuf::uint32 num_slices() const;
   inline void set_num_slices(::google::protobuf::uint32 value);
 
+  // required uint32 num_files = 8;
+  inline bool has_num_files() const;
+  inline void clear_num_files();
+  static const int kNumFilesFieldNumber = 8;
+  inline ::google::protobuf::uint32 num_files() const;
+  inline void set_num_files(::google::protobuf::uint32 value);
+
+  // required bool damaged = 9;
+  inline bool has_damaged() const;
+  inline void clear_damaged();
+  static const int kDamagedFieldNumber = 9;
+  inline bool damaged() const;
+  inline void set_damaged(bool value);
+
   // @@protoc_insertion_point(class_scope:data.Batch)
  private:
   inline void set_has_account_id();
@@ -766,6 +780,10 @@ class Batch : public ::google::protobuf::Message {
   inline void clear_has_num_tasks();
   inline void set_has_num_slices();
   inline void clear_has_num_slices();
+  inline void set_has_num_files();
+  inline void clear_has_num_files();
+  inline void set_has_damaged();
+  inline void clear_has_damaged();
 
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
 
@@ -778,6 +796,8 @@ class Batch : public ::google::protobuf::Message {
   ::google::protobuf::uint64 byte_size_;
   ::google::protobuf::uint32 num_tasks_;
   ::google::protobuf::uint32 num_slices_;
+  ::google::protobuf::uint32 num_files_;
+  bool damaged_;
   friend void  protobuf_AddDesc_engine_2eproto();
   friend void protobuf_AssignDesc_engine_2eproto();
   friend void protobuf_ShutdownFile_engine_2eproto();
@@ -2395,6 +2415,54 @@ inline void Batch::set_num_slices(::google::protobuf::uint32 value) {
   set_has_num_slices();
   num_slices_ = value;
   // @@protoc_insertion_point(field_set:data.Batch.num_slices)
+}
+
+// required uint32 num_files = 8;
+inline bool Batch::has_num_files() const {
+  return (_has_bits_[0] & 0x00000080u) != 0;
+}
+inline void Batch::set_has_num_files() {
+  _has_bits_[0] |= 0x00000080u;
+}
+inline void Batch::clear_has_num_files() {
+  _has_bits_[0] &= ~0x00000080u;
+}
+inline void Batch::clear_num_files() {
+  num_files_ = 0u;
+  clear_has_num_files();
+}
+inline ::google::protobuf::uint32 Batch::num_files() const {
+  // @@protoc_insertion_point(field_get:data.Batch.num_files)
+  return num_files_;
+}
+inline void Batch::set_num_files(::google::protobuf::uint32 value) {
+  set_has_num_files();
+  num_files_ = value;
+  // @@protoc_insertion_point(field_set:data.Batch.num_files)
+}
+
+// required bool damaged = 9;
+inline bool Batch::has_damaged() const {
+  return (_has_bits_[0] & 0x00000100u) != 0;
+}
+inline void Batch::set_has_damaged() {
+  _has_bits_[0] |= 0x00000100u;
+}
+inline void Batch::clear_has_damaged() {
+  _has_bits_[0] &= ~0x00000100u;
+}
+inline void Batch::clear_damaged() {
+  damaged_ = false;
+  clear_has_damaged();
+}
+inline bool Batch::damaged() const {
+  // @@protoc_insertion_point(field_get:data.Batch.damaged)
+  return damaged_;
+}
+inline void Batch::set_damaged(bool value) {
+  set_has_damaged();
+  damaged_ = value;
+  // @@protoc_insertion_point(field_set:data.Batch.damaged)
 }
 
 // -------------------------------------------------------------------

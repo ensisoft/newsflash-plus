@@ -70,6 +70,12 @@ namespace newsflash
         // the human readable description of the batch.
         std::string desc;
 
+        // set to true if some files were damaged
+        bool damaged = false;
+
+        // count of files produced by the batch
+        std::size_t filecount = 0;
+
     };
 
     struct GroupListResult : public Result

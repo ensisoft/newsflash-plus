@@ -130,7 +130,7 @@ void protobuf_AssignDesc_engine_2eproto() {
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(TaskState));
   Batch_descriptor_ = file->message_type(4);
-  static const int Batch_offsets_[7] = {
+  static const int Batch_offsets_[9] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Batch, account_id_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Batch, batch_id_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Batch, path_),
@@ -138,6 +138,8 @@ void protobuf_AssignDesc_engine_2eproto() {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Batch, byte_size_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Batch, num_tasks_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Batch, num_slices_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Batch, num_files_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Batch, damaged_),
   };
   Batch_reflection_ =
     new ::google::protobuf::internal::GeneratedMessageReflection(
@@ -232,13 +234,14 @@ void protobuf_AddDesc_engine_2eproto() {
     "\n\007task_id\030\001 \002(\r\022\022\n\naccount_id\030\002 \002(\r\022\020\n\010b"
     "atch_id\030\003 \002(\r\022\014\n\004desc\030\004 \002(\t\022\014\n\004path\030\005 \002("
     "\t\022\014\n\004size\030\006 \002(\004\022\014\n\004type\030\007 \002(\r\022\014\n\004data\030\010 "
-    "\002(\014\"\203\001\n\005Batch\022\022\n\naccount_id\030\001 \002(\r\022\020\n\010bat"
+    "\002(\014\"\247\001\n\005Batch\022\022\n\naccount_id\030\001 \002(\r\022\020\n\010bat"
     "ch_id\030\002 \002(\r\022\014\n\004path\030\003 \002(\t\022\014\n\004desc\030\004 \002(\t\022"
     "\021\n\tbyte_size\030\005 \002(\004\022\021\n\tnum_tasks\030\006 \002(\r\022\022\n"
-    "\nnum_slices\030\007 \002(\r\"\204\001\n\010TaskList\022\024\n\014bytes_"
-    "queued\030\001 \002(\004\022\023\n\013bytes_ready\030\002 \002(\004\022\021\n\tobj"
-    "ect_id\030\003 \002(\004\022\032\n\005batch\030\004 \003(\0132\013.data.Batch"
-    "\022\036\n\005tasks\030\005 \003(\0132\017.data.TaskState", 792);
+    "\nnum_slices\030\007 \002(\r\022\021\n\tnum_files\030\010 \002(\r\022\017\n\007"
+    "damaged\030\t \002(\010\"\204\001\n\010TaskList\022\024\n\014bytes_queu"
+    "ed\030\001 \002(\004\022\023\n\013bytes_ready\030\002 \002(\004\022\021\n\tobject_"
+    "id\030\003 \002(\004\022\032\n\005batch\030\004 \003(\0132\013.data.Batch\022\036\n\005"
+    "tasks\030\005 \003(\0132\017.data.TaskState", 828);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "engine.proto", &protobuf_RegisterTypes);
   File::default_instance_ = new File();
@@ -2222,6 +2225,8 @@ const int Batch::kDescFieldNumber;
 const int Batch::kByteSizeFieldNumber;
 const int Batch::kNumTasksFieldNumber;
 const int Batch::kNumSlicesFieldNumber;
+const int Batch::kNumFilesFieldNumber;
+const int Batch::kDamagedFieldNumber;
 #endif  // !_MSC_VER
 
 Batch::Batch()
@@ -2250,6 +2255,8 @@ void Batch::SharedCtor() {
   byte_size_ = GOOGLE_ULONGLONG(0);
   num_tasks_ = 0u;
   num_slices_ = 0u;
+  num_files_ = 0u;
+  damaged_ = false;
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
 
@@ -2301,9 +2308,9 @@ void Batch::Clear() {
     ::memset(&first, 0, n);                                \
   } while (0)
 
-  if (_has_bits_[0 / 32] & 127) {
+  if (_has_bits_[0 / 32] & 255) {
     ZR_(account_id_, batch_id_);
-    ZR_(byte_size_, num_slices_);
+    ZR_(byte_size_, num_files_);
     if (has_path()) {
       if (path_ != &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
         path_->clear();
@@ -2315,6 +2322,7 @@ void Batch::Clear() {
       }
     }
   }
+  damaged_ = false;
 
 #undef OFFSET_OF_FIELD_
 #undef ZR_
@@ -2437,6 +2445,36 @@ bool Batch::MergePartialFromCodedStream(
         } else {
           goto handle_unusual;
         }
+        if (input->ExpectTag(64)) goto parse_num_files;
+        break;
+      }
+
+      // required uint32 num_files = 8;
+      case 8: {
+        if (tag == 64) {
+         parse_num_files:
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::uint32, ::google::protobuf::internal::WireFormatLite::TYPE_UINT32>(
+                 input, &num_files_)));
+          set_has_num_files();
+        } else {
+          goto handle_unusual;
+        }
+        if (input->ExpectTag(72)) goto parse_damaged;
+        break;
+      }
+
+      // required bool damaged = 9;
+      case 9: {
+        if (tag == 72) {
+         parse_damaged:
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   bool, ::google::protobuf::internal::WireFormatLite::TYPE_BOOL>(
+                 input, &damaged_)));
+          set_has_damaged();
+        } else {
+          goto handle_unusual;
+        }
         if (input->ExpectAtEnd()) goto success;
         break;
       }
@@ -2511,6 +2549,16 @@ void Batch::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormatLite::WriteUInt32(7, this->num_slices(), output);
   }
 
+  // required uint32 num_files = 8;
+  if (has_num_files()) {
+    ::google::protobuf::internal::WireFormatLite::WriteUInt32(8, this->num_files(), output);
+  }
+
+  // required bool damaged = 9;
+  if (has_damaged()) {
+    ::google::protobuf::internal::WireFormatLite::WriteBool(9, this->damaged(), output);
+  }
+
   if (!unknown_fields().empty()) {
     ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
         unknown_fields(), output);
@@ -2566,6 +2614,16 @@ void Batch::SerializeWithCachedSizes(
   // required uint32 num_slices = 7;
   if (has_num_slices()) {
     target = ::google::protobuf::internal::WireFormatLite::WriteUInt32ToArray(7, this->num_slices(), target);
+  }
+
+  // required uint32 num_files = 8;
+  if (has_num_files()) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteUInt32ToArray(8, this->num_files(), target);
+  }
+
+  // required bool damaged = 9;
+  if (has_damaged()) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteBoolToArray(9, this->damaged(), target);
   }
 
   if (!unknown_fields().empty()) {
@@ -2629,6 +2687,20 @@ int Batch::ByteSize() const {
           this->num_slices());
     }
 
+    // required uint32 num_files = 8;
+    if (has_num_files()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::UInt32Size(
+          this->num_files());
+    }
+
+  }
+  if (_has_bits_[8 / 32] & (0xffu << (8 % 32))) {
+    // required bool damaged = 9;
+    if (has_damaged()) {
+      total_size += 1 + 1;
+    }
+
   }
   if (!unknown_fields().empty()) {
     total_size +=
@@ -2677,6 +2749,14 @@ void Batch::MergeFrom(const Batch& from) {
     if (from.has_num_slices()) {
       set_num_slices(from.num_slices());
     }
+    if (from.has_num_files()) {
+      set_num_files(from.num_files());
+    }
+  }
+  if (from._has_bits_[8 / 32] & (0xffu << (8 % 32))) {
+    if (from.has_damaged()) {
+      set_damaged(from.damaged());
+    }
   }
   mutable_unknown_fields()->MergeFrom(from.unknown_fields());
 }
@@ -2694,7 +2774,7 @@ void Batch::CopyFrom(const Batch& from) {
 }
 
 bool Batch::IsInitialized() const {
-  if ((_has_bits_[0] & 0x0000007f) != 0x0000007f) return false;
+  if ((_has_bits_[0] & 0x000001ff) != 0x000001ff) return false;
 
   return true;
 }
@@ -2708,6 +2788,8 @@ void Batch::Swap(Batch* other) {
     std::swap(byte_size_, other->byte_size_);
     std::swap(num_tasks_, other->num_tasks_);
     std::swap(num_slices_, other->num_slices_);
+    std::swap(num_files_, other->num_files_);
+    std::swap(damaged_, other->damaged_);
     std::swap(_has_bits_[0], other->_has_bits_[0]);
     _unknown_fields_.Swap(&other->_unknown_fields_);
     std::swap(_cached_size_, other->_cached_size_);

@@ -1203,6 +1203,13 @@ public:
     bitflag<ui::TaskDesc::Errors> errors() const
     { return ui_.error; }
 
+    bool IsDamaged() const
+    { return damaged_; }
+
+    std::size_t NumFiles() const
+    { return num_files_produced_; }
+
+
 private:
     transition UpdateCompletion(Engine::State& state)
     {
@@ -1314,6 +1321,11 @@ private:
                     if (auto* ptr = dynamic_cast<ui::FileResult*>(result_ptr))
                     {
                         state.on_file_callback(*ptr);
+                        for (const auto& file : ptr->files)
+                        {
+                            damaged_ |= file.damaged;
+                        }
+                        num_files_produced_ = ptr->files.size();
                     }
                     else if (auto* ptr = dynamic_cast<ui::GroupListResult*>(result_ptr))
                     {
@@ -1369,7 +1381,10 @@ private:
     std::size_t num_active_cmdlists_ = 0;
     std::size_t num_active_actions_  = 0;
     std::size_t num_bytes_queued_    = 0;
+    std::size_t num_files_produced_  = 0;
     bool did_receive_content_ = false;
+    bool damaged_ = false;
+
 private:
     enum class LockState {
         Locked, Unlocked
@@ -1471,6 +1486,8 @@ public:
         data->set_path(ui_.path);
         data->set_num_tasks(num_tasks_);
         data->set_num_slices(num_slices_);
+        data->set_damaged(damaged_);
+        data->set_num_files(filecount_);
     }
 
     void lock(Engine::State& state)
@@ -1581,12 +1598,12 @@ public:
         return num_tasks_ == 0;
     }
 
-    void update(Engine::State& state, const TaskState& t, const TaskState::transition& s)
+    void update(Engine::State& state, const TaskState& task, const TaskState::transition& s)
     {
-        ui_.error |= t.errors();
+        ui_.error |= task.errors();
 
-        leave_state(t, s.previous);
-        enter_state(t, s.current);
+        leave_state(task, s.previous);
+        enter_state(task, s.current);
         update(state);
 
         if (!filebatch_)
@@ -1594,14 +1611,19 @@ public:
 
         if (s.current == states::Complete || s.current == states::Error)
         {
+            filecount_ += task.NumFiles();
+            damaged_   |= task.IsDamaged();
+
             if (ui_.state == states::Complete)
             {
                 if (state.on_batch_callback)
                 {
                     ui::FileBatchResult result;
-                    result.account = ui_.account;
-                    result.path    = ui_.path;
-                    result.desc    = ui_.desc;
+                    result.account   = ui_.account;
+                    result.path      = ui_.path;
+                    result.desc      = ui_.desc;
+                    result.filecount = filecount_;
+                    result.damaged   = damaged_;
                     state.on_batch_callback(result);
                 }
             }
@@ -1715,10 +1737,12 @@ private:
 private:
     ui::TaskDesc ui_;
 private:
-    std::size_t num_slices_;
-    std::size_t num_tasks_;
+    std::size_t num_slices_ = 0;
+    std::size_t num_tasks_  = 0;
     std::size_t statesets_[7];
-    bool filebatch_;
+    std::size_t filecount_ = 0;
+    bool filebatch_ = false;
+    bool damaged_ = false;
 };
 
 void Engine::State::on_cmdlist_done(const Connection::CmdListCompletionData& completion)

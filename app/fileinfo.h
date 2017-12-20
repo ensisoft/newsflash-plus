@@ -61,6 +61,9 @@ namespace app
         // human readable description
         QString desc;
 
+        quint64 numFiles = 0;
+
+        bool damaged = false;
     };
 
     struct HeaderInfo {
@@ -68,9 +71,9 @@ namespace app
 
         QString groupPath;
 
-        quint64 numLocalArticles;
+        quint64 numLocalArticles = 0;
 
-        quint64 numRemoteArticles;
+        quint64 numRemoteArticles = 0;
     };
 
     struct HeaderUpdateInfo {

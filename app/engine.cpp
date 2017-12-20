@@ -612,8 +612,10 @@ void Engine::onBatchComplete(const newsflash::ui::FileBatchResult& batch)
     path = QDir::toNativeSeparators(path);
 
     FilePackInfo pack;
-    pack.desc = fromUtf8(batch.desc);
-    pack.path = path;
+    pack.desc     = fromUtf8(batch.desc);
+    pack.path     = path;
+    pack.numFiles = batch.filecount;
+    pack.damaged  = batch.damaged;
 
     emit packCompleted(pack);
 }
