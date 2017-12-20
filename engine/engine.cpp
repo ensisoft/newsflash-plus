@@ -2499,6 +2499,7 @@ void Engine::LoadTasks(const std::string& file)
         std::unique_ptr<TaskState> state(new TaskState(std::move(task), state_data));
         state->Configure(settings);
         state_->tasks.push_back(std::move(state));
+        state_->num_pending_tasks++;
     }
 
     state_->bytes_queued = list.bytes_queued();
@@ -2511,6 +2512,7 @@ void Engine::Reset()
     state_->tasks.clear();
     state_->batches.clear();
     state_->accounts.clear();
+    state_->num_pending_tasks = 0;
     state_->bytes_queued = 0;
     state_->bytes_ready = 0;
     state_->bytes_written = 0;
