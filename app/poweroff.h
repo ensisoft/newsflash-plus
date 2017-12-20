@@ -20,9 +20,11 @@
 
 #pragma once
 
-#include <newsflash/warnpush.h>
+#include "newsflash/config.h"
+
+#include "newsflash/warnpush.h"
 #  include <QObject>
-#include <newsflash/warnpop.h>
+#include "newsflash/warnpop.h"
 
 namespace app
 {
@@ -72,6 +74,9 @@ namespace app
         void unpackReady();
         void numPendingArchives(std::size_t);
         void numPendingTasks(std::size_t);
+    private slots:
+        void startShutdown();
+
     private:
         void evaluate();
 
