@@ -342,7 +342,7 @@ add_test(NAME unit_test_throttle    COMMAND unit_test_throttle)
 add_test(NAME unit_test_engine      COMMAND unit_test_engine)
 add_test(NAME unit_test_connection  COMMAND unit_test_connection)
 
-# this test case fails on msvs with stack overflow 
+# this test case fails on msvs with stack overflow
 # set the stack size to 4mb
 if (MSVC)
     set_target_properties(unit_test_update PROPERTIES LINK_FLAGS "/STACK:4194304")
@@ -361,11 +361,17 @@ file(GLOB LICENSE_FILES doc/*.txt)
 
 if (CMAKE_BUILD_TYPE MATCHES "Release")
     install(TARGETS newsflash join smtpclient DESTINATION "${CMAKE_CURRENT_LIST_DIR}/dist")
-    file(COPY ${LICENSE_FILES} 
+    file(COPY ${LICENSE_FILES}
          DESTINATION "${CMAKE_CURRENT_LIST_DIR}/dist")
+    if (UNIX)
+        file(COPY "${CMAKE_CURRENT_LIST_DIR}/newsflash.sh" DESTINATION "${CMAKE_CURRENT_LIST_DIR}/dist")
+    endif()
 elseif(CMAKE_BUILD_TYPE MATCHES "Debug")
     install(TARGETS newsflash join smtpclient DESTINATION "${CMAKE_CURRENT_LIST_DIR}/dist_d")
-    file(COPY ${LICENSE_FILES} 
+    file(COPY ${LICENSE_FILES}
          DESTINATION "${CMAKE_CURRENT_LIST_DIR}/dist_d")
+    if (UNIX)
+        file(COPY "${CMAKE_CURRENT_LIST_DIR}/newsflash.sh" DESTINATION "${CMAKE_CURRENT_LIST_DIR}/dist_d")
+    endif()
 endif()
 
