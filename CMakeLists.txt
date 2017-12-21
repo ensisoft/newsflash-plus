@@ -357,8 +357,15 @@ target_link_libraries(unit_test_unzip appcore)
 add_test(NAME unit_test_unrar       COMMAND unit_test_unrar)
 add_test(NAME unit_test_unzip       COMMAND unit_test_unzip)
 
+file(GLOB LICENSE_FILES doc/*.txt)
+
 if (CMAKE_BUILD_TYPE MATCHES "Release")
     install(TARGETS newsflash join smtpclient DESTINATION "${CMAKE_CURRENT_LIST_DIR}/dist")
+    file(COPY ${LICENSE_FILES} 
+         DESTINATION "${CMAKE_CURRENT_LIST_DIR}/dist")
 elseif(CMAKE_BUILD_TYPE MATCHES "Debug")
     install(TARGETS newsflash join smtpclient DESTINATION "${CMAKE_CURRENT_LIST_DIR}/dist_d")
+    file(COPY ${LICENSE_FILES} 
+         DESTINATION "${CMAKE_CURRENT_LIST_DIR}/dist_d")
 endif()
+
