@@ -400,6 +400,14 @@ Build Unrar
     $ msbuild UnRAR.vcxproj /p:Configuration=Release /p:Platform=x64
 ```
 
+Build 7zip (7za) or NOT
+```
+    The source package is outdated without proper build files. Fuck this shit.
+    Instead grab the pre-built binary from http://www.7-zip.org/download.html
+    The extra package has a command line version and apparenty is built
+    against static crt.
+```
+
 Build Newsflash
 
 ```
