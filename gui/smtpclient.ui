@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>517</width>
-    <height>379</height>
+    <height>412</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -178,6 +178,16 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>grpEmail</tabstop>
+  <tabstop>edtHost</tabstop>
+  <tabstop>edtPort</tabstop>
+  <tabstop>chkSSL</tabstop>
+  <tabstop>edtUsername</tabstop>
+  <tabstop>edtPassword</tabstop>
+  <tabstop>edtRecipient</tabstop>
+  <tabstop>btnTest</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>
