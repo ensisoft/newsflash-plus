@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -54,7 +54,7 @@ Accounts::Accounts()
     ui_.actionEdit->setEnabled(!empty);
     ui_.grpServer->setEnabled(false);
     ui_.grpQuota->setEnabled(false);
-    ui_.grpQuota->setChecked(false);    
+    ui_.grpQuota->setChecked(false);
     ui_.btnMonthlyQuota->setChecked(true);
     ui_.pie->setScale(0.8);
     ui_.pie->setDrawPie(false);
@@ -72,7 +72,7 @@ Accounts::Accounts()
     const auto num = (qrand() >> 7) % 4;
 
     QString resource;
-    QString campaing;    
+    QString campaing;
     int speed = 200;
     if (num == 0)
     {
@@ -83,7 +83,7 @@ Accounts::Accounts()
     {
         resource = ":/resource/nh-special.gif";
         campaing = "http://www.newshosting.com/en/index.php?&amp;a_aid=foobar1234&amp;a_bid=2b57ce3a";
-    }    
+    }
     else if (num == 2)
     {
         resource = ":resource/usenext-1.gif";
@@ -96,15 +96,15 @@ Accounts::Accounts()
         campaing = "http://www.usenext.com/?utm_source=AF_TP_93470&utm_medium=AFGE&utm_campaign=441948&utm_content=0_1";
     }
 
-    //DEBUG("Usenet campaing '%1' '%2'", resource, campaing);    
+    //DEBUG("Usenet campaing '%1' '%2'", resource, campaing);
 
     // NOTE: if the movie doesn't show up the problem might have
-    // to do with Qt image plugins!    
+    // to do with Qt image plugins!
 
     QMovie* mov = new QMovie(this);
     mov->setFileName(resource);
     mov->start();
-    mov->setSpeed(speed);    
+    mov->setSpeed(speed);
 
     const auto& pix  = mov->currentPixmap();
     const auto& size = pix.size();
@@ -112,9 +112,10 @@ Accounts::Accounts()
     ui_.lblMovie->resize(size);
     ui_.lblMovie->setMovie(mov);
     ui_.lblMovie->setVisible(true);
-    ui_.lblMovie->setProperty("url", campaing);    
+    ui_.lblMovie->setProperty("url", campaing);
     ui_.lblPlead->setVisible(true);
     ui_.lblRegister->setVisible(true);
+    ui_.lblDonate->setVisible(true);
 }
 
 Accounts::~Accounts()
@@ -156,6 +157,7 @@ void Accounts::updateRegistration(bool success)
     ui_.lblMovie->setVisible(!success);
     ui_.lblPlead->setVisible(!success);
     ui_.lblRegister->setVisible(!success);
+    ui_.lblDonate->setVisible(!success);
     ui_.grpAdvert->setVisible(!success);
 }
 
@@ -190,7 +192,7 @@ void Accounts::updatePie()
         if (slice_used > 1.0)
             slice_used = 1.0;
         auto slice_avail = 1.0 - slice_used;
-        ui_.pie->setAvailSlice(slice_avail);        
+        ui_.pie->setAvailSlice(slice_avail);
         ui_.pie->setDrawPie(true);
 
         DEBUG("Quota avail %1, used %2", slice_avail, slice_used);
@@ -263,12 +265,12 @@ void Accounts::currentRowChanged()
     ui_.spinAllTime->setValue(gigs_alltime.as_float());
     ui_.spinThisMonth->setValue(gigs_month.as_float());
     ui_.spinQuotaAvail->setValue(quota_total.as_float());
-    ui_.spinQuotaUsed->setMaximum(quota_total.as_float());        
+    ui_.spinQuotaUsed->setMaximum(quota_total.as_float());
     ui_.spinQuotaUsed->setValue(quota_spent.as_float());
 
     in_row_changed_ = false;
 
-    
+
     if (quota_type == app::Accounts::Quota::none)
     {
         ui_.grpQuota->setChecked(false);
@@ -283,7 +285,7 @@ void Accounts::currentRowChanged()
     {
         ui_.btnMonthlyQuota->setChecked(false);
         ui_.btnFixedQuota->setChecked(true);
-        ui_.grpQuota->setChecked(true);        
+        ui_.grpQuota->setChecked(true);
     }
 
     updatePie();
@@ -405,7 +407,7 @@ void Accounts::on_spinQuotaUsed_valueChanged(double value)
 
     DEBUG("Quota spent value %1", value);
 
-    auto& account = app::g_accounts->getAccount(row);    
+    auto& account = app::g_accounts->getAccount(row);
 
     const app::gigs gigs { value };
 
@@ -432,6 +434,11 @@ void Accounts::on_lblRegister_linkActivated(QString)
     g_win->updateLicense();
 }
 
+void Accounts::on_lblDonate_linkActivated(QString)
+{
+    app::openWeb(NEWSFLASH_DONATE_URL);
+}
+
 void Accounts::on_grpQuota_toggled(bool on)
 {
     const auto row = ui_.listView->currentIndex().row();
@@ -444,7 +451,7 @@ void Accounts::on_grpQuota_toggled(bool on)
     {
         account.quotaType = app::Accounts::Quota::none;
     }
-    else 
+    else
     {
         if (ui_.btnFixedQuota->isChecked())
             account.quotaType = app::Accounts::Quota::fixed;

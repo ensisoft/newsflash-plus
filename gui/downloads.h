@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -53,7 +53,7 @@ namespace gui
         virtual void activate(QWidget*) override;
         virtual void updateRegistration(bool success) override;
 
-        virtual info getInformation() const override 
+        virtual info getInformation() const override
         { return {"downloads.html", true}; }
 
     private slots:
@@ -78,6 +78,7 @@ namespace gui
         void on_tableConns_doubleClicked(const QModelIndex&);
         void on_chkGroupSimilar_clicked(bool checked);
         void on_lblRegister_linkActivated(QString);
+        void on_lblDonate_linkActivated(QString);
         void tableTasks_selectionChanged();
         void tableConns_selectionChanged();
 

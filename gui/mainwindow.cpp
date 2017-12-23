@@ -1183,7 +1183,7 @@ void MainWindow::on_actionPoweroff_triggered()
 
 void MainWindow::on_actionDonate_triggered()
 {
-    app::openWeb("http://www.ensisoft.com/donate");
+    app::openWeb(NEWSFLASH_DONATE_URL);
 }
 
 

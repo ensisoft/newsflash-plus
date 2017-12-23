@@ -63,7 +63,7 @@
 
   #define NORETURN __declspec(noreturn)
 
-  // after careful consideration we're going to disable 
+  // after careful consideration we're going to disable
   // msvs warning about conversion with possible loss of data
   // these warnings are generated copiously since Qt uses ints
   #pragma warning(disable : 4267)
@@ -141,6 +141,7 @@
 //#define NEWSFLASH_VERSION   "master" // remember to edit!
 #define NEWSFLASH_COPYRIGHT "Copyright (c) Sami V\303\244is\303\244nen 2005-2017"
 #define NEWSFLASH_WEBSITE   "http://www.ensisoft.com"
+#define NEWSFLASH_DONATE_URL "http://www.ensisoft.com/donate"
 
 #ifdef NDEBUG
 #  define NEWSFLASH_TITLE "Newsflash Plus"

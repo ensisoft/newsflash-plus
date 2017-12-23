@@ -76,11 +76,12 @@ Downloads::Downloads() : panels_y_pos_(0), numDownloads_(0)
     ui_.lblMovie->resize(dimensions);
     ui_.lblMovie->setMovie(movie);
     ui_.lblMovie->setVisible(true);
-    ui_.lblMovie->setProperty("url", 
+    ui_.lblMovie->setProperty("url",
         "http://www.usenext.com/?utm_source=AF_TP_93470&utm_medium=AFGE&utm_campaign=447055&utm_content=0_1");
     ui_.lblMovie->installEventFilter(this);
     ui_.lblPlead->setVisible(true);
     ui_.lblRegister->setVisible(true);
+    ui_.lblDonate->setVisible(true);
 
     DEBUG("Created downloads UI");
 }
@@ -191,6 +192,7 @@ void Downloads::updateRegistration(bool success)
     ui_.lblMovie->setVisible(!success);
     ui_.lblPlead->setVisible(!success);
     ui_.lblRegister->setVisible(!success);
+    ui_.lblDonate->setVisible(!success);
     ui_.grpAdvert->setVisible(!success);
 }
 
@@ -447,6 +449,11 @@ void Downloads::on_chkGroupSimilar_clicked(bool checked)
 void Downloads::on_lblRegister_linkActivated(QString)
 {
     g_win->updateLicense();
+}
+
+void Downloads::on_lblDonate_linkActivated(QString)
+{
+    app::openWeb(NEWSFLASH_DONATE_URL);
 }
 
 void Downloads::tableTasks_selectionChanged()

@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -33,7 +33,7 @@ namespace gui
     class Accounts : public MainWidget
     {
         Q_OBJECT
-        
+
     public:
         Accounts();
        ~Accounts();
@@ -63,9 +63,10 @@ namespace gui
         void on_listView_doubleClicked(const QModelIndex& index);
         void on_listView_customContextMenuRequested(QPoint pos);
         void on_lblRegister_linkActivated(QString);
+        void on_lblDonate_linkActivated(QString);
         void on_grpQuota_toggled(bool on);
         void currentRowChanged();
-        void updatePie();        
+        void updatePie();
 
     private:
         Ui::Accounts ui_;
