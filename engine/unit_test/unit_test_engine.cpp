@@ -1592,10 +1592,10 @@ void test_task_execute_restart()
 
     Engine eng(std::make_unique<Factory>(), debug_single_thread);
 
-    {
-        ConnState test_conn_params;
-        test_conn_params.SetError(Connection::State::Active, Connection::Error::PermissionDenied);
+    std::unique_ptr<ConnState> initial_params(new ConnState);
+    initial_params->SetError(Connection::State::Active, Connection::Error::PermissionDenied);
 
+    {
         ui::Account account;
         account.id = 123;
         account.name = "test";
@@ -1608,7 +1608,7 @@ void test_task_execute_restart()
         account.enable_general_server = false;
         account.enable_compression = false;
         account.enable_pipelining = false;
-        account.user_data = &test_conn_params;
+        account.user_data = initial_params.get();
         eng.SetAccount(account, false);
     }
 
@@ -1651,9 +1651,8 @@ void test_task_execute_restart()
     BOOST_REQUIRE(task.state == ui::TaskDesc::States::Waiting);
 
     // reset the connection
+    std::unique_ptr<ConnState> test_conn_params(new ConnState);
     {
-        ConnState test_conn_params;
-
         ui::Account account;
         account.id = 123;
         account.name = "test";
@@ -1666,7 +1665,7 @@ void test_task_execute_restart()
         account.enable_general_server = false;
         account.enable_compression = false;
         account.enable_pipelining = false;
-        account.user_data = &test_conn_params;
+        account.user_data = test_conn_params.get();
         eng.SetAccount(account, false);
     }
 
