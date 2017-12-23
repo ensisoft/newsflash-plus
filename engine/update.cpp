@@ -26,6 +26,7 @@
 #include <set>
 #include <mutex>
 
+#include "bigfile.h"
 #include "filesys.h"
 #include "linebuffer.h"
 #include "filemap.h"
@@ -371,20 +372,17 @@ Update::Update(const std::string& path, const std::string& group)
     state_->folder = path;
     state_->group  = group;
 
-#if defined(LINUX_OS)
-    std::ifstream in(nfo, std::ios::in | std::ios::binary);
-#elif defined(WINDOWS_OS)
-    // msvc extension
-    std::ifstream in(utf8::decode(nfo), std::ios::in | std::ios::binary);
-#endif
-    if (in.is_open())
+    std::error_code err;
+
+    bigfile big;
+    big.open(nfo, bigfile::o_no_flags, &err);
+
+    if (big.is_open())
     {
-        in.seekg(0, std::ios::end);
-        const auto total_size   = (unsigned long)in.tellg();
+        const auto total_size   = big.size();
         const auto header_size  = sizeof(FileHeader);
         const auto payload_size = total_size - header_size;
         const auto num_hashes   = payload_size / sizeof(FileHash);
-        in.seekg(0, std::ios::beg);
 
         // previously there was no versioning of the meta database file
         // but if there was a need to change the structure the catalog
@@ -396,7 +394,7 @@ Update::Update(const std::string& path, const std::string& group)
         // since the UI has implicitly done a version check through the catalog
         // version when opening the group and has (thus) failed.
         FileHeader header;
-        in.read((char*)&header, sizeof(header));
+        big.read((char*)&header, sizeof(header));
         if (header.version != CurrentVersion)
             throw std::runtime_error("unsupported file version");
 
@@ -413,7 +411,7 @@ Update::Update(const std::string& path, const std::string& group)
             // read back the hashes
             std::vector<FileHash> vec;
             vec.resize(num_hashes);
-            in.read((char*)&vec[0], num_hashes * sizeof(FileHash));
+            big.read((char*)&vec[0], num_hashes * sizeof(FileHash));
             for (std::size_t i=0; i<vec.size(); ++i)
             {
                 const auto key = vec[i].article_hash;
@@ -546,14 +544,9 @@ void Update::Commit()
     if (local_first_ == 0 || local_last_ == 0)
         return;
 
-#if defined(LINUX_OS)
-    std::ofstream out(file, std::ios::out | std::ios::binary | std::ios::trunc);
-#elif defined(WINDOWS_OS)
-    std::ofstream out(utf8::decode(file), std::ios::out | std::ios::binary | std::ios::trunc);
-#endif
 
-    if (!out.is_open())
-        throw std::runtime_error("unable to open: " + file);
+    bigfile big;
+    big.open(file, bigfile::o_truncate | bigfile::o_create);
 
     FileHeader header;
     header.version = CurrentVersion;
@@ -563,7 +556,7 @@ void Update::Commit()
     header.positive_offset = state_->positive_offset;
     header.negative_offset = state_->negative_offset;
 
-    out.write((const char*)&header, sizeof(header));
+    big.write((const char*)&header, sizeof(header));
 
     auto& files = state_->files;
     for (auto& p : files)
@@ -584,9 +577,9 @@ void Update::Commit()
     }
     if (!vec.empty())
     {
-        out.write((const char*)&vec[0], vec.size() * sizeof(FileHash));
+        big.write((const char*)&vec[0], vec.size() * sizeof(FileHash));
     }
-    out.close();
+    big.close();
 
     commit_done_ = true;
 }
