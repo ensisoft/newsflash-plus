@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -18,7 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <newsflash/config.h>
+#include "newsflash/config.h"
+
 #if defined(WINDOWS_OS)
 #  include <windows.h>
 #  include <iterator>
@@ -33,8 +34,10 @@
 #  include <fcntl.h>
 #  include <cerrno>
 #endif
+
 #include <cassert>
 #include <stdexcept>
+
 #include "bigfile.h"
 #include "assert.h"
 
@@ -44,10 +47,10 @@ namespace newsflash
 #if defined(WINDOWS_OS)
 
 struct bigfile::impl {
-    HANDLE file;
-    bool append;
+    HANDLE file = INVALID_HANDLE_VALUE;
+    bool append = false;
 
-    impl(const std::string& filename, unsigned flags)
+    impl(const std::string& filename, unsigned flags, std::error_code* error)
     {
         const std::wstring& wide = utf8::decode(filename);
 
@@ -60,29 +63,40 @@ struct bigfile::impl {
             FILE_ATTRIBUTE_NORMAL,
             NULL);
         if (file == INVALID_HANDLE_VALUE)
-            throw std::system_error(GetLastError(), std::system_category(),
-                "file open failed: " + filename);
+        {
+            if (error)
+            {
+                *error = std::error_code(GetLastError(), std::system_category());
+                return;
+            }
+            throw std::system_error(GetLastError(), std::system_category(), "file open failed: " + filename);
+        }
 
-        // make the handle non-inheritable so that any child processes 
+        // make the handle non-inheritable so that any child processes
         // that get started by this process do not have these files open
-        // todo: this is not really consistent behaviour with linux, should the 
+        // todo: this is not really consistent behaviour with linux, should the
         // handles be inherited?
         SetHandleInformation(file, HANDLE_FLAG_INHERIT, 0);
     }
    ~impl()
     {
-        ASSERT(CloseHandle(file) == TRUE);
+        if (file != INVALID_HANDLE_VALUE)
+        {
+            ASSERT(CloseHandle(file) == TRUE);
+        }
     }
 };
 
-void bigfile::open(const std::string& file, unsigned flags)
+void bigfile::open(const std::string& file, unsigned flags, std::error_code* error)
 {
     // note that the open flags _cannot_ be combined!
     unsigned mode = OPEN_EXISTING;
     if (flags & o_create)
-        mode = CREATE_ALWAYS;    
+        mode = CREATE_ALWAYS;
 
-    std::unique_ptr<impl> p(new impl(file, mode));
+    std::unique_ptr<impl> p(new impl(file, mode, error));
+    if (error && *error)
+        return;
 
     p->append = ((flags & o_append) == o_append);
 
@@ -130,7 +144,7 @@ void bigfile::seek(big_t offset)
     assert(offset >= 0);
 
     auto hi = static_cast<LONG>(offset >> 32);
-    auto lo = static_cast<LONG>(offset & 0xFFFFFFFF);    
+    auto lo = static_cast<LONG>(offset & 0xFFFFFFFF);
     if (SetFilePointer(pimpl_->file, lo, &hi, FILE_BEGIN) == INVALID_SET_FILE_POINTER)
     {
         if (GetLastError() != NO_ERROR)
@@ -180,7 +194,7 @@ std::pair<std::error_code, bigfile::big_t> bigfile::size(const std::string& file
     const std::wstring& wstr = utf8::decode(file);
     __stat64 st;
     if (_wstat64(wstr.c_str(), &st))
-        return { std::error_code(GetLastError(), std::system_category()), 0 };        
+        return { std::error_code(GetLastError(), std::system_category()), 0 };
 
     return{ std::error_code(), st.st_size };
 }
@@ -212,16 +226,16 @@ std::error_code bigfile::resize(const std::string& file, big_t size)
         NULL);
     if (handle == INVALID_HANDLE_VALUE)
         return std::error_code(GetLastError(), std::system_category());
-        
+
     LARGE_INTEGER li;
     li.QuadPart = size;
- 
+
     if (SetFilePointerEx(handle, li, NULL, FILE_BEGIN) == INVALID_SET_FILE_POINTER ||
         SetEndOfFile(handle) == FALSE)
     {
         const int err = GetLastError();
         CloseHandle(handle);
-        return std::error_code(err, std::system_category());        
+        return std::error_code(err, std::system_category());
     }
     CloseHandle(handle);
 
@@ -231,22 +245,31 @@ std::error_code bigfile::resize(const std::string& file, big_t size)
 #elif defined(LINUX_OS)
 
 struct bigfile::impl {
-    int fd;
+    int fd = -1;
 
-    impl(const std::string& filename, unsigned flags, unsigned mode)
+    impl(const std::string& filename, unsigned flags, unsigned mode, std::error_code* error)
     {
         fd = ::open(filename.c_str(), flags, mode);
         if (fd == -1)
-            throw std::system_error(errno, std::generic_category(),
-                "file open failed: " + filename);
+        {
+            if (error)
+            {
+                *error = std::error_code(errno, std::generic_category());
+                return;
+            }
+            throw std::system_error(errno, std::generic_category(), "file open failed: " + filename);
+        }
     }
    ~impl()
     {
-        ASSERT(::close(fd) == 0);
+        if (fd != -1)
+        {
+            ASSERT(::close(fd) == 0);
+        }
     }
 };
 
-void bigfile::open(const std::string& file, unsigned flags)
+void bigfile::open(const std::string& file, unsigned flags, std::error_code* error)
 {
     int mode = O_RDWR | O_LARGEFILE;
     if (flags & o_create)
@@ -256,7 +279,9 @@ void bigfile::open(const std::string& file, unsigned flags)
     if (flags & o_append)
         mode |= O_APPEND;
 
-    std::unique_ptr<impl> p(new impl(file, mode, S_IRWXU | S_IRGRP | S_IROTH));
+    std::unique_ptr<impl> p(new impl(file, mode, S_IRWXU | S_IRGRP | S_IROTH, error));
+    if (error && *error)
+        return;
 
     pimpl_ = std::move(p);
 }
@@ -272,13 +297,13 @@ bigfile::big_t bigfile::position() const
     return big_t(pos);
 }
 
-bigfile::big_t bigfile::size() const 
+bigfile::big_t bigfile::size() const
 {
     assert(is_open());
 
     struct stat64 st {0};
     if (fstat64(pimpl_->fd, &st))
-        throw std::system_error(errno, std::generic_category(), 
+        throw std::system_error(errno, std::generic_category(),
             "failed to get file size");
 
     return big_t{st.st_size};
@@ -307,7 +332,7 @@ void bigfile::write(const void* data, size_t bytes)
     // std::numeric_limits<size_t>::max() -1 ??
     const size_t ret = ::write(pimpl_->fd, data, bytes);
     if (ret == (size_t)-1)
-        throw std::system_error(errno, std::generic_category(), 
+        throw std::system_error(errno, std::generic_category(),
             "file write failed");
 }
 

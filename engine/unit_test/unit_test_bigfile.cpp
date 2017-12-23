@@ -48,6 +48,13 @@ void test_file_open()
         BOOST_REQUIRE(file.is_open() == false);
     }
 
+    {
+        newsflash::bigfile file;
+        std::error_code error;
+        file.open("test0.file", newsflash::bigfile::o_no_flags, &error);
+        BOOST_REQUIRE(error);
+    }
+
     // create file
     {
         newsflash::bigfile file;

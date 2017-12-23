@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -20,12 +20,13 @@
 
 #pragma once
 
-#include <newsflash/config.h>
+#include "newsflash/config.h"
 
 #include <system_error>
 #include <cstdint>
 #include <string>
 #include <memory>
+
 #include "utility.h"
 
 namespace newsflash
@@ -35,6 +36,7 @@ namespace newsflash
     {
     public:
         enum open_flags {
+            o_no_flags = 0,
             o_create   = 1 << 0, // create file if it doesnt exist
             o_truncate = 1 << 1, // truncate file contents to 0 length on open
             o_append   = 1 << 2  // always append to the file.
@@ -52,7 +54,8 @@ namespace newsflash
        ~bigfile();
 
         // Open a file.
-        void open(const std::string& file, unsigned flags = 0);
+        void open(const std::string& file, unsigned flags = 0,
+            std::error_code* error = nullptr);
 
         // check if already open, returns true if open otherwise false.
         bool is_open() const;
@@ -78,7 +81,7 @@ namespace newsflash
         void write(const void* data, std::size_t bytes);
 
         // Try to read the given number of bytes from the file
-        // returns the actual number of bytes read. 
+        // returns the actual number of bytes read.
         std::size_t read(void* buff, std::size_t bytes);
 
         // flush buffered writes to the file on device.
@@ -86,14 +89,14 @@ namespace newsflash
 
         bigfile& operator=(bigfile&& other);
 
-        // get file size. 
+        // get file size.
         static std::pair<std::error_code, big_t> size(const std::string& file);
 
-        // erase the file. returns 0 on success or 
+        // erase the file. returns 0 on success or
         // platform specific native error code on error.
         static std::error_code erase(const std::string& file);
 
-        // Resize the file (either truncate or expand) to the given size. 
+        // Resize the file (either truncate or expand) to the given size.
         static std::error_code resize(const std::string& file, big_t size);
 
         // check if file exists or not.
