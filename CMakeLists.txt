@@ -225,8 +225,11 @@ if (MSVC)
     elseif(CMAKE_BUILD_TYPE MATCHES "Debug")
         set_target_properties(newsflash PROPERTIES LINK_FLAGS "/SUBSYSTEM:CONSOLE,5.2")
     endif()
+
+    target_link_libraries(newsflash appcore Qt4::QAxContainer)
+else()
+    target_link_libraries(newsflash appcore)
 endif()
-target_link_libraries(newsflash appcore)
 
 # build the keygen
 add_executable(keygen

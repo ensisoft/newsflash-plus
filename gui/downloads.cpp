@@ -66,22 +66,10 @@ Downloads::Downloads() : panels_y_pos_(0), numDownloads_(0)
     tableTasks_selectionChanged();
     tableConns_selectionChanged();
 
-    QMovie* movie = new QMovie(this);
-    movie->setFileName(":resource/USENEXT.gif");
-    movie->start();
-    movie->setSpeed(100);
-    const auto& pixmap     = movie->currentPixmap();
-    const auto& dimensions = pixmap.size();
-    ui_.lblMovie->setMinimumSize(dimensions);
-    ui_.lblMovie->resize(dimensions);
-    ui_.lblMovie->setMovie(movie);
-    ui_.lblMovie->setVisible(true);
-    ui_.lblMovie->setProperty("url",
-        "http://www.usenext.com/?utm_source=AF_TP_93470&utm_medium=AFGE&utm_campaign=447055&utm_content=0_1");
-    ui_.lblMovie->installEventFilter(this);
     ui_.lblPlead->setVisible(true);
     ui_.lblRegister->setVisible(true);
     ui_.lblDonate->setVisible(true);
+    ui_.webAdWidget->setVisible(true);
 
     DEBUG("Created downloads UI");
 }
@@ -189,11 +177,19 @@ void Downloads::activate(QWidget*)
 
 void Downloads::updateRegistration(bool success)
 {
-    ui_.lblMovie->setVisible(!success);
+#if defined(LINUX_OS)
+    success = true;
+#endif
+
     ui_.lblPlead->setVisible(!success);
     ui_.lblRegister->setVisible(!success);
     ui_.lblDonate->setVisible(!success);
     ui_.grpAdvert->setVisible(!success);
+    ui_.webAdWidget->setVisible(!success);
+    if (!success)
+    {
+        ui_.webAdWidget->loadUrl("http://ensisoft.com/embedded-downloads-tab-ad.php");
+    }
 }
 
 void Downloads::on_actionConnect_triggered()
@@ -539,16 +535,7 @@ void Downloads::tableConns_selectionChanged()
 
 bool Downloads::eventFilter(QObject* obj, QEvent* event)
 {
-    if (obj == ui_.lblMovie)
-    {
-        if (event->type() == QEvent::MouseButtonPress)
-        {
-            const auto& url = ui_.lblMovie->property("url").toString();
-            app::openWeb(url);
-            return true;
-        }
-    }
-    else if (obj == ui_.splitter)
+    if (obj == ui_.splitter)
     {
         if (event->type() == QEvent::MouseMove)
         {
@@ -577,7 +564,6 @@ bool Downloads::eventFilter(QObject* obj, QEvent* event)
             return true;
         }
     }
-
     return QObject::eventFilter(obj, event);
 }
 

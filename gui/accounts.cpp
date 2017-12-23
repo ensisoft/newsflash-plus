@@ -49,7 +49,6 @@ Accounts::Accounts()
 
     ui_.setupUi(this);
     ui_.listView->setModel(app::g_accounts);
-    ui_.lblMovie->installEventFilter(this);
     ui_.actionDel->setEnabled(!empty);
     ui_.actionEdit->setEnabled(!empty);
     ui_.grpServer->setEnabled(false);
@@ -68,59 +67,14 @@ Accounts::Accounts()
     QObject::connect(app::g_accounts, SIGNAL(accountsUpdated()),
         this, SLOT(currentRowChanged()));
 
-    qsrand(std::time(nullptr));
-    const auto num = (qrand() >> 7) % 4;
-
-    QString resource;
-    QString campaing;
-    int speed = 200;
-    if (num == 0)
-    {
-        resource = ":/resource/uns-special-2.gif";
-        campaing = "https://usenetserver.com/partners/?a_aid=foobar1234&amp;a_bid=dcec941d";
-    }
-    else if (num == 1)
-    {
-        resource = ":/resource/nh-special.gif";
-        campaing = "http://www.newshosting.com/en/index.php?&amp;a_aid=foobar1234&amp;a_bid=2b57ce3a";
-    }
-    else if (num == 2)
-    {
-        resource = ":resource/usenext-1.gif";
-        campaing = "http://www.usenext.com/?utm_source=AF_TP_93470&utm_medium=AFGE&utm_campaign=441944&utm_content=0_1";
-        speed = 100;
-    }
-    else if (num == 3)
-    {
-        resource = ":resource/usenext-2.gif";
-        campaing = "http://www.usenext.com/?utm_source=AF_TP_93470&utm_medium=AFGE&utm_campaign=441948&utm_content=0_1";
-    }
-
-    //DEBUG("Usenet campaing '%1' '%2'", resource, campaing);
-
-    // NOTE: if the movie doesn't show up the problem might have
-    // to do with Qt image plugins!
-
-    QMovie* mov = new QMovie(this);
-    mov->setFileName(resource);
-    mov->start();
-    mov->setSpeed(speed);
-
-    const auto& pix  = mov->currentPixmap();
-    const auto& size = pix.size();
-    ui_.lblMovie->setMinimumSize(size);
-    ui_.lblMovie->resize(size);
-    ui_.lblMovie->setMovie(mov);
-    ui_.lblMovie->setVisible(true);
-    ui_.lblMovie->setProperty("url", campaing);
+    ui_.lblDonate->setVisible(true);
     ui_.lblPlead->setVisible(true);
     ui_.lblRegister->setVisible(true);
-    ui_.lblDonate->setVisible(true);
+    ui_.webAdWidget->setVisible(true);
 }
 
 Accounts::~Accounts()
 {
-    ui_.lblMovie->removeEventFilter(this);
 }
 
 void Accounts::addActions(QMenu& menu)
@@ -154,23 +108,24 @@ void Accounts::saveState(app::Settings& s)
 
 void Accounts::updateRegistration(bool success)
 {
-    ui_.lblMovie->setVisible(!success);
+#if defined(LINUX_OS)
+    success = true;
+#endif
+
     ui_.lblPlead->setVisible(!success);
     ui_.lblRegister->setVisible(!success);
     ui_.lblDonate->setVisible(!success);
     ui_.grpAdvert->setVisible(!success);
+    ui_.webAdWidget->setVisible(!success);
+    if (!success)
+    {
+        ui_.webAdWidget->loadUrl("http://ensisoft.com/embedded-accounts-tab-ad.php");
+    }
 }
 
 
 bool Accounts::eventFilter(QObject* object, QEvent* event)
 {
-    if (object == ui_.lblMovie &&
-        event->type() == QEvent::MouseButtonPress)
-    {
-        const auto& url = ui_.lblMovie->property("url").toString();
-        app::openWeb(url);
-        return true;
-    }
     return QObject::eventFilter(object, event);
 }
 
