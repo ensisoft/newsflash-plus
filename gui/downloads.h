@@ -25,7 +25,9 @@
 #include "newsflash/warnpush.h"
 #  include "ui_downloads.h"
 #include "newsflash/warnpop.h"
+
 #include <memory>
+
 #include "mainwidget.h"
 #include "app/tasklist.h"
 #include "app/connlist.h"
@@ -49,6 +51,7 @@ namespace gui
         virtual void saveState(app::Settings& s) override;
         virtual void refresh(bool isActive) override;
         virtual void activate(QWidget*) override;
+        virtual void updateRegistration(bool success) override;
 
         virtual info getInformation() const override 
         { return {"downloads.html", true}; }
@@ -74,6 +77,7 @@ namespace gui
         void on_tableConns_customContextMenuRequested(QPoint pos);
         void on_tableConns_doubleClicked(const QModelIndex&);
         void on_chkGroupSimilar_clicked(bool checked);
+        void on_lblRegister_linkActivated(QString);
         void tableTasks_selectionChanged();
         void tableConns_selectionChanged();
 

@@ -188,5 +188,6 @@
     <file>resource/ajax-loader.gif</file>
     <file>resource/usenext-1.gif</file>
     <file>resource/usenext-2.gif</file>
+    <file>resource/USENEXT.gif</file>
   </qresource>
 </RCC>

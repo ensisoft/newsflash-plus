@@ -27,8 +27,11 @@
 #  include <QtGui/QMenu>
 #  include <QtGui/QSplitter>
 #  include <QtGui/QMouseEvent>
+#  include <QtGui/QPixmap>
+#  include <QtGui/QMovie>
 #include "newsflash/warnpop.h"
 
+#include "mainwindow.h"
 #include "downloads.h"
 #include "app/debug.h"
 #include "app/format.h"
@@ -62,6 +65,22 @@ Downloads::Downloads() : panels_y_pos_(0), numDownloads_(0)
 
     tableTasks_selectionChanged();
     tableConns_selectionChanged();
+
+    QMovie* movie = new QMovie(this);
+    movie->setFileName(":resource/USENEXT.gif");
+    movie->start();
+    movie->setSpeed(100);
+    const auto& pixmap     = movie->currentPixmap();
+    const auto& dimensions = pixmap.size();
+    ui_.lblMovie->setMinimumSize(dimensions);
+    ui_.lblMovie->resize(dimensions);
+    ui_.lblMovie->setMovie(movie);
+    ui_.lblMovie->setVisible(true);
+    ui_.lblMovie->setProperty("url", 
+        "http://www.usenext.com/?utm_source=AF_TP_93470&utm_medium=AFGE&utm_campaign=447055&utm_content=0_1");
+    ui_.lblMovie->installEventFilter(this);
+    ui_.lblPlead->setVisible(true);
+    ui_.lblRegister->setVisible(true);
 
     DEBUG("Created downloads UI");
 }
@@ -165,6 +184,14 @@ void Downloads::activate(QWidget*)
 
     numDownloads_ = numTasks;
     setWindowTitle("Downloads");
+}
+
+void Downloads::updateRegistration(bool success)
+{
+    ui_.lblMovie->setVisible(!success);
+    ui_.lblPlead->setVisible(!success);
+    ui_.lblRegister->setVisible(!success);
+    ui_.grpAdvert->setVisible(!success);
 }
 
 void Downloads::on_actionConnect_triggered()
@@ -417,6 +444,11 @@ void Downloads::on_chkGroupSimilar_clicked(bool checked)
     tasks_.setGroupSimilar(checked);
 }
 
+void Downloads::on_lblRegister_linkActivated(QString)
+{
+    g_win->updateLicense();
+}
+
 void Downloads::tableTasks_selectionChanged()
 {
     const auto& indices = ui_.tableTasks->selectionModel()->selectedRows();
@@ -500,31 +532,43 @@ void Downloads::tableConns_selectionChanged()
 
 bool Downloads::eventFilter(QObject* obj, QEvent* event)
 {
-    if (event->type() == QEvent::MouseMove)
+    if (obj == ui_.lblMovie)
     {
-        const auto* mickey = static_cast<QMouseEvent*>(event);
-        const auto& point  = mapFromGlobal(mickey->globalPos());
-        const auto  ypos   = point.y();
-        if (panels_y_pos_)
+        if (event->type() == QEvent::MouseButtonPress)
         {
-            auto change = ypos - panels_y_pos_;
-            auto height = ui_.grpTasks->height();
-            if (height + change < 150)
-                return true;
-
-            height = ui_.grpConns->height();
-            if (height - change < 100)
-                return true;
-
-            ui_.grpConns->setFixedHeight(height - change);
+            const auto& url = ui_.lblMovie->property("url").toString();
+            app::openWeb(url);
+            return true;
         }
-        panels_y_pos_ = ypos;
-        return true;
     }
-    else if (event->type() == QEvent::MouseButtonRelease)
+    else if (obj == ui_.splitter)
     {
-        panels_y_pos_ = 0;
-        return true;
+        if (event->type() == QEvent::MouseMove)
+        {
+            const auto* mickey = static_cast<QMouseEvent*>(event);
+            const auto& point  = mapFromGlobal(mickey->globalPos());
+            const auto  ypos   = point.y();
+            if (panels_y_pos_)
+            {
+                auto change = ypos - panels_y_pos_;
+                auto height = ui_.grpTasks->height();
+                if (height + change < 150)
+                    return true;
+
+                height = ui_.grpConns->height();
+                if (height - change < 100)
+                    return true;
+
+                ui_.grpConns->setFixedHeight(height - change);
+            }
+            panels_y_pos_ = ypos;
+            return true;
+        }
+        else if (event->type() == QEvent::MouseButtonRelease)
+        {
+            panels_y_pos_ = 0;
+            return true;
+        }
     }
 
     return QObject::eventFilter(obj, event);
