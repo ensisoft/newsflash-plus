@@ -20,7 +20,8 @@
 
 #pragma once
 
-#include <newsflash/config.h>
+#include "newsflash/config.h"
+
 #include <memory>
 #include <vector>
 #include <string>
@@ -71,7 +72,7 @@ namespace newsflash
                 return data_.data();
             }
 
-            std::size_t length() const
+            std::int64_t length() const
             {
                 return data_.size();
             }
@@ -79,13 +80,13 @@ namespace newsflash
 
         private:
             buffer(std::shared_ptr<fileio> io, std::vector<byte> data,
-                std::size_t offset, bool write) : fileio_(io), data_(std::move(data)), offset_(offset), write_(write)
+                std::int64_t offset, bool write) : fileio_(io), data_(std::move(data)), offset_(offset), write_(write)
             {}
             friend class filebuf;
         private:
             std::shared_ptr<fileio> fileio_;
             std::vector<byte> data_;
-            std::size_t offset_;
+            std::int64_t offset_;
         private:
             bool write_;
         };
@@ -108,10 +109,10 @@ namespace newsflash
 
         // load a buffer of the given size (in bytes) from the
         // filebuf from the  given offset.
-        buffer load(std::size_t offset, std::size_t size, unsigned flags);
+        buffer load(std::int64_t offset, std::size_t size, unsigned flags);
 
         // get the size of the file backing the filebuf.
-        std::size_t size() const;
+        std::int64_t size() const;
 
         // get the current name of the file.
         std::string filename() const;

@@ -18,12 +18,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <newsflash/config.h>
+#include "newsflash/config.h"
 
 #if defined(WINDOWS_OS)
 #  include <windows.h>
 #  include "utf8.h"
 #elif defined(LINUX_OS)
+#  ifndef __LARGEFILE64_SOURCE
+#    define __LARGEFILE64_SOURCE
+#  endif
 #  include <sys/types.h>
 #  include <sys/stat.h>
 #  include <unistd.h>
@@ -63,7 +66,7 @@ public:
         ASSERT(CloseHandle(file_) == TRUE);
     }
 
-    void read(void* buff, std::size_t bytes, std::uint64_t offset)
+    void read(void* buff, std::size_t bytes, std::int64_t offset)
     {
         auto hi = static_cast<LONG>(offset >> 32L);
         auto lo = static_cast<LONG>(offset & 0xFFFFFFFF);
@@ -97,7 +100,7 @@ public:
             throw std::runtime_error("file flush failed");
     }
 
-    std::size_t size() const
+    std::int64_t size() const
     {
         LARGE_INTEGER size;
         if (!GetFileSizeEx(file_, &size))
@@ -130,7 +133,7 @@ public:
     {
         ASSERT(::close(file_) == 0);
     }
-    void read(void* buff, std::size_t bytes, std::size_t offset)
+    void read(void* buff, std::size_t bytes, std::int64_t offset)
     {
         if (::lseek64(file_, offset, SEEK_SET) == off64_t(-1))
             throw std::runtime_error("file seek failed");
@@ -138,7 +141,7 @@ public:
             throw std::runtime_error("file read failed");
     }
 
-    void write(const void* buff, std::size_t bytes, std::size_t offset)
+    void write(const void* buff, std::size_t bytes, std::int64_t offset)
     {
         // lseek allows the seek to be set beyond the existing end of file.
         if (::lseek64(file_, offset, SEEK_SET) == off64_t(-1))
@@ -153,7 +156,7 @@ public:
             throw std::runtime_error("syncfs failed");
     }
 
-    std::size_t size() const
+    std::int64_t size() const
     {
         struct stat64 st;
         if (fstat64(file_, &st))
@@ -192,7 +195,7 @@ void filebuf::flush()
     fileio_->flush();
 }
 
-filebuf::buffer filebuf::load(std::size_t offset, std::size_t size, unsigned flags)
+filebuf::buffer filebuf::load(std::int64_t offset, std::size_t size, unsigned flags)
 {
     std::vector<byte> vec;
     vec.resize(size);
@@ -205,7 +208,7 @@ filebuf::buffer filebuf::load(std::size_t offset, std::size_t size, unsigned fla
     return {fileio_, std::move(vec), offset, write_data};
 }
 
-std::size_t filebuf::size() const
+std::int64_t filebuf::size() const
 {
     return fileio_->size();
 }
