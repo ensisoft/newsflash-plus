@@ -20,7 +20,8 @@
 
 #pragma once
 
-#include <newsflash/config.h>
+#include "newsflash/config.h"
+
 #include <string>
 #include <cstdint>
 

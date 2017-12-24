@@ -40,6 +40,7 @@
 #include "action.h"
 #include "assert.h"
 #include "filesys.h"
+#include "filetype.h"
 #include "logging.h"
 #include "utf8.h"
 #include "threadpool.h"
@@ -3007,6 +3008,8 @@ void initialize()
     // details here;
     // https://msdn.microsoft.com/en-us/library/hh567368.aspx
     nntp::thread_safe_initialize();
+
+    find_filetype("foo");
 
     openssl_init();
 
