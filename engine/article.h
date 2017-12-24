@@ -79,12 +79,10 @@ namespace newsflash
 
             m_pubdate = nntp::timevalue(date.second);
 
-            const auto binary = nntp::is_binary_post(data.subject.start, data.subject.len);
-            if (binary)
+            const auto& filename = nntp::find_filename(data.subject.start, data.subject.len);
+            if (!filename.empty())
             {
-                const auto& filename = nntp::find_filename(data.subject.start, data.subject.len);
-                if (!filename.empty())
-                    m_type = find_filetype(filename);
+                m_type = find_filetype(filename);
                 m_bits.set(fileflag::binary);
             }
 
