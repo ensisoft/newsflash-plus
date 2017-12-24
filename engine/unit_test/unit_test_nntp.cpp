@@ -451,6 +451,9 @@ void test_find_filename()
         const char* str;
         std::string expected;
     } tests[] = {
+        {"\"8zm6tvYNq2.part14.rar\" - 1.53GB <<< www.nfo-underground.xxx >>> yEnc (19/273)",
+         "8zm6tvYNq2.part14.rar"},
+
         {"Darkstar - Heart of Darkstar - File 07 of 10 - Darkstar_Heart of Darkness_07_The Dream (Scene 2).mp3 (01/11)",
          "Darkstar_Heart of Darkness_07_The Dream (Scene 2).mp3"},
 

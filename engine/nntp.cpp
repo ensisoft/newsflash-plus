@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -18,13 +18,14 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <newsflash/config.h>
+#include "newsflash/config.h"
 
-#include <newsflash/warnpush.h>
+#include "newsflash/warnpush.h"
 #  include <boost/spirit/include/classic.hpp>
 #  include <boost/functional/hash.hpp>
 #  include <boost/regex.hpp>
-#include <newsflash/warnpop.h>
+#include "newsflash/warnpop.h"
+
 #include <sstream>
 #include <algorithm>
 #include <stack>
@@ -96,7 +97,7 @@ namespace {
         // {
         //     if (++parser.pos == parser.len)
         //         return false;
-        //     ++start;        
+        //     ++start;
         // }
         // return true;
     }
@@ -114,7 +115,7 @@ namespace {
     // Audio formats: MP3, MP2, WAV
     // DNS: Nintendo DS
     // SFW: flash
-    const char* REVERSE_FILE_EXTENSION_REGEX = 
+    const char* REVERSE_FILE_EXTENSION_REGEX =
         R"(rar\.|2rap\.|rap\.|ge?pj\.|iva\.|[234]pm\.|ge?pm\.|gnp\.|)" \
         R"(fig\.|fdp\.|ggo\.|vmw\.|vom\.|osi\.|nib\.|piz\.|vaw\.|amw\.|)" \
         R"(pmb\.|vfs\.|[0-9][0-9]r\.|ofn\.|euc\.|u3m\.|alf\.|bzn\.|mgo\.|)" \
@@ -126,14 +127,14 @@ namespace {
 // part count notation indicates the segment of the file when the file is split
 // to multiple NNTP posts. Usual notation is (xx/yy) but sometimes [xx/yy] is used
 // also note that sometimes subject lines contain both. In this case the [xx/yy] is considered
-// to indicate the file number in the batch of files. 
+// to indicate the file number in the batch of files.
 // so [xx/yy] is not considered as part count unless (xx/yy) is not found.
 const char* find_part_count(const char* subjectline, std::size_t len, std::size_t& i)
 {
     // NOTE: the regex is in reverse because the search is from the tail
     // this matches "metallica - enter sandman.mp3 (01/50)"
      const static boost::regex ex("(\\]|\\))[0-9]*/[0-9]*(\\(|\\[)");
-    
+
      nntp::reverse_c_str_iterator itbeg(subjectline + len - 1);
      nntp::reverse_c_str_iterator itend(subjectline - 1);
 
@@ -141,17 +142,17 @@ const char* find_part_count(const char* subjectline, std::size_t len, std::size_
 
      if (!regex_search(itbeg, itend, res, ex))
          return NULL;
-    
+
      if (res[0].second == itend)
          return NULL;
 
      const char* end   = res[0].first.as_ptr();  // at the last matched character
      const char* start = res[0].second.as_ptr(); // at one before the start of the match
-     
+
      ++start;
      ++end;
      // some people use this gay notation of prefixing their stuff with (xx/yy) notation
-     // to indicate all the articles of their posting "batch". This has nothing to do with 
+     // to indicate all the articles of their posting "batch". This has nothing to do with
      // with the yEnc part count hack. So if the search returned a match at the beginning, ignore this.
      if (start == subjectline)
          return NULL;
@@ -175,8 +176,8 @@ namespace nntp
 std::string make_overview(const overview& ov)
 {
     std::stringstream ss;
-    ss << make_string(ov.number)     << "\t";    
-    ss << make_string(ov.subject)    << "\t";    
+    ss << make_string(ov.number)     << "\t";
+    ss << make_string(ov.subject)    << "\t";
     ss << make_string(ov.author)     << "\t";
     ss << make_string(ov.date)       << "\t";
     ss << make_string(ov.messageid)  << "\t";
@@ -191,7 +192,7 @@ bool is_binary_post(const char* str, size_t len)
     // TODO: consider separating this functionality into two functions.
     // 1 to find whether a post is should be collapsed, i.e. is multipart post
     // 2 to find whether the post is a binary post
-    // http://www.boost.org/libs/regex/doc/syntax_perl.html      
+    // http://www.boost.org/libs/regex/doc/syntax_perl.html
     const static boost::regex filename(REVERSE_FILE_EXTENSION_REGEX, boost::regbase::icase | boost::regbase::perl);
     const static boost::regex yenc("yEnc *\\([0-9]*/[0-9]*\\)");
     const static boost::regex part("\\([0-9]*/[0-9]*\\)|yEnc");
@@ -202,7 +203,7 @@ bool is_binary_post(const char* str, size_t len)
     {
         reverse_c_str_iterator itbeg(start);
         reverse_c_str_iterator itend(str - 1);
-        
+
         boost::match_results<reverse_c_str_iterator> res;
 
         if (!regex_search(itbeg, itend, res, filename))
@@ -232,7 +233,7 @@ bool is_binary_post(const char* str, size_t len)
         // but something like ".pdf viewer for linux?"
         if (start == str)
             return false;
-        
+
         // if filename is matched at the end of the subjectline
         // this is ok
         if (end == str + len)
@@ -240,19 +241,19 @@ bool is_binary_post(const char* str, size_t len)
 
         --start;
 
-        assert(end < str + len);        
+        assert(end < str + len);
         assert(start >= str);
-        
-        // if the filename ends with a space (very common), 
+
+        // if the filename ends with a space (very common),
         // or with a double quote this is ok and the extension does not
         // have a space right before it then it is ok
-        
+
         // if the filename ends with a quote this is ok.
         // (yEnc encoded posts should have a subject line like '"fooobar.mp3 (1/10)" yEnc'
         // another used notation is '(fooobar.jpeg')
         if (*end == '"' || *end == ')')
             return true;
-        
+
         if (*start != ' ')
         {
             // a space after a filename this is swell. Probably some non-yEnc encoded
@@ -273,7 +274,7 @@ bool is_binary_post(const char* str, size_t len)
         }
     }
 
-    return false;    
+    return false;
 }
 
 bool strcmp(const char* first,  std::size_t firstLen, const char* second, std::size_t secondLen)
@@ -293,7 +294,7 @@ bool strcmp(const char* first,  std::size_t firstLen, const char* second, std::s
     else
     {
         const auto* p2 = find_part_count(second, secondLen, skip_second);
-        if (!p2) 
+        if (!p2)
             return false;
 
         // the part count needs to begin at the same position
@@ -326,8 +327,8 @@ bool strcmp(const char* first,  std::size_t firstLen, const char* second, std::s
     }
 
     return true;
-    
-} 
+
+}
 
 
 std::time_t timevalue(const nntp::date& date)
@@ -346,7 +347,7 @@ std::time_t timevalue(const nntp::date& date)
     // todo: can this depend on the locale where where
     // the date was generated??
     const char* arr[] = {
-        "Jan", "Feb", "Mar", "Apr", "May", "Jun", 
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
         "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
 
     for (size_t i=0; i<sizeof(arr)/sizeof(char*); ++i)
@@ -432,14 +433,14 @@ std::pair<bool, group> parse_group_list_item(const char* str, size_t len)
 
 std::pair<bool, group> parse_group(const char* str, size_t len)
 {
-    group grp;    
-    try 
+    group grp;
+    try
     {
         std::string estimate;
         nntp::scan_response({211}, str, len, estimate, grp.first, grp.last, grp.name);
     }
     catch (const std::exception& e)
-    { 
+    {
         return {false, grp };
     }
     return {true, grp};
@@ -483,11 +484,11 @@ std::pair<bool, date> parse_date(const char* str, size_t len)
          !(int_p[assign(date.tzoffset)])     >>
          !((*alpha_p)[assign(date.tz)])
         ), ch_p(' '));
-    if (ret.full) 
+    if (ret.full)
     {
         if (date.year < 100)
             date.year += 2000;
-        return {true, date};        
+        return {true, date};
     }
 
 
@@ -519,7 +520,7 @@ std::pair<bool, part> parse_part(const char* str, size_t len)
     nntp::part part {0};
 
     str = find_part_count(str, len, len);
-    if (!str) 
+    if (!str)
         return {false, part};
 
     using namespace boost::spirit::classic;
@@ -527,8 +528,8 @@ std::pair<bool, part> parse_part(const char* str, size_t len)
     // first notation (xx/yy)
     {
         const auto& ret = parse(str, str+len,
-            (                                   
-               ch_p('(') >> uint_p[assign(part.numerator)] >> 
+            (
+               ch_p('(') >> uint_p[assign(part.numerator)] >>
                    ch_p('/') >> uint_p[assign(part.denominator)] >>
                    ch_p(')')
                    ));
@@ -538,8 +539,8 @@ std::pair<bool, part> parse_part(const char* str, size_t len)
 
     // second notation  [xx/yy]
     const auto& ret = parse(str, str+len,
-        (                                   
-         ch_p('[') >> uint_p[assign(part.numerator)] >> 
+        (
+         ch_p('[') >> uint_p[assign(part.numerator)] >>
              ch_p('/') >> uint_p[assign(part.denominator)] >>
              ch_p(']')
              ));
@@ -584,13 +585,31 @@ std::string find_filename(const char* str, size_t len, bool include_extension)
     {
         std::string yenc_name;
         const auto ret = parse(str, str + len,
-            (*(anychar_p - '"') >> str_p("\"") >> (*(anychar_p - '"'))[assign(yenc_name)] >> str_p("\" yEnc")));
+            (*(anychar_p - '"'))
+                >> str_p("\"")
+                >> (*(anychar_p - '"'))[assign(yenc_name)]
+                >> str_p("\"")
+                >> (*(anychar_p - '"'))
+                >> str_p("yEnc")
+                >> (*(anychar_p)));
         if (ret.hit)
         {
             if (include_extension)
                 return yenc_name;
-
         }
+        else if (ret.stop == str + len && !yenc_name.empty())
+        {
+            // something weird about the parse_info.
+            // when the input is something like:
+            // "8zm6tvYNq2.part14.rar" - 1.53GB <<< www.nfo-underground.xxx >>> yEnc (19/273)
+            // then ret.hit == false, but however ret.stop == str + len
+            // and the filaneme is stored into yenc_name.
+            // I'm not really sure what's going on here and the documentaion
+            // is so fucking super bad it's useless to even read.
+            if (include_extension)
+                return yenc_name;
+        }
+
         using iterator = std::string::reverse_iterator;
 
         boost::match_results<iterator> res;
@@ -605,14 +624,14 @@ std::string find_filename(const char* str, size_t len, bool include_extension)
     reverse_c_str_iterator itend(str - 1);
 
     boost::match_results<reverse_c_str_iterator> res;
-    
+
     if (!regex_search(itbeg, itend, res, regex))
         return "";
 
-    // first returns an iterator pointing to the 
+    // first returns an iterator pointing to the
     // start of the sequence, which in this case is the end of the filename
     // extension.
-    const char* ext = res[0].first.as_ptr(); 
+    const char* ext = res[0].first.as_ptr();
     // second returns an iterator pointing one past the end of the sequence
     // which in this case is one before the the start of the filename extension
     const char* start = res[0].second.as_ptr();
@@ -620,7 +639,7 @@ std::string find_filename(const char* str, size_t len, bool include_extension)
     if (start < str)
         ++start;
 
-    // seek the dot, its part of the regex so it must be found before start of str    
+    // seek the dot, its part of the regex so it must be found before start of str
     const char* dot = ext;
     while (*dot != '.')
     {
@@ -712,11 +731,11 @@ std::string find_filename(const char* str, size_t len, bool include_extension)
                 }
                 else if (c == '-')
                 {
-                    if (prev_ == ' ' || prev_ == '-')                    
+                    if (prev_ == ' ' || prev_ == '-')
                     {
                         if (dash_ == true)
                             return false;
-                            
+
                         good_ = false;
                         dash_ = true;
                     }
@@ -805,7 +824,7 @@ std::size_t find_response(const void* buff, std::size_t size)
     if (size < 2)
         return 0;
 
-    const char* str = static_cast<const char*>(buff);            
+    const char* str = static_cast<const char*>(buff);
 
     for (std::size_t len=1; len<size; ++len)
     {
@@ -838,10 +857,10 @@ std::size_t find_body(const void* buff, std::size_t size)
     //
     // and in case of empty body case we must look for . CRLF only.
     //
-    //     response line CRLF 
+    //     response line CRLF
     //     . CRLF
 
-    const char* str = static_cast<const char*>(buff);    
+    const char* str = static_cast<const char*>(buff);
     if (size == 3)
     {
         if (str[0] == '.' && str[1] == '\r' && str[2] == '\n')
@@ -852,7 +871,7 @@ std::size_t find_body(const void* buff, std::size_t size)
 
     for (std::size_t len=4; len<size; ++len)
     {
-        if ((str[len-0] == '\n' && str[len-1] == '\r' && str[len-2] == '.') && 
+        if ((str[len-0] == '\n' && str[len-1] == '\r' && str[len-2] == '.') &&
             (str[len-3] == '\n' && str[len-4] == '\r'))
             return len+1;
     }
