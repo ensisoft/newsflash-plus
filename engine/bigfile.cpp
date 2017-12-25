@@ -118,8 +118,9 @@ bigfile::big_t bigfile::position() const
     DWORD low = SetFilePointer(pimpl_->file, 0, &high, FILE_CURRENT);
     if (low == 0xFFFFFFFF)
     {
+        const auto error = GetLastError();
         if (GetLastError() != NO_ERROR)
-            throw std::runtime_error("get current file position failed");
+            throw std::system_error(error, std::system_category(), "SetFilePointer failed");
     }
 
     const big_t ret = (big_t(high) << 32) | low;
@@ -133,7 +134,7 @@ bigfile::big_t bigfile::size() const
 
     LARGE_INTEGER size = {0};
     if (!GetFileSizeEx(pimpl_->file, &size))
-        throw std::runtime_error("get file size failed");
+        throw std::system_error(GetLastError(), std::system_category(), "GetFileSizeEx failed");
 
     return size.QuadPart;
 }
@@ -147,8 +148,9 @@ void bigfile::seek(big_t offset)
     auto lo = static_cast<LONG>(offset & 0xFFFFFFFF);
     if (SetFilePointer(pimpl_->file, lo, &hi, FILE_BEGIN) == INVALID_SET_FILE_POINTER)
     {
+        const auto error = GetLastError();
         if (GetLastError() != NO_ERROR)
-            throw std::runtime_error("file seek failed");
+            throw std::system_error(error, std::system_category(), "SetFilePointer failed");
     }
 }
 
@@ -170,7 +172,7 @@ void bigfile::write(const void* data, size_t bytes)
     }
     DWORD dw = 0;
     if (WriteFile(pimpl_->file, data, bytes, &dw, NULL) == 0)
-        throw std::runtime_error("file write failed");
+        throw std::system_error(GetLastError(), std::system_category(), "WriteFile failed");
 }
 
 size_t bigfile::read(void* buff, size_t bytes)
@@ -181,7 +183,7 @@ size_t bigfile::read(void* buff, size_t bytes)
 
     DWORD dw = 0;
     if (ReadFile(pimpl_->file, buff, bytes, &dw, NULL) == 0)
-        throw std::runtime_error("file read failed");
+        throw std::system_error(GetLastError(), std::system_category(), "ReadFile failed");
 
     return size_t(dw);
 }
@@ -191,7 +193,7 @@ void bigfile::flush()
     assert(is_open());
 
     if (FlushFileBuffers(pimpl_->file))
-        throw std::runtime_error("file flush failed");
+        throw std::system_error(GetLastError(), std::system_category(), "FlushFileBuffers failed");
 }
 
 void bigfile::resize(big_t size)
@@ -284,10 +286,10 @@ struct bigfile::impl {
         {
             if (error)
             {
-                *error = std::error_code(errno, std::generic_category());
+                *error = std::error_code(errno, std::system_category());
                 return;
             }
-            throw std::system_error(errno, std::generic_category(), "file open failed: " + filename);
+            throw std::system_error(errno, std::system_category(), "file open failed: " + filename);
         }
     }
    ~impl()
@@ -322,7 +324,7 @@ bigfile::big_t bigfile::position() const
 
     const off64_t pos = lseek64(pimpl_->fd, 0, SEEK_CUR);
     if (pos == (off64_t)-1)
-        throw std::runtime_error("get current file position failed (lseek64)");
+        throw std::system_error(errno, std::system_category(), "lseek64 failed");
 
     return big_t(pos);
 }
@@ -333,8 +335,7 @@ bigfile::big_t bigfile::size() const
 
     struct stat64 st {0};
     if (fstat64(pimpl_->fd, &st))
-        throw std::system_error(errno, std::generic_category(),
-            "failed to get file size");
+        throw std::system_error(errno, std::system_category(), "fstat64 failed");
 
     return big_t{st.st_size};
 }
@@ -346,8 +347,7 @@ void bigfile::seek(big_t offset)
 
     const off64_t pos = lseek64(pimpl_->fd, offset, SEEK_SET);
     if (pos == (off64_t)-1)
-        throw std::system_error(errno, std::generic_category(),
-            "file seek failed");
+        throw std::system_error(errno, std::system_category(), "lseek64 failed");
 }
 
 void bigfile::write(const void* data, size_t bytes)
@@ -362,8 +362,7 @@ void bigfile::write(const void* data, size_t bytes)
     // std::numeric_limits<size_t>::max() -1 ??
     const size_t ret = ::write(pimpl_->fd, data, bytes);
     if (ret == (size_t)-1)
-        throw std::system_error(errno, std::generic_category(),
-            "file write failed");
+        throw std::system_error(errno, std::system_category(), "file write failed");
 }
 
 size_t bigfile::read(void* buff, size_t bytes)
@@ -374,8 +373,7 @@ size_t bigfile::read(void* buff, size_t bytes)
 
     const size_t ret = ::read(pimpl_->fd, buff, bytes);
     if (ret == (size_t)-1)
-        throw std::system_error(errno, std::generic_category(),
-            "file read failed");
+        throw std::system_error(errno, std::system_category(), "file read failed");
 
     return ret;
 }
@@ -385,7 +383,7 @@ void bigfile::flush()
     assert(is_open());
 
     if (fdatasync(pimpl_->fd))
-        throw std::runtime_error("flush failed");
+        throw std::system_error(errno, std::system_category(), "fdatasync failed");
 }
 
 void bigfile::resize(big_t size)
@@ -393,7 +391,7 @@ void bigfile::resize(big_t size)
     assert(is_open());
 
     if (ftruncate64(pimpl_->fd, size))
-        throw std::runtime_error("ftruncate64 failed");
+        throw std::system_error(errno, std::system_category(), "ftruncate64 failed");
 }
 
 std::pair<std::error_code, bigfile::big_t> bigfile::size(const std::string& file)
@@ -401,7 +399,7 @@ std::pair<std::error_code, bigfile::big_t> bigfile::size(const std::string& file
     struct stat64 st {0};
 
     if (stat64(file.c_str(), &st))
-        return { std::error_code(errno, std::generic_category()), 0};
+        return { std::error_code(errno, std::system_category()), 0};
 
     return { std::error_code(), big_t(st.st_size) };
 }
@@ -409,7 +407,7 @@ std::pair<std::error_code, bigfile::big_t> bigfile::size(const std::string& file
 std::error_code bigfile::erase(const std::string& file)
 {
     if (unlink(file.c_str()) == -1)
-        return std::error_code(errno, std::generic_category());
+        return std::error_code(errno, std::system_category());
     return std::error_code();
 }
 
@@ -418,7 +416,7 @@ std::error_code bigfile::resize(const std::string& file, big_t size)
     assert(size >= 0);
 
     if (truncate64(file.c_str(), size))
-        return std::error_code(errno, std::generic_category());
+        return std::error_code(errno, std::system_category());
 
     return std::error_code();
 }
