@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -22,10 +22,12 @@
 
 #pragma once
 
-#include <newsflash/config.h>
-#include <newsflash/warnpush.h>
+#include "newsflash/config.h"
+
+#include "newsflash/warnpush.h"
 #  include <boost/algorithm/string/trim.hpp>
-#include <newsflash/warnpop.h>
+#include "newsflash/warnpop.h"
+
 #include <sstream>
 #include <vector>
 #include <iomanip>
@@ -70,13 +72,13 @@ namespace nntp
             ++ptr_;
             return *this;
         }
-    
+
         const char& operator*() const
         {
             assert(ptr_);
             return *ptr_;
         }
-        
+
         const char* as_ptr() const
         {
             return ptr_;
@@ -89,7 +91,7 @@ namespace nntp
         {
             return ptr_ == rhs.ptr_;
         }
-    
+
     private:
         const char* ptr_;
     };
@@ -131,7 +133,7 @@ namespace nntp
 
     // (01/34)
     struct part {
-        std::size_t numerator;  // 1        
+        std::size_t numerator;  // 1
         std::size_t denominator; // 34
     };
 
@@ -143,7 +145,7 @@ namespace nntp
 
     // Compare two subject lines for equality ignoring
     // the NNTP part hack for subject line identity. I.e.
-    // 
+    //
     // "foobar (1/50).mp3" equals "foobar (2/50).mp3" and function returns true
     bool strcmp(const char* first,  std::size_t firstLen,
         const char* second, std::size_t secondLen);
@@ -181,6 +183,14 @@ namespace nntp
     std::pair<bool, part> parse_part(const std::string& subject)
     { return parse_part(subject.c_str(), subject.size()); }
 
+    using hash_combine_function = void (*)(size_t& seed, size_t value);
+
+    // set the hash function to be used when computing the
+    // subject line hash. this is convenient for testing purposes
+    // to force hash collisions to happen.
+    // the library defaults to the "real" hash function by default.
+    void set_hash_function(hash_combine_function h);
+
     // return a 32bit hash value representing this subject line
     // this function ensures that "foobar.mp3 (1/10)" and "foobar.mp3 (2/10)" hash to the same value.
     std::uint32_t hashvalue(const char* subjectline, size_t len);
@@ -191,7 +201,7 @@ namespace nntp
 
     // find a filename in the given subjectline. if no filename was found
     // then returns (nullptr, 0), otherwise a pointer to the start of the filename
-    // and the length of the name. 
+    // and the length of the name.
     // example: "South.park "Southpark.S1E3.par2" yEnc" returns ("southpark.S1E3.par2", 19)
     std::string find_filename(const char* str, size_t len, bool include_extension = true);
 
@@ -267,7 +277,7 @@ namespace nntp
     };
 
 
-    // scan response string for a sequence of values given their specific type. 
+    // scan response string for a sequence of values given their specific type.
     // returns true if scan was succesful, otherwise false.
     template<typename... Values>
     int scan_response(std::vector<int> codes, const char* response, std::size_t len, Values&... values)
@@ -277,7 +287,7 @@ namespace nntp
             str.pop_back();
         if (str.back() == '\r')
             str.pop_back();
-        
+
         std::stringstream ss(str);
         int code = 0;
         detail::extract_value(ss, code);
@@ -304,7 +314,7 @@ namespace nntp
         detail::extract_value(ss, code);
         if (ss.fail())
             throw nntp::exception("scan response failed: " + str, 0);
-        
+
         if (std::find(std::begin(codes), std::end(codes), code) == std::end(codes))
             throw nntp::exception("incorrect response code: " + str, code);
 
@@ -323,11 +333,11 @@ namespace nntp
             if (exponent)
                 ret *= 10;
         }
-        return ret;          
+        return ret;
     }
 
 
-    template<typename Integral> 
+    template<typename Integral>
     Integral to_int(const char* digit_string, int digits, bool& overflow)
     {
         // remove leading zeroes
@@ -350,7 +360,7 @@ namespace nntp
         {
             int exponent = digits-i-1;
             int base     = digit_string[i] - 0x30;
-        
+
             if (ret > max || (ret == max && (base > mod)))
             {
                 overflow = true;

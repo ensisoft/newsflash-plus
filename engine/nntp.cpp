@@ -124,49 +124,56 @@ namespace {
         R"([0-9]{1,3}s\.|ffai\.|fws\.|sdn\.|st\.|3ca\.|rrs\.)" \
         R"(v4m\.|vlf\.|mhc\.)";
 
-// part count notation indicates the segment of the file when the file is split
-// to multiple NNTP posts. Usual notation is (xx/yy) but sometimes [xx/yy] is used
-// also note that sometimes subject lines contain both. In this case the [xx/yy] is considered
-// to indicate the file number in the batch of files.
-// so [xx/yy] is not considered as part count unless (xx/yy) is not found.
-const char* find_part_count(const char* subjectline, std::size_t len, std::size_t& i)
-{
-    // NOTE: the regex is in reverse because the search is from the tail
-    // this matches "metallica - enter sandman.mp3 (01/50)"
-     const static boost::regex ex("(\\]|\\))[0-9]*/[0-9]*(\\(|\\[)");
+    // part count notation indicates the segment of the file when the file is split
+    // to multiple NNTP posts. Usual notation is (xx/yy) but sometimes [xx/yy] is used
+    // also note that sometimes subject lines contain both. In this case the [xx/yy] is considered
+    // to indicate the file number in the batch of files.
+    // so [xx/yy] is not considered as part count unless (xx/yy) is not found.
+    const char* find_part_count(const char* subjectline, std::size_t len, std::size_t& i)
+    {
+        // NOTE: the regex is in reverse because the search is from the tail
+        // this matches "metallica - enter sandman.mp3 (01/50)"
+         const static boost::regex ex("(\\]|\\))[0-9]*/[0-9]*(\\(|\\[)");
 
-     nntp::reverse_c_str_iterator itbeg(subjectline + len - 1);
-     nntp::reverse_c_str_iterator itend(subjectline - 1);
+         nntp::reverse_c_str_iterator itbeg(subjectline + len - 1);
+         nntp::reverse_c_str_iterator itend(subjectline - 1);
 
-     boost::match_results<nntp::reverse_c_str_iterator> res;
+         boost::match_results<nntp::reverse_c_str_iterator> res;
 
-     if (!regex_search(itbeg, itend, res, ex))
-         return NULL;
+         if (!regex_search(itbeg, itend, res, ex))
+             return NULL;
 
-     if (res[0].second == itend)
-         return NULL;
+         if (res[0].second == itend)
+             return NULL;
 
-     const char* end   = res[0].first.as_ptr();  // at the last matched character
-     const char* start = res[0].second.as_ptr(); // at one before the start of the match
+         const char* end   = res[0].first.as_ptr();  // at the last matched character
+         const char* start = res[0].second.as_ptr(); // at one before the start of the match
 
-     ++start;
-     ++end;
-     // some people use this gay notation of prefixing their stuff with (xx/yy) notation
-     // to indicate all the articles of their posting "batch". This has nothing to do with
-     // with the yEnc part count hack. So if the search returned a match at the beginning, ignore this.
-     if (start == subjectline)
-         return NULL;
+         ++start;
+         ++end;
+         // some people use this gay notation of prefixing their stuff with (xx/yy) notation
+         // to indicate all the articles of their posting "batch". This has nothing to do with
+         // with the yEnc part count hack. So if the search returned a match at the beginning, ignore this.
+         if (start == subjectline)
+             return NULL;
 
-     i = end - start;
-     return start;
-}
+         i = end - start;
+         return start;
+    }
 
-std::string make_string(const nntp::overview::field& f)
-{
-    if (!f.start) return "";
-    if (!f.len)  return {f.start, std::strlen(f.start)};
-    return {f.start, f.len};
-}
+    std::string make_string(const nntp::overview::field& f)
+    {
+        if (!f.start) return "";
+        if (!f.len)  return {f.start, std::strlen(f.start)};
+        return {f.start, f.len};
+    }
+
+    inline void default_boost_hash(size_t& seed, size_t value)
+    {
+        boost::hash_combine(seed, value);
+    }
+
+    nntp::hash_combine_function hash_combine = &default_boost_hash;
 
 } // namespace
 
@@ -547,6 +554,11 @@ std::pair<bool, part> parse_part(const char* str, size_t len)
     return {ret.full, part};
 }
 
+void set_hash_function(hash_combine_function h)
+{
+    hash_combine = h;
+}
+
 std::uint32_t hashvalue(const char* subjectline, size_t len)
 {
     std::size_t seed = 0;
@@ -555,7 +567,7 @@ std::uint32_t hashvalue(const char* subjectline, size_t len)
     if (!p)
     {
         for (std::size_t i=0; i<len; ++i)
-            boost::hash_combine(seed, subjectline[i]);
+            hash_combine(seed, subjectline[i]);
     }
     else
     {
@@ -563,10 +575,10 @@ std::uint32_t hashvalue(const char* subjectline, size_t len)
         const std::size_t num = p - subjectline;
         std::size_t i;
         for (i=0; i<num; ++i)
-            boost::hash_combine(seed, subjectline[i]);
+            hash_combine(seed, subjectline[i]);
         i += skip;
         for (; i<len; ++i)
-            boost::hash_combine(seed, subjectline[i]);
+            hash_combine(seed, subjectline[i]);
     }
 
     return std::uint32_t(seed);
