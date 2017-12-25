@@ -28,6 +28,7 @@
 #include <iostream>
 
 #include "engine/bigfile.h"
+#include "engine/utility.h"
 #include "unit_test_common.h"
 
 namespace fs = boost::filesystem;
@@ -164,7 +165,7 @@ void test_large_file()
     delete_file("test2.file");
 
     newsflash::bigfile file;
-    file.open("test2.file", true);
+    file.open("test2.file", newsflash::bigfile::o_create);
 
     using big_t = newsflash::bigfile::big_t;
 
@@ -177,13 +178,14 @@ void test_large_file()
     file.write(buff, sizeof(buff));
 
     file.seek(big_t(0xFFFFFFFFL));
-    file.write(buff, 1);
+    file.write(buff, sizeof(buff));
     file.close();
 
     file.open("test2.file", newsflash::bigfile::o_append);
     file.write(buff, sizeof(buff));
 
-    BOOST_REQUIRE(newsflash::bigfile::size("test2.file").second == big_t(0xffffffffL) + sizeof(buff));
+    BOOST_REQUIRE(newsflash::bigfile::size("test2.file").second == big_t(0xffffffffL) + 2 * sizeof(buff));
+    BOOST_REQUIRE(file.size() == big_t(0xffffffffL) + 2 * sizeof(buff));
 
     delete_file("test2.file");
 }
@@ -238,6 +240,9 @@ int test_main(int, char* [])
     test_unicode_filename();
     //test_error_codes();
     test_static_methods();
+
+    test_large_file();
+
 
     return 0;
 }
