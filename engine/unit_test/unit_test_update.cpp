@@ -39,6 +39,7 @@
 void unit_test_ranges()
 {
     delete_file("alt.binaries.test/alt.binaries.test.nfo");
+    delete_file("alt.binaries.test/alt.binaries.test.idb");
 
     fs::createpath("alt.binaries.test");
 
@@ -159,6 +160,7 @@ void unit_test_ranges()
     }
 
     delete_file("alt.binaries.test/alt.binaries.test.nfo");
+    delete_file("alt.binaries.test/alt.binaries.test.idb");
 }
 
 void unit_test_data()
@@ -721,11 +723,22 @@ void unit_test_index()
 
 }
 
+void stupid_hash(std::size_t& seed, size_t addition)
+{
+    seed = 0xdefeceba;
+}
 
 int test_main(int, char* [])
 {
     unit_test_ranges();
     unit_test_data();
     unit_test_index();
+
+    // let's force some hash collision and run the same test
+    // cases again to make sure that colliding hashes
+    // are handled properly.
+    nntp::set_hash_function(&stupid_hash);
+    unit_test_data();
+
     return 0;
 }
