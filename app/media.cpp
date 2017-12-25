@@ -371,6 +371,7 @@ MediaType findMediaType(const QString& newsgroup)
         {MediaType::AdultOther, "erotica.fetish"},
         {MediaType::AdultOther, "erotica.multimedia"},
         {MediaType::AdultOther, ".porn"},
+        {MediaType::AdultOther, "alt.binaries.xxx"},
 
 
         {MediaType::Ebook, ".ebook."},
