@@ -50,7 +50,7 @@ namespace newsflash
             clear();
         }
 
-        bool parse(const char* overview, std::size_t len)
+        bool parse_initial_data(const char* overview, std::size_t len)
         {
             const auto& pair = nntp::parse_overview(overview, len);
             if (!pair.first)
@@ -73,18 +73,9 @@ namespace newsflash
                 m_bits.set(fileflag::broken, (m_parts_avail != m_parts_total));
             }
 
-            const auto date = nntp::parse_date(data.date.start, data.date.len);
-            if (!date.first)
-                return false;
-
-            m_pubdate = nntp::timevalue(date.second);
-
-            const auto& filename = nntp::find_filename(data.subject.start, data.subject.len);
-            if (!filename.empty())
-            {
-                m_type = find_filetype(filename);
-                m_bits.set(fileflag::binary);
-            }
+            // instead of parsing the date now it can be moved into
+            // parse_rest_of_the_data and parsed only if needed at later time.
+            m_date_str = std::string{data.date.start, data.date.len};
 
             // we support utf8 now.
             // using runtime article specific flag here insted of versioning the catalog
@@ -116,6 +107,23 @@ namespace newsflash
             if (m_author.size() > 64)
                 m_author.resize(64);
 
+            return true;
+        }
+
+        bool parse_rest_of_the_data()
+        {
+            const auto date = nntp::parse_date(m_date_str.c_str(), m_date_str.size());
+            if (!date.first)
+                return false;
+
+            m_pubdate = nntp::timevalue(date.second);
+
+            const auto& filename = nntp::find_filename(m_subject.c_str(), m_subject.size());
+            if (!filename.empty())
+            {
+                m_type = find_filetype(filename);
+                m_bits.set(fileflag::binary);
+            }
             return true;
         }
 
@@ -417,6 +425,7 @@ namespace newsflash
         std::string   m_subject;
         std::string   m_author;
         // non persistent
+        std::string m_date_str;
     private:
         mutable std::uint16_t m_partno;
         mutable std::uint32_t m_hash;

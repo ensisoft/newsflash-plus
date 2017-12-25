@@ -176,7 +176,7 @@ public:
             const auto& line = *beg;
 
             article_t a;
-            if (!a.parse(line.start, line.length))
+            if (!a.parse_initial_data(line.start, line.length))
                 continue;
 
             articles_.push_back(a);
@@ -313,6 +313,9 @@ public:
             }
             else
             {
+                if (!article.parse_rest_of_the_data())
+                    continue;
+
                 article.set_index(index.value );
                 // we store one complete 64bit article number for the whole pack
                 // and then for the additional parts we store a 16 bit delta value.
