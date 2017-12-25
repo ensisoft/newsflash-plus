@@ -160,8 +160,13 @@ void bigfile::write(const void* data, size_t bytes)
 
     if (pimpl_->append)
     {
-        if (SetFilePointer(pimpl_->file, 0, NULL, FILE_END) == INVALID_SET_FILE_POINTER)
-            throw std::runtime_error("file write failed (seek to the end)");
+        LONG high = 0;
+        if (SetFilePointer(pimpl_->file, 0, &high, FILE_END) == INVALID_SET_FILE_POINTER)
+        {
+            const auto error = GetLastError();
+            if (error != NO_ERROR)
+                throw std::system_error(error, std::system_category(), "SetFilePointer failed");
+        }
     }
     DWORD dw = 0;
     if (WriteFile(pimpl_->file, data, bytes, &dw, NULL) == 0)
@@ -187,6 +192,24 @@ void bigfile::flush()
 
     if (FlushFileBuffers(pimpl_->file))
         throw std::runtime_error("file flush failed");
+}
+
+void bigfile::resize(big_t size)
+{
+    assert(is_open());
+
+    LARGE_INTEGER li = {0};
+    li.QuadPart = size;
+
+    if (SetFilePointerEx(pimpl_->file, li, NULL, FILE_BEGIN) == INVALID_SET_FILE_POINTER)
+    {
+        const auto error = GetLastError();
+        if (error != NO_ERROR)
+            throw std::system_error(error, std::system_category(), "SetFilePointerEx failed");
+    }
+
+    if (SetEndOfFile(pimpl_->file) == FALSE)
+        throw std::system_error(GetLastError(), std::system_category(), "SetEndOfFile failed");
 }
 
 std::pair<std::error_code, bigfile::big_t> bigfile::size(const std::string& file)
@@ -227,11 +250,18 @@ std::error_code bigfile::resize(const std::string& file, big_t size)
     if (handle == INVALID_HANDLE_VALUE)
         return std::error_code(GetLastError(), std::system_category());
 
-    LARGE_INTEGER li;
+    LARGE_INTEGER li = {0};
     li.QuadPart = size;
-
-    if (SetFilePointerEx(handle, li, NULL, FILE_BEGIN) == INVALID_SET_FILE_POINTER ||
-        SetEndOfFile(handle) == FALSE)
+    if (SetFilePointerEx(handle, li, NULL, FILE_BEGIN) == INVALID_SET_FILE_POINTER)
+    {
+        const auto error = GetLastError();
+        if (error != NO_ERROR)
+        {
+            CloseHandle(handle);
+            return std::error_code(error, std::system_category());
+        }
+    }
+    if (SetEndOfFile(handle) == FALSE)
     {
         const int err = GetLastError();
         CloseHandle(handle);
@@ -356,6 +386,14 @@ void bigfile::flush()
 
     if (fdatasync(pimpl_->fd))
         throw std::runtime_error("flush failed");
+}
+
+void bigfile::resize(big_t size)
+{
+    assert(is_open());
+
+    if (ftruncate64(pimpl_->fd, size))
+        throw std::runtime_error("ftruncate64 failed");
 }
 
 std::pair<std::error_code, bigfile::big_t> bigfile::size(const std::string& file)

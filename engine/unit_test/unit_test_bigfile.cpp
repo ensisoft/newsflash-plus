@@ -49,6 +49,7 @@ void test_file_open()
         BOOST_REQUIRE(file.is_open() == false);
     }
 
+    // try opening non-existing file, expect error
     {
         newsflash::bigfile file;
         std::error_code error;
@@ -63,6 +64,18 @@ void test_file_open()
         file.open("test0.file", newsflash::bigfile::o_create);
         BOOST_REQUIRE(file.is_open());
         BOOST_REQUIRE(file.size() == 0);
+        file.close();
+
+        delete_file("test0.file");
+    }
+
+    {
+        newsflash::bigfile file;
+        std::error_code error;
+        file.open("test0.file", newsflash::bigfile::o_create, &error);
+        BOOST_REQUIRE(file.is_open());
+        BOOST_REQUIRE(file.size() == 0);
+        BOOST_REQUIRE(error == std::error_code());
         file.close();
 
         delete_file("test0.file");
@@ -101,10 +114,18 @@ void test_file_open()
 
         REQUIRE_EXCEPTION(file.open("."));
 
+        std::error_code error;
+        file.open(".", newsflash::bigfile::o_no_flags, &error);
+        BOOST_REQUIRE(error);
+
 #if defined(LINUX_OS)
         REQUIRE_EXCEPTION(file.open("/dev/mem")); // no permission
+        file.open("/dev/mem", newsflash::bigfile::o_no_flags, &error);
+        BOOST_REQUIRE(error);
 #elif defined(WINDOWS_OS)
         REQUIRE_EXCEPTION(file.open("\\\foobar\file"));
+        file.open("\\\foobar\file", newsflash::bigfile::o_no_flags, &error);
+        BOOST_REQUIRE(error);
 #endif
     }
 
@@ -136,14 +157,14 @@ void test_file_write_read()
 
         file.seek(0);
         file.read(&empty[0], buff1.size());
-
         BOOST_REQUIRE(!std::memcmp(&empty[0], &buff1[0], buff1.size()));
         BOOST_REQUIRE(file.position() == buff1.size());
 
         file.seek(0);
         file.write(&buff2[0], buff2.size());
-
         BOOST_REQUIRE(file.position() == buff2.size());
+
+        file.close();
 
         delete_file("test1.file");
     }
@@ -154,6 +175,7 @@ void test_file_write_read()
 
         newsflash::bigfile file("test1.file");
         BOOST_REQUIRE(file.read(&empty[0], 512) == 512);
+        file.close();
 
         delete_file("test1.file");
     }
@@ -164,15 +186,14 @@ void test_large_file()
 {
     delete_file("test2.file");
 
-    newsflash::bigfile file;
-    file.open("test2.file", newsflash::bigfile::o_create);
-
     using big_t = newsflash::bigfile::big_t;
 
-    newsflash::bigfile::resize("test2.file", big_t(0xffffffffL) + 1);
-    BOOST_REQUIRE(newsflash::bigfile::size("test2.file").second == big_t(0xffffffffL) + 1);
-
     const char buff[] = "foobar";
+
+    newsflash::bigfile file;
+    file.open("test2.file", newsflash::bigfile::o_create);
+    file.resize(big_t(0xFFFFFFFFL) + sizeof(buff));
+    BOOST_REQUIRE(file.size() == big_t(0xFFFFFFFFL) + sizeof(buff));
 
     file.seek(0);
     file.write(buff, sizeof(buff));
@@ -183,9 +204,29 @@ void test_large_file()
 
     file.open("test2.file", newsflash::bigfile::o_append);
     file.write(buff, sizeof(buff));
+    BOOST_REQUIRE(file.size() == big_t(0xffffffffl) + 2 * sizeof(buff));
+    file.close();
 
-    BOOST_REQUIRE(newsflash::bigfile::size("test2.file").second == big_t(0xffffffffL) + 2 * sizeof(buff));
-    BOOST_REQUIRE(file.size() == big_t(0xffffffffL) + 2 * sizeof(buff));
+    char read_buff[sizeof(buff)];
+
+    file.open("test2.file", newsflash::bigfile::o_no_flags);
+    file.seek(0);
+    file.read(read_buff, sizeof(read_buff));
+    BOOST_REQUIRE(!std::memcmp(read_buff, buff, sizeof(buff)));
+
+    std::memset(read_buff, 0, sizeof(read_buff));
+
+    file.seek(big_t(0xffffffffl));
+    file.read(read_buff, sizeof(read_buff));
+    BOOST_REQUIRE(!std::memcmp(read_buff, buff, sizeof(buff)));
+
+    std::memset(read_buff, 0, sizeof(read_buff));
+
+    file.read(read_buff, sizeof(read_buff));
+    BOOST_REQUIRE(!std::memcmp(read_buff, buff, sizeof(buff)));
+    BOOST_REQUIRE(file.position() == big_t(0xffffffffl) + 2 * sizeof(buff));
+
+    file.close();
 
     delete_file("test2.file");
 }
@@ -210,15 +251,13 @@ void test_huge_file()
     {
         newsflash::bigfile file;
         file.open("huge_file_test", newsflash::bigfile::o_no_flags);
-
         BOOST_REQUIRE(file.size() == buffer.size() * 20);
 
+        std::vector<char> data;
+        data.resize(newsflash::MB(512));
         for (int i=0; i<20; ++i)
         {
-            std::vector<char> data;
-            data.resize(newsflash::MB(512));
             file.read(&data[0], data.size());
-
             BOOST_REQUIRE(data == buffer);
         }
     }

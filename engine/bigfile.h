@@ -87,6 +87,9 @@ namespace newsflash
         // flush buffered writes to the file on device.
         void flush();
 
+        // resize the file to the specified size.
+        void resize(big_t size);
+
         bigfile& operator=(bigfile&& other);
 
         // get file size.
