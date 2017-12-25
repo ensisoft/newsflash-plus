@@ -190,6 +190,42 @@ void test_large_file()
     delete_file("test2.file");
 }
 
+void test_huge_file()
+{
+    delete_file("huge_file_test");
+
+    std::vector<char> buffer(newsflash::MB(512));
+    fill_random(&buffer[0], buffer.size());
+
+    {
+        newsflash::bigfile file;
+        file.open("huge_file_test", newsflash::bigfile::o_create);
+
+        for (int i=0; i<20; ++i)
+        {
+            file.write(&buffer[0], buffer.size());
+        }
+    }
+
+    {
+        newsflash::bigfile file;
+        file.open("huge_file_test", newsflash::bigfile::o_no_flags);
+
+        BOOST_REQUIRE(file.size() == buffer.size() * 20);
+
+        for (int i=0; i<20; ++i)
+        {
+            std::vector<char> data;
+            data.resize(newsflash::MB(512));
+            file.read(&data[0], data.size());
+
+            BOOST_REQUIRE(data == buffer);
+        }
+    }
+
+    delete_file("huge_file_test");
+}
+
 void test_unicode_filename()
 {
 #if defined(WINDOWS_OS)
@@ -211,23 +247,6 @@ void print_err(const std::error_code& err)
               << "Category: " << err.category().name() << std::endl;
 }
 
-// void test_error_codes()
-// {
-//     newsflash::bigfile file;
-
-//     // no such file
-//     auto err = file.open("nosuchfile");
-//     print_err(err);
-//     BOOST_REQUIRE(err == std::errc::no_such_file_or_directory);
-
-// #if defined(LINUX_OS)
-//     print_err(file.open("/dev/mem")); // no permission
-// #elif defined(WINDOWS_OS)
-//     print_err(file.open("\\\foobar\\file"));
-// #endif
-
-// }
-
 void test_static_methods()
 {
     // todo:
@@ -238,12 +257,9 @@ int test_main(int, char* [])
     test_file_open();
     test_file_write_read();
     test_unicode_filename();
-    //test_error_codes();
     test_static_methods();
-
     test_large_file();
-
-
+    test_huge_file();
     return 0;
 }
 
