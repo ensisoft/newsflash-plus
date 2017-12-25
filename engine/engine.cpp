@@ -1218,7 +1218,7 @@ private:
         // i.e. we're active (or possibly paused)
         if (num_active_actions_)
         {
-            if (num_bytes_queued_ >= MB(8))
+            if (num_bytes_queued_ >= MB(64))
             {
                 if (ui_.state == states::Active)
                     return GotoState(state, states::Crunching);
