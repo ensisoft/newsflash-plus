@@ -195,7 +195,7 @@ namespace app
 
         using catalog = newsflash::catalog<newsflash::filemap>;
         using index   = newsflash::index<newsflash::filemap>;
-        using idlist  = newsflash::idlist<newsflash::filemap>;
+        using idlist  = newsflash::idlist<newsflash::filebuf>;
 
         enum class State {
             Loaded, UnLoaded
