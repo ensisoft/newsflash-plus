@@ -263,12 +263,17 @@ public:
                 }
                 if (!internal_article_number)
                 {
+                    if (!article.parse_rest_of_the_data())
+                        continue;
+
                     internal_article_number = state_->allocate_internal(article);
                     hmap.insert(std::make_pair(article.hash(), internal_article_number));
                 }
             }
             else
             {
+                if (!article.parse_rest_of_the_data())
+                    continue;
                 internal_article_number = state_->allocate_internal(article);
             }
 
@@ -313,9 +318,6 @@ public:
             }
             else
             {
-                if (!article.parse_rest_of_the_data())
-                    continue;
-
                 article.set_index(index.value );
                 // we store one complete 64bit article number for the whole pack
                 // and then for the additional parts we store a 16 bit delta value.
