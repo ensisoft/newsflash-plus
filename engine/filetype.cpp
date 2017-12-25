@@ -138,10 +138,11 @@ filetype find_filetype(const std::string& filename)
             for (int i=0; i<1000; ++i)
             {
                 std::stringstream ss;
-                ss << std::setfill('0') << std::setw(2) << i;
+                ss << std::setfill('0') << std::setw(3) << i;
                 std::string s;
                 ss >> s;
                 typemap[".r" + s] = filetype::archive;
+                typemap["." + s] = filetype::archive;
                 typemap[".part" + s] = filetype::archive;
             }
 

@@ -37,6 +37,7 @@ int test_main(int, char*[])
     BOOST_REQUIRE(n::find_filetype("foobar.mp4") == t::video);
     BOOST_REQUIRE(n::find_filetype("foobar.r00") == t::archive);
     BOOST_REQUIRE(n::find_filetype("foobar.r59") == t::archive);
+    BOOST_REQUIRE(n::find_filetype("foobar.r000") == t::archive);
     BOOST_REQUIRE(n::find_filetype("foobar.rar") == t::archive);
     BOOST_REQUIRE(n::find_filetype("foobar.mpeg") == t::video);
     BOOST_REQUIRE(n::find_filetype("foobar.rar") == t::archive);
@@ -49,6 +50,8 @@ int test_main(int, char*[])
     BOOST_REQUIRE(n::find_filetype("American.Pastoral.2016.1080p.BluRay.DTS.x264-HDMaNiAcS.nzb") == t::text);
     BOOST_REQUIRE(n::find_filetype("movie.mkv.jpg") == t::image);
     BOOST_REQUIRE(n::find_filetype("ööööhöh.wma") == t::video);
+    BOOST_REQUIRE(n::find_filetype("foobar.wmv.00") == t::archive); // hjsplit files
+    BOOST_REQUIRE(n::find_filetype("foobar.wmv.000") == t::archive); // hjsplit file
 
     return 0;
 }
