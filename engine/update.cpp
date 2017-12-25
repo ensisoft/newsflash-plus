@@ -273,7 +273,7 @@ public:
             }
 
 
-            ASSERT(internal_article_number  && "Article number is undefined.");
+            assert(internal_article_number  && "Article number is undefined.");
 
             const auto file_index  = internal_article_number / CATALOG_SIZE;
             const auto file_bucket = internal_article_number & (CATALOG_SIZE-1);
@@ -290,8 +290,8 @@ public:
             if (!db->is_empty(index))
             {
                 auto a = db->load(index);
-                ASSERT(a.is_match(article));
-                ASSERT(a.has_parts());
+                assert(a.is_match(article));
+                assert(a.has_parts());
 
                 const auto max_parts = a.num_parts_total();
                 const auto num_part  = article.partno();
