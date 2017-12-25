@@ -93,7 +93,7 @@ namespace newsflash
         bool is_open() const
         { return device_.is_open(); }
 
-        std::uint32_t size() const
+        std::uint64_t size() const
         { return header_.size; }
 
         std::uint32_t version() const
