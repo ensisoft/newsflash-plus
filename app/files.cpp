@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -20,12 +20,14 @@
 
 #define LOGTAG "files"
 
-#include <newsflash/config.h>
-#include <newsflash/warnpush.h>
+#include "newsflash/config.h"
+
+#include "newsflash/warnpush.h"
 #  include <QDir>
 #  include <QFile>
 #  include <QTextStream>
-#include <newsflash/warnpop.h>
+#include "newsflash/warnpop.h"
+
 #include "eventlog.h"
 #include "debug.h"
 #include "files.h"
@@ -93,7 +95,7 @@ Files::Files() : m_keepSorted(false), m_sortColumn(0), m_sortOrder(Qt::Ascending
         return;
     }
 
-    DEBUG("Opened filelist %1", file);    
+    DEBUG("Opened filelist %1", file);
 }
 
 Files::~Files()
@@ -105,11 +107,11 @@ QVariant Files::data(const QModelIndex& index, int role) const
 {
     // back of the vector is "top of the data"
     // so that we can just push-back instead of more expensive push_front (on deque)
-    // and the latest item is then always at table row 0 
+    // and the latest item is then always at table row 0
 
     const auto row   = m_files.size() - (size_t)index.row()  - 1;
     const auto col   = (columns)index.column();
-    const auto& file = m_files[row];    
+    const auto& file = m_files[row];
 
     if (role == Qt::DisplayRole)
     {
@@ -146,14 +148,14 @@ QVariant Files::headerData(int section, Qt::Orientation orientation, int role) c
     return QVariant();
 }
 
-void Files::sort(int column, Qt::SortOrder order) 
+void Files::sort(int column, Qt::SortOrder order)
 {
     DEBUG("Sorting in %1 order", order);
 
     emit layoutAboutToBeChanged();
 
     // note that the comparision operators are reversed here
-    // because the order of the items in the list is reversed 
+    // because the order of the items in the list is reversed
     // last item in the list is considered to be the first item
     // on the UI
 #define SORT(x) \
@@ -170,7 +172,7 @@ void Files::sort(int column, Qt::SortOrder order)
         case columns::time: SORT(time); break;
         case columns::path: SORT(path); break;
         case columns::name: SORT(name); break;
-        case columns::count: Q_ASSERT(0);        
+        case columns::count: Q_ASSERT(0);
     }
 
 #undef SORT
@@ -181,12 +183,12 @@ void Files::sort(int column, Qt::SortOrder order)
     m_sortOrder  = order;
 }
 
-int Files::rowCount(const QModelIndex&) const 
-{ 
+int Files::rowCount(const QModelIndex&) const
+{
     return (int)m_files.size();
 }
 
-int Files::columnCount(const QModelIndex&) const 
+int Files::columnCount(const QModelIndex&) const
 {
     return (int)columns::count;
 }
@@ -263,6 +265,10 @@ void Files::loadHistory()
         DEBUG("Pruned file list");
     }
 
+    QAbstractTableModel::beginResetModel();
+    QAbstractTableModel::reset();
+    QAbstractTableModel::endResetModel();
+
     DEBUG("Loaded files list with %1 files", m_files.size());
 }
 
@@ -279,7 +285,7 @@ void Files::eraseHistory()
     }
 
     QAbstractTableModel::beginResetModel();
-    m_files.clear();    
+    m_files.clear();
     QAbstractTableModel::reset();
     QAbstractTableModel::endResetModel();
 }
@@ -299,7 +305,7 @@ void Files::eraseFiles(QModelIndexList& list)
         const auto file = QString("%1/%2").arg(data.path).arg(data.name);
         QFile::remove(file);
         DEBUG("Deleted file %1", file);
-        
+
         QDir dir(data.path);
         QFileInfoList entries = dir.entryInfoList(QDir::NoDotAndDotDot);
         if (entries.isEmpty())
@@ -322,7 +328,7 @@ void Files::keepSorted(bool onOff)
     m_keepSorted = onOff;
 }
 
-const Files::File& Files::getItem(std::size_t i) const 
+const Files::File& Files::getItem(std::size_t i) const
 {
     // the vector is accessed in reverse manner (item at index 0 is at the end)
     // so latest item (push_back) comes at the top of the list on the GUI
