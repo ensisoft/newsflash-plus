@@ -52,6 +52,7 @@
 #include "sslcontext.h"
 #include "encoding.h"
 #include "nntp.h"
+#include "utility.h"
 
 namespace newsflash
 {
@@ -885,13 +886,21 @@ public:
     TaskState(std::unique_ptr<Task> task, const data::TaskState& state)
     {
         task_              = std::move(task);
+        ui_.completion     = task_->GetProgress();
         ui_.task_id        = state.task_id();
         ui_.batch_id       = state.batch_id();
         ui_.account        = state.account_id();
         ui_.desc           = state.desc();
         ui_.size           = state.size();
         ui_.path           = state.path();
-        ui_.completion     = task_->GetProgress();
+        ui_.error.set_from_value(state.errors());
+        ui_.state          = static_cast<states>(state.state());
+        ui_.runtime        = state.runtime();
+        if (ui_.state == states::Active ||
+            ui_.state == states::Waiting ||
+            ui_.state == states::Crunching)
+            ui_.state = states::Waiting;
+
         LOG_I("Task ", ui_.task_id, "( ", ui_.desc, ") restored");
     }
 
@@ -917,9 +926,6 @@ public:
 
     void Serialize(data::TaskList& list)
     {
-        if (ui_.state == states::Error || ui_.state == states::Complete)
-            return;
-
         ASSERT(num_active_actions_ == 0);
         ASSERT(locking_ == LockState::Unlocked);
 
@@ -933,6 +939,9 @@ public:
         ptr->set_desc(ui_.desc);
         ptr->set_size(ui_.size);
         ptr->set_path(ui_.path);
+        ptr->set_errors(ui_.error.value());
+        ptr->set_state(static_cast<::google::protobuf::uint32>(ui_.state));
+        ptr->set_runtime(ui_.runtime);
         ptr->set_type(1); // TODO: put a dummy here for now since we're only saving downloads
         ptr->set_data(data);
     }
@@ -977,6 +986,30 @@ public:
         // todo: actually measure the time
         if (ui_.state == states::Active || ui_.state == states::Crunching)
             ui_.runtime++;
+
+        if (task_)
+        {
+            ui_.completion = task_->GetProgress();
+            ui_.completion = clamp(ui_.completion, 100.0);
+        }
+
+        if ((ui_.state == states::Active ||
+             ui_.state == states::Waiting ||
+             ui_.state == states::Crunching) &&
+             ui_.runtime >= 10 &&
+             ui_.completion > 0.0)
+        {
+            const auto complete  = ui_.completion;
+            const auto remaining = 100.0 - complete;
+            const auto timespent = ui_.runtime;
+            const auto time_per_percent = timespent / complete;
+            const auto timeremains = remaining * time_per_percent;
+            ui_.etatime = (std::uint32_t)timeremains;
+        }
+        else
+        {
+            ui_.etatime = 0;
+        }
     }
 
     bool CanRun() const
@@ -1080,23 +1113,9 @@ public:
         return GotoState(state, states::Queued);
     }
 
-    void Update(Engine::State& state, ui::TaskDesc& ui)
+    void GetStateUpdate(ui::TaskDesc& ui)
     {
         ui = ui_;
-        ui.etatime = 0;
-
-        if (ui_.state == states::Active || ui_.state == states::Waiting || ui_.state == states::Crunching)
-        {
-            if (ui_.runtime >= 10 && ui_.completion > 0.0)
-            {
-                const auto complete  = ui.completion;
-                const auto remaining = 100.0 - complete;
-                const auto timespent = ui.runtime;
-                const auto time_per_percent = timespent / complete;
-                const auto timeremains = remaining * time_per_percent;
-                ui.etatime = (std::uint32_t)timeremains;
-            }
-        }
     }
 
     transition Complete(Engine::State& state, std::unique_ptr<action> act)
@@ -1135,10 +1154,6 @@ public:
                 ui_.error.set(ui::TaskDesc::Errors::Damaged);
             if (err.test(Task::Error::SizeMismatch))
                 ui_.error.set(ui::TaskDesc::Errors::Damaged);
-
-            ui_.completion = task_->GetProgress();
-            if (ui_.completion > 100.0f)
-                ui_.completion = 100.0f;
 
             for (auto& a : actions)
                 DoAction(state, std::move(a));
@@ -1211,6 +1226,11 @@ public:
 
     std::size_t NumFiles() const
     { return num_files_produced_; }
+
+    bool CanSerialize() const
+    {
+        return task_ ? task_->CanSerialize() : false;
+    }
 
 
 private:
@@ -1400,58 +1420,61 @@ const Engine::TaskState::transition Engine::TaskState::no_transition {Engine::Ta
 
 class Engine::BatchState
 {
-    BatchState(std::size_t id)
-    {
-        ui_.batch_id = id;
-        ui_.task_id  = id;
-        std::fill(std::begin(statesets_), std::end(statesets_), 0);
-        filebatch_  = false;
-        num_slices_ = 0;
-        num_tasks_  = 0;
-    }
-
 public:
     using states = ui::TaskDesc::States;
 
-    BatchState(std::size_t id, const ui::FileBatchDownload& files) : BatchState(id)
+    enum class Type {
+        FileBatch,
+        ListBatch,
+        UpdateBatch
+    };
+
+    BatchState(std::size_t id, const ui::FileBatchDownload& files)
     {
+        ui_.task_id    = id;
+        ui_.batch_id   = id;
         ui_.account    = files.account;
         ui_.desc       = files.desc;
         ui_.path       = files.path;
         ui_.size       = files.size;
+        ui_.completion = 0.0f;
         num_tasks_     = files.files.size();
-        num_slices_    = files.files.size();
-        filebatch_     = true;
+        type_ = Type::FileBatch;
 
         LOG_I("Batch ", ui_.batch_id, " (", ui_.desc, ") created");
         LOG_D("Batch has ", num_tasks_, " tasks");
-
-        statesets_[(int)states::Queued] = num_tasks_;
     }
 
-    BatchState(std::size_t id, const ui::GroupListDownload& list) : BatchState(id)
+    BatchState(std::size_t id, const ui::GroupListDownload& list)
     {
-        ui_.account  = list.account;
-        ui_.desc     = list.desc;
+        ui_.task_id    = id;
+        ui_.batch_id   = id;
+        ui_.account    = list.account;
+        ui_.desc       = list.desc;
+        ui_.path       = list.path;
+        ui_.size       = list.size;
+        ui_.completion = 0.0f;
         num_tasks_   = 1;
-        num_slices_  = 1;
+        type_ = Type::ListBatch;
 
         LOG_I("Batch ", ui_.batch_id, " (", ui_.desc, ") created");
         LOG_D("Batch has 1 task");
-
-        statesets_[(int)states::Queued] = num_tasks_;
     }
 
-    BatchState(std::size_t id, const ui::HeaderDownload& download) : BatchState(id)
+    BatchState(std::size_t id, const ui::HeaderDownload& download)
     {
-        ui_.account = download.account;
-        ui_.desc    = download.desc;
-        num_tasks_  = 1;
-        num_slices_ = 1;
+        ui_.task_id  = id;
+        ui_.batch_id = id;
+        ui_.account  = download.account;
+        ui_.desc     = download.desc;
+        ui_.path     = download.path;
+        ui_.size     = download.size;
+        ui_.completion = 0.0f;
+        num_tasks_   = 1;
+        type_ = Type::UpdateBatch;
 
         LOG_I("Batch ", ui_.batch_id, " (", ui_.desc, ") created");
         LOG_D("Batch has 1 tasks");
-        statesets_[(int)states::Queued] = num_tasks_;
     }
 
     BatchState(const data::Batch& data)
@@ -1462,11 +1485,11 @@ public:
         ui_.desc       = data.desc();
         ui_.path       = data.path();
         ui_.size       = data.byte_size();
-        num_slices_    = data.num_slices();
+        ui_.completion = data.completion();
+        ui_.runtime    = data.runtime();
         num_tasks_     = data.num_tasks();
-        filebatch_     = true;
-        std::fill(std::begin(statesets_), std::end(statesets_), 0);
-        statesets_[(int)states::Queued] = num_tasks_;
+        type_          = static_cast<Type>(data.type());
+        damaged_       = data.damaged();
     }
 
    ~BatchState()
@@ -1474,23 +1497,21 @@ public:
         LOG_I("Batch ", ui_.batch_id, " deleted");
     }
 
-    void serialize(data::TaskList& list)
+    void Serialize(data::TaskList& list)
     {
-        if (ui_.state == states::Complete || ui_.state == states::Error)
-            return;
-        if (!filebatch_)
-            return;
-
         auto* data = list.add_batch();
         data->set_batch_id(ui_.task_id);
         data->set_account_id(ui_.account);
         data->set_desc(ui_.desc);
         data->set_byte_size(ui_.size);
         data->set_path(ui_.path);
+        data->set_runtime(ui_.runtime);
+        data->set_completion(ui_.completion);
         data->set_num_tasks(num_tasks_);
-        data->set_num_slices(num_slices_);
+        data->set_num_files(num_files_);
         data->set_damaged(damaged_);
-        data->set_num_files(filecount_);
+        data->set_type(static_cast<::google::protobuf::uint32>(type_));
+
     }
 
     void lock(Engine::State& state)
@@ -1528,14 +1549,9 @@ public:
             if (task->GetBatchId() != ui_.batch_id)
                 continue;
 
-            const auto transition = task->Pause(state);
-            if (transition)
-            {
-                leave_state(*task, transition.previous);
-                enter_state(*task, transition.current);
-            }
+            task->Pause(state);
         }
-        update(state);
+        UpdateState(state);
     }
 
     void resume(Engine::State& state)
@@ -1547,32 +1563,15 @@ public:
             if (task->GetBatchId() != ui_.batch_id)
                 continue;
 
-            const auto transition = task->Resume(state);
-            if (transition)
-            {
-                leave_state(*task, transition.previous);
-                enter_state(*task, transition.current);
-            }
+            task->Resume(state);
         }
-        update(state);
+        UpdateState(state);
     }
 
-    void update(Engine::State& state, ui::TaskDesc& ui)
+    void GetStateUpdate(ui::TaskDesc& ui)
     {
         ui = ui_;
-        ui.etatime = 0;
-        if (ui_.state == states::Waiting || ui_.state == states::Active)
-        {
-            if (ui_.runtime >= 10)
-            {
-                const auto complete = ui.completion;
-                const auto remaining = 100.0 - complete;
-                const auto timespent = ui.runtime;
-                const auto time_per_percent = timespent / complete;
-                const auto time_remains = remaining * time_per_percent;
-                ui.etatime = (std::uint32_t)time_remains;
-            }
-        }
+        ui.completion += completion_;
     }
 
     void kill(Engine::State& state)
@@ -1592,160 +1591,198 @@ public:
         state.tasks.erase(it, std::end(state.tasks));
     }
 
-    bool kill(Engine::State& state, const TaskState& task)
+    bool HasTasks(Engine::State& state) const
     {
-        leave_state(task, task.GetState());
-        num_tasks_--;
-        update(state);
-
-        return num_tasks_ == 0;
+        for (const auto& task : state.tasks)
+        {
+            if (task->GetBatchId() == ui_.batch_id)
+                return true;
+        }
+        return false;
     }
 
-    void update(Engine::State& state, const TaskState& task, const TaskState::transition& s)
+    void UpdateState(Engine::State& state, const TaskState& task, const TaskState::transition& s)
     {
         ui_.error |= task.errors();
 
-        leave_state(task, s.previous);
-        enter_state(task, s.current);
-        update(state);
-
-        if (!filebatch_)
-            return;
-
         if (s.current == states::Complete || s.current == states::Error)
         {
-            filecount_ += task.NumFiles();
-            damaged_   |= task.IsDamaged();
+            const auto task_size = task.GetSize();
+            const auto this_size = ui_.size;
+            const auto compute_based_on_actual_size = task_size != 0 && this_size != 0;
 
-            if (ui_.state == states::Complete)
-            {
-                if (state.on_batch_callback)
-                {
-                    ui::FileBatchResult result;
-                    result.account   = ui_.account;
-                    result.path      = ui_.path;
-                    result.desc      = ui_.desc;
-                    result.filecount = filecount_;
-                    result.damaged   = damaged_;
-                    state.on_batch_callback(result);
-                }
-            }
+            const double task_slice_size = compute_based_on_actual_size ?
+                (double)task_size / (double)this_size : 1.0 / (double)num_tasks_;
+
+            const double task_completion = task.GetCompletion();
+            const double actually_done   = task_slice_size * task_completion; // * 100.0f;
+            ui_.completion += actually_done;
+            ui_.completion = clamp(ui_.completion, 100.0);
+
+            num_files_ += task.NumFiles();
+            damaged_   |= task.IsDamaged();
         }
+        UpdateState(state);
     }
 
     void tick(Engine::State& state, const std::chrono::milliseconds& elapsed)
     {
-        if (ui_.state == states::Active)
+        if (ui_.state == states::Active || ui_.state == states::Crunching)
             ui_.runtime++;
 
-        double total = 0.0;
+        completion_ = 0;
 
-        const double slice = 1.0 / (double)num_slices_;
-        for (auto it = std::begin(state.tasks); it != std::end(state.tasks); ++it)
+        for (const auto& task : state.tasks)
         {
-            const auto& task = *it;
             if (task->GetBatchId() != ui_.batch_id)
                 continue;
-            double done = task->GetCompletion() / 100.0;
-            total += done * slice;
+
+            const auto task_size = task->GetSize();
+            const auto this_size = ui_.size;
+            const auto compute_based_on_actual_size = task_size != 0 && this_size != 0;
+
+            const double task_slice_size = compute_based_on_actual_size ?
+                (double)task_size / (double)this_size : 1.0 / (double)num_tasks_;
+
+            const double task_completion = task->GetCompletion();
+            const double actually_done   = task_slice_size * task_completion;// * 100.0f;
+            completion_ += actually_done;
         }
-        ui_.completion  = total * 100.0;
-        ui_.completion += (num_slices_ - num_tasks_) * slice * 100.0;
+
+        if ((ui_.state == states::Active ||
+             ui_.state == states::Waiting ||
+             ui_.state == states::Crunching) &&
+             ui_.runtime >= 10 &&
+             ui_.completion + completion_ > 0.0)
+        {
+            // compute eta.
+            const auto complete = ui_.completion + completion_;
+            const auto remaining = 100.0 - complete;
+            const auto timespent = ui_.runtime;
+            const auto time_per_percent = timespent / complete;
+            const auto time_remains = remaining * time_per_percent;
+            ui_.etatime = (std::uint32_t)time_remains;
+        }
+        else
+        {
+            ui_.etatime = 0;
+        }
     }
 
     std::size_t id() const
     { return ui_.batch_id; }
 
 private:
-    void enter_state(const TaskState& t, states s)
+    void UpdateState(Engine::State& state)
     {
-        statesets_[(int)s]++;
-    }
-    void leave_state(const TaskState& t, states s)
-    {
-        assert(statesets_[(int)s]);
+        size_t num_queued_tasks  = 0;
+        size_t num_waiting_tasks = 0;
+        size_t num_active_tasks  = 0;
+        size_t num_crunching_tasks = 0;
+        size_t num_paused_tasks = 0;
+        size_t num_complete_tasks = 0;
+        size_t num_error_tasks = 0;
+        size_t num_tasks = 0;
 
-        statesets_[(int)s]--;
-    }
-
-    bool is_empty_set(states s)
-    {
-        return statesets_[(int)s] == 0;
-    }
-
-    bool is_full_set(states s)
-    {
-        return statesets_[(int)s] == num_tasks_;
-    }
-    bool is_full_set(states a, states b)
-    {
-        const auto num_a = statesets_[(int)a];
-        const auto num_b = statesets_[(int)b];
-        return num_a + num_b == num_tasks_;
-    }
-
-    void update(Engine::State& state)
-    {
-        const std::size_t num_states = std::accumulate(std::begin(statesets_),
-            std::end(statesets_), 0);
-        assert(num_states == num_tasks_);
-        (void)num_states;
-
-        if (!is_empty_set(states::Active))
-            goto_state(state, states::Active);
-        else if (!is_empty_set(states::Waiting))
-            goto_state(state, states::Waiting);
-        else if (is_full_set(states::Crunching))
-            goto_state(state, states::Crunching);
-
-        if (!is_empty_set(states::Paused))
-            goto_state(state, states::Paused);
-        else if (is_full_set(states::Complete, states::Error))
+        for (const auto& task : state.tasks)
         {
-            if (is_full_set(states::Error))
-                goto_state(state, states::Error);
-            else goto_state(state, states::Complete);
+            if (task->GetBatchId() != ui_.batch_id)
+                continue;
+            switch (task->GetState())
+            {
+                case states::Queued:
+                    num_queued_tasks++;
+                    break;
+                case states::Waiting:
+                    num_waiting_tasks++;
+                    break;
+                case states::Active:
+                    num_active_tasks++;
+                    break;
+                case states::Crunching:
+                    num_crunching_tasks++;
+                    break;
+                case states::Paused:
+                    num_paused_tasks++;
+                    break;
+                case states::Complete:
+                    num_complete_tasks++;
+                    break;
+                case states::Error:
+                    num_error_tasks++;
+                    break;
+            }
+            num_tasks++;
         }
-        else if (is_full_set(states::Error))
-            goto_state(state, states::Error);
-        else if (is_full_set(states::Queued))
-            goto_state(state, states::Queued);
+
+        LOG_D("Batch has ", num_tasks, " tasks");
+        LOG_D("Batch tasks"
+              " Queued: ", num_queued_tasks,
+              " Waiting: ", num_waiting_tasks,
+              " Active: ", num_active_tasks,
+              " Crunching: ", num_crunching_tasks,
+              " Paused: ", num_paused_tasks,
+              " Complete: ", num_complete_tasks,
+              " Errored: ", num_error_tasks);
+
+        if (num_active_tasks)
+            GotoState(state, states::Active);
+        else if (num_tasks == num_queued_tasks)
+            GotoState(state, states::Queued);
+        else if (num_tasks == num_active_tasks)
+            GotoState(state, states::Active);
+        else if (num_tasks == num_crunching_tasks)
+            GotoState(state, states::Crunching);
+        else if (num_tasks == num_paused_tasks)
+            GotoState(state, states::Paused);
+        else if (num_tasks == num_complete_tasks)
+            GotoState(state, states::Complete);
+        else if (num_tasks == num_error_tasks)
+            GotoState(state, states::Error);
+        else if (num_tasks == num_error_tasks + num_complete_tasks)
+            GotoState(state, states::Error);
+        else if (num_waiting_tasks)
+            GotoState(state, states::Waiting);
+        else if (num_queued_tasks)
+            GotoState(state, states::Queued);
+        else if (num_paused_tasks)
+            GotoState(state, states::Paused);
+        else if (num_crunching_tasks)
+            GotoState(state, states::Crunching);
     }
 
-    void goto_state(Engine::State& state, states new_state)
+    void GotoState(Engine::State& state, states new_state)
     {
         ui_.state = new_state;
         switch (new_state)
         {
+            case states::Error:
             case states::Complete:
-                ui_.completion = 100.0;
-                ui_.etatime    = 0;
+                if (state.on_batch_callback && type_ == Type::FileBatch)
+                {
+                    ui::FileBatchResult result;
+                    result.account   = ui_.account;
+                    result.path      = ui_.path;
+                    result.desc      = ui_.desc;
+                    result.filecount = num_files_;
+                    result.damaged   = damaged_;
+                    state.on_batch_callback(result);
+                }
                 break;
 
             default:
             break;
         }
-
-        LOG_D("Batch has ", num_tasks_, " tasks");
-        LOG_D("Batch tasks"
-              " Queued: ", statesets_[(int)states::Queued],
-              " Waiting: ", statesets_[(int)states::Waiting],
-              " Active: ", statesets_[(int)states::Active],
-              " Crunching: ", statesets_[(int)states::Crunching],
-              " Paused: ", statesets_[(int)states::Paused],
-              " Complete: ", statesets_[(int)states::Complete],
-              " Errored: ", statesets_[(int)states::Error]);
         LOG_D("Batch ", ui_.batch_id, " => ", str(new_state));
     }
 private:
     ui::TaskDesc ui_;
 private:
-    std::size_t num_slices_ = 0;
-    std::size_t num_tasks_  = 0;
-    std::size_t statesets_[7];
-    std::size_t filecount_ = 0;
-    bool filebatch_ = false;
+    std::size_t num_tasks_ = 0;
+    std::size_t num_files_ = 0;
     bool damaged_ = false;
+    float completion_ = 0.0f;
+    Type type_ = Type::FileBatch;
 };
 
 void Engine::State::on_cmdlist_done(const Connection::CmdListCompletionData& completion)
@@ -1857,7 +1894,7 @@ void Engine::State::on_cmdlist_done(const Connection::CmdListCompletionData& com
         if (transition)
         {
             auto* batch = find_batch(task->GetBatchId());
-            batch->update(*this, *task, transition);
+            batch->UpdateState(*this, *task, transition);
         }
     }
     else
@@ -1937,7 +1974,7 @@ void Engine::State::execute()
             if (transition)
             {
                 auto* batch = find_batch(task->GetBatchId());
-                batch->update(*this, *task, transition);
+                batch->UpdateState(*this, *task, transition);
             }
         }
     }
@@ -2315,7 +2352,7 @@ bool Engine::Pump()
                         if (transition)
                         {
                             auto* batch = state_->find_batch(task->GetBatchId());
-                            batch->update(*state_, *task, transition);
+                            batch->UpdateState(*state_, *task, transition);
                         }
                     }
                 }
@@ -2339,7 +2376,7 @@ bool Engine::Pump()
                 if (transition)
                 {
                     auto* batch = state_->find_batch(task->GetBatchId());
-                    batch->update(*state_, *task, transition);
+                    batch->UpdateState(*state_, *task, transition);
                 }
                 break;
             }
@@ -2437,13 +2474,25 @@ void Engine::SaveTasks(const std::string& file)
     std::ofstream out(file, std::ios::out | std::ios::binary | std::ios::trunc);
 #endif
     if (!out.is_open())
-        throw std::system_error(errno, std::generic_category(), "failed to sdata in: " + file);
+        throw std::system_error(errno, std::generic_category(), "failed to open: " + file);
 
     data::TaskList list;
 
     for (const auto& batch : state_->batches)
     {
-        batch->serialize(list);
+        bool can_serialize = true;
+        for (const auto& task : state_->tasks)
+        {
+            if (task->GetBatchId() != batch->id())
+                continue;
+            can_serialize = task->CanSerialize();
+            if (!can_serialize)
+                break;
+        }
+        if (!can_serialize)
+            continue;
+
+        batch->Serialize(list);
     }
 
     for (const auto& task : state_->tasks)
@@ -2728,7 +2777,7 @@ void Engine::GetTasks(std::deque<ui::TaskDesc>* tasklist) const
         tasklist->resize(batches.size());
 
         for (std::size_t i=0; i<batches.size(); ++i)
-            batches[i]->update(*state_, (*tasklist)[i]);
+            batches[i]->GetStateUpdate((*tasklist)[i]);
     }
     else
     {
@@ -2737,7 +2786,7 @@ void Engine::GetTasks(std::deque<ui::TaskDesc>* tasklist) const
         tasklist->resize(tasks.size());
 
         for (std::size_t i=0; i<tasks.size(); ++i)
-            tasks[i]->Update(*state_, (*tasklist)[i]);
+            tasks[i]->GetStateUpdate((*tasklist)[i]);
     }
 }
 
@@ -2746,12 +2795,12 @@ void Engine::GetTask(std::size_t index, ui::TaskDesc* task) const
     if (state_->group_items)
     {
         ASSERT(index < state_->batches.size());
-        state_->batches[index]->update(*state_, *task);
+        state_->batches[index]->GetStateUpdate(*task);
     }
     else
     {
         ASSERT(index < state_->tasks.size());
-        state_->tasks[index]->Update(*state_, *task);
+        state_->tasks[index]->GetStateUpdate(*task);
     }
 }
 
@@ -2820,21 +2869,22 @@ Engine::TaskId Engine::KillTask(std::size_t i)
         auto tit = state_->tasks.begin();
         tit += i;
 
+        const auto batch_id = (*tit)->GetBatchId();
+
+        (*tit)->Kill(*state_);
+        state_->tasks.erase(tit);
+
         auto bit = std::find_if(std::begin(state_->batches), std::end(state_->batches),
             [&](const std::unique_ptr<BatchState>& b) {
-                return b->id() == (*tit)->GetBatchId();
+                return b->id() == batch_id;
             });
         ASSERT(bit != std::end(state_->batches));
 
         auto& batch = *bit;
-        auto& task  = *tit;
-        if (batch->kill(*state_, *task))
+        if (!batch->HasTasks(*state_))
         {
             state_->batches.erase(bit);
         }
-
-        task->Kill(*state_);
-        state_->tasks.erase(tit);
     }
 
     if (state_->tasks.empty())
@@ -2868,7 +2918,7 @@ Engine::TaskId Engine::PauseTask(std::size_t index)
         if (transition)
         {
             auto* batch = state_->find_batch(task->GetBatchId());
-            batch->update(*state_, *task, transition);
+            batch->UpdateState(*state_, *task, transition);
         }
     }
 
@@ -2898,7 +2948,7 @@ Engine::TaskId Engine::ResumeTask(std::size_t index)
         if (transition)
         {
             auto* batch = state_->find_batch(task->GetBatchId());
-            batch->update(*state_, *task, transition);
+            batch->UpdateState(*state_, *task, transition);
         }
 
     }

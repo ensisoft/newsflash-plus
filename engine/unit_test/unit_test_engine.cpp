@@ -182,6 +182,8 @@ public:
     {
         return errors_;
     }
+    virtual bool CanSerialize() const override
+    { return true; }
 
     virtual void Pack(std::string* data) const override
     {

@@ -586,10 +586,31 @@ class TaskState : public ::google::protobuf::Message {
   inline ::google::protobuf::uint32 type() const;
   inline void set_type(::google::protobuf::uint32 value);
 
-  // required bytes data = 8;
+  // required uint32 state = 8;
+  inline bool has_state() const;
+  inline void clear_state();
+  static const int kStateFieldNumber = 8;
+  inline ::google::protobuf::uint32 state() const;
+  inline void set_state(::google::protobuf::uint32 value);
+
+  // required uint32 errors = 9;
+  inline bool has_errors() const;
+  inline void clear_errors();
+  static const int kErrorsFieldNumber = 9;
+  inline ::google::protobuf::uint32 errors() const;
+  inline void set_errors(::google::protobuf::uint32 value);
+
+  // required uint32 runtime = 10;
+  inline bool has_runtime() const;
+  inline void clear_runtime();
+  static const int kRuntimeFieldNumber = 10;
+  inline ::google::protobuf::uint32 runtime() const;
+  inline void set_runtime(::google::protobuf::uint32 value);
+
+  // required bytes data = 11;
   inline bool has_data() const;
   inline void clear_data();
-  static const int kDataFieldNumber = 8;
+  static const int kDataFieldNumber = 11;
   inline const ::std::string& data() const;
   inline void set_data(const ::std::string& value);
   inline void set_data(const char* value);
@@ -614,6 +635,12 @@ class TaskState : public ::google::protobuf::Message {
   inline void clear_has_size();
   inline void set_has_type();
   inline void clear_has_type();
+  inline void set_has_state();
+  inline void clear_has_state();
+  inline void set_has_errors();
+  inline void clear_has_errors();
+  inline void set_has_runtime();
+  inline void clear_has_runtime();
   inline void set_has_data();
   inline void clear_has_data();
 
@@ -628,7 +655,10 @@ class TaskState : public ::google::protobuf::Message {
   ::google::protobuf::uint32 batch_id_;
   ::google::protobuf::uint32 type_;
   ::google::protobuf::uint64 size_;
+  ::google::protobuf::uint32 state_;
+  ::google::protobuf::uint32 errors_;
   ::std::string* data_;
+  ::google::protobuf::uint32 runtime_;
   friend void  protobuf_AddDesc_engine_2eproto();
   friend void protobuf_AssignDesc_engine_2eproto();
   friend void protobuf_ShutdownFile_engine_2eproto();
@@ -743,26 +773,40 @@ class Batch : public ::google::protobuf::Message {
   inline ::google::protobuf::uint32 num_tasks() const;
   inline void set_num_tasks(::google::protobuf::uint32 value);
 
-  // required uint32 num_slices = 7;
-  inline bool has_num_slices() const;
-  inline void clear_num_slices();
-  static const int kNumSlicesFieldNumber = 7;
-  inline ::google::protobuf::uint32 num_slices() const;
-  inline void set_num_slices(::google::protobuf::uint32 value);
-
-  // required uint32 num_files = 8;
+  // required uint32 num_files = 7;
   inline bool has_num_files() const;
   inline void clear_num_files();
-  static const int kNumFilesFieldNumber = 8;
+  static const int kNumFilesFieldNumber = 7;
   inline ::google::protobuf::uint32 num_files() const;
   inline void set_num_files(::google::protobuf::uint32 value);
 
-  // required bool damaged = 9;
+  // required bool damaged = 8;
   inline bool has_damaged() const;
   inline void clear_damaged();
-  static const int kDamagedFieldNumber = 9;
+  static const int kDamagedFieldNumber = 8;
   inline bool damaged() const;
   inline void set_damaged(bool value);
+
+  // required float completion = 9;
+  inline bool has_completion() const;
+  inline void clear_completion();
+  static const int kCompletionFieldNumber = 9;
+  inline float completion() const;
+  inline void set_completion(float value);
+
+  // required uint32 type = 10;
+  inline bool has_type() const;
+  inline void clear_type();
+  static const int kTypeFieldNumber = 10;
+  inline ::google::protobuf::uint32 type() const;
+  inline void set_type(::google::protobuf::uint32 value);
+
+  // required uint32 runtime = 11;
+  inline bool has_runtime() const;
+  inline void clear_runtime();
+  static const int kRuntimeFieldNumber = 11;
+  inline ::google::protobuf::uint32 runtime() const;
+  inline void set_runtime(::google::protobuf::uint32 value);
 
   // @@protoc_insertion_point(class_scope:data.Batch)
  private:
@@ -778,12 +822,16 @@ class Batch : public ::google::protobuf::Message {
   inline void clear_has_byte_size();
   inline void set_has_num_tasks();
   inline void clear_has_num_tasks();
-  inline void set_has_num_slices();
-  inline void clear_has_num_slices();
   inline void set_has_num_files();
   inline void clear_has_num_files();
   inline void set_has_damaged();
   inline void clear_has_damaged();
+  inline void set_has_completion();
+  inline void clear_has_completion();
+  inline void set_has_type();
+  inline void clear_has_type();
+  inline void set_has_runtime();
+  inline void clear_has_runtime();
 
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
 
@@ -795,9 +843,11 @@ class Batch : public ::google::protobuf::Message {
   ::std::string* desc_;
   ::google::protobuf::uint64 byte_size_;
   ::google::protobuf::uint32 num_tasks_;
-  ::google::protobuf::uint32 num_slices_;
   ::google::protobuf::uint32 num_files_;
   bool damaged_;
+  float completion_;
+  ::google::protobuf::uint32 type_;
+  ::google::protobuf::uint32 runtime_;
   friend void  protobuf_AddDesc_engine_2eproto();
   friend void protobuf_AssignDesc_engine_2eproto();
   friend void protobuf_ShutdownFile_engine_2eproto();
@@ -2065,15 +2115,87 @@ inline void TaskState::set_type(::google::protobuf::uint32 value) {
   // @@protoc_insertion_point(field_set:data.TaskState.type)
 }
 
-// required bytes data = 8;
-inline bool TaskState::has_data() const {
+// required uint32 state = 8;
+inline bool TaskState::has_state() const {
   return (_has_bits_[0] & 0x00000080u) != 0;
 }
-inline void TaskState::set_has_data() {
+inline void TaskState::set_has_state() {
   _has_bits_[0] |= 0x00000080u;
 }
-inline void TaskState::clear_has_data() {
+inline void TaskState::clear_has_state() {
   _has_bits_[0] &= ~0x00000080u;
+}
+inline void TaskState::clear_state() {
+  state_ = 0u;
+  clear_has_state();
+}
+inline ::google::protobuf::uint32 TaskState::state() const {
+  // @@protoc_insertion_point(field_get:data.TaskState.state)
+  return state_;
+}
+inline void TaskState::set_state(::google::protobuf::uint32 value) {
+  set_has_state();
+  state_ = value;
+  // @@protoc_insertion_point(field_set:data.TaskState.state)
+}
+
+// required uint32 errors = 9;
+inline bool TaskState::has_errors() const {
+  return (_has_bits_[0] & 0x00000100u) != 0;
+}
+inline void TaskState::set_has_errors() {
+  _has_bits_[0] |= 0x00000100u;
+}
+inline void TaskState::clear_has_errors() {
+  _has_bits_[0] &= ~0x00000100u;
+}
+inline void TaskState::clear_errors() {
+  errors_ = 0u;
+  clear_has_errors();
+}
+inline ::google::protobuf::uint32 TaskState::errors() const {
+  // @@protoc_insertion_point(field_get:data.TaskState.errors)
+  return errors_;
+}
+inline void TaskState::set_errors(::google::protobuf::uint32 value) {
+  set_has_errors();
+  errors_ = value;
+  // @@protoc_insertion_point(field_set:data.TaskState.errors)
+}
+
+// required uint32 runtime = 10;
+inline bool TaskState::has_runtime() const {
+  return (_has_bits_[0] & 0x00000200u) != 0;
+}
+inline void TaskState::set_has_runtime() {
+  _has_bits_[0] |= 0x00000200u;
+}
+inline void TaskState::clear_has_runtime() {
+  _has_bits_[0] &= ~0x00000200u;
+}
+inline void TaskState::clear_runtime() {
+  runtime_ = 0u;
+  clear_has_runtime();
+}
+inline ::google::protobuf::uint32 TaskState::runtime() const {
+  // @@protoc_insertion_point(field_get:data.TaskState.runtime)
+  return runtime_;
+}
+inline void TaskState::set_runtime(::google::protobuf::uint32 value) {
+  set_has_runtime();
+  runtime_ = value;
+  // @@protoc_insertion_point(field_set:data.TaskState.runtime)
+}
+
+// required bytes data = 11;
+inline bool TaskState::has_data() const {
+  return (_has_bits_[0] & 0x00000400u) != 0;
+}
+inline void TaskState::set_has_data() {
+  _has_bits_[0] |= 0x00000400u;
+}
+inline void TaskState::clear_has_data() {
+  _has_bits_[0] &= ~0x00000400u;
 }
 inline void TaskState::clear_data() {
   if (data_ != &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
@@ -2393,39 +2515,15 @@ inline void Batch::set_num_tasks(::google::protobuf::uint32 value) {
   // @@protoc_insertion_point(field_set:data.Batch.num_tasks)
 }
 
-// required uint32 num_slices = 7;
-inline bool Batch::has_num_slices() const {
+// required uint32 num_files = 7;
+inline bool Batch::has_num_files() const {
   return (_has_bits_[0] & 0x00000040u) != 0;
 }
-inline void Batch::set_has_num_slices() {
+inline void Batch::set_has_num_files() {
   _has_bits_[0] |= 0x00000040u;
 }
-inline void Batch::clear_has_num_slices() {
-  _has_bits_[0] &= ~0x00000040u;
-}
-inline void Batch::clear_num_slices() {
-  num_slices_ = 0u;
-  clear_has_num_slices();
-}
-inline ::google::protobuf::uint32 Batch::num_slices() const {
-  // @@protoc_insertion_point(field_get:data.Batch.num_slices)
-  return num_slices_;
-}
-inline void Batch::set_num_slices(::google::protobuf::uint32 value) {
-  set_has_num_slices();
-  num_slices_ = value;
-  // @@protoc_insertion_point(field_set:data.Batch.num_slices)
-}
-
-// required uint32 num_files = 8;
-inline bool Batch::has_num_files() const {
-  return (_has_bits_[0] & 0x00000080u) != 0;
-}
-inline void Batch::set_has_num_files() {
-  _has_bits_[0] |= 0x00000080u;
-}
 inline void Batch::clear_has_num_files() {
-  _has_bits_[0] &= ~0x00000080u;
+  _has_bits_[0] &= ~0x00000040u;
 }
 inline void Batch::clear_num_files() {
   num_files_ = 0u;
@@ -2441,15 +2539,15 @@ inline void Batch::set_num_files(::google::protobuf::uint32 value) {
   // @@protoc_insertion_point(field_set:data.Batch.num_files)
 }
 
-// required bool damaged = 9;
+// required bool damaged = 8;
 inline bool Batch::has_damaged() const {
-  return (_has_bits_[0] & 0x00000100u) != 0;
+  return (_has_bits_[0] & 0x00000080u) != 0;
 }
 inline void Batch::set_has_damaged() {
-  _has_bits_[0] |= 0x00000100u;
+  _has_bits_[0] |= 0x00000080u;
 }
 inline void Batch::clear_has_damaged() {
-  _has_bits_[0] &= ~0x00000100u;
+  _has_bits_[0] &= ~0x00000080u;
 }
 inline void Batch::clear_damaged() {
   damaged_ = false;
@@ -2463,6 +2561,78 @@ inline void Batch::set_damaged(bool value) {
   set_has_damaged();
   damaged_ = value;
   // @@protoc_insertion_point(field_set:data.Batch.damaged)
+}
+
+// required float completion = 9;
+inline bool Batch::has_completion() const {
+  return (_has_bits_[0] & 0x00000100u) != 0;
+}
+inline void Batch::set_has_completion() {
+  _has_bits_[0] |= 0x00000100u;
+}
+inline void Batch::clear_has_completion() {
+  _has_bits_[0] &= ~0x00000100u;
+}
+inline void Batch::clear_completion() {
+  completion_ = 0;
+  clear_has_completion();
+}
+inline float Batch::completion() const {
+  // @@protoc_insertion_point(field_get:data.Batch.completion)
+  return completion_;
+}
+inline void Batch::set_completion(float value) {
+  set_has_completion();
+  completion_ = value;
+  // @@protoc_insertion_point(field_set:data.Batch.completion)
+}
+
+// required uint32 type = 10;
+inline bool Batch::has_type() const {
+  return (_has_bits_[0] & 0x00000200u) != 0;
+}
+inline void Batch::set_has_type() {
+  _has_bits_[0] |= 0x00000200u;
+}
+inline void Batch::clear_has_type() {
+  _has_bits_[0] &= ~0x00000200u;
+}
+inline void Batch::clear_type() {
+  type_ = 0u;
+  clear_has_type();
+}
+inline ::google::protobuf::uint32 Batch::type() const {
+  // @@protoc_insertion_point(field_get:data.Batch.type)
+  return type_;
+}
+inline void Batch::set_type(::google::protobuf::uint32 value) {
+  set_has_type();
+  type_ = value;
+  // @@protoc_insertion_point(field_set:data.Batch.type)
+}
+
+// required uint32 runtime = 11;
+inline bool Batch::has_runtime() const {
+  return (_has_bits_[0] & 0x00000400u) != 0;
+}
+inline void Batch::set_has_runtime() {
+  _has_bits_[0] |= 0x00000400u;
+}
+inline void Batch::clear_has_runtime() {
+  _has_bits_[0] &= ~0x00000400u;
+}
+inline void Batch::clear_runtime() {
+  runtime_ = 0u;
+  clear_has_runtime();
+}
+inline ::google::protobuf::uint32 Batch::runtime() const {
+  // @@protoc_insertion_point(field_get:data.Batch.runtime)
+  return runtime_;
+}
+inline void Batch::set_runtime(::google::protobuf::uint32 value) {
+  set_has_runtime();
+  runtime_ = value;
+  // @@protoc_insertion_point(field_set:data.Batch.runtime)
 }
 
 // -------------------------------------------------------------------

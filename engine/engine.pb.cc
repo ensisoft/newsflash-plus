@@ -108,7 +108,7 @@ void protobuf_AssignDesc_engine_2eproto() {
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(Download));
   TaskState_descriptor_ = file->message_type(3);
-  static const int TaskState_offsets_[8] = {
+  static const int TaskState_offsets_[11] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(TaskState, task_id_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(TaskState, account_id_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(TaskState, batch_id_),
@@ -116,6 +116,9 @@ void protobuf_AssignDesc_engine_2eproto() {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(TaskState, path_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(TaskState, size_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(TaskState, type_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(TaskState, state_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(TaskState, errors_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(TaskState, runtime_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(TaskState, data_),
   };
   TaskState_reflection_ =
@@ -130,16 +133,18 @@ void protobuf_AssignDesc_engine_2eproto() {
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(TaskState));
   Batch_descriptor_ = file->message_type(4);
-  static const int Batch_offsets_[9] = {
+  static const int Batch_offsets_[11] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Batch, account_id_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Batch, batch_id_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Batch, path_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Batch, desc_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Batch, byte_size_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Batch, num_tasks_),
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Batch, num_slices_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Batch, num_files_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Batch, damaged_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Batch, completion_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Batch, type_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Batch, runtime_),
   };
   Batch_reflection_ =
     new ::google::protobuf::internal::GeneratedMessageReflection(
@@ -230,18 +235,20 @@ void protobuf_AddDesc_engine_2eproto() {
     "um_decode_jobs\030\006 \002(\r\022\031\n\021num_actions_tota"
     "l\030\007 \002(\r\022\031\n\021num_actions_ready\030\010 \002(\r\022\016\n\006er"
     "rors\030\t \002(\r\022\030\n\004file\030\n \003(\0132\n.data.File\022\032\n\005"
-    "stash\030\013 \003(\0132\013.data.Stash\"\210\001\n\tTaskState\022\017"
+    "stash\030\013 \003(\0132\013.data.Stash\"\270\001\n\tTaskState\022\017"
     "\n\007task_id\030\001 \002(\r\022\022\n\naccount_id\030\002 \002(\r\022\020\n\010b"
     "atch_id\030\003 \002(\r\022\014\n\004desc\030\004 \002(\t\022\014\n\004path\030\005 \002("
-    "\t\022\014\n\004size\030\006 \002(\004\022\014\n\004type\030\007 \002(\r\022\014\n\004data\030\010 "
-    "\002(\014\"\247\001\n\005Batch\022\022\n\naccount_id\030\001 \002(\r\022\020\n\010bat"
-    "ch_id\030\002 \002(\r\022\014\n\004path\030\003 \002(\t\022\014\n\004desc\030\004 \002(\t\022"
-    "\021\n\tbyte_size\030\005 \002(\004\022\021\n\tnum_tasks\030\006 \002(\r\022\022\n"
-    "\nnum_slices\030\007 \002(\r\022\021\n\tnum_files\030\010 \002(\r\022\017\n\007"
-    "damaged\030\t \002(\010\"\204\001\n\010TaskList\022\024\n\014bytes_queu"
-    "ed\030\001 \002(\004\022\023\n\013bytes_ready\030\002 \002(\004\022\021\n\tobject_"
-    "id\030\003 \002(\004\022\032\n\005batch\030\004 \003(\0132\013.data.Batch\022\036\n\005"
-    "tasks\030\005 \003(\0132\017.data.TaskState", 828);
+    "\t\022\014\n\004size\030\006 \002(\004\022\014\n\004type\030\007 \002(\r\022\r\n\005state\030\010"
+    " \002(\r\022\016\n\006errors\030\t \002(\r\022\017\n\007runtime\030\n \002(\r\022\014\n"
+    "\004data\030\013 \002(\014\"\306\001\n\005Batch\022\022\n\naccount_id\030\001 \002("
+    "\r\022\020\n\010batch_id\030\002 \002(\r\022\014\n\004path\030\003 \002(\t\022\014\n\004des"
+    "c\030\004 \002(\t\022\021\n\tbyte_size\030\005 \002(\004\022\021\n\tnum_tasks\030"
+    "\006 \002(\r\022\021\n\tnum_files\030\007 \002(\r\022\017\n\007damaged\030\010 \002("
+    "\010\022\022\n\ncompletion\030\t \002(\002\022\014\n\004type\030\n \002(\r\022\017\n\007r"
+    "untime\030\013 \002(\r\"\204\001\n\010TaskList\022\024\n\014bytes_queue"
+    "d\030\001 \002(\004\022\023\n\013bytes_ready\030\002 \002(\004\022\021\n\tobject_i"
+    "d\030\003 \002(\004\022\032\n\005batch\030\004 \003(\0132\013.data.Batch\022\036\n\005t"
+    "asks\030\005 \003(\0132\017.data.TaskState", 907);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "engine.proto", &protobuf_RegisterTypes);
   File::default_instance_ = new File();
@@ -1667,6 +1674,9 @@ const int TaskState::kDescFieldNumber;
 const int TaskState::kPathFieldNumber;
 const int TaskState::kSizeFieldNumber;
 const int TaskState::kTypeFieldNumber;
+const int TaskState::kStateFieldNumber;
+const int TaskState::kErrorsFieldNumber;
+const int TaskState::kRuntimeFieldNumber;
 const int TaskState::kDataFieldNumber;
 #endif  // !_MSC_VER
 
@@ -1696,6 +1706,9 @@ void TaskState::SharedCtor() {
   path_ = const_cast< ::std::string*>(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   size_ = GOOGLE_ULONGLONG(0);
   type_ = 0u;
+  state_ = 0u;
+  errors_ = 0u;
+  runtime_ = 0u;
   data_ = const_cast< ::std::string*>(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
@@ -1753,7 +1766,7 @@ void TaskState::Clear() {
 
   if (_has_bits_[0 / 32] & 255) {
     ZR_(task_id_, account_id_);
-    ZR_(batch_id_, size_);
+    ZR_(batch_id_, state_);
     if (has_desc()) {
       if (desc_ != &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
         desc_->clear();
@@ -1764,6 +1777,10 @@ void TaskState::Clear() {
         path_->clear();
       }
     }
+  }
+  if (_has_bits_[8 / 32] & 1792) {
+    errors_ = 0u;
+    runtime_ = 0u;
     if (has_data()) {
       if (data_ != &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
         data_->clear();
@@ -1892,13 +1909,58 @@ bool TaskState::MergePartialFromCodedStream(
         } else {
           goto handle_unusual;
         }
-        if (input->ExpectTag(66)) goto parse_data;
+        if (input->ExpectTag(64)) goto parse_state;
         break;
       }
 
-      // required bytes data = 8;
+      // required uint32 state = 8;
       case 8: {
-        if (tag == 66) {
+        if (tag == 64) {
+         parse_state:
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::uint32, ::google::protobuf::internal::WireFormatLite::TYPE_UINT32>(
+                 input, &state_)));
+          set_has_state();
+        } else {
+          goto handle_unusual;
+        }
+        if (input->ExpectTag(72)) goto parse_errors;
+        break;
+      }
+
+      // required uint32 errors = 9;
+      case 9: {
+        if (tag == 72) {
+         parse_errors:
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::uint32, ::google::protobuf::internal::WireFormatLite::TYPE_UINT32>(
+                 input, &errors_)));
+          set_has_errors();
+        } else {
+          goto handle_unusual;
+        }
+        if (input->ExpectTag(80)) goto parse_runtime;
+        break;
+      }
+
+      // required uint32 runtime = 10;
+      case 10: {
+        if (tag == 80) {
+         parse_runtime:
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::uint32, ::google::protobuf::internal::WireFormatLite::TYPE_UINT32>(
+                 input, &runtime_)));
+          set_has_runtime();
+        } else {
+          goto handle_unusual;
+        }
+        if (input->ExpectTag(90)) goto parse_data;
+        break;
+      }
+
+      // required bytes data = 11;
+      case 11: {
+        if (tag == 90) {
          parse_data:
           DO_(::google::protobuf::internal::WireFormatLite::ReadBytes(
                 input, this->mutable_data()));
@@ -1979,10 +2041,25 @@ void TaskState::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormatLite::WriteUInt32(7, this->type(), output);
   }
 
-  // required bytes data = 8;
+  // required uint32 state = 8;
+  if (has_state()) {
+    ::google::protobuf::internal::WireFormatLite::WriteUInt32(8, this->state(), output);
+  }
+
+  // required uint32 errors = 9;
+  if (has_errors()) {
+    ::google::protobuf::internal::WireFormatLite::WriteUInt32(9, this->errors(), output);
+  }
+
+  // required uint32 runtime = 10;
+  if (has_runtime()) {
+    ::google::protobuf::internal::WireFormatLite::WriteUInt32(10, this->runtime(), output);
+  }
+
+  // required bytes data = 11;
   if (has_data()) {
     ::google::protobuf::internal::WireFormatLite::WriteBytesMaybeAliased(
-      8, this->data(), output);
+      11, this->data(), output);
   }
 
   if (!unknown_fields().empty()) {
@@ -2042,11 +2119,26 @@ void TaskState::SerializeWithCachedSizes(
     target = ::google::protobuf::internal::WireFormatLite::WriteUInt32ToArray(7, this->type(), target);
   }
 
-  // required bytes data = 8;
+  // required uint32 state = 8;
+  if (has_state()) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteUInt32ToArray(8, this->state(), target);
+  }
+
+  // required uint32 errors = 9;
+  if (has_errors()) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteUInt32ToArray(9, this->errors(), target);
+  }
+
+  // required uint32 runtime = 10;
+  if (has_runtime()) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteUInt32ToArray(10, this->runtime(), target);
+  }
+
+  // required bytes data = 11;
   if (has_data()) {
     target =
       ::google::protobuf::internal::WireFormatLite::WriteBytesToArray(
-        8, this->data(), target);
+        11, this->data(), target);
   }
 
   if (!unknown_fields().empty()) {
@@ -2110,7 +2202,30 @@ int TaskState::ByteSize() const {
           this->type());
     }
 
-    // required bytes data = 8;
+    // required uint32 state = 8;
+    if (has_state()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::UInt32Size(
+          this->state());
+    }
+
+  }
+  if (_has_bits_[8 / 32] & (0xffu << (8 % 32))) {
+    // required uint32 errors = 9;
+    if (has_errors()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::UInt32Size(
+          this->errors());
+    }
+
+    // required uint32 runtime = 10;
+    if (has_runtime()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::UInt32Size(
+          this->runtime());
+    }
+
+    // required bytes data = 11;
     if (has_data()) {
       total_size += 1 +
         ::google::protobuf::internal::WireFormatLite::BytesSize(
@@ -2165,6 +2280,17 @@ void TaskState::MergeFrom(const TaskState& from) {
     if (from.has_type()) {
       set_type(from.type());
     }
+    if (from.has_state()) {
+      set_state(from.state());
+    }
+  }
+  if (from._has_bits_[8 / 32] & (0xffu << (8 % 32))) {
+    if (from.has_errors()) {
+      set_errors(from.errors());
+    }
+    if (from.has_runtime()) {
+      set_runtime(from.runtime());
+    }
     if (from.has_data()) {
       set_data(from.data());
     }
@@ -2185,7 +2311,7 @@ void TaskState::CopyFrom(const TaskState& from) {
 }
 
 bool TaskState::IsInitialized() const {
-  if ((_has_bits_[0] & 0x000000ff) != 0x000000ff) return false;
+  if ((_has_bits_[0] & 0x000007ff) != 0x000007ff) return false;
 
   return true;
 }
@@ -2199,6 +2325,9 @@ void TaskState::Swap(TaskState* other) {
     std::swap(path_, other->path_);
     std::swap(size_, other->size_);
     std::swap(type_, other->type_);
+    std::swap(state_, other->state_);
+    std::swap(errors_, other->errors_);
+    std::swap(runtime_, other->runtime_);
     std::swap(data_, other->data_);
     std::swap(_has_bits_[0], other->_has_bits_[0]);
     _unknown_fields_.Swap(&other->_unknown_fields_);
@@ -2224,9 +2353,11 @@ const int Batch::kPathFieldNumber;
 const int Batch::kDescFieldNumber;
 const int Batch::kByteSizeFieldNumber;
 const int Batch::kNumTasksFieldNumber;
-const int Batch::kNumSlicesFieldNumber;
 const int Batch::kNumFilesFieldNumber;
 const int Batch::kDamagedFieldNumber;
+const int Batch::kCompletionFieldNumber;
+const int Batch::kTypeFieldNumber;
+const int Batch::kRuntimeFieldNumber;
 #endif  // !_MSC_VER
 
 Batch::Batch()
@@ -2254,9 +2385,11 @@ void Batch::SharedCtor() {
   desc_ = const_cast< ::std::string*>(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   byte_size_ = GOOGLE_ULONGLONG(0);
   num_tasks_ = 0u;
-  num_slices_ = 0u;
   num_files_ = 0u;
   damaged_ = false;
+  completion_ = 0;
+  type_ = 0u;
+  runtime_ = 0u;
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
 
@@ -2310,7 +2443,7 @@ void Batch::Clear() {
 
   if (_has_bits_[0 / 32] & 255) {
     ZR_(account_id_, batch_id_);
-    ZR_(byte_size_, num_files_);
+    ZR_(byte_size_, damaged_);
     if (has_path()) {
       if (path_ != &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
         path_->clear();
@@ -2322,7 +2455,7 @@ void Batch::Clear() {
       }
     }
   }
-  damaged_ = false;
+  ZR_(completion_, runtime_);
 
 #undef OFFSET_OF_FIELD_
 #undef ZR_
@@ -2430,28 +2563,13 @@ bool Batch::MergePartialFromCodedStream(
         } else {
           goto handle_unusual;
         }
-        if (input->ExpectTag(56)) goto parse_num_slices;
+        if (input->ExpectTag(56)) goto parse_num_files;
         break;
       }
 
-      // required uint32 num_slices = 7;
+      // required uint32 num_files = 7;
       case 7: {
         if (tag == 56) {
-         parse_num_slices:
-          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
-                   ::google::protobuf::uint32, ::google::protobuf::internal::WireFormatLite::TYPE_UINT32>(
-                 input, &num_slices_)));
-          set_has_num_slices();
-        } else {
-          goto handle_unusual;
-        }
-        if (input->ExpectTag(64)) goto parse_num_files;
-        break;
-      }
-
-      // required uint32 num_files = 8;
-      case 8: {
-        if (tag == 64) {
          parse_num_files:
           DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
                    ::google::protobuf::uint32, ::google::protobuf::internal::WireFormatLite::TYPE_UINT32>(
@@ -2460,18 +2578,63 @@ bool Batch::MergePartialFromCodedStream(
         } else {
           goto handle_unusual;
         }
-        if (input->ExpectTag(72)) goto parse_damaged;
+        if (input->ExpectTag(64)) goto parse_damaged;
         break;
       }
 
-      // required bool damaged = 9;
-      case 9: {
-        if (tag == 72) {
+      // required bool damaged = 8;
+      case 8: {
+        if (tag == 64) {
          parse_damaged:
           DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
                    bool, ::google::protobuf::internal::WireFormatLite::TYPE_BOOL>(
                  input, &damaged_)));
           set_has_damaged();
+        } else {
+          goto handle_unusual;
+        }
+        if (input->ExpectTag(77)) goto parse_completion;
+        break;
+      }
+
+      // required float completion = 9;
+      case 9: {
+        if (tag == 77) {
+         parse_completion:
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   float, ::google::protobuf::internal::WireFormatLite::TYPE_FLOAT>(
+                 input, &completion_)));
+          set_has_completion();
+        } else {
+          goto handle_unusual;
+        }
+        if (input->ExpectTag(80)) goto parse_type;
+        break;
+      }
+
+      // required uint32 type = 10;
+      case 10: {
+        if (tag == 80) {
+         parse_type:
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::uint32, ::google::protobuf::internal::WireFormatLite::TYPE_UINT32>(
+                 input, &type_)));
+          set_has_type();
+        } else {
+          goto handle_unusual;
+        }
+        if (input->ExpectTag(88)) goto parse_runtime;
+        break;
+      }
+
+      // required uint32 runtime = 11;
+      case 11: {
+        if (tag == 88) {
+         parse_runtime:
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::uint32, ::google::protobuf::internal::WireFormatLite::TYPE_UINT32>(
+                 input, &runtime_)));
+          set_has_runtime();
         } else {
           goto handle_unusual;
         }
@@ -2544,19 +2707,29 @@ void Batch::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormatLite::WriteUInt32(6, this->num_tasks(), output);
   }
 
-  // required uint32 num_slices = 7;
-  if (has_num_slices()) {
-    ::google::protobuf::internal::WireFormatLite::WriteUInt32(7, this->num_slices(), output);
-  }
-
-  // required uint32 num_files = 8;
+  // required uint32 num_files = 7;
   if (has_num_files()) {
-    ::google::protobuf::internal::WireFormatLite::WriteUInt32(8, this->num_files(), output);
+    ::google::protobuf::internal::WireFormatLite::WriteUInt32(7, this->num_files(), output);
   }
 
-  // required bool damaged = 9;
+  // required bool damaged = 8;
   if (has_damaged()) {
-    ::google::protobuf::internal::WireFormatLite::WriteBool(9, this->damaged(), output);
+    ::google::protobuf::internal::WireFormatLite::WriteBool(8, this->damaged(), output);
+  }
+
+  // required float completion = 9;
+  if (has_completion()) {
+    ::google::protobuf::internal::WireFormatLite::WriteFloat(9, this->completion(), output);
+  }
+
+  // required uint32 type = 10;
+  if (has_type()) {
+    ::google::protobuf::internal::WireFormatLite::WriteUInt32(10, this->type(), output);
+  }
+
+  // required uint32 runtime = 11;
+  if (has_runtime()) {
+    ::google::protobuf::internal::WireFormatLite::WriteUInt32(11, this->runtime(), output);
   }
 
   if (!unknown_fields().empty()) {
@@ -2611,19 +2784,29 @@ void Batch::SerializeWithCachedSizes(
     target = ::google::protobuf::internal::WireFormatLite::WriteUInt32ToArray(6, this->num_tasks(), target);
   }
 
-  // required uint32 num_slices = 7;
-  if (has_num_slices()) {
-    target = ::google::protobuf::internal::WireFormatLite::WriteUInt32ToArray(7, this->num_slices(), target);
-  }
-
-  // required uint32 num_files = 8;
+  // required uint32 num_files = 7;
   if (has_num_files()) {
-    target = ::google::protobuf::internal::WireFormatLite::WriteUInt32ToArray(8, this->num_files(), target);
+    target = ::google::protobuf::internal::WireFormatLite::WriteUInt32ToArray(7, this->num_files(), target);
   }
 
-  // required bool damaged = 9;
+  // required bool damaged = 8;
   if (has_damaged()) {
-    target = ::google::protobuf::internal::WireFormatLite::WriteBoolToArray(9, this->damaged(), target);
+    target = ::google::protobuf::internal::WireFormatLite::WriteBoolToArray(8, this->damaged(), target);
+  }
+
+  // required float completion = 9;
+  if (has_completion()) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteFloatToArray(9, this->completion(), target);
+  }
+
+  // required uint32 type = 10;
+  if (has_type()) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteUInt32ToArray(10, this->type(), target);
+  }
+
+  // required uint32 runtime = 11;
+  if (has_runtime()) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteUInt32ToArray(11, this->runtime(), target);
   }
 
   if (!unknown_fields().empty()) {
@@ -2680,25 +2863,37 @@ int Batch::ByteSize() const {
           this->num_tasks());
     }
 
-    // required uint32 num_slices = 7;
-    if (has_num_slices()) {
-      total_size += 1 +
-        ::google::protobuf::internal::WireFormatLite::UInt32Size(
-          this->num_slices());
-    }
-
-    // required uint32 num_files = 8;
+    // required uint32 num_files = 7;
     if (has_num_files()) {
       total_size += 1 +
         ::google::protobuf::internal::WireFormatLite::UInt32Size(
           this->num_files());
     }
 
-  }
-  if (_has_bits_[8 / 32] & (0xffu << (8 % 32))) {
-    // required bool damaged = 9;
+    // required bool damaged = 8;
     if (has_damaged()) {
       total_size += 1 + 1;
+    }
+
+  }
+  if (_has_bits_[8 / 32] & (0xffu << (8 % 32))) {
+    // required float completion = 9;
+    if (has_completion()) {
+      total_size += 1 + 4;
+    }
+
+    // required uint32 type = 10;
+    if (has_type()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::UInt32Size(
+          this->type());
+    }
+
+    // required uint32 runtime = 11;
+    if (has_runtime()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::UInt32Size(
+          this->runtime());
     }
 
   }
@@ -2746,16 +2941,22 @@ void Batch::MergeFrom(const Batch& from) {
     if (from.has_num_tasks()) {
       set_num_tasks(from.num_tasks());
     }
-    if (from.has_num_slices()) {
-      set_num_slices(from.num_slices());
-    }
     if (from.has_num_files()) {
       set_num_files(from.num_files());
     }
-  }
-  if (from._has_bits_[8 / 32] & (0xffu << (8 % 32))) {
     if (from.has_damaged()) {
       set_damaged(from.damaged());
+    }
+  }
+  if (from._has_bits_[8 / 32] & (0xffu << (8 % 32))) {
+    if (from.has_completion()) {
+      set_completion(from.completion());
+    }
+    if (from.has_type()) {
+      set_type(from.type());
+    }
+    if (from.has_runtime()) {
+      set_runtime(from.runtime());
     }
   }
   mutable_unknown_fields()->MergeFrom(from.unknown_fields());
@@ -2774,7 +2975,7 @@ void Batch::CopyFrom(const Batch& from) {
 }
 
 bool Batch::IsInitialized() const {
-  if ((_has_bits_[0] & 0x000001ff) != 0x000001ff) return false;
+  if ((_has_bits_[0] & 0x000007ff) != 0x000007ff) return false;
 
   return true;
 }
@@ -2787,9 +2988,11 @@ void Batch::Swap(Batch* other) {
     std::swap(desc_, other->desc_);
     std::swap(byte_size_, other->byte_size_);
     std::swap(num_tasks_, other->num_tasks_);
-    std::swap(num_slices_, other->num_slices_);
     std::swap(num_files_, other->num_files_);
     std::swap(damaged_, other->damaged_);
+    std::swap(completion_, other->completion_);
+    std::swap(type_, other->type_);
+    std::swap(runtime_, other->runtime_);
     std::swap(_has_bits_[0], other->_has_bits_[0]);
     _unknown_fields_.Swap(&other->_unknown_fields_);
     std::swap(_cached_size_, other->_cached_size_);

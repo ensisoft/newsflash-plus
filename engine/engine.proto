@@ -34,7 +34,10 @@ message TaskState {
     required string path              = 5;
     required uint64 size              = 6;
     required uint32 type              = 7;
-    required bytes  data              = 8;
+    required uint32 state             = 8;
+    required uint32 errors            = 9;
+    required uint32 runtime           = 10;
+    required bytes  data              = 11;
 }
 
 
@@ -45,9 +48,11 @@ message Batch {
     required string desc       = 4;
     required uint64 byte_size  = 5;
     required uint32 num_tasks  = 6;
-    required uint32 num_slices = 7;
-    required uint32 num_files  = 8;
-    required bool   damaged    = 9;
+    required uint32 num_files  = 7;
+    required bool   damaged    = 8;
+    required float  completion = 9;
+    required uint32 type       = 10;
+    required uint32 runtime    = 11;
 }
 
 message TaskList {

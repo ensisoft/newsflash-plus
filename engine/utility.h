@@ -126,6 +126,12 @@ namespace newsflash
     std::size_t KB(std::size_t kbs)
     { return kbs * 1024; }
 
+    template<typename T>
+    T clamp(T value, T max)
+    {
+        return value > max ? max : value;
+    }
+
     struct recursion_detector
     {
         std::map<void*, bool> instance_entry_map;
