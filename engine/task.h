@@ -109,6 +109,11 @@ namespace newsflash
             return bitflag<Error>();
         }
 
+        // returns true if the task can serialize (pack)
+        // and load (load) it's state.
+        virtual bool CanSerialize() const
+        { return false; }
+
         // pack the task state into byte buffer
         virtual void Pack(std::string* data) const
         {}

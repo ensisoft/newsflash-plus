@@ -65,6 +65,8 @@ namespace newsflash
         virtual bool HasCommands() const override;
         virtual float GetProgress() const override;
         virtual bitflag<Error> GetErrors() const override;
+        virtual bool CanSerialize() const override
+        { return true; }
         virtual void Pack(std::string* data) const override;
         virtual void Load(const std::string& data) override;
 
