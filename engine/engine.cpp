@@ -871,13 +871,14 @@ public:
 
     TaskState(std::size_t id, std::unique_ptr<Task> task, const ui::Download& desc)
     {
-        task_       = std::move(task);
-        ui_.task_id = id;
-        ui_.account = desc.account;
-        ui_.state   = states::Queued;
-        ui_.size    = desc.size;
-        ui_.desc    = desc.desc;
-        ui_.path    = desc.path;
+        task_          = std::move(task);
+        ui_.task_id    = id;
+        ui_.account    = desc.account;
+        ui_.state      = states::Queued;
+        ui_.size       = desc.size;
+        ui_.desc       = desc.desc;
+        ui_.path       = desc.path;
+        ui_.completion = 0.0f;
         LOG_I("Task ", ui_.task_id, " (", ui_.desc, ") created");
     }
 
@@ -890,6 +891,7 @@ public:
         ui_.desc           = state.desc();
         ui_.size           = state.size();
         ui_.path           = state.path();
+        ui_.completion     = task_->GetProgress();
         LOG_I("Task ", ui_.task_id, "( ", ui_.desc, ") restored");
     }
 
