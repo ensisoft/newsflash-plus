@@ -929,6 +929,9 @@ public:
         ASSERT(num_active_actions_ == 0);
         ASSERT(locking_ == LockState::Unlocked);
 
+        if (!task_->CanSerialize())
+            return;
+
         std::string data;
         task_->Pack(&data);
 
@@ -957,8 +960,6 @@ public:
                 if (cmd->GetTaskId() == ui_.task_id)
                     cmd->Cancel();
             }
-
-            assert(task_);
             task_->Cancel();
 
             state.bytes_queued -= ui_.size;
@@ -977,8 +978,7 @@ public:
 
     void Configure(const Task::Settings& settings)
     {
-        if (task_)
-            task_->Configure(settings);
+        task_->Configure(settings);
     }
 
     void Tick(Engine::State& state, const std::chrono::milliseconds& elapsed)
@@ -987,11 +987,8 @@ public:
         if (ui_.state == states::Active || ui_.state == states::Crunching)
             ui_.runtime++;
 
-        if (task_)
-        {
-            ui_.completion = task_->GetProgress();
-            ui_.completion = clamp(ui_.completion, 100.0);
-        }
+        ui_.completion = task_->GetProgress();
+        ui_.completion = clamp(ui_.completion, 100.0);
 
         if ((ui_.state == states::Active ||
              ui_.state == states::Waiting ||
@@ -1229,9 +1226,8 @@ public:
 
     bool CanSerialize() const
     {
-        return task_ ? task_->CanSerialize() : false;
+        return task_->CanSerialize();
     }
-
 
 private:
     transition UpdateCompletion(Engine::State& state)
@@ -1321,7 +1317,6 @@ private:
 
             case states::Complete:
             {
-                ASSERT(task_);
                 ASSERT(task_->HasCommands() == false);
                 ASSERT(num_active_cmdlists_ == 0);
                 ASSERT(num_active_actions_ == 0);
