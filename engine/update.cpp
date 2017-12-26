@@ -670,16 +670,12 @@ bool Update::HasCommands() const
 
 float Update::GetProgress() const
 {
-    if (remote_last_ == 0)
-        return 100.0f;
-
     const auto remote_articles = remote_last_ - remote_first_ + 1;
     const auto local_articles = local_last_ - local_first_ + 1;
     if (remote_articles == 0)
         return 100.0f;
 
-    return float(double(local_articles) /
-        double(remote_articles)) * 100.0f;
+    return float(double(local_articles) / double(remote_articles)) * 100.0f;
 
 }
 
