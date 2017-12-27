@@ -1031,8 +1031,6 @@ public:
 
     std::shared_ptr<CmdList> CreateCommands()
     {
-        num_active_cmdlists_++;
-
         return task_->CreateCommands();
     }
 
@@ -1045,12 +1043,25 @@ public:
         return GotoState(state, states::Active);
     }
 
+    transition UpdateActiveState(Engine::State& state)
+    {
+        ASSERT(ui_.state == states::Active ||
+               ui_.state == states::Paused);
+
+        if (ui_.state == states::Paused)
+            return no_transition;
+
+        for (const auto& cmd : state.cmds)
+        {
+            if (cmd->IsActive() &&
+                cmd->GetTaskId() == ui_.task_id)
+                return no_transition;
+        }
+        return GotoState(state, states::Waiting);
+    }
+
     transition Complete(Engine::State& state, std::shared_ptr<CmdList> cmds)
     {
-        ASSERT(cmds->GetTaskId() == ui_.task_id);
-        ASSERT(num_active_cmdlists_ > 0);
-        num_active_cmdlists_--;
-
         if (ui_.state == states::Error)
             return no_transition;
 
@@ -1071,15 +1082,17 @@ public:
         std::vector<std::unique_ptr<action>> actions;
         task_->Complete(*cmds, actions);
         for (auto& a : actions)
+        {
             DoAction(state, std::move(a));
+        }
 
-        return UpdateCompletion(state);
+        return ChooseState(state);
     }
 
     transition Pause(Engine::State& state)
     {
         if (ui_.state == states::Paused ||
-            ui_.state == states::Error ||
+            ui_.state == states::Error  ||
             ui_.state == states::Complete)
             return no_transition;
 
@@ -1103,7 +1116,7 @@ public:
         // then the task completes while it's in the paused state.
         // hence we expect the completion on resume and possibly
         // transfer to complete stated instead of waiting/queued.
-        const auto transition = UpdateCompletion(state);
+        const auto transition = ChooseState(state);
         if (transition)
             return transition;
 
@@ -1146,8 +1159,6 @@ public:
                 act->rethrow();
 
             std::vector<std::unique_ptr<action>> actions;
-            std::unique_ptr<ui::Update> update;
-
             task_->Complete(*act, actions);
             act.reset();
 
@@ -1158,9 +1169,11 @@ public:
                 ui_.error.set(ui::TaskDesc::Errors::Damaged);
 
             for (auto& a : actions)
+            {
                 DoAction(state, std::move(a));
+            }
 
-            return UpdateCompletion(state);
+            return ChooseState(state);
         }
         catch (const std::system_error& e)
         {
@@ -1235,7 +1248,7 @@ public:
     }
 
 private:
-    transition UpdateCompletion(Engine::State& state)
+    transition ChooseState(Engine::State& state)
     {
         // if we have pending actions our state should not change
         // i.e. we're active (or possibly paused)
@@ -1251,7 +1264,12 @@ private:
 
         // if we have currently executing cmdlists our state should not change.
         // i.e. we're active (or possibly paused)
-        if (num_active_cmdlists_)
+        const auto num_active_cmdlists = std::count_if(std::begin(state.cmds), std::end(state.cmds),
+            [&](const std::shared_ptr<CmdList>& cmdlist) {
+                return cmdlist->GetConnId() != 0 &&
+                       cmdlist->GetTaskId() == ui_.task_id;
+            });
+        if (num_active_cmdlists)
             return no_transition;
 
 
@@ -1323,7 +1341,6 @@ private:
             case states::Complete:
             {
                 ASSERT(task_->HasCommands() == false);
-                ASSERT(num_active_cmdlists_ == 0);
                 ASSERT(num_active_actions_ == 0);
 
                 task_->Commit();
@@ -1379,7 +1396,6 @@ private:
         }
 
         LOG_D("Task ", ui_.task_id, " => ", str(new_state));
-        LOG_D("Task ", ui_.task_id, " has ", num_active_cmdlists_,  " active cmdlists");
         LOG_D("Task ", ui_.task_id, " has ", num_active_actions_, " active actions");
         LOG_FLUSH();
 
@@ -1401,7 +1417,6 @@ private:
     ui::TaskDesc ui_;
 private:
     std::unique_ptr<newsflash::Task> task_;
-    std::size_t num_active_cmdlists_ = 0;
     std::size_t num_active_actions_  = 0;
     std::size_t num_bytes_queued_    = 0;
     std::size_t num_files_produced_  = 0;
@@ -1890,6 +1905,12 @@ void Engine::State::on_cmdlist_done(const Connection::CmdListCompletionData& com
                 cmds->SetAccountId(this->fill_account);
                 cmds->SetConnId(0);
                 current_cmdlists.push_back(cmds);
+                const auto transition = task->UpdateActiveState(*this);
+                if (transition)
+                {
+                    auto* batch = find_batch(task->GetBatchId());
+                    batch->UpdateState(*this, *task, transition);
+                }
                 return;
             }
         }
@@ -1907,6 +1928,12 @@ void Engine::State::on_cmdlist_done(const Connection::CmdListCompletionData& com
         // to be run on some other connection.
         cmds->SetConnId(0);
         current_cmdlists.push_back(cmds);
+        const auto transition = task->UpdateActiveState(*this);
+        if (transition)
+        {
+            auto* batch = find_batch(task->GetBatchId());
+            batch->UpdateState(*this, *task, transition);
+        }
     }
 }
 

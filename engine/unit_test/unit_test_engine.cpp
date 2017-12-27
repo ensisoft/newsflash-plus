@@ -637,17 +637,26 @@ public:
                 {
                     set(incoming, "420 DMCA takedown\r\n");
                 }
+                else if (command == "BODY <unexpected_disconnect>\r\n")
+                {
+                    error = Connection::Error::Network;
+                    return;
+                }
                 session->RecvNext(incoming, out);
                 cmdlist->ReceiveDataBuffer(std::move(out));
             }
         }
         virtual void run_completion_callbacks() override
         {
+            const bool has_exception = this->has_exception();
+            const bool has_error = this->error != Connection::Error::None;
+            const bool has_any_error = has_exception || has_error;
+
             Connection::CmdListCompletionData completion;
             completion.cmds          = cmdlist;
             completion.total_bytes   = 300;
             completion.content_bytes = 200;
-            completion.execution_did_complete = !has_exception();
+            completion.execution_did_complete = !has_any_error;
             callback(completion);
         }
         std::shared_ptr<CmdList> cmdlist;
@@ -656,6 +665,8 @@ public:
 
         bool force_no_such_body = false;
         bool force_no_such_group = false;
+
+        Connection::Error error = Connection::Error::None;
     };
 
     TestConnection(const ConnState& state) : conn_state_(state)
@@ -714,8 +725,14 @@ public:
         {
             state_ = Connection::State::Disconnected;
         }
-        else if (dynamic_cast<struct Execute*>(ptr))
+        else if (auto* p = dynamic_cast<struct Execute*>(ptr))
         {
+            if (p->error != Connection::Error::None)
+            {
+                state_ = Connection::State::Error;
+                error_ = p->error;
+                return next;
+            }
             state_ = Connection::State::Connected;
         }
         return next;
@@ -1971,6 +1988,100 @@ void test_task_execute_fill_error()
     }
 }
 
+// Test that a task transitions to a waiting state if the connection
+// encounters an error.
+//
+// Issue #83
+
+void test_task_execute_connection_disruption()
+{
+    const bool debug_single_thread = true;
+    const bool spawn_immediately = true;
+
+    ConnState test_conn_params;
+
+    Engine eng(std::make_unique<Factory>(), debug_single_thread);
+
+    ui::Account account;
+    account.id = 123;
+    account.name = "test";
+    account.username = "user";
+    account.password = "pass";
+    account.secure_host = "test.host.com";
+    account.secure_port = 1000;
+    account.connections = 1;
+    account.enable_secure_server = true;
+    account.enable_general_server = false;
+    account.enable_compression = false;
+    account.enable_pipelining = false;
+    account.user_data = &test_conn_params;
+    eng.Start();
+    eng.SetAccount(account, spawn_immediately);
+    while (eng.HasPendingActions())
+    {
+        eng.RunMainThread();
+        eng.Pump();
+    };
+
+    ui::Connection conn;
+    eng.GetConn(0, &conn);
+    BOOST_REQUIRE(conn.state == ui::Connection::States::Connected);
+
+    TaskParams params;
+    params.should_commit = false;
+    params.expect_cmdlist = false;
+    params.num_buffers = 21;
+
+    auto articles = std::vector<std::string>(10, "<success>");
+
+    ui::FileDownload download;
+    download.account   = 123;
+    download.size      = 666;
+    download.path      = "test/foo/bar";
+    download.desc      = "download";
+    download.articles.insert(download.articles.end(),
+        articles.begin(), articles.end());
+    download.articles.push_back("<unexpected_disconnect>");
+    download.articles.insert(download.articles.end(),
+        articles.begin(), articles.end());
+    download.groups.push_back("alt.binaries.success");
+    download.user_data = &params;
+    ui::FileBatchDownload batch;
+    batch.account = 123;
+    batch.size    = 666;
+    batch.path    = "test/foo/bar";
+    batch.desc    = "download";
+    batch.files.push_back(download);
+    eng.DownloadFiles(batch);
+
+    ui::TaskDesc task;
+    eng.GetTask(0, &task);
+    BOOST_REQUIRE(task.state == ui::TaskDesc::States::Active);
+
+    eng.GetConn(0, &conn);
+    BOOST_REQUIRE(conn.state == ui::Connection::States::Active);
+    while (eng.HasPendingActions())
+    {
+        eng.RunMainThread();
+        eng.Pump();
+    }
+    eng.GetConn(0, &conn);
+    BOOST_REQUIRE(conn.state == ui::Connection::States::Error);
+
+    // this is what we're testing here.
+    eng.GetTask(0, &task);
+    BOOST_REQUIRE(task.state == ui::TaskDesc::States::Waiting);
+
+    eng.Stop();
+
+    while (eng.HasPendingActions())
+    {
+        eng.RunMainThread();
+        eng.Pump();
+    }
+
+}
+
 void test_save_load_tasks()
 {
     // empty task list, empty state
@@ -2065,6 +2176,7 @@ int test_main(int argc, char*[])
     test_task_execute_restart();
     test_task_execute_fill_success();
     test_task_execute_fill_error();
+    test_task_execute_connection_disruption();
 
     test_save_load_tasks();
     return 0;

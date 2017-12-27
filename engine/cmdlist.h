@@ -271,6 +271,9 @@ namespace newsflash
         bool IsGood() const
         { return !failbit_; }
 
+        bool IsActive() const
+        { return conn_ != 0; }
+
         void SetAccountId(std::size_t aid)
         { account_ = aid; }
 
