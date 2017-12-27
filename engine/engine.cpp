@@ -534,12 +534,12 @@ public:
         state.threads->DetachPrivateThread(thread_);
     }
 
-    void Execute(Engine::State& state, std::shared_ptr<CmdList> cmds, std::string desc)
+    void Execute(Engine::State& state, std::shared_ptr<CmdList> cmds)
     {
         ASSERT(ui_.state == states::Connected);
 
         ui_.task  = cmds->GetTaskId();
-        ui_.desc  = std::move(desc);
+        ui_.desc  = cmds->GetDesc();
         ui_.state = states::Active;
         LOG_I("Connection ", ui_.id, " executing cmdlist ", cmds->GetCmdListId());
 
@@ -2031,8 +2031,9 @@ void Engine::State::execute()
 
         cmdlist->SetAccountId(account);
         cmdlist->SetTaskId(task->GetTaskId());
+        cmdlist->SetDesc(task->GetDesc());
         cmdlist->SetConnId(conn->id());
-        conn->Execute(*this, cmdlist, task->GetDesc());
+        conn->Execute(*this, cmdlist);
     }
 }
 

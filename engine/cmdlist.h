@@ -254,6 +254,9 @@ namespace newsflash
         std::size_t GetCmdListId() const
         { return id_; }
 
+        std::string GetDesc() const
+        { return desc_; }
+
         Type GetType() const
         { return cmdtype_; }
 
@@ -276,6 +279,9 @@ namespace newsflash
 
         void SetConnId(std::size_t cid)
         { conn_ = cid; }
+
+        void SetDesc(const std::string& description)
+        { desc_ = description; }
 
         // returns whether the CmdList can be filled from another
         // account, i.e. whether the content's are available on any server
@@ -330,6 +336,7 @@ namespace newsflash
         std::size_t task_ = 0;
         std::size_t conn_ = 0;
         std::size_t id_   = 0;
+        std::string desc_;
     private:
         // nntp data
         std::vector<Buffer> buffers_;
