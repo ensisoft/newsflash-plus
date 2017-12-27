@@ -464,13 +464,12 @@ public:
         LOG_I("Connection ", ui_.id, " deleted");
     }
 
-    void tick(Engine::State& state, const std::chrono::milliseconds& elapsed)
+    void Tick(Engine::State& state, const std::chrono::milliseconds& elapsed)
     {
         if (ui_.state == states::Connected)
         {
             if (--ticks_to_ping_ == 0)
                 do_action(state, conn_->Ping());
-
         }
         else if (ui_.state == states::Error)
         {
@@ -497,6 +496,29 @@ public:
             host.enable_pipelining  = acc.enable_pipelining;
             do_action(state, conn_->Connect(host));
         }
+
+        if (ui_.state == states::Active)
+        {
+            // if the bytes value hasn't increased since the last
+            // read then the bps value cannot be valid but has become
+            // stale since the connection has not ready any data. (i.e. it's stalled)
+            const auto bytes_before  = ui_.down;
+            const auto bytes_current = conn_->GetNumBytesTransferred();
+            const auto bytes_speed   = conn_->GetCurrentSpeedBps();
+            if (bytes_current != bytes_before)
+            {
+                ui_.bps  = bytes_speed;
+                ui_.down = bytes_current;
+            }
+            else
+            {
+                ui_.bps = 0;
+            }
+        }
+        else
+        {
+            ui_.bps = 0;
+        }
     }
 
     void Disconnect(Engine::State& state)
@@ -513,7 +535,7 @@ public:
         state.threads->DetachPrivateThread(thread_);
     }
 
-    void execute(Engine::State& state, std::shared_ptr<CmdList> cmds, std::size_t tid, std::string desc)
+    void Execute(Engine::State& state, std::shared_ptr<CmdList> cmds, std::size_t tid, std::string desc)
     {
         ui_.task  = tid;
         ui_.desc  = std::move(desc);
@@ -523,26 +545,12 @@ public:
         do_action(state, conn_->Execute(cmds, tid));
     }
 
-    void update(ui::Connection& ui)
+    void GetStateUpdate(ui::Connection& ui)
     {
         ui = ui_;
-        ui.bps = 0;
-        if (ui_.state == states::Active)
-        {
-            // if the bytes value hasn't increased since the last
-            // read then the bps value cannot be valid but has become
-            // stale since the connection has not ready any data. (i.e. it's stalled)
-            const auto bytes_before  = ui_.down;
-            const auto bytes_current = conn_->GetNumBytesTransferred();
-            if (bytes_current != bytes_before)
-            {
-                ui_.bps  = ui.bps  = conn_->GetCurrentSpeedBps();
-                ui_.down = ui.down = bytes_current;
-            }
-        }
     }
 
-    void on_action(Engine::State& engine_state, std::unique_ptr<action> act)
+    void CompleteAction(Engine::State& engine_state, std::unique_ptr<action> act)
     {
         LOG_D("Connection ", ui_.id, " action ", act->get_id(), "(", act->describe(), ") complete");
 
@@ -1999,7 +2007,7 @@ void Engine::State::enqueue(const TaskState& task, std::shared_ptr<CmdList> cmd)
             continue;
 
         cmd->SetConnId(conn->id());
-        conn->execute(*this, cmd, task.GetTaskId(), task.GetDesc());
+        conn->Execute(*this, cmd, task.GetTaskId(), task.GetDesc());
         return;
     }
 
@@ -2314,7 +2322,7 @@ bool Engine::Pump()
         if (it != std::end(state_->conns))
         {
             auto& conn = *it;
-            conn->on_action(*state_, std::move(action));
+            conn->CompleteAction(*state_, std::move(action));
             if (conn->is_ready())
             {
                 auto it = std::find_if(std::begin(state_->cmds), std::end(state_->cmds),
@@ -2333,7 +2341,7 @@ bool Engine::Pump()
                     ASSERT(tit != std::end(state_->tasks));
                     auto& task = *tit;
 
-                    conn->execute(*state_, cmd, task->GetTaskId(), task->GetDesc());
+                    conn->Execute(*state_, cmd, task->GetTaskId(), task->GetDesc());
                     cmd->SetConnId(conn->id());
                 }
                 else
@@ -2408,7 +2416,7 @@ void Engine::Tick()
     for (auto& conn : state_->conns)
     {
     // todo: measure time here instead of relying on the clientr
-        conn->tick(*state_, std::chrono::seconds(1));
+        conn->Tick(*state_, std::chrono::seconds(1));
     }
 
     for (auto& task : state_->tasks)
@@ -2810,7 +2818,7 @@ void Engine::GetConns(std::deque<ui::Connection>* connlist) const
 
     for (std::size_t i=0; i<conns.size(); ++i)
     {
-        conns[i]->update((*connlist)[i]);
+        conns[i]->GetStateUpdate((*connlist)[i]);
     }
 }
 
@@ -2818,7 +2826,7 @@ void Engine::GetConn(std::size_t index, ui::Connection* conn) const
 {
     ASSERT(index < state_->conns.size());
 
-    state_->conns[index]->update(*conn);
+    state_->conns[index]->GetStateUpdate(*conn);
 }
 
 void Engine::KillConnection(std::size_t i)
