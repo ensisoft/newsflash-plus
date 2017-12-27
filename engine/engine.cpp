@@ -357,7 +357,6 @@ struct Engine::State {
     Engine::BatchState* find_batch(std::size_t id);
 
     void execute();
-    void enqueue(const TaskState& t, std::shared_ptr<CmdList> cmd);
     void on_cmdlist_done(const Connection::CmdListCompletionData&);
     void on_update_progress(const HeaderTask::Progress&, std::size_t account);
     void on_write_done(const ContentTask::WriteComplete&);
@@ -1028,22 +1027,18 @@ public:
         return false;
     }
 
+    std::shared_ptr<CmdList> CreateCommands()
+    {
+        num_active_cmdlists_++;
+
+        return task_->CreateCommands();
+    }
+
     transition Run(Engine::State& state)
     {
-        if (ui_.state == states::Complete ||
-            ui_.state == states::Error ||
-            ui_.state == states::Paused)
-            return no_transition;
-
-        auto cmds = task_->CreateCommands();
-
-        LOG_I("Task ", ui_.task_id, " new cmdlist ", cmds->GetCmdListId());
-
-        cmds->SetAccountId(ui_.account);
-        cmds->SetTaskId(ui_.task_id);
-        state.enqueue(*this, cmds);
-
-        num_active_cmdlists_++;
+        ASSERT(ui_.state == states::Waiting ||
+               ui_.state == states::Queued  ||
+               ui_.state == states::Active);
 
         return GotoState(state, states::Active);
     }
@@ -1891,7 +1886,8 @@ void Engine::State::on_cmdlist_done(const Connection::CmdListCompletionData& com
             {
                 LOG_D("Cmdlist ", id, " set for refill");
                 cmds->SetAccountId(this->fill_account);
-                enqueue(*task, cmds);
+                cmds->SetConnId(0);
+                current_cmdlists.push_back(cmds);
                 return;
             }
         }
@@ -1907,7 +1903,8 @@ void Engine::State::on_cmdlist_done(const Connection::CmdListCompletionData& com
     {
         // the command list didn't run properly, enqueue it again
         // to be run on some other connection.
-        enqueue(*task, cmds);
+        cmds->SetConnId(0);
+        current_cmdlists.push_back(cmds);
     }
 }
 
@@ -1952,83 +1949,90 @@ void Engine::State::execute()
     if (!started)
         return;
 
-    for (auto it = std::begin(tasks); it != std::end(tasks); ++it)
+    // spawn connections if needed.
+    for (const auto& account : accounts)
     {
-        auto& task  = *it;
-        if (!task->CanRun())
-            continue;
+        const bool has_cmds = std::find_if(std::begin(cmds), std::end(cmds),
+            [&](const std::shared_ptr<CmdList>& cmdlist) {
+                return cmdlist->GetAccountId() == account.id;
+            }) != std::end(cmds);
+        const bool has_tasks = std::find_if(std::begin(tasks), std::end(tasks),
+            [&](const std::unique_ptr<TaskState>& task) {
+                return task->GetAccountId() == account.id &&
+                       task->CanRun();
+            }) != std::end(tasks);
 
-        std::size_t num_conns = std::count_if(std::begin(conns), std::end(conns),
-            [&](const std::unique_ptr<ConnState>& c) {
-                return c->account() == task->GetAccountId();
-            });
-
-        const auto& acc = find_account(task->GetAccountId());
-        for (auto i=num_conns; i<acc.connections; ++i)
-            conns.emplace_back(new ConnState(*this, acc.id, oid++));
-
-        while (task->CanRun())
+        if (has_cmds || has_tasks)
         {
-            auto it = std::find_if(std::begin(conns), std::end(conns),
-                [&](const std::unique_ptr<ConnState>& c) {
-                    return c->is_ready() && (c->account() == task->GetAccountId());
+            std::size_t num_conns = std::count_if(std::begin(conns), std::end(conns),
+                [&](const std::unique_ptr<ConnState>& conn) {
+                    return conn->account() == account.id;
                 });
-            if (it == std::end(conns))
-                break;
-
-            const auto transition = task->Run(*this);
-            if (transition)
+            for (; num_conns < account.connections; ++num_conns)
             {
-                auto* batch = find_batch(task->GetBatchId());
-                batch->UpdateState(*this, *task, transition);
+                conns.emplace_back(new ConnState(*this, account.id, oid++));
             }
         }
     }
-}
 
-void Engine::State::enqueue(const TaskState& task, std::shared_ptr<CmdList> cmd)
-{
-    cmd->SetConnId(0);
-    cmds.push_back(cmd);
-
-    if (!started)
-        return;
-
-    std::size_t num_conns = 0;
-
+    // schedule cmdlists (if any) to available connections
     for (auto& conn : conns)
     {
-        if (conn->account() != cmd->GetAccountId())
-            continue;
-
-        ++num_conns;
-
         if (!conn->is_ready())
             continue;
 
-        cmd->SetConnId(conn->id());
-        conn->Execute(*this, cmd, task.GetTaskId(), task.GetDesc());
-        return;
+        const auto account = conn->account();
+
+        std::shared_ptr<CmdList> cmdlist;
+        TaskState* task = nullptr;
+
+        auto it = std::find_if(std::begin(cmds), std::end(cmds),
+            [&](const std::shared_ptr<CmdList>& cmdlist) {
+                return cmdlist->GetConnId() == 0 &&
+                       cmdlist->GetAccountId() == conn->account() &&
+                       cmdlist->IsCancelled() == false;
+            });
+        if (it != std::end(cmds))
+        {
+            cmdlist = *it;
+            auto it = std::find_if(std::begin(tasks), std::end(tasks),
+                [&](const std::unique_ptr<TaskState>& task) {
+                    return task->GetTaskId() == cmdlist->GetTaskId();
+                });
+            ASSERT(it != std::end(tasks));
+            task = (*it).get();
+        }
+        else
+        {
+            // look for the next runnable task.
+            auto it = std::find_if(std::begin(tasks), std::end(tasks),
+                [&](const std::unique_ptr<TaskState>& task) {
+                    return task->GetAccountId() == account &&
+                           task->CanRun();
+                });
+            if (it != std::end(tasks))
+            {
+                task = (*it).get();
+                cmdlist = task->CreateCommands();
+                cmds.push_back(cmdlist);
+                const auto transition = task->Run(*this);
+                if (transition)
+                {
+                    auto* batch = find_batch(task->GetBatchId());
+                    batch->UpdateState(*this, *task, transition);
+                }
+            }
+        }
+
+        if (!cmdlist)
+            continue;
+
+        cmdlist->SetAccountId(account);
+        cmdlist->SetTaskId(task->GetTaskId());
+        cmdlist->SetConnId(conn->id());
+        conn->Execute(*this, cmdlist, task->GetTaskId(), task->GetDesc());
     }
-
-
-    const auto& acc = find_account(cmd->GetAccountId());
-    if (num_conns < acc.connections)
-    {
-        // const auto num_acc   = cmd->account();
-        // const auto num_tasks = std::count_if(std::begin(tasks), std::end(tasks),
-        //     [=](const std::unique_ptr<engine::task> task) {
-        //         return task->account() == num_acc;
-        //     };
-        // if (num_tasks < num_conns)
-        //     return;
-
-        const auto id = oid++;
-        conns.emplace_back(new ConnState(*this, acc.id, id));
-    }
-
 }
-
 
 Engine::Engine(std::unique_ptr<Factory> factory,
     bool enable_single_thread_debug) : state_(new State(enable_single_thread_debug))
@@ -2149,13 +2153,6 @@ void Engine::SetAccount(const ui::Account& acc, bool spawn_connections_immediate
         });
 
     state_->conns.erase(end, std::end(state_->conns));
-
-    //const auto have_tasks = std::find_if(std::begin(state_->tasks), std::end(state_->tasks),
-    //    [&](const std::unique_ptr<task>& t) {
-    //        return t->account() == acc.id;
-    //    }) != std::end(state_->tasks);
-    //if (!have_tasks)
-    //    return;
 
     // count the number of connections we have now for this account.
     // if there are less than the minimum number of allowed, we spawn
@@ -2290,15 +2287,6 @@ Engine::TaskId Engine::DownloadHeaders(const ui::HeaderDownload& download)
 
 bool Engine::Pump()
 {
-// #ifdef NEWSFLASH_DEBUG
-//     {
-//         std::lock_guard<std::mutex> lock(state_->mutex);
-//         std::size_t num_actions = state_->actions.size();
-//         if (num_actions == 0)
-//             return state_->num_pending_actions;
-//         LOG_D("Pumping all ", num_actions, " currently completed actions");
-//     }
-// #endif
     state_->quit_pump_loop = false;
 
     SetThreadLog(state_->logger.get());
@@ -2323,46 +2311,6 @@ bool Engine::Pump()
         {
             auto& conn = *it;
             conn->CompleteAction(*state_, std::move(action));
-            if (conn->is_ready())
-            {
-                auto it = std::find_if(std::begin(state_->cmds), std::end(state_->cmds),
-                    [&](const std::shared_ptr<CmdList>& c) {
-                        return c->GetConnId() == 0 &&
-                               c->GetAccountId() == conn->account() &&
-                               c->IsCancelled() == false;
-                           });
-                if (it != std::end(state_->cmds))
-                {
-                    auto cmd = *it;
-                    auto tit = std::find_if(std::begin(state_->tasks), std::end(state_->tasks),
-                        [&](const std::unique_ptr<TaskState>& t) {
-                            return t->GetTaskId() == cmd->GetTaskId();
-                        });
-                    ASSERT(tit != std::end(state_->tasks));
-                    auto& task = *tit;
-
-                    conn->Execute(*state_, cmd, task->GetTaskId(), task->GetDesc());
-                    cmd->SetConnId(conn->id());
-                }
-                else
-                {
-                    auto it = std::find_if(std::begin(state_->tasks), std::end(state_->tasks),
-                        [&](const std::unique_ptr<TaskState>& t) {
-                            return t->GetAccountId() == conn->account() &&
-                                   t->CanRun();
-                               });
-                    if (it != std::end(state_->tasks))
-                    {
-                        auto& task = *it;
-                        const auto transition = task->Run(*state_);
-                        if (transition)
-                        {
-                            auto* batch = state_->find_batch(task->GetBatchId());
-                            batch->UpdateState(*state_, *task, transition);
-                        }
-                    }
-                }
-            }
         }
         else if (state_->current_connection_test &&
             state_->current_connection_test->id() == id)
@@ -2390,6 +2338,8 @@ bool Engine::Pump()
         }
         state_->num_pending_actions--;
     }
+
+    state_->execute();
 
     LOG_FLUSH();
 
@@ -2428,6 +2378,8 @@ void Engine::Tick()
     {
         batch->tick(*state_, std::chrono::seconds(1));
     }
+
+    state_->execute();
 
     if (state_->logger)
         state_->logger->Flush();
