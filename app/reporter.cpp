@@ -63,24 +63,30 @@ void Reporter::enableJournal()
 // slot
 void Reporter::packCompleted(const app::FilePackInfo& pack)
 {
-    mFilePacks.push_back(pack);
+    if (mShouldJournal)
+        mFilePacks.push_back(pack);
 }
 
 // slot
 void Reporter::repairReady(const app::Archive& archive)
 {
-    mRepairs.push_back(archive);
+    if (mShouldJournal)
+        mRepairs.push_back(archive);
 }
 
 // slot
 void Reporter::unpackReady(const app::Archive& archive)
 {
-    mUnpacks.push_back(archive);
+    if (mShouldJournal)
+        mUnpacks.push_back(archive);
 }
 
 // slot
 void Reporter::compileReport()
 {
+    if (!mShouldJournal)
+        return;
+
     QStringList message;
     message << "Hello,\r\n\r\nbelow are the details for your last night's downloads.\r\n";
 
