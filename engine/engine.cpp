@@ -1631,6 +1631,9 @@ public:
         {
             if (task->GetBatchId() != ui_.batch_id)
                 continue;
+            const auto state = task->GetState();
+            if (state == states::Error || state == states::Complete)
+                continue;
 
             const auto task_size = task->GetSize();
             const auto this_size = ui_.size;
