@@ -530,12 +530,20 @@ public:
 
     virtual void run_completion_callbacks() override
     {
+        const bool has_exception = this->has_exception();
+        const bool has_connection_error = state_->pending_connection_error != Connection::Error::None;
+        const bool has_socket_error = state_->pending_socket_error != std::error_code();
+        const bool has_session_error = state_->pending_session_error != Session::Error::None;
+        const bool has_any_error =
+            has_exception || has_connection_error || has_socket_error ||
+            has_session_error;
+
         Connection::CmdListCompletionData completion;
         completion.cmds          = cmds_;
         completion.task_owner_id = taskid_;
         completion.total_bytes   = total_bytes_;
         completion.content_bytes = content_bytes_;
-        completion.execution_did_complete = !has_exception();
+        completion.execution_did_complete = !has_any_error;
         state_->on_cmdlist_done_callback(completion);
     }
 

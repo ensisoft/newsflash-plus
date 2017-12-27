@@ -383,7 +383,73 @@ void test_execute_success()
 
 void test_execute_failure()
 {
-    // todo:
+    auto log = std::make_shared<nf::StdLogger>(std::cout);
+
+    std::unique_ptr<nf::action> act;
+
+    nf::throttle throttle;
+    nf::Connection::HostDetails s;
+    s.hostname = "localhost";
+    s.hostport = 1919;
+    s.use_ssl  = false;
+    s.enable_compression = false;
+    s.enable_pipelining  = false;
+    s.username  = "pass";
+    s.password  = "pass";
+    s.pthrottle = &throttle;
+
+    nf::Connection::CmdListCompletionData completion;
+    nf::ConnectionImpl conn;
+    conn.SetCallback([&](const nf::Connection::CmdListCompletionData& data) {
+        completion = data;
+    });
+
+    // unpexected network error
+    {
+
+        // resolve
+        act = conn.Connect(s);
+        act->set_log(log);
+        act->perform();
+
+        // Connect
+        act = conn.Complete(std::move(act));
+        act->set_log(log);
+        act->perform();
+
+        // initialize
+        act = conn.Complete(std::move(act));
+        act->set_log(log);
+        act->perform();
+
+        nf::CmdList::Messages m;
+        m.groups  = {"alt.binaries.foo"};
+        m.numbers = {"3", "3", "3", "3", "5"};
+        auto cmds = std::make_shared<nf::CmdList>(m);
+
+        // execute
+        act = conn.Execute(cmds, 123);
+        BOOST_REQUIRE(conn.GetState() == nf::Connection::State::Active);
+        act->perform();
+        act->run_completion_callbacks();
+        act = conn.Complete(std::move(act));
+        BOOST_REQUIRE(conn.GetState() == nf::Connection::State::Error);
+        BOOST_REQUIRE(conn.GetError() != nf::Connection::Error::None);
+        BOOST_REQUIRE(!act);
+
+        BOOST_REQUIRE(completion.execution_did_complete == false);
+        BOOST_REQUIRE(completion.cmds == cmds);
+        BOOST_REQUIRE(completion.task_owner_id == 123);
+        BOOST_REQUIRE(completion.total_bytes != 0); // todo:
+        BOOST_REQUIRE(completion.content_bytes != 0); // todo:
+
+    }
+
+    // unexpected session error
+    {
+        // todo:
+    }
+
 }
 
 void test_cancel_execute()

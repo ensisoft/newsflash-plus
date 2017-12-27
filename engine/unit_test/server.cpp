@@ -185,6 +185,13 @@ void service_client(newsflash::native_socket_t sock)
             }
             send_response(sock, ".");
         }
+        else if (cmd == "BODY 5")
+        {
+            // simulate network disruption and close socket unexpectedly.
+            newsflash::closesocket(sock);
+            break;
+        }
+
         else if (cmd == "GROUP alt.binaries.foo")
         {
             send_response(sock, "211 5 1 5 alt.binaries.foo Group selected");
