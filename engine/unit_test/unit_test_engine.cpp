@@ -505,13 +505,11 @@ public:
         {
             Connection::CmdListCompletionData completion;
             completion.cmds          = cmdlist;
-            completion.task_owner_id = taskid;
             completion.total_bytes   = 300;
             completion.content_bytes = 200;
             completion.execution_did_complete = !has_exception();
             callback(completion);
         }
-        std::size_t taskid = 0;
         std::shared_ptr<CmdList> cmdlist;
         Connection::OnCmdlistDone callback;
     };
@@ -647,13 +645,11 @@ public:
         {
             Connection::CmdListCompletionData completion;
             completion.cmds          = cmdlist;
-            completion.task_owner_id = taskid;
             completion.total_bytes   = 300;
             completion.content_bytes = 200;
             completion.execution_did_complete = !has_exception();
             callback(completion);
         }
-        std::size_t taskid = 0;
         std::shared_ptr<CmdList> cmdlist;
         std::shared_ptr<Session> session;
         Connection::OnCmdlistDone callback;
@@ -725,12 +721,11 @@ public:
         return next;
     }
 
-    virtual std::unique_ptr<action> Execute(std::shared_ptr<CmdList> cmd, std::size_t tid) override
+    virtual std::unique_ptr<action> Execute(std::shared_ptr<CmdList> cmd) override
     {
         if (conn_state_.errors_[(int)Connection::State::Active] != Connection::Error::None)
         {
             auto ret = std::make_unique<struct DummyExecute>();
-            ret->taskid = tid;
             ret->cmdlist = cmd;
             ret->callback = callback_;
             state_ = Connection::State::Active;
@@ -739,7 +734,6 @@ public:
 
         auto ret = std::make_unique<struct Execute>();
         ret->session = session_;
-        ret->taskid = tid;
         ret->callback = callback_;
         ret->cmdlist = cmd;
         ret->force_no_such_body  = conn_state_.force_no_such_body;

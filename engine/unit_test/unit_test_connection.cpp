@@ -333,7 +333,7 @@ void test_execute_success()
         auto cmds = std::make_shared<nf::CmdList>(m);
 
         // execute
-        act = conn.Execute(cmds, 123);
+        act = conn.Execute(cmds);
         BOOST_REQUIRE(conn.GetState() == nf::Connection::State::Active);
         act->perform();
         act->run_completion_callbacks();
@@ -344,7 +344,6 @@ void test_execute_success()
 
         BOOST_REQUIRE(completion.execution_did_complete);
         BOOST_REQUIRE(completion.cmds == cmds);
-        BOOST_REQUIRE(completion.task_owner_id == 123);
         BOOST_REQUIRE(completion.total_bytes != 0); // todo:
         BOOST_REQUIRE(completion.content_bytes != 0); // todo:
 
@@ -361,7 +360,7 @@ void test_execute_success()
 
         auto cmds = std::make_shared<nf::CmdList>(m);
 
-        act = conn.Execute(cmds, 123);
+        act = conn.Execute(cmds);
         act->perform();
         act->run_completion_callbacks();
         act = conn.Complete(std::move(act));
@@ -370,7 +369,6 @@ void test_execute_success()
 
         BOOST_REQUIRE(completion.execution_did_complete);
         BOOST_REQUIRE(completion.cmds == cmds);
-        BOOST_REQUIRE(completion.task_owner_id == 123);
         BOOST_REQUIRE(completion.total_bytes != 0); // todo:
         BOOST_REQUIRE(completion.content_bytes == 0);
 
@@ -428,7 +426,7 @@ void test_execute_failure()
         auto cmds = std::make_shared<nf::CmdList>(m);
 
         // execute
-        act = conn.Execute(cmds, 123);
+        act = conn.Execute(cmds);
         BOOST_REQUIRE(conn.GetState() == nf::Connection::State::Active);
         act->perform();
         act->run_completion_callbacks();
@@ -439,7 +437,6 @@ void test_execute_failure()
 
         BOOST_REQUIRE(completion.execution_did_complete == false);
         BOOST_REQUIRE(completion.cmds == cmds);
-        BOOST_REQUIRE(completion.task_owner_id == 123);
         BOOST_REQUIRE(completion.total_bytes != 0); // todo:
         BOOST_REQUIRE(completion.content_bytes != 0); // todo:
 

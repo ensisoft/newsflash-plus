@@ -534,14 +534,16 @@ public:
         state.threads->DetachPrivateThread(thread_);
     }
 
-    void Execute(Engine::State& state, std::shared_ptr<CmdList> cmds, std::size_t tid, std::string desc)
+    void Execute(Engine::State& state, std::shared_ptr<CmdList> cmds, std::string desc)
     {
-        ui_.task  = tid;
+        ASSERT(ui_.state == states::Connected);
+
+        ui_.task  = cmds->GetTaskId();
         ui_.desc  = std::move(desc);
         ui_.state = states::Active;
         LOG_I("Connection ", ui_.id, " executing cmdlist ", cmds->GetCmdListId());
 
-        do_action(state, conn_->Execute(cmds, tid));
+        do_action(state, conn_->Execute(cmds));
     }
 
     void GetStateUpdate(ui::Connection& ui)
@@ -1789,8 +1791,8 @@ private:
 void Engine::State::on_cmdlist_done(const Connection::CmdListCompletionData& completion)
 {
     auto cmds = completion.cmds;
-    const auto tid   = completion.task_owner_id;
     const auto bytes = completion.content_bytes;
+    const auto tid   = cmds->GetTaskId();
     const auto id    = cmds->GetCmdListId();
 
     bytes_downloaded += bytes;
@@ -2030,7 +2032,7 @@ void Engine::State::execute()
         cmdlist->SetAccountId(account);
         cmdlist->SetTaskId(task->GetTaskId());
         cmdlist->SetConnId(conn->id());
-        conn->Execute(*this, cmdlist, task->GetTaskId(), task->GetDesc());
+        conn->Execute(*this, cmdlist, task->GetDesc());
     }
 }
 

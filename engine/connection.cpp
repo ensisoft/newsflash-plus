@@ -311,7 +311,7 @@ private:
 class ConnectionImpl::execute : public action
 {
 public:
-    execute(std::shared_ptr<impl> s, std::shared_ptr<CmdList> cmd, std::size_t tid) : state_(s), cmds_(cmd), taskid_(tid)
+    execute(std::shared_ptr<impl> s, std::shared_ptr<CmdList> cmd) : state_(s), cmds_(cmd)
     {}
 
     virtual void xperform() override
@@ -540,7 +540,6 @@ public:
 
         Connection::CmdListCompletionData completion;
         completion.cmds          = cmds_;
-        completion.task_owner_id = taskid_;
         completion.total_bytes   = total_bytes_;
         completion.content_bytes = content_bytes_;
         completion.execution_did_complete = !has_any_error;
@@ -554,7 +553,6 @@ public:
 private:
     std::shared_ptr<impl> state_;
     std::shared_ptr<CmdList> cmds_;
-    std::size_t taskid_ = 0;
     std::size_t total_bytes_ = 0;
     std::size_t content_bytes_ = 0;
 private:
@@ -833,11 +831,11 @@ std::unique_ptr<action> ConnectionImpl::Complete(std::unique_ptr<action> a)
     return next;
 }
 
-std::unique_ptr<action> ConnectionImpl::Execute(std::shared_ptr<CmdList> cmd, std::size_t tid)
+std::unique_ptr<action> ConnectionImpl::Execute(std::shared_ptr<CmdList> cmd)
 {
     state_->cancel->ResetSignal();
 
-    std::unique_ptr<action> act(new class execute(state_, std::move(cmd), tid));
+    std::unique_ptr<action> act(new class execute(state_, std::move(cmd)));
 
     state_->state = State::Active;
 

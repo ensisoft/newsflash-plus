@@ -90,7 +90,7 @@ namespace newsflash
         virtual std::unique_ptr<action> Complete(std::unique_ptr<action> a) = 0;
 
         // execute the given cmdlist
-        virtual std::unique_ptr<action> Execute(std::shared_ptr<CmdList> cmd, std::size_t tid) = 0;
+        virtual std::unique_ptr<action> Execute(std::shared_ptr<CmdList> cmd) = 0;
 
         // cancel a pending operation in the connection such as connecting
         // or executing a cmdlist. note that if the operation is excute
@@ -119,7 +119,6 @@ namespace newsflash
 
         struct CmdListCompletionData {
             std::shared_ptr<CmdList> cmds;
-            std::size_t task_owner_id = 0;
             std::uint64_t total_bytes = 0;
             std::uint64_t content_bytes = 0;
             bool execution_did_complete = false;
@@ -152,7 +151,7 @@ namespace newsflash
         virtual std::unique_ptr<action> Complete(std::unique_ptr<action> a) override;
 
         // execute the given cmdlist
-        virtual std::unique_ptr<action> Execute(std::shared_ptr<CmdList> cmd, std::size_t tid) override;
+        virtual std::unique_ptr<action> Execute(std::shared_ptr<CmdList> cmd) override;
 
         // cancel a pending operation in the connection such as connecting
         // or executing a cmdlist. note that if the operation is excute
