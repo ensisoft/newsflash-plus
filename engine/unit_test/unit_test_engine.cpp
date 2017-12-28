@@ -447,10 +447,7 @@ public:
             session_->on_send = [&](const std::string& cmd) {
                 command = cmd;
             };
-            session_->on_auth = [](std::string& user, std::string& pass) {
-                user = "user";
-                pass = "pass";
-            };
+            session_->SetCredentials("user", "pass");
 
             const bool authenticate_immediately = false;
             session_->Start(authenticate_immediately);
@@ -521,10 +518,6 @@ public:
             std::string command;
             session->on_send = [&](const std::string& out) {
                 command = out;
-            };
-            session->on_auth = [](std::string& user, std::string& pass) {
-                user = "user";
-                pass = "pass";
             };
 
             if (cmdlist->NeedsToConfigure())

@@ -51,10 +51,7 @@ void unit_test_init_session_success()
     session.on_send = [&](const std::string& cmd) {
         output = cmd;
     };
-    session.on_auth = [](std::string& user, std::string& pass) {
-        user = "foo";
-        pass = "bar";
-    };
+    session.SetCredentials("foo", "bar");
 
     nf::Buffer incoming(1024);
     nf::Buffer tmp(1);
@@ -117,10 +114,8 @@ void unit_test_init_session_success_caps()
     session.on_send = [&](const std::string& cmd) {
         output = cmd;
     };
-    session.on_auth = [](std::string& user, std::string& pass) {
-        user = "foo";
-        pass = "bar";
-    };
+
+    session.SetCredentials("foo", "bar");
 
     nf::Buffer incoming(1024);
     nf::Buffer tmp(1);
@@ -164,10 +159,8 @@ void unit_test_init_session_failure_authenticate()
     session.on_send = [&](const std::string& cmd) {
         output = cmd;
     };
-    session.on_auth = [](std::string& user, std::string& pass) {
-        user = "foo";
-        pass = "bar";
-    };
+
+    session.SetCredentials("foo", "bar");
 
     nf::Buffer incoming(1024);
     nf::Buffer tmp(1);
@@ -384,10 +377,8 @@ void unit_test_unexpected_response()
 
     session.on_send = [&](const std::string& cmd) {
     };
-    session.on_auth = [](std::string& user, std::string& pass) {
-        user = "foo";
-        pass = "bar";
-    };
+
+    session.SetCredentials("foo", "bar");
 
     // junk on welcome
     {
@@ -463,10 +454,8 @@ void unit_test_no_permission()
 
     session.on_send = [&](const std::string& cmd) {
     };
-    session.on_auth = [](std::string& user, std::string& pass) {
-        user = "foo";
-        pass = "bar";
-    };
+
+    session.SetCredentials("foo", "bar");
 
     nf::Buffer incoming(1024);
     nf::Buffer tmp(1);

@@ -81,8 +81,6 @@ namespace newsflash
         // called when session wants to send data
         std::function<void (const std::string& cmd)> on_send;
 
-        // called when session wants to authenticate
-        std::function<void (std::string& user, std::string& pass)> on_auth;
 
         Session();
        ~Session();
@@ -146,6 +144,9 @@ namespace newsflash
 
         // turn on/off header compression.
         void SetEnableCompression(bool on_off);
+
+        // set the session user credentials 
+        void SetCredentials(const std::string& username, const std::string& password);
 
         // get current error
         Error GetError() const;

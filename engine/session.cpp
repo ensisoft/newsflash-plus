@@ -43,8 +43,8 @@ struct Session::impl {
     bool enable_pipelining = false;
     bool enable_compression = false;
     bool have_caps = false;
-    std::string user;
-    std::string pass;
+    std::string username;
+    std::string password;
     std::string group;
     Session::Error error = Session::Error::None;
     Session::State state = Session::State::None;
@@ -869,9 +869,6 @@ bool Session::RecvNext(Buffer& buff, Buffer& out)
     {
         LOG_I(response);
 
-        std::string username;
-        std::string password;
-        on_auth(username, password);
         if (recv_.size() != 1)
         {
             LOG_E("Authentication requested during pipelined commands");
@@ -897,8 +894,8 @@ bool Session::RecvNext(Buffer& buff, Buffer& out)
             send_.emplace_front(new getcaps);
         }
         // todo: only send password when 381 is received
-        send_.emplace_front(new authpass(password));
-        send_.emplace_front(new authuser(username));
+        send_.emplace_front(new authpass(state_->password));
+        send_.emplace_front(new authuser(state_->username));
         recv_.pop_front();
         buff.Clear();
         return true;
@@ -967,6 +964,12 @@ void Session::SetEnablePipelining(bool on_off)
 
 void Session::SetEnableCompression(bool on_off)
 { state_->enable_compression = on_off; }
+
+void Session::SetCredentials(const std::string& username, const std::string& password)
+{
+    state_->username = username;
+    state_->password = password;
+}
 
 Session::Error Session::GetError() const
 { return state_->error; }
