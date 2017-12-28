@@ -489,6 +489,8 @@ public:
                 state_->bps    = 0.05 * bps + (0.95 * state_->bps);
                 state_->bytes += bytes;
                 total_bytes_ += bytes;
+
+                cmdlist->InspectRawBuffer(recvbuf);
             }
             while (!session->RecvNext(recvbuf, content));
 

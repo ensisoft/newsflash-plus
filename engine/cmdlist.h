@@ -26,6 +26,7 @@
 #include <atomic>
 #include <vector>
 #include <string>
+#include <functional>
 
 #include "session.h"
 #include "buffer.h"
@@ -206,6 +207,18 @@ namespace newsflash
             ASSERT("No such buffer");
         }
 
+        using RawBufferDataCallback = std::function<void(const Buffer& buff)>;
+
+        void InspectRawBuffer(const Buffer& buffer)
+        {
+            if (!raw_data_callback_)
+                return;
+            raw_data_callback_(buffer);
+        }
+
+        void SetRawBufferCallback(const RawBufferDataCallback callback)
+        { raw_data_callback_ = callback; }
+
         // useful for testing purposes
         std::size_t NumGroups() const
         { return groups_.size(); }
@@ -346,6 +359,7 @@ namespace newsflash
         std::vector<std::string> groups_;
         std::vector<std::string> commands_;
     private:
+        RawBufferDataCallback raw_data_callback_;
     };
 
 } // newsflash
