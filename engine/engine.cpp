@@ -827,7 +827,8 @@ public:
         }
         else
         {
-            success_  = true;
+            const auto status = conn_->GetState();
+            success_  = status != Connection::State::Error;
             finished_ = true;
             if (state.on_test_callback)
                 state.on_test_callback(success_);
