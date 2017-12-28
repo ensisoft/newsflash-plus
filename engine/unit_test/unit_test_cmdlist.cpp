@@ -41,9 +41,9 @@ void unit_test_bodylist()
 
         std::string command;
         nf::Session session;
-        session.on_send = [&](const std::string& cmd) {
+        session.SetSendCallback([&](const std::string& cmd) {
             command = cmd;
-        };
+        });
 
         BOOST_REQUIRE(list.SubmitConfigureCommand(0, session));
         session.SendNext();
@@ -83,9 +83,9 @@ void unit_test_bodylist()
 
         std::string command;
         nf::Session session;
-        session.on_send = [&](const std::string& cmd) {
+        session.SetSendCallback([&](const std::string& cmd) {
             command += cmd;
-        };
+        });
 
 
         // configure
@@ -155,9 +155,9 @@ void unit_test_refill()
 
     std::string command;
     nf::Session session;
-    session.on_send = [&](const std::string& cmd) {
+    session.SetSendCallback([&](const std::string& cmd) {
         command += cmd;
-    };
+    });
 
     session.SetEnablePipelining(true);
 
@@ -263,9 +263,9 @@ void unit_test_listing()
 
     std::string command;
     nf::Session session;
-    session.on_send = [&](const std::string& cmd) {
+    session.SetSendCallback([&](const std::string& cmd) {
         command = cmd;
-    };
+    });
 
     listing.SubmitDataCommands(session);
 
@@ -297,9 +297,9 @@ void unit_test_groupinfo()
 
         std::string command;
         nf::Session session;
-        session.on_send = [&](const std::string& cmd) {
+        session.SetSendCallback([&](const std::string& cmd) {
             command = cmd;
-        };
+        });
 
         BOOST_REQUIRE(list.NeedsToConfigure() == false);
 
@@ -328,9 +328,9 @@ void unit_test_groupinfo()
 
         std::string command;
         nf::Session session;
-        session.on_send = [&](const std::string& cmd) {
+        session.SetSendCallback([&](const std::string& cmd) {
             command = cmd;
-        };
+        });
 
         list.SubmitDataCommands(session);
 

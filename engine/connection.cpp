@@ -219,8 +219,8 @@ public:
         // object by a shared_ptr and created a circular depedency.
         // i think a cleaner and less error prone system is
         // to use a boost:bind here with real functions.
-        state_->session->on_send = std::bind(&impl::do_send, state_.get(),
-            std::placeholders::_1);
+        state_->session->SetSendCallback(std::bind(&impl::do_send, state_.get(),
+            std::placeholders::_1));
 
         state_->session->SetCredentials(state_->username, state_->password);
         state_->session->SetEnablePipelining(s->pipelining);

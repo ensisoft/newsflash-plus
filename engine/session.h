@@ -78,8 +78,8 @@ namespace newsflash
             Error
         };
 
-        // called when session wants to send data
-        std::function<void (const std::string& cmd)> on_send;
+        // callback when session wants to send data
+        using SendCallback = std::function<void(const std::string& cmd)>;
 
 
         Session();
@@ -145,8 +145,13 @@ namespace newsflash
         // turn on/off header compression.
         void SetEnableCompression(bool on_off);
 
-        // set the session user credentials 
+        // set the session user credentials
         void SetCredentials(const std::string& username, const std::string& password);
+
+        // set the send callback to be invoked when session
+        // needs to send some data.
+        // This must be set.
+        void SetSendCallback(const SendCallback& callback);
 
         // get current error
         Error GetError() const;

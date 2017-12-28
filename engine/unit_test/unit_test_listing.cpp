@@ -65,9 +65,9 @@ void unit_test_success()
     std::string cmd;
 
     newsflash::Session session;
-    session.on_send = [&](const std::string& c) {
+    session.SetSendCallback([&](const std::string& c) {
         cmd = c;
-    };
+    });
 
     newsflash::Listing listing;
     BOOST_REQUIRE(listing.HasCommands());

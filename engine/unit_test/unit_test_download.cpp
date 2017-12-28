@@ -49,11 +49,11 @@ void unit_test_create_cmds()
 
     nf::Download download({"alt.binaries.foobar"}, articles, "", "test");
     nf::Session session;
-    session.on_send = [&](const std::string& cmd) {
+    session.SetSendCallback([&](const std::string& cmd) {
         BOOST_REQUIRE(cmd == "BODY " +
             boost::lexical_cast<std::string>(cmd_number) + "\r\n");
         ++cmd_number;
-    };
+    });
 
     session.SetEnablePipelining(true);
 
@@ -76,7 +76,7 @@ void unit_test_decode_yenc()
 
     nf::Download download({"alt.binaries.foobar"}, {"1", "2", "3"}, "", "test");
     nf::Session session;
-    session.on_send = [&](const std::string&) {};
+    session.SetSendCallback([&](const std::string&) {});
 
     auto cmdlist = download.CreateCommands();
 
@@ -116,7 +116,7 @@ void unit_test_decode_yenc_bug_32()
 
     nf::Download download({"alt.binaries.wallpaper"}, {"1", "2"}, "", "test");
     nf::Session session;
-    session.on_send = [&](const std::string&) {};
+    session.SetSendCallback([&](const std::string&) {});
 
     auto cmdlist = download.CreateCommands();
 
@@ -154,7 +154,7 @@ void unit_test_decode_uuencode()
 
     nf::Download download({"alt.binaries.foobar"}, {"1", "2", "3"}, "", "test");
     nf::Session session;
-    session.on_send = [&](const std::string&) {};
+    session.SetSendCallback([&](const std::string&) {});
 
     auto cmdlist = download.CreateCommands();
 
@@ -214,7 +214,7 @@ void unit_test_decode_from_files()
     settings.overwrite_existing_files = true;
     download.Configure(settings);
     nf::Session ses;
-    ses.on_send = [&](const std::string&) {};
+    ses.SetSendCallback([&](const std::string&) {});
 
     for (std::size_t i=0; i<articles.size();)
     {
@@ -280,7 +280,7 @@ void unit_test_pack_load()
         std::string data;
 
         nf::Session session;
-        session.on_send = [&](const std::string&) {};
+        session.SetSendCallback([&](const std::string&) {});
 
         // pack
         {

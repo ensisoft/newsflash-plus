@@ -48,6 +48,7 @@ struct Session::impl {
     std::string group;
     Session::Error error = Session::Error::None;
     Session::State state = Session::State::None;
+    Session::SendCallback on_send;
 };
 
 // command encapsulates a request/response transaction.
@@ -812,7 +813,7 @@ bool Session::SendNext()
                 LOG_I("AUTHINFO PASS ****");
             else LOG_I(str);
 
-            on_send(str + "\r\n");
+            state_->on_send(str + "\r\n");
         }
 
         state_->state = next->state();
@@ -969,6 +970,11 @@ void Session::SetCredentials(const std::string& username, const std::string& pas
 {
     state_->username = username;
     state_->password = password;
+}
+
+void Session::SetSendCallback(const SendCallback& callback)
+{
+    state_->on_send = callback;
 }
 
 Session::Error Session::GetError() const

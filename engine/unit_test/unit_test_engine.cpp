@@ -444,9 +444,9 @@ public:
         virtual void xperform() override
         {
             std::string command;
-            session_->on_send = [&](const std::string& cmd) {
+            session_->SetSendCallback([&](const std::string& cmd) {
                 command = cmd;
-            };
+            });
             session_->SetCredentials("user", "pass");
 
             const bool authenticate_immediately = false;
@@ -516,9 +516,9 @@ public:
         virtual void xperform() override
         {
             std::string command;
-            session->on_send = [&](const std::string& out) {
+            session->SetSendCallback([&](const std::string& out) {
                 command = out;
-            };
+            });
 
             if (cmdlist->NeedsToConfigure())
             {

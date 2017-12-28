@@ -45,9 +45,9 @@ void unit_test_ranges()
 
     std::string str;
     newsflash::Session session;
-    session.on_send = [&](const std::string& c) {
+    session.SetSendCallback([&](const std::string& c) {
         str += c;
-    };
+    });
     session.SetEnablePipelining(true);
 
     std::vector<std::unique_ptr<newsflash::action>> actions;

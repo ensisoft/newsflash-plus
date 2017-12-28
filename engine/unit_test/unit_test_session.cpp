@@ -48,9 +48,9 @@ void unit_test_init_session_success()
     BOOST_REQUIRE(session.GetState() == nf::Session::State::None);
 
     std::string output;
-    session.on_send = [&](const std::string& cmd) {
+    session.SetSendCallback([&](const std::string& cmd) {
         output = cmd;
-    };
+    });
     session.SetCredentials("foo", "bar");
 
     nf::Buffer incoming(1024);
@@ -111,9 +111,9 @@ void unit_test_init_session_success_caps()
     BOOST_REQUIRE(session.GetState() == nf::Session::State::None);
 
     std::string output;
-    session.on_send = [&](const std::string& cmd) {
+    session.SetSendCallback([&](const std::string& cmd) {
         output = cmd;
-    };
+    });
 
     session.SetCredentials("foo", "bar");
 
@@ -156,9 +156,9 @@ void unit_test_init_session_failure_authenticate()
     BOOST_REQUIRE(session.GetState() == nf::Session::State::None);
 
     std::string output;
-    session.on_send = [&](const std::string& cmd) {
+    session.SetSendCallback([&](const std::string& cmd) {
         output = cmd;
-    };
+    });
 
     session.SetCredentials("foo", "bar");
 
@@ -203,9 +203,9 @@ void unit_test_change_group()
     nf::Session session;
 
     std::string output;
-    session.on_send = [&](const std::string& cmd) {
+    session.SetSendCallback([&](const std::string& cmd) {
         output = cmd;
-    };
+    });
 
     nf::Buffer incoming(1024);
     nf::Buffer tmp(1024);
@@ -232,9 +232,9 @@ void unit_test_retrieve_article()
     nf::Session session;
 
     std::string output;
-    session.on_send = [&](const std::string& cmd) {
+    session.SetSendCallback([&](const std::string& cmd) {
         output = cmd;
-    };
+    });
 
     // single command
     {
@@ -301,10 +301,10 @@ void unit_test_retrieve_article()
         nf::Buffer content(1024);
 
 
-        session.on_send = [&](const std::string& cmd) {
+        session.SetSendCallback([&](const std::string& cmd) {
             output.append(cmd);
             output.append("/");
-        };
+        });
 
         output.clear();
 
@@ -344,9 +344,9 @@ void unit_test_retrieve_listing()
     nf::Session session;
 
     std::string output;
-    session.on_send = [&](const std::string& cmd) {
+    session.SetSendCallback([&](const std::string& cmd) {
         output = cmd;
-    };
+    });
 
     nf::Buffer i(1024);
     nf::Buffer o(1024);
@@ -375,8 +375,8 @@ void unit_test_unexpected_response()
     BOOST_REQUIRE(session.GetError() == nf::Session::Error::None);
     BOOST_REQUIRE(session.GetState() == nf::Session::State::None);
 
-    session.on_send = [&](const std::string& cmd) {
-    };
+    session.SetSendCallback([&](const std::string& cmd) {
+    });
 
     session.SetCredentials("foo", "bar");
 
@@ -452,8 +452,8 @@ void unit_test_no_permission()
     BOOST_REQUIRE(session.GetError() == nf::Session::Error::None);
     BOOST_REQUIRE(session.GetState() == nf::Session::State::None);
 
-    session.on_send = [&](const std::string& cmd) {
-    };
+    session.SetSendCallback([&](const std::string& cmd) {
+    });
 
     session.SetCredentials("foo", "bar");
 
