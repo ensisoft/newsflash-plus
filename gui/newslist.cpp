@@ -52,6 +52,7 @@ NewsList::NewsList() : m_curAccount(0)
     m_ui.progressBar->setMinimum(0);
     m_ui.progressBar->setValue(0);
     m_ui.progressBar->setVisible(false);
+    m_ui.lblInfo->setVisible(false);
     m_ui.actionRefresh->setShortcut(QKeySequence::Refresh);
     m_ui.actionRefresh->setEnabled(false);    
     m_ui.actionFavorite->setEnabled(false);
@@ -250,6 +251,7 @@ void NewsList::on_actionRefresh_triggered()
 
     m_ui.progressBar->setMaximum(0);        
     m_ui.progressBar->setVisible(true);
+    m_ui.lblInfo->setVisible(true);
     m_ui.actionStop->setEnabled(true);
     m_ui.actionRefresh->setEnabled(false);
     m_model.makeListing(file, account->id);        
@@ -331,6 +333,7 @@ void NewsList::on_actionStop_triggered()
     m_ui.actionStop->setEnabled(false);    
     m_ui.actionRefresh->setEnabled(true);
     m_ui.progressBar->setVisible(false);
+    m_ui.lblInfo->setVisible(false);
 }
 
 
@@ -375,6 +378,7 @@ void NewsList::on_cmbAccounts_currentIndexChanged()
             m_model.makeListing(file, acc.id);
             m_ui.actionStop->setEnabled(true);
             m_ui.actionRefresh->setEnabled(false);
+            m_ui.lblInfo->setVisible(true);
         }
         return;
     }
@@ -506,6 +510,7 @@ void NewsList::loadComplete(quint32 acc)
         return;
 
     m_ui.progressBar->setVisible(false);
+    m_ui.lblInfo->setVisible(false);
     m_ui.actionRefresh->setEnabled(true);
 
     resort();
@@ -520,6 +525,7 @@ void NewsList::makeComplete(quint32 accountId)
         return;
 
     m_ui.progressBar->setVisible(false);
+    m_ui.lblInfo->setVisible(false);
     m_ui.actionStop->setEnabled(false);
     m_ui.actionRefresh->setEnabled(true);
 

@@ -213,6 +213,16 @@
        </widget>
       </item>
       <item>
+       <widget class="QLabel" name="lblInfo">
+        <property name="text">
+         <string>Downloading list of available newsgroups. Please wait... (see Downloads tab for details)</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QProgressBar" name="progressBar">
         <property name="minimumSize">
          <size>
