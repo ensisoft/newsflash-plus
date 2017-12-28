@@ -93,6 +93,10 @@ namespace newsflash
         virtual float GetProgress() const
         { return 0.0f; }
 
+        // periodically tick the task. can be used to perform
+        // some periodic activity in the task.
+        virtual void Tick() {}
+
         // Lock the task for the calling thread.
         // Locking allows the calling thread to acquire a consistent
         // view of the current task state by preventing any other

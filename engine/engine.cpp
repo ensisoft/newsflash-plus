@@ -993,6 +993,8 @@ public:
 
     void Tick(Engine::State& state, const std::chrono::milliseconds& elapsed)
     {
+        task_->Tick();
+
         // todo: actually measure the time
         if (ui_.state == states::Active || ui_.state == states::Crunching)
             ui_.runtime++;
