@@ -165,8 +165,6 @@
     <file>resource/16x16_ico_png/ico_properties.png</file>
     <file>resource/16x16_ico_png/ico_sorting.png</file>
 
-
-
     <file>resource/16x16_ico_png/ico_link.png</file>
     <file>resource/16x16_ico_png/ico_start.png</file>
     <file>resource/16x16_ico_png/ico_empty.png</file>
@@ -174,20 +172,9 @@
     <file>resource/16x16_ico_png/ico_run.png</file>
     <file>resource/16x16_ico_png/ico_waiting.png</file>
 
-
-
+    <file>resource/png/logo_black.png</file>
     <file>resource/png/failure.png</file>
     <file>resource/png/success.png</file>
-    <file>resource/png/logo_black.png</file>
-    <file>resource/png/python-logo.png</file>
-    <file>resource/png/speed_kmh.png</file>
-
-    <file>resource/flash.ico</file>
-    <file>resource/nh-special.gif</file>
-    <file>resource/uns-special-2.gif</file>
     <file>resource/ajax-loader.gif</file>
-    <file>resource/usenext-1.gif</file>
-    <file>resource/usenext-2.gif</file>
-    <file>resource/USENEXT.gif</file>
   </qresource>
 </RCC>
