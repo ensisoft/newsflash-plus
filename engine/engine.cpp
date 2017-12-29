@@ -1049,9 +1049,11 @@ public:
     transition UpdateActiveState(Engine::State& state)
     {
         ASSERT(ui_.state == states::Active ||
-               ui_.state == states::Paused);
+               ui_.state == states::Paused ||
+               ui_.state == states::Waiting ||
+               ui_.state == states::Crunching);
 
-        if (ui_.state == states::Paused)
+        if (ui_.state != states::Active)
             return no_transition;
 
         for (const auto& cmd : state.cmds)
