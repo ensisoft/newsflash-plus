@@ -179,6 +179,7 @@ namespace newsflash
         class xover;
         class xovergzip;
         class list;
+        class listgzip;
         class xfeature_compress_gzip;
 
     private:

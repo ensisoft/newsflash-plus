@@ -646,6 +646,119 @@ public:
 private:
 };
 
+class Session::listgzip : public Session::command
+{
+public:
+    listgzip()
+    {
+        std::memset(&z_, 0, sizeof(z_));
+        inflateInit(&z_);
+    }
+   ~listgzip()
+    {
+        inflateEnd(&z_);
+    }
+    virtual bool parse(Buffer& buff, Buffer& out, impl& st) override
+    {
+        if (inflate_done_)
+        {
+            LOG_D("Rescanning ....");
+            if (buff.GetSize() >= 3)
+            {
+                if (!std::strncmp(buff.Head(), ".\r\n", 3))
+                {
+                    LOG_D("Found end of body marker!");
+                    buff.Pop(3);
+                    return true;
+                }
+            }
+        }
+
+        const auto len = nntp::find_response(buff.Head(), buff.GetSize());
+        if (len == 0)
+            return false;
+
+        nntp::scan_response({215}, buff.Head(), len);
+
+        if (!out.GetCapacity())
+            out.Allocate(MB(5));
+
+        int err = Z_OK;
+        for (;;)
+        {
+            const auto head = buff.Head() + len + ibytes_;
+            const auto size = buff.GetSize() - len - ibytes_;
+            if (size == 0)
+                return false;
+
+            z_.next_in   = (Bytef*)head;
+            z_.avail_in  = size;
+            z_.next_out  = (Bytef*)out.Back();
+            z_.avail_out = out.GetAvailableBytes();
+            err = inflate(&z_, Z_NO_FLUSH);
+
+            out.Append(z_.total_out - obytes_);
+            obytes_ = z_.total_out;
+            ibytes_ = z_.total_in;
+            if (err < 0)
+                break;
+            else if (err == Z_BUF_ERROR)
+                out.Allocate(out.GetSize() * 2);
+            else if (err == Z_STREAM_END)
+                break;
+        }
+        inflate_done_ = true;
+
+        if (err != Z_STREAM_END)
+        {
+            LOG_E("Inflate failed zlib error: ", err);
+            out.SetStatus(Buffer::Status::Error);
+            return true;
+        }
+        LOG_I("Inflated list data from ", kb(ibytes_), " to ", kb(obytes_));
+
+        out.SetContentStart(0);
+        out.SetContentType(Buffer::Type::GroupList);
+        out.SetStatus(Buffer::Status::Success);
+        out.SetContentLength(obytes_);
+
+        const auto head = buff.Head() + ibytes_ + len;
+        const auto size = buff.GetSize() - ibytes_ - len;
+        if (size >= 3)
+        {
+            if (!std::strncmp(head, ".\r\n", 3))
+            {
+                LOG_D("Found end of body marker!");
+                buff.Pop(ibytes_ + len + 3);
+                return true;
+            }
+        }
+
+        buff.Pop(ibytes_ + len);
+        // we're still missing the ".\r\n" that supposedly comes at the
+        // end of the deflated data. therefore we return false
+        return false;
+    }
+
+    virtual bool can_pipeline() const override
+    { return false; }
+
+    virtual Session::State state() const override
+    { return Session::State::Transfer; }
+
+    virtual Session::Error error() const override
+    { return Session::Error::None; }
+
+    virtual std::string str() const override
+    { return "LIST"; }
+private:
+    z_stream z_;
+    uLong obytes_ = 0;
+    uLong ibytes_ = 0;
+private:
+    bool inflate_done_ = false;
+};
+
 class Session::xfeature_compress_gzip : public Session::command
 {
 public:
@@ -762,7 +875,14 @@ void Session::RetrieveHeaders(const std::string& range)
 
 void Session::RetrieveList()
 {
-    send_.emplace_back(new list);
+    if (state_->enable_compression)
+    {
+        send_.emplace_back(new listgzip);
+    }
+    else
+    {
+        send_.emplace_back(new list);
+    }
 }
 
 void Session::Ping()
