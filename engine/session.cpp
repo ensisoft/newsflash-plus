@@ -512,7 +512,7 @@ public:
         // 502 no permssion
         nntp::scan_response({224}, buff.Head(), len);
 
-        if (out.GetCapacity())
+        if (!out.GetCapacity())
             out.Allocate(MB(1));
 
         // astraweb supposedly uses a scheme where the zlib deflate'd data is yenc encoded.
