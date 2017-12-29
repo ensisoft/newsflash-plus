@@ -490,7 +490,9 @@ public:
                 state_->bytes += bytes;
                 total_bytes_ += bytes;
 
-                cmdlist->InspectRawBuffer(recvbuf);
+                const bool compression = session->IsCurrentCommandCompressed();
+
+                cmdlist->InspectRawBuffer(recvbuf, compression);
             }
             while (!session->RecvNext(recvbuf, content));
 

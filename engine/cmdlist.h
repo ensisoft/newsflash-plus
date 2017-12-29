@@ -207,13 +207,13 @@ namespace newsflash
             ASSERT("No such buffer");
         }
 
-        using RawBufferDataCallback = std::function<void(const Buffer& buff)>;
+        using RawBufferDataCallback = std::function<void(const Buffer& buff, bool compressed)>;
 
-        void InspectRawBuffer(const Buffer& buffer)
+        void InspectRawBuffer(const Buffer& buffer, bool compressed)
         {
             if (!raw_data_callback_)
                 return;
-            raw_data_callback_(buffer);
+            raw_data_callback_(buffer, compressed);
         }
 
         void SetRawBufferCallback(const RawBufferDataCallback callback)

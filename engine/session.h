@@ -139,6 +139,10 @@ namespace newsflash
         // the session state changes.
         bool HasPending() const;
 
+        // returns true if the currently executing command
+        // is likely to be compressed.
+        bool IsCurrentCommandCompressed() const;
+
         // turn on/off command pipelining where applicable.
         void SetEnablePipelining(bool on_off);
 

@@ -63,6 +63,9 @@ public:
 
     virtual bool can_pipeline() const = 0;
 
+    virtual bool is_compressed() const
+    { return false; }
+
     // get the state represented by this command
     virtual Session::State state() const = 0;
 
@@ -582,6 +585,9 @@ public:
     virtual bool can_pipeline() const override
     { return true; }
 
+    virtual bool is_compressed() const override
+    { return true; }
+
     virtual Session::State state() const override
     { return Session::State::Transfer; }
 
@@ -742,6 +748,9 @@ public:
 
     virtual bool can_pipeline() const override
     { return false; }
+
+    virtual bool is_compressed() const override
+    { return true; }
 
     virtual Session::State state() const override
     { return Session::State::Transfer; }
@@ -1079,6 +1088,14 @@ void Session::Clear()
 
 bool Session::HasPending() const
 { return !send_.empty() || !recv_.empty(); }
+
+bool Session::IsCurrentCommandCompressed() const
+{
+    ASSERT(!recv_.empty());
+
+    auto& next = recv_.front();
+    return next->is_compressed();
+}
 
 void Session::SetEnablePipelining(bool on_off)
 { state_->enable_pipelining = on_off; }
