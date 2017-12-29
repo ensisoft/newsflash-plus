@@ -1093,9 +1093,18 @@ bool Session::IsCurrentCommandCompressed() const
 {
     ASSERT(!recv_.empty());
 
-    auto& next = recv_.front();
+    const auto& next = recv_.front();
     return next->is_compressed();
 }
+
+bool Session::IsCurrentCommandContent() const
+{
+    ASSERT(!recv_.empty());
+
+    const auto& next = recv_.front();
+    return next->state() == State::Transfer;
+}
+
 
 void Session::SetEnablePipelining(bool on_off)
 { state_->enable_pipelining = on_off; }

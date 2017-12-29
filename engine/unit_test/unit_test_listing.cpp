@@ -85,22 +85,69 @@ void unit_test_success()
     std::vector<std::unique_ptr<newsflash::action>> actions;
     listing.Complete(*cmds, actions);
 
-    BOOST_REQUIRE(listing.is_ready());
+    BOOST_REQUIRE(listing.HasCommands() == false);
 
-    const auto& groups = listing.group_list();
-    BOOST_REQUIRE(groups.size() == 3);
-    BOOST_REQUIRE(groups[0].name == "alt.binaries.pictures.graphics.3d");
-    BOOST_REQUIRE(groups[0].last == 900);
-    BOOST_REQUIRE(groups[0].first == 800);
+    BOOST_REQUIRE(listing.NumGroups() == 3);
+    BOOST_REQUIRE(listing.GetGroup(0).name == "alt.binaries.pictures.graphics.3d");
+    BOOST_REQUIRE(listing.GetGroup(0).last == 900);
+    BOOST_REQUIRE(listing.GetGroup(0).first == 800);
+    BOOST_REQUIRE(listing.GetGroup(1).name == "alt.binaries.movies.divx");
+    BOOST_REQUIRE(listing.GetGroup(1).last == 321);
+    BOOST_REQUIRE(listing.GetGroup(1).first == 123);
+    BOOST_REQUIRE(listing.GetGroup(2).name == "alt.binaries.sounds.mp3");
+    BOOST_REQUIRE(listing.GetGroup(2).last == std::uint64_t(8523443434535555));
+    BOOST_REQUIRE(listing.GetGroup(2).first == 80);
+}
 
-    BOOST_REQUIRE(groups[1].name == "alt.binaries.movies.divx");
-    BOOST_REQUIRE(groups[1].last == 321);
-    BOOST_REQUIRE(groups[1].first == 123);
+void unit_test_intermediate_callback()
+{
+    newsflash::Listing::NewsGroup capture;
+    newsflash::Listing listing;
+    listing.SetProgressCallback([&](const newsflash::Listing::NewsGroup& g) {
+        capture = g;
+    });
 
-    BOOST_REQUIRE(groups[2].name == "alt.binaries.sounds.mp3");
-    BOOST_REQUIRE(groups[2].last == std::uint64_t(8523443434535555));
-    BOOST_REQUIRE(groups[2].first == 80);
+    auto cmds = listing.CreateCommands();
 
+    newsflash::Buffer recv(1024);
+
+    recv.Append("215 group listing ");
+    cmds->InspectRawBuffer(recv);
+    listing.Tick();
+    BOOST_REQUIRE(capture.last == 0);
+    BOOST_REQUIRE(capture.first == 0);
+    BOOST_REQUIRE(capture.size  == 0);
+
+    recv.Append("\r\n");
+    cmds->InspectRawBuffer(recv);
+    listing.Tick();
+    BOOST_REQUIRE(capture.last == 0);
+    BOOST_REQUIRE(capture.first == 0);
+    BOOST_REQUIRE(capture.size  == 0);
+
+    recv.Append("alt.binaries.pictures.graphics.3d 900 800 y\r\n");
+    cmds->InspectRawBuffer(recv);
+    listing.Tick();
+    BOOST_REQUIRE(capture.last  == 900);
+    BOOST_REQUIRE(capture.first == 800);
+
+    recv.Append("alt.binaries.movies.divx ");
+    cmds->InspectRawBuffer(recv);
+    listing.Tick();
+    BOOST_REQUIRE(capture.last  == 900);
+    BOOST_REQUIRE(capture.first == 800);
+
+    recv.Append("321 123 y\r\n");
+    cmds->InspectRawBuffer(recv);
+    listing.Tick();
+    BOOST_REQUIRE(capture.last  == 321);
+    BOOST_REQUIRE(capture.first == 123);
+
+    recv.Append(".\r\n");
+    cmds->InspectRawBuffer(recv);
+    listing.Tick();
+    BOOST_REQUIRE(capture.last  == 321);
+    BOOST_REQUIRE(capture.first == 123);
 
 }
 
@@ -113,6 +160,7 @@ int test_main(int, char* [])
 {
 
     unit_test_success();
+    unit_test_intermediate_callback();
     unit_test_failure();
 
     return 0;

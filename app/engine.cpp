@@ -346,6 +346,8 @@ void Engine::loadState(Settings& s)
         std::placeholders::_1));
     engine_->SetTestLogCallback(std::bind(&Engine::onConnectionTestLogMsg, this,
         std::placeholders::_1));
+    engine_->SetListingUpdateCallback(std::bind(&Engine::onListingUpdate, this,
+        std::placeholders::_1));
 
     // remember that the notify callback can come from any thread
     // within the engine and it has to be thread safe.
@@ -666,6 +668,19 @@ void Engine::onHeaderInfoAvailable(const newsflash::ui::HeaderUpdate& update)
         info.numRemoteArticles = update.num_remote_articles;
         info.snapshot = update.snapshots[i];
         emit newHeaderInfoAvailable(info);
+    }
+}
+
+void Engine::onListingUpdate(const newsflash::ui::GroupListUpdate& update)
+{
+    for (const auto& group : update.groups)
+    {
+        NewsGroupInfo groupInfo;
+        groupInfo.first = group.first;
+        groupInfo.last  = group.last;
+        groupInfo.size  = group.size;
+        groupInfo.name  = fromUtf8(group.name);
+        emit listUpdate(update.account, groupInfo);
     }
 }
 

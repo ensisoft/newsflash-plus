@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -54,9 +54,9 @@ NewsList::NewsList() : m_curAccount(0)
     m_ui.progressBar->setVisible(false);
     m_ui.lblInfo->setVisible(false);
     m_ui.actionRefresh->setShortcut(QKeySequence::Refresh);
-    m_ui.actionRefresh->setEnabled(false);    
+    m_ui.actionRefresh->setEnabled(false);
     m_ui.actionFavorite->setEnabled(false);
-    m_ui.actionStop->setEnabled(false);    
+    m_ui.actionStop->setEnabled(false);
     m_ui.chkShowEmpty->setChecked(false);
 
     const auto nameWidth = m_ui.tableGroups->columnWidth((int)app::NewsList::Columns::Name);
@@ -72,6 +72,8 @@ NewsList::NewsList() : m_curAccount(0)
         this, SLOT(loadComplete(quint32)));
     QObject::connect(&m_model, SIGNAL(makeComplete(quint32)),
         this, SLOT(makeComplete(quint32)));
+    QObject::connect(&m_model, SIGNAL(listUpdate(quint32)),
+        this, SLOT(listUpdate(quint32)));
 }
 
 NewsList::~NewsList()
@@ -113,7 +115,7 @@ MainWidget::info NewsList::getInformation() const
     return {"news.html", true};
 }
 
-Finder* NewsList::getFinder() 
+Finder* NewsList::getFinder()
 {
     return this;
 }
@@ -148,13 +150,13 @@ std::size_t NewsList::numItems() const
     return m_model.numItems();
 }
 
-std::size_t NewsList::curItem() const 
+std::size_t NewsList::curItem() const
 {
     const auto& indices = m_ui.tableGroups->selectionModel()->selectedRows();
     if (indices.isEmpty())
         return 0;
     const auto& first = indices.first();
-    return first.row();    
+    return first.row();
 }
 
 void NewsList::setFound(std::size_t index)
@@ -177,7 +179,7 @@ void NewsList::loadState(app::Settings& settings)
     app::loadState("newslist", m_ui.chkGames, settings);
     app::loadState("newslist", m_ui.chkApps, settings);
     app::loadState("newslist", m_ui.chkAdult, settings);
-    app::loadState("newslist", m_ui.chkImages, settings);    
+    app::loadState("newslist", m_ui.chkImages, settings);
     app::loadState("newslist", m_ui.chkOther, settings);
 
     accountsUpdated();
@@ -188,7 +190,7 @@ void NewsList::saveState(app::Settings& settings)
     app::saveTableLayout("newslist", m_ui.tableGroups, settings);
     app::saveState("newslist", m_ui.editFilter, settings);
     app::saveState("newslist", m_ui.chkShowEmpty, settings);
-    app::saveState("newslist", m_ui.chkShowText, settings);    
+    app::saveState("newslist", m_ui.chkShowText, settings);
     app::saveState("newslist", m_ui.chkMusic, settings);
     app::saveState("newslist", m_ui.chkMovies, settings);
     app::saveState("newslist", m_ui.chkTV, settings);
@@ -231,9 +233,9 @@ void NewsList::on_actionBrowse_triggered()
 
         auto* news = new NewsGroup(account, datapath, group);
         g_win->attach(news, false, true);
-        news->setProperty("newsgroup-guid", guid);        
+        news->setProperty("newsgroup-guid", guid);
         news->setProperty("parent-object", QVariant::fromValue(static_cast<QObject*>(this)));
-        news->load();        
+        news->load();
     }
 }
 
@@ -249,12 +251,12 @@ void NewsList::on_actionRefresh_triggered()
 
     const auto file = app::homedir::file(account->name + ".lst");
 
-    m_ui.progressBar->setMaximum(0);        
+    m_ui.progressBar->setMaximum(0);
     m_ui.progressBar->setVisible(true);
     m_ui.lblInfo->setVisible(true);
     m_ui.actionStop->setEnabled(true);
     m_ui.actionRefresh->setEnabled(false);
-    m_model.makeListing(file, account->id);        
+    m_model.makeListing(file, account->id);
 
 }
 
@@ -309,9 +311,9 @@ void NewsList::on_actionDeleteData_triggered()
         {
             auto* w = g_win->getWidget(i);
             const auto& p = w->property("newsgroup-guid");
-            if (p.isNull()) 
+            if (p.isNull())
                 continue;
-            if (p.toString() != guid) 
+            if (p.toString() != guid)
                 continue;
 
             auto* tab = qobject_cast<NewsGroup*>(w);
@@ -330,7 +332,7 @@ void NewsList::on_actionStop_triggered()
 
     m_model.stop(m_curAccount);
 
-    m_ui.actionStop->setEnabled(false);    
+    m_ui.actionStop->setEnabled(false);
     m_ui.actionRefresh->setEnabled(true);
     m_ui.progressBar->setVisible(false);
     m_ui.lblInfo->setVisible(false);
@@ -399,7 +401,7 @@ void NewsList::on_tableGroups_customContextMenuRequested(QPoint point)
 
 void NewsList::on_tableGroups_doubleClicked(const QModelIndex& index)
 {
-    on_actionBrowse_triggered();    
+    on_actionBrowse_triggered();
 }
 
 void NewsList::on_editFilter_returnPressed()
@@ -487,7 +489,7 @@ void NewsList::accountsUpdated()
         m_ui.cmbAccounts->setCurrentIndex(currentAccountIndex);
     }
 
-    m_ui.cmbAccounts->blockSignals(false);    
+    m_ui.cmbAccounts->blockSignals(false);
 
     m_ui.actionRefresh->setEnabled(numAccounts != 0);
     m_ui.actionFavorite->setEnabled(numAccounts != 0);
@@ -543,6 +545,15 @@ void NewsList::makeComplete(quint32 accountId)
     }
 
     Q_ASSERT(!"Account was not found");
+}
+
+void NewsList::listUpdate(quint32 accountId)
+{
+    if (m_curAccount != accountId)
+        return;
+
+    resort();
+    filter();
 }
 
 void NewsList::resort()

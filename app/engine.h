@@ -332,6 +332,7 @@ namespace app
         void fileCompleted(const app::FileInfo& file);
         void packCompleted(const app::FilePackInfo& pack);
         void listCompleted(quint32 account, const QList<app::NewsGroupInfo>& list);
+        void listUpdate(quint32 account, const app::NewsGroupInfo& group);
         void updateCompleted(const app::HeaderInfo& headers);
         void allCompleted();
         void numPendingTasks(std::size_t num);
@@ -355,6 +356,7 @@ namespace app
         void onListComplete(const newsflash::ui::GroupListResult& list);
         void onUpdateComplete(const newsflash::ui::HeaderResult& result);
         void onHeaderInfoAvailable(const newsflash::ui::HeaderUpdate& info);
+        void onListingUpdate(const newsflash::ui::GroupListUpdate& update);
         void onAllComplete();
         void onQuota(std::size_t bytes, std::size_t account);
         void onConnectionTestComplete(bool success);

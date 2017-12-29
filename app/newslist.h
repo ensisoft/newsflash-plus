@@ -47,7 +47,12 @@ namespace app
 
     public:
         enum class Columns {
-            Messages, Category, SizeOnDisk, Subscribed, Name, LAST
+            Messages,
+            Category,
+            SizeOnDisk,
+            Subscribed,
+            Name,
+            LAST
         };
 
         NewsList();
@@ -95,13 +100,16 @@ namespace app
         void progressUpdated(quint32 acc, quint32 maxValue, quint32 curValue);
         void loadComplete(quint32 acc);
         void makeComplete(quint32 acc);
+        void listUpdate(quint32 acc);
 
     private slots:
         void listCompleted(quint32 acc, const QList<app::NewsGroupInfo>& list);
+        void listUpdate(quint32 acc, const app::NewsGroupInfo& info);
         void newHeaderDataAvailable(const app::HeaderUpdateInfo& info);
 
     private:
         void setAccountSubscriptions(quint32 accountId);
+
 
         enum Flags {
             Subscribed = 0x1
@@ -109,25 +117,27 @@ namespace app
 
         struct NewsGroup {
             QString   name;
-            quint64   numMessages;
-            quint64   sizeOnDisk;
-            quint32   flags;
-            MediaType type;
+            quint64   numMessages = 0;
+            quint64   sizeOnDisk  = 0;
+            quint32   flags       = 0;
+            MediaType type        = MediaType::Other;
         };
-        struct operation {
-            quint32 account;
-            quint32 taskId;
+        struct Operation {
+            quint32 account = 0;
+            quint32 taskId  = 0;
             QString file;
         };
 
     private:
-        Columns sort_;
-        Qt::SortOrder order_;
-        std::size_t size_;
-        std::vector<NewsGroup> groups_;
-        std::map<quint32, operation> pending_;
+        Columns sort_ = Columns::LAST;
+        Qt::SortOrder order_ = Qt::AscendingOrder;
+        quint32 account_  = 0;
+
+        std::vector<NewsGroup> grouplist_;
+        std::size_t listsize_ = 0;
+        std::map<quint32, Operation> pending_;
     private:
-        quint32 account_;
+
     };
 
 } // app

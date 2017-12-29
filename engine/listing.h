@@ -25,42 +25,53 @@
 #include <string>
 #include <cstdint>
 #include <vector>
+#include <functional>
+#include <memory>
 
 #include "task.h"
 
 namespace newsflash
 {
+    class Buffer;
+
     // produce a listing of available newsgroups
     class Listing : public Task
     {
     public:
-        struct group {
+        struct NewsGroup {
             std::string name;
-            std::uint64_t last;
-            std::uint64_t first;
-            std::uint64_t size;
+            std::uint64_t last  = 0;
+            std::uint64_t first = 0;
+            std::uint64_t size  = 0;
         };
+
+        using OnProgress = std::function<void (const NewsGroup&)>;
+
+        Listing();
+       ~Listing();
 
         // Task implementation
         virtual std::shared_ptr<CmdList> CreateCommands() override;
         virtual void Complete(CmdList& cmd,
             std::vector<std::unique_ptr<action>>& actions) override;
-        virtual bool HasCommands() const override
-        { return has_commands_;}
+        virtual bool HasCommands() const override;
+        virtual float GetProgress() const override;
+        virtual void Tick() override;
 
-        virtual float GetProgress() const override
-        { return is_ready_ ? 100.0f : 0.0f; }
+        void SetProgressCallback(const OnProgress& callback);
 
-        const std::vector<group>& group_list() const
-        { return groups_; }
+        size_t NumGroups() const;
 
-        bool is_ready() const
-        { return is_ready_; }
+        const NewsGroup& GetGroup(size_t i) const;
 
     private:
-        std::vector<group> groups_;
-        bool has_commands_ = true;
-        bool is_ready_ = false;
+        struct State;
+        std::shared_ptr<State> state_;
+
+    private:
+        static void ParseIntermediateBuffer(const Buffer& buff,
+            std::shared_ptr<State> state);
+
     };
 
 } // newsflash

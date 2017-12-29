@@ -18,9 +18,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#define LOGTAG "news"
+#define LOGTAG "newslist"
 
-#include <newsflash/warnpush.h>
+#include "newsflash/warnpush.h"
 #  include <QtGui/QFont>
 #  include <QtGui/QIcon>
 #  include <QDir>
@@ -28,7 +28,8 @@
 #  include <QFile>
 #  include <QTextStream>
 #  include <QFileInfo>
-#include <newsflash/warnpop.h>
+#include "newsflash/warnpop.h"
+
 #include <algorithm>
 #include "newslist.h"
 #include "settings.h"
@@ -50,7 +51,7 @@ namespace app
 const int CurrentFileVersion = 2;
 // FileVersion 2 adds the media type for the group. (MediaTypeVersion 2)
 
-NewsList::NewsList() : sort_(Columns::LAST), order_(Qt::AscendingOrder), size_(0), account_(0)
+NewsList::NewsList()
 {
     DEBUG("NewsList created");
 
@@ -58,6 +59,8 @@ NewsList::NewsList() : sort_(Columns::LAST), order_(Qt::AscendingOrder), size_(0
         this, SLOT(listCompleted(quint32, const QList<app::NewsGroupInfo>&)));
     QObject::connect(g_engine, SIGNAL(newHeaderInfoAvailable(const app::HeaderUpdateInfo&)),
         this, SLOT(newHeaderDataAvailable(const app::HeaderUpdateInfo&)));
+    QObject::connect(g_engine, SIGNAL(listUpdate(quint32, const app::NewsGroupInfo&)),
+        this, SLOT(listUpdate(quint32, const app::NewsGroupInfo&)));
 }
 
 NewsList::~NewsList()
@@ -100,7 +103,7 @@ QVariant NewsList::data(const QModelIndex& index, int role) const
     const auto row = index.row();
     if (role == Qt::DisplayRole)
     {
-        const auto& group = groups_[row];
+        const auto& group = grouplist_[row];
         switch ((NewsList::Columns)col)
         {
             case Columns::Messages:
@@ -126,7 +129,7 @@ QVariant NewsList::data(const QModelIndex& index, int role) const
     }
     else if (role == Qt::DecorationRole)
     {
-        const auto& group = groups_[row];
+        const auto& group = grouplist_[row];
         switch ((NewsList::Columns)col)
         {
             case Columns::Messages:
@@ -158,8 +161,8 @@ void NewsList::sort(int column, Qt::SortOrder order)
 
     emit layoutAboutToBeChanged();
 
-    auto beg = std::begin(groups_);
-    auto end = std::begin(groups_) + size_;
+    auto beg = std::begin(grouplist_);
+    auto end = std::begin(grouplist_) + listsize_;
     switch ((Columns)column)
     {
         case Columns::Messages:
@@ -196,12 +199,12 @@ void NewsList::sort(int column, Qt::SortOrder order)
 
 int NewsList::rowCount(const QModelIndex&) const
 {
-    return (int)size_;
+    return static_cast<int>(listsize_);
 }
 
 int NewsList::columnCount(const QModelIndex&) const
 {
-    return (int)Columns::LAST;
+    return static_cast<int>(Columns::LAST);
 }
 
 
@@ -209,8 +212,8 @@ void NewsList::clear()
 {
     QAbstractTableModel::beginResetModel();
 
-    groups_.clear();
-    size_ = 0;
+    grouplist_.clear();
+    listsize_ = 0;
 
     QAbstractTableModel::reset();
     QAbstractTableModel::endResetModel();
@@ -292,17 +295,17 @@ void NewsList::loadListing(const QString& file, quint32 accountId)
             if (newslist[i] == group.name)
                 group.flags |= Flags::Subscribed;
         }
-        groups_.push_back(group);
+        grouplist_.push_back(group);
         curGroup++;
 
         if (!(curGroup % 100))
             emit progressUpdated(accountId, numGroups, curGroup);
     }
 
-    size_ = groups_.size();
-    account_ = accountId;
+    listsize_ = grouplist_.size();
+    account_  = accountId;
 
-    DEBUG("Loaded %1 items", size_);
+    DEBUG("Loaded %1 items", listsize_);
 
     // note that the ordering of the data is undefined at this moment.
     // the UI should then perform sorting.
@@ -321,11 +324,13 @@ void NewsList::makeListing(const QString& file, quint32 account)
 
     auto task = g_engine->retrieveNewsgroupListing(account);
 
-    operation op;
+    Operation op;
     op.file    = file;
     op.account = account;
     op.taskId  = task;
     pending_.insert(std::make_pair(account, op));
+
+    account_ = account;
 
     emit progressUpdated(account, 0, 0);
 }
@@ -344,7 +349,7 @@ void NewsList::subscribe(QModelIndexList& list, quint32 accountId)
         if (row > maxIndex)
             maxIndex = row;
 
-        auto& group = groups_[row];
+        auto& group = grouplist_[row];
         group.flags |= Flags::Subscribed;
     }
 
@@ -369,7 +374,7 @@ void NewsList::unsubscribe(QModelIndexList& list, quint32 accountId)
         if (row > maxIndex)
             maxIndex = row;
 
-        auto& group = groups_[row];
+        auto& group = grouplist_[row];
         group.flags &= ~Flags::Subscribed;
     }
 
@@ -383,9 +388,9 @@ void NewsList::unsubscribe(QModelIndexList& list, quint32 accountId)
 void NewsList::clearSize(const QModelIndex& index)
 {
     const auto row = index.row();
-    BOUNDSCHECK(groups_, row);
+    BOUNDSCHECK(grouplist_, row);
 
-    groups_[row].sizeOnDisk = 0;
+    grouplist_[row].sizeOnDisk = 0;
 
     const auto first = QAbstractTableModel::index(row, 0);
     const auto last  = QAbstractTableModel::index(row, (int)Columns::LAST);
@@ -394,22 +399,22 @@ void NewsList::clearSize(const QModelIndex& index)
 
 QString NewsList::getName(const QModelIndex& index) const
 {
-    return groups_[index.row()].name;
+    return grouplist_[index.row()].name;
 }
 
 QString NewsList::getName(std::size_t index) const
 {
-    return groups_[index].name;
+    return grouplist_[index].name;
 }
 
 MediaType NewsList::getMediaType(const QModelIndex& index) const
 {
-    return groups_[index.row()].type;
+    return grouplist_[index.row()].type;
 }
 
 std::size_t NewsList::numItems() const
 {
-    return size_;
+    return listsize_;
 }
 
 void NewsList::filter(const QString& str, newsflash::bitflag<FilterFlags> options)
@@ -421,8 +426,8 @@ void NewsList::filter(const QString& str, newsflash::bitflag<FilterFlags> option
 
     QAbstractTableModel::beginResetModel();
 
-    auto beg = std::begin(groups_);
-    auto end = std::partition(std::begin(groups_), std::end(groups_),
+    auto beg = std::begin(grouplist_);
+    auto end = std::partition(std::begin(grouplist_), std::end(grouplist_),
         [&](const NewsGroup& group) {
 
         if (isMusic(group.type) && !options.test(FilterFlags::ShowMusic))
@@ -461,7 +466,7 @@ void NewsList::filter(const QString& str, newsflash::bitflag<FilterFlags> option
         return (bool)group.name.contains(str);
     });
 
-    size_ = std::distance(beg, end);
+    listsize_ = std::distance(beg, end);
 
     switch (sort_)
     {
@@ -482,13 +487,13 @@ void NewsList::filter(const QString& str, newsflash::bitflag<FilterFlags> option
     }
 
     // and finally grab the favs and put them at the top
-    beg = std::begin(groups_);
-    end = std::begin(groups_) + size_;
+    beg = std::begin(grouplist_);
+    end = std::begin(grouplist_) + listsize_;
     auto it = std::stable_partition(beg, end, [&](const NewsGroup& group) {
             return ((group.flags & Flags::Subscribed) != 0);
         });
 
-    DEBUG("Found %1 matching items...", size_);
+    DEBUG("Found %1 matching items...", listsize_);
     DEBUG("Found %1 favs", std::distance(beg, it));
     Q_UNUSED(it);
 
@@ -533,6 +538,26 @@ void NewsList::listCompleted(quint32 acc, const QList<app::NewsGroupInfo>& list)
     emit makeComplete(acc);
 }
 
+void NewsList::listUpdate(quint32 account, const app::NewsGroupInfo& info)
+{
+    if (account != account_)
+        return;
+
+    QAbstractTableModel::beginInsertRows(QModelIndex(),
+        grouplist_.size(), grouplist_.size());
+
+    NewsGroup next;
+    next.name        = info.name;
+    next.numMessages = info.size;
+    next.flags       = 0;
+    next.type        = findMediaType(next.name);
+    grouplist_.push_back(next);
+
+    QAbstractTableModel::endInsertRows();
+
+    emit listUpdate(account);
+}
+
 void NewsList::newHeaderDataAvailable(const app::HeaderUpdateInfo& info)
 {
     if (account_ == 0)
@@ -547,11 +572,11 @@ void NewsList::newHeaderDataAvailable(const app::HeaderUpdateInfo& info)
     if (newsGroupFile.indexOf(datapath) == -1)
         return;
 
-    auto it = std::find_if(std::begin(groups_), std::end(groups_),
+    auto it = std::find_if(std::begin(grouplist_), std::end(grouplist_),
         [&](const NewsGroup& group) {
             return group.name == newsGroupName;
         });
-    if (it == std::end(groups_))
+    if (it == std::end(grouplist_))
         return;
 
     auto& group = *it;
@@ -561,7 +586,7 @@ void NewsList::newHeaderDataAvailable(const app::HeaderUpdateInfo& info)
     DEBUG("%1 was updated. New size on disk is %2",
         group.name, app::size{group.sizeOnDisk});
 
-    auto row = std::distance(std::begin(groups_), it);
+    auto row = std::distance(std::begin(grouplist_), it);
     auto first = QAbstractTableModel::index(row, 0);
     auto last  = QAbstractTableModel::index(row, (int)Columns::LAST);
     emit dataChanged(first, last);
@@ -570,7 +595,7 @@ void NewsList::newHeaderDataAvailable(const app::HeaderUpdateInfo& info)
 void NewsList::setAccountSubscriptions(quint32 accountId)
 {
     QStringList list;
-    for (const auto& group : groups_)
+    for (const auto& group : grouplist_)
     {
         if (group.flags & Flags::Subscribed)
             list << group.name;

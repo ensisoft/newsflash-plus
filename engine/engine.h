@@ -82,6 +82,9 @@ namespace newsflash
         // an ongoing header update task.
         using on_header_update = std::function<void(const ui::HeaderUpdate& update)>;
 
+        // this callback is invoked when there's new information regarding
+        // an ongoing listing download task.
+        using on_listing_update = std::function<void(const ui::GroupListUpdate& update)>;
 
         // this callback is invoked when there are pending events inside the engine
         // the handler function should organize for a call into engine::pump()
@@ -208,6 +211,9 @@ namespace newsflash
 
         // set the header update callback.
         void SetHeaderInfoCallback(on_header_update callback);
+
+        // set the listing update callback.
+        void SetListingUpdateCallback(on_listing_update callback);
 
         // Set the finish callback. Invoked when all previously pending tasks are complete.
         void SetFinishCallback(on_finish callback);

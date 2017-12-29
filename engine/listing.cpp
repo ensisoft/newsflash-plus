@@ -22,6 +22,7 @@
 
 #include <string>
 #include <fstream>
+#include <mutex>
 
 #include "nntp.h"
 #include "linebuffer.h"
@@ -33,16 +34,44 @@
 namespace newsflash
 {
 
+struct Listing::State {
+    std::mutex mutex;
+    std::size_t last_parse_offset = 0;
+    bool discard = false;
+    bool commands = true;
+    bool complete = false;
+
+    Listing::OnProgress progress_callback;
+    std::vector<NewsGroup> groups;
+};
+
+Listing::Listing()
+{
+    state_ = std::make_shared<State>();
+}
+
+Listing::~Listing()
+{
+    std::lock_guard<std::mutex> lock(state_->mutex);
+    state_->discard = true;
+}
+
 std::shared_ptr<CmdList> Listing::CreateCommands()
 {
     std::shared_ptr<CmdList> cmd(new CmdList(CmdList::Listing{}));
-    has_commands_ = false;
+    if (state_->progress_callback)
+    {
+        //cmd->SetRawBufferCallback(std::bind(ParseIntermediateBuffer,
+        //    std::placeholders::_1, state_));
+    }
+    state_->commands = false;
     return cmd;
 }
 
 void Listing::Complete(CmdList& cmd, std::vector<std::unique_ptr<action>>& actions)
 {
-    is_ready_ = true;
+    state_->complete = true;
+    state_->groups.clear();
 
     if (!cmd.IsGood())
         return;
@@ -63,18 +92,94 @@ void Listing::Complete(CmdList& cmd, std::vector<std::unique_ptr<action>>& actio
             continue;
 
         const auto& data = ret.second;
-        group g;
-        g.last  = std::stoull(data.last);
-        g.first = std::stoull(data.first);
-        g.name  = data.name;
-        g.size  = 0;
+        NewsGroup group;
+        group.last  = std::stoull(data.last);
+        group.first = std::stoull(data.first);
+        group.name  = data.name;
+        group.size  = 0;
 
         // if the last field is less than the first field
         // then there are no articles in the group.
-        if (g.last >= g.first)
-            g.size = g.last - g.first + 1; // inclusive
+        if (group.last >= group.first)
+            group.size = group.last - group.first + 1; // inclusive
 
-        groups_.push_back(g);
+        state_->groups.push_back(group);
+    }
+}
+bool Listing::HasCommands() const
+{ return state_->commands; }
+
+float Listing::GetProgress() const
+{ return state_->complete ? 100.0f : 0.0f; }
+
+void Listing::Tick()
+{
+    std::lock_guard<std::mutex> lock(state_->mutex);
+    if (state_->groups.empty())
+        return;
+    if (!state_->progress_callback)
+        return;
+
+    for (const auto& group : state_->groups)
+    {
+        state_->progress_callback(group);
+    }
+    state_->groups.clear();
+}
+
+void Listing::SetProgressCallback(const OnProgress& callback)
+{ state_->progress_callback = callback; }
+
+size_t Listing::NumGroups() const
+{ return state_->groups.size(); }
+
+const Listing::NewsGroup& Listing::GetGroup(size_t i) const
+{
+    ASSERT(i < state_->groups.size());
+    return state_->groups[i];
+}
+
+// static
+void Listing::ParseIntermediateBuffer(const Buffer& buff, std::shared_ptr<State> state)
+{
+    // this call is executed in whatever thread that is running the cmdlist
+
+    std::lock_guard<std::mutex> lock(state->mutex);
+    if (state->discard)
+        return;
+
+    const nntp::linebuffer lines(buff.Head() + state->last_parse_offset,
+        buff.GetSize() - state->last_parse_offset);
+    auto beg = lines.begin();
+    auto end = lines.end();
+    if (beg == end)
+        return;
+
+    if (state->last_parse_offset == 0)
+    {
+        const auto& line = *beg;
+        state->last_parse_offset = line.length;
+        ++beg;
+    }
+
+    for (; beg != end; ++beg)
+    {
+        const auto& line = *beg;
+        const auto& ret  = nntp::parse_group_list_item(line.start, line.length);
+        if (!ret.first)
+            continue;
+
+        const auto& data = ret.second;
+        NewsGroup group;
+        group.last  = std::stoull(data.last);
+        group.first = std::stoull(data.first);
+        group.name  = data.name;
+        group.size  = 0;
+        if (group.last >= group.first)
+            group.size = group.last - group.first + 1;
+
+        state->groups.push_back(group);
+        state->last_parse_offset += line.length;
     }
 }
 

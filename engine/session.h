@@ -143,6 +143,10 @@ namespace newsflash
         // is likely to be compressed.
         bool IsCurrentCommandCompressed() const;
 
+        // returns true if the currently executing command
+        // is transferring content.
+        bool IsCurrentCommandContent() const;
+
         // turn on/off command pipelining where applicable.
         void SetEnablePipelining(bool on_off);
 

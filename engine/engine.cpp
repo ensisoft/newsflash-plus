@@ -121,9 +121,9 @@ public:
             result->account = desc.account;
             result->desc    = desc.desc;
 
-            const auto& groups = ptr->group_list();
-            for (const auto& g : groups)
+            for (size_t i=0; i<ptr->NumGroups(); ++i)
             {
+                const auto& g = ptr->GetGroup(i);
                 ui::GroupListResult::Newsgroup group;
                 group.name  = g.name;
                 group.first = g.first;
@@ -260,6 +260,7 @@ struct Engine::State {
     Engine::on_task  on_task_callback;
     Engine::on_update on_update_callback;
     Engine::on_header_update on_header_update_callback;
+    Engine::on_listing_update on_listing_update_callback;
     Engine::on_async_notify on_notify_callback;
     Engine::on_finish on_finish_callback;
     Engine::on_quota on_quota_callback;
@@ -358,7 +359,8 @@ struct Engine::State {
 
     void execute();
     void on_cmdlist_done(const Connection::CmdListCompletionData&);
-    void on_update_progress(const HeaderTask::Progress&, std::size_t account);
+    void on_header_update_progress(const HeaderTask::Progress&, std::size_t account);
+    void on_listing_update_progress(const Listing::NewsGroup&, std::size_t account);
     void on_write_done(const ContentTask::WriteComplete&);
 };
 
@@ -1942,7 +1944,23 @@ void Engine::State::on_cmdlist_done(const Connection::CmdListCompletionData& com
     }
 }
 
-void Engine::State::on_update_progress(const HeaderTask::Progress& progress, std::size_t account)
+void Engine::State::on_listing_update_progress(const Listing::NewsGroup& group, std::size_t account)
+{
+    if (!on_listing_update_callback)
+        return;
+
+    ui::GroupListUpdate update;
+    ui::GroupListUpdate::NewsGroup data;
+    data.first = group.first;
+    data.last  = group.last;
+    data.name  = group.name;
+    data.size  = group.size;
+    update.account = account;
+    update.groups.push_back(std::move(data));
+    on_listing_update_callback(update);
+}
+
+void Engine::State::on_header_update_progress(const HeaderTask::Progress& progress, std::size_t account)
 {
     if (!on_header_update_callback)
         return;
@@ -2285,6 +2303,12 @@ Engine::TaskId Engine::DownloadListing(const ui::GroupListDownload& list)
 
     const auto taskid = state_->oid++;
     std::unique_ptr<Task> task(state_->factory->AllocateTask(list));
+    if (auto* ptr = dynamic_cast<Listing*>(task.get()))
+    {
+        ptr->SetProgressCallback(std::bind(&Engine::State::on_listing_update_progress, state_.get(),
+            std::placeholders::_1, list.account));
+    }
+
     std::unique_ptr<TaskState> state(new TaskState(taskid, std::move(task), list));
     state->SetAccountId(list.account);
     state->SetBatchId(batchid);
@@ -2305,7 +2329,7 @@ Engine::TaskId Engine::DownloadHeaders(const ui::HeaderDownload& download)
     std::unique_ptr<Task> task(state_->factory->AllocateTask(download));
     if (auto* ptr = static_cast<HeaderTask*>(task.get()))
     {
-        ptr->SetProgressCallback(std::bind(&Engine::State::on_update_progress, state_.get(),
+        ptr->SetProgressCallback(std::bind(&Engine::State::on_header_update_progress, state_.get(),
             std::placeholders::_1, download.account));
     }
 
@@ -2586,6 +2610,11 @@ void Engine::SetFileCallback(on_file file_callback)
 void Engine::SetNotifyCallback(on_async_notify notify_callback)
 {
     state_->on_notify_callback = std::move(notify_callback);
+}
+
+void Engine::SetListingUpdateCallback(on_listing_update callback)
+{
+    state_->on_listing_update_callback = std::move(callback);
 }
 
 void Engine::SetHeaderInfoCallback(on_header_update callback)

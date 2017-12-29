@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -81,6 +81,7 @@ namespace gui
         void progressUpdated(quint32 acc, quint32 maxValue, quint32 curValue);
         void loadComplete(quint32 acc);
         void makeComplete(quint32 acc);
+        void listUpdate(quint32 acc);
 
     private:
         void resort();

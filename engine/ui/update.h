@@ -60,6 +60,24 @@ namespace newsflash
         std::vector<const Snapshot*> snapshots;
     };
 
+    struct GroupListUpdate : public Update
+    {
+        struct NewsGroup {
+            // name of the newsgroup, for example alt.binaries.movies.divx
+            std::string name;
+
+            // first article id in the group (low water mark)
+            std::uint64_t first = 0;
+
+            // last article id in the group (high water mark)
+            std::uint64_t last = 0;
+
+            // estimated number of articles
+            std::uint64_t size = 0;
+        };
+        std::vector<NewsGroup> groups;
+    };
+
     } // namespace
 
 } // namespace
