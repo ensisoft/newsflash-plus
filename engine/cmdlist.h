@@ -207,17 +207,17 @@ namespace newsflash
             ASSERT("No such buffer");
         }
 
-        using RawBufferDataCallback = std::function<void(const Buffer& buff, bool compressed)>;
+        using ContentBufferCallback = std::function<void(const Buffer& buff, bool compressed)>;
 
-        void InspectRawBuffer(const Buffer& buffer, bool compressed)
+        void InspectIntermediateContentBuffer(const Buffer& buffer, bool compressed)
         {
-            if (!raw_data_callback_)
+            if (!intermediate_content_buffer_callback_)
                 return;
-            raw_data_callback_(buffer, compressed);
+            intermediate_content_buffer_callback_(buffer, compressed);
         }
 
-        void SetRawBufferCallback(const RawBufferDataCallback callback)
-        { raw_data_callback_ = callback; }
+        void SetIntermediateContentBufferCallback(const ContentBufferCallback& callback)
+        { intermediate_content_buffer_callback_ = callback; }
 
         // useful for testing purposes
         std::size_t NumGroups() const
@@ -359,7 +359,7 @@ namespace newsflash
         std::vector<std::string> groups_;
         std::vector<std::string> commands_;
     private:
-        RawBufferDataCallback raw_data_callback_;
+        ContentBufferCallback intermediate_content_buffer_callback_;
     };
 
 } // newsflash

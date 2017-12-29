@@ -432,6 +432,9 @@ public:
             Buffer content(MB(4));
 
             session->SendNext();
+
+            bool command_is_done = false;
+
             do
             {
                 auto cancelled = cancel->GetWaitHandle();
@@ -490,11 +493,19 @@ public:
                 state_->bytes += bytes;
                 total_bytes_ += bytes;
 
-                const bool compression = session->IsCurrentCommandCompressed();
+                command_is_done = session->RecvNext(recvbuf, content);
 
-                cmdlist->InspectRawBuffer(recvbuf, compression);
+                if (!command_is_done)
+                {
+                    const bool compression = session->IsCurrentCommandCompressed();
+                    const bool content     = session->IsCurrentCommandContent();
+                    if (content)
+                    {
+                        cmdlist->InspectIntermediateContentBuffer(recvbuf, compression);
+                    }
+                }
             }
-            while (!session->RecvNext(recvbuf, content));
+            while (!command_is_done);
 
             content_bytes_ += content.GetContentLength();
 
