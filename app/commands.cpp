@@ -392,8 +392,7 @@ void Commands::firstLaunch()
     commands_.push_back(audacious);
 
 #elif defined(WINDOWS_OS)
-    Command imgView("rundll32.exe", "shimgvw.dll,ImageView_Fullscreen ${file.file}",
-        "Open images in an image viewer.",
+    Command imgView("explorer.exe", "${file.file}", "Open images in an image viewer.",
         Condition("file.type", "equals", toString(FileType::Image)));
     imgView.setWhen(Command::When::OnFileDownload);
 
