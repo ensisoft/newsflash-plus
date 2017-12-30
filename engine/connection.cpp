@@ -455,6 +455,21 @@ public:
                         return;
                 }
 
+                if (cmdlist->MightRunSlowly())
+                {
+                    // check for cancellation, but only if the command runs slow.
+                    // we do this check because there's no way to cancel the current
+                    // command from running and canceling the cmdlist during a command
+                    // means that we must do a brute socket close.
+                    if (cmdlist->IsCancelled())
+                    {
+                        LOG_D("Cmdlist was cancelled");
+                        state_->pending_connection_error = Error::PipelineReset;
+                        socket->Close();
+                        return;
+                    }
+                }
+
                 auto quota = throttle->give_quota();
                 while (!quota)
                 {
@@ -519,16 +534,16 @@ public:
 
             cmdlist->ReceiveDataBuffer(std::move(content));
 
-            // if the session is pipelined there's no way to stop the data transmission
-            // of already pipelined commands other than by doing a hard socket reset.
-            // if the session is not pipelined we can just exit the reading loop after
-            // a complete command is completed and we can maintain the socket/session.
             if (cmdlist->IsCancelled())
             {
-                LOG_D("Cmdlist was canceled");
-
+                LOG_D("Cmdlist was cancelled");
                 if (state_->pipelining)
                 {
+                    // if the session is pipelined there's no way to stop the data transmission
+                    // of already pipelined commands other than by doing a hard socket reset.
+                    // if the session is not pipelined we can just exit the reading loop after
+                    // a complete command is completed and we can maintain the socket/session.
+                    socket->Close();
                     state_->pending_connection_error = Error::PipelineReset;
                     return;
                 }
@@ -537,7 +552,7 @@ public:
             }
         }
 
-        LOG_I("Cmdlist complete");
+        LOG_D("Cmdlist complete");
     }
 
     virtual void run_completion_callbacks() override

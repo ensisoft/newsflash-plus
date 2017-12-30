@@ -278,6 +278,14 @@ namespace newsflash
         void Cancel()
         { cancelbit_ = true; }
 
+        bool MightRunSlowly() const
+        {
+            // for some reason getting the list of
+            // available newsgroups is typically a very
+            // slow operation.
+            return cmdtype_ == Type::Listing;
+        }
+
         bool IsCancelled() const
         { return cancelbit_;}
 
