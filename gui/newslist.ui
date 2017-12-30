@@ -184,7 +184,7 @@
          <enum>Qt::ScrollBarAlwaysOff</enum>
         </property>
         <property name="selectionMode">
-         <enum>QAbstractItemView::SingleSelection</enum>
+         <enum>QAbstractItemView::ExtendedSelection</enum>
         </property>
         <property name="selectionBehavior">
          <enum>QAbstractItemView::SelectRows</enum>
@@ -254,7 +254,7 @@
      <normaloff>:/resource/16x16_ico_png/ico_refresh.png</normaloff>:/resource/16x16_ico_png/ico_refresh.png</iconset>
    </property>
    <property name="text">
-    <string>Reresh</string>
+    <string>Reresh List</string>
    </property>
    <property name="toolTip">
     <string>Refresh the list of newsgroups</string>
@@ -266,10 +266,10 @@
      <normaloff>:/resource/16x16_ico_png/ico_favourite.png</normaloff>:/resource/16x16_ico_png/ico_favourite.png</iconset>
    </property>
    <property name="text">
-    <string>Favorite</string>
+    <string>Toggle Favorite</string>
    </property>
    <property name="toolTip">
-    <string>Mark as favorite newsgroup</string>
+    <string>Toggle as favorite newsgroup</string>
    </property>
   </action>
   <action name="actionStop">
@@ -287,22 +287,10 @@
      <normaloff>:/resource/16x16_ico_png/ico_news.png</normaloff>:/resource/16x16_ico_png/ico_news.png</iconset>
    </property>
    <property name="text">
-    <string>Browse</string>
+    <string>Browse Group</string>
    </property>
    <property name="toolTip">
     <string>Browse the contents of the news group</string>
-   </property>
-  </action>
-  <action name="actionUnfavorite">
-   <property name="icon">
-    <iconset resource="resource.qrc">
-     <normaloff>:/resource/16x16_ico_png/ico_unfavourite.png</normaloff>:/resource/16x16_ico_png/ico_unfavourite.png</iconset>
-   </property>
-   <property name="text">
-    <string>Unfavorite</string>
-   </property>
-   <property name="toolTip">
-    <string>Mark as nonfavorite</string>
    </property>
   </action>
   <action name="actionDeleteData">
@@ -311,7 +299,7 @@
      <normaloff>:/resource/16x16_ico_png/ico_delete.png</normaloff>:/resource/16x16_ico_png/ico_delete.png</iconset>
    </property>
    <property name="text">
-    <string>Delete data</string>
+    <string>Delete Data</string>
    </property>
   </action>
  </widget>

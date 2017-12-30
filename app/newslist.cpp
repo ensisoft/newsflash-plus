@@ -378,7 +378,7 @@ void NewsList::loadListing(quint32 accountId)
 }
 
 
-void NewsList::subscribe(QModelIndexList& list, quint32 accountId)
+void NewsList::subscribe(QModelIndexList& list)
 {
     int minIndex = std::numeric_limits<int>::max();
     int maxIndex = std::numeric_limits<int>::min();
@@ -400,10 +400,10 @@ void NewsList::subscribe(QModelIndexList& list, quint32 accountId)
     auto last  = QAbstractTableModel::index(maxIndex, (int)Columns::LAST);
     emit dataChanged(first, last);
 
-    setAccountSubscriptions(accountId);
+    setAccountSubscriptions();
 }
 
-void NewsList::unsubscribe(QModelIndexList& list, quint32 accountId)
+void NewsList::unsubscribe(QModelIndexList& list)
 {
     int minIndex = std::numeric_limits<int>::max();
     int maxIndex = std::numeric_limits<int>::min();
@@ -425,7 +425,32 @@ void NewsList::unsubscribe(QModelIndexList& list, quint32 accountId)
     auto last  = QAbstractTableModel::index(maxIndex, (int)Columns::LAST);
     emit dataChanged(first, last);
 
-    setAccountSubscriptions(accountId);
+    setAccountSubscriptions();
+}
+
+void NewsList::toggleSubscriptions(QModelIndexList& list)
+{
+    int minIndex = std::numeric_limits<int>::max();
+    int maxIndex = std::numeric_limits<int>::min();
+
+    qSort(list);
+    for (int i=0; i<list.size(); ++i)
+    {
+        const int row = list[i].row();
+        if (row < minIndex)
+            minIndex = row;
+        if (row > maxIndex)
+            maxIndex = row;
+
+        auto& group = grouplist_[row];
+        group.flags ^= Flags::Subscribed;
+    }
+
+    auto first = QAbstractTableModel::index(minIndex, 0);
+    auto last  = QAbstractTableModel::index(maxIndex, (int)Columns::LAST);
+    emit dataChanged(first, last);
+
+    setAccountSubscriptions();
 }
 
 void NewsList::clearSize(const QModelIndex& index)
@@ -632,8 +657,10 @@ void NewsList::newHeaderDataAvailable(const app::HeaderUpdateInfo& info)
     emit dataChanged(first, last);
 }
 
-void NewsList::setAccountSubscriptions(quint32 accountId)
+void NewsList::setAccountSubscriptions()
 {
+    Q_ASSERT(account_);
+
     QStringList list;
     for (const auto& group : grouplist_)
     {
@@ -641,7 +668,7 @@ void NewsList::setAccountSubscriptions(quint32 accountId)
             list << group.name;
     }
 
-    auto* account = g_accounts->findAccount(accountId);
+    auto* account = g_accounts->findAccount(account_);
     Q_ASSERT(account);
 
     account->subscriptions = list;

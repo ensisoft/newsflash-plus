@@ -89,7 +89,6 @@ void NewsList::addActions(QMenu& menu)
     menu.addSeparator();
     menu.addAction(m_ui.actionBrowse);
     menu.addAction(m_ui.actionFavorite);
-    menu.addAction(m_ui.actionUnfavorite);
     menu.addSeparator();
     menu.addAction(m_ui.actionDeleteData);
     menu.addSeparator();
@@ -102,7 +101,6 @@ void NewsList::addActions(QToolBar& bar)
     bar.addSeparator();
     bar.addAction(m_ui.actionBrowse);
     bar.addAction(m_ui.actionFavorite);
-    bar.addAction(m_ui.actionUnfavorite);
     bar.addSeparator();
     bar.addAction(m_ui.actionDeleteData);
     bar.addSeparator();
@@ -261,20 +259,7 @@ void NewsList::on_actionFavorite_triggered()
     if (indices.isEmpty())
         return;
 
-    Q_ASSERT(m_curAccount);
-
-    m_model.subscribe(indices, m_curAccount);
-}
-
-void NewsList::on_actionUnfavorite_triggered()
-{
-    auto indices = m_ui.tableGroups->selectionModel()->selectedRows();
-    if (indices.isEmpty())
-        return;
-
-    Q_ASSERT(m_curAccount);
-
-    m_model.unsubscribe(indices, m_curAccount);
+    m_model.toggleSubscriptions(indices);
 }
 
 void NewsList::on_actionDeleteData_triggered()
@@ -381,7 +366,6 @@ void NewsList::on_tableGroups_customContextMenuRequested(QPoint point)
     menu.addAction(m_ui.actionBrowse);
     menu.addSeparator();
     menu.addAction(m_ui.actionFavorite);
-    menu.addAction(m_ui.actionUnfavorite);
     menu.addSeparator();
     menu.addAction(m_ui.actionDeleteData);
     menu.exec(QCursor::pos());
@@ -399,23 +383,14 @@ void NewsList::tableGroups_selectionChanged()
     m_ui.actionBrowse->setEnabled(!indices.isEmpty());
     m_ui.actionDeleteData->setEnabled(true);
     m_ui.actionFavorite->setEnabled(true);
-    m_ui.actionUnfavorite->setEnabled(true);
 
     for (const auto& index : indices)
     {
         const bool has_data = m_model.hasData(index);
-        const bool is_fav   = m_model.isSubscribed(index);
+
         if (!has_data)
         {
             m_ui.actionDeleteData->setEnabled(false);
-        }
-        if (is_fav)
-        {
-            m_ui.actionFavorite->setEnabled(false);
-        }
-        else
-        {
-            m_ui.actionUnfavorite->setEnabled(false);
         }
     }
 }
@@ -602,7 +577,6 @@ void NewsList::filter()
 
     m_ui.actionBrowse->setEnabled(false);
     m_ui.actionFavorite->setEnabled(false);
-    m_ui.actionUnfavorite->setEnabled(false);
     m_ui.actionDeleteData->setEnabled(false);
 }
 

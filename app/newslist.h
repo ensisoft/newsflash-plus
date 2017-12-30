@@ -70,8 +70,9 @@ namespace app
         void makeListing(quint32 accountId);
         void loadListing(quint32 accountId);
 
-        void subscribe(QModelIndexList& list, quint32 account);
-        void unsubscribe(QModelIndexList& list, quint32 account);
+        void subscribe(QModelIndexList& list);
+        void unsubscribe(QModelIndexList& list);
+        void toggleSubscriptions(QModelIndexList& list);
 
         void clearSize(const QModelIndex& index);
 
@@ -112,7 +113,7 @@ namespace app
         void newHeaderDataAvailable(const app::HeaderUpdateInfo& info);
 
     private:
-        void setAccountSubscriptions(quint32 accountId);
+        void setAccountSubscriptions();
 
         enum Flags {
             Subscribed = 0x1
