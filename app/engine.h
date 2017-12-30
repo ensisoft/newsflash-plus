@@ -332,7 +332,7 @@ namespace app
         void fileCompleted(const app::FileInfo& file);
         void packCompleted(const app::FilePackInfo& pack);
         void listCompleted(quint32 account, const QList<app::NewsGroupInfo>& list);
-        void listUpdate(quint32 account, const app::NewsGroupInfo& group);
+        void listUpdated(quint32 account, const QList<app::NewsGroupInfo>& list);
         void updateCompleted(const app::HeaderInfo& headers);
         void allCompleted();
         void numPendingTasks(std::size_t num);

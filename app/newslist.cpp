@@ -31,6 +31,8 @@
 #include "newsflash/warnpop.h"
 
 #include <algorithm>
+
+#include "homedir.h"
 #include "newslist.h"
 #include "settings.h"
 #include "eventlog.h"
@@ -57,10 +59,11 @@ NewsList::NewsList()
 
     QObject::connect(g_engine, SIGNAL(listCompleted(quint32, const QList<app::NewsGroupInfo>&)),
         this, SLOT(listCompleted(quint32, const QList<app::NewsGroupInfo>&)));
+    QObject::connect(g_engine, SIGNAL(listUpdated(quint32, const QList<app::NewsGroupInfo>&)),
+        this, SLOT(listUpdated(quint32, const QList<app::NewsGroupInfo>&)));
     QObject::connect(g_engine, SIGNAL(newHeaderInfoAvailable(const app::HeaderUpdateInfo&)),
         this, SLOT(newHeaderDataAvailable(const app::HeaderUpdateInfo&)));
-    QObject::connect(g_engine, SIGNAL(listUpdate(quint32, const app::NewsGroupInfo&)),
-        this, SLOT(listUpdate(quint32, const app::NewsGroupInfo&)));
+
 }
 
 NewsList::~NewsList()
@@ -162,7 +165,7 @@ void NewsList::sort(int column, Qt::SortOrder order)
     emit layoutAboutToBeChanged();
 
     auto beg = std::begin(grouplist_);
-    auto end = std::begin(grouplist_) + listsize_;
+    auto end = std::begin(grouplist_) + visiblesize_;
     switch ((Columns)column)
     {
         case Columns::Messages:
@@ -193,13 +196,11 @@ void NewsList::sort(int column, Qt::SortOrder order)
     Q_UNUSED(it);
 
     emit layoutChanged();
-    sort_  = (Columns)column;
-    order_ = order;
 }
 
 int NewsList::rowCount(const QModelIndex&) const
 {
-    return static_cast<int>(listsize_);
+    return static_cast<int>(visiblesize_);
 }
 
 int NewsList::columnCount(const QModelIndex&) const
@@ -207,133 +208,175 @@ int NewsList::columnCount(const QModelIndex&) const
     return static_cast<int>(Columns::LAST);
 }
 
-
 void NewsList::clear()
 {
     QAbstractTableModel::beginResetModel();
 
     grouplist_.clear();
-    listsize_ = 0;
+    visiblesize_ = 0;
 
     QAbstractTableModel::reset();
     QAbstractTableModel::endResetModel();
 }
 
-void NewsList::stop(quint32 account)
+void NewsList::stopRefresh(quint32 accountId)
 {
-    auto it = pending_.find(account);
+    auto it = pending_.find(accountId);
     if (it == std::end(pending_))
         return;
 
     auto& op = it->second;
+    const auto list = std::move(op.intermediateList);
+    const auto file = op.file;
     g_engine->killTaskById(op.taskId);
 
     pending_.erase(it);
-}
 
-void NewsList::loadListing(const QString& file, quint32 accountId)
-{
-    DEBUG("Loading newslist from %1", file);
+    if (list.empty())
+        return;
 
     QFile io(file);
-    if (!io.open(QIODevice::ReadOnly))
+    if (!io.open(QIODevice::WriteOnly | QIODevice::Truncate))
     {
-        ERROR("Failed to read listing file %1", file, io.error());
+        ERROR("Unable to write listing file %1", file, io.error());
         return;
     }
 
-    QAbstractTableModel::beginResetModel();
-
-    const auto* account  = g_accounts->findAccount(accountId);
-    const auto& datapath = account->datapath;
-    const auto& newslist = account->subscriptions;
-
     QTextStream stream(&io);
     stream.setCodec("UTF-8");
-
-    const quint32 fileVersion = stream.readLine().toUInt();
-    const quint32 numGroups   = stream.readLine().toUInt();
-
-    DEBUG("Data file version %1", fileVersion);
-
-    quint32 curGroup   = 0;
-    while (!stream.atEnd())
+    stream << CurrentFileVersion << "\n";
+    stream << list.size() << "\n";
+    for (const auto& group : list)
     {
-        const auto& line = stream.readLine();
-        const auto& toks = line.split("\t");
-        if (toks.size() < 2)
+        stream << group.name << "\t"
+               << group.numMessages << "\t"
+               << static_cast<int>(group.type) << "\n";
+    }
+    io.flush();
+    io.close();
+
+}
+
+void NewsList::makeListing(quint32 accountId)
+{
+    auto it = pending_.find(accountId);
+    if (it != std::end(pending_))
+        return;
+
+    const auto* account = g_accounts->findAccount(accountId);
+    const auto& listing = app::homedir::file(account->name + ".lst");
+
+    DEBUG("Refresh newslist '%1' '%2'", account->name, listing);
+
+    const auto task = g_engine->retrieveNewsgroupListing(accountId);
+
+    Operation refresh;
+    refresh.file    = listing;
+    refresh.account = accountId;
+    refresh.taskId  = task;
+    pending_.insert(std::make_pair(accountId, refresh));
+}
+
+void NewsList::loadListing(quint32 accountId)
+{
+    std::vector<NewsGroup> list;
+
+    auto it = pending_.find(accountId);
+    if (it != std::end(pending_))
+    {
+        DEBUG("Loading a intermediate list");
+
+        const auto& refresh = it->second;
+        list = refresh.intermediateList;
+    }
+    else
+    {
+        const auto* account       = g_accounts->findAccount(accountId);
+        const auto& datapath      = account->datapath;
+        const auto& subscriptions = account->subscriptions;
+        const auto& listingfile   = app::homedir::file(account->name + ".lst");
+
+        DEBUG("Loading newslist from %1", listingfile);
+
+        QFile io(listingfile);
+        if (!io.open(QIODevice::ReadOnly))
         {
-            ERROR("Invalid newslist data.");
+            ERROR("Failed to read listing file %1", listingfile, io.error());
             return;
         }
 
-        NewsGroup group;
-        group.name  = toks[0];
-        group.numMessages = toks[1].toULongLong();
-        group.sizeOnDisk  = sumFileSizes(joinPath(datapath, group.name));
-        group.flags       = 0;
-        group.type        = MediaType::Other;
+        QTextStream stream(&io);
+        stream.setCodec("UTF-8");
 
-        if (fileVersion == 1)
+        const quint32 fileVersion = stream.readLine().toUInt();
+        const quint32 numGroups   = stream.readLine().toUInt();
+
+        DEBUG("Data file version %1", fileVersion);
+
+        while (!stream.atEnd())
         {
-            group.type = findMediaType(group.name);
-        }
-        else if (fileVersion == 2)
-        {
-            if (toks.size() < 3)
+            const auto& line = stream.readLine();
+            const auto& toks = line.split("\t");
+            if (toks.size() < 2)
             {
                 ERROR("Invalid newslist data.");
                 return;
             }
 
-            // MediaTypeVersion 2
-            group.type = (MediaType)toks[2].toInt();
-        }
+            NewsGroup group;
+            group.name  = toks[0];
+            group.numMessages = toks[1].toULongLong();
+            group.sizeOnDisk  = sumFileSizes(joinPath(datapath, group.name));
+            group.flags       = 0;
+            group.type        = MediaType::Other;
 
-        for (int i=0; i<newslist.size(); ++i)
-        {
-            if (newslist[i] == group.name)
-                group.flags |= Flags::Subscribed;
-        }
-        grouplist_.push_back(group);
-        curGroup++;
+            if (fileVersion == 1)
+            {
+                group.type = findMediaType(group.name);
+            }
+            else if (fileVersion == 2)
+            {
+                if (toks.size() < 3)
+                {
+                    ERROR("Invalid newslist data.");
+                    return;
+                }
+                // MediaTypeVersion 2
+                group.type = (MediaType)toks[2].toInt();
+            }
 
-        if (!(curGroup % 100))
-            emit progressUpdated(accountId, numGroups, curGroup);
+            for (const auto& subscription : subscriptions)
+            {
+                if (subscription == group.name)
+                    group.flags |= Flags::Subscribed;
+            }
+
+            list.push_back(group);
+
+            if ((list.size() % 100) == 0)
+            {
+                emit progressUpdated(accountId, numGroups, list.size());
+            }
+        }
     }
 
-    listsize_ = grouplist_.size();
-    account_  = accountId;
+    // after the grouplist is reset:
+    // - the filtering is now undefined.
+    // - the sorting is now undefined.
+    // the UI should do these operations again, it has the state
 
-    DEBUG("Loaded %1 items", listsize_);
-
-    // note that the ordering of the data is undefined at this moment.
-    // the UI should then perform sorting.
-
+    QAbstractTableModel::beginResetModel();
+    grouplist_   = std::move(list);
+    visiblesize_ = grouplist_.size();
+    account_     = accountId;
     QAbstractTableModel::reset();
     QAbstractTableModel::endResetModel();
+
+    DEBUG("Loaded %1 items", visiblesize_);
 
     emit loadComplete(accountId);
 }
 
-void NewsList::makeListing(const QString& file, quint32 account)
-{
-    auto it = pending_.find(account);
-    if (it != std::end(pending_))
-        return;
-
-    auto task = g_engine->retrieveNewsgroupListing(account);
-
-    Operation op;
-    op.file    = file;
-    op.account = account;
-    op.taskId  = task;
-    pending_.insert(std::make_pair(account, op));
-
-    account_ = account;
-
-    emit progressUpdated(account, 0, 0);
-}
 
 void NewsList::subscribe(QModelIndexList& list, quint32 accountId)
 {
@@ -397,6 +440,22 @@ void NewsList::clearSize(const QModelIndex& index)
     emit dataChanged(first, last);
 }
 
+bool NewsList::isUpdating(quint32 account) const
+{
+    auto it = pending_.find(account);
+    return it != pending_.end();
+}
+
+bool NewsList::hasData(const QModelIndex& index) const
+{
+    return grouplist_[index.row()].sizeOnDisk != 0;
+}
+
+bool NewsList::isSubscribed(const QModelIndex& index) const
+{
+    return (grouplist_[index.row()].flags & Flags::Subscribed) != 0;
+}
+
 QString NewsList::getName(const QModelIndex& index) const
 {
     return grouplist_[index.row()].name;
@@ -414,14 +473,11 @@ MediaType NewsList::getMediaType(const QModelIndex& index) const
 
 std::size_t NewsList::numItems() const
 {
-    return listsize_;
+    return visiblesize_;
 }
 
-void NewsList::filter(const QString& str, newsflash::bitflag<FilterFlags> options)
+void NewsList::filter(const QString& str, newsflash::bitflag<FilterFlags> flags)
 {
-    Q_ASSERT((sort_ != Columns::LAST) &&
-        "The data is not yet sorted. Current sorting is needed for filtering.");
-
     DEBUG("Filter with %1", str);
 
     QAbstractTableModel::beginResetModel();
@@ -429,73 +485,45 @@ void NewsList::filter(const QString& str, newsflash::bitflag<FilterFlags> option
     auto beg = std::begin(grouplist_);
     auto end = std::partition(std::begin(grouplist_), std::end(grouplist_),
         [&](const NewsGroup& group) {
-
-        if (isMusic(group.type) && !options.test(FilterFlags::ShowMusic))
-            return false;
-
-        if (isMovie(group.type) && !options.test(FilterFlags::ShowMovies))
-            return false;
-
-        if (isTelevision(group.type) && !options.test(FilterFlags::ShowTv))
-            return false;
-
-        if (isConsole(group.type) && !options.test(FilterFlags::ShowGames))
-            return false;
-
-        if (isApps(group.type) && !options.test(FilterFlags::ShowApps))
-            return false;
-
-        if (isAdult(group.type) && !options.test(FilterFlags::ShowAdult))
-            return false;
-
-        if (isImage(group.type) && !options.test(FilterFlags::ShowImages))
-            return false;
-
-        if (isOther(group.type) && !options.test(FilterFlags::ShowOther))
-            return false;
-
-        if (!options.test(FilterFlags::ShowEmpty) && !group.numMessages)
-            return false;
-
-        if (!options.test(FilterFlags::ShowText))
-        {
-            if (!group.name.contains(".binaries."))
+            if (isMusic(group.type) && !flags.test(FilterFlags::ShowMusic))
                 return false;
-        }
 
-        return (bool)group.name.contains(str);
-    });
+            if (isMovie(group.type) && !flags.test(FilterFlags::ShowMovies))
+                return false;
 
-    listsize_ = std::distance(beg, end);
+            if (isTelevision(group.type) && !flags.test(FilterFlags::ShowTv))
+                return false;
 
-    switch (sort_)
-    {
-        case Columns::Messages:
-            app::sort(beg, end, order_, &NewsGroup::numMessages);
-            break;
-        case Columns::Name:
-            app::sort(beg, end, order_, &NewsGroup::name);
-            break;
-        case Columns::SizeOnDisk:
-            app::sort(beg, end, order_, &NewsGroup::sizeOnDisk);
-            break;
-        case Columns::Category:
-            app::sort(beg, end, order_, &NewsGroup::type);
-            break;
+            if (isConsole(group.type) && !flags.test(FilterFlags::ShowGames))
+                return false;
 
-        default: Q_ASSERT(!"incorrect sorting");
-    }
+            if (isApps(group.type) && !flags.test(FilterFlags::ShowApps))
+                return false;
 
-    // and finally grab the favs and put them at the top
-    beg = std::begin(grouplist_);
-    end = std::begin(grouplist_) + listsize_;
-    auto it = std::stable_partition(beg, end, [&](const NewsGroup& group) {
-            return ((group.flags & Flags::Subscribed) != 0);
+            if (isAdult(group.type) && !flags.test(FilterFlags::ShowAdult))
+                return false;
+
+            if (isImage(group.type) && !flags.test(FilterFlags::ShowImages))
+                return false;
+
+            if (isOther(group.type) && !flags.test(FilterFlags::ShowOther))
+                return false;
+
+            if (!flags.test(FilterFlags::ShowEmpty) && !group.numMessages)
+                return false;
+
+            if (!flags.test(FilterFlags::ShowText))
+            {
+                if (!group.name.contains(".binaries."))
+                    return false;
+            }
+
+            return (bool)group.name.contains(str);
         });
 
-    DEBUG("Found %1 matching items...", listsize_);
-    DEBUG("Found %1 favs", std::distance(beg, it));
-    Q_UNUSED(it);
+    visiblesize_ = std::distance(beg, end);
+
+    DEBUG("Found %1 matching items...", visiblesize_);
 
     QAbstractTableModel::reset();
     QAbstractTableModel::endResetModel();
@@ -538,24 +566,36 @@ void NewsList::listCompleted(quint32 acc, const QList<app::NewsGroupInfo>& list)
     emit makeComplete(acc);
 }
 
-void NewsList::listUpdate(quint32 account, const app::NewsGroupInfo& info)
+void NewsList::listUpdated(quint32 accountId, const QList<app::NewsGroupInfo>& list)
 {
-    if (account != account_)
+    auto it = pending_.find(accountId);
+    if (it == std::end(pending_))
         return;
 
-    QAbstractTableModel::beginInsertRows(QModelIndex(),
-        grouplist_.size(), grouplist_.size());
+    auto& op = it->second;
 
-    NewsGroup next;
-    next.name        = info.name;
-    next.numMessages = info.size;
-    next.flags       = 0;
-    next.type        = findMediaType(next.name);
-    grouplist_.push_back(next);
+    const auto* account = g_accounts->findAccount(account_);
+    const auto& subscriptions = account->subscriptions;
+    const auto& datapath = account->datapath;
 
-    QAbstractTableModel::endInsertRows();
+    for (const auto& group : list)
+    {
+        NewsGroup next;
+        next.name        = group.name;
+        next.numMessages = group.size;
+        next.flags       = 0;
+        next.type        = findMediaType(next.name);
+        next.sizeOnDisk  = sumFileSizes(joinPath(datapath, next.name));
 
-    emit listUpdate(account);
+        for (const auto& subscription : subscriptions)
+        {
+            if (subscription == next.name)
+                next.flags |= Flags::Subscribed;
+        }
+        op.intermediateList.push_back(next);
+    }
+
+    emit listUpdate(accountId);
 }
 
 void NewsList::newHeaderDataAvailable(const app::HeaderUpdateInfo& info)

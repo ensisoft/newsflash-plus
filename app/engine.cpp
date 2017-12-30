@@ -673,6 +673,8 @@ void Engine::onHeaderInfoAvailable(const newsflash::ui::HeaderUpdate& update)
 
 void Engine::onListingUpdate(const newsflash::ui::GroupListUpdate& update)
 {
+    QList<NewsGroupInfo> infoList;
+
     for (const auto& group : update.groups)
     {
         NewsGroupInfo groupInfo;
@@ -680,8 +682,10 @@ void Engine::onListingUpdate(const newsflash::ui::GroupListUpdate& update)
         groupInfo.last  = group.last;
         groupInfo.size  = group.size;
         groupInfo.name  = fromUtf8(group.name);
-        emit listUpdate(update.account, groupInfo);
+        infoList.append(groupInfo);
     }
+
+    emit listUpdated(update.account, infoList);
 }
 
 void Engine::onAllComplete()

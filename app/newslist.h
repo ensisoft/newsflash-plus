@@ -66,15 +66,19 @@ namespace app
         virtual int columnCount(const QModelIndex&) const override;
 
         void clear();
-        void stop(quint32 acc);
-        void loadListing(const QString& file, quint32 account);
-        void makeListing(const QString& file, quint32 account);
+        void stopRefresh(quint32 accountId);
+        void makeListing(quint32 accountId);
+        void loadListing(quint32 accountId);
 
         void subscribe(QModelIndexList& list, quint32 account);
         void unsubscribe(QModelIndexList& list, quint32 account);
 
         void clearSize(const QModelIndex& index);
 
+        bool isUpdating(quint32 account) const;
+
+        bool hasData(const QModelIndex& index) const;
+        bool isSubscribed(const QModelIndex& index) const;
         QString getName(const QModelIndex& index) const;
         QString getName(std::size_t index) const;
         MediaType getMediaType(const QModelIndex& index) const;
@@ -104,12 +108,11 @@ namespace app
 
     private slots:
         void listCompleted(quint32 acc, const QList<app::NewsGroupInfo>& list);
-        void listUpdate(quint32 acc, const app::NewsGroupInfo& info);
+        void listUpdated(quint32 acc, const QList<app::NewsGroupInfo>& list);
         void newHeaderDataAvailable(const app::HeaderUpdateInfo& info);
 
     private:
         void setAccountSubscriptions(quint32 accountId);
-
 
         enum Flags {
             Subscribed = 0x1
@@ -126,17 +129,17 @@ namespace app
             quint32 account = 0;
             quint32 taskId  = 0;
             QString file;
+            std::vector<NewsGroup> intermediateList;
         };
 
     private:
-        Columns sort_ = Columns::LAST;
-        Qt::SortOrder order_ = Qt::AscendingOrder;
-        quint32 account_  = 0;
-
+        std::size_t visiblesize_ = 0;
         std::vector<NewsGroup> grouplist_;
-        std::size_t listsize_ = 0;
+
+    private:
         std::map<quint32, Operation> pending_;
     private:
+        quint32 account_  = 0;
 
     };
 

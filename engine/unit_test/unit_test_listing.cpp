@@ -103,8 +103,9 @@ void unit_test_intermediate_callback()
 {
     newsflash::Listing::NewsGroup capture;
     newsflash::Listing listing;
-    listing.SetProgressCallback([&](const newsflash::Listing::NewsGroup& g) {
-        capture = g;
+    listing.SetProgressCallback([&](const newsflash::Listing::Progress& progress) {
+        BOOST_REQUIRE(progress.groups.size() == 1);
+        capture = progress.groups[0];
     });
 
     auto cmds = listing.CreateCommands();
@@ -112,39 +113,39 @@ void unit_test_intermediate_callback()
     newsflash::Buffer recv(1024);
 
     recv.Append("215 group listing ");
-    cmds->InspectRawBuffer(recv);
+    cmds->InspectIntermediateContentBuffer(recv, false);
     listing.Tick();
     BOOST_REQUIRE(capture.last == 0);
     BOOST_REQUIRE(capture.first == 0);
     BOOST_REQUIRE(capture.size  == 0);
 
     recv.Append("\r\n");
-    cmds->InspectRawBuffer(recv);
+    cmds->InspectIntermediateContentBuffer(recv, false);
     listing.Tick();
     BOOST_REQUIRE(capture.last == 0);
     BOOST_REQUIRE(capture.first == 0);
     BOOST_REQUIRE(capture.size  == 0);
 
     recv.Append("alt.binaries.pictures.graphics.3d 900 800 y\r\n");
-    cmds->InspectRawBuffer(recv);
+    cmds->InspectIntermediateContentBuffer(recv, false);
     listing.Tick();
     BOOST_REQUIRE(capture.last  == 900);
     BOOST_REQUIRE(capture.first == 800);
 
     recv.Append("alt.binaries.movies.divx ");
-    cmds->InspectRawBuffer(recv);
+    cmds->InspectIntermediateContentBuffer(recv, false);
     listing.Tick();
     BOOST_REQUIRE(capture.last  == 900);
     BOOST_REQUIRE(capture.first == 800);
 
     recv.Append("321 123 y\r\n");
-    cmds->InspectRawBuffer(recv);
+    cmds->InspectIntermediateContentBuffer(recv, false);
     listing.Tick();
     BOOST_REQUIRE(capture.last  == 321);
     BOOST_REQUIRE(capture.first == 123);
 
     recv.Append(".\r\n");
-    cmds->InspectRawBuffer(recv);
+    cmds->InspectIntermediateContentBuffer(recv, false);
     listing.Tick();
     BOOST_REQUIRE(capture.last  == 321);
     BOOST_REQUIRE(capture.first == 123);

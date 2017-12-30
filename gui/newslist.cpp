@@ -63,6 +63,10 @@ NewsList::NewsList() : m_curAccount(0)
     m_ui.tableGroups->setColumnWidth((int)app::NewsList::Columns::Name, nameWidth * 3);
     m_ui.tableGroups->setColumnWidth((int)app::NewsList::Columns::Subscribed, 32);
 
+    QObject::connect(m_ui.tableGroups->selectionModel(),
+        SIGNAL(selectionChanged(const QItemSelection&, const QItemSelection&)),
+        this, SLOT(tableGroups_selectionChanged()));
+
     QObject::connect(app::g_accounts, SIGNAL(accountsUpdated()),
         this, SLOT(accountsUpdated()));
 
@@ -242,22 +246,13 @@ void NewsList::on_actionBrowse_triggered()
 
 void NewsList::on_actionRefresh_triggered()
 {
-    m_model.clear();
-
-    const auto* account = app::g_accounts->findAccount(m_curAccount);
-    Q_ASSERT(account);
-
-    DEBUG("Refresh newslist '%1' (%2)", account->name, account->id);
-
-    const auto file = app::homedir::file(account->name + ".lst");
-
     m_ui.progressBar->setMaximum(0);
     m_ui.progressBar->setVisible(true);
     m_ui.lblInfo->setVisible(true);
     m_ui.actionStop->setEnabled(true);
     m_ui.actionRefresh->setEnabled(false);
-    m_model.makeListing(file, account->id);
-
+    m_model.makeListing(m_curAccount);
+    m_model.loadListing(m_curAccount);
 }
 
 void NewsList::on_actionFavorite_triggered()
@@ -330,7 +325,7 @@ void NewsList::on_actionStop_triggered()
 {
     Q_ASSERT(m_curAccount);
 
-    m_model.stop(m_curAccount);
+    m_model.stopRefresh(m_curAccount);
 
     m_ui.actionStop->setEnabled(false);
     m_ui.actionRefresh->setEnabled(true);
@@ -341,15 +336,11 @@ void NewsList::on_actionStop_triggered()
 
 void NewsList::on_cmbAccounts_currentIndexChanged()
 {
-    //ui_.actionStop->setEnabled(false);
-    //ui_.actionRefresh->setEnabled(false);
-
     const auto index = m_ui.cmbAccounts->currentIndex();
     if (index == -1)
         return;
 
     const auto name = m_ui.cmbAccounts->currentText();
-    const auto file = app::homedir::file(name + ".lst");
 
     const auto numAccounts = app::g_accounts->numAccounts();
     for (std::size_t i=0; i<numAccounts; ++i)
@@ -366,22 +357,19 @@ void NewsList::on_cmbAccounts_currentIndexChanged()
 
         m_ui.progressBar->setMaximum(0);
         m_ui.progressBar->setVisible(true);
-
-        if (QFile::exists(file))
+        if (m_model.isUpdating(acc.id))
         {
-            m_model.clear();
-            m_model.loadListing(file, acc.id);
-            m_ui.actionStop->setEnabled(false);
-            m_ui.actionRefresh->setEnabled(true);
-        }
-        else
-        {
-            m_model.clear();
-            m_model.makeListing(file, acc.id);
             m_ui.actionStop->setEnabled(true);
             m_ui.actionRefresh->setEnabled(false);
             m_ui.lblInfo->setVisible(true);
         }
+        else
+        {
+            m_ui.actionStop->setEnabled(false);
+            m_ui.actionRefresh->setEnabled(true);
+            m_ui.lblInfo->setVisible(false);
+        }
+        m_model.loadListing(acc.id);
         return;
     }
     Q_ASSERT(!"account was not found");
@@ -402,6 +390,34 @@ void NewsList::on_tableGroups_customContextMenuRequested(QPoint point)
 void NewsList::on_tableGroups_doubleClicked(const QModelIndex& index)
 {
     on_actionBrowse_triggered();
+}
+
+void NewsList::tableGroups_selectionChanged()
+{
+    const auto& indices = m_ui.tableGroups->selectionModel()->selectedRows();
+
+    m_ui.actionBrowse->setEnabled(!indices.isEmpty());
+    m_ui.actionDeleteData->setEnabled(true);
+    m_ui.actionFavorite->setEnabled(true);
+    m_ui.actionUnfavorite->setEnabled(true);
+
+    for (const auto& index : indices)
+    {
+        const bool has_data = m_model.hasData(index);
+        const bool is_fav   = m_model.isSubscribed(index);
+        if (!has_data)
+        {
+            m_ui.actionDeleteData->setEnabled(false);
+        }
+        if (is_fav)
+        {
+            m_ui.actionFavorite->setEnabled(false);
+        }
+        else
+        {
+            m_ui.actionUnfavorite->setEnabled(false);
+        }
+    }
 }
 
 void NewsList::on_editFilter_returnPressed()
@@ -511,11 +527,13 @@ void NewsList::loadComplete(quint32 acc)
     if (m_curAccount != acc)
         return;
 
-    m_ui.progressBar->setVisible(false);
-    m_ui.lblInfo->setVisible(false);
-    m_ui.actionRefresh->setEnabled(true);
+    if (!m_model.isUpdating(acc))
+    {
+        m_ui.progressBar->setVisible(false);
+        m_ui.lblInfo->setVisible(false);
+        m_ui.actionRefresh->setEnabled(true);
+    }
 
-    resort();
     filter();
 }
 
@@ -531,20 +549,7 @@ void NewsList::makeComplete(quint32 accountId)
     m_ui.actionStop->setEnabled(false);
     m_ui.actionRefresh->setEnabled(true);
 
-    const auto numAcccounts = app::g_accounts->numAccounts();
-    for (std::size_t i=0; i<numAcccounts; ++i)
-    {
-        const auto& acc = app::g_accounts->getAccount(i);
-        if (acc.id != accountId)
-            continue;
-
-        const auto& name = acc.name;
-        const auto& file = app::homedir::file(name + ".lst");
-        m_model.loadListing(file, acc.id);
-        return;
-    }
-
-    Q_ASSERT(!"Account was not found");
+    m_model.loadListing(accountId);
 }
 
 void NewsList::listUpdate(quint32 accountId)
@@ -552,8 +557,7 @@ void NewsList::listUpdate(quint32 accountId)
     if (m_curAccount != accountId)
         return;
 
-    resort();
-    filter();
+    m_model.loadListing(accountId);
 }
 
 void NewsList::resort()
@@ -593,6 +597,13 @@ void NewsList::filter()
     flags.set(F::ShowText, showText);
 
     m_model.filter(str, flags);
+
+    resort();
+
+    m_ui.actionBrowse->setEnabled(false);
+    m_ui.actionFavorite->setEnabled(false);
+    m_ui.actionUnfavorite->setEnabled(false);
+    m_ui.actionDeleteData->setEnabled(false);
 }
 
 } // gui

@@ -45,7 +45,11 @@ namespace newsflash
             std::uint64_t size  = 0;
         };
 
-        using OnProgress = std::function<void (const NewsGroup&)>;
+        struct Progress {
+            std::vector<NewsGroup> groups;
+        };
+
+        using OnProgress = std::function<void (const Progress&)>;
 
         Listing();
        ~Listing();
@@ -69,7 +73,7 @@ namespace newsflash
         std::shared_ptr<State> state_;
 
     private:
-        static void ParseIntermediateBuffer(const Buffer& buff,
+        static void ParseIntermediateBuffer(const Buffer& buff, bool compressed,
             std::shared_ptr<State> state);
 
     };

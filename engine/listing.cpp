@@ -61,8 +61,8 @@ std::shared_ptr<CmdList> Listing::CreateCommands()
     std::shared_ptr<CmdList> cmd(new CmdList(CmdList::Listing{}));
     if (state_->progress_callback)
     {
-        //cmd->SetRawBufferCallback(std::bind(ParseIntermediateBuffer,
-        //    std::placeholders::_1, state_));
+        cmd->SetIntermediateContentBufferCallback(std::bind(ParseIntermediateBuffer,
+            std::placeholders::_1, std::placeholders::_2, state_));
     }
     state_->commands = false;
     return cmd;
@@ -115,16 +115,18 @@ float Listing::GetProgress() const
 void Listing::Tick()
 {
     std::lock_guard<std::mutex> lock(state_->mutex);
-    if (state_->groups.empty())
-        return;
+
     if (!state_->progress_callback)
         return;
+    if (state_->complete)
+        return;
+    if (state_->groups.empty())
+        return;
 
-    for (const auto& group : state_->groups)
-    {
-        state_->progress_callback(group);
-    }
-    state_->groups.clear();
+    Progress progress;
+    progress.groups  = std::move(state_->groups);
+    state_->groups = std::vector<NewsGroup>();
+    state_->progress_callback(progress);
 }
 
 void Listing::SetProgressCallback(const OnProgress& callback)
@@ -140,9 +142,14 @@ const Listing::NewsGroup& Listing::GetGroup(size_t i) const
 }
 
 // static
-void Listing::ParseIntermediateBuffer(const Buffer& buff, std::shared_ptr<State> state)
+void Listing::ParseIntermediateBuffer(const Buffer& buff, bool compressed,
+    std::shared_ptr<State> state)
 {
     // this call is executed in whatever thread that is running the cmdlist
+
+    // we don't know how to deal with compressed data.
+    if (compressed)
+        return;
 
     std::lock_guard<std::mutex> lock(state->mutex);
     if (state->discard)

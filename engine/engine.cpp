@@ -360,7 +360,7 @@ struct Engine::State {
     void execute();
     void on_cmdlist_done(const Connection::CmdListCompletionData&);
     void on_header_update_progress(const HeaderTask::Progress&, std::size_t account);
-    void on_listing_update_progress(const Listing::NewsGroup&, std::size_t account);
+    void on_listing_update_progress(const Listing::Progress&, std::size_t account);
     void on_write_done(const ContentTask::WriteComplete&);
 };
 
@@ -1944,19 +1944,23 @@ void Engine::State::on_cmdlist_done(const Connection::CmdListCompletionData& com
     }
 }
 
-void Engine::State::on_listing_update_progress(const Listing::NewsGroup& group, std::size_t account)
+void Engine::State::on_listing_update_progress(const Listing::Progress& progress, std::size_t account)
 {
     if (!on_listing_update_callback)
         return;
 
     ui::GroupListUpdate update;
-    ui::GroupListUpdate::NewsGroup data;
-    data.first = group.first;
-    data.last  = group.last;
-    data.name  = group.name;
-    data.size  = group.size;
     update.account = account;
-    update.groups.push_back(std::move(data));
+
+    for (const auto& group : progress.groups)
+    {
+        ui::GroupListUpdate::NewsGroup data;
+        data.first = group.first;
+        data.last  = group.last;
+        data.name  = group.name;
+        data.size  = group.size;
+        update.groups.push_back(std::move(data));
+    }
     on_listing_update_callback(update);
 }
 
