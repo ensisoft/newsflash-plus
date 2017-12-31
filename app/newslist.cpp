@@ -471,6 +471,13 @@ bool NewsList::isUpdating(quint32 account) const
     return it != pending_.end();
 }
 
+bool NewsList::hasListing(quint32 accountId) const 
+{
+    const auto* account = g_accounts->findAccount(accountId);
+    const auto& listing = app::homedir::file(account->name + ".lst");
+    return QFile::exists(listing);
+}
+
 bool NewsList::hasData(const QModelIndex& index) const
 {
     return grouplist_[index.row()].sizeOnDisk != 0;

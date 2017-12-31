@@ -342,6 +342,9 @@ void NewsList::on_cmbAccounts_currentIndexChanged()
 
         m_ui.progressBar->setMaximum(0);
         m_ui.progressBar->setVisible(true);
+        if (!m_model.hasListing(acc.id))
+            m_model.makeListing(acc.id);
+
         if (m_model.isUpdating(acc.id))
         {
             m_ui.actionStop->setEnabled(true);

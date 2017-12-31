@@ -77,6 +77,7 @@ namespace app
         void clearSize(const QModelIndex& index);
 
         bool isUpdating(quint32 account) const;
+        bool hasListing(quint32 account) const;
 
         bool hasData(const QModelIndex& index) const;
         bool isSubscribed(const QModelIndex& index) const;
