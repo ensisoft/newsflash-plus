@@ -144,6 +144,10 @@ void SslSocket::SendAll(const void* buff, int len, std::error_code* error)
     do
     {
         sent += SendSome(ptr + sent, len - sent, error);
+        if (*error)
+        {
+            return;
+        }
     }
     while (sent != len);
 }
