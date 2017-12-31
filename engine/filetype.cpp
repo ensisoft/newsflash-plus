@@ -101,7 +101,7 @@ struct FileTypePatterns{
     const char* str;
 } FileTypePatterns[] = {
     { filetype::audio,    ".mp3 | .mp2 | .wav | .xm | .flac | .m3u | .pls | .mpa | .ogg" },
-    { filetype::video,    ".avi | .mkv | .ogm | .wmv | .wma | .mpeg | | .mpg | .rm | .mov | .flv | .asf | .mp4 | .3gp | .3g2 | .m4v" },
+    { filetype::video,    ".avi | .mkv | .ogm | .wmv | .wma | .mpeg | .mpg | .rm | .mov | .flv | .asf | .mp4 | .3gp | .3g2 | .m4v" },
     { filetype::image,    ".jpg | .jpeg | .bmp | .png | .gif" },
     { filetype::text,     ".txt | .nfo | .sfv | .log | .nzb | .rtf | .cue"},
     { filetype::archive,  ".zip | .rar | .7z" },
