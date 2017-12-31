@@ -1697,8 +1697,7 @@ public:
     std::size_t id() const
     { return ui_.batch_id; }
 
-private:
-    void UpdateState(Engine::State& state)
+    void UpdateState(Engine::State& state, bool run_callbacks = true)
     {
         size_t num_queued_tasks  = 0;
         size_t num_waiting_tasks = 0;
@@ -1751,39 +1750,39 @@ private:
               " Errored: ", num_error_tasks);
 
         if (num_active_tasks)
-            GotoState(state, states::Active);
+            GotoState(state, states::Active, run_callbacks);
         else if (num_tasks == num_queued_tasks)
-            GotoState(state, states::Queued);
+            GotoState(state, states::Queued, run_callbacks);
         else if (num_tasks == num_active_tasks)
-            GotoState(state, states::Active);
+            GotoState(state, states::Active, run_callbacks);
         else if (num_tasks == num_crunching_tasks)
-            GotoState(state, states::Crunching);
+            GotoState(state, states::Crunching, run_callbacks);
         else if (num_tasks == num_paused_tasks)
-            GotoState(state, states::Paused);
+            GotoState(state, states::Paused, run_callbacks);
         else if (num_tasks == num_complete_tasks)
-            GotoState(state, states::Complete);
+            GotoState(state, states::Complete, run_callbacks);
         else if (num_tasks == num_error_tasks)
-            GotoState(state, states::Error);
+            GotoState(state, states::Error, run_callbacks);
         else if (num_tasks == num_error_tasks + num_complete_tasks)
-            GotoState(state, states::Error);
+            GotoState(state, states::Error, run_callbacks);
         else if (num_waiting_tasks)
-            GotoState(state, states::Waiting);
+            GotoState(state, states::Waiting, run_callbacks);
         else if (num_queued_tasks)
-            GotoState(state, states::Queued);
+            GotoState(state, states::Queued, run_callbacks);
         else if (num_paused_tasks)
-            GotoState(state, states::Paused);
+            GotoState(state, states::Paused, run_callbacks);
         else if (num_crunching_tasks)
-            GotoState(state, states::Crunching);
+            GotoState(state, states::Crunching, run_callbacks);
     }
-
-    void GotoState(Engine::State& state, states new_state)
+private:
+    void GotoState(Engine::State& state, states new_state, bool run_callbacks = true)
     {
         ui_.state = new_state;
         switch (new_state)
         {
             case states::Error:
             case states::Complete:
-                if (state.on_batch_callback && type_ == Type::FileBatch)
+                if (state.on_batch_callback && type_ == Type::FileBatch && run_callbacks)
                 {
                     ui::FileBatchResult result;
                     result.account   = ui_.account;
@@ -2546,13 +2545,6 @@ void Engine::LoadTasks(const std::string& file)
     if (!list.ParseFromIstream(&in))
         throw std::runtime_error("engine parse from stream failed");
 
-    for (int i=0; i<list.batch_size(); ++i)
-    {
-        const auto& data   = list.batch(i);
-        std::unique_ptr<BatchState> batch(new BatchState(data));
-        state_->batches.push_back(std::move(batch));
-    }
-
     Task::Settings settings;
     settings.discard_text_content = state_->discard_text;
     settings.overwrite_existing_files = state_->overwrite_existing;
@@ -2574,6 +2566,17 @@ void Engine::LoadTasks(const std::string& file)
         state_->tasks.push_back(std::move(state));
         state_->num_pending_tasks++;
     }
+
+    for (int i=0; i<list.batch_size(); ++i)
+    {
+        const bool run_callbacks = false;
+
+        const auto& data   = list.batch(i);
+        std::unique_ptr<BatchState> batch(new BatchState(data));
+        batch->UpdateState(*state_, run_callbacks);
+        state_->batches.push_back(std::move(batch));
+    }
+
 
     state_->bytes_queued = list.bytes_queued();
     state_->bytes_ready  = list.bytes_ready();
