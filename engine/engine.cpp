@@ -1237,22 +1237,20 @@ public:
     std::uint64_t GetSize() const
     { return ui_.size; }
 
-    double GetCompletion() const
-    { return ui_.completion; }
-
     bitflag<ui::TaskDesc::Errors> errors() const
     { return ui_.error; }
+
+    double GetCompletion() const
+    { return task_->GetProgress(); }
+
+    bool CanSerialize() const
+    { return task_->CanSerialize(); }
 
     bool IsDamaged() const
     { return damaged_; }
 
     std::size_t NumFiles() const
     { return num_files_produced_; }
-
-    bool CanSerialize() const
-    {
-        return task_->CanSerialize();
-    }
 
 private:
     transition ChooseState(Engine::State& state)
