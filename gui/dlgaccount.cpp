@@ -19,10 +19,13 @@
 // THE SOFTWARE.
 
 #include "newsflash/config.h"
+
 #include "newsflash/warnpush.h"
 #  include <QtGui/QFileDialog>
+#  include <QtGui/QMessageBox>
 #  include <QDir>
 #include "newsflash/warnpop.h"
+
 #include "dlgaccount.h"
 #include "dlgacctest.h"
 #include "app/utility.h"
@@ -224,6 +227,23 @@ void DlgAccount::on_btnAccept_clicked()
     {
         ui_.edtDataPath->setFocus();
         return;
+    }
+
+    if (acc_.generalHost.contains("giganews.com") ||
+        acc_.secureHost.contains("giganews.com"))
+    {
+        if (!acc_.enableCompression)
+        {
+            QMessageBox msg(this);
+            msg.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+            msg.setIcon(QMessageBox::Question);
+            msg.setText(tr("It looks like your server supports compressed headers\r\n"
+                "Would you like to turn them on?"));
+            if (msg.exec() == QMessageBox::Yes)
+            {
+                acc_.enableCompression = true;
+            }
+        }
     }
 
     accept();
