@@ -21,18 +21,21 @@
 #pragma once
 
 #include "newsflash/config.h"
+
 #include "newsflash/warnpush.h"
 #  include <QStringList>
 #  include <QTimer>
 #  include "ui_search.h"
 #include "newsflash/warnpop.h"
+
 #include <memory>
+
 #include "mainwidget.h"
 #include "app/search.h"
 
 namespace gui
 {
-    class SearchModule;
+    class Newznab;
     class DlgMovie;
 
     class Search : public MainWidget
@@ -40,7 +43,7 @@ namespace gui
         Q_OBJECT
 
     public:
-        Search(SearchModule& module);
+        Search(Newznab& module);
        ~Search();
 
         virtual void addActions(QMenu& menu) override;
@@ -82,7 +85,7 @@ namespace gui
         Ui::Search ui_;
     private:
         app::Search model_;
-        SearchModule& module_;
+        Newznab& module_;
         std::unique_ptr<DlgMovie> movie_;
     private:
         QTimer popup_;

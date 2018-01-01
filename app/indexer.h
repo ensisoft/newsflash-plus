@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -49,7 +49,7 @@ namespace app
             // there was an error parsing the content response from the server.
             Content,
 
-            // No such item 
+            // No such item
             NoSuchItem,
 
             // the given credentials were wrong.
@@ -64,27 +64,19 @@ namespace app
             Unknown
         };
 
-        enum class Category {
-            Music,
-            Movies, 
-            Television,
-            Console, 
-            Apps,
-            Adult,
-            Other
-        };
-        using Categories = newsflash::bitflag<Category>;
+        using Category   = MainMediaType;
+        using Categories = newsflash::bitflag<MainMediaType>;
 
         struct BasicQuery {
             QString keywords;
-            quint32 offset;
-            quint32 size;
+            quint32 offset = 0;
+            quint32 size = 0;
         };
 
         struct AdvancedQuery {
             QString keywords;
-            quint32 offset;            
-            quint32 size;
+            quint32 offset = 0;
+            quint32 size  = 0;
             Categories categories;
         };
 
@@ -93,16 +85,16 @@ namespace app
             QString track;
             QString year;
             QString artist;
-            quint32 offset;            
-            quint32 size;
+            quint32 offset = 0;
+            quint32 size = 0;
         };
 
         struct TelevisionQuery {
             QString season;
             QString episode;
             QString keywords;
-            quint32 offset;            
-            quint32 size;
+            quint32 offset = 0;
+            quint32 size = 0;
         };
 
         virtual ~Indexer() = default;

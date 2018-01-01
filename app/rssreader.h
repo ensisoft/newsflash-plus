@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -20,18 +20,21 @@
 
 #pragma once
 
-#include <newsflash/config.h>
-#include <newsflash/warnpush.h>
+#include "newsflash/config.h"
+
+#include "newsflash/warnpush.h"
 #  include <QString>
 #  include <QObject>
 #  include <QAbstractTableModel>
 #  include <QDateTime>
-#include <newsflash/warnpop.h>
+#include "newsflash/warnpop.h"
+
 #include <memory>
 #include <vector>
 #include <map>
 #include <list>
 #include <functional>
+
 #include "media.h"
 #include "rssfeed.h"
 #include "rssmodel.h"
@@ -48,28 +51,29 @@ namespace app
     public:
         RSSReader();
        ~RSSReader();
-        
-        std::function<void()> on_ready;
+
+        using ReadyCallback = std::function<void()>;
+        using DataCallback  = std::function<void (const QByteArray&)>;
+
+        // callback to be invoked when all webquery operations are done.
+        ReadyCallback OnReadyCallback;
 
         QAbstractTableModel* getModel();
+
+        void setEngine(std::unique_ptr<RSSFeed> engine)
+        { engine_ = std::move(engine); }
 
         // refresh the RSS stream for media type m.
         // returns true if there are RSS feeds in this media
         // category to be refreshed. otherwise false and no network activity occurs.
-        bool refresh(MediaType m);
-
-        void enableFeed(const QString& feed, bool on_off);
-
-        void setCredentials(const QString& feed, const QString& user, const QString& apikey);
-
-        using data_callback = std::function<void (const QByteArray&)>;
+        bool refresh(MainMediaType m);
 
         // save NZB description of the RSS item and place the .nzb file in the given folder.
         void downloadNzbFile(std::size_t index, const QString& file);
 
         // download the contents of the RSS item and upon completion
         // invoke the callback handler.
-        void downloadNzbFile(std::size_t index, data_callback cb);
+        void downloadNzbFile(std::size_t index, DataCallback callback);
 
         // download the contents of the RSS item.
         void downloadNzbContent(std::size_t row, quint32 account, const QString& folder);
@@ -85,15 +89,15 @@ namespace app
         std::size_t numItems() const;
 
     private:
-        void onRefreshComplete(RSSFeed* feed, MediaType type, QNetworkReply& reply);
+        void onRefreshComplete(RSSFeed* feed, QNetworkReply& reply);
         void onNzbFileComplete(const QString& file, QNetworkReply& reply);
         void onNzbDataComplete(const QString& folder, const QString& title, MediaType type, quint32 acc, QNetworkReply& rely);
-        void onNzbDataCompleteCallback(const data_callback& cb, QNetworkReply& reply);
+        void onNzbDataCompleteCallback(const DataCallback& cb, QNetworkReply& reply);
 
     private:
         using ModelType = TableModel<RSSModel, MediaItem>;
-        std::vector<std::unique_ptr<RSSFeed>> feeds_;
         std::unique_ptr<ModelType> model_;
+        std::unique_ptr<RSSFeed> engine_;
         std::list<WebQuery*> queries_;
     };
 

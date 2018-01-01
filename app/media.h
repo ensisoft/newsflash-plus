@@ -35,7 +35,16 @@
 namespace app
 {
     enum class MediaSource {
-        RSS, Search, Headers, File
+        // the item is from a RSS stream
+        RSS,
+        // the item is from a search
+        Search,
+
+        // the item is from headers.
+        Headers,
+
+        // the item is from a nzb file
+        File
     };
 
     // media types tags that apply to any particular media object.
@@ -130,6 +139,8 @@ namespace app
         SENTINEL
     };
 
+    using MediaTypeFlag = newsflash::bitflag<MediaType, std::uint64_t>;
+
     inline
     bool isMovie(MediaType type)
     {
@@ -214,7 +225,7 @@ namespace app
     struct MediaItem {
 
         // media tag flags set on this item
-        MediaType type;
+        MediaType type = MediaType::Other;
 
         // human readable title
         QString title;
@@ -229,10 +240,10 @@ namespace app
         QDateTime pubdate;
 
         // size in bytes if known, otherwise 0
-        quint64 size;
+        quint64 size = 0;
 
         // true if password is required for the item
-        bool password;
+        bool password = false;
     };
 
     // media iterator to iterate over media tags.

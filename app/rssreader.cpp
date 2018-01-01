@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -20,7 +20,9 @@
 
 #define LOGTAG "rss"
 
-#include <newsflash/warnpush.h>
+#include "newsflash/config.h"
+
+#include "newsflash/warnpush.h"
 #  include <QtNetwork/QNetworkRequest>
 #  include <QtNetwork/QNetworkReply>
 #  include <QtGui/QIcon>
@@ -30,14 +32,12 @@
 #  include <QByteArray>
 #  include <QBuffer>
 #  include <QDir>
-#include <newsflash/warnpop.h>
+#include "newsflash/warnpop.h"
+
 #include "rssreader.h"
 #include "eventlog.h"
 #include "debug.h"
 #include "format.h"
-#include "nzbparse.h"
-#include "womble.h"
-#include "nzbs.h"
 #include "nzbparse.h"
 #include "engine.h"
 #include "platform.h"
@@ -50,74 +50,34 @@ namespace app
 
 RSSReader::RSSReader() : model_(new ModelType)
 {
-    feeds_.emplace_back(new Womble);
-    feeds_.emplace_back(new Nzbs);
     DEBUG("RSSReader created");
 }
 
 RSSReader::~RSSReader()
 {
-    DEBUG("RSSReader destroyed");
+    DEBUG("RSSReader deleted");
 }
 
-
-bool RSSReader::refresh(MediaType type)
+bool RSSReader::refresh(MainMediaType type)
 {
-    bool ret = false;
-
-    for (auto& feed : feeds_)
+    std::vector<QUrl> urls;
+    engine_->prepare(type, urls);
+    for (const auto& url : urls)
     {
-        if (!feed->isEnabled())
-            continue;
-
-        std::vector<QUrl> urls;
-        feed->prepare(type, urls);
-        for (const auto& url : urls)
-        {
-            WebQuery query(url);
-            query.OnReply = std::bind(&RSSReader::onRefreshComplete, this, 
-                feed.get(), type, std::placeholders::_1);
-            auto* p = g_web->submit(query);
-            queries_.push_back(p);
-            ret = true;
-        }
+        WebQuery query(url);
+        query.OnReply = std::bind(&RSSReader::onRefreshComplete, this,
+            engine_.get(), std::placeholders::_1);
+        auto* p = g_web->submit(query);
+        queries_.push_back(p);
     }
     model_->clear();
-    return ret;
+    return !urls.empty();
 }
 
 QAbstractTableModel* RSSReader::getModel()
 {
     return model_.get();
 }
-
-void RSSReader::enableFeed(const QString& feed, bool on_off)
-{
-    for (auto& f :feeds_)
-    {
-        if (f->name() == feed)
-        {
-            f->enable(on_off);
-            return;
-        }
-    }
-}
-
-void RSSReader::setCredentials(const QString& feed, const QString& user, const QString& apikey)
-{
-    RSSFeed::params p;
-    p.user = user;
-    p.key  = apikey;
-    for (auto& f : feeds_)
-    {
-        if (f->name() == feed)
-        {
-            f->setParams(p);
-            return;
-        }
-    }
-}
-
 
 void RSSReader::downloadNzbFile(std::size_t index, const QString& file)
 {
@@ -131,13 +91,13 @@ void RSSReader::downloadNzbFile(std::size_t index, const QString& file)
     queries_.push_back(ret);
 }
 
-void RSSReader::downloadNzbFile(std::size_t index, data_callback cb)
+void RSSReader::downloadNzbFile(std::size_t index, DataCallback cb)
 {
     const auto& item = model_->getItem(index);
     const auto& link = item.nzblink;
 
     WebQuery query(link);
-    query.OnReply = std::bind(&RSSReader::onNzbDataCompleteCallback, this, std::move(cb), 
+    query.OnReply = std::bind(&RSSReader::onNzbDataCompleteCallback, this, std::move(cb),
         std::placeholders::_1);
     auto* ret = g_web->submit(query);
     queries_.push_back(ret);
@@ -168,23 +128,23 @@ const MediaItem& RSSReader::getItem(std::size_t i) const
 {
     return model_->getItem(i);
 }
-const MediaItem& RSSReader::getItem(const QModelIndex& i) const 
+const MediaItem& RSSReader::getItem(const QModelIndex& i) const
 {
     return model_->getItem(i.row());
 }
 
 
-bool RSSReader::isEmpty() const 
+bool RSSReader::isEmpty() const
 {
     return model_->isEmpty();
 }
 
-std::size_t RSSReader::numItems() const 
+std::size_t RSSReader::numItems() const
 {
     return model_->numItems();
 }
 
-void RSSReader::onRefreshComplete(RSSFeed* feed, MediaType type, QNetworkReply& reply)
+void RSSReader::onRefreshComplete(RSSFeed* feed, QNetworkReply& reply)
 {
     DEBUG("RSS stream reply %1", reply);
 
@@ -195,7 +155,7 @@ void RSSReader::onRefreshComplete(RSSFeed* feed, MediaType type, QNetworkReply& 
     ENDCHECK(queries_, it);
     queries_.erase(it);
     if (queries_.empty())
-        on_ready();
+        OnReadyCallback();
 
     const auto err = reply.error();
     const auto url = reply.url();
@@ -217,7 +177,6 @@ void RSSReader::onRefreshComplete(RSSFeed* feed, MediaType type, QNetworkReply& 
 
     for (auto& i : items)
     {
-        i.type = type;
         i.pubdate = i.pubdate.toLocalTime();
     }
 
@@ -235,7 +194,7 @@ void RSSReader::onNzbFileComplete(const QString& file, QNetworkReply& reply)
     ENDCHECK(queries_, it);
     queries_.erase(it);
     if (queries_.empty())
-        on_ready();
+        OnReadyCallback();
 
     const auto err = reply.error();
     const auto url = reply.url();
@@ -268,7 +227,7 @@ void RSSReader::onNzbDataComplete(const QString& folder, const QString& desc, Me
     ENDCHECK(queries_, it);
     queries_.erase(it);
     if (queries_.empty())
-        on_ready();
+        OnReadyCallback();
 
     const auto err = reply.error();
     const auto url = reply.url();
@@ -290,7 +249,7 @@ void RSSReader::onNzbDataComplete(const QString& folder, const QString& desc, Me
     g_engine->downloadNzbContents(download, nzb);
 }
 
-void RSSReader::onNzbDataCompleteCallback(const data_callback& cb, QNetworkReply& reply)
+void RSSReader::onNzbDataCompleteCallback(const DataCallback& cb, QNetworkReply& reply)
 {
     DEBUG("Got nzb data reply %1", reply);
 
@@ -301,7 +260,7 @@ void RSSReader::onNzbDataCompleteCallback(const data_callback& cb, QNetworkReply
     ENDCHECK(queries_, it);
     queries_.erase(it);
     if (queries_.empty())
-        on_ready();
+        OnReadyCallback();
 
     const auto err = reply.error();
     const auto url = reply.url();

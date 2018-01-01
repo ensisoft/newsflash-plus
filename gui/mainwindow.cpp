@@ -187,8 +187,8 @@ void MainWindow::attach(MainWidget* widget, bool permanent, bool loadstate)
 
     QObject::connect(widget, SIGNAL(updateMenu(MainWidget*)),
         this, SLOT(updateMenu(MainWidget*)));
-    QObject::connect(widget, SIGNAL(showSettings(MainWidget*)),
-        this, SLOT(showSettings(MainWidget*)));
+    QObject::connect(widget, SIGNAL(showSettings(const QString&)),
+        this, SLOT(showSettings(const QString&)));
 }
 
 void MainWindow::attach(MainModule* module, bool loadstate)
@@ -367,6 +367,7 @@ void MainWindow::prepareFileMenu()
     mUI.menuFile->addAction(mUI.actionOpen);
     mUI.menuFile->addSeparator();
     mUI.menuFile->addAction(mUI.actionSearch);
+    mUI.menuFile->addAction(mUI.actionRSS);
     mUI.menuFile->addSeparator();
 
     for (auto* m : mModules)
@@ -503,9 +504,9 @@ void MainWindow::updateMenu(MainWidget* widget)
     mUI.mainToolBar->addAction(mUI.actionContextHelp);
 }
 
-void MainWindow::showSettings(MainWidget* widget)
+void MainWindow::showSettings(const QString& tabName)
 {
-    showSetting(widget->windowTitle());
+    showSetting(tabName);
 }
 
 void MainWindow::show(const QString& title)
@@ -1103,7 +1104,21 @@ void MainWindow::on_actionSearch_triggered()
     {
         MainWidget* widget = m->openSearch();
         if (widget)
+        {
             attach(widget, false, true);
+        }
+    }
+}
+
+void MainWindow::on_actionRSS_triggered()
+{
+    for (auto* m : mModules)
+    {
+        MainWidget* widget = m->openRSSFeed();
+        if (widget)
+        {
+            attach(widget, false, true);
+        }
     }
 }
 

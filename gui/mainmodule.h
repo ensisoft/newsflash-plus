@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -67,7 +67,7 @@ namespace gui
 
         virtual info getInformation() const { return {"", ""}; }
 
-        // get a settings widget if any. 
+        // get a settings widget if any.
         virtual SettingsWidget* getSettings() { return nullptr; }
 
         // notify that the application settings have been changed.
@@ -80,6 +80,8 @@ namespace gui
         virtual MainWidget* openFile(const QString& name) { return nullptr; }
 
         virtual MainWidget* openSearch() { return nullptr; }
+
+        virtual MainWidget* openRSSFeed() { return nullptr; }
 
         virtual void updateRegistration(bool success) {};
     protected:

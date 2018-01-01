@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -19,10 +19,13 @@
 // THE SOFTWARE.
 
 #include "newsflash/config.h"
+
 #include "newsflash/warnpush.h"
 #  include <QtGui/QMessageBox>
 #include "newsflash/warnpop.h"
+
 #include <algorithm>
+
 #include "dlgimport.h"
 #include "dlgnewznab.h"
 #include "app/newznab.h"
@@ -32,7 +35,7 @@
 namespace gui
 {
 
-DlgImport::DlgImport(QWidget* parent, std::vector<app::Newznab::Account>& accs) : QDialog(parent), m_accounts(accs), m_query(nullptr)
+DlgImport::DlgImport(QWidget* parent, std::vector<app::newznab::Account>& accs) : QDialog(parent), m_accounts(accs)
 {
     m_ui.setupUi(this);
     m_ui.progressBar->setVisible(true);
@@ -40,11 +43,11 @@ DlgImport::DlgImport(QWidget* parent, std::vector<app::Newznab::Account>& accs) 
     m_ui.progressBar->setMaximum(0);
     m_ui.btnStart->setEnabled(false);
 
-    auto callback = [=](const app::Newznab::ImportList& list) {
+    auto callback = [=](const app::newznab::ImportList& list) {
         m_query = nullptr;
         m_ui.progressBar->setVisible(false);
-        m_ui.grpList->setTitle("Import List");        
-        if (!list.success) 
+        m_ui.grpList->setTitle("Import List");
+        if (!list.success)
         {
             QMessageBox::critical(this, tr("Import List"),
                 tr("There was an error import list of servers.\n%1").arg(list.error));
@@ -52,7 +55,7 @@ DlgImport::DlgImport(QWidget* parent, std::vector<app::Newznab::Account>& accs) 
         }
         for (const auto& host : list.hosts)
         {
-            app::Newznab::Account acc;
+            app::newznab::Account acc;
             acc.apiurl = host;
             m_accounts.push_back(acc);
             QListWidgetItem* item = new QListWidgetItem();
@@ -64,7 +67,7 @@ DlgImport::DlgImport(QWidget* parent, std::vector<app::Newznab::Account>& accs) 
     };
 
     // begin importing the list from our host.
-    m_query = app::Newznab::importList(std::move(callback));
+    m_query = app::newznab::importServerList(std::move(callback));
 }
 
 DlgImport::~DlgImport()
@@ -107,8 +110,8 @@ void DlgImport::registerNext(QString email, std::size_t index)
 
     account.email = email;
 
-    m_query = app::Newznab::apiRegisterUser(account, 
-        std::bind(&DlgImport::registerInfo, this, std::placeholders::_1, 
+    m_query = app::newznab::registerAccount(account,
+        std::bind(&DlgImport::registerInfo, this, std::placeholders::_1,
             email, index));
 
     m_ui.log->appendPlainText(tr("Registering to %1").arg(account.apiurl));
@@ -120,7 +123,7 @@ void DlgImport::registerNext(QString email, std::size_t index)
     m_ui.listWidget->editItem(item);
 }
 
-void DlgImport::registerInfo(const app::Newznab::HostInfo& ret, QString email, std::size_t index)
+void DlgImport::registerInfo(const app::newznab::HostInfo& ret, QString email, std::size_t index)
 {
     m_query = nullptr;
 
@@ -133,7 +136,7 @@ void DlgImport::registerInfo(const app::Newznab::HostInfo& ret, QString email, s
         m_ui.log->appendPlainText(QString("Username: %1").arg(ret.username));
         m_ui.log->appendPlainText(QString("Password: %1").arg(ret.password));
         m_ui.log->appendPlainText(QString("Apikey: %1").arg(ret.apikey));
-        m_ui.log->appendPlainText("\n");            
+        m_ui.log->appendPlainText("\n");
         auto& account = m_accounts[index];
         account.username  = ret.username;
         account.password  = ret.password;
@@ -141,7 +144,7 @@ void DlgImport::registerInfo(const app::Newznab::HostInfo& ret, QString email, s
 
         if (account.apikey.isEmpty())
         {
-            item->setIcon(QIcon("icons:ico_bullet_yellow.png"));            
+            item->setIcon(QIcon("icons:ico_bullet_yellow.png"));
 
             m_ui.log->appendPlainText("Manual login required.");
 
@@ -167,7 +170,7 @@ void DlgImport::registerInfo(const app::Newznab::HostInfo& ret, QString email, s
         }
         else
         {
-            item->setIcon(QIcon("icons:ico_bullet_green.png"));            
+            item->setIcon(QIcon("icons:ico_bullet_green.png"));
         }
     }
     else

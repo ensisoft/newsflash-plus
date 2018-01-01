@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -18,14 +18,21 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <newsflash/config.h>
-#include <newsflash/warnpush.h>
+#define LOGTAG "newznab"
+
+#include "newsflash/config.h"
+
+#include "newsflash/warnpush.h"
 #  include <QtXml/QDomDocument>
 #  include <QIODevice>
 #  include <QUrl>
 #  include <QBuffer>
-#include <newsflash/warnpop.h>
+#include "newsflash/warnpop.h"
+
 #include <algorithm>
+#include <string>
+
+#include "eventlog.h"
 #include "newznab.h"
 #include "debug.h"
 #include "rssdate.h"
@@ -35,97 +42,71 @@
 
 namespace {
 
-using Type = app::MediaType;
-using Cat  = app::Indexer::Category;
-using Code = unsigned;
-
+// mapping table
 struct Mapping {
-    Type type;
-    Code code;
-    Cat  cat;
-} map[] = {
-    {Type::GamesNDS, 1010, Cat::Console},
-    {Type::GamesWii, 1030, Cat::Console},
-    {Type::GamesXbox, 1040, Cat::Console},
-    {Type::GamesXbox360, 1050, Cat::Console},
-    {Type::GamesPSP, 1020, Cat::Console},
-    {Type::GamesPS2, 1080, Cat::Console},    
-    {Type::GamesPS3, 1090, Cat::Console},    
-    //{Type::ConsolePS4, ??},        
+    app::MediaType type;
+    const char* arg;
+} mappings[] = {
+    {app::MediaType::GamesNDS,      "1010"},
+    {app::MediaType::GamesPSP,      "1020"},
+    {app::MediaType::GamesWii,      "1030"},
+    {app::MediaType::GamesXbox,     "1040"},
+    {app::MediaType::GamesXbox360,  "1050"},
+    {app::MediaType::GamesPS3,      "1080"},
+    {app::MediaType::GamesPS2,      "1090"},
 
-    {Type::MoviesInt, 2060, Cat::Movies},
-    {Type::MoviesSD, 2010, Cat::Movies},
-    {Type::MoviesHD, 2040, Cat::Movies},
-    {Type::MoviesSD, 2030, Cat::Movies}, // xvid
+    {app::MediaType::MoviesInt,     "2060"}, // foreign
+    {app::MediaType::MoviesSD,      "2010"}, // dvd
+    {app::MediaType::MoviesWMV,     "2020"}, // wmv-hd
+    {app::MediaType::MoviesSD,      "2030"}, // xvid
+    {app::MediaType::MoviesHD,      "2040"}, // x264
 
-    {Type::MusicMp3, 3010, Cat::Music},
-    {Type::MusicVideo, 3020, Cat::Music},
-    {Type::MusicLossless, 3040, Cat::Music},
+    {app::MediaType::MusicMp3,      "3010"},
+    {app::MediaType::MusicVideo,    "3020"},
+    {app::MediaType::MusicLossless, "3040"}, // flac
 
-    {Type::AppsPC, 4000, Cat::Apps},
-    {Type::AppsISO, 4020, Cat::Apps},
-    {Type::AppsMac, 4030, Cat::Apps},
-    {Type::AppsAndroid, 4070, Cat::Apps},
-    {Type::AppsIos, 4060, Cat::Apps},
+    {app::MediaType::AppsPC,        "4010"}, // 0day
+    {app::MediaType::AppsISO,       "4020"},
+    {app::MediaType::AppsMac,       "4030"},
+    {app::MediaType::AppsIos,       "4060"},
+    {app::MediaType::AppsAndroid,   "4070"},
 
-    {Type::TvInt, 5020, Cat::Television},
-    {Type::TvSD, 5030, Cat::Television},
-    {Type::TvHD, 5040, Cat::Television},
-    {Type::TvOther, 5050, Cat::Television},
-    {Type::TvSport, 5060, Cat::Television},
+    {app::MediaType::TvSD,          "5010"}, // dvd
+    {app::MediaType::TvHD,          "5040"}, // hd
+    {app::MediaType::TvSD,          "5070"}, // boxsd
+    {app::MediaType::TvInt,         "5080"}, // foreign
+    {app::MediaType::TvHD,          "5090"}, // boxhd
 
-    {Type::AdultDVD, 6010, Cat::Adult},
-    {Type::AdultHD, 6040, Cat::Adult},
-    {Type::AdultSD, 6030, Cat::Adult},
-    {Type::AdultOther, 6070, Cat::Adult}, // anime
-    {Type::AdultOther, 6020, Cat::Adult}, // clip
-    {Type::AdultOther, 6060, Cat::Adult}, // imgset
-    {Type::AdultOther, 6050, Cat::Adult}, // pack
-
-    {Type::Ebook, 7020, Cat::Other},
-    {Type::Audiobook, 3030, Cat::Other}
+    {app::MediaType::AdultOther,    "6000"},
+    {app::MediaType::AdultDVD,      "6010"},
+    {app::MediaType::AdultHD,       "6040"}, // x264
+    {app::MediaType::AdultSD,       "6030"}, // xvid
 };
 
 app::MediaType mapType(unsigned code)
 {
-    auto it = std::find_if(std::begin(map), std::end(map),
+    auto it = std::find_if(std::begin(mappings), std::end(mappings),
         [=](const Mapping& m) {
-            return m.code == code;
+            return std::stoul(m.arg) == code;
         });
-    if (it == std::end(map))
+    if (it == std::end(mappings))
     {
-//        DEBUG("Newznab code %1 could not be mapped.", code);
+        switch (code / 1000)
+        {
+            case 1: return app::MediaType::GamesOther;
+            case 2: return app::MediaType::MoviesOther;
+            case 3: return app::MediaType::MusicOther;
+            case 4: return app::MediaType::AppsOther;
+            case 5: return app::MediaType::TvOther;
+            case 6: return app::MediaType::AdultOther;
+        }
+        WARN("Newznab code %1 could not be mapped.", code);
         return app::MediaType::Other;
     }
     return (*it).type;
 }
 
-void collect(QStringList& str, Cat c)
-{
-    for (auto beg = std::begin(map); beg != std::end(map); ++beg)
-    {
-        const auto& item =*beg;
-        if (item.cat != c)
-            continue;
-        str << QString::number(item.code);
-    }
-}
-
-QString collect(newsflash::bitflag<app::Indexer::Category> bits)
-{
-    QStringList str;
-    for (unsigned i=0; i<bits.BitCount; ++i)
-    {
-        if (!bits.test(i))
-            continue;
-
-        const auto cat = static_cast<Cat>(i);
-        collect(str, cat);
-    }
-    return str.join(",");
-}
-
-bool parseResponse(QNetworkReply& reply, app::Newznab::HostInfo& info, QDomDocument& dom)
+bool parseResponse(QNetworkReply& reply, app::newznab::HostInfo& info, QDomDocument& dom)
 {
     const auto err = reply.error();
     if (err != QNetworkReply::NoError)
@@ -178,6 +159,22 @@ QString makeApiUrl(QString host)
     return host;
 }
 
+QString makeRssUrl(QString host)
+{
+    QUrl url(host);
+    const auto& path = url.path();
+    if (path.isEmpty())
+        host += "/rss/";
+    else if (path == "/")
+        host += "rss/";
+    else if (path == "/api/")
+        host.replace("/api/", "/rss/");
+    else if (path == "api/")
+        host.replace("api/", "rss/");
+
+    return host;
+}
+
 QString slashCombine(const QString& lhs, const QString& rhs)
 {
     if (lhs.endsWith("/") || rhs.startsWith("/"))
@@ -186,12 +183,14 @@ QString slashCombine(const QString& lhs, const QString& rhs)
     return lhs + "/" + rhs;
 }
 
-} // namespace 
+} // namespace
 
 namespace app
 {
 
-Indexer::Error Newznab::parse(QIODevice& io, std::vector<MediaItem>& results)
+namespace newznab {
+
+Indexer::Error Search::parse(QIODevice& io, std::vector<app::MediaItem>& results)
 {
     int errorColumn;
     int errorLine;
@@ -221,7 +220,7 @@ Indexer::Error Newznab::parse(QIODevice& io, std::vector<MediaItem>& results)
 
     const QDomElement root   = dom.firstChildElement();
     const QDomNodeList resp  = root.elementsByTagName("newznab:response");
-    const QDomNodeList items = root.elementsByTagName("item");    
+    const QDomNodeList items = root.elementsByTagName("item");
 
     for (int i=0; i<items.size(); ++i)
     {
@@ -235,7 +234,7 @@ Indexer::Error Newznab::parse(QIODevice& io, std::vector<MediaItem>& results)
         item.title    = elem.firstChildElement("title").text();
 
         // there's a newznab bug (11/7/2010) so that if the search matches no data
-        // a single incomplete <item> is returned. therefore we check if the title for 
+        // a single incomplete <item> is returned. therefore we check if the title for
         // emptyness to work around this issue.
         if (item.title.isEmpty())
             continue;
@@ -292,7 +291,7 @@ Indexer::Error Newznab::parse(QIODevice& io, std::vector<MediaItem>& results)
     return Error::None;
 }
 
-void Newznab::prepare(const BasicQuery& query, QUrl& url)
+void Search::prepare(const BasicQuery& query, QUrl& url)
 {
     url.setUrl(makeApiUrl(apiurl_));
     url.addQueryItem("apikey", apikey_);
@@ -303,25 +302,46 @@ void Newznab::prepare(const BasicQuery& query, QUrl& url)
         url.addQueryItem("q", query.keywords);
 }
 
-void Newznab::prepare(const AdvancedQuery& query, QUrl& url)
+void Search::prepare(const AdvancedQuery& query, QUrl& url)
 {
+    QStringList cats;
+    for (unsigned i=0; i<query.categories.BitCount; ++i)
+    {
+        if (!query.categories.test(i))
+            continue;
+
+        const auto type = static_cast<app::MainMediaType>(i);
+        for (const auto& mapping : mappings)
+        {
+            if (!categories_.test(mapping.type))
+                continue;
+
+            if (toMainType(mapping.type) != type)
+                continue;
+
+            cats << mapping.arg;
+        }
+    }
+    QString categories;
+    categories = cats.join(",");
+
     url.setUrl(makeApiUrl(apiurl_));
     url.addQueryItem("apikey", apikey_);
     url.addQueryItem("extended", "1");
     url.addQueryItem("t", "search");
-    url.addQueryItem("offset", QString::number(query.offset));    
-    url.addQueryItem("cat", collect(query.categories));
+    url.addQueryItem("offset", QString::number(query.offset));
+    url.addQueryItem("cat", categories);
     if (!query.keywords.isEmpty())
         url.addQueryItem("q", query.keywords);
 }
 
-void Newznab::prepare(const MusicQuery& query, QUrl& url)
+void Search::prepare(const MusicQuery& query, QUrl& url)
 {
     url.setUrl(makeApiUrl(apiurl_));
     url.addQueryItem("apikey", apikey_);
     url.addQueryItem("extended", "1");
     url.addQueryItem("t", "music");
-    url.addQueryItem("offset", QString::number(query.offset));    
+    url.addQueryItem("offset", QString::number(query.offset));
     if (!query.artist.isEmpty())
         url.addQueryItem("artist", query.artist);
     if (!query.album.isEmpty())
@@ -332,13 +352,13 @@ void Newznab::prepare(const MusicQuery& query, QUrl& url)
         url.addQueryItem("year", query.year);
 }
 
-void Newznab::prepare(const TelevisionQuery& query, QUrl& url)
+void Search::prepare(const TelevisionQuery& query, QUrl& url)
 {
     url.setUrl(makeApiUrl(apiurl_));
     url.addQueryItem("apikey", apikey_);
     url.addQueryItem("extended", "1");
     url.addQueryItem("t", "tvsearch");
-    url.addQueryItem("offset", QString::number(query.offset));    
+    url.addQueryItem("offset", QString::number(query.offset));
     if (!query.keywords.isEmpty())
         url.addQueryItem("q", query.keywords);
     if (!query.episode.isEmpty())
@@ -347,18 +367,95 @@ void Newznab::prepare(const TelevisionQuery& query, QUrl& url)
         url.addQueryItem("season", query.season);
 }
 
-QString Newznab::name() const
+QString Search::name() const
 {
     return apiurl_;
 }
 
-void Newznab::setAccount(const Account& acc)
+bool RSSFeed::parse(QIODevice& io, std::vector<MediaItem>& rss)
 {
-    apikey_ = acc.apikey;
-    apiurl_ = acc.apiurl;
+    QDomDocument dom;
+    QString error_string;
+    int error_line   = 0;
+    int error_column = 0;
+    if (!dom.setContent(&io, false, &error_string, &error_line, &error_column))
+    {
+        DEBUG("XML parse error '%1' on line %2", error_string, error_line);
+        return false;
+    }
+
+    const auto& root  = dom.firstChildElement();
+    const auto& items = root.elementsByTagName("item");
+    for (int i=0; i<items.size(); ++i)
+    {
+        const auto& elem = items.at(i).toElement();
+
+        MediaItem item {};
+        item.title   = elem.firstChildElement("title").text();
+        item.guid    = elem.firstChildElement("guid").text();
+        item.nzblink = elem.firstChildElement("link").text();
+        item.pubdate = parseRssDate(elem.firstChildElement("pubDate").text());
+
+        const auto& attrs = elem.elementsByTagName("newznab:attr");
+        for (int x=0; x<attrs.size(); ++x)
+        {
+            const auto& attr = attrs.at(x).toElement();
+            const auto& name = attr.attribute("name");
+            if (name == "size")
+                item.size = attr.attribute("value").toLongLong();
+            else if (name == "password")
+                item.password = attr.attribute("value").toInt();
+            else if (name =="category")
+                item.type = mapType(attr.attribute("value").toInt());
+        }
+
+        // looks like there's a problem with the RSS feed from nzbs.org. The link contains a link to a
+        // HTML info page about the the NZB not an actual link to get the NZB. adding &dl=1 to the
+        // query params doesn't change this.
+        // we have a simple hack here to change the feed link to get link
+        // http://nzbs.org/index.php?action=view&nzbid=334012
+        // http://nzbs.org/index.php?action=getnzb&nzbid=334012
+        if (item.nzblink.contains("action=view&"))
+            item.nzblink.replace("action=view&", "action=getnzb&");
+
+        rss.push_back(std::move(item));
+    }
+    return true;
 }
 
-WebQuery* Newznab::apiTest(const Account& acc, HostCallback cb)
+void RSSFeed::prepare(MainMediaType type, std::vector<QUrl>& urls)
+{
+    // nzbs.org supports num=123 parameter for limiting the feed size
+    // however since we map multiple rss feeds to a single category
+    // it doesn't work as the user expects.
+    // num= defaults to 25. 100 is the max value. we'll use that.
+    for (const auto& mapping : mappings)
+    {
+        if (!categories_.test(mapping.type))
+            continue;
+
+        if (toMainType(mapping.type) != type)
+            continue;
+
+        QUrl url;
+        url.setUrl(makeRssUrl(apiurl_));
+        url.addQueryItem("t", mapping.arg);
+        url.addQueryItem("i", userid_);
+        url.addQueryItem("r", apikey_);
+        url.addQueryItem("dl", "1");
+        url.addQueryItem("num", "100");
+        urls.push_back(url);
+    }
+}
+
+QString RSSFeed::name() const
+{
+    return apiurl_;
+}
+
+
+// global function
+WebQuery* testAccount(const Account& acc, const HostCallback& callback)
 {
     QUrl url(makeApiUrl(acc.apiurl));
     url.addQueryItem("apikey", acc.apikey);
@@ -366,7 +463,7 @@ WebQuery* Newznab::apiTest(const Account& acc, HostCallback cb)
 
     WebQuery query(url);
     query.OnReply = [=](QNetworkReply& reply) {
-        HostInfo info;            
+        HostInfo info;
         QDomDocument dom;
         if (parseResponse(reply, info, dom))
         {
@@ -377,12 +474,12 @@ WebQuery* Newznab::apiTest(const Account& acc, HostCallback cb)
             info.version   = server.attribute("version");
             info.success   = true;
         }
-        cb(info);
+        callback(info);
     };
     return g_web->submit(std::move(query));
 }
 
-WebQuery* Newznab::apiRegisterUser(const Account& acc, HostCallback cb)
+WebQuery* registerAccount(const Account& acc, const HostCallback& callback)
 {
     QUrl url(makeApiUrl(acc.apiurl));
     url.addQueryItem("apikey", acc.apikey);
@@ -401,12 +498,12 @@ WebQuery* Newznab::apiRegisterUser(const Account& acc, HostCallback cb)
             info.apikey      = reg.attribute("apikey");
             info.success = true;
         }
-        cb(info);
+        callback(info);
     };
     return g_web->submit(std::move(query));
 }
 
-WebQuery* Newznab::importList(ImportCallback cb)
+WebQuery* importServerList(const ImportCallback& callback)
 {
     WebQuery query(QUrl("http://www.ensisoft.com/import.php"));
     query.OnReply = [=](QNetworkReply& reply) {
@@ -417,7 +514,7 @@ WebQuery* Newznab::importList(ImportCallback cb)
         {
             list.success = false;
             list.error   = toString(err);
-            cb(list);
+            callback(list);
             return;
         }
         const auto& buff   = reply.readAll();
@@ -435,9 +532,11 @@ WebQuery* Newznab::importList(ImportCallback cb)
                 list.hosts.push_back(host);
         }
         list.success = true;
-        cb(list);
+        callback(list);
     };
     return g_web->submit(std::move(query));
 }
+
+} // newznab
 
 } // app

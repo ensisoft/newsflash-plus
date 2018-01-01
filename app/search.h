@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -20,14 +20,17 @@
 
 #pragma once
 
-#include <newsflash/config.h>
-#include <newsflash/warnpush.h>
-#  include <QtNetwork/QNetworkReply>
+#include "newsflash/config.h"
+
+#include "newsflash/warnpush.h"
+#  include "QtNetwork/QNetworkReply"
 #  include <QString>
-#include <newsflash/warnpop.h>
+#include "newsflash/warnpop.h"
+
 #include <functional>
 #include <memory>
 #include <list>
+
 #include "media.h"
 #include "searchmodel.h"
 #include "tablemodel.h"
@@ -46,22 +49,22 @@ namespace app
         // basic search
         struct Basic {
             QString keywords;
-            quint32 qoffset;
-            quint32 qsize;
+            quint32 qoffset = 0;
+            quint32 qsize   = 0;
         };
 
         // advanced search allows us to limit the scope
         // of the search to some specific media streams.
         struct Advanced {
             QString keywords;
-            bool music;
-            bool movies;
-            bool television;
-            bool console;
-            bool computer;
-            bool adult;
-            quint32 qoffset;
-            quint32 qsize;
+            bool music = false;
+            bool movies = false;
+            bool television = false;
+            bool console = false;
+            bool computer = false;
+            bool adult = false;
+            quint32 qoffset = 0;
+            quint32 qsize   = 0;
         };
 
         // music search optionally searching for specific
@@ -71,8 +74,8 @@ namespace app
             QString track;
             QString year;
             QString keywords;
-            quint32 qoffset;
-            quint32 qsize;
+            quint32 qoffset = 0;
+            quint32 qsize   = 0;
         };
 
         // television search optionally searching
@@ -81,8 +84,8 @@ namespace app
             QString season;
             QString episode;
             QString keywords;
-            quint32 qoffset;
-            quint32 qsize;
+            quint32 qoffset = 0;
+            quint32 qsize   = 0;
         };
 
         Search();

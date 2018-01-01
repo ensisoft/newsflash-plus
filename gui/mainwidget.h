@@ -118,7 +118,7 @@ namespace gui
         void updateMenu(MainWidget* self);
 
         // request the settings to be displayed.
-        void showSettings(MainWidget* self);
+        void showSettings(const QString& tabName);
 
     private:
     };

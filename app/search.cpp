@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -20,11 +20,13 @@
 
 #define LOGTAG "search"
 
-#include <newsflash/config.h>
-#include <newsflash/warnpush.h>
+#include "newsflash/config.h"
+
+#include "newsflash/warnpush.h"
 #  include <QtNetwork/QNetworkReply>
 #  include <QBuffer>
-#include <newsflash/warnpop.h>
+#include "newsflash/warnpop.h"
+
 #include <functional>
 #include "search.h"
 #include "debug.h"
@@ -36,7 +38,7 @@
 #include "engine.h"
 
 namespace app
-{ 
+{
 
 Search::Search() : model_(new ModelType)
 {
@@ -49,7 +51,9 @@ Search::~Search()
 }
 
 QAbstractTableModel* Search::getModel()
-{ return model_.get(); }
+{
+    return model_.get();
+}
 
 bool Search::beginSearch(const Basic& query, std::unique_ptr<Indexer> index)
 {
@@ -59,7 +63,7 @@ bool Search::beginSearch(const Basic& query, std::unique_ptr<Indexer> index)
     q.size      = query.qsize;
 
     QUrl url;
-    indexer_ = std::move(index);        
+    indexer_ = std::move(index);
     indexer_->prepare(q, url);
 
     doSearch(url);
@@ -75,7 +79,7 @@ bool Search::beginSearch(const Advanced& query, std::unique_ptr<Indexer> index)
     bits.set(c::Music, query.music);
     bits.set(c::Movies, query.movies);
     bits.set(c::Television, query.television);
-    bits.set(c::Console, query.console);
+    bits.set(c::Games, query.console);
     bits.set(c::Apps, query.computer);
     bits.set(c::Adult, query.adult);
 
@@ -151,7 +155,7 @@ void Search::loadItem(const QModelIndex& index, OnData cb)
     const auto& desc = item.title;
 
     WebQuery query(link);
-    query.OnReply = [=](QNetworkReply& reply) 
+    query.OnReply = [=](QNetworkReply& reply)
     {
         const auto it = std::find_if(std::begin(queries_), std::end(queries_),
             [&](const WebQuery* q ){
@@ -160,7 +164,7 @@ void Search::loadItem(const QModelIndex& index, OnData cb)
         ENDCHECK(queries_, it);
         queries_.erase(it);
         if (queries_.empty())
-            OnReadyCallback();        
+            OnReadyCallback();
 
         const auto err = reply.error();
         const auto url = reply.url();
@@ -177,13 +181,13 @@ void Search::loadItem(const QModelIndex& index, OnData cb)
     queries_.push_back(ret);
 }
 
-void Search::saveItem(const QModelIndex& index, const QString& file) 
+void Search::saveItem(const QModelIndex& index, const QString& file)
 {
     const auto& item = getItem(index);
     const auto& link = item.nzblink;
 
     WebQuery query(link);
-    query.OnReply = [=](QNetworkReply& reply) 
+    query.OnReply = [=](QNetworkReply& reply)
     {
         const auto it = std::find_if(std::begin(queries_), std::end(queries_),
             [&](const WebQuery* q ){
@@ -192,7 +196,7 @@ void Search::saveItem(const QModelIndex& index, const QString& file)
         ENDCHECK(queries_, it);
         queries_.erase(it);
         if (queries_.empty())
-            OnReadyCallback();        
+            OnReadyCallback();
 
         const auto err = reply.error();
         const auto url = reply.url();
@@ -257,7 +261,7 @@ void Search::downloadItem(const QModelIndex& index, const QString& folder, quint
     queries_.push_back(ret);
 }
 
-const MediaItem& Search::getItem(const QModelIndex& index) const 
+const MediaItem& Search::getItem(const QModelIndex& index) const
 {
     return model_->getItem(index);
 }
@@ -280,7 +284,7 @@ void Search::onSearchReady(QNetworkReply& reply)
     ENDCHECK(queries_, it);
     queries_.erase(it);
     if (queries_.empty())
-        OnReadyCallback();    
+        OnReadyCallback();
 
     const auto err = reply.error();
     const auto url = reply.url();
@@ -305,7 +309,7 @@ void Search::onSearchReady(QNetworkReply& reply)
         case e::Content:
             ERROR("%1 Content error.", name);
             break;
-        case e::NoSuchItem: 
+        case e::NoSuchItem:
             ERROR("%1, No such item.", name);
             break;
         case e::IncorrectCredentials:

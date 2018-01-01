@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -18,13 +18,18 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+#pragma once
+
 #include "newsflash/config.h"
+
 #include "newsflash/warnpush.h"
 #  include <QtGui/QDialog>
 #  include <QObject>
 #  include "ui_dlgimport.h"
 #include "newsflash/warnpop.h"
+
 #include <vector>
+
 #include "app/newznab.h"
 #include "app/webquery.h"
 
@@ -35,7 +40,7 @@ namespace gui
         Q_OBJECT
 
     public:
-        DlgImport(QWidget* parent, std::vector<app::Newznab::Account>& accs);
+        DlgImport(QWidget* parent, std::vector<app::newznab::Account>& accs);
        ~DlgImport();
 
     private slots:
@@ -43,14 +48,14 @@ namespace gui
         void on_btnClose_clicked();
     private:
         void registerNext(QString email, std::size_t index);
-        void registerInfo(const app::Newznab::HostInfo& ret, QString email, std::size_t index);
+        void registerInfo(const app::newznab::HostInfo& ret, QString email, std::size_t index);
 
     private:
         Ui::Import m_ui;
     private:
-        std::vector<app::Newznab::Account>& m_accounts;
+        std::vector<app::newznab::Account>& m_accounts;
     private:
-        app::WebQuery* m_query;
+        app::WebQuery* m_query = nullptr;
     };
 
 } // gui

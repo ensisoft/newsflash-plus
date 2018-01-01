@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -21,11 +21,13 @@
 #pragma once
 
 #include "newsflash/config.h"
+
 #include "newsflash/warnpush.h"
 #  include <QtGui/QDialog>
 #  include <QObject>
 #  include "ui_dlgnewznab.h"
 #include "newsflash/warnpop.h"
+
 #include "app/newznab.h"
 #include "app/webquery.h"
 
@@ -36,7 +38,7 @@ namespace gui
         Q_OBJECT
 
     public:
-        DlgNewznab(QWidget* parent, app::Newznab::Account& acc);
+        DlgNewznab(QWidget* parent, app::newznab::Account& acc);
        ~DlgNewznab();
 
     private slots:
@@ -47,7 +49,7 @@ namespace gui
     private:
         Ui::Newznab ui_;
     private:
-        app::Newznab::Account& acc_;
-        app::WebQuery* query_;
+        app::newznab::Account& acc_;
+        app::WebQuery* query_ = nullptr;
     };
 } // gui

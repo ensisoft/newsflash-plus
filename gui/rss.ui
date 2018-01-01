@@ -90,6 +90,16 @@
          </widget>
         </item>
         <item>
+         <widget class="QComboBox" name="cmbServerList">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+         </widget>
+        </item>
+        <item>
          <spacer name="horizontalSpacer">
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
@@ -274,6 +284,7 @@
   <tabstop>chkMovies</tabstop>
   <tabstop>chkMusic</tabstop>
   <tabstop>chkTV</tabstop>
+  <tabstop>cmbServerList</tabstop>
   <tabstop>tableView</tabstop>
  </tabstops>
  <resources>

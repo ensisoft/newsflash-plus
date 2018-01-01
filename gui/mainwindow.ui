@@ -14,7 +14,7 @@
    <string>Newsflash Plus</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="resource.qrc">
+   <iconset>
     <normaloff>:/resource/flash.ico</normaloff>:/resource/flash.ico</iconset>
   </property>
   <property name="toolButtonStyle">
@@ -699,6 +699,9 @@
    <property name="text">
     <string>New Search ...</string>
    </property>
+   <property name="toolTip">
+    <string>New Search Window</string>
+   </property>
   </action>
   <action name="actionFindClose">
    <property name="icon">
@@ -731,6 +734,18 @@
    </property>
    <property name="text">
     <string>Donate</string>
+   </property>
+  </action>
+  <action name="actionRSS">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_rss.png</normaloff>:/resource/16x16_ico_png/ico_rss.png</iconset>
+   </property>
+   <property name="text">
+    <string>New RSS ...</string>
+   </property>
+   <property name="toolTip">
+    <string>New RSS Window</string>
    </property>
   </action>
  </widget>

@@ -158,6 +158,7 @@ namespace gui
         void on_actionFindPrev_triggered();
         void on_actionFindClose_triggered();
         void on_actionSearch_triggered();
+        void on_actionRSS_triggered();
         void on_actionSettings_triggered();
         void on_actionAbout_triggered();
         void on_actionViewForum_triggered();
@@ -174,7 +175,7 @@ namespace gui
         void timerMigrate_timeout();
         void displayNote(const app::Event& event);
         void updateMenu(MainWidget* widget);
-        void showSettings(MainWidget* widget);
+        void showSettings(const QString& widget);
 
     private:
         // main UI object

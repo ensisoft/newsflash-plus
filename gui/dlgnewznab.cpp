@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -19,22 +19,26 @@
 // THE SOFTWARE.
 
 #include "newsflash/config.h"
+
 #include "newsflash/warnpush.h"
 #  include <QtGui/QMessageBox>
 #include "newsflash/warnpop.h"
+
 #include "dlgnewznab.h"
 
 namespace gui
 {
 
-DlgNewznab::DlgNewznab(QWidget* parent, app::Newznab::Account& acc) : QDialog(parent), acc_(acc), query_(nullptr)
+DlgNewznab::DlgNewznab(QWidget* parent, app::newznab::Account& acc) : QDialog(parent), acc_(acc), query_(nullptr)
 {
     ui_.setupUi(this);
     if (!acc.apikey.isEmpty())
         ui_.editKey->setText(acc.apikey);
     if (!acc.apiurl.isEmpty())
         ui_.editHost->setText(acc.apiurl);
-    
+    if (!acc.userid.isEmpty())
+        ui_.editUserId->setText(acc.userid);
+
     ui_.editEmail->setText(acc.email);
     ui_.editPassword->setText(acc.password);
     ui_.editUsername->setText(acc.username);
@@ -70,6 +74,7 @@ void DlgNewznab::on_btnAccept_clicked()
     acc_.apiurl   = ui_.editHost->text();
     acc_.password = ui_.editPassword->text();
     acc_.username = ui_.editUsername->text();
+    acc_.userid   = ui_.editUserId->text();
 
     accept();
 }
@@ -81,12 +86,13 @@ void DlgNewznab::on_btnCancel_clicked()
 
 void DlgNewznab::on_btnTest_clicked()
 {
-    app::Newznab::Account acc;
+    app::newznab::Account acc;
     acc.email    = ui_.editEmail->text();
     acc.apikey   = ui_.editKey->text();
     acc.apiurl   = ui_.editHost->text();
     acc.password = ui_.editPassword->text();
     acc.username = ui_.editUsername->text();
+    acc.userid   = ui_.editUserId->text();
 
     if (acc.apiurl.isEmpty())
     {
@@ -98,15 +104,20 @@ void DlgNewznab::on_btnTest_clicked()
         ui_.editKey->setFocus();
         return;
     }
+    if (acc.userid.isEmpty())
+    {
+        ui_.editUserId->setFocus();
+        return;
+    }
 
 
-    auto callback = [=](const app::Newznab::HostInfo& info) {
+    auto callback = [=](const app::newznab::HostInfo& info) {
         query_ = nullptr;
         ui_.progressBar->setVisible(false);
         ui_.btnTest->setEnabled(true);
         if (info.success)
         {
-            QMessageBox::information(this, acc.apiurl, 
+            QMessageBox::information(this, acc.apiurl,
                 QString("Success! Server reports:\n"
                     "Strapline: %1\n"
                     "Version: %2\n"
@@ -122,7 +133,7 @@ void DlgNewznab::on_btnTest_clicked()
         }
     };
 
-    query_ = app::Newznab::apiTest(acc, callback);
+    query_ = app::newznab::testAccount(acc, callback);
 
     ui_.progressBar->setVisible(true);
     ui_.btnTest->setEnabled(false);

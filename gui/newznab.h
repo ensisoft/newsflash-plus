@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -21,24 +21,36 @@
 #pragma once
 
 #include "newsflash/config.h"
+
 #include "newsflash/warnpush.h"
 #  include <QObject>
-#  include "ui_searchsettings.h"
+#  include "ui_newznab.h"
 #include "newsflash/warnpop.h"
+
 #include <vector>
+#include <memory>
+
 #include "mainmodule.h"
 #include "settings.h"
 #include "app/newznab.h"
+#include "app/types.h"
+#include "app/media.h"
+#include "engine/bitflag.h"
+
+namespace app {
+    class Indexer;
+    class RSSFeed;
+} // app
 
 namespace gui
 {
-    class SearchSettings : public SettingsWidget
+    class NewznabSettings : public SettingsWidget
     {
         Q_OBJECT
 
     public:
-        SearchSettings(std::vector<app::Newznab::Account> newznab);
-       ~SearchSettings();
+        NewznabSettings(std::vector<app::newznab::Account> accounts);
+       ~NewznabSettings();
 
         virtual bool validate() const override;
 
@@ -50,36 +62,42 @@ namespace gui
         void on_listServers_currentRowChanged(int currentRow);
 
     private:
-        Ui::SearchSettings ui_;
+        Ui::NewznabSettings ui_;
     private:
-        friend class SearchModule;
-        std::vector<app::Newznab::Account> newznab_;
+        friend class Newznab;
+        std::vector<app::newznab::Account> accounts_;
     };
 
 
-    class SearchModule : public QObject, public MainModule
+    class Newznab : public QObject, public MainModule
     {
         Q_OBJECT
 
     public:
-        SearchModule();
-       ~SearchModule();
+        Newznab();
+       ~Newznab();
 
+        // MainModule implementation
         virtual void saveState(app::Settings& settings) override;
         virtual void loadState(app::Settings& settings) override;
-
         virtual MainWidget* openSearch() override;
-
+        virtual MainWidget* openRSSFeed() override;
         virtual SettingsWidget* getSettings() override;
         virtual void applySettings(SettingsWidget* gui) override;
         virtual void freeSettings(SettingsWidget* gui) override;
 
-        const app::Newznab::Account& getAccount(const QString& apiurl) const;
+        std::unique_ptr<app::Indexer> makeSearchEngine(const QString& hostName);
+        std::unique_ptr<app::RSSFeed> makeRSSFeedEngine(const QString& hostName);
+
     Q_SIGNALS:
         void listUpdated(const QStringList&);
 
     private:
-        std::vector<app::Newznab::Account> newznab_;
+        const app::newznab::Account& findAccount(const QString& hostName) const;
+
+    private:
+        std::vector<app::newznab::Account> accounts_;
+        app::MediaTypeFlag enabled_streams_;
     };
 
 } // gui

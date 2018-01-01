@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -20,31 +20,63 @@
 
 #pragma once
 
-#include <newsflash/config.h>
-#include <newsflash/warnpush.h>
-#  include <QObject>
-#include <newsflash/warnpop.h>
+#include "newsflash/config.h"
+
+#include "newsflash/warnpush.h"
+#  include <QString>
+#include "newsflash/warnpop.h"
+
 #include <functional>
 #include <vector>
+
+#include "engine/bitflag.h"
 #include "indexer.h"
+#include "rssfeed.h"
 
 namespace app
 {
     class WebQuery;
 
-    class Newznab : public QObject, public Indexer
+    namespace newznab {
+
+    struct Account {
+        QString userid;
+        QString apiurl;
+        QString apikey;
+        QString username;
+        QString password;
+        QString email;
+    };
+
+    struct HostInfo {
+        QString strapline;
+        QString email;
+        QString version;
+        QString error;
+        QString username;
+        QString password;
+        QString apikey;
+        bool success = false;
+    };
+
+    struct ImportList {
+        bool success = false;
+        QString error;
+        std::vector<QString> hosts;
+    };
+
+    // Implements a newznab search against some newznab server
+    class Search : public app::Indexer
     {
-        Q_OBJECT
-
     public:
-        struct Account {
-            QString apiurl;
-            QString apikey;
-            QString username;
-            QString password;
-            QString email;
-        };
+        Search(const Account& account, app::MediaTypeFlag categories)
+        {
+            apikey_ = account.apikey;
+            apiurl_ = account.apiurl;
+            categories_ = categories;
+        }
 
+        // Indexer implementation
         virtual Error parse(QIODevice& io, std::vector<MediaItem>& results) override;
         virtual void prepare(const BasicQuery& query, QUrl& url) override;
         virtual void prepare(const AdvancedQuery& query, QUrl& url) override;
@@ -52,38 +84,50 @@ namespace app
         virtual void prepare(const TelevisionQuery& query, QUrl& url) override;
         virtual QString name() const override;
 
-        void setAccount(const Account& acc);
-
-        struct HostInfo {
-            QString strapline;
-            QString email;
-            QString version;
-            QString error;
-            QString username;
-            QString password;
-            QString apikey;
-            bool success;
-        };
-        struct ImportList {
-            bool success;
-            QString error;
-            std::vector<QString> hosts;
-        };
-
-        using HostCallback = std::function<void(const HostInfo&)>;
-        using ImportCallback = std::function<void(const ImportList&)>;
-
-        static 
-        WebQuery* apiTest(const Account& acc, HostCallback cb);
-
-        static
-        WebQuery* apiRegisterUser(const Account& acc, HostCallback cb);
-
-        static
-        WebQuery* importList(ImportCallback cb);
     private:
         QString apikey_;
         QString apiurl_;
+        app::MediaTypeFlag categories_;
     };
+
+    // implements RSS support against some newznab server
+    class RSSFeed : public app::RSSFeed
+    {
+    public:
+        RSSFeed(const Account& account, app::MediaTypeFlag categories)
+        {
+            userid_ = account.userid;
+            apiurl_ = account.apiurl;
+            apikey_ = account.apikey;
+            categories_ = categories;
+        }
+
+        // RSSFeed implementation
+        virtual bool parse(QIODevice& io, std::vector<MediaItem>& rss) override;
+        virtual void prepare(MainMediaType m, std::vector<QUrl>& urls) override;
+        virtual QString name() const override;
+    private:
+        QString userid_;
+        QString apiurl_;
+        QString apikey_;
+        app::MediaTypeFlag categories_;
+    };
+
+
+    using HostCallback   = std::function<void(const HostInfo&)>;
+    using ImportCallback = std::function<void(const ImportList&)>;
+
+    // test the given account
+    app::WebQuery* testAccount(const Account& account, const HostCallback& callback);
+
+    // try to register an account with the details
+    app::WebQuery* registerAccount(const Account& account, const HostCallback& callback);
+
+    // import a list of "currently known good servers".
+    // these each probably require registration before they work
+    // properly.
+    app::WebQuery* importServerList(const ImportCallback& callback);
+
+    } // namespace newznab
 
 } // app

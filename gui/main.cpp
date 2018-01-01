@@ -43,7 +43,6 @@
 #include "accounts.h"
 #include "newslist.h"
 #include "eventlog.h"
-#include "rss.h"
 #include "nzbfile.h"
 #include "nzbcore.h"
 #include "downloads.h"
@@ -57,7 +56,7 @@
 #include "commands.h"
 #include "unpack.h"
 #include "notify.h"
-#include "searchmodule.h"
+#include "newznab.h"
 #include "historydb.h"
 #include "omdb.h"
 #include "filesystem.h"
@@ -218,14 +217,9 @@ int run(QtSingleApplication& qtinstance)
     gui::NewsList news;
     win.attach(&news);
 
-    // RSS widget
-    gui::RSS rss;
-    win.attach(&rss);
-
     // downloads widget
     gui::Downloads downloads;
     win.attach(&downloads);
-
 
     // files component
     app::Files files;
@@ -300,9 +294,9 @@ int run(QtSingleApplication& qtinstance)
     gui::ToolModule toolsgui;
     win.attach(&toolsgui);
 
-    // search engine
-    gui::SearchModule search;
-    win.attach(&search);
+    // newznab accounts
+    gui::Newznab newznab;
+    win.attach(&newznab);
 
     gui::HistoryDb historygui(app::g_history);
     win.attach(&historygui);

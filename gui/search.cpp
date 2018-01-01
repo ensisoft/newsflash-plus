@@ -21,15 +21,17 @@
 #define LOGTAG "search"
 
 #include "newsflash/config.h"
+
 #include "newsflash/warnpush.h"
 #  include <QtGui/QToolBar>
 #  include <QtGui/QMenu>
 #  include <QtGui/QMessageBox>
 #  include <QDate>
 #include "newsflash/warnpop.h"
+
 #include "mainwindow.h"
 #include "search.h"
-#include "searchmodule.h"
+#include "newznab.h"
 #include "nzbfile.h"
 #include "dlgmovie.h"
 #include "dlgwildcards.h"
@@ -45,7 +47,7 @@ namespace gui
 
 const auto QuerySize = 100;
 
-Search::Search(SearchModule& module) : module_(module)
+Search::Search(Newznab& module) : module_(module)
 {
     ui_.setupUi(this);
     ui_.btnBasic->setChecked(true);
@@ -227,7 +229,7 @@ void Search::on_actionStop_triggered()
 
 void Search::on_actionSettings_triggered()
 {
-    emit showSettings(this);
+    emit showSettings("Newznab");
 }
 
 void Search::on_actionOpen_triggered()
@@ -505,19 +507,19 @@ void Search::beginSearch(quint32 queryOffset, quint32 querySize)
         if (msg.exec() == QMessageBox::No)
             return;
 
-        emit showSettings(this);
+        emit showSettings("Newznab");
         return;
     }
-    const auto& name    = ui_.cmbIndexer->currentText();
-    const auto& account = module_.getAccount(name);
+    const auto& name = ui_.cmbIndexer->currentText();
 
     if (queryOffset == 0)
         model_.clear();
 
     offset_ = queryOffset;
 
-    std::unique_ptr<app::Newznab> nab(new app::Newznab);
-    nab->setAccount(account);
+    // create the newznab search engine.
+    // which is then given to the model as an app::Indexer.
+    auto engine = module_.makeSearchEngine(name);
 
     if (ui_.btnBasic->isChecked())
     {
@@ -525,7 +527,7 @@ void Search::beginSearch(quint32 queryOffset, quint32 querySize)
         query.keywords = ui_.editSearch->text();
         query.qoffset  = queryOffset;
         query.qsize    = querySize;
-        model_.beginSearch(query, std::move(nab));
+        model_.beginSearch(query, std::move(engine));
     }
     else if (ui_.btnAdvanced->isChecked())
     {
@@ -539,7 +541,7 @@ void Search::beginSearch(quint32 queryOffset, quint32 querySize)
         query.keywords   = ui_.editSearch->text();
         query.qoffset    = queryOffset;
         query.qsize      = querySize;
-        model_.beginSearch(query, std::move(nab));
+        model_.beginSearch(query, std::move(engine));
     }
     else if (ui_.btnMusic->isChecked())
     {
@@ -550,7 +552,7 @@ void Search::beginSearch(quint32 queryOffset, quint32 querySize)
         music.year     = ui_.cmbYear->currentText();
         music.qoffset  = queryOffset;
         music.qsize    = querySize;
-        model_.beginSearch(music, std::move(nab));
+        model_.beginSearch(music, std::move(engine));
 
     }
     else if (ui_.btnTelevision->isChecked())
@@ -561,7 +563,7 @@ void Search::beginSearch(quint32 queryOffset, quint32 querySize)
         tv.keywords = ui_.editSearch->text();
         tv.qoffset  = queryOffset;
         tv.qsize    = querySize;
-        model_.beginSearch(tv, std::move(nab));
+        model_.beginSearch(tv, std::move(engine));
     }
 
     ui_.progress->setVisible(true);

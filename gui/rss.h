@@ -32,7 +32,6 @@
 #include "engine/bitflag.h"
 #include "mainwidget.h"
 #include "settings.h"
-#include "dlgmovie.h"
 #include "finder.h"
 #include "app/types.h"
 #include "app/rssreader.h"
@@ -40,13 +39,16 @@
 
 namespace gui
 {
+    class Newznab;
+    class DlgMovie;
+
     // RSS feeds GUI
     class RSS : public MainWidget, public Finder
     {
         Q_OBJECT
 
     public:
-        RSS();
+        RSS(Newznab& module);
        ~RSS();
 
         // MainWidget implementation
@@ -57,9 +59,6 @@ namespace gui
         virtual void saveState(app::Settings& s) override;
         virtual void shutdown() override;
         virtual info getInformation() const override;
-        virtual SettingsWidget* getSettings() override;
-        virtual void applySettings(SettingsWidget* gui) override;
-        virtual void freeSettings(SettingsWidget* s);
         virtual Finder* getFinder() override;
         virtual void firstLaunch() override;
 
@@ -69,6 +68,9 @@ namespace gui
         virtual std::size_t numItems() const override;
         virtual std::size_t curItem() const override;
         virtual void setFound(std::size_t index) override;
+
+    public slots:
+        void updateBackendList(const QStringList& names);
 
     private:
         bool eventFilter(QObject* obj, QEvent* event);
@@ -98,17 +100,12 @@ namespace gui
         Ui::RSS ui_;
     private:
         app::RSSReader model_;
+        Newznab& module_;
+
     private:
-        newsflash::bitflag<app::MediaType,
-            std::uint64_t> streams_;
-        bool enable_nzbs_;
-        bool enable_womble_;
-        bool show_popup_hint_;
-        QString nzbs_userid_;
-        QString nzbs_apikey_;
-        QTimer  popup_;
-    private:
+        QTimer popup_;
         std::unique_ptr<DlgMovie> movie_;
+        bool show_popup_hint_ = false;
     };
 
 } // gui
