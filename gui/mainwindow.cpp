@@ -166,10 +166,11 @@ void MainWindow::attach(MainWidget* widget, bool permanent, bool loadstate)
     }
     else
     {
-        const auto count = mUI.mainTab->count();
-        mUI.mainTab->addTab(widget, icon, text);
-        mUI.mainTab->setCurrentIndex(count);
         widget->setProperty("permanent", false);
+
+        // load the state of the widget *before* we add it to the main tab
+        // in order to make sure that we always load the state before
+        // doing any kind of widget activation.
         if (loadstate)
         {
             auto it = std::find_if(std::begin(mTransientSettings), std::end(mTransientSettings),
@@ -177,12 +178,18 @@ void MainWindow::attach(MainWidget* widget, bool permanent, bool loadstate)
                     return s.name() == widget->objectName();
                 });
             if (it == std::end(mTransientSettings))
+            {
                 widget->loadState(mSettings);
-            else {
+            }
+            else
+            {
                 auto& settings = *it;
                 widget->loadState(settings);
             }
         }
+        const auto count = mUI.mainTab->count();
+        mUI.mainTab->addTab(widget, icon, text);
+        mUI.mainTab->setCurrentIndex(count);
     }
 
     QObject::connect(widget, SIGNAL(updateMenu(MainWidget*)),
