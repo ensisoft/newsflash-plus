@@ -47,13 +47,14 @@ namespace gui
         void on_btnStart_clicked();
         void on_btnClose_clicked();
     private:
-        void registerNext(QString email, std::size_t index);
-        void registerInfo(const app::newznab::HostInfo& ret, QString email, std::size_t index);
+        void registerNext(const QString& email, std::size_t index);
+        void registerResultCallback(const app::newznab::HostInfo& ret, QString email, std::size_t index);
 
     private:
         Ui::Import m_ui;
     private:
-        std::vector<app::newznab::Account>& m_accounts;
+        std::vector<app::newznab::Account>  m_avail_accounts;
+        std::vector<app::newznab::Account>& m_added_accounts;
     private:
         app::WebQuery* m_query = nullptr;
     };

@@ -56,6 +56,7 @@ namespace app
         QString username;
         QString password;
         QString apikey;
+        QString userid;
         bool success = false;
     };
 

@@ -496,6 +496,7 @@ WebQuery* registerAccount(const Account& acc, const HostCallback& callback)
             info.username    = reg.attribute("username");
             info.password    = reg.attribute("password");
             info.apikey      = reg.attribute("apikey");
+            info.userid      = reg.attribute("userid");
             info.success = true;
         }
         callback(info);

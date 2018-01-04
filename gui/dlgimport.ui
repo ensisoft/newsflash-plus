@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>527</width>
-    <height>481</height>
+    <height>504</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -34,6 +34,9 @@
           <verstretch>0</verstretch>
          </sizepolicy>
         </property>
+        <property name="selectionMode">
+         <enum>QAbstractItemView::ExtendedSelection</enum>
+        </property>
        </widget>
       </item>
       <item row="1" column="0">
@@ -58,7 +61,13 @@
    <item>
     <widget class="QGroupBox" name="grpEmail">
      <property name="title">
-      <string>Register using this email ...</string>
+      <string>Try to register using this email ...</string>
+     </property>
+     <property name="checkable">
+      <bool>true</bool>
+     </property>
+     <property name="checked">
+      <bool>false</bool>
      </property>
      <layout class="QGridLayout" name="gridLayout_2">
       <item row="0" column="0">

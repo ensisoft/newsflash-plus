@@ -72,9 +72,6 @@ void NewznabSettings::on_btnImport_clicked()
     ui_.listServers->blockSignals(true);
     for (const auto& acc : accounts)
     {
-        if (acc.apikey.isEmpty())
-            continue;
-
         accounts_.push_back(acc);
 
         auto* item = new QListWidgetItem();
