@@ -399,7 +399,10 @@ void RSS::on_actionOpen_triggered()
     static auto callback = [=](const QByteArray& bytes, const QString& desc, app::MediaType type) {
         auto* view = new NZBFile(type);
         view->setProperty("parent-object", QVariant::fromValue(static_cast<QObject*>(this)));
-        g_win->attach(view, false);
+        newsflash::bitflag<MainWindow::WidgetAttachFlags> flags;
+        flags.set(MainWindow::WidgetAttachFlags::LoadState);
+        flags.set(MainWindow::WidgetAttachFlags::Activate);
+        g_win->attach(view, flags);
         view->open(bytes, desc);
     };
 

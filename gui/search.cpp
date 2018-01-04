@@ -246,7 +246,10 @@ void Search::on_actionOpen_triggered()
             [=](const QByteArray& bytes, const QString& desc) {
                 auto* view = new NZBFile(type);
                 view->setProperty("parent-object", QVariant::fromValue(static_cast<QObject*>(this)));
-                g_win->attach(view, false, true);
+                newsflash::bitflag<MainWindow::WidgetAttachFlags> flags;
+                flags.set(MainWindow::WidgetAttachFlags::LoadState);
+                flags.set(MainWindow::WidgetAttachFlags::Activate);
+                g_win->attach(view, flags);
                 view->open(bytes, desc);
             });
     }

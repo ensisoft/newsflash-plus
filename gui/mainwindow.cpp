@@ -135,7 +135,7 @@ void MainWindow::showWindow()
     emit shown();
 }
 
-void MainWindow::attach(MainWidget* widget, bool permanent, bool loadstate)
+void MainWindow::attach(MainWidget* widget, newsflash::bitflag<WidgetAttachFlags> flags)
 {
     Q_ASSERT(!widget->parent());
 
@@ -146,6 +146,10 @@ void MainWindow::attach(MainWidget* widget, bool permanent, bool loadstate)
     const auto& text = widget->windowTitle();
     const auto& icon = widget->windowIcon();
     const auto& info = widget->getInformation();
+
+    const bool permanent = flags.test(WidgetAttachFlags::Permanent);
+    const bool loadstate = flags.test(WidgetAttachFlags::LoadState);
+    const bool activate  = flags.test(WidgetAttachFlags::Activate);
 
     // only permanent widgets get a view action.
     // permant widgets are those that instead of being closed
@@ -189,7 +193,10 @@ void MainWindow::attach(MainWidget* widget, bool permanent, bool loadstate)
         }
         const auto count = mUI.mainTab->count();
         mUI.mainTab->addTab(widget, icon, text);
-        mUI.mainTab->setCurrentIndex(count);
+        if (activate)
+        {
+            mUI.mainTab->setCurrentIndex(count);
+        }
     }
 
     QObject::connect(widget, SIGNAL(updateMenu(MainWidget*)),
@@ -492,7 +499,12 @@ void MainWindow::messageReceived(const QString& message)
     {
         MainWidget* widget = m->dropFile(message);
         if (widget)
-            attach(widget, false, true);
+        {
+            newsflash::bitflag<WidgetAttachFlags> flags;
+            flags.set(WidgetAttachFlags::LoadState);
+            flags.set(WidgetAttachFlags::Activate);
+            attach(widget, flags);
+        }
     }
 }
 
@@ -703,7 +715,12 @@ void MainWindow::dropEvent(QDropEvent* event)
         {
             MainWidget* widget = m->dropFile(name);
             if (widget)
-                attach(widget, false, true);
+            {
+                newsflash::bitflag<WidgetAttachFlags> flags;
+                flags.set(WidgetAttachFlags::LoadState);
+                flags.set(WidgetAttachFlags::Activate);
+                attach(widget, flags);
+            }
         }
 
         for (size_t i=0; i<mWidgets.size(); ++i)
@@ -1023,7 +1040,12 @@ void MainWindow::on_actionOpen_triggered()
     {
         MainWidget* widget = m->openFile(file);
         if (widget)
-            attach(widget, false, true);
+        {
+            newsflash::bitflag<WidgetAttachFlags> flags;
+            flags.set(WidgetAttachFlags::LoadState);
+            flags.set(WidgetAttachFlags::Activate);
+            attach(widget, flags);
+        }
     }
 }
 
@@ -1112,7 +1134,10 @@ void MainWindow::on_actionSearch_triggered()
         MainWidget* widget = m->openSearch();
         if (widget)
         {
-            attach(widget, false, true);
+            newsflash::bitflag<WidgetAttachFlags> flags;
+            flags.set(WidgetAttachFlags::LoadState);
+            flags.set(WidgetAttachFlags::Activate);
+            attach(widget, flags);
         }
     }
 }
@@ -1124,7 +1149,10 @@ void MainWindow::on_actionRSS_triggered()
         MainWidget* widget = m->openRSSFeed();
         if (widget)
         {
-            attach(widget, false, true);
+            newsflash::bitflag<WidgetAttachFlags> flags;
+            flags.set(WidgetAttachFlags::LoadState);
+            flags.set(WidgetAttachFlags::Activate);
+            attach(widget, flags);
         }
     }
 }

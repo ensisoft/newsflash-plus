@@ -209,22 +209,25 @@ int run(QtSingleApplication& qtinstance)
     QObject::connect(&reporter, SIGNAL(sendTextReport(const QString&, const QString&)),
         &smtp, SLOT(sendEmail(const QString&, const QString&)));
 
+    newsflash::bitflag<gui::MainWindow::WidgetAttachFlags> permanent_widget_flags;
+    permanent_widget_flags.set(gui::MainWindow::WidgetAttachFlags::Permanent);
+
     // accounts widget
     gui::Accounts gacc;
-    win.attach(&gacc);
+    win.attach(&gacc, permanent_widget_flags);
 
     // groups widget
     gui::NewsList news;
-    win.attach(&news);
+    win.attach(&news, permanent_widget_flags);
 
     // downloads widget
     gui::Downloads downloads;
-    win.attach(&downloads);
+    win.attach(&downloads, permanent_widget_flags);
 
     // files component
     app::Files files;
     gui::Files filesUI(files);
-    win.attach(&filesUI);
+    win.attach(&filesUI, permanent_widget_flags);
     // connect to the engine
     QObject::connect(&engine, SIGNAL(fileCompleted(const app::FileInfo&)),
         &files, SLOT(fileCompleted(const app::FileInfo&)));
@@ -257,7 +260,7 @@ int run(QtSingleApplication& qtinstance)
 
     // compose repair + unpack together into a single GUI element
     gui::Archives archives(unpackGui, repairGui);
-    win.attach(&archives);
+    win.attach(&archives, permanent_widget_flags);
 
     // archive manager runs the show regarding repair/unpack order.
     app::ArchiveManager arcMan(repairer, unpacker);
@@ -280,7 +283,7 @@ int run(QtSingleApplication& qtinstance)
     // eventlog module. this is a bit special
     // because it is used literally from everywhere.
     gui::EventLog log;
-    win.attach(&log);
+    win.attach(&log, permanent_widget_flags);
 
     // core module
     gui::CoreModule core;
@@ -377,6 +380,13 @@ int run(QtSingleApplication& qtinstance)
     win.prepareMainTab();
     win.startup();
     win.show();
+
+    // add some transient default widgets to be shown
+    newsflash::bitflag<gui::MainWindow::WidgetAttachFlags> transient_widget_flags;
+    transient_widget_flags.set(gui::MainWindow::WidgetAttachFlags::LoadState);
+
+    win.attach(newznab.openRSSFeed(), transient_widget_flags);
+    win.attach(newznab.openSearch(), transient_widget_flags);
 
     auto ret = qtinstance.exec();
 
