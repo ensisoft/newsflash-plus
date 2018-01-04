@@ -2153,6 +2153,113 @@ void test_save_load_tasks()
     }
 }
 
+// test that when a new download is scheduled while the
+// connections are in error state the task stays in queued
+// state and then executes when a connection is available.
+//
+// Issue #86
+//
+void test_task_execute_while_connection_disruption()
+{
+    const bool debug_single_thread = true;
+    const bool spawn_immediately = true;
+
+
+
+    Engine eng(std::make_unique<Factory>(), debug_single_thread);
+
+    {
+        ConnState test_conn_params;
+        test_conn_params.SetError(Connection::State::Initializing,
+            Connection::Error::PermissionDenied);
+
+        ui::Account account;
+        account.id = 123;
+        account.name = "test";
+        account.username = "user";
+        account.password = "pass";
+        account.secure_host = "test.fail.com";
+        account.secure_port = 1000;
+        account.connections = 1;
+        account.enable_secure_server = true;
+        account.enable_general_server = false;
+        account.enable_compression = false;
+        account.enable_pipelining = false;
+        account.user_data = &test_conn_params;
+        eng.Start();
+        eng.SetAccount(account, spawn_immediately);
+        while (eng.HasPendingActions())
+        {
+            eng.RunMainThread();
+            eng.Pump();
+        };
+
+        ui::Connection conn;
+        eng.GetConn(0, &conn);
+        BOOST_REQUIRE(conn.state == ui::Connection::States::Error);
+    }
+
+    TaskParams params;
+    params.should_commit = false;
+    params.expect_cmdlist = true;
+    params.num_buffers = 2;
+
+    ui::FileDownload download;
+    download.account   = 123;
+    download.size      = 666;
+    download.path      = "test/foo/bar";
+    download.desc      = "download";
+    download.articles.push_back("<success>");
+    download.articles.push_back("<success>");
+    download.groups.push_back("alt.binaries.success");
+    download.user_data = &params;
+    ui::FileBatchDownload batch;
+    batch.account = 123;
+    batch.size    = 666;
+    batch.path    = "test/foo/bar";
+    batch.desc    = "download";
+    batch.files.push_back(download);
+    eng.DownloadFiles(batch);
+
+    ui::TaskDesc task;
+    eng.GetTask(0, &task);
+    BOOST_REQUIRE(task.state == ui::TaskDesc::States::Queued);
+
+    {
+        ConnState test_conn_params;
+        ui::Account account;
+        account.id = 123;
+        account.name = "test";
+        account.username = "user";
+        account.password = "pass";
+        account.secure_host = "test.pass.com";
+        account.secure_port = 1000;
+        account.connections = 1;
+        account.enable_secure_server = true;
+        account.enable_general_server = false;
+        account.enable_compression = false;
+        account.enable_pipelining = false;
+        account.user_data = &test_conn_params;
+        eng.SetAccount(account, false);
+    }
+
+    while (eng.HasPendingActions())
+    {
+        eng.RunMainThread();
+        eng.Pump();
+    }
+
+    eng.GetTask(0, &task);
+    BOOST_REQUIRE(task.state == ui::TaskDesc::States::Complete);
+
+    eng.Stop();
+    while (eng.HasPendingActions())
+    {
+        eng.RunMainThread();
+        eng.Pump();
+    }
+}
+
 
 int test_main(int argc, char*[])
 {
@@ -2170,6 +2277,7 @@ int test_main(int argc, char*[])
     test_task_execute_fill_success();
     test_task_execute_fill_error();
     test_task_execute_connection_disruption();
+    test_task_execute_while_connection_disruption();
 
     test_save_load_tasks();
     return 0;
