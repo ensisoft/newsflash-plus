@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -18,11 +18,16 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <newsflash/config.h>
-#include <boost/test/minimal.hpp>
+#include "newsflash/config.h"
+
+#include "newsflash/warnpush.h"
+#  include <boost/test/minimal.hpp>
+#include "newsflash/warnpop.h"
+
 #include <QCoreApplication>
 #include <QTimer>
-#include "../poweroff.h"
+
+#include "app/poweroff.h"
 #include "unit_test_poweroff.h"
 
 
@@ -48,14 +53,14 @@ int test_main(int argc, char* argv[])
 
         power.waitDownloads(true);
         power.waitRepairs(true);
-        power.repairEnqueue();        
+        power.repairEnqueue();
         power.numPendingTasks(0);
-        
+
         BOOST_REQUIRE(!tester.initPoweroffSignal);
         power.repairReady();
         BOOST_REQUIRE(tester.initPoweroffSignal);
 
-    }    
+    }
 
     {
         app::Poweroff power;
@@ -66,18 +71,18 @@ int test_main(int argc, char* argv[])
         power.waitRepairs(true);
         power.waitUnpacks(true);
 
-        power.repairEnqueue();  
+        power.repairEnqueue();
         power.numPendingArchives(1);
         power.numPendingTasks(1);
-        
+
         BOOST_REQUIRE(!tester.initPoweroffSignal);
         power.repairReady();
         BOOST_REQUIRE(!tester.initPoweroffSignal);
         power.numPendingArchives(0);
-        BOOST_REQUIRE(!tester.initPoweroffSignal);        
+        BOOST_REQUIRE(!tester.initPoweroffSignal);
         power.numPendingTasks(0);
-        BOOST_REQUIRE(tester.initPoweroffSignal);                
-    }        
+        BOOST_REQUIRE(tester.initPoweroffSignal);
+    }
 
     return 0;
 }

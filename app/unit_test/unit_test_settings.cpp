@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -18,9 +18,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <newsflash/config.h>
+#include "newsflash/config.h"
 
-#include <boost/test/minimal.hpp>
+#include "newsflash/warnpush.h"
+#  include <boost/test/minimal.hpp>
+#include "newsflash/warnpop.h"
 
 #include <QCoreApplication>
 #include <QEventLoop>
@@ -29,7 +31,7 @@
 #include <QBuffer>
 #include <cstdio>
 
-#include "../settings.h"
+#include "app/settings.h"
 
 int test_main(int argc, char* argv[])
 {

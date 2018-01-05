@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -18,9 +18,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <newsflash/config.h>
-#include <boost/test/minimal.hpp>
-#include "../debug.h"
+#include "newsflash/config.h"
+
+#include "newsflash/warnpush.h"
+#  include <boost/test/minimal.hpp>
+#include "newsflash/warnpop.h"
+
+#include "app/debug.h"
 
 int test_main(int, char* argv[])
 {
@@ -40,7 +44,7 @@ int test_main(int, char* argv[])
         DEBUG("Unrar error %1", QProcess::WriteError);
     }
 
-    for  (int i=0; i<100000; ++i)
+    for (int i=0; i<100; ++i)
     {
         DEBUG("ping");
     }

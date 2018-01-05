@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -18,19 +18,20 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <newsflash/config.h>
-#include <newsflash/test_minimal.h>
+#include "newsflash/config.h"
 
-#include <newsflash/warnpush.h>
-//#  include <boost/test/minimal.hpp>
+#include "newsflash/warnpush.h"
 #  include <QCoreApplication>
 #  include <QFile>
 #  include <QEventLoop>
-#  include <newsflash/warnpop.h>
+#include "newsflash/warnpop.h"
+
 #include <vector>
 #include <list>
-#include "../webengine.h"
-#include "../webquery.h"
+
+#include "app/webengine.h"
+#include "app/webquery.h"
+#include "test_minimal.h"
 
 void test_basic_get()
 {
@@ -115,7 +116,7 @@ void test_mass_timeout()
                 ++success;
             };
         }
-    }    
+    }
     QEventLoop loop;
     QObject::connect(&engine, SIGNAL(allFinished()), &loop, SLOT(quit()));
     loop.exec();

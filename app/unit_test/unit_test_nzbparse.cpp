@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -18,21 +18,24 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <newsflash/config.h>
-#include <newsflash/warnpush.h>
+#include "newsflash/config.h"
+
+#include "newsflash/warnpush.h"
 #  include <boost/test/minimal.hpp>
 #  include <QCoreApplication>
 #  include <QFile>
 #  include <QEventLoop>
-#  include <newsflash/warnpop.h>
+#include "newsflash/warnpop.h"
+
 #include <vector>
-#include "../nzbparse.h"
+
+#include "app/nzbparse.h"
 
 void test_sync()
 {
     // success
     {
-        QFile input("ubuntu-12.04.4-server-amd64.iso.nzb");
+        QFile input("test_data/ubuntu-12.04.4-server-amd64.iso.nzb");
         input.open(QIODevice::ReadOnly);
         BOOST_REQUIRE(input.isOpen());
 
@@ -52,12 +55,12 @@ void test_sync()
 
         const auto& par = content[1];
         BOOST_REQUIRE(par.date == "1392602495");
-        BOOST_REQUIRE(par.subject == "Test2 - [2/2] - \"ubuntu-12.04.4-server-amd64.par2\" yEnc (1/1)"); 
+        BOOST_REQUIRE(par.subject == "Test2 - [2/2] - \"ubuntu-12.04.4-server-amd64.par2\" yEnc (1/1)");
         BOOST_REQUIRE(par.segments.size() == 1);
         BOOST_REQUIRE(par.segments[0] == "<Part1of1.FB4A5EFFD8D842A6953CDA1F2239C743@1392561150.local>");
     }
 
-    // Io error 
+    // Io error
     {
         QFile input;
         std::vector<app::NZBContent> content;
@@ -68,10 +71,10 @@ void test_sync()
 
     // nzb content error
     {
-        QFile input("ubuntu-12.04.4-server-amd64.iso-nzb-error.nzb");
+        QFile input("test_data/ubuntu-12.04.4-server-amd64.iso-nzb-error.nzb");
         std::vector<app::NZBContent> content;
 
-        input.open(QIODevice::ReadOnly);      
+        input.open(QIODevice::ReadOnly);
         BOOST_REQUIRE(input.isOpen());
         const auto err = app::parseNZB(input, content);
 
@@ -80,10 +83,10 @@ void test_sync()
 
     // xml error
     {
-        QFile input("ubuntu-12.04.4-server-amd64.iso-xml-error.nzb");
+        QFile input("test_data/ubuntu-12.04.4-server-amd64.iso-xml-error.nzb");
         std::vector<app::NZBContent> content;
 
-        input.open(QIODevice::ReadOnly);      
+        input.open(QIODevice::ReadOnly);
         BOOST_REQUIRE(input.isOpen());
         const auto err = app::parseNZB(input, content);
 

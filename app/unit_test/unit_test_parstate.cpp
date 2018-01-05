@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -18,17 +18,21 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <newsflash/config.h>
-#include <newsflash/test_float.h>
-#include <boost/test/minimal.hpp>
-#include "../parstate.h"
-#include "../paritychecker.h"
+#include "newsflash/config.h"
+
+#include "newsflash/warnpush.h"
+#  include <boost/test/minimal.hpp>
+#include "newsflash/warnpop.h"
+
+#include "app/parstate.h"
+#include "app/paritychecker.h"
+#include "test_float.h"
 
 int test_main(int, char* argv[])
 {
     using status = app::ParityChecker::FileState;
     using type   = app::ParityChecker::FileType;
-    using state = app::ParState::ExecState;        
+    using state = app::ParState::ExecState;
 
     {
 
@@ -42,16 +46,16 @@ int test_main(int, char* argv[])
         BOOST_REQUIRE(state.update("Loaded: \"The.Judge.2014.720p.BluRay.DTS.x264-iNK.vol000+001.par2\" Loaded 10 new packets\n", file));
         BOOST_REQUIRE(file.state == status::Loaded);
         BOOST_REQUIRE(file.name  == "The.Judge.2014.720p.BluRay.DTS.x264-iNK.vol000+001.par2");
-        BOOST_REQUIRE(file.type  == type::Parity);        
+        BOOST_REQUIRE(file.type  == type::Parity);
 
         BOOST_REQUIRE(state.update("Loading: \"The.Judge.2014.720p.BluRay.DTS.x264-iNK.vol000+002.par2\".\n", file));
         BOOST_REQUIRE(file.state == status::Loading);
-        BOOST_REQUIRE(file.type  == type::Parity);                
+        BOOST_REQUIRE(file.type  == type::Parity);
         BOOST_REQUIRE(file.name  == "The.Judge.2014.720p.BluRay.DTS.x264-iNK.vol000+002.par2");
         BOOST_REQUIRE(state.update("Loaded: \"The.Judge.2014.720p.BluRay.DTS.x264-iNK.vol000+002.par2\" No new packets found.", file));
         BOOST_REQUIRE(file.state == status::Loaded);
-        BOOST_REQUIRE(file.type  == type::Parity);                
-        BOOST_REQUIRE(file.name  == "The.Judge.2014.720p.BluRay.DTS.x264-iNK.vol000+002.par2");        
+        BOOST_REQUIRE(file.type  == type::Parity);
+        BOOST_REQUIRE(file.name  == "The.Judge.2014.720p.BluRay.DTS.x264-iNK.vol000+002.par2");
 
         BOOST_REQUIRE(!state.update("There are 49 recoverable filed 0 other file", file));
         BOOST_REQUIRE(!state.update("The block size used was 4814660 bytes.\n", file));
@@ -62,12 +66,12 @@ int test_main(int, char* argv[])
         BOOST_REQUIRE(state.update("Target: \"The.Judge.2014.720p.BluRay.DTS.x264-iNK.part48.rar\" - missing.\n", file));
         BOOST_REQUIRE(file.state == status::Missing);
         BOOST_REQUIRE(file.type  == type::Target);
-        BOOST_REQUIRE(file.name  == "The.Judge.2014.720p.BluRay.DTS.x264-iNK.part48.rar");        
+        BOOST_REQUIRE(file.name  == "The.Judge.2014.720p.BluRay.DTS.x264-iNK.part48.rar");
 
         BOOST_REQUIRE(state.update("Target: \"The.Judge.2014.720p.BluRay.DTS.x264-iNK.part09.rar\" - damaged. Found 39 of 42 data blocks.\n", file));
         BOOST_REQUIRE(file.state == status::Damaged);
         BOOST_REQUIRE(file.type  == type::Target);
-        BOOST_REQUIRE(file.name  == "The.Judge.2014.720p.BluRay.DTS.x264-iNK.part09.rar");        
+        BOOST_REQUIRE(file.name  == "The.Judge.2014.720p.BluRay.DTS.x264-iNK.part09.rar");
 
         BOOST_REQUIRE(!state.update("Scanning extra files:", file));
 
@@ -104,7 +108,7 @@ int test_main(int, char* argv[])
         BOOST_REQUIRE(app::ParState::parseRepairProgress(
             "Repairing Reed Solomon Matrix: 56.0%\n", step, done));
         BOOST_REQUIRE(step == "Repairing Reed Solomon Matrix");
-        BOOST_REQUIRE(done == F32(56.0));        
+        BOOST_REQUIRE(done == F32(56.0));
 
         BOOST_REQUIRE(app::ParState::parseRepairProgress(
             "Repairing: 56.8%\n", step, done));
@@ -124,4 +128,4 @@ int test_main(int, char* argv[])
     }
 
     return 0;
-}        
+}
