@@ -69,6 +69,10 @@ QString findMovieTitle(const QString& subject)
     if (tryCapture(subject, "(^\\S*)\\.(DVDRip)", 1, ret))
         return ret;
 
+    // The.Faith.Of.Anna.Waters.(2016).1080p.BluRay.x264.DD5.1
+    if (tryCapture(subject, "(^\\S*)\\.\\((\\d{4})\\)\\.(1080p|720p)", 1, ret))
+        return ret;
+
     return ret;
 }
 
