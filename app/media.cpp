@@ -18,22 +18,44 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <newsflash/config.h>
-#include <newsflash/warnpush.h>
+#include "newsflash/config.h"
+
+#include "newsflash/warnpush.h"
 #  include <QRegExp>
-#include <newsflash/warnpop.h>
+#include "newsflash/warnpop.h"
+
+#include <vector>
+
 #include "media.h"
 
 namespace app
 {
 
-bool tryCapture(const QString& subject, const QString& regex, int index, QString& out)
+bool tryCapture(const QString& subject, const QString& regex,
+    int firstIndex, QString* firstCapture,
+    int secondIndex, QString* secondCapture)
+
 {
     const QRegExp pattern(regex);
     if (pattern.indexIn(subject) == -1)
         return false;
 
-    out = pattern.cap(index);
+    if (firstCapture)
+        *firstCapture = pattern.cap(firstIndex);
+    if (secondCapture)
+        *secondCapture = pattern.cap(secondIndex);
+
+    return true;
+}
+
+bool tryCapture(const QString& subject, const QString& regex, int index, QString* capture)
+{
+    const QRegExp pattern(regex);
+    if (pattern.indexIn(subject) == -1)
+        return false;
+
+    if (capture)
+        *capture = pattern.cap(index);
     return true;
 }
 
@@ -42,38 +64,38 @@ QString findAdultTitle(const QString& subject)
     QString ret;
 
     // Butterfly.2008.XXX.HDTVRiP.x264-REDX"
-    if (tryCapture(subject, "(^\\S*)\\.(\\d{4})\\.XXX\\.", 1, ret))
+    if (tryCapture(subject, "(^\\S*)\\.(\\d{4})\\.XXX\\.", 1, &ret))
         return ret;
 
-    if (tryCapture(subject, "(^\\S*)\\.((FRENCH)|(GERMAN))\\.XXX\\.", 1, ret))
+    if (tryCapture(subject, "(^\\S*)\\.((FRENCH)|(GERMAN))\\.XXX\\.", 1, &ret))
         return ret;
 
     // Boning.The.Mom.Next.Door.XXX.COMPLETE.NTSC.DVDR-DFA
-    if (tryCapture(subject, "(^\\S*)\\.XXX\\.", 1, ret))
+    if (tryCapture(subject, "(^\\S*)\\.XXX\\.", 1, &ret))
         return ret;
 
     return ret;
 }
 
-QString findMovieTitle(const QString& subject)
+QString findMovieTitle(const QString& subject, QString* outReleaseYear)
 {
-    QString ret;
+    QString title;
 
     // Two.Girls.And.a.Guy.1997.1080p.BluRay.x264-BARC0DE
-    if (tryCapture(subject, "(^\\S*)\\.(\\d{4})\\.", 1, ret))
-        return ret;
+    if (tryCapture(subject, "(^\\S*)\\.(\\d{4})\\.", 1, &title, 2, outReleaseYear))
+        return title;
 
     // Dark.Salvation.DVDRip.Multi4.READ
-    if (tryCapture(subject, "(^\\S*)\\.(DVDRIP)", 1, ret))
-        return ret;
-    if (tryCapture(subject, "(^\\S*)\\.(DVDRip)", 1, ret))
-        return ret;
+    if (tryCapture(subject, "(^\\S*)\\.(DVDRIP)", 1, &title))
+        return title;
+    if (tryCapture(subject, "(^\\S*)\\.(DVDRip)", 1, &title))
+        return title;
 
     // The.Faith.Of.Anna.Waters.(2016).1080p.BluRay.x264.DD5.1
-    if (tryCapture(subject, "(^\\S*)\\.\\((\\d{4})\\)\\.(1080p|720p)", 1, ret))
-        return ret;
+    if (tryCapture(subject, "(^\\S*)\\.\\((\\d{4})\\)\\.(1080p|720p)", 1, &title, 2, outReleaseYear))
+        return title;
 
-    return ret;
+    return "";
 }
 
 QString findTVSeriesTitle(const QString& subject, QString* season, QString* episode)
