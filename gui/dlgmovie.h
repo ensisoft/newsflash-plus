@@ -41,7 +41,8 @@ namespace gui
        ~DlgMovie();
 
         // show the dialog and initiate lookup for the Movie
-        void lookupMovie(const QString& movieTitle, const QString& guid);
+        void lookupMovie(const QString& movieTitle, const QString& guid,
+            const QString& releaseYear = "");
 
         void testLookupMovie(const QString& apikey);
 

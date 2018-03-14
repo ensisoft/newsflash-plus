@@ -20,13 +20,13 @@
 
 #pragma once
 
-#include <newsflash/config.h>
+#include "newsflash/config.h"
 
-#include <newsflash/warnpush.h>
+#include "newsflash/warnpush.h"
 #  include <QtGui/QPixmap>
 #  include <QObject>
 #  include <QString>
-#include <newsflash/warnpop.h>
+#include "newsflash/warnpop.h"
 #include <map>
 
 class QNetworkReply;
@@ -48,30 +48,30 @@ namespace app
             QString runtime;
             QString actors;
             QString imdbid;
+            QString rating;
+            QString year;
             QPixmap poster;
-            float rating;
-            int year;
         };
 
 
         MovieDatabase();
        ~MovieDatabase();
 
-        bool beginLookup(const QString& title);
+        bool beginLookup(const QString& title, const QString& releaseYear = "");
         void abortLookup(const QString& title);
 
         bool testLookup(const QString& testKey, const QString& testTitle);
 
         void setApikey(const QString& apikey)
-        { apikey_   = apikey; }
+        { mApikey = apikey; }
 
-        QString apikey() const
-        { return apikey_; }
+        QString getApikey() const
+        { return mApikey; }
 
-        bool hasApiKey() const
-        { return !apikey_.isEmpty(); }
+        bool hasApikey() const
+        { return !mApikey.isEmpty(); }
 
-        const Movie* getMovie(const QString& title) const;
+        const Movie* getMovie(const QString& title, const QString& releaseYear = "") const;
 
     signals:
         void lookupReady(const QString& title);
@@ -84,9 +84,9 @@ namespace app
         void onPosterFinished(QNetworkReply& reply, const QString& title);
 
     private:
-        std::map<QString, Movie> db_;
+        std::map<QString, Movie> mMovieMap;
     private:
-        QString apikey_;
+        QString mApikey;
     };
 
     extern MovieDatabase* g_movies;

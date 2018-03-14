@@ -38,12 +38,12 @@ void Omdb::loadState(app::Settings& s)
 
 void Omdb::saveState(app::Settings& s)
 {
-    s.set("omdb", "apikey", omdb_->apikey());
+    s.set("omdb", "apikey", omdb_->getApikey());
 }
 
 SettingsWidget* Omdb::getSettings()
 {
-    return new OmdbSettings(omdb_->apikey());
+    return new OmdbSettings(omdb_->getApikey());
 }
 
 void Omdb::applySettings(SettingsWidget* gui)

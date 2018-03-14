@@ -20,14 +20,16 @@
 
 #define LOGTAG "omdb"
 
-#include <newsflash/config.h>
-#include <newsflash/warnpush.h>
+#include "newsflash/config.h"
+
+#include "newsflash/warnpush.h"
 #  include <QJson/Parser>
 #  include <QString>
 #  include <QUrl>
 #  include <QByteArray>
 #  include <QBuffer>
-#include <newsflash/warnpop.h>
+#include "newsflash/warnpop.h"
+
 #include "omdb.h"
 #include "debug.h"
 #include "eventlog.h"
@@ -48,9 +50,9 @@ MovieDatabase::~MovieDatabase()
     DEBUG("MovieDatabase deleted");
 }
 
-bool MovieDatabase::beginLookup(const QString& title)
+bool MovieDatabase::beginLookup(const QString& title, const QString& releaseYear)
 {
-    if (apikey_.isEmpty())
+    if (mApikey.isEmpty())
     {
         WARN("No apikey set. Can't use omdbapi.com.");
         return false;
@@ -58,17 +60,18 @@ bool MovieDatabase::beginLookup(const QString& title)
 
     QUrl url("http://www.omdbapi.com/");
     url.addQueryItem("t", title);
-    url.addQueryItem("y", "");
     url.addQueryItem("plot", "short");
     url.addQueryItem("r", "json");
-    url.addQueryItem("apikey", apikey_);
+    url.addQueryItem("apikey", mApikey);
+    if (!releaseYear.isEmpty())
+        url.addQueryItem("y", releaseYear);
 
     WebQuery query(url);
     query.OnReply = std::bind(&MovieDatabase::onLookupFinished, this,
         std::placeholders::_1, title);
     g_web->submit(query);
 
-    DEBUG("Lookup movie '%1'", title);
+    DEBUG("Lookup movie '%1' %2", title, releaseYear);
     return true;
 }
 
@@ -93,13 +96,20 @@ bool MovieDatabase::testLookup(const QString& testKey, const QString& testTitle)
 void MovieDatabase::abortLookup(const QString& title)
 {}
 
-const MovieDatabase::Movie* MovieDatabase::getMovie(const QString& title) const
+const MovieDatabase::Movie* MovieDatabase::getMovie(const QString& title, const QString& releaseYear) const
 {
-    const auto it = db_.find(title);
-    if (it == std::end(db_))
-        return nullptr;
-
-    return &it->second;
+    const auto it = mMovieMap.find(title);
+    if (it != std::end(mMovieMap))
+    {
+        const auto* movie = &it->second;
+        if (!releaseYear.isEmpty())
+        {
+            if (movie->year != releaseYear)
+                return nullptr;
+        }
+        return movie;
+    }
+    return nullptr;
 }
 
 void MovieDatabase::onLookupFinished(QNetworkReply& reply, const QString& title)
@@ -134,18 +144,18 @@ void MovieDatabase::onLookupFinished(QNetworkReply& reply, const QString& title)
     }
 
     Movie movie;
-    movie.title = title;
-    movie.genre = json["Genre"].toString();
-    movie.plot  = json["Plot"].toString();
+    movie.title    = title;
+    movie.genre    = json["Genre"].toString();
+    movie.plot     = json["Plot"].toString();
     movie.director = json["Director"].toString();
     movie.language = json["Language"].toString();
     movie.country  = json["Country"].toString();
-    movie.rating   = json["imdbRating"].toFloat();
-    movie.year     = json["Year"].toInt();
+    movie.rating   = json["imdbRating"].toString();
+    movie.year     = json["Year"].toString();
     movie.runtime  = json["Runtime"].toString();
     movie.actors   = json["Actors"].toString();
     movie.imdbid   = json["imdbID"].toString();
-    db_.insert(std::make_pair(title, movie));
+    mMovieMap.insert(std::make_pair(title, movie));
 
     const auto& poster = json["Poster"].toString();
     DEBUG("Retrieving poster from %1", poster);
@@ -168,8 +178,8 @@ void MovieDatabase::onPosterFinished(QNetworkReply& reply, const QString& title)
         return;
     }
 
-    auto it = db_.find(title);
-    Q_ASSERT(it != std::end(db_));
+    auto it = mMovieMap.find(title);
+    Q_ASSERT(it != std::end(mMovieMap));
 
     QByteArray bytes = reply.readAll();
     QPixmap& pixmap  = it->second.poster;

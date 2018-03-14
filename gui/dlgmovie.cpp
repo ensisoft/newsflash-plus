@@ -55,15 +55,15 @@ DlgMovie::DlgMovie(QWidget* parent) : QDialog(parent)
 DlgMovie::~DlgMovie()
 {}
 
-void DlgMovie::lookupMovie(const QString& movieTitle, const QString& guid)
+void DlgMovie::lookupMovie(const QString& movieTitle, const QString& guid, const QString& releaseYear)
 {
     mTitle = movieTitle;
     mGuid  = guid;
 
-    const auto* movie = app::g_movies->getMovie(movieTitle);
+    const auto* movie = app::g_movies->getMovie(movieTitle, releaseYear);
     if (!movie)
     {
-        if (app::g_movies->beginLookup(movieTitle))
+        if (app::g_movies->beginLookup(movieTitle, releaseYear))
         {
             mLoader.start();
             mUI.lblPoster->setMovie(&mLoader);
@@ -132,7 +132,7 @@ void DlgMovie::lookupSeries(const QString& seriesTitle, const QString& guid)
 void DlgMovie::on_btnCredentials_clicked()
 {
     g_win->showSetting("Omdb");
-    if (app::g_movies->hasApiKey())
+    if (app::g_movies->hasApikey())
     {
         lookupMovie(mTitle, mGuid);
     }
@@ -152,14 +152,14 @@ void DlgMovie::lookupReady(const QString& title)
     const auto* movie = app::g_movies->getMovie(title);
 
     QStringList ss;
-    ss << "Title: " << movie->title << "<br>";
-    ss << "Genre: " << movie->genre << "<br>";
-    ss << "Director: " << movie->director << "<br>";
-    ss << "Actors: " << movie->actors << "<br>";
-    ss << "Language: " << movie->language << "<br>";
-    ss << "Country: " << movie->country << ", " << QString::number(movie->year) << "<br>";
-    ss << "Runtime: " << movie->runtime << "<br>";
-    ss << "IMDb Score: " << QString::number(movie->rating) << "<br>";
+    ss << "Title: "      << movie->title    << "<br>";
+    ss << "Genre: "      << movie->genre    << "<br>";
+    ss << "Director: "   << movie->director << "<br>";
+    ss << "Actors: "     << movie->actors   << "<br>";
+    ss << "Language: "   << movie->language << "<br>";
+    ss << "Country: "    << movie->country  << ", " << movie->year << "<br>";
+    ss << "Runtime: "    << movie->runtime  << "<br>";
+    ss << "IMDb Score: " << movie->rating   << "<br>";
     ss << "<br>";
     ss << movie->plot;
     ss << QString("<br><a href=http://www.imdb.com/title/%1>more ...</a>").arg(movie->imdbid);

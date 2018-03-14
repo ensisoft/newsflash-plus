@@ -452,7 +452,8 @@ void RSS::on_actionInformation_triggered()
 
     if (isMovie(item.type))
     {
-        const auto& title = app::findMovieTitle(item.title);
+        QString releaseYear;
+        const auto& title = app::findMovieTitle(item.title, &releaseYear);
         if (title.isEmpty())
             return;
         if (!movie_)
@@ -461,7 +462,7 @@ void RSS::on_actionInformation_triggered()
             QObject::connect(movie_.get(), SIGNAL(startMovieDownload(const QString&)),
                 this, SLOT(startMovieDownload(const QString&)));
         }
-        movie_->lookupMovie(title, item.guid);
+        movie_->lookupMovie(title, item.guid, releaseYear);
     }
     else if (isTelevision(item.type))
     {
@@ -590,7 +591,8 @@ void RSS::popupDetails()
     const auto& item  = model_.getItem(sel.row());
     if (isMovie(item.type))
     {
-        const auto& title = app::findMovieTitle(item.title);
+        QString releaseYear;
+        const auto& title = app::findMovieTitle(item.title, &releaseYear);
         if (title.isEmpty())
             return;
         if (!movie_)
@@ -599,7 +601,7 @@ void RSS::popupDetails()
             QObject::connect(movie_.get(), SIGNAL(startMovieDownload(const QString&)),
                 this, SLOT(startMovieDownload(const QString&)));
         }
-        movie_->lookupMovie(title, item.guid);
+        movie_->lookupMovie(title, item.guid, releaseYear);
     }
     else if (isTelevision(item.type))
     {

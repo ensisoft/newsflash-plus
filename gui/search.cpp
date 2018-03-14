@@ -422,7 +422,8 @@ void Search::popupDetails()
     const auto& item = model_.getItem(sel);
     if (isMovie(item.type))
     {
-        const auto& title = app::findMovieTitle(item.title);
+        QString releaseYear;
+        const auto& title = app::findMovieTitle(item.title, &releaseYear);
         if (title.isEmpty())
             return;
         if (!movie_)
@@ -431,7 +432,7 @@ void Search::popupDetails()
             QObject::connect(movie_.get(), SIGNAL(startMovieDownload(const QString&)),
                 this, SLOT(startMovieDownload(const QString&)));
         }
-        movie_->lookupMovie(title, item.guid);
+        movie_->lookupMovie(title, item.guid, releaseYear);
     }
     else if (isTelevision(item.type))
     {
