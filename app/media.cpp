@@ -95,6 +95,10 @@ QString findMovieTitle(const QString& subject, QString* outReleaseYear)
     if (tryCapture(subject, "(^\\S*)\\.\\((\\d{4})\\)\\.(1080p|720p)", 1, &title, 2, outReleaseYear))
         return title;
 
+    // The Condo (2017) 1080p Amazon WEB-DL+ 2.0 x264-TrollHD
+    if (tryCapture(subject, "(^(\\S| )*) \\((\\d{4})\\) (1080p|720p)? (Amazon|Netflix)", 1, &title, 2, outReleaseYear))
+        return title;
+
     return "";
 }
 
