@@ -49,6 +49,8 @@ namespace gui
         // show the dialog and initite lookup for the TV Series
         void lookupSeries(const QString& seriesTitle, const QString& guid);
 
+        static bool isLookupEnabled();
+
     signals:
         void startMovieDownload(const QString& guid);
 

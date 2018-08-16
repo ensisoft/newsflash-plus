@@ -129,6 +129,12 @@ void DlgMovie::lookupSeries(const QString& seriesTitle, const QString& guid)
     lookupMovie(seriesTitle, guid);
 }
 
+// static
+bool DlgMovie::isLookupEnabled()
+{
+    return app::g_movies->isEnabled();
+}
+
 void DlgMovie::on_btnCredentials_clicked()
 {
     g_win->showSetting("Omdb");

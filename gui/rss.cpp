@@ -45,37 +45,37 @@
 namespace gui
 {
 
-RSS::RSS(Newznab& module) : module_(module)
+RSS::RSS(Newznab& module) : mNewznab(module)
 {
-    ui_.setupUi(this);
-    ui_.tableView->setModel(model_.getModel());
-    ui_.actionDownload->setEnabled(false);
-    ui_.actionDownloadTo->setEnabled(false);
-    ui_.actionSave->setEnabled(false);
-    ui_.actionOpen->setEnabled(false);
-    ui_.actionStop->setEnabled(false);
-    ui_.progressBar->setVisible(false);
-    ui_.progressBar->setValue(0);
-    ui_.progressBar->setRange(0, 0);
+    mUi.setupUi(this);
+    mUi.tableView->setModel(mRSSReader.getModel());
+    mUi.actionDownload->setEnabled(false);
+    mUi.actionDownloadTo->setEnabled(false);
+    mUi.actionSave->setEnabled(false);
+    mUi.actionOpen->setEnabled(false);
+    mUi.actionStop->setEnabled(false);
+    mUi.progressBar->setVisible(false);
+    mUi.progressBar->setValue(0);
+    mUi.progressBar->setRange(0, 0);
 
-    auto* selection = ui_.tableView->selectionModel();
+    auto* selection = mUi.tableView->selectionModel();
     QObject::connect(selection, SIGNAL(selectionChanged(const QItemSelection&, const QItemSelection&)),
         this, SLOT(rowChanged()));
 
-    QObject::connect(&popup_, SIGNAL(timeout()),
+    QObject::connect(&mPopupTimer, SIGNAL(timeout()),
         this, SLOT(popupDetails()));
 
-    ui_.tableView->viewport()->installEventFilter(this);
-    ui_.tableView->viewport()->setMouseTracking(true);
-    ui_.tableView->setMouseTracking(true);
-    //ui_.tableView->setColumnWidth((int)app::RSSReader::columns::locked, 32);
+    mUi.tableView->viewport()->installEventFilter(this);
+    mUi.tableView->viewport()->setMouseTracking(true);
+    mUi.tableView->setMouseTracking(true);
+    //mUi.tableView->setColumnWidth((int)app::RSSReader::columns::locked, 32);
 
     // when the model has no more actions we hide the progress bar and disable
     // the stop button.
-    model_.OnReadyCallback = [&]() {
-        ui_.progressBar->hide();
-        ui_.actionStop->setEnabled(false);
-        ui_.actionRefresh->setEnabled(true);
+    mRSSReader.OnReadyCallback = [&]() {
+        mUi.progressBar->hide();
+        mUi.actionStop->setEnabled(false);
+        mUi.actionRefresh->setEnabled(true);
     };
 
     DEBUG("RSS gui created");
@@ -88,34 +88,34 @@ RSS::~RSS()
 
 void RSS::addActions(QMenu& menu)
 {
-    menu.addAction(ui_.actionRefresh);
+    menu.addAction(mUi.actionRefresh);
     menu.addSeparator();
-    menu.addAction(ui_.actionDownload);
-    menu.addAction(ui_.actionSave);
+    menu.addAction(mUi.actionDownload);
+    menu.addAction(mUi.actionSave);
     menu.addSeparator();
-    menu.addAction(ui_.actionOpen);
+    menu.addAction(mUi.actionOpen);
     menu.addSeparator();
-    menu.addAction(ui_.actionSettings);
+    menu.addAction(mUi.actionSettings);
     menu.addSeparator();
-    menu.addAction(ui_.actionStop);
+    menu.addAction(mUi.actionStop);
 }
 
 void RSS::addActions(QToolBar& bar)
 {
-    bar.addAction(ui_.actionRefresh);
+    bar.addAction(mUi.actionRefresh);
     bar.addSeparator();
-    bar.addAction(ui_.actionDownload);
+    bar.addAction(mUi.actionDownload);
     bar.addSeparator();
-    bar.addAction(ui_.actionSettings);
+    bar.addAction(mUi.actionSettings);
     bar.addSeparator();
-    bar.addAction(ui_.actionStop);
+    bar.addAction(mUi.actionStop);
 }
 
 void RSS::activate(QWidget*)
 {
-    if (model_.isEmpty())
+    if (mRSSReader.isEmpty())
     {
-        const bool refreshing = ui_.progressBar->isVisible();
+        const bool refreshing = mUi.progressBar->isVisible();
         if (refreshing)
             return;
         refreshStreams(false);
@@ -124,30 +124,30 @@ void RSS::activate(QWidget*)
 
 void RSS::saveState(app::Settings& settings)
 {
-    app::saveState("rss", ui_.chkAdult, settings);
-    app::saveState("rss", ui_.chkApps, settings);
-    app::saveState("rss", ui_.chkGames, settings);
-    app::saveState("rss", ui_.chkMovies, settings);
-    app::saveState("rss", ui_.chkMusic, settings);
-    app::saveState("rss", ui_.chkTV, settings);
-    app::saveTableLayout("rss", ui_.tableView, settings);
+    app::saveState("rss", mUi.chkAdult, settings);
+    app::saveState("rss", mUi.chkApps, settings);
+    app::saveState("rss", mUi.chkGames, settings);
+    app::saveState("rss", mUi.chkMovies, settings);
+    app::saveState("rss", mUi.chkMusic, settings);
+    app::saveState("rss", mUi.chkTV, settings);
+    app::saveTableLayout("rss", mUi.tableView, settings);
 }
 
 void RSS::shutdown()
 {
     // we're shutting down. cancel all pending requests if any.
-    model_.stop();
+    mRSSReader.stop();
 }
 
 void RSS::loadState(app::Settings& settings)
 {
-    app::loadState("rss", ui_.chkAdult, settings);
-    app::loadState("rss", ui_.chkApps, settings);
-    app::loadState("rss", ui_.chkGames, settings);
-    app::loadState("rss", ui_.chkMovies, settings);
-    app::loadState("rss", ui_.chkMusic, settings);
-    app::loadState("rss", ui_.chkTV, settings);
-    app::loadTableLayout("rss", ui_.tableView, settings);
+    app::loadState("rss", mUi.chkAdult, settings);
+    app::loadState("rss", mUi.chkApps, settings);
+    app::loadState("rss", mUi.chkGames, settings);
+    app::loadState("rss", mUi.chkMovies, settings);
+    app::loadState("rss", mUi.chkMusic, settings);
+    app::loadState("rss", mUi.chkTV, settings);
+    app::loadTableLayout("rss", mUi.tableView, settings);
 }
 
 MainWidget::info RSS::getInformation() const
@@ -162,12 +162,12 @@ Finder* RSS::getFinder()
 
 void RSS::firstLaunch()
 {
-    show_popup_hint_ = true;
+    mShowPopupHint = true;
 }
 
 bool RSS::isMatch(const QString& str, std::size_t index, bool caseSensitive)
 {
-    const auto& item = model_.getItem(index);
+    const auto& item = mRSSReader.getItem(index);
     if (!caseSensitive)
     {
         auto upper = item.title.toUpper();
@@ -184,7 +184,7 @@ bool RSS::isMatch(const QString& str, std::size_t index, bool caseSensitive)
 
 bool RSS::isMatch(const QRegExp& regex, std::size_t index)
 {
-    const auto& item = model_.getItem(index);
+    const auto& item = mRSSReader.getItem(index);
     if (regex.indexIn(item.title) != -1)
         return true;
     return false;
@@ -192,12 +192,12 @@ bool RSS::isMatch(const QRegExp& regex, std::size_t index)
 
 std::size_t RSS::numItems() const
 {
-    return model_.numItems();
+    return mRSSReader.numItems();
 }
 
 std::size_t RSS::curItem() const
 {
-    const auto& indices = ui_.tableView->selectionModel()->selectedRows();
+    const auto& indices = mUi.tableView->selectionModel()->selectedRows();
     if (indices.isEmpty())
         return 0;
     const auto& first = indices.first();
@@ -206,36 +206,36 @@ std::size_t RSS::curItem() const
 
 void RSS::setFound(std::size_t index)
 {
-    auto* model = ui_.tableView->model();
+    auto* model = mUi.tableView->model();
     auto i = model->index(index, 0);
-    ui_.tableView->setCurrentIndex(i);
-    ui_.tableView->scrollTo(i);
+    mUi.tableView->setCurrentIndex(i);
+    mUi.tableView->scrollTo(i);
 }
 
 void RSS::updateBackendList(const QStringList& names)
 {
-    ui_.cmbServerList->clear();
+    mUi.cmbServerList->clear();
     for (const auto& name : names)
-        ui_.cmbServerList->addItem(name);
+        mUi.cmbServerList->addItem(name);
 }
 
 bool RSS::eventFilter(QObject* obj, QEvent* event)
 {
     if (event->type() == QEvent::MouseMove)
     {
-        popup_.start(1000);
+        mPopupTimer.start(1000);
     }
     else if (event->type() == QEvent::MouseButtonPress)
     {
-        if (movie_)
-            movie_->hide();
+        if (mMovieDetails)
+            mMovieDetails->hide();
     }
     return QObject::eventFilter(obj, event);
 }
 
 void RSS::downloadSelected(const QString& folder)
 {
-    const auto& indices = ui_.tableView->selectionModel()->selectedRows();
+    const auto& indices = mUi.tableView->selectionModel()->selectedRows();
     if (indices.isEmpty())
         return;
 
@@ -244,7 +244,7 @@ void RSS::downloadSelected(const QString& folder)
     for (int i=0; i<indices.size(); ++i)
     {
         const auto row = indices[i].row();
-        const auto& item = model_.getItem(row);
+        const auto& item = mRSSReader.getItem(row);
         const auto& desc = item.title;
 
         if (!passDuplicateCheck(this, desc, item.type))
@@ -257,20 +257,20 @@ void RSS::downloadSelected(const QString& folder)
         if (acc == 0)
             continue;
 
-        model_.downloadNzbContent(row, acc, folder);
+        mRSSReader.downloadNzbContent(row, acc, folder);
         actions = true;
     }
 
     if (actions)
     {
-        ui_.progressBar->setVisible(true);
-        ui_.actionStop->setEnabled(true);
+        mUi.progressBar->setVisible(true);
+        mUi.actionStop->setEnabled(true);
     }
 }
 
 void RSS::refreshStreams(bool verbose)
 {
-    const auto index = ui_.cmbServerList->currentIndex();
+    const auto index = mUi.cmbServerList->currentIndex();
     if (index == -1)
     {
         if (verbose)
@@ -287,21 +287,21 @@ void RSS::refreshStreams(bool verbose)
         }
         return;
     }
-    const auto& name = ui_.cmbServerList->currentText();
+    const auto& name = mUi.cmbServerList->currentText();
 
-    auto engine = module_.makeRSSFeedEngine(name);
-    model_.setEngine(std::move(engine));
+    auto engine = mNewznab.makeRSSFeedEngine(name);
+    mRSSReader.setEngine(std::move(engine));
 
     struct feed {
         QCheckBox* chk;
         app::MainMediaType type;
     } selected_feeds[] = {
-        {ui_.chkGames,  app::MainMediaType::Games},
-        {ui_.chkMusic,  app::MainMediaType::Music},
-        {ui_.chkMovies, app::MainMediaType::Movies},
-        {ui_.chkTV,     app::MainMediaType::Television},
-        {ui_.chkApps,   app::MainMediaType::Apps},
-        {ui_.chkAdult,  app::MainMediaType::Adult}
+        {mUi.chkGames,  app::MainMediaType::Games},
+        {mUi.chkMusic,  app::MainMediaType::Music},
+        {mUi.chkMovies, app::MainMediaType::Movies},
+        {mUi.chkTV,     app::MainMediaType::Television},
+        {mUi.chkApps,   app::MainMediaType::Apps},
+        {mUi.chkAdult,  app::MainMediaType::Adult}
     };
     bool have_feeds = false;
     bool have_selections = false;
@@ -311,7 +311,7 @@ void RSS::refreshStreams(bool verbose)
         if (!feed.chk->isChecked())
             continue;
 
-        if (model_.refresh(feed.type))
+        if (mRSSReader.refresh(feed.type))
             have_feeds = true;
 
         have_selections = true;
@@ -343,14 +343,14 @@ void RSS::refreshStreams(bool verbose)
         return;
     }
 
-    ui_.progressBar->setVisible(true);
-    ui_.actionDownload->setEnabled(false);
-    ui_.actionDownloadTo->setEnabled(false);
-    ui_.actionSave->setEnabled(false);
-    ui_.actionOpen->setEnabled(false);
-    ui_.actionStop->setEnabled(true);
-    ui_.actionRefresh->setEnabled(false);
-    ui_.actionInformation->setEnabled(false);
+    mUi.progressBar->setVisible(true);
+    mUi.actionDownload->setEnabled(false);
+    mUi.actionDownloadTo->setEnabled(false);
+    mUi.actionSave->setEnabled(false);
+    mUi.actionOpen->setEnabled(false);
+    mUi.actionStop->setEnabled(true);
+    mUi.actionRefresh->setEnabled(false);
+    mUi.actionInformation->setEnabled(false);
 }
 
 void RSS::on_actionRefresh_triggered()
@@ -374,25 +374,25 @@ void RSS::on_actionDownloadTo_triggered()
 
 void RSS::on_actionSave_triggered()
 {
-    const auto& indices = ui_.tableView->selectionModel()->selectedRows();
+    const auto& indices = mUi.tableView->selectionModel()->selectedRows();
     if (indices.isEmpty())
         return;
 
     for (int i=0; i<indices.size(); ++i)
     {
-        const auto& item = model_.getItem(indices[i].row());
+        const auto& item = mRSSReader.getItem(indices[i].row());
         const auto& nzb  = g_win->selectNzbSaveFile(item.title + ".nzb");
         if (nzb.isEmpty())
             continue;
-        model_.downloadNzbFile(indices[i].row(), nzb);
-        ui_.progressBar->setVisible(true);
-        ui_.actionStop->setEnabled(true);
+        mRSSReader.downloadNzbFile(indices[i].row(), nzb);
+        mUi.progressBar->setVisible(true);
+        mUi.actionStop->setEnabled(true);
     }
 }
 
 void RSS::on_actionOpen_triggered()
 {
-    const auto& indices = ui_.tableView->selectionModel()->selectedRows();
+    const auto& indices = mUi.tableView->selectionModel()->selectedRows();
     if (indices.isEmpty())
         return;
 
@@ -409,14 +409,14 @@ void RSS::on_actionOpen_triggered()
     for (int i=0; i<indices.size(); ++i)
     {
         const auto  row  = indices[i].row();
-        const auto& item = model_.getItem(row);
+        const auto& item = mRSSReader.getItem(row);
         const auto& desc = item.title;
         const auto type  = item.type;
-        model_.downloadNzbFile(row, std::bind(callback, std::placeholders::_1, desc, type));
+        mRSSReader.downloadNzbFile(row, std::bind(callback, std::placeholders::_1, desc, type));
     }
 
-    ui_.progressBar->setVisible(true);
-    ui_.actionStop->setEnabled(true);
+    mUi.progressBar->setVisible(true);
+    mUi.actionStop->setEnabled(true);
 }
 
 void RSS::on_actionSettings_triggered()
@@ -426,10 +426,10 @@ void RSS::on_actionSettings_triggered()
 
 void RSS::on_actionStop_triggered()
 {
-    model_.stop();
-    ui_.progressBar->hide();
-    ui_.actionStop->setEnabled(false);
-    ui_.actionRefresh->setEnabled(true);
+    mRSSReader.stop();
+    mUi.progressBar->hide();
+    mUi.actionStop->setEnabled(false);
+    mUi.actionRefresh->setEnabled(true);
 }
 
 void RSS::on_actionBrowse_triggered()
@@ -443,12 +443,12 @@ void RSS::on_actionBrowse_triggered()
 
 void RSS::on_actionInformation_triggered()
 {
-    const auto& indices = ui_.tableView->selectionModel()->selectedRows();
+    const auto& indices = mUi.tableView->selectionModel()->selectedRows();
     if (indices.isEmpty())
         return;
 
     const auto& first = indices[0];
-    const auto& item  = model_.getItem(first);
+    const auto& item  = mRSSReader.getItem(first);
 
     if (isMovie(item.type))
     {
@@ -456,13 +456,13 @@ void RSS::on_actionInformation_triggered()
         const auto& title = app::findMovieTitle(item.title, &releaseYear);
         if (title.isEmpty())
             return;
-        if (!movie_)
+        if (!mMovieDetails)
         {
-            movie_.reset(new DlgMovie(this));
-            QObject::connect(movie_.get(), SIGNAL(startMovieDownload(const QString&)),
+            mMovieDetails.reset(new DlgMovie(this));
+            QObject::connect(mMovieDetails.get(), SIGNAL(startMovieDownload(const QString&)),
                 this, SLOT(startMovieDownload(const QString&)));
         }
-        movie_->lookupMovie(title, item.guid, releaseYear);
+        mMovieDetails->lookupMovie(title, item.guid, releaseYear);
     }
     else if (isTelevision(item.type))
     {
@@ -470,16 +470,16 @@ void RSS::on_actionInformation_triggered()
         if (title.isEmpty())
             return;
         // the same dialog + api can be used for TV series.
-        if (!movie_)
+        if (!mMovieDetails)
         {
-            movie_.reset(new DlgMovie(this));
-            QObject::connect(movie_.get(), SIGNAL(startMovieDownload(const QString&)),
+            mMovieDetails.reset(new DlgMovie(this));
+            QObject::connect(mMovieDetails.get(), SIGNAL(startMovieDownload(const QString&)),
                 this, SLOT(startMovieDownload(const QString&)));
         }
-        movie_->lookupSeries(title, item.guid);
+        mMovieDetails->lookupSeries(title, item.guid);
     }
 
-    if (show_popup_hint_)
+    if (mShowPopupHint)
     {
         QMessageBox msg(this);
         msg.setStandardButtons(QMessageBox::Ok);
@@ -487,7 +487,7 @@ void RSS::on_actionInformation_triggered()
         msg.setWindowTitle("Hint");
         msg.setText("Did you know that you can also open this dialog by letting the mouse hover over the selected item.");
         msg.exec();
-        show_popup_hint_ = false;
+        mShowPopupHint = false;
     }
 }
 
@@ -505,24 +505,26 @@ void RSS::on_tableView_customContextMenuRequested(QPoint point)
     }
 
     sub.addSeparator();
-    sub.addAction(ui_.actionBrowse);
-    sub.setEnabled(ui_.actionDownload->isEnabled());
+    sub.addAction(mUi.actionBrowse);
+    sub.setEnabled(mUi.actionDownload->isEnabled());
+
+    mUi.actionInformation->setEnabled(DlgMovie::isLookupEnabled());
 
     QMenu menu;
-    menu.addAction(ui_.actionRefresh);
+    menu.addAction(mUi.actionRefresh);
     menu.addSeparator();
-    menu.addAction(ui_.actionDownload);
+    menu.addAction(mUi.actionDownload);
     menu.addMenu(&sub);
     menu.addSeparator();
-    menu.addAction(ui_.actionSave);
+    menu.addAction(mUi.actionSave);
     menu.addSeparator();
-    menu.addAction(ui_.actionOpen);
+    menu.addAction(mUi.actionOpen);
     menu.addSeparator();
-    menu.addAction(ui_.actionInformation);
+    menu.addAction(mUi.actionInformation);
     menu.addSeparator();
-    menu.addAction(ui_.actionStop);
+    menu.addAction(mUi.actionStop);
     menu.addSeparator();
-    menu.addAction(ui_.actionSettings);
+    menu.addAction(mUi.actionSettings);
     menu.exec(QCursor::pos());
 }
 
@@ -533,21 +535,21 @@ void RSS::on_tableView_doubleClicked(const QModelIndex&)
 
 void RSS::rowChanged()
 {
-    const auto& indices = ui_.tableView->selectionModel()->selectedRows();
+    const auto& indices = mUi.tableView->selectionModel()->selectedRows();
     if (indices.isEmpty())
         return;
 
-    ui_.actionDownload->setEnabled(true);
-    ui_.actionSave->setEnabled(true);
-    ui_.actionOpen->setEnabled(true);
-    ui_.actionInformation->setEnabled(true);
+    mUi.actionDownload->setEnabled(true);
+    mUi.actionSave->setEnabled(true);
+    mUi.actionOpen->setEnabled(true);
+    mUi.actionInformation->setEnabled(true);
 
     for (const auto& i : indices)
     {
-        const auto& item = model_.getItem(i);
+        const auto& item = mRSSReader.getItem(i);
         if (!(isMovie(item.type) || isTelevision(item.type)))
         {
-            ui_.actionInformation->setEnabled(false);
+            mUi.actionInformation->setEnabled(false);
             break;
         }
     }
@@ -567,18 +569,21 @@ void RSS::popupDetails()
 {
     //DEBUG("Popup event!");
 
-    popup_.stop();
-    if (movie_ && movie_->isVisible())
+    mPopupTimer.stop();
+    if (!DlgMovie::isLookupEnabled())
         return;
 
-    if (!ui_.tableView->underMouse())
+    if (mMovieDetails && mMovieDetails->isVisible())
+        return;
+
+    if (!mUi.tableView->underMouse())
         return;
 
     const QPoint global = QCursor::pos();
-    const QPoint local  = ui_.tableView->viewport()->mapFromGlobal(global);
+    const QPoint local  = mUi.tableView->viewport()->mapFromGlobal(global);
 
-    const auto& all = ui_.tableView->selectionModel()->selectedRows();
-    const auto& sel = ui_.tableView->indexAt(local);
+    const auto& all = mUi.tableView->selectionModel()->selectedRows();
+    const auto& sel = mUi.tableView->indexAt(local);
     int i=0;
     for (; i<all.size(); ++i)
     {
@@ -588,20 +593,20 @@ void RSS::popupDetails()
     if (i == all.size())
         return;
 
-    const auto& item  = model_.getItem(sel.row());
+    const auto& item  = mRSSReader.getItem(sel.row());
     if (isMovie(item.type))
     {
         QString releaseYear;
         const auto& title = app::findMovieTitle(item.title, &releaseYear);
         if (title.isEmpty())
             return;
-        if (!movie_)
+        if (!mMovieDetails)
         {
-            movie_.reset(new DlgMovie(this));
-            QObject::connect(movie_.get(), SIGNAL(startMovieDownload(const QString&)),
+            mMovieDetails.reset(new DlgMovie(this));
+            QObject::connect(mMovieDetails.get(), SIGNAL(startMovieDownload(const QString&)),
                 this, SLOT(startMovieDownload(const QString&)));
         }
-        movie_->lookupMovie(title, item.guid, releaseYear);
+        mMovieDetails->lookupMovie(title, item.guid, releaseYear);
     }
     else if (isTelevision(item.type))
     {
@@ -609,13 +614,13 @@ void RSS::popupDetails()
         if (title.isEmpty())
             return;
 
-        if (!movie_)
+        if (!mMovieDetails)
         {
-            movie_.reset(new DlgMovie(this));
-            QObject::connect(movie_.get(), SIGNAL(startMovieDownload(const QString&)),
+            mMovieDetails.reset(new DlgMovie(this));
+            QObject::connect(mMovieDetails.get(), SIGNAL(startMovieDownload(const QString&)),
                 this, SLOT(startMovieDownload(const QString&)));
         }
-        movie_->lookupSeries(title, item.guid);
+        mMovieDetails->lookupSeries(title, item.guid);
     }
 }
 

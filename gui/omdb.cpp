@@ -32,25 +32,44 @@ namespace gui
 
 void Omdb::loadState(app::Settings& s)
 {
-    QString apikey = s.get("omdb", "apikey").toString();
+    const auto apikey  = s.get("omdb", "apikey").toString();
+
+    // this enabled flag was missing from the original implementation.
+    //  so to maintain old logic we assume that if there's an apikey then the flag is
+    // enabled.
+    bool isEnabled = false;
+
+    if (s.contains("omdb", "enabled"))
+    {
+        isEnabled = s.get("omdb", "enabled").toBool();
+    }
+    else
+    {
+        isEnabled = s.contains("omdb", "apikey");
+    }
+
     omdb_->setApikey(apikey);
+    omdb_->setEnabled(isEnabled);
 }
 
 void Omdb::saveState(app::Settings& s)
 {
     s.set("omdb", "apikey", omdb_->getApikey());
+    s.set("omdb", "enabled", omdb_->isEnabled());
 }
 
 SettingsWidget* Omdb::getSettings()
 {
-    return new OmdbSettings(omdb_->getApikey());
+    return new OmdbSettings(omdb_->getApikey(), omdb_->isEnabled());
 }
 
 void Omdb::applySettings(SettingsWidget* gui)
 {
     const auto* mine = dynamic_cast<OmdbSettings*>(gui);
     const auto& key  = mine->apikey();
+    const auto& enabled = mine->isEnabled();
     omdb_->setApikey(key);
+    omdb_->setEnabled(enabled);
 }
 
 void Omdb::freeSettings(SettingsWidget* s)

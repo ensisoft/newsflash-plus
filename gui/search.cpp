@@ -47,94 +47,94 @@ namespace gui
 
 const auto QuerySize = 100;
 
-Search::Search(Newznab& module) : module_(module)
+Search::Search(Newznab& module) : mNewznab(module)
 {
-    ui_.setupUi(this);
-    ui_.btnBasic->setChecked(true);
-    ui_.wBasic->setVisible(true);
-    ui_.wAdvanced->setVisible(false);
-    ui_.wTV->setVisible(false);
-    ui_.wMusic->setVisible(false);
-    ui_.tableView->setModel(model_.getModel());
-    ui_.progress->setVisible(false);
-    ui_.progress->setMinimum(0);
-    ui_.progress->setMaximum(0);
-    ui_.actionStop->setEnabled(false);
-    ui_.actionDownload->setEnabled(false);
-    ui_.actionSave->setEnabled(false);
-    ui_.actionOpen->setEnabled(false);
-    ui_.editSearch->setFocus();
-    ui_.btnSearchMore->setEnabled(false);
-    ui_.editSearch->setFocus();
+    mUi.setupUi(this);
+    mUi.btnBasic->setChecked(true);
+    mUi.wBasic->setVisible(true);
+    mUi.wAdvanced->setVisible(false);
+    mUi.wTV->setVisible(false);
+    mUi.wMusic->setVisible(false);
+    mUi.tableView->setModel(mSearch.getModel());
+    mUi.progress->setVisible(false);
+    mUi.progress->setMinimum(0);
+    mUi.progress->setMaximum(0);
+    mUi.actionStop->setEnabled(false);
+    mUi.actionDownload->setEnabled(false);
+    mUi.actionSave->setEnabled(false);
+    mUi.actionOpen->setEnabled(false);
+    mUi.editSearch->setFocus();
+    mUi.btnSearchMore->setEnabled(false);
+    mUi.editSearch->setFocus();
 
-    ui_.cmbYear->addItem("");
+    mUi.cmbYear->addItem("");
     const auto thisYear = QDate::currentDate().year();
     for (int year=thisYear; year>=1900; --year)
-        ui_.cmbYear->addItem(QString::number(year));
+        mUi.cmbYear->addItem(QString::number(year));
 
-    model_.OnReadyCallback = [=]() {
-        ui_.progress->setVisible(false);
-        ui_.actionStop->setEnabled(false);
-        ui_.actionRefresh->setEnabled(true);
-        ui_.btnSearch->setEnabled(true);
+    mSearch.OnReadyCallback = [=]() {
+        mUi.progress->setVisible(false);
+        mUi.actionStop->setEnabled(false);
+        mUi.actionRefresh->setEnabled(true);
+        mUi.btnSearch->setEnabled(true);
     };
 
-    model_.OnSearchCallback = [=](bool emptyResult) {
+    mSearch.OnSearchCallback = [=](bool emptyResult) {
         if (emptyResult)
-            ui_.btnSearchMore->setText("No more results");
-        else ui_.btnSearchMore->setText("Load more results ...");
-        ui_.btnSearchMore->setEnabled(!emptyResult);
-        const QHeaderView* header = ui_.tableView->horizontalHeader();
+            mUi.btnSearchMore->setText("No more results");
+        else mUi.btnSearchMore->setText("Load more results ...");
+        mUi.btnSearchMore->setEnabled(!emptyResult);
+        const QHeaderView* header = mUi.tableView->horizontalHeader();
         const auto sortColumn = header->sortIndicatorSection();
         const auto sortOrder  = header->sortIndicatorOrder();
-        ui_.tableView->sortByColumn(sortColumn, sortOrder);
+        mUi.tableView->sortByColumn(sortColumn, sortOrder);
     };
 
-    QObject::connect(ui_.btnBasic, SIGNAL(clicked()),
-        ui_.wBasic, SLOT(show()));
-    QObject::connect(ui_.btnBasic, SIGNAL(clicked()),
-        ui_.wAdvanced, SLOT(hide()));
-    QObject::connect(ui_.btnBasic, SIGNAL(clicked()),
-        ui_.wMusic, SLOT(hide()));
-    QObject::connect(ui_.btnBasic, SIGNAL(clicked()),
-        ui_.wTV, SLOT(hide()));
+    QObject::connect(mUi.btnBasic, SIGNAL(clicked()),
+        mUi.wBasic, SLOT(show()));
+    QObject::connect(mUi.btnBasic, SIGNAL(clicked()),
+        mUi.wAdvanced, SLOT(hide()));
+    QObject::connect(mUi.btnBasic, SIGNAL(clicked()),
+        mUi.wMusic, SLOT(hide()));
+    QObject::connect(mUi.btnBasic, SIGNAL(clicked()),
+        mUi.wTV, SLOT(hide()));
 
-    QObject::connect(ui_.btnAdvanced, SIGNAL(clicked()),
-        ui_.wBasic, SLOT(hide()));
-    QObject::connect(ui_.btnAdvanced, SIGNAL(clicked()),
-        ui_.wAdvanced, SLOT(show()));
-    QObject::connect(ui_.btnAdvanced, SIGNAL(clicked()),
-        ui_.wMusic, SLOT(hide()));
-    QObject::connect(ui_.btnAdvanced, SIGNAL(clicked()),
-        ui_.wTV, SLOT(hide()));
+    QObject::connect(mUi.btnAdvanced, SIGNAL(clicked()),
+        mUi.wBasic, SLOT(hide()));
+    QObject::connect(mUi.btnAdvanced, SIGNAL(clicked()),
+        mUi.wAdvanced, SLOT(show()));
+    QObject::connect(mUi.btnAdvanced, SIGNAL(clicked()),
+        mUi.wMusic, SLOT(hide()));
+    QObject::connect(mUi.btnAdvanced, SIGNAL(clicked()),
+        mUi.wTV, SLOT(hide()));
 
-    QObject::connect(ui_.btnTelevision, SIGNAL(clicked()),
-        ui_.wBasic, SLOT(hide()));
-    QObject::connect(ui_.btnTelevision, SIGNAL(clicked()),
-        ui_.wAdvanced, SLOT(hide()));
-    QObject::connect(ui_.btnTelevision, SIGNAL(clicked()),
-        ui_.wMusic, SLOT(hide()));
-    QObject::connect(ui_.btnTelevision, SIGNAL(clicked()),
-        ui_.wTV, SLOT(show()));
+    QObject::connect(mUi.btnTelevision, SIGNAL(clicked()),
+        mUi.wBasic, SLOT(hide()));
+    QObject::connect(mUi.btnTelevision, SIGNAL(clicked()),
+        mUi.wAdvanced, SLOT(hide()));
+    QObject::connect(mUi.btnTelevision, SIGNAL(clicked()),
+        mUi.wMusic, SLOT(hide()));
+    QObject::connect(mUi.btnTelevision, SIGNAL(clicked()),
+        mUi.wTV, SLOT(show()));
 
-    QObject::connect(ui_.btnMusic, SIGNAL(clicked()),
-        ui_.wBasic, SLOT(hide()));
-    QObject::connect(ui_.btnMusic, SIGNAL(clicked()),
-        ui_.wAdvanced, SLOT(hide()));
-    QObject::connect(ui_.btnMusic, SIGNAL(clicked()),
-        ui_.wMusic, SLOT(show()));
-    QObject::connect(ui_.btnMusic, SIGNAL(clicked()),
-        ui_.wTV, SLOT(hide()));
+    QObject::connect(mUi.btnMusic, SIGNAL(clicked()),
+        mUi.wBasic, SLOT(hide()));
+    QObject::connect(mUi.btnMusic, SIGNAL(clicked()),
+        mUi.wAdvanced, SLOT(hide()));
+    QObject::connect(mUi.btnMusic, SIGNAL(clicked()),
+        mUi.wMusic, SLOT(show()));
+    QObject::connect(mUi.btnMusic, SIGNAL(clicked()),
+        mUi.wTV, SLOT(hide()));
 
-    auto* model = ui_.tableView->selectionModel();
+    auto* model = mUi.tableView->selectionModel();
     QObject::connect(model, SIGNAL(selectionChanged(const QItemSelection&, const QItemSelection&)),
         this, SLOT(tableview_selectionChanged()));
 
-    auto* viewport = ui_.tableView->viewport();
+    auto* viewport = mUi.tableView->viewport();
     viewport->installEventFilter(this);
     viewport->setMouseTracking(true);
 
-    QObject::connect(&popup_, SIGNAL(timeout()),
+    QObject::connect(&mPopupTimer, SIGNAL(timeout()),
         this, SLOT(popupDetails()));
 
     DEBUG("Search UI created");
@@ -147,70 +147,70 @@ Search::~Search()
 
 void Search::addActions(QMenu& menu)
 {
-    menu.addAction(ui_.actionRefresh);
+    menu.addAction(mUi.actionRefresh);
     menu.addSeparator();
-    menu.addAction(ui_.actionDownload);
+    menu.addAction(mUi.actionDownload);
     menu.addSeparator();
-    menu.addAction(ui_.actionSave);
-    menu.addAction(ui_.actionOpen);
+    menu.addAction(mUi.actionSave);
+    menu.addAction(mUi.actionOpen);
     menu.addSeparator();
-    menu.addAction(ui_.actionStop);
+    menu.addAction(mUi.actionStop);
 }
 
 void Search::addActions(QToolBar& bar)
 {
-    bar.addAction(ui_.actionRefresh);
+    bar.addAction(mUi.actionRefresh);
     bar.addSeparator();
-    bar.addAction(ui_.actionDownload);
+    bar.addAction(mUi.actionDownload);
     bar.addSeparator();
-    bar.addAction(ui_.actionSettings);
+    bar.addAction(mUi.actionSettings);
     bar.addSeparator();
-    bar.addAction(ui_.actionStop);
+    bar.addAction(mUi.actionStop);
 }
 
 void Search::loadState(app::Settings& settings)
 {
-    app::loadState("search", ui_.chkMusic, settings);
-    app::loadState("search", ui_.chkMovies, settings);
-    app::loadState("search", ui_.chkTV, settings);
-    app::loadState("search", ui_.chkConsole, settings);
-    app::loadState("search", ui_.chkComputer, settings);
-    app::loadState("search", ui_.chkAdult, settings);
-    app::loadState("search", ui_.editAlbum, settings);
-    app::loadState("search", ui_.editTrack, settings);
-    app::loadState("search", ui_.editSeason, settings);
-    app::loadState("search", ui_.editEpisode, settings);
-    app::loadState("search", ui_.editSearch, settings);
-    app::loadState("search", ui_.cmbYear, settings);
-    app::loadTableLayout("search", ui_.tableView, settings);
+    app::loadState("search", mUi.chkMusic, settings);
+    app::loadState("search", mUi.chkMovies, settings);
+    app::loadState("search", mUi.chkTV, settings);
+    app::loadState("search", mUi.chkConsole, settings);
+    app::loadState("search", mUi.chkComputer, settings);
+    app::loadState("search", mUi.chkAdult, settings);
+    app::loadState("search", mUi.editAlbum, settings);
+    app::loadState("search", mUi.editTrack, settings);
+    app::loadState("search", mUi.editSeason, settings);
+    app::loadState("search", mUi.editEpisode, settings);
+    app::loadState("search", mUi.editSearch, settings);
+    app::loadState("search", mUi.cmbYear, settings);
+    app::loadTableLayout("search", mUi.tableView, settings);
 
-    const auto text = ui_.editSearch->text();
-    ui_.editSearch->setFocus();
-    ui_.editSearch->setCursorPosition(text.size());
+    const auto text = mUi.editSearch->text();
+    mUi.editSearch->setFocus();
+    mUi.editSearch->setCursorPosition(text.size());
 }
 
 void Search::saveState(app::Settings& settings)
 {
-    app::saveTableLayout("search", ui_.tableView, settings);
-    app::saveState("search", ui_.chkMusic, settings);
-    app::saveState("search", ui_.chkMovies, settings);
-    app::saveState("search", ui_.chkTV, settings);
-    app::saveState("search", ui_.chkConsole, settings);
-    app::saveState("search", ui_.chkComputer, settings);
-    app::saveState("search", ui_.chkAdult, settings);
-    app::saveState("search", ui_.editAlbum, settings);
-    app::saveState("search", ui_.editTrack, settings);
-    app::saveState("search", ui_.editSeason, settings);
-    app::saveState("search", ui_.editEpisode, settings);
-    app::saveState("search", ui_.editSearch, settings);
-    app::saveState("search", ui_.cmbYear, settings);
+    app::saveTableLayout("search", mUi.tableView, settings);
+    app::saveState("search", mUi.chkMusic, settings);
+    app::saveState("search", mUi.chkMovies, settings);
+    app::saveState("search", mUi.chkTV, settings);
+    app::saveState("search", mUi.chkConsole, settings);
+    app::saveState("search", mUi.chkComputer, settings);
+    app::saveState("search", mUi.chkAdult, settings);
+    app::saveState("search", mUi.editAlbum, settings);
+    app::saveState("search", mUi.editTrack, settings);
+    app::saveState("search", mUi.editSeason, settings);
+    app::saveState("search", mUi.editEpisode, settings);
+    app::saveState("search", mUi.editSearch, settings);
+    app::saveState("search", mUi.cmbYear, settings);
 }
 
 void Search::updateBackendList(const QStringList& names)
 {
-    ui_.cmbIndexer->clear();
+    mUi.cmbIndexer->clear();
     for (const auto& name : names)
-        ui_.cmbIndexer->addItem(name);
+        mUi.cmbIndexer->addItem(name);
 }
 
 void Search::on_actionRefresh_triggered()
@@ -220,11 +220,11 @@ void Search::on_actionRefresh_triggered()
 
 void Search::on_actionStop_triggered()
 {
-    model_.stop();
-    ui_.actionStop->setEnabled(false);
-    ui_.progress->setVisible(false);
-    ui_.btnSearch->setEnabled(true);
-    ui_.actionRefresh->setEnabled(true);
+    mSearch.stop();
+    mUi.actionStop->setEnabled(false);
+    mUi.progress->setVisible(false);
+    mUi.btnSearch->setEnabled(true);
+    mUi.actionRefresh->setEnabled(true);
 }
 
 void Search::on_actionSettings_triggered()
@@ -234,15 +234,15 @@ void Search::on_actionSettings_triggered()
 
 void Search::on_actionOpen_triggered()
 {
-    const auto& indices = ui_.tableView->selectionModel()->selectedRows();
+    const auto& indices = mUi.tableView->selectionModel()->selectedRows();
     if (indices.isEmpty())
         return;
 
     for (const auto& index : indices)
     {
-        const auto& item = model_.getItem(index);
+        const auto& item = mSearch.getItem(index);
         const auto type  = item.type;
-        model_.loadItem(index,
+        mSearch.loadItem(index,
             [=](const QByteArray& bytes, const QString& desc) {
                 auto* view = new NZBFile(type);
                 view->setProperty("parent-object", QVariant::fromValue(static_cast<QObject*>(this)));
@@ -253,25 +253,25 @@ void Search::on_actionOpen_triggered()
                 view->open(bytes, desc);
             });
     }
-    ui_.progress->setVisible(true);
-    ui_.actionStop->setEnabled(true);
+    mUi.progress->setVisible(true);
+    mUi.actionStop->setEnabled(true);
 }
 
 void Search::on_actionSave_triggered()
 {
-    const auto& indices = ui_.tableView->selectionModel()->selectedRows();
+    const auto& indices = mUi.tableView->selectionModel()->selectedRows();
     if (indices.isEmpty())
         return;
 
     for (const auto& index : indices)
     {
-        const auto& item = model_.getItem(index);
+        const auto& item = mSearch.getItem(index);
         const auto& file = g_win->selectNzbSaveFile(item.title + ".nzb");
         if (file.isEmpty())
             continue;
-        model_.saveItem(index, file);
-        ui_.progress->setVisible(true);
-        ui_.actionStop->setEnabled(true);
+        mSearch.saveItem(index, file);
+        mUi.progress->setVisible(true);
+        mUi.actionStop->setEnabled(true);
     }
 }
 
@@ -306,7 +306,7 @@ void Search::on_btnSearch_clicked()
 void Search::on_btnSearchMore_clicked()
 {
     // grab the next queryfull of entries.
-    beginSearch(offset_ + QuerySize, QuerySize);
+    beginSearch(mSearchOffset + QuerySize, QuerySize);
 }
 
 
@@ -323,22 +323,22 @@ void Search::on_tableView_customContextMenuRequested(QPoint point)
             this, SLOT(downloadToPrevious()));
     }
     sub.addSeparator();
-    sub.addAction(ui_.actionBrowse);
-    sub.setEnabled(ui_.actionDownload->isEnabled());
+    sub.addAction(mUi.actionBrowse);
+    sub.setEnabled(mUi.actionDownload->isEnabled());
 
     QMenu menu;
-    menu.addAction(ui_.actionRefresh);
+    menu.addAction(mUi.actionRefresh);
     menu.addSeparator();
-    menu.addAction(ui_.actionDownload);
+    menu.addAction(mUi.actionDownload);
     menu.addMenu(&sub);
     menu.addSeparator();
-    menu.addAction(ui_.actionSave);
+    menu.addAction(mUi.actionSave);
     menu.addSeparator();
-    menu.addAction(ui_.actionOpen);
+    menu.addAction(mUi.actionOpen);
     menu.addSeparator();
-    menu.addAction(ui_.actionStop);
+    menu.addAction(mUi.actionStop);
     menu.addSeparator();
-    menu.addAction(ui_.actionSettings);
+    menu.addAction(mUi.actionSettings);
     menu.exec(QCursor::pos());
 }
 
@@ -375,13 +375,13 @@ void Search::on_lblWildcard_linkActivated(QString)
 
 void Search::tableview_selectionChanged()
 {
-    const auto indices = ui_.tableView->selectionModel()->selectedRows();
+    const auto indices = mUi.tableView->selectionModel()->selectedRows();
     if (indices.isEmpty())
         return;
 
-    ui_.actionDownload->setEnabled(true);
-    ui_.actionSave->setEnabled(true);
-    ui_.actionOpen->setEnabled(true);
+    mUi.actionDownload->setEnabled(true);
+    mUi.actionSave->setEnabled(true);
+    mUi.actionOpen->setEnabled(true);
 }
 
 void Search::downloadToPrevious()
@@ -394,20 +394,23 @@ void Search::downloadToPrevious()
 }
 void Search::popupDetails()
 {
-    popup_.stop();
-    if (movie_ && movie_->isVisible())
+    mPopupTimer.stop();
+    if (!DlgMovie::isLookupEnabled())
         return;
 
-    if (!ui_.tableView->underMouse())
+    if (mMovieDetails && mMovieDetails->isVisible())
+        return;
+
+    if (!mUi.tableView->underMouse())
         return;
 
     const auto global = QCursor::pos();
-    const auto local  = ui_.tableView->viewport()->mapFromGlobal(global);
+    const auto local  = mUi.tableView->viewport()->mapFromGlobal(global);
 
     // see if the current item under the mouse pointer is also
     // currently selected.
-    const auto& all = ui_.tableView->selectionModel()->selectedRows();
-    const auto& sel = ui_.tableView->indexAt(local);
+    const auto& all = mUi.tableView->selectionModel()->selectedRows();
+    const auto& sel = mUi.tableView->indexAt(local);
     int i=0;
     for (; i<all.size(); ++i)
     {
@@ -419,20 +422,20 @@ void Search::popupDetails()
 
     using media = app::MediaType;
 
-    const auto& item = model_.getItem(sel);
+    const auto& item = mSearch.getItem(sel);
     if (isMovie(item.type))
     {
         QString releaseYear;
         const auto& title = app::findMovieTitle(item.title, &releaseYear);
         if (title.isEmpty())
             return;
-        if (!movie_)
+        if (!mMovieDetails)
         {
-            movie_.reset(new DlgMovie(this));
-            QObject::connect(movie_.get(), SIGNAL(startMovieDownload(const QString&)),
+            mMovieDetails.reset(new DlgMovie(this));
+            QObject::connect(mMovieDetails.get(), SIGNAL(startMovieDownload(const QString&)),
                 this, SLOT(startMovieDownload(const QString&)));
         }
-        movie_->lookupMovie(title, item.guid, releaseYear);
+        mMovieDetails->lookupMovie(title, item.guid, releaseYear);
     }
     else if (isTelevision(item.type))
     {
@@ -440,14 +443,13 @@ void Search::popupDetails()
         if (title.isEmpty())
             return;
 
-        if (!movie_)
+        if (!mMovieDetails)
         {
-            movie_.reset(new DlgMovie(this));
-            QObject::connect(movie_.get(), SIGNAL(startMovieDownload(const QString&)),
+            mMovieDetails.reset(new DlgMovie(this));
+            QObject::connect(mMovieDetails.get(), SIGNAL(startMovieDownload(const QString&)),
                 this, SLOT(startMovieDownload(const QString&)));
         }
-
-        movie_->lookupSeries(title, item.guid);
+        mMovieDetails->lookupSeries(title, item.guid);
     }
 }
 
@@ -455,19 +457,19 @@ bool Search::eventFilter(QObject* object, QEvent* event)
 {
     if (event->type() == QEvent::MouseMove)
     {
-        popup_.start(1000);
+        mPopupTimer.start(1000);
     }
     else if (event->type() == QEvent::MouseButtonPress)
     {
-        if (movie_)
-            movie_->hide();
+        if (mMovieDetails)
+            mMovieDetails->hide();
     }
     return QObject::eventFilter(object, event);
 }
 
 void Search::downloadSelected(const QString& folder)
 {
-    const auto& indices = ui_.tableView->selectionModel()->selectedRows();
+    const auto& indices = mUi.tableView->selectionModel()->selectedRows();
     if (indices.isEmpty())
         return;
 
@@ -475,7 +477,7 @@ void Search::downloadSelected(const QString& folder)
 
     for (const auto& index : indices)
     {
-        const auto& item = model_.getItem(index);
+        const auto& item = mSearch.getItem(index);
         const auto& desc = item.title;
 
         if (!passDuplicateCheck(this, desc, item.type))
@@ -488,19 +490,19 @@ void Search::downloadSelected(const QString& folder)
         if (acc == 0)
             continue;
 
-        model_.downloadItem(index, folder, acc);
+        mSearch.downloadItem(index, folder, acc);
         actions = true;
     }
     if (actions)
     {
-        ui_.progress->setVisible(true);
-        ui_.actionStop->setEnabled(true);
+        mUi.progress->setVisible(true);
+        mUi.actionStop->setEnabled(true);
     }
 }
 
 void Search::beginSearch(quint32 queryOffset, quint32 querySize)
 {
-    const auto index = ui_.cmbIndexer->currentIndex();
+    const auto index = mUi.cmbIndexer->currentIndex();
     if (index == -1)
     {
         QMessageBox msg(this);
@@ -514,70 +516,70 @@ void Search::beginSearch(quint32 queryOffset, quint32 querySize)
         emit showSettings("Newznab");
         return;
     }
-    const auto& name = ui_.cmbIndexer->currentText();
+    const auto& name = mUi.cmbIndexer->currentText();
 
     if (queryOffset == 0)
-        model_.clear();
+        mSearch.clear();
 
-    offset_ = queryOffset;
+    mSearchOffset = queryOffset;
 
     // create the newznab search engine.
     // which is then given to the model as an app::Indexer.
-    auto engine = module_.makeSearchEngine(name);
+    auto engine = mNewznab.makeSearchEngine(name);
 
-    if (ui_.btnBasic->isChecked())
+    if (mUi.btnBasic->isChecked())
     {
         app::Search::Basic query;
-        query.keywords = ui_.editSearch->text();
+        query.keywords = mUi.editSearch->text();
         query.qoffset  = queryOffset;
         query.qsize    = querySize;
-        model_.beginSearch(query, std::move(engine));
+        mSearch.beginSearch(query, std::move(engine));
     }
-    else if (ui_.btnAdvanced->isChecked())
+    else if (mUi.btnAdvanced->isChecked())
     {
         app::Search::Advanced query;
-        query.music      = ui_.chkMusic->isChecked();
-        query.movies     = ui_.chkMovies->isChecked();
-        query.television = ui_.chkTV->isChecked();
-        query.console    = ui_.chkConsole->isChecked();
-        query.computer   = ui_.chkComputer->isChecked();
-        query.adult      = ui_.chkAdult->isChecked();
-        query.keywords   = ui_.editSearch->text();
+        query.music      = mUi.chkMusic->isChecked();
+        query.movies     = mUi.chkMovies->isChecked();
+        query.television = mUi.chkTV->isChecked();
+        query.console    = mUi.chkConsole->isChecked();
+        query.computer   = mUi.chkComputer->isChecked();
+        query.adult      = mUi.chkAdult->isChecked();
+        query.keywords   = mUi.editSearch->text();
         query.qoffset    = queryOffset;
         query.qsize      = querySize;
-        model_.beginSearch(query, std::move(engine));
+        mSearch.beginSearch(query, std::move(engine));
     }
-    else if (ui_.btnMusic->isChecked())
+    else if (mUi.btnMusic->isChecked())
     {
         app::Search::Music music;
-        music.keywords = ui_.editSearch->text();
-        music.album    = ui_.editAlbum->text();
-        music.track    = ui_.editTrack->text();
-        music.year     = ui_.cmbYear->currentText();
+        music.keywords = mUi.editSearch->text();
+        music.album    = mUi.editAlbum->text();
+        music.track    = mUi.editTrack->text();
+        music.year     = mUi.cmbYear->currentText();
         music.qoffset  = queryOffset;
         music.qsize    = querySize;
-        model_.beginSearch(music, std::move(engine));
+        mSearch.beginSearch(music, std::move(engine));
 
     }
-    else if (ui_.btnTelevision->isChecked())
+    else if (mUi.btnTelevision->isChecked())
     {
         app::Search::Television tv;
-        tv.episode  = ui_.editEpisode->text();
-        tv.season   = ui_.editSeason->text();
-        tv.keywords = ui_.editSearch->text();
+        tv.episode  = mUi.editEpisode->text();
+        tv.season   = mUi.editSeason->text();
+        tv.keywords = mUi.editSearch->text();
         tv.qoffset  = queryOffset;
         tv.qsize    = querySize;
-        model_.beginSearch(tv, std::move(engine));
+        mSearch.beginSearch(tv, std::move(engine));
     }
 
-    ui_.progress->setVisible(true);
-    ui_.actionStop->setEnabled(true);
-    ui_.actionDownload->setEnabled(false);
-    ui_.actionOpen->setEnabled(false);
-    ui_.actionSave->setEnabled(false);
-    ui_.actionRefresh->setEnabled(false);
-    ui_.btnSearchMore->setEnabled(false);
-    ui_.btnSearch->setEnabled(false);
+    mUi.progress->setVisible(true);
+    mUi.actionStop->setEnabled(true);
+    mUi.actionDownload->setEnabled(false);
+    mUi.actionOpen->setEnabled(false);
+    mUi.actionSave->setEnabled(false);
+    mUi.actionRefresh->setEnabled(false);
+    mUi.btnSearchMore->setEnabled(false);
+    mUi.btnSearch->setEnabled(false);
 }
 
 void Search::startMovieDownload(const QString& guid)

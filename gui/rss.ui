@@ -273,7 +273,10 @@
      <normaloff>:/resource/16x16_ico_png/ico_info.png</normaloff>:/resource/16x16_ico_png/ico_info.png</iconset>
    </property>
    <property name="text">
-    <string>Information</string>
+    <string>OMDb Info ...</string>
+   </property>
+   <property name="toolTip">
+    <string>Query OMDb for details about the movie / tv title</string>
    </property>
   </action>
  </widget>

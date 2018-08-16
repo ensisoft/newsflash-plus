@@ -40,14 +40,19 @@ namespace gui
         Q_OBJECT
 
     public:
-        OmdbSettings(const QString& apikey)
+        OmdbSettings(const QString& apikey, bool enabled)
         {
             ui_.setupUi(this);
             ui_.apikey->setText(apikey);
+            ui_.grpOmdb->setChecked(enabled);
         }
         QString apikey() const
         {
             return ui_.apikey->text();
+        }
+        bool isEnabled() const
+        {
+            return ui_.grpOmdb->isChecked();
         }
     private slots:
         void on_btnTest_clicked()

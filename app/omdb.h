@@ -65,11 +65,17 @@ namespace app
         void setApikey(const QString& apikey)
         { mApikey = apikey; }
 
+        void setEnabled(bool enabled)
+        { mEnabled = enabled; }
+
         QString getApikey() const
         { return mApikey; }
 
         bool hasApikey() const
         { return !mApikey.isEmpty(); }
+
+        bool isEnabled() const
+        { return mEnabled; }
 
         const Movie* getMovie(const QString& title, const QString& releaseYear = "") const;
 
@@ -87,6 +93,7 @@ namespace app
         std::map<QString, Movie> mMovieMap;
     private:
         QString mApikey;
+        bool mEnabled = false;
     };
 
     extern MovieDatabase* g_movies;

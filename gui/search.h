@@ -82,13 +82,14 @@ namespace gui
         void beginSearch(quint32 queryOffset, quint32 querySize);
 
     private:
-        Ui::Search ui_;
+        Ui::Search mUi;
     private:
-        app::Search model_;
-        Newznab& module_;
-        std::unique_ptr<DlgMovie> movie_;
+        app::Search mSearch;
+        quint32     mSearchOffset = 0;
+        Newznab&    mNewznab;
     private:
-        QTimer popup_;
-        quint32 offset_;
+        QTimer mPopupTimer; // movie details popup timer.
+        std::unique_ptr<DlgMovie> mMovieDetails;
+
     };
 } // gui

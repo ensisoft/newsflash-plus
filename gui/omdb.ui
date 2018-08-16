@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>698</width>
-    <height>452</height>
+    <height>491</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -15,9 +15,12 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
    <item>
-    <widget class="QGroupBox" name="groupBox">
+    <widget class="QGroupBox" name="grpOmdb">
      <property name="title">
-      <string>Omdb</string>
+      <string>OMDb</string>
+     </property>
+     <property name="checkable">
+      <bool>true</bool>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout">
       <item>
@@ -29,7 +32,7 @@
          </sizepolicy>
         </property>
         <property name="text">
-         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;OMDB - The Open Movie Database&lt;/span&gt;&lt;/p&gt;&lt;p&gt;OMDB is an excellent database for movies and movie details. Unfortunately as we all understand bandwidth costs money. So in order to use this excellent service you need an account. &lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;How?&lt;/span&gt;&lt;/p&gt;&lt;p&gt;1. Go to &lt;a href=&quot;http://omdbapi.com&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;http://omdbapi.com &lt;/span&gt;&lt;/a&gt;and click on &amp;quot;Become a patron&amp;quot;&lt;br/&gt;2. Go to &lt;a href=&quot;http://omdbapi.com/apikey.aspx&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;http://omdbapi.com/apikey.aspx &lt;/span&gt;&lt;/a&gt;and input your email from step #1&lt;br/&gt;3. Paste your key in the edit below&lt;/p&gt;&lt;p&gt;Thanks!&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;OMDb - The Open Movie Database&lt;/span&gt;&lt;/p&gt;&lt;p&gt;OMDb is an excellent database for movies and movie details. Unfortunately as we all understand bandwidth costs money. So in order to use this excellent service you need an account. &lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;What?&lt;/span&gt;&lt;/p&gt;&lt;p&gt;Use this feature in either RSS or search results to find information (IMDb score, synopsis etc.) about TV series or a movie.&lt;/p&gt;&lt;p&gt;1. Enable the feature and create an OMDb account as described below.&lt;br/&gt;2. In either RSS or Search window right click on an item and select &amp;quot;OMDb Info ...&amp;quot;. &lt;br/&gt;3. In either RSS or Search window hover the mouse on an item. &lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;How?&lt;/span&gt;&lt;/p&gt;&lt;p&gt;1. Go to &lt;a href=&quot;http://omdbapi.com&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;http://omdbapi.com &lt;/span&gt;&lt;/a&gt;and click on &amp;quot;Become a patron&amp;quot;&lt;br/&gt;2. Go to &lt;a href=&quot;http://omdbapi.com/apikey.aspx&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;http://omdbapi.com/apikey.aspx &lt;/span&gt;&lt;/a&gt;and input your email from step #1&lt;br/&gt;3. Paste your key in the edit below&lt;/p&gt;&lt;p&gt;Thanks!&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
         </property>
         <property name="textFormat">
          <enum>Qt::RichText</enum>

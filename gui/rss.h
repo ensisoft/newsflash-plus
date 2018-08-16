@@ -97,15 +97,15 @@ namespace gui
         void startMovieDownload(const QString& guid);
 
     private:
-        Ui::RSS ui_;
+        Ui::RSS mUi;
     private:
-        app::RSSReader model_;
-        Newznab& module_;
+        app::RSSReader mRSSReader;
+        Newznab& mNewznab;
 
     private:
-        QTimer popup_;
-        std::unique_ptr<DlgMovie> movie_;
-        bool show_popup_hint_ = false;
+        QTimer mPopupTimer; // movie details popup timer
+        std::unique_ptr<DlgMovie> mMovieDetails;
+        bool mShowPopupHint = false;
     };
 
 } // gui
