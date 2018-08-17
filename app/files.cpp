@@ -74,23 +74,23 @@ namespace {
 namespace app
 {
 
-Files::Files() : m_keepSorted(false), m_sortColumn(0), m_sortOrder(Qt::AscendingOrder), m_version(0)
+Files::Files()
 {
     DEBUG("Files created");
 
-    int version = 0;
+    //int version = 0;
 
-    const auto& file = migrateFile(m_version);
+    const auto& file = migrateFile(mVersion);
 
-    m_file.setFileName(file);
-    if (!m_file.open(QIODevice::ReadWrite))
+    mFile.setFileName(file);
+    if (!mFile.open(QIODevice::ReadWrite))
     {
-        WARN("Unable to open filelist file %1, %2", file, m_file.error());
+        WARN("Unable to open filelist file %1, %2", file, mFile.error());
         return;
     }
-    if (m_file.size() == 0)
+    if (mFile.size() == 0)
     {
-        QTextStream out(&m_file);
+        QTextStream out(&mFile);
         out << CurrentFileVersion << "\n";
         return;
     }
@@ -109,9 +109,9 @@ QVariant Files::data(const QModelIndex& index, int role) const
     // so that we can just push-back instead of more expensive push_front (on deque)
     // and the latest item is then always at table row 0
 
-    const auto row   = m_files.size() - (size_t)index.row()  - 1;
+    const auto row   = mFiles.size() - (size_t)index.row()  - 1;
     const auto col   = (columns)index.column();
-    const auto& file = m_files[row];
+    const auto& file = mFiles[row];
 
     if (role == Qt::DisplayRole)
     {
@@ -159,7 +159,7 @@ void Files::sort(int column, Qt::SortOrder order)
     // last item in the list is considered to be the first item
     // on the UI
 #define SORT(x) \
-    std::sort(std::begin(m_files), std::end(m_files), \
+    std::sort(std::begin(mFiles), std::end(mFiles), \
         [&](const Files::File& lhs, const Files::File& rhs) { \
             if (order == Qt::AscendingOrder) \
                 return lhs.x > rhs.x; \
@@ -179,13 +179,13 @@ void Files::sort(int column, Qt::SortOrder order)
 
     emit layoutChanged();
 
-    m_sortColumn = column;
-    m_sortOrder  = order;
+    mSortColumn = column;
+    mSortOrder  = order;
 }
 
 int Files::rowCount(const QModelIndex&) const
 {
-    return (int)m_files.size();
+    return (int)mFiles.size();
 }
 
 int Files::columnCount(const QModelIndex&) const
@@ -193,22 +193,20 @@ int Files::columnCount(const QModelIndex&) const
     return (int)columns::count;
 }
 
-
-
 void Files::loadHistory()
 {
-    if (!m_file.isOpen())
+    if (!mFile.isOpen())
         return;
 
-    QTextStream load(&m_file);
+    QTextStream load(&mFile);
     load.setCodec("UTF-8");
 
-    if (m_version > 1)
+    if (mVersion > 1)
     {
-        m_version = load.readLine().toInt();
+        mVersion = load.readLine().toInt();
     }
 
-    DEBUG("File version %1", m_version);
+    DEBUG("File version %1", mVersion);
 
     bool needsPruning = false;
 
@@ -239,21 +237,21 @@ void Files::loadHistory()
             continue;
         }
 
-        m_files.push_back(std::move(next));
+        mFiles.push_back(std::move(next));
     }
 
     if (needsPruning)
     {
         // seek back to the start of the file and write back out
         // the data that is still valid.
-        m_file.resize(0);
-        m_file.seek(0);
+        mFile.resize(0);
+        mFile.seek(0);
 
-        QTextStream save(&m_file);
+        QTextStream save(&mFile);
         save.setCodec("UTF-8");
         save << CurrentFileVersion << "\n";
 
-        for (const auto& next : m_files)
+        for (const auto& next : mFiles)
         {
             save << (int)next.type << "\t";
             save << next.time.toTime_t() << "\t";
@@ -269,28 +267,28 @@ void Files::loadHistory()
     QAbstractTableModel::reset();
     QAbstractTableModel::endResetModel();
 
-    DEBUG("Loaded files list with %1 files", m_files.size());
+    DEBUG("Loaded files list with %1 files", mFiles.size());
 }
 
 void Files::eraseHistory()
 {
-    if (m_file.isOpen())
+    if (mFile.isOpen())
     {
-        m_file.resize(0);
-        m_file.seek(0);
+        mFile.resize(0);
+        mFile.seek(0);
 
-        QTextStream out(&m_file);
+        QTextStream out(&mFile);
         out.setCodec("UTF-8");
         out << CurrentFileVersion << "\n";
     }
 
     QAbstractTableModel::beginResetModel();
-    m_files.clear();
+    mFiles.clear();
     QAbstractTableModel::reset();
     QAbstractTableModel::endResetModel();
 }
 
-void Files::eraseFiles(QModelIndexList& list)
+void Files::deleteFiles(QModelIndexList& list)
 {
     qSort(list);
 
@@ -315,24 +313,62 @@ void Files::eraseFiles(QModelIndexList& list)
         }
 
         beginRemoveRows(QModelIndex(), row, row);
-        auto it = std::begin(m_files);
-        std::advance(it, m_files.size() - row - 1);
-        m_files.erase(it);
+        auto it = std::begin(mFiles);
+        std::advance(it, mFiles.size() - row - 1);
+        mFiles.erase(it);
         endRemoveRows();
         ++removed;
     }
 }
 
+void Files::forgetFiles(QModelIndexList& list)
+{
+    qSort(list);
+
+    int removed = 0;
+
+    for (int i=0; i<list.size(); ++i)
+    {
+        const auto row = list[i].row() - removed;
+
+        beginRemoveRows(QModelIndex(), row, row);
+        auto it = std::begin(mFiles);
+        std::advance(it, mFiles.size() - row - 1);
+        mFiles.erase(it);
+        endRemoveRows();
+        ++removed;
+    }
+
+    if (removed != 0 && mFile.isOpen())
+    {
+        mFile.resize(0);
+        mFile.seek(0);
+
+        QTextStream save(&mFile);
+        save.setCodec("UTF-8");
+        save << CurrentFileVersion << "\n";
+        for (const auto& file : mFiles)
+        {
+            save << (int)file.type << "\t";
+            save << file.time.toTime_t() << "\t";
+            save << file.path << "\t";
+            save << file.name;
+            save << "\n";
+        }
+        DEBUG("Rewrote the file list and forgot %1 files", removed);
+    }
+}
+
 void Files::keepSorted(bool onOff)
 {
-    m_keepSorted = onOff;
+    mKeepSorted = onOff;
 }
 
 const Files::File& Files::getItem(std::size_t i) const
 {
     // the vector is accessed in reverse manner (item at index 0 is at the end)
     // so latest item (push_back) comes at the top of the list on the GUI
-    return m_files[m_files.size() - i -1];
+    return mFiles[mFiles.size() - i -1];
 }
 
 void Files::fileCompleted(const app::FileInfo& file)
@@ -344,26 +380,26 @@ void Files::fileCompleted(const app::FileInfo& file)
     next.icon = findFileIcon(next.type);
     next.time = QDateTime::currentDateTime();
 
-    if (m_file.isOpen())
+    if (mFile.isOpen())
     {
         // record the file download event in the history file.
-        QTextStream stream(&m_file);
+        QTextStream stream(&mFile);
         stream.setCodec("UTF-8");
         stream << (int)next.type << "\t";
         stream << next.time.toTime_t() << "\t";
         stream << next.path << "\t";
         stream << next.name;
         stream << "\n";
-        m_file.flush();
+        mFile.flush();
     }
 
     beginInsertRows(QModelIndex(), 0, 0);
-    m_files.push_back(std::move(next));
+    mFiles.push_back(std::move(next));
     endInsertRows();
 
-    if (m_keepSorted)
+    if (mKeepSorted)
     {
-        sort(m_sortColumn, (Qt::SortOrder)m_sortOrder);
+        sort(mSortColumn, (Qt::SortOrder)mSortOrder);
     }
 }
 

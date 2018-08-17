@@ -56,6 +56,7 @@
     <file>resource/16x16_ico_png/ico_bookmark_prev.png</file>
     <file>resource/16x16_ico_png/ico_bookmark.png</file>
     <file>resource/16x16_ico_png/ico_poweroff.png</file>
+    <file>resource/16x16_ico_png/ico_file_forget.png</file>
 
     <!-- application icons -->
     <file>resource/16x16_ico_png/ico_application.png</file>

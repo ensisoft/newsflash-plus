@@ -121,7 +121,7 @@
      <normaloff>:/resource/16x16_ico_png/ico_open_file.png</normaloff>:/resource/16x16_ico_png/ico_open_file.png</iconset>
    </property>
    <property name="text">
-    <string>Open</string>
+    <string>Open File</string>
    </property>
    <property name="toolTip">
     <string>Open selected files</string>
@@ -145,10 +145,10 @@
      <normaloff>:/resource/16x16_ico_png/ico_clear.png</normaloff>:/resource/16x16_ico_png/ico_clear.png</iconset>
    </property>
    <property name="text">
-    <string>Clear</string>
+    <string>Clear List</string>
    </property>
    <property name="toolTip">
-    <string>Clear history</string>
+    <string>Clear file list</string>
    </property>
   </action>
   <action name="actionOpenFolder">
@@ -157,10 +157,13 @@
      <normaloff>:/resource/16x16_ico_png/ico_open_folder.png</normaloff>:/resource/16x16_ico_png/ico_open_folder.png</iconset>
    </property>
    <property name="text">
-    <string>Open folder</string>
+    <string>Open Folder</string>
    </property>
    <property name="toolTip">
     <string>Open folder</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+O</string>
    </property>
   </action>
   <action name="actionFind">
@@ -211,13 +214,25 @@
      <normaloff>:/resource/16x16_ico_png/ico_delete.png</normaloff>:/resource/16x16_ico_png/ico_delete.png</iconset>
    </property>
    <property name="text">
-    <string>Delete file</string>
+    <string>Delete File</string>
    </property>
    <property name="toolTip">
-    <string>Delete files from the disk permanently</string>
+    <string>Delete file from the disk permanently</string>
    </property>
    <property name="shortcut">
     <string>Del</string>
+   </property>
+  </action>
+  <action name="actionForget">
+   <property name="icon">
+    <iconset resource="resource.qrc">
+     <normaloff>:/resource/16x16_ico_png/ico_file_forget.png</normaloff>:/resource/16x16_ico_png/ico_file_forget.png</iconset>
+   </property>
+   <property name="text">
+    <string>Forget File</string>
+   </property>
+   <property name="toolTip">
+    <string>Forget file from this list</string>
    </property>
   </action>
  </widget>

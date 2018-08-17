@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -48,7 +48,7 @@ namespace gui
         virtual void loadState(app::Settings& s) override;
         virtual void saveState(app::Settings& s) override;
         virtual void shutdown() override;
-        virtual void refresh(bool isActive) override;        
+        virtual void refresh(bool isActive) override;
         virtual void activate(QWidget*) override;
         virtual info getInformation() const override;
         virtual Finder* getFinder() override;
@@ -64,8 +64,9 @@ namespace gui
         void on_actionOpenFile_triggered();
         void on_actionOpenFileWith_triggered();
         void on_actionClear_triggered();
-        void on_actionOpenFolder_triggered();        
+        void on_actionOpenFolder_triggered();
         void on_actionDelete_triggered();
+        void on_actionForget_triggered();
         void on_tableFiles_customContextMenuRequested(QPoint point);
         void on_tableFiles_doubleClicked();
         void on_chkKeepSorted_clicked();
@@ -73,10 +74,9 @@ namespace gui
         void toolsUpdated();
 
     private:
-        Ui::Files ui_;
+        Ui::Files mUi;
     private:
-        app::Files& model_;
-    private:
-        std::size_t numFiles_;
+        app::Files& mModel;
+        std::size_t mNumFiles = 0;
     };
 } // gui

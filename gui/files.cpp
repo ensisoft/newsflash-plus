@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -47,11 +47,11 @@
 namespace gui
 {
 
-Files::Files(app::Files& files) : model_(files), numFiles_(0)
+Files::Files(app::Files& files) : mModel(files)
 {
-    ui_.setupUi(this);
-    ui_.tableFiles->setModel(&model_);
-    ui_.actionOpenFile->setShortcut(QKeySequence::Open);
+    mUi.setupUi(this);
+    mUi.tableFiles->setModel(&mModel);
+    mUi.actionOpenFile->setShortcut(QKeySequence::Open);
 
     QObject::connect(app::g_tools, SIGNAL(toolsUpdated()),
         this, SLOT(toolsUpdated()));
@@ -66,26 +66,27 @@ Files::~Files()
 
 void Files::addActions(QMenu& menu)
 {
-    menu.addAction(ui_.actionOpenFile);
+    menu.addAction(mUi.actionOpenFile);
     menu.addSeparator();
-    menu.addAction(ui_.actionOpenFolder);
+    menu.addAction(mUi.actionOpenFolder);
     menu.addSeparator();
-    menu.addAction(ui_.actionClear);
+    menu.addAction(mUi.actionClear);
     menu.addSeparator();
-    menu.addAction(ui_.actionDelete);
+    menu.addAction(mUi.actionDelete);
+    menu.addAction(mUi.actionForget);
 
 }
 
 void Files::addActions(QToolBar& bar)
 {
-    bar.addAction(ui_.actionOpenFile);
+    bar.addAction(mUi.actionOpenFile);
     bar.addSeparator();
-    bar.addAction(ui_.actionOpenFolder);
+    bar.addAction(mUi.actionOpenFolder);
     bar.addSeparator();
-    bar.addAction(ui_.actionClear);
+    bar.addAction(mUi.actionClear);
     bar.addSeparator();
-    bar.addAction(ui_.actionDelete);
-
+    bar.addAction(mUi.actionDelete);
+    bar.addAction(mUi.actionForget);
     bar.addSeparator();
 
     const auto& tools = app::g_tools->get_tools();
@@ -102,12 +103,12 @@ void Files::addActions(QToolBar& bar)
             if (!keys.isEmpty())
                 action->setShortcut(keys);
         }
-        QObject::connect(action, SIGNAL(triggered()), 
+        QObject::connect(action, SIGNAL(triggered()),
             this, SLOT(invokeTool()));
-    }    
+    }
 }
 
-void Files::loadState(app::Settings& settings) 
+void Files::loadState(app::Settings& settings)
 {
     const auto sorted     = settings.get("files", "keep_sorted", false);
     const auto clear      = settings.get("files", "clear_on_exit", false);
@@ -115,25 +116,25 @@ void Files::loadState(app::Settings& settings)
     const auto sortColumn = settings.get("files", "sort_column", 0);
     const auto sortOrder  = settings.get("files", "sort_order", (int)Qt::AscendingOrder);
 
-    ui_.chkKeepSorted->setChecked(sorted);
-    ui_.chkClearOnExit->setChecked(clear);
-    ui_.chkConfirmDelete->setChecked(confirm);
-    ui_.tableFiles->sortByColumn(sortColumn, (Qt::SortOrder)sortOrder);    
+    mUi.chkKeepSorted->setChecked(sorted);
+    mUi.chkClearOnExit->setChecked(clear);
+    mUi.chkConfirmDelete->setChecked(confirm);
+    mUi.tableFiles->sortByColumn(sortColumn, (Qt::SortOrder)sortOrder);
 
-    app::loadTableLayout("files", ui_.tableFiles, settings);
+    app::loadTableLayout("files", mUi.tableFiles, settings);
 
-    model_.loadHistory();
-    model_.keepSorted(sorted);
-    numFiles_ = model_.numFiles();
+    mModel.loadHistory();
+    mModel.keepSorted(sorted);
+    mNumFiles = mModel.numFiles();
 }
 
 void Files::saveState(app::Settings& settings)
 {
-    const auto sorted    = ui_.chkKeepSorted->isChecked();
-    const auto clear     = ui_.chkClearOnExit->isChecked();
-    const auto confirm   = ui_.chkConfirmDelete->isChecked();
+    const auto sorted    = mUi.chkKeepSorted->isChecked();
+    const auto clear     = mUi.chkClearOnExit->isChecked();
+    const auto confirm   = mUi.chkConfirmDelete->isChecked();
 
-    const QHeaderView* header = ui_.tableFiles->horizontalHeader();
+    const QHeaderView* header = mUi.tableFiles->horizontalHeader();
     const auto sortColumn = header->sortIndicatorSection();
     const auto sortOrder  = header->sortIndicatorOrder();
 
@@ -143,15 +144,15 @@ void Files::saveState(app::Settings& settings)
     settings.set("files", "sort_column", sortColumn);
     settings.set("files", "sort_order", sortOrder);
 
-    app::saveTableLayout("files", ui_.tableFiles, settings);
+    app::saveTableLayout("files", mUi.tableFiles, settings);
 }
 
-void Files::shutdown() 
+void Files::shutdown()
 {
-    const auto clear = ui_.chkClearOnExit->isChecked();
+    const auto clear = mUi.chkClearOnExit->isChecked();
     if (clear)
     {
-        model_.eraseHistory();
+        mModel.eraseHistory();
     }
 }
 
@@ -160,30 +161,30 @@ void Files::refresh(bool isActive)
     if (isActive)
         return;
 
-    const auto numFiles = model_.numFiles();
-    if (numFiles > numFiles_)
-        setWindowTitle(QString("Files (%1)").arg(numFiles - numFiles_));
+    const auto numFiles = mModel.numFiles();
+    if (numFiles > mNumFiles)
+        setWindowTitle(QString("Files (%1)").arg(numFiles - mNumFiles));
 }
 
 void Files::activate(QWidget*)
 {
-    numFiles_ = model_.numFiles();
+    mNumFiles = mModel.numFiles();
     setWindowTitle("Files");
 }
 
 MainWidget::info Files::getInformation() const
 {
-    return {"files.html", true};    
+    return {"files.html", true};
 }
 
-Finder* Files::getFinder() 
+Finder* Files::getFinder()
 {
     return this;
 }
 
 bool Files::isMatch(const QString& str, std::size_t index, bool caseSensitive)
 {
-    const auto& item = model_.getItem(index);
+    const auto& item = mModel.getItem(index);
     if (!caseSensitive)
     {
         auto upper = item.name.toUpper();
@@ -200,18 +201,18 @@ bool Files::isMatch(const QString& str, std::size_t index, bool caseSensitive)
 
 bool Files::isMatch(const QRegExp& regex, std::size_t index)
 {
-    const auto& item = model_.getItem(index);
+    const auto& item = mModel.getItem(index);
     if (regex.indexIn(item.name) != -1)
         return true;
     return false;
 }
 
-std::size_t Files::numItems() const 
-{ return model_.numFiles(); }
+std::size_t Files::numItems() const
+{ return mModel.numFiles(); }
 
-std::size_t Files::curItem() const 
+std::size_t Files::curItem() const
 {
-    const auto& indices = ui_.tableFiles->selectionModel()->selectedRows();
+    const auto& indices = mUi.tableFiles->selectionModel()->selectedRows();
     if (indices.isEmpty())
         return 0;
 
@@ -221,19 +222,19 @@ std::size_t Files::curItem() const
 
 void Files::setFound(std::size_t index)
 {
-    auto* model = ui_.tableFiles->model();
+    auto* model = mUi.tableFiles->model();
     auto i = model->index(index, 0);
-    ui_.tableFiles->setCurrentIndex(i);
-    ui_.tableFiles->scrollTo(i);
+    mUi.tableFiles->setCurrentIndex(i);
+    mUi.tableFiles->scrollTo(i);
 }
 
 void Files::on_actionOpenFile_triggered()
 {
-    const auto& indices = ui_.tableFiles->selectionModel()->selectedRows();
+    const auto& indices = mUi.tableFiles->selectionModel()->selectedRows();
     for (int i=0; i<indices.size(); ++i)
     {
         const auto row   = indices[i].row();
-        const auto& item = model_.getItem(row);
+        const auto& item = mModel.getItem(row);
         const auto& file = QString("%1/%2").arg(item.path).arg(item.name);
         app::openFile(file);
     }
@@ -255,11 +256,11 @@ void Files::on_actionOpenFileWith_triggered()
 
     newsflash::bitflag<app::FileType> types;
 
-    const auto& indices = ui_.tableFiles->selectionModel()->selectedRows();
+    const auto& indices = mUi.tableFiles->selectionModel()->selectedRows();
     for (int i=0; i<indices.size(); ++i)
     {
         const auto row = indices[i].row();
-        const auto& item = model_.getItem(row);
+        const auto& item = mModel.getItem(row);
         const auto& file = QString("\"%1/%2\"").arg(item.path).arg(item.name);
         const auto type = app::findFileType(item.name);
         types.set(type);
@@ -268,7 +269,7 @@ void Files::on_actionOpenFileWith_triggered()
         {
             QFileInfo info(exe);
             const auto name = info.completeBaseName();
-            QMessageBox::critical(this, name, 
+            QMessageBox::critical(this, name,
                 tr("The application could not be started.\n%1").arg(exe));
             return;
         }
@@ -293,49 +294,57 @@ void Files::on_actionOpenFileWith_triggered()
 
 void Files::on_actionClear_triggered()
 {
-    model_.eraseHistory();
+    mModel.eraseHistory();
 }
 
 void Files::on_actionOpenFolder_triggered()
 {
-    const auto& indices = ui_.tableFiles->selectionModel()->selectedRows();
+    const auto& indices = mUi.tableFiles->selectionModel()->selectedRows();
     for (int i=0; i<indices.size(); ++i)
     {
         const auto row   = indices[i].row();
-        const auto& item = model_.getItem(row);
+        const auto& item = mModel.getItem(row);
         app::openFolder(item.path);
     }
 }
 
 void Files::on_actionDelete_triggered()
 {
-    auto indices = ui_.tableFiles->selectionModel()->selectedRows();
+    auto indices = mUi.tableFiles->selectionModel()->selectedRows();
     if (indices.isEmpty())
         return;
 
-    const auto confirm = ui_.chkConfirmDelete->isChecked();
+    const auto confirm = mUi.chkConfirmDelete->isChecked();
     if (confirm)
     {
         DlgConfirm dlg(this);
         if (dlg.exec() == QDialog::Rejected)
             return;
-        ui_.chkConfirmDelete->setChecked(!dlg.askAgain());
+        mUi.chkConfirmDelete->setChecked(!dlg.askAgain());
     }
 
-    model_.eraseFiles(indices);
+    mModel.deleteFiles(indices);
 }
 
+void Files::on_actionForget_triggered()
+{
+    auto indices = mUi.tableFiles->selectionModel()->selectedRows();
+    if (indices.isEmpty())
+        return;
+
+    mModel.forgetFiles(indices);
+}
 
 
 void Files::on_tableFiles_customContextMenuRequested(QPoint point)
 {
     newsflash::bitflag<app::FileType> types;
 
-    const auto& indices = ui_.tableFiles->selectionModel()->selectedRows();
+    const auto& indices = mUi.tableFiles->selectionModel()->selectedRows();
     for (int i=0; i<indices.size(); ++i)
     {
         const auto row = indices[i].row();
-        const auto& item = model_.getItem(row);
+        const auto& item = mModel.getItem(row);
         const auto type = app::findFileType(item.name);
         types.set(type);
     }
@@ -344,7 +353,7 @@ void Files::on_tableFiles_customContextMenuRequested(QPoint point)
     const auto& sum_tools = app::g_tools->get_tools(types);
 
     QMenu menu(this);
-    menu.addAction(ui_.actionOpenFile);
+    menu.addAction(mUi.actionOpenFile);
     menu.addSeparator();
 
     for (const auto* tool : sum_tools)
@@ -369,12 +378,13 @@ void Files::on_tableFiles_customContextMenuRequested(QPoint point)
     }
 
     sub.addSeparator();
-    sub.addAction(ui_.actionOpenFileWith);
+    sub.addAction(mUi.actionOpenFileWith);
     menu.addMenu(&sub);
     menu.addSeparator();
-    menu.addAction(ui_.actionOpenFolder);
+    menu.addAction(mUi.actionOpenFolder);
     menu.addSeparator();
-    menu.addAction(ui_.actionDelete);
+    menu.addAction(mUi.actionDelete);
+    menu.addAction(mUi.actionForget);
     menu.exec(QCursor::pos());
 }
 
@@ -385,12 +395,12 @@ void Files::on_tableFiles_doubleClicked()
 
 void Files::on_chkKeepSorted_clicked()
 {
-    model_.keepSorted(ui_.chkKeepSorted->isChecked());
+    mModel.keepSorted(mUi.chkKeepSorted->isChecked());
 }
 
 void Files::invokeTool()
 {
-    const auto& indices = ui_.tableFiles->selectionModel()->selectedRows();
+    const auto& indices = mUi.tableFiles->selectionModel()->selectedRows();
     if (indices.isEmpty())
         return;
 
@@ -402,7 +412,7 @@ void Files::invokeTool()
     for (int i=0; i<indices.size(); ++i)
     {
         const auto row   = indices[i].row();
-        const auto& item = model_.getItem(row);
+        const auto& item = mModel.getItem(row);
         const auto& file = QString("%1/%2").arg(item.path).arg(item.name);
 
         if (!tool->startNewInstance(file))

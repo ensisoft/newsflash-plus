@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -51,7 +51,7 @@ namespace app
             // Full path to the file.
             QString   path;
 
-            // DateTime when first 
+            // DateTime when first
             QDateTime time;
             QIcon     icon;
             FileType  type;
@@ -69,30 +69,31 @@ namespace app
 
         void loadHistory();
         void eraseHistory();
-        void eraseFiles(QModelIndexList& list);
+        void deleteFiles(QModelIndexList& list);
+        void forgetFiles(QModelIndexList& list);
 
         void keepSorted(bool onOff);
 
         const File& getItem(std::size_t i) const;
 
-        std::size_t numFiles() const 
-        { return m_files.size(); }
+        std::size_t numFiles() const
+        { return mFiles.size(); }
 
     public slots:
         void fileCompleted(const app::FileInfo& file);
         void packCompleted(const app::FilePackInfo& pack);
 
     private:
-        std::vector<File> m_files;
+        std::vector<File> mFiles;
 
     private:
-        bool m_keepSorted;
-        int  m_sortColumn;
-        int  m_sortOrder;
+        bool mKeepSorted = false;
+        int  mSortColumn = 0;
+        int  mSortOrder  = Qt::AscendingOrder;
 
     private:
-        int m_version;
-        QFile m_file;
+        int mVersion = 0;
+        QFile mFile;
     };
-    
+
 } // app
