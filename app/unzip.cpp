@@ -160,9 +160,11 @@ void Unzip::stop()
 {
     DEBUG("Killing unzip of archive %1", mCurrentArchive.file);
 
-    mCurrentArchive.state = Archive::Status::Stopped;
-
     mProcess.kill();
+
+    mCurrentArchive.state   = Archive::Status::Stopped;
+    mCurrentArchive.message = "Stopped by user";
+    onReady(mCurrentArchive);
 }
 
 bool Unzip::isRunning() const
@@ -264,55 +266,59 @@ void Unzip::onFinished()
 {
     DEBUG("Unzip finished. Archive %1", mCurrentArchive.file);
 
-    if (mCurrentArchive.state != Archive::Status::Stopped)
+    const auto error = mProcess.error();
+
+    if (error == Process::Error::None)
     {
-        const auto error = mProcess.error();
-
-        if (error == Process::Error::None)
+        const auto success = mErrors.isEmpty();
+        if (success)
         {
-            const auto success = mErrors.isEmpty();
-            if (success)
-            {
-                INFO("Unzip %1 success.", mCurrentArchive.file);
-                mCurrentArchive.message = mMessage;
-                mCurrentArchive.state   = Archive::Status::Success;
-            }
-            else
-            {
-                WARN("Unzip %1 failed", mCurrentArchive.file);
-                if (mErrors.isEmpty())
-                    mErrors = mMessage;
-                if (mErrors.isEmpty())
-                    mErrors = "Unknown failure";
-                mCurrentArchive.message = mErrors;
-                mCurrentArchive.state   = Archive::Status::Failed;
-            }
-
-            if (success && mDoCleanup)
-            {
-                const auto& archive = app::joinPath(mCurrentArchive.path, mCurrentArchive.file);
-                DEBUG("Cleaning up archive %1", archive);
-                QFile file;
-                file.setFileName(archive);
-                if (!file.remove())
-                {
-                    ERROR("Failed to remove (cleanup) %1, %2", archive, file.error());
-                }
-            }
-        }
-        else if (error == Process::Error::Crashed)
-        {
-            ERROR("Unzip process crashed when extracting %1", mCurrentArchive.file);
-            mCurrentArchive.message = "Crashed :(";
-            mCurrentArchive.state   = Archive::Status::Error;
+            INFO("Unzip %1 success.", mCurrentArchive.file);
+            mCurrentArchive.message = mMessage;
+            mCurrentArchive.state   = Archive::Status::Success;
         }
         else
         {
-            ERROR("Unzip process failed to to extract %1", mCurrentArchive.file);
-            mCurrentArchive.message = "Process error :(";
-            mCurrentArchive.state   = Archive::Status::Error;
+            WARN("Unzip %1 failed", mCurrentArchive.file);
+            if (mErrors.isEmpty())
+                mErrors = mMessage;
+            if (mErrors.isEmpty())
+                mErrors = "Unknown failure";
+            mCurrentArchive.message = mErrors;
+            mCurrentArchive.state   = Archive::Status::Failed;
+        }
+
+        if (success && mDoCleanup)
+        {
+            const auto& archive = app::joinPath(mCurrentArchive.path, mCurrentArchive.file);
+            DEBUG("Cleaning up archive %1", archive);
+            QFile file;
+            file.setFileName(archive);
+            if (!file.remove())
+            {
+                ERROR("Failed to remove (cleanup) %1, %2", archive, file.error());
+            }
         }
     }
+    else if (error == Process::Error::Crashed)
+    {
+        ERROR("Unzip process crashed when extracting %1", mCurrentArchive.file);
+        mCurrentArchive.message = "Crashed :(";
+        mCurrentArchive.state   = Archive::Status::Error;
+    }
+    else if (error == Process::Error::Timedout)
+    {
+        ERROR("Unzip process hung/froze when extracting %1", mCurrentArchive.file);
+        mCurrentArchive.message = "Hung/froze :(";
+        mCurrentArchive.state   = Archive::Status::Error;
+    }
+    else
+    {
+        ERROR("Unzip process failed to to extract %1", mCurrentArchive.file);
+        mCurrentArchive.message = "Process error :(";
+        mCurrentArchive.state   = Archive::Status::Error;
+    }
+
     onReady(mCurrentArchive);
 }
 

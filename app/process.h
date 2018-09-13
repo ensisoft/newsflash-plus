@@ -29,6 +29,7 @@
 #  include <QByteArray>
 #  include <QFile>
 #  include <QStringList>
+#  include <QTimer>
 #include "newsflash/warnpop.h"
 
 #include <functional>
@@ -63,6 +64,8 @@ namespace app
         // callback invoked when there's a new line extracted from stdout
         std::function<void (const QString& line)> onStdOut;
 
+        // called on normal/abnormal process exit. i.e. when the process
+        // exits normally or it has crashed or timedout.
         std::function<void ()> onFinished;
 
         // Start the given executable optionally setting the workingDir and writing
@@ -72,8 +75,12 @@ namespace app
                    const QString& logFile,
                    const QString& workingDir);
 
+        // this will kill the currently running process (if any)
+        // when the process is killed no more callbacks are called
+        // to indicate new stdout or stderr data or process completion.
         void kill();
 
+        // returns true if the process is currently running or not.
         bool isRunning() const
         {
             const auto state = mProcess.state();
@@ -101,12 +108,14 @@ namespace app
         void processFinished(int exitCode, QProcess::ExitStatus status);
         void processError(QProcess::ProcessError error);
         void processState(QProcess::ProcessState state);
+        void timeoutProcess();
 
     private:
         void parseStdOut();
         void parseStdErr();
 
     private:
+        QTimer  mTimeout;
         QString mExecutable;
         QString mWorkingDir;
         QProcess mProcess;
@@ -114,6 +123,7 @@ namespace app
         QByteArray mStdErr;
         QFile mLogFile;
         Error mError = Error::None;
+        bool mKilled = false;
     private:
     };
 } // namespace

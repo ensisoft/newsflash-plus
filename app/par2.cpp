@@ -76,9 +76,11 @@ void Par2::stop()
 {
     DEBUG("Killing par2 of archive %1", mCurrentArchive.file);
 
-    mCurrentArchive.state = Archive::Status::Stopped;
-
     mProcess.kill();
+
+    mCurrentArchive.state   = Archive::Status::Stopped;
+    mCurrentArchive.message = "Stopped by user";
+    onReady(mCurrentArchive);
 }
 
 bool Par2::isRunning() const
@@ -126,38 +128,43 @@ void Par2::onFinished()
 {
     DEBUG("par2 finished. Archive %1", mCurrentArchive.file);
 
-    if (mCurrentArchive.state != Archive::Status::Stopped)
+    const auto error = mProcess.error();
+
+    if (error == Process::Error::None)
     {
-        const auto error = mProcess.error();
-        if (error == Process::Error::None)
+        const auto message = mParState.getMessage();
+        const auto success = mParState.getSuccess();
+        mCurrentArchive.message = message;
+        if (success)
         {
-            const auto message = mParState.getMessage();
-            const auto success = mParState.getSuccess();
-            mCurrentArchive.message = message;
-            if (success)
-            {
-                INFO("Par2 %1 success", mCurrentArchive.file);
-                mCurrentArchive.state = Archive::Status::Success;
-            }
-            else
-            {
-                WARN("Par2 %1 failed", mCurrentArchive.file);
-                mCurrentArchive.state = Archive::Status::Failed;
-            }
-        }
-        else if (error == Process::Error::Crashed)
-        {
-            ERROR("Par2 process crashed when repairing %1", mCurrentArchive.file);
-            mCurrentArchive.message = "Crashed :(";
-            mCurrentArchive.state   = Archive::Status::Error;
+            INFO("Par2 %1 success", mCurrentArchive.file);
+            mCurrentArchive.state = Archive::Status::Success;
         }
         else
         {
-            ERROR("Par2 process failed to run on %1", mCurrentArchive.file);
-            mCurrentArchive.message = "Unknown process error :(";
-            mCurrentArchive.state   = Archive::Status::Error;
+            WARN("Par2 %1 failed", mCurrentArchive.file);
+            mCurrentArchive.state = Archive::Status::Failed;
         }
     }
+    else if (error == Process::Error::Crashed)
+    {
+        ERROR("Par2 process crashed when repairing %1", mCurrentArchive.file);
+        mCurrentArchive.message = "Crashed :(";
+        mCurrentArchive.state   = Archive::Status::Error;
+    }
+    else if (error == Process::Error::Timedout)
+    {
+        ERROR("Par2 process hung/froze when repairing %1", mCurrentArchive.file);
+        mCurrentArchive.message = "Hung/froze :(";
+        mCurrentArchive.state   = Archive::Status::Error;
+    }
+    else
+    {
+        ERROR("Par2 process failed to repair %1", mCurrentArchive.file);
+        mCurrentArchive.message = "Unknown process error :(";
+        mCurrentArchive.state   = Archive::Status::Error;
+    }
+
     onReady(mCurrentArchive);
 }
 

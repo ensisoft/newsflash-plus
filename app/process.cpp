@@ -81,6 +81,8 @@ Process::Process()
         this, SLOT(processStdOut()));
     QObject::connect(&mProcess, SIGNAL(readyReadStandardError()),
         this, SLOT(processStdErr()));
+    QObject::connect(&mTimeout, SIGNAL(timeout()),
+        this, SLOT(timeoutProcess()));
 }
 
 Process::~Process()
@@ -117,6 +119,7 @@ void Process::start(const QString& executable,
 
     if (!workingDir.isEmpty())
         mProcess.setWorkingDirectory(workingDir);
+    mProcess.blockSignals(false);
     mProcess.setProcessChannelMode(QProcess::SeparateChannels);
     mProcess.start(executable, args);
 }
@@ -130,7 +133,16 @@ void Process::kill()
         // looks like terminate will send sigint and unrar obliges and exits cleanly.
         // however this means that process's return state is normal exit.
         // whereas unrar just dies.
+        mProcess.blockSignals(true);
         mProcess.kill();
+
+        // this can block the UI thread but unfortunately the
+        // QProcess has the issue that after calling kill
+        // properties such as state() != Running might not hold!
+        // we wait here until the process finishes and then
+        // QProcess should be in reasonable state again.
+        mProcess.waitForFinished();
+
         if (mLogFile.isOpen())
         {
             // dump the last buffer bits into log.
@@ -138,7 +150,7 @@ void Process::kill()
             mLogFile.write("\n");
             mLogFile.write(mStdErr);
             mLogFile.write("\n");
-            mLogFile.write("*** terminated by user ***");
+            mLogFile.write("***killed by user ***");
             mLogFile.flush();
             mLogFile.close();
         }
@@ -173,6 +185,9 @@ bool Process::runAndCapture(const QString& executable,
 
 void Process::processStdOut()
 {
+    // input was received, it's still running. restart the timer.
+    mTimeout.start(30 * 1000);
+
     const QByteArray& buff = mProcess.readAllStandardOutput();
     mStdOut.append(buff);
     if (mStdOut.isEmpty())
@@ -197,6 +212,9 @@ void Process::processStdOut()
 
 void Process::processStdErr()
 {
+    // input was received, it's still running, restart the timer.
+    mTimeout.start(30 * 1000);
+
     const QByteArray& buff = mProcess.readAllStandardError();
     mStdErr.append(buff);
     if (mStdErr.isEmpty())
@@ -226,6 +244,8 @@ void Process::processFinished(int exitCode, QProcess::ExitStatus status)
 
     processStdOut();
     processStdErr();
+
+    mTimeout.stop();
 
     if (mLogFile.isOpen())
     {
@@ -278,6 +298,40 @@ void Process::processError(QProcess::ProcessError error)
 void Process::processState(QProcess::ProcessState state)
 {
     DEBUG("%1 state %2", mExecutable, state);
+}
+
+void Process::timeoutProcess()
+{
+    DEBUG("%1 has been timed out. No input was detected.", mExecutable);
+
+    mError  = Error::Timedout;
+    mKilled = true;
+    mProcess.blockSignals(true);
+    mProcess.kill();
+
+    // this can block the UI thread but unfortunately the
+    // QProcess has the issue that after calling kill
+    // properties such as state() != Running might not hold!
+    // we wait here until the process finishes and then
+    // QProcess should be in reasonable state again.
+    mProcess.waitForFinished();
+
+    mTimeout.stop();
+
+    if (mLogFile.isOpen())
+    {
+        mLogFile.write(mStdOut);
+        mLogFile.write("\r\n");
+        mLogFile.write(mStdErr);
+        mLogFile.write("\r\n");
+        mLogFile.write("*** process timeout ***");
+        mLogFile.flush();
+        mLogFile.close();
+    }
+
+    if (onFinished)
+        onFinished();
+
 }
 
 } // namespace

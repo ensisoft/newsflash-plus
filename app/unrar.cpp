@@ -117,9 +117,11 @@ void Unrar::stop()
 {
     DEBUG("Killing unrar of archive%1", mCurrentArchive.file);
 
-    mCurrentArchive.state = Archive::Status::Stopped;
-
     mProcess.kill();
+
+    mCurrentArchive.state   = Archive::Status::Stopped;
+    mCurrentArchive.message = "Stopped by user";
+    onReady(mCurrentArchive);
 }
 
 bool Unrar::isRunning() const
@@ -317,64 +319,67 @@ void Unrar::onFinished()
 {
     DEBUG("Unrar finished. Archive %1", mCurrentArchive.file);
 
-    // the user killed the whole thing.
-    if (mCurrentArchive.state != Archive::Status::Stopped)
+    const auto error = mProcess.error();
+
+    if (error == Process::Error::None)
     {
-        const auto error = mProcess.error();
+        // we should have extracted at least 1 file
+        const auto success = mErrors.isEmpty() && !mCleanupSet.empty();
 
-        if (error == Process::Error::None)
+        if (success)
         {
-            // we should have extracted at least 1 file
-            const auto success = mErrors.isEmpty() && !mCleanupSet.empty();
-
-            if (success)
-            {
-                INFO("Unrar %1 success.", mCurrentArchive.file);
-                mCurrentArchive.message = mMessage;
-                mCurrentArchive.state   = Archive::Status::Success;
-            }
-            else
-            {
-                WARN("Unrar %1 failed.", mCurrentArchive.file);
-                if (mErrors.isEmpty())
-                    mCurrentArchive.message = mMessage;
-                else mCurrentArchive.message = mErrors;
-                if (mCurrentArchive.message.isEmpty())
-                {
-                    if (mCleanupSet.empty())
-                        mCurrentArchive.message = "Unknown failure.";
-                }
-                mCurrentArchive.state   = Archive::Status::Failed;
-            }
-
-            if (success && mDoCleanup)
-            {
-                DEBUG("Cleaning up rars in %1", mCurrentArchive.path);
-                for (const auto& file : mCleanupSet)
-                {
-                    const auto& name = joinPath(mCurrentArchive.path, file);
-                    QFile fileio;
-                    fileio.setFileName(name);
-                    if (!fileio.remove())
-                    {
-                        ERROR("Failed to remove (cleanup) %1, %2", name, fileio.error());
-                    }
-                }
-            }
-        }
-        else if (error == Process::Error::Crashed)
-        {
-            ERROR("Unrar process crashed when extracting %1", mCurrentArchive.file);
-            mCurrentArchive.message = "Crash exit :(";
-            mCurrentArchive.state   = Archive::Status::Error;
+            INFO("Unrar %1 success.", mCurrentArchive.file);
+            mCurrentArchive.message = mMessage;
+            mCurrentArchive.state   = Archive::Status::Success;
         }
         else
         {
-            ERROR("Unrar process failed to run when extracting %1", mCurrentArchive.file);
-            mCurrentArchive.message = "Process error :(";
-            mCurrentArchive.state   = Archive::Status::Error;
+            WARN("Unrar %1 failed.", mCurrentArchive.file);
+            if (mErrors.isEmpty())
+                mCurrentArchive.message = mMessage;
+            else mCurrentArchive.message = mErrors;
+            if (mCurrentArchive.message.isEmpty())
+            {
+                if (mCleanupSet.empty())
+                    mCurrentArchive.message = "Unknown failure.";
+            }
+            mCurrentArchive.state   = Archive::Status::Failed;
+        }
+
+        if (success && mDoCleanup)
+        {
+            DEBUG("Cleaning up rars in %1", mCurrentArchive.path);
+            for (const auto& file : mCleanupSet)
+            {
+                const auto& name = joinPath(mCurrentArchive.path, file);
+                QFile fileio;
+                fileio.setFileName(name);
+                if (!fileio.remove())
+                {
+                    ERROR("Failed to remove (cleanup) %1, %2", name, fileio.error());
+                }
+            }
         }
     }
+    else if (error == Process::Error::Crashed)
+    {
+        ERROR("Unrar process crashed when extracting %1", mCurrentArchive.file);
+        mCurrentArchive.message = "Crashed :(";
+        mCurrentArchive.state   = Archive::Status::Error;
+    }
+    else if (error == Process::Error::Timedout)
+    {
+        ERROR("Unrar process hung/froze when extracting %1", mCurrentArchive.file);
+        mCurrentArchive.message = "Hung/froze :(";
+        mCurrentArchive.state   = Archive::Status::Error;
+    }
+    else
+    {
+        ERROR("Unrar process failed to extract %1", mCurrentArchive.file);
+        mCurrentArchive.message = "Process error :(";
+        mCurrentArchive.state   = Archive::Status::Error;
+    }
+
     onReady(mCurrentArchive);
 }
 
