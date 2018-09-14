@@ -31,6 +31,7 @@
 #include <string>
 #include <map>
 
+#include "assert.h"
 #include "unrar.h"
 #include "debug.h"
 #include "format.h"
@@ -78,6 +79,13 @@ Unrar::Unrar(const QString& executable)
         std::placeholders::_1);
 }
 
+Unrar::~Unrar()
+{
+    ASSERT(!mProcess.isRunning() &&
+        "Unrar is still running. It should be either killed or waited to finish.");
+    ASSERT(!mCurrentArchive.isValid() &&
+        "There should be no current valid archive.");
+}
 
 void Unrar::extract(const Archive& arc, const Settings& settings)
 {
@@ -118,10 +126,7 @@ void Unrar::stop()
     DEBUG("Killing unrar of archive%1", mCurrentArchive.file);
 
     mProcess.kill();
-
-    mCurrentArchive.state   = Archive::Status::Stopped;
-    mCurrentArchive.message = "Stopped by user";
-    onReady(mCurrentArchive);
+    mCurrentArchive.clear();
 }
 
 bool Unrar::isRunning() const
@@ -146,6 +151,16 @@ bool Unrar::isSupportedFormat(const QString& filePath, const QString& fileName) 
     {
         if (fileName.contains(QString::fromLatin1(p)))
             return true;
+    }
+    return false;
+}
+
+bool Unrar::getCurrentArchiveData(Archive* arc) const
+{
+    if (mProcess.isRunning() && mCurrentArchive.isValid())
+    {
+        *arc = mCurrentArchive;
+        return true;
     }
     return false;
 }
@@ -381,6 +396,9 @@ void Unrar::onFinished()
     }
 
     onReady(mCurrentArchive);
+
+    // we're done with this, clear it out.
+    mCurrentArchive.clear();
 }
 
 void Unrar::onStdErr(const QString& line)

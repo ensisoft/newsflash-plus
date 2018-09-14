@@ -38,11 +38,13 @@ namespace app
     {
     public:
         Par2(const QString& executable);
+       ~Par2();
 
         // ParityChecker implementation
-        virtual void recover(const Archive& arc, const Settings& s);
-        virtual void stop();
-        virtual bool isRunning() const;
+        virtual void recover(const Archive& arc, const Settings& s) override;
+        virtual void stop() override;
+        virtual bool isRunning() const override;
+        virtual bool getCurrentArchiveData(Archive* arc) const override;
 
         static QStringList getCopyright(const QString& executable);
 

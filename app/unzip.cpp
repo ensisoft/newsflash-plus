@@ -75,6 +75,13 @@ Unzip::Unzip(const QString& executable) : mUnzipExecutable(executable)
         std::placeholders::_1);
 }
 
+Unzip::~Unzip()
+{
+    ASSERT(!mProcess.isRunning() &&
+        "Unzip is still running. It should be either killed or waited to finish.");
+    ASSERT(!mCurrentArchive.isValid() &&
+        "There should be no current valid archive.");
+}
 
 void Unzip::extract(const Archive& arc, const Settings& settings)
 {
@@ -161,10 +168,7 @@ void Unzip::stop()
     DEBUG("Killing unzip of archive %1", mCurrentArchive.file);
 
     mProcess.kill();
-
-    mCurrentArchive.state   = Archive::Status::Stopped;
-    mCurrentArchive.message = "Stopped by user";
-    onReady(mCurrentArchive);
+    mCurrentArchive.clear();
 }
 
 bool Unzip::isRunning() const
@@ -195,6 +199,16 @@ QStringList Unzip::findArchives(const QStringList& fileNames) const
 bool Unzip::hasProgressInfo() const
 {
     return mHasProgress;
+}
+
+bool Unzip::getCurrentArchiveData(Archive* arc) const
+{
+    if (mProcess.isRunning() && mCurrentArchive.isValid())
+    {
+        *arc = mCurrentArchive;
+        return true;
+    }
+    return false;
 }
 
 // static
@@ -320,6 +334,9 @@ void Unzip::onFinished()
     }
 
     onReady(mCurrentArchive);
+
+    // we're done with this, clear it out.
+    mCurrentArchive.clear();
 }
 
 void Unzip::onStdErr(const QString& line)

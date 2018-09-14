@@ -148,7 +148,7 @@ void Unpack::saveState(app::Settings& settings)
 
 void Unpack::shutdown()
 {
-    model_.stopUnpack();
+    model_.shutdown();
 }
 
 bool Unpack::dropFile(const QString& file)

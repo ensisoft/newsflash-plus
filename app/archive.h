@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -20,18 +20,22 @@
 
 #pragma once
 
-#include <newsflash/config.h>
-#include <newsflash/warnpush.h>
+#include "newsflash/config.h"
+
+#include "newsflash/warnpush.h"
 #  include <QtGui/QIcon>
 #  include <QString>
 #  include <QMetaType>
-#include <newsflash/warnpop.h>
+#include "newsflash/warnpop.h"
 
 namespace app
 {
     // File archive such as .zip, .rar etc.
     struct Archive {
         enum class Status {
+            // archive has no status (reset)
+            None,
+
             // archive is queued and will execute at some later time.
             Queued,
 
@@ -39,7 +43,7 @@ namespace app
             Active,
 
             // archive was succesfully unpacked.
-            Success, 
+            Success,
 
             // archive failed to unpack
             Failed,
@@ -52,7 +56,7 @@ namespace app
         };
 
         // current unpack state of the archive.
-        Status state;
+        Status state = Status::None;
 
         // path to the unpack source folder (where the .rar files are)
         QString path;
@@ -68,10 +72,24 @@ namespace app
 
         Archive();
 
-        quint32 getGuid() const 
+        quint32 getGuid() const
         { return guid; }
+
+        void clear()
+        {
+            guid  = 0;
+            state = Status::None;
+            path.clear();
+            file.clear();
+            desc.clear();
+            message.clear();
+        }
+
+        bool isValid() const
+        { return state != Status::None; }
+
     private:
-        quint32 guid;
+        quint32 guid = 0;
     };
 
     QString toString(Archive::Status status);

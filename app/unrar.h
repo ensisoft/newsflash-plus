@@ -40,6 +40,7 @@ namespace app
     {
     public:
         Unrar(const QString& executable);
+       ~Unrar();
 
         // Archiever implementation.
         virtual void extract(const Archive& arc, const Settings& settings) override;
@@ -49,6 +50,7 @@ namespace app
         virtual bool isSupportedFormat(const QString& filePath, const QString& fileName) const override;
         virtual bool hasProgressInfo() const override
         { return true; }
+        virtual bool getCurrentArchiveData(Archive* arc) const override;
 
         // public static parse functions for easy unit testing.
         static bool parseMessage(const QString& line, QString& msg);

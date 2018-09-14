@@ -20,15 +20,15 @@
 
 #pragma once
 
-#include <newsflash/config.h>
+#include "newsflash/config.h"
 
-#include <newsflash/warnpush.h>
+#include "newsflash/warnpush.h"
 #  include <QAbstractTableModel>
 #  include <QByteArray>
 #  include <QObject>
 #  include <QProcess>
 #  include <QStringList>
-#include <newsflash/warnpop.h>
+#include "newsflash/warnpop.h"
 #include <memory>
 #include <vector>
 #include "archiver.h"
@@ -59,8 +59,16 @@ namespace app
         // add a new unpack operation to be performed.
         void addUnpack(const Archive& arc);
 
-        // stop current unpack operation.
+        // stop current unpack operation, will run the
+        // scheduler to start the next unpack operaton if any.
+        // will also invoke the unpackReady signal
         void stopUnpack();
+
+        // shutdown the unpacker. will stop any pending unpack
+        // operations without invoking any signals.
+        // this should be called when the application is
+        // shutting down.
+        void shutdown();
 
         void moveUp(QModelIndexList& list);
 

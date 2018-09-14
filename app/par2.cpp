@@ -28,6 +28,7 @@
 
 #include <string>
 
+#include "assert.h"
 #include "eventlog.h"
 #include "format.h"
 #include "debug.h"
@@ -46,6 +47,13 @@ Par2::Par2(const QString& executable) : mPar2Executable(executable)
         std::placeholders::_1);
 }
 
+Par2::~Par2()
+{
+    ASSERT(!mProcess.isRunning() &&
+        "Par2 is still running. It should be either killed or waited to finish.");
+    ASSERT(!mCurrentArchive.isValid() &&
+        "There should be no current valid archive.");
+}
 
 void Par2::recover(const Archive& arc, const Settings& s)
 {
@@ -77,15 +85,22 @@ void Par2::stop()
     DEBUG("Killing par2 of archive %1", mCurrentArchive.file);
 
     mProcess.kill();
-
-    mCurrentArchive.state   = Archive::Status::Stopped;
-    mCurrentArchive.message = "Stopped by user";
-    onReady(mCurrentArchive);
+    mCurrentArchive.clear();
 }
 
 bool Par2::isRunning() const
 {
     return mProcess.isRunning();
+}
+
+bool Par2::getCurrentArchiveData(Archive* arc) const
+{
+    if (mProcess.isRunning() && mCurrentArchive.isValid())
+    {
+        *arc = mCurrentArchive;
+        return true;
+    }
+    return false;
 }
 
 void Par2::onStdOut(const QString& line)
@@ -166,6 +181,8 @@ void Par2::onFinished()
     }
 
     onReady(mCurrentArchive);
+
+    mCurrentArchive.clear();
 }
 
 // static

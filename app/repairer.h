@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -20,15 +20,15 @@
 
 #pragma once
 
-#include <newsflash/config.h>
+#include "newsflash/config.h"
 
-#include <newsflash/warnpush.h>
+#include "newsflash/warnpush.h"
 #  include <QAbstractTableModel>
 #  include <QByteArray>
 #  include <QObject>
 #  include <QProcess>
 #  include <QMetaType>
-#include <newsflash/warnpop.h>
+#include "newsflash/warnpop.h"
 #include <memory>
 #include <list>
 #include "paritychecker.h"
@@ -38,7 +38,7 @@ namespace app
 {
     // perform recovery operation on a batch of files based on
     // the par2 recovery files. Listens for engine signals
-    // and creates new recovery operations when applicable 
+    // and creates new recovery operations when applicable
     // automatically.
     class Repairer : public QObject
     {
@@ -64,7 +64,16 @@ namespace app
         void addRecovery(const Archive& arc);
 
         // stop current recovery operation.
+        // this will run the scheduler and start the next
+        // recovery operation if any.
+        // will also invoke the repairReady signal.
         void stopRecovery();
+
+        // shutdown the repairer. will stop any pending
+        // recovery operation without invoking any signals.
+        // this should be called when the application is
+        // shutting down.
+        void shutdown();
 
         void moveUp(QModelIndexList& list);
 
@@ -80,52 +89,53 @@ namespace app
 
         void openLog(QModelIndexList& list);
 
-        void setWriteLogs(bool onOff);
-
-        void setPurgePars(bool onOff);
+        void setWriteLogs(bool onOff)
+        { mWriteLogs = onOff; }
+        void setPurgePars(bool onOff)
+        { mPurgePars = onOff; }
 
         std::size_t numRepairs() const;
 
         const Archive& getRecovery(const QModelIndex&) const;
 
         void setEnabled(bool onOff)
-        { 
-            enabled_ = onOff; 
-            if (enabled_)
+        {
+            mEnabled = onOff;
+            if (mEnabled)
                 startNextRecovery();
         }
 
-        bool isEnabled() const 
-        { return enabled_; }
+        bool isEnabled() const
+        { return mEnabled; }
 
     signals:
         void repairEnqueue(const app::Archive& arc);
         void repairStart(const app::Archive& rec);
         void repairReady(const app::Archive& rec);
         void scanProgress(const QString& file, int val);
-        void repairProgress(const QString& step, int val);                
+        void repairProgress(const QString& step, int val);
 
     private:
         void startNextRecovery();
 
     private:
         class RecoveryData;
-        class RecoveryList;        
-        std::unique_ptr<RecoveryData> data_;
-        std::unique_ptr<RecoveryData> info_;
-        std::unique_ptr<RecoveryList> list_;
-        std::unique_ptr<ParityChecker> engine_;
+        class RecoveryList;
+        std::unique_ptr<RecoveryData> mData;
+        std::unique_ptr<RecoveryData> mInfo;
+        std::unique_ptr<RecoveryList> mList;
+        std::unique_ptr<ParityChecker> mEngine;
 
         struct RecoveryFiles {
             quint32 archiveID;
             std::vector<ParityChecker::File> files;
         };
-        std::list<RecoveryFiles> history_;
+        std::list<RecoveryFiles> mHistory;
 
     private:
-        bool writeLogs_;
-        bool purgePars_;
-        bool enabled_;
+        bool mWriteLogs = true;
+        bool mPurgePars = false;
+        bool mEnabled   = true;
     };
 
 } // app

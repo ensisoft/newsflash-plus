@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -38,13 +38,13 @@ namespace app
     public:
         enum class FileState {
             // parity file is being loaded.
-            Loading, 
+            Loading,
 
             // parity file is loaded.
             Loaded,
 
             // target file is being scanned.
-            Scanning, 
+            Scanning,
 
             // Target file is missing.
             Missing,
@@ -66,7 +66,7 @@ namespace app
             Target, Parity
         };
 
-        // information about a file referenced in the 
+        // information about a file referenced in the
         // parity checking process. could be either a target file
         // or a checksum/data file
         struct File {
@@ -76,8 +76,8 @@ namespace app
         };
 
         struct Settings {
-            bool writeLogFile;
-            bool purgeOnSuccess;
+            bool writeLogFile = false;
+            bool purgeOnSuccess = false;
         };
 
         // list a new file in the parity process.
@@ -100,8 +100,12 @@ namespace app
         virtual void stop() = 0;
 
         virtual bool isRunning() const = 0;
+
+        // get the current archive contents if any and returns true
+        // otherwise false.
+        virtual bool getCurrentArchiveData(Archive* arc) const = 0;
     protected:
-    private:      
+    private:
     };
 
 } // app

@@ -73,6 +73,10 @@ namespace app
         // Returns true if the engine supports reporting progress information.
         virtual bool hasProgressInfo() const = 0;
 
+        // get the current archive contents if any and returns true
+        // otherwise false.
+        virtual bool getCurrentArchiveData(Archive* arc) const = 0;
+
     protected:
     private:
     };

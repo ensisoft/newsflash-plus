@@ -20,13 +20,14 @@
 
 #define LOGTAG "extract"
 
-#include <newsflash/config.h>
-#include <newsflash/warnpush.h>
+#include "newsflash/config.h"
+
+#include "newsflash/warnpush.h"
 #  include <QtGui/QIcon>
 #  include <QDir>
 #  include <QFileInfo>
 #  include <QRegExp>
-#include <newsflash/warnpop.h>
+#include "newsflash/warnpop.h"
 #include <limits>
 #include <algorithm>
 #include "unpacker.h"
@@ -373,9 +374,31 @@ void Unpacker::addUnpack(const Archive& arc)
 
 void Unpacker::stopUnpack()
 {
-    if (!mCurrentEngine)
-        return;
-    mCurrentEngine->stop();
+    app::Archive arc;
+
+    if (mCurrentEngine && mCurrentEngine->getCurrentArchiveData(&arc))
+    {
+        mCurrentEngine->stop();
+        arc.state   = Archive::Status::Stopped;
+        arc.message = "Stopped by user.";
+
+        emit unpackReady(arc);
+
+        const auto index = mUnpackList->findActive();
+        if (index != UnpackList::NoSuchUnpack)
+        {
+            auto& active = mUnpackList->getArchive(index);
+            active = arc;
+            mUnpackList->refresh(index);
+        }
+        startNextUnpack();
+    }
+}
+
+void Unpacker::shutdown()
+{
+    if (mCurrentEngine)
+        mCurrentEngine->stop();
 }
 
 void Unpacker::moveUp(QModelIndexList& list)

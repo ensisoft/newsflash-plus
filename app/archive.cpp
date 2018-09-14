@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -31,6 +31,7 @@ QString toString(Archive::Status status)
     using s = Archive::Status;
     switch (status)
     {
+        case s::None:    return "None";
         case s::Queued:  return "Queued";
         case s::Active:  return "Active";
         case s::Success: return "Success";
@@ -47,18 +48,19 @@ QIcon toIcon(Archive::Status status)
     using s = Archive::Status;
     switch (status)
     {
+        case s::None:    return QIcon();
         case s::Queued:  return QIcon("icons:ico_recovery_queued.png");
         case s::Active:  return QIcon("icons:ico_recovery_active.png");
         case s::Success: return QIcon("icons:ico_recovery_success.png");
         case s::Error:   return QIcon("icons:ico_recovery_error.png");
         case s::Failed:  return QIcon("icons:ico_recovery_failed.png");
         case s::Stopped: return QIcon("icons:ico_stop.png");
-    }    
+    }
     Q_ASSERT(0);
     return {};
 }
 
-Archive::Archive() : state(Status::Queued)
+Archive::Archive()
 {
     static quint32 id = 1;
     guid = id++;

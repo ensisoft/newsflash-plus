@@ -142,7 +142,7 @@ void Repair::saveState(app::Settings& settings)
 
 void Repair::shutdown()
 {
-    model_.stopRecovery();
+    model_.shutdown();
 }
 
 bool Repair::dropFile(const QString& file)

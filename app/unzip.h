@@ -37,6 +37,7 @@ namespace app
     {
     public:
         Unzip(const QString& executable);
+       ~Unzip();
 
         // Archiver implementation
         virtual void extract(const Archive& arc, const Settings& settings) override;
@@ -45,6 +46,7 @@ namespace app
         virtual bool isSupportedFormat(const QString& filePath, const QString& fileName) const override;
         virtual QStringList findArchives(const QStringList& fileNames) const override;
         virtual bool hasProgressInfo() const override;
+        virtual bool getCurrentArchiveData(Archive* arc) const override;
 
         static QString getCopyright(const QString& executable);
         static bool parseVolume(const QString& line, QString& file);
