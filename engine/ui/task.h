@@ -116,6 +116,9 @@ namespace newsflash
 
         // the current completion %  (range 0.0 - 100.0)
         double completion = 0.0;
+
+        // true if the completion percentage above is reliable.
+        bool has_completion = false;
     };
 
 } // ui

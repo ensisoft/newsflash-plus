@@ -99,7 +99,7 @@ QVariant TaskList::data(const QModelIndex& index, int role) const
                 return str(ui.state);
 
             case columns::done:
-                return QString("%1%").arg(ui.completion, 0, 'f', 2);
+                return ui.has_completion ? QString("%1%").arg(ui.completion, 0, 'f', 2) : "n/a";
 
             case columns::time:
                 return toString(runtime{ui.runtime});

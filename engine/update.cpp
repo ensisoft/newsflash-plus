@@ -668,6 +668,14 @@ bool Update::HasCommands() const
     return xover_last_ < remote_last_ || xover_first_ > remote_first_;
 }
 
+bool Update::HasProgress() const
+{
+    // we can compute progress information once
+    // we know how many remote headers there are
+    // and how many of those we have locally already.
+    return remote_last_ != 0 && remote_first_ != 0;
+}
+
 float Update::GetProgress() const
 {
     const auto remote_articles = remote_last_ - remote_first_ + 1;

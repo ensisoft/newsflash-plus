@@ -292,10 +292,12 @@ bool Download::HasCommands() const
     return !articles_.empty();
 }
 
+bool Download::HasProgress() const
+{ return true; }
+
 float Download::GetProgress() const
 {
-    return float(num_actions_ready_) /
-        float(num_actions_total_) * 100.0f;
+    return float(num_actions_ready_) / float(num_actions_total_) * 100.0f;
 }
 
 bitflag<Task::Error> Download::GetErrors() const

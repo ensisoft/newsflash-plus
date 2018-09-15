@@ -1001,6 +1001,7 @@ public:
         if (ui_.state == states::Active || ui_.state == states::Crunching)
             ui_.runtime++;
 
+        ui_.has_completion = task_->HasProgress();
         ui_.completion = task_->GetProgress();
         ui_.completion = clamp(ui_.completion, 100.0);
 
@@ -1242,6 +1243,9 @@ public:
 
     double GetCompletion() const
     { return task_->GetProgress(); }
+
+    bool HasCompletion() const
+    { return task_->HasProgress(); }
 
     bool CanSerialize() const
     { return task_->CanSerialize(); }
@@ -1591,7 +1595,8 @@ public:
     void GetStateUpdate(ui::TaskDesc& ui)
     {
         ui = ui_;
-        ui.completion += completion_;
+        ui.completion += partial_task_completion_;
+        ui.completion = clamp(ui.completion, 100.0);
     }
 
     void kill(Engine::State& state)
@@ -1634,7 +1639,7 @@ public:
             const double task_slice_size = compute_based_on_actual_size ?
                 (double)task_size / (double)this_size : 1.0 / (double)num_tasks_;
 
-            const double task_completion = task.GetCompletion();
+            const double task_completion = task.HasCompletion() ? task.GetCompletion() : 100.0f;
             const double actually_done   = task_slice_size * task_completion; // * 100.0f;
             ui_.completion += actually_done;
             ui_.completion = clamp(ui_.completion, 100.0);
@@ -1650,12 +1655,18 @@ public:
         if (ui_.state == states::Active || ui_.state == states::Crunching)
             ui_.runtime++;
 
-        completion_ = 0;
+        ui_.has_completion = true;
 
+        partial_task_completion_ = 0;
+
+        // compute partial running task completion
         for (const auto& task : state.tasks)
         {
             if (task->GetBatchId() != ui_.batch_id)
                 continue;
+
+            ui_.has_completion = ui_.has_completion & task->HasCompletion();
+
             const auto state = task->GetState();
             if (state == states::Error || state == states::Complete)
                 continue;
@@ -1669,17 +1680,17 @@ public:
 
             const double task_completion = task->GetCompletion();
             const double actually_done   = task_slice_size * task_completion;// * 100.0f;
-            completion_ += actually_done;
+            partial_task_completion_ += actually_done;
         }
 
         if ((ui_.state == states::Active ||
              ui_.state == states::Waiting ||
              ui_.state == states::Crunching) &&
              ui_.runtime >= 10 &&
-             ui_.completion + completion_ > 0.0)
+             ui_.completion + partial_task_completion_ > 0.0)
         {
             // compute eta.
-            const auto complete = ui_.completion + completion_;
+            const auto complete = ui_.completion + partial_task_completion_;
             const auto remaining = 100.0 - complete;
             const auto timespent = ui_.runtime;
             const auto time_per_percent = timespent / complete;
@@ -1803,7 +1814,7 @@ private:
     std::size_t num_tasks_ = 0;
     std::size_t num_files_ = 0;
     bool damaged_ = false;
-    float completion_ = 0.0f;
+    float partial_task_completion_ = 0.0f;
     Type type_ = Type::FileBatch;
 };
 

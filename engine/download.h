@@ -63,6 +63,7 @@ namespace newsflash
             std::vector<std::unique_ptr<action>>& next) override;
         virtual void Configure(const Settings& settings) override;
         virtual bool HasCommands() const override;
+        virtual bool HasProgress() const override;
         virtual float GetProgress() const override;
         virtual bitflag<Error> GetErrors() const override;
         virtual bool CanSerialize() const override

@@ -89,9 +89,13 @@ namespace newsflash
 
         virtual bool HasCommands() const = 0;
 
+        // returns true if task can compute reliable progress
+        // information. otherwise returns false and GetProgress
+        // might not be correct.
+        virtual bool HasProgress() const = 0;
+
         // return the current progress percentage (0.0f - 100.0f)
-        virtual float GetProgress() const
-        { return 0.0f; }
+        virtual float GetProgress() const = 0;
 
         // periodically tick the task. can be used to perform
         // some periodic activity in the task.

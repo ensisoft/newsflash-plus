@@ -59,6 +59,7 @@ namespace newsflash
         virtual void Complete(CmdList& cmd,
             std::vector<std::unique_ptr<action>>& actions) override;
         virtual bool HasCommands() const override;
+        virtual bool HasProgress() const override;
         virtual float GetProgress() const override;
         virtual void Tick() override;
 

@@ -178,6 +178,12 @@ public:
     {
         return !articles_.empty();
     }
+    virtual bool HasProgress() const override
+    { return false; }
+
+    virtual float GetProgress() const override
+    { return 0.0f; }
+
     virtual bitflag<Error> GetErrors() const override
     {
         return errors_;
@@ -303,9 +309,13 @@ public:
     {}
 
     virtual bool HasCommands() const override
-    {
-        return true;
-    }
+    { return true; }
+
+    virtual bool HasProgress() const override
+    { return false; }
+
+    virtual float GetProgress() const override
+    { return 0.0f; }
 
     virtual bitflag<Error> GetErrors() const override
     {
@@ -369,9 +379,11 @@ public:
     {}
 
     virtual bool HasCommands() const override
-    {
-        return true;
-    }
+    { return true; }
+    virtual bool HasProgress() const override
+    { return false; }
+    virtual float GetProgress() const override
+    { return 0.0f; }
 
     virtual bitflag<Error> GetErrors() const override
     {

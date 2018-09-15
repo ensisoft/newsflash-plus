@@ -109,6 +109,9 @@ void Listing::Complete(CmdList& cmd, std::vector<std::unique_ptr<action>>& actio
 bool Listing::HasCommands() const
 { return state_->commands; }
 
+bool Listing::HasProgress() const
+{ return true; }
+
 float Listing::GetProgress() const
 { return state_->complete ? 100.0f : 0.0f; }
 
