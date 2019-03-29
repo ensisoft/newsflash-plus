@@ -45,8 +45,6 @@ namespace gui
 
         virtual void addActions(QMenu& menu) override;
         virtual void addActions(QToolBar& bar) override;
-        virtual void loadState(app::Settings& settings) override;
-        virtual void saveState(app::Settings& settings) override;
         virtual info getInformation() const override;
         virtual Finder* getFinder() override;
 
@@ -57,7 +55,9 @@ namespace gui
         virtual std::size_t curItem() const override;
         virtual void setFound(std::size_t index) override;
 
-        void load();
+        void loadState();
+        void saveState() const;
+        void loadFirstData();
 
         static
         void deleteData(quint32 account, QString path, QString group);

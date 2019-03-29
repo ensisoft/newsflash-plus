@@ -204,30 +204,27 @@ int run(QtSingleApplication& qtinstance)
     gui::SmtpClient smtpGui(smtp);
     app::g_smtp = &smtp;
     smtp.startup();
-    win.attach(&smtpGui);
+    win.attachModule(&smtpGui);
 
     QObject::connect(&reporter, SIGNAL(sendTextReport(const QString&, const QString&)),
         &smtp, SLOT(sendEmail(const QString&, const QString&)));
 
-    newsflash::bitflag<gui::MainWindow::WidgetAttachFlags> permanent_widget_flags;
-    permanent_widget_flags.set(gui::MainWindow::WidgetAttachFlags::Permanent);
-
     // accounts widget
     gui::Accounts gacc;
-    win.attach(&gacc, permanent_widget_flags);
+    win.attachWidget(&gacc);
 
     // groups widget
     gui::NewsList news;
-    win.attach(&news, permanent_widget_flags);
+    win.attachWidget(&news);
 
     // downloads widget
     gui::Downloads downloads;
-    win.attach(&downloads, permanent_widget_flags);
+    win.attachWidget(&downloads);
 
     // files component
     app::Files files;
     gui::Files filesUI(files);
-    win.attach(&filesUI, permanent_widget_flags);
+    win.attachWidget(&filesUI);
     // connect to the engine
     QObject::connect(&engine, SIGNAL(fileCompleted(const app::FileInfo&)),
         &files, SLOT(fileCompleted(const app::FileInfo&)));
@@ -260,7 +257,7 @@ int run(QtSingleApplication& qtinstance)
 
     // compose repair + unpack together into a single GUI element
     gui::Archives archives(unpackGui, repairGui);
-    win.attach(&archives, permanent_widget_flags);
+    win.attachWidget(&archives);
 
     // archive manager runs the show regarding repair/unpack order.
     app::ArchiveManager arcMan(repairer, unpacker);
@@ -283,26 +280,26 @@ int run(QtSingleApplication& qtinstance)
     // eventlog module. this is a bit special
     // because it is used literally from everywhere.
     gui::EventLog log;
-    win.attach(&log, permanent_widget_flags);
+    win.attachWidget(&log);
 
     // core module
     gui::CoreModule core;
-    win.attach(&core);
+    win.attachModule(&core);
 
     // nzb module
     gui::NZBCore nzb;
-    win.attach(&nzb);
+    win.attachModule(&nzb);
 
     // tool module
     gui::ToolModule toolsgui;
-    win.attach(&toolsgui);
+    win.attachModule(&toolsgui);
 
     // newznab accounts
     gui::Newznab newznab;
-    win.attach(&newznab);
+    win.attachModule(&newznab);
 
     gui::HistoryDb historygui(app::g_history);
-    win.attach(&historygui);
+    win.attachModule(&historygui);
 
     // commands module
     app::Commands cmds;
@@ -316,23 +313,23 @@ int run(QtSingleApplication& qtinstance)
         &cmds, SLOT(unpackFinished(const app::Archive&)));
 
     gui::Commands cmdsGui(cmds);
-    win.attach(&cmdsGui);
+    win.attachModule(&cmdsGui);
 
 #if defined(LINUX_OS)
     #undef linux
     gui::LinuxModule linux;
-    win.attach(&linux);
+    win.attachModule(&linux);
 #endif
 
     gui::Appearance style;
-    win.attach(&style);
+    win.attachModule(&style);
 
     gui::Notify notify;
     if (QSystemTrayIcon::isSystemTrayAvailable())
     {
         auto& eventLog = app::EventLog::get();
 
-        win.attach(&notify);
+        win.attachModule(&notify);
         QObject::connect(&engine, SIGNAL(packCompleted(const app::FilePackInfo&)),
             &notify, SLOT(packCompleted(const app::FilePackInfo&)));
         QObject::connect(&engine, SIGNAL(fileCompleted(const app::FileInfo&)),
@@ -357,10 +354,10 @@ int run(QtSingleApplication& qtinstance)
     }
 
     gui::Omdb omdbgui(&omdb);
-    win.attach(&omdbgui);
+    win.attachModule(&omdbgui);
 
     gui::FileSystemModule fileSysMod;
-    win.attach(&fileSysMod);
+    win.attachModule(&fileSysMod);
 
     // note that this order is currently a bit important
     // since the engine needs to load it's state before
@@ -380,13 +377,6 @@ int run(QtSingleApplication& qtinstance)
     win.prepareMainTab();
     win.startup();
     win.show();
-
-    // add some transient default widgets to be shown
-    newsflash::bitflag<gui::MainWindow::WidgetAttachFlags> transient_widget_flags;
-    transient_widget_flags.set(gui::MainWindow::WidgetAttachFlags::LoadState);
-
-    win.attach(newznab.openRSSFeed(), transient_widget_flags);
-    win.attach(newznab.openSearch(), transient_widget_flags);
 
     auto ret = qtinstance.exec();
 

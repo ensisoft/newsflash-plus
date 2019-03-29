@@ -65,6 +65,7 @@
 #include "app/filetype.h"
 #include "app/historydb.h"
 #include "app/smtpclient.h"
+#include "app/utility.h"
 
 namespace gui
 {
@@ -135,77 +136,56 @@ void MainWindow::showWindow()
     emit shown();
 }
 
-void MainWindow::attach(MainWidget* widget, newsflash::bitflag<WidgetAttachFlags> flags)
+void MainWindow::attachWidget(MainWidget* widget)
 {
     Q_ASSERT(!widget->parent());
 
-    int index = mWidgets.size();
+    const int index  = mWidgets.size();
+    const auto& text = widget->windowTitle();
+    const auto& icon = widget->windowIcon();
+    const auto& info = widget->getInformation();
+
+    // Each permanent widget gets a view action.
+    // Permanent widgets are those that instead of being closed
+    // are just hidden and toggled in the View menu.
+    QAction* action = mUI.menuView->addAction(text);
+    action->setCheckable(true);
+    action->setChecked(true);
+    action->setProperty("index", index);
+
+    QObject::connect(action, SIGNAL(triggered()), this,
+        SLOT(actionWindowToggleView_triggered()));
+    QObject::connect(widget, SIGNAL(updateMenu(MainWidget*)),
+        this, SLOT(updateMenu(MainWidget*)));
+    QObject::connect(widget, SIGNAL(showSettings(const QString&)),
+        this, SLOT(showSettings(const QString&)));
+
+    mWidgets.push_back(widget);
+    mActions.push_back(action);
+    widget->setProperty("permanent", true);
+}
+
+void MainWindow::attachSessionWidget(MainWidget* widget)
+{
+    Q_ASSERT(!widget->parent());
+
+    widget->setProperty("permanent", false);
+    QObject::connect(widget, SIGNAL(updateMenu(MainWidget*)),
+        this, SLOT(updateMenu(MainWidget*)));
+    QObject::connect(widget, SIGNAL(showSettings(const QString&)),
+        this, SLOT(showSettings(const QString&)));
 
     mWidgets.push_back(widget);
 
     const auto& text = widget->windowTitle();
     const auto& icon = widget->windowIcon();
-    const auto& info = widget->getInformation();
 
-    const bool permanent = flags.test(WidgetAttachFlags::Permanent);
-    const bool loadstate = flags.test(WidgetAttachFlags::LoadState);
-    const bool activate  = flags.test(WidgetAttachFlags::Activate);
-
-    // only permanent widgets get a view action.
-    // permant widgets are those that instead of being closed
-    // are just hidden and toggled in the View menu.
-    if (permanent)
-    {
-        QAction* action = mUI.menuView->addAction(text);
-        action->setCheckable(true);
-        action->setChecked(true);
-        action->setProperty("index", index);
-        QObject::connect(action, SIGNAL(triggered()), this,
-            SLOT(actionWindowToggleView_triggered()));
-
-        mActions.push_back(action);
-        widget->setProperty("permanent", true);
-        if (loadstate)
-            widget->loadState(mSettings);
-    }
-    else
-    {
-        widget->setProperty("permanent", false);
-
-        // load the state of the widget *before* we add it to the main tab
-        // in order to make sure that we always load the state before
-        // doing any kind of widget activation.
-        if (loadstate)
-        {
-            auto it = std::find_if(std::begin(mTransientSettings), std::end(mTransientSettings),
-                [=](const app::Settings& s) {
-                    return s.name() == widget->objectName();
-                });
-            if (it == std::end(mTransientSettings))
-            {
-                widget->loadState(mSettings);
-            }
-            else
-            {
-                auto& settings = *it;
-                widget->loadState(settings);
-            }
-        }
-        const auto count = mUI.mainTab->count();
-        mUI.mainTab->addTab(widget, icon, text);
-        if (activate)
-        {
-            mUI.mainTab->setCurrentIndex(count);
-        }
-    }
-
-    QObject::connect(widget, SIGNAL(updateMenu(MainWidget*)),
-        this, SLOT(updateMenu(MainWidget*)));
-    QObject::connect(widget, SIGNAL(showSettings(const QString&)),
-        this, SLOT(showSettings(const QString&)));
+    const auto count = mUI.mainTab->count();
+    mUI.mainTab->addTab(widget, icon, text);
+    mUI.mainTab->setCurrentIndex(count);
 }
 
-void MainWindow::attach(MainModule* module, bool loadstate)
+void MainWindow::attachModule(MainModule* module)
 {
     mModules.push_back(module);
 }
@@ -230,7 +210,9 @@ void MainWindow::closeWidget(MainWidget* widget)
 
 void MainWindow::loadState()
 {
-    if (!mSettings.contains("window", "width"))
+    const bool first_launch = !mSettings.contains("window", "width");
+
+    if (first_launch)
     {
         // if the settings file doesn't exist then we assume that this is the
         // first launch of the application and just setup for the user welcome
@@ -303,6 +285,55 @@ void MainWindow::loadState()
     {
         m->loadState(mSettings);
         m->updateRegistration(success);
+
+        if (!first_launch)
+            continue;
+
+        MainWidget* search = m->openSearch();
+        if (search)
+        {
+            attachSessionWidget(search);
+        }
+        MainWidget* rss = m->openRSSFeed();
+        if (rss)
+        {
+            attachSessionWidget(rss);
+        }
+    }
+
+    // load tabs that need to be recovered from previous session
+    QStringList session_widget_file_list;
+    session_widget_file_list = mSettings.get("session", "temp_file_list").toStringList();
+    for (const auto& temp : session_widget_file_list)
+    {
+        app::Settings settings;
+        const auto file = app::homedir::file("temp/" + temp + ".json");
+        const auto err = settings.load(file);
+        if (err != QFile::NoError)
+        {
+            ERROR("Failed to load state from %1, %2", file, err);
+            continue;
+        }
+        const QString& module = settings.get("widget", "module").toString();
+        for (auto* m : mModules)
+        {
+            MainWidget* widget = nullptr;
+            // todo: fix the module name checking properly.
+            // should store the name of the module which created the widget
+            // and then see which one in the list matches.
+            if (module == "Search")
+                widget = m->openSearch();
+            else if (module == "RSS")
+                widget = m->openRSSFeed();
+
+            if (widget)
+            {
+                widget->loadState(settings);
+                attachSessionWidget(widget);
+                break;
+            }
+        }
+        QFile::remove(file);
     }
 
     app::g_engine->loadSession();
@@ -500,10 +531,8 @@ void MainWindow::messageReceived(const QString& message)
         MainWidget* widget = m->dropFile(message);
         if (widget)
         {
-            newsflash::bitflag<WidgetAttachFlags> flags;
-            flags.set(WidgetAttachFlags::LoadState);
-            flags.set(WidgetAttachFlags::Activate);
-            attach(widget, flags);
+            attachSessionWidget(widget);
+            break;
         }
     }
 }
@@ -716,10 +745,7 @@ void MainWindow::dropEvent(QDropEvent* event)
             MainWidget* widget = m->dropFile(name);
             if (widget)
             {
-                newsflash::bitflag<WidgetAttachFlags> flags;
-                flags.set(WidgetAttachFlags::LoadState);
-                flags.set(WidgetAttachFlags::Activate);
-                attach(widget, flags);
+                attachSessionWidget(widget);
             }
         }
 
@@ -728,7 +754,7 @@ void MainWindow::dropEvent(QDropEvent* event)
             auto* widget = mWidgets[i];
             if (widget->dropFile(name))
             {
-                bool permanent = widget->property("permanent").toBool();
+                const bool permanent = widget->property("permanent").toBool();
                 if (permanent)
                 {
                     show(i);
@@ -814,8 +840,6 @@ bool MainWindow::saveState(DlgExit* dlg)
         // data from the settings. for example if tools are modified and removed the state
         // is kept in memory and then persisted cleanly into the settings object on save.
         mSettings.clear();
-        for (const auto& a : mTransientSettings)
-            mSettings.merge(a);
 
         // todo: refactor this
         app::g_accounts->saveState(mSettings);
@@ -848,12 +872,37 @@ bool MainWindow::saveState(DlgExit* dlg)
             mSettings.set("window_visible_tabs", text, show);
         }
 
+        QStringList session_widget_state_files;
+
         // save widget states
-        for (auto* w : mWidgets)
+        for (auto* widget : mWidgets)
         {
-            DEBUG("Saving widget %1", w->windowTitle());
-            w->saveState(mSettings);
+            DEBUG("Saving widget %1", widget->windowTitle());
+            const bool bIsPermanent = widget->property("permanent").toBool();
+            if (bIsPermanent)
+            {
+                widget->saveState(mSettings);
+                continue;
+            }
+            const auto temp = app::generateRandomString();
+            const auto path = app::homedir::file("/temp/");
+            const auto file = app::homedir::file("/temp/" + temp + ".json");
+            QDir dir;
+            if (!dir.mkpath(path))
+            {
+                ERROR("Failed to create %1 folder.", path);
+                throw std::runtime_error("failed to create temp folder");
+            }
+
+            app::Settings widget_settings;
+            // todo: we should save the module name
+            widget_settings.set("widget", "module", widget->windowTitle());
+            widget->saveState(widget_settings);
+            session_widget_state_files << temp;
+            widget_settings.save(file);
+
         }
+        mSettings.set("session", "temp_file_list", session_widget_state_files);
 
         // save module state
         for (auto* m : mModules)
@@ -919,18 +968,20 @@ void MainWindow::on_mainTab_currentChanged(int index)
 
 void MainWindow::on_mainTab_tabCloseRequested(int tab)
 {
-    auto* widget = static_cast<MainWidget*>(mUI.mainTab->widget(tab));
-    auto parent  = widget->property("parent-object");
+    const auto* widget   = static_cast<MainWidget*>(mUI.mainTab->widget(tab));
+    const auto parent    = widget->property("parent-object");
+    const auto permanent = widget->property("permanent").toBool();
+
+    if (widget == mCurrentWidget)
+        mCurrentWidget = nullptr;
 
     mUI.mainTab->removeTab(tab);
 
     // find in the array
-    auto it = std::find(std::begin(mWidgets), std::end(mWidgets), widget);
+    const auto it = std::find(std::begin(mWidgets), std::end(mWidgets), widget);
 
-    Q_ASSERT(it != std::end(mWidgets));
-    Q_ASSERT(*it == widget);
-
-    auto permanent = widget->property("permanent").toBool();
+    ASSERT(it != std::end(mWidgets));
+    ASSERT(*it == widget);
 
     if (permanent)
     {
@@ -942,37 +993,6 @@ void MainWindow::on_mainTab_tabCloseRequested(int tab)
     }
     else
     {
-        // we have transient and permanent settings. the reason being
-        // that we want to clear the settings saved on the disk from
-        // stale data. I.e. if there's an object such as an account
-        // that was deleted we want this data to be gone from the settings.json.
-        // the easiest way to do this is just to clear the settings object
-        // and then have all the modules persist their *current* state
-        // into the settings and then write this out to the disk.
-        // however this does not work for temporary widgets that are deleted
-        // during program run because and which are not around anymore at the time
-        // when the settings are saved.
-
-        // so in order to maintain clean set of settings we have a separate
-        // settings object for each type of transient widgets
-        // which we then combine with the permanent settings to create the
-        // final settings object saved to the file
-
-        auto sit = std::find_if(std::begin(mTransientSettings), std::end(mTransientSettings),
-            [=](const app::Settings& s) {
-                return s.name() == widget->objectName();
-            });
-        if (sit == std::end(mTransientSettings))
-        {
-            app::Settings s;
-            s.setName(widget->objectName());
-            sit = mTransientSettings.insert(mTransientSettings.end(), s);
-        }
-        auto& settings = *sit;
-        settings.clear();
-
-        widget->saveState(settings);
-
         delete widget;
         mWidgets.erase(it);
     }
@@ -1041,10 +1061,8 @@ void MainWindow::on_actionOpen_triggered()
         MainWidget* widget = m->openFile(file);
         if (widget)
         {
-            newsflash::bitflag<WidgetAttachFlags> flags;
-            flags.set(WidgetAttachFlags::LoadState);
-            flags.set(WidgetAttachFlags::Activate);
-            attach(widget, flags);
+            attachSessionWidget(widget);
+            break;
         }
     }
 }
@@ -1129,30 +1147,28 @@ void MainWindow::on_actionFindClose_triggered()
 
 void MainWindow::on_actionSearch_triggered()
 {
+    // open first available search widget provided by some module
     for (auto* m : mModules)
     {
         MainWidget* widget = m->openSearch();
         if (widget)
         {
-            newsflash::bitflag<WidgetAttachFlags> flags;
-            flags.set(WidgetAttachFlags::LoadState);
-            flags.set(WidgetAttachFlags::Activate);
-            attach(widget, flags);
+            attachSessionWidget(widget);
+            break;
         }
     }
 }
 
 void MainWindow::on_actionRSS_triggered()
 {
+    // open first available RSS widget provided by some module
     for (auto* m : mModules)
     {
         MainWidget* widget = m->openRSSFeed();
         if (widget)
         {
-            newsflash::bitflag<WidgetAttachFlags> flags;
-            flags.set(WidgetAttachFlags::LoadState);
-            flags.set(WidgetAttachFlags::Activate);
-            attach(widget, flags);
+            attachSessionWidget(widget);
+            break;
         }
     }
 }

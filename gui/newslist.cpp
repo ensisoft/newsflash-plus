@@ -234,15 +234,12 @@ void NewsList::on_actionBrowse_triggered()
         if (isTabOpen) continue;
 
         auto* news = new NewsGroup(account, datapath, group);
+        news->loadState();
 
-        newsflash::bitflag<MainWindow::WidgetAttachFlags> flags;
-        flags.set(MainWindow::WidgetAttachFlags::LoadState);
-        flags.set(MainWindow::WidgetAttachFlags::Activate);
-
-        g_win->attach(news, flags);
+        g_win->attachSessionWidget(news);
         news->setProperty("newsgroup-guid", guid);
         news->setProperty("parent-object", QVariant::fromValue(static_cast<QObject*>(this)));
-        news->load();
+        news->loadFirstData();
     }
 }
 

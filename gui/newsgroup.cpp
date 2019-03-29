@@ -21,6 +21,7 @@
 #define LOGTAG "news"
 
 #include "newsflash/config.h"
+
 #include "newsflash/warnpush.h"
 #  include <QtGui/QMessageBox>
 #  include <QtGui/QToolBar>
@@ -31,18 +32,22 @@
 #  include <QFileInfo>
 #  include <QDir>
 #include "newsflash/warnpop.h"
+
 #include <limits>
-#include "newsgroup.h"
-#include "mainwindow.h"
-#include "dlgfilter.h"
-#include "dlgvolumes.h"
-#include "common.h"
+
+#include "app/eventlog.h"
 #include "app/debug.h"
 #include "app/format.h"
 #include "app/utility.h"
 #include "app/engine.h"
 #include "app/fileinfo.h"
 #include "app/types.h"
+
+#include "newsgroup.h"
+#include "mainwindow.h"
+#include "dlgfilter.h"
+#include "dlgvolumes.h"
+#include "common.h"
 
 namespace gui
 {
@@ -137,6 +142,8 @@ NewsGroup::NewsGroup(quint32 acc, QString path, QString name) : account_(acc), p
 
 NewsGroup::~NewsGroup()
 {
+    saveState();
+
     DEBUG("Newsgroup GUI deleted");
 }
 
@@ -178,8 +185,21 @@ void NewsGroup::addActions(QMenu& menu)
     menu.addAction(ui_.actionStop);
 }
 
-void NewsGroup::loadState(app::Settings& settings)
+void NewsGroup::loadState()
 {
+    const auto& settingsPath = app::joinPath(path_, name_);
+    const auto& settingsFile = app::joinPath(settingsPath, name_ + ".json");
+    if (!QFile::exists(settingsFile))
+        return;
+
+    app::Settings settings;
+    const auto err = settings.load(settingsFile);
+    if (err != QFile::NoError)
+    {
+        ERROR("Failed to read settings %1, %2", settingsFile, err);
+        return;
+    }
+
     ui_.tableView->setSortingEnabled(false);
 
     app::loadTableLayout("newsgroup", ui_.tableView, settings);
@@ -201,8 +221,9 @@ void NewsGroup::loadState(app::Settings& settings)
     app::loadState("newsgroup", ui_.actionShowDeleted, settings);
 }
 
-void NewsGroup::saveState(app::Settings& settings)
+void NewsGroup::saveState() const
 {
+    app::Settings settings;
     app::saveTableLayout("newsgroup", ui_.tableView, settings);
     app::saveState("newsgroup", ui_.actionShowNone, settings);
     app::saveState("newsgroup", ui_.actionShowAudio, settings);
@@ -215,6 +236,15 @@ void NewsGroup::saveState(app::Settings& settings)
     app::saveState("newsgroup", ui_.actionShowOther, settings);
     app::saveState("newsgroup", ui_.actionShowBroken, settings);
     app::saveState("newsgroup", ui_.actionShowDeleted, settings);
+
+    const auto& settingsPath = app::joinPath(path_, name_);
+    const auto& settingsFile = app::joinPath(settingsPath, name_ + ".json");
+
+    const auto err = settings.save(settingsFile);
+    if (err != QFile::NoError)
+    {
+        ERROR("Failed to save settings %1, %2", settingsFile, err);
+    }
 }
 
 MainWidget::info NewsGroup::getInformation() const
@@ -279,7 +309,7 @@ void NewsGroup::setFound(std::size_t index)
     ui_.tableView->scrollTo(i);
 }
 
-void NewsGroup::load()
+void NewsGroup::loadFirstData()
 {
     try
     {

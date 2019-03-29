@@ -32,7 +32,6 @@
 #include <vector>
 #include <memory>
 
-#include "engine/bitflag.h"
 #include "app/settings.h"
 
 class QIcon;
@@ -72,23 +71,16 @@ namespace gui
 
         void showWindow();
 
-        enum class WidgetAttachFlags {
-            Permanent,
-            LoadState,
-            Activate
-        };
+        // Attach a new permanent MainWidget to the window and display it.
+        // The ownership of the widget remains with the caller.
+        void attachWidget(MainWidget* widget);
 
-        // attach a new widget to the mainwindow and display it.
-        // ownership of the object remains with the caller.
-        // if permanent is true the widget will appear in the View Menu
-        // and upon closure is just hidden and can be reopened through the View menu.
-        // non permanent widgets on the other hand are deleted.
-        void attach(MainWidget* widget,
-            newsflash::bitflag<WidgetAttachFlags> flags);
+        // attach a temporary session widget.
+        void attachSessionWidget(MainWidget* widget);
 
         // attach a new module to the mainwindow.
         // ownership of the module remains with the caller.
-        void attach(MainModule* module, bool loadstate = false);
+        void attachModule(MainModule* module);
 
         // detach all widgets
         void detachAllWidgets();
@@ -193,9 +185,6 @@ namespace gui
 
     private:
         app::Settings& mSettings;
-        std::vector<app::Settings> mTransientSettings;
-
-    private:
         std::vector<MainModule*> mModules;
         std::vector<MainWidget*> mWidgets;
         std::vector<QAction*>    mActions;

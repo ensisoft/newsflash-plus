@@ -43,6 +43,8 @@ class QAction;
 namespace app
 {
 
+QString generateRandomString();
+
 QString suggestName(const std::vector<std::string>& subjectLines);
 
 QString joinPath(const QString& lhs, const QString& rhs);
