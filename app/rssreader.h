@@ -61,7 +61,7 @@ namespace app
         QAbstractTableModel* getModel();
 
         void setEngine(std::unique_ptr<RSSFeed> engine)
-        { engine_ = std::move(engine); }
+        { mEngine = std::move(engine); }
 
         // refresh the RSS stream for media type m.
         // returns true if there are RSS feeds in this media
@@ -96,9 +96,9 @@ namespace app
 
     private:
         using ModelType = TableModel<RSSModel, MediaItem>;
-        std::unique_ptr<ModelType> model_;
-        std::unique_ptr<RSSFeed> engine_;
-        std::list<WebQuery*> queries_;
+        std::unique_ptr<ModelType> mModel;
+        std::unique_ptr<RSSFeed> mEngine;
+        std::list<WebQuery*> mWebQueries;
     };
 
 } // rss

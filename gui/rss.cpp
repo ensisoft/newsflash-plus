@@ -83,6 +83,8 @@ RSS::RSS(Newznab& module) : mNewznab(module)
 
 RSS::~RSS()
 {
+    mRSSReader.stop();
+
     DEBUG("RSS gui destroyed");
 }
 
