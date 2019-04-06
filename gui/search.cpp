@@ -142,6 +142,8 @@ Search::Search(Newznab& module) : mNewznab(module)
 
 Search::~Search()
 {
+    mSearch.stop();
+
     DEBUG("Search UI deleted");
 }
 

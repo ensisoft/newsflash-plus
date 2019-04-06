@@ -40,19 +40,21 @@
 namespace app
 {
 
-Search::Search() : model_(new ModelType)
+Search::Search() : mModel(new ModelType)
 {
     DEBUG("Search created");
 }
 
 Search::~Search()
 {
+    stop();
+
     DEBUG("Search deleted");
 }
 
 QAbstractTableModel* Search::getModel()
 {
-    return model_.get();
+    return mModel.get();
 }
 
 bool Search::beginSearch(const Basic& query, std::unique_ptr<Indexer> index)
@@ -63,8 +65,8 @@ bool Search::beginSearch(const Basic& query, std::unique_ptr<Indexer> index)
     q.size      = query.qsize;
 
     QUrl url;
-    indexer_ = std::move(index);
-    indexer_->prepare(q, url);
+    mIndexer = std::move(index);
+    mIndexer->prepare(q, url);
 
     doSearch(url);
 
@@ -90,8 +92,8 @@ bool Search::beginSearch(const Advanced& query, std::unique_ptr<Indexer> index)
     q.size       = query.qsize;
 
     QUrl url;
-    indexer_ = std::move(index);
-    indexer_->prepare(q, url);
+    mIndexer = std::move(index);
+    mIndexer->prepare(q, url);
 
     doSearch(url);
 
@@ -109,8 +111,8 @@ bool Search::beginSearch(const Music& query, std::unique_ptr<Indexer> index)
     q.size   = query.qsize;
 
     QUrl url;
-    indexer_ = std::move(index);
-    indexer_->prepare(q, url);
+    mIndexer = std::move(index);
+    mIndexer->prepare(q, url);
 
     doSearch(url);
 
@@ -127,8 +129,8 @@ bool Search::beginSearch(const Television& query, std::unique_ptr<Indexer> index
     q.size     = query.qsize;
 
     QUrl url;
-    indexer_ = std::move(index);
-    indexer_->prepare(q, url);
+    mIndexer = std::move(index);
+    mIndexer->prepare(q, url);
 
     doSearch(url);
 
@@ -137,33 +139,33 @@ bool Search::beginSearch(const Television& query, std::unique_ptr<Indexer> index
 
 void Search::stop()
 {
-    for (auto* query : queries_)
+    for (auto* query : mWebQueries)
         query->abort();
 
-    queries_.clear();
+    mWebQueries.clear();
 }
 
 void Search::clear()
 {
-    model_->clear();
+    mModel->clear();
 }
 
 void Search::loadItem(const QModelIndex& index, OnData cb)
 {
-    const auto& item = model_->getItem(index);
+    const auto& item = mModel->getItem(index);
     const auto& link = item.nzblink;
     const auto& desc = item.title;
 
     WebQuery query(link);
     query.OnReply = [=](QNetworkReply& reply)
     {
-        const auto it = std::find_if(std::begin(queries_), std::end(queries_),
+        const auto it = std::find_if(std::begin(mWebQueries), std::end(mWebQueries),
             [&](const WebQuery* q ){
                 return q->isOwner(reply);
             });
-        ENDCHECK(queries_, it);
-        queries_.erase(it);
-        if (queries_.empty())
+        ENDCHECK(mWebQueries, it);
+        mWebQueries.erase(it);
+        if (mWebQueries.empty())
             OnReadyCallback();
 
         const auto err = reply.error();
@@ -178,7 +180,7 @@ void Search::loadItem(const QModelIndex& index, OnData cb)
         cb(buff, desc);
     };
     auto* ret = g_web->submit(query);
-    queries_.push_back(ret);
+    mWebQueries.push_back(ret);
 }
 
 void Search::saveItem(const QModelIndex& index, const QString& file)
@@ -189,13 +191,13 @@ void Search::saveItem(const QModelIndex& index, const QString& file)
     WebQuery query(link);
     query.OnReply = [=](QNetworkReply& reply)
     {
-        const auto it = std::find_if(std::begin(queries_), std::end(queries_),
+        const auto it = std::find_if(std::begin(mWebQueries), std::end(mWebQueries),
             [&](const WebQuery* q ){
                 return q->isOwner(reply);
             });
-        ENDCHECK(queries_, it);
-        queries_.erase(it);
-        if (queries_.empty())
+        ENDCHECK(mWebQueries, it);
+        mWebQueries.erase(it);
+        if (mWebQueries.empty())
             OnReadyCallback();
 
         const auto err = reply.error();
@@ -218,7 +220,7 @@ void Search::saveItem(const QModelIndex& index, const QString& file)
 
     };
     auto* ret = g_web->submit(query);
-    queries_.push_back(ret);
+    mWebQueries.push_back(ret);
 }
 
 void Search::downloadItem(const QModelIndex& index, const QString& folder, quint32 account)
@@ -229,13 +231,13 @@ void Search::downloadItem(const QModelIndex& index, const QString& folder, quint
     WebQuery query(link);
     query.OnReply = [=](QNetworkReply& reply)
     {
-        const auto it = std::find_if(std::begin(queries_), std::end(queries_),
+        const auto it = std::find_if(std::begin(mWebQueries), std::end(mWebQueries),
             [&](const WebQuery* q) {
                 return q->isOwner(reply);
             });
-        ENDCHECK(queries_, it);
-        queries_.erase(it);
-        if (queries_.empty())
+        ENDCHECK(mWebQueries, it);
+        mWebQueries.erase(it);
+        if (mWebQueries.empty())
             OnReadyCallback();
 
         const auto err = reply.error();
@@ -258,12 +260,12 @@ void Search::downloadItem(const QModelIndex& index, const QString& folder, quint
 
     };
     auto* ret = g_web->submit(query);
-    queries_.push_back(ret);
+    mWebQueries.push_back(ret);
 }
 
 const MediaItem& Search::getItem(const QModelIndex& index) const
 {
-    return model_->getItem(index);
+    return mModel->getItem(index);
 }
 
 void Search::doSearch(QUrl url)
@@ -272,18 +274,18 @@ void Search::doSearch(QUrl url)
     web.OnReply = std::bind(&Search::onSearchReady, this,
         std::placeholders::_1);
     WebQuery* ret = g_web->submit(web);
-    queries_.push_back(ret);
+    mWebQueries.push_back(ret);
 }
 
 void Search::onSearchReady(QNetworkReply& reply)
 {
-    const auto it = std::find_if(std::begin(queries_), std::end(queries_),
+    const auto it = std::find_if(std::begin(mWebQueries), std::end(mWebQueries),
         [&](const WebQuery* q ){
             return q->isOwner(reply);
         });
-    ENDCHECK(queries_, it);
-    queries_.erase(it);
-    if (queries_.empty())
+    ENDCHECK(mWebQueries, it);
+    mWebQueries.erase(it);
+    if (mWebQueries.empty())
         OnReadyCallback();
 
     const auto err = reply.error();
@@ -301,8 +303,8 @@ void Search::onSearchReady(QNetworkReply& reply)
 
     using e = Indexer::Error;
 
-    const auto error = indexer_->parse(io, items);
-    const auto name  = indexer_->name();
+    const auto error = mIndexer->parse(io, items);
+    const auto name  = mIndexer->name();
     switch (error)
     {
         case e::None: break;
@@ -328,7 +330,7 @@ void Search::onSearchReady(QNetworkReply& reply)
 
     const auto emptyResult = items.empty();
 
-    model_->append(std::move(items));
+    mModel->append(std::move(items));
 
     OnSearchCallback(emptyResult);
 }

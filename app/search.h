@@ -129,9 +129,9 @@ namespace app
 
     private:
         using ModelType = TableModel<SearchModel, MediaItem>;
-        std::unique_ptr<ModelType> model_;
-        std::unique_ptr<Indexer> indexer_;
-        std::list<WebQuery*> queries_;
+        std::unique_ptr<ModelType> mModel;
+        std::unique_ptr<Indexer> mIndexer;
+        std::list<WebQuery*> mWebQueries;
     };
 
 } // app
