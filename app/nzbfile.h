@@ -20,16 +20,18 @@
 
 #pragma once
 
-#include <newsflash/config.h>
+#include "newsflash/config.h"
 
-#include <newsflash/warnpush.h>
+#include "newsflash/warnpush.h"
 #  include <QAbstractTableModel>
 #  include <QObject>
 #  include <QString>
-#include <newsflash/warnpop.h>
+#include "newsflash/warnpop.h"
+
 #include <memory>
 #include <vector>
 #include <functional>
+
 #include "nzbparse.h"
 #include "media.h"
 
@@ -62,16 +64,18 @@ namespace app
         bool load(const QByteArray& array, const QString& desc);
 
         // download the items specified by the index list
-        void download(const QModelIndexList& list, quint32 account, const QString& folder, const QString& desc);
+        void downloadSel(const QModelIndexList& list, quint32 account, const QString& folder, const QString& desc);
+        void downloadAll(quint32 account, const QString& folder, const QString& desc);
 
         quint64 sumDataSizes(const QModelIndexList& list) const;
+        quint64 sumDataSizes() const;
 
         void setShowFilenamesOnly(bool on_off);
 
         const NZBContent& getItem(std::size_t index) const;
 
         std::size_t numItems() const
-        { return data_.size(); }
+        { return mData.size(); }
 
         MediaType findMediaType() const;
 
@@ -86,13 +90,13 @@ namespace app
         void parseComplete();
 
     private:
-        std::unique_ptr<NZBThread> thread_;
-        std::vector<NZBContent> data_;
+        std::unique_ptr<NZBThread> mThread;
+        std::vector<NZBContent> mData;
     private:
-        QString file_;
-        QByteArray buffer_;
-        bool show_filename_only_ = false;
-        mutable MediaType mediatype_ = MediaType::SENTINEL;
+        QString mSourceDesc;
+        QByteArray mSourceBuffer;
+        bool mShowFilenameOnly = false;
+        mutable MediaType mMediatype = MediaType::SENTINEL;
     };
 
 } // app

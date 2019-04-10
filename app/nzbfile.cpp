@@ -43,7 +43,7 @@
 namespace app
 {
 
-NZBFile::NZBFile(MediaType mediaType) : mediatype_(mediaType)
+NZBFile::NZBFile(MediaType mediaType) : mMediatype(mediaType)
 {
     DEBUG("NZBFile created");
 }
@@ -55,11 +55,11 @@ NZBFile::NZBFile()
 
 NZBFile::~NZBFile()
 {
-    if (thread_.get())
+    if (mThread.get())
     {
         DEBUG("Waiting nzb parser thread....");
-        thread_->wait();
-        thread_.reset();
+        mThread->wait();
+        mThread.reset();
     }
 
     DEBUG("NZBFile destroyed");
@@ -74,52 +74,52 @@ bool NZBFile::load(const QString& file)
         return false;
     }
 
-    if (thread_.get())
+    if (mThread.get())
     {
         DEBUG("Waiting existing parsing thread...");
-        thread_->wait();
-        thread_.reset();
+        mThread->wait();
+        mThread.reset();
     }
-    file_ = file;
-    thread_.reset(new NZBThread(std::move(io)));
+    mSourceDesc = file;
+    mThread.reset(new NZBThread(std::move(io)));
 
-    QObject::connect(thread_.get(), SIGNAL(complete()),
+    QObject::connect(mThread.get(), SIGNAL(complete()),
         this, SLOT(parseComplete()), Qt::QueuedConnection);
 
-    thread_->start();
+    mThread->start();
     return true;
 }
 
 bool NZBFile::load(const QByteArray& bytes, const QString& desc)
 {
-    if (thread_.get())
+    if (mThread.get())
     {
         DEBUG("Waiting existing parsing thread...");
-        thread_->wait();
-        thread_.reset();
+        mThread->wait();
+        mThread.reset();
     }
-    buffer_ = bytes;
-    file_   = desc;
+    mSourceBuffer = bytes;
+    mSourceDesc   = desc;
 
     std::unique_ptr<QBuffer> io(new QBuffer);
-    io->setBuffer(&buffer_);
+    io->setBuffer(&mSourceBuffer);
 
-    thread_.reset(new NZBThread(std::move(io)));
+    mThread.reset(new NZBThread(std::move(io)));
 
-    QObject::connect(thread_.get(), SIGNAL(complete()),
+    QObject::connect(mThread.get(), SIGNAL(complete()),
         this, SLOT(parseComplete()), Qt::QueuedConnection);
 
-    thread_->start();
+    mThread->start();
     return true;
 }
 
-void NZBFile::download(const QModelIndexList& list, quint32 account, const QString& folder, const QString& desc)
+void NZBFile::downloadSel(const QModelIndexList& list, quint32 account, const QString& folder, const QString& desc)
 {
     std::vector<NZBContent> selected;
     selected.reserve(list.size());
 
     for (const auto& i : list)
-        selected.push_back(data_[i.row()]);
+        selected.push_back(mData[i.row()]);
 
     Download download;
     download.type     = findMediaType();
@@ -131,13 +131,37 @@ void NZBFile::download(const QModelIndexList& list, quint32 account, const QStri
     g_engine->downloadNzbContents(download, std::move(selected));
 }
 
+void NZBFile::downloadAll(quint32 account, const QString& folder, const QString& desc)
+{
+    std::vector<NZBContent> everything = mData;
+
+    Download download;
+    download.type     = findMediaType();
+    download.source   = MediaSource::File;
+    download.account  = account;
+    download.basepath = folder;
+    download.folder   = desc;
+    download.desc     = desc;
+    g_engine->downloadNzbContents(download, std::move(everything));
+}
+
 quint64 NZBFile::sumDataSizes(const QModelIndexList& list) const
 {
     quint64 bytes = 0;
     for (const auto& i : list)
     {
         const auto row = i.row();
-        const auto& item = data_[row];
+        const auto& item = mData[row];
+        bytes += item.bytes;
+    }
+    return bytes;
+}
+
+quint64 NZBFile::sumDataSizes() const
+{
+    quint64 bytes = 0;
+    for (const auto& item : mData)
+    {
         bytes += item.bytes;
     }
     return bytes;
@@ -145,55 +169,55 @@ quint64 NZBFile::sumDataSizes(const QModelIndexList& list) const
 
 void NZBFile::setShowFilenamesOnly(bool on_off)
 {
-    if (on_off == show_filename_only_)
+    if (on_off == mShowFilenameOnly)
         return;
-    show_filename_only_ = on_off;
+    mShowFilenameOnly = on_off;
 
     auto first = QAbstractTableModel::index(0, 0);
-    auto last  = QAbstractTableModel::index(data_.size(), 3);
+    auto last  = QAbstractTableModel::index(mData.size(), 3);
     emit dataChanged(first, last);
 }
 
 const NZBContent& NZBFile::getItem(std::size_t index) const
 {
-    BOUNDSCHECK(data_, index);
-    return data_[index];
+    BOUNDSCHECK(mData, index);
+    return mData[index];
 }
 
 MediaType NZBFile::findMediaType() const
 {
-    if (mediatype_ != MediaType::SENTINEL)
-        return mediatype_;
+    if (mMediatype != MediaType::SENTINEL)
+        return mMediatype;
 
     // we're going to speculate for the media type the
     // based on the items that we have.
 
-    for (const auto& item : data_)
+    for (const auto& item : mData)
     {
         for (const auto& newsgroup : item.groups)
         {
             const auto type = app::findMediaType(fromUtf8(newsgroup));
             if (type != MediaType::Other)
             {
-                if (mediatype_ == MediaType::SENTINEL)
-                    mediatype_ = type;
-                else if (mediatype_ != type)
+                if (mMediatype == MediaType::SENTINEL)
+                    mMediatype = type;
+                else if (mMediatype != type)
                 {
-                    mediatype_ = MediaType::Other;
-                    return mediatype_;
+                    mMediatype = MediaType::Other;
+                    return mMediatype;
                 }
             }
         }
     }
-    if (mediatype_ == MediaType::SENTINEL)
-        mediatype_ = MediaType::Other;
+    if (mMediatype == MediaType::SENTINEL)
+        mMediatype = MediaType::Other;
 
-    return mediatype_;
+    return mMediatype;
 }
 
 int NZBFile::rowCount(const QModelIndex&) const
 {
-    return (int)data_.size();
+    return (int)mData.size();
 }
 
 int NZBFile::columnCount(const QModelIndex&) const
@@ -206,7 +230,7 @@ void NZBFile::sort(int column, Qt::SortOrder order)
     emit layoutAboutToBeChanged();
     if (column == (int)Columns::Type)
     {
-        std::sort(std::begin(data_), std::end(data_),
+        std::sort(std::begin(mData), std::end(mData),
             [&](const NZBContent& lhs, const NZBContent& rhs) {
                 if (order == Qt::AscendingOrder)
                     return lhs.type < rhs.type;
@@ -215,7 +239,7 @@ void NZBFile::sort(int column, Qt::SortOrder order)
     }
     else if (column == (int)Columns::Size)
     {
-        std::sort(std::begin(data_), std::end(data_),
+        std::sort(std::begin(mData), std::end(mData),
             [=](const NZBContent& lhs, const NZBContent& rhs) {
                 if (order == Qt::AscendingOrder)
                     return lhs.bytes < rhs.bytes;
@@ -224,7 +248,7 @@ void NZBFile::sort(int column, Qt::SortOrder order)
     }
     else if (column == (int)Columns::File)
     {
-        std::sort(std::begin(data_), std::end(data_),
+        std::sort(std::begin(mData), std::end(mData),
             [&](const NZBContent& lhs, const NZBContent& rhs) {
                 if (order == Qt::AscendingOrder)
                     return lhs.subject < rhs.subject;
@@ -238,7 +262,7 @@ QVariant NZBFile::data(const QModelIndex& index, int role) const
 {
     const auto row = index.row();
     const auto col = index.column();
-    const auto& item = data_[row];
+    const auto& item = mData[row];
 
     if (role == Qt::DisplayRole)
     {
@@ -247,7 +271,7 @@ QVariant NZBFile::data(const QModelIndex& index, int role) const
             case Columns::Type: return toString(item.type);
             case Columns::Size: return toString(app::size{item.bytes});
             case Columns::File:
-                if (show_filename_only_)
+                if (mShowFilenameOnly)
                 {
                     const auto& utf8 = toUtf8(item.subject);
                     const auto& name = nntp::find_filename(utf8);
@@ -283,9 +307,9 @@ QVariant NZBFile::headerData(int section, Qt::Orientation orientation, int role)
 
 void NZBFile::parseComplete()
 {
-    DEBUG("Parse_complete %1", file_);
+    DEBUG("Parse_complete %1", mSourceDesc);
 
-    const auto result = thread_->result(data_);
+    const auto result = mThread->result(mData);
     switch (result)
     {
         case NZBError::None:
@@ -293,22 +317,22 @@ void NZBFile::parseComplete()
             break;
 
         case NZBError::XML:
-            ERROR("XML error while parsing NZB file %1", file_);
+            ERROR("XML error while parsing NZB file %1", mSourceDesc);
             break;
 
         case NZBError::NZB:
-            ERROR("Error in NZB file content %1", file_);
+            ERROR("Error in NZB file content %1", mSourceDesc);
             break;
 
         case NZBError::Io:
-            ERROR("I/O error while parsing NZB file %1",file_);
+            ERROR("I/O error while parsing NZB file %1",mSourceDesc);
             break;
 
         case NZBError::Other:
-            ERROR("Unknown error while parsing NZB file %1", file_);
+            ERROR("Unknown error while parsing NZB file %1", mSourceDesc);
             break;
     }
-    for (auto& item : data_)
+    for (auto& item : mData)
     {
         const auto utf8 = app::toUtf8(item.subject);
         auto name = nntp::find_filename(utf8);

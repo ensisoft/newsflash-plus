@@ -21,14 +21,17 @@
 #pragma once
 
 #include "newsflash/config.h"
+
 #include "newsflash/warnpush.h"
 #  include "ui_nzbfile.h"
 #include "newsflash/warnpop.h"
+
 #include <memory>
-#include "mainwidget.h"
-#include "finder.h"
+
 #include "app/nzbfile.h"
 #include "app/media.h"
+#include "mainwidget.h"
+#include "finder.h"
 
 namespace gui
 {
@@ -69,15 +72,15 @@ namespace gui
         void on_actionBrowse_triggered();
         void on_tableView_customContextMenuRequested(QPoint);
         void on_chkFilenamesOnly_clicked();
+        void on_btnSelectAll_clicked();
+        void on_btnSelectNone_clicked();
         void downloadToPrevious();
     private:
         void downloadSelected(const QString& folder);
 
     private:
-        Ui::NZB ui_;
-
-    private:
-        app::NZBFile model_;
+        Ui::NZB mUi;
+        app::NZBFile mModel;
     };
 
 } // gui

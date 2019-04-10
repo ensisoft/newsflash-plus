@@ -21,34 +21,36 @@
 #define LOGTAG "nzb"
 
 #include "newsflash/config.h"
+
 #include "newsflash/warnpush.h"
 #  include <QtGui/QMenu>
 #  include <QtGui/QToolBar>
 #  include <QtGui/QMessageBox>
 #  include <QFileInfo>
 #include "newsflash/warnpop.h"
-#include "nzbfile.h"
-#include "mainwindow.h"
-#include "finder.h"
-#include "common.h"
+
 #include "app/debug.h"
 #include "app/format.h"
 #include "app/eventlog.h"
 #include "app/settings.h"
 #include "app/utility.h"
+#include "nzbfile.h"
+#include "mainwindow.h"
+#include "finder.h"
+#include "common.h"
 
 namespace gui
 {
 
-NZBFile::NZBFile(app::MediaType type) : model_(type)
+NZBFile::NZBFile(app::MediaType type) : mModel(type)
 {
-    ui_.setupUi(this);
-    ui_.progressBar->setVisible(false);
-    ui_.progressBar->setValue(0);
-    ui_.progressBar->setRange(0, 0);
-    ui_.tableView->setModel(&model_);
-    ui_.actionDownload->setEnabled(false);
-    ui_.actionBrowse->setEnabled(false);
+    mUi.setupUi(this);
+    mUi.progressBar->setVisible(false);
+    mUi.progressBar->setValue(0);
+    mUi.progressBar->setRange(0, 0);
+    mUi.tableView->setModel(&mModel);
+    mUi.actionDownload->setEnabled(false);
+    mUi.actionBrowse->setEnabled(false);
 
     DEBUG("NZBFile UI created");
 }
@@ -63,24 +65,24 @@ NZBFile::~NZBFile()
 
 void NZBFile::addActions(QMenu& menu)
 {
-    menu.addAction(ui_.actionDownload);
+    menu.addAction(mUi.actionDownload);
 }
 
 void NZBFile::addActions(QToolBar& bar)
 {
-    bar.addAction(ui_.actionDownload);
+    bar.addAction(mUi.actionDownload);
 }
 
 void NZBFile::loadState(app::Settings& settings)
 {
-    app::loadState("nzbfile", ui_.chkFilenamesOnly, settings);
+    app::loadState("nzbfile", mUi.chkFilenamesOnly, settings);
 
     on_chkFilenamesOnly_clicked();
 }
 
 void NZBFile::saveState(app::Settings& settings)
 {
-    app::saveState("nzbfile", ui_.chkFilenamesOnly, settings);
+    app::saveState("nzbfile", mUi.chkFilenamesOnly, settings);
 }
 
 MainWidget::info NZBFile::getInformation() const
@@ -95,7 +97,7 @@ Finder* NZBFile::getFinder()
 
 bool NZBFile::isMatch(const QString& str, std::size_t index, bool caseSensitive)
 {
-    const auto& item = model_.getItem(index);
+    const auto& item = mModel.getItem(index);
     if (!caseSensitive)
     {
         auto upper = item.subject.toUpper();
@@ -107,19 +109,19 @@ bool NZBFile::isMatch(const QString& str, std::size_t index, bool caseSensitive)
 
 bool NZBFile::isMatch(const QRegExp& regex, std::size_t index)
 {
-    const auto& item = model_.getItem(index);
+    const auto& item = mModel.getItem(index);
 
     return regex.indexIn(item.subject) != -1;
 }
 
 std::size_t NZBFile::numItems() const
 {
-    return model_.numItems();
+    return mModel.numItems();
 }
 
 std::size_t NZBFile::curItem() const
 {
-    const auto& indices = ui_.tableView->selectionModel()->selectedRows();
+    const auto& indices = mUi.tableView->selectionModel()->selectedRows();
     if (indices.isEmpty())
         return 0;
 
@@ -129,20 +131,20 @@ std::size_t NZBFile::curItem() const
 
 void NZBFile::setFound(std::size_t index)
 {
-    auto* model = ui_.tableView->model();
+    auto* model = mUi.tableView->model();
     auto i = model->index(index, 0);
-    ui_.tableView->setCurrentIndex(i);
-    ui_.tableView->scrollTo(i);
+    mUi.tableView->setCurrentIndex(i);
+    mUi.tableView->scrollTo(i);
 }
 
 void NZBFile::open(const QString& nzbfile)
 {
-    model_.on_ready = [&](bool success)
+    mModel.on_ready = [&](bool success)
     {
-        ui_.progressBar->setVisible(false);
-        ui_.actionDownload->setEnabled(success);
-        ui_.actionBrowse->setEnabled(success);
-        ui_.tableView->sortByColumn((int)app::NZBFile::Columns::File);
+        mUi.progressBar->setVisible(false);
+        mUi.actionDownload->setEnabled(success);
+        mUi.actionBrowse->setEnabled(success);
+        mUi.tableView->sortByColumn((int)app::NZBFile::Columns::File);
         if (!success)
         {
             QMessageBox::critical(this, "An Error Occurred",
@@ -150,27 +152,27 @@ void NZBFile::open(const QString& nzbfile)
         }
     };
 
-    if (model_.load(nzbfile))
+    if (mModel.load(nzbfile))
     {
-        ui_.progressBar->setVisible(true);
-        ui_.grpBox->setTitle(nzbfile);
+        mUi.progressBar->setVisible(true);
+        mUi.grpBox->setTitle(nzbfile);
     }
 }
 
 void NZBFile::open(const QByteArray& bytes, const QString& desc)
 {
-    model_.on_ready = [&](bool success)
+    mModel.on_ready = [&](bool success)
     {
-        ui_.progressBar->setVisible(false);
-        ui_.actionDownload->setEnabled(success);
-        ui_.actionBrowse->setEnabled(success);
-        ui_.tableView->sortByColumn((int)app::NZBFile::Columns::File);
+        mUi.progressBar->setVisible(false);
+        mUi.actionDownload->setEnabled(success);
+        mUi.actionBrowse->setEnabled(success);
+        mUi.tableView->sortByColumn((int)app::NZBFile::Columns::File);
     };
 
-    if (model_.load(bytes, desc))
+    if (mModel.load(bytes, desc))
     {
-        ui_.progressBar->setVisible(true);
-        ui_.grpBox->setTitle(desc);
+        mUi.progressBar->setVisible(true);
+        mUi.grpBox->setTitle(desc);
     }
 }
 
@@ -201,20 +203,36 @@ void NZBFile::on_tableView_customContextMenuRequested(QPoint)
             this, SLOT(downloadToPrevious()));
     }
     sub.addSeparator();
-    sub.addAction(ui_.actionBrowse);
-    sub.setEnabled(ui_.actionDownload->isEnabled());
+    sub.addAction(mUi.actionBrowse);
+    sub.setEnabled(mUi.actionDownload->isEnabled());
 
     QMenu menu;
-    menu.addAction(ui_.actionDownload);
+    menu.addAction(mUi.actionDownload);
     menu.addMenu(&sub);
     menu.exec(QCursor::pos());
 }
 
 void NZBFile::on_chkFilenamesOnly_clicked()
 {
-    const bool on_off = ui_.chkFilenamesOnly->isChecked();
+    const bool on_off = mUi.chkFilenamesOnly->isChecked();
 
-    model_.setShowFilenamesOnly(on_off);
+    mModel.setShowFilenamesOnly(on_off);
+}
+
+void NZBFile::on_btnSelectAll_clicked()
+{
+    const QModelIndex parent;
+    const QModelIndex topLeft = mModel.index(0, 0, parent);
+    const QModelIndex bottomRight = mModel.index(mModel.rowCount(parent)-1,
+         mModel.columnCount(parent)-1, parent);
+    const QItemSelection selection(topLeft, bottomRight);
+    auto* selectionModel = mUi.tableView->selectionModel();
+    selectionModel->select(selection, QItemSelectionModel::Select);
+}
+
+void NZBFile::on_btnSelectNone_clicked()
+{
+    mUi.tableView->selectionModel()->clearSelection();
 }
 
 void NZBFile::downloadToPrevious()
@@ -228,17 +246,17 @@ void NZBFile::downloadToPrevious()
 
 void NZBFile::downloadSelected(const QString& folder)
 {
-    const auto& indices = ui_.tableView->selectionModel()->selectedRows();
+    const auto& indices = mUi.tableView->selectionModel()->selectedRows();
     if (indices.isEmpty())
         return;
 
-    const auto& filename = ui_.grpBox->title();
+    const auto& filename = mUi.grpBox->title();
     const auto& basename = QFileInfo(filename).completeBaseName();
 
     // todo: should we do duplicate checking here somehow?
 
-    const auto mediatype = model_.findMediaType();
-    const auto byteSize  = model_.sumDataSizes(indices);
+    const auto mediatype = mModel.findMediaType();
+    const auto byteSize  = mModel.sumDataSizes(indices);
     if (!passSpaceCheck(this, basename, folder, byteSize, byteSize, mediatype))
         return;
 
@@ -246,7 +264,7 @@ void NZBFile::downloadSelected(const QString& folder)
     if (!acc)
         return;
 
-    model_.download(indices, acc, folder, basename);
+    mModel.downloadSel(indices, acc, folder, basename);
 }
 
 } // gui

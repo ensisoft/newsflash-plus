@@ -27,6 +27,20 @@
       <item>
        <layout class="QHBoxLayout" name="horizontalLayout_2">
         <item>
+         <widget class="QPushButton" name="btnSelectAll">
+          <property name="text">
+           <string>Select All</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btnSelectNone">
+          <property name="text">
+           <string>Select None</string>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="QCheckBox" name="chkFilenamesOnly">
           <property name="text">
            <string>Show filename only</string>
@@ -172,6 +186,12 @@ p, li { white-space: pre-wrap; }
    </property>
   </action>
  </widget>
+ <tabstops>
+  <tabstop>btnSelectAll</tabstop>
+  <tabstop>btnSelectNone</tabstop>
+  <tabstop>chkFilenamesOnly</tabstop>
+  <tabstop>tableView</tabstop>
+ </tabstops>
  <resources>
   <include location="resource.qrc"/>
  </resources>
