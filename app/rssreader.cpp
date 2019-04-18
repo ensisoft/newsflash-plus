@@ -44,6 +44,7 @@
 #include "webquery.h"
 #include "webengine.h"
 #include "download.h"
+#include "utility.h"
 
 namespace app
 {
@@ -173,6 +174,20 @@ void RSSReader::onRefreshComplete(RSSFeed* feed, QNetworkReply& reply)
     if (!feed->parse(io, items))
     {
         ERROR("RSS XML parse failed (%1)", url);
+#ifdef NEWSFLASH_DEBUG
+#  ifdef LINUX_OS
+        const QString& random   = generateRandomString();
+        const QString& filename = "/tmp/" + random + ".xml";
+        QFile dump;
+        dump.setFileName(filename);
+        dump.open(QIODevice::WriteOnly);
+        if (dump.isOpen())
+        {
+            dump.write(bytes);
+            DEBUG("Dumped XML file in %1", filename);
+        }
+#  endif
+#endif
         return;
     }
 
