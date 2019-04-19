@@ -2,3 +2,8 @@
 */bin
 */*.o
 protobuf
+third_party
+dist
+dist_d
+build
+build_d
