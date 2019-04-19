@@ -387,10 +387,10 @@ p, li { white-space: pre-wrap; }
      <normaloff>:/resource/16x16_ico_png/ico_log.png</normaloff>:/resource/16x16_ico_png/ico_log.png</iconset>
    </property>
    <property name="text">
-    <string>Open log</string>
+    <string>Open Log</string>
    </property>
    <property name="toolTip">
-    <string>Open log file</string>
+    <string>Open engine log file</string>
    </property>
   </action>
   <action name="actionConnOpenLog">
@@ -399,10 +399,10 @@ p, li { white-space: pre-wrap; }
      <normaloff>:/resource/16x16_ico_png/ico_log.png</normaloff>:/resource/16x16_ico_png/ico_log.png</iconset>
    </property>
    <property name="text">
-    <string>Open log</string>
+    <string>Open Log</string>
    </property>
    <property name="toolTip">
-    <string>Open log file</string>
+    <string>Open connection log file</string>
    </property>
   </action>
   <action name="actionConnDelete">
@@ -462,7 +462,7 @@ p, li { white-space: pre-wrap; }
     <string>Move Up</string>
    </property>
    <property name="toolTip">
-    <string>Move selected downloads up</string>
+    <string>Move selected downloads up one step</string>
    </property>
   </action>
   <action name="actionTaskMoveDown">
@@ -474,7 +474,7 @@ p, li { white-space: pre-wrap; }
     <string>Move Down</string>
    </property>
    <property name="toolTip">
-    <string>Move selected downloads down</string>
+    <string>Move selected downloads down one step</string>
    </property>
   </action>
   <action name="actionTaskMoveTop">
@@ -483,10 +483,10 @@ p, li { white-space: pre-wrap; }
      <normaloff>:/resource/16x16_ico_png/ico_task_movetop.png</normaloff>:/resource/16x16_ico_png/ico_task_movetop.png</iconset>
    </property>
    <property name="text">
-    <string>Top</string>
+    <string>Move To Top</string>
    </property>
    <property name="toolTip">
-    <string>Move selected downloads to top</string>
+    <string>Move selected downloads to top of the download queue</string>
    </property>
   </action>
   <action name="actionTaskMoveBottom">
@@ -495,10 +495,10 @@ p, li { white-space: pre-wrap; }
      <normaloff>:/resource/16x16_ico_png/ico_task_movebottom.png</normaloff>:/resource/16x16_ico_png/ico_task_movebottom.png</iconset>
    </property>
    <property name="text">
-    <string>Bottom</string>
+    <string>Move To Bottom</string>
    </property>
    <property name="toolTip">
-    <string>Move selected downloads to bottom</string>
+    <string>Move selected downloads to bottom of the download queue</string>
    </property>
   </action>
   <action name="actionPreferSSL">

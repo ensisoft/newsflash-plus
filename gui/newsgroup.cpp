@@ -116,7 +116,7 @@ NewsGroup::NewsGroup(quint32 acc, QString path, QString name) : account_(acc), p
         const auto numTotal  = model_.numBlocksAvail();
         ui_.btnLoadMore->setEnabled(numLoaded != numTotal);
         ui_.btnLoadMore->setText(
-            tr("Load more headers ... (%1/%2)").arg(numLoaded).arg(numTotal));
+            tr("Load more ... (%1/%2)").arg(numLoaded).arg(numTotal));
     };
     model_.onKilled = [this] {
         ui_.actionStop->setEnabled(false);
@@ -150,6 +150,7 @@ NewsGroup::~NewsGroup()
 void NewsGroup::addActions(QToolBar& bar)
 {
     bar.addAction(ui_.actionRefresh);
+    bar.addAction(ui_.actionStop);
     bar.addSeparator();
     bar.addAction(ui_.actionDownload);
     bar.addSeparator();
@@ -162,13 +163,12 @@ void NewsGroup::addActions(QToolBar& bar)
     bar.addAction(ui_.actionBookmarkNext);
     bar.addSeparator();
     bar.addAction(ui_.actionDelete);
-    bar.addSeparator();
-    bar.addAction(ui_.actionStop);
 }
 
 void NewsGroup::addActions(QMenu& menu)
 {
     menu.addAction(ui_.actionRefresh);
+    menu.addAction(ui_.actionStop);
     menu.addSeparator();
     menu.addAction(ui_.actionDownload);
     menu.addSeparator();
@@ -181,8 +181,6 @@ void NewsGroup::addActions(QMenu& menu)
     menu.addAction(ui_.actionBookmarkNext);
     menu.addSeparator();
     menu.addAction(ui_.actionDelete);
-    menu.addSeparator();
-    menu.addAction(ui_.actionStop);
 }
 
 void NewsGroup::loadState()
@@ -702,7 +700,7 @@ void NewsGroup::newHeaderInfoAvailable(const app::HeaderUpdateInfo& info)
     const auto numLoaded = model_.numBlocksLoaded();
     ui_.btnLoadMore->setEnabled(numAvail != numLoaded);
     ui_.btnLoadMore->setVisible(true);
-    ui_.btnLoadMore->setText(tr("Load more headers ... (%1/%2)").arg(numLoaded).arg(numAvail));
+    ui_.btnLoadMore->setText(tr("Load more ... (%1/%2)").arg(numLoaded).arg(numAvail));
 }
 
 void NewsGroup::updateCompleted(const app::HeaderInfo& info)

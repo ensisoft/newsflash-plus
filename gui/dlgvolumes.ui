@@ -17,7 +17,7 @@
    <item>
     <widget class="QGroupBox" name="groupBox">
      <property name="title">
-      <string>Available Header Data Blocks</string>
+      <string>Data blocks</string>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout">
       <item>

@@ -86,25 +86,23 @@ NewsList::~NewsList()
 void NewsList::addActions(QMenu& menu)
 {
     menu.addAction(m_ui.actionRefresh);
+    menu.addAction(m_ui.actionStop);
     menu.addSeparator();
     menu.addAction(m_ui.actionBrowse);
     menu.addAction(m_ui.actionFavorite);
     menu.addSeparator();
     menu.addAction(m_ui.actionDeleteData);
-    menu.addSeparator();
-    menu.addAction(m_ui.actionStop);
 }
 
 void NewsList::addActions(QToolBar& bar)
 {
     bar.addAction(m_ui.actionRefresh);
+    bar.addAction(m_ui.actionStop);
     bar.addSeparator();
     bar.addAction(m_ui.actionBrowse);
     bar.addAction(m_ui.actionFavorite);
     bar.addSeparator();
     bar.addAction(m_ui.actionDeleteData);
-    bar.addSeparator();
-    bar.addAction(m_ui.actionStop);
 }
 
 void NewsList::activate(QWidget*)

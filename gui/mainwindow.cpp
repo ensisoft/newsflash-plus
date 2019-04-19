@@ -97,13 +97,12 @@ MainWindow::MainWindow(app::Settings& s) : QMainWindow(nullptr), mSettings(s)
     mUI.actionViewStatusbar->setChecked(true);
     mUI.progressBar->setTextVisible(false);
 
+    // set platform specific (idiomatic) key shortcuts here.
     mUI.actionOpen->setShortcut(QKeySequence::Open);
     mUI.actionExit->setShortcut(QKeySequence::Quit);
-    mUI.actionSearch->setShortcut(QKeySequence::New);
     mUI.actionWindowClose->setShortcut(QKeySequence::Close);
     mUI.actionWindowNext->setShortcut(QKeySequence::Forward);
     mUI.actionWindowPrev->setShortcut(QKeySequence::Back);
-
     mUI.actionFind->setShortcut(QKeySequence::Find);
     mUI.actionFindNext->setShortcut(QKeySequence::FindNext);
     mUI.actionFindPrev->setShortcut(QKeySequence::FindPrevious);

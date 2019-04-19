@@ -218,10 +218,10 @@
      <normaloff>:/resource/16x16_ico_png/ico_task_movetop.png</normaloff>:/resource/16x16_ico_png/ico_task_movetop.png</iconset>
    </property>
    <property name="text">
-    <string>Top</string>
+    <string>Move To Top</string>
    </property>
    <property name="toolTip">
-    <string>Move to top</string>
+    <string>Move selected items to the top of the list</string>
    </property>
   </action>
   <action name="actionMoveUp">
@@ -230,7 +230,10 @@
      <normaloff>:/resource/16x16_ico_png/ico_move_up.png</normaloff>:/resource/16x16_ico_png/ico_move_up.png</iconset>
    </property>
    <property name="text">
-    <string>Move up</string>
+    <string>Move Up</string>
+   </property>
+   <property name="toolTip">
+    <string>Move selected items up one step</string>
    </property>
   </action>
   <action name="actionMoveDown">
@@ -239,7 +242,10 @@
      <normaloff>:/resource/16x16_ico_png/ico_move_down.png</normaloff>:/resource/16x16_ico_png/ico_move_down.png</iconset>
    </property>
    <property name="text">
-    <string>Move down</string>
+    <string>Move Down</string>
+   </property>
+   <property name="toolTip">
+    <string>Move selected items down one step</string>
    </property>
   </action>
   <action name="actionBottom">
@@ -248,7 +254,10 @@
      <normaloff>:/resource/16x16_ico_png/ico_task_movebottom.png</normaloff>:/resource/16x16_ico_png/ico_task_movebottom.png</iconset>
    </property>
    <property name="text">
-    <string>Bottom</string>
+    <string>Move To Bottom</string>
+   </property>
+   <property name="toolTip">
+    <string>Move selected items to the bottom of the list</string>
    </property>
   </action>
   <action name="actionOpenLog">
@@ -257,7 +266,7 @@
      <normaloff>:/resource/16x16_ico_png/ico_log.png</normaloff>:/resource/16x16_ico_png/ico_log.png</iconset>
    </property>
    <property name="text">
-    <string>Open log</string>
+    <string>Open Log</string>
    </property>
   </action>
   <action name="actionClear">

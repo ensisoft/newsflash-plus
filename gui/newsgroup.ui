@@ -270,10 +270,10 @@
      <normaloff>:/resource/16x16_ico_png/ico_headers.png</normaloff>:/resource/16x16_ico_png/ico_headers.png</iconset>
    </property>
    <property name="text">
-    <string>Headers</string>
+    <string>View Blocks</string>
    </property>
-   <property name="shortcut">
-    <string>Ctrl+H</string>
+   <property name="toolTip">
+    <string>View data block details</string>
    </property>
   </action>
   <action name="actionBookmark">
@@ -282,13 +282,13 @@
      <normaloff>:/resource/16x16_ico_png/ico_bookmark.png</normaloff>:/resource/16x16_ico_png/ico_bookmark.png</iconset>
    </property>
    <property name="text">
-    <string>Bookmark</string>
+    <string>Toggle Bookmark</string>
    </property>
    <property name="toolTip">
     <string>Toggle bookmark</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+B</string>
+    <string>Ctrl+Shift+B</string>
    </property>
   </action>
   <action name="actionBookmarkNext">
@@ -297,10 +297,13 @@
      <normaloff>:/resource/16x16_ico_png/ico_bookmark_next.png</normaloff>:/resource/16x16_ico_png/ico_bookmark_next.png</iconset>
    </property>
    <property name="text">
-    <string>Next bookmark</string>
+    <string>Next Bookmark</string>
    </property>
    <property name="toolTip">
-    <string>Next bookmark</string>
+    <string>Find next bookmark</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+N</string>
    </property>
   </action>
   <action name="actionBookmarkPrev">
@@ -309,10 +312,13 @@
      <normaloff>:/resource/16x16_ico_png/ico_bookmark_prev.png</normaloff>:/resource/16x16_ico_png/ico_bookmark_prev.png</iconset>
    </property>
    <property name="text">
-    <string>Prev bookmark</string>
+    <string>Prev Bookmark</string>
    </property>
    <property name="toolTip">
-    <string>Previous bookmark</string>
+    <string>Find previous bookmark</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+P</string>
    </property>
   </action>
  </widget>

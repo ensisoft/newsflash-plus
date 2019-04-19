@@ -201,10 +201,10 @@
      <normaloff>:/resource/16x16_ico_png/ico_task_movetop.png</normaloff>:/resource/16x16_ico_png/ico_task_movetop.png</iconset>
    </property>
    <property name="text">
-    <string>Top</string>
+    <string>Move To Top</string>
    </property>
    <property name="toolTip">
-    <string>Move to top</string>
+    <string>Move selected items to the top of the list</string>
    </property>
   </action>
   <action name="actionMoveUp">
@@ -213,7 +213,10 @@
      <normaloff>:/resource/16x16_ico_png/ico_move_up.png</normaloff>:/resource/16x16_ico_png/ico_move_up.png</iconset>
    </property>
    <property name="text">
-    <string>Move up</string>
+    <string>Move Up</string>
+   </property>
+   <property name="toolTip">
+    <string>Move selected items up one step</string>
    </property>
   </action>
   <action name="actionMoveDown">
@@ -222,7 +225,10 @@
      <normaloff>:/resource/16x16_ico_png/ico_move_down.png</normaloff>:/resource/16x16_ico_png/ico_move_down.png</iconset>
    </property>
    <property name="text">
-    <string>Move down</string>
+    <string>Move Down</string>
+   </property>
+   <property name="toolTip">
+    <string>Move selected items down one step</string>
    </property>
   </action>
   <action name="actionBottom">
@@ -231,7 +237,10 @@
      <normaloff>:/resource/16x16_ico_png/ico_task_movebottom.png</normaloff>:/resource/16x16_ico_png/ico_task_movebottom.png</iconset>
    </property>
    <property name="text">
-    <string>Bottom</string>
+    <string>Move To Bottom</string>
+   </property>
+   <property name="toolTip">
+    <string>Move selected items to the bottom of the list</string>
    </property>
   </action>
   <action name="actionClear">
@@ -252,7 +261,7 @@
      <normaloff>:/resource/16x16_ico_png/ico_log.png</normaloff>:/resource/16x16_ico_png/ico_log.png</iconset>
    </property>
    <property name="text">
-    <string>Open log</string>
+    <string>Open Log</string>
    </property>
   </action>
   <action name="actionStop">
@@ -275,6 +284,9 @@
    <property name="text">
     <string>Open Folder ...</string>
    </property>
+   <property name="toolTip">
+    <string>Open the folder containing the selected repair</string>
+   </property>
   </action>
   <action name="actionDetails">
    <property name="icon">
@@ -282,7 +294,10 @@
      <normaloff>:/resource/16x16_ico_png/ico_details.png</normaloff>:/resource/16x16_ico_png/ico_details.png</iconset>
    </property>
    <property name="text">
-    <string>Show files ...</string>
+    <string>Show Details ...</string>
+   </property>
+   <property name="toolTip">
+    <string>Show details about repaired files in the archive</string>
    </property>
   </action>
  </widget>

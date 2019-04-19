@@ -359,7 +359,7 @@
      <x>0</x>
      <y>0</y>
      <width>785</width>
-     <height>27</height>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -562,7 +562,10 @@
      <normaloff>:/resource/16x16_ico_png/ico_app_register.png</normaloff>:/resource/16x16_ico_png/ico_app_register.png</iconset>
    </property>
    <property name="text">
-    <string>Register</string>
+    <string>Register License ...</string>
+   </property>
+   <property name="toolTip">
+    <string>Register license key</string>
    </property>
   </action>
   <action name="actionReportBug">
@@ -571,7 +574,7 @@
      <normaloff>:/resource/16x16_ico_png/ico_app_report_bug.png</normaloff>:/resource/16x16_ico_png/ico_app_report_bug.png</iconset>
    </property>
    <property name="text">
-    <string>Report a bug ...</string>
+    <string>Report a Bug ...</string>
    </property>
   </action>
   <action name="actionSendFeedback">
@@ -580,7 +583,7 @@
      <normaloff>:/resource/16x16_ico_png/ico_app_send_feedback.png</normaloff>:/resource/16x16_ico_png/ico_app_send_feedback.png</iconset>
    </property>
    <property name="text">
-    <string>Send feedback ...</string>
+    <string>Send Feedback ...</string>
    </property>
   </action>
   <action name="actionRequestFeature">
@@ -589,7 +592,7 @@
      <normaloff>:/resource/16x16_ico_png/ico_app_request_feature.png</normaloff>:/resource/16x16_ico_png/ico_app_request_feature.png</iconset>
    </property>
    <property name="text">
-    <string>Request a feature ...</string>
+    <string>Request a Feature ...</string>
    </property>
   </action>
   <action name="actionContextHelp">
@@ -622,10 +625,10 @@
      <normaloff>:/resource/16x16_ico_png/ico_app_request_license.png</normaloff>:/resource/16x16_ico_png/ico_app_request_license.png</iconset>
    </property>
    <property name="text">
-    <string>Request license ...</string>
+    <string>Request License ...</string>
    </property>
    <property name="toolTip">
-    <string>Request license</string>
+    <string>Request a license key</string>
    </property>
   </action>
   <action name="actionWindowNext">
@@ -700,7 +703,10 @@
     <string>New Search ...</string>
    </property>
    <property name="toolTip">
-    <string>New Search Window</string>
+    <string>Open new search tab</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+S</string>
    </property>
   </action>
   <action name="actionFindClose">
@@ -745,7 +751,10 @@
     <string>New RSS ...</string>
    </property>
    <property name="toolTip">
-    <string>New RSS Window</string>
+    <string>Open new RSS tab</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+R</string>
    </property>
   </action>
  </widget>

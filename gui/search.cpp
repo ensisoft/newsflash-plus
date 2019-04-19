@@ -150,24 +150,22 @@ Search::~Search()
 void Search::addActions(QMenu& menu)
 {
     menu.addAction(mUi.actionRefresh);
+    menu.addAction(mUi.actionStop);
     menu.addSeparator();
     menu.addAction(mUi.actionDownload);
     menu.addSeparator();
     menu.addAction(mUi.actionSave);
     menu.addAction(mUi.actionOpen);
-    menu.addSeparator();
-    menu.addAction(mUi.actionStop);
 }
 
 void Search::addActions(QToolBar& bar)
 {
     bar.addAction(mUi.actionRefresh);
+    bar.addAction(mUi.actionStop);
     bar.addSeparator();
     bar.addAction(mUi.actionDownload);
     bar.addSeparator();
     bar.addAction(mUi.actionSettings);
-    bar.addSeparator();
-    bar.addAction(mUi.actionStop);
 }
 
 void Search::loadState(app::Settings& settings)

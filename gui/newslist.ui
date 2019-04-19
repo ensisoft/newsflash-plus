@@ -254,7 +254,7 @@
      <normaloff>:/resource/16x16_ico_png/ico_refresh.png</normaloff>:/resource/16x16_ico_png/ico_refresh.png</iconset>
    </property>
    <property name="text">
-    <string>Reresh List</string>
+    <string>Refresh</string>
    </property>
    <property name="toolTip">
     <string>Refresh the list of newsgroups</string>

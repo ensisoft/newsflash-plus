@@ -91,6 +91,7 @@ RSS::~RSS()
 void RSS::addActions(QMenu& menu)
 {
     menu.addAction(mUi.actionRefresh);
+    menu.addAction(mUi.actionStop);
     menu.addSeparator();
     menu.addAction(mUi.actionDownload);
     menu.addAction(mUi.actionSave);
@@ -98,19 +99,16 @@ void RSS::addActions(QMenu& menu)
     menu.addAction(mUi.actionOpen);
     menu.addSeparator();
     menu.addAction(mUi.actionSettings);
-    menu.addSeparator();
-    menu.addAction(mUi.actionStop);
 }
 
 void RSS::addActions(QToolBar& bar)
 {
     bar.addAction(mUi.actionRefresh);
+    bar.addAction(mUi.actionStop);
     bar.addSeparator();
     bar.addAction(mUi.actionDownload);
     bar.addSeparator();
     bar.addAction(mUi.actionSettings);
-    bar.addSeparator();
-    bar.addAction(mUi.actionStop);
 }
 
 void RSS::activate(QWidget*)

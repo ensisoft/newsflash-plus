@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -37,7 +37,7 @@
 
 namespace {
 
-    // we can tuck this away insice the .cpp because 
+    // we can tuck this away insice the .cpp because
     // this settings widget doesn't require any signals/slots
 class MySettings : public gui::SettingsWidget
 {
@@ -58,18 +58,18 @@ namespace gui
 
 Notify::Notify()
 {
-    m_restoreAction  = new QAction(tr("Restore from tray"), this);
+    m_restoreAction  = new QAction(tr("Restore from Tray"), this);
     m_restoreAction->setIcon(QIcon("icons:ico_app_restore.png"));
     m_restoreAction->setEnabled(false);
     QObject::connect(m_restoreAction, SIGNAL(triggered()), this, SIGNAL(restore()));
     QObject::connect(m_restoreAction, SIGNAL(triggered()), this, SLOT(actionRestore()));
 
-    m_minimizeAction = new QAction(tr("Minimize to tray"), this);
+    m_minimizeAction = new QAction(tr("Minimize to Tray"), this);
     m_minimizeAction->setIcon(QIcon("icons:ico_app_minimize.png"));
     QObject::connect(m_minimizeAction, SIGNAL(triggered()), this, SIGNAL(minimize()));
     QObject::connect(m_minimizeAction, SIGNAL(triggered()), this, SLOT(actionMinimize()));
 
-    m_exitAction = new QAction(tr("Exit application"), this);
+    m_exitAction = new QAction(tr("Exit Application"), this);
     m_exitAction->setIcon(QIcon("icons:ico_app_exit.png"));
     QObject::connect(m_exitAction, SIGNAL(triggered()), this, SIGNAL(exit()));
 
@@ -116,7 +116,7 @@ void Notify::saveState(app::Settings& settings)
     settings.set("notify", "bits", bits);
 }
 
-SettingsWidget* Notify::getSettings() 
+SettingsWidget* Notify::getSettings()
 {
     auto* p = new MySettings;
     auto& ui = p->ui_;
@@ -179,7 +179,7 @@ void Notify::newEvent(const app::Event& event)
     {
         if (!m_notifications.test(NotifyWhen::OnWarning))
             return;
-        m_trayIcon.showMessage(tr("Warning"), event.message);            
+        m_trayIcon.showMessage(tr("Warning"), event.message);
     }
 }
 
@@ -194,13 +194,13 @@ void Notify::repairReady(const app::Archive& arc)
     if (arc.state == app::Archive::Status::Error ||
         arc.state == app::Archive::Status::Failed)
     {
-        m_trayIcon.showMessage(tr("Repair failed"), 
+        m_trayIcon.showMessage(tr("Repair failed"),
             tr("%1\n%2").arg(arc.desc).arg(arc.message));
     }
     else
     {
         m_trayIcon.showMessage(tr("Repair ready"),
-            tr("%1\n%2").arg(arc.desc).arg(arc.message));        
+            tr("%1\n%2").arg(arc.desc).arg(arc.message));
     }
 
 }
@@ -222,7 +222,7 @@ void Notify::unpackReady(const app::Archive& arc)
     else
     {
         m_trayIcon.showMessage(tr("Unpacking ready"),
-            tr("%1\n%2").arg(arc.desc).arg(arc.message));        
+            tr("%1\n%2").arg(arc.desc).arg(arc.message));
     }
 }
 
