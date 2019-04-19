@@ -182,6 +182,7 @@ void Search::loadState(app::Settings& settings)
     app::loadState("search", mUi.editEpisode, settings);
     app::loadState("search", mUi.editSearch, settings);
     app::loadState("search", mUi.cmbYear, settings);
+    app::loadState("search", mUi.cmbIndexer, settings);
     app::loadTableLayout("search", mUi.tableView, settings);
 
     const auto text = mUi.editSearch->text();
@@ -204,6 +205,7 @@ void Search::saveState(app::Settings& settings)
     app::saveState("search", mUi.editEpisode, settings);
     app::saveState("search", mUi.editSearch, settings);
     app::saveState("search", mUi.cmbYear, settings);
+    app::saveState("search", mUi.cmbIndexer, settings);
 }
 
 void Search::updateBackendList(const QStringList& names)

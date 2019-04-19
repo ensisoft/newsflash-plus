@@ -130,6 +130,7 @@ void RSS::saveState(app::Settings& settings)
     app::saveState("rss", mUi.chkMovies, settings);
     app::saveState("rss", mUi.chkMusic, settings);
     app::saveState("rss", mUi.chkTV, settings);
+    app::saveState("rss", mUi.cmbServerList, settings);
     app::saveTableLayout("rss", mUi.tableView, settings);
 }
 
@@ -147,6 +148,7 @@ void RSS::loadState(app::Settings& settings)
     app::loadState("rss", mUi.chkMovies, settings);
     app::loadState("rss", mUi.chkMusic, settings);
     app::loadState("rss", mUi.chkTV, settings);
+    app::loadState("rss", mUi.cmbServerList, settings);
     app::loadTableLayout("rss", mUi.tableView, settings);
 }
 
