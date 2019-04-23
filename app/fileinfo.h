@@ -85,6 +85,8 @@ namespace app
 
         quint64 numRemoteArticles = 0;
 
+        quint32 account = 0;
+
         const void* snapshot = nullptr;
     };
 

@@ -667,6 +667,7 @@ void Engine::onHeaderInfoAvailable(const newsflash::ui::HeaderUpdate& update)
         info.numLocalArticles  = update.num_local_articles;
         info.numRemoteArticles = update.num_remote_articles;
         info.snapshot = update.snapshots[i];
+        info.account  = update.account;
         emit newHeaderInfoAvailable(info);
     }
 }

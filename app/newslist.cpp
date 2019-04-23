@@ -471,7 +471,7 @@ bool NewsList::isUpdating(quint32 account) const
     return it != pending_.end();
 }
 
-bool NewsList::hasListing(quint32 accountId) const 
+bool NewsList::hasListing(quint32 accountId) const
 {
     const auto* account = g_accounts->findAccount(accountId);
     const auto& listing = app::homedir::file(account->name + ".lst");
@@ -606,7 +606,7 @@ void NewsList::listUpdated(quint32 accountId, const QList<app::NewsGroupInfo>& l
 
     auto& op = it->second;
 
-    const auto* account = g_accounts->findAccount(account_);
+    const auto* account = g_accounts->findAccount(accountId);
     const auto& subscriptions = account->subscriptions;
     const auto& datapath = account->datapath;
 
@@ -632,7 +632,7 @@ void NewsList::listUpdated(quint32 accountId, const QList<app::NewsGroupInfo>& l
 
 void NewsList::newHeaderDataAvailable(const app::HeaderUpdateInfo& info)
 {
-    if (account_ == 0)
+    if (account_ != info.account)
         return;
 
     const auto* account  = g_accounts->findAccount(account_);
