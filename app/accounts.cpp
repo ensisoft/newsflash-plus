@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -18,18 +18,20 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#define LOGTAG "acc"
+#define LOGTAG "accounts"
 
-#include <newsflash/config.h>
+#include "newsflash/config.h"
 
-#include <newsflash/warnpush.h>
+#include "newsflash/warnpush.h"
 #  include <QtGui/QFont>
 #  include <QtGui/QIcon>
 #  include <QDir>
 #  include <QStringList>
-#include <newsflash/warnpop.h>
+#include "newsflash/warnpop.h"
+
 #include <algorithm>
 #include <ctime>
+
 #include "accounts.h"
 #include "format.h"
 #include "eventlog.h"
@@ -46,8 +48,6 @@ quint32 CurrentAccountId = 1;
 
 Accounts::Accounts()
 {
-    mainAccount_ = 0;
-    fillAccount_ = 0;
     DEBUG("Accounts created");
 
     QObject::connect(g_engine, SIGNAL(quotaUpdate(std::size_t, std::size_t)),
@@ -68,11 +68,11 @@ Accounts::Account Accounts::suggestAccount() const
     {
         name = toString("My Usenet %1", index);
 
-        const auto& it = std::find_if(std::begin(accounts_), std::end(accounts_),
+        const auto& it = std::find_if(std::begin(mAccounts), std::end(mAccounts),
             [&](const Account& acc) {
                 return acc.name == name;
             });
-        if (it == std::end(accounts_))
+        if (it == std::end(mAccounts))
             break;
         ++index;
     }
@@ -97,48 +97,48 @@ Accounts::Account Accounts::suggestAccount() const
     return next;
 }
 
-const 
+const
 Accounts::Account& Accounts::getAccount(std::size_t index) const
 {
-    return accounts_[index];
+    return mAccounts[index];
 }
 
-Accounts::Account& Accounts::getAccount(std::size_t index) 
+Accounts::Account& Accounts::getAccount(std::size_t index)
 {
-    return accounts_[index];
+    return mAccounts[index];
 }
 
-const Accounts::Account* Accounts::getFillAccount() const 
+const Accounts::Account* Accounts::getFillAccount() const
 {
-    if (fillAccount_ == 0)
+    if (mFillAccount == 0)
         return nullptr;
 
-    auto* fill = findAccount(fillAccount_);
+    auto* fill = findAccount(mFillAccount);
     return fill;
 }
 
 const Accounts::Account* Accounts::getMainAccount() const
 {
-    if (accounts_.empty())
+    if (mAccounts.empty())
         return nullptr;
 
-    if (accounts_.size() == 1)
-        return &accounts_[0];
+    if (mAccounts.size() == 1)
+        return &mAccounts[0];
 
-    if (mainAccount_ == 0)
+    if (mMainAccount == 0)
         return nullptr;
 
-    auto* main = findAccount(mainAccount_);
+    auto* main = findAccount(mMainAccount);
     return main;
 }
 
 Accounts::Account* Accounts::findAccount(quint32 accountId)
 {
-    auto it = std::find_if(std::begin(accounts_), std::end(accounts_),
+    auto it = std::find_if(std::begin(mAccounts), std::end(mAccounts),
         [=](const Account& a) {
             return a.id == accountId;
         });
-    if (it == std::end(accounts_))
+    if (it == std::end(mAccounts))
         return nullptr;
 
     return &(*it);
@@ -146,11 +146,11 @@ Accounts::Account* Accounts::findAccount(quint32 accountId)
 
 Accounts::Account* Accounts::findAccount(const QString& name)
 {
-    auto it = std::find_if(std::begin(accounts_), std::end(accounts_),
-        [=](const Account& a) { 
-            return a.name == name; 
+    auto it = std::find_if(std::begin(mAccounts), std::end(mAccounts),
+        [=](const Account& a) {
+            return a.name == name;
         });
-    if (it == std::end(accounts_))
+    if (it == std::end(mAccounts))
         return nullptr;
 
     return &(*it);
@@ -158,11 +158,11 @@ Accounts::Account* Accounts::findAccount(const QString& name)
 
 const Accounts::Account* Accounts::findAccount(quint32 accountId) const
 {
-    auto it = std::find_if(std::begin(accounts_), std::end(accounts_),
+    auto it = std::find_if(std::begin(mAccounts), std::end(mAccounts),
         [=](const Account& a) {
             return a.id == accountId;
         });
-    if (it == std::end(accounts_))
+    if (it == std::end(mAccounts))
         return nullptr;
 
     return &(*it);
@@ -170,11 +170,11 @@ const Accounts::Account* Accounts::findAccount(quint32 accountId) const
 
 const Accounts::Account* Accounts::findAccount(const QString& name) const
 {
-    auto it = std::find_if(std::begin(accounts_), std::end(accounts_),
-        [=](const Account& a) { 
-            return a.name == name; 
+    auto it = std::find_if(std::begin(mAccounts), std::end(mAccounts),
+        [=](const Account& a) {
+            return a.name == name;
         });
-    if (it == std::end(accounts_))
+    if (it == std::end(mAccounts))
         return nullptr;
 
     return &(*it);
@@ -183,23 +183,23 @@ const Accounts::Account* Accounts::findAccount(const QString& name) const
 
 void Accounts::delAccount(std::size_t index)
 {
-    Q_ASSERT(index < accounts_.size());
+    Q_ASSERT(index < mAccounts.size());
 
     beginRemoveRows(QModelIndex(), index, index);
 
-    auto key = accounts_[index].name;
-    auto it  = accounts_.begin();
+    auto key = mAccounts[index].name;
+    auto it  = mAccounts.begin();
     it += index;
 
     auto id = it->id;
-    if (id == mainAccount_)
-        mainAccount_ = 0;
-    else if (id == fillAccount_)
-        fillAccount_ = 0;
+    if (id == mMainAccount)
+        mMainAccount = 0;
+    else if (id == mFillAccount)
+        mFillAccount = 0;
 
     g_engine->delAccount(*it);
 
-    accounts_.erase(it);
+    mAccounts.erase(it);
 
     endRemoveRows();
 
@@ -208,22 +208,22 @@ void Accounts::delAccount(std::size_t index)
 
 void Accounts::setAccount(const Account& acc)
 {
-    auto it = std::find_if(std::begin(accounts_), std::end(accounts_),
+    auto it = std::find_if(std::begin(mAccounts), std::end(mAccounts),
         [&](const Account& maybe) {
             return maybe.id == acc.id;
         });
 
-    if (it == std::end(accounts_))
+    if (it == std::end(mAccounts))
     {
         DEBUG("Insert account '%1' (%2) ", acc.name, acc.id);
 
-        beginInsertRows(QModelIndex(), accounts_.size(), accounts_.size());
-        accounts_.push_back(acc);
+        beginInsertRows(QModelIndex(), mAccounts.size(), mAccounts.size());
+        mAccounts.push_back(acc);
         endInsertRows();
 
         // first account to be added automatically becomes the main account.
-        if (accounts_.size() == 1)
-            mainAccount_ = acc.id;
+        if (mAccounts.size() == 1)
+            mMainAccount = acc.id;
     }
     else
     {
@@ -232,10 +232,10 @@ void Accounts::setAccount(const Account& acc)
         const auto old_key = it->name;
         const auto new_key = acc.name;
         //if (old_key != new_key)
-        //    store.del(old_key);< 
+        //    store.del(old_key);<
 
         *it = acc;
-        const auto pos = std::distance(std::begin(accounts_), it);
+        const auto pos = std::distance(std::begin(mAccounts), it);
         const auto first = index(pos, 0);
         const auto last  = index(pos, 0);
         emit dataChanged(first, last);
@@ -254,38 +254,38 @@ void Accounts::setMainAccount(quint32 id)
     // user about which one he wants to use.
     if (id == 0)
     {
-        mainAccount_ = 0;
+        mMainAccount = 0;
         return;
     }
 
-    auto it =std::find_if(std::begin(accounts_), std::end(accounts_),
+    auto it =std::find_if(std::begin(mAccounts), std::end(mAccounts),
         [=](const Account& a) {
             return a.id == id;
         });
-    ENDCHECK(accounts_, it);
+    ENDCHECK(mAccounts, it);
 
-    mainAccount_ = id;
+    mMainAccount = id;
 
     DEBUG("Main account set to %1", it->name);
 }
 
 void Accounts::setFillAccount(quint32 id)
 {
-    // if fill account is set to 0 it means 
+    // if fill account is set to 0 it means
     // that there's no fill account to be used.
     if (id == 0)
     {
-        fillAccount_ = 0;
+        mFillAccount = 0;
         g_engine->setFillAccount(0);
         return;
     }
-    auto it = std::find_if(std::begin(accounts_), std::end(accounts_),
+    auto it = std::find_if(std::begin(mAccounts), std::end(mAccounts),
         [=](const Account& a) {
             return a.id == id;
-        });    
-    ENDCHECK(accounts_, it);
+        });
+    ENDCHECK(mAccounts, it);
 
-    fillAccount_ = id;
+    mFillAccount = id;
     g_engine->setFillAccount(id);
 
     DEBUG("Fill account set to %1", it->name);
@@ -295,7 +295,7 @@ bool Accounts::saveState(Settings& store) const
 {
     QStringList list;
 
-    for (const auto& acc : accounts_)
+    for (const auto& acc : mAccounts)
     {
         QString key = acc.name;
         store.set(key, "username", acc.username);
@@ -303,9 +303,9 @@ bool Accounts::saveState(Settings& store) const
         store.set(key, "general_host", acc.generalHost);
         store.set(key, "general_port", acc.generalPort);
         store.set(key, "secure_host", acc.secureHost);
-        store.set(key, "secure_port", acc.securePort);        
+        store.set(key, "secure_port", acc.securePort);
         store.set(key, "enable_general_server", acc.enableGeneralServer);
-        store.set(key, "enable_secure_server", acc.enableSecureServer);        
+        store.set(key, "enable_secure_server", acc.enableSecureServer);
         store.set(key, "enable_pipelining", acc.enablePipelining);
         store.set(key, "enable_compression", acc.enableCompression);
         store.set(key, "enable_login", acc.enableLogin);
@@ -316,15 +316,15 @@ bool Accounts::saveState(Settings& store) const
         store.set(key, "quota_type", (int)acc.quotaType);
         store.set(key, "max_connections", acc.maxConnections);
         store.set(key, "last_use_date", acc.lastUseDate);
-        store.set(key, "subscriptions", acc.subscriptions);
+        store.set(key, "favorites", acc.favorites);
         store.set(key, "datapath", acc.datapath);
         list.append(key);
     }
     store.set("accounts", "list", list);
 
-    if (mainAccount_)
+    if (mMainAccount)
     {
-        const auto* main = findAccount(mainAccount_);
+        const auto* main = findAccount(mMainAccount);
         Q_ASSERT(main);
         store.set("accounts", "main", main->name);
     }
@@ -332,9 +332,9 @@ bool Accounts::saveState(Settings& store) const
     {
         store.set("accounts", "main", "");
     }
-    if (fillAccount_)
+    if (mFillAccount)
     {
-        const auto* fill = findAccount(fillAccount_);
+        const auto* fill = findAccount(mFillAccount);
         Q_ASSERT(fill);
         store.set("accounts", "fill", fill->name);
     }
@@ -346,7 +346,9 @@ bool Accounts::saveState(Settings& store) const
 }
 
 void Accounts::loadState(Settings& store)
-{     
+{
+    const int SettingsVersion = store.get("version", "settings").toInt();
+
     const auto& today = QDate::currentDate();
     const auto& list  = store.get("accounts", "list").toStringList();
     for (const auto& key : list)
@@ -359,37 +361,35 @@ void Accounts::loadState(Settings& store)
         acc.generalHost         = store.get(key, "general_host").toString();
         acc.generalPort         = store.get(key, "general_port").toInt();
         acc.secureHost          = store.get(key, "secure_host").toString();
-        acc.securePort          = store.get(key, "secure_port").toInt();        
+        acc.securePort          = store.get(key, "secure_port").toInt();
         acc.enableGeneralServer = store.get(key, "enable_general_server").toBool();
         acc.enableSecureServer  = store.get(key, "enable_secure_server").toBool();
         acc.enableCompression   = store.get(key, "enable_compression").toBool();
         acc.enablePipelining    = store.get(key, "enable_pipelining").toBool();
         acc.enableLogin         = store.get(key, "enable_login").toBool();
         acc.quotaSpent          = store.get(key, "quota_spent", quint64(0));
-        acc.quotaAvail          = store.get(key, "quota_avail", quint64(0));        
+        acc.quotaAvail          = store.get(key, "quota_avail", quint64(0));
         acc.downloadsAllTime    = store.get(key, "downloads_all_time", quint64(0));
-        acc.downloadsThisMonth  = store.get(key, "downloads_this_month", quint64(0));        
+        acc.downloadsThisMonth  = store.get(key, "downloads_this_month", quint64(0));
         acc.quotaType           = (Quota)store.get(key, "quota_type").toInt();
         acc.maxConnections      = store.get(key, "max_connections").toInt();
         acc.lastUseDate         = store.get(key, "last_use_date").toDate();
-        acc.subscriptions       = store.get(key, "subscriptions").toStringList();
+        acc.favorites           = store.get(key, SettingsVersion == 1 ? "subscriptions" : "favorites").toStringList();
         acc.datapath            = store.get(key, "datapath", homedir::path(acc.name));
         const auto& used = acc.lastUseDate;
-        if (today.month() > used.month() ||
-            today.year() > used.year())
+        if (today.month() > used.month() || today.year() > used.year())
         {
             acc.downloadsThisMonth = 0;
             if (acc.quotaType == Quota::monthly)
                 acc.quotaSpent = 0;
         }
-
-        accounts_.push_back(acc);
+        mAccounts.push_back(acc);
         DEBUG("Account loaded %1", acc.name);
 
         g_engine->setAccount(acc);
     }
-    mainAccount_ = 0;
-    fillAccount_ = 0;
+    mMainAccount = 0;
+    mFillAccount = 0;
 
     const auto& main = store.get("accounts", "main", "");
     const auto& fill = store.get("accounts", "fill", "");
@@ -397,7 +397,7 @@ void Accounts::loadState(Settings& store)
     {
         const auto* m = findAccount(main);
         if (m) {
-            mainAccount_ = m->id;
+            mMainAccount = m->id;
             DEBUG("Main Account is %1", main);
         }
     }
@@ -406,18 +406,18 @@ void Accounts::loadState(Settings& store)
     {
         const auto* f = findAccount(fill);
         if (f) {
-            fillAccount_  = f->id;
-            g_engine->setFillAccount(fillAccount_);
-            DEBUG("Fill Account is %1", fill);            
+            mFillAccount  = f->id;
+            g_engine->setFillAccount(mFillAccount);
+            DEBUG("Fill Account is %1", fill);
         }
     }
 
     QAbstractItemModel::reset();
 }
 
-int Accounts::rowCount(const QModelIndex&) const 
+int Accounts::rowCount(const QModelIndex&) const
 {
-    return accounts_.size();
+    return mAccounts.size();
 }
 
 QVariant Accounts::data(const QModelIndex& index, int role) const
@@ -425,7 +425,7 @@ QVariant Accounts::data(const QModelIndex& index, int role) const
 
     if (role == Qt::DisplayRole)
     {
-        const auto& acc = accounts_[index.row()];
+        const auto& acc = mAccounts[index.row()];
         return acc.name;
     }
     else if (role == Qt::FontRole)
@@ -449,7 +449,7 @@ void Accounts::quotaUpdate(std::size_t bytes, std::size_t account)
 
     const auto today = QDate::currentDate();
     const auto used  = pacc->lastUseDate;
-    if (today.month() > used.month() || 
+    if (today.month() > used.month() ||
         today.year() > used.year())
     {
         pacc->downloadsThisMonth = 0;

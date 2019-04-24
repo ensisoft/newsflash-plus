@@ -221,8 +221,10 @@ void MainWindow::loadState()
     {
         const auto MediaTypeVersion = mSettings.get("version", "mediatype").toInt();
         const auto FileTypeVersion  = mSettings.get("version", "filetype").toInt();
+        const auto SettingsVersion  = mSettings.get("version", "settings").toInt();
         if (MediaTypeVersion != app::MediaTypeVersion ||
-            FileTypeVersion  != app::FileTypeVersion)
+            FileTypeVersion  != app::FileTypeVersion  ||
+            SettingsVersion  != app::Settings::Version)
         {
             QTimer::singleShot(500, this, SLOT(timerMigrate_timeout()));
         }
@@ -860,6 +862,7 @@ bool MainWindow::saveState(DlgExit* dlg)
 
         mSettings.set("version", "mediatype", app::MediaTypeVersion);
         mSettings.set("version", "filetype", app::FileTypeVersion);
+        mSettings.set("version", "settings", app::Settings::Version);
 
         // save tab visibility values
         // but only for permanent widgets, i.e. those that have actions.

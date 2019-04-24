@@ -50,7 +50,7 @@ namespace app
             Messages,
             Category,
             SizeOnDisk,
-            Subscribed,
+            Favorite,
             Name,
             LAST
         };
@@ -70,9 +70,9 @@ namespace app
         void makeListing(quint32 accountId);
         void loadListing(quint32 accountId);
 
-        void subscribe(QModelIndexList& list);
-        void unsubscribe(QModelIndexList& list);
-        void toggleSubscriptions(QModelIndexList& list);
+        void markItemsFavorite(QModelIndexList& list);
+        void clearFavoriteMarkFromItems(QModelIndexList& list);
+        void toggleFavoriteMark(QModelIndexList& list);
 
         void clearSize(const QModelIndex& index);
 
@@ -80,7 +80,7 @@ namespace app
         bool hasListing(quint32 account) const;
 
         bool hasData(const QModelIndex& index) const;
-        bool isSubscribed(const QModelIndex& index) const;
+        bool isFavorite(const QModelIndex& index) const;
         QString getName(const QModelIndex& index) const;
         QString getName(std::size_t index) const;
         MediaType getMediaType(const QModelIndex& index) const;
@@ -114,10 +114,10 @@ namespace app
         void newHeaderDataAvailable(const app::HeaderUpdateInfo& info);
 
     private:
-        void setAccountSubscriptions();
+        void setAccountFavorites();
 
         enum Flags {
-            Subscribed = 0x1
+            Favorite = 0x1,          
         };
 
         struct NewsGroup {
@@ -127,7 +127,7 @@ namespace app
             quint32   flags       = 0;
             MediaType type        = MediaType::Other;
         };
-        struct Operation {
+        struct RefreshListAction {
             quint32 account = 0;
             quint32 taskId  = 0;
             QString file;
@@ -135,14 +135,12 @@ namespace app
         };
 
     private:
-        std::size_t visiblesize_ = 0;
-        std::vector<NewsGroup> grouplist_;
-
+        quint32 mCurrentAccountId  = 0;
+        std::vector<NewsGroup> mCurrentGroupList;
+        std::size_t mNumCurrentlyVisible = 0;
     private:
-        std::map<quint32, Operation> pending_;
+        std::map<quint32, RefreshListAction> mPendingRefreshes;
     private:
-        quint32 account_  = 0;
-
     };
 
 } // app

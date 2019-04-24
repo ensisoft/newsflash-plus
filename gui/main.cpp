@@ -150,6 +150,9 @@ int run(QtSingleApplication& qtinstance)
     if (!settings.contains("version", "filetype"))
         settings.set("version", "filetype", 1);
 
+    if (!settings.contains("version", "settings"))
+        settings.set("version", "settings", 1);
+
     // initialize global pointers.
     app::Poweroff power;
     app::g_poweroff = &power;

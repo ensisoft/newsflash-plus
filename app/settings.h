@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -37,6 +37,14 @@ namespace app
     class Settings
     {
     public:
+        enum {
+            // version 1 didn't "exist" and wasn't really being used.
+            // so we go directly to version 2
+            // bump this version number if there are breaking changes
+            // that require migration.
+            Version = 2
+        };
+
         enum class format {
             json
         };
@@ -92,10 +100,10 @@ namespace app
 
         void merge(const Settings& other);
 
-        QString name() const 
+        QString name() const
         { return m_name; }
 
-        void setName(QString name) 
+        void setName(QString name)
         { m_name = name; }
 
     private:

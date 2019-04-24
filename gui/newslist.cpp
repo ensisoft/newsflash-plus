@@ -61,7 +61,7 @@ NewsList::NewsList() : m_curAccount(0)
 
     const auto nameWidth = m_ui.tableGroups->columnWidth((int)app::NewsList::Columns::Name);
     m_ui.tableGroups->setColumnWidth((int)app::NewsList::Columns::Name, nameWidth * 3);
-    m_ui.tableGroups->setColumnWidth((int)app::NewsList::Columns::Subscribed, 32);
+    m_ui.tableGroups->setColumnWidth((int)app::NewsList::Columns::Favorite, 32);
 
     QObject::connect(m_ui.tableGroups->selectionModel(),
         SIGNAL(selectionChanged(const QItemSelection&, const QItemSelection&)),
@@ -259,7 +259,7 @@ void NewsList::on_actionFavorite_triggered()
     if (indices.isEmpty())
         return;
 
-    m_model.toggleSubscriptions(indices);
+    m_model.toggleFavoriteMark(indices);
 }
 
 void NewsList::on_actionDeleteData_triggered()

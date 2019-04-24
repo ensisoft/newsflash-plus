@@ -84,18 +84,16 @@ QVariant NewsList::headerData(int section, Qt::Orientation orietantation, int ro
             case Columns::Messages:   return "Messages";
             case Columns::Category:   return "Category";
             case Columns::SizeOnDisk: return "Size";
-            case Columns::Subscribed: return "";
+            case Columns::Favorite:   return "";
             case Columns::Name:       return "Name";
             case Columns::LAST: Q_ASSERT(false); break;
         }
     }
     else if (role == Qt::DecorationRole)
     {
-        static const QIcon gray(toGrayScale(QPixmap("icons:ico_favourite.png")));
-
-        if ((Columns)section == Columns::Subscribed)
-            return gray;
-
+        static const QIcon grayFav(toGrayScale(QPixmap("icons:ico_favourite.png")));
+        if ((Columns)section == Columns::Favorite)
+            return grayFav;
     }
     return QVariant();
 }
@@ -106,7 +104,7 @@ QVariant NewsList::data(const QModelIndex& index, int role) const
     const auto row = index.row();
     if (role == Qt::DisplayRole)
     {
-        const auto& group = grouplist_[row];
+        const auto& group = mCurrentGroupList[row];
         switch ((NewsList::Columns)col)
         {
             case Columns::Messages:
@@ -122,7 +120,7 @@ QVariant NewsList::data(const QModelIndex& index, int role) const
 
             case Columns::Name:
                 return group.name;
-            case Columns::Subscribed:
+            case Columns::Favorite:
                 break;
 
             case Columns::LAST:
@@ -132,14 +130,14 @@ QVariant NewsList::data(const QModelIndex& index, int role) const
     }
     else if (role == Qt::DecorationRole)
     {
-        const auto& group = grouplist_[row];
+        const auto& group = mCurrentGroupList[row];
         switch ((NewsList::Columns)col)
         {
             case Columns::Messages:
                 return QIcon("icons:ico_news.png");
 
-            case Columns::Subscribed:
-                if (group.flags & Flags::Subscribed)
+            case Columns::Favorite:
+                if (group.flags & Flags::Favorite)
                 {
                     return QIcon("icons:ico_favourite.png");
                 }
@@ -157,15 +155,15 @@ QVariant NewsList::data(const QModelIndex& index, int role) const
 
 void NewsList::sort(int column, Qt::SortOrder order)
 {
-    if ((Columns)column == Columns::Subscribed)
+    if ((Columns)column == Columns::Favorite)
         return;
 
     DEBUG("Sorting by %1 into %2", column, order);
 
     emit layoutAboutToBeChanged();
 
-    auto beg = std::begin(grouplist_);
-    auto end = std::begin(grouplist_) + visiblesize_;
+    auto beg = std::begin(mCurrentGroupList);
+    auto end = std::begin(mCurrentGroupList) + mNumCurrentlyVisible;
     switch ((Columns)column)
     {
         case Columns::Messages:
@@ -187,9 +185,9 @@ void NewsList::sort(int column, Qt::SortOrder order)
         default: Q_ASSERT("wut"); break;
     }
 
-    // and put the subscribed items at the top.
+    // and put the favorite items at the top.
     auto it = std::stable_partition(beg, end, [&](const NewsGroup& group) {
-            return ((group.flags & Flags::Subscribed) != 0);
+            return ((group.flags & Flags::Favorite) != 0);
         });
 
     DEBUG("Found %1 favs", std::distance(beg, it));
@@ -200,7 +198,7 @@ void NewsList::sort(int column, Qt::SortOrder order)
 
 int NewsList::rowCount(const QModelIndex&) const
 {
-    return static_cast<int>(visiblesize_);
+    return static_cast<int>(mNumCurrentlyVisible);
 }
 
 int NewsList::columnCount(const QModelIndex&) const
@@ -212,8 +210,8 @@ void NewsList::clear()
 {
     QAbstractTableModel::beginResetModel();
 
-    grouplist_.clear();
-    visiblesize_ = 0;
+    mCurrentGroupList.clear();
+    mNumCurrentlyVisible = 0;
 
     QAbstractTableModel::reset();
     QAbstractTableModel::endResetModel();
@@ -221,8 +219,8 @@ void NewsList::clear()
 
 void NewsList::stopRefresh(quint32 accountId)
 {
-    auto it = pending_.find(accountId);
-    if (it == std::end(pending_))
+    auto it = mPendingRefreshes.find(accountId);
+    if (it == std::end(mPendingRefreshes))
         return;
 
     auto& op = it->second;
@@ -230,7 +228,7 @@ void NewsList::stopRefresh(quint32 accountId)
     const auto file = op.file;
     g_engine->killTaskById(op.taskId);
 
-    pending_.erase(it);
+    mPendingRefreshes.erase(it);
 
     if (list.empty())
         return;
@@ -259,8 +257,8 @@ void NewsList::stopRefresh(quint32 accountId)
 
 void NewsList::makeListing(quint32 accountId)
 {
-    auto it = pending_.find(accountId);
-    if (it != std::end(pending_))
+    auto it = mPendingRefreshes.find(accountId);
+    if (it != std::end(mPendingRefreshes))
         return;
 
     const auto* account = g_accounts->findAccount(accountId);
@@ -270,19 +268,19 @@ void NewsList::makeListing(quint32 accountId)
 
     const auto task = g_engine->retrieveNewsgroupListing(accountId);
 
-    Operation refresh;
+    RefreshListAction refresh;
     refresh.file    = listing;
     refresh.account = accountId;
     refresh.taskId  = task;
-    pending_.insert(std::make_pair(accountId, refresh));
+    mPendingRefreshes.insert(std::make_pair(accountId, refresh));
 }
 
 void NewsList::loadListing(quint32 accountId)
 {
     std::vector<NewsGroup> list;
 
-    auto it = pending_.find(accountId);
-    if (it != std::end(pending_))
+    auto it = mPendingRefreshes.find(accountId);
+    if (it != std::end(mPendingRefreshes))
     {
         DEBUG("Loading a intermediate list");
 
@@ -291,10 +289,10 @@ void NewsList::loadListing(quint32 accountId)
     }
     else
     {
-        const auto* account       = g_accounts->findAccount(accountId);
-        const auto& datapath      = account->datapath;
-        const auto& subscriptions = account->subscriptions;
-        const auto& listingfile   = app::homedir::file(account->name + ".lst");
+        const auto* account     = g_accounts->findAccount(accountId);
+        const auto& datapath    = account->datapath;
+        const auto& favorites  = account->favorites;
+        const auto& listingfile = app::homedir::file(account->name + ".lst");
 
         DEBUG("Loading newslist from %1", listingfile);
 
@@ -345,10 +343,12 @@ void NewsList::loadListing(quint32 accountId)
                 group.type = (MediaType)toks[2].toInt();
             }
 
-            for (const auto& subscription : subscriptions)
+            for (const auto& favorite : favorites)
             {
-                if (subscription == group.name)
-                    group.flags |= Flags::Subscribed;
+                if (favorite == group.name) {
+                    group.flags |= Flags::Favorite;
+                    break;
+                }
             }
 
             list.push_back(group);
@@ -366,19 +366,19 @@ void NewsList::loadListing(quint32 accountId)
     // the UI should do these operations again, it has the state
 
     QAbstractTableModel::beginResetModel();
-    grouplist_   = std::move(list);
-    visiblesize_ = grouplist_.size();
-    account_     = accountId;
+    mCurrentGroupList    = std::move(list);
+    mNumCurrentlyVisible = mCurrentGroupList.size();
+    mCurrentAccountId    = accountId;
     QAbstractTableModel::reset();
     QAbstractTableModel::endResetModel();
 
-    DEBUG("Loaded %1 items", visiblesize_);
+    DEBUG("Loaded %1 items", mNumCurrentlyVisible);
 
     emit loadComplete(accountId);
 }
 
 
-void NewsList::subscribe(QModelIndexList& list)
+void NewsList::markItemsFavorite(QModelIndexList& list)
 {
     int minIndex = std::numeric_limits<int>::max();
     int maxIndex = std::numeric_limits<int>::min();
@@ -392,18 +392,18 @@ void NewsList::subscribe(QModelIndexList& list)
         if (row > maxIndex)
             maxIndex = row;
 
-        auto& group = grouplist_[row];
-        group.flags |= Flags::Subscribed;
+        auto& group = mCurrentGroupList[row];
+        group.flags |= Flags::Favorite;
     }
 
     auto first = QAbstractTableModel::index(minIndex, 0);
     auto last  = QAbstractTableModel::index(maxIndex, (int)Columns::LAST);
     emit dataChanged(first, last);
 
-    setAccountSubscriptions();
+    setAccountFavorites();
 }
 
-void NewsList::unsubscribe(QModelIndexList& list)
+void NewsList::clearFavoriteMarkFromItems(QModelIndexList& list)
 {
     int minIndex = std::numeric_limits<int>::max();
     int maxIndex = std::numeric_limits<int>::min();
@@ -417,18 +417,18 @@ void NewsList::unsubscribe(QModelIndexList& list)
         if (row > maxIndex)
             maxIndex = row;
 
-        auto& group = grouplist_[row];
-        group.flags &= ~Flags::Subscribed;
+        auto& group = mCurrentGroupList[row];
+        group.flags &= ~Flags::Favorite;
     }
 
     auto first = QAbstractTableModel::index(minIndex, 0);
     auto last  = QAbstractTableModel::index(maxIndex, (int)Columns::LAST);
     emit dataChanged(first, last);
 
-    setAccountSubscriptions();
+    setAccountFavorites();
 }
 
-void NewsList::toggleSubscriptions(QModelIndexList& list)
+void NewsList::toggleFavoriteMark(QModelIndexList& list)
 {
     int minIndex = std::numeric_limits<int>::max();
     int maxIndex = std::numeric_limits<int>::min();
@@ -442,23 +442,23 @@ void NewsList::toggleSubscriptions(QModelIndexList& list)
         if (row > maxIndex)
             maxIndex = row;
 
-        auto& group = grouplist_[row];
-        group.flags ^= Flags::Subscribed;
+        auto& group = mCurrentGroupList[row];
+        group.flags ^= Flags::Favorite;
     }
 
     auto first = QAbstractTableModel::index(minIndex, 0);
     auto last  = QAbstractTableModel::index(maxIndex, (int)Columns::LAST);
     emit dataChanged(first, last);
 
-    setAccountSubscriptions();
+    setAccountFavorites();
 }
 
 void NewsList::clearSize(const QModelIndex& index)
 {
     const auto row = index.row();
-    BOUNDSCHECK(grouplist_, row);
+    BOUNDSCHECK(mCurrentGroupList, row);
 
-    grouplist_[row].sizeOnDisk = 0;
+    mCurrentGroupList[row].sizeOnDisk = 0;
 
     const auto first = QAbstractTableModel::index(row, 0);
     const auto last  = QAbstractTableModel::index(row, (int)Columns::LAST);
@@ -467,8 +467,8 @@ void NewsList::clearSize(const QModelIndex& index)
 
 bool NewsList::isUpdating(quint32 account) const
 {
-    auto it = pending_.find(account);
-    return it != pending_.end();
+    auto it = mPendingRefreshes.find(account);
+    return it != mPendingRefreshes.end();
 }
 
 bool NewsList::hasListing(quint32 accountId) const
@@ -480,32 +480,32 @@ bool NewsList::hasListing(quint32 accountId) const
 
 bool NewsList::hasData(const QModelIndex& index) const
 {
-    return grouplist_[index.row()].sizeOnDisk != 0;
+    return mCurrentGroupList[index.row()].sizeOnDisk != 0;
 }
 
-bool NewsList::isSubscribed(const QModelIndex& index) const
+bool NewsList::isFavorite(const QModelIndex& index) const
 {
-    return (grouplist_[index.row()].flags & Flags::Subscribed) != 0;
+    return (mCurrentGroupList[index.row()].flags & Flags::Favorite) != 0;
 }
 
 QString NewsList::getName(const QModelIndex& index) const
 {
-    return grouplist_[index.row()].name;
+    return mCurrentGroupList[index.row()].name;
 }
 
 QString NewsList::getName(std::size_t index) const
 {
-    return grouplist_[index].name;
+    return mCurrentGroupList[index].name;
 }
 
 MediaType NewsList::getMediaType(const QModelIndex& index) const
 {
-    return grouplist_[index.row()].type;
+    return mCurrentGroupList[index.row()].type;
 }
 
 std::size_t NewsList::numItems() const
 {
-    return visiblesize_;
+    return mNumCurrentlyVisible;
 }
 
 void NewsList::filter(const QString& str, newsflash::bitflag<FilterFlags> flags)
@@ -514,8 +514,8 @@ void NewsList::filter(const QString& str, newsflash::bitflag<FilterFlags> flags)
 
     QAbstractTableModel::beginResetModel();
 
-    auto beg = std::begin(grouplist_);
-    auto end = std::partition(std::begin(grouplist_), std::end(grouplist_),
+    auto beg = std::begin(mCurrentGroupList);
+    auto end = std::partition(std::begin(mCurrentGroupList), std::end(mCurrentGroupList),
         [&](const NewsGroup& group) {
             if (isMusic(group.type) && !flags.test(FilterFlags::ShowMusic))
                 return false;
@@ -553,9 +553,9 @@ void NewsList::filter(const QString& str, newsflash::bitflag<FilterFlags> flags)
             return (bool)group.name.contains(str);
         });
 
-    visiblesize_ = std::distance(beg, end);
+    mNumCurrentlyVisible = std::distance(beg, end);
 
-    DEBUG("Found %1 matching items...", visiblesize_);
+    DEBUG("Found %1 matching items...", mNumCurrentlyVisible);
 
     QAbstractTableModel::reset();
     QAbstractTableModel::endResetModel();
@@ -563,8 +563,8 @@ void NewsList::filter(const QString& str, newsflash::bitflag<FilterFlags> flags)
 
 void NewsList::listCompleted(quint32 acc, const QList<app::NewsGroupInfo>& list)
 {
-    auto it = pending_.find(acc);
-    ENDCHECK(pending_, it);
+    auto it = mPendingRefreshes.find(acc);
+    ENDCHECK(mPendingRefreshes, it);
 
     auto op = it->second;
 
@@ -593,22 +593,22 @@ void NewsList::listCompleted(quint32 acc, const QList<app::NewsGroupInfo>& list)
     io.flush();
     io.close();
 
-    pending_.erase(it);
+    mPendingRefreshes.erase(it);
 
     emit makeComplete(acc);
 }
 
 void NewsList::listUpdated(quint32 accountId, const QList<app::NewsGroupInfo>& list)
 {
-    auto it = pending_.find(accountId);
-    if (it == std::end(pending_))
+    auto it = mPendingRefreshes.find(accountId);
+    if (it == std::end(mPendingRefreshes))
         return;
 
     auto& op = it->second;
 
-    const auto* account = g_accounts->findAccount(accountId);
-    const auto& subscriptions = account->subscriptions;
-    const auto& datapath = account->datapath;
+    const auto* account   = g_accounts->findAccount(accountId);
+    const auto& favorites = account->favorites;
+    const auto& datapath  = account->datapath;
 
     for (const auto& group : list)
     {
@@ -619,10 +619,12 @@ void NewsList::listUpdated(quint32 accountId, const QList<app::NewsGroupInfo>& l
         next.type        = findMediaType(next.name);
         next.sizeOnDisk  = sumFileSizes(joinPath(datapath, next.name));
 
-        for (const auto& subscription : subscriptions)
+        for (const auto& favorite : favorites)
         {
-            if (subscription == next.name)
-                next.flags |= Flags::Subscribed;
+            if (favorite == next.name) {
+                next.flags |= Flags::Favorite;
+                break;
+            }
         }
         op.intermediateList.push_back(next);
     }
@@ -632,10 +634,12 @@ void NewsList::listUpdated(quint32 accountId, const QList<app::NewsGroupInfo>& l
 
 void NewsList::newHeaderDataAvailable(const app::HeaderUpdateInfo& info)
 {
-    if (account_ != info.account)
+    if (mCurrentAccountId != info.account)
+        return;
+    if (mCurrentAccountId == 0)
         return;
 
-    const auto* account  = g_accounts->findAccount(account_);
+    const auto* account  = g_accounts->findAccount(mCurrentAccountId);
     const auto& datapath = account->datapath;
 
     const auto& newsGroupName = info.groupName;
@@ -644,11 +648,11 @@ void NewsList::newHeaderDataAvailable(const app::HeaderUpdateInfo& info)
     if (newsGroupFile.indexOf(datapath) == -1)
         return;
 
-    auto it = std::find_if(std::begin(grouplist_), std::end(grouplist_),
+    auto it = std::find_if(std::begin(mCurrentGroupList), std::end(mCurrentGroupList),
         [&](const NewsGroup& group) {
             return group.name == newsGroupName;
         });
-    if (it == std::end(grouplist_))
+    if (it == std::end(mCurrentGroupList))
         return;
 
     auto& group = *it;
@@ -658,27 +662,26 @@ void NewsList::newHeaderDataAvailable(const app::HeaderUpdateInfo& info)
     DEBUG("%1 was updated. New size on disk is %2",
         group.name, app::size{group.sizeOnDisk});
 
-    auto row = std::distance(std::begin(grouplist_), it);
+    auto row = std::distance(std::begin(mCurrentGroupList), it);
     auto first = QAbstractTableModel::index(row, 0);
     auto last  = QAbstractTableModel::index(row, (int)Columns::LAST);
     emit dataChanged(first, last);
 }
 
-void NewsList::setAccountSubscriptions()
+void NewsList::setAccountFavorites()
 {
-    Q_ASSERT(account_);
-
+    Q_ASSERT(mCurrentAccountId);
     QStringList list;
-    for (const auto& group : grouplist_)
+    for (const auto& group : mCurrentGroupList)
     {
-        if (group.flags & Flags::Subscribed)
+        if (group.flags & Flags::Favorite)
             list << group.name;
     }
 
-    auto* account = g_accounts->findAccount(account_);
+    auto* account = g_accounts->findAccount(mCurrentAccountId);
     Q_ASSERT(account);
 
-    account->subscriptions = list;
+    account->favorites = list;
 }
 
 } // app
