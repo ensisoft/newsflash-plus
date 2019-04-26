@@ -46,6 +46,18 @@ namespace newsflash
         // name of the newsgroup in question.
         std::string group_name;
 
+        // the first article number in the local database.
+        std::uint64_t local_first = 0;
+
+        // the last article number in the local database.
+        std::uint64_t local_last = 0;
+
+        // the first article number currently at the remote (server)
+        std::uint64_t remote_first = 0;
+
+        // the last article number currently at the remote (server)
+        std::uint64_t remote_last = 0;
+
         // the number of articles on locally indexed.
         std::uint64_t num_local_articles  = 0;
 

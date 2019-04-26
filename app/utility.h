@@ -20,13 +20,17 @@
 
 #pragma once
 
-#include <newsflash/config.h>
-#include <newsflash/warnpush.h>
+#include "newsflash/config.h"
+
+#include "newsflash/warnpush.h"
 #  include <QtAlgorithms>
 #  include <QModelIndex>
 #  include <QString>
 #  include <QStringList>
-#include <newsflash/warnpop.h>
+#  include <QVariant>
+#  include <QMap>
+#include "newsflash/warnpop.h"
+
 #include <algorithm>
 #include <string>
 #include <vector>
@@ -42,6 +46,8 @@ class QAction;
 
 namespace app
 {
+
+bool readKeyValueMap(const QString& file, QMap<QString, QVariant>* map);
 
 QString generateRandomString();
 

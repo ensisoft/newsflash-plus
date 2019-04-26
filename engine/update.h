@@ -37,6 +37,10 @@ namespace newsflash
         struct Progress {
             std::string group;
             std::string path;
+            std::uint64_t local_first = 0;
+            std::uint64_t local_last  = 0;
+            std::uint64_t remote_first = 0;
+            std::uint64_t remote_last = 0;
             std::uint64_t num_local_articles  = 0;
             std::uint64_t num_remote_articles = 0;
             std::vector<std::unique_ptr<Snapshot>> snapshots;
@@ -78,6 +82,16 @@ namespace newsflash
         std::uint64_t num_local_articles() const;
 
         std::uint64_t num_remote_articles() const;
+
+        std::uint64_t get_local_first() const
+        { return local_last_; }
+        std::uint64_t get_local_last() const
+        { return local_last_; }
+
+        std::uint64_t get_remote_first() const
+        { return remote_first_; }
+        std::uint64_t get_remote_last() const
+        { return remote_last_; }
 
     private:
         class parse;

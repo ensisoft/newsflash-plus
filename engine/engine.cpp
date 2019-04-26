@@ -142,6 +142,10 @@ public:
             result->path    = ptr->path();
             result->num_local_articles  = ptr->num_local_articles();
             result->num_remote_articles = ptr->num_remote_articles();
+            result->local_last = ptr->get_local_last();
+            result->local_first = ptr->get_local_first();
+            result->remote_first = ptr->get_remote_first();
+            result->remote_last = ptr->get_remote_last();
             ret = std::move(result);
         }
         return ret;
@@ -1982,6 +1986,10 @@ void Engine::State::on_header_update_progress(const HeaderTask::Progress& progre
     update.group_name = progress.group;
     update.num_local_articles  = progress.num_local_articles;
     update.num_remote_articles = progress.num_remote_articles;
+    update.local_last = progress.local_last;
+    update.local_first = progress.local_first;
+    update.remote_last = progress.remote_last;
+    update.remote_first = progress.remote_first;
     update.catalogs = progress.catalogs;
 
     for (auto& snapshot : progress.snapshots)

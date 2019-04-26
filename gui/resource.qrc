@@ -31,6 +31,7 @@
     <file>resource/16x16_ico_png/ico_flag_bookmark.png</file>
 
     <!-- common/uncategorized item icons -->
+    <file>resource/16x16_ico_png/ico_new.png</file>
     <file>resource/16x16_ico_png/ico_folder.png</file>
     <file>resource/16x16_ico_png/ico_rss.png</file>
     <file>resource/16x16_ico_png/ico_news.png</file>

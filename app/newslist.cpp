@@ -50,8 +50,9 @@
 namespace app
 {
 
-const int CurrentFileVersion = 2;
+const int CurrentFileVersion = 3;
 // FileVersion 2 adds the media type for the group. (MediaTypeVersion 2)
+// FileVersion 3 adds the last remote message number
 
 NewsList::NewsList()
 {
@@ -63,6 +64,8 @@ NewsList::NewsList()
         this, SLOT(listUpdated(quint32, const QList<app::NewsGroupInfo>&)));
     QObject::connect(g_engine, SIGNAL(newHeaderInfoAvailable(const app::HeaderUpdateInfo&)),
         this, SLOT(newHeaderDataAvailable(const app::HeaderUpdateInfo&)));
+    QObject::connect(g_engine, SIGNAL(updateCompleted(const app::HeaderInfo&)),
+        this, SLOT(groupUpdateComplete(const app::HeaderInfo&)));
 
 }
 
@@ -81,7 +84,8 @@ QVariant NewsList::headerData(int section, Qt::Orientation orietantation, int ro
     {
         switch ((NewsList::Columns)section)
         {
-            case Columns::Messages:   return "Messages";
+            case Columns::AllMessages:  return "Messages";
+            case Columns::NewMessages:  return "New Messages";
             case Columns::Category:   return "Category";
             case Columns::SizeOnDisk: return "Size";
             case Columns::Favorite:   return "";
@@ -107,8 +111,17 @@ QVariant NewsList::data(const QModelIndex& index, int role) const
         const auto& group = mCurrentGroupList[row];
         switch ((NewsList::Columns)col)
         {
-            case Columns::Messages:
+            case Columns::AllMessages:
                 return toString(app::count{group.numMessages});
+
+            case Columns::NewMessages:
+                if (group.sizeOnDisk) {
+                    if (group.lastLocalMessageNumber == 0)
+                        return tr("Please refresh group ...");
+                    if (group.lastRemoteMessageNumber > group.lastLocalMessageNumber)
+                        return toString(app::count{group.lastRemoteMessageNumber - group.lastLocalMessageNumber});
+                }
+                break;
 
             case Columns::Category:
                 return toString(group.type);
@@ -133,8 +146,15 @@ QVariant NewsList::data(const QModelIndex& index, int role) const
         const auto& group = mCurrentGroupList[row];
         switch ((NewsList::Columns)col)
         {
-            case Columns::Messages:
+            case Columns::AllMessages:
                 return QIcon("icons:ico_news.png");
+
+            case Columns::NewMessages:
+                if (group.lastLocalMessageNumber != 0) {
+                    if (group.lastRemoteMessageNumber > group.lastLocalMessageNumber)
+                        return QIcon("icons:ico_new.png");
+                }
+                break;
 
             case Columns::Favorite:
                 if (group.flags & Flags::Favorite)
@@ -157,6 +177,8 @@ void NewsList::sort(int column, Qt::SortOrder order)
 {
     if ((Columns)column == Columns::Favorite)
         return;
+    if ((Columns)column == Columns::NewMessages)
+        return;
 
     DEBUG("Sorting by %1 into %2", column, order);
 
@@ -166,7 +188,7 @@ void NewsList::sort(int column, Qt::SortOrder order)
     auto end = std::begin(mCurrentGroupList) + mNumCurrentlyVisible;
     switch ((Columns)column)
     {
-        case Columns::Messages:
+        case Columns::AllMessages:
             app::sort(beg, end, order, &NewsGroup::numMessages);
             break;
 
@@ -248,7 +270,8 @@ void NewsList::stopRefresh(quint32 accountId)
     {
         stream << group.name << "\t"
                << group.numMessages << "\t"
-               << static_cast<int>(group.type) << "\n";
+               << static_cast<int>(group.type) << "\t"
+               << group.lastRemoteMessageNumber << "\n";
     }
     io.flush();
     io.close();
@@ -296,6 +319,7 @@ void NewsList::loadListing(quint32 accountId)
 
         DEBUG("Loading newslist from %1", listingfile);
 
+        QFileInfo listing_file_info(listingfile);
         QFile io(listingfile);
         if (!io.open(QIODevice::ReadOnly))
         {
@@ -322,7 +346,7 @@ void NewsList::loadListing(quint32 accountId)
             }
 
             NewsGroup group;
-            group.name  = toks[0];
+            group.name        = toks[0];
             group.numMessages = toks[1].toULongLong();
             group.sizeOnDisk  = sumFileSizes(joinPath(datapath, group.name));
             group.flags       = 0;
@@ -332,15 +356,52 @@ void NewsList::loadListing(quint32 accountId)
             {
                 group.type = findMediaType(group.name);
             }
-            else if (fileVersion == 2)
+            if (fileVersion >= 2)
             {
                 if (toks.size() < 3)
                 {
                     ERROR("Invalid newslist data.");
                     return;
                 }
-                // MediaTypeVersion 2
                 group.type = (MediaType)toks[2].toInt();
+            }
+            if (fileVersion >= 3)
+            {
+                if (toks.size() < 4)
+                {
+                    ERROR("Invalid newslist data.");
+                    return;
+                }
+                group.lastRemoteMessageNumber = toks[3].toULongLong();
+            }
+
+            // this file is written as a response to group update signal.
+            // it has simple key=value format and contains the
+            // local and remote first and last article numbers.
+            // if this file is newer than the current listing file
+            // then we use this information in the newsgroup list
+            // instead of the information from the listing file itself.
+            const QString& txt_file = joinPath(joinPath(datapath, group.name), group.name + ".txt");
+            const QFileInfo info(txt_file);
+            if (info.exists())
+            {
+                QMap<QString, QVariant> kvmap;
+                if (!readKeyValueMap(txt_file, &kvmap))
+                {
+                    WARN("Failed to read group meta data file: %1", txt_file);
+                }
+                else
+                {
+                    const auto& lm_group_data = info.lastModified();
+                    const auto& lm_list_file = listing_file_info.lastModified();
+                    if (lm_group_data > lm_list_file) {
+                        const auto remote_first = kvmap["remote_first"].toULongLong();
+                        const auto remote_last  = kvmap["remote_last"].toULongLong();
+                        group.numMessages = remote_last - remote_first + 1;
+                        group.lastRemoteMessageNumber = remote_last;
+                    }
+                    group.lastLocalMessageNumber = kvmap["local_last"].toULongLong();
+                }
             }
 
             for (const auto& favorite : favorites)
@@ -459,6 +520,7 @@ void NewsList::clearSize(const QModelIndex& index)
     BOUNDSCHECK(mCurrentGroupList, row);
 
     mCurrentGroupList[row].sizeOnDisk = 0;
+    mCurrentGroupList[row].lastLocalMessageNumber = 0;
 
     const auto first = QAbstractTableModel::index(row, 0);
     const auto last  = QAbstractTableModel::index(row, (int)Columns::LAST);
@@ -587,7 +649,10 @@ void NewsList::listCompleted(quint32 acc, const QList<app::NewsGroupInfo>& list)
         //stream << group.name << "\t" << group.size << "\n";
         // now we're adding the cached category for the group.
         const auto type = findMediaType(group.name);
-        stream << group.name << "\t" << group.size << "\t" << (int)type << "\n";
+        stream <<  group.name << "\t"
+                << group.size << "\t"
+                << static_cast<int>(type) << "\t"
+                << group.last << "\n";
     }
 
     io.flush();
@@ -615,6 +680,7 @@ void NewsList::listUpdated(quint32 accountId, const QList<app::NewsGroupInfo>& l
         NewsGroup next;
         next.name        = group.name;
         next.numMessages = group.size;
+        next.lastRemoteMessageNumber = group.last;
         next.flags       = 0;
         next.type        = findMediaType(next.name);
         next.sizeOnDisk  = sumFileSizes(joinPath(datapath, next.name));
@@ -632,19 +698,87 @@ void NewsList::listUpdated(quint32 accountId, const QList<app::NewsGroupInfo>& l
     emit listUpdate(accountId);
 }
 
+void NewsList::groupUpdateComplete(const app::HeaderInfo& info)
+{
+    const auto* account = g_accounts->findAccount(info.account);
+    if (!account)
+        return;
+    const auto& name = info.groupName;
+    const auto& path = joinPath(account->datapath, name);
+    const auto& file = joinPath(path, name + ".txt");
+
+    QFile io(file);
+    if (!io.open(QIODevice::WriteOnly | QIODevice::Truncate))
+    {
+        ERROR("Failed to open %1 for writing.", file);
+        return;
+    }
+    QTextStream stream(&io);
+    stream.setCodec("UTF-8");
+    stream << "remote_last=" << info.remoteLast << "\n";
+    stream << "remote_first=" << info.remoteFirst << "\n";
+    stream << "local_first=" << info.localFirst << "\n";
+    stream << "local_last=" << info.localLast << "\n";
+    stream.flush();
+    io.flush();
+    io.close();
+    DEBUG("Wrote group information in %1", file);
+
+    if (info.account != mCurrentAccountId)
+        return;
+    auto it = std::find_if(std::begin(mCurrentGroupList), std::end(mCurrentGroupList),
+        [&](const NewsGroup& group) {
+            return group.name == info.groupName;
+        });
+    if (it == std::end(mCurrentGroupList))
+        return;
+
+    auto& group = *it;
+    group.sizeOnDisk = sumFileSizes(joinPath(account->datapath, info.groupName));
+    group.lastLocalMessageNumber = info.localLast;
+    group.lastRemoteMessageNumber = info.remoteLast;
+    group.numMessages = info.numRemoteArticles;
+
+    auto row = std::distance(std::begin(mCurrentGroupList), it);
+    auto first = QAbstractTableModel::index(row, 0);
+    auto last  = QAbstractTableModel::index(row, (int)Columns::LAST);
+    emit dataChanged(first, last);
+
+}
+
 void NewsList::newHeaderDataAvailable(const app::HeaderUpdateInfo& info)
 {
-    if (mCurrentAccountId != info.account)
-        return;
-    if (mCurrentAccountId == 0)
+    const auto* account  = g_accounts->findAccount(info.account);
+    if (!account)
         return;
 
-    const auto* account  = g_accounts->findAccount(mCurrentAccountId);
     const auto& datapath = account->datapath;
-
     const auto& newsGroupName = info.groupName;
     const auto& newsGroupFile = info.groupFile;
+    const auto& path = joinPath(datapath, info.groupName);
+    const auto& file = joinPath(path, info.groupName + ".txt");
 
+    QFile io(file);
+    if (!io.open(QIODevice::WriteOnly | QIODevice::Truncate))
+    {
+        ERROR("Failed to open %1 for writing.", file);
+        return;
+    }
+    QTextStream stream(&io);
+    stream.setCodec("UTF-8");
+    stream << "remote_last=" << info.remoteLast << "\n";
+    stream << "remote_first=" << info.remoteFirst << "\n";
+    stream << "local_first=" << info.localFirst << "\n";
+    stream << "local_last=" << info.localLast << "\n";
+    stream.flush();
+    io.flush();
+    io.close();
+    DEBUG("Wrote group information in %1", file);
+
+    if (info.account != mCurrentAccountId)
+        return;
+
+    // the fuck is this check?
     if (newsGroupFile.indexOf(datapath) == -1)
         return;
 
@@ -658,6 +792,9 @@ void NewsList::newHeaderDataAvailable(const app::HeaderUpdateInfo& info)
     auto& group = *it;
 
     group.sizeOnDisk = sumFileSizes(joinPath(datapath, group.name));
+    group.lastLocalMessageNumber  = info.localLast;
+    group.lastRemoteMessageNumber = info.remoteLast;
+    group.numMessages = info.numRemoteArticles;
 
     DEBUG("%1 was updated. New size on disk is %2",
         group.name, app::size{group.sizeOnDisk});

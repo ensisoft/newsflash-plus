@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -18,12 +18,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <newsflash/config.h>
-#include <newsflash/warnpush.h>
+#include "newsflash/config.h"
+
+#include "newsflash/warnpush.h"
 #  include <QString>
 #  include <QtGlobal>
 #  include <QMetaType>
-#include <newsflash/warnpop.h>
+#include "newsflash/warnpop.h"
 
 namespace app
 {
@@ -31,18 +32,18 @@ namespace app
     // as part of a listing event.
     struct NewsGroupInfo {
         // the estimated number of articles available in the group
-        quint64 size;
+        quint64 size = 0;
 
         // the first article number
-        quint64 first;
+        quint64 first = 0;
 
         // the last article number
-        quint64 last;
+        quint64 last = 0;
 
         // group name
         QString name;
-    };    
-    
+    };
+
 } // app
 
     Q_DECLARE_METATYPE(app::NewsGroupInfo);

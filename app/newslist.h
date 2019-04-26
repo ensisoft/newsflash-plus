@@ -33,6 +33,7 @@
 #include <map>
 
 #include "engine/bitflag.h"
+#include "app/fileinfo.h"
 #include "media.h"
 
 namespace app
@@ -47,7 +48,8 @@ namespace app
 
     public:
         enum class Columns {
-            Messages,
+            AllMessages,
+            NewMessages,
             Category,
             SizeOnDisk,
             Favorite,
@@ -112,17 +114,20 @@ namespace app
         void listCompleted(quint32 acc, const QList<app::NewsGroupInfo>& list);
         void listUpdated(quint32 acc, const QList<app::NewsGroupInfo>& list);
         void newHeaderDataAvailable(const app::HeaderUpdateInfo& info);
+        void groupUpdateComplete(const app::HeaderInfo& info);
 
     private:
         void setAccountFavorites();
 
         enum Flags {
-            Favorite = 0x1,          
+            Favorite = 0x1,
         };
 
         struct NewsGroup {
             QString   name;
             quint64   numMessages = 0;
+            quint64   lastRemoteMessageNumber  = 0;
+            quint64   lastLocalMessageNumber   = 0;
             quint64   sizeOnDisk  = 0;
             quint32   flags       = 0;
             MediaType type        = MediaType::Other;

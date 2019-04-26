@@ -34,6 +34,8 @@
 #  include <QtGui/QAction>
 #  include <QAbstractTableModel>
 #  include <QDir>
+#  include <QFile>
+#  include <QTextStream>
 #include "newsflash/warnpop.h"
 
 #include <map>
@@ -48,6 +50,27 @@
 
 namespace app
 {
+
+bool readKeyValueMap(const QString& file, QMap<QString, QVariant>* map)
+{
+    QFile io(file);
+    if (!io.open(QIODevice::ReadOnly))
+        return false;
+
+    QTextStream stream(&io);
+    stream.setCodec("UTF-8");
+    while (!stream.atEnd())
+    {
+        const auto& line = stream.readLine();
+        const auto& toks = line.split("=");
+        if (toks.size() != 2)
+            return false;
+        const auto& key = toks[0];
+        const auto& val = toks[1];
+        (*map)[key] = QVariant(val);
+    }
+    return true;
+}
 
 QString generateRandomString()
 {

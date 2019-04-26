@@ -109,6 +109,18 @@ namespace newsflash
         // human readable descripton for the task list.
         std::string desc;
 
+        // the current first local message number
+        std::uint64_t local_last = 0;
+
+        // the current last local message number
+        std::uint64_t local_first = 0;
+
+        // the first message number on the server at the start of the operation
+        std::uint64_t remote_last = 0;
+
+        // the last message number on the server at the start of the operation
+        std::uint64_t remote_first = 0;
+
         // this will be the number of articles stored locally
         // when an update is completed.
         std::uint64_t num_local_articles = 0;

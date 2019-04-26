@@ -549,7 +549,6 @@ void Update::Commit()
     if (local_first_ == 0 || local_last_ == 0)
         return;
 
-
     bigfile big;
     big.open(file, bigfile::o_truncate | bigfile::o_create);
 
@@ -647,6 +646,10 @@ void Update::Complete(action& a, std::vector<std::unique_ptr<action>>& next)
             HeaderTask::Progress progress;
             progress.group = state_->group;
             progress.path  = state_->folder;
+            progress.local_first = local_first_;
+            progress.local_last  = local_last_;
+            progress.remote_first = remote_first_;
+            progress.remote_last  = remote_last_;
             progress.num_local_articles  = local_last_ - local_first_ + 1;
             progress.num_remote_articles = remote_last_ - remote_first_ + 1;
             for (auto* catalog : p->updates_)

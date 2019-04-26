@@ -648,6 +648,11 @@ void Engine::onUpdateComplete(const newsflash::ui::HeaderResult& result)
     info.groupPath = fromUtf8(result.path);
     info.numLocalArticles = result.num_local_articles;
     info.numRemoteArticles = result.num_remote_articles;
+    info.localLast = result.local_last;
+    info.localFirst = result.local_first;
+    info.remoteLast = result.remote_last;
+    info.remoteFirst = result.remote_first;
+    info.account = result.account;
     DEBUG("%1 Update complete at %2", info.groupName, info.groupPath);
 
     INFO("%1 updated with %2 articles of %3 available", info.groupName,
@@ -668,6 +673,10 @@ void Engine::onHeaderInfoAvailable(const newsflash::ui::HeaderUpdate& update)
         info.numRemoteArticles = update.num_remote_articles;
         info.snapshot = update.snapshots[i];
         info.account  = update.account;
+        info.localFirst = update.local_first;
+        info.localLast  = update.local_last;
+        info.remoteFirst = update.remote_first;
+        info.remoteLast = update.remote_last;
         emit newHeaderInfoAvailable(info);
     }
 }

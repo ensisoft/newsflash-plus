@@ -41,15 +41,17 @@ namespace app
         QString name;
 
         // size of the file
-        quint64 size;
+        quint64 size = 0;
 
         // true if apparently damaged.
-        bool damaged;
+        bool damaged = false;
 
         // true if data is binary.
-        bool binary;
+        bool binary = false;
 
-        FileType type;
+        // the expected type of the file guessed based on
+        // the file extension (if any)
+        FileType type = FileType::None;
     };
 
     // FilePackInfo describes a group (a pack) of new files
@@ -66,20 +68,54 @@ namespace app
         bool damaged = false;
     };
 
+    // final information about a header update that
+    // was concluded.
     struct HeaderInfo {
+        // name of the newsgroup that was updated.
         QString groupName;
 
+        // path to the data files for this newsgroup
         QString groupPath;
 
+        // this is the number of local articles.
         quint64 numLocalArticles = 0;
 
+        // this is the number of (estimated) remote articles
+        // at the time operation was started.
         quint64 numRemoteArticles = 0;
+
+        // this is the current first article number locally
+        quint64 localFirst = 0;
+
+        // this is the current last article number loally
+        quint64 localLast = 0;
+
+        // this was the current first article number on the
+        // remote server at the time operation was started.
+        quint64 remoteFirst = 0;
+
+        // this was the current last article number on the
+        // remote server at the time the operation was started.
+        quint64 remoteLast = 0;
+
+        // this is the account that was used for the operation.
+        quint32 account = 0;
     };
 
+    // intermediate information about a header update
+    // that is currently in progress.
     struct HeaderUpdateInfo {
         QString groupName;
 
         QString groupFile;
+
+        quint64 localFirst = 0;
+
+        quint64 localLast  = 0;
+
+        quint64 remoteFirst = 0;
+
+        quint64 remoteLast = 0;
 
         quint64 numLocalArticles = 0;
 
