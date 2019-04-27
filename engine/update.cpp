@@ -681,8 +681,19 @@ bool Update::HasProgress() const
 
 float Update::GetProgress() const
 {
+    // it's possible that the local first is actually
+    // smaller than the remote first. this can happen when the
+    // articles become too old and the server doesn't keep them around.
+    // then when this happens is that our local number of articles
+    // will actually exceed the number of articles on the remote
+    // and this will throw off the progress computation.
+    // if this happens we clip the local article range
+    // and consider only the newest articles in the progress computation.
+    // see issue #103
+    const auto local_first = std::max(local_first_, remote_first_);
+
     const auto remote_articles = remote_last_ - remote_first_ + 1;
-    const auto local_articles = local_last_ - local_first_ + 1;
+    const auto local_articles = local_last_ - local_first + 1;
     if (remote_articles == 0)
         return 100.0f;
 

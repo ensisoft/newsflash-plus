@@ -677,21 +677,35 @@ void NewsGroup::newHeaderInfoAvailable(const app::HeaderUpdateInfo& info)
 {
     const QString& file = info.groupFile;
     const QString& name = info.groupName;
-    const auto numRemote = info.numRemoteArticles;
-    const auto numLocal  = info.numLocalArticles;
+
+    // it's possible that the local first is actually
+    // smaller than the remote first. this can happen when the
+    // articles become too old and the server doesn't keep them around.
+    // then when this happens is that our local number of articles
+    // will actually exceed the number of articles on the remote
+    // and this will throw off the progress computation.
+    // if this happens we clip the local article range
+    // and consider only the newest articles in the progress computation.
+    // see issue #103
+    const auto local_first  = std::max(info.localFirst, info.remoteFirst);
+    const auto local_last   = info.localLast;
+    const auto remote_first = info.remoteFirst;
+    const auto remote_last  = info.remoteLast;
+    const auto num_local_articles = local_last - local_first + 1;
+    const auto num_remote_articles = remote_last - remote_first + 1;
 
     if (file.indexOf(app::joinPath(path_, name_)) != 0)
         return;
 
     const auto max = std::numeric_limits<int>::max();
-    if(numRemote < max)
+    if(num_local_articles < max && num_remote_articles < max)
     {
-        ui_.progressBar->setMaximum(numRemote);
-        ui_.progressBar->setValue(numLocal);
+        ui_.progressBar->setMaximum(num_remote_articles);
+        ui_.progressBar->setValue(num_local_articles);
     }
     else
     {
-        const auto d = double(numLocal) / double(numRemote);
+        const auto d = double(num_remote_articles) / double(num_local_articles);
         ui_.progressBar->setMaximum(max);
         ui_.progressBar->setValue(d * max);
     }
