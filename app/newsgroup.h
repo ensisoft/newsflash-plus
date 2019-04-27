@@ -121,19 +121,19 @@ namespace app
 
         void setTypeFilter(FileType type, bool onOff)
         {
-            show_these_filetypes_.set(type, onOff);
+            mShowTheseFileTypes.set(type, onOff);
         }
         void setFlagFilter(FileFlag flag, bool onOff)
         {
-            show_these_fileflags_.set(flag, onOff);
+            mShowTheseFileFlags.set(flag, onOff);
         }
 
         void setSizeFilter(quint64 minSize, quint64 maxSize)
         {
             DEBUG("Size filter %1 - %2", app::size{minSize}, app::size{maxSize});
 
-            min_show_file_size_ = minSize;
-            max_show_file_size_ = maxSize;
+            mMinShowFileSize = minSize;
+            mMaxShowFileSize = maxSize;
         }
 
         void setDateFilter(quint32 minDays, quint32 maxDays)
@@ -144,16 +144,15 @@ namespace app
 
             DEBUG("Date filter %1 - %2", app::age{beg}, app::age{end});
 
-            min_show_pubdate_ = end.toTime_t();
-            max_show_pubdate_ = beg.toTime_t();
+            mMinShowPubdate = end.toTime_t();
+            mMaxShowPubdate = beg.toTime_t();
         }
 
         void setStringFilter(const QString& str, bool case_sensitive)
         {
-            match_string_wide_ = str;
-            string_matcher_case_sensitive_ = case_sensitive;
-            string_matcher_utf8_.reset(toUtf8(str), string_matcher_case_sensitive_);
-
+            mFilterString = str;
+            mFilterStringUtf8.reset(toUtf8(str), case_sensitive);
+            mIsFilterStringCaseSensitive = case_sensitive;
         }
 
         void applyFilter()
@@ -162,7 +161,7 @@ namespace app
             //CALLGRIND_ZERO_STATS;
 
             QAbstractTableModel::beginResetModel();
-            index_.filter();
+            mIndex.filter();
             QAbstractTableModel::reset();
             QAbstractTableModel::endResetModel();
 
@@ -174,7 +173,7 @@ namespace app
 
         MediaType findMediaType() const
         {
-            return app::findMediaType(name_);
+            return app::findMediaType(mGroupName);
         }
 
         static
@@ -190,7 +189,7 @@ namespace app
         void loadData(Block& block, bool guiLoad, const void* snapshot = nullptr);
 
         bool showDeleted() const {
-            return show_these_fileflags_.test(newsflash::fileflag::deleted);
+            return mShowTheseFileFlags.test(newsflash::fileflag::deleted);
         }
 
         using catalog = newsflash::catalog<newsflash::filemap>;
@@ -202,39 +201,39 @@ namespace app
         };
 
         struct Block {
-            std::size_t prevSize;
-            std::size_t prevOffset;
-            std::size_t index;
+            std::size_t prevSize   = 0;
+            std::size_t prevOffset = 0;
+            std::size_t index = 0;
             QString file;
-            State state;
-            bool purge;
+            State state = State::UnLoaded;
+            bool purge  = false;
         };
 
         class VolumeList;
-        std::unique_ptr<VolumeList> volumeList_;
+        std::unique_ptr<VolumeList> mVolumeList;
 
-        std::deque<Block> blocks_;
-        std::deque<catalog> catalogs_;
-        index index_;
-        idlist idlist_;
+        std::deque<Block> mLoadedBlocks;
+        std::deque<catalog> mCatalogs;
+        index mIndex;
+        idlist mArticleNumberList;
 
     private:
-        quint32 numSelected_;
-        quint32 task_;
-        QString path_;
-        QString name_;
+        quint32 mNumCurrentlySelectedItems = 0;
+        quint32 mCurrentUpdateTaskId = 0;
+        QString mGroupPath;
+        QString mGroupName;
     private:
         // filtering options
-        newsflash::bitflag<FileType, std::uint16_t> show_these_filetypes_;
-        newsflash::bitflag<FileFlag, std::uint16_t> show_these_fileflags_;
-        std::uint64_t min_show_file_size_;
-        std::uint64_t max_show_file_size_;
-        std::time_t   min_show_pubdate_;
-        std::time_t   max_show_pubdate_;
+        newsflash::bitflag<FileType, std::uint16_t> mShowTheseFileTypes;
+        newsflash::bitflag<FileFlag, std::uint16_t> mShowTheseFileFlags;
+        std::uint64_t mMinShowFileSize = 0;
+        std::uint64_t mMaxShowFileSize = 0;
+        std::time_t   mMinShowPubdate  = 0;
+        std::time_t   mMaxShowPubdate  = 0;
 
-        QString      match_string_wide_;
-        str::string_matcher<> string_matcher_utf8_;
-        bool string_matcher_case_sensitive_;
+        QString mFilterString;
+        bool mIsFilterStringCaseSensitive = false;
+        str::string_matcher<> mFilterStringUtf8;
 
     };
 } // app

@@ -185,6 +185,12 @@ void NewsGroup::addActions(QMenu& menu)
 
 void NewsGroup::loadState()
 {
+    // set the default sorting to Ascending age, i.e newest items at the
+    // top of the list and older items at the bottom.
+    // loadTableLayout below will restore the previous sorting order
+    // that was used by the user.
+    ui_.tableView->sortByColumn((int)app::NewsGroup::Columns::Age, Qt::AscendingOrder);
+
     const auto& settingsPath = app::joinPath(path_, name_);
     const auto& settingsFile = app::joinPath(settingsPath, name_ + ".json");
     if (!QFile::exists(settingsFile))
@@ -198,14 +204,7 @@ void NewsGroup::loadState()
         return;
     }
 
-    ui_.tableView->setSortingEnabled(false);
-
     app::loadTableLayout("newsgroup", ui_.tableView, settings);
-
-    ui_.tableView->setSortingEnabled(true);
-    ui_.tableView->sortByColumn((int)app::NewsGroup::Columns::Age,
-        Qt::DescendingOrder);
-
     app::loadState("newsgroup", ui_.actionShowNone, settings);
     app::loadState("newsgroup", ui_.actionShowAudio, settings);
     app::loadState("newsgroup", ui_.actionShowVideo, settings);

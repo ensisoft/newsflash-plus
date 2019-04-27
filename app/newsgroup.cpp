@@ -77,7 +77,7 @@ class NewsGroup::VolumeList : public QAbstractTableModel
 {
 public:
     VolumeList(std::deque<Block>& blocks,
-        std::deque<catalog>& catalogs) : blocks_(blocks), catalogs_(catalogs)
+        std::deque<catalog>& catalogs) : mLoadedBlocks(blocks), mCatalogs(catalogs)
     {}
     virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const override
     {
@@ -101,7 +101,7 @@ public:
     {
         const auto row   = index.row();
         const auto col   = (Columns)index.column();
-        const auto& item = blocks_[row];
+        const auto& item = mLoadedBlocks[row];
 
         if (role == Qt::DisplayRole)
         {
@@ -113,7 +113,7 @@ public:
                 case Columns::Usage:
                     if (item.state == State::Loaded)
                     {
-                        const auto& db = catalogs_[item.index];
+                        const auto& db = mCatalogs[item.index];
                         const auto maxItems = (double)newsflash::CATALOG_SIZE;
                         const auto numItems = (double)db.size();
                         const auto used     = (numItems / maxItems) * 100.0;
@@ -124,7 +124,7 @@ public:
                 case Columns::Ages:
                     if (item.state == State::Loaded)
                     {
-                        const auto& db = catalogs_[item.index];
+                        const auto& db = mCatalogs[item.index];
                         const auto first = QDateTime::fromTime_t(db.first_date());
                         const auto last  = QDateTime::fromTime_t(db.last_date());
                         const auto now   = QDateTime::currentDateTime();
@@ -158,7 +158,7 @@ public:
 
     virtual int rowCount(const QModelIndex& index) const override
     {
-        return (int)catalogs_.size();
+        return (int)mCatalogs.size();
     }
     virtual int columnCount(const QModelIndex& index) const override
     {
@@ -167,7 +167,7 @@ public:
 
     void updateBlock(std::size_t index)
     {
-        BOUNDSCHECK(catalogs_, index);
+        BOUNDSCHECK(mCatalogs, index);
         auto first = QAbstractTableModel::index(index, 0);
         auto last  = QAbstractTableModel::index(index, (int)Columns::LAST);
         emit dataChanged(first, last);
@@ -201,11 +201,11 @@ private:
     };
 
 private:
-    std::deque<Block>& blocks_;
-    std::deque<catalog>& catalogs_;
+    std::deque<Block>& mLoadedBlocks;
+    std::deque<catalog>& mCatalogs;
 };
 
-NewsGroup::NewsGroup() : task_(0)
+NewsGroup::NewsGroup()
 {
     DEBUG("NewsGroup created");
 
@@ -217,66 +217,66 @@ NewsGroup::NewsGroup() : task_(0)
         this, SLOT(actionKilled(quint32)));
 
     // loader callback
-    index_.on_load = [this] (std::size_t key, std::size_t idx) {
-        auto& c = catalogs_[key];
+    mIndex.on_load = [this] (std::size_t key, std::size_t idx) {
+        auto& c = mCatalogs[key];
         return c.load(catalog::index_t{idx});
     };
-    index_.on_filter = [this](const Article& article) {
-        if (!show_these_filetypes_.test(article.type()))
+    mIndex.on_filter = [this](const Article& article) {
+        if (!mShowTheseFileTypes.test(article.type()))
             return false;
 
         const auto bits = article.bits();
-        if (!show_these_fileflags_.test(FileFlag::broken) &&
+        if (!mShowTheseFileFlags.test(FileFlag::broken) &&
             bits.test(FileFlag::broken))
             return false;
-        if (!show_these_fileflags_.test(FileFlag::deleted) &&
+        if (!mShowTheseFileFlags.test(FileFlag::deleted) &&
             bits.test(FileFlag::deleted))
             return false;
 
         const auto date = article.pubdate();
-        if (date < min_show_pubdate_ || date > max_show_pubdate_)
+        if (date < mMinShowPubdate|| date > mMaxShowPubdate)
             return false;
 
         const auto size = article.bytes();
-        if (size < min_show_file_size_ || size > max_show_file_size_)
+        if (size < mMinShowFileSize || size > mMaxShowFileSize)
             return false;
 
-        if (string_matcher_utf8_.empty())
+        if (mFilterStringUtf8.empty())
             return true;
 
         const auto& subject = article.subject();
-        if (article.is_utf8_enabled() && string_matcher_case_sensitive_)
-            return string_matcher_utf8_.search(subject.c_str(), subject.size());
+        if (article.is_utf8_enabled() && mIsFilterStringCaseSensitive)
+            return mFilterStringUtf8.search(subject.c_str(), subject.size());
 
         const auto& wide = toString(subject, article.is_utf8_enabled());
-        if (string_matcher_case_sensitive_)
-            return (bool)wide.contains(match_string_wide_, Qt::CaseSensitive);
+        if (mIsFilterStringCaseSensitive)
+            return (bool)wide.contains(mFilterString, Qt::CaseSensitive);
 
-        return (bool)wide.contains(match_string_wide_, Qt::CaseInsensitive);
+        return (bool)wide.contains(mFilterString, Qt::CaseInsensitive);
 
     };
-    numSelected_ = 0;
-    show_these_filetypes_.set_from_value(~0);
-    show_these_fileflags_.set_from_value(~0);
-    min_show_file_size_ = std::numeric_limits<std::uint64_t>::min();
-    max_show_file_size_ = std::numeric_limits<std::uint64_t>::max();
-    min_show_pubdate_   = std::numeric_limits<std::time_t>::min();
-    max_show_pubdate_   = std::numeric_limits<std::time_t>::max();
+    mNumCurrentlySelectedItems = 0;
+    mShowTheseFileTypes.set_from_value(~0);
+    mShowTheseFileFlags.set_from_value(~0);
+    mMinShowFileSize = std::numeric_limits<std::uint64_t>::min();
+    mMaxShowFileSize = std::numeric_limits<std::uint64_t>::max();
+    mMinShowPubdate  = std::numeric_limits<std::time_t>::min();
+    mMaxShowPubdate  = std::numeric_limits<std::time_t>::max();
 }
 
 NewsGroup::~NewsGroup()
 {
-    if (task_)
+    if (mCurrentUpdateTaskId)
     {
-        g_engine->killTaskById(task_);
+        g_engine->killTaskById(mCurrentUpdateTaskId);
     }
 
-    for (auto& cat : catalogs_)
+    for (auto& cat : mCatalogs)
     {
         cat.close();
     }
 
-    for (const auto& b : blocks_)
+    for (const auto& b : mLoadedBlocks)
     {
         if (!b.purge)
             continue;
@@ -353,7 +353,7 @@ QVariant NewsGroup::data(const QModelIndex& index, int role) const
 {
     const auto row   = (std::size_t)index.row();
     const auto col   = (Columns)index.column();
-    const auto& item = index_[row];
+    const auto& item = mIndex[row];
 
     if (role == Qt::DisplayRole)
     {
@@ -452,7 +452,7 @@ QVariant NewsGroup::data(const QModelIndex& index, int role) const
 
 int NewsGroup::rowCount(const QModelIndex&) const
 {
-    return (int)index_.size();
+    return (int)mIndex.size();
 }
 
 int NewsGroup::columnCount(const QModelIndex&) const
@@ -470,36 +470,47 @@ void NewsGroup::sort(int column, Qt::SortOrder order)
         index::sortdir::ascending :
         index::sortdir::descending;
 
-    DEBUG("Index has %1 articles", index_.size());
+    DEBUG("Index has %1 articles", mIndex.size());
 
     switch ((Columns)column)
     {
         case Columns::Type:
-            index_.sort(index::sorting::sort_by_type, o);
+            mIndex.sort(index::sorting::sort_by_type, o);
             break;
 
         case Columns::BrokenFlag:
-            index_.sort(index::sorting::sort_by_broken, o);
+            mIndex.sort(index::sorting::sort_by_broken, o);
             break;
 
         case Columns::DownloadFlag:
-            index_.sort(index::sorting::sort_by_downloaded, o);
+            mIndex.sort(index::sorting::sort_by_downloaded, o);
             break;
 
         case Columns::BookmarkFlag:
-            index_.sort(index::sorting::sort_by_bookmarked, o);
+            mIndex.sort(index::sorting::sort_by_bookmarked, o);
             break;
 
         case Columns::Age:
-            index_.sort(index::sorting::sort_by_date, o);
+            {
+                // age is a bit special since the data is just integers and
+                // newer items mean bigger value. thus sorting by ascending order
+                // produces an order where the oldest items are first but the user
+                // is shown a value of "age" which is larger. This is a bit counter
+                // intuitive in the UI level even if completely correct in the data
+                // structure level.
+                const auto age_sorting_is_special = (order == Qt::AscendingOrder)
+                    ? index::sortdir::descending
+                    : index::sortdir::ascending;
+                mIndex.sort(index::sorting::sort_by_date, age_sorting_is_special);
+            }
             break;
 
         case Columns::Subject:
-            index_.sort(index::sorting::sort_by_subject, o);
+            mIndex.sort(index::sorting::sort_by_subject, o);
             break;
 
         case Columns::Size:
-            index_.sort(index::sorting::sort_by_size, o);
+            mIndex.sort(index::sorting::sort_by_size, o);
             break;
 
         case Columns::LAST: Q_ASSERT(0); break;
@@ -513,10 +524,10 @@ void NewsGroup::sort(int column, Qt::SortOrder order)
 bool NewsGroup::init(QString path, QString name)
 {
     DEBUG("Init data for %1 from %2", name, path);
-    path_ = path;
-    name_ = name;
+    mGroupPath = path;
+    mGroupName = name;
 
-    const auto& dataPath = joinPath(path_, name_);
+    const auto& dataPath = joinPath(mGroupPath, mGroupName);
 
     // data is in .vol files with the file number indicating data ordering.
     // i.e. the bigger the index in the datafile name the newer the data.
@@ -535,10 +546,10 @@ bool NewsGroup::init(QString path, QString name)
         block.prevSize   = 0;
         block.file       = joinPath(dataPath, file);
         block.state      = State::UnLoaded;
-        block.index      = catalogs_.size();
+        block.index      = mCatalogs.size();
         block.purge      = false;
-        blocks_.push_back(block);
-        catalogs_.emplace_back();
+        mLoadedBlocks.push_back(block);
+        mCatalogs.emplace_back();
     }
 
     return true;
@@ -548,25 +559,25 @@ void NewsGroup::load(std::size_t blockIndex)
 {
     DEBUG("Load block %1", blockIndex);
 
-    BOUNDSCHECK(blocks_, blockIndex);
-    auto& block = blocks_[blockIndex];
+    BOUNDSCHECK(mLoadedBlocks, blockIndex);
+    auto& block = mLoadedBlocks[blockIndex];
     if (block.state == State::Loaded)
         return;
 
-    const auto& path = joinPath(path_, name_);
+    const auto& path = joinPath(mGroupPath, mGroupName);
     const auto& file = joinPath(path, block.file);
     DEBUG("Loading headers from %1", file);
 
-    onLoadBegin(blockIndex, blocks_.size());
+    onLoadBegin(blockIndex, mLoadedBlocks.size());
 
     loadData(block, true);
 
     block.state = State::Loaded;
 
-    onLoadComplete(blockIndex, blocks_.size());
+    onLoadComplete(blockIndex, mLoadedBlocks.size());
 
-    if (volumeList_)
-        volumeList_->updateBlock(blockIndex);
+    if (mVolumeList)
+        mVolumeList->updateBlock(blockIndex);
 
     DEBUG("Loaded block %1", blockIndex);
 }
@@ -574,46 +585,46 @@ void NewsGroup::load(std::size_t blockIndex)
 void NewsGroup::load()
 {
     // find first available block that isn't loaded yet.
-    auto it = std::find_if(std::begin(blocks_), std::end(blocks_),
+    auto it = std::find_if(std::begin(mLoadedBlocks), std::end(mLoadedBlocks),
         [](const Block& block) {
             return block.state != State::Loaded;
         });
-    if (it == std::end(blocks_))
+    if (it == std::end(mLoadedBlocks))
         return;
 
-    auto index = std::distance(std::begin(blocks_), it);
+    auto index = std::distance(std::begin(mLoadedBlocks), it);
     load(index);
 }
 
 void NewsGroup::purge(std::size_t blockIndex)
 {
-    BOUNDSCHECK(blocks_, blockIndex);
+    BOUNDSCHECK(mLoadedBlocks, blockIndex);
 
-    auto& block = blocks_[blockIndex];
+    auto& block = mLoadedBlocks[blockIndex];
     block.purge = !block.purge;
 
-    if (volumeList_)
-        volumeList_->updateBlock(blockIndex);
+    if (mVolumeList)
+        mVolumeList->updateBlock(blockIndex);
 }
 
 
 void NewsGroup::refresh(quint32 account, QString path, QString name)
 {
-    Q_ASSERT(task_ == 0);
+    Q_ASSERT(mCurrentUpdateTaskId == 0);
 
     DEBUG("Refresh data for %1 in %2", name, path);
-    path_ = path;
-    name_ = name;
-    task_ = g_engine->retrieveHeaders(account, path, name);
+    mGroupPath = path;
+    mGroupName = name;
+    mCurrentUpdateTaskId = g_engine->retrieveHeaders(account, path, name);
 }
 
 void NewsGroup::stop()
 {
-    Q_ASSERT(task_ != 0);
+    Q_ASSERT(mCurrentUpdateTaskId != 0);
 
-    g_engine->killTaskById(task_);
+    g_engine->killTaskById(mCurrentUpdateTaskId);
 
-    task_ = 0;
+    mCurrentUpdateTaskId = 0;
 }
 
 void NewsGroup::killSelected(const QModelIndexList& list)
@@ -626,7 +637,7 @@ void NewsGroup::killSelected(const QModelIndexList& list)
         minRow = std::min(row, minRow);
         maxRow = std::max(row, maxRow);
 
-        auto article  = index_[row];
+        auto article  = mIndex[row];
         auto deletion = article.is_deleted();
         article.set_bits(FileFlag::deleted, !deletion);
         //article.save();
@@ -645,14 +656,14 @@ void NewsGroup::killSelected(const QModelIndexList& list)
 
 void NewsGroup::scanSelected(QModelIndexList& list)
 {
-    const auto numArticles = index_.size();
+    const auto numArticles = mIndex.size();
 
     for (std::size_t i=0; i<numArticles; ++i)
     {
-        if (index_.is_selected(i))
+        if (mIndex.is_selected(i))
         {
             list.append(QAbstractTableModel::index(i, 0));
-            if (list.size() == (int)numSelected_)
+            if (list.size() == (int)mNumCurrentlySelectedItems)
                 break;
         }
     }
@@ -660,13 +671,13 @@ void NewsGroup::scanSelected(QModelIndexList& list)
 
 void NewsGroup::select(const QModelIndexList& list, bool val)
 {
-    numSelected_ = 0;
+    mNumCurrentlySelectedItems = 0;
 
     for (const auto& i : list)
-        index_.select(i.row(), val);
+        mIndex.select(i.row(), val);
 
     if (val)
-        numSelected_ = list.size();
+        mNumCurrentlySelectedItems = list.size();
 }
 
 void NewsGroup::bookmark(const QModelIndexList& list)
@@ -678,7 +689,7 @@ void NewsGroup::bookmark(const QModelIndexList& list)
         const auto row = i.row();
         minRow = std::min(row, minRow);
         maxRow = std::max(row, maxRow);
-        auto article  = index_[row];
+        auto article  = mIndex[row];
         auto bookmark = article.is_bookmarked();
         article.set_bits(FileFlag::bookmarked, !bookmark);
     }
@@ -702,12 +713,12 @@ void NewsGroup::download(const QModelIndexList& list, quint32 acc, const QString
         minRow = std::min(row, minRow);
         maxRow = std::max(row, maxRow);
 
-        auto article = index_[row];
+        auto article = mIndex[row];
         NZBContent nzb;
         nzb.bytes   = article.bytes();
         nzb.subject = toString(article.subject(), article.is_utf8_enabled());
         nzb.poster  = toString(article.author(), article.is_utf8_enabled());
-        nzb.groups.push_back(narrow(name_));
+        nzb.groups.push_back(narrow(mGroupName));
 
         subjects.push_back(article.subject_as_string());
 
@@ -730,17 +741,17 @@ void NewsGroup::download(const QModelIndexList& list, quint32 acc, const QString
                 // we also need to reload the idlist. if the idb index
                 // is still out of bounds then we have a bug. god bless.
 
-                if (!idlist_.is_open() || index >= idlist_.size())
+                if (!mArticleNumberList.is_open() || index >= mArticleNumberList.size())
                 {
-                    const auto& path = joinPath(path_, name_);
-                    const auto& file = joinPath(path, name_ + ".idb");
+                    const auto& path = joinPath(mGroupPath, mGroupName);
+                    const auto& file = joinPath(path, mGroupName + ".idb");
 
-                    TaskLockGuard task_lock;
-                    task_lock.lock(task_);
-                    idlist_.open(narrow(file));
+                    TaskLockGuard mCurrentUpdateTaskIdlock;
+                    mCurrentUpdateTaskIdlock.lock(mCurrentUpdateTaskId);
+                    mArticleNumberList.open(narrow(file));
                 }
 
-                const std::int16_t segment = idlist_[index];
+                const std::int16_t segment = mArticleNumberList[index];
                 if (segment == 0)
                     continue;
                 const auto number = baseSegment + segment;
@@ -776,7 +787,7 @@ void NewsGroup::download(const QModelIndexList& list, quint32 acc, const QString
         name = app::suggestName(subjects);
         if (name.isEmpty())
         {
-            desc = toString("%1 file(s) from %2", list.size(), name_);
+            desc = toString("%1 file(s) from %2", list.size(), mGroupName);
         }
         else
         {
@@ -786,12 +797,12 @@ void NewsGroup::download(const QModelIndexList& list, quint32 acc, const QString
     }
 
     // want something like alt.binaries.foobar/some-file-batch-name
-    path = joinPath(name_, path);
+    path = joinPath(mGroupName, path);
 
     DEBUG("Suggest batch name '%1' and folder '%2'", name, path);
 
     Download download;
-    download.type     = app::findMediaType(name_);
+    download.type     = app::findMediaType(mGroupName);
     download.source   = MediaSource::Headers;
     download.account  = acc;
     download.basepath = folder;
@@ -811,7 +822,7 @@ quint64 NewsGroup::sumDataSizes(const QModelIndexList& list) const
     for (const auto& i : list)
     {
         const auto row = i.row();
-        const auto& article = index_[row];
+        const auto& article = mIndex[row];
         ret += article.bytes();
     }
     return ret;
@@ -826,7 +837,7 @@ QString NewsGroup::suggestName(const QModelIndexList& list) const
     for (const auto& i : list)
     {
         const auto row = i.row();
-        const auto& article = index_[row];
+        const auto& article = mIndex[row];
         subjectLines.push_back(article.subject_as_string());
     }
     if (subjectLines.size() == 1)
@@ -845,22 +856,22 @@ QString NewsGroup::suggestName(const QModelIndexList& list) const
 
 std::size_t NewsGroup::numItems() const
 {
-    return index_.real_size();
+    return mIndex.real_size();
 }
 
 std::size_t NewsGroup::numShown() const
 {
-    return index_.size();
+    return mIndex.size();
 }
 
 std::size_t NewsGroup::numBlocksAvail() const
 {
-    return catalogs_.size();
+    return mCatalogs.size();
 }
 
 std::size_t NewsGroup::numBlocksLoaded() const
 {
-    const auto num = std::count_if(std::begin(blocks_), std::end(blocks_),
+    const auto num = std::count_if(std::begin(mLoadedBlocks), std::end(mLoadedBlocks),
         [](const Block& block) {
             return block.state == State::Loaded;
         });
@@ -870,15 +881,15 @@ std::size_t NewsGroup::numBlocksLoaded() const
 
 NewsGroup::Article NewsGroup::getArticle(std::size_t i) const
 {
-    return index_[i];
+    return mIndex[i];
 }
 
 QAbstractTableModel* NewsGroup::getVolumeList()
 {
-    if (!volumeList_)
-        volumeList_.reset(new VolumeList(blocks_, catalogs_));
+    if (!mVolumeList)
+        mVolumeList.reset(new VolumeList(mLoadedBlocks, mCatalogs));
 
-    return volumeList_.get();
+    return mVolumeList.get();
 }
 
 void NewsGroup::deleteData(quint32 account, QString path, QString group)
@@ -904,14 +915,14 @@ void NewsGroup::newHeaderDataAvailable(const app::HeaderUpdateInfo& info)
     DEBUG("New headers available in %1", file);
 
     // see if this data file is of interest to us. if it isn't just ignore the signal
-    if (file.indexOf(joinPath(path_, name_)) != 0)
+    if (file.indexOf(joinPath(mGroupPath, mGroupName)) != 0)
         return;
 
-    auto it = std::find_if(std::begin(blocks_), std::end(blocks_),
+    auto it = std::find_if(std::begin(mLoadedBlocks), std::end(mLoadedBlocks),
         [&](const Block& block) {
             return block.file == file;
         });
-    if (it == std::end(blocks_))
+    if (it == std::end(mLoadedBlocks))
     {
         // the data is organized into files that are lexiographically comparable
         // i.e. bigger numbers means newer data. If we're reciving new headers
@@ -919,25 +930,25 @@ void NewsGroup::newHeaderDataAvailable(const app::HeaderUpdateInfo& info)
         // load it up on the ui. otherwise it's up to the user to specifically
         // request to load older data blocks.
         bool newData = true;
-        if (!blocks_.empty())
-            newData = file > blocks_[0].file;
+        if (!mLoadedBlocks.empty())
+            newData = file > mLoadedBlocks[0].file;
 
         Block block;
         block.prevSize   = 0;
         block.prevOffset = 0;
         block.state      = newData ? State::Loaded : State::UnLoaded;
         block.file       = file;
-        block.index      = catalogs_.size();
+        block.index      = mCatalogs.size();
         block.purge      = false;
-        catalogs_.emplace_back();
+        mCatalogs.emplace_back();
 
 #ifdef NEWSFLASH_DEBUG
-        ASSERT(std::is_sorted(std::begin(blocks_), std::end(blocks_),
+        ASSERT(std::is_sorted(std::begin(mLoadedBlocks), std::end(mLoadedBlocks),
             [&](const Block& lhs, const Block& rhs) {
                 return lhs.file > rhs.file;
             }));
 
-        for (const auto& block : blocks_)
+        for (const auto& block : mLoadedBlocks)
         {
             DEBUG("Block list: %1", block.file);
         }
@@ -945,15 +956,15 @@ void NewsGroup::newHeaderDataAvailable(const app::HeaderUpdateInfo& info)
 
         // descending order, since the larger the index in the filename
         // the newer the content.
-        it = std::lower_bound(std::begin(blocks_), std::end(blocks_), block,
+        it = std::lower_bound(std::begin(mLoadedBlocks), std::end(mLoadedBlocks), block,
             [&](const Block& lhs, const Block& rhs) {
                 return lhs.file > rhs.file;
             });
 
-        it = blocks_.insert(it, block);
+        it = mLoadedBlocks.insert(it, block);
 
-        if (volumeList_)
-            volumeList_->hardReset();
+        if (mVolumeList)
+            mVolumeList->hardReset();
     }
 
     auto& block = *it;
@@ -962,19 +973,19 @@ void NewsGroup::newHeaderDataAvailable(const app::HeaderUpdateInfo& info)
 
     loadData(block, false, info.snapshot);
 
-    if (volumeList_)
+    if (mVolumeList)
     {
-        auto index = std::distance(std::begin(blocks_), it);
-        volumeList_->updateBlock(index);
+        auto index = std::distance(std::begin(mLoadedBlocks), it);
+        mVolumeList->updateBlock(index);
     }
 
 #ifdef NEWSFLASH_DEBUG
-    ASSERT(std::is_sorted(std::begin(blocks_), std::end(blocks_),
+    ASSERT(std::is_sorted(std::begin(mLoadedBlocks), std::end(mLoadedBlocks),
         [&](const Block& lhs, const Block& rhs) {
             return lhs.file > rhs.file;
         }));
 
-    for (const auto& block : blocks_)
+    for (const auto& block : mLoadedBlocks)
     {
         DEBUG("Block list: %1", block.file);
     }
@@ -985,20 +996,20 @@ void NewsGroup::newHeaderDataAvailable(const app::HeaderUpdateInfo& info)
 
 void NewsGroup::updateCompleted(const app::HeaderInfo& info)
 {
-    if (info.groupName != name_ || info.groupPath != path_)
+    if (info.groupName != mGroupName || info.groupPath != mGroupPath)
         return;
 
-    task_ = 0;
+    mCurrentUpdateTaskId = 0;
 }
 
 void NewsGroup::actionKilled(quint32 action)
 {
-    //DEBUG("Action killed %1, my action %2", action, task_);
+    //DEBUG("Action killed %1, my action %2", action, mCurrentUpdateTaskId);
 
-    if (action == task_)
+    if (action == mCurrentUpdateTaskId)
     {
         DEBUG("Newsgroup update killed...");
-        task_ = 0;
+        mCurrentUpdateTaskId = 0;
         onKilled();
     }
 }
@@ -1011,7 +1022,7 @@ void NewsGroup::loadData(Block& block, bool guiLoad, const void* snapshot)
 
     if (guiLoad)
     {
-        task_lock.lock(task_);
+        task_lock.lock(mCurrentUpdateTaskId);
     }
 
     // resetting the model will make it forget the current selection.
@@ -1028,7 +1039,7 @@ void NewsGroup::loadData(Block& block, bool guiLoad, const void* snapshot)
     // and create a new Selection list for the GUI.
     // see scanSelected and select and the GUI code for modelReset
 
-    auto& db = catalogs_[block.index];
+    auto& db = mCatalogs[block.index];
     if (snapshot)
     {
         DEBUG("Opening catalog from snapshot");
@@ -1045,7 +1056,7 @@ void NewsGroup::loadData(Block& block, bool guiLoad, const void* snapshot)
     QAbstractTableModel::beginResetModel();
 
     DEBUG("Block %1 is at offset %2", block.file, block.prevOffset);
-    DEBUG("Index has %1 articles. Loading more...", index_.size());
+    DEBUG("Index has %1 articles. Loading more...", mIndex.size());
 
     std::size_t curItem  = 0;
     std::size_t numItems = db.size();
@@ -1057,7 +1068,7 @@ void NewsGroup::loadData(Block& block, bool guiLoad, const void* snapshot)
     {
         const auto& article  = *beg;
 
-        index_.insert(article, block.index, article.index());
+        mIndex.insert(article, block.index, article.index());
 
         if (guiLoad)
         {
@@ -1065,7 +1076,7 @@ void NewsGroup::loadData(Block& block, bool guiLoad, const void* snapshot)
         }
     }
 
-    DEBUG("Load done. Index now has %1 articles", index_.size());
+    DEBUG("Load done. Index now has %1 articles", mIndex.size());
 
     // save the database and the current offset
     // when new data is added to the same database
