@@ -216,6 +216,7 @@ void NewsGroup::loadState()
     app::loadState("newsgroup", ui_.actionShowOther, settings);
     app::loadState("newsgroup", ui_.actionShowBroken, settings);
     app::loadState("newsgroup", ui_.actionShowDeleted, settings);
+    app::loadState("newsgroup", ui_.chkRefreshAutomatically, settings);
 }
 
 void NewsGroup::saveState() const
@@ -233,6 +234,7 @@ void NewsGroup::saveState() const
     app::saveState("newsgroup", ui_.actionShowOther, settings);
     app::saveState("newsgroup", ui_.actionShowBroken, settings);
     app::saveState("newsgroup", ui_.actionShowDeleted, settings);
+    app::saveState("newsgroup", ui_.chkRefreshAutomatically, settings);
 
     const auto& settingsPath = app::joinPath(path_, name_);
     const auto& settingsFile = app::joinPath(settingsPath, name_ + ".json");
@@ -323,6 +325,10 @@ void NewsGroup::loadFirstData()
         else
         {
             model_.load(0);
+            const bool refresh_automatically = ui_.chkRefreshAutomatically->isChecked();
+            if (refresh_automatically) {
+                on_actionRefresh_triggered();
+            }
         }
     }
     catch (const std::exception& e)

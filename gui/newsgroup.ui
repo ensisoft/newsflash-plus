@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>679</width>
-    <height>356</height>
+    <width>842</width>
+    <height>519</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -29,18 +29,35 @@
      <property name="flat">
       <bool>false</bool>
      </property>
-     <layout class="QGridLayout" name="gridLayout_4">
-      <property name="bottomMargin">
-       <number>5</number>
-      </property>
-      <item row="3" column="0">
-       <widget class="QPushButton" name="btnLoadMore">
-        <property name="text">
-         <string>Load older headers ...</string>
-        </property>
-       </widget>
+     <layout class="QVBoxLayout" name="verticalLayout">
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout">
+        <item>
+         <widget class="QCheckBox" name="chkRefreshAutomatically">
+          <property name="text">
+           <string>Refresh group automatically on open</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="horizontalSpacer">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
       </item>
-      <item row="0" column="0">
+      <item>
        <widget class="QTableView" name="tableView">
         <property name="contextMenuPolicy">
          <enum>Qt::CustomContextMenu</enum>
@@ -89,7 +106,17 @@
         </attribute>
        </widget>
       </item>
-      <item row="2" column="0">
+      <item>
+       <widget class="QProgressBar" name="loader">
+        <property name="value">
+         <number>24</number>
+        </property>
+        <property name="textVisible">
+         <bool>false</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QProgressBar" name="progressBar">
         <property name="maximum">
          <number>99</number>
@@ -102,17 +129,20 @@
         </property>
        </widget>
       </item>
-      <item row="1" column="0">
-       <widget class="QProgressBar" name="loader">
-        <property name="value">
-         <number>24</number>
-        </property>
-        <property name="textVisible">
-         <bool>false</bool>
+      <item>
+       <widget class="QPushButton" name="btnLoadMore">
+        <property name="text">
+         <string>Load older headers ...</string>
         </property>
        </widget>
       </item>
      </layout>
+     <zorder>btnLoadMore</zorder>
+     <zorder>tableView</zorder>
+     <zorder>progressBar</zorder>
+     <zorder>loader</zorder>
+     <zorder>layoutWidget</zorder>
+     <zorder>chkRefreshAutomatically</zorder>
     </widget>
    </item>
   </layout>
@@ -324,6 +354,8 @@
  </widget>
  <tabstops>
   <tabstop>tableView</tabstop>
+  <tabstop>btnLoadMore</tabstop>
+  <tabstop>chkRefreshAutomatically</tabstop>
  </tabstops>
  <resources>
   <include location="resource.qrc"/>
