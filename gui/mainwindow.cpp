@@ -290,12 +290,12 @@ void MainWindow::loadState()
         if (!first_launch)
             continue;
 
-        MainWidget* search = m->openSearch();
+        MainWidget* search = MainWidget::createSearchWidget();
         if (search)
         {
             attachSessionWidget(search);
         }
-        MainWidget* rss = m->openRSSFeed();
+        MainWidget* rss = MainWidget::createRssWidget();
         if (rss)
         {
             attachSessionWidget(rss);
@@ -316,23 +316,17 @@ void MainWindow::loadState()
             continue;
         }
         const QString& module = settings.get("widget", "module").toString();
-        for (auto* m : mModules)
-        {
-            MainWidget* widget = nullptr;
-            // todo: fix the module name checking properly.
-            // should store the name of the module which created the widget
-            // and then see which one in the list matches.
-            if (module == "Search")
-                widget = m->openSearch();
-            else if (module == "RSS")
-                widget = m->openRSSFeed();
 
-            if (widget)
-            {
-                widget->loadState(settings);
-                attachSessionWidget(widget);
-                break;
-            }
+        MainWidget* widget = nullptr;
+        if (module == "Search")
+            widget = MainWidget::createSearchWidget();
+        else if (module == "RSS")
+            widget = MainWidget::createRssWidget();
+
+        if (widget)
+        {
+            widget->loadState(settings);
+            attachSessionWidget(widget);
         }
         QFile::remove(file);
     }
@@ -1149,30 +1143,20 @@ void MainWindow::on_actionFindClose_triggered()
 
 void MainWindow::on_actionSearch_triggered()
 {
-    // open first available search widget provided by some module
-    for (auto* m : mModules)
-    {
-        MainWidget* widget = m->openSearch();
-        if (widget)
-        {
-            attachSessionWidget(widget);
-            break;
-        }
-    }
+    MainWidget* widget = MainWidget::createSearchWidget();
+    if (!widget)
+        return;
+
+    attachSessionWidget(widget);
 }
 
 void MainWindow::on_actionRSS_triggered()
 {
-    // open first available RSS widget provided by some module
-    for (auto* m : mModules)
-    {
-        MainWidget* widget = m->openRSSFeed();
-        if (widget)
-        {
-            attachSessionWidget(widget);
-            break;
-        }
-    }
+    MainWidget* widget = MainWidget::createRssWidget();
+    if (!widget)
+        return;
+
+    attachSessionWidget(widget);
 }
 
 

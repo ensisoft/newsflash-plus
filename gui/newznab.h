@@ -24,6 +24,7 @@
 
 #include "newsflash/warnpush.h"
 #  include <QObject>
+#  include <QStringList>
 #  include "ui_newznab.h"
 #include "newsflash/warnpop.h"
 
@@ -62,13 +63,14 @@ namespace gui
         void on_listServers_currentRowChanged(int currentRow);
 
     private:
-        Ui::NewznabSettings ui_;
+        Ui::NewznabSettings mUi;
     private:
         friend class Newznab;
-        std::vector<app::newznab::Account> accounts_;
+        std::vector<app::newznab::Account> mAccounts;
     };
 
 
+    // manages the Newznab accounts.
     class Newznab : public QObject, public MainModule
     {
         Q_OBJECT
@@ -80,11 +82,11 @@ namespace gui
         // MainModule implementation
         virtual void saveState(app::Settings& settings) override;
         virtual void loadState(app::Settings& settings) override;
-        virtual MainWidget* openSearch() override;
-        virtual MainWidget* openRSSFeed() override;
         virtual SettingsWidget* getSettings() override;
         virtual void applySettings(SettingsWidget* gui) override;
         virtual void freeSettings(SettingsWidget* gui) override;
+
+        QStringList listAccounts() const;
 
         std::unique_ptr<app::Indexer> makeSearchEngine(const QString& hostName);
         std::unique_ptr<app::RSSFeed> makeRSSFeedEngine(const QString& hostName);
@@ -96,8 +98,8 @@ namespace gui
         const app::newznab::Account& findAccount(const QString& hostName) const;
 
     private:
-        std::vector<app::newznab::Account> accounts_;
-        app::MediaTypeFlag enabled_streams_;
+        std::vector<app::newznab::Account> mAccounts;
+        app::MediaTypeFlag mEnabledStreams;
     };
 
 } // gui

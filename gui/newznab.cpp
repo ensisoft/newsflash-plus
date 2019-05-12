@@ -34,21 +34,21 @@
 namespace gui
 {
 
-NewznabSettings::NewznabSettings(std::vector<app::newznab::Account> accounts) : accounts_(std::move(accounts))
+NewznabSettings::NewznabSettings(std::vector<app::newznab::Account> accounts) : mAccounts(std::move(accounts))
 {
-    ui_.setupUi(this);
-    ui_.btnDel->setEnabled(false);
-    ui_.btnEdit->setEnabled(false);
+    mUi.setupUi(this);
+    mUi.btnDel->setEnabled(false);
+    mUi.btnEdit->setEnabled(false);
 
-    ui_.listServers->blockSignals(true);
-    for (const auto& acc : accounts_)
+    mUi.listServers->blockSignals(true);
+    for (const auto& acc : mAccounts)
     {
         auto* item = new QListWidgetItem();
         item->setIcon(QIcon("icons:ico_accounts.png"));
         item->setText(acc.apiurl);
-        ui_.listServers->addItem(item);
+        mUi.listServers->addItem(item);
     }
-    ui_.listServers->blockSignals(false);
+    mUi.listServers->blockSignals(false);
 
 
     on_listServers_currentRowChanged(-1);
@@ -69,17 +69,17 @@ void NewznabSettings::on_btnImport_clicked()
     DlgImport dlg(this, accounts);
     dlg.exec();
 
-    ui_.listServers->blockSignals(true);
+    mUi.listServers->blockSignals(true);
     for (const auto& acc : accounts)
     {
-        accounts_.push_back(acc);
+        mAccounts.push_back(acc);
 
         auto* item = new QListWidgetItem();
         item->setIcon(QIcon("icons:ico_accounts.png"));
         item->setText(acc.apiurl);
-        ui_.listServers->addItem(item);
+        mUi.listServers->addItem(item);
     }
-    ui_.listServers->blockSignals(false);
+    mUi.listServers->blockSignals(false);
 }
 
 void NewznabSettings::on_btnAdd_clicked()
@@ -93,48 +93,48 @@ void NewznabSettings::on_btnAdd_clicked()
     QListWidgetItem* item = new QListWidgetItem();
     item->setIcon(QIcon("icons:ico_accounts.png"));
     item->setText(acc.apiurl);
-    ui_.listServers->addItem(item);
+    mUi.listServers->addItem(item);
 
-    accounts_.push_back(acc);
+    mAccounts.push_back(acc);
 }
 
 void NewznabSettings::on_btnDel_clicked()
 {
-    const auto row = ui_.listServers->currentRow();
+    const auto row = mUi.listServers->currentRow();
     Q_ASSERT(row != -1);
 
-    const auto item = ui_.listServers->takeItem(row);
+    const auto item = mUi.listServers->takeItem(row);
     delete item;
 
-    auto it = std::begin(accounts_);
+    auto it = std::begin(mAccounts);
     std::advance(it, row);
-    accounts_.erase(it);
-    if (accounts_.empty())
+    mAccounts.erase(it);
+    if (mAccounts.empty())
     {
-        ui_.btnEdit->setEnabled(false);
-        ui_.btnDel->setEnabled(false);
+        mUi.btnEdit->setEnabled(false);
+        mUi.btnDel->setEnabled(false);
     }
 }
 
 void NewznabSettings::on_btnEdit_clicked()
 {
-    const auto row = ui_.listServers->currentRow();
+    const auto row = mUi.listServers->currentRow();
     Q_ASSERT(row != -1);
 
-    auto& acc = accounts_[row];
+    auto& acc = mAccounts[row];
     DlgNewznab dlg(this, acc);
     if (dlg.exec() == QDialog::Rejected)
         return;
 
-    QListWidgetItem* item = ui_.listServers->item(row);
+    QListWidgetItem* item = mUi.listServers->item(row);
     item->setText(acc.apiurl);
-    ui_.listServers->editItem(item);
+    mUi.listServers->editItem(item);
 }
 
 void NewznabSettings::on_listServers_currentRowChanged(int currentRow)
 {
-    ui_.btnDel->setEnabled(currentRow != -1);
-    ui_.btnEdit->setEnabled(currentRow != -1);
+    mUi.btnDel->setEnabled(currentRow != -1);
+    mUi.btnEdit->setEnabled(currentRow != -1);
 }
 
 Newznab::Newznab()
@@ -150,9 +150,9 @@ Newznab::~Newznab()
 void Newznab::saveState(app::Settings& settings)
 {
     QStringList list;
-    for (std::size_t i=0; i<accounts_.size(); ++i)
+    for (std::size_t i=0; i<mAccounts.size(); ++i)
     {
-        const auto& acc = accounts_[i];
+        const auto& acc = mAccounts[i];
         const auto key  = QString("newznab-account-%1").arg(i);
         settings.set(key, "apiurl", acc.apiurl);
         settings.set(key, "apikey", acc.apikey);
@@ -163,7 +163,7 @@ void Newznab::saveState(app::Settings& settings)
         list << key;
     }
     settings.set("newznab", "list", list);
-    settings.set("newznab", "enabled_streams", quint64(enabled_streams_.value()));
+    settings.set("newznab", "enabled_streams", quint64(mEnabledStreams.value()));
 }
 
 void Newznab::loadState(app::Settings& settings)
@@ -178,7 +178,7 @@ void Newznab::loadState(app::Settings& settings)
         acc.password = settings.get(key, "password").toString();
         acc.email    = settings.get(key, "email").toString();
         acc.userid   = settings.get(key, "userid").toString();
-        accounts_.push_back(acc);
+        mAccounts.push_back(acc);
     }
 
     using m = app::MediaType;
@@ -220,138 +220,110 @@ void Newznab::loadState(app::Settings& settings)
 
     streams = settings.get("newznab", "enabled_streams", streams);
 
-    enabled_streams_.set_from_value(streams);
-}
-
-MainWidget* Newznab::openSearch()
-{
-    Search* search = new Search(*this);
-    QObject::connect(this, SIGNAL(listUpdated(const QStringList&)),
-        search, SLOT(updateBackendList(const QStringList&)));
-
-    QStringList list;
-    for (const auto& acc : accounts_)
-        list << acc.apiurl;
-
-    search->updateBackendList(list);
-    return search;
-}
-
-MainWidget* Newznab::openRSSFeed()
-{
-    RSS* rss = new RSS(*this);
-    QObject::connect(this, SIGNAL(listUpdated(const QStringList&)),
-        rss, SLOT(updateBackendList(const QStringList&)));
-
-    QStringList list;
-    for (const auto& account : accounts_)
-        list << account.apiurl;
-
-    rss->updateBackendList(list);
-    return rss;
+    mEnabledStreams.set_from_value(streams);
 }
 
 SettingsWidget* Newznab::getSettings()
 {
-    auto* p = new NewznabSettings(accounts_);
-    auto& ui = p->ui_;
+    auto* p = new NewznabSettings(mAccounts);
+    auto& ui = p->mUi;
 
     using m = app::MediaType;
-    if (enabled_streams_.test(m::TvInt)) ui.chkTvInt->setChecked(true);
-    if (enabled_streams_.test(m::TvSD))  ui.chkTvSD->setChecked(true);
-    if (enabled_streams_.test(m::TvHD))  ui.chkTvHD->setChecked(true);
+    if (mEnabledStreams.test(m::TvInt)) ui.chkTvInt->setChecked(true);
+    if (mEnabledStreams.test(m::TvSD))  ui.chkTvSD->setChecked(true);
+    if (mEnabledStreams.test(m::TvHD))  ui.chkTvHD->setChecked(true);
 
-    if (enabled_streams_.test(m::AppsPC)) ui.chkComputerPC->setChecked(true);
-    if (enabled_streams_.test(m::AppsISO)) ui.chkComputerISO->setChecked(true);
-    if (enabled_streams_.test(m::AppsAndroid)) ui.chkComputerAndroid->setChecked(true);
-    if (enabled_streams_.test(m::AppsMac) || enabled_streams_.test(m::AppsIos))
+    if (mEnabledStreams.test(m::AppsPC)) ui.chkComputerPC->setChecked(true);
+    if (mEnabledStreams.test(m::AppsISO)) ui.chkComputerISO->setChecked(true);
+    if (mEnabledStreams.test(m::AppsAndroid)) ui.chkComputerAndroid->setChecked(true);
+    if (mEnabledStreams.test(m::AppsMac) || mEnabledStreams.test(m::AppsIos))
         ui.chkComputerMac->setChecked(true);
 
-    if (enabled_streams_.test(m::MusicMp3)) ui.chkMusicMP3->setChecked(true);
-    if (enabled_streams_.test(m::MusicVideo)) ui.chkMusicVideo->setChecked(true);
-    if (enabled_streams_.test(m::MusicLossless)) ui.chkMusicLosless->setChecked(true);
+    if (mEnabledStreams.test(m::MusicMp3)) ui.chkMusicMP3->setChecked(true);
+    if (mEnabledStreams.test(m::MusicVideo)) ui.chkMusicVideo->setChecked(true);
+    if (mEnabledStreams.test(m::MusicLossless)) ui.chkMusicLosless->setChecked(true);
 
-    if (enabled_streams_.test(m::MoviesInt)) ui.chkMoviesInt->setChecked(true);
-    if (enabled_streams_.test(m::MoviesSD)) ui.chkMoviesSD->setChecked(true);
-    if (enabled_streams_.test(m::MoviesHD)) ui.chkMoviesHD->setChecked(true);
-    if (enabled_streams_.test(m::MoviesWMV)) ui.chkMoviesWMV->setChecked(true);
+    if (mEnabledStreams.test(m::MoviesInt)) ui.chkMoviesInt->setChecked(true);
+    if (mEnabledStreams.test(m::MoviesSD)) ui.chkMoviesSD->setChecked(true);
+    if (mEnabledStreams.test(m::MoviesHD)) ui.chkMoviesHD->setChecked(true);
+    if (mEnabledStreams.test(m::MoviesWMV)) ui.chkMoviesWMV->setChecked(true);
 
-    if (enabled_streams_.test(m::GamesNDS) ||
-        enabled_streams_.test(m::GamesWii))
+    if (mEnabledStreams.test(m::GamesNDS) ||
+        mEnabledStreams.test(m::GamesWii))
         ui.chkConsoleNintendo->setChecked(true);
 
-    if (enabled_streams_.test(m::GamesPSP) ||
-        enabled_streams_.test(m::GamesPS2) ||
-        enabled_streams_.test(m::GamesPS3) ||
-        enabled_streams_.test(m::GamesPS4))
+    if (mEnabledStreams.test(m::GamesPSP) ||
+        mEnabledStreams.test(m::GamesPS2) ||
+        mEnabledStreams.test(m::GamesPS3) ||
+        mEnabledStreams.test(m::GamesPS4))
         ui.chkConsolePlaystation->setChecked(true);
 
-    if (enabled_streams_.test(m::GamesXbox) ||
-        enabled_streams_.test(m::GamesXbox360))
+    if (mEnabledStreams.test(m::GamesXbox) ||
+        mEnabledStreams.test(m::GamesXbox360))
         ui.chkConsoleXbox->setChecked(true);
 
-    if (enabled_streams_.test(m::AdultDVD)) ui.chkXXXDVD->setChecked(true);
-    if (enabled_streams_.test(m::AdultSD)) ui.chkXXXSD->setChecked(true);
-    if (enabled_streams_.test(m::AdultHD)) ui.chkXXXHD->setChecked(true);
+    if (mEnabledStreams.test(m::AdultDVD)) ui.chkXXXDVD->setChecked(true);
+    if (mEnabledStreams.test(m::AdultSD)) ui.chkXXXSD->setChecked(true);
+    if (mEnabledStreams.test(m::AdultHD)) ui.chkXXXHD->setChecked(true);
     return p;
 }
 
 void Newznab::applySettings(SettingsWidget* gui)
 {
     auto* p   = static_cast<NewznabSettings*>(gui);
-    auto& ui  = p->ui_;
-    accounts_ = std::move(p->accounts_);
+    auto& ui  = p->mUi;
+    mAccounts = std::move(p->mAccounts);
 
-    enabled_streams_.clear();
+    mEnabledStreams.clear();
 
     using m = app::MediaType;
 
-    if (ui.chkTvInt->isChecked()) enabled_streams_.set(m::TvInt);
-    if (ui.chkTvSD->isChecked()) enabled_streams_.set(m::TvSD);
-    if (ui.chkTvHD->isChecked()) enabled_streams_.set(m::TvHD);
+    if (ui.chkTvInt->isChecked()) mEnabledStreams.set(m::TvInt);
+    if (ui.chkTvSD->isChecked()) mEnabledStreams.set(m::TvSD);
+    if (ui.chkTvHD->isChecked()) mEnabledStreams.set(m::TvHD);
 
-    if (ui.chkComputerPC->isChecked()) enabled_streams_.set(m::AppsPC);
-    if (ui.chkComputerISO->isChecked()) enabled_streams_.set(m::AppsISO);
-    if (ui.chkComputerAndroid->isChecked()) enabled_streams_.set(m::AppsAndroid);
+    if (ui.chkComputerPC->isChecked()) mEnabledStreams.set(m::AppsPC);
+    if (ui.chkComputerISO->isChecked()) mEnabledStreams.set(m::AppsISO);
+    if (ui.chkComputerAndroid->isChecked()) mEnabledStreams.set(m::AppsAndroid);
     if (ui.chkComputerMac->isChecked()) {
-        enabled_streams_.set(m::AppsMac);
-        enabled_streams_.set(m::AppsIos);
+        mEnabledStreams.set(m::AppsMac);
+        mEnabledStreams.set(m::AppsIos);
     }
 
-    if (ui.chkMusicMP3->isChecked()) enabled_streams_.set(m::MusicMp3);
-    if (ui.chkMusicVideo->isChecked()) enabled_streams_.set(m::MusicVideo);
-    if (ui.chkMusicLosless->isChecked()) enabled_streams_.set(m::MusicLossless);
+    if (ui.chkMusicMP3->isChecked()) mEnabledStreams.set(m::MusicMp3);
+    if (ui.chkMusicVideo->isChecked()) mEnabledStreams.set(m::MusicVideo);
+    if (ui.chkMusicLosless->isChecked()) mEnabledStreams.set(m::MusicLossless);
 
-    if (ui.chkMoviesInt->isChecked()) enabled_streams_.set(m::MoviesInt);
-    if (ui.chkMoviesSD->isChecked()) enabled_streams_.set(m::MoviesSD);
-    if (ui.chkMoviesHD->isChecked()) enabled_streams_.set(m::MoviesHD);
-    if (ui.chkMoviesWMV->isChecked()) enabled_streams_.set(m::MoviesWMV);
+    if (ui.chkMoviesInt->isChecked()) mEnabledStreams.set(m::MoviesInt);
+    if (ui.chkMoviesSD->isChecked()) mEnabledStreams.set(m::MoviesSD);
+    if (ui.chkMoviesHD->isChecked()) mEnabledStreams.set(m::MoviesHD);
+    if (ui.chkMoviesWMV->isChecked()) mEnabledStreams.set(m::MoviesWMV);
 
     if (ui.chkConsoleNintendo->isChecked())
     {
-        enabled_streams_.set(m::GamesNDS);
-        enabled_streams_.set(m::GamesWii);
+        mEnabledStreams.set(m::GamesNDS);
+        mEnabledStreams.set(m::GamesWii);
     }
     if (ui.chkConsolePlaystation->isChecked())
     {
-        enabled_streams_.set(m::GamesPSP);
-        enabled_streams_.set(m::GamesPS2);
-        enabled_streams_.set(m::GamesPS3);
-        enabled_streams_.set(m::GamesPS4);
+        mEnabledStreams.set(m::GamesPSP);
+        mEnabledStreams.set(m::GamesPS2);
+        mEnabledStreams.set(m::GamesPS3);
+        mEnabledStreams.set(m::GamesPS4);
     }
     if (ui.chkConsoleXbox->isChecked())
     {
-        enabled_streams_.set(m::GamesXbox);
-        enabled_streams_.set(m::GamesXbox360);
+        mEnabledStreams.set(m::GamesXbox);
+        mEnabledStreams.set(m::GamesXbox360);
     }
 
-    if (ui.chkXXXDVD->isChecked()) enabled_streams_.set(m::AdultDVD);
-    if (ui.chkXXXHD->isChecked()) enabled_streams_.set(m::AdultHD);
-    if (ui.chkXXXSD->isChecked()) enabled_streams_.set(m::AdultSD);
+    if (ui.chkXXXDVD->isChecked()) mEnabledStreams.set(m::AdultDVD);
+    if (ui.chkXXXHD->isChecked()) mEnabledStreams.set(m::AdultHD);
+    if (ui.chkXXXSD->isChecked()) mEnabledStreams.set(m::AdultSD);
 
     // notify about change in the list of accounts.
     QStringList list;
-    for (const auto& acc : accounts_)
+    for (const auto& acc : mAccounts)
     {
         list << acc.apiurl;
     }
@@ -363,28 +335,37 @@ void Newznab::freeSettings(SettingsWidget* gui)
     delete gui;
 }
 
+QStringList Newznab::listAccounts() const
+{
+    QStringList list;
+    for (const auto& acc : mAccounts) {
+        list << acc.apiurl;
+    }
+    return list;
+}
+
 std::unique_ptr<app::Indexer> Newznab::makeSearchEngine(const QString& hostName)
 {
     const auto& account = findAccount(hostName);
 
-    return std::make_unique<app::newznab::Search>(account, enabled_streams_);
+    return std::make_unique<app::newznab::Search>(account, mEnabledStreams);
 }
 
 std::unique_ptr<app::RSSFeed> Newznab::makeRSSFeedEngine(const QString& hostName)
 {
     const auto& account = findAccount(hostName);
 
-    return std::make_unique<app::newznab::RSSFeed>(account, enabled_streams_);
+    return std::make_unique<app::newznab::RSSFeed>(account, mEnabledStreams);
 }
 
 
 const app::newznab::Account& Newznab::findAccount(const QString& apiurl) const
 {
-    const auto it = std::find_if(std::begin(accounts_), std::end(accounts_),
+    const auto it = std::find_if(std::begin(mAccounts), std::end(mAccounts),
         [&](const app::newznab::Account& a) {
             return a.apiurl == apiurl;
         });
-    ENDCHECK(accounts_, it);
+    ENDCHECK(mAccounts, it);
 
     return *it;
 }

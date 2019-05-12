@@ -28,6 +28,8 @@
 #  include <QObject>
 #include "newsflash/warnpop.h"
 
+#include <vector>
+
 class QMenu;
 class QToolBar;
 
@@ -37,8 +39,86 @@ namespace app {
 
 namespace gui
 {
+    class MainWidget;
     class SettingsWidget;
     class Finder;
+
+    enum class WidgetType {
+        Rss,
+        Search
+    };
+
+    namespace detail {
+        class WidgetFactoryBase
+        {
+        public:
+            virtual ~WidgetFactoryBase() = default;
+            WidgetFactoryBase(WidgetType type)
+              : mType(type)
+              {}
+            MainWidget* createWidget(WidgetType type) const
+            {
+                if (type != mType)
+                    return nullptr;
+                return createWidget();
+            }
+        protected:
+            virtual gui::MainWidget* createWidget() const = 0;
+        private:
+            const WidgetType mType;
+        };
+
+        // it should be possible to replace the widget factory templates
+        // below with a single widget factory taking variadic template arguments
+        // and packing them into a tuple and using std::apply (c++17) to
+        // pass the variables to the widget ctor. However that'd require
+        // c++17 which means having to upgrade the tool chain which is a
+        // lot of work. using the conventional / manual method for now.
+
+        template<typename WidgetT>
+        class WidgetFactory_arg0 : public WidgetFactoryBase
+        {
+        public:
+            WidgetFactory_arg0(WidgetType type)
+              : WidgetFactoryBase(type)
+            {}
+
+            virtual gui::MainWidget* createWidget() const override
+            { return new WidgetT(); }
+        private:
+        };
+        template<typename WidgetT, typename Arg0>
+        class WidgetFactory_arg1 : public WidgetFactoryBase
+        {
+        public:
+            WidgetFactory_arg1(WidgetType type, const Arg0& a)
+              : WidgetFactoryBase(type)
+              , mArg(a)
+            {}
+
+            virtual gui::MainWidget* createWidget() const override
+            { return new WidgetT(mArg); }
+        private:
+            const Arg0 mArg;
+        };
+        template<typename WidgetT, typename Arg0, typename Arg1>
+        class WidgetFactory_arg2 : public WidgetFactoryBase
+        {
+        public:
+            WidgetFactory_arg2(WidgetType type, const Arg0& a0, const Arg1& a1)
+              : WidgetFactoryBase(type)
+              , mArg0(a0)
+              , mArg1(a1)
+            {}
+
+            virtual gui::MainWidget* createWidget() const override
+            { return new WidgetT(mArg0, mArg1); }
+        private:
+            const Arg0 mArg0;
+            const Arg1 mArg1;
+        };
+
+    } // namespace
 
     // mainwidget objects sit in the mainwindow's main tab
     // and provides GUI and features to the application.
@@ -113,6 +193,45 @@ namespace gui
 
         virtual bool dropFile(const QString& name) { return false; }
 
+        static MainWidget* createSearchWidget()
+        {
+            const auto& WidgetFactories = GetWidgetFactories();
+            for (const auto* factory : WidgetFactories)
+            {
+                MainWidget* widget = factory->createWidget(WidgetType::Search);
+                if (widget)
+                    return widget;
+            }
+            return nullptr;
+        }
+        static MainWidget* createRssWidget()
+        {
+            const auto& WidgetFactories = GetWidgetFactories();
+            for (const auto* factory : WidgetFactories)
+            {
+                MainWidget* widget = factory->createWidget(WidgetType::Rss);
+                if (widget)
+                    return widget;
+            }
+            return nullptr;
+        }
+
+        template<typename T> static
+        void registerWidgetType(WidgetType type)
+        {
+            GetWidgetFactories().emplace_back(new detail::WidgetFactory_arg0<T>(type));
+        }
+        template<typename T, typename Arg0> static
+        void registerWidgetType(WidgetType type, const Arg0& a0)
+        {
+            GetWidgetFactories().emplace_back(new detail::WidgetFactory_arg1<T, Arg0>(type, a0));
+        }
+        template<typename T, typename Arg0, typename Arg1> static
+        void registerWidgetType(WidgetType type, const Arg0& a0, const Arg1& a1)
+        {
+            GetWidgetFactories().emplace_back(new detail::WidgetFactory_arg2<T, Arg0, Arg1>(type, a0, a1));
+        }
+
     signals:
         // request the widget to have it's toolbar updated.
         void updateMenu(MainWidget* self);
@@ -121,6 +240,11 @@ namespace gui
         void showSettings(const QString& tabName);
 
     private:
+        static std::vector<detail::WidgetFactoryBase*>& GetWidgetFactories()
+        {
+            static std::vector<detail::WidgetFactoryBase*> WidgetFactories;
+            return WidgetFactories;
+        }
     };
 
 } // gui

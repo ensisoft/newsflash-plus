@@ -78,6 +78,10 @@ RSS::RSS(Newznab& module) : mNewznab(module)
         mUi.actionRefresh->setEnabled(true);
     };
 
+    QObject::connect(&mNewznab, SIGNAL(listUpdated(const QStringList&)),
+        this, SLOT(updateBackendList(const QStringList&)));
+    updateBackendList(mNewznab.listAccounts());
+
     DEBUG("RSS gui created");
 }
 

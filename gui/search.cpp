@@ -130,6 +130,10 @@ Search::Search(Newznab& module) : mNewznab(module)
     QObject::connect(model, SIGNAL(selectionChanged(const QItemSelection&, const QItemSelection&)),
         this, SLOT(tableview_selectionChanged()));
 
+    QObject::connect(&mNewznab, SIGNAL(listUpdated(const QStringList&)),
+        this, SLOT(updateBackendList(const QStringList&)));
+    updateBackendList(mNewznab.listAccounts());
+
     auto* viewport = mUi.tableView->viewport();
     viewport->installEventFilter(this);
     viewport->setMouseTracking(true);
