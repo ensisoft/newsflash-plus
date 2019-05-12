@@ -513,9 +513,13 @@ MainWidget* MainWindow::getWidget(std::size_t i)
     return mWidgets[i];
 }
 
+// this function is invoked when another instance of
+// of Newsflash is started with some parameter. the parameter
+// is IPC'ed to this instance and the new instance exits.
+// also we're (ab)using this same functionality in case of drag & drop
 void MainWindow::messageReceived(const QString& message)
 {
-    QFileInfo info(message);
+    const QFileInfo info(message);
     if (!info.isFile() || !info.exists())
         return;
 
@@ -523,11 +527,37 @@ void MainWindow::messageReceived(const QString& message)
 
     for (auto* m : mModules)
     {
-        MainWidget* widget = m->dropFile(message);
-        if (widget)
+        if(m->dropFile(message))
+            return;
+    }
+    for (auto* w : mWidgets)
+    {
+        // check whether the widget is permanent or not
+        // because the expectation is that the permanent widget
+        // that consumes this event will be able to support
+        // a list of actions/drops in the UI
+        // if we also checked the temporary a single temporary/session
+        // widget would end up consuming all the subsequent URLs
+        // but instead we'd like to create a new session widget for
+        // each not yet handled drop.
+        const bool permanent = w->property("permanent").toBool();
+        if (permanent && w->dropFile(message))
         {
-            attachSessionWidget(widget);
-            break;
+            show(w);
+            focusWidget(w);
+            return;
+        }
+    }
+
+    // fallback here.
+    const QString& suffix = info.suffix();
+    if (suffix.toLower() == "nzb")
+    {
+        MainWidget* nzb = MainWidget::createNzbWidget();
+        if (nzb)
+        {
+            nzb->dropFile(message);
+            attachSessionWidget(nzb);
         }
     }
 }
@@ -729,34 +759,8 @@ void MainWindow::dropEvent(QDropEvent* event)
     for (int i=0; i<urls.size(); ++i)
     {
         const auto& name = urls[i].toLocalFile();
-        const auto& info = QFileInfo(name);
-        if (!info.isFile() || !info.exists())
-            continue;
 
-        DEBUG("processing %1 file", name);
-
-        for (auto* m : mModules)
-        {
-            MainWidget* widget = m->dropFile(name);
-            if (widget)
-            {
-                attachSessionWidget(widget);
-            }
-        }
-
-        for (size_t i=0; i<mWidgets.size(); ++i)
-        {
-            auto* widget = mWidgets[i];
-            if (widget->dropFile(name))
-            {
-                const bool permanent = widget->property("permanent").toBool();
-                if (permanent)
-                {
-                    show(i);
-                    focusWidget(widget);
-                }
-            }
-        }
+        messageReceived(name);
     }
 }
 

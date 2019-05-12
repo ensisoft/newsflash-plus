@@ -75,7 +75,9 @@ namespace gui
 
         virtual void freeSettings(SettingsWidget* gui) {}
 
-        virtual MainWidget* dropFile(const QString& name) { return nullptr; }
+        // try to process the file identifie by 'name' (includes path)
+        // returns true if the file (type) was supported and processed.
+        virtual bool dropFile(const QString& name) { return false; }
 
         virtual void updateRegistration(bool success) {};
     protected:

@@ -118,6 +118,11 @@ bool NZBFile::openFile(const QString& file)
     return true;
 }
 
+bool NZBFile::dropFile(const QString& file)
+{
+    return openFile(file);
+}
+
 bool NZBFile::isMatch(const QString& str, std::size_t index, bool caseSensitive)
 {
     const auto& item = mModel.getItem(index);

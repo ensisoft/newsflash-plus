@@ -30,7 +30,6 @@
 #include "dlgdragdrop.h"
 #include "mainwindow.h"
 #include "nzbcore.h"
-#include "nzbfile.h"
 #include "common.h"
 #include "app/settings.h"
 #include "app/debug.h"
@@ -220,11 +219,11 @@ void NZBCore::freeSettings(SettingsWidget* s)
     delete s;
 }
 
-MainWidget* NZBCore::dropFile(const QString& file)
+bool NZBCore::dropFile(const QString& file)
 {
     QFileInfo info(file);
     if (info.suffix() != "nzb")
-        return nullptr;
+        return false;
 
     DragDropAction action = m_action;
 
@@ -232,7 +231,7 @@ MainWidget* NZBCore::dropFile(const QString& file)
     {
         DlgDragDrop dlg(g_win, info.completeBaseName());
         if (dlg.exec() == QDialog::Rejected)
-            return nullptr;
+            return true;
 
         if (dlg.downloadContents())
             action = DragDropAction::DownloadContents;
@@ -243,26 +242,20 @@ MainWidget* NZBCore::dropFile(const QString& file)
             m_action = action;
     }
 
-    if (action == DragDropAction::ShowContents)
-    {
-        auto* widget = new NZBFile;
-        widget->openFile(file);
-        return widget;
-    }
-    else if (action == DragDropAction::DownloadContents)
-    {
-        const auto desc = info.completeBaseName();
-        const auto path = info.completeBaseName();
-        if (!passDuplicateCheck(g_win, desc))
-            return nullptr;
+    if (action != DragDropAction::DownloadContents)
+        return false;
 
-        const auto acc = selectAccount(g_win, info.completeBaseName());
-        if (acc == 0)
-            return nullptr;
+    const auto desc = info.completeBaseName();
+    const auto path = info.completeBaseName();
+    if (!passDuplicateCheck(g_win, desc))
+        return true;
 
-        m_module.downloadNzbContents(file, "", path, desc, acc);
-    }
-    return nullptr;
+    const auto acc = selectAccount(g_win, info.completeBaseName());
+    if (acc == 0)
+        return true;
+
+    m_module.downloadNzbContents(file, "", path, desc, acc);
+    return true;
 }
 
 } // gui

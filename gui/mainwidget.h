@@ -192,8 +192,16 @@ namespace gui
 
         virtual void updateRegistration(bool success) {};
 
+        // consume the given file on drag & drop action.
+        // returns true if the file was accepted or false
+        // if the file was not supported/accepted by this
+        // mainwidget instance.
         virtual bool dropFile(const QString& name) { return false; }
 
+        // open the given file.
+        // returns true if the file was supported and opened
+        // or false if the file was not supported by this
+        // mainwidget instance.
         virtual bool openFile(const QString& name) { return false; }
 
         static MainWidget* createWidget(WidgetType type)

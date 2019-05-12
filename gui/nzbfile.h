@@ -53,6 +53,7 @@ namespace gui
         virtual info getInformation() const override;
         virtual Finder* getFinder() override;
         virtual bool openFile(const QString& file) override;
+        virtual bool dropFile(const QString& file) override;
 
         // Finder
         virtual bool isMatch(const QString& str, std::size_t index, bool caseSensitive) override;

@@ -64,9 +64,7 @@ namespace gui
         virtual SettingsWidget* getSettings() override;
         virtual void applySettings(SettingsWidget* gui) override;
         virtual void freeSettings(SettingsWidget* s) override;
-
-        virtual MainWidget* dropFile(const QString& file) override;
-
+        virtual bool dropFile(const QString& file) override;
         virtual info getInformation() const override
         { return {"nzbcore", "nzb.html"}; }
 
