@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -86,7 +86,7 @@ void NZBSettings::on_btnDelWatchFolder_clicked()
         return;
 
     auto* item = ui_.watchList->takeItem(row);
-    ui_.watchList->removeItemWidget(item);    
+    ui_.watchList->removeItemWidget(item);
     delete item;
 
     if (ui_.watchList->count() == 0)
@@ -95,7 +95,7 @@ void NZBSettings::on_btnDelWatchFolder_clicked()
 
 NZBCore::NZBCore() : m_action(DragDropAction::AskForAction)
 {
-    m_module.PromptForFile = [this] (const QString& file) { 
+    m_module.PromptForFile = [this] (const QString& file) {
 
         QFileInfo info(file);
         const auto desc = info.completeBaseName();
@@ -115,7 +115,7 @@ NZBCore::NZBCore() : m_action(DragDropAction::AskForAction)
 
         if (m_module.downloadNzbContents(file, "", path, desc, acc))
             m_module.postProcess(file);
-        return true;        
+        return true;
     };
 }
 
@@ -134,9 +134,9 @@ void NZBCore::loadState(app::Settings& settings)
 
     m_module.setWatchFolders(list);
     m_module.setPostAction((app::NZBCore::PostAction)action);
-    m_module.watch(onOff);    
+    m_module.watch(onOff);
 }
-    
+
 void NZBCore::saveState(app::Settings& settings)
 {
     const auto& list  = m_module.getWatchFolders();
@@ -242,11 +242,11 @@ MainWidget* NZBCore::dropFile(const QString& file)
         if (dlg.rememberSetting())
             m_action = action;
     }
-    
+
     if (action == DragDropAction::ShowContents)
     {
         auto* widget = new NZBFile;
-        widget->open(file);
+        widget->openFile(file);
         return widget;
     }
     else if (action == DragDropAction::DownloadContents)
@@ -263,18 +263,6 @@ MainWidget* NZBCore::dropFile(const QString& file)
         m_module.downloadNzbContents(file, "", path, desc, acc);
     }
     return nullptr;
-}
-
-MainWidget* NZBCore::openFile(const QString& file)
-{
-    QFileInfo info(file);
-    if (info.suffix() != "nzb")
-        return nullptr;
-
-    auto* widget = new NZBFile;
-    widget->open(file);
-
-    return widget;
 }
 
 } // gui

@@ -52,6 +52,7 @@ namespace gui
         virtual void saveState(app::Settings& s) override;
         virtual info getInformation() const override;
         virtual Finder* getFinder() override;
+        virtual bool openFile(const QString& file) override;
 
         // Finder
         virtual bool isMatch(const QString& str, std::size_t index, bool caseSensitive) override;
@@ -60,12 +61,8 @@ namespace gui
         virtual std::size_t curItem() const override;
         virtual void setFound(std::size_t index) override;
 
-
-        // open and display the contents of the given NZB file.
-        void open(const QString& nzbfile);
-
         // open and display the contents of the given in memory buffer.
-        void open(const QByteArray& nzb, const QString& desc);
+        void openBuffer(const QByteArray& nzb, const QString& desc);
 
     private slots:
         void on_actionDownload_triggered();

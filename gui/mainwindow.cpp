@@ -1050,17 +1050,18 @@ void MainWindow::on_actionOpen_triggered()
     if (file.isEmpty())
         return;
 
-    mRecentLoadNZBPath = QFileInfo(file).absolutePath();
+    const QFileInfo info(file);
+    if (info.suffix() != "nzb")
+        return;
 
-    for (auto* m : mModules)
-    {
-        MainWidget* widget = m->openFile(file);
-        if (widget)
-        {
-            attachSessionWidget(widget);
-            break;
-        }
-    }
+    MainWidget* nzb = MainWidget::createNzbWidget();
+    if (!nzb)
+        return;
+    nzb->openFile(file);
+
+    mRecentLoadNZBPath = info.absolutePath();
+
+    attachSessionWidget(nzb);
 }
 
 void MainWindow::on_actionHelp_triggered()

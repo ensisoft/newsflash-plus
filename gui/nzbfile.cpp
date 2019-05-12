@@ -95,6 +95,29 @@ Finder* NZBFile::getFinder()
     return this;
 }
 
+bool NZBFile::openFile(const QString& file)
+{
+    mModel.on_ready = [&](bool success)
+    {
+        mUi.progressBar->setVisible(false);
+        mUi.actionDownload->setEnabled(success);
+        mUi.actionBrowse->setEnabled(success);
+        mUi.tableView->sortByColumn((int)app::NZBFile::Columns::File);
+        if (!success)
+        {
+            QMessageBox::critical(this, "An Error Occurred",
+                "The Newzbin file could not be loaded.");
+        }
+    };
+
+    if (mModel.load(file))
+    {
+        mUi.progressBar->setVisible(true);
+        mUi.grpBox->setTitle(file);
+    }
+    return true;
+}
+
 bool NZBFile::isMatch(const QString& str, std::size_t index, bool caseSensitive)
 {
     const auto& item = mModel.getItem(index);
@@ -137,29 +160,9 @@ void NZBFile::setFound(std::size_t index)
     mUi.tableView->scrollTo(i);
 }
 
-void NZBFile::open(const QString& nzbfile)
-{
-    mModel.on_ready = [&](bool success)
-    {
-        mUi.progressBar->setVisible(false);
-        mUi.actionDownload->setEnabled(success);
-        mUi.actionBrowse->setEnabled(success);
-        mUi.tableView->sortByColumn((int)app::NZBFile::Columns::File);
-        if (!success)
-        {
-            QMessageBox::critical(this, "An Error Occurred",
-                "The Newzbin file could not be loaded.");
-        }
-    };
 
-    if (mModel.load(nzbfile))
-    {
-        mUi.progressBar->setVisible(true);
-        mUi.grpBox->setTitle(nzbfile);
-    }
-}
 
-void NZBFile::open(const QByteArray& bytes, const QString& desc)
+void NZBFile::openBuffer(const QByteArray& bytes, const QString& desc)
 {
     mModel.on_ready = [&](bool success)
     {

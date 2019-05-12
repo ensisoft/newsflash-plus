@@ -406,7 +406,7 @@ void RSS::on_actionOpen_triggered()
         auto* view = new NZBFile(type);
         view->setProperty("parent-object", QVariant::fromValue(static_cast<QObject*>(this)));
         g_win->attachSessionWidget(view);
-        view->open(bytes, desc);
+        view->openBuffer(bytes, desc);
     };
 
     for (int i=0; i<indices.size(); ++i)

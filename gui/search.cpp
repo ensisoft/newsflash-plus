@@ -253,7 +253,7 @@ void Search::on_actionOpen_triggered()
                 auto* view = new NZBFile(type);
                 view->setProperty("parent-object", QVariant::fromValue(static_cast<QObject*>(this)));
                 g_win->attachSessionWidget(view);
-                view->open(bytes, desc);
+                view->openBuffer(bytes, desc);
             });
     }
     mUi.progress->setVisible(true);

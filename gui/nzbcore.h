@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -66,10 +66,9 @@ namespace gui
         virtual void freeSettings(SettingsWidget* s) override;
 
         virtual MainWidget* dropFile(const QString& file) override;
-        virtual MainWidget* openFile(const QString& file) override;
 
         virtual info getInformation() const override
-        { return {"nzbcore", "nzb.html"}; }        
+        { return {"nzbcore", "nzb.html"}; }
 
     private:
         enum class DragDropAction {

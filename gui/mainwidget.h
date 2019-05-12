@@ -44,6 +44,7 @@ namespace gui
     class Finder;
 
     enum class WidgetType {
+        Nzb,
         Rss,
         Search
     };
@@ -193,28 +194,28 @@ namespace gui
 
         virtual bool dropFile(const QString& name) { return false; }
 
+        virtual bool openFile(const QString& name) { return false; }
+
+        static MainWidget* createWidget(WidgetType type)
+        {
+            const auto& WidgetFactories = GetWidgetFactories();
+            for (const auto* factory : WidgetFactories)
+            {
+                MainWidget* widget = factory->createWidget(type);
+                if (widget)
+                    return widget;
+            }
+            return nullptr;
+        }
+
         static MainWidget* createSearchWidget()
-        {
-            const auto& WidgetFactories = GetWidgetFactories();
-            for (const auto* factory : WidgetFactories)
-            {
-                MainWidget* widget = factory->createWidget(WidgetType::Search);
-                if (widget)
-                    return widget;
-            }
-            return nullptr;
-        }
+        { return createWidget(WidgetType::Search); }
+
         static MainWidget* createRssWidget()
-        {
-            const auto& WidgetFactories = GetWidgetFactories();
-            for (const auto* factory : WidgetFactories)
-            {
-                MainWidget* widget = factory->createWidget(WidgetType::Rss);
-                if (widget)
-                    return widget;
-            }
-            return nullptr;
-        }
+        { return createWidget(WidgetType::Rss); }
+
+        static MainWidget* createNzbWidget()
+        { return createWidget(WidgetType::Nzb); }
 
         template<typename T> static
         void registerWidgetType(WidgetType type)

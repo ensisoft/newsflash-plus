@@ -63,6 +63,7 @@
 #include "smtpclient.h"
 #include "rss.h"
 #include "search.h"
+#include "nzbfile.h"
 #include "app/debug.h"
 #include "app/format.h"
 #include "app/distdir.h"
@@ -368,6 +369,7 @@ int run(QtSingleApplication& qtinstance)
        std::reference_wrapper<gui::Newznab>>(gui::WidgetType::Search, std::ref(newznab));
     gui::MainWidget::registerWidgetType<gui::RSS,
         std::reference_wrapper<gui::Newznab>>(gui::WidgetType::Rss, std::ref(newznab));
+    gui::MainWidget::registerWidgetType<gui::NZBFile>(gui::WidgetType::Nzb);
 
     // note that this order is currently a bit important
     // since the engine needs to load it's state before
