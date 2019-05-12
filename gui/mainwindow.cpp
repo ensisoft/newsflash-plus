@@ -317,11 +317,14 @@ void MainWindow::loadState()
         }
         const QString& module = settings.get("widget", "module").toString();
 
+        // todo: perhaps use Qt's QMetaType here to identify which
+        // widget type should be created.
         MainWidget* widget = nullptr;
         if (module == "Search")
             widget = MainWidget::createSearchWidget();
         else if (module == "RSS")
             widget = MainWidget::createRssWidget();
+        else widget = MainWidget::createGroupWidget();
 
         if (widget)
         {

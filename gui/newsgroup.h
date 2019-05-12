@@ -40,13 +40,17 @@ namespace gui
         Q_OBJECT
 
     public:
+        NewsGroup();
         NewsGroup(quint32 account, QString path, QString group);
        ~NewsGroup();
 
+        // MainWidget
         virtual void addActions(QMenu& menu) override;
         virtual void addActions(QToolBar& bar) override;
         virtual info getInformation() const override;
         virtual Finder* getFinder() override;
+        virtual void loadState(app::Settings& s) override;
+        virtual void saveState(app::Settings& s) override;
 
         // Finder
         virtual bool isMatch(const QString& str, std::size_t index, bool caseSensitive) override;
@@ -99,17 +103,17 @@ namespace gui
         void downloadSelected(const QString& folder);
 
     private:
-        Ui::NewsGroup ui_;
+        Ui::NewsGroup mUi;
     private:
-        app::NewsGroup model_;
+        app::NewsGroup mModel;
     private:
-        quint32 account_;
-        QString path_;
-        QString name_;
+        quint32 mAccountId = 0;
+        QString mGroupPath;
+        QString mGroupName;
     private:
-        DlgFilter::Params filter_;
+        DlgFilter::Params mFilterParams;
     private:
-        QModelIndexList selected_rows_;
-        QModelIndex     current_index_;
+        QModelIndexList mCurrentlySelectedRows;
+        QModelIndex     mCurrentIndex;
     };
 } // gui

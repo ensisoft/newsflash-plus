@@ -39,6 +39,7 @@
 #include "engine/logging.h"
 
 #include "qtsingleapplication/qtsingleapplication.h"
+#include "newsgroup.h"
 #include "mainwindow.h"
 #include "accounts.h"
 #include "newslist.h"
@@ -370,6 +371,7 @@ int run(QtSingleApplication& qtinstance)
     gui::MainWidget::registerWidgetType<gui::RSS,
         std::reference_wrapper<gui::Newznab>>(gui::WidgetType::Rss, std::ref(newznab));
     gui::MainWidget::registerWidgetType<gui::NZBFile>(gui::WidgetType::Nzb);
+    gui::MainWidget::registerWidgetType<gui::NewsGroup>(gui::WidgetType::Newsgroup);
 
     // note that this order is currently a bit important
     // since the engine needs to load it's state before

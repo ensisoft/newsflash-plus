@@ -55,87 +55,95 @@ namespace gui
 using FileType = app::NewsGroup::FileType;
 using FileFlag = app::NewsGroup::FileFlag;
 
-NewsGroup::NewsGroup(quint32 acc, QString path, QString name) : account_(acc), path_(path), name_(name)
+NewsGroup::NewsGroup()
 {
     using Cols = app::NewsGroup::Columns;
 
-    ui_.setupUi(this);
-    ui_.tableView->setModel(&model_);
-    ui_.grpView->setTitle(app::toString("%1 (%2 / %3)", name, app::count {0}, app::count{0}));
-    ui_.tableView->setColumnWidth((int)Cols::DownloadFlag, 32);
-    ui_.tableView->setColumnWidth((int)Cols::BrokenFlag, 32);
-    ui_.tableView->setColumnWidth((int)Cols::BookmarkFlag, 32);
-    ui_.tableView->installEventFilter(this);
-    ui_.progressBar->setVisible(false);
-    ui_.loader->setVisible(false);
-    ui_.actionRefresh->setShortcut(QKeySequence::Refresh);
-    ui_.actionStop->setEnabled(false);
-    ui_.actionDownload->setEnabled(false);
-    ui_.actionShowNone->setChecked(true);
-    ui_.actionShowAudio->setChecked(true);
-    ui_.actionShowVideo->setChecked(true);
-    ui_.actionShowImage->setChecked(true);
-    ui_.actionShowText->setChecked(true);
-    ui_.actionShowArchive->setChecked(true);
-    ui_.actionShowParity->setChecked(true);
-    ui_.actionShowDocument->setChecked(true);
-    ui_.actionShowOther->setChecked(true);
-    ui_.actionShowBroken->setChecked(true);
-    ui_.actionShowDeleted->setChecked(true);
+    mUi.setupUi(this);
+    mUi.tableView->setModel(&mModel);
+    mUi.tableView->setColumnWidth((int)Cols::DownloadFlag, 32);
+    mUi.tableView->setColumnWidth((int)Cols::BrokenFlag, 32);
+    mUi.tableView->setColumnWidth((int)Cols::BookmarkFlag, 32);
+    mUi.tableView->installEventFilter(this);
+    mUi.progressBar->setVisible(false);
+    mUi.loader->setVisible(false);
+    mUi.actionRefresh->setShortcut(QKeySequence::Refresh);
+    mUi.actionStop->setEnabled(false);
+    mUi.actionDownload->setEnabled(false);
+    mUi.actionShowNone->setChecked(true);
+    mUi.actionShowAudio->setChecked(true);
+    mUi.actionShowVideo->setChecked(true);
+    mUi.actionShowImage->setChecked(true);
+    mUi.actionShowText->setChecked(true);
+    mUi.actionShowArchive->setChecked(true);
+    mUi.actionShowParity->setChecked(true);
+    mUi.actionShowDocument->setChecked(true);
+    mUi.actionShowOther->setChecked(true);
+    mUi.actionShowBroken->setChecked(true);
+    mUi.actionShowDeleted->setChecked(true);
 
     QObject::connect(app::g_engine, SIGNAL(newHeaderInfoAvailable(const app::HeaderUpdateInfo&)),
         this, SLOT(newHeaderInfoAvailable(const app::HeaderUpdateInfo&)));
     QObject::connect(app::g_engine, SIGNAL(updateCompleted(const app::HeaderInfo&)),
         this, SLOT(updateCompleted(const app::HeaderInfo&)));
 
-    QObject::connect(&model_, SIGNAL(modelAboutToBeReset()),
+    QObject::connect(&mModel, SIGNAL(modelAboutToBeReset()),
         this, SLOT(modelBegReset()));
-    QObject::connect(&model_, SIGNAL(modelReset()),
+    QObject::connect(&mModel, SIGNAL(modelReset()),
         this, SLOT(modelEndReset()));
-    QObject::connect(&model_, SIGNAL(layoutChanged()),
+    QObject::connect(&mModel, SIGNAL(layoutChanged()),
         this, SLOT(modelLayoutChanged()));
 
-    QObject::connect(ui_.tableView->selectionModel(),
+    QObject::connect(mUi.tableView->selectionModel(),
         SIGNAL(selectionChanged(const QItemSelection&, const QItemSelection&)),
         this, SLOT(selectionChanged(const QItemSelection&, const QItemSelection&)));
 
-    setWindowTitle(name);
-
-    model_.onLoadBegin = [this](std::size_t curBlock, std::size_t numBlocks) {
-        ui_.loader->setVisible(true);
-        ui_.btnLoadMore->setEnabled(false);
+    mModel.onLoadBegin = [this](std::size_t curBlock, std::size_t numBlocks) {
+        mUi.loader->setVisible(true);
+        mUi.btnLoadMore->setEnabled(false);
     };
 
-    model_.onLoadProgress = [this] (std::size_t curItem, std::size_t numItems) {
-        ui_.loader->setMaximum(numItems);
-        ui_.loader->setValue(curItem);
+    mModel.onLoadProgress = [this] (std::size_t curItem, std::size_t numItems) {
+        mUi.loader->setMaximum(numItems);
+        mUi.loader->setValue(curItem);
     };
-    model_.onLoadComplete = [this](std::size_t curBlock, std::size_t numBlocks) {
-        ui_.loader->setVisible(false);
-        const auto numLoaded = model_.numBlocksLoaded();
-        const auto numTotal  = model_.numBlocksAvail();
-        ui_.btnLoadMore->setEnabled(numLoaded != numTotal);
-        ui_.btnLoadMore->setText(
+    mModel.onLoadComplete = [this](std::size_t curBlock, std::size_t numBlocks) {
+        mUi.loader->setVisible(false);
+        const auto numLoaded = mModel.numBlocksLoaded();
+        const auto numTotal  = mModel.numBlocksAvail();
+        mUi.btnLoadMore->setEnabled(numLoaded != numTotal);
+        mUi.btnLoadMore->setText(
             tr("Load more ... (%1/%2)").arg(numLoaded).arg(numTotal));
     };
-    model_.onKilled = [this] {
-        ui_.actionStop->setEnabled(false);
-        ui_.progressBar->setVisible(false);
-        ui_.actionRefresh->setEnabled(true);
+    mModel.onKilled = [this] {
+        mUi.actionStop->setEnabled(false);
+        mUi.progressBar->setVisible(false);
+        mUi.actionRefresh->setEnabled(true);
     };
 
-    filter_.minSize  = 0;
-    filter_.maxSize  = std::numeric_limits<quint32>::max() + 1ull;
-    filter_.bMinSize = false;
-    filter_.bMaxSize = false;
-    filter_.minDays  = 0;
-    filter_.maxDays  = 12527;
-    filter_.bMinDays = false;
-    filter_.bMaxDays = false;
-    filter_.sizeUnits = DlgFilter::Unit::MB;
-    filter_.matchStringCaseSensitive = true;
-    model_.setSizeFilter(filter_.minSize, filter_.maxSize);
-    model_.setDateFilter(filter_.minDays, filter_.maxDays);
+    mFilterParams.minSize  = 0;
+    mFilterParams.maxSize  = std::numeric_limits<quint32>::max() + 1ull;
+    mFilterParams.bMinSize = false;
+    mFilterParams.bMaxSize = false;
+    mFilterParams.minDays  = 0;
+    mFilterParams.maxDays  = 12527;
+    mFilterParams.bMinDays = false;
+    mFilterParams.bMaxDays = false;
+    mFilterParams.sizeUnits = DlgFilter::Unit::MB;
+    mFilterParams.matchStringCaseSensitive = true;
+    mModel.setSizeFilter(mFilterParams.minSize, mFilterParams.maxSize);
+    mModel.setDateFilter(mFilterParams.minDays, mFilterParams.maxDays);
+
+    DEBUG("NewsGroup GUI created");
+}
+NewsGroup::NewsGroup(quint32 acc, QString path, QString name) : NewsGroup()
+{
+    mAccountId = acc;
+    mGroupPath = path;
+    mGroupName = name;
+
+    mUi.grpView->setTitle(app::toString("%1 (%2 / %3)", name, app::count {0}, app::count{0}));
+    setWindowTitle(name);
 
     DEBUG("NewsGroup GUI created");
 }
@@ -149,38 +157,38 @@ NewsGroup::~NewsGroup()
 
 void NewsGroup::addActions(QToolBar& bar)
 {
-    bar.addAction(ui_.actionRefresh);
-    bar.addAction(ui_.actionStop);
+    bar.addAction(mUi.actionRefresh);
+    bar.addAction(mUi.actionStop);
     bar.addSeparator();
-    bar.addAction(ui_.actionDownload);
+    bar.addAction(mUi.actionDownload);
     bar.addSeparator();
-    bar.addAction(ui_.actionHeaders);
+    bar.addAction(mUi.actionHeaders);
     bar.addSeparator();
-    bar.addAction(ui_.actionFilter);
+    bar.addAction(mUi.actionFilter);
     bar.addSeparator();
-    bar.addAction(ui_.actionBookmarkPrev);
-    bar.addAction(ui_.actionBookmark);
-    bar.addAction(ui_.actionBookmarkNext);
+    bar.addAction(mUi.actionBookmarkPrev);
+    bar.addAction(mUi.actionBookmark);
+    bar.addAction(mUi.actionBookmarkNext);
     bar.addSeparator();
-    bar.addAction(ui_.actionDelete);
+    bar.addAction(mUi.actionDelete);
 }
 
 void NewsGroup::addActions(QMenu& menu)
 {
-    menu.addAction(ui_.actionRefresh);
-    menu.addAction(ui_.actionStop);
+    menu.addAction(mUi.actionRefresh);
+    menu.addAction(mUi.actionStop);
     menu.addSeparator();
-    menu.addAction(ui_.actionDownload);
+    menu.addAction(mUi.actionDownload);
     menu.addSeparator();
-    menu.addAction(ui_.actionHeaders);
+    menu.addAction(mUi.actionHeaders);
     menu.addSeparator();
-    menu.addAction(ui_.actionFilter);
+    menu.addAction(mUi.actionFilter);
     menu.addSeparator();
-    menu.addAction(ui_.actionBookmarkPrev);
-    menu.addAction(ui_.actionBookmark);
-    menu.addAction(ui_.actionBookmarkNext);
+    menu.addAction(mUi.actionBookmarkPrev);
+    menu.addAction(mUi.actionBookmark);
+    menu.addAction(mUi.actionBookmarkNext);
     menu.addSeparator();
-    menu.addAction(ui_.actionDelete);
+    menu.addAction(mUi.actionDelete);
 }
 
 void NewsGroup::loadState()
@@ -189,10 +197,10 @@ void NewsGroup::loadState()
     // top of the list and older items at the bottom.
     // loadTableLayout below will restore the previous sorting order
     // that was used by the user.
-    ui_.tableView->sortByColumn((int)app::NewsGroup::Columns::Age, Qt::AscendingOrder);
+    mUi.tableView->sortByColumn((int)app::NewsGroup::Columns::Age, Qt::AscendingOrder);
 
-    const auto& settingsPath = app::joinPath(path_, name_);
-    const auto& settingsFile = app::joinPath(settingsPath, name_ + ".json");
+    const auto& settingsPath = app::joinPath(mGroupPath, mGroupName);
+    const auto& settingsFile = app::joinPath(settingsPath, mGroupName + ".json");
     if (!QFile::exists(settingsFile))
         return;
 
@@ -204,40 +212,40 @@ void NewsGroup::loadState()
         return;
     }
 
-    app::loadTableLayout("newsgroup", ui_.tableView, settings);
-    app::loadState("newsgroup", ui_.actionShowNone, settings);
-    app::loadState("newsgroup", ui_.actionShowAudio, settings);
-    app::loadState("newsgroup", ui_.actionShowVideo, settings);
-    app::loadState("newsgroup", ui_.actionShowImage, settings);
-    app::loadState("newsgroup", ui_.actionShowText, settings);
-    app::loadState("newsgroup", ui_.actionShowArchive, settings);
-    app::loadState("newsgroup", ui_.actionShowParity, settings);
-    app::loadState("newsgroup", ui_.actionShowDocument, settings);
-    app::loadState("newsgroup", ui_.actionShowOther, settings);
-    app::loadState("newsgroup", ui_.actionShowBroken, settings);
-    app::loadState("newsgroup", ui_.actionShowDeleted, settings);
-    app::loadState("newsgroup", ui_.chkRefreshAutomatically, settings);
+    app::loadTableLayout("newsgroup", mUi.tableView, settings);
+    app::loadState("newsgroup", mUi.actionShowNone, settings);
+    app::loadState("newsgroup", mUi.actionShowAudio, settings);
+    app::loadState("newsgroup", mUi.actionShowVideo, settings);
+    app::loadState("newsgroup", mUi.actionShowImage, settings);
+    app::loadState("newsgroup", mUi.actionShowText, settings);
+    app::loadState("newsgroup", mUi.actionShowArchive, settings);
+    app::loadState("newsgroup", mUi.actionShowParity, settings);
+    app::loadState("newsgroup", mUi.actionShowDocument, settings);
+    app::loadState("newsgroup", mUi.actionShowOther, settings);
+    app::loadState("newsgroup", mUi.actionShowBroken, settings);
+    app::loadState("newsgroup", mUi.actionShowDeleted, settings);
+    app::loadState("newsgroup", mUi.chkRefreshAutomatically, settings);
 }
 
 void NewsGroup::saveState() const
 {
     app::Settings settings;
-    app::saveTableLayout("newsgroup", ui_.tableView, settings);
-    app::saveState("newsgroup", ui_.actionShowNone, settings);
-    app::saveState("newsgroup", ui_.actionShowAudio, settings);
-    app::saveState("newsgroup", ui_.actionShowVideo, settings);
-    app::saveState("newsgroup", ui_.actionShowImage, settings);
-    app::saveState("newsgroup", ui_.actionShowText, settings);
-    app::saveState("newsgroup", ui_.actionShowArchive, settings);
-    app::saveState("newsgroup", ui_.actionShowParity, settings);
-    app::saveState("newsgroup", ui_.actionShowDocument, settings);
-    app::saveState("newsgroup", ui_.actionShowOther, settings);
-    app::saveState("newsgroup", ui_.actionShowBroken, settings);
-    app::saveState("newsgroup", ui_.actionShowDeleted, settings);
-    app::saveState("newsgroup", ui_.chkRefreshAutomatically, settings);
+    app::saveTableLayout("newsgroup", mUi.tableView, settings);
+    app::saveState("newsgroup", mUi.actionShowNone, settings);
+    app::saveState("newsgroup", mUi.actionShowAudio, settings);
+    app::saveState("newsgroup", mUi.actionShowVideo, settings);
+    app::saveState("newsgroup", mUi.actionShowImage, settings);
+    app::saveState("newsgroup", mUi.actionShowText, settings);
+    app::saveState("newsgroup", mUi.actionShowArchive, settings);
+    app::saveState("newsgroup", mUi.actionShowParity, settings);
+    app::saveState("newsgroup", mUi.actionShowDocument, settings);
+    app::saveState("newsgroup", mUi.actionShowOther, settings);
+    app::saveState("newsgroup", mUi.actionShowBroken, settings);
+    app::saveState("newsgroup", mUi.actionShowDeleted, settings);
+    app::saveState("newsgroup", mUi.chkRefreshAutomatically, settings);
 
-    const auto& settingsPath = app::joinPath(path_, name_);
-    const auto& settingsFile = app::joinPath(settingsPath, name_ + ".json");
+    const auto& settingsPath = app::joinPath(mGroupPath, mGroupName);
+    const auto& settingsFile = app::joinPath(settingsPath, mGroupName + ".json");
 
     const auto err = settings.save(settingsFile);
     if (err != QFile::NoError)
@@ -256,9 +264,38 @@ Finder* NewsGroup::getFinder()
     return this;
 }
 
+void NewsGroup::saveState(app::Settings& s)
+{
+    // this is called if the widget is still alive when the application
+    // is exiting. we can save our initial (constructor) args
+    // that provide us the information needed to re-load the actual group data.
+    s.set("newsgroup", "account", mAccountId);
+    s.set("newsgroup", "group_path", mGroupPath);
+    s.set("newsgroup", "group_name", mGroupName);
+
+    saveState();
+}
+
+void NewsGroup::loadState(app::Settings& s)
+{
+    // this is called if the widget was alive when the application
+    // was exited. then we persisted our widget ctor info into settings
+    // and we can load that now.
+    // that info will tell us where to look for the actual data files.
+    mAccountId = s.get("newsgroup", "account").toUInt();
+    mGroupPath = s.get("newsgroup", "group_path").toString();
+    mGroupName = s.get("newsgroup", "group_name").toString();
+
+    mUi.grpView->setTitle(app::toString("%1 (%2 / %3)", mGroupName, app::count {0}, app::count{0}));
+    setWindowTitle(mGroupName);
+
+    loadState();
+    loadFirstData();
+}
+
 bool NewsGroup::isMatch(const QString& str, std::size_t index, bool caseSensitive)
 {
-    const auto& article = model_.getArticle(index);
+    const auto& article = mModel.getArticle(index);
     const auto& subject = article.subject();
     const auto& latin   = QString::fromLatin1(subject.c_str(), subject.size());
     if (!caseSensitive)
@@ -277,7 +314,7 @@ bool NewsGroup::isMatch(const QString& str, std::size_t index, bool caseSensitiv
 
 bool NewsGroup::isMatch(const QRegExp& reg, std::size_t index)
 {
-    const auto& article = model_.getArticle(index);
+    const auto& article = mModel.getArticle(index);
     const auto& subject = article.subject();
     const auto& latin   = QString::fromLatin1(subject.c_str(), subject.size());
     if (reg.indexIn(latin) != -1)
@@ -287,12 +324,12 @@ bool NewsGroup::isMatch(const QRegExp& reg, std::size_t index)
 
 std::size_t NewsGroup::numItems() const
 {
-    return model_.numShown();
+    return mModel.numShown();
 }
 
 std::size_t NewsGroup::curItem() const
 {
-    const auto& indices = ui_.tableView->selectionModel()->selectedRows();
+    const auto& indices = mUi.tableView->selectionModel()->selectedRows();
     if (indices.isEmpty())
         return 0;
 
@@ -302,30 +339,30 @@ std::size_t NewsGroup::curItem() const
 
 void NewsGroup::setFound(std::size_t index)
 {
-    auto* model = ui_.tableView->model();
+    auto* model = mUi.tableView->model();
     auto i = model->index(index, 0);
-    ui_.tableView->setCurrentIndex(i);
-    ui_.tableView->scrollTo(i);
+    mUi.tableView->setCurrentIndex(i);
+    mUi.tableView->scrollTo(i);
 }
 
 void NewsGroup::loadFirstData()
 {
     try
     {
-        if (!model_.init(path_, name_))
+        if (!mModel.init(mGroupPath, mGroupName))
         {
-            model_.refresh(account_, path_, name_);
-            ui_.progressBar->setVisible(true);
-            ui_.progressBar->setMaximum(0),
-            ui_.progressBar->setMinimum(0);
-            ui_.actionStop->setEnabled(true);
-            ui_.actionRefresh->setEnabled(false);
-            ui_.btnLoadMore->setVisible(false);
+            mModel.refresh(mAccountId, mGroupPath, mGroupName);
+            mUi.progressBar->setVisible(true);
+            mUi.progressBar->setMaximum(0),
+            mUi.progressBar->setMinimum(0);
+            mUi.actionStop->setEnabled(true);
+            mUi.actionRefresh->setEnabled(false);
+            mUi.btnLoadMore->setVisible(false);
         }
         else
         {
-            model_.load(0);
-            const bool refresh_automatically = ui_.chkRefreshAutomatically->isChecked();
+            mModel.load(0);
+            const bool refresh_automatically = mUi.chkRefreshAutomatically->isChecked();
             if (refresh_automatically) {
                 on_actionRefresh_triggered();
             }
@@ -333,9 +370,9 @@ void NewsGroup::loadFirstData()
     }
     catch (const std::exception& e)
     {
-        ui_.progressBar->setVisible(false);
-        ui_.loader->setVisible(false);
-        QMessageBox::critical(this, name_,
+        mUi.progressBar->setVisible(false);
+        mUi.loader->setVisible(false);
+        QMessageBox::critical(this, mGroupName,
             tr("Unable to load the newsgroup data.\n%1").arg(app::widen(e.what())));
     }
 }
@@ -347,126 +384,126 @@ void NewsGroup::deleteData(quint32 account, QString path, QString group)
 
 void NewsGroup::on_actionShowNone_changed()
 {
-    model_.setTypeFilter(FileType::none, ui_.actionShowNone->isChecked());
-    model_.applyFilter();
+    mModel.setTypeFilter(FileType::none, mUi.actionShowNone->isChecked());
+    mModel.applyFilter();
 }
 
 void NewsGroup::on_actionShowAudio_changed()
 {
-    model_.setTypeFilter(FileType::audio, ui_.actionShowAudio->isChecked());
-    model_.applyFilter();
+    mModel.setTypeFilter(FileType::audio, mUi.actionShowAudio->isChecked());
+    mModel.applyFilter();
 }
 
 void NewsGroup::on_actionShowVideo_changed()
 {
-    model_.setTypeFilter(FileType::video, ui_.actionShowVideo->isChecked());
-    model_.applyFilter();
+    mModel.setTypeFilter(FileType::video, mUi.actionShowVideo->isChecked());
+    mModel.applyFilter();
 }
 
 void NewsGroup::on_actionShowImage_changed()
 {
-    model_.setTypeFilter(FileType::image, ui_.actionShowImage->isChecked());
-    model_.applyFilter();
+    mModel.setTypeFilter(FileType::image, mUi.actionShowImage->isChecked());
+    mModel.applyFilter();
 }
 
 void NewsGroup::on_actionShowText_changed()
 {
-    model_.setTypeFilter(FileType::text, ui_.actionShowText->isChecked());
-    model_.applyFilter();
+    mModel.setTypeFilter(FileType::text, mUi.actionShowText->isChecked());
+    mModel.applyFilter();
 }
 
 void NewsGroup::on_actionShowArchive_changed()
 {
-    model_.setTypeFilter(FileType::archive, ui_.actionShowArchive->isChecked());
-    model_.applyFilter();
+    mModel.setTypeFilter(FileType::archive, mUi.actionShowArchive->isChecked());
+    mModel.applyFilter();
 }
 
 void NewsGroup::on_actionShowParity_changed()
 {
-    model_.setTypeFilter(FileType::parity, ui_.actionShowParity->isChecked());
-    model_.applyFilter();
+    mModel.setTypeFilter(FileType::parity, mUi.actionShowParity->isChecked());
+    mModel.applyFilter();
 }
 
 void NewsGroup::on_actionShowDocument_changed()
 {
-    model_.setTypeFilter(FileType::document, ui_.actionShowDocument->isChecked());
-    model_.applyFilter();
+    mModel.setTypeFilter(FileType::document, mUi.actionShowDocument->isChecked());
+    mModel.applyFilter();
 }
 
 void NewsGroup::on_actionShowOther_changed()
 {
-    model_.setTypeFilter(FileType::other, ui_.actionShowOther->isChecked());
-    model_.applyFilter();
+    mModel.setTypeFilter(FileType::other, mUi.actionShowOther->isChecked());
+    mModel.applyFilter();
 }
 
 void NewsGroup::on_actionShowBroken_changed()
 {
-    model_.setFlagFilter(FileFlag::broken, ui_.actionShowBroken->isChecked());
-    model_.applyFilter();
+    mModel.setFlagFilter(FileFlag::broken, mUi.actionShowBroken->isChecked());
+    mModel.applyFilter();
 }
 
 void NewsGroup::on_actionShowDeleted_changed()
 {
-    model_.setFlagFilter(FileFlag::deleted, ui_.actionShowDeleted->isChecked());
-    model_.applyFilter();
+    mModel.setFlagFilter(FileFlag::deleted, mUi.actionShowDeleted->isChecked());
+    mModel.applyFilter();
 }
 
 void NewsGroup::on_actionDelete_triggered()
 {
-    const auto& indices = ui_.tableView->selectionModel()->selectedRows();
+    const auto& indices = mUi.tableView->selectionModel()->selectedRows();
     if (indices.isEmpty())
         return;
 
-    model_.killSelected(indices);
+    mModel.killSelected(indices);
 }
 
 void NewsGroup::on_actionHeaders_triggered()
 {
-    DlgVolumes dlg(this, model_);
+    DlgVolumes dlg(this, mModel);
     dlg.exec();
 }
 
 void NewsGroup::on_actionRefresh_triggered()
 {
-    model_.refresh(account_, path_, name_);
-    ui_.actionRefresh->setEnabled(false);
-    ui_.actionStop->setEnabled(true);
-    ui_.progressBar->setMaximum(0);
-    ui_.progressBar->setMinimum(0);
-    ui_.progressBar->setVisible(true);
+    mModel.refresh(mAccountId, mGroupPath, mGroupName);
+    mUi.actionRefresh->setEnabled(false);
+    mUi.actionStop->setEnabled(true);
+    mUi.progressBar->setMaximum(0);
+    mUi.progressBar->setMinimum(0);
+    mUi.progressBar->setVisible(true);
 }
 
 void NewsGroup::on_actionFilter_triggered()
 {
-    DlgFilter::Params filter = filter_;
+    DlgFilter::Params filter = mFilterParams;
 
     DlgFilter dlg(this, filter);
     dlg.applyFilter = [this](quint32 minDays, quint32 maxDays, quint64 minSize, quint64 maxSize,
         const QString& matchString, bool matchStringCaseSensitive) {
-        model_.setSizeFilter(minSize, maxSize);
-        model_.setDateFilter(minDays, maxDays);
-        model_.setStringFilter(matchString, matchStringCaseSensitive);
-        model_.applyFilter();
+        mModel.setSizeFilter(minSize, maxSize);
+        mModel.setDateFilter(minDays, maxDays);
+        mModel.setStringFilter(matchString, matchStringCaseSensitive);
+        mModel.applyFilter();
     };
     if (dlg.exec() == QDialog::Accepted)
     {
-        filter_ = filter;
+        mFilterParams = filter;
         if (dlg.isApplied())
             return;
     }
 
-    model_.setSizeFilter(filter_.minSize, filter_.maxSize);
-    model_.setDateFilter(filter_.minDays, filter_.maxDays);
-    model_.setStringFilter(filter_.matchString, filter_.matchStringCaseSensitive);
-    model_.applyFilter();
+    mModel.setSizeFilter(mFilterParams.minSize, mFilterParams.maxSize);
+    mModel.setDateFilter(mFilterParams.minDays, mFilterParams.maxDays);
+    mModel.setStringFilter(mFilterParams.matchString, mFilterParams.matchStringCaseSensitive);
+    mModel.applyFilter();
 }
 
 void NewsGroup::on_actionStop_triggered()
 {
-    model_.stop();
-    ui_.actionStop->setEnabled(false);
-    ui_.progressBar->setVisible(false);
-    ui_.actionRefresh->setEnabled(true);
+    mModel.stop();
+    mUi.actionStop->setEnabled(false);
+    mUi.progressBar->setVisible(false);
+    mUi.actionRefresh->setEnabled(true);
 }
 
 void NewsGroup::on_actionDownload_triggered()
@@ -485,26 +522,26 @@ void NewsGroup::on_actionBrowse_triggered()
 
 void NewsGroup::on_actionBookmark_triggered()
 {
-    const auto& indices = ui_.tableView->selectionModel()->selectedRows();
+    const auto& indices = mUi.tableView->selectionModel()->selectedRows();
     if (indices.isEmpty())
         return;
 
-    model_.bookmark(indices);
+    mModel.bookmark(indices);
 }
 
 void NewsGroup::on_actionBookmarkPrev_triggered()
 {
-    const auto& indices = ui_.tableView->selectionModel()->selectedRows();
+    const auto& indices = mUi.tableView->selectionModel()->selectedRows();
     int start = indices.isEmpty() ? 0
         : indices[0].row() - 1;
 
-    const auto numItems = model_.numShown();
+    const auto numItems = mModel.numShown();
     for (std::size_t i=0; i<numItems; ++i, --start)
     {
         if (start < 0)
             start = numItems - 1;
 
-        const auto& item = model_.getArticle(start);
+        const auto& item = mModel.getArticle(start);
         if ( item.is_bookmarked())
         {
             setFound(start);
@@ -515,15 +552,15 @@ void NewsGroup::on_actionBookmarkPrev_triggered()
 
 void NewsGroup::on_actionBookmarkNext_triggered()
 {
-    const auto& indices = ui_.tableView->selectionModel()->selectedRows();
+    const auto& indices = mUi.tableView->selectionModel()->selectedRows();
     const auto start = indices.isEmpty() ? 0
         : indices[0].row() + 1;
 
-    const auto numItems = model_.numShown();
+    const auto numItems = mModel.numShown();
     for (std::size_t i=0; i<numItems; ++i)
     {
         const auto index = (start + i) % numItems;
-        const auto& item = model_.getArticle(index);
+        const auto& item = mModel.getArticle(index);
         if (item.is_bookmarked())
         {
             setFound(index);
@@ -534,12 +571,12 @@ void NewsGroup::on_actionBookmarkNext_triggered()
 
 void NewsGroup::on_btnLoadMore_clicked()
 {
-    ui_.loader->setVisible(true);
-    ui_.btnLoadMore->setEnabled(false);
+    mUi.loader->setVisible(true);
+    mUi.btnLoadMore->setEnabled(false);
 
-    model_.load();
+    mModel.load();
 
-    ui_.loader->setVisible(false);
+    mUi.loader->setVisible(false);
 
 }
 
@@ -556,47 +593,47 @@ void NewsGroup::on_tableView_customContextMenuRequested(QPoint p)
             this, SLOT(downloadToPrevious()));
     }
     sub.addSeparator();
-    sub.addAction(ui_.actionBrowse);
-    sub.setEnabled(ui_.actionDownload->isEnabled());
+    sub.addAction(mUi.actionBrowse);
+    sub.setEnabled(mUi.actionDownload->isEnabled());
 
     QMenu menu(this);
-    menu.addAction(ui_.actionRefresh);
+    menu.addAction(mUi.actionRefresh);
     menu.addSeparator();
-    menu.addAction(ui_.actionHeaders);
+    menu.addAction(mUi.actionHeaders);
     menu.addSeparator();
-    menu.addAction(ui_.actionDownload);
+    menu.addAction(mUi.actionDownload);
     menu.addMenu(&sub);
     menu.addSeparator();
-    menu.addAction(ui_.actionFilter);
+    menu.addAction(mUi.actionFilter);
 
 
     QMenu showType("Filter by type", this);
     showType.setIcon(QIcon("icons:ico_filter.png"));
-    showType.addAction(ui_.actionShowNone);
-    showType.addAction(ui_.actionShowAudio);
-    showType.addAction(ui_.actionShowVideo);
-    showType.addAction(ui_.actionShowImage);
-    showType.addAction(ui_.actionShowText);
-    showType.addAction(ui_.actionShowArchive);
-    showType.addAction(ui_.actionShowParity);
-    showType.addAction(ui_.actionShowDocument);
-    showType.addAction(ui_.actionShowOther);
+    showType.addAction(mUi.actionShowNone);
+    showType.addAction(mUi.actionShowAudio);
+    showType.addAction(mUi.actionShowVideo);
+    showType.addAction(mUi.actionShowImage);
+    showType.addAction(mUi.actionShowText);
+    showType.addAction(mUi.actionShowArchive);
+    showType.addAction(mUi.actionShowParity);
+    showType.addAction(mUi.actionShowDocument);
+    showType.addAction(mUi.actionShowOther);
 
     QMenu showFlag("Filter by status", this);
     showFlag.setIcon(QIcon("icons:ico_filter.png"));
-    showFlag.addAction(ui_.actionShowBroken);
-    showFlag.addAction(ui_.actionShowDeleted);
+    showFlag.addAction(mUi.actionShowBroken);
+    showFlag.addAction(mUi.actionShowDeleted);
 
     menu.addMenu(&showType);
     menu.addMenu(&showFlag);
     menu.addSeparator();
-    menu.addAction(ui_.actionBookmarkPrev);
-    menu.addAction(ui_.actionBookmark);
-    menu.addAction(ui_.actionBookmarkNext);
+    menu.addAction(mUi.actionBookmarkPrev);
+    menu.addAction(mUi.actionBookmark);
+    menu.addAction(mUi.actionBookmarkNext);
     menu.addSeparator();
-    menu.addAction(ui_.actionDelete);
+    menu.addAction(mUi.actionDelete);
     menu.addSeparator();
-    menu.addAction(ui_.actionStop);
+    menu.addAction(mUi.actionStop);
     menu.exec(QCursor::pos());
 }
 
@@ -617,22 +654,22 @@ void NewsGroup::selectionChanged(const QItemSelection& selected, const QItemSele
     // update the selection bits in the index items.
 
     // current selection is deselected.
-    model_.select(selected_rows_, false);
+    mModel.select(mCurrentlySelectedRows, false);
 
-    auto* selectionModel = ui_.tableView->selectionModel();
+    auto* selectionModel = mUi.tableView->selectionModel();
 
     // grab new items.
-    selected_rows_ = selectionModel->selectedRows();
-    current_index_ = selectionModel->currentIndex();
+    mCurrentlySelectedRows = selectionModel->selectedRows();
+    mCurrentIndex = selectionModel->currentIndex();
 
     // update (store) the item bits.
-    model_.select(selected_rows_, true);
+    mModel.select(mCurrentlySelectedRows, true);
 
-    const auto empty = selected_rows_.empty();
+    const auto empty = mCurrentlySelectedRows.empty();
 
-    ui_.actionDownload->setEnabled(!empty);
-    ui_.actionBookmark->setEnabled(!empty);
-    ui_.actionDelete->setEnabled(!empty);
+    mUi.actionDownload->setEnabled(!empty);
+    mUi.actionBookmark->setEnabled(!empty);
+    mUi.actionDelete->setEnabled(!empty);
 }
 
 void NewsGroup::modelBegReset()
@@ -646,9 +683,9 @@ void NewsGroup::modelEndReset()
     // current selection on the UI
 
     QModelIndexList list;
-    model_.scanSelected(list);
+    mModel.scanSelected(list);
 
-    auto* selectionModel = ui_.tableView->selectionModel();
+    auto* selectionModel = mUi.tableView->selectionModel();
     selectionModel->blockSignals(true);
 
     if (!list.empty())
@@ -661,15 +698,15 @@ void NewsGroup::modelEndReset()
             QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
     }
 
-    selectionModel->setCurrentIndex(current_index_,
+    selectionModel->setCurrentIndex(mCurrentIndex,
         QItemSelectionModel::NoUpdate);
     selectionModel->blockSignals(false);
 
-    selected_rows_ = list;
+    mCurrentlySelectedRows = list;
 
-    const auto numShown = model_.numShown();
-    const auto numItems = model_.numItems();
-    ui_.grpView->setTitle(app::toString("%1 (%2 / %3)", name_, app::count{numShown}, app::count{numItems}));
+    const auto numShown = mModel.numShown();
+    const auto numItems = mModel.numItems();
+    mUi.grpView->setTitle(app::toString("%1 (%2 / %3)", mGroupName, app::count{numShown}, app::count{numItems}));
 }
 
 void NewsGroup::modelLayoutChanged()
@@ -699,47 +736,47 @@ void NewsGroup::newHeaderInfoAvailable(const app::HeaderUpdateInfo& info)
     const auto num_local_articles = local_last - local_first + 1;
     const auto num_remote_articles = remote_last - remote_first + 1;
 
-    if (file.indexOf(app::joinPath(path_, name_)) != 0)
+    if (file.indexOf(app::joinPath(mGroupPath, mGroupName)) != 0)
         return;
 
     const auto max = std::numeric_limits<int>::max();
     if(num_local_articles < max && num_remote_articles < max)
     {
-        ui_.progressBar->setMaximum(num_remote_articles);
-        ui_.progressBar->setValue(num_local_articles);
+        mUi.progressBar->setMaximum(num_remote_articles);
+        mUi.progressBar->setValue(num_local_articles);
     }
     else
     {
         const auto d = double(num_remote_articles) / double(num_local_articles);
-        ui_.progressBar->setMaximum(max);
-        ui_.progressBar->setValue(d * max);
+        mUi.progressBar->setMaximum(max);
+        mUi.progressBar->setValue(d * max);
     }
 
-    const auto numAvail  = model_.numBlocksAvail();
-    const auto numLoaded = model_.numBlocksLoaded();
-    ui_.btnLoadMore->setEnabled(numAvail != numLoaded);
-    ui_.btnLoadMore->setVisible(true);
-    ui_.btnLoadMore->setText(tr("Load more ... (%1/%2)").arg(numLoaded).arg(numAvail));
+    const auto numAvail  = mModel.numBlocksAvail();
+    const auto numLoaded = mModel.numBlocksLoaded();
+    mUi.btnLoadMore->setEnabled(numAvail != numLoaded);
+    mUi.btnLoadMore->setVisible(true);
+    mUi.btnLoadMore->setText(tr("Load more ... (%1/%2)").arg(numLoaded).arg(numAvail));
 }
 
 void NewsGroup::updateCompleted(const app::HeaderInfo& info)
 {
-    if (info.groupName != name_ ||
-        info.groupPath != path_) return;
+    if (info.groupName != mGroupName ||
+        info.groupPath != mGroupPath) return;
 
-    ui_.progressBar->setVisible(false);
-    ui_.actionStop->setEnabled(false);
-    ui_.actionRefresh->setEnabled(true);
+    mUi.progressBar->setVisible(false);
+    mUi.actionStop->setEnabled(false);
+    mUi.actionRefresh->setEnabled(true);
 }
 
 
 void NewsGroup::downloadSelected(const QString& folder)
 {
-    const auto& indices = ui_.tableView->selectionModel()->selectedRows();
+    const auto& indices = mUi.tableView->selectionModel()->selectedRows();
     if (indices.isEmpty())
         return;
 
-    Q_ASSERT(account_);
+    Q_ASSERT(mAccountId);
 
     // we don't need to ask for the account here since
     // the data is specific to an account (because we're using article numbers)
@@ -751,18 +788,18 @@ void NewsGroup::downloadSelected(const QString& folder)
     // selected items into batches with well defined names.
     //
     // However we need to and should do the space checking.
-    const auto media    = model_.findMediaType();
-    const auto byteSize = model_.sumDataSizes(indices);
-    const auto desc = model_.suggestName(indices);
+    const auto media    = mModel.findMediaType();
+    const auto byteSize = mModel.sumDataSizes(indices);
+    const auto desc = mModel.suggestName(indices);
     if (!passSpaceCheck(this, desc, folder, byteSize, byteSize, media))
         return;
 
-    model_.download(indices, account_, folder);
+    mModel.download(indices, mAccountId, folder);
 }
 
 bool NewsGroup::eventFilter(QObject* recv, QEvent* event)
 {
-    Q_ASSERT(recv == ui_.tableView);
+    Q_ASSERT(recv == mUi.tableView);
 
     if (event->type() == QEvent::KeyPress)
     {
@@ -773,7 +810,7 @@ bool NewsGroup::eventFilter(QObject* recv, QEvent* event)
         }
         else if (key->key() == Qt::Key_Escape)
         {
-            ui_.tableView->clearSelection();
+            mUi.tableView->clearSelection();
         }
     }
     return false;

@@ -46,7 +46,8 @@ namespace gui
     enum class WidgetType {
         Nzb,
         Rss,
-        Search
+        Search,
+        Newsgroup
     };
 
     namespace detail {
@@ -224,6 +225,9 @@ namespace gui
 
         static MainWidget* createNzbWidget()
         { return createWidget(WidgetType::Nzb); }
+
+        static MainWidget* createGroupWidget()
+        { return createWidget(WidgetType::Newsgroup); }
 
         template<typename T> static
         void registerWidgetType(WidgetType type)
