@@ -263,6 +263,22 @@ void MainWindow::loadState()
 
     const auto success = keygen::verify_code(mKeyCode);
 
+    // add these tabs on the first launch to help discover the features
+    // of the software
+    if (first_launch)
+    {
+        MainWidget* search = MainWidget::createSearchWidget();
+        if (search)
+        {
+            attachSessionWidget(search);
+        }
+        MainWidget* rss = MainWidget::createRssWidget();
+        if (rss)
+        {
+            attachSessionWidget(rss);
+        }
+    }
+
     for (std::size_t i=0; i<mWidgets.size(); ++i)
     {
         const auto text = mWidgets[i]->objectName();
@@ -286,20 +302,6 @@ void MainWindow::loadState()
     {
         m->loadState(mSettings);
         m->updateRegistration(success);
-
-        if (!first_launch)
-            continue;
-
-        MainWidget* search = MainWidget::createSearchWidget();
-        if (search)
-        {
-            attachSessionWidget(search);
-        }
-        MainWidget* rss = MainWidget::createRssWidget();
-        if (rss)
-        {
-            attachSessionWidget(rss);
-        }
     }
 
     // load tabs that need to be recovered from previous session
