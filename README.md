@@ -84,6 +84,10 @@ Google protobuffer library 2.6.1
 https://github.com/google/protobuf
 
 Use the protoc to compile the .proto files in the project.
+```
+$ newsflash/engine
+$ ./protoc engine.proto --cpp_out=.
+```
 
 
 third_party/openssl
@@ -214,6 +218,13 @@ L246: AUTOMAKE = ${SHELL} /home/enska/coding/newsflash/protobuf/missing automake
 ```
 If the above fails then Download and extract the protobuf-2.6.1 lib into some other folder and build it there,
 and then copy the libs over. That usually works.
+
+Or you can try the following:
+```
+$ aclocal
+$ automake
+$ ./configure
+```
 
 
 Build qjson
@@ -422,7 +433,7 @@ Build Newsflash
 
 ```
 
-Run Unit Tests 
+Run Unit Tests
 ```
     $ cd newsflash_plus\build_d
     $ copy ..\test_data .
