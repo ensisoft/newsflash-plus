@@ -24,6 +24,7 @@
 
 #include "newsflash/warnpush.h"
 #  include <QtNetwork/QNetworkReply>
+#  include <QtXml/QDomDocument>
 #  include <QBuffer>
 #include "newsflash/warnpop.h"
 
@@ -244,7 +245,24 @@ void Search::downloadItem(const QModelIndex& index, const QString& folder, quint
         const auto url = reply.url();
         if (err != QNetworkReply::NoError)
         {
-            ERROR("Failed to retrieve NZB content (%1), %2", url, err);
+            QString errorString;
+            int errorLine   = 0;
+            int errorColumn = 0;
+
+            QByteArray maybe_xml = reply.readAll();
+            QBuffer io(&maybe_xml);
+            QDomDocument dom;
+            if (dom.setContent(&io, false, &errorString, &errorLine, &errorColumn))
+            {
+                QDomElement error = dom.firstChildElement("error");
+                if (!error.isNull()) {
+                    const auto code = error.attribute("code");
+                    const auto desc = error.attribute("description");
+                    ERROR("Failed to retrieve NZB content: %1, (%2)", desc, code);
+                    return;
+                }
+            }
+            ERROR("Failed to retrieve NZB content '%1'", err);
             return;
         }
         QByteArray nzb = reply.readAll();
@@ -326,6 +344,7 @@ void Search::onSearchReady(QNetworkReply& reply)
         case e::Unknown:
             ERROR("%1 Unknown error.", name);
             break;
+
     }
 
     const auto emptyResult = items.empty();
