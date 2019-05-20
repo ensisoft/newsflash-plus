@@ -69,7 +69,8 @@ public:
 
     std::unique_ptr<Task> AllocateTask(const ui::FileDownload& file) override
     {
-        return std::make_unique<Download>(file.groups, file.articles, file.path, file.desc);
+        return std::make_unique<Download>(file.groups, file.articles, file.path, file.desc,
+            file.ignore_yenc_filename);
     }
 
     std::unique_ptr<Task> AllocateTask(const ui::HeaderDownload& download) override

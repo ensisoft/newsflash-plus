@@ -22,8 +22,9 @@ message Download {
     required uint32 num_actions_total = 7;
     required uint32 num_actions_ready = 8;
     required uint32 errors            = 9;
-    repeated File file                = 10;
-    repeated Stash stash              = 11;
+    required uint32 flags             = 10;
+    repeated File file                = 11;
+    repeated Stash stash              = 12;
 }
 
 message TaskState {

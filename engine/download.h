@@ -50,7 +50,8 @@ namespace newsflash
         Download(const std::vector<std::string>& groups,
             const std::vector<std::string>& articles,
             const std::string& path,
-            const std::string& name);
+            const std::string& name,
+            bool ignore_yenc_filename = false);
         Download();
 
         // Task implementation
@@ -112,6 +113,7 @@ namespace newsflash
     private:
         bool overwrite_ = false;
         bool discardtext_ = false;
+        bool ignore_yenc_filename_ = false;
     private:
         OnWriteDone callback_;
     };

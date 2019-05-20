@@ -409,10 +409,17 @@ class Download : public ::google::protobuf::Message {
   inline ::google::protobuf::uint32 errors() const;
   inline void set_errors(::google::protobuf::uint32 value);
 
-  // repeated .data.File file = 10;
+  // required uint32 flags = 10;
+  inline bool has_flags() const;
+  inline void clear_flags();
+  static const int kFlagsFieldNumber = 10;
+  inline ::google::protobuf::uint32 flags() const;
+  inline void set_flags(::google::protobuf::uint32 value);
+
+  // repeated .data.File file = 11;
   inline int file_size() const;
   inline void clear_file();
-  static const int kFileFieldNumber = 10;
+  static const int kFileFieldNumber = 11;
   inline const ::data::File& file(int index) const;
   inline ::data::File* mutable_file(int index);
   inline ::data::File* add_file();
@@ -421,10 +428,10 @@ class Download : public ::google::protobuf::Message {
   inline ::google::protobuf::RepeatedPtrField< ::data::File >*
       mutable_file();
 
-  // repeated .data.Stash stash = 11;
+  // repeated .data.Stash stash = 12;
   inline int stash_size() const;
   inline void clear_stash();
-  static const int kStashFieldNumber = 11;
+  static const int kStashFieldNumber = 12;
   inline const ::data::Stash& stash(int index) const;
   inline ::data::Stash* mutable_stash(int index);
   inline ::data::Stash* add_stash();
@@ -449,6 +456,8 @@ class Download : public ::google::protobuf::Message {
   inline void clear_has_num_actions_ready();
   inline void set_has_errors();
   inline void clear_has_errors();
+  inline void set_has_flags();
+  inline void clear_has_flags();
 
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
 
@@ -465,6 +474,7 @@ class Download : public ::google::protobuf::Message {
   ::google::protobuf::uint32 errors_;
   ::google::protobuf::RepeatedPtrField< ::data::File > file_;
   ::google::protobuf::RepeatedPtrField< ::data::Stash > stash_;
+  ::google::protobuf::uint32 flags_;
   friend void  protobuf_AddDesc_engine_2eproto();
   friend void protobuf_AssignDesc_engine_2eproto();
   friend void protobuf_ShutdownFile_engine_2eproto();
@@ -1779,7 +1789,31 @@ inline void Download::set_errors(::google::protobuf::uint32 value) {
   // @@protoc_insertion_point(field_set:data.Download.errors)
 }
 
-// repeated .data.File file = 10;
+// required uint32 flags = 10;
+inline bool Download::has_flags() const {
+  return (_has_bits_[0] & 0x00000200u) != 0;
+}
+inline void Download::set_has_flags() {
+  _has_bits_[0] |= 0x00000200u;
+}
+inline void Download::clear_has_flags() {
+  _has_bits_[0] &= ~0x00000200u;
+}
+inline void Download::clear_flags() {
+  flags_ = 0u;
+  clear_has_flags();
+}
+inline ::google::protobuf::uint32 Download::flags() const {
+  // @@protoc_insertion_point(field_get:data.Download.flags)
+  return flags_;
+}
+inline void Download::set_flags(::google::protobuf::uint32 value) {
+  set_has_flags();
+  flags_ = value;
+  // @@protoc_insertion_point(field_set:data.Download.flags)
+}
+
+// repeated .data.File file = 11;
 inline int Download::file_size() const {
   return file_.size();
 }
@@ -1809,7 +1843,7 @@ Download::mutable_file() {
   return &file_;
 }
 
-// repeated .data.Stash stash = 11;
+// repeated .data.Stash stash = 12;
 inline int Download::stash_size() const {
   return stash_.size();
 }

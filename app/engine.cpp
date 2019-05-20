@@ -209,14 +209,22 @@ bool Engine::downloadNzbContents(const Download& download, std::vector<NZBConten
     batch.size    = 0;
     for (auto& item : nzb)
     {
+        auto name = nntp::find_filename(toUtf8(item.subject));
+
         newsflash::ui::FileDownload file;
         file.articles = std::move(item.segments);
         file.groups   = std::move(item.groups);
         file.size     = item.bytes;
         file.path     = batch.path;
-        file.desc     = nntp::find_filename(toUtf8(item.subject));
-        if (file.desc.size() < 5)
+        if (name.size() > 5)
+        {
+            file.ignore_yenc_filename = true;
+            file.desc = std::move(name);
+        }
+        else
+        {
             file.desc = toUtf8(item.subject);
+        }
         batch.files.push_back(std::move(file));
         batch.size += item.bytes;
     }

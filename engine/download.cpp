@@ -47,10 +47,12 @@ Download::Download(
     const std::vector<std::string>& groups,
     const std::vector<std::string>& articles,
     const std::string& path,
-    const std::string& name)
+    const std::string& name,
+    bool ignore_yenc_filename)
     : groups_(groups)
     , articles_(articles)
     , path_(path)
+    , ignore_yenc_filename_(ignore_yenc_filename)
 {
     name_         = fs::remove_illegal_filename_chars(name);
     num_decode_jobs_   = articles_.size();
@@ -159,6 +161,14 @@ void Download::Complete(action& act, std::vector<std::unique_ptr<action>>& next)
             const auto offset = dec->HasOffset() ?
                 dec->GetBinaryOffset() + 1 : 0;
             const auto size = dec->GetBinarySize();
+
+            // ignore_yenc_filename flag is a workaround for obfuscation
+            // where each yEnc header has a random garbage filename.
+            // without this flag we'd create a separate file for each yEnc junk.
+            // so this flag effectively forces all data to be written out to
+            // a single file only.
+            if (dec->IsMultipart() && ignore_yenc_filename_)
+                name = name_;
 
             std::shared_ptr<DataFile> file = create_file(name, size);
             std::unique_ptr<action> write  = file->Write(offset, std::move(binary), callback_);
@@ -313,6 +323,14 @@ void Download::Pack(std::string* data) const
 
     auto* ptr = &download;
 
+    uint32_t flags = 0;
+    if (ignore_yenc_filename_)
+        flags |= 1 << 0;
+    if (overwrite_)
+        flags |= 1 << 1;
+    if (discardtext_)
+        flags |= 1 << 2;
+
     ptr->set_path(path_);
     ptr->set_name(name_);
     ptr->set_stash_name(stash_name_);
@@ -320,6 +338,8 @@ void Download::Pack(std::string* data) const
     ptr->set_num_decode_jobs(num_decode_jobs_);
     ptr->set_num_actions_total(num_actions_total_);
     ptr->set_num_actions_ready(num_actions_ready_);
+    ptr->set_flags(flags);
+
 
     for (const auto& group : groups_)
     {
@@ -375,6 +395,11 @@ void Download::Load(const std::string& data)
     num_decode_jobs_   = ptr.num_decode_jobs();
     num_actions_total_ = ptr.num_actions_total();
     num_actions_ready_ = ptr.num_actions_ready();
+
+    const std::uint32_t flags = ptr.flags();
+    ignore_yenc_filename_ = (flags & (1<<0));
+    overwrite_ = (flags & (1<<1));
+    discardtext_ = (flags & (1<<2));
 
     // load the files that we're working on.
     for (int i=0; i<ptr.file_size(); ++i)

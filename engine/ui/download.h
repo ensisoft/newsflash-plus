@@ -66,6 +66,11 @@ namespace newsflash
 
         // the list of groups into which look for the messge ids.
         std::vector<std::string> groups;
+
+        // if this flag is set to true the filename is
+        // always taken from 'desc' irrespective what the
+        // names the actual content reports.
+        bool ignore_yenc_filename = false;
     };
 
     // A set of FileDownloads grouped together into a "batch"
