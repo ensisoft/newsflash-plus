@@ -77,7 +77,7 @@ Accounts::Account Accounts::suggestAccount() const
         ++index;
     }
 
-    Account next = {0};
+    Account next = {};
     next.id                 = CurrentAccountId++;
     next.name               = name;
     next.generalPort        = 119;
