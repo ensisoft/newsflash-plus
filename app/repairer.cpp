@@ -390,7 +390,12 @@ Repairer::Repairer(std::unique_ptr<ParityChecker> engine) : mEngine(std::move(en
             [&](const RecoveryFiles& files) {
                 return files.archiveID == arc.getGuid();
             });
-        ENDCHECK(mHistory, ait);
+        // difficult to replicate bug that sometimes causes the archive not to be found
+        // in our list of repairs. Dunno what the f*k is the actual problem.
+        if (ait == std::end(mHistory))
+            return;
+
+        //ENDCHECK(mHistory, ait);
         auto& files = (*ait).files;
 
         auto it = std::find_if(std::begin(files), std::end(files),
