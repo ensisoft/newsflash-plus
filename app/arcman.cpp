@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -69,6 +69,8 @@ void ArchiveManager::packCompleted(const app::FilePackInfo& pack)
     dir.setPath(pack.path);
     dir.setNameFilters(QStringList("*.par2"));
     files = dir.entryList();
+
+    // look for a foo.par2 files to repair
     for (int i=0; i<files.size(); ++i)
     {
         QFileInfo file(files[i]);
@@ -79,25 +81,54 @@ void ArchiveManager::packCompleted(const app::FilePackInfo& pack)
         Archive arc;
         arc.path  = pack.path;
         arc.desc  = file.fileName();
-        arc.file  = file.fileName();        
+        arc.file  = file.fileName();
         arc.state = Archive::Status::Queued;
         m_repairer.addRecovery(arc);
 
         // record how many pending repairs we have scheduled for the archives
-        // in this filepack location. 
+        // in this filepack location.
         // we can launch extracts only after *all* the repairs have completed.
         // otherwise we might end up in a race condition (with the cleanup options)
         // where the extract process extracs and cleans up archives that have not yet
         // completed their repair thus resulting in a silly (and incorrect) repair error.
         m_repairs[pack.path]++;
 
-        DEBUG("FilePack in '%1' has now %2 pending repairs", 
+        DEBUG("FilePack in '%1' has now %2 pending repairs",
             pack.path, m_repairs[pack.path]);
 
         m_pendingArchives.insert(arc.getGuid());
 
         haveRepairs = true;
     }
+
+    // if foo.par2 were not found then look for foo.vol000+vol001.par2 files
+    if (!haveRepairs)
+    {
+        for (int i=0; i<files.size(); ++i)
+        {
+            const QFileInfo file(files[i]);
+            const QString& name = file.completeBaseName();
+            if (!(name.contains(".vol0+")   || name.contains(".vol00+") ||
+                  name.contains(".vol000+") || name.contains(".vol0000+")))
+                continue;
+
+            Archive arc;
+            arc.path = pack.path;
+            arc.desc = file.fileName();
+            arc.file = file.fileName();
+            arc.state = Archive::Status::Queued;
+            m_repairer.addRecovery(arc);
+            m_repairs[pack.path]++;
+
+            DEBUG("Filepack in '%1' has now %2 pending repairs",
+                pack.path, m_repairs[pack.path]);
+
+            m_pendingArchives.insert(arc.getGuid());
+            haveRepairs = true;
+        }
+    }
+
+
     if (!haveRepairs)
     {
         QDir dir;
@@ -118,9 +149,9 @@ void ArchiveManager::packCompleted(const app::FilePackInfo& pack)
         }
     }
 
-    emit numPendingArchives(m_pendingArchives.size());    
+    emit numPendingArchives(m_pendingArchives.size());
 
-    DEBUG("%1 pending archives", m_pendingArchives.size());    
+    DEBUG("%1 pending archives", m_pendingArchives.size());
 }
 
 void ArchiveManager::repairReady(const app::Archive& arc)
@@ -144,7 +175,7 @@ void ArchiveManager::repairReady(const app::Archive& arc)
 
     m_repairs.erase(it);
 
-    DEBUG("Repairs completed for '%1'. Scanning for archives to unpack.", 
+    DEBUG("Repairs completed for '%1'. Scanning for archives to unpack.",
         arc.path);
 
     QDir dir;
@@ -188,7 +219,7 @@ void ArchiveManager::unpackReady(const app::Archive& arc)
     for (const auto& vol : volumes)
     {
         // sometimes we have a .rar file inside a .rar file. (subtitles)
-        // in such a case we want to rescan the archive folder for new 
+        // in such a case we want to rescan the archive folder for new
         // rar files that we havent extracted yet and extract those too.
         // this means that we need to manually keep track of the archives
         // that we have already extracted.
@@ -211,7 +242,7 @@ void ArchiveManager::unpackReady(const app::Archive& arc)
     emit numPendingArchives(m_pendingArchives.size());
 }
 
-bool ArchiveManager::isOurArchive(const app::Archive& arc) const 
+bool ArchiveManager::isOurArchive(const app::Archive& arc) const
 {
     const auto it = m_pendingArchives.find(arc.getGuid());
 
