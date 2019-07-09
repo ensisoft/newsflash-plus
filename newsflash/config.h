@@ -139,7 +139,7 @@
 // inside string literals easily for exaple L"yadi yadi" VERSION_STRING "yadi yadi"
 #define NEWSFLASH_VERSION   "4.2.1"
 //#define NEWSFLASH_VERSION   "master" // remember to edit!
-#define NEWSFLASH_COPYRIGHT "Copyright (c) Sami V\303\244is\303\244nen 2005-2017"
+#define NEWSFLASH_COPYRIGHT "Copyright (c) Sami V\303\244is\303\244nen 2005-2019"
 #define NEWSFLASH_WEBSITE   "http://www.ensisoft.com"
 #define NEWSFLASH_DONATE_URL "http://www.ensisoft.com/donate"
 
