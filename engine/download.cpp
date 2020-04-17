@@ -21,7 +21,8 @@
 #include "newsflash/config.h"
 
 #include "newsflash/warnpush.h"
-#  include "engine.pb.h"
+#  include <third_party/nlohmann/json.hpp>
+#  include <third_party/base64/base64.h>
 #include "newsflash/warnpop.h"
 
 #include <functional>
@@ -317,11 +318,7 @@ bitflag<Task::Error> Download::GetErrors() const
 
 void Download::Pack(std::string* data) const
 {
-    GOOGLE_PROTOBUF_VERIFY_VERSION;
-
-    data::Download download;
-
-    auto* ptr = &download;
+    nlohmann::json json;
 
     uint32_t flags = 0;
     if (ignore_yenc_filename_)
@@ -331,101 +328,98 @@ void Download::Pack(std::string* data) const
     if (discardtext_)
         flags |= 1 << 2;
 
-    ptr->set_path(path_);
-    ptr->set_name(name_);
-    ptr->set_stash_name(stash_name_);
-    ptr->set_errors(errors_.value());
-    ptr->set_num_decode_jobs(num_decode_jobs_);
-    ptr->set_num_actions_total(num_actions_total_);
-    ptr->set_num_actions_ready(num_actions_ready_);
-    ptr->set_flags(flags);
+    json["path"] = path_;
+    json["name"] = name_;
+    json["stash_name"] = stash_name_;
+    json["error_bits"] = errors_.value();
+    json["num_decode_jobs"] = num_decode_jobs_;
+    json["num_actions_total"] = num_actions_total_;
+    json["num_actions_ready"] = num_actions_ready_;
+    json["flags"] = flags;
+    json["groups"] = groups_;
+    json["articles"] = articles_;
 
-
-    for (const auto& group : groups_)
-    {
-        ptr->add_group(group);
-    }
-    for (const auto& article : articles_)
-    {
-        ptr->add_article(article);
-    }
     for (const auto& file : files_)
     {
-        auto* file_data = ptr->add_file();
-        file_data->set_filename(file->GetFileName());
-        file_data->set_filepath(file->GetFilePath());
-        file_data->set_dataname(file->GetBinaryName());
-        file_data->set_is_binary(file->IsBinary());
+        nlohmann::json json_f;
+        json_f["name"] = file->GetFileName();
+        json_f["path"] = file->GetFilePath();
+        json_f["binary_name"] = file->GetBinaryName();
+        json_f["is_binary"] = file->IsBinary();
+        json["files"].push_back(json_f);
     }
 
     for (size_t i=0; i<stash_.size(); ++i)
     {
+        // the stash is a binary buffer of content that we haven't yet been able to
+        // write out. base64 encode it!
         const auto& stash = *stash_[i];
-        std::string str;
-        std::copy(std::begin(stash), std::end(stash), std::back_inserter(str));
-        auto* stash_data = ptr->add_stash();
-        stash_data->set_sequence(i);
-        stash_data->set_data(str);
+        std::string binary;
+        std::copy(std::begin(stash), std::end(stash), std::back_inserter(binary));
+
+        const std::string& base64 = base64::Encode(binary);
+        nlohmann::json json_s;
+        json_s["sequence_number"] = i;
+        json_s["data"] = base64;
+        json["stashes"].push_back(json_s);
     }
-    if (!download.SerializeToString(data))
-        throw std::runtime_error("protobuf SerializeToString failed");
+    *data = json.dump(2);
 }
 
 void Download::Load(const std::string& data)
 {
-    GOOGLE_PROTOBUF_VERIFY_VERSION;
+    const nlohmann::json& json = nlohmann::json::parse(data);
 
-    data::Download download;
-    if (!download.ParseFromString(data))
-        throw std::runtime_error("protobuf ParseFromString failed");
+    const unsigned error_bits = json["error_bits"];
+    const unsigned flag_bits = json["flags"];
 
-    auto& ptr = download;
+    path_ = json["path"];
+    name_ = json["name"];
+    stash_name_ = json["stash_name"];
+    errors_.set_from_value(error_bits);
+    num_decode_jobs_ = json["num_decode_jobs"];
+    num_actions_total_ = json["num_actions_total"];
+    num_actions_ready_ = json["num_actions_ready"];
 
     // load the groups and article / message names
-    for (int i=0; i<ptr.group_size(); ++i)
-        groups_.push_back(ptr.group(i));
-    for (int i=0; i<ptr.article_size(); ++i)
-        articles_.push_back(ptr.article(i));
+    articles_ = json["articles"].get<std::vector<std::string>>();
+    groups_   = json["groups"].get<std::vector<std::string>>();
 
-    path_ = ptr.path();
-    name_ = ptr.name();
-    stash_name_ = ptr.stash_name();
-    errors_.set_from_value(ptr.errors());
-
-    num_decode_jobs_   = ptr.num_decode_jobs();
-    num_actions_total_ = ptr.num_actions_total();
-    num_actions_ready_ = ptr.num_actions_ready();
-
-    const std::uint32_t flags = ptr.flags();
+    const std::uint32_t flags = flag_bits; //ptr.flags();
     ignore_yenc_filename_ = (flags & (1<<0));
     overwrite_ = (flags & (1<<1));
     discardtext_ = (flags & (1<<2));
 
     // load the files that we're working on.
-    for (int i=0; i<ptr.file_size(); ++i)
+    if (json.contains("files"))
     {
-        const auto& file_data = ptr.file(i);
-        const auto& path = file_data.filepath();
-        const auto& name = file_data.filename();
-        const auto& binary_name = file_data.dataname();
-        const bool is_binary = file_data.is_binary();
-        auto file = std::make_shared<DataFile>(path, name, binary_name, is_binary);
-        files_.push_back(file);
+        for (const auto& json_f : json["files"].items())
+        {
+            const auto& value = json_f.value();
+            const std::string& path = value["path"];
+            const std::string& name = value["name"];
+            const std::string& binary_name = value["binary_name"];
+            const bool is_binary = value["is_binary"];
+            auto file = std::make_shared<DataFile>(path, name, binary_name, is_binary);
+            files_.push_back(file);
+        }
     }
 
-    if (ptr.stash_size())
+    if (json.contains("stashes"))
     {
-        stash_.resize(num_decode_jobs_);
-    }
+        for (const auto& json_s : json["stashes"].items())
+        {
+            const auto& value = json_s.value();
+            const unsigned sequence_number = value["sequence_number"];
+            const std::string& base64 = value["data"];
+            const std::string& binary = base64::Decode(base64);
+            std::unique_ptr<stash> stash(new Download::stash);
+            std::copy(std::begin(binary), std::end(binary), std::back_inserter(*stash));
 
-    for (int i=0; i<ptr.stash_size(); ++i)
-    {
-        const auto& stash_data = ptr.stash(i);
-        const auto index = stash_data.sequence();
-        const auto& str  = stash_data.data();
-        std::unique_ptr<stash> s(new stash);
-        std::copy(std::begin(str), std::end(str), std::back_inserter(*s));
-        stash_[index] = std::move(s);
+            if (stash_.empty())
+                stash_.resize(num_decode_jobs_);
+            stash_[sequence_number] = std::move(stash);
+        }
     }
 }
 

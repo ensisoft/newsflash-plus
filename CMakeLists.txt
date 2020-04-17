@@ -82,7 +82,6 @@ set(CMAKE_AUTORCC ON)
 include_directories(BEFORE "${CMAKE_CURRENT_LIST_DIR}/third_party/qjson/include")
 include_directories(BEFORE "${CMAKE_CURRENT_LIST_DIR}/third_party")
 include_directories(BEFORE "${CMAKE_CURRENT_LIST_DIR}/third_party/openssl/sdk/include")
-include_directories(BEFORE "${CMAKE_CURRENT_LIST_DIR}/third_party/protobuf/src")
 include_directories(BEFORE "${CMAKE_CURRENT_LIST_DIR}/third_party/zlib")
 include_directories(BEFORE "${Boost_INCLUDE_DIRS}")
 # UI generated files do a global include for custom widgets such as the pieview.
@@ -107,16 +106,9 @@ link_directories("${CMAKE_CURRENT_LIST_DIR}/third_party/boost_1_51_0/sdk/lib")
 
 # platform specific link dirs
 if (WIN32)
-    # different iterator levels thus must use correct lib (either debug or release)
-    if (CMAKE_BUILD_TYPE MATCHES "Release")
-        link_directories("${CMAKE_CURRENT_LIST_DIR}/third_party/protobuf/vsprojects/x64/Release")
-    elseif(CMAKE_BUILD_TYPE MATCHES "Debug")
-        link_directories("${CMAKE_CURRENT_LIST_DIR}/third_party/protobuf/vsprojects/x64/Debug")
-    endif()
     link_directories("${CMAKE_CURRENT_LIST_DIR}/third_party/qjson/lib/Release")
     link_directories("${CMAKE_CURRENT_LIST_DIR}/third_party/zlib/Release")
 elseif(UNIX)
-    link_directories("${CMAKE_CURRENT_LIST_DIR}/third_party/protobuf/lib")
     link_directories("${CMAKE_CURRENT_LIST_DIR}/third_party/qjson/lib")
     link_directories("${CMAKE_CURRENT_LIST_DIR}/third_party/zlib/")
 endif()
@@ -125,12 +117,10 @@ if (WIN32)
     set(LIB_OPENSSL  "ssleay32")
     set(LIB_CRYPTO   "libeay32")
     set(LIB_Z        "zlib") # note that in a very gay fashion the lib is zlib.lib and the library is zlib1.dll
-    set(LIB_PROTOBUF "libprotobuf")
 elseif(UNIX)
     set(LIB_OPENSSL  "ssl.a")
     set(LIB_CRYPTO   "crypto.a")
     set(LIB_Z        "z")
-    set(LIB_PROTOBUF "protobuf")
 endif()
 
 # compiler specific compiler & linker flags
@@ -186,11 +176,12 @@ target_link_libraries(smtpclient_test smtpclient Qt5::Core Qt5::Widgets)
 
 
 # build the engine lib
-file(GLOB ENGINE_SOURCE engine/*.cpp engine/*.cc)
-add_library(engine STATIC ${ENGINE_SOURCE})
+file(GLOB ENGINE_SOURCE engine/*.cpp)
+add_library(engine STATIC
+    ${ENGINE_SOURCE}
+    third_party/base64/base64.cpp)
 target_link_libraries(engine INTERFACE
     ${Boost_LIBRARIES}
-    ${LIB_PROTOBUF}
     ${LIB_Z}
     ${LIB_OPENSSL}
     ${LIB_CRYPTO})

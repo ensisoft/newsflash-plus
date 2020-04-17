@@ -78,17 +78,6 @@ The zlib compression library. The current version is 1.2.11
 http://www.zlib.net/
 
 
-third_party/protobuf
--------------------------
-Google protobuffer library 2.6.1
-https://github.com/google/protobuf
-
-Use the protoc to compile the .proto files in the project.
-```
-$ newsflash/engine
-$ ./protoc engine.proto --cpp_out=.
-```
-
 
 third_party/openssl
 ------------------------
@@ -177,54 +166,6 @@ NOTE: if you get this Cryptic error:
 it means that the script interpreter is shitting itself on windows style line endings, so you probably downloaded
 the .zip file instead of the .tar.gz  (you can fix this with dos2unix, but then also the executable bits are not set
 and configure will fail with some other cryptic error such as "no make or gmake was found bla bla".
-
-
-
-Build protobuf
-
-```
-    $ cd third_party/protobuf
-    $ ./configure
-    $ make
-    $ mkdir lib
-    $ cp src/.libs/libprotobuf.a lib/libprotobuf.a
-```
-
-WARNING: This might shit itself if aclocal has been updated to another version.
-
-```
-    WARNING: 'aclocal-1.14' is missing on your system.
-         You should only need it if you modified 'acinclude.m4' or
-         'configure.ac' or m4 files included by 'configure.ac'.
-         The 'aclocal' program is part of the GNU Automake package:
-         <http://www.gnu.org/software/automake>
-         It also requires GNU Autoconf, GNU m4 and Perl in order to run:
-         <http://www.gnu.org/software/autoconf>
-         <http://www.gnu.org/software/m4/>
-         <http://www.perl.org/>
-    Makefile:641: recipe for target 'aclocal.m4' failed
- ```
-
-You can try to fix it by opening and editing protobuf/Makefile. Sometimes this works sometimes it doesn't. Seriously I can't f* understand why if I extract the .tar.gz to another folder it builds there
-but the checkout in third_party won't build. Yet these two folders compare similar (with Meld). So WTF!?
-
-```
-L240: ACLOCAL = ${SHELL} /home/enska/coding/newsflash/protobuf/missing <del>aclocal-1.14</del>
-L240: ACLOCAL = ${SHELL} /home/enska/coding/newsflash/protobuf/missing aclocal-1.15
-
-L246: AUTOMAKE = ${SHELL} /home/enska/coding/newsflash/protobuf/missing <del>automake-1.14</del>
-L246: AUTOMAKE = ${SHELL} /home/enska/coding/newsflash/protobuf/missing automake-1.15
-
-```
-If the above fails then Download and extract the protobuf-2.6.1 lib into some other folder and build it there,
-and then copy the libs over. That usually works.
-
-Or you can try the following:
-```
-$ aclocal
-$ automake
-$ ./configure
-```
 
 
 Build qjson
