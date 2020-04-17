@@ -113,6 +113,9 @@ void logCopyright()
     INFO("Compiler: %1 %2", COMPILER_NAME , COMPILER_VERSION);
     INFO(QString::fromUtf8(NEWSFLASH_COPYRIGHT));
     INFO(NEWSFLASH_WEBSITE);
+    INFO("JSON for Modern C++");
+    INFO("https://github.com/nlohmann/json");
+    INFO("Copyright (c) 2013-2019 Niels Lohmann <http://nlohmann.me>");
     INFO("Boost software library %1.%2.%3", boost_major, boost_minor, boost_revision);
     INFO("http://www.boost.org");
     INFO("16x16 Free Application Icons");

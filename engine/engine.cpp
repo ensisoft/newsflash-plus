@@ -21,7 +21,8 @@
 #include "newsflash/config.h"
 
 #include "newsflash/warnpush.h"
-#  include "engine.pb.h"
+#  include <third_party/nlohmann/json.hpp>
+#  include <third_party/base64/base64.h>
 #include "newsflash/warnpop.h"
 
 #include <algorithm>
@@ -900,19 +901,21 @@ public:
         LOG_I("Task ", ui_.task_id, " (", ui_.desc, ") created");
     }
 
-    TaskState(std::unique_ptr<Task> task, const data::TaskState& state)
+    TaskState(std::unique_ptr<Task> task, const nlohmann::json& json)
     {
+        const unsigned error_bits = json["error_bits"];
+
         task_              = std::move(task);
         ui_.completion     = task_->GetProgress();
-        ui_.task_id        = state.task_id();
-        ui_.batch_id       = state.batch_id();
-        ui_.account        = state.account_id();
-        ui_.desc           = state.desc();
-        ui_.size           = state.size();
-        ui_.path           = state.path();
-        ui_.error.set_from_value(state.errors());
-        ui_.state          = static_cast<states>(state.state());
-        ui_.runtime        = state.runtime();
+        ui_.task_id        = json["id"];
+        ui_.batch_id       = json["batch"];
+        ui_.account        = json["account"];
+        ui_.desc           = json["desc"];
+        ui_.size           = json["size"];
+        ui_.path           = json["path"];
+        ui_.error.set_from_value(error_bits);
+        ui_.state          = static_cast<states>((int)json["state"]);
+        ui_.runtime        = json["runtime"];
         if (ui_.state == states::Active ||
             ui_.state == states::Waiting ||
             ui_.state == states::Crunching)
@@ -941,7 +944,7 @@ public:
         locking_ = LockState::Unlocked;
     }
 
-    void Serialize(data::TaskList& list)
+    void Serialize(nlohmann::json& json)
     {
         ASSERT(num_active_actions_ == 0);
         ASSERT(locking_ == LockState::Unlocked);
@@ -951,19 +954,23 @@ public:
 
         std::string data;
         task_->Pack(&data);
+        // base64 encode it so we can put it json
+        const auto& base64 = base64::Encode(data);
 
-        auto* ptr = list.add_tasks();
-        ptr->set_task_id(ui_.task_id);
-        ptr->set_account_id(ui_.account);
-        ptr->set_batch_id(ui_.batch_id);
-        ptr->set_desc(ui_.desc);
-        ptr->set_size(ui_.size);
-        ptr->set_path(ui_.path);
-        ptr->set_errors(ui_.error.value());
-        ptr->set_state(static_cast<::google::protobuf::uint32>(ui_.state));
-        ptr->set_runtime(ui_.runtime);
-        ptr->set_type(1); // TODO: put a dummy here for now since we're only saving downloads
-        ptr->set_data(data);
+        nlohmann::json foo;
+        foo["id"] = ui_.task_id;
+        foo["account"] = ui_.account;
+        foo["batch"] = ui_.batch_id;
+        foo["desc"] = ui_.desc;
+        foo["size"] = ui_.size;
+        foo["path"] = ui_.path;
+        foo["error_bits"] = ui_.error.value();
+        foo["state"] = static_cast<int>(ui_.state);
+        foo["type"] = 1; // TODO: put a dummy here for now since we're only saving downloads
+        foo["data"] = base64;
+        foo["runtime"] = ui_.runtime;
+
+        json["tasks"].push_back(foo);
     }
 
     void Kill(Engine::State& state)
@@ -1506,19 +1513,20 @@ public:
         LOG_D("Batch has 1 tasks");
     }
 
-    BatchState(const data::Batch& data)
+    BatchState(const nlohmann::json& data)
     {
-        ui_.batch_id   = data.batch_id();
-        ui_.task_id    = data.batch_id();
-        ui_.account    = data.account_id();
-        ui_.desc       = data.desc();
-        ui_.path       = data.path();
-        ui_.size       = data.byte_size();
-        ui_.completion = data.completion();
-        ui_.runtime    = data.runtime();
-        num_tasks_     = data.num_tasks();
-        type_          = static_cast<Type>(data.type());
-        damaged_       = data.damaged();
+        ui_.batch_id   = data["id"];
+        ui_.task_id    = data["id"];
+        ui_.account    = data["account"];
+        ui_.desc       = data["desc"];
+        ui_.path       = data["path"];
+        ui_.size       = data["size"];
+        ui_.completion = data["completion"];
+        ui_.runtime    = data["runtime"];
+        num_tasks_     = data["num_tasks"];
+        num_files_     = data["num_files"];
+        damaged_       = data["is_damaged"];
+        type_          = static_cast<Type>((int)data["type"]);
     }
 
    ~BatchState()
@@ -1526,21 +1534,23 @@ public:
         LOG_I("Batch ", ui_.batch_id, " deleted");
     }
 
-    void Serialize(data::TaskList& list)
+    void Serialize(nlohmann::json& json)
     {
-        auto* data = list.add_batch();
-        data->set_batch_id(ui_.task_id);
-        data->set_account_id(ui_.account);
-        data->set_desc(ui_.desc);
-        data->set_byte_size(ui_.size);
-        data->set_path(ui_.path);
-        data->set_runtime(ui_.runtime);
-        data->set_completion(ui_.completion);
-        data->set_num_tasks(num_tasks_);
-        data->set_num_files(num_files_);
-        data->set_damaged(damaged_);
-        data->set_type(static_cast<::google::protobuf::uint32>(type_));
+        nlohmann::json data;
+        data["id"] = ui_.task_id;
+        data["account"] = ui_.account;
+        data["desc"] = ui_.desc;
+        data["path"] = ui_.path;
+        data["size"] = ui_.size;
+        data["completion"] = ui_.completion;
+        data["runtime"] = ui_.runtime;
+        data["num_tasks"] = num_tasks_;
+        data["num_files"] = num_files_;
+        data["is_damaged"] = damaged_;
+        data["type"] = static_cast<int>(type_);
 
+        // todo move this
+        json["batches"].push_back(data);
     }
 
     void lock(Engine::State& state)
@@ -2503,18 +2513,16 @@ void Engine::Stop()
 
 void Engine::SaveTasks(const std::string& file)
 {
-    GOOGLE_PROTOBUF_VERIFY_VERSION;
-
 #if defined(WINDOWS_OS)
     // msvc specific extension..
-    std::ofstream out(utf8::decode(file), std::ios::out | std::ios::binary | std::ios::trunc);
+    std::ofstream out(utf8::decode(file), std::ios::out | std::ios::trunc);
 #elif defined(LINUX_OS)
-    std::ofstream out(file, std::ios::out | std::ios::binary | std::ios::trunc);
+    std::ofstream out(file, std::ios::out | std::ios::trunc);
 #endif
     if (!out.is_open())
         throw std::system_error(errno, std::generic_category(), "failed to open: " + file);
 
-    data::TaskList list;
+    nlohmann::json json;
 
     for (const auto& batch : state_->batches)
     {
@@ -2530,75 +2538,78 @@ void Engine::SaveTasks(const std::string& file)
         if (!can_serialize)
             continue;
 
-        batch->Serialize(list);
+        batch->Serialize(json);
     }
 
     for (const auto& task : state_->tasks)
     {
-        task->Serialize(list);
+        task->Serialize(json);
     }
+    json["bytes_queued"] = state_->bytes_queued;
+    json["bytes_ready"]  = state_->bytes_ready;
+    json["object_id"]    = state_->oid;
 
-    list.set_bytes_queued(state_->bytes_queued);
-    list.set_bytes_ready(state_->bytes_ready);
-    list.set_object_id(state_->oid);
-
-    if (!list.SerializeToOstream(&out))
-        throw std::runtime_error("engine serialize to stream failed");
+    out << json.dump(2);
 }
 
 void Engine::LoadTasks(const std::string& file)
 {
-    GOOGLE_PROTOBUF_VERIFY_VERSION;
 
 #if defined(WINDOWS_OS)
     // msvc extension
-    std::ifstream in(utf8::decode(file), std::ios::in | std::ios::binary);
+    std::ifstream in(utf8::decode(file), std::ios::in);
 #elif defined(LINUX_OS)
-    std::ifstream in(file, std::ios::in | std::ios::binary);
+    std::ifstream in(file, std::ios::in);
 #endif
     if (!in.is_open())
         throw std::system_error(errno, std::generic_category(), "failed to ldata from: " + file);
 
-    data::TaskList list;
-    if (!list.ParseFromIstream(&in))
-        throw std::runtime_error("engine parse from stream failed");
+    std::string content((std::istreambuf_iterator<char>(in)),
+                        (std::istreambuf_iterator<char>()));
+    const auto& json = nlohmann::json::parse(content);
 
     Task::Settings settings;
     settings.discard_text_content = state_->discard_text;
     settings.overwrite_existing_files = state_->overwrite_existing;
 
-    for (int i=0; i<list.tasks_size(); ++i)
+    if (json.contains("tasks"))
     {
-        const auto& state_data = list.tasks(i);
-        const auto& type = state_data.type();
-        const auto& data = state_data.data();
-        std::unique_ptr<Task> task(state_->factory->AllocateTask(type));
-        task->Load(data);
-        if (auto* ptr = dynamic_cast<ContentTask*>(task.get()))
+        for (const auto& json_p : json["tasks"].items())
         {
-            ptr->SetWriteCallback(std::bind(&Engine::State::on_write_done, state_.get(),
-                std::placeholders::_1));
+            const int type = json_p.value()["type"];
+            const std::string& base64 = json_p.value()["data"];
+            std::unique_ptr<Task> task(state_->factory->AllocateTask(type));
+
+            const std::string& data = base64::Decode(base64);
+            task->Load(data);
+
+            if (auto* ptr = dynamic_cast<ContentTask*>(task.get()))
+            {
+                ptr->SetWriteCallback(std::bind(&Engine::State::on_write_done, state_.get(),
+                    std::placeholders::_1));
+            }
+            std::unique_ptr<TaskState> state(new TaskState(std::move(task), json_p.value()));
+            state->Configure(settings);
+            state_->tasks.push_back(std::move(state));
+            state_->num_pending_tasks++;
         }
-        std::unique_ptr<TaskState> state(new TaskState(std::move(task), state_data));
-        state->Configure(settings);
-        state_->tasks.push_back(std::move(state));
-        state_->num_pending_tasks++;
     }
 
-    for (int i=0; i<list.batch_size(); ++i)
+    if (json.contains("batches"))
     {
-        const bool run_callbacks = false;
+        for (const auto& json_p : json["batches"].items())
+        {
+            const bool run_callbacks = false;
 
-        const auto& data   = list.batch(i);
-        std::unique_ptr<BatchState> batch(new BatchState(data));
-        batch->UpdateState(*state_, run_callbacks);
-        state_->batches.push_back(std::move(batch));
+            std::unique_ptr<BatchState> batch(new BatchState(json_p.value()));
+            batch->UpdateState(*state_, run_callbacks);
+            state_->batches.push_back(std::move(batch));
+        }
     }
 
-
-    state_->bytes_queued = list.bytes_queued();
-    state_->bytes_ready  = list.bytes_ready();
-    state_->oid          = list.object_id();
+    state_->bytes_queued = json["bytes_queued"];
+    state_->bytes_ready  = json["bytes_ready"];
+    state_->oid          = json["object_id"];
 }
 
 void Engine::Reset()
