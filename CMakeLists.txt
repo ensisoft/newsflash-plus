@@ -110,8 +110,8 @@ if (WIN32)
     set(LIB_Z        "zlib") # note that in a very gay fashion the lib is zlib.lib and the library is zlib1.dll
     set(LIB_PROTOBUF "libprotobuf")
 elseif(UNIX)
-    set(LIB_OPENSSL  "ssl")
-    set(LIB_CRYPTO   "crypto")
+    set(LIB_OPENSSL  "ssl.a")
+    set(LIB_CRYPTO   "crypto.a")
     set(LIB_Z        "z")
     set(LIB_PROTOBUF "protobuf")
 endif()
@@ -120,8 +120,8 @@ endif()
 if (CMAKE_COMPILER_IS_GNUCC)
     # we need -rdynamic for backtrace and backtrace_symbols
     # in order to dump a stacktrace from the ASSERT macro.
-    set(CMAKE_EXE_LINKER_FLAGS    "${CMAKE_EXE_LINKER_FLAGS}    -rdynamic -pthread")
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -rdynamic -pthread")
+    set(CMAKE_EXE_LINKER_FLAGS    "${CMAKE_EXE_LINKER_FLAGS}    -rdynamic -pthread -ldl")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -rdynamic -pthread -ldl")
     set(CMAKE_CXX_STANDARD 14)
 elseif(MSVC)
     # /Zc:wchar_t  treats wchar_t as a native type
