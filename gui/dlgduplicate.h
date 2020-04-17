@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -23,7 +23,7 @@
 #include "newsflash/config.h"
 
 #include "newsflash/warnpush.h"
-#  include <QtGui/QDialog>
+#  include <QDialog>
 #  include "ui_dlgduplicate.h"
 #include "newsflash/warnpop.h"
 #include "app/historydb.h"
@@ -37,7 +37,7 @@ namespace gui
         Q_OBJECT
 
     public:
-        DlgDuplicate(QWidget* parent, const QString& desc, 
+        DlgDuplicate(QWidget* parent, const QString& desc,
             const app::HistoryDb::Item& item) : QDialog(parent)
         {
             m_ui.setupUi(this);
@@ -51,7 +51,7 @@ namespace gui
             m_ui.lblDesc->setText(str);
         }
 
-        bool checkDuplicates() const 
+        bool checkDuplicates() const
         {
             return m_ui.chkDuplicates->isChecked();
         }

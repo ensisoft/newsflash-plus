@@ -23,9 +23,9 @@
 #include "newsflash/config.h"
 
 #include "newsflash/warnpush.h"
-#  include <QtGui/QStyle>
-#  include <QtGui/QMessageBox>
-#  include <QtGui/QSystemTrayIcon>
+#  include <QStyle>
+#  include <QMessageBox>
+#  include <QSystemTrayIcon>
 #  include <QDir>
 #  include <QFile>
 #  include <QUrl>

@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -23,7 +23,7 @@
 #include "newsflash/config.h"
 
 #include "newsflash/warnpush.h"
-#  include <QtGui/QDialog>
+#  include <QDialog>
 #  include <QModelIndex>
 #  include <QList>
 #  include <QString>
@@ -38,7 +38,7 @@ namespace gui
     class DlgSettings : public QDialog
     {
         Q_OBJECT
-        
+
     public:
         DlgSettings(QWidget* parent);
        ~DlgSettings();
@@ -50,7 +50,7 @@ namespace gui
 
         // show the tab that has the matching title.
         void show(const QString& title);
-        
+
     private slots:
         void on_btnAccept_clicked();
         void on_btnCancel_clicked();

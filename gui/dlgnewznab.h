@@ -23,7 +23,7 @@
 #include "newsflash/config.h"
 
 #include "newsflash/warnpush.h"
-#  include <QtGui/QDialog>
+#  include <QDialog>
 #  include <QObject>
 #  include "ui_dlgnewznab.h"
 #include "newsflash/warnpop.h"

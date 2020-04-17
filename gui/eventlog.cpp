@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -22,8 +22,8 @@
 
 #include "newsflash/config.h"
 #include "newsflash/warnpush.h"
-#  include <QtGui/QMenu>
-#  include <QtGui/QToolBar>
+#  include <QMenu>
+#  include <QToolBar>
 #include "newsflash/warnpop.h"
 #include "eventlog.h"
 #include "app/eventlog.h"
@@ -97,7 +97,7 @@ void EventLog::startup()
     filter();
 }
 
-MainWidget::info EventLog::getInformation() const 
+MainWidget::info EventLog::getInformation() const
 {
     return {"eventlog.html", true};
 }
@@ -107,7 +107,7 @@ void EventLog::on_actionClearLog_triggered()
     auto& model = app::EventLog::get();
 
     ui_.actionClearLog->setEnabled(false);
-    
+
     model.clear();
 }
 
@@ -184,7 +184,7 @@ void EventLog::filter()
     filtering.ShowInfos       = ui_.chkInfo->isChecked();
     filtering.ShowWarnings    = ui_.chkWarn->isChecked();
     filtering.ShowErrors      = ui_.chkError->isChecked();
-    
+
     auto& model = app::EventLog::get();
     model.filter(filtering);
 }

@@ -22,8 +22,8 @@
 
 #include "newsflash/config.h"
 #include "newsflash/warnpush.h"
-#  include <QtGui/QMenu>
-#  include <QtGui/QIcon>
+#  include <QMenu>
+#  include <QIcon>
 #  include "ui_notify.h"
 #include "newsflash/warnpop.h"
 #include "settings.h"

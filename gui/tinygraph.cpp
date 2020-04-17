@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -21,15 +21,15 @@
 #include "newsflash/config.h"
 
 #include "newsflash/warnpush.h"
-#  include <QtGui/QColor>
-#  include <QtGui/QPainter>
-#  include <QtGui/QGradient>
-#  include <QtGui/QBrush>
-#  include <QtGui/QColorDialog>
-#  include <QtGui/QFontDialog>
-#  include <QtGui/QMenu>
-#  include <QtGui/QContextMenuEvent>
-#  include <QtGui/QAction>
+#  include <QColor>
+#  include <QPainter>
+#  include <QGradient>
+#  include <QBrush>
+#  include <QColorDialog>
+#  include <QFontDialog>
+#  include <QMenu>
+#  include <QContextMenuEvent>
+#  include <QAction>
 #  include <QVector>
 #include "newsflash/warnpop.h"
 #include <chrono>
@@ -80,7 +80,7 @@ void TinyGraph::addSample(unsigned value)
         const sample& s = timeline_[0];
         if (s.timestamp >= (timestamp - millis))
             break;
-        
+
         timeline_.removeFirst();
     }
 
@@ -107,7 +107,7 @@ const TinyGraph::colors& TinyGraph::getColors() const
 void TinyGraph::paintEvent(QPaintEvent* event)
 {
     QPainter p(this);
-    
+
     int width  = this->width();
     int height = this->height();
 
@@ -121,7 +121,7 @@ void TinyGraph::paintEvent(QPaintEvent* event)
 
     QPen black(QColor(0, 0, 0, 100));
     p.setPen(black);
-    
+
     // draw the time grid
     int stride_in_px = PIXELS_PER_SECOND * 10; // 10s
     for (int x = width; x > 0; x -= stride_in_px)
@@ -152,7 +152,7 @@ void TinyGraph::paintEvent(QPaintEvent* event)
     outline.setWidth(2);
     p.setRenderHint(QPainter::Antialiasing);
     p.setPen(outline);
-    
+
     const unsigned int epoch = timeline_.last().timestamp;
 
     QVector<QPoint> points;
@@ -163,20 +163,20 @@ void TinyGraph::paintEvent(QPaintEvent* event)
     for (int i=timeline_.size()-1; i>=0; --i)
     {
         const sample& s = timeline_[i];
-            
+
         double t = epoch - s.timestamp;
-        int x = width - ((t / 1000.0) * PIXELS_PER_SECOND);      
+        int x = width - ((t / 1000.0) * PIXELS_PER_SECOND);
         int y = height - (int)((s.value / double(maxval_)) * height);
         QPoint p(x, y);
         points.append(p);
     }
 
     Q_ASSERT(!points.isEmpty());
-           
+
     // the ending polygon is on the same x-axis as the last graph point
-    // except that its aligned on the y axis with the first point 
+    // except that its aligned on the y axis with the first point
     const QPoint& last_graph_point = points.last();
-    
+
     points.append(QPoint(last_graph_point.x(), height));
 
     // polygon is filled with currently selected brush.
@@ -225,7 +225,7 @@ void TinyGraph::action_choose_1st_gradient()
     QColor c = QColorDialog::getColor(colors_.grad1);
     if (c.isValid())
         colors_.grad1 = c;
-    
+
     update();
 }
 
@@ -234,7 +234,7 @@ void TinyGraph::action_choose_2nd_gradient()
     QColor c = QColorDialog::getColor(colors_.grad2);
     if (c.isValid())
         colors_.grad2 = c;
-    
+
     update();
 }
 
@@ -243,7 +243,7 @@ void TinyGraph::action_choose_outline_color()
     QColor c = QColorDialog::getColor(colors_.outline);
     if (c.isValid())
         colors_.outline = c;
-    
+
     update();
 }
 
@@ -252,14 +252,14 @@ void TinyGraph::action_choose_fill_color()
     QColor c = QColorDialog::getColor(colors_.fill);
     if (c.isValid())
         colors_.fill = c;
-    
+
     update();
 }
 
 void TinyGraph::action_choose_font()
 {
     font_ = QFontDialog::getFont(NULL, this);
-    
+
     update();
 }
 

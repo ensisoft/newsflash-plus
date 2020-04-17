@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -22,7 +22,7 @@
 
 #include "newsflash/config.h"
 #include "newsflash/warnpush.h"
-#  include <QtGui/QDialog>
+#  include <QDialog>
 #  include "ui_dlgconfirm.h"
 #include "newsflash/warnpop.h"
 
@@ -39,9 +39,9 @@ namespace gui
             ui_.setupUi(this);
         }
 
-        bool askAgain() const 
-        { 
-            return ui_.chkAskAgain->isChecked(); 
+        bool askAgain() const
+        {
+            return ui_.chkAskAgain->isChecked();
         }
     private slots:
         void on_btnAccept_clicked()

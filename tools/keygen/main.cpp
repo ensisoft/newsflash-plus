@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -33,13 +33,13 @@ bool readYesNo(const char* question)
     for (;;)
     {
         std::cout << question;
-        int c = std::getchar(); 
+        int c = std::getchar();
         std::getchar(); // pop the enter
         if (c == 'y' || c == 'Y')
             break;
         else if (c == 'n' || c == 'N')
             return false;
-        else 
+        else
         {
             std::cout << "Excuse me?\n";
             continue;
@@ -73,11 +73,11 @@ int main(int argc, char *argv[])
         return 1;
     }
     using namespace keygen;
-    
-    const QString& fingerprint = QString::fromAscii(argv[1]);
+
+    const QString& fingerprint = QString::fromLatin1(argv[1]);
     const QString& keycode     = generate_keycode(fingerprint);
-    
-    const QByteArray& bytes = keycode.toAscii();
+
+    const QByteArray& bytes = keycode.toLatin1();
     std::cout.write(bytes.constData(), bytes.size());
     std::cout << std::endl;
 

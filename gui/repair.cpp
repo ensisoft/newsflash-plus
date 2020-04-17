@@ -22,9 +22,9 @@
 
 #include "newsflash/config.h"
 #include "newsflash/warnpush.h"
-#  include <QtGui/QMenu>
-#  include <QtGui/QToolBar>
-#  include <QtGui/QFileDialog>
+#  include <QMenu>
+#  include <QToolBar>
+#  include <QFileDialog>
 #include "newsflash/warnpop.h"
 #include "dlgarchive.h"
 #include "repair.h"

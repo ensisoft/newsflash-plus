@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -23,9 +23,9 @@
 #include "newsflash/config.h"
 
 #include "newsflash/warnpush.h"
-#  include <QtGui/QWidget>
-#  include <QtGui/QColor>
-#  include <QtGui/QFont>
+#  include <QWidget>
+#  include <QColor>
+#  include <QFont>
 #  include <QTimer>
 #  include <QString>
 #  include <QList>
@@ -51,13 +51,13 @@ namespace gui
         // sample value is any arbitrary value
         // timestamp should be the timestamp of the sample in milliseconds
         void addSample(unsigned value);
-        
+
         // set any text to be rendered within the graph
         void setText(const QString& str);
 
         // set colors
         void setColors(const colors& c);
-        
+
         const colors& getColors() const;
 
     private:

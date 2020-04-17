@@ -21,8 +21,8 @@
 #include "newsflash/config.h"
 
 #include "newsflash/warnpush.h"
-#  include <QtGui/QFileDialog>
-#  include <QtGui/QMessageBox>
+#  include <QFileDialog>
+#  include <QMessageBox>
 #include "newsflash/warnpop.h"
 
 #include "tools/keygen/keygen.h"

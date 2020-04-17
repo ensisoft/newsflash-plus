@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -22,7 +22,7 @@
 
 #include "newsflash/config.h"
 #include "newsflash/warnpush.h"
-#  include <QtGui/QDialog>
+#  include <QDialog>
 #  include "ui_dlgregister.h"
 #include "newsflash/warnpop.h"
 
@@ -38,10 +38,10 @@ namespace gui
             ui_.setupUi(this);
         }
 
-        QString registrationCode() const 
+        QString registrationCode() const
         { return ui_.editCode->text(); }
 
-    private slots: 
+    private slots:
         void on_btnAccept_clicked()
         {
             accept();
@@ -52,6 +52,6 @@ namespace gui
         }
 
     private:
-        Ui::Register ui_;  
+        Ui::Register ui_;
     };
 } // gui

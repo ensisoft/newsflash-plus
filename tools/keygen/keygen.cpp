@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -34,7 +34,7 @@ QString generate_fingerprint(const QString& seed)
 
     QByteArray hash = QCryptographicHash::hash(str.toUtf8(), QCryptographicHash::Md5).toHex();
 
-    return QString::fromAscii(hash.constData(), hash.size());
+    return QString::fromLatin1(hash.constData(), hash.size());
 }
 
 QString generate_fingerprint()
@@ -53,17 +53,17 @@ QString generate_fingerprint()
     }
     if (!nic)
         return generate_fingerprint(FALLBACK);
-        
+
     return generate_fingerprint(nic->hardwareAddress());
 }
 
 QString generate_keycode(const QString& fingerprint)
 {
     QString str = QString("keycode:%1").arg(fingerprint);
-    
+
     QByteArray hash = QCryptographicHash::hash(str.toUtf8(), QCryptographicHash::Md5).toHex();
 
-    return QString::fromAscii(hash.constData(), hash.size());
+    return QString::fromLatin1(hash.constData(), hash.size());
 }
 
 bool verify_code(const QString& keycode)
@@ -78,7 +78,7 @@ bool verify_code(const QString& keycode)
     }
     if (macs.isEmpty())
         macs.append(FALLBACK);
-    
+
     for (int i=0; i<macs.size(); ++i)
     {
         QString fingerprint = generate_fingerprint(macs[i]);

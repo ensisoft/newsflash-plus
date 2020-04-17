@@ -162,7 +162,6 @@ namespace app
 
             QAbstractTableModel::beginResetModel();
             mIndex.filter();
-            QAbstractTableModel::reset();
             QAbstractTableModel::endResetModel();
 
             //CALLGRIND_DUMP_STATS_AT("applyFilter");

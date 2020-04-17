@@ -135,6 +135,8 @@
 
 #define QT_NO_CAST_TO_ASCII
 
+#define QT_DISABLE_DEPRECATED_BEFORE 0
+
 // these are macros so that they can be embedded
 // inside string literals easily for exaple L"yadi yadi" VERSION_STRING "yadi yadi"
 #define NEWSFLASH_VERSION   "4.3.0"

@@ -21,7 +21,7 @@
 #include "newsflash/config.h"
 
 #include "newsflash/warnpush.h"
-#  include <QtGui/QLineEdit>
+#  include <QLineEdit>
 #include "newsflash/warnpop.h"
 
 #include <deque>

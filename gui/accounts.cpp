@@ -21,11 +21,11 @@
 #include "newsflash/config.h"
 
 #include "newsflash/warnpush.h"
-#  include <QtGui/QToolBar>
-#  include <QtGui/QMenu>
-#  include <QtGui/QPixmap>
-#  include <QtGui/QMovie>
-#  include <QtGui/QStandardItemModel>
+#  include <QToolBar>
+#  include <QMenu>
+#  include <QPixmap>
+#  include <QMovie>
+#  include <QStandardItemModel>
 #include "newsflash/warnpop.h"
 #include <ctime>
 #include "dlgaccount.h"

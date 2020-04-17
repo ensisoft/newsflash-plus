@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -22,7 +22,7 @@
 
 #include "newsflash/config.h"
 #include <newsflash/warnpush.h>
-#  include <QtGui/QMessageBox>
+#  include <QMessageBox>
 #include "newsflash/warnpop.h"
 #include "historydb.h"
 #include "app/eventlog.h"
@@ -59,7 +59,7 @@ void HistoryDbSettings::accept()
 
 void HistoryDbSettings::on_btnClear_clicked()
 {
-    // todo: this action isn't reversible, 
+    // todo: this action isn't reversible,
     // i.e. if the settings dialog is canceled
     // the data is still already lost.
     // perhaps this should follow the same semantics?
@@ -93,7 +93,7 @@ void HistoryDb::loadState(app::Settings& settings)
 
 void HistoryDb::saveState(app::Settings& settings)
 {
-    
+
 }
 
 SettingsWidget* HistoryDb::getSettings()

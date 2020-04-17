@@ -27,7 +27,7 @@
 #    include <ActiveQt/QAxWidget>
 #    define BASE_CLASS QAxWidget
 #  else
-#    include <QtGui/QWidget>
+#    include <QWidget>
 #    define BASE_CLASS QWidget
 #  endif
 #include "newsflash/warnpop.h"

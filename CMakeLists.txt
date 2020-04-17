@@ -50,8 +50,25 @@ endif()
 # Setting QT_QMAKE_EXECUTABLE is *the* official way to tell CMake where the Qt
 # that you want is. All else is a "find-and-guess" game if you have multiple Qt's available.
 # https://public.kitware.com/pipermail/cmake/2009-March/027708.html
-set(QT_QMAKE_EXECUTABLE "${CMAKE_CURRENT_LIST_DIR}/third_party/qt-4.8.6/bin/qmake")
-find_package(Qt4 REQUIRED)
+#set(QT_QMAKE_EXECUTABLE "${CMAKE_CURRENT_LIST_DIR}/third_party/qt-4.8.6/bin/qmake")
+#find_package(Qt4 REQUIRED)
+
+# expected location on win to find Qt
+if (WIN32)
+    set(CMAKE_PREFIX_PATH "C:/Qt/5.12.6/msvc2017_64")
+endif()
+
+find_package(Qt5Widgets)
+find_package(Qt5Network)
+find_package(Qt5Xml)
+if (NOT Qt5Widgets_FOUND)
+    message("
+Qt5 was not found.
+")
+else()
+    message(STATUS "Qt5 version: ${Qt5Widgets_VERSION}")
+    message(STATUS "${Qt5Widgets_INCLUDE_DIRS}")
+endif()
 
 message(STATUS "${Boost_INCLUDE_DIRS}")
 message(STATUS "${Boost_LIBRARY_DIRS}")
@@ -160,11 +177,11 @@ endif()
 file(GLOB SMTPCLIENT_SOURCE third_party/smtpclient/*.cpp)
 add_library(smtpclient SHARED ${SMTPCLIENT_SOURCE})
 target_link_libraries(smtpclient
-    Qt4::QtCore
-    Qt4::QtNetwork)
+    Qt5::Widgets
+    Qt5::Network)
 target_compile_definitions(smtpclient PRIVATE SMTP_BUILD)
 add_executable(smtpclient_test third_party/smtpclient/example/main.cpp)
-target_link_libraries(smtpclient_test smtpclient Qt4::QtCore Qt4::QtGui)
+target_link_libraries(smtpclient_test smtpclient Qt5::Core Qt5::Widgets)
 
 
 
@@ -176,8 +193,7 @@ target_link_libraries(engine INTERFACE
     ${LIB_PROTOBUF}
     ${LIB_Z}
     ${LIB_OPENSSL}
-    ${LIB_CRYPTO}
-    smtpclient)
+    ${LIB_CRYPTO})
 
 file(GLOB APP_SOURCE  app/*.h app/*.cpp)
 file(GLOB GUI_SOURCE  gui/*.h gui/*.cpp gui/*.ui)
@@ -189,11 +205,12 @@ add_library(appcore STATIC
 
 target_link_libraries(appcore PUBLIC
     engine
+    smtpclient
     qjson
-    Qt4::QtCore
-    Qt4::QtGui
-    Qt4::QtXml
-    Qt4::QtNetwork)
+    Qt5::Core
+    Qt5::Widgets
+    Qt5::Xml
+    Qt5::Network)
 
 if(WIN32)
     set(ICO_SOURCE "gui/icon.rc")
@@ -232,23 +249,24 @@ else()
 endif()
 
 # build the keygen
-add_executable(keygen
-    tools/keygen/main.cpp
-    tools/keygen/keygen.cpp
-    app/webengine.h
-    app/webengine.cpp
-    app/webquery.h
-    app/webquery.cpp
-    app/debug.h
-    app/debug.cpp
-    engine/assert.cpp)
-target_link_libraries(keygen
-    Qt4::QtCore
-    Qt4::QtNetwork)
+#
+# add_executable(keygen
+#     tools/keygen/main.cpp
+#     tools/keygen/keygen.cpp
+#     app/webengine.h
+#     app/webengine.cpp
+#     app/webquery.h
+#     app/webquery.cpp
+#     app/debug.h
+#     app/debug.cpp
+#     engine/assert.cpp)
+# target_link_libraries(keygen
+#     Qt5::Core
+#     Qt5::Network)
 
 # build the join tool for joining .001, .002 ... files
 add_executable(join tools/joiner/main.cpp)
-target_link_libraries(join Qt4::QtCore)
+target_link_libraries(join Qt5::Core)
 
 # this is a dummy test server used by some of the test cases.
 # it must be built and running before tests can be run.
