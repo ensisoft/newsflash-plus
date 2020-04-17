@@ -43,15 +43,15 @@ void test_basic_post()
     // todo:
 }
 
-void test_mass_success()
+void test_loop_success(const char* url)
 {
     app::WebEngine engine;
 
     int callbacks = 0;
 
-    for (int i=0; i<100; ++i)
+    for (int i=0; i<10; ++i)
     {
-        auto* q = engine.submit(QUrl("http://httpbin.org/ip"));
+        auto* q = engine.submit(QUrl(url));
         q->OnReply = [&](QNetworkReply& reply) {
             const auto err = reply.error();
             TEST_REQUIRE(err == QNetworkReply::NoError);
@@ -62,18 +62,18 @@ void test_mass_success()
     QObject::connect(&engine, SIGNAL(allFinished()), &loop, SLOT(quit()));
     loop.exec();
 
-    TEST_REQUIRE(callbacks == 100);
+    TEST_REQUIRE(callbacks == 10);
 }
 
-void test_mass_error()
+void test_loop_error(const char* url)
 {
     app::WebEngine engine;
 
     int callbacks = 0;
 
-    for (int i=0; i<100; ++i)
+    for (int i=0; i<10; ++i)
     {
-        auto* q = engine.submit(QUrl("http://asgsagsaas.foo"));
+        auto* q = engine.submit(QUrl(url));
         q->OnReply = [&](QNetworkReply& reply) {
             const auto err = reply.error();
             TEST_REQUIRE(err != QNetworkReply::NoError);
@@ -85,53 +85,40 @@ void test_mass_error()
     QObject::connect(&engine, SIGNAL(allFinished()), &loop, SLOT(quit()));
     loop.exec();
 
-    TEST_REQUIRE(callbacks == 100);
+    TEST_REQUIRE(callbacks == 10);
 }
 
-void test_mass_timeout()
+void test_loop_timeout()
 {
     app::WebEngine engine;
     engine.setTimeout(5);
 
     int timeout = 0;
-    int success = 0;
 
-    for (int i=0; i<100; ++i)
+    for (int i=0; i<10; ++i)
     {
-        if (i % 2)
-        {
-            auto* q = engine.submit(QUrl("http://httpbin.org/delay/10"));
-            q->OnReply = [&](QNetworkReply& reply) {
-                const auto err = reply.error();
-                TEST_REQUIRE(err == QNetworkReply::OperationCanceledError);
-                ++timeout;
-            };
-        }
-        else
-        {
-            auto* q = engine.submit(QUrl("http://httpbin.org/ip"));
-            q->OnReply = [&](QNetworkReply& reply) {
-                const auto err = reply.error();
-                TEST_REQUIRE(err == QNetworkReply::NoError);
-                ++success;
-            };
-        }
+        auto* q = engine.submit(QUrl("http://httpbin.org/delay/10"));
+        q->OnReply = [&](QNetworkReply& reply) {
+            const auto err = reply.error();
+            TEST_REQUIRE(err == QNetworkReply::OperationCanceledError);
+            ++timeout;
+        };
     }
     QEventLoop loop;
     QObject::connect(&engine, SIGNAL(allFinished()), &loop, SLOT(quit()));
     loop.exec();
 
-    TEST_REQUIRE(timeout == 50);
-    TEST_REQUIRE(success == 50);
+    TEST_REQUIRE(timeout == 10);
 }
 
 int test_main(int argc, char* argv[])
 {
     QCoreApplication app(argc, argv);
 
-    test_mass_success();
-    test_mass_error();
-    test_mass_timeout();
+    test_loop_success("http://httpbin.org/ip");
+    test_loop_success("https://httpbin.org/ip");
+    test_loop_error("http://asgsagsaas.foo");
+    test_loop_timeout();
     return 0;
 
 }

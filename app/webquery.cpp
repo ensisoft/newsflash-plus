@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -26,6 +26,7 @@
 #  include <QtNetwork/QNetworkAccessManager>
 #include "newsflash/warnpop.h"
 
+#include "engine/assert.h"
 #include "webquery.h"
 #include "debug.h"
 
@@ -33,12 +34,6 @@
 
 namespace app
 {
-
-WebQuery::~WebQuery()
-{
-    if (m_reply)
-        m_reply->deleteLater();
-}
 
 void append(QByteArray& buff,  QString str)
 {
@@ -50,23 +45,24 @@ void append(QByteArray& buff, const QByteArray& in)
     buff.append(in);
 }
 
-bool WebQuery::submit(QNetworkAccessManager& qnam)
+QNetworkReply* WebQuery::Submit(QNetworkAccessManager& qnam)
 {
-    Q_ASSERT(m_reply == nullptr && "Query has already been submitted.");
-    if (m_aborted)
-        return false;
+    // should only ever be submitted when in waiting state.
+    ASSERT(mState == State::Waiting);
 
     QNetworkRequest request;
     request.setRawHeader("User-Agent", "NewsflashPlus");
     request.setUrl(m_url);
 
+    QNetworkReply* reply = nullptr;
+
     if (!haveAttachment())
     {
-        m_reply = qnam.get(request);
+        reply = qnam.get(request);
     }
     else
     {
-        const auto BOUNDARY = "--abcdef123abcdef123";            
+        const auto BOUNDARY = "--abcdef123abcdef123";
         QByteArray buff;
         append(buff, S("--%1\r\n").arg(BOUNDARY));
         append(buff, S("Content-Disposition: form-data; name=\"attachment\"; filename=\"%1\"\r\n").arg(m_attchName));
@@ -75,10 +71,21 @@ bool WebQuery::submit(QNetworkAccessManager& qnam)
         append(buff, S("\r\n--%1--\r\n").arg(BOUNDARY));
         request.setRawHeader("Content-Type", S("multipart/form-data; boundary=%1").arg(BOUNDARY).toAscii());
         request.setRawHeader("Content-Length", QString::number(buff.size()).toAscii());
-        m_reply = qnam.post(request, buff);
+        reply = qnam.post(request, buff);
     }
     DEBUG("WebQuery to %1 submitted...", m_url);
-    return true;
+
+    // we throw this away to save space.
+    m_attchName.clear();
+    m_attchData.clear();
+
+    // return the reply to the caller
+    mState = State::Active;
+
+    // todo: get rid of this
+    m_reply = reply;
+
+    return reply;
 }
 
 bool WebQuery::tick(unsigned maxTicks)
@@ -89,68 +96,52 @@ bool WebQuery::tick(unsigned maxTicks)
     return false;
 }
 
-bool WebQuery::receive(QNetworkReply& reply)
+void WebQuery::Complete(QNetworkReply& reply)
 {
-    if (&reply != m_reply)
-        return false;
-
-    // if the user has aborted the query, but the query has already
-    // finished at time but the event has not been processed,
-    // we simply discard the reply.
-    if (m_aborted)
-        return true;
+    ASSERT(mState == State::Active);
 
     DEBUG("WebQuery to %1 completed with %2", m_url, reply.error());
 
+    // dangerous callback be here. todo. refactor to event/message based.
     OnReply(reply);
-    return true;
+
+    mState = State::Complete;
 }
 
-bool WebQuery::isActive() const 
+bool WebQuery::isActive() const
 {
-    return m_reply != nullptr;
+    return mState == State::Active;
 }
 
-bool WebQuery::isAborted() const 
+bool WebQuery::isAborted() const
 {
-    return m_aborted;
+    return mState == State::Aborted;
 }
 
-bool WebQuery::isTimeout() const 
+bool WebQuery::isTimeout() const
 {
-    return m_timeout;
+    return mState == State::Timedout;
 }
 
 void WebQuery::abort()
 {
-    m_aborted = true;
-    if (!m_reply)
-        return;
-
     // aborting the query is done by the client of WebQuery.
     // which means that they're no longer interested in the completion
-    // of the query (so the completion callback will not be fired).
-    // Hence we must block the signal here before calling
-    // abort on the reply, otherwise the signal will fire.
+    mState = State::Aborted;
 
-    m_reply->blockSignals(true);
-    m_reply->abort();
     DEBUG("WebQuery to %1 aborted", m_url);
 }
 
-void WebQuery::timeout()
+void WebQuery::Timeout(QNetworkReply& reply)
 {
-    m_timeout = true;
+    mState = State::Timedout;
+
+    OnReply(reply);
 
     DEBUG("WebQuery to %1 timed out", m_url);
-
-    // NOTE: calling abort() will invoke the signal for completion.
-    // and for timeout() this is what we want, basically this means that 
-    // the query completed but *with* errors.
-    m_reply->abort();
 }
 
-bool WebQuery::haveAttachment() const 
+bool WebQuery::haveAttachment() const
 {
     return !m_attchName.isEmpty() &&
            !m_attchData.isEmpty();

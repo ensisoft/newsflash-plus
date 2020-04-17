@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -20,13 +20,15 @@
 
 #define LOGTAG "web"
 
-#include <newsflash/config.h>
-#include <newsflash/warnpush.h>
+#include "newsflash/config.h"
+
+#include "newsflash/warnpush.h"
 #  include <QtNetwork/QNetworkRequest>
 #  include <QtNetwork/QNetworkReply>
 #  include <QtNetwork/QNetworkAccessManager>
 #  include <QThread>
-#include <newsflash/warnpop.h>
+#include "newsflash/warnpop.h"
+
 #include "webengine.h"
 #include "webquery.h"
 #include "debug.h"
@@ -34,24 +36,29 @@
 // Notes about the implementation...
 // Qt 4.5.3 QNetworkAccessManager has a problem with network down situations.
 // If a request has already been succesfully made before "connection" is established and
-// the network goes down during/before a subsequent request there is no way to get a 
+// the network goes down during/before a subsequent request there is no way to get a
 // timeout signal from the network access manager. However on "first" request timeout works
 // as expected.
 //
 // I tried to workaround this problem by using a timer per request but that turns out to create
-// more problems (more Qt bugs). One problem is that calling QNetworkReply::abort() on timer 
-// sometimes leads to an assert in Qt code. I.e. if the first request was aborted and later 
+// more problems (more Qt bugs). One problem is that calling QNetworkReply::abort() on timer
+// sometimes leads to an assert in Qt code. I.e. if the first request was aborted and later
 // QNetworkAccessManager timeouts the same request an assert is fired. Simply deleting (deleteLater())
-// the request doesn't work either because then it still seems to be in Qt queues and on exiting the 
+// the request doesn't work either because then it still seems to be in Qt queues and on exiting the
 // application application gets stuck in pthread_cond_wait when destruction QApplication.
 
 // site for testing.
 // http://httpbin.org/
 
+namespace {
+    constexpr auto kNumTicksPerSecond  = 2;
+    constexpr auto kTickIntervalMillis = 1000 / kNumTicksPerSecond;
+}
+
 namespace app
 {
 
-WebEngine::WebEngine() : m_timeout(DefaultTimeout)
+WebEngine::WebEngine()
 {
     DEBUG("WebEngine created");
 
@@ -59,19 +66,24 @@ WebEngine::WebEngine() : m_timeout(DefaultTimeout)
         this, SLOT(finished(QNetworkReply*)));
     QObject::connect(&m_timer, SIGNAL(timeout()),
         this, SLOT(heartbeat()));
+
+    m_timer.setInterval(kTickIntervalMillis);
+    m_timer.start();
+
+    setTimeout(DefaultTimeout);
 }
 
 WebEngine::~WebEngine()
 {
-    if (!m_live.empty())
-    {
-        m_timer.stop();
-        m_timer.blockSignals(true);
-        m_qnam.blockSignals(true);
-        DEBUG("WebEngine has %1 pending queries...", m_live.size());
+    m_timer.stop();
+    m_timer.blockSignals(true);
+    m_qnam.blockSignals(true);
+    DEBUG("WebEngine has %1 pending queries...", m_active.size());
 
-        for (auto& query : m_live)
-            query->abort();
+    for (auto& query : m_active)
+    {
+        if (query.reply)
+            query.reply->deleteLater();
     }
 
     DEBUG("WebEngine deleted");
@@ -79,23 +91,27 @@ WebEngine::~WebEngine()
 
 WebQuery* WebEngine::submit(WebQuery query)
 {
-    std::unique_ptr<WebQuery> q(new WebQuery(std::move(query)));
+    auto q = std::make_shared<WebQuery>(std::move(query));
 
     WebQuery* ret = q.get();
 
-    m_live.push_back(std::move(q));
+    QueryState state;
+    state.reply = q->Submit(m_qnam);
+    state.query = q;
+    // put in the set of active currently running queries.
+    m_active.push_back(state);
 
-    m_timer.setInterval(1000);
-    m_timer.start();
-    if (m_live.size() == 1)
-        heartbeat();
+    // set a flag that is used to limit the allcomplete signal
+    // to signal edge only.
+    m_signalled = false;
 
     return ret;
 }
 
 void WebEngine::setTimeout(std::size_t seconds)
 {
-    m_timeout = seconds;
+    // convert timeout seconds to ticks
+    m_timeoutTicks = kNumTicksPerSecond * seconds;
 }
 
 void WebEngine::finished(QNetworkReply* reply)
@@ -103,127 +119,82 @@ void WebEngine::finished(QNetworkReply* reply)
     DEBUG("Finished reply handler!");
     DEBUG("Current thread %1", QThread::currentThreadId());
 
-    auto it = std::find_if(std::begin(m_live), std::end(m_live),
-        [=](const std::unique_ptr<WebQuery>& q) {
-            return q->isOwner(reply);
-        });
-    if (it != std::end(m_live))
+    for (auto it = m_active.begin(); it != m_active.end(); ++it)
     {
-        std::unique_ptr<WebQuery> query = std::move(*it);
+        QueryState& query  = *it;
+        if (query.reply != reply)
+            continue;
 
-        m_live.erase(it);
-
-        query->receive(*reply);    
+        // if we get a signal for a query that has non-active state
+        // (for example aborted) we simply ignore the signal
+        if (query.query->GetState() == WebQuery::State::Active)
+        {
+            // invoke completion
+            query.query->Complete(*query.reply);
+        }
+        m_active.erase(it);
+        break;
     }
-    else
-    {
-        auto it = std::find_if(std::begin(m_dead), std::end(m_dead),
-            [=](const std::unique_ptr<WebQuery>& q) {
-                return q->isOwner(reply);
-            });
-        ENDCHECK(m_dead, it);
-
-        std::unique_ptr<WebQuery>& query = *it;
-
-        query->receive(*reply);
-    }
-}
-
-void WebEngine::timedout(QNetworkReply* reply)
-{
-    DEBUG("Timedout reply handler!");
-
-    auto it = std::find_if(std::begin(m_dead), std::end(m_dead),
-        [=](const std::unique_ptr<WebQuery>& q) {
-            return q->isOwner(reply);
-        });
-    ENDCHECK(m_dead, it);
-
-    std::unique_ptr<WebQuery>& query = *it;
-
-    query->receive(*reply);
+    reply->blockSignals(true);
     reply->deleteLater();
 }
 
 void WebEngine::heartbeat()
 {
-    // first see if there's a new query to be submitted.
-    auto it = std::find_if(std::begin(m_live), std::end(m_live),
-        [](const std::unique_ptr<WebQuery>& query) {
-            return !query->isActive() && !query->isAborted();
-        });
-    if (it != std::end(m_live))
+    // handle/tick currently active queries.
+    for (auto it = m_active.begin(); it != m_active.end();)
     {
         auto& query = *it;
-        query->submit(m_qnam);
+
+        // tick and optinally timeout.
+        if (query.query->GetState() == WebQuery::State::Active &&
+           !query.query->tick(m_timeoutTicks))
+        {
+            ASSERT(query.reply);
+            query.reply->blockSignals(true);
+            // we call abort here and then invoke the timeout callback
+            // this will set the reply state to CanceledError which is
+            // the behaviour from before (Qt4 time QNAM)
+            query.reply->abort();
+            query.reply->deleteLater();
+            query.query->Timeout(*query.reply);
+            query.reply = nullptr;
+            // delete
+            it = m_active.erase(it);
+        }
+        else
+        {
+            ++it;
+        }
     }
 
-    // remove queries that were aborted before being submitted.
-    auto end = std::remove_if(std::begin(m_live), std::end(m_live),
-        [&](const std::unique_ptr<WebQuery>& query) {
-            return query->isAborted();
-        });
-    m_live.erase(end, std::end(m_live));
-
-
-    // important: if we manually timeout() a webquery the finished signal for the
-    // query will be emitted. This is exactly what we want since basically this 
-    // means that the query completed/finished but with *errors*. 
-    // However we must be careful since the same callback is also used for 
-    // succesful queries and in those cases it deletes the query object
-    // not to mess up our iteration here!
-
-    // tick live queries and abort the ones that have timed out.
-    for (auto it = std::begin(m_live); it != std::end(m_live); )
+    // handle aborted queries
+    for (auto it = m_active.begin(); it != m_active.end(); )
     {
         auto& query = *it;
-        // if not yet active (i.e. submitted), skip it.
-        if (!query->isActive())
+        if (query.query->GetState() == WebQuery::State::Aborted)
+        {
+              // if there's already a pending QNetworkReply then abort it.
+            if (query.reply)
+            {
+                query.reply->blockSignals(true);
+                query.reply->abort();
+                query.reply->deleteLater();
+                query.reply = nullptr;
+            }
+            // delete
+            it = m_active.erase(it);
+        }
+        else
         {
             ++it;
-            continue;
         }
-
-        // update the tick, returns true if still within timeout treshold.
-        if (query->tick(m_timeout))
-        {
-            ++it;
-            continue;
-        }
-
-        // timeout the query.
-        // see the comments above about the signal handler.
-        //query->timeout();
-        m_dead.push_back(std::move(*it));
-        it = m_live.erase(it);
     }
 
-    if (!m_dead.empty())
+    if (m_active.empty() && !m_signalled)
     {
-        DEBUG("Deleting timedout queries");
-
-        // doesn't f***N disconnect!
-        //QObject::disconnect(&m_qnam, SIGNAL(finished(QNetworkReply*)));
-        //QObject::connect(&m_qnam, SIGNAL(finished(QNetworkReply*)),
-        //    this, SLOT(timedout(QNetworkReply*)));
-
-        for (auto& carcass : m_dead)
-        {
-            auto& query = carcass;
-            query->timeout();
-        }
-
-        // QObject::disconnect(&m_qnam, SIGNAL(finished(QNetworkReply*)));
-        // QObject::connect(&m_qnam, SIGNAL(finished(QNetworkReply*)),
-        //     this, SLOT(finished(QNetworkReply*)));
-
-        m_dead.clear();
-    }
-
-    if (m_live.empty())
-    {
-        m_timer.stop();
         emit allFinished();
+        m_signalled = true;
     }
 }
 
