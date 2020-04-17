@@ -23,15 +23,15 @@
 #include "newsflash/warnpush.h"
 #  include <boost/algorithm/string/regex.hpp>
 #  include <boost/regex.hpp>
-#  include <QtGui/QTableView>
-#  include <QtGui/QCheckBox>
-#  include <QtGui/QLineEdit>
-#  include <QtGui/QComboBox>
-#  include <QtGui/QHeaderView>
-#  include <QtGui/QPixmap>
-#  include <QtGui/QImage>
-#  include <QtGui/QIcon>
-#  include <QtGui/QAction>
+#  include <QTableView>
+#  include <QCheckBox>
+#  include <QLineEdit>
+#  include <QComboBox>
+#  include <QHeaderView>
+#  include <QPixmap>
+#  include <QImage>
+#  include <QIcon>
+#  include <QAction>
 #  include <QAbstractTableModel>
 #  include <QDir>
 #  include <QFile>

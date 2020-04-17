@@ -23,7 +23,7 @@
 #include "newsflash/config.h"
 
 #include "newsflash/warnpush.h"
-#  include <QtGui/QMainWindow>
+#  include <QMainWindow>
 #  include <QTimer>
 #  include <QList>
 #  include "ui_mainwindow.h"

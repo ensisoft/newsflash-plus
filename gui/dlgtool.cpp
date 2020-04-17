@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -20,8 +20,8 @@
 
 #include "newsflash/config.h"
 #include "newsflash/warnpush.h"
-#  include <QtGui/QKeyEvent>
-#  include <QtGui/QFileDialog>
+#  include <QKeyEvent>
+#  include <QFileDialog>
 #  include <QDir>
 #  include <QFileInfo>
 #include "newsflash/warnpop.h"
@@ -171,7 +171,7 @@ bool DlgTool::eventFilter(QObject* receiver, QEvent* event)
     // todo: this code is probably pretty broken.
     // figure out a real way of mapping input key events into key seqeunces
 
-    QString shortcut;    
+    QString shortcut;
     if (key->modifiers() & Qt::ShiftModifier)
         shortcut += "Shift+";
     if (key->modifiers() & Qt::ControlModifier)

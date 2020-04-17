@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -22,8 +22,8 @@
 
 #include "newsflash/config.h"
 #include "newsflash/warnpush.h"
-#  include <QtGui/QFileDialog>
-#  include <QtGui/QMessageBox>
+#  include <QFileDialog>
+#  include <QMessageBox>
 #  include <QDir>
 #include "newsflash/warnpop.h"
 
@@ -32,7 +32,7 @@
 #include "mainwindow.h"
 #include "app/tools.h"
 
-namespace gui 
+namespace gui
 {
 
 ToolSettings::ToolSettings()
@@ -43,7 +43,7 @@ ToolSettings::ToolSettings()
 ToolSettings::~ToolSettings()
 {}
 
-bool ToolSettings::validate() const 
+bool ToolSettings::validate() const
 {
     // we're always valid.
     return true;
@@ -75,7 +75,7 @@ void ToolSettings::on_btnAdd_clicked()
     if (dlg.exec() == QDialog::Rejected)
         return;
 
-    auto it = std::find_if(std::begin(tools_), std::end(tools_), 
+    auto it = std::find_if(std::begin(tools_), std::end(tools_),
         [&](const app::tools::tool& t) {
             return t.name() == tool.name();
         });

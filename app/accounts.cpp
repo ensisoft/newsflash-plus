@@ -23,8 +23,8 @@
 #include "newsflash/config.h"
 
 #include "newsflash/warnpush.h"
-#  include <QtGui/QFont>
-#  include <QtGui/QIcon>
+#  include <QFont>
+#  include <QIcon>
 #  include <QDir>
 #  include <QStringList>
 #include "newsflash/warnpop.h"

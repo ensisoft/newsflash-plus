@@ -24,15 +24,16 @@
 
 #include "newsflash/warnpush.h"
 #  include <boost/version.hpp>
-#  include <QtGui/QCloseEvent>
-#  include <QtGui/QMessageBox>
-#  include <QtGui/QSystemTrayIcon>
-#  include <QtGui/QFileDialog>
-#  include <QtGui/QDesktopWidget>
+#  include <QCloseEvent>
+#  include <QMessageBox>
+#  include <QSystemTrayIcon>
+#  include <QFileDialog>
+#  include <QDesktopWidget>
 #  include <QEvent>
 #  include <QTimer>
 #  include <QDir>
 #  include <QFileInfo>
+#  include <QMimeData>
 #include "newsflash/warnpop.h"
 
 #include "tools/keygen/keygen.h"

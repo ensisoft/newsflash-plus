@@ -10,13 +10,16 @@ set(qjson_MOC_HDRS
   serializerrunnable.h
 )
 
-qt4_wrap_cpp(qjson_MOC_SRCS ${qjson_MOC_HDRS})
+# wtf is this wanking shit?
+#qt4_wrap_cpp(qjson_MOC_SRCS ${qjson_MOC_HDRS})
+set(CMAKE_AUTOMOC ON)
 
 set (qjson_SRCS parser.cpp qobjecthelper.cpp json_scanner.cpp json_parser.cc parserrunnable.cpp serializer.cpp serializerrunnable.cpp)
 set (qjson_HEADERS parser.h parserrunnable.h qobjecthelper.h serializer.h serializerrunnable.h qjson_export.h)
 
 add_library (qjson SHARED ${qjson_SRCS} ${qjson_MOC_SRCS} ${qjson_HEADERS})
-target_link_libraries( qjson ${QT_LIBRARIES})
+#target_link_libraries( qjson ${QT_LIBRARIES})
+target_link_libraries(qjson Qt5::Core)
 
 if(NOT android)
 	set_target_properties(qjson PROPERTIES

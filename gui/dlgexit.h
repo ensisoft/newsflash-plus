@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -22,9 +22,9 @@
 
 #include "newsflash/config.h"
 #include "newsflash/warnpush.h"
-#  include <QtGui/QDialog>
-#  include <QtGui/QCloseEvent>
-#  include <QtGui/QKeyEvent>
+#  include <QDialog>
+#  include <QCloseEvent>
+#  include <QKeyEvent>
 #  include "ui_dlgexit.h"
 #include "newsflash/warnpop.h"
 #include "app/debug.h"

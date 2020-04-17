@@ -23,8 +23,8 @@
 #include "newsflash/config.h"
 
 #include "newsflash/warnpush.h"
-#  include <QtGui/QDialog>
-#  include <QtGui/QMessageBox>
+#  include <QDialog>
+#  include <QMessageBox>
 #  include "ui_dlgpoweroff.h"
 #include "newsflash/warnpop.h"
 

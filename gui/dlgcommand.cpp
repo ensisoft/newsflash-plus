@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -20,7 +20,7 @@
 
 #include "newsflash/config.h"
 #include "newsflash/warnpush.h"
-#  include <QtGui/QFileDialog>
+#  include <QFileDialog>
 #  include <QDir>
 #  include <QFileInfo>
 #  include "ui_cmdargs.h"
@@ -35,8 +35,8 @@ namespace {
     {
     public:
         DlgCmdArgs(QString argString, QWidget* parent) : QDialog(parent)
-        { 
-            ui_.setupUi(this); 
+        {
+            ui_.setupUi(this);
 
             QComboBox* combos[] = {
                 ui_.arg0,
@@ -59,21 +59,21 @@ namespace {
                 else combo->setEditText(arg);
             }
         }
-        QString cmdString() const 
+        QString cmdString() const
         {
             QComboBox* combos[] = {
                 ui_.arg0,
                 ui_.arg1,
                 ui_.arg2,
                 ui_.arg3
-            };            
+            };
 
             QString cmd;
 
             for (int i=0; i<4; ++i)
             {
                 const auto text = combos[i]->currentText();
-                if (text.isEmpty()) 
+                if (text.isEmpty())
                     continue;
                 cmd.append(text);
                 cmd.append(" ");
@@ -96,9 +96,9 @@ namespace {
             for (; beg != end; ++beg)
             {
                 ui_.cmbRHS->addItem(toString(*beg));
-            }            
+            }
             ui_.cmbRHS->addItem(app::toString(true));
-            ui_.cmbRHS->addItem(app::toString(false));            
+            ui_.cmbRHS->addItem(app::toString(false));
         }
 
         DlgCmdCond(QWidget* parent, const app::Commands::Condition& cond) : DlgCmdCond(parent)
@@ -111,13 +111,13 @@ namespace {
                 ui_.cmbOperator->findText(cond.getOp()));
         }
 
-        QString getRHS() const 
+        QString getRHS() const
         { return ui_.cmbRHS->currentText(); }
 
-        QString getLHS() const 
+        QString getLHS() const
         { return ui_.cmbLHS->currentText(); }
 
-        QString getOp() const 
+        QString getOp() const
         { return ui_.cmbOperator->currentText(); }
 
     private:

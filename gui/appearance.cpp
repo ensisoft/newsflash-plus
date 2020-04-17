@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -22,7 +22,8 @@
 
 #include "newsflash/config.h"
 #include "newsflash/warnpush.h"
-#  include <QtGui/QStyleFactory>
+#  include <QStyleFactory>
+#  include <QStyle>
 #  include <QFile>
 #  include <QTextStream>
 #  include <QString>
@@ -50,7 +51,7 @@ namespace {
             const auto styles = QStyleFactory::keys();
             for (int i=0; i<styles.size(); ++i)
             {
-                QRadioButton* rd = new QRadioButton(styles[i], 
+                QRadioButton* rd = new QRadioButton(styles[i],
                     ui_.grpStyle);
                 if (current_style == styles[i])
                     rd->setChecked(true);
@@ -121,9 +122,9 @@ SettingsWidget* Appearance::getSettings()
     return new MySettings(current_style_name_);
 }
 
-void Appearance::applySettings(SettingsWidget* gui) 
+void Appearance::applySettings(SettingsWidget* gui)
 {
-    const auto mine = dynamic_cast<MySettings*>(gui);    
+    const auto mine = dynamic_cast<MySettings*>(gui);
     const auto name = mine->getStyleName();
 
     current_style_name_ = name;

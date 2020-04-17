@@ -32,20 +32,20 @@ SET(FRAMEWORK_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/Library/Frameworks"
 SET(QT_USE_IMPORTED_TARGETS TRUE)
 
 # samiv, ensisoft
-# see comments here, 
+# see comments here,
 # http://stackoverflow.com/questions/12511370/how-to-include-a-certain-qt-installation-using-cmake
-SET(QT_ROOT_DIR "../qt-4.8.6")
-SET(QT_QMAKE_EXECUTABLE ${QT_ROOT_DIR}/bin/qmake)
+#SET(QT_ROOT_DIR "../qt-4.8.6")
+#SET(QT_QMAKE_EXECUTABLE ${QT_ROOT_DIR}/bin/qmake)
 
-# Find Qt4
-FIND_PACKAGE( Qt4 REQUIRED )
+# Find Qt5
+FIND_PACKAGE( Qt5Core )
 
 IF (NOT WIN32)
   SET( QT_DONT_USE_QTGUI TRUE )
 ENDIF()
 
 # Include the cmake file needed to use qt4
-INCLUDE( ${QT_USE_FILE} )
+#INCLUDE( ${QT_USE_FILE} )
 
 #add extra search paths for libraries and includes
 SET (LIB_SUFFIX "" CACHE STRING "Define suffix of directory name (32/64)" )

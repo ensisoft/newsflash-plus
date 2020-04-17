@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -20,7 +20,7 @@
 
 #include "newsflash/config.h"
 #include "newsflash/warnpush.h"
-#  include <QtGui/QMenu>
+#  include <QMenu>
 #  include <QAbstractTableModel>
 #include "newsflash/warnpop.h"
 #include <algorithm>
@@ -35,7 +35,7 @@ namespace gui
 class CmdSettings::Model : public QAbstractTableModel
 {
 public:
-    Model(app::Commands::CmdList cmds) : commands_(cmds) 
+    Model(app::Commands::CmdList cmds) : commands_(cmds)
     {}
 
     virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const override
@@ -49,7 +49,7 @@ public:
             {
                 case Columns::Enabled: return "Enabled";
                 case Columns::Exec:    return "Executable";
-                case Columns::Comment: return "Comment";                
+                case Columns::Comment: return "Comment";
                 case Columns::LAST:    Q_ASSERT(0);
             }
         }
@@ -97,9 +97,9 @@ public:
     }
 
     app::Commands::Command& getCommand(std::size_t index)
-    { 
+    {
         Q_ASSERT(index < commands_.size());
-        return commands_[index]; 
+        return commands_[index];
     }
 
     app::Commands::CmdList getCommands()
@@ -130,7 +130,7 @@ public:
         const int index = commands_.size();
         beginInsertRows(QModelIndex(), index, index);
         commands_.push_back(cmd);
-        endInsertRows(); 
+        endInsertRows();
     }
 
     void moveUp(QModelIndexList& indices)
@@ -183,7 +183,7 @@ public:
     {
         auto first = QAbstractTableModel::index(0, 0);
         auto last  = QAbstractTableModel::index((int)commands_.size(), (int)Columns::LAST);
-        emit dataChanged(first, last);                        
+        emit dataChanged(first, last);
     }
 private:
     enum class Columns {
@@ -192,7 +192,7 @@ private:
 private:
     friend class CmdSettings;
     app::Commands::CmdList commands_;
-};    
+};
 
 CmdSettings::CmdSettings(app::Commands::CmdList cmds) : model_(new Model(cmds))
 {
@@ -209,7 +209,7 @@ CmdSettings::~CmdSettings()
 {}
 
 
-app::Commands::CmdList CmdSettings::getCommandsCopy() 
+app::Commands::CmdList CmdSettings::getCommandsCopy()
 { return model_->commands_; }
 
 void CmdSettings::on_btnAdd_clicked()
@@ -248,7 +248,7 @@ void CmdSettings::on_btnEdit_clicked()
         return;
 
     model_->setCommand(row, command);
- 
+
 }
 
 void CmdSettings::on_btnMoveUp_clicked()
@@ -264,7 +264,7 @@ void CmdSettings::on_btnMoveUp_clicked()
     auto* model = ui_.tableCmds->selectionModel();
     model->setCurrentIndex(selection.indexes().first(),
         QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
-    model->select(selection, 
+    model->select(selection,
         QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
 }
 
@@ -281,8 +281,8 @@ void CmdSettings::on_btnMoveDown_clicked()
     auto* model = ui_.tableCmds->selectionModel();
     model->setCurrentIndex(selection.indexes().first(),
         QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
-    model->select(selection, 
-        QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);    
+    model->select(selection,
+        QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
 }
 
 void CmdSettings::on_actionAdd_triggered()
@@ -318,7 +318,7 @@ void CmdSettings::on_actionDisable_triggered()
     model_->setEnableDisable(indices, false);
 
     ui_.actionDisable->setEnabled(false);
-    ui_.actionEnable->setEnabled(true);    
+    ui_.actionEnable->setEnabled(true);
 }
 
 
@@ -327,10 +327,10 @@ void CmdSettings::on_tableCmds_customContextMenuRequested(QPoint point)
     QMenu menu(ui_.tableCmds);
     menu.addAction(ui_.actionAdd);
     menu.addAction(ui_.actionEdit);
-    menu.addSeparator();        
+    menu.addSeparator();
     menu.addAction(ui_.actionEnable);
     menu.addAction(ui_.actionDisable);
-    menu.addSeparator();    
+    menu.addSeparator();
     menu.addAction(ui_.actionDel);
     menu.exec(QCursor::pos());
 }
@@ -349,7 +349,7 @@ void CmdSettings::tableCmds_selectionChanged()
     ui_.btnEdit->setEnabled(enable);
     ui_.actionDel->setEnabled(enable);
     ui_.actionEdit->setEnabled(enable);
-    ui_.actionEnable->setEnabled(false);    
+    ui_.actionEnable->setEnabled(false);
     ui_.actionDisable->setEnabled(false);
 
     qSort(indices);

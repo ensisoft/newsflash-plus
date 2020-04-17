@@ -22,9 +22,9 @@
 
 #include "newsflash/config.h"
 #include "newsflash/warnpush.h"
-#  include <QtGui/QFileDialog>
-#  include <QtGui/QAction>
-#  include <QtGui/QMenu>
+#  include <QFileDialog>
+#  include <QAction>
+#  include <QMenu>
 #  include <QDir>
 #include "newsflash/warnpop.h"
 #include "dlgdragdrop.h"

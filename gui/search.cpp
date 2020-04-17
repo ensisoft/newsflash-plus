@@ -23,9 +23,9 @@
 #include "newsflash/config.h"
 
 #include "newsflash/warnpush.h"
-#  include <QtGui/QToolBar>
-#  include <QtGui/QMenu>
-#  include <QtGui/QMessageBox>
+#  include <QToolBar>
+#  include <QMenu>
+#  include <QMessageBox>
 #  include <QDate>
 #include "newsflash/warnpop.h"
 

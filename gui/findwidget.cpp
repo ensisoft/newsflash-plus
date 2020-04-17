@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -20,7 +20,7 @@
 
 #include "newsflash/config.h"
 #include "newsflash/warnpush.h"
-#  include <QtGui/QMessageBox>
+#  include <QMessageBox>
 #include "newsflash/warnpop.h"
 #include "findwidget.h"
 #include "finder.h"
@@ -97,8 +97,8 @@ void FindWidget::doFind(bool forward)
         if (!regexp_.isValid())
         {
             const auto err = regexp_.errorString();
-            QMessageBox::critical(this, 
-                tr("Incorrect Regular Expression"), err);            
+            QMessageBox::critical(this,
+                tr("Incorrect Regular Expression"), err);
             return;
         }
         auto numItems = finder_.numItems();

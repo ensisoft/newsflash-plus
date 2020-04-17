@@ -23,9 +23,9 @@
 #include "newsflash/config.h"
 
 #include "newsflash/warnpush.h"
-#  include <QtGui/QDialog>
-#  include <QtGui/QMovie>
-#  include <QtGui/QPixmap>
+#  include <QDialog>
+#  include <QMovie>
+#  include <QPixmap>
 #  include "ui_dlgmovie.h"
 #include "newsflash/warnpop.h"
 

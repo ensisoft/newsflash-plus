@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -20,8 +20,8 @@
 
 #include "newsflash/config.h"
 #include "newsflash/warnpush.h"
-#  include <QtGui/QMessageBox>
-#  include <QtGui/QMenu>
+#  include <QMessageBox>
+#  include <QMenu>
 #include "newsflash/warnpop.h"
 #include "dlgvolumes.h"
 #include "app/newsgroup.h"
@@ -52,14 +52,14 @@ void DlgVolumes::on_btnPurge_clicked()
 void DlgVolumes::on_btnLoad_clicked()
 {
     const auto& indices = ui_.tableView->selectionModel()->selectedRows();
-    try 
+    try
     {
         for (const auto& i : indices)
             model_.load(i.row());
     }
     catch (const std::exception& e)
     {
-        QMessageBox::critical(this, "Headers", 
+        QMessageBox::critical(this, "Headers",
             tr("Unable to load the newsgroup data.\n%1").arg(app::widen(e.what())));
     }
 }

@@ -74,13 +74,13 @@ class Settings;
 inline
 void sortAscending(QModelIndexList& list)
 {
-    qSort(list.begin(), list.end(), qLess<QModelIndex>());
+    std::sort(list.begin(), list.end(), qLess<QModelIndex>());
 }
 
 inline
 void sortDescending(QModelIndexList& list)
 {
-    qSort(list.begin(), list.end(), qGreater<QModelIndex>());
+    std::sort(list.begin(), list.end(), qGreater<QModelIndex>());
 }
 
 void saveTableLayout(const QString& key, const QTableView* view, Settings& settings);

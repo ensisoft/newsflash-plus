@@ -23,12 +23,12 @@
 #include "newsflash/config.h"
 
 #include "newsflash/warnpush.h"
-#  include <QtGui/QToolBar>
-#  include <QtGui/QMenu>
-#  include <QtGui/QSplitter>
-#  include <QtGui/QMouseEvent>
-#  include <QtGui/QPixmap>
-#  include <QtGui/QMovie>
+#  include <QToolBar>
+#  include <QMenu>
+#  include <QSplitter>
+#  include <QMouseEvent>
+#  include <QPixmap>
+#  include <QMovie>
 #include "newsflash/warnpop.h"
 
 #include "mainwindow.h"

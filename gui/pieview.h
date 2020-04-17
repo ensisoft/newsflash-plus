@@ -22,7 +22,7 @@
 
 #include "newsflash/config.h"
 #include "newsflash/warnpush.h"
-#  include <QtGui/QWidget>
+#  include <QWidget>
 #include "newsflash/warnpop.h"
 
 namespace gui

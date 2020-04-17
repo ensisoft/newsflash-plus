@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -23,7 +23,7 @@
 #include "newsflash/config.h"
 
 #include "newsflash/warnpush.h"
-#  include <QtGui/QDialog>
+#  include <QDialog>
 #  include "ui_dlgwelcome.h"
 #include "newsflash/warnpop.h"
 
@@ -50,7 +50,7 @@ namespace gui
         {
             return ui_.chkQuickStart->isChecked();
         }
-        bool add_account() const 
+        bool add_account() const
         {
             return this->result() == QDialog::Accepted;
         }
@@ -68,7 +68,7 @@ namespace gui
     private:
         Ui::DlgWelcome ui_;
 
-    }; 
+    };
 
 } // gui
 

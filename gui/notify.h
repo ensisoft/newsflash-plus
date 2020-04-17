@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -18,12 +18,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#pragma once 
+#pragma once
 
 #include "newsflash/config.h"
 
 #include "newsflash/warnpush.h"
-#  include <QtGui/QSystemTrayIcon>
+#  include <QSystemTrayIcon>
 #  include <QObject>
 #include "newsflash/warnpop.h"
 
@@ -82,28 +82,28 @@ namespace gui
 
         enum class NotifyWhen {
             // notifications are enabled.
-            Enable, 
+            Enable,
 
             // notify when file is downloaded.
-            OnFile, 
+            OnFile,
 
             // notify when a batch of files is downloaded.
-            OnFilePack, 
+            OnFilePack,
 
             // notify on error event.
-            OnError, 
+            OnError,
 
             // notify on warning event.
-            OnWarning, 
+            OnWarning,
 
             // notify when a repair completes.
-            OnRepair, 
+            OnRepair,
 
             // notify when an unpack completes
             OnUnpack
         };
         using Flags = newsflash::bitflag<NotifyWhen>;
-        Flags m_notifications;        
+        Flags m_notifications;
     };
 
 } // gui
