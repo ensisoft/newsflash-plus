@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -30,9 +30,11 @@
 #  include <QTimer>
 #  include <QUrl>
 #include <newsflash/warnpop.h>
+
 #include <functional>
 #include <memory>
 #include <list>
+#include <queue>
 
 namespace app
 {
@@ -63,15 +65,18 @@ namespace app
 
     private slots:
         void finished(QNetworkReply* reply);
-        void timedout(QNetworkReply* reply);
         void heartbeat();
 
     private:
         QNetworkAccessManager m_qnam;
         QTimer m_timer;
-        std::list<std::unique_ptr<WebQuery>> m_live;
-        std::list<std::unique_ptr<WebQuery>> m_dead;
-        std::size_t m_timeout;
+        struct QueryState {
+            QNetworkReply* reply = nullptr;
+            std::shared_ptr<WebQuery> query;
+        };
+        std::list<QueryState> m_active;
+        std::size_t m_timeoutTicks = 1000;
+        bool m_signalled = false;
     };
 
     extern WebEngine* g_web;

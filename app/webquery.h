@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -34,9 +34,17 @@ class QNetworkReply;
 namespace app
 {
     // WebQuery represents a HTTP Get/Post request.
-    class WebQuery 
+    class WebQuery
     {
     public:
+        enum class State {
+            Waiting,
+            Active,
+            Aborted,
+            Complete,
+            Timedout
+        };
+
         using OnReplyCallback = std::function<void (QNetworkReply&)>;
 
         // Callback to be invoked when the query has completed
@@ -44,7 +52,7 @@ namespace app
         OnReplyCallback OnReply;
 
         // construct a new simple query.
-        WebQuery(QUrl url) : m_url(url), m_reply(nullptr), m_aborted(false), m_timeout(false), m_ticks(0)
+        WebQuery(QUrl url) : m_url(url)
         {}
 
         // construct a query with attachment.
@@ -54,20 +62,20 @@ namespace app
             m_attchName = attchName;
         }
 
-       ~WebQuery();
+        State GetState() const
+        { return mState; }
 
-
-        // submit the query through QNetworkAccessManager.
-        bool submit(QNetworkAccessManager& qnam);
+        // Submit the query through QNetworkAccessManager.
+        // Returns the QNetworkReply* that is the reply handle.
+        QNetworkReply* Submit(QNetworkAccessManager& qnam);
 
         // tick the query. if the current tick count exceeds the max tick count
         // returns false, otherwise true.
         bool tick(unsigned maxTicks);
 
-        // inspect a reply. if the reply is for this query
-        // invokes the OnReply callback and returns true.
-        // Otherwise returns false.
-        bool receive(QNetworkReply& reply);
+        // Complete the query by inspecting the given reply and
+        // doing any processing required.
+        void Complete(QNetworkReply& reply);
 
         // returns true if the query is active. otherwise false.
         bool isActive() const;
@@ -81,25 +89,28 @@ namespace app
 
         // times out the query. this is used by the WebEngine and
         // is not intended to be called by the clients.
-        void timeout();
+        void Timeout(QNetworkReply& reply);
 
+        // fix this shit. the WebQuery should no longer hold on
+        // to the QNetworkReply
         bool isOwner(const QNetworkReply* reply) const
-        { return reply == m_reply; }
-
+        { return m_reply == reply; }
         bool isOwner(const QNetworkReply& reply) const
-        { return &reply == m_reply; }
-        
+        { return m_reply == &reply; }
+
     private:
         bool haveAttachment() const;
     private:
         QUrl m_url;
         QString m_attchName;
         QByteArray m_attchData;
-        QNetworkReply* m_reply;
+        // todo: remove this.
+        QNetworkReply* m_reply = nullptr;
     private:
-        bool m_aborted;
-        bool m_timeout;
-        unsigned m_ticks;
+        // current query state.
+        State mState = State::Waiting;
+        // current tick counter how long the query has been "ticking"
+        unsigned m_ticks = 0;
     };
 
 } // app
