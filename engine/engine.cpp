@@ -3121,7 +3121,7 @@ void initialize()
 
     find_filetype("foo");
 
-    openssl_init();
+    //openssl_init();
 
     identify_encoding("", 0);
 }

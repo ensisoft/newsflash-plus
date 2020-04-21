@@ -25,6 +25,7 @@
 #include "newsflash/config.h"
 
 #include <system_error>
+#include <memory>
 
 #include "socketapi.h"
 #include "waithandle.h"
@@ -76,3 +77,17 @@ namespace newsflash
 
 } // newsflash
 
+// We have a problem with libssl being a conflicting dependency between
+// our engine and Qt5. Qt5 uses libssl 1.1.x and we're still on libssl 1.0.x.
+// These are not binary compatible.
+// Having all the symbols available in the engine library will lead to problems
+// when these two libraries are loaded in the process.
+// In order to workout this problem we take the socket code and build it into
+// a library and tell the linker to hide all symbols *except* for
+// MakeNewsflashSocket which is public. Then the rest of the engine code
+// simply uses this API to create a socket and libssl stays hidden.
+// Extern C is just to simplify  specificing the symbol name (no mangling)
+// in the linker file
+extern "C"  {
+    std::unique_ptr<newsflash::Socket> MakeNewsflashSocket(bool ssl);
+} // extern "C"
