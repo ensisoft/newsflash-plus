@@ -173,18 +173,65 @@ target_compile_definitions(smtpclient PRIVATE SMTP_BUILD)
 add_executable(smtpclient_test third_party/smtpclient/example/main.cpp)
 target_link_libraries(smtpclient_test smtpclient Qt5::Core Qt5::Widgets)
 
-
-
-# build the engine lib
-file(GLOB ENGINE_SOURCE engine/*.cpp)
-add_library(engine STATIC
-    ${ENGINE_SOURCE}
-    third_party/base64/base64.cpp)
-target_link_libraries(engine INTERFACE
-    ${Boost_LIBRARIES}
-    ${LIB_Z}
+# We have a problem with libssl being a conflicting dependency between
+# our engine and Qt5. Qt5 uses libssl 1.1.x and we're still on libssl 1.0.x.
+# These are not binary compatible.
+# Having all the symbols available in the engine library will lead to problems
+# when these two libraries are loaded in the process.
+# In order to workout this problem we take the socket code and build it into
+# a library and tell the linker to hide all symbols *except* for
+# MakeNewsflashSocket which is public. Then the rest of the engine code
+# simply uses this API to create a socket and libssl stays hidden.
+# Extern C is just to simplify  specificing the symbol name (no mangling)
+# in the linker file
+add_library(socketlib SHARED
+    engine/socket.cpp
+    engine/socketapi.cpp
+    engine/tcpsocket.cpp
+    engine/sslsocket.cpp
+    engine/sslcontext.cpp
+    engine/assert.cpp
+    engine/waithandle.cpp
+    engine/platform.cpp
+    )
+target_link_libraries(socketlib PRIVATE
     ${LIB_OPENSSL}
     ${LIB_CRYPTO})
+if (CMAKE_COMPILER_IS_GNUCC)
+    target_link_options(socketlib PRIVATE "-Wl,--version-script=${CMAKE_CURRENT_LIST_DIR}/engine/linux_linker_openssl_war.version")
+endif()
+
+# build the engine lib
+add_library(engine STATIC
+    engine/assert.cpp
+    engine/bigfile.cpp
+    engine/connection.cpp
+    engine/decode.cpp
+    engine/download.cpp
+    engine/encoding.cpp
+    engine/engine.cpp
+    engine/event.cpp
+    engine/filebuf.cpp
+    engine/filemap.cpp
+    engine/filesys.cpp
+    engine/filetype.cpp
+    engine/format.cpp
+    engine/iso_8859_15.cpp
+    engine/listing.cpp
+    engine/logging.cpp
+    engine/minidump.cpp
+    engine/nntp.cpp
+    engine/platform.cpp
+    engine/session.cpp
+    engine/threadpool.cpp
+    engine/update.cpp
+    engine/waithandle.cpp
+    engine/socketapi.cpp
+    third_party/base64/base64.cpp)
+target_link_libraries(engine PUBLIC
+    socketlib
+    ${Boost_LIBRARIES}
+    ${LIB_Z})
 
 file(GLOB APP_SOURCE  app/*.h app/*.cpp)
 file(GLOB GUI_SOURCE  gui/*.h gui/*.cpp gui/*.ui)
@@ -201,7 +248,9 @@ target_link_libraries(appcore PUBLIC
     Qt5::Core
     Qt5::Widgets
     Qt5::Xml
-    Qt5::Network)
+    Qt5::Network
+    # just need libregex really
+    ${Boost_LIBRARIES})
 
 if(WIN32)
     set(ICO_SOURCE "gui/icon.rc")
@@ -274,12 +323,25 @@ add_executable(unit_test_session     engine/unit_test/unit_test_session.cpp)
 add_executable(unit_test_buffer      engine/unit_test/unit_test_buffer.cpp)
 add_executable(unit_test_threadpool  engine/unit_test/unit_test_threadpool.cpp)
 add_executable(unit_test_event       engine/unit_test/unit_test_event.cpp)
-add_executable(unit_test_tcpsocket   engine/unit_test/unit_test_tcpsocket.cpp)
-add_executable(unit_test_sslsocket   engine/unit_test/unit_test_sslsocket.cpp)
+add_executable(unit_test_tcpsocket
+    engine/unit_test/unit_test_tcpsocket.cpp
+    engine/assert.cpp
+    engine/platform.cpp
+    engine/socketapi.cpp
+    engine/tcpsocket.cpp
+    engine/waithandle.cpp)
+add_executable(unit_test_sslsocket   engine/unit_test/unit_test_sslsocket.cpp
+    engine/assert.cpp
+    engine/platform.cpp
+    engine/socketapi.cpp
+    engine/sslsocket.cpp
+    engine/sslcontext.cpp
+    engine/waithandle.cpp)
 add_executable(unit_test_listing     engine/unit_test/unit_test_listing.cpp)
 add_executable(unit_test_download    engine/unit_test/unit_test_download.cpp)
 add_executable(unit_test_update      engine/unit_test/unit_test_update.cpp)
-add_executable(unit_test_stringtable engine/unit_test/unit_test_stringtable.cpp)
+add_executable(unit_test_stringtable engine/unit_test/unit_test_stringtable.cpp
+    engine/stringtable.cpp)
 add_executable(unit_test_datafile    engine/unit_test/unit_test_datafile.cpp)
 add_executable(unit_test_catalog     engine/unit_test/unit_test_catalog.cpp)
 add_executable(unit_test_index       engine/unit_test/unit_test_index.cpp)
@@ -304,7 +366,7 @@ target_link_libraries(unit_test_buffer      engine)
 target_link_libraries(unit_test_threadpool  engine)
 target_link_libraries(unit_test_event       engine)
 target_link_libraries(unit_test_tcpsocket   engine)
-target_link_libraries(unit_test_sslsocket   engine)
+target_link_libraries(unit_test_sslsocket   engine  ${LIB_OPENSSL} ${LIB_CRYPTO})
 target_link_libraries(unit_test_listing     engine)
 target_link_libraries(unit_test_download    engine)
 target_link_libraries(unit_test_update      engine)
@@ -399,14 +461,14 @@ add_test(NAME unit_test_webengine   COMMAND unit_test_webengine)
 file(GLOB LICENSE_FILES doc/*.txt)
 
 if (CMAKE_BUILD_TYPE MATCHES "Release")
-    install(TARGETS newsflash join smtpclient DESTINATION "${CMAKE_CURRENT_LIST_DIR}/dist")
+    install(TARGETS newsflash join smtpclient socketlib DESTINATION "${CMAKE_CURRENT_LIST_DIR}/dist")
     file(COPY ${LICENSE_FILES}
          DESTINATION "${CMAKE_CURRENT_LIST_DIR}/dist")
     if (UNIX)
         file(COPY "${CMAKE_CURRENT_LIST_DIR}/newsflash.sh" DESTINATION "${CMAKE_CURRENT_LIST_DIR}/dist")
     endif()
 elseif(CMAKE_BUILD_TYPE MATCHES "Debug")
-    install(TARGETS newsflash join smtpclient DESTINATION "${CMAKE_CURRENT_LIST_DIR}/dist_d")
+    install(TARGETS newsflash join smtpclient socketlib DESTINATION "${CMAKE_CURRENT_LIST_DIR}/dist_d")
     file(COPY ${LICENSE_FILES}
          DESTINATION "${CMAKE_CURRENT_LIST_DIR}/dist_d")
     if (UNIX)

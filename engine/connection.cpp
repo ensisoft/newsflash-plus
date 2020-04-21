@@ -32,8 +32,7 @@
 #include <map>
 
 #include "connection.h"
-#include "tcpsocket.h"
-#include "sslsocket.h"
+#include "socket.h"
 #include "buffer.h"
 #include "session.h"
 #include "cmdlist.h"
@@ -153,9 +152,7 @@ class ConnectionImpl::connect : public action
 public:
     connect(std::shared_ptr<impl> s) : state_(s)
     {
-        if (state_->ssl)
-            state_->socket.reset(new SslSocket);
-        else state_->socket.reset(new TcpSocket);
+        state_->socket = MakeNewsflashSocket(state_->ssl);
     }
 
     virtual void xperform() override
