@@ -175,12 +175,14 @@ QVariant NewsList::data(const QModelIndex& index, int role) const
 
 void NewsList::sort(int column, Qt::SortOrder order)
 {
+    DEBUG("Request to sort by %1 into %2", column, order);
+
     if ((Columns)column == Columns::Favorite)
         return;
     if ((Columns)column == Columns::NewMessages)
         return;
 
-    DEBUG("Sorting by %1 into %2", column, order);
+    DEBUG("Starting sort...");
 
     emit layoutAboutToBeChanged();
 
@@ -430,7 +432,6 @@ void NewsList::loadListing(quint32 accountId)
     mCurrentGroupList    = std::move(list);
     mNumCurrentlyVisible = mCurrentGroupList.size();
     mCurrentAccountId    = accountId;
-    QAbstractTableModel::reset();
     QAbstractTableModel::endResetModel();
 
     DEBUG("Loaded %1 items", mNumCurrentlyVisible);

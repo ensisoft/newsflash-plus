@@ -48,6 +48,7 @@ NewsList::NewsList() : m_curAccount(0)
     m_ui.setupUi(this);
     m_ui.tableGroups->setModel(&m_model);
     m_ui.tableGroups->setColumnWidth(0, 150);
+    m_ui.tableGroups->setSortingEnabled(true);
     m_ui.progressBar->setMaximum(0);
     m_ui.progressBar->setMinimum(0);
     m_ui.progressBar->setValue(0);
@@ -107,7 +108,10 @@ void NewsList::addActions(QToolBar& bar)
 
 void NewsList::activate(QWidget*)
 {
-    on_cmbAccounts_currentIndexChanged();
+    const auto index = m_ui.cmbAccounts->currentIndex();
+    if (index == -1)
+        return;
+    on_cmbAccounts_currentIndexChanged(index);
 }
 
 MainWidget::info NewsList::getInformation() const
@@ -169,6 +173,11 @@ void NewsList::setFound(std::size_t index)
 
 void NewsList::loadState(app::Settings& settings)
 {
+    const auto sortColumn = settings.get("newslist", "sort_column", 0);
+    const auto sortOrder  = settings.get("newslist", "sort_order", (int)Qt::AscendingOrder);
+    m_ui.tableGroups->sortByColumn(sortColumn, (Qt::SortOrder)sortOrder);
+    DEBUG("UI table state sorted by %1 into %2", sortColumn, (Qt::SortOrder)sortOrder);
+
     app::loadTableLayout("newslist", m_ui.tableGroups, settings);
     app::loadState("newslist", m_ui.editFilter, settings);
     app::loadState("newslist", m_ui.chkShowEmpty, settings);
@@ -187,6 +196,13 @@ void NewsList::loadState(app::Settings& settings)
 
 void NewsList::saveState(app::Settings& settings)
 {
+    const QHeaderView* header = m_ui.tableGroups->horizontalHeader();
+    const auto sortColumn = header->sortIndicatorSection();
+    const auto sortOrder  = header->sortIndicatorOrder();
+    settings.set("newslist", "sort_column", sortColumn);
+    settings.set("newslist", "sort_order", sortOrder);
+    DEBUG("UI table state sorted by %1 into %2", sortColumn, sortOrder);
+
     app::saveTableLayout("newslist", m_ui.tableGroups, settings);
     app::saveState("newslist", m_ui.editFilter, settings);
     app::saveState("newslist", m_ui.chkShowEmpty, settings);
@@ -319,7 +335,7 @@ void NewsList::on_actionStop_triggered()
 }
 
 
-void NewsList::on_cmbAccounts_currentIndexChanged()
+void NewsList::on_cmbAccounts_currentIndexChanged(int current)
 {
     const auto index = m_ui.cmbAccounts->currentIndex();
     if (index == -1)
@@ -543,7 +559,13 @@ void NewsList::resort()
     const QHeaderView* header = m_ui.tableGroups->horizontalHeader();
     const auto sortColumn = header->sortIndicatorSection();
     const auto sortOrder  = header->sortIndicatorOrder();
-    m_ui.tableGroups->sortByColumn(sortColumn, sortOrder);
+    DEBUG("UI request resort by %1 into %2", sortColumn, sortOrder);
+    // somehow this is no longer working in Qt5
+    // the model's sort is never invoked, guess there's some
+    // logic that thinks that the UI state is synced with the
+    // model state and the sort is skipped ¯\_(ツ)_/¯
+    //m_ui.tableGroups->sortByColumn(sortColumn, sortOrder);
+    m_model.sort(sortColumn, sortOrder);
 }
 
 void NewsList::filter()
