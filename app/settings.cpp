@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -21,8 +21,9 @@
 #include <newsflash/config.h>
 
 #include <newsflash/warnpush.h>
-#  include <QJson/Serializer>
-#  include <QJson/Parser>
+#  include <QJsonDocument>
+#  include <QJsonArray>
+#  include <QJsonObject>
 #  include <QVariant>
 #  include <QScopedPointer>
 #  include <QIODevice>
@@ -54,23 +55,22 @@ void Settings::load(QIODevice& io, Settings::format format)
 
     if (format == Settings::format::json)
     {
-        bool ok = false;
-        QJson::Parser parser;
-        auto ret = parser.parse(&io, &ok).toMap();
-        if (!ok)
+        QJsonParseError error;
+        QJsonDocument doc(QJsonDocument::fromJson(io.readAll(), &error));
+        if (doc.isNull())
         {
-            const auto& line = parser.errorLine();
-            const auto& what = parser.errorString();
-            throw std::runtime_error(
-                narrow(toString("JSON parse failed %1 at line %2", what, line)));
+            const auto& line = error.offset;
+            const auto& what = error.errorString();
+            throw std::runtime_error(narrow(toString("JSON parse failed %1 at line %2", what, line)));
         }
 
         QVariantMap db;
 
-        for (auto it = ret.begin(); it != ret.end(); ++it)
+        const QJsonObject& root = doc.object();
+        for (auto it = root.begin(); it != root.end(); ++it)
         {
             const auto& context = it.key();
-            const auto& values  = it.value().toMap();
+            const auto& values  = it.value().toObject().toVariantMap();
             db[context] = values;
         }
         m_values = db;
@@ -83,16 +83,14 @@ void Settings::save(QIODevice& io, Settings::format format) const
 
     if (format == Settings::format::json)
     {
-        bool ok = false;
-        QJson::Serializer serializer;
-        serializer.setIndentMode(QJson::IndentFull);
-        serializer.serialize(m_values, &io, &ok);
-        if (!ok)
+        QJsonObject root;
+        for (auto it = m_values.begin(); it != m_values.end(); ++it)
         {
-            const auto& msg = serializer.errorMessage();
-            throw std::runtime_error(
-                narrow(toString("JSON serialize failed %1", msg)));
+            const QVariantMap& values = it.value().toMap();
+            root[it.key()] = QJsonObject::fromVariantMap(values);
         }
+        QJsonDocument docu(root);
+        io.write(docu.toJson());
     }
 }
 

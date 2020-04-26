@@ -79,7 +79,6 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
 # generic include directories (same for each platform)
-include_directories(BEFORE "${CMAKE_CURRENT_LIST_DIR}/third_party/qjson/include")
 include_directories(BEFORE "${CMAKE_CURRENT_LIST_DIR}/third_party")
 include_directories(BEFORE "${CMAKE_CURRENT_LIST_DIR}/third_party/openssl/sdk/include")
 include_directories(BEFORE "${CMAKE_CURRENT_LIST_DIR}/third_party/zlib")
@@ -106,10 +105,8 @@ link_directories("${CMAKE_CURRENT_LIST_DIR}/third_party/boost_1_51_0/sdk/lib")
 
 # platform specific link dirs
 if (WIN32)
-    link_directories("${CMAKE_CURRENT_LIST_DIR}/third_party/qjson/lib/Release")
     link_directories("${CMAKE_CURRENT_LIST_DIR}/third_party/zlib/Release")
 elseif(UNIX)
-    link_directories("${CMAKE_CURRENT_LIST_DIR}/third_party/qjson/lib")
     link_directories("${CMAKE_CURRENT_LIST_DIR}/third_party/zlib/")
 endif()
 
@@ -244,7 +241,6 @@ add_library(appcore STATIC
 target_link_libraries(appcore PUBLIC
     engine
     smtpclient
-    qjson
     Qt5::Core
     Qt5::Widgets
     Qt5::Xml
