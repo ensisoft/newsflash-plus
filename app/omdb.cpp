@@ -23,7 +23,9 @@
 #include "newsflash/config.h"
 
 #include "newsflash/warnpush.h"
-#  include <QJson/Parser>
+#  include <QJsonDocument>
+#  include <QJsonObject>
+#  include <QJsonArray>
 #  include <QString>
 #  include <QUrl>
 #  include <QByteArray>
@@ -88,8 +90,6 @@ bool MovieDatabase::testLookup(const QString& testKey, const QString& testTitle)
     query.OnReply = std::bind(&MovieDatabase::onLookupFinished, this,
         std::placeholders::_1, testTitle);
     g_web->submit(query);
-
-    DEBUG("Lookup test movie '%1'", testTitle);
     return true;
 }
 
@@ -121,20 +121,18 @@ void MovieDatabase::onLookupFinished(QNetworkReply& reply, const QString& title)
        emit lookupError(title, toString("Failed to retrieve movie details (%1)", err));
        return;
     }
-    QByteArray bytes = reply.readAll();
-    QBuffer io(&bytes);
-
-    bool success = true;
-
-    QJson::Parser parser;
-    QVariantMap json = parser.parse(&io, &success).toMap();
-    if (!success)
+    QJsonParseError error;
+    QJsonDocument doc(QJsonDocument::fromJson(reply.readAll(), &error));
+    if (doc.isNull())
     {
-        ERROR("Incorrect JSON response from omdbapi.com");
+        ERROR("Incorrect JSON response from omdbapi.com (%1)", error.errorString());
         emit lookupError(title, "Incorrect JSON response from omdbapi.com");
         return;
     }
-    success = json["Response"].toBool();
+    const QJsonObject& root = doc.object();
+    const QVariantMap& json = root.toVariantMap();
+
+    const bool success = json["Response"].toBool();
     if (!success)
     {
         const auto& err = json["Error"].toString();

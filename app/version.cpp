@@ -126,9 +126,6 @@ void logCopyright()
     INFO("http://www.famfamfam.com/lab/icons/silk/");
     INFO("Qt cross-platform application and UI framework %1", QT_VERSION_STR);
     INFO("http://qt.nokia.com");
-    INFO("QJSon Qt JSON library");
-    INFO("Copyright (c) 2010 Flavio Castelli");
-    INFO("http://qjson.sourceforge.net");
     INFO("Zlib compression library " ZLIB_VERSION);
     INFO("Copyright (c) 1995-2010 Jean-Loup Gailly & Mark Adler");
     INFO("http://zlib.net");

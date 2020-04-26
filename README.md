@@ -168,16 +168,6 @@ the .zip file instead of the .tar.gz  (you can fix this with dos2unix, but then 
 and configure will fail with some other cryptic error such as "no make or gmake was found bla bla".
 
 
-Build qjson
-
-NOTE: I have edited the CMakeList.txt to have a custom Qt path.
-
-```
-    $ cd third_party/qjson
-    $ cmake -G "Unix Makefiles"
-    $ make
-```
-
 Build par2cmdline
 
 ```
