@@ -20,14 +20,18 @@
 
 #define LOGTAG "app"
 
-#include <newsflash/config.h>
-#include <newsflash/warnpush.h>
+#include "newsflash/config.h"
+
+#include "newsflash/warnpush.h"
 #  include <boost/version.hpp>
 #  include <QStringList>
 #  include <QString>
 #  include <QRegExp>
-#include <newsflash/warnpop.h>
-#include <zlib/zlib.h>
+#  include <QSslSocket>
+#  include <zlib/zlib.h>
+#include "newsflash/warnpop.h"
+
+
 #include "eventlog.h"
 #include "format.h"
 #include "unrar.h"

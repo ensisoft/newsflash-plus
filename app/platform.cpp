@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -90,7 +90,7 @@ QImage qt_fromWinHBITMAP(HDC hdc, HBITMAP bitmap, int w, int h)
 QIcon extractIcon(const QString& binary)
 {
     HICON small_icon[1] = {0};
-    ExtractIconEx(binary.utf16(), 0, NULL, small_icon, 1);
+    ExtractIconEx((const wchar_t*)binary.utf16(), 0, NULL, small_icon, 1);
     if (!small_icon[0])
         return QIcon();
 
@@ -103,7 +103,7 @@ QIcon extractIcon(const QString& binary)
     bool result = GetIconInfo(small_icon[0], &iconinfo); //x and y Hotspot describes the icon center
     if (!result)
     {
-        DeleteDC(hdc);        
+        DeleteDC(hdc);
         return QIcon();
     }
 
@@ -123,30 +123,30 @@ QIcon extractIcon(const QString& binary)
     bitmapInfo.biClrUsed       = 0;
     bitmapInfo.biClrImportant  = 0;
     DWORD* bits;
-            
+
     HBITMAP winBitmap = CreateDIBSection(hdc, (BITMAPINFO*)&bitmapInfo, DIB_RGB_COLORS, (VOID**)&bits, NULL, 0);
     HGDIOBJ oldhdc = (HBITMAP)SelectObject(hdc, winBitmap);
     DrawIconEx( hdc, 0, 0, small_icon[0], iconinfo.xHotspot * 2, iconinfo.yHotspot * 2, 0, 0, DI_NORMAL);
     QImage image = qt_fromWinHBITMAP(hdc, winBitmap, w, h);
-            
-    for (int y = 0 ; y < h && !foundAlpha ; y++) 
+
+    for (int y = 0 ; y < h && !foundAlpha ; y++)
     {
         QRgb *scanLine= reinterpret_cast<QRgb *>(image.scanLine(y));
-        for (int x = 0; x < w ; x++) 
+        for (int x = 0; x < w ; x++)
         {
-            if (qAlpha(scanLine[x]) != 0) 
+            if (qAlpha(scanLine[x]) != 0)
             {
                 foundAlpha = true;
                 break;
             }
         }
     }
-    if (!foundAlpha) 
+    if (!foundAlpha)
     {
         //If no alpha was found, we use the mask to set alpha values
         DrawIconEx( hdc, 0, 0, small_icon[0], w, h, 0, 0, DI_MASK);
         QImage mask = qt_fromWinHBITMAP(hdc, winBitmap, w, h);
-                
+
         for (int y = 0 ; y < h ; y++)
         {
             QRgb *scanlineImage = reinterpret_cast<QRgb *>(image.scanLine(y));
@@ -164,10 +164,10 @@ QIcon extractIcon(const QString& binary)
     //dispose resources created by iconinfo call
     DeleteObject(iconinfo.hbmMask);
     DeleteObject(iconinfo.hbmColor);
-        
+
     SelectObject(hdc, oldhdc); //restore state
     DeleteObject(winBitmap);
-    DeleteDC(hdc);        
+    DeleteDC(hdc);
     return QIcon(QPixmap::fromImage(image));
 }
 
@@ -217,7 +217,7 @@ QString getPlatformName()
         else if (info.dwMinorVersion == 0)
         {
             if (info.wProductType == VER_NT_WORKSTATION)
-                ret = "Windows Vista"; 
+                ret = "Windows Vista";
             else ret = "Windows Server 2008";
         }
     }
@@ -229,7 +229,7 @@ QString getPlatformName()
         enum {
             VER_SUITE_WH_SERVER = 0x00008000
         };
-#endif 
+#endif
         if (info.dwMinorVersion == 2 && GetSystemMetrics(SM_SERVERR2))
             ret = "Windows Server 2003 R2";
         else if (info.dwMinorVersion == 2 && GetSystemMetrics(SM_SERVERR2) == 0)
@@ -275,7 +275,7 @@ QString getPlatformName()
             ret += ", 32-bit";
     }
 
-    return ret;    
+    return ret;
 }
 
 QString resolveMountPoint(const QString& directory)
@@ -297,7 +297,7 @@ quint64 getFreeDiskSpace(const QString& filename)
     const auto& native = QDir::toNativeSeparators(filename);
 
     ULARGE_INTEGER large = {};
-    if (!GetDiskFreeSpaceEx(native.utf16(), &large, nullptr, nullptr))
+    if (!GetDiskFreeSpaceEx((const wchar_t*)native.utf16(), &large, nullptr, nullptr))
         return 0;
 
     return large.QuadPart;
@@ -307,7 +307,7 @@ void openFile(const QString& file)
 {
     HINSTANCE ret = ShellExecute(nullptr,
         L"open",
-        file.utf16(),
+        (const wchar_t*)file.utf16(),
         NULL, // executable parameters, don't care
         NULL, // working directory
         SW_SHOWNORMAL);
@@ -323,16 +323,16 @@ void shutdownComputer()
     HANDLE hToken = NULL;
     HANDLE hProc  = GetCurrentProcess();
     OpenProcessToken(hProc, TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hToken);
-    
+
     TOKEN_PRIVILEGES tkp = {0};
     LookupPrivilegeValue(NULL, SE_SHUTDOWN_NAME, &tkp.Privileges[0].Luid);
     tkp.PrivilegeCount = 1;
     tkp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
-        
+
     AdjustTokenPrivileges(hToken, FALSE, &tkp, 0, (PTOKEN_PRIVILEGES)NULL, 0);
-        
+
     ExitWindowsEx(EWX_SHUTDOWN | EWX_FORCE,
-      SHTDN_REASON_MAJOR_OPERATINGSYSTEM | 
+      SHTDN_REASON_MAJOR_OPERATINGSYSTEM |
       SHTDN_REASON_MINOR_UPGRADE |
       SHTDN_REASON_FLAG_PLANNED);
 
@@ -360,11 +360,11 @@ QString getPlatformName()
        line = stream.readLine();
        if (line.isEmpty() || line.isNull())
            continue;
-       
+
        QStringList split = line.split("=");
        if (split.size() != 2)
            continue;
-       
+
        if (split[0] == "DISTRIB_DESCRIPTION")
        {
            // the value is double quoted, e.g. "Ubuntu 9.04", ditch the quotes
@@ -383,27 +383,27 @@ QString resolveMountPoint(const QString& directory)
     QDir dir(directory);
     QString path = dir.canonicalPath(); // resolves symbolic links
 
-    // have to read /proc/mounts and compare the mount points to 
+    // have to read /proc/mounts and compare the mount points to
     // the given directory path. an alternative could be /etc/mtab
     // but apparently /proc/mounts is more up to date and should exist
     // on any new modern kernel
     QFile mtab("/proc/mounts");
     if (!mtab.open(QIODevice::ReadOnly))
         return "";
-    
+
     QStringList mounts;
     QString line;
     QTextStream stream(&mtab);
-    do 
+    do
     {
         line = stream.readLine();
         if (line.isEmpty() || line.isNull())
             continue;
-        
+
         QStringList split = line.split(" ");
         if (split.size() != 6)
             continue;
-        
+
         // /proc/mounts should look something like this...
         // rootfs / rootfs rw 0 0
         // none /sys sysfs rw,nosuid,nodev,noexec 0 0
@@ -423,7 +423,7 @@ QString resolveMountPoint(const QString& directory)
                 mount_point = mounts[i];
         }
     }
-    return mount_point;    
+    return mount_point;
 }
 
 quint64 getFreeDiskSpace(const QString& filename)
@@ -439,8 +439,8 @@ quint64 getFreeDiskSpace(const QString& filename)
     // f_bsize is the "optimal transfer block size"
     // not sure if this reliable and always the same as the
     // actual file system block size. If it is different then
-    // this is incorrect.  
-    auto ret = st.f_bsize * st.f_bavail;    
+    // this is incorrect.
+    auto ret = st.f_bsize * st.f_bavail;
     return ret;
 }
 

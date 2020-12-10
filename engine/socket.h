@@ -77,6 +77,20 @@ namespace newsflash
 
 } // newsflash
 
+#ifdef NEWSFLASH_BUILD_SOCKET_LIB
+#  ifdef __MSVC__
+#    define NEWSFLASH_LIBRARY_CALL __declspec(dllexport)
+#  else
+#    define NEWSFLASH_LIBRARY_CALL
+#  endif
+#else
+#  ifdef __MSVC__
+#    define NEWSFLASH_LIBRARY_CALL __declspec(dllimport)
+#  else
+#    define NEWSFLASH_LIBRARY_CALL
+#  endif
+#endif
+
 // We have a problem with libssl being a conflicting dependency between
 // our engine and Qt5. Qt5 uses libssl 1.1.x and we're still on libssl 1.0.x.
 // These are not binary compatible.
@@ -89,5 +103,17 @@ namespace newsflash
 // Extern C is just to simplify  specificing the symbol name (no mangling)
 // in the linker file
 extern "C"  {
-    std::unique_ptr<newsflash::Socket> MakeNewsflashSocket(bool ssl);
+    NEWSFLASH_LIBRARY_CALL void* MakeNewsflashSocketUnsafe(bool ssl);
+    NEWSFLASH_LIBRARY_CALL const char* GetSocketAllocationFailureString();
 } // extern "C"
+
+// wrapper since on MSVS a function with C linkage cannot return
+// a c++ object.
+inline std::unique_ptr<newsflash::Socket> MakeNewsflashSocket(bool ssl)
+{
+    if (void* ret = MakeNewsflashSocketUnsafe(ssl))
+        return std::unique_ptr<newsflash::Socket>(static_cast<newsflash::Socket*>(ret));
+
+    const std::string err = GetSocketAllocationFailureString();
+    throw std::runtime_error("Socket allocation failure:" + err);
+}

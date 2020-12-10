@@ -22,6 +22,8 @@
 
 #if defined(WINDOWS_OS)
 #  include <windows.h>
+#  include <sys/types.h>
+#  include <sys/stat.h>
 #  include <iterator>
 #  include "utf8.h"
 #elif defined(LINUX_OS)
@@ -217,7 +219,7 @@ void bigfile::resize(big_t size)
 std::pair<std::error_code, bigfile::big_t> bigfile::size(const std::string& file)
 {
     const std::wstring& wstr = utf8::decode(file);
-    __stat64 st;
+    struct __stat64 st;
     if (_wstat64(wstr.c_str(), &st))
         return { std::error_code(GetLastError(), std::system_category()), 0 };
 

@@ -1,20 +1,44 @@
 
+#include "newsflash/config.h"
+
+#include <stdexcept>
+#include <string>
+
 #include "socket.h"
 #include "tcpsocket.h"
 #include "sslsocket.h"
 #include "sslcontext.h"
 
+namespace {
+
+thread_local std::string error_string;
+
+} // namespace
+
 extern "C"
 {
 
-std::unique_ptr<newsflash::Socket> MakeNewsflashSocket(bool ssl)
+void* MakeNewsflashSocketUnsafe(bool ssl)
 {
-    if (ssl)
+    try
     {
-        newsflash::openssl_init();
-        return std::make_unique<newsflash::SslSocket>();
+        if (ssl)
+        {
+            newsflash::openssl_init();
+            return new newsflash::SslSocket();
+        }
+        return new newsflash::TcpSocket();
     }
-    return std::make_unique<newsflash::TcpSocket>();
+    catch (const std::exception& e)
+    {
+        error_string = e.what();
+    }
+    return nullptr;
+}
+
+const char* GetSocketAllocationFailureString()
+{
+    return error_string.c_str();
 }
 
 } // extern "C"

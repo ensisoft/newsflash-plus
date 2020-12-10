@@ -30,6 +30,7 @@
 #  include <QFile>
 #  include <QUrl>
 #  include <QImageReader>
+#  include <QSslSocket>
 #include "newsflash/warnpop.h"
 #include <iostream>
 #include <exception>
@@ -136,6 +137,9 @@ int run(QtSingleApplication& qtinstance)
     {
         DEBUG("ImageFormat: %1", format);
     }
+
+    DEBUG("Expected OpenSSL %1, found %2", QSslSocket::sslLibraryBuildVersionString(),
+        QSslSocket::supportsSsl());
 
     // settings is that everything depends on so we must load settings first.
     app::Settings settings;

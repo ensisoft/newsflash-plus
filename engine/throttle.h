@@ -1,7 +1,7 @@
-// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft 
+// Copyright (c) 2010-2015 Sami Väisänen, Ensisoft
 //
 // http://www.ensisoft.com
-// 
+//
 // This software is copyrighted software. Unauthorized hacking, cracking, distribution
 // and general assing around is prohibited.
 // Redistribution and use in source and binary forms, with or without modification,
@@ -20,7 +20,8 @@
 
 #pragma once
 
-#include <newsflash/config.h>
+#include "newsflash/config.h"
+
 #include <atomic>
 #include <mutex>
 #include <chrono>
@@ -30,12 +31,12 @@
 #include <thread>
 
 namespace newsflash
-{ 
+{
     // implement throttling to conserve/limit bandwidth usage
     class throttle
     {
     public:
-        throttle() : time_(0), quota_(0), accum_(0), enabled_(false)
+        throttle()
         {
             start_ = clock_t::now();
         }
@@ -45,7 +46,7 @@ namespace newsflash
             enabled_ = on_off;
         }
 
-        // enable throttling. 
+        // enable throttling.
         // set the speed limit to the given bytes_per_second.
         void set_quota(std::size_t bytes_per_second)
         {
@@ -61,8 +62,8 @@ namespace newsflash
             if (actual > quota)
                 actual = quota;
 
-            // if actual number of bytes received is less than 
-            // the quote that was allowed to be returned 
+            // if actual number of bytes received is less than
+            // the quote that was allowed to be returned
             // we can return the difference to "avaiable" quota, i.e.
             // reduce accum so far.
             accum_ -= (quota - actual);
@@ -93,25 +94,18 @@ namespace newsflash
             return chunk;
         }
 
-        bool is_enabled() const 
+        bool is_enabled() const
         { return enabled_; }
 
-        std::size_t get_quota() const 
+        std::size_t get_quota() const
         { return quota_; }
 
 
     private:
         using clock_t = std::chrono::steady_clock;
-#if defined(__MSVC__)
-        // msvc2013 returns this type from steady_clock::now
-        // instead of time_point<steady_clock> and then there are no conversion
-        // operators between these two unrelated types.
-        using point_t = std::chrono::time_point < std::chrono::system_clock > ;
-#else
         using point_t = std::chrono::time_point<clock_t>;
-#endif
-       
-        std::size_t millis() const 
+
+        std::size_t millis() const
         {
             const auto now  = clock_t::now();
             const auto span = std::chrono::duration_cast<std::chrono::milliseconds>(now - start_);
@@ -122,11 +116,11 @@ namespace newsflash
 
     private:
         point_t start_;
-        std::size_t time_;
-        std::size_t quota_;
-        std::size_t accum_;
+        std::size_t time_ = 0;
+        std::size_t quota_ = 0;
+        std::size_t accum_ = 0;
         std::mutex  mutex_;
-        std::atomic<bool> enabled_;
+        std::atomic<bool> enabled_ {false};
     };
 
 } // newsflash

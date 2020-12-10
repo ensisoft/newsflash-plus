@@ -232,8 +232,30 @@ More information here:
 http://www.tripleboot.org/?p=423
 http://blogs.msdn.com/b/vcblog/archive/2012/10/08/windows-xp-targeting-with-c-in-visual-studio-2012.aspx?Redirected=true
 
-Currently only ~~32bit~~ 64bit build is supported. You'll need Microsoft Visual Studio 2013.
-Once you've installed visual studio open the VS2013 ~~x86~~ x64 Native Tools Commmand Prompt.
+Currently only 64bit build is supported. You'll need Microsoft Visual Studio 2019.
+Once you've installed visual studio open the VS2019  x64 Native Tools Commmand Prompt.
+
+Install Qt 5.12.6 (At the time of writing there's only MSVS2017 pre-built binaries)
+https://download.qt.io/archive/qt/5.12/5.12.6/
+
+About Qt and OpenSSL. The documentation at https://doc.qt.io/qt-5/ssl.html#import-and-export-restrictions
+says that the OpenSSL libraries are / can be installed by the Qt installer. This is a fucking lie, the
+installer offers no option to install these. (Currently tried with qt-opensource-windows-x86-5.12.6.exe)
+
+Qt 5x requires OpenSSL 1.1.x (See QSsslSocket::sslLibraryBuildVersionString).
+
+The OpenSSL Wiki below provides links to sites hosting prebuilt OpenSSL binaries but they're all outdated
+OpensSL 1.0.0x versions.
+https://wiki.openssl.org/index.php/Binaries
+
+As of now there's this site:  https://kb.firedaemon.com/support/solutions/articles/4000121705
+that has a 1.1.x prebuilt library package: https://mirror.firedaemon.com/OpenSSL/openssl-1.1.1e-dev.zip
+These binaries seem to work with Qt5.
+
+Install Boost.1.72.0 (currently only MSVS2017 pre-built binaries)
+https://sourceforge.net/projects/boost/files/boost-binaries/1.72.0/boost_1_72_0-msvc-14.2-64.exe/download
+
+
 
 Start by cloning the source
 ```
@@ -243,89 +265,45 @@ Start by cloning the source
     $ mkdir dist
 ```
 
-Download and extract boost package boost_1_51_0, then build and install boost.build
+Build openssl. Install ActivePerl.
 
-```
-    $ cd third_party/boost_1_51_0
-    $ bootstrap.bat
-    $ b2 install --prefix=%cd%/sdk
-```
-
-Build openssl. Install ~~NASM and~~ ActivePerl.
-
-    ~~http://sourceforge.net/projects/nasm/~~
     http://www.activestate.com/activeperl
 
 Note that openssl does not maintain source code compatibility between versions. And this applies
 even to minor versions. I.e. openssl 1.0.2 is source compatible with openssl 1.0.1
 Qt seems to want the 1.0.1x series.
 
+Also note that the because of the apparent INCOMPETENCE of OpenSSL developers we're locked to building
+the OpenSSL with MSVS2013. Several versions of OpenSSL starting from 1.0.1k to 1.0.2u fail to build
+with either MSVS2017 or MSVS2019. Sample of build (compile/link) errors:
+
+* .\crypto\bn\bn_exp.c(508): error C2065: 'BN_FLG_FIXED_TOP': undeclared identifier
+* .\crypto\bn\bn_exp.c(685): error C2065: 'BN_FLG_FIXED_TOP': undeclared identifier
+* .\crypto\bio\bss_file.c(434): error C2065: 'SYS_F_FFLUSH': undeclared identifier
+ * fatal error LNK1112: module machine type 'x64' conflicts with target machine type 'x86'
+
+It takes a special kind of code and programmers to make C code fail like this across compilers.
+
+So therefore the OpenSSL libraries are produced with MSVS2013.
+
 ```
     $ set PATH=%PATH%;"c:\Perl64\bin"
     $ cd third_party/openssl
-    $ perl configure VC-WIN64A no-asm --prefix="%cd%\sdk"
+    $ perl configure VC-WIN64A  --prefix="%cd%\sdk"
     $ ms\do_win64a
-    $ notepad ms\ntdll.mak
+    $ ~~notepad ms\ntdll.mak~~
+    $ notepad ms\nt.mak
       * replace LFLAGS /debug with /release
-      * replace MlFLAGS /debug with /release
-    $ nmake -f ms\ntdll.mak
-    $ nmake -f ms\ntdll.mak install
+    $ nmake -f ms\nt.mak
+    $ nmake -f ms\nt.mak install
 ```
 
 Build zlib
 
 ```
     $ cd third_party/zlib
-    $ cmake -G "Visual Studio 12 2013 Win64"
+    $ cmake -G "Visual Studio 16 2019"
     $ msbuild zlib.sln /p:Configuration=Release /p:Platform=x64
-```
-
-Build Qt
-
-The -platform parameter can be used to define the platform "spec". Qt don't bother documenting the available specs, so just have a look
-inside the source folder mkspecs folder to see what is available.
-
-Also 64bit build is cleverly supported by the 32bit spec. Just make sure to use x64 native tools command prompt.
-
-```
-    $ cd qt-everywhere-opensource-src-4.8.6
-    $ configure.exe
-      -platform win32-msvc2013
-      -prefix "<newsflash_plus>\third_party\qt-4.8.6"
-      -no-accessibility
-      -release
-      -no-script
-      -no-scripttools
-      -no-qt3support
-      -no-webkit
-      -openssl
-      -I "<newsflash_plus>\third_party\openssl\sdk\include"
-      -L "<newsflash_plus>\third_party\openssl\sdk\lib"
-    $ nmake
-    $ nmake install
-```
-
-Build protobuf library
-
-```
-    ~~
-    $ cd third_party/protobuf
-    $ cd vsprojects
-    $ msbuild protobuf.sln /p:Configuration=Release
-    $ msbuild protobuf.sln /P/Configuration=Debug
-    ~~
-    Open the libprotobuf.vcproj in Visual Studio 2013. Then open the configuration manager, and create a new configuration for x86 based on Win32. Then build.
-```
-
-Build qjson
-
-NOTE: I have edited the CMakeList.txt to have a custom Qt path.
-
-```
-    $ cd third_party/qjson
-    $ cmake -G "Visual Studio 12 2013 Win64"
-    $ msbuild qjson.sln /p:Configuration=Release /p:Platform=x64
-    $ msbuild qjson.sln /p:Configuration=Debug /p:Platform=x64
 ```
 
 Build Par2cmdline
@@ -356,10 +334,10 @@ Build Newsflash
     $ cd newsflash_plus
     $ mkdir build
     $ cd build
-    $ cmake -G "Visual Studio 12 2013 Win64" -DCMAKE_BUILD_TYPE=Release ..
+    $ cmake -G "Visual Studio 16 2019" -DCMAKE_BUILD_TYPE=Release ..
     $ msbuild NewsflashPlus.sln /p:Configuration=Release /p:Platform=x64
     $ mkdir build_d
-    $ cmake -G "Visual Studio 12 2013 Win64" -DCMAKE_BUILD_TYPE=Debug ..
+    $ cmake -G "Visual Studio 12 2019 Win64" -DCMAKE_BUILD_TYPE=Debug ..
     $ msbuild NewsflashPlus.sln /p:Configuration=Debug /p:Platform:x64
 
 ```

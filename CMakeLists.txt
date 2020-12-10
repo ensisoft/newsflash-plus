@@ -23,35 +23,86 @@ cmake -G \"Unix Makefiles\" -DCMAKE_BUILD_TYPE=Release
 ")
 endif(NOT CMAKE_BUILD_TYPE)
 
-# set this to ON when CVomit fails to work automatically.
-#set(Boost_DEBUG ON)
+# Unfortunately we need boost...
+set(Boost_USE_STATIC_LIBS ON)
+if(WIN32)
+    set(BOOST_ROOT $ENV{BOOST_ROOT})
+    if (NOT BOOST_ROOT)
+        set(BOOST_ROOT "c:/local/boost_1_72_0")
+        message("
+Bollocks. BOOST_ROOT was not set. Defaulting to ${BOOST_ROOT}
+TL;DR BOOST_ROOT is a variable that points to your Boost installation
+root. So for example if your Boost is installed in C:/boost_1_72_0
+your BOOST_ROOT should be c:/boost_1_72_0.
+You can set the variable in M$ command prompt with
 
-set(Boost_USE_MULTITHREADED  ON)
-set(Boost_USE_STATIC_LIBS    ON)
-set(Boost_USE_STATIC_RUNTIME OFF)
-# for whatever reason CVomit thinks we're using vc120... but our build chain is MSVS 2013 (vc110)
-if (WIN32)
-  set(Boost_COMPILER "-vc110")
+        $ set BOOST_ROOT=c:/boost_1_72_0
+
+and in Linux in your terminal (in bash)
+
+        $ export BOOST_ROOT=/usr/local/boost_1_72_0
+")
+    endif()
 endif()
-set(BOOST_ROOT       "${CMAKE_CURRENT_LIST_DIR}/third_party/boost_1_51_0/sdk")
-set(BOOST_INCLUDEDIR "${CMAKE_CURRENT_LIST_DIR}/third_party/boost_1_51_0/sdk/include/")
-set(BOOST_LIBRARYDIR "${CMAKE_CURRENT_LIST_DIR}/third_party/boost_1_51_0/sdk/lib")
 
 
+# for some reason the find_package fails on windows when we say which
+# libs we'd like to use. Anyway the linking is automatic so we'll just
+# add the libs manually to linking options for Linux.
+#find_package(Boost REQUIRED COMPONENTS system filesystem)
 find_package(Boost REQUIRED COMPONENTS filesystem thread regex system)
 if(NOT Boost_FOUND)
-    message(FATAL_ERROR
-"Shit. Couldn't find Boost third_party/boost_1_51_0"
-    )
+    if (UNIX)
+        message(FATAL_ERROR "
+Boost (http://www.boost.org) development libraries were not found.
+You should be able to use the boost dev packages available in your distro's repos.
+On Ubuntu you might want to try 'sudo apt-get install libboost-all-dev'
+On other distros please consult your distro's docs on how to install Boost.
+I'm going to crap out now. >.<
+")
+    elseif(WIN32)
+        message(FATAL_ERROR "
+Boost (http://www.boost.org) development libraries were not found.
+You can download a prebuilt binary package from http://www.boost.org.
+Or if you're using Visual Studio 2015 you can follow this direct link:
+https://sourceforge.net/projects/boost/files/boost-binaries/1.72.0/boost_1_72_0-msvc-14.2-64.exe/download
+If you have boost but not in a default location or another version of boost
+you can try to specify BOOST_ROOT environment variable.
+I'm going to crap out now. >.<
+")
+    endif()
 endif()
 
-# If you set QT_QMAKE_EXECUTABLE to the full path to a qmake *that* qmake is used
-# above all else to find the right Qt. Regardless of QTDIR or PATH.
-# Setting QT_QMAKE_EXECUTABLE is *the* official way to tell CMake where the Qt
-# that you want is. All else is a "find-and-guess" game if you have multiple Qt's available.
-# https://public.kitware.com/pipermail/cmake/2009-March/027708.html
-#set(QT_QMAKE_EXECUTABLE "${CMAKE_CURRENT_LIST_DIR}/third_party/qt-4.8.6/bin/qmake")
-#find_package(Qt4 REQUIRED)
+# why is this not set!?
+# should come from cmake through find_package(Boost, ...)
+if(NOT Boost_LIBRARY_DIRS)
+    message(WARNING "
+Boost_LIBRARY_DIRS is not set.
+I'm going to use a default for MSVS 14 2015 Win64.
+If that doesn't match your build environment/compiler/arch you will need
+to edit the line below this message manually.
+Sorry about that :-(
+")
+    set(Boost_LIBRARY_DIRS "${BOOST_ROOT}/lib64-msvc-14.0")
+endif()
+
+message(STATUS "${Boost_INCLUDE_DIRS}")
+message(STATUS "${Boost_LIBRARY_DIRS}")
+
+# see this bug report about C++14 and Qt
+# https://bugreports.qt.io/browse/QTBUG-53002
+set(CMAKE_CXX_STANDARD 17)
+
+if (MSVC)
+    # /wd4251 Qt dll interface crap
+    # /wd4275 Qt dll interface crap again
+    # /wd4018 signed/unsigned mismatch
+    # /wd4244 conversion from double to float
+    # /wd4305 truncation from double to float
+    # /wd4267 conversion from size_t to int (Qt uses ints extensively)
+    add_definitions("/wd4251 /wd4275 /wd4018 /wd4244 /wd4305 /wd4267")
+endif()
+
 
 # expected location on win to find Qt
 if (WIN32)
@@ -61,6 +112,9 @@ endif()
 find_package(Qt5Widgets)
 find_package(Qt5Network)
 find_package(Qt5Xml)
+if (WIN32)
+    find_package(Qt5AxContainer)
+endif()
 if (NOT Qt5Widgets_FOUND)
     message("
 Qt5 was not found.
@@ -69,10 +123,6 @@ else()
     message(STATUS "Qt5 version: ${Qt5Widgets_VERSION}")
     message(STATUS "${Qt5Widgets_INCLUDE_DIRS}")
 endif()
-
-message(STATUS "${Boost_INCLUDE_DIRS}")
-message(STATUS "${Boost_LIBRARY_DIRS}")
-message(STATUS "${Boost_LIBRARIES}")
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
@@ -131,7 +181,7 @@ elseif(MSVC)
     # /Zc:wchar_t  treats wchar_t as a native type
     # /Zc:wchar_t- treats wchar_t as a typedef for unsigned short.
     # Qt requires wchar_t- otherwise the types don't match.
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:wchar_t-")
+    #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:wchar_t-")
 
     if (CMAKE_BUILD_TYPE MATCHES "Release")
         #  /Zi turns on the .pdb generation. We want this for the release build
@@ -197,6 +247,7 @@ target_link_libraries(socketlib PRIVATE
 if (CMAKE_COMPILER_IS_GNUCC)
     target_link_options(socketlib PRIVATE "-Wl,--version-script=${CMAKE_CURRENT_LIST_DIR}/engine/linux_linker_openssl_war.version")
 endif()
+target_compile_definitions(socketlib PRIVATE NEWSFLASH_BUILD_SOCKET_LIB)
 
 # build the engine lib
 add_library(engine STATIC
@@ -275,11 +326,12 @@ if (MSVC)
     # 5.2 = Win XP 64bit version
     if (CMAKE_BUILD_TYPE MATCHES "Release")
         set_target_properties(newsflash PROPERTIES LINK_FLAGS "/SUBSYSTEM:WINDOWS,5.2")
+        target_link_libraries(newsflash Qt5::WinMain)
     elseif(CMAKE_BUILD_TYPE MATCHES "Debug")
         set_target_properties(newsflash PROPERTIES LINK_FLAGS "/SUBSYSTEM:CONSOLE,5.2")
     endif()
 
-    target_link_libraries(newsflash appcore Qt4::QAxContainer)
+    target_link_libraries(newsflash appcore Qt5::AxContainer)
 else()
     target_link_libraries(newsflash appcore)
 endif()
