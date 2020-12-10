@@ -9,31 +9,15 @@ Build Configuration
 -------------------------
 
 Build configuration is defined as much as possible in the config file in this folder.
-It's assumed that either clang or gcc is used for a linux based build and msvc for windows.
+It's assumed that either GCC is used for a linux based build and MSVC for windows.
 A C++11 compliant compiler is required.
 
-Only 32bit building is currently supported.
+Only 64bit building is currently supported.
 
 A new version of CMake is required (currently works with CMake >= 3.9.1).
 If you get an error about automoc producing files by the same name your CMake version is too old.
-See this link for more information:
+See this link for more information:  
 https://public.kitware.com/Bug/view.php?id=12873
-
-
-Description of Modules
--------------------------
-
-app/
-- newsflash application
-
-app/gui/
-- newsflash gui code
-
-engine/
-- generic downloader engine. provides a high level api to download data from the usenet.
-
-keygen/
-- newsflash keygen code
 
 
 tools/par2cmdline
@@ -46,47 +30,25 @@ ArchLinux packages par2 from https://github.com/BlackIkeEagle/par2cmdline which 
 The Newsflash par2 has been updated to version 0.6.11
 ("bump 0.6.11", https://github.com/BlackIkeEagle/par2cmdline/commit/7735bb3f67f4f46b0fcb88894f9a28fb2fe451c6)
 
-
 tools/unrar
 -------------------------
-Unrar is a tool to unrar .rar archives. Current version ~~5.21 beta2~~ 5.50 beta1
+Unrar is a tool to unrar .rar archives. Current version ~~5.21 beta2~~ 5.50 beta1  
 http://www.rarlab.com/rar_add.htm
-
-
-third_party/qt-4.8.0
--------------------------
-Qt Window/Application Framework/toolkit
-https://download.qt.io/archive/qt/4.8/4.8.6/qt-everywhere-opensource-src-4.8.6.zip
-
-Needs to be downloaded and extracted into third_party/
-
-third_party/boost_1_51_0
---------------------------
-High quality C++ libraries for stuff such as filesystem, parser generators etc.
-https://www.boost.org
-
-third_party/qjson
--------------------------
-Qt JSON library 0.8.1
-http://qjson.sourceforge.net/
-https://github.com/flavio/qjson
-
 
 third_party/zlib
 -------------------------
-The zlib compression library. The current version is 1.2.11
+The zlib compression library. The current version is 1.2.11  
 http://www.zlib.net/
-
-
 
 third_party/openssl
 ------------------------
-Secure Socket Layer & Cryptography. Current version is 1.0.2k
+Secure Socket Layer & Cryptography. Current version is 1.0.2k  
 https://www.openssl.org/source/
-
 
 Building for Linux
 =======================
+
+You need to install the Qt5 and boost development libraries. 
 
 Start by cloning the source
 
@@ -95,15 +57,6 @@ Start by cloning the source
    $ cd newsflash-plus
    $ mkdir dist_d
    $ mkdir dist
-```
-
-
-Download and extract boost package boost_1_51_0, then build and install boost.build
-
-```
-  $ cd third_party/boost_1_51_0/
-  $ ./bootstrap.sh --prefix=`pwd`/sdk
-  $ ./b2 install
 ```
 
 Build openssl.
@@ -122,51 +75,6 @@ Build zlib
     $ cmake -G "Unix Makefiles"
     $ make
 ```
-
-
-Build Qt
-
-Note that you must have XRender and fontconfig for nice looking font rendering in Qt.
-
-Install these packages.
-
-    libx11-dev
-    libext-dev
-    libfontconfig-dev
-    libxrender-dev
-    libpng12-dev
-    openssl-dev
-    libgtk2.0-dev
-    libgtk-3-dev
-    libicu-dev
-    autoconf
-    qt4-qmake
-
-```
-    $ cd qt-everywhere-opensource-src-4.8.6
-    $ ./configure \
-      --prefix=<newsflash_plus>/third_party/qt-4.8.6 \
-      --no-accessibility \
-      --release \
-      --no-script \
-      --no-scripttools \
-      --no-qt3support \
-      --no-webkit \
-      --openssl \
-      -I<newsflash_plus>/third_party/openssl/sdk/include \
-      -L<newsflash_plus>/third_party/openssl/sdk/lib \
-      -I<newsflash_plus>/third_party/zlib \
-      -L<newsflash_plus>/third_party/zlib
-    $ make
-    $ make install
-```
-
-NOTE: if you get this Cryptic error:
-"bash: ./configure: /bin/sh^M: bad interpreter: No such file or directory"
-it means that the script interpreter is shitting itself on windows style line endings, so you probably downloaded
-the .zip file instead of the .tar.gz  (you can fix this with dos2unix, but then also the executable bits are not set
-and configure will fail with some other cryptic error such as "no make or gmake was found bla bla".
-
 
 Build par2cmdline
 
@@ -191,7 +99,7 @@ Build  unrar
     $ cp unrar ~/coding/newsflash/dist_d
 ```
 
-Build newsflash
+Build Newsflash
 
 ```
   $ cd newsflash_plus
@@ -222,40 +130,37 @@ Comments about ICU.
 Both Qt and boost.regex depend on ICU. So if ICU updates both Qt and boost.regex needs to be rebuilt.
 
 
-
 Building for Windows
 =======================
 
 NOTE About WindowsXP. To target WinXP we need /SUBSYSTEM:WINDOWS,5.01
 More information here:
 
-http://www.tripleboot.org/?p=423
+http://www.tripleboot.org/?p=423  
 http://blogs.msdn.com/b/vcblog/archive/2012/10/08/windows-xp-targeting-with-c-in-visual-studio-2012.aspx?Redirected=true
 
 Currently only 64bit build is supported. You'll need Microsoft Visual Studio 2019.
-Once you've installed visual studio open the VS2019  x64 Native Tools Commmand Prompt.
+Once you've installed visual studio open the VS2019  x64 Native Tools Command Prompt.
 
-Install Qt 5.12.6 (At the time of writing there's only MSVS2017 pre-built binaries)
+Install Qt 5.12.6 (At the time of writing there's only MSVS2017 pre-built binaries)  
 https://download.qt.io/archive/qt/5.12/5.12.6/
 
 About Qt and OpenSSL. The documentation at https://doc.qt.io/qt-5/ssl.html#import-and-export-restrictions
-says that the OpenSSL libraries are / can be installed by the Qt installer. This is a fucking lie, the
+says that the OpenSSL libraries are / can be installed by the Qt installer. This looks like a lie, the
 installer offers no option to install these. (Currently tried with qt-opensource-windows-x86-5.12.6.exe)
 
 Qt 5x requires OpenSSL 1.1.x (See QSsslSocket::sslLibraryBuildVersionString).
 
 The OpenSSL Wiki below provides links to sites hosting prebuilt OpenSSL binaries but they're all outdated
-OpensSL 1.0.0x versions.
+OpensSL 1.0.0x versions.  
 https://wiki.openssl.org/index.php/Binaries
 
 As of now there's this site:  https://kb.firedaemon.com/support/solutions/articles/4000121705
-that has a 1.1.x prebuilt library package: https://mirror.firedaemon.com/OpenSSL/openssl-1.1.1e-dev.zip
-These binaries seem to work with Qt5.
+that has a 1.1.x prebuilt library package that seem to work with Qt5.  
+https://mirror.firedaemon.com/OpenSSL/openssl-1.1.1e-dev.zip  
 
 Install Boost.1.72.0 (currently only MSVS2017 pre-built binaries)
 https://sourceforge.net/projects/boost/files/boost-binaries/1.72.0/boost_1_72_0-msvc-14.2-64.exe/download
-
-
 
 Start by cloning the source
 ```
