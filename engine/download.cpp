@@ -125,7 +125,7 @@ void Download::Commit()
         stash_.clear();
     }
 
-    // release our file handles so that we dont keep the file objects
+    // release our file handles so that we don't keep the file objects
     // open anymore needlessly. yet we keep the file objects around
     // since our other data is stored there.
     for (auto& f : files_)
@@ -273,7 +273,7 @@ void Download::Complete(CmdList& cmd, std::vector<std::unique_ptr<action>>& next
         const auto status  = buffer.GetContentStatus();
         const auto command = cmd.GetCommand(i);
 
-        // if the article content was succesfully retrieved
+        // if the article content was successfully retrieved
         // create a decoding job and push into the output queue
         if (status == Buffer::Status::Success)
         {
@@ -442,7 +442,7 @@ std::shared_ptr<DataFile> Download::create_file(const std::string& name, std::si
     else
     {
         file = *it;
-        assert(file->IsOpen());
+        ASSERT(file->IsOpen());
     }
     return file;
 }
