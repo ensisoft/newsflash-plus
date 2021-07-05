@@ -1283,12 +1283,14 @@ private:
             return no_transition;
         }
 
-        // if we have currently executing cmdlists our state should not change.
+        // if we have currently executing/pending cmdlists our state should not change.
         // i.e. we're active (or possibly paused)
         const auto num_active_cmdlists = std::count_if(std::begin(state.cmds), std::end(state.cmds),
             [&](const std::shared_ptr<CmdList>& cmdlist) {
-                return cmdlist->GetConnId() != 0 &&
-                       cmdlist->GetTaskId() == ui_.task_id;
+                // bug: also need to consider cmd lists that are pending but not yet
+                // being executed by any connection (not scheduled yet).
+                //return cmdlist->GetConnId() != 0 &&
+                return  cmdlist->GetTaskId() == ui_.task_id;
             });
         if (num_active_cmdlists)
             return no_transition;
