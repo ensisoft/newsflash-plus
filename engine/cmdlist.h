@@ -329,6 +329,8 @@ namespace newsflash
             return true;
         }
 
+        void ClearFailBit()
+        { failbit_ = false; }
 
         // returns true if some content could not be retrieved.
         bool HasFailedContent() const
@@ -344,7 +346,7 @@ namespace newsflash
         }
 
     private:
-        CmdList() : cancelbit_(false), failbit_(false), account_(0), task_(0), conn_(0)
+        CmdList()
         {
             static std::atomic<std::size_t> id(1);
             id_ = id++;
@@ -352,8 +354,8 @@ namespace newsflash
     private:
         // cmdlist data
         Type cmdtype_ = Type::Header;
-        std::atomic<bool> cancelbit_;
-        std::atomic<bool> failbit_;
+        std::atomic<bool> cancelbit_ = {false};
+        std::atomic<bool> failbit_   = {false};
     private:
         // owner account, task and connection
         std::size_t account_ = 0;

@@ -42,6 +42,7 @@ struct Session::impl {
     bool has_modereader = false;
     bool enable_pipelining = false;
     bool enable_compression = false;
+    bool enable_skipping = true;
     bool have_caps = false;
     std::string username;
     std::string password;
@@ -303,9 +304,9 @@ public:
             out.SetContentLength(len);
             out.SetContentStart(0);
             out.SetStatus(Buffer::Status::Success);
+            st.group = group_;
         }
         out.SetContentType(Buffer::Type::GroupInfo);
-        st.group = group_;
         return true;
     }
 
@@ -828,6 +829,7 @@ void Session::Reset()
     state_->group          = "";
     state_->enable_pipelining = false;
     state_->enable_compression = false;
+    state_->enable_skipping = true;
 }
 
 void Session::Start(bool authenticate_immediately)
@@ -855,7 +857,7 @@ void Session::Quit()
 
 void Session::ChangeGroup(const std::string& name)
 {
-    if (name == state_->group)
+    if ((name == state_->group) && state_->enable_skipping)
         return;
     send_.emplace_back(new group(name));
 }
@@ -1105,12 +1107,14 @@ bool Session::IsCurrentCommandContent() const
     return next->state() == State::Transfer;
 }
 
-
 void Session::SetEnablePipelining(bool on_off)
 { state_->enable_pipelining = on_off; }
 
 void Session::SetEnableCompression(bool on_off)
 { state_->enable_compression = on_off; }
+
+void Session::SetEnableSkipRedundant(bool on_off)
+{ state_->enable_skipping = on_off; }
 
 void Session::SetCredentials(const std::string& username, const std::string& password)
 {

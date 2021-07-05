@@ -153,6 +153,12 @@ namespace newsflash
         // turn on/off header compression.
         void SetEnableCompression(bool on_off);
 
+        // Turn on/off skipping of superfluous commands.
+        // For example if the request to change the group
+        // would select the group that is already selected
+        // it can be omitted. The initial state is enabled.
+        void SetEnableSkipRedundant(bool on_off);
+
         // set the session user credentials
         void SetCredentials(const std::string& username, const std::string& password);
 

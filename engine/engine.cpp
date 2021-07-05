@@ -1936,6 +1936,7 @@ void Engine::State::on_cmdlist_done(const Connection::CmdListCompletionData& com
                 LOG_D("Cmdlist ", id, " set for refill");
                 cmds->SetAccountId(this->fill_account);
                 cmds->SetConnId(0);
+                cmds->ClearFailBit();
                 current_cmdlists.push_back(cmds);
                 const auto transition = task->UpdateActiveState(*this);
                 if (transition)

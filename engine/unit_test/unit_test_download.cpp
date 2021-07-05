@@ -49,22 +49,47 @@ void unit_test_create_cmds()
 
     nf::Download download({"alt.binaries.foobar"}, articles, "", "test");
     nf::Session session;
-    session.SetSendCallback([&](const std::string& cmd) {
-        BOOST_REQUIRE(cmd == "BODY " +
-            boost::lexical_cast<std::string>(cmd_number) + "\r\n");
-        ++cmd_number;
-    });
 
     session.SetEnablePipelining(true);
+    session.SetEnableSkipRedundant(false);
 
     for (;;)
     {
         auto cmds = download.CreateCommands();
         if (!cmds)
             break;
+        session.SetSendCallback([&](const std::string& cmd) {
+            BOOST_REQUIRE(cmd == "GROUP alt.binaries.foobar\r\n");
+        });
+        BOOST_REQUIRE(cmds->NeedsToConfigure());
+        cmds->SubmitConfigureCommand(0, session);
+        BOOST_REQUIRE(session.SendNext());
 
+        nf::Buffer resp(1024);
+        nf::Buffer body(10);
+        resp.Append("211 80786662 2 80786663 alt.binaries.foobar\r\n");
+        BOOST_REQUIRE(session.RecvNext(resp, body));
+
+        auto start = cmd_number;
+
+        session.SetSendCallback([&](const std::string& cmd) {
+            BOOST_REQUIRE(cmd == "BODY " + boost::lexical_cast<std::string>(cmd_number) + "\r\n");
+            ++cmd_number;
+        });
         cmds->SubmitDataCommands(session);
-        session.SendNext();
+        BOOST_REQUIRE(session.SendNext());
+
+        for (auto i=start; i<cmd_number; ++i)
+        {
+            nf::Buffer resp;
+            nf::Buffer body;
+            resp.Allocate(128);
+            resp.Append("222 BODY xxx\r\n"
+                        "blablah\r\n"
+                        ".\r\n");
+            body.Allocate(20);
+            BOOST_REQUIRE(session.RecvNext(resp, body));
+        }
     }
     BOOST_REQUIRE(cmd_number == articles.size());
 
