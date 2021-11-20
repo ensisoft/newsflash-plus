@@ -42,10 +42,10 @@ namespace newsflash
         // Connect this socket to the specified host on the specified port.
         // This function is non-blocking and returns immediately.
         // To complete the connection attempt call complete connect
-        // after the waithandle becomes signaled.
+        // after the wait handle becomes signaled.
         virtual void BeginConnect(ipv4addr_t host, ipv4port_t port) = 0;
 
-        // Complete the connection attempt. On succesful return
+        // Complete the connection attempt. On successful return
         // the connection is ready to be used for sending and receiving data.
         virtual void CompleteConnect(std::error_code* error) = 0;
 

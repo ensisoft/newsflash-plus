@@ -24,6 +24,11 @@
 #include <algorithm>
 #include <cassert>
 #include <cerrno>
+
+#if defined(LINUX_OS)
+#  include <string.h>
+#endif
+
 #include "sockets.h"
 #include "waithandle.h"
 
@@ -146,6 +151,13 @@ bool WaitHandle::WaitForMultipleHandles(const WaitList& handles, const std::chro
 
 #elif defined(LINUX_OS)
 
+std::string ErrorString(int error)
+{
+    std::string blah;
+    blah.resize(100);
+    return strerror_r(error, &blah[0], blah.size());
+}
+
 bool WaitHandle::WaitForMultipleHandles(const WaitList& handles, const std::chrono::milliseconds* ms)
 {
     assert(std::distance(std::begin(handles), std::end(handles)) > 0);
@@ -168,12 +180,20 @@ bool WaitHandle::WaitForMultipleHandles(const WaitList& handles, const std::chro
 
     if (ms)
     {
+        const auto seconds = ms->count() / 1000;
+        const auto millis  = ms->count() - (seconds * 1000);
+
+        // glibc 2.33 seems to break the select API. if the timeout is specified
+        // only using tv_usec select returns with -1 and complains about invalid
+        // argument. seems that the time needs to be broken down complete seconds
+        // and the leftover can then go into tv_usec.  &!&!#R¤"#!!
         struct timeval tv {0};
-        tv.tv_usec = ms->count() * 1000;
+        tv.tv_sec  = seconds;
+        tv.tv_usec = millis * 1000;
 
         const int ret = select(maxfd + 1, &read, &write, nullptr, &tv);
         if (ret == -1)
-            throw std::runtime_error("wait failed");
+            throw std::runtime_error(std::string("wait failed:") + ErrorString(errno));
         else if (ret == 0)
         {
             for (auto& handle : handles)
@@ -187,7 +207,7 @@ bool WaitHandle::WaitForMultipleHandles(const WaitList& handles, const std::chro
     else
     {
         if (select(maxfd + 1, &read, &write, nullptr, nullptr) == -1)
-            throw std::runtime_error("wait failed");
+            throw std::runtime_error(std::string("wait failed") + ErrorString(errno));
     }
 
     for (auto& handle : handles)
