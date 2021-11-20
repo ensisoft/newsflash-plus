@@ -46,7 +46,7 @@ namespace gui
 Accounts::Accounts()
 {
     const bool empty = app::g_accounts->numAccounts() == 0;
-
+    
     ui_.setupUi(this);
     ui_.listView->setModel(app::g_accounts);
     ui_.actionDel->setEnabled(!empty);
@@ -66,11 +66,6 @@ Accounts::Accounts()
         this, SLOT(updatePie()));
     QObject::connect(app::g_accounts, SIGNAL(accountsUpdated()),
         this, SLOT(currentRowChanged()));
-
-    ui_.lblDonate->setVisible(true);
-    ui_.lblPlead->setVisible(true);
-    ui_.lblRegister->setVisible(true);
-    ui_.webAdWidget->setVisible(true);
 }
 
 Accounts::~Accounts()
@@ -108,21 +103,7 @@ void Accounts::saveState(app::Settings& s)
 
 void Accounts::updateRegistration(bool success)
 {
-#if defined(LINUX_OS)
-    success = true;
-#endif
-
-    ui_.lblPlead->setVisible(!success);
-    ui_.lblRegister->setVisible(!success);
-    ui_.lblDonate->setVisible(!success);
-    ui_.grpAdvert->setVisible(!success);
-    ui_.webAdWidget->setVisible(!success);
-    if (!success)
-    {
-        ui_.webAdWidget->loadUrl("http://ensisoft.com/embedded-accounts-tab-ad.php");
-    }
 }
-
 
 bool Accounts::eventFilter(QObject* object, QEvent* event)
 {

@@ -89,148 +89,13 @@
           <attribute name="verticalHeaderVisible">
            <bool>false</bool>
           </attribute>
-          <attribute name="verticalHeaderDefaultSectionSize">
-           <number>16</number>
-          </attribute>
           <attribute name="verticalHeaderMinimumSectionSize">
            <number>16</number>
           </attribute>
+          <attribute name="verticalHeaderDefaultSectionSize">
+           <number>16</number>
+          </attribute>
          </widget>
-        </item>
-       </layout>
-      </widget>
-     </item>
-     <item>
-      <widget class="QGroupBox" name="grpAdvert">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="title">
-        <string>Advertisement</string>
-       </property>
-       <layout class="QHBoxLayout" name="horizontalLayout_2">
-        <item>
-         <spacer name="horizontalSpacer_2">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>40</width>
-            <height>20</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-        <item>
-         <layout class="QVBoxLayout" name="verticalLayout_2">
-          <item>
-           <widget class="gui::WebWidget" name="webAdWidget" native="true">
-            <property name="minimumSize">
-             <size>
-              <width>728</width>
-              <height>90</height>
-             </size>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>728</width>
-              <height>90</height>
-             </size>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_3">
-            <item>
-             <spacer name="horizontalSpacer_4">
-              <property name="orientation">
-               <enum>Qt::Horizontal</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>40</width>
-                <height>20</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
-            <item>
-             <widget class="QLabel" name="lblPlead">
-              <property name="font">
-               <font>
-                <italic>true</italic>
-               </font>
-              </property>
-              <property name="text">
-               <string>Don't like this ad? Please donate and register.</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QLabel" name="lblRegister">
-              <property name="font">
-               <font>
-                <italic>false</italic>
-               </font>
-              </property>
-              <property name="text">
-               <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
-&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
-p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Sans Serif'; font-size:8pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;a href=&quot;search.html&quot;&gt;&lt;span style=&quot; font-family:'MS Shell Dlg 2'; font-style:italic; text-decoration: underline; color:#0000ff;&quot;&gt;Already donated?&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QLabel" name="lblDonate">
-              <property name="font">
-               <font>
-                <italic>false</italic>
-               </font>
-              </property>
-              <property name="text">
-               <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
-&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
-p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'MS Shell Dlg 2'; font-size:8pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;a href=&quot;search.html&quot;&gt;&lt;span style=&quot; font-style:italic; text-decoration: underline; color:#0000ff;&quot;&gt;Want to donate?&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <spacer name="horizontalSpacer_5">
-              <property name="orientation">
-               <enum>Qt::Horizontal</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>40</width>
-                <height>20</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
-           </layout>
-          </item>
-         </layout>
-        </item>
-        <item>
-         <spacer name="horizontalSpacer_3">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>40</width>
-            <height>20</height>
-           </size>
-          </property>
-         </spacer>
         </item>
        </layout>
       </widget>
@@ -298,10 +163,10 @@ p, li { white-space: pre-wrap; }
           <attribute name="verticalHeaderVisible">
            <bool>false</bool>
           </attribute>
-          <attribute name="verticalHeaderDefaultSectionSize">
+          <attribute name="verticalHeaderMinimumSectionSize">
            <number>16</number>
           </attribute>
-          <attribute name="verticalHeaderMinimumSectionSize">
+          <attribute name="verticalHeaderDefaultSectionSize">
            <number>16</number>
           </attribute>
          </widget>
@@ -544,14 +409,6 @@ p, li { white-space: pre-wrap; }
    </property>
   </action>
  </widget>
- <customwidgets>
-  <customwidget>
-   <class>gui::WebWidget</class>
-   <extends>QWidget</extends>
-   <header location="global">webwidget.h</header>
-   <container>1</container>
-  </customwidget>
- </customwidgets>
  <tabstops>
   <tabstop>chkRemoveComplete</tabstop>
   <tabstop>chkGroupSimilar</tabstop>

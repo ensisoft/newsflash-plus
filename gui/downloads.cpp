@@ -65,12 +65,6 @@ Downloads::Downloads() : panels_y_pos_(0), numDownloads_(0)
 
     tableTasks_selectionChanged();
     tableConns_selectionChanged();
-
-    ui_.lblPlead->setVisible(true);
-    ui_.lblRegister->setVisible(true);
-    ui_.lblDonate->setVisible(true);
-    ui_.webAdWidget->setVisible(true);
-
     DEBUG("Created downloads UI");
 }
 
@@ -177,19 +171,7 @@ void Downloads::activate(QWidget*)
 
 void Downloads::updateRegistration(bool success)
 {
-#if defined(LINUX_OS)
-    success = true;
-#endif
 
-    ui_.lblPlead->setVisible(!success);
-    ui_.lblRegister->setVisible(!success);
-    ui_.lblDonate->setVisible(!success);
-    ui_.grpAdvert->setVisible(!success);
-    ui_.webAdWidget->setVisible(!success);
-    if (!success)
-    {
-        ui_.webAdWidget->loadUrl("http://ensisoft.com/embedded-downloads-tab-ad.php");
-    }
 }
 
 void Downloads::on_actionConnect_triggered()
