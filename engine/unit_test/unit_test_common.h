@@ -1,4 +1,4 @@
-// Copyright (c) 2010-2013 Sami Väisänen, Ensisoft
+// Copyright (c) 2010-2013 Sami Vï¿½isï¿½nen, Ensisoft
 //
 // http://www.ensisoft.com
 //
@@ -33,7 +33,6 @@
 #include "newsflash/warnpush.h"
 #  include <boost/filesystem/path.hpp>
 #  include <boost/filesystem/operations.hpp>
-#  include <boost/filesystem/convenience.hpp>
 #include "newsflash/warnpop.h"
 
 #include <cstdlib>
@@ -194,7 +193,7 @@ inline
 std::string illegal_fs_root()
 {
 #if defined(WINDOWS)
-    return "ö:\\";
+    return "ï¿½:\\";
 #elif defined(LINUX_OS)
     return "/root/";
 #endif
