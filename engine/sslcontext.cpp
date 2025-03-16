@@ -28,6 +28,7 @@
 #include "newsflash/warnpop.h"
 
 #include <cassert>
+#include <stdexcept>
 
 #include "sslcontext.h"
 #include "platform.h"
