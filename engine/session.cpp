@@ -355,9 +355,12 @@ public:
         // 423 no such article number in this group
         // 430 no such article found
         //
+        // giganews seems to respond also with 451 cancelled.
+        // (whatever the fuck that means...)
+
         nntp::trailing_comment comment;
-        const auto code = nntp::scan_response({222, 423, 420, 430}, buff.Head(), len, comment);
-        if (code == 423 || code == 420 || code == 430)
+        const auto code = nntp::scan_response({222, 423, 420, 430, 451}, buff.Head(), len, comment);
+        if (code == 423 || code == 420 || code == 430 || code == 451)
         {
             // the output Buffer only carries meta information
             // i.e. that there was no content data available.
