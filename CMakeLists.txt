@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.5)
 
 project(NewsflashPlus)
 
@@ -7,7 +7,7 @@ message(STATUS "
      World's best newsreader!
 \\\\o Brought to you by Ensisoft o//
      http://www.ensisoft.com
-Copyright (c) 2010-2017 Sami Väisänen
+Copyright (c) 2010-2026 Sami Väisänen
              Ensisoft
 
 https://github.com/ensisoft/newsflash-plus
@@ -50,7 +50,7 @@ endif()
 # libs we'd like to use. Anyway the linking is automatic so we'll just
 # add the libs manually to linking options for Linux.
 #find_package(Boost REQUIRED COMPONENTS system filesystem)
-find_package(Boost REQUIRED COMPONENTS filesystem thread regex system)
+find_package(Boost REQUIRED COMPONENTS filesystem thread regex)
 if(NOT Boost_FOUND)
     if (UNIX)
         message(FATAL_ERROR "
