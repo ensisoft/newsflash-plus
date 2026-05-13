@@ -194,7 +194,7 @@ void bigfile::flush()
 {
     assert(is_open());
 
-    if (FlushFileBuffers(pimpl_->file))
+    if (!FlushFileBuffers(pimpl_->file))
         throw std::system_error(GetLastError(), std::system_category(), "FlushFileBuffers failed");
 }
 
