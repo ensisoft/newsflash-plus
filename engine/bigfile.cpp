@@ -37,7 +37,6 @@
 #  include <cerrno>
 #endif
 
-#include <cassert>
 #include <stdexcept>
 
 #include "bigfile.h"
@@ -114,7 +113,7 @@ void bigfile::open(const std::string& file, unsigned flags, std::error_code* err
 
 bigfile::big_t bigfile::position() const
 {
-    assert(is_open());
+    ASSERT(is_open());
 
     LONG high = 0;
     DWORD low = SetFilePointer(pimpl_->file, 0, &high, FILE_CURRENT);
@@ -132,7 +131,7 @@ bigfile::big_t bigfile::position() const
 
 bigfile::big_t bigfile::size() const
 {
-    assert(is_open());
+    ASSERT(is_open());
 
     LARGE_INTEGER size = {0};
     if (!GetFileSizeEx(pimpl_->file, &size))
@@ -143,8 +142,8 @@ bigfile::big_t bigfile::size() const
 
 void bigfile::seek(big_t offset)
 {
-    assert(is_open());
-    assert(offset >= 0);
+    ASSERT(is_open());
+    ASSERT(offset >= 0);
 
     auto hi = static_cast<LONG>(offset >> 32);
     auto lo = static_cast<LONG>(offset & 0xFFFFFFFF);
@@ -158,9 +157,9 @@ void bigfile::seek(big_t offset)
 
 void bigfile::write(const void* data, size_t bytes)
 {
-    assert(is_open());
-    assert(data);
-    assert(bytes > 0 && bytes < ((size_t)-1));
+    ASSERT(is_open());
+    ASSERT(data);
+    ASSERT(bytes > 0 && bytes < ((size_t)-1));
 
     if (pimpl_->append)
     {
@@ -179,9 +178,9 @@ void bigfile::write(const void* data, size_t bytes)
 
 size_t bigfile::read(void* buff, size_t bytes)
 {
-    assert(is_open());
-    assert(buff);
-    assert(buff > 0 && bytes < ((size_t)-1));
+    ASSERT(is_open());
+    ASSERT(buff);
+    ASSERT(bytes > 0 && bytes < ((size_t)-1));
 
     DWORD dw = 0;
     if (ReadFile(pimpl_->file, buff, bytes, &dw, NULL) == 0)
@@ -192,7 +191,7 @@ size_t bigfile::read(void* buff, size_t bytes)
 
 void bigfile::flush()
 {
-    assert(is_open());
+    ASSERT(is_open());
 
     if (!FlushFileBuffers(pimpl_->file))
         throw std::system_error(GetLastError(), std::system_category(), "FlushFileBuffers failed");
@@ -200,7 +199,7 @@ void bigfile::flush()
 
 void bigfile::resize(big_t size)
 {
-    assert(is_open());
+    ASSERT(is_open());
 
     LARGE_INTEGER li = {0};
     li.QuadPart = size;
@@ -239,7 +238,7 @@ std::error_code bigfile::erase(const std::string& file)
 
 std::error_code bigfile::resize(const std::string& file, big_t size)
 {
-    assert(size >= 0);
+    ASSERT(size >= 0);
 
     const std::wstring& wstr = utf8::decode(file);
 
@@ -322,7 +321,7 @@ void bigfile::open(const std::string& file, unsigned flags, std::error_code* err
 
 bigfile::big_t bigfile::position() const
 {
-    assert(is_open());
+    ASSERT(is_open());
 
     const off64_t pos = lseek64(pimpl_->fd, 0, SEEK_CUR);
     if (pos == (off64_t)-1)
@@ -333,7 +332,7 @@ bigfile::big_t bigfile::position() const
 
 bigfile::big_t bigfile::size() const
 {
-    assert(is_open());
+    ASSERT(is_open());
 
     struct stat64 st {0};
     if (fstat64(pimpl_->fd, &st))
@@ -344,8 +343,8 @@ bigfile::big_t bigfile::size() const
 
 void bigfile::seek(big_t offset)
 {
-    assert(is_open());
-    assert(offset >= 0);
+    ASSERT(is_open());
+    ASSERT(offset >= 0);
 
     const off64_t pos = lseek64(pimpl_->fd, offset, SEEK_SET);
     if (pos == (off64_t)-1)
@@ -354,9 +353,9 @@ void bigfile::seek(big_t offset)
 
 void bigfile::write(const void* data, size_t bytes)
 {
-    assert(is_open());
-    assert(data);
-    assert(bytes > 0 && bytes < ((size_t)-1));
+    ASSERT(is_open());
+    ASSERT(data);
+    ASSERT(bytes > 0 && bytes < ((size_t)-1));
 
     // note that the return value is ssize_t and nbyte is size_t!
     // i guess this is because of the return value is -1 on error. (herp derp..)
@@ -369,9 +368,9 @@ void bigfile::write(const void* data, size_t bytes)
 
 size_t bigfile::read(void* buff, size_t bytes)
 {
-    assert(is_open());
-    assert(buff);
-    assert(bytes > 0 && bytes < ((size_t)-1));
+    ASSERT(is_open());
+    ASSERT(buff);
+    ASSERT(bytes > 0 && bytes < ((size_t)-1));
 
     const size_t ret = ::read(pimpl_->fd, buff, bytes);
     if (ret == (size_t)-1)
@@ -382,7 +381,7 @@ size_t bigfile::read(void* buff, size_t bytes)
 
 void bigfile::flush()
 {
-    assert(is_open());
+    ASSERT(is_open());
 
     if (fdatasync(pimpl_->fd))
         throw std::system_error(errno, std::system_category(), "fdatasync failed");
@@ -390,7 +389,7 @@ void bigfile::flush()
 
 void bigfile::resize(big_t size)
 {
-    assert(is_open());
+    ASSERT(is_open());
 
     if (ftruncate64(pimpl_->fd, size))
         throw std::system_error(errno, std::system_category(), "ftruncate64 failed");
@@ -415,7 +414,7 @@ std::error_code bigfile::erase(const std::string& file)
 
 std::error_code bigfile::resize(const std::string& file, big_t size)
 {
-    assert(size >= 0);
+    ASSERT(size >= 0);
 
     if (truncate64(file.c_str(), size))
         return std::error_code(errno, std::system_category());
